@@ -601,20 +601,20 @@ watch(
                 <button
                   type="button"
                   class="sidebar-parent-row__chevron"
+                  :class="{ 'sidebar-parent-row__chevron--expanded': isParentExpanded(group) }"
                   :aria-expanded="isParentExpanded(group)"
                   :aria-label="`${isParentExpanded(group) ? 'Collapse' : 'Expand'} ${group.title}`"
                   @click.stop.prevent="toggleParent(group)"
                   @keydown.enter.stop.prevent="toggleParent(group)"
                   @keydown.space.stop.prevent="toggleParent(group)"
                 >
-                  <v-icon size="14">{{ isParentExpanded(group) ? 'chevron-up' : 'chevron-down' }}</v-icon>
+                  <v-icon size="14">chevron-right</v-icon>
                 </button>
               </div>
             </template>
 
             <!-- Hover flyout — single card (no sub-groups) -->
             <div v-if="!hasSubGroups(group)" class="rail-flyout-card">
-              <div class="rail-flyout-card__header">{{ group.title }}</div>
               <div
                 v-for="item in group.items"
                 :key="item.title"
@@ -627,7 +627,6 @@ watch(
             <!-- Hover flyout — cascade (groups with sub-groups) -->
             <div v-else class="rail-cascade-wrap">
               <div class="rail-flyout-card">
-                <div class="rail-flyout-card__header">{{ group.title }}</div>
                 <div
                   v-for="flat in railFlatItems(group)"
                   :key="flat.title"
@@ -1264,7 +1263,25 @@ watch(
   cursor: pointer;
   z-index: 2;
   padding: 0;
-  transition: var(--sidebar-transition);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 120ms ease,
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.sidebar-parent-row:hover .sidebar-parent-row__chevron,
+.sidebar-parent-row:focus-within .sidebar-parent-row__chevron,
+.sidebar-parent-row__chevron:focus-visible,
+.sidebar-parent-row__chevron--expanded {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar-parent-row__chevron--expanded {
+  transform: translateY(-50%) rotate(90deg);
 }
 
 .sidebar-parent-row__chevron:hover {
@@ -1595,41 +1612,48 @@ watch(
   --sidebar-border: var(--hairline);
   --sidebar-text: var(--ink);
   --sidebar-muted: var(--muted);
-  --sidebar-hover-bg: color-mix(in oklch, var(--sidebar-text) 5%, transparent);
-  --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 9%, transparent);
+  --sidebar-hover-bg: color-mix(in oklch, var(--sidebar-text) 6%, transparent);
+  --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 10%, transparent);
   --sidebar-active-text: var(--sidebar-text);
-  --sidebar-radius: 8px;
+  --sidebar-radius: 10px;
   background: var(--surface-1);
   border: 1px solid var(--sidebar-border);
-  border-radius: var(--sidebar-radius);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04);
-  padding: 4px;
-  min-width: 160px;
+  border-radius: 12px;
+  box-shadow:
+    0 12px 32px color-mix(in oklch, var(--ink) 14%, transparent),
+    0 2px 6px color-mix(in oklch, var(--ink) 6%, transparent);
+  padding: 6px;
+  min-width: 220px;
 }
 
 .rail-flyout-card__header {
-  padding: 5px 8px 4px;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
+  padding: 8px 12px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
   color: var(--sidebar-muted);
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.08em;
 }
 
 .rail-flyout-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 28px;
-  padding: 5px 8px;
+  min-height: 34px;
+  padding: 7px 12px;
   border-radius: var(--sidebar-radius);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 500;
+  line-height: 1.35;
   color: var(--sidebar-text);
   cursor: pointer;
-  transition: background 100ms ease;
+  transition: background 100ms ease, color 100ms ease;
   user-select: none;
+}
+
+.rail-flyout-item + .rail-flyout-item {
+  margin-top: 1px;
 }
 
 .rail-flyout-item:hover {
@@ -1644,15 +1668,15 @@ watch(
 
 .rail-flyout-item svg {
   flex-shrink: 0;
-  width: 11px;
-  height: 11px;
-  opacity: 0.45;
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
 }
 
 /* Rail cascade — two cards side by side */
 .rail-cascade-wrap {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   align-items: flex-start;
 }
 </style>

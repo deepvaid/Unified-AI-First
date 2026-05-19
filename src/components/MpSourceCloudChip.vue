@@ -51,13 +51,13 @@ const iconSize = computed(() => (props.size === 'sm' ? 12 : 13))
   cursor: default;
 }
 
-.mp-source-cloud-chip--commerce { color: #166534; }
-.mp-source-cloud-chip--marketing { color: #5b21b6; }
-.mp-source-cloud-chip--analytics { color: #1d4ed8; }
-.mp-source-cloud-chip--contacts { color: #155e75; }
-.mp-source-cloud-chip--service { color: #c2410c; }
+.mp-source-cloud-chip--commerce { color: var(--cloud-commerce-text); }
+.mp-source-cloud-chip--marketing { color: var(--cloud-marketing-text); }
+.mp-source-cloud-chip--analytics { color: var(--cloud-analytics-text); }
+.mp-source-cloud-chip--contacts { color: var(--cloud-contacts-text); }
+.mp-source-cloud-chip--service { color: var(--cloud-service-text); }
 .mp-source-cloud-chip--neto { color: var(--ink); }
-.mp-source-cloud-chip--retail { color: #0f766e; }
+.mp-source-cloud-chip--retail { color: var(--cloud-retail-text); }
 
 .mp-source-cloud-chip--sm {
   height: 20px;

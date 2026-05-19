@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useTheme } from 'vuetify'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
+import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
 
 const copilot = useCopilotStore()
 
-const theme = useTheme()
 const router = useRouter()
 const accountsStore = useAccountsStore()
+const { mode, setMode } = useAppTheme()
+
+const themeToggleValue = computed({
+  get: () => mode.value,
+  set: (value: ThemeMode) => setMode(value),
+})
 
 const notificationCount = ref(18)
 const userName = ref('Ross Andrew Paquette')
@@ -65,54 +70,6 @@ watch(userMenuOpen, (open) => {
     userMenuView.value = 'main'
     accountSearch.value = ''
   }
-})
-
-type ThemeMode = 'light' | 'dark' | 'auto'
-const STORAGE_KEY = 'mp-theme-mode'
-
-function getInitialThemeMode(): ThemeMode {
-  if (typeof window === 'undefined') return 'light'
-  const stored = window.localStorage.getItem(STORAGE_KEY) as ThemeMode | null
-  if (stored === 'light' || stored === 'dark' || stored === 'auto') return stored
-  return 'light'
-}
-
-function applyTheme(mode: ThemeMode) {
-  let resolved: 'maropostLight' | 'maropostDark'
-  if (mode === 'auto') {
-    const prefersDark = typeof window !== 'undefined'
-      && window.matchMedia?.('(prefers-color-scheme: dark)').matches
-    resolved = prefersDark ? 'maropostDark' : 'maropostLight'
-  } else {
-    resolved = mode === 'dark' ? 'maropostDark' : 'maropostLight'
-  }
-  theme.global.name.value = resolved
-}
-
-const themeToggleValue = ref<ThemeMode>(getInitialThemeMode())
-
-watch(themeToggleValue, (next) => {
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(STORAGE_KEY, next)
-  }
-  applyTheme(next)
-})
-
-let mql: MediaQueryList | null = null
-const handleSystemThemeChange = () => {
-  if (themeToggleValue.value === 'auto') applyTheme('auto')
-}
-
-onMounted(() => {
-  applyTheme(themeToggleValue.value)
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    mql = window.matchMedia('(prefers-color-scheme: dark)')
-    mql.addEventListener?.('change', handleSystemThemeChange)
-  }
-})
-
-onUnmounted(() => {
-  mql?.removeEventListener?.('change', handleSystemThemeChange)
 })
 
 function switchAccount(id: string) {
@@ -476,7 +433,6 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                   >
                     <v-btn value="light" icon="sun" variant="text" aria-label="Light theme" />
                     <v-btn value="dark" icon="moon" variant="text" aria-label="Dark theme" />
-                    <v-btn value="auto" icon="monitor" variant="text" aria-label="Match system theme" />
                   </v-btn-toggle>
                 </div>
               </div>
@@ -591,7 +547,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 <style scoped lang="scss">
 .mp-appbar {
   border-bottom: 1px solid var(--hairline);
-  background: rgb(240, 247, 248) !important;
+  background: var(--surface-1);
 }
 
 .mp-appbar-shell {
@@ -659,7 +615,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   padding: 5px 12px;
   border: 1px solid var(--hairline);
   border-radius: var(--r-pill);
-  background: #fff;
+  background: var(--surface-1);
   color: var(--ink);
   font: inherit;
   appearance: none;
@@ -697,7 +653,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   padding: 3px 8px 3px 4px;
   border: 1px solid var(--hairline);
   border-radius: var(--r-pill);
-  background: #fff;
+  background: var(--surface-1);
   cursor: pointer;
   font: inherit;
   appearance: none;
@@ -756,10 +712,12 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 /* ── Profile dropdown ───────────────────────────── */
 .user-menu-card {
   width: 360px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
   border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
+    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
   overflow: hidden;
   max-height: 90vh;
   overflow-y: auto;
@@ -770,7 +728,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   align-items: flex-start;
   gap: 14px;
   padding: 20px;
-  background: linear-gradient(135deg, #f0f7ff 0%, #f7f0ff 100%);
+  background: var(--surface-2);
 }
 
 .um-header__info {
@@ -784,17 +742,17 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   font-size: 17px;
   font-weight: 700;
   line-height: 1.2;
-  color: #111827;
+  color: var(--ink);
 }
 
 .um-header__email {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .um-divider {
   height: 1px;
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hairline);
 }
 
 .um-section {
@@ -810,7 +768,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   font-size: 10.5px;
   font-weight: 700;
   line-height: 1;
-  color: #9ca3af;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1.2px;
 }
@@ -825,8 +783,14 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   transition: background 120ms ease, transform 80ms ease;
 }
 
-.um-item:hover {
-  background: #f3f4f6;
+.um-item:hover,
+.um-item:focus-visible {
+  background: var(--surface-2);
+}
+
+.um-item:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: -2px;
 }
 
 .um-item:active {
@@ -834,25 +798,25 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 .um-item--active {
-  background: rgba(26, 86, 219, 0.08);
+  background: rgba(var(--v-theme-primary), 0.08);
 }
 
 .um-item--active:hover {
-  background: rgba(26, 86, 219, 0.12);
+  background: rgba(var(--v-theme-primary), 0.12);
 }
 
 .um-item--active .um-item__title {
-  color: #1a56db;
+  color: rgb(var(--v-theme-primary));
   font-weight: 700;
 }
 
 .um-item__icon {
-  color: #6b7280;
+  color: var(--muted);
   flex-shrink: 0;
 }
 
 .um-item:hover .um-item__icon {
-  color: #374151;
+  color: var(--ink);
 }
 
 .um-item__avatar {
@@ -869,13 +833,13 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   font-size: 14px;
   font-weight: 600;
   line-height: 1.3;
-  color: #1f2937;
+  color: var(--ink);
 }
 
 .um-item__sub {
   font-size: 12px;
   line-height: 1.3;
-  color: #9ca3af;
+  color: var(--muted);
   margin-top: 1px;
 }
 
@@ -893,7 +857,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 .um-item__chevron {
-  color: #9ca3af;
+  color: var(--muted);
   margin-left: auto;
   flex-shrink: 0;
 }
@@ -904,8 +868,8 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   align-items: center;
   gap: 8px;
   padding: 14px 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  background: #fff;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--surface-1);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -916,7 +880,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   text-align: center;
   font-size: 15px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--ink);
 }
 
 .um-icon-btn {
@@ -928,7 +892,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #6b7280;
+  color: var(--muted);
   cursor: pointer;
   font: inherit;
   appearance: none;
@@ -936,8 +900,8 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 .um-icon-btn:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
 .um-switch-search {
@@ -947,9 +911,9 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   padding: 0 10px;
   margin: 10px 12px 6px;
   height: 36px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
-  background: #f9fafb;
+  background: var(--surface-2);
   position: sticky;
   top: 57px;
   z-index: 1;
@@ -957,12 +921,12 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 .um-switch-search:focus-within {
-  border-color: rgba(26, 86, 219, 0.4);
-  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.08);
+  border-color: color-mix(in oklch, rgb(var(--v-theme-primary)) 40%, transparent);
+  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.08);
 }
 
 .um-account-search__icon {
-  color: #9ca3af;
+  color: var(--muted);
   flex-shrink: 0;
 }
 
@@ -975,12 +939,12 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   font-size: 13px;
   font-weight: 500;
   font-family: inherit;
-  color: #1f2937;
+  color: var(--ink);
   line-height: 1.3;
 }
 
 .um-account-search__input::placeholder {
-  color: #9ca3af;
+  color: var(--muted);
 }
 
 .um-switch-list {
@@ -995,7 +959,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   text-align: center;
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--muted);
 }
 
 .theme-segment.v-btn-group {
@@ -1038,7 +1002,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 
 .theme-segment :deep(.v-btn--active) {
   background: var(--surface-1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px color-mix(in oklch, var(--ink) 8%, transparent);
 }
 .theme-toggle-item :deep(.v-list-item__append) {
   align-self: center;
@@ -1224,7 +1188,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   height: 32px;
   border: 1px solid var(--hairline);
   border-radius: 50%;
-  background: #fff;
+  background: var(--surface-1);
   color: var(--muted);
   font: inherit;
   appearance: none;

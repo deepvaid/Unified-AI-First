@@ -662,7 +662,7 @@ const cartHeaders = [
 :deep(.mb-stat-card) {
   --mb-stat-bg: rgb(var(--v-theme-surface)) !important;
   --mb-stat-border: rgb(var(--v-theme-outline-variant)) !important;
-  --mb-stat-value-color: #0f172a !important;
+  --mb-stat-value-color: rgb(var(--v-theme-on-surface)) !important;
   --mb-stat-label-color: rgba(var(--v-theme-on-surface), 0.72) !important;
   --mb-stat-unit-color: rgba(var(--v-theme-on-surface), 0.62) !important;
 }

@@ -2,10 +2,11 @@ import { ref } from 'vue'
 import { useTheme } from 'vuetify'
 
 export type AccentKey = 'cyan' | 'blue' | 'amber' | 'gray' | 'purple'
-export type ThemeMode = 'light' | 'dark' | 'auto'
+export type ThemeMode = 'light' | 'dark'
 
 const LS_ACCENT = 'app-accent'
 const LS_MODE = 'app-theme-mode'
+const LS_LEGACY_MODE = 'mp-theme-mode'
 const LS_DARK_SIDEBAR = 'app-dark-sidebar'
 
 // ─── Accent color definitions ─────────────────────────────────────────────────
@@ -55,9 +56,33 @@ const ACCENT_DEFS: Record<AccentKey, AccentDef> = {
   },
 }
 
+function normalizeMode(stored: string | null): ThemeMode {
+  return stored === 'dark' ? 'dark' : 'light'
+}
+
+function migrateLegacyThemeMode() {
+  if (typeof window === 'undefined') return
+
+  const current = window.localStorage.getItem(LS_MODE)
+  const legacy = window.localStorage.getItem(LS_LEGACY_MODE)
+
+  if (!current && legacy) {
+    window.localStorage.setItem(LS_MODE, normalizeMode(legacy))
+  }
+
+  if (legacy) {
+    window.localStorage.removeItem(LS_LEGACY_MODE)
+  }
+
+  const stored = window.localStorage.getItem(LS_MODE)
+  if (stored && stored !== 'light' && stored !== 'dark') {
+    window.localStorage.setItem(LS_MODE, 'light')
+  }
+}
+
 // ─── Reactive state ───────────────────────────────────────────────────────────
 const accent = ref<AccentKey>((localStorage.getItem(LS_ACCENT) as AccentKey) || 'cyan')
-const mode = ref<ThemeMode>((localStorage.getItem(LS_MODE) as ThemeMode) || 'light')
+const mode = ref<ThemeMode>(normalizeMode(localStorage.getItem(LS_MODE)))
 const darkSidebar = ref<boolean>(localStorage.getItem(LS_DARK_SIDEBAR) !== 'false')
 
 /** Current accent hex color — reactive, for use in charts and dynamic JS. */
@@ -74,10 +99,7 @@ function applyAccent(key: AccentKey) {
 }
 
 function applyMode(m: ThemeMode) {
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const isDark = m === 'dark' || (m === 'auto' && prefersDark)
-
-  document.documentElement.dataset.theme = isDark ? 'dark' : 'light'
+  document.documentElement.dataset.theme = m === 'dark' ? 'dark' : 'light'
   localStorage.setItem(LS_MODE, m)
 }
 
@@ -113,9 +135,7 @@ export function useAppTheme() {
   function setMode(m: ThemeMode) {
     mode.value = m
     applyMode(m)
-    vuetifyTheme.global.name.value = m === 'dark' || (m === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-      ? 'maropostDark'
-      : 'maropostLight'
+    vuetifyTheme.global.name.value = m === 'dark' ? 'maropostDark' : 'maropostLight'
 
     // Re-apply accent to the new theme
     const def = ACCENT_DEFS[accent.value]
@@ -140,8 +160,9 @@ export function useAppTheme() {
  * before the first paint. Does NOT require Vuetify context.
  */
 export function initAppTheme() {
+  migrateLegacyThemeMode()
   const storedAccent = (localStorage.getItem(LS_ACCENT) as AccentKey) || 'cyan'
-  const storedMode = (localStorage.getItem(LS_MODE) as ThemeMode) || 'light'
+  const storedMode = normalizeMode(localStorage.getItem(LS_MODE))
   const storedDarkSidebar = localStorage.getItem(LS_DARK_SIDEBAR) !== 'false'
   applyAccent(storedAccent)
   applyMode(storedMode)

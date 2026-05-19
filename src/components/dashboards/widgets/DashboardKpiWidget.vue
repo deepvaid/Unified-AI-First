@@ -238,33 +238,33 @@ const sparklinePoints = computed(() => {
 }
 
 .dashboard-kpi-widget__icon-chip--commerce {
-  background: color-mix(in oklch, #16a34a 12%, transparent);
-  color: #166534;
+  background: color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent);
+  color: var(--cloud-commerce-text);
 }
 
 .dashboard-kpi-widget__icon-chip--marketing {
-  background: color-mix(in oklch, #7c3aed 12%, transparent);
-  color: #5b21b6;
+  background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent);
+  color: var(--cloud-marketing-text);
 }
 
 .dashboard-kpi-widget__icon-chip--analytics {
-  background: color-mix(in oklch, #2563eb 12%, transparent);
-  color: #1d4ed8;
+  background: color-mix(in oklch, var(--cloud-analytics-accent) 12%, transparent);
+  color: var(--cloud-analytics-text);
 }
 
 .dashboard-kpi-widget__icon-chip--contacts {
-  background: color-mix(in oklch, #0891b2 12%, transparent);
-  color: #155e75;
+  background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);
+  color: var(--cloud-contacts-text);
 }
 
 .dashboard-kpi-widget__icon-chip--service {
-  background: color-mix(in oklch, #ea580c 12%, transparent);
-  color: #c2410c;
+  background: color-mix(in oklch, var(--cloud-service-accent) 12%, transparent);
+  color: var(--cloud-service-text);
 }
 
 .dashboard-kpi-widget__icon-chip--retail {
-  background: color-mix(in oklch, #0d9488 12%, transparent);
-  color: #0f766e;
+  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
+  color: var(--cloud-retail-text);
 }
 
 .dashboard-kpi-widget__title-row {
@@ -505,14 +505,14 @@ const sparklinePoints = computed(() => {
   font: inherit;
   font-size: 11.5px;
   font-weight: 600;
-  color: #0f766e;
+  color: var(--cloud-retail-link);
   cursor: pointer;
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
 
 .dashboard-kpi-widget__view-report:hover {
-  color: #0d6260;
+  color: var(--cloud-retail-link-hover);
   text-decoration: underline;
   text-underline-offset: 2px;
 }

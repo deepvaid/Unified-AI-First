@@ -330,7 +330,7 @@ function buildSub(item: DaVinciHistoryItem): string {
   border-radius: 9999px;
   border: none;
   background: linear-gradient(135deg, #5b8def 0%, #2dd4bf 100%);
-  color: #fff;
+  color: rgb(var(--v-theme-on-primary));
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;

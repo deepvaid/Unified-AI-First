@@ -67,7 +67,7 @@ withDefaults(defineProps<MbCardProps>(), {
 .mb-card[data-tone='inverse'] {
   --mb-card-bg: var(--mp-color-blue-900, #0b3558);
   --mb-card-border: transparent;
-  --mb-card-text: #ffffff;
+  --mb-card-text: rgb(var(--v-theme-on-primary));
 }
 
 .mb-card[data-radius='sm'] {

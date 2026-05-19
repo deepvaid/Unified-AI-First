@@ -749,7 +749,7 @@ function save() { saveSnack.value = true }
 }
 .billing-plan-chip {
   background: rgba(255, 255, 255, 0.18) !important;
-  color: #fff !important;
+  color: rgb(var(--v-theme-on-primary)) !important;
   letter-spacing: 0.05em;
 }
 .billing-upgrade-btn {

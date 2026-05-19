@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useTheme } from 'vuetify'
 import type { ApexOptions } from 'apexcharts'
 import type { DashboardChartVariant, DashboardSeriesData, DashboardWidgetType } from '@/stores/dashboards/types'
 import { applyChartTheme, chartPalette } from '@/plugins/chartPalette'
@@ -68,6 +69,12 @@ const chartHeight = computed(() => {
 })
 
 const { accentHex } = useAppTheme()
+const vuetifyTheme = useTheme()
+const markerStrokeColor = computed(() => (
+  vuetifyTheme.global.current.value.dark
+    ? 'rgb(var(--v-theme-surface))'
+    : '#ffffff'
+))
 const base = applyChartTheme()
 
 // For single-series bar charts, distribute palette colors across categories.
@@ -161,7 +168,7 @@ const chartOptions = computed<ApexOptions>(() => {
                 seriesIndex: 0,
                 dataPointIndex: lastDataPointIndex.value,
                 fillColor: accentHex.value,
-                strokeColor: '#ffffff',
+                strokeColor: markerStrokeColor.value,
                 size: 5,
               },
             ],

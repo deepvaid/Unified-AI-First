@@ -56,7 +56,7 @@ const trendSymbol = computed(() => {
   --mb-stat-bg: var(--mb-color-surface);
   --mb-stat-border: var(--mb-color-border-subtle);
   --mb-stat-label-color: var(--mb-color-text-muted);
-  --mb-stat-value-color: #0f172a;
+  --mb-stat-value-color: var(--mb-color-text);
   --mb-stat-unit-color: var(--mb-color-text-muted);
 
   display: flex;
@@ -88,7 +88,7 @@ const trendSymbol = computed(() => {
   --mb-stat-bg: var(--mp-color-blue-900, #0b3558);
   --mb-stat-border: transparent;
   --mb-stat-label-color: rgba(255, 255, 255, 0.7);
-  --mb-stat-value-color: #ffffff;
+  --mb-stat-value-color: rgb(var(--v-theme-on-primary));
   --mb-stat-unit-color: rgba(255, 255, 255, 0.64);
 }
 

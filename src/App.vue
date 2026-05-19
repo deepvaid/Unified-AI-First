@@ -8,9 +8,10 @@ import MpDaVinciBot from '@/components/MpDaVinciBot.vue'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { useCopilotStore } from '@/stores/useCopilot'
 
-// Apply stored accent to Vuetify theme on initial mount
-const { accent, setAccent } = useAppTheme()
+// Apply stored accent and theme to Vuetify on initial mount
+const { accent, mode, setAccent, setMode } = useAppTheme()
 setAccent(accent.value)
+setMode(mode.value)
 
 const route = useRoute()
 const drawer = ref(true)

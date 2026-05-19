@@ -931,7 +931,7 @@ function toggleFavoriteActive() {
 .dashboard-page-header {
   margin: -32px -36px 12px;
   border-bottom: 1px solid var(--hairline);
-  background: #fff;
+  background: var(--surface-1);
 }
 
 :deep(.dashboard-grid) {
@@ -1141,7 +1141,7 @@ function toggleFavoriteActive() {
   justify-content: space-between;
   gap: 12px;
   padding: 4px 36px;
-  background: #fff;
+  background: var(--surface-1);
   border-top: 1px solid var(--hairline);
 }
 

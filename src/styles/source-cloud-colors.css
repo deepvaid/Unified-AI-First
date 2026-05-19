@@ -1,0 +1,28 @@
+:root {
+  --cloud-commerce-accent: #16a34a;
+  --cloud-commerce-text: #166534;
+  --cloud-marketing-accent: #7c3aed;
+  --cloud-marketing-text: #5b21b6;
+  --cloud-analytics-accent: #2563eb;
+  --cloud-analytics-text: #1d4ed8;
+  --cloud-contacts-accent: #0891b2;
+  --cloud-contacts-text: #155e75;
+  --cloud-service-accent: #ea580c;
+  --cloud-service-text: #c2410c;
+  --cloud-retail-accent: #0d9488;
+  --cloud-retail-text: #0f766e;
+  --cloud-retail-link: #0f766e;
+  --cloud-retail-link-hover: #0d6260;
+}
+
+[data-theme='dark'],
+.v-application.v-theme--maropostDark {
+  --cloud-commerce-text: #86efac;
+  --cloud-marketing-text: #c4b5fd;
+  --cloud-analytics-text: #93c5fd;
+  --cloud-contacts-text: #67e8f9;
+  --cloud-service-text: #fdba74;
+  --cloud-retail-text: #5eead4;
+  --cloud-retail-link: #5eead4;
+  --cloud-retail-link-hover: #99f6e4;
+}
