@@ -1607,53 +1607,58 @@ watch(
   font-weight: 600;
 }
 
-/* Rail flyout — single card */
+/* Rail flyout — single card (tokens: sidebar-dark.css + light defaults below) */
 .rail-flyout-card {
   --sidebar-border: var(--hairline);
   --sidebar-text: var(--ink);
-  --sidebar-muted: var(--muted);
-  --sidebar-hover-bg: color-mix(in oklch, var(--sidebar-text) 6%, transparent);
-  --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 10%, transparent);
+  --sidebar-muted: color-mix(in oklch, var(--ink) 62%, transparent);
+  --sidebar-hover-bg: color-mix(in oklch, var(--sidebar-text) 7%, transparent);
+  --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 14%, transparent);
   --sidebar-active-text: var(--sidebar-text);
-  --sidebar-radius: 10px;
+  --sidebar-radius: 8px;
   background: var(--surface-1);
   border: 1px solid var(--sidebar-border);
-  border-radius: 12px;
-  box-shadow:
-    0 12px 32px color-mix(in oklch, var(--ink) 14%, transparent),
-    0 2px 6px color-mix(in oklch, var(--ink) 6%, transparent);
+  border-radius: var(--sidebar-radius);
+  box-shadow: 0 4px 16px color-mix(in oklch, var(--ink) 10%, transparent), 0 1px 3px color-mix(in oklch, var(--ink) 6%, transparent);
   padding: 6px;
-  min-width: 220px;
+  min-width: 200px;
+  max-width: 260px;
+  max-height: min(70vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .rail-flyout-card__header {
-  padding: 8px 12px 6px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: -2px -2px 4px;
+  padding: 8px 10px 7px;
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
   color: var(--sidebar-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
+  border-bottom: 1px solid var(--sidebar-border);
+  background: inherit;
 }
 
 .rail-flyout-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   min-height: 34px;
-  padding: 7px 12px;
+  padding: 7px 10px;
   border-radius: var(--sidebar-radius);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
   color: var(--sidebar-text);
   cursor: pointer;
   transition: background 100ms ease, color 100ms ease;
   user-select: none;
-}
-
-.rail-flyout-item + .rail-flyout-item {
-  margin-top: 1px;
 }
 
 .rail-flyout-item:hover {
@@ -1668,15 +1673,20 @@ watch(
 
 .rail-flyout-item svg {
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
-  opacity: 0.6;
+  width: 12px;
+  height: 12px;
+  opacity: 0.55;
+}
+
+.rail-flyout-item--active svg,
+.rail-flyout-item:hover svg {
+  opacity: 0.75;
 }
 
 /* Rail cascade — two cards side by side */
 .rail-cascade-wrap {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: flex-start;
 }
 </style>
