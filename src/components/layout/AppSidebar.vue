@@ -918,7 +918,7 @@ function onFlyoutChildClick(item: NavItem) {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 14px 14px 14px;
+  padding: 16px 14px 16px 20px;
   margin-bottom: 6px;
   border-bottom: 1px solid var(--sidebar-border);
   background: var(--sidebar-bg);
@@ -1040,11 +1040,12 @@ function onFlyoutChildClick(item: NavItem) {
 }
 
 .sidebar-brand__wordmark {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
-  letter-spacing: 1.1px;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
   color: var(--sidebar-text);
+  line-height: 1;
 }
 
 .sidebar-apps-toggle {

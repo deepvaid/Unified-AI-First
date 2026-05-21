@@ -45,29 +45,28 @@ const sortedFilteredAccounts = computed(() => {
 
 const activeAccount = computed(() => accountsStore.activeAccount)
 
+const AVATAR_PALETTE = [
+  'primary', 'secondary', 'info', 'success', 'warning', 'error',
+] as const
+
+function accountColor(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length]
+}
+
 const userMenuOpen = ref(false)
-type UserMenuView = 'main' | 'switch'
-const userMenuView = ref<UserMenuView>('main')
+const switchAccountOpen = ref(false)
 
 function closeUserMenu() {
   userMenuOpen.value = false
-  userMenuView.value = 'main'
-  accountSearch.value = ''
-}
-
-function openSwitchAccountView() {
-  userMenuView.value = 'switch'
-  accountSearch.value = ''
-}
-
-function backToMainView() {
-  userMenuView.value = 'main'
+  switchAccountOpen.value = false
   accountSearch.value = ''
 }
 
 watch(userMenuOpen, (open) => {
   if (!open) {
-    userMenuView.value = 'main'
+    switchAccountOpen.value = false
     accountSearch.value = ''
   }
 })
@@ -206,7 +205,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <v-app-bar height="52" color="surface" flat class="mp-appbar">
+  <v-app-bar height="52" color="surface-variant" flat class="mp-appbar">
     <div class="mp-appbar-shell w-100 d-flex align-center px-4 gap-2">
       <div class="appbar-search-group">
         <v-menu v-model="searchOpen" location="bottom start" offset="8" :close-on-content-click="false">
@@ -386,9 +385,43 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
             <v-icon size="14" class="user-pill__chevron">chevron-down</v-icon>
           </button>
         </template>
-          <div class="user-menu-card">
-            <!-- MAIN VIEW -->
-            <template v-if="userMenuView === 'main'">
+          <div class="um-cascade-wrap">
+            <div v-if="switchAccountOpen" class="um-cascade-card">
+              <div class="um-cascade-card__header">All accounts</div>
+              <div class="um-switch-search">
+                <v-icon size="16" class="um-account-search__icon">search</v-icon>
+                <input
+                  v-model="accountSearch"
+                  type="text"
+                  class="um-account-search__input"
+                  placeholder="Search accounts…"
+                  aria-label="Filter accounts"
+                />
+              </div>
+              <div class="um-switch-list">
+                <div
+                  v-for="account in sortedFilteredAccounts"
+                  :key="account.id"
+                  class="um-item"
+                  :class="{ 'um-item--active': account.id === activeAccountId }"
+                  @click="switchAccount(account.id)"
+                >
+                  <v-avatar size="28" variant="tonal" :color="accountColor(account.id)" class="flex-shrink-0 um-item__avatar">
+                    {{ account.name.slice(0, 2).toUpperCase() }}
+                  </v-avatar>
+                  <div class="um-item__body">
+                    <div class="um-item__title">{{ account.name }}</div>
+                    <div class="um-item__sub">Account #{{ account.id }}</div>
+                  </div>
+                  <v-icon v-if="account.id === activeAccountId" size="16" color="primary" class="ml-auto">check-circle-2</v-icon>
+                </div>
+                <div v-if="sortedFilteredAccounts.length === 0" class="um-account-empty">
+                  No accounts match "{{ accountSearch.trim() }}"
+                </div>
+              </div>
+            </div>
+
+            <div class="user-menu-card">
               <div class="um-header">
                 <v-avatar size="56" class="flex-shrink-0">
                   <v-img :src="userAvatarUrl" :alt="userName" cover>
@@ -409,7 +442,6 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 
               <div class="um-divider" />
 
-              <!-- PERSONAL -->
               <div class="um-section">
                 <div class="um-subheader">Personal</div>
                 <div class="um-item" @click="$router.push(profileRoute); closeUserMenu()">
@@ -419,27 +451,10 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                     <div class="um-item__sub">View and edit your info</div>
                   </div>
                 </div>
-                <div class="um-item">
-                  <v-icon class="um-item__icon" size="20">sun-moon</v-icon>
-                  <div class="um-item__body">
-                    <div class="um-item__title">Theme</div>
-                    <div class="um-item__sub">Toggle light or dark mode</div>
-                  </div>
-                  <v-btn-toggle
-                    v-model="themeToggleValue"
-                    density="comfortable"
-                    mandatory
-                    class="theme-segment ml-auto"
-                  >
-                    <v-btn value="light" icon="sun" variant="text" aria-label="Light theme" />
-                    <v-btn value="dark" icon="moon" variant="text" aria-label="Dark theme" />
-                  </v-btn-toggle>
-                </div>
               </div>
 
               <div class="um-divider" />
 
-              <!-- ACCOUNT -->
               <div class="um-section">
                 <div class="um-subheader">Account</div>
                 <div class="um-item" @click="$router.push(settingsRoute); closeUserMenu()">
@@ -449,6 +464,20 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                 <div class="um-item" @click="openStub('Billing'); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">credit-card</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Billing</div><div class="um-item__sub">Plan, usage, invoices</div></div>
+                </div>
+                <div
+                  class="um-item um-account-trigger"
+                  :class="{ 'um-item--active': switchAccountOpen }"
+                  @click.stop="switchAccountOpen = !switchAccountOpen"
+                >
+                  <v-avatar size="28" variant="tonal" :color="accountColor(activeAccount.id)" class="flex-shrink-0 um-item__avatar">
+                    {{ activeAccount.name.slice(0, 2).toUpperCase() }}
+                  </v-avatar>
+                  <div class="um-item__body">
+                    <div class="um-item__title">{{ activeAccount.name }}</div>
+                    <div class="um-item__sub">Account #{{ activeAccount.id }}</div>
+                  </div>
+                  <v-icon size="16" class="um-item__chevron">chevron-right</v-icon>
                 </div>
                 <div class="um-item" @click="openStub('Galaxy'); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">target</v-icon>
@@ -466,74 +495,29 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 
               <div class="um-divider" />
 
-              <!-- SWITCH ACCOUNT trigger -->
-              <div class="um-section">
-                <div class="um-subheader">Switch Account</div>
-                <div class="um-item um-account-trigger" @click="openSwitchAccountView">
-                  <v-avatar size="28" variant="tonal" color="primary" class="flex-shrink-0 um-item__avatar">
-                    {{ activeAccount.name.slice(0, 2).toUpperCase() }}
-                  </v-avatar>
-                  <div class="um-item__body">
-                    <div class="um-item__title">{{ activeAccount.name }}</div>
-                    <div class="um-item__sub">Account #{{ activeAccount.id }}</div>
-                  </div>
-                  <v-icon size="16" class="um-item__chevron">chevron-right</v-icon>
-                </div>
-              </div>
-
-              <div class="um-divider" />
-
-              <!-- Sign out -->
               <div class="um-section um-section--last">
+                <div class="um-item">
+                  <v-icon class="um-item__icon" size="20">sun-moon</v-icon>
+                  <div class="um-item__body">
+                    <div class="um-item__title">Theme</div>
+                    <div class="um-item__sub">Toggle light or dark mode</div>
+                  </div>
+                  <v-btn-toggle
+                    v-model="themeToggleValue"
+                    density="comfortable"
+                    mandatory
+                    class="theme-segment ml-auto"
+                  >
+                    <v-btn value="light" icon="sun" variant="text" aria-label="Light theme" />
+                    <v-btn value="dark" icon="moon" variant="text" aria-label="Dark theme" />
+                  </v-btn-toggle>
+                </div>
                 <div class="um-item um-item--danger" @click="openStub('Sign out'); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">log-out</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Sign Out</div></div>
                 </div>
               </div>
-            </template>
-
-            <!-- SWITCH ACCOUNT VIEW -->
-            <template v-else>
-              <div class="um-switch-header">
-                <button type="button" class="um-icon-btn" aria-label="Back" @click="backToMainView">
-                  <v-icon size="18">arrow-left</v-icon>
-                </button>
-                <div class="um-switch-title">Switch account</div>
-                <button type="button" class="um-icon-btn" aria-label="Close" @click="closeUserMenu">
-                  <v-icon size="18">x</v-icon>
-                </button>
-              </div>
-
-              <div class="um-switch-search">
-                <v-icon size="16" class="um-account-search__icon">search</v-icon>
-                <input
-                  v-model="accountSearch"
-                  type="text"
-                  class="um-account-search__input"
-                  placeholder="Search accounts…"
-                  aria-label="Filter accounts"
-                />
-              </div>
-
-              <div class="um-switch-list">
-                <div
-                  v-for="account in sortedFilteredAccounts"
-                  :key="account.id"
-                  class="um-item"
-                  :class="{ 'um-item--active': account.id === activeAccountId }"
-                  @click="switchAccount(account.id)"
-                >
-                  <v-avatar size="28" variant="tonal" :color="account.id === activeAccountId ? 'primary' : undefined" class="flex-shrink-0 um-item__avatar">
-                    {{ account.name.slice(0, 2).toUpperCase() }}
-                  </v-avatar>
-                  <div class="um-item__body"><div class="um-item__title">{{ account.name }}</div></div>
-                  <v-icon v-if="account.id === activeAccountId" size="16" color="primary" class="ml-auto">check-circle-2</v-icon>
-                </div>
-                <div v-if="sortedFilteredAccounts.length === 0" class="um-account-empty">
-                  No accounts match "{{ accountSearch.trim() }}"
-                </div>
-              </div>
-            </template>
+            </div>
           </div>
       </v-menu>
     </div>
@@ -547,13 +531,18 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 <style scoped lang="scss">
 .mp-appbar {
   border-bottom: 1px solid var(--hairline);
-  background: var(--surface-1);
+  background: var(--surface-2);
+}
+
+.mp-appbar :deep(.v-toolbar__content) {
+  background: var(--surface-2);
 }
 
 .mp-appbar-shell {
   min-width: 0;
   padding: 0 22px;
   height: 100%;
+  background: var(--surface-2);
 }
 
 .min-width-0 {
@@ -710,6 +699,35 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 /* ── Profile dropdown ───────────────────────────── */
+.um-cascade-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.um-cascade-card {
+  width: 280px;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  box-shadow:
+    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
+    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
+  overflow: hidden;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.um-cascade-card__header {
+  padding: 14px 16px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: rgb(var(--v-theme-primary));
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 .user-menu-card {
   width: 360px;
   background: var(--surface-1);
@@ -728,7 +746,12 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   align-items: flex-start;
   gap: 14px;
   padding: 20px;
-  background: var(--surface-2);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, rgb(var(--v-theme-primary)) 10%, var(--surface-1)) 0%,
+    color-mix(in oklch, rgb(var(--v-theme-primary)) 4%, var(--surface-1)) 100%
+  );
+  border-bottom: 1px solid color-mix(in oklch, rgb(var(--v-theme-primary)) 14%, var(--hairline));
 }
 
 .um-header__info {
@@ -862,61 +885,16 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   flex-shrink: 0;
 }
 
-/* ── Switch Account view (two-level) ────────────── */
-.um-switch-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 14px;
-  border-bottom: 1px solid var(--hairline);
-  background: var(--surface-1);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.um-switch-title {
-  flex: 1;
-  text-align: center;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.um-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font: inherit;
-  appearance: none;
-  transition: background 100ms ease, color 100ms ease;
-}
-
-.um-icon-btn:hover {
-  background: var(--surface-2);
-  color: var(--ink);
-}
-
 .um-switch-search {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 10px;
-  margin: 10px 12px 6px;
+  margin: 0 12px 8px;
   height: 36px;
   border: 1px solid var(--hairline);
   border-radius: 10px;
   background: var(--surface-2);
-  position: sticky;
-  top: 57px;
-  z-index: 1;
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
@@ -951,7 +929,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   max-height: 380px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 6px 8px 12px;
+  padding: 0 8px 12px;
 }
 
 .um-account-empty {
@@ -1189,7 +1167,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   border: 1px solid var(--hairline);
   border-radius: 50%;
   background: var(--surface-1);
-  color: var(--muted);
+  color: var(--accent);
   font: inherit;
   appearance: none;
   cursor: pointer;
@@ -1197,10 +1175,14 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
+.appbar-create-btn :deep(svg) {
+  stroke-width: 2.5;
+}
+
 .appbar-create-btn:hover,
 .appbar-create-btn--open {
   background: var(--surface-2);
-  color: var(--ink);
+  color: var(--accent-ink);
 }
 
 .appbar-create-btn:focus-visible {
