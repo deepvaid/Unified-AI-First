@@ -29,7 +29,7 @@ const appbarNoticeVisible = ref(false)
 
 const currentAccountId = computed(() => accountsStore.activeId)
 const settingsRoute = computed(() => ({ name: 'Settings' as const, params: { accountId: currentAccountId.value } }))
-const profileRoute = computed(() => `/accounts/${currentAccountId.value}/settings/profile`)
+const profileRoute = computed(() => ({ name: 'SettingsGeneral' as const, params: { accountId: currentAccountId.value } }))
 const appsRoute = computed(() => ({ name: 'AppStore' as const, params: { accountId: currentAccountId.value } }))
 
 const accounts = computed(() => accountsStore.accounts)

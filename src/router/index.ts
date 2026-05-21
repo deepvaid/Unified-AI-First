@@ -109,7 +109,31 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/app_store', name: 'AppStore', component: () => import('@/views/Integrations/Integrations.vue') },
 
   // 10. Settings & User Account
-  { path: '/accounts/:accountId/settings', name: 'Settings', component: () => import('@/views/Settings/Settings.vue') },
+  {
+    path: '/accounts/:accountId/settings',
+    name: 'Settings',
+    component: () => import('@/views/Settings/SettingsLayout.vue'),
+    redirect: { name: 'SettingsAccountDefaults' },
+    children: [
+      { path: 'general',             name: 'SettingsGeneral',            component: () => import('@/views/Settings/pages/GeneralPage.vue') },
+      { path: 'notifications',       name: 'SettingsNotifications',      component: () => import('@/views/Settings/pages/NotificationsPage.vue') },
+      { path: 'account-defaults',    name: 'SettingsAccountDefaults',    component: () => import('@/views/Settings/pages/AccountDefaultsPage.vue') },
+      { path: 'account-billing',     name: 'SettingsAccountBilling',     component: () => import('@/views/Settings/pages/AccountBillingPage.vue') },
+      { path: 'users-permissions',   name: 'SettingsUsersPermissions',   component: () => import('@/views/Settings/pages/UsersPermissionsPage.vue') },
+      { path: 'audit-log',           name: 'SettingsAuditLog',           component: () => import('@/views/Settings/pages/AuditLogPage.vue') },
+      { path: 'connections',         name: 'SettingsConnections',        component: () => import('@/views/Settings/pages/ConnectionsPage.vue') },
+      { path: 'dns-setup',           name: 'SettingsDnsSetup',           component: () => import('@/views/Settings/pages/DnsSetupPage.vue') },
+      { path: 'integrations',        name: 'SettingsIntegrations',       component: () => import('@/views/Settings/pages/IntegrationsPage.vue') },
+      { path: 'tracking-analytics',  name: 'SettingsTrackingAnalytics',  component: () => import('@/views/Settings/pages/TrackingAnalyticsPage.vue') },
+      { path: 'privacy-consent',     name: 'SettingsPrivacyConsent',     component: () => import('@/views/Settings/pages/PrivacyConsentPage.vue') },
+      { path: 'security',            name: 'SettingsSecurity',           component: () => import('@/views/Settings/pages/SecurityPage.vue') },
+      { path: 'store-profile',       name: 'SettingsStoreProfile',       component: () => import('@/views/Settings/pages/StoreProfilePage.vue') },
+      { path: 'sales-channels',      name: 'SettingsSalesChannels',      component: () => import('@/views/Settings/pages/SalesChannelsPage.vue') },
+      { path: 'payment-account',     name: 'SettingsPaymentAccount',     component: () => import('@/views/Settings/pages/PaymentAccountPage.vue') },
+      { path: 'service',             name: 'SettingsService',            component: () => import('@/views/Settings/pages/ServicePage.vue') },
+      { path: 'ai-settings',         name: 'SettingsAiSettings',         component: () => import('@/views/Settings/pages/AiSettingsPage.vue') },
+    ],
+  },
   { path: '/accounts/:accountId/design-system', name: 'DesignSystemDemo', component: () => import('@/views/Settings/DesignSystemDemo.vue') },
 
   // Redirect root to dashboard
