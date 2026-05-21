@@ -1,0 +1,54 @@
+/* Da Vinci copilot — theme-scoped aliases over generated aiAccent tokens */
+
+:root,
+.v-theme--maropostLight,
+[data-theme='light'] {
+  --dv-accent: var(--mp-color-light-aiAccent-primary);
+  --dv-accent-hover: var(--mp-color-light-aiAccent-primaryHover);
+  --dv-accent-active: var(--mp-color-light-aiAccent-primaryActive);
+  --dv-on-accent: var(--mp-color-light-aiAccent-onAccent);
+  --dv-accent-soft: var(--mp-color-light-aiAccent-soft);
+  --dv-border: var(--mp-color-light-aiAccent-border);
+  --dv-text-primary: var(--mp-color-light-aiAccent-textPrimary);
+  --dv-text-secondary: var(--mp-color-light-aiAccent-textSecondary);
+  --dv-muted: var(--mp-color-light-aiAccent-muted);
+  --dv-grad: linear-gradient(
+    135deg,
+    var(--mp-color-light-aiAccent-gradientFrom) 0%,
+    var(--mp-color-light-aiAccent-gradientTo) 100%
+  );
+  --dv-header-grad: linear-gradient(
+    120deg,
+    var(--mp-color-light-aiAccent-soft) 0%,
+    var(--mp-color-light-aiAccent-muted) 100%
+  );
+  --dv-metric-positive: var(--mp-color-light-aiMetric-positive);
+  --dv-metric-negative: var(--mp-color-light-aiMetric-negative);
+  --dv-metric-neutral: var(--mp-color-light-aiMetric-neutral);
+}
+
+.v-theme--maropostDark,
+[data-theme='dark'] {
+  --dv-accent: var(--mp-color-dark-aiAccent-primary);
+  --dv-accent-hover: var(--mp-color-dark-aiAccent-primaryHover);
+  --dv-accent-active: var(--mp-color-dark-aiAccent-primaryActive);
+  --dv-on-accent: var(--mp-color-dark-aiAccent-onAccent);
+  --dv-accent-soft: var(--mp-color-dark-aiAccent-soft);
+  --dv-border: var(--mp-color-dark-aiAccent-border);
+  --dv-text-primary: var(--mp-color-dark-aiAccent-textPrimary);
+  --dv-text-secondary: var(--mp-color-dark-aiAccent-textSecondary);
+  --dv-muted: var(--mp-color-dark-aiAccent-muted);
+  --dv-grad: linear-gradient(
+    135deg,
+    var(--mp-color-dark-aiAccent-gradientFrom) 0%,
+    var(--mp-color-dark-aiAccent-gradientTo) 100%
+  );
+  --dv-header-grad: linear-gradient(
+    120deg,
+    var(--mp-color-dark-aiAccent-soft) 0%,
+    var(--mp-color-dark-aiAccent-muted) 100%
+  );
+  --dv-metric-positive: var(--mp-color-dark-aiMetric-positive);
+  --dv-metric-negative: var(--mp-color-dark-aiMetric-negative);
+  --dv-metric-neutral: var(--mp-color-dark-aiMetric-neutral);
+}

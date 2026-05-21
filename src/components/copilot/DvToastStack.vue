@@ -59,7 +59,7 @@ const { toasts, triggerAction } = useDaVinciToasts()
   font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--mp-shadow-md);
   min-width: 280px;
   max-width: 440px;
   animation: dvToastIn 220ms cubic-bezier(0.2, 0.7, 0.3, 1.2);
@@ -126,6 +126,6 @@ const { toasts, triggerAction } = useDaVinciToasts()
 }
 
 .dv-toast__action:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in oklch, var(--dv-on-accent) 12%, transparent);
 }
 </style>

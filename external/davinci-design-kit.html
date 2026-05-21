@@ -7,70 +7,99 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../src/design-tokens/generated/variables.css" />
   <style>
-    /* Sync when tokens or Vue sources change: tokens.json (daVinci + theme), MpDaVinciBot.vue, Dv*.vue, maropostTheme / generated tokens */
-    :root {
-      --dv-bg: #f0e9df;
-      --dv-surface: #ffffff;
-      --dv-surface-variant: #f5efe6;
-      --dv-on-surface: #1a1814;
-      --dv-on-surface-variant: #7a7466;
-      --dv-primary: #1ab7ea;
-      --dv-on-primary: #ffffff;
-      --dv-outline-variant: #e6dfd1;
-      --dv-outline: #d8d0bf;
-      --dv-primary-container: #d6eefb;
-      --dv-on-primary-container: #0a4f6c;
-      --dv-success: #1f8a5b;
-      --dv-success-container: #d6f0e2;
-      --dv-on-success-container: #0c5238;
-      --dv-warning: #c97a16;
-      --dv-warning-container: #fbe7c8;
-      --dv-on-warning-container: #7a4a08;
-      --dv-error: #c0392b;
-      --dv-error-container: #fbe1dc;
-      --dv-on-error-container: #7a1f15;
-      --dv-info: #1ab7ea;
-      --dv-davinci-from: #7c3aed;
-      --dv-davinci-to: #6366f1;
-      --dv-davinci-text: #634fda;
-      --dv-header-grad: linear-gradient(120deg, #eef0ff 0%, #f3eafc 60%, #fde8ef 100%);
-      --dv-header-grad-dark: linear-gradient(120deg, #232a3d 0%, #2d2538 60%, #3a2530 100%);
-      --dv-avatar-grad: linear-gradient(135deg, #5b8def 0%, #2dd4bf 100%);
-      --dv-toast-bg: #1a1814;
-      --dv-toast-fg: #ffffff;
-      --dv-kit-nav-bg: #faf8f5;
-      --dv-kit-border: #e6dfd1;
+    /* Sync: tokens.json (aiAccent), src/styles/dv-tokens.css, MpDaVinciBot.vue, Dv*.vue */
+    :root, html[data-theme="light"] {
+      --dv-bg: var(--mp-color-light-background);
+      --dv-surface: var(--mp-color-light-surface);
+      --dv-surface-variant: var(--mp-color-light-surfaceVariant);
+      --dv-on-surface: var(--mp-color-light-textPrimary);
+      --dv-on-surface-variant: var(--mp-color-light-onSurfaceVariant);
+      --dv-primary: var(--mp-color-light-primary);
+      --dv-on-primary: var(--mp-color-light-onPrimary);
+      --dv-outline-variant: var(--mp-color-light-outlineVariant);
+      --dv-outline: var(--mp-color-light-outline);
+      --dv-primary-container: var(--mp-color-light-primaryContainer);
+      --dv-on-primary-container: var(--mp-color-light-onPrimaryContainer);
+      --dv-success: var(--mp-color-light-success);
+      --dv-success-container: var(--mp-color-light-successContainer);
+      --dv-on-success-container: var(--mp-color-light-onSuccessContainer);
+      --dv-warning: var(--mp-color-light-warning);
+      --dv-warning-container: var(--mp-color-light-warningContainer);
+      --dv-on-warning-container: var(--mp-color-light-onWarningContainer);
+      --dv-error: var(--mp-color-light-error);
+      --dv-error-container: var(--mp-color-light-errorContainer);
+      --dv-on-error-container: var(--mp-color-light-onErrorContainer);
+      --dv-info: var(--mp-color-light-info);
+      --dv-accent: var(--mp-color-light-aiAccent-primary);
+      --dv-accent-hover: var(--mp-color-light-aiAccent-primaryHover);
+      --dv-accent-active: var(--mp-color-light-aiAccent-primaryActive);
+      --dv-on-accent: var(--mp-color-light-aiAccent-onAccent);
+      --dv-accent-soft: var(--mp-color-light-aiAccent-soft);
+      --dv-accent-border: var(--mp-color-light-aiAccent-border);
+      --dv-text-primary: var(--mp-color-light-aiAccent-textPrimary);
+      --dv-text-secondary: var(--mp-color-light-aiAccent-textSecondary);
+      --dv-muted: var(--mp-color-light-aiAccent-muted);
+      --dv-grad: linear-gradient(135deg, var(--mp-color-light-aiAccent-gradientFrom) 0%, var(--mp-color-light-aiAccent-gradientTo) 100%);
+      --dv-header-grad: linear-gradient(120deg, var(--mp-color-light-aiAccent-soft) 0%, var(--mp-color-light-aiAccent-muted) 100%);
+      --dv-metric-positive: var(--mp-color-light-aiMetric-positive);
+      --dv-metric-negative: var(--mp-color-light-aiMetric-negative);
+      --dv-metric-neutral: var(--mp-color-light-aiMetric-neutral);
+      --dv-davinci-from: var(--mp-color-light-aiAccent-gradientFrom);
+      --dv-davinci-to: var(--mp-color-light-aiAccent-gradientTo);
+      --dv-davinci-text: var(--mp-color-light-aiAccent-textPrimary);
+      --dv-avatar-grad: var(--dv-grad);
+      --dv-toast-bg: var(--mp-color-light-textPrimary);
+      --dv-toast-fg: var(--mp-color-light-surface);
+      --dv-kit-nav-bg: var(--mp-color-light-surface);
+      --dv-kit-border: var(--mp-color-light-outlineVariant);
+      --dv-shadow-md: var(--mp-shadow-md);
     }
     html[data-theme="dark"] {
-      --dv-bg: #1a1714;
-      --dv-surface: #222019;
-      --dv-surface-variant: #2e2b25;
-      --dv-on-surface: #f1ece2;
-      --dv-on-surface-variant: #b3aa97;
-      --dv-primary: #4ec8f2;
-      --dv-on-primary: #06212c;
-      --dv-outline-variant: #332e28;
-      --dv-outline: #4a443a;
-      --dv-primary-container: #0e3a4f;
-      --dv-on-primary-container: #bfe5f7;
-      --dv-success: #4cc28a;
-      --dv-success-container: #0f3a28;
-      --dv-on-success-container: #bfe6d2;
-      --dv-warning: #e1a04a;
-      --dv-warning-container: #4a3210;
-      --dv-on-warning-container: #f7dcb1;
-      --dv-error: #e57266;
-      --dv-error-container: #4a1f19;
-      --dv-on-error-container: #f7c8c1;
-      --dv-info: #4ec8f2;
-      --dv-davinci-from: #a78bfa;
-      --dv-davinci-to: #818cf8;
-      --dv-davinci-text: #c4b5fd;
-      --dv-toast-bg: #f1ece2;
-      --dv-toast-fg: #1a1714;
-      --dv-kit-nav-bg: #222019;
-      --dv-kit-border: #332e28;
+      --dv-bg: var(--mp-color-dark-background);
+      --dv-surface: var(--mp-color-dark-surface);
+      --dv-surface-variant: var(--mp-color-dark-surfaceVariant);
+      --dv-on-surface: var(--mp-color-dark-textPrimary);
+      --dv-on-surface-variant: var(--mp-color-dark-onSurfaceVariant);
+      --dv-primary: var(--mp-color-dark-primary);
+      --dv-on-primary: var(--mp-color-dark-onPrimary);
+      --dv-outline-variant: var(--mp-color-dark-outlineVariant);
+      --dv-outline: var(--mp-color-dark-outline);
+      --dv-primary-container: var(--mp-color-dark-primaryContainer);
+      --dv-on-primary-container: var(--mp-color-dark-onPrimaryContainer);
+      --dv-success: var(--mp-color-dark-success);
+      --dv-success-container: var(--mp-color-dark-successContainer);
+      --dv-on-success-container: var(--mp-color-dark-onSuccessContainer);
+      --dv-warning: var(--mp-color-dark-warning);
+      --dv-warning-container: var(--mp-color-dark-warningContainer);
+      --dv-on-warning-container: var(--mp-color-dark-onWarningContainer);
+      --dv-error: var(--mp-color-dark-error);
+      --dv-error-container: var(--mp-color-dark-errorContainer);
+      --dv-on-error-container: var(--mp-color-dark-onErrorContainer);
+      --dv-info: var(--mp-color-dark-info);
+      --dv-accent: var(--mp-color-dark-aiAccent-primary);
+      --dv-accent-hover: var(--mp-color-dark-aiAccent-primaryHover);
+      --dv-accent-active: var(--mp-color-dark-aiAccent-primaryActive);
+      --dv-on-accent: var(--mp-color-dark-aiAccent-onAccent);
+      --dv-accent-soft: var(--mp-color-dark-aiAccent-soft);
+      --dv-accent-border: var(--mp-color-dark-aiAccent-border);
+      --dv-text-primary: var(--mp-color-dark-aiAccent-textPrimary);
+      --dv-text-secondary: var(--mp-color-dark-aiAccent-textSecondary);
+      --dv-muted: var(--mp-color-dark-aiAccent-muted);
+      --dv-grad: linear-gradient(135deg, var(--mp-color-dark-aiAccent-gradientFrom) 0%, var(--mp-color-dark-aiAccent-gradientTo) 100%);
+      --dv-header-grad: linear-gradient(120deg, var(--mp-color-dark-aiAccent-soft) 0%, var(--mp-color-dark-aiAccent-muted) 100%);
+      --dv-metric-positive: var(--mp-color-dark-aiMetric-positive);
+      --dv-metric-negative: var(--mp-color-dark-aiMetric-negative);
+      --dv-metric-neutral: var(--mp-color-dark-aiMetric-neutral);
+      --dv-davinci-from: var(--mp-color-dark-aiAccent-gradientFrom);
+      --dv-davinci-to: var(--mp-color-dark-aiAccent-gradientTo);
+      --dv-davinci-text: var(--mp-color-dark-aiAccent-textPrimary);
+      --dv-avatar-grad: var(--dv-grad);
+      --dv-toast-bg: var(--mp-color-dark-textPrimary);
+      --dv-toast-fg: var(--mp-color-dark-surface);
+      --dv-kit-nav-bg: var(--mp-color-dark-surface);
+      --dv-kit-border: var(--mp-color-dark-outlineVariant);
     }
     * { box-sizing: border-box; }
     body {
@@ -154,10 +183,9 @@
       display: flex; align-items: center; gap: 12px; padding: 10px 14px; height: 60px;
       background: var(--dv-header-grad); border-bottom: 1px solid var(--dv-outline-variant); flex-shrink: 0;
     }
-    html[data-theme="dark"] .dv-panel__header { background: var(--dv-header-grad-dark); }
     .dv-panel__avatar {
-      width: 40px; height: 40px; border-radius: 9999px; background: var(--dv-avatar-grad);
-      display: grid; place-items: center; flex-shrink: 0; color: #fff;
+      width: 40px; height: 40px; border-radius: 9999px; background: var(--dv-grad);
+      display: grid; place-items: center; flex-shrink: 0; color: var(--dv-on-accent);
     }
     .dv-panel__title { flex: 1; min-width: 0; }
     .dv-panel__title-name { font-size: 15px; font-weight: 600; color: var(--dv-on-surface); }
@@ -165,8 +193,8 @@
     .dv-panel__body { padding: 18px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
     .dv-landing { text-align: center; padding: 16px 8px; }
     .dv-landing__avatar {
-      width: 56px; height: 56px; border-radius: 9999px; background: var(--dv-avatar-grad);
-      display: grid; place-items: center; margin: 0 auto 16px; color: #fff;
+      width: 56px; height: 56px; border-radius: 9999px; background: var(--dv-grad);
+      display: grid; place-items: center; margin: 0 auto 16px; color: var(--dv-on-accent);
     }
     .dv-landing__title { font-size: 20px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.3px; }
     .dv-landing__sub { font-size: 13.5px; color: var(--dv-on-surface-variant); max-width: 340px; margin: 0 auto 16px; }
@@ -175,22 +203,22 @@
       border: 1px solid var(--dv-outline-variant); background: var(--dv-surface); font-size: 13px; font-weight: 500;
       color: var(--dv-on-surface); text-align: left; width: 100%; margin-bottom: 8px;
     }
-    .dv-landing__pill--hover { background: var(--dv-surface-variant); border-color: var(--dv-outline); }
+    .dv-landing__pill--hover { background: var(--dv-accent-soft); border-color: var(--dv-accent); }
     .dv-msg-user { display: flex; justify-content: flex-end; }
     .dv-msg-user__bubble {
-      max-width: 88%; padding: 10px 14px; background: var(--dv-primary); color: var(--dv-on-primary);
+      max-width: 88%; padding: 10px 14px; background: var(--dv-accent); color: var(--dv-on-accent);
       border-radius: 16px 16px 4px 16px; font-size: 13.5px; font-weight: 500;
     }
     .dv-msg-bot { display: flex; gap: 10px; }
     .dv-msg-bot__avatar {
-      width: 28px; height: 28px; border-radius: 9999px; background: var(--dv-avatar-grad);
-      display: grid; place-items: center; flex-shrink: 0; color: #fff; margin-top: 2px;
+      width: 28px; height: 28px; border-radius: 9999px; background: var(--dv-grad);
+      display: grid; place-items: center; flex-shrink: 0; color: var(--dv-on-accent); margin-top: 2px;
     }
     .dv-msg-bot__body { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
     .dv-msg-bot__intro { font-size: 14px; font-weight: 500; color: var(--dv-on-surface); }
     .dv-msg-bot__rationale {
-      font-size: 13px; color: var(--dv-on-surface-variant); padding: 10px 12px;
-      background: var(--dv-surface-variant); border-radius: 8px; border-left: 2px solid var(--dv-primary);
+      font-size: 13px; color: var(--dv-text-secondary); padding: 10px 12px;
+      background: var(--dv-accent-soft); border-radius: 8px; border-left: 2px solid var(--dv-accent);
     }
     .dv-drafts__meta { font-size: 12px; font-weight: 500; color: var(--dv-on-surface-variant); display: flex; align-items: center; gap: 6px; }
     .dv-status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dv-on-surface-variant); }
@@ -213,18 +241,17 @@
       display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px;
       background: var(--dv-surface); border: 1px solid var(--dv-outline-variant); border-radius: 12px;
     }
-    .dv-composer__field--focus { border-color: var(--dv-primary); }
+    .dv-composer__field--focus { border-color: var(--dv-accent); box-shadow: inset 0 0 0 2px var(--dv-accent); }
     .dv-composer__input { flex: 1; border: none; outline: none; background: transparent; font-size: 14px; color: var(--dv-on-surface); padding: 8px 0; font-family: inherit; }
     .dv-composer__send {
-      width: 32px; height: 32px; border-radius: 9999px; border: none; background: var(--dv-avatar-grad);
-      display: grid; place-items: center; color: #fff; cursor: default;
+      width: 32px; height: 32px; border-radius: 9999px; border: none; background: var(--dv-grad);
+      display: grid; place-items: center; color: var(--dv-on-accent); cursor: default;
     }
     .dv-composer__send[disabled] { opacity: 0.45; cursor: not-allowed; }
 
     /* History */
     .dv-history-mock { position: relative; height: 420px; background: var(--dv-surface); border: 1px solid var(--dv-outline-variant); border-radius: 8px; overflow: hidden; }
     .dv-history-mock__bar { height: 48px; border-bottom: 1px solid var(--dv-outline-variant); background: var(--dv-header-grad); }
-    html[data-theme="dark"] .dv-history-mock__bar { background: var(--dv-header-grad-dark); }
     .dv-history {
       position: absolute; inset: 48px 0 0 0; display: flex; flex-direction: column;
       background: var(--dv-surface); border-bottom: 1px solid var(--dv-outline-variant);
@@ -244,24 +271,23 @@
     .dv-history__empty-title { font-weight: 600; color: var(--dv-on-surface); margin-top: 8px; }
     .dv-history__foot { padding: 12px 14px; border-top: 1px solid var(--dv-outline-variant); background: var(--dv-bg); }
     .dv-history__newchat {
-      width: 100%; height: 40px; border: none; border-radius: 9999px; font-weight: 600; font-size: 13px; color: #fff;
-      background: var(--dv-avatar-grad); cursor: default;
+      width: 100%; height: 40px; border: none; border-radius: 9999px; font-weight: 600; font-size: 13px; color: var(--dv-on-accent);
+      background: var(--dv-grad); cursor: default;
     }
     .dv-history--rail { position: relative; height: 360px; width: 220px; border: 1px solid var(--dv-outline-variant); border-radius: 8px; display: flex; flex-direction: column; }
 
     /* Draft card */
     .dv-draft { border: 1px solid var(--dv-outline-variant); border-radius: 12px; background: var(--dv-surface); overflow: hidden; max-width: 440px; }
-    .dv-draft.is-selected { border-color: var(--dv-primary); box-shadow: 0 0 0 2px color-mix(in oklch, var(--dv-primary) 18%, transparent); }
+    .dv-draft.is-selected { border-color: var(--dv-accent); box-shadow: 0 0 0 2px color-mix(in oklch, var(--dv-accent) 18%, transparent); }
+    .dv-draft.is-disabled { opacity: 0.45; pointer-events: none; }
+    .dv-draft.is-loading .dv-draft__preview { opacity: 0.6; }
     .dv-draft.is-added { opacity: 0.55; }
     .dv-draft__top { padding: 12px 14px 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
     .dv-draft__type { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dv-on-surface-variant); display: flex; align-items: center; gap: 6px; }
     .dv-draft__badge {
       display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 9999px; font-size: 10.5px; font-weight: 600;
       text-transform: uppercase; letter-spacing: 1px;
-      background: linear-gradient(120deg, #eef0ff 0%, #f3eafc 60%, #fde8ef 100%); color: #5b4dbf; border: 1px solid color-mix(in oklch, #5b4dbf 25%, transparent);
-    }
-    html[data-theme="dark"] .dv-draft__badge {
-      background: linear-gradient(120deg, #2d3550 0%, #382a44 60%, #44293c 100%); color: #c4b8ff; border-color: rgba(196, 184, 255, 0.25);
+      background: var(--dv-accent); color: var(--dv-on-accent); border: 1px solid var(--dv-accent);
     }
     .dv-draft__title-block { padding: 8px 14px 12px; }
     .dv-draft__title { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
@@ -269,7 +295,10 @@
     .dv-draft__preview { padding: 0 14px 14px; }
     .dv-draft__rationale { padding: 10px 14px; border-top: 1px solid var(--dv-outline-variant); font-size: 12.5px; color: var(--dv-on-surface-variant); display: flex; gap: 8px; }
     .dv-draft__actions { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--dv-outline-variant); }
-    .dv-btn-pri { height: 32px; padding: 0 14px; border-radius: 999px; border: none; background: var(--dv-primary); color: var(--dv-on-primary); font-weight: 600; font-size: 12.5px; font-family: inherit; }
+    .dv-btn-pri { height: 32px; padding: 0 14px; border-radius: 999px; border: none; background: var(--dv-accent); color: var(--dv-on-accent); font-weight: 600; font-size: 12.5px; font-family: inherit; cursor: default; }
+    .dv-btn-pri:hover, .dv-btn-pri--hover { background: var(--dv-accent-hover); }
+    .dv-btn-pri:disabled, .dv-btn-pri--disabled { opacity: 0.45; cursor: not-allowed; }
+    .dv-btn-pri--loading { opacity: 0.7; }
     .dv-btn-ghost { height: 32px; padding: 0 12px; border-radius: 999px; border: none; background: transparent; color: var(--dv-on-surface-variant); font-weight: 500; font-size: 12.5px; font-family: inherit; }
     .dv-draft__actions-spacer { flex: 1; }
 
@@ -311,7 +340,7 @@
     .dv-toast {
       display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--dv-toast-bg); color: var(--dv-toast-fg);
       border-radius: 10px; font-size: 13px; font-weight: 500; min-width: 280px; max-width: 440px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      box-shadow: var(--dv-shadow-md);
     }
     .dv-toast__icon { width: 22px; height: 22px; border-radius: 999px; background: var(--dv-success); display: grid; place-items: center; color: #fff; font-size: 11px; }
     .dv-toast__sub { font-size: 12px; opacity: 0.75; margin-top: 2px; }
@@ -343,9 +372,26 @@
     .dv-page-main { flex: 1; background: var(--dv-bg); padding: 12px; font-size: 12px; color: var(--dv-on-surface-variant); }
 
     .dv-swatch-row { display: flex; flex-wrap: wrap; gap: 12px; }
-    .dv-swatch { width: 72px; text-align: center; font-size: 10px; }
+    .dv-swatch { width: 88px; text-align: center; font-size: 10px; line-height: 1.3; }
     .dv-swatch__b { height: 44px; border-radius: 8px; border: 1px solid var(--dv-outline-variant); margin-bottom: 4px; }
+    .dv-swatch__ratio { font-size: 9px; color: var(--dv-text-secondary); }
     .dv-token-note { font-size: 12px; color: var(--dv-on-surface-variant); margin-top: 12px; max-width: 640px; }
+    .dv-kit-ladder { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+    .dv-kit-ladder__item { text-align: center; font-size: 10px; color: var(--dv-on-surface-variant); }
+    .dv-kit-ladder__box { border: 1px solid var(--dv-outline-variant); background: var(--dv-surface); border-radius: 4px; }
+    .dv-kit-token-panel { font-size: 11px; font-family: ui-monospace, monospace; line-height: 1.5; max-height: 200px; overflow-y: auto; padding: 10px; background: var(--dv-muted); border-radius: 8px; border: 1px solid var(--dv-outline-variant); margin-top: 12px; }
+    .dv-kit-token-panel div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; border-bottom: 1px solid color-mix(in srgb, var(--dv-outline-variant) 50%, transparent); }
+    .dv-kit-contrast-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; }
+    .dv-kit-contrast-table th, .dv-kit-contrast-table td { border: 1px solid var(--dv-outline-variant); padding: 8px 10px; text-align: left; }
+    .dv-kit-contrast-table th { background: var(--dv-accent-soft); font-weight: 600; }
+    .dv-kit-figma-tree { font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.6; background: var(--dv-muted); padding: 14px; border-radius: 8px; border: 1px solid var(--dv-outline-variant); white-space: pre; }
+    .dv-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 8px 14px; border-radius: var(--mp-borderRadius-lg, 12px); border: 1px solid var(--dv-accent-border); background: var(--dv-surface); font-size: 13px; font-weight: 500; }
+    .dv-chip--hover { background: var(--dv-accent-soft); border-color: var(--dv-accent); }
+    .dv-chip--pressed { background: var(--dv-accent-soft); border-color: var(--dv-accent-active); }
+    .dv-chip--disabled { opacity: 0.45; }
+    .dv-icon-btn--hover { background: var(--dv-accent-soft); color: var(--dv-accent); }
+    .dv-icon-btn--pressed { background: color-mix(in oklch, var(--dv-accent) 18%, transparent); }
+    .dv-icon-btn--disabled { opacity: 0.4; }
 
     /* Isolated dark preview (split story) without toggling whole page */
     .dv-kit-dark-island {
@@ -368,9 +414,17 @@
   <div class="dv-kit-app">
     <nav class="dv-kit-nav" aria-label="Da Vinci kit sections">
       <h2>Foundations</h2>
-      <a href="#story-foundations-tokens">Tokens &amp; brand</a>
+      <a href="#story-foundations-tokens">AI accent tokens</a>
+      <a href="#story-foundations-spacing">Spacing scale</a>
+      <a href="#story-foundations-radius">Radius scale</a>
       <a href="#story-foundations-type">Typography</a>
       <a href="#story-foundations-icons">Iconography</a>
+      <h2>Figma</h2>
+      <a href="#story-figma-naming">Layer naming</a>
+      <a href="#story-token-sidebar">Live tokens</a>
+      <a href="#story-a11y-contrast">Contrast &amp; states</a>
+      <h2>Components</h2>
+      <a href="#story-component-states">Component states</a>
       <h2>MpDaVinciBot</h2>
       <a href="#story-panel-header">Header default</a>
       <a href="#story-panel-landing">Landing</a>
@@ -415,21 +469,42 @@
       </header>
 
       <!-- Foundations -->
-      <article class="dv-kit-story" id="story-foundations-tokens">
+      <article class="dv-kit-story" id="story-foundations-tokens" data-component="DvFoundations">
         <div class="dv-kit-story__meta">
           <span class="dv-kit-story__component">Foundations</span>
-          <span class="dv-kit-story__state">Da Vinci tokens + chrome gradients</span>
-          <p class="dv-kit-story__note">Token keys from tokens.json. Gradients below match MpDaVinciBot / DvWidgetDraftCard (not all mapped to tokens yet).</p>
+          <span class="dv-kit-story__state">aiAccent.* — accessible calm SaaS blue</span>
+          <p class="dv-kit-story__note">Source: <code>tokens.json → color.light.aiAccent</code>. Aliases: <code>--dv-*</code> in app via <code>src/styles/dv-tokens.css</code>.</p>
         </div>
         <div class="dv-kit-story__canvas">
           <div class="dv-swatch-row">
-            <div class="dv-swatch"><div class="dv-swatch__b" style="background:linear-gradient(135deg,var(--dv-davinci-from),var(--dv-davinci-to))"></div>daVinci gradient</div>
-            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-davinci-text)"></div>daVinci.text</div>
-            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-primary)"></div>primary</div>
-            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-surface)"></div>surface</div>
-            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-bg)"></div>background</div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-accent)"></div>primary<div class="dv-swatch__ratio">5.0:1 on white</div></div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-accent-hover)"></div>hover</div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-accent-active)"></div>active</div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-grad)"></div>gradient</div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-accent-soft)"></div>soft</div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-accent-border)"></div>border</div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-text-primary);color:var(--dv-on-accent)"></div>textPrimary</div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-text-secondary);color:var(--dv-on-accent)"></div>textSecondary<div class="dv-swatch__ratio">5.1:1</div></div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-muted)"></div>muted</div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-metric-positive)"></div>metric +</div>
+            <div class="dv-swatch"><div class="dv-swatch__b" style="background:var(--dv-metric-negative)"></div>metric −</div>
           </div>
-          <p class="dv-token-note">Chrome gradients (header strip, avatars, send, New chat): <code>linear-gradient(135deg, #5b8def, #2dd4bf)</code> and header <code>#eef0ff → #f3eafc → #fde8ef</code> (light) / <code>#232a3d → #2d2538 → #3a2530</code> (dark).</p>
+          <p class="dv-token-note">Header chrome uses <code>--dv-header-grad</code> (soft → muted). Avatars, send, New chat, Draft badge use <code>--dv-grad</code> with <code>--dv-on-accent</code> foreground.</p>
+        </div>
+      </article>
+
+      <article class="dv-kit-story" id="story-foundations-spacing">
+        <div class="dv-kit-story__meta"><span class="dv-kit-story__component">Foundations</span><span class="dv-kit-story__state">Spacing scale (4px base)</span></div>
+        <div class="dv-kit-story__canvas">
+          <div class="dv-kit-ladder" id="dv-spacing-ladder"></div>
+          <p class="dv-token-note">Auto-layout: use gap 12 between list items, padding 16/14/12/14 on DvDraftCard frames.</p>
+        </div>
+      </article>
+
+      <article class="dv-kit-story" id="story-foundations-radius">
+        <div class="dv-kit-story__meta"><span class="dv-kit-story__component">Foundations</span><span class="dv-kit-story__state">Border radius</span></div>
+        <div class="dv-kit-story__canvas">
+          <div class="dv-kit-ladder" id="dv-radius-ladder"></div>
         </div>
       </article>
 
@@ -753,6 +828,105 @@
         </div></div>
       </article>
 
+      <!-- Figma + a11y -->
+      <article class="dv-kit-story" id="story-figma-naming" data-component="DvFigmaGuide">
+        <div class="dv-kit-story__meta">
+          <span class="dv-kit-story__component">Figma</span>
+          <span class="dv-kit-story__state">Layer naming &amp; auto-layout</span>
+        </div>
+        <div class="dv-kit-story__canvas">
+          <pre class="dv-kit-figma-tree">DvDraftCard
+├─ Frame / Card          padding: 0 · gap: 0 · radius: 12
+│  ├─ Header / TypeRow   padding: 12/14/0 · gap: 10
+│  │  ├─ Eyebrow
+│  │  ├─ TypeIcon
+│  │  └─ Badge / Draft
+│  ├─ Body / TitleBlock  padding: 8/14/12
+│  ├─ Preview / DvDraftPreview  padding: 0/14/14
+│  └─ Footer / Actions   padding: 10/12 · gap: 6 · height: 32
+DvComposer
+├─ Frame / Composer      padding: 16 · gap: 10
+│  ├─ PillsRow           gap: 6
+│  └─ InputRow           padding: 6/8/6/12 · gap: 6 · radius: 12
+│     ├─ AttachIcon
+│     ├─ TextField
+│     └─ SendButton      32×32 · radius: full</pre>
+        </div>
+      </article>
+
+      <article class="dv-kit-story" id="story-token-sidebar">
+        <div class="dv-kit-story__meta"><span class="dv-kit-story__component">Figma</span><span class="dv-kit-story__state">Live token values</span></div>
+        <div class="dv-kit-story__canvas">
+          <div class="dv-kit-token-panel" id="dv-live-tokens" aria-live="polite"></div>
+        </div>
+      </article>
+
+      <article class="dv-kit-story" id="story-a11y-contrast">
+        <div class="dv-kit-story__meta"><span class="dv-kit-story__component">Accessibility</span><span class="dv-kit-story__state">WCAG AA verification</span></div>
+        <div class="dv-kit-story__canvas">
+          <table class="dv-kit-contrast-table">
+            <thead><tr><th>Surface</th><th>Foreground</th><th>Ratio</th><th>WCAG</th></tr></thead>
+            <tbody>
+              <tr><td>Primary button (<code>--dv-accent</code>)</td><td><code>--dv-on-accent</code></td><td>5.0:1</td><td>AA normal</td></tr>
+              <tr><td>Draft badge gradient</td><td><code>--dv-on-accent</code></td><td>5.0:1+</td><td>AA normal</td></tr>
+              <tr><td>User bubble</td><td><code>--dv-on-accent</code></td><td>5.0:1</td><td>AA normal</td></tr>
+              <tr><td>Helper text</td><td><code>--dv-text-secondary</code> on white</td><td>5.1:1</td><td>AA normal</td></tr>
+              <tr><td>Why-these card</td><td><code>--dv-text-primary</code> on <code>--dv-accent-soft</code></td><td>9.4:1</td><td>AAA</td></tr>
+              <tr><td>Input placeholder</td><td><code>--dv-text-secondary</code></td><td>5.1:1</td><td>AA</td></tr>
+              <tr><td>Icon-only actions</td><td>Focus ring <code>--dv-accent</code> @ 40%</td><td>3:1 UI</td><td>AA UI</td></tr>
+              <tr><td>Toast inverted</td><td>Theme inversion</td><td>7:1+</td><td>AAA</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="dv-kit-story" id="story-component-states" data-component="DvComponentStates">
+        <div class="dv-kit-story__meta">
+          <span class="dv-kit-story__component">Component states</span>
+          <span class="dv-kit-story__state">DvDraftCard · DvSuggestionChip · DvComposer · DvIconButton · DvBadge · DvMetricTile · DvToast</span>
+        </div>
+        <div class="dv-kit-story__canvas">
+          <p class="dv-eyebrow">DvDraftCard</p>
+          <div class="dv-kit-row" style="margin-bottom:20px">
+            <div class="dv-draft" style="flex:1;min-width:180px"><div class="dv-draft__top"><span class="dv-draft__type">◇ KPI</span><span class="dv-draft__badge">✦ Draft</span></div><div class="dv-draft__title-block"><div class="dv-draft__title">Default</div></div></div>
+            <div class="dv-draft is-selected" style="flex:1;min-width:180px"><div class="dv-draft__top"><span class="dv-draft__type">◇ KPI</span><span class="dv-draft__badge">✦ Draft</span></div><div class="dv-draft__title-block"><div class="dv-draft__title">Selected</div></div></div>
+            <div class="dv-draft is-added" style="flex:1;min-width:180px"><div class="dv-draft__top"><span class="dv-draft__type">◇ KPI</span><span class="dv-draft__badge">✦ Draft</span></div><div class="dv-draft__title-block"><div class="dv-draft__title">Added</div></div></div>
+            <div class="dv-draft is-disabled" style="flex:1;min-width:180px"><div class="dv-draft__top"><span class="dv-draft__type">◇ KPI</span><span class="dv-draft__badge">✦ Draft</span></div><div class="dv-draft__title-block"><div class="dv-draft__title">Disabled</div></div></div>
+          </div>
+          <p class="dv-eyebrow">DvSuggestionChip</p>
+          <div class="dv-kit-row" style="margin-bottom:20px;gap:8px">
+            <span class="dv-chip">Default</span>
+            <span class="dv-chip dv-chip--hover">Hover</span>
+            <span class="dv-chip dv-chip--pressed">Pressed</span>
+            <span class="dv-chip dv-chip--disabled">Disabled</span>
+          </div>
+          <p class="dv-eyebrow">DvPrimaryButton</p>
+          <div class="dv-kit-row" style="margin-bottom:20px;gap:8px">
+            <button type="button" class="dv-btn-pri">Default</button>
+            <button type="button" class="dv-btn-pri dv-btn-pri--hover">Hover</button>
+            <button type="button" class="dv-btn-pri" disabled>Disabled</button>
+            <button type="button" class="dv-btn-pri dv-btn-pri--loading">Loading…</button>
+          </div>
+          <p class="dv-eyebrow">DvIconButton</p>
+          <div class="dv-kit-row" style="margin-bottom:20px;gap:8px">
+            <button type="button" class="dv-icon-btn" aria-label="Default">⋯</button>
+            <button type="button" class="dv-icon-btn dv-icon-btn--hover" aria-label="Hover">⋯</button>
+            <button type="button" class="dv-icon-btn dv-icon-btn--disabled" disabled aria-label="Disabled">⋯</button>
+          </div>
+          <p class="dv-eyebrow">DvMetricTile</p>
+          <div class="dv-kit-row" style="margin-bottom:20px">
+            <div class="dv-kpi-quad__cell" style="min-width:100px"><span class="dv-eyebrow">Sent</span><div class="dv-kpi-quad__v">241K</div><span class="dv-delta dv-delta--up" style="background:color-mix(in srgb,var(--dv-metric-positive) 18%,transparent);color:var(--dv-metric-positive)">↑ 12%</span></div>
+            <div class="dv-kpi-quad__cell" style="min-width:100px"><span class="dv-eyebrow">Bounce</span><div class="dv-kpi-quad__v">4.2%</div><span class="dv-delta dv-delta--down">↓ 3%</span></div>
+            <div class="dv-kpi-quad__cell" style="min-width:100px;opacity:.6"><span class="dv-eyebrow">Loading</span><div class="dv-skeleton__bar" style="margin-top:8px"></div></div>
+          </div>
+          <p class="dv-eyebrow">DvComposer</p>
+          <div class="dv-kit-row" style="gap:12px;flex-wrap:wrap">
+            <div class="dv-composer__field" style="min-width:200px"><span style="opacity:.5">Ask Da Vinci…</span><button type="button" class="dv-composer__send" disabled aria-label="Send disabled">↑</button></div>
+            <div class="dv-composer__field dv-composer__field--focus" style="min-width:200px"><span>Typing…</span><button type="button" class="dv-composer__send" aria-label="Send">↑</button></div>
+          </div>
+        </div>
+      </article>
+
       <!-- Page layout -->
       <article class="dv-kit-story" id="story-page-copilot">
         <div class="dv-kit-story__meta"><span class="dv-kit-story__component">DaVinciCopilot</span><span class="dv-kit-story__state">Breadcrumb + 260px rail + main</span></div>
@@ -779,11 +953,52 @@
           btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
           btn.textContent = dark ? 'Use light theme' : 'Toggle dark theme';
         }
+        renderLiveTokens();
+      }
+      function renderLiveTokens() {
+        var panel = document.getElementById('dv-live-tokens');
+        if (!panel) return;
+        var keys = [
+          '--dv-accent', '--dv-accent-hover', '--dv-accent-soft', '--dv-accent-border',
+          '--dv-on-accent', '--dv-text-primary', '--dv-text-secondary', '--dv-muted',
+          '--dv-metric-positive', '--dv-metric-negative'
+        ];
+        panel.innerHTML = keys.map(function (k) {
+          var val = getComputedStyle(root).getPropertyValue(k).trim();
+          return '<div><span>' + k + '</span><span>' + (val || '—') + '</span></div>';
+        }).join('');
+      }
+      function buildSpacingLadder() {
+        var el = document.getElementById('dv-spacing-ladder');
+        if (!el) return;
+        el.innerHTML = '';
+        for (var i = 1; i <= 8; i++) {
+          var val = getComputedStyle(root).getPropertyValue('--mp-spacing-' + i).trim();
+          var px = parseInt(val, 10) || 4 * i;
+          var item = document.createElement('div');
+          item.className = 'dv-kit-ladder__item';
+          item.innerHTML = '<div class="dv-kit-ladder__box" style="width:' + Math.max(px * 3, 12) + 'px;height:' + px + 'px"></div>spacing-' + i + '<br>' + val;
+          el.appendChild(item);
+        }
+      }
+      function buildRadiusLadder() {
+        var el = document.getElementById('dv-radius-ladder');
+        if (!el) return;
+        var names = ['sm', 'md', 'lg', 'xl', '2xl'];
+        el.innerHTML = '';
+        names.forEach(function (name) {
+          var val = getComputedStyle(root).getPropertyValue('--mp-borderRadius-' + name).trim();
+          var px = parseInt(val, 10) || 8;
+          var item = document.createElement('div');
+          item.className = 'dv-kit-ladder__item';
+          item.innerHTML = '<div class="dv-kit-ladder__box" style="width:48px;height:48px;border-radius:' + val + '"></div>' + name + '<br>' + val;
+          el.appendChild(item);
+        });
       }
       apply(false);
-      btn.addEventListener('click', function () {
-        apply(!isDark());
-      });
+      buildSpacingLadder();
+      buildRadiusLadder();
+      if (btn) btn.addEventListener('click', function () { apply(!isDark()); });
     })();
   </script>
 </body>

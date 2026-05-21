@@ -177,15 +177,29 @@ function generateTokensStudio(raw) {
   }
 
   // Colors — separate token sets for Light, Dark, Sidebar (Supernova-compatible)
+  // Recurse into nested groups (aiAccent, daVinci, aiMetric) with dotted keys for Figma.
+  function addColorTokens(group, theme, prefix, targetSet) {
+    for (const [key, val] of Object.entries(group)) {
+      if (key.startsWith('$')) continue
+      const tokenKey = prefix ? `${prefix}.${key}` : key
+      if (val && typeof val === 'object' && '$value' in val) {
+        targetSet[tokenKey] = {
+          value: remapAlias(val.$value),
+          type: 'color',
+          description: `color.${theme}.${tokenKey}`,
+        }
+      } else if (val && typeof val === 'object') {
+        addColorTokens(val, theme, tokenKey, targetSet)
+      }
+    }
+  }
+
   const colorSetMap = { light: 'Colors/Light', dark: 'Colors/Dark', sidebar: 'Colors/Sidebar' }
   for (const theme of ['light', 'dark', 'sidebar']) {
     if (!raw.color?.[theme]) continue
     const setName = colorSetMap[theme]
     out[setName] = {}
-    for (const [key, val] of Object.entries(raw.color[theme])) {
-      if (key.startsWith('$')) continue
-      out[setName][key] = { value: val.$value, type: 'color', description: `color.${theme}.${key}` }
-    }
+    addColorTokens(raw.color[theme], theme, '', out[setName])
   }
 
   // Typography — font sizes, weights, line heights

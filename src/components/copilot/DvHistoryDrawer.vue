@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useDaVinciHistory, type DaVinciHistoryItem, type GroupedHistory } from '@/composables/useDaVinciHistory'
+import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
 
 const props = defineProps<{
   open: boolean
@@ -14,7 +15,17 @@ const emit = defineEmits<{
   newChat: []
 }>()
 
-const { groupedItems, formatAgo, removeItem } = useDaVinciHistory()
+const { items, groupedItems, formatAgo, removeItem, clearAll } = useDaVinciHistory()
+const { pushToast } = useDaVinciToasts()
+
+const hasHistory = computed(() => items.value.length > 0)
+
+function handleClearAll() {
+  const confirmed = window.confirm('Delete all Da Vinci conversations? This cannot be undone.')
+  if (!confirmed) return
+  clearAll()
+  pushToast({ title: 'All conversations deleted' })
+}
 
 function handleDelete(id: string, event: MouseEvent) {
   event.stopPropagation()
@@ -67,6 +78,19 @@ function buildSub(item: DaVinciHistoryItem): string {
       <v-btn v-if="mode !== 'rail'" icon size="32" variant="text" aria-label="Close history" @click="emit('close')">
         <v-icon size="16">x</v-icon>
       </v-btn>
+      <v-menu v-if="mode === 'rail' && hasHistory" offset="6" location="bottom end">
+        <template #activator="{ props: menuProps }">
+          <v-btn icon size="32" variant="text" aria-label="More" v-bind="menuProps">
+            <v-icon size="16">more-vertical</v-icon>
+          </v-btn>
+        </template>
+        <v-list density="compact">
+          <v-list-item class="dv-history__menu-danger" @click="handleClearAll">
+            <template #prepend><v-icon size="18" color="error">trash-2</v-icon></template>
+            <v-list-item-title>Delete all conversations</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
     </header>
 
     <div class="dv-history__search">
@@ -329,8 +353,8 @@ function buildSub(item: DaVinciHistoryItem): string {
   padding: 0 14px;
   border-radius: 9999px;
   border: none;
-  background: linear-gradient(135deg, #5b8def 0%, #2dd4bf 100%);
-  color: rgb(var(--v-theme-on-primary));
+  background: var(--dv-grad);
+  color: var(--dv-on-accent);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -340,6 +364,11 @@ function buildSub(item: DaVinciHistoryItem): string {
 
 .dv-history__newchat:hover {
   filter: brightness(1.05);
+}
+
+.dv-history__menu-danger :deep(.v-list-item-title) {
+  color: rgb(var(--v-theme-error));
+  font-size: 13px;
 }
 
 /* ─── Rail mode overrides ───────────────────────────────────────────── */

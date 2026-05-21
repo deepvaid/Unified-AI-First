@@ -415,7 +415,7 @@ function onComposerKeydown(event: KeyboardEvent) {
     <!-- ═══ HEADER ═══ -->
     <header v-if="!headerless" class="dv-panel__header">
       <div class="dv-panel__avatar">
-        <v-icon color="white" size="22">sparkles</v-icon>
+        <v-icon class="dv-on-accent-icon" size="22">sparkles</v-icon>
       </div>
       <div class="dv-panel__title">
         <div class="dv-panel__title-name">Da Vinci</div>
@@ -472,7 +472,7 @@ function onComposerKeydown(event: KeyboardEvent) {
       <!-- Landing state -->
       <div v-if="!chatMode" class="dv-landing">
         <div class="dv-landing__avatar">
-          <v-icon size="28" color="white">sparkles</v-icon>
+          <v-icon size="28" class="dv-on-accent-icon">sparkles</v-icon>
         </div>
         <h2 class="dv-landing__title">What can I help you build?</h2>
         <p class="dv-landing__sub">
@@ -499,7 +499,7 @@ function onComposerKeydown(event: KeyboardEvent) {
         </div>
         <div v-else class="dv-msg-bot">
           <div class="dv-msg-bot__avatar">
-            <v-icon color="white" size="14">sparkles</v-icon>
+            <v-icon class="dv-on-accent-icon" size="14">sparkles</v-icon>
           </div>
           <div class="dv-msg-bot__body">
             <div v-if="msg.text" class="dv-msg-bot__intro" v-html="msg.text"></div>
@@ -545,7 +545,7 @@ function onComposerKeydown(event: KeyboardEvent) {
       <!-- Generating skeleton -->
       <div v-if="isTyping" class="dv-msg-bot">
         <div class="dv-msg-bot__avatar">
-          <v-icon color="white" size="14">sparkles</v-icon>
+          <v-icon class="dv-on-accent-icon" size="14">sparkles</v-icon>
         </div>
         <div class="dv-msg-bot__body">
           <div class="dv-status">
@@ -598,7 +598,7 @@ function onComposerKeydown(event: KeyboardEvent) {
           :disabled="!inputText.trim() || isTyping"
           @click="sendQuery"
         >
-          <v-icon size="16" color="white">arrow-up</v-icon>
+          <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
         </button>
       </div>
     </footer>
@@ -624,26 +624,26 @@ function onComposerKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  height: 60px;
-  background: linear-gradient(120deg, #eef0ff 0%, #f3eafc 60%, #fde8ef 100%);
+  padding: 12px 16px;
+  height: 64px;
+  background: var(--dv-header-grad);
   border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
   flex-shrink: 0;
-}
-
-:global([data-theme='dark']) .dv-panel__header,
-.v-theme--maropostDark .dv-panel__header {
-  background: linear-gradient(120deg, #232a3d 0%, #2d2538 60%, #3a2530 100%);
 }
 
 .dv-panel__avatar {
   width: 40px;
   height: 40px;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #5b8def 0%, #2dd4bf 100%);
+  background: var(--dv-grad);
   display: grid;
   place-items: center;
   flex-shrink: 0;
+}
+
+.dv-on-accent-icon :deep(.v-icon),
+.dv-on-accent-icon :deep(svg) {
+  color: var(--dv-on-accent) !important;
 }
 
 .dv-panel__title {
@@ -672,6 +672,11 @@ function onComposerKeydown(event: KeyboardEvent) {
   flex-shrink: 0;
 }
 
+.dv-panel__icon-btn:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--dv-accent) 40%, transparent);
+  outline-offset: 2px;
+}
+
 .dv-panel__menu {
   min-width: 220px;
   border-radius: 12px !important;
@@ -687,10 +692,10 @@ function onComposerKeydown(event: KeyboardEvent) {
 .dv-panel__body {
   flex: 1;
   overflow-y: auto;
-  padding: 18px 18px 20px;
+  padding: 20px 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   min-height: 0;
 }
 
@@ -713,7 +718,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   width: 56px;
   height: 56px;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #5b8def 0%, #2dd4bf 100%);
+  background: var(--dv-grad);
   display: grid;
   place-items: center;
   margin: 0 auto 16px;
@@ -729,9 +734,9 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-landing__sub {
-  font-size: 13.5px;
+  font-size: var(--mp-typography-fontSize-body);
   line-height: 1.45;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--dv-text-secondary);
   max-width: 340px;
   margin: 0 auto 20px;
 }
@@ -748,11 +753,12 @@ function onComposerKeydown(event: KeyboardEvent) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 36px;
   padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid rgb(var(--v-theme-outline-variant));
+  border-radius: var(--mp-borderRadius-lg);
+  border: 1px solid var(--dv-border);
   background: rgb(var(--v-theme-surface));
-  font-size: 13px;
+  font-size: var(--mp-typography-fontSize-sm);
   font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
   cursor: pointer;
@@ -761,8 +767,8 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-landing__pill:hover {
-  background: rgb(var(--v-theme-surface-variant));
-  border-color: rgb(var(--v-theme-outline));
+  background: var(--dv-accent-soft);
+  border-color: var(--dv-accent);
 }
 
 /* User bubble */
@@ -774,10 +780,10 @@ function onComposerKeydown(event: KeyboardEvent) {
 .dv-msg-user__bubble {
   max-width: 88%;
   padding: 10px 14px;
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
+  background: var(--dv-accent);
+  color: var(--dv-on-accent);
   border-radius: 16px 16px 4px 16px;
-  font-size: 13.5px;
+  font-size: var(--mp-typography-fontSize-body);
   font-weight: 500;
   line-height: 1.45;
 }
@@ -792,7 +798,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   width: 28px;
   height: 28px;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #5b8def 0%, #2dd4bf 100%);
+  background: var(--dv-grad);
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -819,14 +825,14 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-msg-bot__rationale {
-  font-size: 13px;
+  font-size: var(--mp-typography-fontSize-sm);
   font-weight: 400;
   line-height: 1.5;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--dv-text-secondary);
   padding: 10px 12px;
-  background: rgb(var(--v-theme-surface-variant));
-  border-radius: 8px;
-  border-left: 2px solid rgb(var(--v-theme-primary));
+  background: var(--dv-accent-soft);
+  border-radius: var(--mp-borderRadius-md);
+  border-left: 2px solid var(--dv-accent);
 }
 
 .dv-eyebrow {
@@ -919,7 +925,7 @@ function onComposerKeydown(event: KeyboardEvent) {
 /* ─── Composer ─────────────────────────────────────────────────────── */
 .dv-panel__composer {
   flex-shrink: 0;
-  padding: 14px 16px 16px;
+  padding: 16px 16px 16px;
   background: rgb(var(--v-theme-background));
   border-top: 1px solid rgb(var(--v-theme-outline-variant));
 }
@@ -959,12 +965,14 @@ function onComposerKeydown(event: KeyboardEvent) {
   padding: 6px 8px 6px 12px;
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 12px;
-  transition: border-color 120ms ease;
+  border-radius: var(--mp-borderRadius-lg);
+  box-shadow: inset 0 0 0 1px rgb(var(--v-theme-outline-variant));
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .dv-composer__field:focus-within {
-  border-color: rgb(var(--v-theme-primary));
+  border-color: var(--dv-accent);
+  box-shadow: inset 0 0 0 2px var(--dv-accent);
 }
 
 .dv-composer__input {
@@ -972,7 +980,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   border: none;
   outline: none;
   background: transparent;
-  font-size: 14px;
+  font-size: var(--mp-typography-fontSize-body);
   line-height: 1.4;
   color: rgb(var(--v-theme-on-surface));
   padding: 8px 0;
@@ -980,7 +988,7 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-composer__input::placeholder {
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--dv-text-secondary);
 }
 
 .dv-composer__send {
@@ -988,7 +996,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   height: 32px;
   border-radius: 9999px;
   border: none;
-  background: linear-gradient(135deg, #5b8def 0%, #2dd4bf 100%);
+  background: var(--dv-grad);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -997,6 +1005,11 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 .dv-composer__send:hover {
   filter: brightness(1.05);
+}
+
+.dv-composer__send:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--dv-accent) 40%, transparent);
+  outline-offset: 2px;
 }
 
 .dv-composer__send:disabled {

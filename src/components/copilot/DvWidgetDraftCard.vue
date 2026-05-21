@@ -14,6 +14,7 @@ const props = withDefaults(defineProps<{
   filters?: DashboardFilterState
   rationale?: string
   showRationale?: boolean
+  selected?: boolean
 }>(), {
   filters: () => ({
     rangePreset: 'last_30_days',
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<{
   }),
   rationale: '',
   showRationale: true,
+  selected: false,
 })
 
 const emit = defineEmits<{
@@ -131,7 +133,7 @@ function handleExpandAdd() {
 </script>
 
 <template>
-  <article class="dv-draft" :class="{ 'is-selected': false, 'is-added': isAdded }">
+  <article class="dv-draft" :class="{ 'is-selected': selected, 'is-added': isAdded }">
     <header class="dv-draft__top">
       <span class="dv-draft__type">
         <v-icon size="14">{{ typeMeta.icon }}</v-icon>
@@ -265,15 +267,13 @@ function handleExpandAdd() {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  background: linear-gradient(120deg, #eef0ff 0%, #f3eafc 60%, #fde8ef 100%);
-  color: #5b4dbf;
-  border: 1px solid color-mix(in oklch, #5b4dbf 25%, transparent);
+  background: var(--dv-accent);
+  color: var(--dv-on-accent);
+  border: 1px solid var(--dv-accent);
 }
 
-:global([data-theme='dark']) .dv-draft__badge,
-:deep([data-theme='dark']) .dv-draft__badge {
-  background: linear-gradient(120deg, #2d3550 0%, #382a44 60%, #44293c 100%);
-  color: #c4b8ff;
+.dv-draft__badge :deep(.v-icon) {
+  color: var(--dv-on-accent) !important;
 }
 
 .dv-draft__title-block {

@@ -282,8 +282,9 @@ const sparklinePoints = computed(() => {
   height: 18px;
   padding: 0 7px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(99, 102, 241, 0.18));
-  color: rgb(99, 79, 218);
+  background: var(--dv-accent-soft);
+  color: var(--dv-text-primary);
+  border: 1px solid var(--dv-border);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -292,7 +293,7 @@ const sparklinePoints = computed(() => {
 }
 
 .dashboard-kpi-widget__davinci-chip :deep(.v-icon) {
-  color: rgb(124, 58, 237);
+  color: var(--dv-accent);
 }
 
 .dashboard-kpi-widget__title {
