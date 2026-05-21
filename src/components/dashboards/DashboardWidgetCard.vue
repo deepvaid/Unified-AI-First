@@ -333,7 +333,7 @@ function openSettings() {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   gap: 12px;
-  min-height: 56px;
+  min-height: 60px;
   padding: 20px 22px 14px;
 }
 
@@ -344,7 +344,7 @@ function openSettings() {
 .dashboard-widget-card__title-row {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -352,7 +352,7 @@ function openSettings() {
   min-width: 0;
   overflow: hidden;
   color: var(--ink);
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.25;
   text-overflow: ellipsis;
@@ -382,9 +382,9 @@ function openSettings() {
 
 .dashboard-widget-card__subtitle {
   overflow: hidden;
-  margin-top: 3px;
+  margin-top: 4px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   line-height: 1.3;
   text-overflow: ellipsis;
@@ -396,14 +396,14 @@ function openSettings() {
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
-  margin-top: -4px;
+  margin-top: -2px;
 }
 
 .dashboard-widget-card__actions :deep(.v-btn),
 .dashboard-widget-card__kpi-actions :deep(.v-btn) {
-  min-width: 28px;
-  width: 28px !important;
-  height: 28px !important;
+  min-width: 32px;
+  width: 32px !important;
+  height: 32px !important;
   padding: 0;
   color: var(--muted);
   border-radius: var(--r-pill);
@@ -417,13 +417,18 @@ function openSettings() {
 
 .dashboard-widget-card__actions :deep(.v-icon),
 .dashboard-widget-card__kpi-actions :deep(.v-icon) {
-  font-size: 16px;
+  font-size: 18px;
+}
+
+.dashboard-widget-card__actions :deep(.v-icon svg),
+.dashboard-widget-card__kpi-actions :deep(.v-icon svg) {
+  stroke-width: 2.25;
 }
 
 .dashboard-widget-card__kpi-actions {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 12px;
+  right: 12px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
