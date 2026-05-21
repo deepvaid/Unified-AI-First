@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 import { useAppTheme, type AccentKey } from '@/composables/useAppTheme'
@@ -232,9 +232,12 @@ function buildNavGroups(accountId: string): NavGroup[] {
 const localDrawer = ref(props.modelValue)
 const localRail = ref(props.rail)
 const railHoveredSubGroup = ref<string | null>(null)
+const railOpenGroup = ref<string | null>(null)
 const appsExpanded = ref(false)
-const expandedParentKey = ref<string | null>(null)
-const expandedSubKey = ref<string | null>(null)
+const flyoutOpen = ref(false)
+const flyoutGroupTitle = ref<string | null>(null)
+const expandedSubgroupTitle = ref<string | null>(null)
+const flyoutTop = ref(64)
 const router = useRouter()
 const route = useRoute()
 const resolvedAccountId = computed(() => {
@@ -245,6 +248,11 @@ const resolvedAccountId = computed(() => {
   return routeAccountId ?? accountsStore.activeId
 })
 const navGroups = computed(() => buildNavGroups(resolvedAccountId.value))
+const flyoutGroup = computed(() =>
+  flyoutGroupTitle.value
+    ? navGroups.value.find((group) => group.title === flyoutGroupTitle.value) ?? null
+    : null,
+)
 const installedApps = computed<InstalledAppItem[]>(() => [
   {
     title: 'Shopify',
@@ -288,6 +296,30 @@ watch(localRail, (nextValue) => {
   emit('update:rail', nextValue)
 })
 
+watch(() => props.rail, (isRail) => {
+  if (isRail) closeFlyout()
+})
+
+function handleOutsideClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null
+  if (!target) return
+  if (target.closest('.sidebar-expanded-flyout')) return
+  if (target.closest('.mp-sidebar')) return
+  closeFlyout()
+}
+
+watch(flyoutOpen, (isOpen) => {
+  if (isOpen) {
+    document.addEventListener('mousedown', handleOutsideClick)
+  } else {
+    document.removeEventListener('mousedown', handleOutsideClick)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', handleOutsideClick)
+})
+
 function goTo(route: string) {
   if (router.currentRoute.value.fullPath === route) return
   router.push(route)
@@ -328,10 +360,6 @@ function routeMatches(target: string): boolean {
   return route.path === target || route.path.startsWith(`${target}/`)
 }
 
-function flatGroupItems(group: NavGroup): NavItem[] {
-  return group.items.flatMap((item) => isSubGroup(item) ? item.items : [item])
-}
-
 function collectGroupRoutes(group: NavGroup): string[] {
   const routes: string[] = []
   if (group.singleRoute) routes.push(group.singleRoute)
@@ -345,91 +373,76 @@ function collectGroupRoutes(group: NavGroup): string[] {
   return routes
 }
 
+const activeNavGroupTitle = computed(() => {
+  let bestTitle: string | null = null
+  let bestRouteLength = -1
+
+  for (const group of navGroups.value) {
+    for (const navRoute of collectGroupRoutes(group)) {
+      if (!routeMatches(navRoute)) continue
+      if (navRoute.length > bestRouteLength) {
+        bestRouteLength = navRoute.length
+        bestTitle = group.title
+      }
+    }
+  }
+
+  return bestTitle
+})
+
 function isModuleActive(group: NavGroup): boolean {
-  return collectGroupRoutes(group).some((r) => routeMatches(r))
+  if (!localRail.value && flyoutOpen.value) {
+    return flyoutGroupTitle.value === group.title
+  }
+  return activeNavGroupTitle.value === group.title
 }
 
-// ─── Manual expand/collapse tracking (split label/chevron) ──
-function subGroupKey(group: NavGroup, subgroup: NavSubGroup): string {
-  return `${group.title}:${subgroup.title}`
+// ─── Expanded-mode click flyout ─────────────────────────────
+function closeFlyout() {
+  flyoutOpen.value = false
+  flyoutGroupTitle.value = null
+  expandedSubgroupTitle.value = null
 }
 
-function activeItemForGroup(group: NavGroup): NavItem | null {
-  return flatGroupItems(group)
-    .filter((item) => routeMatches(item.route))
-    .sort((a, b) => b.route.length - a.route.length)[0] ?? null
+function updateFlyoutTop(event: Event) {
+  const target = event.currentTarget as HTMLElement | null
+  if (!target) return
+  const rect = target.getBoundingClientRect()
+  const maxTop = Math.max(8, window.innerHeight - 16)
+  flyoutTop.value = Math.min(Math.max(rect.top, 8), maxTop)
+  ;(target as HTMLElement).blur?.()
 }
 
-function isItemActive(group: NavGroup, item: NavItem): boolean {
-  return activeItemForGroup(group)?.route === item.route
-}
-
-function activeSubGroupForGroup(group: NavGroup): NavSubGroup | null {
-  const activeItem = activeItemForGroup(group)
-  if (!activeItem) return null
-  return railSubGroups(group).find((subgroup) =>
-    subgroup.items.some((item) => item.route === activeItem.route),
-  ) ?? null
-}
-
-function isParentExpanded(group: NavGroup): boolean {
-  return expandedParentKey.value === group.title
-}
-
-function isSubGroupExpanded(group: NavGroup, subgroup: NavSubGroup): boolean {
-  return expandedSubKey.value === subGroupKey(group, subgroup)
-}
-
-function isSubGroupActive(group: NavGroup, subgroup: NavSubGroup): boolean {
-  return activeSubGroupForGroup(group)?.title === subgroup.title
-}
-
-function setExpandedParent(group: NavGroup) {
-  const activeSubGroup = activeSubGroupForGroup(group)
-  expandedParentKey.value = group.title
-  expandedSubKey.value = activeSubGroup ? subGroupKey(group, activeSubGroup) : null
-}
-
-function toggleParent(group: NavGroup) {
-  if (isParentExpanded(group)) {
-    expandedParentKey.value = null
-    expandedSubKey.value = null
+function onParentClick(group: NavGroup, event: MouseEvent) {
+  const isSame = flyoutOpen.value && flyoutGroupTitle.value === group.title
+  if (isSame) {
+    closeFlyout()
     return
   }
 
-  setExpandedParent(group)
+  updateFlyoutTop(event)
+  flyoutOpen.value = true
+  flyoutGroupTitle.value = group.title
+  expandedSubgroupTitle.value = null
 }
 
-function toggleSubGroup(group: NavGroup, subgroup: NavSubGroup) {
-  expandedParentKey.value = group.title
-  expandedSubKey.value = isSubGroupExpanded(group, subgroup)
-    ? null
-    : subGroupKey(group, subgroup)
+function onParentHover(group: NavGroup, event: MouseEvent) {
+  if (!flyoutOpen.value) return
+  if (flyoutGroupTitle.value === group.title) return
+  updateFlyoutTop(event)
+  flyoutGroupTitle.value = group.title
+  expandedSubgroupTitle.value = null
 }
 
-function keepParentExpanded(group: NavGroup, subgroup?: NavSubGroup) {
-  expandedParentKey.value = group.title
-  expandedSubKey.value = subgroup ? subGroupKey(group, subgroup) : null
+function onFlyoutChildClick(item: NavItem) {
+  goTo(item.route)
+  closeFlyout()
 }
 
-function syncExpansionWithRoute() {
-  // Only collapse — never auto-expand. If a section was explicitly opened
-  // by the chevron, keep it open as long as it's still the active module.
-  // If the user navigated to a different module, collapse.
-  if (!expandedParentKey.value) return
-
-  const expandedGroup = navGroups.value.find((group) => group.title === expandedParentKey.value)
-  if (!expandedGroup || !isModuleActive(expandedGroup)) {
-    expandedParentKey.value = null
-    expandedSubKey.value = null
-  }
+function toggleFlyoutSubgroup(sub: NavSubGroup) {
+  expandedSubgroupTitle.value =
+    expandedSubgroupTitle.value === sub.title ? null : sub.title
 }
-
-watch(
-  () => [route.path, resolvedAccountId.value] as const,
-  syncExpansionWithRoute,
-  { immediate: true },
-)
 </script>
 
 <template>
@@ -439,7 +452,7 @@ watch(
     :rail-width="64"
     permanent
     :mobile-breakpoint="0"
-    width="248"
+    width="240"
     class="mp-sidebar"
   >
     <!-- Brand + anchored toggle -->
@@ -482,7 +495,8 @@ watch(
     </div>
 
     <!-- Navigation List -->
-    <v-list density="compact" nav class="px-2 py-1 sidebar-scroll">
+    <div class="sidebar-scroll">
+    <v-list density="compact" class="py-1">
       <template v-for="group in navGroups" :key="group.title">
         <template v-if="isAppsGroup(group) && !localRail">
           <v-list-item
@@ -492,6 +506,7 @@ watch(
             :title="group.title"
             :value="group.title"
             rounded="lg"
+            :active="isModuleActive(group)"
             active-class="active-nav-item"
             class="mb-1 sidebar-text"
           >
@@ -542,6 +557,7 @@ watch(
           :title="!localRail ? group.title : ''"
           :value="group.title"
           rounded="lg"
+          :active="isModuleActive(group)"
           active-class="active-nav-item"
           class="mb-1 sidebar-text"
         >
@@ -563,166 +579,53 @@ watch(
 
         <div
           v-else-if="!localRail"
-          class="sidebar-parent"
-          :class="{ 'sidebar-parent--active': isModuleActive(group) }"
+          class="sidebar-parent-row"
         >
-          <v-menu
-            location="end"
-            open-on-hover
-            :open-delay="0"
-            :close-delay="120"
-            offset="8"
-            :close-on-content-click="false"
-            @update:model-value="(v: boolean) => { if (!v) railHoveredSubGroup = null }"
+          <v-list-item
+            :prepend-icon="group.icon"
+            :title="group.title"
+            :value="group.title"
+            rounded="lg"
+            :active="isModuleActive(group)"
+            active-class="active-nav-item"
+            class="mb-1 sidebar-text sidebar-parent-row__label"
+            @click.prevent="onParentClick(group, $event)"
+            @mouseenter="onParentHover(group, $event)"
           >
-            <template #activator="{ props: menuProps, isActive: menuOpen }">
-              <div class="sidebar-parent-row" v-bind="menuProps">
-                <v-list-item
-                  :to="group.singleRoute"
-                  @click="group.singleRoute && goTo(group.singleRoute)"
-                  :prepend-icon="group.icon"
-                  :title="group.title"
-                  rounded="lg"
-                  class="sidebar-text sidebar-parent-row__label"
-                  :class="{
-                    'sidebar-parent-row__label--expanded': isParentExpanded(group),
-                    'rail-icon-hovered': menuOpen,
-                  }"
-                >
-                  <template #append>
-                    <v-tooltip v-if="isLocked(group)" location="end" text="Upgrade to unlock">
-                      <template #activator="{ props: tipProps }">
-                        <v-icon v-bind="tipProps" size="14" class="ml-2 sidebar-lock">lock</v-icon>
-                      </template>
-                    </v-tooltip>
-                  </template>
-                </v-list-item>
-
-                <button
-                  type="button"
-                  class="sidebar-parent-row__chevron"
-                  :class="{ 'sidebar-parent-row__chevron--expanded': isParentExpanded(group) }"
-                  :aria-expanded="isParentExpanded(group)"
-                  :aria-label="`${isParentExpanded(group) ? 'Collapse' : 'Expand'} ${group.title}`"
-                  @click.stop.prevent="toggleParent(group)"
-                  @keydown.enter.stop.prevent="toggleParent(group)"
-                  @keydown.space.stop.prevent="toggleParent(group)"
-                >
-                  <v-icon size="14">chevron-right</v-icon>
-                </button>
-              </div>
+            <template #append>
+              <v-icon
+                v-if="!isLocked(group)"
+                size="14"
+                class="sidebar-parent-row__chevron"
+                aria-hidden="true"
+              >chevron-right</v-icon>
+              <v-tooltip v-if="isLocked(group)" location="end" text="Upgrade to unlock">
+                <template #activator="{ props: tipProps }">
+                  <v-icon v-bind="tipProps" size="14" class="ml-2 sidebar-lock">lock</v-icon>
+                </template>
+              </v-tooltip>
             </template>
-
-            <!-- Hover flyout — single card (no sub-groups) -->
-            <div v-if="!hasSubGroups(group)" class="rail-flyout-card">
-              <div
-                v-for="item in group.items"
-                :key="item.title"
-                class="rail-flyout-item"
-                :class="{ 'rail-flyout-item--active': ('route' in item) && route.path.startsWith((item as NavItem).route) }"
-                @click="('route' in item) && goTo((item as NavItem).route)"
-              >{{ ('route' in item) ? (item as NavItem).title : '' }}</div>
-            </div>
-
-            <!-- Hover flyout — cascade (groups with sub-groups) -->
-            <div v-else class="rail-cascade-wrap">
-              <div class="rail-flyout-card">
-                <div
-                  v-for="flat in railFlatItems(group)"
-                  :key="flat.title"
-                  class="rail-flyout-item"
-                  :class="{ 'rail-flyout-item--active': route.path.startsWith(flat.route) }"
-                  @click="goTo(flat.route)"
-                >{{ flat.title }}</div>
-                <div
-                  v-for="sub in railSubGroups(group)"
-                  :key="sub.title"
-                  class="rail-flyout-item rail-flyout-item--has-sub"
-                  :class="{ 'rail-flyout-item--active': railHoveredSubGroup === sub.title }"
-                  @mouseenter="railHoveredSubGroup = sub.title"
-                >
-                  <span>{{ sub.title }}</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-                </div>
-              </div>
-              <div v-if="railHoveredSubGroup && activeRailSubGroupItems(group).length" class="rail-flyout-card">
-                <div class="rail-flyout-card__header">{{ railHoveredSubGroup }}</div>
-                <div
-                  v-for="child in activeRailSubGroupItems(group)"
-                  :key="child.title"
-                  class="rail-flyout-item"
-                  :class="{ 'rail-flyout-item--active': route.path.startsWith(child.route) }"
-                  @click="goTo(child.route)"
-                >{{ child.title }}</div>
-              </div>
-            </div>
-          </v-menu>
-
-          <v-expand-transition>
-            <div v-show="isParentExpanded(group)" class="sidebar-parent__children">
-              <template v-for="item in group.items" :key="item.title">
-                <div
-                  v-if="isSubGroup(item)"
-                  class="sidebar-tree-branch"
-                  :class="{
-                    'sidebar-tree-branch--active': isSubGroupActive(group, item),
-                    'sidebar-tree-branch--expanded': isSubGroupExpanded(group, item),
-                  }"
-                >
-                  <button
-                    type="button"
-                    class="sidebar-subgroup-row"
-                    :aria-expanded="isSubGroupExpanded(group, item)"
-                    @click="toggleSubGroup(group, item)"
-                  >
-                    <span class="sidebar-subgroup-row__title">{{ item.title }}</span>
-                    <v-icon size="15">{{ isSubGroupExpanded(group, item) ? 'chevron-up' : 'chevron-down' }}</v-icon>
-                  </button>
-
-                  <v-expand-transition>
-                    <div v-show="isSubGroupExpanded(group, item)" class="sidebar-subgroup__children">
-                      <div
-                        v-for="subItem in item.items"
-                        :key="subItem.title"
-                        class="sidebar-tree-row sidebar-tree-row--grandchild"
-                        :class="{ 'sidebar-tree-row--active': isItemActive(group, subItem) }"
-                      >
-                        <v-list-item
-                          :title="subItem.title"
-                          :to="subItem.route"
-                          :active="isItemActive(group, subItem)"
-                          @click="keepParentExpanded(group, item)"
-                          class="sidebar-text sidebar-grandchild-item sidebar-tree-link"
-                          rounded="lg"
-                          exact
-                        />
-                      </div>
-                    </div>
-                  </v-expand-transition>
-                </div>
-
-                <div
-                  v-else
-                  class="sidebar-tree-row sidebar-tree-row--child"
-                  :class="{ 'sidebar-tree-row--active': isItemActive(group, item) }"
-                >
-                  <v-list-item
-                    :title="item.title"
-                    :to="item.route"
-                    :active="isItemActive(group, item)"
-                    @click="keepParentExpanded(group)"
-                    class="sidebar-text sidebar-child-item sidebar-tree-link"
-                    rounded="lg"
-                    exact
-                  />
-                </div>
-              </template>
-            </div>
-          </v-expand-transition>
+          </v-list-item>
         </div>
 
-        <v-menu v-else location="end" open-on-hover :open-delay="0" :close-delay="120" offset="8" :close-on-content-click="false" @update:model-value="(v: boolean) => { if (!v) railHoveredSubGroup = null }">
-          <template #activator="{ props: menuProps, isActive: menuOpen }">
+        <v-menu
+          v-else
+          location="end"
+          open-on-hover
+          :open-delay="0"
+          :close-delay="120"
+          offset="8"
+          :close-on-content-click="false"
+          @update:model-value="(v: boolean) => {
+            if (v) {
+              railOpenGroup = group.title
+            } else {
+              railHoveredSubGroup = null
+              if (railOpenGroup === group.title) railOpenGroup = null
+            }
+          }"
+        >
+          <template #activator="{ props: menuProps }">
             <v-list-item
               v-bind="menuProps"
               :prepend-icon="group.icon"
@@ -730,7 +633,7 @@ watch(
               :value="group.title"
               rounded="lg"
               class="sidebar-text mb-1"
-              :class="{ 'rail-icon-hovered': menuOpen }"
+              :class="{ 'rail-icon-hovered': railOpenGroup === group.title }"
             />
           </template>
 
@@ -786,6 +689,7 @@ watch(
         <v-divider v-if="group.dividerAfter" class="sidebar-divider my-1 mx-2" />
       </template>
     </v-list>
+    </div>
 
     <!-- Bottom: Controls -->
     <template v-slot:append>
@@ -871,6 +775,66 @@ watch(
       </div>
     </template>
   </v-navigation-drawer>
+
+  <Teleport to="body">
+    <div
+      v-if="!localRail && flyoutOpen && flyoutGroup"
+      class="sidebar-expanded-flyout rail-flyout-card"
+      role="menu"
+      :aria-label="`${flyoutGroup.title} menu`"
+      :style="{ top: flyoutTop + 'px' }"
+    >
+      <template v-if="!hasSubGroups(flyoutGroup)">
+        <button
+          v-for="item in flyoutGroup.items"
+          :key="item.title"
+          type="button"
+          class="rail-flyout-item"
+          :class="{ 'rail-flyout-item--active': 'route' in item && routeMatches((item as NavItem).route) }"
+          @click="'route' in item && onFlyoutChildClick(item as NavItem)"
+        >{{ 'route' in item ? (item as NavItem).title : '' }}</button>
+      </template>
+
+      <template v-else>
+        <button
+          v-for="flat in railFlatItems(flyoutGroup)"
+          :key="flat.title"
+          type="button"
+          class="rail-flyout-item"
+          :class="{ 'rail-flyout-item--active': routeMatches(flat.route) }"
+          @click="onFlyoutChildClick(flat)"
+        >{{ flat.title }}</button>
+
+        <div
+          v-for="sub in railSubGroups(flyoutGroup)"
+          :key="sub.title"
+          class="flyout-subgroup"
+        >
+          <button
+            type="button"
+            class="rail-flyout-item rail-flyout-item--has-sub"
+            :aria-expanded="expandedSubgroupTitle === sub.title"
+            @click="toggleFlyoutSubgroup(sub)"
+          >
+            <span>{{ sub.title }}</span>
+            <v-icon size="14">{{ expandedSubgroupTitle === sub.title ? 'chevron-down' : 'chevron-right' }}</v-icon>
+          </button>
+          <v-expand-transition>
+            <div v-show="expandedSubgroupTitle === sub.title" class="flyout-subgroup__children">
+              <button
+                v-for="child in sub.items"
+                :key="child.title"
+                type="button"
+                class="rail-flyout-item rail-flyout-item--child"
+                :class="{ 'rail-flyout-item--active': routeMatches(child.route) }"
+                @click="onFlyoutChildClick(child)"
+              >{{ child.title }}</button>
+            </div>
+          </v-expand-transition>
+        </div>
+      </template>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped lang="scss">
@@ -884,7 +848,7 @@ watch(
   --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 9%, transparent);
   --sidebar-active-text: var(--sidebar-text);
   --sidebar-focus-ring: color-mix(in oklch, var(--sidebar-text) 22%, transparent);
-  --sidebar-radius: 12px;
+  --sidebar-radius: 8px;
   --sidebar-radius-sm: 10px;
   --sidebar-transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
   background: var(--sidebar-bg) !important;
@@ -895,17 +859,21 @@ watch(
 .mp-sidebar :deep(.v-navigation-drawer__content) {
   display: flex;
   flex-direction: column;
+  height: 100%;
   overflow: visible;
 }
 
 .sidebar-header {
   position: relative;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 14px 14px 14px 14px;
   margin-bottom: 6px;
   border-bottom: 1px solid var(--sidebar-border);
+  background: var(--sidebar-bg);
+  z-index: 2;
 }
 
 .sidebar-header--rail {
@@ -1068,10 +1036,12 @@ watch(
 }
 
 .sidebar-scroll {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 4px 14px 12px;
+  overflow-x: hidden;
+  padding: 4px 8px 12px;
+  scrollbar-width: thin;
 }
 
 .sidebar-controls {
@@ -1228,270 +1198,38 @@ watch(
   font-weight: 600;
 }
 
-/* ─── Expanded sidebar tree: parent, level-2, level-3 ─── */
-.sidebar-parent {
-  margin-bottom: 1px;
-}
-
+/* ─── Expanded-mode parent row: hover chevron (HubSpot-style) ─── */
 .sidebar-parent-row {
   position: relative;
-  display: flex;
-  align-items: center;
 }
 
 .sidebar-parent-row__label {
-  flex: 1;
-  min-width: 0;
-  padding-right: 36px !important;
-  cursor: pointer;
+  padding-right: 28px !important;
 }
 
-.sidebar-parent-row__chevron {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: var(--sidebar-radius-sm);
+.mp-sidebar :deep(.sidebar-parent-row__chevron) {
+  opacity: 0 !important;
   color: var(--sidebar-muted);
-  cursor: pointer;
-  z-index: 2;
-  padding: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity 120ms ease,
-    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    background 120ms ease,
-    color 120ms ease;
+  transition: opacity 120ms ease;
 }
 
-.sidebar-parent-row:hover .sidebar-parent-row__chevron,
-.sidebar-parent-row:focus-within .sidebar-parent-row__chevron,
-.sidebar-parent-row__chevron:focus-visible,
-.sidebar-parent-row__chevron--expanded {
-  opacity: 1;
-  pointer-events: auto;
+.mp-sidebar :deep(.sidebar-parent-row:hover .sidebar-parent-row__chevron) {
+  opacity: 1 !important;
 }
 
-.sidebar-parent-row__chevron--expanded {
-  transform: translateY(-50%) rotate(90deg);
-}
-
-.sidebar-parent-row__chevron:hover {
-  background: var(--sidebar-hover-bg);
-  color: var(--sidebar-active-text);
-}
-
-.sidebar-parent-row__chevron:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--sidebar-focus-ring);
-}
-
-.sidebar-parent--active .sidebar-parent-row__label {
+/* ─── Expanded-mode click flyout parent highlight ─── */
+.mp-sidebar :deep(.sidebar-parent--flyout-open) {
   background: var(--sidebar-active-bg) !important;
   color: var(--sidebar-active-text) !important;
   font-weight: 600;
 }
 
-.sidebar-parent--active .sidebar-parent-row__label :deep(.v-list-item__overlay) {
+.mp-sidebar :deep(.sidebar-parent--flyout-open > .v-list-item__overlay) {
   opacity: 0 !important;
 }
 
-.sidebar-parent--active .sidebar-parent-row__label :deep(.v-list-item__prepend > .v-icon),
-.sidebar-parent--active .sidebar-parent-row__label :deep(.v-list-item-title) {
-  color: var(--sidebar-active-text) !important;
-}
-
-.sidebar-parent--active .sidebar-parent-row__label :deep(.v-list-item-title) {
-  font-weight: 600;
-}
-
-.sidebar-parent--active .sidebar-parent-row__chevron {
-  color: var(--sidebar-muted);
-}
-
-.sidebar-parent__children {
-  position: relative;
-  margin: 3px 0 8px 18px;
-  padding-left: 16px;
-}
-
-.sidebar-parent__children::before {
-  content: '';
-  position: absolute;
-  left: 6px;
-  top: 1px;
-  bottom: 12px;
-  width: 1px;
-  background: var(--sidebar-line);
-}
-
-.sidebar-tree-row,
-.sidebar-tree-branch {
-  position: relative;
-}
-
-.sidebar-tree-row {
-  --sidebar-elbow-left: -10px;
-  --sidebar-elbow-width: 10px;
-}
-
-.sidebar-tree-row::before {
-  content: '';
-  position: absolute;
-  left: var(--sidebar-elbow-left);
-  top: 0;
-  width: var(--sidebar-elbow-width);
-  height: 17px;
-  border-left: 1px solid var(--sidebar-line);
-  border-bottom: 1px solid var(--sidebar-line);
-  border-bottom-left-radius: 8px;
-  background: transparent;
-  opacity: 0;
-  z-index: 0;
-  transition: opacity 120ms ease, border-color 120ms ease;
-}
-
-.sidebar-tree-row--active::before {
-  opacity: 1;
-}
-
-.sidebar-subgroup-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  min-height: 34px;
-  margin: 1px 0;
-  padding: 8px 9px;
-  border: 0;
-  border-radius: var(--sidebar-radius);
-  appearance: none;
-  background: transparent;
-  color: var(--sidebar-text);
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  transition: var(--sidebar-transition);
-}
-
-.sidebar-subgroup-row:hover {
-  background: var(--sidebar-hover-bg);
-}
-
-.sidebar-subgroup-row:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--sidebar-focus-ring);
-}
-
-.sidebar-subgroup-row__title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  font-size: 13.5px;
-  font-weight: 500;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sidebar-subgroup-row .v-icon {
-  flex: none;
-  color: var(--sidebar-muted) !important;
-}
-
-.sidebar-tree-branch--active > .sidebar-subgroup-row,
-.sidebar-tree-branch--expanded > .sidebar-subgroup-row {
-  color: var(--sidebar-active-text);
-  font-weight: 600;
-}
-
-.sidebar-tree-branch--active > .sidebar-subgroup-row .sidebar-subgroup-row__title,
-.sidebar-tree-branch--expanded > .sidebar-subgroup-row .sidebar-subgroup-row__title {
-  font-weight: 600;
-}
-
-.sidebar-tree-branch--active > .sidebar-subgroup-row .v-icon,
-.sidebar-tree-branch--expanded > .sidebar-subgroup-row .v-icon {
-  color: var(--sidebar-active-text) !important;
-}
-
-.sidebar-subgroup__children {
-  position: relative;
-  margin-left: 22px;
-  padding-left: 14px;
-}
-
-.sidebar-subgroup__children::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 10px;
-  width: 1px;
-  background: var(--sidebar-line);
-}
-
-.sidebar-tree-row--grandchild::before {
-  --sidebar-elbow-left: -14px;
-  --sidebar-elbow-width: 14px;
-}
-
-.sidebar-tree-link {
-  position: relative;
-  z-index: 1;
-  min-height: 34px !important;
-  border-radius: var(--sidebar-radius) !important;
-  overflow: visible !important;
-}
-
-.sidebar-tree-link :deep(.v-list-item__overlay) {
-  opacity: 0 !important;
-}
-
-.sidebar-child-item {
-  --indent-padding: 0;
-}
-
-.sidebar-grandchild-item {
-  --indent-padding: 0;
-}
-
-.sidebar-tree-row--grandchild .sidebar-tree-link :deep(.v-list-item-title) {
-  color: var(--sidebar-muted);
-  font-size: 13.5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sidebar-tree-row--active .sidebar-tree-link {
-  background: var(--sidebar-active-bg) !important;
-  color: var(--sidebar-active-text) !important;
-  font-weight: 600;
-}
-
-.sidebar-tree-row--active .sidebar-tree-link :deep(.v-list-item-title) {
-  color: var(--sidebar-active-text) !important;
-  font-weight: 600;
-}
-
-.mp-sidebar :deep(.sidebar-child-item.v-list-item--active) {
-  background: var(--sidebar-active-bg) !important;
-  color: var(--sidebar-active-text) !important;
-  font-weight: 600;
-}
-
-.mp-sidebar :deep(.sidebar-child-item.v-list-item--active .v-list-item-title) {
+.mp-sidebar :deep(.sidebar-parent--flyout-open .v-list-item__prepend > .v-icon),
+.mp-sidebar :deep(.sidebar-parent--flyout-open .v-list-item-title) {
   color: var(--sidebar-active-text) !important;
   font-weight: 600;
 }
@@ -1537,9 +1275,10 @@ watch(
 }
 
 .mp-sidebar :deep(.v-list-item) {
-  min-height: 36px;
-  margin-bottom: 1px;
-  padding: 9px 10px;
+  --v-list-prepend-gap: 16px;
+  min-height: 38px;
+  margin-bottom: 4px;
+  padding: 9px 12px;
   border-radius: var(--sidebar-radius) !important;
   color: var(--sidebar-text);
 }
@@ -1566,45 +1305,60 @@ watch(
   line-height: 1.2;
 }
 
+.mp-sidebar :deep(.v-list-item__prepend) {
+  width: auto !important;
+  min-width: 0 !important;
+  margin-inline-end: 0 !important;
+  padding-inline-end: 0 !important;
+}
+
+.mp-sidebar :deep(.v-list-item__prepend > .v-icon ~ .v-list-item__spacer) {
+  width: 16px !important;
+  min-width: 16px !important;
+  flex-shrink: 0;
+}
+
 .mp-sidebar :deep(.v-list-item__prepend > .v-icon) {
   font-size: 18px;
-  margin-inline-end: 10px;
+  margin-inline-end: 0;
+}
+
+.mp-sidebar :deep(.v-list-item__content) {
+  padding-inline-start: 0 !important;
 }
 
 .mp-sidebar :deep(.v-list-item:hover > .v-list-item__overlay) {
   opacity: 0 !important;
 }
 
-.mp-sidebar :deep(.sidebar-child-item) {
-  min-height: 32px !important;
-  border-radius: var(--sidebar-radius) !important;
+/* Expanded-mode click flyout panel (teleported) */
+.sidebar-expanded-flyout {
+  position: fixed;
+  left: 240px;
+  z-index: 1005;
 }
 
-.mp-sidebar :deep(.sidebar-child-item .v-list-item-title) {
-  font-size: 13.5px;
-  font-weight: 500;
+.sidebar-expanded-flyout .rail-flyout-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  appearance: none;
+  text-align: left;
+  font-family: inherit;
 }
 
-.mp-sidebar :deep(.sidebar-grandchild-item) {
-  min-height: 32px !important;
-  border-radius: var(--sidebar-radius) !important;
+.sidebar-expanded-flyout .rail-flyout-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--sidebar-focus-ring);
 }
 
-.mp-sidebar :deep(.sidebar-grandchild-item .v-list-item-title) {
-  font-size: 13.5px;
+.flyout-subgroup__children {
+  padding-left: 8px;
+}
+
+.rail-flyout-item--child {
+  font-size: 12.5px;
   color: var(--sidebar-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mp-sidebar :deep(.sidebar-grandchild-item.v-list-item--active) {
-  background: var(--sidebar-active-bg) !important;
-}
-
-.mp-sidebar :deep(.sidebar-grandchild-item.v-list-item--active .v-list-item-title) {
-  color: var(--sidebar-active-text) !important;
-  font-weight: 600;
 }
 
 /* Rail flyout — single card (tokens: sidebar-dark.css + light defaults below) */
