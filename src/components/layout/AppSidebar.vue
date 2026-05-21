@@ -236,7 +236,7 @@ const railOpenGroup = ref<string | null>(null)
 const appsExpanded = ref(false)
 const flyoutOpen = ref(false)
 const flyoutGroupTitle = ref<string | null>(null)
-const expandedSubgroupTitle = ref<string | null>(null)
+const expandedHoveredCascade = ref<string | null>(null)
 const flyoutTop = ref(64)
 const router = useRouter()
 const route = useRoute()
@@ -253,6 +253,12 @@ const flyoutGroup = computed(() =>
     ? navGroups.value.find((group) => group.title === flyoutGroupTitle.value) ?? null
     : null,
 )
+const expandedCascadeItems = computed<NavItem[]>(() => {
+  if (!flyoutGroup.value || !expandedHoveredCascade.value) return []
+  const sub = railSubGroups(flyoutGroup.value)
+    .find((s) => s.title === expandedHoveredCascade.value)
+  return sub?.items ?? []
+})
 const installedApps = computed<InstalledAppItem[]>(() => [
   {
     title: 'Shopify',
@@ -341,6 +347,12 @@ function railFlatItems(group: NavGroup) {
   return group.items.filter((item): item is NavItem => !('isSubGroup' in item))
 }
 
+const CASCADE_SUBGROUPS = new Set(['Content'])
+
+function isCascadeSubGroup(sub: NavSubGroup): boolean {
+  return CASCADE_SUBGROUPS.has(sub.title)
+}
+
 function activeRailSubGroupItems(group: NavGroup) {
   if (!railHoveredSubGroup.value) return []
   const sub = railSubGroups(group).find((s) => s.title === railHoveredSubGroup.value)
@@ -401,7 +413,7 @@ function isModuleActive(group: NavGroup): boolean {
 function closeFlyout() {
   flyoutOpen.value = false
   flyoutGroupTitle.value = null
-  expandedSubgroupTitle.value = null
+  expandedHoveredCascade.value = null
 }
 
 function updateFlyoutTop(event: Event) {
@@ -423,7 +435,7 @@ function onParentClick(group: NavGroup, event: MouseEvent) {
   updateFlyoutTop(event)
   flyoutOpen.value = true
   flyoutGroupTitle.value = group.title
-  expandedSubgroupTitle.value = null
+  expandedHoveredCascade.value = null
 }
 
 function onParentHover(group: NavGroup, event: MouseEvent) {
@@ -431,17 +443,12 @@ function onParentHover(group: NavGroup, event: MouseEvent) {
   if (flyoutGroupTitle.value === group.title) return
   updateFlyoutTop(event)
   flyoutGroupTitle.value = group.title
-  expandedSubgroupTitle.value = null
+  expandedHoveredCascade.value = null
 }
 
 function onFlyoutChildClick(item: NavItem) {
   goTo(item.route)
   closeFlyout()
-}
-
-function toggleFlyoutSubgroup(sub: NavSubGroup) {
-  expandedSubgroupTitle.value =
-    expandedSubgroupTitle.value === sub.title ? null : sub.title
 }
 </script>
 
@@ -549,33 +556,42 @@ function toggleFlyoutSubgroup(sub: NavSubGroup) {
           </div>
         </template>
 
-        <v-list-item
+        <v-tooltip
           v-else-if="group.items.length === 0"
-          :to="group.singleRoute"
-          @click="group.singleRoute && goTo(group.singleRoute)"
-          :prepend-icon="group.icon"
-          :title="!localRail ? group.title : ''"
-          :value="group.title"
-          rounded="lg"
-          :active="isModuleActive(group)"
-          active-class="active-nav-item"
-          class="mb-1 sidebar-text"
+          :disabled="!localRail"
+          location="end"
+          :text="group.title"
         >
-          <template v-slot:append v-if="(!localRail && group.badge) || (isLocked(group) && !group.badge)">
-            <v-chip
-              v-if="!localRail && group.badge"
-              size="x-small"
-              variant="tonal"
-              color="secondary"
-              class="font-weight-bold ml-2 sidebar-badge"
-            >{{ group.badge }}</v-chip>
-            <v-tooltip v-if="isLocked(group) && !group.badge" location="end" text="Upgrade to unlock">
-              <template v-slot:activator="{ props: tipProps }">
-                <v-icon v-bind="tipProps" size="14" class="ml-2 sidebar-lock">lock</v-icon>
+          <template #activator="{ props: tipProps }">
+            <v-list-item
+              v-bind="tipProps"
+              :to="group.singleRoute"
+              @click="group.singleRoute && goTo(group.singleRoute)"
+              :prepend-icon="group.icon"
+              :title="!localRail ? group.title : ''"
+              :value="group.title"
+              rounded="lg"
+              :active="isModuleActive(group)"
+              active-class="active-nav-item"
+              class="mb-1 sidebar-text"
+            >
+              <template v-slot:append v-if="(!localRail && group.badge) || (isLocked(group) && !group.badge)">
+                <v-chip
+                  v-if="!localRail && group.badge"
+                  size="x-small"
+                  variant="tonal"
+                  color="secondary"
+                  class="font-weight-bold ml-2 sidebar-badge"
+                >{{ group.badge }}</v-chip>
+                <v-tooltip v-if="isLocked(group) && !group.badge" location="end" text="Upgrade to unlock">
+                  <template v-slot:activator="{ props: lockTipProps }">
+                    <v-icon v-bind="lockTipProps" size="14" class="ml-2 sidebar-lock">lock</v-icon>
+                  </template>
+                </v-tooltip>
               </template>
-            </v-tooltip>
+            </v-list-item>
           </template>
-        </v-list-item>
+        </v-tooltip>
 
         <div
           v-else-if="!localRail"
@@ -649,31 +665,49 @@ function toggleFlyoutSubgroup(sub: NavSubGroup) {
             >{{ ('route' in item) ? item.title : '' }}</div>
           </div>
 
-          <!-- Two separate flyout cards (cascade — groups with sub-groups) -->
+          <!-- Inline sub-groups separated by dividers; cascade subs open in 2nd card -->
           <div v-else class="rail-cascade-wrap">
-            <!-- Card 1: group children & subgroup headers -->
             <div class="rail-flyout-card">
               <div class="rail-flyout-card__header">{{ group.title }}</div>
-              <div
-                v-for="flat in railFlatItems(group)"
-                :key="flat.title"
-                class="rail-flyout-item"
-                :class="{ 'rail-flyout-item--active': route.path.startsWith(flat.route) }"
-                @click="goTo(flat.route)"
-              >{{ flat.title }}</div>
-              <div
-                v-for="sub in railSubGroups(group)"
-                :key="sub.title"
-                class="rail-flyout-item rail-flyout-item--has-sub"
-                :class="{ 'rail-flyout-item--active': railHoveredSubGroup === sub.title }"
-                @mouseenter="railHoveredSubGroup = sub.title"
-              >
-                <span>{{ sub.title }}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-              </div>
+              <template v-for="(sub, idx) in railSubGroups(group)" :key="sub.title">
+                <div v-if="idx > 0" class="rail-flyout-divider" />
+                <template v-if="isCascadeSubGroup(sub)">
+                  <div
+                    class="rail-flyout-item rail-flyout-item--has-sub"
+                    :class="{ 'rail-flyout-item--active': railHoveredSubGroup === sub.title }"
+                    @mouseenter="railHoveredSubGroup = sub.title"
+                  >
+                    <span>{{ sub.title }}</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                  </div>
+                </template>
+                <template v-else>
+                  <div
+                    v-for="child in sub.items"
+                    :key="child.title"
+                    class="rail-flyout-item"
+                    :class="{ 'rail-flyout-item--active': route.path.startsWith(child.route) }"
+                    @click="goTo(child.route); railHoveredSubGroup = null"
+                    @mouseenter="railHoveredSubGroup = null"
+                  >{{ child.title }}</div>
+                </template>
+              </template>
+              <template v-if="railFlatItems(group).length">
+                <div class="rail-flyout-divider" />
+                <div
+                  v-for="flat in railFlatItems(group)"
+                  :key="flat.title"
+                  class="rail-flyout-item"
+                  :class="{ 'rail-flyout-item--active': route.path.startsWith(flat.route) }"
+                  @click="goTo(flat.route); railHoveredSubGroup = null"
+                  @mouseenter="railHoveredSubGroup = null"
+                >{{ flat.title }}</div>
+              </template>
             </div>
-            <!-- Card 2: grandchildren of the hovered subgroup -->
-            <div v-if="railHoveredSubGroup && activeRailSubGroupItems(group).length" class="rail-flyout-card">
+            <div
+              v-if="railHoveredSubGroup && activeRailSubGroupItems(group).length"
+              class="rail-flyout-card"
+            >
               <div class="rail-flyout-card__header">{{ railHoveredSubGroup }}</div>
               <div
                 v-for="child in activeRailSubGroupItems(group)"
@@ -779,12 +813,12 @@ function toggleFlyoutSubgroup(sub: NavSubGroup) {
   <Teleport to="body">
     <div
       v-if="!localRail && flyoutOpen && flyoutGroup"
-      class="sidebar-expanded-flyout rail-flyout-card"
+      class="sidebar-expanded-flyout"
       role="menu"
       :aria-label="`${flyoutGroup.title} menu`"
       :style="{ top: flyoutTop + 'px' }"
     >
-      <template v-if="!hasSubGroups(flyoutGroup)">
+      <div v-if="!hasSubGroups(flyoutGroup)" class="rail-flyout-card">
         <button
           v-for="item in flyoutGroup.items"
           :key="item.title"
@@ -793,46 +827,61 @@ function toggleFlyoutSubgroup(sub: NavSubGroup) {
           :class="{ 'rail-flyout-item--active': 'route' in item && routeMatches((item as NavItem).route) }"
           @click="'route' in item && onFlyoutChildClick(item as NavItem)"
         >{{ 'route' in item ? (item as NavItem).title : '' }}</button>
-      </template>
+      </div>
 
-      <template v-else>
-        <button
-          v-for="flat in railFlatItems(flyoutGroup)"
-          :key="flat.title"
-          type="button"
-          class="rail-flyout-item"
-          :class="{ 'rail-flyout-item--active': routeMatches(flat.route) }"
-          @click="onFlyoutChildClick(flat)"
-        >{{ flat.title }}</button>
-
-        <div
-          v-for="sub in railSubGroups(flyoutGroup)"
-          :key="sub.title"
-          class="flyout-subgroup"
-        >
-          <button
-            type="button"
-            class="rail-flyout-item rail-flyout-item--has-sub"
-            :aria-expanded="expandedSubgroupTitle === sub.title"
-            @click="toggleFlyoutSubgroup(sub)"
-          >
-            <span>{{ sub.title }}</span>
-            <v-icon size="14">{{ expandedSubgroupTitle === sub.title ? 'chevron-down' : 'chevron-right' }}</v-icon>
-          </button>
-          <v-expand-transition>
-            <div v-show="expandedSubgroupTitle === sub.title" class="flyout-subgroup__children">
+      <div v-else class="rail-cascade-wrap">
+        <div class="rail-flyout-card">
+          <template v-for="(sub, idx) in railSubGroups(flyoutGroup)" :key="sub.title">
+            <div v-if="idx > 0" class="rail-flyout-divider" />
+            <template v-if="isCascadeSubGroup(sub)">
+              <div
+                class="rail-flyout-item rail-flyout-item--has-sub"
+                :class="{ 'rail-flyout-item--active': expandedHoveredCascade === sub.title }"
+                @mouseenter="expandedHoveredCascade = sub.title"
+              >
+                <span>{{ sub.title }}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+              </div>
+            </template>
+            <template v-else>
               <button
                 v-for="child in sub.items"
                 :key="child.title"
                 type="button"
-                class="rail-flyout-item rail-flyout-item--child"
+                class="rail-flyout-item"
                 :class="{ 'rail-flyout-item--active': routeMatches(child.route) }"
-                @click="onFlyoutChildClick(child)"
+                @click="onFlyoutChildClick(child); expandedHoveredCascade = null"
+                @mouseenter="expandedHoveredCascade = null"
               >{{ child.title }}</button>
-            </div>
-          </v-expand-transition>
+            </template>
+          </template>
+          <template v-if="railFlatItems(flyoutGroup).length">
+            <div class="rail-flyout-divider" />
+            <button
+              v-for="flat in railFlatItems(flyoutGroup)"
+              :key="flat.title"
+              type="button"
+              class="rail-flyout-item"
+              :class="{ 'rail-flyout-item--active': routeMatches(flat.route) }"
+              @click="onFlyoutChildClick(flat); expandedHoveredCascade = null"
+              @mouseenter="expandedHoveredCascade = null"
+            >{{ flat.title }}</button>
+          </template>
         </div>
-      </template>
+        <div
+          v-if="expandedHoveredCascade && expandedCascadeItems.length"
+          class="rail-flyout-card"
+        >
+          <button
+            v-for="child in expandedCascadeItems"
+            :key="child.title"
+            type="button"
+            class="rail-flyout-item"
+            :class="{ 'rail-flyout-item--active': routeMatches(child.route) }"
+            @click="onFlyoutChildClick(child)"
+          >{{ child.title }}</button>
+        </div>
+      </div>
     </div>
   </Teleport>
 </template>
@@ -1352,15 +1401,6 @@ function toggleFlyoutSubgroup(sub: NavSubGroup) {
   box-shadow: 0 0 0 2px var(--sidebar-focus-ring);
 }
 
-.flyout-subgroup__children {
-  padding-left: 8px;
-}
-
-.rail-flyout-item--child {
-  font-size: 12.5px;
-  color: var(--sidebar-muted);
-}
-
 /* Rail flyout — single card (tokens: sidebar-dark.css + light defaults below) */
 .rail-flyout-card {
   --sidebar-border: var(--hairline);
@@ -1377,14 +1417,10 @@ function toggleFlyoutSubgroup(sub: NavSubGroup) {
   padding: 6px;
   min-width: 200px;
   max-width: 260px;
-  max-height: min(70vh, 420px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
 }
 
 .rail-flyout-card__header {
-  position: sticky;
-  top: 0;
   z-index: 1;
   margin: -2px -2px 4px;
   padding: 8px 10px 7px;
@@ -1437,7 +1473,11 @@ function toggleFlyoutSubgroup(sub: NavSubGroup) {
   opacity: 0.75;
 }
 
-/* Rail cascade — two cards side by side */
+.rail-flyout-divider {
+  margin: 4px 6px;
+  border-top: 1px solid var(--sidebar-border);
+}
+
 .rail-cascade-wrap {
   display: flex;
   gap: 4px;
