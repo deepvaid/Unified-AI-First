@@ -1,194 +1,44 @@
+/**
+ * Unified Field Style Stories
+ *
+ * All outlined Vuetify fields (v-text-field, v-select, v-textarea, v-autocomplete,
+ * v-combobox) share a single visual baseline defined in settings-form.scss:
+ *   • 10px border radius
+ *   • 40px minimum control height
+ *   • Subtle surface-2 fill (color-mix with --surface-2 token)
+ *   • Flat 1px outline using --hairline (dark-mode-aware)
+ *   • Primary-color border on focus, no ring/glow
+ *   • Full-opacity disabled container with muted text
+ *
+ * Settings pages inherit this baseline unchanged.
+ * The AppBar command-search intentionally overrides to a pill shape.
+ */
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
-import { VTextField } from 'vuetify/components'
 
-interface FormFieldsArgs {
-  label: string
-  placeholder: string
-  variant: 'outlined' | 'filled' | 'solo' | 'underlined' | 'plain'
-  density: 'default' | 'comfortable' | 'compact'
-  rounded: '0' | 'sm' | 'lg' | 'xl' | 'pill'
-  prependInnerIcon: string
-  appendInnerIcon: string
-  clearable: boolean
-  disabled: boolean
-  readonly: boolean
-  errorMessages: string
-  hint: string
-  persistentHint: boolean
-  hideDetails: boolean
-}
-
-const meta: Meta<FormFieldsArgs> = {
-  title: 'Archive/Legacy Base/FormFields',
-  component: VTextField,
+const meta: Meta = {
+  title: 'Design System/Form Fields',
   tags: ['autodocs'],
-  argTypes: {
-    label: {
-      control: 'text',
-      description: 'Field label',
-      table: {
-        category: 'Content',
-        defaultValue: 'Label',
-      },
-    },
-    placeholder: {
-      control: 'text',
-      description: 'Placeholder text',
-      table: {
-        category: 'Content',
-        defaultValue: '',
-      },
-    },
-    variant: {
-      control: 'select',
-      options: ['outlined', 'filled', 'solo', 'underlined', 'plain'],
-      description: 'Field variant style',
-      table: {
-        category: 'Appearance',
-        defaultValue: 'outlined',
-      },
-    },
-    density: {
-      control: 'select',
-      options: ['default', 'comfortable', 'compact'],
-      description: 'Vertical spacing density',
-      table: {
-        category: 'Appearance',
-        defaultValue: 'comfortable',
-      },
-    },
-    rounded: {
-      control: 'select',
-      options: ['0', 'sm', 'lg', 'xl', 'pill'],
-      description: 'Border radius',
-      table: {
-        category: 'Appearance',
-        defaultValue: 'lg',
-      },
-    },
-    prependInnerIcon: {
-      control: 'text',
-      description: 'Icon at the start of input',
-      table: {
-        category: 'Icons',
-        defaultValue: '',
-      },
-    },
-    appendInnerIcon: {
-      control: 'text',
-      description: 'Icon at the end of input',
-      table: {
-        category: 'Icons',
-        defaultValue: '',
-      },
-    },
-    clearable: {
-      control: 'boolean',
-      description: 'Shows a clear button',
-      table: {
-        category: 'Behavior',
-        defaultValue: false,
-      },
-    },
-    disabled: {
-      control: 'boolean',
-      description: 'Disables the field',
-      table: {
-        category: 'State',
-        defaultValue: false,
-      },
-    },
-    readonly: {
-      control: 'boolean',
-      description: 'Makes field read-only',
-      table: {
-        category: 'State',
-        defaultValue: false,
-      },
-    },
-    errorMessages: {
-      control: 'text',
-      description: 'Error message to display',
-      table: {
-        category: 'Validation',
-        defaultValue: '',
-      },
-    },
-    hint: {
-      control: 'text',
-      description: 'Helper text below field',
-      table: {
-        category: 'Content',
-        defaultValue: '',
-      },
-    },
-    persistentHint: {
-      control: 'boolean',
-      description: 'Always show hint text',
-      table: {
-        category: 'Behavior',
-        defaultValue: false,
-      },
-    },
-    hideDetails: {
-      control: 'boolean',
-      description: 'Hide hint and error messages',
-      table: {
-        category: 'Behavior',
-        defaultValue: false,
-      },
-    },
-  },
-  args: {
-    label: 'Label',
-    placeholder: '',
-    variant: 'outlined',
-    density: 'comfortable',
-    rounded: 'lg',
-    prependInnerIcon: '',
-    appendInnerIcon: '',
-    clearable: false,
-    disabled: false,
-    readonly: false,
-    errorMessages: '',
-    hint: '',
-    persistentHint: false,
-    hideDetails: false,
-  },
   parameters: {
     docs: {
       description: {
         component: `
-# Form Fields
+## Unified Field Baseline
 
-Text input fields allow users to enter, edit, or search text. Vuetify provides flexible, customizable form fields with multiple variants and densities.
+Every outlined form control in the app shares a single visual style:
+- **Shape** – 10px border radius
+- **Height** – 40px minimum (all densities)
+- **Fill** – Subtle \`surface-2\` tint, slightly darker on hover
+- **Border** – Flat 1px, \`--hairline\` token (light & dark mode)
+- **Focus** – Primary-color border, no box-shadow ring
+- **Disabled** – Full opacity, muted text color
+- **Error** – Error-color border
 
-## Overview
-
-VTextField is the primary text input component. It supports various styles (outlined, filled, solo, underlined, plain), sizes (density), and validation states.
-
-## Do's
-
-- Use descriptive labels and placeholders
-- Provide helpful hint text for complex fields
-- Show error messages immediately when validation fails
-- Use appropriate icons (search, email, lock, etc.)
-- Enable clearable for fields with long content
-
-## Don'ts
-
-- Don't use placeholders as labels
-- Avoid overly long or cryptic error messages
-- Don't use readonly for disabled fields
-- Avoid multiple fields without proper spacing
-
-## Best Practices
-
-- Set density based on content density (use 'compact' in dense tables)
-- Use variant 'outlined' as default for standard forms
-- Combine with VForm for comprehensive validation
-- Always pair with MpDataTableToolbar for search fields
+### Rules
+- Always use \`variant="outlined"\` — it picks up the baseline automatically.
+- Never pass \`rounded="pill"\` on standard form fields (AppBar search is the only exception).
+- Do not add local \`background\` or \`box-shadow\` overrides to fields — let the baseline apply.
+- Use \`density="compact"\` for toolbar filter selects, \`density="comfortable"\` for forms.
         `,
       },
     },
@@ -198,115 +48,123 @@ VTextField is the primary text input component. It supports various styles (outl
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Playground: Story = {
-  render: (args) => ({
+export const AllStates: Story = {
+  name: 'All States',
+  parameters: { controls: { disable: true } },
+  render: () => ({
     setup() {
-      const value = ref('')
-      return { args, value }
+      const text = ref('Hello World')
+      const empty = ref('')
+      return { text, empty }
     },
     template: `
-      <div class="pa-6">
-        <v-text-field
-          v-model="value"
-          :label="args.label"
-          :placeholder="args.placeholder"
-          :variant="args.variant"
-          :density="args.density"
-          :rounded="args.rounded"
-          :prepend-inner-icon="args.prependInnerIcon"
-          :append-inner-icon="args.appendInnerIcon"
-          :clearable="args.clearable"
-          :disabled="args.disabled"
-          :readonly="args.readonly"
-          :error-messages="args.errorMessages"
-          :hint="args.hint"
-          :persistent-hint="args.persistentHint"
-          :hide-details="args.hideDetails"
-        />
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Text Field — all states</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Default (empty)</div>
+            <v-text-field
+              v-model="empty"
+              label="Company name"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+            />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Default (filled)</div>
+            <v-text-field
+              v-model="text"
+              label="Company name"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+            />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Disabled</div>
+            <v-text-field
+              model-value="Locked value"
+              label="Company name"
+              variant="outlined"
+              density="comfortable"
+              disabled
+              hide-details
+            />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Read-only</div>
+            <v-text-field
+              model-value="Read-only value"
+              label="Company name"
+              variant="outlined"
+              density="comfortable"
+              readonly
+              hide-details
+            />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Error</div>
+            <v-text-field
+              model-value=""
+              label="Company name"
+              variant="outlined"
+              density="comfortable"
+              error-messages="This field is required"
+            />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Helper text</div>
+            <v-text-field
+              model-value=""
+              label="Subdomain"
+              variant="outlined"
+              density="comfortable"
+              hint="This will be part of your store URL"
+              persistent-hint
+            />
+          </v-col>
+        </v-row>
       </div>
     `,
   }),
 }
 
-export const Showcase: Story = {
+export const SearchField: Story = {
+  name: 'Search Field',
   parameters: { controls: { disable: true } },
   render: () => ({
+    setup() {
+      const query = ref('')
+      return { query }
+    },
     template: `
-      <div class="pa-6">
-        <h3 class="text-h6 mb-4">Variants</h3>
-        <v-row class="mb-6">
-          <v-col cols="12" sm="6">
-            <v-text-field label="Outlined" variant="outlined" placeholder="Enter text" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="Filled" variant="filled" placeholder="Enter text" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="Solo" variant="solo" placeholder="Enter text" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="Underlined" variant="underlined" placeholder="Enter text" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="Plain" variant="plain" placeholder="Enter text" />
-          </v-col>
-        </v-row>
-
-        <h3 class="text-h6 mb-4">Density</h3>
-        <v-row class="mb-6">
-          <v-col cols="12">
-            <v-text-field label="Default" density="default" variant="outlined" />
-          </v-col>
-          <v-col cols="12">
-            <v-text-field label="Comfortable" density="comfortable" variant="outlined" />
-          </v-col>
-          <v-col cols="12">
-            <v-text-field label="Compact" density="compact" variant="outlined" />
-          </v-col>
-        </v-row>
-
-        <h3 class="text-h6 mb-4">With Icons & Helpers</h3>
-        <v-row class="mb-6">
-          <v-col cols="12" sm="6">
-            <v-text-field label="Search" variant="outlined" prepend-inner-icon="search" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="Email" variant="outlined" prepend-inner-icon="mail" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="Password" type="password" variant="outlined" prepend-inner-icon="lock" append-inner-icon="eye-off" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="With hint" variant="outlined" hint="This is a helpful hint" />
-          </v-col>
-        </v-row>
-
-        <h3 class="text-h6 mb-4">States</h3>
-        <v-row class="mb-6">
-          <v-col cols="12" sm="6">
-            <v-text-field label="Normal" variant="outlined" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="Disabled" variant="outlined" disabled />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="Read-only" variant="outlined" readonly value="Read-only text" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="Error" variant="outlined" error-messages="This field is required" />
-          </v-col>
-        </v-row>
-
-        <h3 class="text-h6 mb-4">Select & Textarea</h3>
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Search — toolbar / filter variant</h3>
         <v-row>
           <v-col cols="12" sm="6">
-            <v-select label="Single Select" :items="['Option 1', 'Option 2', 'Option 3']" variant="outlined" />
+            <div class="text-caption text-medium-emphasis mb-1">Comfortable density (forms)</div>
+            <v-text-field
+              v-model="query"
+              variant="outlined"
+              density="comfortable"
+              placeholder="Search…"
+              prepend-inner-icon="search"
+              clearable
+              hide-details
+            />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-select label="Multiple Select" :items="['Option 1', 'Option 2', 'Option 3']" variant="outlined" multiple />
-          </v-col>
-          <v-col cols="12">
-            <v-textarea label="Textarea" variant="outlined" rows="4" />
+            <div class="text-caption text-medium-emphasis mb-1">Compact density (toolbar)</div>
+            <v-text-field
+              v-model="query"
+              variant="outlined"
+              density="compact"
+              placeholder="Search records…"
+              prepend-inner-icon="search"
+              clearable
+              hide-details
+            />
           </v-col>
         </v-row>
       </div>
@@ -314,26 +172,66 @@ export const Showcase: Story = {
   }),
 }
 
-export const TextVariants: Story = {
+export const SelectAndCombobox: Story = {
+  name: 'Select & Combobox',
   parameters: { controls: { disable: true } },
   render: () => ({
+    setup() {
+      const single = ref('')
+      const multi = ref<string[]>([])
+      return { single, multi }
+    },
     template: `
-      <div class="pa-6">
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Select / Combobox — unified style</h3>
         <v-row>
           <v-col cols="12" sm="6">
-            <v-text-field label="Outlined" variant="outlined" placeholder="Outlined style" />
+            <div class="text-caption text-medium-emphasis mb-1">Single select</div>
+            <v-select
+              v-model="single"
+              :items="['Active', 'Inactive', 'Pending', 'Archived']"
+              label="Status"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+            />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-text-field label="Filled" variant="filled" placeholder="Filled style" />
+            <div class="text-caption text-medium-emphasis mb-1">Multi-select with chips</div>
+            <v-select
+              v-model="multi"
+              :items="['Email', 'SMS', 'Push', 'In-app']"
+              label="Channels"
+              variant="outlined"
+              density="comfortable"
+              multiple
+              chips
+              closable-chips
+              hide-details
+            />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-text-field label="Solo" variant="solo" placeholder="Solo style" />
+            <div class="text-caption text-medium-emphasis mb-1">Select — disabled</div>
+            <v-select
+              model-value="Active"
+              :items="['Active']"
+              label="Status"
+              variant="outlined"
+              density="comfortable"
+              disabled
+              hide-details
+            />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-text-field label="Underlined" variant="underlined" placeholder="Underlined style" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field label="Plain" variant="plain" placeholder="Plain style" />
+            <div class="text-caption text-medium-emphasis mb-1">Compact (toolbar filter)</div>
+            <v-select
+              v-model="single"
+              :items="['All statuses', 'Active', 'Inactive', 'Pending']"
+              label="Status filter"
+              variant="outlined"
+              density="compact"
+              hide-details
+            />
           </v-col>
         </v-row>
       </div>
@@ -341,63 +239,162 @@ export const TextVariants: Story = {
   }),
 }
 
-export const Density: Story = {
+export const TextareaField: Story = {
+  name: 'Textarea',
   parameters: { controls: { disable: true } },
   render: () => ({
+    setup() {
+      const body = ref('')
+      return { body }
+    },
     template: `
-      <div class="pa-6">
-        <v-text-field label="Default" density="default" variant="outlined" class="mb-4" />
-        <v-text-field label="Comfortable" density="comfortable" variant="outlined" class="mb-4" />
-        <v-text-field label="Compact" density="compact" variant="outlined" />
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Textarea — same baseline</h3>
+        <v-row>
+          <v-col cols="12" sm="6">
+            <v-textarea
+              v-model="body"
+              label="Message body"
+              variant="outlined"
+              density="comfortable"
+              rows="4"
+              placeholder="Type your message here…"
+              hint="Markdown is supported"
+              persistent-hint
+            />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-textarea
+              model-value="This field is disabled."
+              label="Internal notes"
+              variant="outlined"
+              density="comfortable"
+              rows="4"
+              disabled
+              hide-details
+            />
+          </v-col>
+        </v-row>
       </div>
     `,
   }),
 }
 
 export const WithIcons: Story = {
+  name: 'With Icons',
   parameters: { controls: { disable: true } },
   render: () => ({
     template: `
-      <div class="pa-6">
-        <v-text-field label="Search" prepend-inner-icon="search" variant="outlined" placeholder="Search..." class="mb-4" />
-        <v-text-field label="Email" prepend-inner-icon="mail" variant="outlined" placeholder="your@email.com" class="mb-4" />
-        <v-text-field label="Password" type="password" prepend-inner-icon="lock" append-inner-icon="eye-off" variant="outlined" class="mb-4" />
-        <v-text-field label="Website" prepend-inner-icon="globe" append-inner-icon="external-link" variant="outlined" />
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Fields with icons</h3>
+        <v-row>
+          <v-col cols="12" sm="6">
+            <v-text-field
+              label="Email"
+              variant="outlined"
+              density="comfortable"
+              prepend-inner-icon="mail"
+              placeholder="hello@example.com"
+              hide-details
+            />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-text-field
+              label="Website"
+              variant="outlined"
+              density="comfortable"
+              prepend-inner-icon="globe"
+              append-inner-icon="external-link"
+              placeholder="https://example.com"
+              hide-details
+            />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-text-field
+              label="Password"
+              type="password"
+              variant="outlined"
+              density="comfortable"
+              prepend-inner-icon="lock"
+              append-inner-icon="eye-off"
+              hide-details
+            />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-text-field
+              label="Revenue"
+              variant="outlined"
+              density="comfortable"
+              prefix="$"
+              placeholder="0.00"
+              hide-details
+            />
+          </v-col>
+        </v-row>
       </div>
     `,
   }),
 }
 
-export const States: Story = {
+export const FormLayout: Story = {
+  name: 'Form Layout Example',
   parameters: { controls: { disable: true } },
   render: () => ({
+    setup() {
+      const form = ref({ name: '', email: '', timezone: '', notes: '' })
+      return { form }
+    },
     template: `
-      <div class="pa-6">
-        <v-text-field label="Normal" variant="outlined" placeholder="Normal state" class="mb-4" />
-        <v-text-field label="Disabled" variant="outlined" disabled placeholder="Disabled state" class="mb-4" />
-        <v-text-field label="Read-only" variant="outlined" readonly value="Read-only text" class="mb-4" />
-        <v-text-field label="Error" variant="outlined" error-messages="This field is required" class="mb-4" />
-      </div>
-    `,
-  }),
-}
-
-export const SelectAndAutocomplete: Story = {
-  parameters: { controls: { disable: true } },
-  render: () => ({
-    template: `
-      <div class="pa-6">
-        <h3 class="text-subtitle2 mb-2">Single Select</h3>
-        <v-select label="Choose one" :items="['Apple', 'Banana', 'Cherry', 'Date']" variant="outlined" class="mb-6" />
-
-        <h3 class="text-subtitle2 mb-2">Multiple Select</h3>
-        <v-select label="Choose multiple" :items="['Red', 'Green', 'Blue', 'Yellow']" variant="outlined" multiple class="mb-6" />
-
-        <h3 class="text-subtitle2 mb-2">Autocomplete</h3>
-        <v-autocomplete label="Search countries" :items="['USA', 'UK', 'Canada', 'Australia']" variant="outlined" class="mb-6" />
-
-        <h3 class="text-subtitle2 mb-2">Textarea</h3>
-        <v-textarea label="Enter description" variant="outlined" rows="4" />
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Typical form layout</h3>
+        <v-card flat border rounded="lg" class="pa-6" max-width="620">
+          <div class="settings-grid mb-4">
+            <div class="settings-field--full">
+              <v-text-field
+                v-model="form.name"
+                label="Full name"
+                variant="outlined"
+                density="comfortable"
+                prepend-inner-icon="user"
+                hide-details
+              />
+            </div>
+            <div>
+              <v-text-field
+                v-model="form.email"
+                label="Email"
+                variant="outlined"
+                density="comfortable"
+                prepend-inner-icon="mail"
+                hide-details
+              />
+            </div>
+            <div>
+              <v-select
+                v-model="form.timezone"
+                :items="['UTC-8 (PST)', 'UTC-5 (EST)', 'UTC+0 (GMT)', 'UTC+5:30 (IST)']"
+                label="Timezone"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+              />
+            </div>
+            <div class="settings-field--full">
+              <v-textarea
+                v-model="form.notes"
+                label="Notes"
+                variant="outlined"
+                density="comfortable"
+                rows="3"
+                hide-details
+              />
+            </div>
+          </div>
+          <div class="d-flex justify-end gap-2">
+            <v-btn variant="outlined" class="text-none">Cancel</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none">Save changes</v-btn>
+          </div>
+        </v-card>
       </div>
     `,
   }),

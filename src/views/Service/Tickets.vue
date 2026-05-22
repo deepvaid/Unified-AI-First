@@ -604,7 +604,7 @@ function closeActiveTicket() {
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  border-radius: 6px;
+  border-radius: 20px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -651,6 +651,9 @@ function closeActiveTicket() {
   min-height: 44px;
 }
 .tkt-search :deep(.v-field) {
+  background: rgb(var(--v-theme-surface));
+}
+.tkt-search :deep(.v-field:hover) {
   background: rgb(var(--v-theme-surface));
 }
 .tkt-view-toggle {

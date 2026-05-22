@@ -60,7 +60,6 @@ const filteredItems = computed(() =>
             density="compact"
             variant="outlined"
             hide-details
-            class="filter-select"
           />
         </template>
       </MpDataTableToolbar>

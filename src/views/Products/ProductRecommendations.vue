@@ -73,7 +73,6 @@ const filteredRules = computed(() => {
             density="compact"
             variant="outlined"
             hide-details
-            class="filter-select"
           />
           <v-select
             v-model="filters.placement"
@@ -85,7 +84,6 @@ const filteredRules = computed(() => {
             density="compact"
             variant="outlined"
             hide-details
-            class="filter-select"
           />
         </template>
       </MpDataTableToolbar>

@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -105,7 +106,6 @@ const statusColor = (s: string) => s === 'In Stock' ? 'success' : s === 'Low Sto
               closable-chips
               density="compact"
               variant="outlined"
-              rounded="lg"
               hide-details
               class="mb-3"
             />
@@ -118,7 +118,6 @@ const statusColor = (s: string) => s === 'In Stock' ? 'success' : s === 'Low Sto
               closable-chips
               density="compact"
               variant="outlined"
-              rounded="lg"
               hide-details
               class="mb-3"
             />
@@ -131,7 +130,6 @@ const statusColor = (s: string) => s === 'In Stock' ? 'success' : s === 'Low Sto
               closable-chips
               density="compact"
               variant="outlined"
-              rounded="lg"
               hide-details
               class="mb-2"
             />
@@ -208,6 +206,16 @@ const statusColor = (s: string) => s === 'In Stock' ? 'success' : s === 'Low Sto
               <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
             </v-list>
           </v-menu>
+        </template>
+        <template #no-data>
+          <MpEmptyState
+            icon="package"
+            :title="search ? 'No products match your search' : 'No products found'"
+            :description="search ? 'Try a different search term.' : 'Add products to your catalogue to get started.'"
+            action-label="Add Product"
+            action-icon="plus"
+            class="py-10"
+          />
         </template>
       </v-data-table>
     </v-card>

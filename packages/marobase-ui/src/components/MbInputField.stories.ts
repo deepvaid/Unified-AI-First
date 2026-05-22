@@ -81,3 +81,61 @@ export const Focus: Story = {
     state: 'focus'
   }
 };
+
+export const AllStates: Story = {
+  name: 'All States',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    components: { MbInputField },
+    template: `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;padding:24px;background:var(--mb-color-background,#f9fafb)">
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;margin-bottom:8px">Default</div>
+          <MbInputField label="Search" placeholder="Search records…" trailing-icon="none" :width="300" state="default" />
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;margin-bottom:8px">Focus</div>
+          <MbInputField label="Search" placeholder="Search records…" trailing-icon="none" :width="300" state="focus" />
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;margin-bottom:8px">Disabled</div>
+          <MbInputField label="Search" model-value="Locked content" trailing-icon="none" :width="300" state="disabled" />
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;margin-bottom:8px">Error</div>
+          <MbInputField label="Email" placeholder="you@example.com" trailing-icon="none" :width="300" state="error" error-message="Please enter a valid email" />
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;margin-bottom:8px">With hint</div>
+          <MbInputField label="Subdomain" placeholder="my-store" trailing-icon="none" :width="300" state="default" hint="Appears in your store URL" />
+        </div>
+      </div>
+    `
+  })
+};
+
+export const SearchVariant: Story = {
+  name: 'Search (toolbar)',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    components: { MbInputField },
+    setup() {
+      const query = ref('');
+      return { query };
+    },
+    template: `
+      <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;max-width:400px">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:8px">Toolbar search (as used in MpDataTableToolbar)</div>
+        <MbInputField
+          :model-value="query"
+          label="Search"
+          placeholder="Search records…"
+          trailing-icon="none"
+          :width="320"
+          state="default"
+          @update:modelValue="query = $event"
+        />
+      </div>
+    `
+  })
+};

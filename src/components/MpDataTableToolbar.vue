@@ -323,9 +323,6 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   --mb-btn-bg-outline-loading: rgb(var(--v-theme-surface));
 }
 
-:deep(.mp-toolbar-search .mb-if__control) {
-  background: rgb(var(--v-theme-surface));
-}
 
 @media (max-width: 959px) {
   .mp-toolbar-row {

@@ -14,18 +14,18 @@ html.theme-light {
   --mb-idd-required-line-height: 20px;
   --mb-idd-required-color: #e54d2e;
 
-  --mb-idd-control-height: 48px;
+  --mb-idd-control-height: 40px;
   --mb-idd-control-gap: 12px;
-  --mb-idd-control-padding-x: 16px;
-  --mb-idd-control-padding-y: 12px;
-  --mb-idd-radius: 6px;
+  --mb-idd-control-padding-x: 12px;
+  --mb-idd-control-padding-y: 8px;
+  --mb-idd-radius: 10px;
   --mb-idd-bg: #ffffff;
   --mb-idd-bg-disabled: #f5f7f9;
-  --mb-idd-border: #c9bfa6;
-  --mb-idd-border-hover: #a39880;
-  --mb-idd-border-focus: #1ab7ea;
+  --mb-idd-border: rgba(0, 0, 0, 0.2);
+  --mb-idd-border-hover: #1A56DB;
+  --mb-idd-border-focus: #1A56DB;
   --mb-idd-border-error: #e54d2e;
-  --mb-idd-focus-ring: 0 0 0 3px #a8ddf1;
+  --mb-idd-focus-ring: none;
 
   --mb-idd-value-size: 16px;
   --mb-idd-value-line-height: 24px;
@@ -66,7 +66,11 @@ html.v-theme--dark {
   --mb-idd-border-hover: #5678b8;
   --mb-idd-border-focus: #89a8ff;
   --mb-idd-border-error: #ff8f7a;
-  --mb-idd-focus-ring: 0 0 0 3px #304d84;
+  --mb-idd-focus-ring: none;
+  --mb-idd-radius: 10px;
+  --mb-idd-control-height: 40px;
+  --mb-idd-control-padding-x: 12px;
+  --mb-idd-control-padding-y: 8px;
 
   --mb-idd-value-color: #e5eaf2;
   --mb-idd-addon-color: #97a3b5;

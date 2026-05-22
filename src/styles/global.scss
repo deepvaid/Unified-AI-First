@@ -154,10 +154,6 @@ a {
     background-color $mp-transition-fast;
 }
 
-.v-field--variant-outlined {
-  background: rgb(var(--v-theme-surface));
-}
-
 /* VCard variant="flat" is transparent in Vuetify 3. Force solid surface
    background on all cards/sheets/steppers/MbCard inside overlays/dialogs.
    Both direct-child (>) and descendant selectors for maximum coverage. */
@@ -170,10 +166,6 @@ a {
 .v-overlay__content .v-stepper,
 .v-overlay__content .mb-card {
   background: rgb(var(--v-theme-surface)) !important;
-}
-
-.v-field--focused {
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.12);
 }
 
 .v-field--variant-outlined .v-field__outline {
@@ -268,33 +260,24 @@ a {
 .gap-6 { gap: 24px; }
 
 /* ─── Sidebar Nav States ────────────────────────────────────── */
+/* Active styling is owned by AppSidebar.vue tokens (--sidebar-active-bg/text).
+   Only suppress the Vuetify overlay ripple to avoid double highlight. */
 .mp-sidebar .v-list-item--active > .v-list-item__overlay {
   opacity: 0 !important;
 }
-.mp-sidebar .v-list-item--active {
-  background: rgba(var(--v-theme-primary), 0.24) !important;
-  border-radius: 16px;
-}
-.mp-sidebar .v-list-group__items .v-list-item--active {
-  background: rgba(var(--v-theme-primary), 0.2) !important;
-  border-radius: 16px;
-}
-.mp-sidebar .v-list-group__items .v-list-item--active .v-list-item-title {
-  color: rgb(var(--v-theme-secondary)) !important;
-  font-weight: 600 !important;
-}
 
-/* ─── Table Action Buttons (reveal on hover) ────────────────── */
+/* ─── Table Action Buttons (reveal on hover / focus / touch) ── */
 .action-btns {
   opacity: 0;
   transition: opacity $mp-transition-fast;
 }
-tr:hover .action-btns {
-  opacity: 1;
-}
-
+tr:hover .action-btns,
 tr:focus-within .action-btns {
   opacity: 1;
+}
+/* Always show on touch screens where hover is unavailable */
+@media (hover: none) {
+  .action-btns { opacity: 1; }
 }
 
 /* ─── Card Hover Lift (humane, subtle) ───────────────────────── */
@@ -368,13 +351,26 @@ tr:focus-within .action-btns {
   border-bottom-color: var(--mp-border-table-row);
 }
 
-.v-table .v-table__wrapper > table > thead > tr > th {
+.v-table .v-table__wrapper > table > thead > tr > th,
+.v-data-table .v-table__wrapper > table > thead > tr > th.v-data-table__th {
   border-bottom-color: var(--mp-border-table-header);
-  color: rgb(var(--v-theme-on-surface-variant));
-  font-size: 11.5px;
-  font-weight: var(--mp-typography-fontWeight-semibold);
-  letter-spacing: 1.2px;
+  color: rgb(var(--v-theme-on-surface-variant)) !important;
+  font-size: 11px !important;
+  line-height: 1.05 !important;
+  font-weight: var(--mp-typography-fontWeight-semibold) !important;
+  letter-spacing: 0.25px !important;
   text-transform: uppercase;
+  padding-block: 5px !important;
+}
+
+.v-table .v-table__wrapper > table > thead > tr > th .v-data-table-header__content,
+.v-table .v-table__wrapper > table > thead > tr > th .v-data-table-header__content span,
+.v-data-table .v-table__wrapper > table > thead > tr > th.v-data-table__th .v-data-table-header__content,
+.v-data-table .v-table__wrapper > table > thead > tr > th.v-data-table__th .v-data-table-header__content span {
+  font-size: inherit !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+  font-weight: inherit !important;
 }
 
 /* Dialog/modal scrim — Vuetify default 0.32 is too light; use 0.56 for legible contrast */

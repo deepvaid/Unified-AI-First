@@ -1,0 +1,212 @@
+/* ═══════════════════════════════════════════════════════════════
+   Global Outlined Field Baseline
+   ───────────────────────────────────────────────────────────────
+   Applies to ALL variant="outlined" Vuetify controls app-wide
+   (v-text-field, v-select, v-textarea, v-autocomplete, v-combobox,
+   date inputs, and anything else that renders .v-field--variant-outlined).
+
+   Settings pages inherit this unchanged.
+   Individual components may add scoped specificity overrides,
+   but must NOT introduce a second visual field style.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Field shape + subtle fill ─────────────────────────────── */
+.v-application .v-field--variant-outlined {
+  border-radius: 10px;
+  font-size: 14px;
+  background: color-mix(in oklch, var(--surface-2) 55%, transparent);
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.v-application .v-field--variant-outlined:hover {
+  background: color-mix(in oklch, var(--surface-2) 72%, transparent);
+}
+
+/* ── Input area — consistent height across all densities ────── */
+.v-application .v-field--variant-outlined .v-field__field {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.v-application .v-field--variant-outlined .v-field__input {
+  min-height: 40px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* ── Placeholder ────────────────────────────────────────────── */
+.v-application .v-field--variant-outlined .v-field__input::placeholder {
+  color: var(--muted);
+  opacity: 0.65;
+}
+
+/* ── Resting border — dark-mode-aware via --hairline alias ──── */
+.v-application .v-field--variant-outlined .v-field__outline__start,
+.v-application .v-field--variant-outlined .v-field__outline__end,
+.v-application .v-field--variant-outlined .v-field__outline__notch::before,
+.v-application .v-field--variant-outlined .v-field__outline__notch::after {
+  border-color: var(--hairline) !important;
+}
+
+.v-application .v-field--variant-outlined .v-field__outline {
+  opacity: 1;
+}
+
+/* ── Focused border — primary color, no thickness bump, no glow */
+.v-application .v-field--variant-outlined.v-field--focused {
+  box-shadow: none;
+}
+
+.v-application .v-field--variant-outlined.v-field--focused .v-field__outline__start,
+.v-application .v-field--variant-outlined.v-field--focused .v-field__outline__end,
+.v-application .v-field--variant-outlined.v-field--focused .v-field__outline__notch::before,
+.v-application .v-field--variant-outlined.v-field--focused .v-field__outline__notch::after {
+  border-color: rgb(var(--v-theme-primary)) !important;
+}
+
+.v-application .v-field--variant-outlined.v-field--focused .v-field__outline {
+  --v-field-border-width: 1px;
+}
+
+/* ── Error border ───────────────────────────────────────────── */
+.v-application .v-field--variant-outlined.v-field--error .v-field__outline__start,
+.v-application .v-field--variant-outlined.v-field--error .v-field__outline__end,
+.v-application .v-field--variant-outlined.v-field--error .v-field__outline__notch::before,
+.v-application .v-field--variant-outlined.v-field--error .v-field__outline__notch::after {
+  border-color: rgb(var(--v-theme-error)) !important;
+}
+
+/* ── Disabled — full opacity, muted text ────────────────────── */
+.v-application .v-field--disabled {
+  opacity: 1;
+}
+
+.v-application .v-field--disabled .v-field__input {
+  color: var(--muted);
+}
+
+/* ── Details / helper / error text ─────────────────────────── */
+.v-application .v-messages__message {
+  font-size: 12px;
+  letter-spacing: 0.01em;
+}
+
+/* ── Prepend / append inner icon ────────────────────────────── */
+.v-application .v-field--variant-outlined .v-field__prepend-inner,
+.v-application .v-field--variant-outlined .v-field__append-inner {
+  padding-top: 0;
+  align-items: center;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   Settings Page Layout
+   Page-level layout utilities for Settings module.
+   Field chrome is inherited from the global baseline above.
+   ═══════════════════════════════════════════════════════════════ */
+
+.settings-page {
+  max-width: 840px;
+  padding: 20px 32px 96px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px 16px;
+}
+
+.settings-grid--thirds {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.settings-field--full {
+  grid-column: 1 / -1;
+}
+
+.settings-field__label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
+
+.settings-page .v-btn {
+  text-transform: none;
+}
+
+.settings-page .v-btn--variant-flat {
+  font-weight: 600;
+}
+
+.settings-page .v-table {
+  background: transparent;
+}
+
+.settings-page .v-table__wrapper {
+  overflow-x: auto;
+}
+
+.settings-page .v-table th {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.settings-page .v-table td {
+  font-size: 13px;
+}
+
+.settings-page .section-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.settings-page .stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-save-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 0 2px;
+  margin-top: 8px;
+  background: linear-gradient(180deg, transparent 0, rgb(var(--v-theme-background)) 24px);
+  z-index: 2;
+}
+
+@media (max-width: 720px) {
+  .settings-page {
+    padding: 16px 0 88px 0;
+  }
+
+  .settings-grid,
+  .settings-grid--thirds {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-save-bar {
+    justify-content: stretch;
+  }
+
+  .settings-save-bar .v-btn {
+    flex: 1 1 auto;
+  }
+}

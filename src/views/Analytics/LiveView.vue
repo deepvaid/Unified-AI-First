@@ -410,7 +410,6 @@ const recentActivity = computed(() => [
           hide-details
           placeholder="Search location"
           prepend-inner-icon="search"
-          rounded="lg"
           class="live-view__search"
         />
         <v-tooltip location="bottom" :text="isRefreshing ? 'Refreshing…' : `Refreshing in ${secondsLeft}s · click to refresh now`">
