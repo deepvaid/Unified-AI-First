@@ -8,7 +8,7 @@ export interface Ticket {
   customer: string
   customerEmail: string
   avatar: string
-  status: 'Open' | 'In Progress' | 'Awaiting Reply' | 'Resolved'
+  status: 'Open' | 'In Progress' | 'Awaiting Reply' | 'Resolved' | 'Closed'
   priority: 'Low' | 'Normal' | 'High' | 'Urgent'
   category: string
   assignee: string
@@ -16,6 +16,16 @@ export interface Ticket {
   updatedAt: string
   tags: string[]
   thread: { author: string; avatar: string; role: 'customer' | 'agent'; body: string; time: string }[]
+}
+
+export interface NewTicketPayload {
+  customer: string
+  email: string
+  subject: string
+  category: string
+  priority: Ticket['priority']
+  description: string
+  assignee: string
 }
 
 const customerNames = ['James Anderson', 'Sofia Thompson', 'Liam Martinez', 'Emma Johnson', 'Noah Williams', 'Olivia Brown', 'Ethan Davis', 'Ava Miller', 'Mason Wilson', 'Isabella Moore']
@@ -43,6 +53,8 @@ const subjects = [
 ]
 const categories = ['Shipping', 'Returns & Refunds', 'Account', 'Product', 'Billing', 'Technical']
 const assignees = ['Sarah Connor', 'Mike Zhang', 'Priya Sharma', 'Tom Brady', 'Unassigned']
+
+let nextId = subjects.length + 1
 
 export const useTicketsStore = defineStore('tickets', () => {
   const tickets = ref<Ticket[]>(subjects.map((subject, i): Ticket => {
@@ -114,5 +126,62 @@ export const useTicketsStore = defineStore('tickets', () => {
     }
   }
 
-  return { tickets, activeTicketId, setActive, replyToTicket }
+  function createTicket(payload: NewTicketPayload): Ticket {
+    const parts = payload.customer.trim().split(' ')
+    const first = parts[0] ?? 'U'
+    const last = parts[1] ?? first
+    const id = nextId++
+    const ticket: Ticket = {
+      id,
+      number: `TKT-${String(10000 + id - 1).padStart(5, '0')}`,
+      subject: payload.subject,
+      customer: payload.customer,
+      customerEmail: payload.email,
+      avatar: `${first[0]?.toUpperCase() ?? '?'}${last[0]?.toUpperCase() ?? '?'}`,
+      status: 'Open',
+      priority: payload.priority,
+      category: payload.category,
+      assignee: payload.assignee === 'Auto-assign' ? assignees[0]! : payload.assignee,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      tags: [],
+      thread: payload.description
+        ? [{
+            author: payload.customer,
+            avatar: `${first[0]?.toUpperCase() ?? '?'}${last[0]?.toUpperCase() ?? '?'}`,
+            role: 'customer',
+            body: payload.description,
+            time: new Date().toLocaleString(),
+          }]
+        : [],
+    }
+    tickets.value.unshift(ticket)
+    activeTicketId.value = id
+    return ticket
+  }
+
+  function resolveTicket(ticketId: number) {
+    const ticket = tickets.value.find(t => t.id === ticketId)
+    if (ticket) {
+      ticket.status = 'Resolved'
+      ticket.updatedAt = new Date().toISOString()
+      ticket.thread.push({
+        author: 'Sarah Connor',
+        avatar: 'SC',
+        role: 'agent',
+        body: 'This ticket has been marked as resolved. Please reach out if you need further assistance.',
+        time: new Date().toLocaleString(),
+      })
+    }
+  }
+
+  function closeTicket(ticketId: number) {
+    const ticket = tickets.value.find(t => t.id === ticketId)
+    if (ticket) {
+      ticket.status = 'Closed'
+      ticket.updatedAt = new Date().toISOString()
+    }
+  }
+
+  return { tickets, activeTicketId, setActive, replyToTicket, createTicket, resolveTicket, closeTicket }
 })
