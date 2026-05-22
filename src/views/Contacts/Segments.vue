@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useContactsStore } from '@/stores/useContacts'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const store = useContactsStore()
 const search = ref('')
@@ -26,7 +27,7 @@ const headers = [
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="All Segments"
@@ -54,6 +55,14 @@ const headers = [
               <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
             </v-list>
           </v-menu>
+        </template>
+
+        <template v-slot:no-data>
+          <MpEmptyState
+            icon="filter"
+            title="No segments yet"
+            description="Build dynamic segments to group contacts by behaviour, attributes, or lifecycle stage."
+          />
         </template>
       </v-data-table>
     </v-card>

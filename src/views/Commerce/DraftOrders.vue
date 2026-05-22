@@ -120,7 +120,7 @@ const statusColor = (s: string) => ({Open:'primary','Invoice Sent':'success'})[s
     </MpPageHeader>
 
     <!-- Table Card -->
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="All Draft Orders"
@@ -203,7 +203,7 @@ const statusColor = (s: string) => ({Open:'primary','Invoice Sent':'success'})[s
     </v-card>
 
     <!-- ── Create Draft Order Drawer (3-step) ────────────────────── -->
-    <v-navigation-drawer v-model="createDrawer" location="right" temporary :width="560" elevation="16">
+    <v-navigation-drawer v-model="createDrawer" location="right" temporary :width="560" elevation="4">
       <div class="d-flex flex-column h-100">
         <!-- Drawer Header -->
         <div class="pa-5 border-b d-flex align-center justify-space-between" style="flex-shrink:0;">
@@ -279,7 +279,7 @@ const statusColor = (s: string) => ({Open:'primary','Invoice Sent':'success'})[s
           <v-radio-group v-model="draft.shippingMethod" density="compact" class="mb-4">
             <v-card v-for="opt in [{val:'Standard',label:'Standard Shipping',eta:'5–7 business days',price:9.99},{val:'Express',label:'Express Shipping',eta:'2–3 business days',price:24.99},{val:'Overnight',label:'Overnight',eta:'Next business day',price:49.99},{val:'Free',label:'Free Shipping',eta:'7–10 business days',price:0}]"
               :key="opt.val" :variant="draft.shippingMethod===opt.val?'tonal':'outlined'" :color="draft.shippingMethod===opt.val?'primary':'default'"
-              rounded="xl" class="pa-3 mb-2 cursor-pointer" @click="draft.shippingMethod=opt.val">
+              rounded="lg" class="pa-3 mb-2 cursor-pointer" @click="draft.shippingMethod=opt.val">
               <div class="d-flex align-center gap-3">
                 <v-radio :value="opt.val" hide-details density="compact" color="primary"></v-radio>
                 <div class="flex-grow-1">
@@ -303,7 +303,7 @@ const statusColor = (s: string) => ({Open:'primary','Invoice Sent':'success'})[s
         <!-- Step 3: Review ─────────────────────────────────────── -->
         <div v-else class="pa-5 flex-grow-1 overflow-y-auto">
           <div class="text-subtitle-2 font-weight-bold mb-4 text-uppercase text-medium-emphasis">Order Summary</div>
-          <v-card variant="flat" border rounded="xl" class="pa-4 mb-4">
+          <v-card variant="flat" border rounded="lg" class="pa-4 mb-4">
             <div class="d-flex justify-space-between text-body-2 mb-2"><span class="text-medium-emphasis">Customer</span><span class="font-weight-medium">{{ draft.customer || '—' }}</span></div>
             <div class="d-flex justify-space-between text-body-2 mb-2"><span class="text-medium-emphasis">Email</span><span>{{ draft.customerEmail || '—' }}</span></div>
             <div class="d-flex justify-space-between text-body-2"><span class="text-medium-emphasis">Shipping</span><span>{{ draft.shippingMethod }}</span></div>

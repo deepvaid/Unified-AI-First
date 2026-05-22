@@ -251,6 +251,16 @@ watch(activeDashboardId, () => {
 })
 
 const activeFilters = computed<DashboardFilterState>(() => activeDashboard.value?.filters ?? defaultDashboardFilters)
+
+const activeFilterCount = computed(() => {
+  const f = activeFilters.value
+  const d = defaultDashboardFilters
+  let count = 0
+  if (f.rangePreset !== d.rangePreset) count++
+  if (f.comparison !== d.comparison) count++
+  if (f.grain !== d.grain) count++
+  return count
+})
 const selectedPresetOption = computed(() =>
   datePresetOptions.find((option) => option.value === activeFilters.value.rangePreset) ?? datePresetOptions[3],
 )
@@ -438,7 +448,7 @@ function toggleFavoriteActive() {
             :aria-label="activeDashboard?.favorite ? 'Remove from favorites' : 'Add to favorites'"
             @click="toggleFavoriteActive"
           >
-            <v-icon size="16">{{ activeDashboard?.favorite ? 'star' : 'star' }}</v-icon>
+            <v-icon size="16">star</v-icon>
           </button>
 
           <v-menu location="bottom start" offset="8" :close-on-content-click="false">
@@ -736,7 +746,11 @@ function toggleFavoriteActive() {
                 class="text-none dashboard-filter-btn--pill"
               >
                 Filters
-                <span class="dashboard-filter-btn__badge" aria-hidden="true">2</span>
+                <span
+                  v-if="activeFilterCount > 0"
+                  class="dashboard-filter-btn__badge"
+                  aria-label="`${activeFilterCount} active filters`"
+                >{{ activeFilterCount }}</span>
               </v-btn>
             </template>
             <v-card width="360" rounded="lg" flat border class="pa-3">
@@ -821,7 +835,7 @@ function toggleFavoriteActive() {
     />
 
     <v-dialog v-model="expandedWidgetOpen" max-width="1120" width="calc(100vw - 32px)">
-      <v-card v-if="expandedWidget" rounded="xl" flat border color="surface" class="dashboard-widget-expand">
+      <v-card v-if="expandedWidget" rounded="lg" flat border color="surface" class="dashboard-widget-expand">
         <div class="dashboard-widget-expand__header">
           <div class="dashboard-widget-expand__copy">
             <div class="dashboard-widget-expand__eyebrow">Expanded widget</div>
@@ -848,7 +862,7 @@ function toggleFavoriteActive() {
     </v-dialog>
 
     <v-dialog :model-value="!!confirmAction" max-width="440" persistent @update:model-value="confirmAction = null">
-      <v-card v-if="confirmAction" rounded="xl" color="surface">
+      <v-card v-if="confirmAction" rounded="lg" color="surface">
         <v-card-title class="pa-5 text-h6 font-weight-bold">{{ confirmAction.title }}</v-card-title>
         <v-card-text class="pb-2 text-body-2 text-medium-emphasis">{{ confirmAction.body }}</v-card-text>
         <v-card-actions class="pa-4">
@@ -999,6 +1013,15 @@ function toggleFavoriteActive() {
 
 .dashboard-page-header__fav--active {
   color: #f59e0b;
+}
+
+.dashboard-page-header__fav--active :deep(.v-icon svg) {
+  fill: currentColor;
+}
+
+.dashboard-page-header__fav:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(var(--v-theme-primary));
 }
 
 .dashboard-title-switcher {

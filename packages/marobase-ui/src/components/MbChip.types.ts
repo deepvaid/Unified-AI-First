@@ -1,4 +1,4 @@
-export type MbChipTone = 'neutral' | 'brand' | 'danger';
+export type MbChipTone = 'neutral' | 'brand' | 'danger' | 'success' | 'warning';
 
 export interface MbChipProps {
   label?: string;

@@ -43,7 +43,7 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v10'
+const STORAGE_KEY = 'mp.dashboard-hub.v11'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -234,11 +234,12 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
   }
 
   if (account.subscriptions.includes('service')) {
+    // Start after commerce email row (y=27, h=7 → row ends at y=34)
     widgets.push(
-      makeWidget('Open Tickets', 'service_open_tickets', 'kpi', createLayout(0, 25, 3, 4)),
-      makeWidget('Unresolved Tickets', 'service_unresolved_tickets', 'kpi', createLayout(3, 25, 3, 4)),
-      makeWidget('Ticket Volume', 'service_ticket_volume', 'timeseries', createLayout(6, 25, 6, 7)),
-      makeWidget('Tickets by Channel', 'service_tickets_by_channel', 'bar', createLayout(0, 29, 6, 7)),
+      makeWidget('Open Tickets', 'service_open_tickets', 'kpi', createLayout(0, 34, 3, 4)),
+      makeWidget('Unresolved Tickets', 'service_unresolved_tickets', 'kpi', createLayout(3, 34, 3, 4)),
+      makeWidget('Ticket Volume', 'service_ticket_volume', 'timeseries', createLayout(6, 34, 6, 7)),
+      makeWidget('Tickets by Channel', 'service_tickets_by_channel', 'bar', createLayout(0, 38, 6, 7)),
     )
   }
 

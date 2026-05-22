@@ -27,7 +27,7 @@ const filteredImages = () =>
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Images"
@@ -38,7 +38,7 @@ const filteredImages = () =>
       <div class="pa-4">
         <v-row>
           <v-col cols="12" sm="6" md="3" v-for="img in filteredImages()" :key="img.id">
-            <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+            <v-card variant="flat" border rounded="lg" class="overflow-hidden">
               <v-img
                 src="https://picsum.photos/300/200?random"
                 cover

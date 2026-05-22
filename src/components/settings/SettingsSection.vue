@@ -2,14 +2,20 @@
 defineProps<{
   title?: string
   description?: string
+  compact?: boolean
 }>()
 </script>
 
 <template>
-  <section class="settings-section">
-    <div v-if="title || description" class="settings-section__head">
-      <h3 v-if="title" class="settings-section__title">{{ title }}</h3>
-      <p v-if="description" class="settings-section__description">{{ description }}</p>
+  <section class="settings-section" :class="{ 'settings-section--compact': compact }">
+    <div v-if="title || description || $slots.actions" class="settings-section__head">
+      <div class="settings-section__head-left">
+        <h3 v-if="title" class="settings-section__title">{{ title }}</h3>
+        <p v-if="description" class="settings-section__description">{{ description }}</p>
+      </div>
+      <div v-if="$slots.actions" class="settings-section__head-actions">
+        <slot name="actions" />
+      </div>
     </div>
     <div class="settings-section__body">
       <slot />
@@ -19,16 +25,34 @@ defineProps<{
 
 <style scoped lang="scss">
 .settings-section {
-  padding: 0 0 28px;
-
-  &:not(:last-child) {
-    border-bottom: 1px solid var(--hairline);
-    margin-bottom: 28px;
-  }
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  padding: 20px 24px;
 }
 
 .settings-section__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.settings-section__head-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-section__head-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-section--compact {
+  padding: 16px 20px;
 }
 
 .settings-section__title {
@@ -47,5 +71,12 @@ defineProps<{
 
 .settings-section__body {
   display: block;
+}
+
+@media (max-width: 640px) {
+  .settings-section {
+    padding: 16px;
+    border-radius: 12px;
+  }
 }
 </style>

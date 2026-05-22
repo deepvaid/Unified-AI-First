@@ -32,15 +32,15 @@ function save() { saved.value = true }
       <div class="settings-grid">
         <div class="settings-field settings-field--full">
           <label class="settings-field__label">Support Email Address</label>
-          <v-text-field v-model="serviceSettings.supportEmail" variant="outlined" density="comfortable" prepend-inner-icon="mail" hide-details />
+          <v-text-field v-model="serviceSettings.supportEmail" variant="outlined" density="compact" prepend-inner-icon="mail" hide-details />
         </div>
         <div class="settings-field">
           <label class="settings-field__label">Ticket ID Prefix</label>
-          <v-text-field v-model="serviceSettings.ticketPrefix" variant="outlined" density="comfortable" placeholder="TKT-" hide-details />
+          <v-text-field v-model="serviceSettings.ticketPrefix" variant="outlined" density="compact" placeholder="TKT-" hide-details />
         </div>
         <div class="settings-field">
           <label class="settings-field__label">Default SLA (hours)</label>
-          <v-text-field v-model.number="serviceSettings.slaHours" type="number" variant="outlined" density="comfortable" hide-details />
+          <v-text-field v-model.number="serviceSettings.slaHours" type="number" variant="outlined" density="compact" hide-details />
         </div>
         <div class="settings-field">
           <label class="settings-field__label">Default Priority</label>
@@ -48,13 +48,13 @@ function save() { saved.value = true }
             v-model="serviceSettings.defaultPriority"
             :items="['Low','Normal','High','Urgent']"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
         <div class="settings-field">
           <label class="settings-field__label">Support Portal Name</label>
-          <v-text-field v-model="serviceSettings.portalName" variant="outlined" density="comfortable" hide-details />
+          <v-text-field v-model="serviceSettings.portalName" variant="outlined" density="compact" hide-details />
         </div>
       </div>
 
@@ -63,7 +63,14 @@ function save() { saved.value = true }
           <div class="toggle-row__title">Auto-Assign Tickets</div>
           <div class="toggle-row__sub">Automatically assign new tickets to available agents.</div>
         </div>
-        <v-switch v-model="serviceSettings.autoAssign" color="primary" hide-details density="compact" inset />
+        <v-switch
+          v-model="serviceSettings.autoAssign"
+          color="primary"
+          hide-details
+          density="compact"
+          inset
+          aria-label="Toggle automatic ticket assignment"
+        />
       </div>
     </SettingsSection>
 
@@ -96,28 +103,8 @@ function save() { saved.value = true }
 </template>
 
 <style scoped lang="scss">
-.settings-page {
-  max-width: 880px;
-  padding: 24px 32px 96px 0;
-}
-
 .settings-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 16px 20px;
   margin-bottom: 20px;
-}
-
-.settings-field--full {
-  grid-column: 1 / -1;
-}
-
-.settings-field__label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
 }
 
 .toggle-row {
@@ -128,7 +115,7 @@ function save() { saved.value = true }
   padding: 14px 16px;
   border: 1px solid var(--hairline);
   border-radius: 10px;
-  background: var(--surface-1);
+  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
 }
 
 .toggle-row__title {
@@ -163,7 +150,7 @@ function save() { saved.value = true }
   padding: 12px 16px;
   border: 1px solid var(--hairline);
   border-radius: 10px;
-  background: var(--surface-1);
+  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
 }
 
 .template-card__name {
@@ -187,20 +174,23 @@ function save() { saved.value = true }
   gap: 4px;
 }
 
-.settings-save-bar {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 14px 0 0;
-  margin-top: 24px;
-  background: linear-gradient(180deg, transparent 0, var(--surface-1) 24px);
-}
+@media (max-width: 640px) {
+  .toggle-row,
+  .template-card {
+    align-items: flex-start;
+  }
 
-@media (max-width: 720px) {
-  .settings-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .template-card {
+    flex-direction: column;
+  }
+
+  .template-card__preview {
+    max-width: none;
+    white-space: normal;
+  }
+
+  .template-card__actions {
+    align-self: flex-end;
   }
 }
 </style>

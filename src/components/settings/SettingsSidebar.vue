@@ -33,6 +33,7 @@ function routeTo(item: SettingsItem) {
 
 <template>
   <aside class="settings-sidebar" aria-label="Settings navigation">
+    <div class="settings-sidebar__title">Settings</div>
     <div class="settings-sidebar__search">
       <v-icon size="16" class="settings-sidebar__search-icon">search</v-icon>
       <input
@@ -57,6 +58,7 @@ function routeTo(item: SettingsItem) {
           :to="routeTo(item)"
           class="settings-sidebar__item"
           :class="{ 'settings-sidebar__item--active': isActive(item) }"
+          :aria-current="isActive(item) ? 'page' : undefined"
         >
           {{ item.label }}
         </router-link>
@@ -71,10 +73,20 @@ function routeTo(item: SettingsItem) {
   width: 260px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 8px 24px 0;
+  gap: 10px;
+  padding: 20px 12px 16px 12px;
   border-right: 1px solid var(--hairline);
   align-self: stretch;
+  min-height: 0;
+  background: var(--surface-1);
+}
+
+.settings-sidebar__title {
+  padding: 0 10px 2px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
 }
 
 .settings-sidebar__search {
@@ -85,14 +97,14 @@ function routeTo(item: SettingsItem) {
   padding: 0 10px;
   height: 34px;
   border: 1px solid var(--hairline);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface-1);
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .settings-sidebar__search:focus-within {
-  border-color: color-mix(in oklch, rgb(var(--v-theme-primary)) 40%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in oklch, rgb(var(--v-theme-primary)) 12%, transparent);
+  border-color: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.15);
 }
 
 .settings-sidebar__search-icon {
@@ -116,6 +128,8 @@ function routeTo(item: SettingsItem) {
 }
 
 .settings-sidebar__nav {
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -154,6 +168,11 @@ function routeTo(item: SettingsItem) {
   background: var(--surface-2);
 }
 
+.settings-sidebar__item:focus-visible {
+  outline: 2px solid color-mix(in oklch, rgb(var(--v-theme-primary)) 42%, transparent);
+  outline-offset: 2px;
+}
+
 .settings-sidebar__item--active {
   background: var(--surface-2);
   color: rgb(var(--v-theme-primary));
@@ -176,5 +195,20 @@ function routeTo(item: SettingsItem) {
   font-size: 12.5px;
   color: var(--muted);
   text-align: center;
+}
+
+@media (max-width: 900px) {
+  .settings-sidebar {
+    width: 100%;
+    max-height: 320px;
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-sidebar {
+    padding: 16px 12px 12px;
+  }
 }
 </style>

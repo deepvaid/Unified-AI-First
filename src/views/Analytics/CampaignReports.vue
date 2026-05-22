@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const store = useCampaignsStore()
 const search = ref('')
@@ -47,7 +49,7 @@ const filteredCampaigns = computed(() =>
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="All Campaigns"
@@ -78,7 +80,15 @@ const filteredCampaigns = computed(() =>
       </MpDataTableToolbar>
       <v-data-table :headers="headers" :items="filteredCampaigns" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.status="{ item }">
-          <v-chip :color="item.status === 'Sent' ? 'success' : 'warning'" size="small" variant="tonal">{{ item.status }}</v-chip>
+          <MpStatusChip :status="item.status" type="campaign" size="x-small" />
+        </template>
+        <template #no-data>
+          <MpEmptyState
+            icon="bar-chart-2"
+            :title="search || filterStatus.length ? 'No campaigns match your filters' : 'No campaigns yet'"
+            :description="search || filterStatus.length ? 'Try a different search or clear filters.' : 'Campaigns will appear here once sent.'"
+            class="py-10"
+          />
         </template>
       </v-data-table>
     </v-card>

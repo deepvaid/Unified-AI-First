@@ -6,6 +6,7 @@ import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const store = useCampaignsStore()
 
@@ -97,7 +98,7 @@ const submitCampaign = () => {
       </v-col>
     </v-row>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 bg-surface d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 bg-surface d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Campaigns"
@@ -188,8 +189,19 @@ const submitCampaign = () => {
           <div class="action-btns d-flex justify-end pr-2 gap-1">
             <v-btn icon="bar-chart-2" variant="text" size="small" color="primary"></v-btn>
             <v-btn icon="copy" variant="text" size="small" color="medium-emphasis"></v-btn>
-            <v-btn icon="more-vertical" variant="text" size="small" color="medium-emphasis"></v-btn>
+            <v-btn icon="more-vertical" variant="text" size="small" color="medium-emphasis" aria-label="More actions"></v-btn>
           </div>
+        </template>
+        <template #no-data>
+          <MpEmptyState
+            icon="mail"
+            :title="search ? 'No campaigns match your search' : 'No campaigns yet'"
+            :description="search ? 'Try a different search term.' : 'Create your first email campaign to get started.'"
+            action-label="Create Campaign"
+            action-icon="plus"
+            class="py-10"
+            @action="creatorDrawer = true"
+          />
         </template>
       </v-data-table>
     </v-card>

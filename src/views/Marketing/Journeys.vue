@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFilterTabs from '@/components/MpFilterTabs.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const store = useCampaignsStore()
 const router = useRouter()
+const route = useRoute()
+const accountId = computed(() => route.params.accountId as string)
+
+function openBuilder(id: number) {
+  router.push({ name: 'JourneyBuilder', params: { accountId: accountId.value, id: String(id) } })
+}
 const search = ref('')
 const activeTab = ref('all')
 
@@ -28,6 +36,10 @@ const tabs = [
   { label: 'Paused', key: 'paused' },
   { label: 'Draft', key: 'draft' },
 ]
+
+const tabsWithCounts = computed(() =>
+  tabs.map(t => ({ ...t, count: tabCount(t.key) }))
+)
 
 const filteredJourneys = computed(() => {
   const journeys = store.journeys
@@ -54,25 +66,15 @@ function toggleStatus(journey: typeof store.journeys[0]) {
       :subtitle="`${store.journeys.filter(j => j.status === 'Active').length} active · ${store.journeys.reduce((a, j) => a + j.enrolled, 0).toLocaleString()} total enrolled`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">New Journey</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openBuilder(0)">New Journey</v-btn>
+      </template>
+      <template #tabs>
+        <MpFilterTabs v-model="activeTab" :tabs="tabsWithCounts" aria-label="Filter journeys by status" />
       </template>
     </MpPageHeader>
 
-    <!-- Tab Bar -->
-    <v-tabs v-model="activeTab" color="primary" density="compact" class="mb-4" height="36">
-      <v-tab v-for="tab in tabs" :key="tab.key" :value="tab.key" class="text-none font-weight-medium px-4">
-        {{ tab.label }}
-        <v-chip
-          size="x-small"
-          :color="activeTab === tab.key ? 'primary' : 'grey'"
-          :variant="activeTab === tab.key ? 'flat' : 'tonal'"
-          class="ml-2 font-weight-bold"
-        >{{ tabCount(tab.key) }}</v-chip>
-      </v-tab>
-    </v-tabs>
-
     <!-- Main Table Card -->
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Journeys"
@@ -96,7 +98,7 @@ function toggleStatus(journey: typeof store.journeys[0]) {
           <div
             class="font-weight-medium text-body-2 cursor-pointer text-primary-hover"
             style="max-width: 320px;"
-            @click="router.push(`/journeys/${item.id}/builder`)"
+            @click="openBuilder(item.id)"
           >
             {{ item.name }}
           </div>
@@ -160,7 +162,7 @@ function toggleStatus(journey: typeof store.journeys[0]) {
                   variant="text"
                   size="x-small"
                   color="medium-emphasis"
-                  @click="router.push(`/journeys/${item.id}/builder`)"
+                  @click="openBuilder(item.id)"
                 ></v-btn>
               </template>
             </v-tooltip>
@@ -186,16 +188,14 @@ function toggleStatus(journey: typeof store.journeys[0]) {
 
         <!-- Empty state -->
         <template v-slot:no-data>
-          <div class="d-flex flex-column align-center py-12">
-            <v-icon size="56" color="medium-emphasis" class="mb-4">route</v-icon>
-            <div class="text-h6 font-weight-medium mb-1">No journeys found</div>
-            <div class="text-body-2 text-medium-emphasis mb-6">
-              {{ search ? 'Try adjusting your search terms.' : 'Create your first automation journey to get started.' }}
-            </div>
-            <v-btn v-if="!search" color="primary" variant="elevated" prepend-icon="plus" class="text-none">
-              New Journey
-            </v-btn>
-          </div>
+          <MpEmptyState
+            icon="git-branch"
+            :title="search ? 'No journeys match your search' : 'No journeys yet'"
+            :description="search ? 'Try adjusting your search terms.' : 'Create your first automation journey to engage customers at the right moment.'"
+            :action-label="!search ? 'New Journey' : undefined"
+            action-icon="plus"
+            @action="openBuilder(0)"
+          />
         </template>
       </v-data-table>
     </v-card>

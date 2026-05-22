@@ -4,6 +4,7 @@ import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -101,7 +102,7 @@ const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed 
     </MpPageHeader>
 
     <!-- Table Card -->
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="All Coupons"
@@ -179,6 +180,17 @@ const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed 
             <v-tooltip text="Delete" location="top"><template v-slot:activator="{props}"><v-btn v-bind="props" icon="trash-2" variant="text" size="small" color="error"></v-btn></template></v-tooltip>
           </div>
         </template>
+
+        <template v-slot:no-data>
+          <MpEmptyState
+            icon="tag"
+            title="No coupons yet"
+            description="Create discount codes to reward loyal customers and drive repeat purchases."
+            action-label="Create Coupon"
+            action-icon="plus"
+            @action="createDialog = true; step = 1"
+          />
+        </template>
       </v-data-table>
     </v-card>
 
@@ -204,7 +216,7 @@ const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed 
           <v-row dense class="mb-4">
             <v-col v-for="t in [{val:'Percentage',icon:'percent',label:'Percentage Off'},{val:'Fixed Amount',icon:'dollar-sign',label:'Fixed $ Amount'},{val:'Free Shipping',icon:'truck',label:'Free Shipping'}]" :key="t.val" cols="4">
               <v-card @click="coupon.type=t.val" :variant="coupon.type===t.val?'tonal':'outlined'" :color="coupon.type===t.val?'primary':'default'"
-                rounded="xl" class="pa-4 text-center cursor-pointer type-card" :class="{selected:coupon.type===t.val}">
+                rounded="lg" class="pa-4 text-center cursor-pointer type-card" :class="{selected:coupon.type===t.val}">
                 <v-icon :color="coupon.type===t.val?'primary':'medium-emphasis'" size="28" class="mb-2">{{ t.icon }}</v-icon>
                 <div class="text-body-2 font-weight-medium">{{ t.label }}</div>
               </v-card>
@@ -235,19 +247,19 @@ const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed 
           <v-divider class="mb-4"></v-divider>
           <div class="text-subtitle-2 font-weight-bold mb-3">Behaviour Flags</div>
           <div class="d-flex flex-column gap-2">
-            <v-card variant="flat" border rounded="xl" class="pa-3">
+            <v-card variant="flat" border rounded="lg" class="pa-3">
               <div class="d-flex align-center justify-space-between">
                 <div><div class="text-body-2 font-weight-medium">First order only</div><div class="text-caption text-medium-emphasis">Only valid for a customer's first purchase</div></div>
                 <v-switch v-model="coupon.firstOrderOnly" color="primary" hide-details density="compact" inset></v-switch>
               </div>
             </v-card>
-            <v-card variant="flat" border rounded="xl" class="pa-3">
+            <v-card variant="flat" border rounded="lg" class="pa-3">
               <div class="d-flex align-center justify-space-between">
                 <div><div class="text-body-2 font-weight-medium">Stackable</div><div class="text-caption text-medium-emphasis">Can be combined with other discount codes</div></div>
                 <v-switch v-model="coupon.stackable" color="primary" hide-details density="compact" inset></v-switch>
               </div>
             </v-card>
-            <v-card variant="flat" border rounded="xl" class="pa-3">
+            <v-card variant="flat" border rounded="lg" class="pa-3">
               <div class="d-flex align-center justify-space-between">
                 <div><div class="text-body-2 font-weight-medium">Auto-apply at checkout</div><div class="text-caption text-medium-emphasis">Automatically apply without customer entering code</div></div>
                 <v-switch v-model="coupon.autoApply" color="primary" hide-details density="compact" inset></v-switch>
@@ -261,7 +273,7 @@ const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed 
           <div class="text-subtitle-2 font-weight-bold mb-4 text-uppercase text-medium-emphasis">Review & Confirm</div>
 
           <!-- Preview card -->
-          <v-card color="primary" variant="tonal" rounded="xl" class="pa-5 mb-5">
+          <v-card color="primary" variant="tonal" rounded="lg" class="pa-5 mb-5">
             <div class="d-flex align-center justify-space-between mb-3">
               <div class="text-h6 font-weight-bold text-primary">{{ coupon.code || 'AUTO-GENERATED' }}</div>
               <v-chip color="success" variant="flat" size="small">Active</v-chip>

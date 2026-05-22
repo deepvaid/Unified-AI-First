@@ -85,10 +85,6 @@ const invoices = [
 </template>
 
 <style scoped lang="scss">
-.settings-page {
-  max-width: 880px;
-  padding: 24px 32px 96px 0;
-}
 
 .plan-banner {
   display: flex;
@@ -99,13 +95,12 @@ const invoices = [
   padding: 20px 22px;
   border-radius: 14px;
   background: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, rgba(var(--v-theme-secondary), 0.85) 100%);
-  color: #fff;
-  margin-bottom: 28px;
+  color: rgb(var(--v-theme-on-primary));
 }
 
 .plan-banner__chip {
-  background: rgba(255, 255, 255, 0.18) !important;
-  color: #fff !important;
+  background: color-mix(in oklch, rgb(var(--v-theme-on-primary)) 18%, transparent) !important;
+  color: rgb(var(--v-theme-on-primary)) !important;
   letter-spacing: 0.05em;
   font-weight: 700;
   margin-bottom: 8px;
@@ -126,7 +121,7 @@ const invoices = [
 .plan-banner__meta {
   margin-top: 6px;
   font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.78);
+  color: color-mix(in oklch, rgb(var(--v-theme-on-primary)) 78%, transparent);
 }
 
 .plan-banner__actions {
@@ -142,7 +137,7 @@ const invoices = [
 }
 
 .plan-banner__link {
-  color: rgba(255, 255, 255, 0.85) !important;
+  color: color-mix(in oklch, rgb(var(--v-theme-on-primary)) 85%, transparent) !important;
 }
 
 .usage-grid {
@@ -155,7 +150,7 @@ const invoices = [
   padding: 14px 16px;
   border: 1px solid var(--hairline);
   border-radius: 10px;
-  background: var(--surface-1);
+  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
 }
 
 .usage-card__head {
@@ -189,7 +184,7 @@ const invoices = [
   padding: 14px 16px;
   border: 1px solid var(--hairline);
   border-radius: 10px;
-  background: var(--surface-1);
+  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
 }
 
 .payment-row__copy {
@@ -212,5 +207,21 @@ const invoices = [
   border-radius: 10px;
   overflow: hidden;
   background: var(--surface-1);
+}
+
+@media (max-width: 640px) {
+  .plan-banner__actions {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .payment-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .payment-row .v-btn {
+    width: 100%;
+  }
 }
 </style>

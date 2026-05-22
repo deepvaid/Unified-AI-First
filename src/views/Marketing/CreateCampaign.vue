@@ -121,7 +121,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
       <div style="max-width: 760px; margin: 0 auto;">
 
         <!-- Step 1: Setup -->
-        <v-card v-if="step === 1" variant="flat" border rounded="xl" class="pa-8">
+        <v-card v-if="step === 1" variant="flat" border rounded="lg" class="pa-8">
           <div class="text-h6 font-weight-bold mb-1">Campaign Setup</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Name your campaign and configure the sender details that recipients will see.</div>
           <v-divider class="mb-6"></v-divider>
@@ -176,7 +176,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
         </v-card>
 
         <!-- Step 2: Template -->
-        <v-card v-if="step === 2" variant="flat" border rounded="xl" class="pa-8">
+        <v-card v-if="step === 2" variant="flat" border rounded="lg" class="pa-8">
           <div class="text-h6 font-weight-bold mb-1">Choose a Template</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Select a pre-built layout or start from a blank canvas. You can customize everything in the editor.</div>
           <v-divider class="mb-6"></v-divider>
@@ -186,7 +186,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
                 :variant="selectedTemplate === tmpl.id ? 'elevated' : 'outlined'"
                 :border="selectedTemplate !== tmpl.id"
                 :color="selectedTemplate === tmpl.id ? 'primary' : 'surface'"
-                rounded="xl"
+                rounded="lg"
                 class="pa-5 cursor-pointer template-card"
                 :class="{ 'border-primary': selectedTemplate === tmpl.id }"
                 @click="selectedTemplate = tmpl.id"
@@ -207,7 +207,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
         </v-card>
 
         <!-- Step 3: Audience -->
-        <v-card v-if="step === 3" variant="flat" border rounded="xl" class="pa-8">
+        <v-card v-if="step === 3" variant="flat" border rounded="lg" class="pa-8">
           <div class="text-h6 font-weight-bold mb-1">Select Audience</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Choose which list or segment receives this campaign.</div>
           <v-divider class="mb-6"></v-divider>
@@ -230,7 +230,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
               </v-card>
             </v-col>
           </v-row>
-          <v-card variant="tonal" color="success" rounded="xl" class="pa-4 d-flex align-center gap-4">
+          <v-card variant="tonal" color="success" rounded="lg" class="pa-4 d-flex align-center gap-4">
             <v-icon color="success" size="32">user-check</v-icon>
             <div>
               <div class="text-h6 font-weight-bold text-success">{{ estimatedAudience }}</div>
@@ -240,12 +240,12 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
         </v-card>
 
         <!-- Step 4: Schedule -->
-        <v-card v-if="step === 4" variant="flat" border rounded="xl" class="pa-8">
+        <v-card v-if="step === 4" variant="flat" border rounded="lg" class="pa-8">
           <div class="text-h6 font-weight-bold mb-1">Schedule Sending</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Choose when to deliver this campaign to your audience.</div>
           <v-divider class="mb-6"></v-divider>
           <v-radio-group v-model="scheduleType" class="mb-6">
-            <v-card variant="outlined" rounded="xl" class="pa-4 mb-3 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
+            <v-card variant="outlined" rounded="lg" class="pa-4 mb-3 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
               <v-radio value="now" color="primary">
                 <template v-slot:label>
                   <div class="ml-2">
@@ -255,7 +255,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
                 </template>
               </v-radio>
             </v-card>
-            <v-card variant="outlined" rounded="xl" class="pa-4 cursor-pointer" @click="scheduleType = 'scheduled'">
+            <v-card variant="outlined" rounded="lg" class="pa-4 cursor-pointer" @click="scheduleType = 'scheduled'">
               <v-radio value="scheduled" color="primary">
                 <template v-slot:label>
                   <div class="ml-2">
@@ -284,7 +284,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
         </v-card>
 
         <!-- Step 5: Review & Launch -->
-        <v-card v-if="step === 5" variant="flat" border rounded="xl" class="pa-8">
+        <v-card v-if="step === 5" variant="flat" border rounded="lg" class="pa-8">
           <div class="text-h6 font-weight-bold mb-1">Review & Launch</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Double-check your configuration before launching.</div>
           <v-divider class="mb-6"></v-divider>

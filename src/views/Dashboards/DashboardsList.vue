@@ -277,7 +277,7 @@ function handleDashboardCreated(dashboardId: string) {
       </template>
     </MbPageHeader>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         v-model:hidden-columns="hiddenColumns"
@@ -490,7 +490,7 @@ function handleDashboardCreated(dashboardId: string) {
     />
 
     <v-dialog :model-value="!!confirmAction" max-width="440" persistent @update:model-value="confirmAction = null">
-      <v-card v-if="confirmAction" rounded="xl">
+      <v-card v-if="confirmAction" rounded="lg">
         <v-card-title class="pa-5 text-h6 font-weight-bold">{{ confirmAction.title }}</v-card-title>
         <v-card-text class="pb-2 text-body-2 text-medium-emphasis">{{ confirmAction.body }}</v-card-text>
         <v-card-actions class="pa-4">

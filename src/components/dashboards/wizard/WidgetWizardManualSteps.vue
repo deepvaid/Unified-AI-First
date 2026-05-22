@@ -104,7 +104,7 @@ function selectWidgetType(value: DashboardWidgetType) {
         :key="entry.id"
         flat
         border
-        rounded="xl"
+        rounded="lg"
         class="pa-4 wizard-manual__option"
         @click="selectSource(entry.id)"
       >
@@ -130,7 +130,7 @@ function selectWidgetType(value: DashboardWidgetType) {
         :key="metric.id"
         flat
         border
-        rounded="xl"
+        rounded="lg"
         class="pa-4 wizard-manual__option"
         @click="selectMetric(metric.id)"
       >
@@ -146,7 +146,7 @@ function selectWidgetType(value: DashboardWidgetType) {
           <v-card
             flat
             border
-            rounded="xl"
+            rounded="lg"
             class="pa-4 wizard-manual__option h-100"
             @click="selectWidgetType(type)"
           >

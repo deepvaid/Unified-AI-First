@@ -38,7 +38,7 @@ function open() {
   <v-card
     flat
     border
-    rounded="xl"
+    rounded="lg"
     class="dashboard-list-card"
     :class="{ 'dashboard-list-card--selected': selected, 'dashboard-list-card--active': isActive }"
   >
@@ -100,11 +100,13 @@ function open() {
             </template>
           </v-tooltip>
           <v-btn
-            :icon="dashboard.favorite ? 'star' : 'star'"
+            icon="star"
             :color="dashboard.favorite ? 'warning' : undefined"
             variant="text"
             size="small"
+            :class="{ 'fav-btn--active': dashboard.favorite }"
             :aria-label="dashboard.favorite ? `Unfavorite ${dashboard.name}` : `Favorite ${dashboard.name}`"
+            :aria-pressed="dashboard.favorite"
             @click.stop="emit('toggleFavorite', dashboard.id)"
           />
           <v-menu location="bottom end">
@@ -187,6 +189,10 @@ function open() {
 </template>
 
 <style scoped lang="scss">
+:deep(.fav-btn--active .v-icon svg) {
+  fill: currentColor;
+}
+
 .dashboard-list-card {
   border-color: var(--mp-border-subtle);
   background: rgb(var(--v-theme-surface));

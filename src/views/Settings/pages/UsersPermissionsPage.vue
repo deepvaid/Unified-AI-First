@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import SettingsPageHeader from '@/components/settings/SettingsPageHeader.vue'
+import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 const teamUsers = ref([
   { id: 1, name: 'Ross Andrew Paquette', email: 'Ross@maropost.com',  role: 'Owner',         marketing: true,  service: true,  commerce: true,  status: 'Active',  avatar: 'RP' },
@@ -29,43 +30,45 @@ const newUserRole = ref('Marketer')
       </template>
     </SettingsPageHeader>
 
-    <div class="users-table">
-      <v-table density="comfortable">
-        <thead>
-          <tr>
-            <th>User</th>
-            <th>Role</th>
-            <th class="text-center">Marketing</th>
-            <th class="text-center">Service</th>
-            <th class="text-center">Commerce</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="u in teamUsers" :key="u.id">
-            <td>
-              <div class="user-cell">
-                <v-avatar color="primary" variant="tonal" size="34" class="font-weight-bold text-caption">{{ u.avatar }}</v-avatar>
-                <div>
-                  <div class="user-cell__name">{{ u.name }}</div>
-                  <div class="user-cell__email">{{ u.email }}</div>
+    <SettingsSection title="Team Members" description="Review access, ownership, and module permissions.">
+      <div class="users-table">
+        <v-table density="comfortable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th class="text-center">Marketing</th>
+              <th class="text-center">Service</th>
+              <th class="text-center">Commerce</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="u in teamUsers" :key="u.id">
+              <td>
+                <div class="user-cell">
+                  <v-avatar color="primary" variant="tonal" size="34" class="font-weight-bold text-caption">{{ u.avatar }}</v-avatar>
+                  <div>
+                    <div class="user-cell__name">{{ u.name }}</div>
+                    <div class="user-cell__email">{{ u.email }}</div>
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td><v-chip size="x-small" variant="tonal" color="secondary">{{ u.role }}</v-chip></td>
-            <td class="text-center"><v-icon :color="u.marketing ? 'success' : 'grey-lighten-2'" size="18">{{ u.marketing ? 'circle-check' : 'circle-minus' }}</v-icon></td>
-            <td class="text-center"><v-icon :color="u.service ? 'success' : 'grey-lighten-2'" size="18">{{ u.service ? 'circle-check' : 'circle-minus' }}</v-icon></td>
-            <td class="text-center"><v-icon :color="u.commerce ? 'success' : 'grey-lighten-2'" size="18">{{ u.commerce ? 'circle-check' : 'circle-minus' }}</v-icon></td>
-            <td><v-chip :color="u.status === 'Active' ? 'success' : 'warning'" size="x-small" variant="flat">{{ u.status }}</v-chip></td>
-            <td class="text-right">
-              <v-btn icon="pencil" variant="text" size="small" aria-label="Edit" />
-              <v-btn v-if="u.role !== 'Owner'" icon="trash-2" variant="text" size="small" color="error" aria-label="Remove" />
-            </td>
-          </tr>
-        </tbody>
-      </v-table>
-    </div>
+              </td>
+              <td><v-chip size="x-small" variant="tonal" color="secondary">{{ u.role }}</v-chip></td>
+              <td class="text-center"><v-icon :color="u.marketing ? 'success' : 'grey-lighten-2'" size="18">{{ u.marketing ? 'circle-check' : 'circle-minus' }}</v-icon></td>
+              <td class="text-center"><v-icon :color="u.service ? 'success' : 'grey-lighten-2'" size="18">{{ u.service ? 'circle-check' : 'circle-minus' }}</v-icon></td>
+              <td class="text-center"><v-icon :color="u.commerce ? 'success' : 'grey-lighten-2'" size="18">{{ u.commerce ? 'circle-check' : 'circle-minus' }}</v-icon></td>
+              <td><v-chip :color="u.status === 'Active' ? 'success' : 'warning'" size="x-small" variant="flat">{{ u.status }}</v-chip></td>
+              <td class="text-right">
+                <v-btn icon="pencil" variant="text" size="small" aria-label="Edit" />
+                <v-btn v-if="u.role !== 'Owner'" icon="trash-2" variant="text" size="small" color="error" aria-label="Remove" />
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
+      </div>
+    </SettingsSection>
 
     <MpFormDrawer
       v-model="addUserDialog"
@@ -78,7 +81,8 @@ const newUserRole = ref('Marketer')
         label="Email Address"
         type="email"
         variant="outlined"
-        density="comfortable"
+        density="compact"
+        hide-details
         class="mb-3"
         placeholder="colleague@company.com"
       />
@@ -87,7 +91,8 @@ const newUserRole = ref('Marketer')
         label="Role"
         :items="['Admin','Marketer','Support Agent','Analyst','Viewer']"
         variant="outlined"
-        density="comfortable"
+        density="compact"
+        hide-details
         class="mb-3"
       />
       <div class="text-subtitle-2 font-weight-bold mb-2">Module Access</div>
@@ -114,12 +119,12 @@ const newUserRole = ref('Marketer')
 <style scoped lang="scss">
 .settings-page {
   max-width: 980px;
-  padding: 24px 32px 96px 0;
 }
 
 .users-table {
   border: 1px solid var(--hairline);
   border-radius: 12px;
+  background: var(--surface-1);
   overflow: hidden;
 }
 
@@ -143,5 +148,11 @@ const newUserRole = ref('Marketer')
 .user-cell__email {
   font-size: 12px;
   color: var(--muted);
+}
+
+@media (max-width: 760px) {
+  .users-table {
+    overflow-x: auto;
+  }
 }
 </style>

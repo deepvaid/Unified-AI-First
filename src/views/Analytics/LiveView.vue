@@ -524,7 +524,7 @@ const recentActivity = computed(() => [
     </v-row>
 
     <!-- Customer behavior funnel -->
-    <v-card variant="flat" border rounded="xl" class="pa-6">
+    <v-card variant="flat" border rounded="lg" class="pa-6">
       <div class="text-subtitle-2 text-medium-emphasis mb-4">Customer behavior</div>
       <div class="d-flex align-center gap-4 funnel">
         <div class="funnel__step">
@@ -549,7 +549,7 @@ const recentActivity = computed(() => [
       <v-col cols="12" md="5">
         <div class="d-flex flex-column gap-4">
           <!-- Sessions by location (map) -->
-          <v-card variant="flat" border rounded="xl" class="pa-5">
+          <v-card variant="flat" border rounded="lg" class="pa-5">
             <div class="d-flex align-center justify-space-between mb-3">
               <div>
                 <div class="text-subtitle-2 font-weight-bold">Sessions by location</div>
@@ -578,7 +578,7 @@ const recentActivity = computed(() => [
           </v-card>
 
           <!-- New vs returning -->
-          <v-card variant="flat" border rounded="xl" class="pa-5">
+          <v-card variant="flat" border rounded="lg" class="pa-5">
             <div class="text-subtitle-2 font-weight-bold mb-2">New vs returning customers</div>
             <ApexChart
               v-if="chartReady"
@@ -591,7 +591,7 @@ const recentActivity = computed(() => [
           </v-card>
 
           <!-- Top products -->
-          <v-card variant="flat" border rounded="xl" class="pa-5">
+          <v-card variant="flat" border rounded="lg" class="pa-5">
             <div class="d-flex align-center justify-space-between mb-3">
               <div class="text-subtitle-2 font-weight-bold">Top products by sales</div>
               <span class="text-caption text-medium-emphasis">Revenue</span>
@@ -614,7 +614,7 @@ const recentActivity = computed(() => [
       <v-col cols="12" md="7">
         <div class="d-flex flex-column gap-4 h-100">
           <!-- Real-time activity chart -->
-          <v-card variant="flat" border rounded="xl" class="pa-5 flex-grow-1 d-flex flex-column">
+          <v-card variant="flat" border rounded="lg" class="pa-5 flex-grow-1 d-flex flex-column">
             <div class="d-flex align-center justify-space-between mb-2">
               <div>
                 <div class="text-subtitle-2 font-weight-bold">Real-time activity</div>
@@ -637,7 +637,7 @@ const recentActivity = computed(() => [
           </v-card>
 
           <!-- Recent activity feed -->
-          <v-card variant="flat" border rounded="xl" class="pa-5">
+          <v-card variant="flat" border rounded="lg" class="pa-5">
             <div class="text-subtitle-2 font-weight-bold mb-3">Recent activity</div>
             <div class="live-rows">
               <div

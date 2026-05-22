@@ -17,7 +17,7 @@ const userAvatarUrl = 'https://maropost.com/hubfs/Maropost%20website/leadership/
 
     <v-row>
       <v-col cols="12" md="4">
-        <v-card variant="flat" border rounded="xl" class="text-center py-6">
+        <v-card variant="flat" border rounded="lg" class="text-center py-6">
           <v-avatar size="120" color="primary" class="mb-4">
             <v-img :src="userAvatarUrl" :alt="userName" cover>
               <template #error>
@@ -31,7 +31,7 @@ const userAvatarUrl = 'https://maropost.com/hubfs/Maropost%20website/leadership/
         </v-card>
       </v-col>
       <v-col cols="12" md="8">
-        <v-card variant="flat" border rounded="xl">
+        <v-card variant="flat" border rounded="lg">
           <v-card-text class="pa-5">
             <div class="text-subtitle-1 font-weight-bold mb-4">Personal Information</div>
             <v-text-field label="Full Name" variant="outlined" :model-value="userName" density="comfortable" class="mb-3" />

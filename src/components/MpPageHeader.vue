@@ -60,4 +60,10 @@ defineProps<{
   background: rgba(var(--v-theme-on-surface), 0.06);
   color: rgb(var(--v-theme-on-surface));
 }
+
+.mp-page-header__back:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-surface));
+}
 </style>

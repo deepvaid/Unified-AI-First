@@ -204,7 +204,7 @@ function onTabKeydown(item: MbTabItem, index: number, event: KeyboardEvent) {
         class="mb-tabs__tab"
         role="tab"
         type="button"
-        :aria-label="item.ariaLabel ?? item.label"
+        :aria-label="item.ariaLabel ?? (item.badge !== undefined ? `${item.label} (${item.badge})` : item.label)"
         :aria-selected="isActive(item) ? 'true' : 'false'"
         :aria-controls="`mb-tab-panel-${item.id}`"
         :tabindex="isActive(item) ? 0 : -1"

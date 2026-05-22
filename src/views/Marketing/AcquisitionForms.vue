@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 
 const router = useRouter()
+const route = useRoute()
+const accountId = computed(() => route.params.accountId as string)
 
 const forms = ref([
   { id: 1, name: 'Main Website Pop-up', type: 'Modal', views: 45000, conversions: 1200, rate: 2.7, status: 'Active', updated: 'Mar 5, 2026' },
@@ -45,7 +47,11 @@ const filteredTemplates = computed(() =>
 function openBuilder() {
   if (selectedTemplate.value === null) return
   chooseDialog.value = false
-  router.push('/acquisition/forms/create')
+  router.push({ name: 'FormBuilder', params: { accountId: accountId.value } })
+}
+
+function editInBuilder() {
+  router.push({ name: 'FormBuilder', params: { accountId: accountId.value } })
 }
 
 const viewMode = ref<'grid' | 'list'>('grid')
@@ -97,7 +103,7 @@ function clearAllFilters() {
         cols="12"
         sm="3"
       >
-        <v-card variant="flat" border rounded="xl" class="pa-5 kpi-card">
+        <v-card variant="flat" border rounded="lg" class="pa-5 kpi-card">
           <div class="d-flex justify-space-between align-center mb-3">
             <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase">{{ s.label }}</div>
             <div class="kpi-icon-wrap">
@@ -140,7 +146,7 @@ function clearAllFilters() {
         sm="6"
         md="4"
       >
-        <v-card variant="flat" border rounded="xl" class="form-card overflow-hidden">
+        <v-card variant="flat" border rounded="lg" class="form-card overflow-hidden">
           <div class="form-preview d-flex align-center justify-center pa-4">
             <v-icon size="48" color="primary" class="form-preview-icon">
               {{ form.type === 'Modal' ? 'panel-right' : 'columns-2' }}
@@ -160,7 +166,7 @@ function clearAllFilters() {
                   <v-btn v-bind="props" icon="more-vertical" variant="text" size="small"></v-btn>
                 </template>
                 <v-list density="compact" rounded="xl" nav min-width="160" class="pa-2">
-                  <v-list-item prepend-icon="pencil" rounded="lg" @click="router.push('/acquisition/forms/create')">Edit in Builder</v-list-item>
+                  <v-list-item prepend-icon="pencil" rounded="lg" @click="editInBuilder()">Edit in Builder</v-list-item>
                   <v-list-item prepend-icon="copy" rounded="lg">Duplicate</v-list-item>
                   <v-list-item prepend-icon="code-2" rounded="lg">Get Embed Code</v-list-item>
                   <v-list-item prepend-icon="trash-2" rounded="lg" class="text-error mt-1">Delete</v-list-item>
@@ -183,13 +189,13 @@ function clearAllFilters() {
             </div>
           </div>
           <div class="px-5 pb-5">
-            <v-btn block variant="tonal" color="primary" size="small" class="text-none" prepend-icon="pencil" @click="router.push('/acquisition/forms/create')">Edit in Builder</v-btn>
+            <v-btn block variant="tonal" color="primary" size="small" class="text-none" prepend-icon="pencil" @click="editInBuilder()">Edit in Builder</v-btn>
           </div>
         </v-card>
       </v-col>
 
       <v-col cols="12" sm="6" md="4">
-        <v-card variant="flat" border rounded="xl" class="pa-6 d-flex flex-column align-center justify-center text-center cursor-pointer add-card" style="min-height:280px;" @click="chooseDialog = true">
+        <v-card variant="flat" border rounded="lg" class="pa-6 d-flex flex-column align-center justify-center text-center cursor-pointer add-card" style="min-height:280px;" @click="chooseDialog = true">
           <v-icon size="40" color="primary" class="mb-3">circle-plus</v-icon>
           <div class="text-body-1 font-weight-bold mb-1">Create New Form</div>
           <div class="text-caption text-medium-emphasis">Choose a template and launch the form builder</div>
@@ -197,7 +203,7 @@ function clearAllFilters() {
       </v-col>
     </v-row>
 
-    <v-card v-else variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden list-card">
+    <v-card v-else variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden list-card">
       <MpDataTableToolbar
         v-model:search="search"
         title="Forms"
@@ -250,7 +256,7 @@ function clearAllFilters() {
         <template v-slot:item.status="{ item }"><v-chip :color="statusColor(item.status)" size="x-small" variant="flat" rounded="lg">{{ item.status }}</v-chip></template>
         <template v-slot:item.actions>
           <div class="ActionButtons d-flex justify-end gap-1">
-            <v-tooltip text="Edit in Builder" location="top"><template v-slot:activator="{props}"><v-btn v-bind="props" icon="pencil" variant="text" size="small" color="primary" @click="router.push('/acquisition/forms/create')"></v-btn></template></v-tooltip>
+            <v-tooltip text="Edit in Builder" location="top"><template v-slot:activator="{props}"><v-btn v-bind="props" icon="pencil" variant="text" size="small" color="primary" aria-label="Edit in Builder" @click="editInBuilder()"></v-btn></template></v-tooltip>
             <v-tooltip text="Duplicate" location="top"><template v-slot:activator="{props}"><v-btn v-bind="props" icon="copy" variant="text" size="small"></v-btn></template></v-tooltip>
             <v-tooltip text="Delete" location="top"><template v-slot:activator="{props}"><v-btn v-bind="props" icon="trash-2" variant="text" size="small" color="error"></v-btn></template></v-tooltip>
           </div>
@@ -259,7 +265,7 @@ function clearAllFilters() {
     </v-card>
 
     <v-dialog v-model="chooseDialog" max-width="820" rounded="xl">
-      <v-card rounded="xl" border flat color="surface" class="template-dialog-card">
+      <v-card rounded="lg" border flat color="surface" class="template-dialog-card">
         <div class="pa-5 pb-3 d-flex align-center justify-space-between">
           <div>
             <div class="text-h6 font-weight-bold">Choose a Template</div>
@@ -300,7 +306,7 @@ function clearAllFilters() {
                 @click="selectedTemplate = tmpl.id"
                 :variant="selectedTemplate === tmpl.id ? 'tonal' : 'flat'"
                 :color="selectedTemplate === tmpl.id ? 'primary' : 'default'"
-                rounded="xl"
+                rounded="lg"
                 border
                 class="pa-4 cursor-pointer template-card h-100"
                 :class="{ selected: selectedTemplate === tmpl.id }"

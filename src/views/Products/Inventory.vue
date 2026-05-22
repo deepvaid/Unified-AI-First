@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -76,7 +77,7 @@ const headers = [
 
     <v-row dense class="mb-2">
       <v-col cols="12" md="3">
-        <v-card variant="flat" border rounded="xl">
+        <v-card variant="flat" border rounded="lg">
           <v-card-text class="d-flex align-center justify-space-between">
             <div>
               <div class="text-overline text-medium-emphasis">Total Stock Items</div>
@@ -88,7 +89,7 @@ const headers = [
       </v-col>
     </v-row>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         title="Inventory Items"
         v-model:search="search"
@@ -177,6 +178,14 @@ const headers = [
               <v-list-item prepend-icon="arrow-left-right" title="Transfer" />
             </v-list>
           </v-menu>
+        </template>
+
+        <template v-slot:no-data>
+          <MpEmptyState
+            icon="package"
+            title="No inventory items"
+            description="Your product inventory will appear here once products are added to your store."
+          />
         </template>
       </v-data-table>
     </v-card>

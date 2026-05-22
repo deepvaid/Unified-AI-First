@@ -33,7 +33,7 @@ const groups = ref([
       Deliver dynamic images that change based on when, where, and how your subscribers open your emails.
     </v-alert>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Image Groups"

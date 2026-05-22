@@ -2,6 +2,10 @@
 import { ref } from 'vue'
 import SettingsPageHeader from '@/components/settings/SettingsPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
+import { useUserProfile } from '@/stores/useUserProfile'
+
+const profileStore = useUserProfile()
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const profile = ref({
   firstName: 'Ross Andrew',
@@ -18,12 +22,19 @@ const security = ref({
   confirm: '',
 })
 
-const profileAvatarUrl = 'https://maropost.com/hubfs/Maropost%20website/leadership/ross.png'
 const profileInitials = 'RP'
 
 const saved = ref(false)
 function save() { saved.value = true }
 function discard() { saved.value = false }
+
+function onFile(e: Event) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+  profileStore.setAvatar(URL.createObjectURL(file))
+  target.value = ''
+}
 </script>
 
 <template>
@@ -35,17 +46,45 @@ function discard() { saved.value = false }
 
     <SettingsSection title="Profile Image">
       <div class="profile-image-row">
-        <v-avatar size="64" color="primary">
-          <v-img :src="profileAvatarUrl" alt="Profile photo" cover>
+        <v-avatar size="52" color="primary">
+          <v-img v-if="profileStore.hasAvatar" :src="profileStore.avatarUrl" alt="Profile photo" cover>
             <template #error>
               <div class="profile-image-fallback">{{ profileInitials }}</div>
             </template>
           </v-img>
+          <div v-else class="profile-image-fallback">{{ profileInitials }}</div>
         </v-avatar>
-        <div>
-          <v-btn variant="flat" color="primary" size="small" prepend-icon="camera" class="text-none mb-1">
-            Change photo
-          </v-btn>
+        <div class="profile-image-actions">
+          <div class="d-flex align-center gap-2">
+            <v-btn
+              variant="outlined"
+              color="default"
+              size="small"
+              density="compact"
+              prepend-icon="upload"
+              class="text-none profile-image-upload-btn"
+              @click="fileInput?.click()"
+            >
+              Upload photo
+            </v-btn>
+            <v-btn
+              variant="text"
+              size="small"
+              density="compact"
+              class="text-none text-medium-emphasis"
+              :disabled="!profileStore.hasAvatar"
+              @click="profileStore.clearAvatar()"
+            >
+              Remove
+            </v-btn>
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/*"
+              class="d-none"
+              @change="onFile"
+            >
+          </div>
           <div class="profile-image-help">JPG or PNG. Max 2MB.</div>
         </div>
       </div>
@@ -55,19 +94,19 @@ function discard() { saved.value = false }
       <div class="settings-grid">
         <div class="settings-field">
           <label class="settings-field__label">First Name</label>
-          <v-text-field v-model="profile.firstName" variant="outlined" density="comfortable" hide-details />
+          <v-text-field v-model="profile.firstName" variant="outlined" density="compact" hide-details />
         </div>
         <div class="settings-field">
           <label class="settings-field__label">Last Name</label>
-          <v-text-field v-model="profile.lastName" variant="outlined" density="comfortable" hide-details />
+          <v-text-field v-model="profile.lastName" variant="outlined" density="compact" hide-details />
         </div>
         <div class="settings-field">
           <label class="settings-field__label">Email</label>
-          <v-text-field v-model="profile.email" variant="outlined" density="comfortable" hide-details />
+          <v-text-field v-model="profile.email" variant="outlined" density="compact" hide-details />
         </div>
         <div class="settings-field">
           <label class="settings-field__label">Phone</label>
-          <v-text-field v-model="profile.phone" variant="outlined" density="comfortable" prepend-inner-icon="phone" hide-details />
+          <v-text-field v-model="profile.phone" variant="outlined" density="compact" prepend-inner-icon="phone" hide-details />
         </div>
         <div class="settings-field">
           <label class="settings-field__label">Timezone</label>
@@ -75,7 +114,7 @@ function discard() { saved.value = false }
             v-model="profile.timezone"
             :items="['America/New_York','UTC','Europe/London','Asia/Tokyo']"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -85,7 +124,7 @@ function discard() { saved.value = false }
             v-model="profile.language"
             :items="['English (US)','French','Spanish','German']"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -96,15 +135,15 @@ function discard() { saved.value = false }
       <div class="settings-grid settings-grid--thirds">
         <div class="settings-field">
           <label class="settings-field__label">Current Password</label>
-          <v-text-field v-model="security.current" type="password" variant="outlined" density="comfortable" hide-details />
+          <v-text-field v-model="security.current" type="password" variant="outlined" density="compact" hide-details />
         </div>
         <div class="settings-field">
           <label class="settings-field__label">New Password</label>
-          <v-text-field v-model="security.next" type="password" variant="outlined" density="comfortable" hide-details />
+          <v-text-field v-model="security.next" type="password" variant="outlined" density="compact" hide-details />
         </div>
         <div class="settings-field">
           <label class="settings-field__label">Confirm Password</label>
-          <v-text-field v-model="security.confirm" type="password" variant="outlined" density="comfortable" hide-details />
+          <v-text-field v-model="security.confirm" type="password" variant="outlined" density="compact" hide-details />
         </div>
       </div>
     </SettingsSection>
@@ -121,15 +160,16 @@ function discard() { saved.value = false }
 </template>
 
 <style scoped lang="scss">
-.settings-page {
-  max-width: 880px;
-  padding: 24px 32px 96px 0;
-}
-
 .profile-image-row {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
+}
+
+.profile-image-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .profile-image-fallback {
@@ -141,47 +181,16 @@ function discard() { saved.value = false }
   background: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-on-primary));
   font-weight: 700;
-  font-size: 22px;
+  font-size: 18px;
 }
 
 .profile-image-help {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--muted);
 }
 
-.settings-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 16px 20px;
-}
-
-.settings-grid--thirds {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.settings-field__label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.settings-save-bar {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 14px 0 0;
-  margin-top: 24px;
-  background: linear-gradient(180deg, transparent 0, var(--surface-1) 24px);
-}
-
-@media (max-width: 720px) {
-  .settings-grid,
-  .settings-grid--thirds {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.profile-image-upload-btn {
+  border-color: var(--hairline) !important;
+  color: var(--ink) !important;
 }
 </style>

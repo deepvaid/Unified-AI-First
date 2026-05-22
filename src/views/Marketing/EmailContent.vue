@@ -21,7 +21,7 @@ const items = [
 
     <v-row>
       <v-col cols="12" md="4" v-for="item in items" :key="item.name">
-        <v-card variant="flat" border rounded="xl" class="h-100 d-flex flex-column">
+        <v-card variant="flat" border rounded="lg" class="h-100 d-flex flex-column">
           <div class="bg-surface-variant d-flex justify-center align-center rounded-t-xl" style="height: 150px;">
             <v-icon size="48" color="medium-emphasis">mail</v-icon>
           </div>

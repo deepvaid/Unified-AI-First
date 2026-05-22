@@ -177,8 +177,21 @@ a {
   box-shadow: none;
 }
 
+/* ─── Bridge Marobase-UI tokens → Vuetify theme ──────────────────── */
+/* Ensures MbTabs, MbChip etc. use the app's primary, not the        */
+/* standalone Marobase teal, when rendered inside the Vuetify shell. */
+.v-application {
+  --mb-color-primary: rgb(var(--v-theme-primary));
+  --mb-color-primary-soft: rgba(var(--v-theme-primary), 0.10);
+  --mb-color-primary-soft-hover: rgba(var(--v-theme-primary), 0.16);
+  --mb-tabs-focus-ring: 0 0 0 2px rgb(var(--v-theme-primary));
+  --mb-focus-ring: 0 0 0 2px rgba(var(--v-theme-primary), 0.70);
+}
+
 .v-tab {
   letter-spacing: 0;
+  font-size: 13px;
+  text-transform: none;
   font-weight: var(--mp-typography-fontWeight-semibold);
 }
 
@@ -463,6 +476,34 @@ tr:focus-within .action-btns {
 // Popover list text — match sidebar font-size
 .rail-popover .v-list-item-title {
   font-size: 13px !important;
+}
+
+/* ─── Dialog shell normalization ─────────────────────────────────── */
+/* Ensures v-dialog cards always have consistent radius and surface. */
+.v-dialog > .v-overlay__content > .v-card,
+.v-dialog > .v-overlay__content > .v-sheet {
+  border-radius: 12px !important;
+  background: rgb(var(--v-theme-surface)) !important;
+}
+
+/* Normalize dialog card title typography */
+.v-dialog .v-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+/* Footer actions always right-aligned; gap between buttons */
+.v-dialog .v-card-actions {
+  gap: 8px;
+}
+
+/* Drawer card titles share same type scale */
+.v-navigation-drawer .v-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const search = ref('')
 
@@ -32,7 +33,7 @@ const lists = [
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="All Lists"
@@ -63,6 +64,14 @@ const lists = [
               <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
             </v-list>
           </v-menu>
+        </template>
+
+        <template v-slot:no-data>
+          <MpEmptyState
+            icon="list"
+            title="No contact lists yet"
+            description="Create a list to organize your contacts and send targeted campaigns."
+          />
         </template>
       </v-data-table>
     </v-card>

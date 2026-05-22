@@ -30,7 +30,7 @@ const headers = [
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="xl" class="pa-4 mb-4">
+    <v-card variant="flat" border rounded="lg" class="pa-4 mb-4">
       <div class="text-subtitle-2 font-weight-bold mb-3">Query Editor</div>
       <div class="bg-black pa-4 rounded-lg font-family-monospace text-body-2 text-green">
         SELECT c.email, c.first_name, SUM(p.amount) as total_spent<br>
@@ -46,7 +46,7 @@ const headers = [
       </div>
     </v-card>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Saved Queries"

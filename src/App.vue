@@ -17,7 +17,7 @@ const route = useRoute()
 const drawer = ref(true)
 const rail = ref(true)
 const copilot = useCopilotStore()
-const { width } = useDisplay()
+const { width, smAndDown } = useDisplay()
 
 watch(width, (w, prevW) => {
   if (prevW === undefined) return
@@ -26,9 +26,19 @@ watch(width, (w, prevW) => {
   if (!wasNarrow && isNarrow && !rail.value) {
     rail.value = true
   }
+  // Auto-close sidebar on mobile
+  if (w < 768 && prevW >= 768) {
+    drawer.value = false
+  }
+  // Auto-open on desktop return
+  if (w >= 768 && prevW < 768) {
+    drawer.value = true
+  }
 })
 
 const isFullPage = computed(() => !!route.meta?.fullPage)
+// On mobile, sidebar is a temporary overlay (not permanent)
+const sidebarTemporary = computed(() => smAndDown.value)
 const sidebarRail = computed(() => rail.value)
 const copilotDrawerWidth = computed(() => {
   const target = copilot.isExpanded ? 880 : 480
@@ -44,6 +54,7 @@ const copilotDrawerWidth = computed(() => {
       v-if="!isFullPage"
       v-model="drawer"
       :rail="sidebarRail"
+      :temporary="sidebarTemporary"
       @update:rail="rail = $event"
     />
 

@@ -18,12 +18,12 @@ const { accountMetrics } = storeToRefs(store)
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="xl" class="pa-6">
+    <v-card variant="flat" border rounded="lg" class="pa-6">
       <div class="text-overline text-medium-emphasis mb-1">Total Revenue Attributed</div>
       <div class="text-h3 text-primary font-weight-bold">${{ (accountMetrics.revenueAttributed).toLocaleString() }}</div>
     </v-card>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <div class="d-flex align-center ga-3 px-4 pt-4 pb-3">
         <div class="text-subtitle-1 font-weight-bold">Revenue by Channel</div>
       </div>

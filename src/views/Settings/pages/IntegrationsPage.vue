@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SettingsPageHeader from '@/components/settings/SettingsPageHeader.vue'
+import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 const integrations = [
   { name: 'Shopify',          icon: 'shopping-bag', color: 'success',   connected: true,  desc: 'Sync orders, products & customers' },
@@ -21,35 +22,33 @@ const integrations = [
       subtitle="Connect Maropost to the tools your team already uses."
     />
 
-    <div class="integration-grid">
-      <div v-for="intg in integrations" :key="intg.name" class="integration-card">
-        <div class="integration-card__header">
-          <v-icon :color="intg.color" size="28">{{ intg.icon }}</v-icon>
-          <v-chip :color="intg.connected ? 'success' : 'grey'" size="x-small" variant="flat">
-            {{ intg.connected ? 'Connected' : 'Not Connected' }}
-          </v-chip>
+    <SettingsSection title="Available Integrations" description="Connect and manage commerce, analytics, and automation tools.">
+      <div class="integration-grid">
+        <div v-for="intg in integrations" :key="intg.name" class="integration-card">
+          <div class="integration-card__header">
+            <v-icon :color="intg.color" size="26">{{ intg.icon }}</v-icon>
+            <v-chip :color="intg.connected ? 'success' : 'grey'" size="x-small" variant="tonal">
+              {{ intg.connected ? 'Connected' : 'Not Connected' }}
+            </v-chip>
+          </div>
+          <div class="integration-card__name">{{ intg.name }}</div>
+          <div class="integration-card__desc">{{ intg.desc }}</div>
+          <v-btn
+            :color="intg.connected ? 'error' : 'primary'"
+            :variant="intg.connected ? 'outlined' : 'flat'"
+            size="small"
+            block
+            class="text-none integration-card__cta"
+          >
+            {{ intg.connected ? 'Disconnect' : 'Connect' }}
+          </v-btn>
         </div>
-        <div class="integration-card__name">{{ intg.name }}</div>
-        <div class="integration-card__desc">{{ intg.desc }}</div>
-        <v-btn
-          :color="intg.connected ? 'error' : 'primary'"
-          :variant="intg.connected ? 'outlined' : 'flat'"
-          size="small"
-          block
-          class="text-none integration-card__cta"
-        >
-          {{ intg.connected ? 'Disconnect' : 'Connect' }}
-        </v-btn>
       </div>
-    </div>
+    </SettingsSection>
   </div>
 </template>
 
 <style scoped lang="scss">
-.settings-page {
-  max-width: 880px;
-  padding: 24px 32px 96px 0;
-}
 
 .integration-grid {
   display: grid;
@@ -63,7 +62,7 @@ const integrations = [
   padding: 16px;
   border: 1px solid var(--hairline);
   border-radius: 12px;
-  background: var(--surface-1);
+  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
 }
 
 .integration-card__header {

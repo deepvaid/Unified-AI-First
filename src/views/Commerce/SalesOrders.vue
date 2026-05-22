@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -33,15 +34,23 @@ const headers = [
   { title: '', key: 'data-table-expand', width: 40 },
 ]
 
-// ─── Tab Filtering ────────────────────────────────────────────────────────────
+// ─── Tab + Filter Filtering ───────────────────────────────────────────────────
 const filteredOrders = computed(() => {
-  const orders = store.orders
+  let orders = store.orders
+
+  // Tab-level filter
   switch (activeTab.value) {
-    case 'completed':     return orders.filter(o => o.status === 'Completed')
-    case 'processing':    return orders.filter(o => o.status === 'Processing')
-    case 'not_fulfilled': return orders.filter(o => !['Shipped', 'Cancelled'].includes(o.fulfillmentStatus ?? ''))
-    default:              return orders
+    case 'completed':     orders = orders.filter(o => o.status === 'Completed'); break
+    case 'processing':    orders = orders.filter(o => o.status === 'Processing'); break
+    case 'not_fulfilled': orders = orders.filter(o => !['Shipped', 'Cancelled'].includes(o.fulfillmentStatus ?? '')); break
   }
+
+  // Drawer-level filters (aligned to store enum values)
+  if (filters.value.status) orders = orders.filter(o => o.status === filters.value.status)
+  if (filters.value.fulfillment) orders = orders.filter(o => o.fulfillmentStatus === filters.value.fulfillment)
+  if (filters.value.payment) orders = orders.filter(o => o.paymentStatus === filters.value.payment)
+
+  return orders
 })
 
 const tabCount = (key: string) => {
@@ -62,9 +71,12 @@ const filters = ref({
 })
 
 const filterOptions = {
-  status: ['Completed', 'Processing', 'On Hold', 'Cancelled'],
-  fulfillment: ['Shipped', 'Awaiting Fulfillment', 'Partially Fulfilled', 'Unfulfilled'],
-  payment: ['Paid', 'Pending', 'Refunded', 'Failed'],
+  // Aligned to useCommerce.ts `orderStatuses`
+  status: ['Processing', 'Completed', 'On Hold', 'Cancelled', 'Refunded'],
+  // Aligned to useCommerce.ts `fulfillmentStatuses`
+  fulfillment: ['Not Ready', 'Ready For Fulfillment', 'Shipped', 'Return Requested', 'Cancelled', 'Unapproved'],
+  // Aligned to useCommerce.ts paymentStatus logic
+  payment: ['Paid', 'Refunded', 'Voided'],
 }
 
 const filterLabels: Record<string, string> = {
@@ -109,7 +121,7 @@ function selectAll() {
     </MpPageHeader>
 
     <!-- Main Table Card -->
-    <v-card variant="flat" rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden table-card">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden table-card">
       <!-- Toolbar -->
       <MpDataTableToolbar
         v-model:search="search"
@@ -213,12 +225,12 @@ function selectAll() {
           <div class="action-btns d-flex">
             <v-tooltip text="View order" location="top">
               <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" icon="eye" variant="text" size="x-small" color="medium-emphasis"></v-btn>
+                <v-btn v-bind="props" icon="eye" variant="text" size="x-small" color="medium-emphasis" aria-label="View order"></v-btn>
               </template>
             </v-tooltip>
             <v-menu>
               <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" icon="more-vertical" variant="text" size="x-small" color="medium-emphasis"></v-btn>
+                <v-btn v-bind="props" icon="more-vertical" variant="text" size="x-small" color="medium-emphasis" aria-label="More actions"></v-btn>
               </template>
               <v-list density="compact" min-width="180">
                 <v-list-item prepend-icon="pencil" title="Edit order" value="edit"></v-list-item>
@@ -306,6 +318,14 @@ function selectAll() {
               </div>
             </td>
           </tr>
+        </template>
+        <template #no-data>
+          <MpEmptyState
+            icon="shopping-cart"
+            :title="search ? 'No orders match your search' : 'No orders found'"
+            :description="search ? 'Try a different search term.' : 'Orders will appear here once received.'"
+            class="py-10"
+          />
         </template>
       </v-data-table>
     </v-card>

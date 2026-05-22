@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
+const accountId = computed(() => route.params.accountId as string)
 
 // ─── Wizard Steps ─────────────────────────────────────────────────────
 const step = ref(1)
@@ -49,7 +51,8 @@ const step1Valid = computed(() => formName.value.trim().length > 0 && selectedLi
 
 const saveSnack = ref(false)
 
-function finish() { saveSnack.value = true; setTimeout(() => router.push('/marketing/acquisition_forms'), 2000) }
+function goBack() { router.push({ name: 'AcquisitionForms', params: { accountId: accountId.value } }) }
+function finish() { saveSnack.value = true; setTimeout(() => goBack(), 2000) }
 </script>
 
 <template>
@@ -60,7 +63,7 @@ function finish() { saveSnack.value = true; setTimeout(() => router.push('/marke
       <div class="d-flex align-center gap-3">
         <v-tooltip text="Back to Forms" location="bottom">
           <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" @click="router.push('/marketing/acquisition_forms')"></v-btn>
+            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" aria-label="Back to Forms" @click="goBack()"></v-btn>
           </template>
         </v-tooltip>
         <div>
@@ -91,7 +94,7 @@ function finish() { saveSnack.value = true; setTimeout(() => router.push('/marke
 
       <!-- ── STEP 1: Setup ─────────────────────────────────────────────── -->
       <div v-if="step===1" class="overflow-y-auto h-100 d-flex justify-center pt-8 pa-4">
-        <v-card variant="flat" border rounded="xl" style="max-width:600px;width:100%;" class="pa-8">
+        <v-card variant="flat" border rounded="lg" style="max-width:600px;width:100%;" class="pa-8">
           <div class="text-h5 font-weight-bold mb-1">Form Setup</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Name your form and choose which list subscribers will be added to.</div>
           <v-text-field v-model="formName" label="Form Name *" placeholder="e.g. Homepage Exit-Intent Popup" variant="outlined" density="comfortable" class="mb-4"></v-text-field>
@@ -99,7 +102,7 @@ function finish() { saveSnack.value = true; setTimeout(() => router.push('/marke
           <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3">Form Type</div>
           <v-row dense>
             <v-col cols="6">
-              <v-card :variant="formType==='popup'?'elevated':'flat'" :elevation="formType==='popup'?4:0" border rounded="xl"
+              <v-card :variant="formType==='popup'?'elevated':'flat'" :elevation="formType==='popup'?4:0" border rounded="lg"
                 class="pa-4 text-center cursor-pointer" :class="{'type-selected':formType==='popup'}" @click="formType='popup'">
                 <v-icon size="32" :color="formType==='popup'?'primary':undefined" class="mb-2">smartphone</v-icon>
                 <div class="text-body-2 font-weight-bold">Popup</div>
@@ -107,7 +110,7 @@ function finish() { saveSnack.value = true; setTimeout(() => router.push('/marke
               </v-card>
             </v-col>
             <v-col cols="6">
-              <v-card :variant="formType==='embedded'?'elevated':'flat'" :elevation="formType==='embedded'?4:0" border rounded="xl"
+              <v-card :variant="formType==='embedded'?'elevated':'flat'" :elevation="formType==='embedded'?4:0" border rounded="lg"
                 class="pa-4 text-center cursor-pointer" :class="{'type-selected':formType==='embedded'}" @click="formType='embedded'">
                 <v-icon size="32" :color="formType==='embedded'?'primary':undefined" class="mb-2">globe</v-icon>
                 <div class="text-body-2 font-weight-bold">Embedded</div>
@@ -123,7 +126,7 @@ function finish() { saveSnack.value = true; setTimeout(() => router.push('/marke
 
       <!-- ── STEP 2: Display Rules ──────────────────────────────────────── -->
       <div v-else-if="step===2" class="overflow-y-auto h-100 d-flex justify-center pt-8 pa-4">
-        <v-card variant="flat" border rounded="xl" style="max-width:600px;width:100%;" class="pa-8">
+        <v-card variant="flat" border rounded="lg" style="max-width:600px;width:100%;" class="pa-8">
           <div class="text-h5 font-weight-bold mb-1">Display Rules</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Control when and where your form appears.</div>
           <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3">Show Form When</div>
@@ -311,7 +314,7 @@ function finish() { saveSnack.value = true; setTimeout(() => router.push('/marke
       <!-- ── STEP 4: Success & Publish ──────────────────────────────────── -->
       <div v-else class="overflow-y-auto h-100 d-flex justify-center pt-8 pa-4">
         <div style="max-width:600px;width:100%;">
-          <v-card variant="flat" border rounded="xl" class="pa-8 mb-4">
+          <v-card variant="flat" border rounded="lg" class="pa-8 mb-4">
             <div class="text-h5 font-weight-bold mb-1">Success Message</div>
             <div class="text-body-2 text-medium-emphasis mb-6">What happens after a visitor submits the form?</div>
             <v-radio-group v-model="successType">
@@ -325,7 +328,7 @@ function finish() { saveSnack.value = true; setTimeout(() => router.push('/marke
             <v-text-field v-else v-model="redirectUrl" label="Redirect URL" placeholder="https://mysite.com/thank-you" variant="outlined" density="compact"></v-text-field>
           </v-card>
 
-          <v-card variant="flat" border rounded="xl" class="pa-8">
+          <v-card variant="flat" border rounded="lg" class="pa-8">
             <div class="text-h6 font-weight-bold mb-4">Form Summary</div>
             <v-list density="compact" class="pa-0">
               <v-list-item class="px-0"><template v-slot:prepend><v-icon size="18" color="primary">list-checks</v-icon></template><v-list-item-title class="text-body-2"><strong>Name:</strong> {{ formName }}</v-list-item-title></v-list-item>

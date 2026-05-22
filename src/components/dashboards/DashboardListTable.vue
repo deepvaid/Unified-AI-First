@@ -32,7 +32,7 @@ function isSelected(id: string): boolean {
 </script>
 
 <template>
-  <v-card flat border rounded="xl" class="dashboard-list-table">
+  <v-card flat border rounded="lg" class="dashboard-list-table">
     <v-table density="comfortable" hover class="dashboard-list-table__table">
       <thead>
         <tr>
@@ -127,12 +127,14 @@ function isSelected(id: string): boolean {
                 </template>
               </v-tooltip>
               <v-btn
-                :icon="dashboard.favorite ? 'star' : 'star'"
+                icon="star"
                 :color="dashboard.favorite ? 'warning' : undefined"
                 variant="text"
                 size="small"
                 density="comfortable"
+                :class="{ 'fav-btn--active': dashboard.favorite }"
                 :aria-label="dashboard.favorite ? `Unfavorite ${dashboard.name}` : `Favorite ${dashboard.name}`"
+                :aria-pressed="dashboard.favorite"
                 @click="emit('toggleFavorite', dashboard.id)"
               />
               <v-menu location="bottom end">
@@ -181,6 +183,10 @@ function isSelected(id: string): boolean {
 </template>
 
 <style scoped lang="scss">
+:deep(.fav-btn--active .v-icon svg) {
+  fill: currentColor;
+}
+
 .dashboard-list-table {
   border-color: var(--mp-border-subtle);
   overflow: hidden;

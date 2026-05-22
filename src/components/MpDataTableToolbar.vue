@@ -117,7 +117,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
               />
             </MbButton>
           </template>
-          <v-card min-width="220" max-width="280" flat border rounded="xl" class="mt-1 mp-toolbar-panel">
+          <v-card min-width="220" max-width="280" flat border rounded="lg" class="mt-1 mp-toolbar-panel">
             <div class="pa-3">
               <div class="text-subtitle-2 font-weight-bold mb-2">Toggle columns</div>
               <v-checkbox

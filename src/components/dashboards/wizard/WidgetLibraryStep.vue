@@ -28,6 +28,7 @@ const TYPE_LABELS: Record<DashboardWidgetType, string> = {
   pie: 'Chart',
   table: 'Table',
   activity: 'Activity',
+  setup: 'Setup',
 }
 
 const filteredEntries = computed(() => {

@@ -54,7 +54,7 @@ const filteredRules = computed(() => {
       AI-powered recommendation engine automatically places products based on user browsing habits and cohort data.
     </v-alert>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Recommendation Rules"

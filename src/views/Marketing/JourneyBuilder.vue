@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
+const accountId = computed(() => route.params.accountId as string)
 type NodeType = 'trigger' | 'email' | 'delay' | 'condition' | 'action'
 
 interface FlowNode {
@@ -91,7 +93,7 @@ const typeBadgeColor = (t: NodeType) => ({ trigger:'secondary', email:'primary',
       <div class="d-flex align-center gap-3">
         <v-tooltip text="Back to Journeys" location="bottom">
           <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" @click="router.push('/workflows')"></v-btn>
+            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" aria-label="Back to Journeys" @click="router.push({ name: 'Journeys', params: { accountId: accountId } })"></v-btn>
           </template>
         </v-tooltip>
         <div v-if="!editingName" class="font-weight-bold text-body-1 cursor-pointer" @click="editingName=true;nameInput=journeyName">{{ journeyName }}</div>
@@ -158,7 +160,7 @@ const typeBadgeColor = (t: NodeType) => ({ trigger:'secondary', email:'primary',
             </div>
             <div class="d-flex flex-column align-center flow-node-wrap">
               <v-card :variant="selectedNodeId===node.id?'elevated':'flat'" :elevation="selectedNodeId===node.id?4:0"
-                border rounded="xl" class="pa-4 cursor-pointer flow-node" :class="{'node-selected':selectedNodeId===node.id}"
+                border rounded="lg" class="pa-4 cursor-pointer flow-node" :class="{'node-selected':selectedNodeId===node.id}"
                 style="width:460px;" @click="selectNode(node.id)">
                 <div class="d-flex align-center gap-3">
                   <v-avatar :color="node.color" variant="tonal" size="40">
@@ -193,7 +195,7 @@ const typeBadgeColor = (t: NodeType) => ({ trigger:'secondary', email:'primary',
                   <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" icon="plus" size="x-small" variant="flat" color="primary" class="add-btn"></v-btn>
                   </template>
-                  <v-card rounded="xl" elevation="8" width="200" class="py-2">
+                  <v-card rounded="lg" elevation="8" width="200" class="py-2">
                     <div class="px-3 py-1 text-caption text-medium-emphasis font-weight-bold text-uppercase border-b mb-1">Add Step</div>
                     <v-list density="compact" nav>
                       <v-list-item v-for="tmpl in actionNodes" :key="tmpl.title" rounded="lg" @click="addNodeAfter(node.id, tmpl)">
@@ -207,7 +209,7 @@ const typeBadgeColor = (t: NodeType) => ({ trigger:'secondary', email:'primary',
               </div>
             </div>
           </template>
-          <v-card variant="outlined" rounded="xl" class="pa-3 d-flex align-center justify-center gap-2 text-medium-emphasis" style="border-style:dashed;width:200px;">
+          <v-card variant="outlined" rounded="lg" class="pa-3 d-flex align-center justify-center gap-2 text-medium-emphasis" style="border-style:dashed;width:200px;">
             <v-icon size="18">flag</v-icon>
             <span class="text-caption font-weight-medium">End of Journey</span>
           </v-card>

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
+import { useUserProfile } from '@/stores/useUserProfile'
 import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
 
 const copilot = useCopilotStore()
@@ -21,7 +22,8 @@ const userName = ref('Ross Andrew Paquette')
 const userInitials = ref('RP')
 const userEmail = ref('Ross@maropost.com')
 const userRole = ref('Super Admin')
-const userAvatarUrl = ref('https://i.pravatar.cc/128?img=12')
+const profileStore = useUserProfile()
+const userAvatarUrl = computed(() => profileStore.avatarUrl)
 const searchOpen = ref(false)
 const searchQuery = ref('')
 const appbarNotice = ref('')
@@ -52,7 +54,7 @@ const AVATAR_PALETTE = [
 function accountColor(id: string): string {
   let hash = 0
   for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0
-  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length]
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length] ?? 'primary'
 }
 
 const userMenuOpen = ref(false)
@@ -399,11 +401,13 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                 />
               </div>
               <div class="um-switch-list">
-                <div
+                <button
                   v-for="account in sortedFilteredAccounts"
                   :key="account.id"
+                  type="button"
                   class="um-item"
                   :class="{ 'um-item--active': account.id === activeAccountId }"
+                  :aria-pressed="account.id === activeAccountId"
                   @click="switchAccount(account.id)"
                 >
                   <v-avatar size="28" variant="tonal" :color="accountColor(account.id)" class="flex-shrink-0 um-item__avatar">
@@ -414,7 +418,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                     <div class="um-item__sub">Account #{{ account.id }}</div>
                   </div>
                   <v-icon v-if="account.id === activeAccountId" size="16" color="primary" class="ml-auto">check-circle-2</v-icon>
-                </div>
+                </button>
                 <div v-if="sortedFilteredAccounts.length === 0" class="um-account-empty">
                   No accounts match "{{ accountSearch.trim() }}"
                 </div>
@@ -444,30 +448,32 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 
               <div class="um-section">
                 <div class="um-subheader">Personal</div>
-                <div class="um-item" @click="$router.push(profileRoute); closeUserMenu()">
+                <button type="button" class="um-item" @click="$router.push(profileRoute); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">user</v-icon>
                   <div class="um-item__body">
                     <div class="um-item__title">My Profile</div>
                     <div class="um-item__sub">View and edit your info</div>
                   </div>
-                </div>
+                </button>
               </div>
 
               <div class="um-divider" />
 
               <div class="um-section">
                 <div class="um-subheader">Account</div>
-                <div class="um-item" @click="$router.push(settingsRoute); closeUserMenu()">
+                <button type="button" class="um-item" @click="$router.push(settingsRoute); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">settings</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Account Settings</div><div class="um-item__sub">Company, users, permissions</div></div>
-                </div>
-                <div class="um-item" @click="openStub('Billing'); closeUserMenu()">
+                </button>
+                <button type="button" class="um-item" @click="openStub('Billing'); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">credit-card</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Billing</div><div class="um-item__sub">Plan, usage, invoices</div></div>
-                </div>
-                <div
+                </button>
+                <button
+                  type="button"
                   class="um-item um-account-trigger"
                   :class="{ 'um-item--active': switchAccountOpen }"
+                  :aria-expanded="switchAccountOpen"
                   @click.stop="switchAccountOpen = !switchAccountOpen"
                 >
                   <v-avatar size="28" variant="tonal" :color="accountColor(activeAccount.id)" class="flex-shrink-0 um-item__avatar">
@@ -478,25 +484,25 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                     <div class="um-item__sub">Account #{{ activeAccount.id }}</div>
                   </div>
                   <v-icon size="16" class="um-item__chevron">chevron-right</v-icon>
-                </div>
-                <div class="um-item" @click="openStub('Galaxy'); closeUserMenu()">
+                </button>
+                <button type="button" class="um-item" @click="openStub('Galaxy'); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">target</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Galaxy</div><div class="um-item__sub">Cross-product workspace</div></div>
-                </div>
-                <div class="um-item" @click="openStub('Roadmap'); closeUserMenu()">
+                </button>
+                <button type="button" class="um-item" @click="openStub('Roadmap'); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">route</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Roadmap</div><div class="um-item__sub">Planned product work</div></div>
-                </div>
-                <div class="um-item" @click="openStub('System Status'); closeUserMenu()">
+                </button>
+                <button type="button" class="um-item" @click="openStub('System Status'); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">shield-check</v-icon>
                   <div class="um-item__body"><div class="um-item__title">System Status</div><div class="um-item__sub">Trust and availability</div></div>
-                </div>
+                </button>
               </div>
 
               <div class="um-divider" />
 
               <div class="um-section um-section--last">
-                <div class="um-item">
+                <div class="um-item" role="group" aria-label="Theme">
                   <v-icon class="um-item__icon" size="20">sun-moon</v-icon>
                   <div class="um-item__body">
                     <div class="um-item__title">Theme</div>
@@ -512,10 +518,10 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                     <v-btn value="dark" icon="moon" variant="text" aria-label="Dark theme" />
                   </v-btn-toggle>
                 </div>
-                <div class="um-item um-item--danger" @click="openStub('Sign out'); closeUserMenu()">
+                <button type="button" class="um-item um-item--danger" @click="openStub('Sign out'); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">log-out</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Sign Out</div></div>
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -573,9 +579,11 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   transition: background 120ms ease, color 120ms ease;
 }
 
-.appbar-utilities :deep(.appbar-action-btn:hover) {
-  background: var(--surface-2);
+.appbar-utilities :deep(.appbar-action-btn:hover),
+.appbar-utilities :deep(.appbar-action-btn:focus-visible) {
+  background: rgba(var(--v-theme-on-surface), 0.07);
   color: var(--ink);
+  outline: none;
 }
 
 .appbar-utilities :deep(.appbar-action-btn .v-icon) {
@@ -804,11 +812,17 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   border-radius: 10px;
   cursor: pointer;
   transition: background 120ms ease, transform 80ms ease;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
 }
 
 .um-item:hover,
 .um-item:focus-visible {
-  background: var(--surface-2);
+  background: rgba(var(--v-theme-on-surface), 0.05);
 }
 
 .um-item:focus-visible {
@@ -1157,6 +1171,30 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   }
 }
 
+/* Tablet: hide account pill label text, shrink search */
+@media (max-width: 900px) {
+  .appbar-search-group {
+    min-width: 160px;
+    flex: 1 1 200px;
+  }
+  .user-pill__name {
+    display: none;
+  }
+  .assistant-pill {
+    display: none;
+  }
+}
+
+/* Mobile: hide search bar entirely, collapse to icon mode */
+@media (max-width: 640px) {
+  .appbar-search-group {
+    display: none;
+  }
+  .appbar-account-tabs {
+    display: none;
+  }
+}
+
 /* ── Quick Create button + menu ─────────────────── */
 .appbar-create-btn {
   display: inline-flex;
@@ -1230,7 +1268,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 
 .appbar-create-row:hover,
 .appbar-create-row:focus-visible {
-  background: var(--surface-2);
+  background: rgba(var(--v-theme-on-surface), 0.05);
 }
 
 .appbar-create-row:focus-visible {

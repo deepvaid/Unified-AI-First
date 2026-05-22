@@ -16,74 +16,87 @@ const props = withDefaults(defineProps<{
   showIcon: false,
 })
 
-const colorMap: Record<string, Record<string, string>> = {
+// Semantic tone lookup — keys are normalized lower-case status strings
+const toneMap: Record<string, Record<string, MbChipTone>> = {
   order: {
-    Processing: 'info', Completed: 'success', Cancelled: 'grey-darken-1',
-    Refunded: 'error', 'On Hold': 'warning',
+    processing: 'brand', completed: 'success', cancelled: 'danger',
+    refunded: 'danger', 'on hold': 'warning', archived: 'neutral',
   },
   fulfillment: {
-    Unapproved: 'warning', 'Not Ready': 'grey', 'Ready For Fulfillment': 'info',
-    Shipped: 'success', 'Return Requested': 'error', Cancelled: 'grey-darken-1',
-    Fulfilled: 'success', Unfulfilled: 'warning', Partial: 'info',
+    unapproved: 'warning', 'not ready': 'neutral', 'ready for fulfillment': 'brand',
+    shipped: 'success', 'return requested': 'danger', cancelled: 'danger',
+    fulfilled: 'success', unfulfilled: 'warning', partial: 'brand',
+    'awaiting fulfillment': 'warning', picking: 'brand', packed: 'brand', 'ready to ship': 'success',
   },
   payment: {
-    Paid: 'success', Refunded: 'error', Voided: 'grey', Pending: 'warning',
+    paid: 'success', refunded: 'danger', voided: 'neutral', pending: 'warning',
+    failed: 'danger', authorised: 'brand', partially_refunded: 'warning',
   },
   campaign: {
-    Sent: 'success', Scheduled: 'info', Draft: 'grey-darken-1', Sending: 'warning',
-    Active: 'success', Paused: 'warning', Completed: 'success', Failed: 'error',
+    sent: 'success', scheduled: 'brand', draft: 'neutral', sending: 'warning',
+    active: 'success', paused: 'warning', completed: 'success', failed: 'danger',
+    archived: 'neutral', aborted: 'danger',
   },
   contact: {
-    Active: 'success', Unsubscribed: 'grey', Bounced: 'error', Pending: 'warning',
+    active: 'success', unsubscribed: 'neutral', bounced: 'danger',
+    pending: 'warning', confirmed: 'success', suspended: 'danger',
+    suppressed: 'neutral', 'hard bounce': 'danger',
   },
   ticket: {
-    Open: 'info', 'In Progress': 'warning', 'Awaiting Reply': 'secondary',
-    Resolved: 'success', Closed: 'grey',
+    open: 'brand', 'in progress': 'warning', 'awaiting reply': 'brand',
+    resolved: 'success', closed: 'neutral', 'on hold': 'warning',
+    escalated: 'danger', new: 'brand',
   },
   coupon: {
-    Active: 'success', Expired: 'grey', Scheduled: 'info', Used: 'secondary',
+    active: 'success', expired: 'neutral', scheduled: 'brand',
+    used: 'neutral', disabled: 'neutral',
   },
   general: {
-    Active: 'success', Inactive: 'grey', Pending: 'warning', Error: 'error',
-    Published: 'success', Draft: 'grey-darken-1', Archived: 'grey',
+    active: 'success', inactive: 'neutral', pending: 'warning', error: 'danger',
+    published: 'success', draft: 'neutral', archived: 'neutral',
+    enabled: 'success', disabled: 'neutral', failed: 'danger',
+    running: 'brand', paused: 'warning', completed: 'success',
   },
 }
 
 const iconMap: Record<string, Record<string, string>> = {
   campaign: {
-    Sent: 'check', Scheduled: 'calendar-clock',
-    Draft: 'pencil', Sending: 'truck',
+    sent: 'check', scheduled: 'calendar-clock',
+    draft: 'pencil', sending: 'send',
+    active: 'play-circle', paused: 'pause-circle',
+    failed: 'alert-circle', archived: 'archive',
   },
   fulfillment: {
-    Unapproved: 'alert-circle', 'Not Ready': 'package',
-    'Ready For Fulfillment': 'package-check', Shipped: 'truck',
-    'Return Requested': 'corner-down-left', Cancelled: 'circle-x',
+    unapproved: 'alert-circle', 'not ready': 'package',
+    'ready for fulfillment': 'package-check', shipped: 'truck',
+    'return requested': 'corner-down-left', cancelled: 'circle-x',
+    fulfilled: 'check-circle', unfulfilled: 'clock',
   },
   ticket: {
-    Open: 'alert-circle', 'In Progress': 'clock',
-    'Awaiting Reply': 'reply', Resolved: 'circle-check',
+    open: 'alert-circle', 'in progress': 'clock',
+    'awaiting reply': 'reply', resolved: 'circle-check',
+    closed: 'circle-x', escalated: 'alert-triangle',
+    new: 'bell',
+  },
+  order: {
+    completed: 'check-circle', cancelled: 'x-circle',
+    refunded: 'corner-down-left', 'on hold': 'pause-circle',
+  },
+  payment: {
+    paid: 'check-circle', refunded: 'corner-down-left',
+    failed: 'alert-circle',
   },
 }
 
-const chipColor = computed(() => {
-  const fallbackColors = colorMap.general ?? {}
-  return colorMap[props.type]?.[props.status] ?? fallbackColors[props.status] ?? 'default'
+const chipTone = computed<MbChipTone>(() => {
+  const key = props.status.toLowerCase()
+  return toneMap[props.type]?.[key] ?? toneMap.general?.[key] ?? 'neutral'
 })
 
 const chipIcon = computed(() => {
   if (!props.showIcon) return undefined
-  return iconMap[props.type]?.[props.status]
-})
-
-const tone = computed<MbChipTone>(() => {
-  const c = chipColor.value
-  if (c === 'error' || c === 'grey-darken-1') {
-    return 'danger'
-  }
-  if (c === 'grey' || c === 'default') {
-    return 'neutral'
-  }
-  return 'brand'
+  const key = props.status.toLowerCase()
+  return iconMap[props.type]?.[key]
 })
 
 const iconPx = computed(() => (props.size === 'x-small' ? 11 : props.size === 'small' ? 12 : 13))
@@ -92,7 +105,7 @@ const iconPx = computed(() => (props.size === 'x-small' ? 11 : props.size === 's
 <template>
   <MbChip
     :label="status"
-    :tone="tone"
+    :tone="chipTone"
     :dismissible="false"
     :class="['mp-status-chip', `mp-status-chip--size-${size}`]"
   >

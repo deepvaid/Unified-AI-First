@@ -23,9 +23,7 @@ defineProps<{
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 18px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 4px;
 }
 
 .settings-page-header__copy {
@@ -52,5 +50,17 @@ defineProps<{
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .settings-page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-page-header__actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }
 </style>

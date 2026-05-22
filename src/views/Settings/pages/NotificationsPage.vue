@@ -32,7 +32,14 @@ function save() { saved.value = true }
             <div class="notif-row__title">{{ p.label }}</div>
             <div class="notif-row__sub">{{ p.desc }}</div>
           </div>
-          <v-switch v-model="p.value" color="primary" hide-details density="compact" inset />
+          <v-switch
+            v-model="p.value"
+            color="primary"
+            hide-details
+            density="compact"
+            inset
+            :aria-label="`Toggle ${p.label}`"
+          />
         </li>
       </ul>
     </SettingsSection>
@@ -48,10 +55,6 @@ function save() { saved.value = true }
 </template>
 
 <style scoped lang="scss">
-.settings-page {
-  max-width: 880px;
-  padding: 24px 32px 96px 0;
-}
 
 .notif-list {
   margin: 0;
@@ -90,14 +93,10 @@ function save() { saved.value = true }
   margin-top: 2px;
 }
 
-.settings-save-bar {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 14px 0 0;
-  margin-top: 24px;
-  background: linear-gradient(180deg, transparent 0, var(--surface-1) 24px);
+@media (max-width: 640px) {
+  .notif-row {
+    align-items: flex-start;
+    padding: 12px;
+  }
 }
 </style>

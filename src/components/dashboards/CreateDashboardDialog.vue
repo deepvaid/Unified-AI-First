@@ -48,7 +48,7 @@ function create() {
 
 <template>
   <v-dialog v-model="model" max-width="520" persistent scrollable>
-    <v-card flat rounded="xl" color="surface" class="create-dashboard-dialog">
+    <v-card flat rounded="lg" color="surface" class="create-dashboard-dialog">
       <v-card-title class="d-flex align-center ga-3 pa-5">
         <v-avatar size="44" variant="tonal" color="primary">
           <v-icon>grid-2x2-plus</v-icon>

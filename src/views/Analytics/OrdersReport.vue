@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -46,7 +48,7 @@ const filteredOrders = computed(() =>
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Order Analytics"
@@ -77,9 +79,15 @@ const filteredOrders = computed(() =>
       </MpDataTableToolbar>
       <v-data-table :headers="headers" :items="filteredOrders" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.status="{ item }">
-          <v-chip :color="item.status === 'Completed' ? 'success' : 'primary'" size="small">
-            {{ item.status }}
-          </v-chip>
+          <MpStatusChip :status="item.status ?? ''" type="order" size="x-small" />
+        </template>
+        <template #no-data>
+          <MpEmptyState
+            icon="shopping-bag"
+            :title="search || filterStatus.length ? 'No orders match your filters' : 'No orders yet'"
+            :description="search || filterStatus.length ? 'Try a different search or clear filters.' : 'Orders will appear here once received.'"
+            class="py-10"
+          />
         </template>
       </v-data-table>
     </v-card>

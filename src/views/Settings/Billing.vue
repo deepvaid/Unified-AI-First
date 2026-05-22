@@ -27,7 +27,7 @@ const invoices = [
 
     <v-row class="flex-shrink-0">
       <v-col cols="12" md="4">
-        <v-card variant="flat" border rounded="xl" class="pa-5">
+        <v-card variant="flat" border rounded="lg" class="pa-5">
           <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Current Plan</div>
           <div class="text-h5 text-primary font-weight-bold mb-1">Enterprise Plus</div>
           <div class="text-medium-emphasis mb-4">$5,400 / month</div>
@@ -36,7 +36,7 @@ const invoices = [
       </v-col>
 
       <v-col cols="12" md="8">
-        <v-card variant="flat" border rounded="xl" class="pa-5 h-100">
+        <v-card variant="flat" border rounded="lg" class="pa-5 h-100">
           <div class="text-subtitle-1 font-weight-bold mb-4">Monthly Usage Data</div>
           <div class="mb-4">
             <div class="d-flex justify-space-between mb-1">
@@ -56,7 +56,7 @@ const invoices = [
       </v-col>
     </v-row>
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Invoice History"

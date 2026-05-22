@@ -1,37 +1,61 @@
 <script setup lang="ts">
-import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSidebar from '@/components/settings/SettingsSidebar.vue'
 </script>
 
 <template>
-  <div class="settings-shell d-flex flex-column h-100">
-    <MpPageHeader
-      title="Settings"
-      subtitle="Manage your account, connections, users, billing, and platform configuration."
-    />
-
-    <div class="settings-shell__body">
-      <SettingsSidebar />
-      <main class="settings-shell__content">
-        <router-view />
-      </main>
-    </div>
+  <div class="settings-shell d-flex">
+    <SettingsSidebar />
+    <main class="settings-shell__content">
+      <router-view />
+    </main>
   </div>
 </template>
 
 <style scoped lang="scss">
-.settings-shell__body {
-  flex: 1 1 auto;
-  display: flex;
+.settings-shell {
+  margin: -32px -36px;
+  height: calc(100vh - 52px);
+  overflow: hidden;
   align-items: stretch;
-  min-height: 0;
-  margin-top: 8px;
 }
 
 .settings-shell__content {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
   overflow-y: auto;
-  padding: 4px 0 0 32px;
+  padding: 24px 36px 32px 32px;
+}
+
+@media (max-width: 1024px) {
+  .settings-shell {
+    margin: -28px;
+  }
+  .settings-shell__content {
+    padding: 20px 28px 28px 28px;
+  }
+}
+
+@media (max-width: 900px) {
+  .settings-shell {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 52px);
+    overflow: visible;
+  }
+
+  .settings-shell__content {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-shell {
+    margin: -22px;
+  }
+  .settings-shell__content {
+    padding: 16px 22px 22px 22px;
+  }
 }
 </style>
+

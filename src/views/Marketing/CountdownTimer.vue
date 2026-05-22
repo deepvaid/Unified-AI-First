@@ -19,7 +19,7 @@ const timers = [
 
     <v-row>
       <v-col cols="12" md="6" v-for="timer in timers" :key="timer.name">
-        <v-card variant="flat" border rounded="xl">
+        <v-card variant="flat" border rounded="lg">
           <div class="text-center py-8 bg-surface-variant rounded-t-xl">
             <div class="text-h2 font-weight-bold mb-2" style="font-family: monospace; letter-spacing: 4px;">
               {{ timer.display }}

@@ -6,6 +6,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -36,24 +37,22 @@ const fieldMappings = ref([
 const contactFields = ['Email','First Name','Last Name','Phone','Company','City','Country','Tag','Custom Field 1','— Skip —']
 function startImport() { importDialog.value = true; importStep.value = 1 }
 
-// Filters
+// Filters — vocab aligned to store enum values
 const filters = ref({
   status: null as string | null,
-  list: null as string | null,
   score: null as string | null,
   activity: null as string | null,
 })
 
 const filterOptions = {
-  status: ['Active', 'Unsubscribed', 'Bounced'],
-  list: ['Newsletter Subscribers', 'VIP Customer Circle', 'Win-Back Segment'],
+  // Store values: 'Subscribed', 'Unsubscribed', 'Bounced', 'Spam'
+  status: ['Subscribed', 'Unsubscribed', 'Bounced', 'Spam'],
   score: ['80–100 (Hot)', '50–79 (Warm)', '0–49 (Cold)'],
   activity: ['Last 7 days', 'Last 30 days', 'Last 90 days', 'Over 90 days'],
 }
 
 const filterLabels: Record<string, string> = {
   status: 'Status',
-  list: 'List',
   score: 'Score',
   activity: 'Last Activity',
 }
@@ -64,13 +63,34 @@ const activeFilterEntries = computed(() => {
     .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` }))
 })
 
+const filteredContacts = computed(() => {
+  return store.contacts.filter(c => {
+    if (filters.value.status && c.status !== filters.value.status) return false
+    if (filters.value.score) {
+      const s = c.score
+      if (filters.value.score.startsWith('80') && s < 80) return false
+      if (filters.value.score.startsWith('50') && (s < 50 || s > 79)) return false
+      if (filters.value.score.startsWith('0') && s >= 50) return false
+    }
+    if (filters.value.activity && c.lastActive) {
+      const lastActive = new Date(c.lastActive).getTime()
+      const now = Date.now()
+      const days = (now - lastActive) / 86400000
+      if (filters.value.activity === 'Last 7 days' && days > 7) return false
+      if (filters.value.activity === 'Last 30 days' && days > 30) return false
+      if (filters.value.activity === 'Last 90 days' && days > 90) return false
+      if (filters.value.activity === 'Over 90 days' && days <= 90) return false
+    }
+    return true
+  })
+})
 
 function removeFilter(key: string) {
   filters.value[key as keyof typeof filters.value] = null
 }
 
 function clearAllFilters() {
-  filters.value = { status: null, list: null, score: null, activity: null }
+  filters.value = { status: null, score: null, activity: null }
 }
 
 // Table
@@ -133,7 +153,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
     </MpPageHeader>
 
     <!-- Single Card: Table with integrated toolbar, filters, bulk bar -->
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
 
       <!-- Toolbar: title, search, filter, filter chips, bulk bar -->
       <MpDataTableToolbar
@@ -143,7 +163,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         :headers="headers"
         :active-filters="activeFilterEntries"
         :selected-count="selected.length"
-        :total-count="store.contacts.length"
+        :total-count="filteredContacts.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
         @clear-selection="selected = []"
@@ -187,7 +207,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       <v-data-table
         v-model="selected"
         :headers="visibleHeaders"
-        :items="store.contacts"
+        :items="filteredContacts"
         :search="search"
         show-select
         hover
@@ -261,6 +281,16 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
             </v-list>
           </v-menu>
         </template>
+        <template #no-data>
+          <MpEmptyState
+            icon="users"
+            :title="search ? 'No contacts match your search' : 'No contacts found'"
+            :description="search ? 'Try a different search term or clear filters.' : 'Import or add contacts to get started.'"
+            action-label="Add Contact"
+            action-icon="plus"
+            class="py-10"
+          />
+        </template>
       </v-data-table>
     </v-card>
 
@@ -304,13 +334,13 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
 
     <!-- Import Wizard Dialog -->
     <v-dialog v-model="importDialog" max-width="680" rounded="xl" persistent>
-      <v-card rounded="xl" color="surface">
+      <v-card rounded="lg" color="surface">
         <v-stepper v-model="importStep" :items="['Upload File','Map Fields','Review & Import']" flat>
           <template v-slot:item.1>
             <div class="pa-6">
               <div class="text-subtitle-1 font-weight-bold mb-1">Upload your CSV file</div>
               <div class="text-body-2 text-medium-emphasis mb-5">Supported: CSV, XLSX. Max 25MB. First row should be column headers.</div>
-              <v-card variant="outlined" rounded="xl" class="pa-8 text-center" style="border-style:dashed;cursor:pointer;">
+              <v-card variant="outlined" rounded="lg" class="pa-8 text-center" style="border-style:dashed;cursor:pointer;">
                 <v-icon size="48" color="primary" class="mb-3">cloud-upload</v-icon>
                 <div class="text-body-1 font-weight-medium mb-1">Drag & drop file here</div>
                 <div class="text-caption text-medium-emphasis mb-4">or click to browse</div>
@@ -341,9 +371,9 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
             <div class="pa-6">
               <div class="text-subtitle-1 font-weight-bold mb-4">Review before importing</div>
               <v-row dense class="mb-4">
-                <v-col cols="4"><v-card variant="tonal" color="primary" rounded="xl" class="pa-4 text-center"><div class="text-h4 font-weight-bold">1,284</div><div class="text-caption">Rows detected</div></v-card></v-col>
-                <v-col cols="4"><v-card variant="tonal" color="success" rounded="xl" class="pa-4 text-center"><div class="text-h4 font-weight-bold">1,241</div><div class="text-caption">Valid contacts</div></v-card></v-col>
-                <v-col cols="4"><v-card variant="tonal" color="warning" rounded="xl" class="pa-4 text-center"><div class="text-h4 font-weight-bold">43</div><div class="text-caption">Skipped (invalid)</div></v-card></v-col>
+                <v-col cols="4"><v-card variant="tonal" color="primary" rounded="lg" class="pa-4 text-center"><div class="text-h4 font-weight-bold">1,284</div><div class="text-caption">Rows detected</div></v-card></v-col>
+                <v-col cols="4"><v-card variant="tonal" color="success" rounded="lg" class="pa-4 text-center"><div class="text-h4 font-weight-bold">1,241</div><div class="text-caption">Valid contacts</div></v-card></v-col>
+                <v-col cols="4"><v-card variant="tonal" color="warning" rounded="lg" class="pa-4 text-center"><div class="text-h4 font-weight-bold">43</div><div class="text-caption">Skipped (invalid)</div></v-card></v-col>
               </v-row>
               <v-alert type="info" variant="tonal" density="compact" rounded="xl" class="text-body-2 mb-3">
                 <strong>Duplicates:</strong> 23 contacts with matching emails will be <strong>merged</strong> (fields updated, not replaced).

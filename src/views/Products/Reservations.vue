@@ -41,7 +41,7 @@ const filteredItems = computed(() =>
       :subtitle="`${items.filter(i => i.status === 'Active Hold').length} active holds`"
     />
 
-    <v-card variant="flat" border rounded="xl" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="All Reservations"

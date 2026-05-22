@@ -13,7 +13,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="xl">
+    <v-card variant="flat" border rounded="lg">
       <v-card-text class="pa-5">
         <div class="d-flex align-center justify-space-between">
           <div>

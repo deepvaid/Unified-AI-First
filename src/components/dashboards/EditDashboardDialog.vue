@@ -68,7 +68,7 @@ function save() {
 
 <template>
   <v-dialog v-model="model" max-width="560" persistent scrollable>
-    <v-card flat rounded="xl" color="surface" class="edit-dashboard-dialog">
+    <v-card flat rounded="lg" color="surface" class="edit-dashboard-dialog">
       <v-card-title class="d-flex align-center ga-3 pa-5">
         <v-avatar size="44" variant="tonal" :color="previewColor">
           <v-icon>{{ icon }}</v-icon>

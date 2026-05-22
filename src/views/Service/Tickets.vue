@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFilterTabs from '@/components/MpFilterTabs.vue'
 
 const store = useTicketsStore()
 const tab = ref<'list' | 'kanban'>('list')
@@ -75,6 +76,14 @@ const filterCounts = computed(() => {
   return map
 })
 
+const statusTabs = computed(() =>
+  statusOptions.map(s => ({
+    label: s,
+    key: s,
+    count: filterCounts.value[s] ?? 0,
+  }))
+)
+
 const priorityColor = (p: string): string =>
   ({ Urgent: 'error', High: 'warning', Normal: 'primary', Low: 'grey' } as Record<string, string>)[p] ?? 'default'
 
@@ -138,25 +147,13 @@ function closeActiveTicket() {
           New Ticket
         </v-btn>
       </template>
+      <template #tabs>
+        <MpFilterTabs v-model="filterStatus" :tabs="statusTabs" aria-label="Filter tickets by status" />
+      </template>
     </MpPageHeader>
 
-    <!-- ── Status filter tabs ───────────────────────────────────── -->
-    <div class="tkt-filter-row d-flex align-center gap-1 flex-wrap" role="group" aria-label="Filter by status">
-      <button
-        v-for="s in statusOptions"
-        :key="s"
-        class="tkt-tab text-caption font-weight-semibold"
-        :class="{ 'tkt-tab--active': filterStatus === s }"
-        :aria-pressed="filterStatus === s"
-        @click="filterStatus = s"
-      >
-        {{ s }}
-        <span class="tkt-tab__count">{{ filterCounts[s] ?? 0 }}</span>
-      </button>
-    </div>
-
     <!-- ── Toolbar: Search + View Toggle ───────────────────────── -->
-    <div class="d-flex align-center gap-3 tkt-toolbar mt-3">
+    <div class="d-flex align-center gap-3 tkt-toolbar">
       <v-text-field
         v-model="search"
         prepend-inner-icon="search"
@@ -592,58 +589,6 @@ function closeActiveTicket() {
 .tkt-page {
   height: 100%;
   gap: 0;
-}
-
-/* ── Filter tabs ───────────────────────────────────────────────── */
-.tkt-filter-row {
-  margin-top: 12px;
-  row-gap: 6px;
-}
-.tkt-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: 20px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(var(--v-theme-on-surface), 0.65);
-  transition: background 0.12s ease, color 0.12s ease;
-  font-family: inherit;
-  letter-spacing: 0;
-}
-.tkt-tab:hover {
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  color: rgba(var(--v-theme-on-surface), 0.87);
-}
-.tkt-tab:focus-visible {
-  outline: 2px solid rgb(var(--v-theme-primary));
-  outline-offset: 2px;
-}
-.tkt-tab--active {
-  background: rgba(var(--v-theme-primary), 0.1);
-  color: rgb(var(--v-theme-primary));
-  font-weight: 700;
-}
-.tkt-tab__count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 100px;
-  background: rgba(var(--v-theme-on-surface), 0.08);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-}
-.tkt-tab--active .tkt-tab__count {
-  background: rgba(var(--v-theme-primary), 0.15);
-  color: rgb(var(--v-theme-primary));
 }
 
 /* ── Toolbar ───────────────────────────────────────────────────── */

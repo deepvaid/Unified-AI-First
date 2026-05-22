@@ -71,6 +71,7 @@ const TYPE_META: Record<DashboardWidgetType, { label: string; icon: string }> = 
   timeseries: { label: 'Time series', icon: 'line-chart' },
   pie: { label: 'Donut chart', icon: 'pie-chart' },
   table: { label: 'Table', icon: 'table' },
+  setup: { label: 'Setup guide', icon: 'list-checks' },
   activity: { label: 'Activity feed', icon: 'list' },
 }
 

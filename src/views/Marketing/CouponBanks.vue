@@ -22,7 +22,7 @@ const banks = [
 
     <v-row>
       <v-col cols="12" md="4" v-for="bank in banks" :key="bank.name">
-        <v-card variant="flat" border rounded="xl">
+        <v-card variant="flat" border rounded="lg">
           <v-card-text class="pa-5">
             <div class="text-subtitle-1 font-weight-bold mb-3">{{ bank.name }}</div>
             <v-progress-linear

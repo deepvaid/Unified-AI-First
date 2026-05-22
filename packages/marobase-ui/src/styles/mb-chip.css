@@ -57,6 +57,16 @@
   --mb-chip-bg-hover: var(--mb-chip-bg-danger-hover);
 }
 
+.mb-chip[data-tone='success'] {
+  --mb-chip-bg: var(--mb-color-success-soft);
+  --mb-chip-text: var(--mb-color-success);
+}
+
+.mb-chip[data-tone='warning'] {
+  --mb-chip-bg: var(--mb-color-warning-soft);
+  --mb-chip-text: var(--mb-color-warning);
+}
+
 .mb-chip[data-selected='true'] {
   border-color: var(--mb-chip-selected-border);
   box-shadow: none;

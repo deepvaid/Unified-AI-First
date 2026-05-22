@@ -292,7 +292,7 @@ const cartHeaders = [
       <div class="flex-grow-1 d-flex flex-column overflow-hidden right-content">
 
         <!-- Tab bar -->
-        <v-tabs v-model="activeTab" density="comfortable" color="primary" show-arrows class="mb-4 flex-shrink-0">
+        <v-tabs v-model="activeTab" density="compact" color="primary" show-arrows class="mb-4 flex-shrink-0">
           <v-tab value="overview">Overview</v-tab>
           <v-tab value="campaigns">
             Campaigns
@@ -332,7 +332,7 @@ const cartHeaders = [
                   </template>
                 </MpSectionHeader>
 
-                <v-tabs v-model="engagementSubTab" density="compact" color="primary" show-arrows class="mb-4">
+                <v-tabs v-model="engagementSubTab" density="compact" color="primary" show-arrows class="mb-3">
                   <v-tab value="emails">Emails</v-tab>
                   <v-tab value="orders">Orders</v-tab>
                   <v-tab value="sms">SMS</v-tab>

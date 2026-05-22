@@ -15,7 +15,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 
     <v-row>
       <v-col cols="12" md="6">
-        <v-card variant="flat" border rounded="xl">
+        <v-card variant="flat" border rounded="lg">
           <v-card-text class="pa-5">
             <div class="text-subtitle-1 font-weight-bold mb-4">AI Configuration</div>
             <v-switch color="primary" label="Enable Predictive Send Times" model-value="true" hide-details class="mb-2" />

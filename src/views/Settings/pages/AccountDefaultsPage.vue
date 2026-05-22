@@ -50,7 +50,7 @@ function discard() { saved.value = false }
           <v-text-field
             v-model="company.name"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -60,7 +60,7 @@ function discard() { saved.value = false }
           <v-text-field
             :model-value="company.accountId"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             readonly
             hide-details
             bg-color="surface-variant"
@@ -87,7 +87,7 @@ function discard() { saved.value = false }
           <v-text-field
             v-model="company.clientName"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -98,7 +98,7 @@ function discard() { saved.value = false }
             v-model="company.industry"
             :items="['E-Commerce','SaaS','Retail','Media','Healthcare','Finance','Other']"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -109,7 +109,7 @@ function discard() { saved.value = false }
             v-model="company.language"
             :items="['English (US)','English (UK)','French','Spanish','German','Portuguese']"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -119,7 +119,7 @@ function discard() { saved.value = false }
           <v-text-field
             v-model="company.website"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             prepend-inner-icon="globe"
             hide-details
           />
@@ -138,7 +138,7 @@ function discard() { saved.value = false }
             v-model="company.timezone"
             :items="['America/New_York','America/Chicago','America/Los_Angeles','UTC','Europe/London','Asia/Tokyo']"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -149,7 +149,7 @@ function discard() { saved.value = false }
             v-model="company.currency"
             :items="['USD','EUR','GBP','CAD','AUD','JPY']"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -160,7 +160,7 @@ function discard() { saved.value = false }
             v-model="company.dateFormat"
             :items="['MM/DD/YYYY','DD/MM/YYYY','YYYY-MM-DD']"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -177,7 +177,7 @@ function discard() { saved.value = false }
           <v-text-field
             v-model="company.address1"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -187,7 +187,7 @@ function discard() { saved.value = false }
           <v-text-field
             v-model="company.address2"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -198,7 +198,7 @@ function discard() { saved.value = false }
             v-model="company.country"
             :items="['United States','Canada','United Kingdom','Australia','India','Germany']"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -208,7 +208,7 @@ function discard() { saved.value = false }
           <v-text-field
             v-model="company.state"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -218,7 +218,7 @@ function discard() { saved.value = false }
           <v-text-field
             v-model="company.city"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -228,7 +228,7 @@ function discard() { saved.value = false }
           <v-text-field
             v-model="company.zip"
             variant="outlined"
-            density="comfortable"
+            density="compact"
             hide-details
           />
         </div>
@@ -246,49 +246,3 @@ function discard() { saved.value = false }
   </div>
 </template>
 
-<style scoped lang="scss">
-.settings-page {
-  max-width: 880px;
-  padding: 24px 32px 96px 0;
-}
-
-.settings-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 16px 20px;
-}
-
-.settings-grid--thirds {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.settings-field--full {
-  grid-column: 1 / -1;
-}
-
-.settings-field__label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.settings-save-bar {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 14px 0 0;
-  margin-top: 24px;
-  background: linear-gradient(180deg, transparent 0, var(--surface-1) 24px);
-}
-
-@media (max-width: 720px) {
-  .settings-grid,
-  .settings-grid--thirds {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-</style>

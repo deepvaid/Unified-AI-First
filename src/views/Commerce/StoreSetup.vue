@@ -25,7 +25,7 @@ const channelIcon = (type: string) => type === 'Retail' ? 'store' : type === 'Ma
 
     <v-row>
       <v-col cols="12" md="6" lg="3" v-for="channel in channels" :key="channel.name">
-        <v-card variant="flat" border rounded="xl">
+        <v-card variant="flat" border rounded="lg">
           <v-card-text class="text-center py-6">
             <v-avatar color="primary" variant="tonal" size="56" class="mb-4">
               <v-icon size="28">{{ channelIcon(channel.type) }}</v-icon>

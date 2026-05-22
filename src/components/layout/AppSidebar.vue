@@ -7,6 +7,7 @@ import { useAppTheme, type AccentKey } from '@/composables/useAppTheme'
 const props = defineProps<{
   modelValue: boolean
   rail: boolean
+  temporary?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -425,7 +426,7 @@ function updateFlyoutTop(event: Event) {
   ;(target as HTMLElement).blur?.()
 }
 
-function onParentClick(group: NavGroup, event: MouseEvent) {
+function onParentClick(group: NavGroup, event: Event) {
   const isSame = flyoutOpen.value && flyoutGroupTitle.value === group.title
   if (isSame) {
     closeFlyout()
@@ -457,7 +458,8 @@ function onFlyoutChildClick(item: NavItem) {
     v-model="localDrawer"
     :rail="localRail"
     :rail-width="64"
-    permanent
+    :permanent="!props.temporary"
+    :temporary="props.temporary"
     :mobile-breakpoint="0"
     width="240"
     class="mp-sidebar"
@@ -558,8 +560,8 @@ function onFlyoutChildClick(item: NavItem) {
 
         <v-tooltip
           v-else-if="group.items.length === 0"
-          :disabled="!localRail"
           location="end"
+          :open-delay="350"
           :text="group.title"
         >
           <template #activator="{ props: tipProps }">
@@ -596,6 +598,7 @@ function onFlyoutChildClick(item: NavItem) {
         <div
           v-else-if="!localRail"
           class="sidebar-parent-row"
+          :class="{ 'sidebar-parent--flyout-open': flyoutOpen && flyoutGroupTitle === group.title }"
         >
           <v-list-item
             :prepend-icon="group.icon"

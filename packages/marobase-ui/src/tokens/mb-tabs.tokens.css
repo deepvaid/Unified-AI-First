@@ -5,21 +5,21 @@
 html[data-theme='light'],
 html.theme-light {
   --mb-tabs-font-family: var(--mb-font-family-base);
-  --mb-tabs-list-gap: var(--mb-space-3);
-  --mb-tabs-tab-height: 44px;
+  --mb-tabs-list-gap: var(--mb-space-1);
+  --mb-tabs-tab-height: 34px;
   --mb-tabs-tab-padding-x: 12px;
-  --mb-tabs-tab-padding-y: 12px;
+  --mb-tabs-tab-padding-y: 8px;
   --mb-tabs-tab-gap: var(--mb-space-2);
-  --mb-tabs-label-size: var(--mb-font-size-body);
-  --mb-tabs-label-line-height: 20px;
+  --mb-tabs-label-size: 13px;
+  --mb-tabs-label-line-height: 18px;
   --mb-tabs-label-weight: var(--mb-font-weight-semibold);
-  --mb-tabs-letter-spacing: var(--mb-letter-spacing-wide);
-  --mb-tabs-icon-size: 20px;
-  --mb-tabs-dot-size: 7px;
-  --mb-tabs-badge-height: 20px;
-  --mb-tabs-badge-padding-x: 6px;
+  --mb-tabs-letter-spacing: 0;
+  --mb-tabs-icon-size: 16px;
+  --mb-tabs-dot-size: 6px;
+  --mb-tabs-badge-height: 18px;
+  --mb-tabs-badge-padding-x: 5px;
   --mb-tabs-badge-size: 11px;
-  --mb-tabs-badge-line-height: 16px;
+  --mb-tabs-badge-line-height: 14px;
   --mb-tabs-badge-weight: var(--mb-font-weight-bold);
   --mb-tabs-active-border-size: 2px;
   --mb-tabs-border-overlap: 2px;
@@ -44,21 +44,21 @@ html[data-theme='dark'],
 html.theme-dark,
 html.v-theme--dark {
   --mb-tabs-font-family: var(--mb-font-family-base);
-  --mb-tabs-list-gap: var(--mb-space-3);
-  --mb-tabs-tab-height: 44px;
+  --mb-tabs-list-gap: var(--mb-space-1);
+  --mb-tabs-tab-height: 34px;
   --mb-tabs-tab-padding-x: 12px;
-  --mb-tabs-tab-padding-y: 12px;
+  --mb-tabs-tab-padding-y: 8px;
   --mb-tabs-tab-gap: var(--mb-space-2);
-  --mb-tabs-label-size: var(--mb-font-size-body);
-  --mb-tabs-label-line-height: 20px;
+  --mb-tabs-label-size: 13px;
+  --mb-tabs-label-line-height: 18px;
   --mb-tabs-label-weight: var(--mb-font-weight-semibold);
-  --mb-tabs-letter-spacing: var(--mb-letter-spacing-wide);
-  --mb-tabs-icon-size: 20px;
-  --mb-tabs-dot-size: 7px;
-  --mb-tabs-badge-height: 20px;
-  --mb-tabs-badge-padding-x: 6px;
+  --mb-tabs-letter-spacing: 0;
+  --mb-tabs-icon-size: 16px;
+  --mb-tabs-dot-size: 6px;
+  --mb-tabs-badge-height: 18px;
+  --mb-tabs-badge-padding-x: 5px;
   --mb-tabs-badge-size: 11px;
-  --mb-tabs-badge-line-height: 16px;
+  --mb-tabs-badge-line-height: 14px;
   --mb-tabs-badge-weight: var(--mb-font-weight-bold);
   --mb-tabs-active-border-size: 2px;
   --mb-tabs-border-overlap: 2px;

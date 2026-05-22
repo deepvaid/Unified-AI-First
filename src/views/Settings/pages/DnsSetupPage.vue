@@ -85,10 +85,6 @@ function statusColor(s: string) {
 </template>
 
 <style scoped lang="scss">
-.settings-page {
-  max-width: 880px;
-  padding: 24px 32px 96px 0;
-}
 
 .section-actions {
   display: flex;
@@ -106,7 +102,7 @@ function statusColor(s: string) {
   padding: 14px 16px;
   border: 1px solid var(--hairline);
   border-radius: 10px;
-  background: var(--surface-1);
+  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
 }
 
 .domain-card__header {
@@ -120,22 +116,28 @@ function statusColor(s: string) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .domain-card__title {
   font-size: 14px;
   font-weight: 700;
   color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 .domain-card__actions {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .domain-card__checks {
   display: flex;
+  flex-wrap: wrap;
   gap: 24px;
   margin-top: 14px;
 }
@@ -147,5 +149,16 @@ function statusColor(s: string) {
   color: var(--muted);
   margin-bottom: 4px;
   text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .domain-card__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .domain-card__actions {
+    justify-content: flex-start;
+  }
 }
 </style>

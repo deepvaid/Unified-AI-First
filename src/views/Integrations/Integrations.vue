@@ -32,7 +32,7 @@ const filteredApps = computed(() => {
       :subtitle="`${apps.filter(a => a.connected).length} connected · ${apps.length} available`"
     />
 
-    <v-card variant="flat" border rounded="xl" class="flex-shrink-0">
+    <v-card variant="flat" border rounded="lg" class="flex-shrink-0">
       <MpDataTableToolbar
         v-model:search="search"
         search-placeholder="Search integrations..."

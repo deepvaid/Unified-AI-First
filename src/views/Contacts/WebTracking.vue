@@ -13,7 +13,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="xl" class="pa-6">
+    <v-card variant="flat" border rounded="lg" class="pa-6">
       <div class="d-flex align-center justify-space-between mb-4">
         <h3 class="text-subtitle-1 font-weight-bold">Primary Tracking Domain</h3>
         <v-chip color="success" size="small" variant="tonal">Verified</v-chip>

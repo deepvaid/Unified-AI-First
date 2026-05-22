@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3';
 import MbChip from './MbChip.vue';
 import type { MbChipProps, MbChipTone } from './MbChip.types';
 
-const toneOptions: MbChipTone[] = ['neutral', 'brand', 'danger'];
+const toneOptions: MbChipTone[] = ['neutral', 'brand', 'danger', 'success', 'warning'];
 
 const meta: Meta<MbChipProps> = {
   title: 'Components/MbChip',
