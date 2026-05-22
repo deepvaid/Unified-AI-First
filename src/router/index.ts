@@ -61,6 +61,9 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/orders/drafts', name: 'DraftOrders', component: () => import('@/views/Commerce/DraftOrders.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/fulfillments', name: 'Fulfillments', component: () => import('@/views/Commerce/Fulfillments.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/coupons', name: 'Coupons', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/promotions', name: 'Promotions', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/custom_gift_cards', name: 'CustomGiftCards', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/purchasable_gift_cards', name: 'PurchasableGiftCards', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/sales_channels', name: 'StoreSetup', component: () => import('@/views/Commerce/StoreSetup.vue'), meta: commerceGate },
 
   // 5.5 Merchandising
@@ -75,10 +78,13 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/campaigns', name: 'EmailCampaigns', component: () => import('@/views/Marketing/EmailCampaigns.vue') },
   { path: '/accounts/:accountId/journeys/:id/builder', name: 'JourneyBuilder', component: () => import('@/views/Marketing/JourneyBuilder.vue'), meta: { fullPage: true } },
   { path: '/accounts/:accountId/acquisition/forms/create', name: 'FormBuilder', component: () => import('@/views/Marketing/FormBuilder.vue'), meta: { fullPage: true } },
+  { path: '/accounts/:accountId/sms_campaigns', name: 'SmsCampaigns', component: () => import('@/views/Marketing/TransactionalEmail.vue') },
   { path: '/accounts/:accountId/transactional_campaigns', name: 'TransactionalEmail', component: () => import('@/views/Marketing/TransactionalEmail.vue') },
+  { path: '/accounts/:accountId/transactional_sms', name: 'TransactionalSms', component: () => import('@/views/Marketing/TransactionalEmail.vue') },
   { path: '/accounts/:accountId/campaign_tags', name: 'CampaignTags', component: () => import('@/views/Marketing/CampaignTags.vue') },
   { path: '/accounts/:accountId/acquisition', name: 'AcquisitionForms', component: () => import('@/views/Marketing/AcquisitionForms.vue') },
   { path: '/accounts/:accountId/landing_pages', name: 'LandingPages', component: () => import('@/views/Marketing/LandingPages.vue') },
+  { path: '/accounts/:accountId/lead_ads', name: 'LeadAds', component: () => import('@/views/Marketing/AcquisitionForms.vue') },
   { path: '/accounts/:accountId/signup_forms', name: 'SignupForms', component: () => import('@/views/Marketing/SignupForms.vue') },
   { path: '/accounts/:accountId/surveys', name: 'Surveys', component: () => import('@/views/Marketing/Surveys.vue') },
   { path: '/accounts/:accountId/journeys', name: 'Journeys', component: () => import('@/views/Marketing/Journeys.vue') },
@@ -95,10 +101,11 @@ const routes: RouteRecordRaw[] = [
 
   // 7. Service
   { path: '/accounts/:accountId/service', name: 'Tickets', component: () => import('@/views/Service/Tickets.vue') },
+  { path: '/accounts/:accountId/chatbot', name: 'Chatbot', component: () => import('@/views/Service/Tickets.vue') },
 
   // 8. Da Vinci
   { path: '/accounts/:accountId/da-vinci', name: 'DaVinciAI', component: () => import('@/views/DaVinci/DaVinciAI.vue') },
-  { path: '/accounts/:accountId/da-vinci/dashboard', name: 'DaVinciDashboard', component: () => import('@/views/DaVinci/DaVinciDashboard.vue') },
+  { path: '/accounts/:accountId/da-vinci/dashboard', name: 'DaVinciDashboard', component: () => import('@/views/DaVinci/DaVinciAI.vue') },
   {
     path: '/accounts/:accountId/da-vinci/copilot/:conversationId?',
     name: 'DaVinciCopilot',

@@ -9,10 +9,7 @@ import DvInsightCard from './copilot/DvInsightCard.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
-import type {
-  DashboardWidgetDraft,
-  DashboardWidgetType,
-} from '@/stores/dashboards/types'
+import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
 
@@ -148,86 +145,20 @@ function scrollToBottom() {
   })
 }
 
-function expandToThreeDrafts(base: DashboardWidgetDraft, prompt: string): DashboardWidgetDraft[] {
-  const metric = getMetricDescriptor(base.metricId)
-  const metricLabel = metric?.label ?? base.title ?? 'data'
-  const dimensionGuess = guessDimension(prompt)
-
-  const kpiVariant: DashboardWidgetDraft = {
-    ...base,
-    type: 'kpi',
-    chartVariant: undefined,
-    title: `${metricLabel} · last 30 days`,
-    subtitle: `4 KPIs sourced from ${metric?.dataSource ?? base.dataSource}`,
-  }
-
-  const chartType: DashboardWidgetType = base.type === 'bar' || base.type === 'pie' ? base.type : 'bar'
-  const dimNoun = dimensionGuess.toLowerCase()
-  const baseTitleNoun = stripBy(metricLabel)
-  const chartVariant: DashboardWidgetDraft = {
-    ...base,
-    type: chartType,
-    title: `${baseTitleNoun} by ${dimNoun}`,
-    subtitle: `Grouped by ${dimNoun}`,
-  }
-
-  const tableVariant: DashboardWidgetDraft = {
-    ...base,
-    type: 'table',
-    chartVariant: undefined,
-    title: `Top ${dimNoun}s`,
-    subtitle: 'By revenue · last 30 days · top 5',
-  }
-
-  return [kpiVariant, chartVariant, tableVariant]
-}
-
-function stripBy(label: string): string {
-  // Drop trailing "by X" / "by X over time" so we can recompose without redundancy
-  return label.replace(/\s+by\s+\w+(\s+over\s+time)?$/i, '').replace(/\s+over\s+time$/i, '').trim()
-}
-
-function guessDimension(prompt: string): string {
-  const lower = prompt.toLowerCase()
-  if (lower.includes('channel')) return 'channel'
-  if (lower.includes('region') || lower.includes('country')) return 'region'
-  if (lower.includes('segment')) return 'segment'
-  if (lower.includes('campaign')) return 'campaign'
-  if (lower.includes('product')) return 'product'
-  return 'campaign'
-}
-
 function buildRationale(prompt: string, base: DashboardWidgetDraft): string {
   const metric = getMetricDescriptor(base.metricId)
   const metricLabel = metric?.label ?? 'these metrics'
   const sourceLabel = metric?.dataSource ?? base.dataSource
-  const dim = guessDimension(prompt)
-  return `You asked about ${metricLabel.toLowerCase()} · last 30 days. I pulled from ${capitalize(sourceLabel)}, then drafted a KPI summary, a ${dim} breakdown, and a top-${dim} table so you can see headline numbers, where they came from, and which sends drove them.`
+  void prompt
+  return `You asked about ${metricLabel.toLowerCase()} · last 30 days. I pulled from ${capitalize(sourceLabel)} and picked the visualisation that best surfaces the headline numbers. Refine it to change the chart type or rename before adding.`
 }
 
 function buildIntro(count: number): string {
   const dashName = targetDashboard.value?.name ?? 'this dashboard'
-  return `Here are <strong>${count} widgets</strong> I drafted for <strong>${dashName}</strong>. Add the ones you want, or refine a draft to adjust the metric, window, or grouping.`
+  const noun = count === 1 ? 'widget' : 'widgets'
+  return `Here&rsquo;s <strong>${count} ${noun}</strong> I drafted for <strong>${dashName}</strong>. Click <em>Add widget</em> to review and confirm.`
 }
 
-function rationaleFor(draft: DashboardWidgetDraft): string {
-  switch (draft.type) {
-    case 'kpi':
-      return 'Replaces the headline KPI strip with metric-specific numbers. Comparing to the previous 30-day window.'
-    case 'bar':
-      return 'Grouped to surface the cleanest split between channels and campaign types.'
-    case 'pie':
-      return 'Donut shows share rather than absolute numbers — useful when totals matter less than mix.'
-    case 'table':
-      return 'Sorted by revenue rather than open rate — your existing dashboards lean on revenue as the primary KPI.'
-    case 'timeseries':
-      return draft.chartVariant === 'area'
-        ? 'Area emphasises cumulative volume — useful when you want to see where the curve bends.'
-        : 'A line keeps the focus on slope and momentum across the window.'
-    default:
-      return 'Drafted to match the request. Refine to swap chart type, window, or grouping.'
-  }
-}
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -252,7 +183,7 @@ function processQuery(text: string) {
   if (targetAccountId.value && targetDashboard.value) {
     const base = dashboardsStore.buildAiWidgetDraft(targetAccountId.value, targetDashboard.value.id, text)
     if (base) {
-      drafts = expandToThreeDrafts(base, text)
+      drafts = [base]
       rationale = buildRationale(text, base)
       const metricLabel = getMetricDescriptor(base.metricId)?.label ?? base.title ?? 'data'
       generatingStatus.value = `Pulling ${metricLabel.toLowerCase()} from the last 30 days`
@@ -514,7 +445,7 @@ function onComposerKeydown(event: KeyboardEvent) {
                 <div class="dv-drafts__meta">
                   <span class="dv-drafts__count">
                     <v-icon size="14" color="primary">sparkles</v-icon>
-                    {{ getDraftSetProps(msg)?.drafts.length }} drafts
+                    Draft
                   </span>
                 </div>
 
@@ -525,7 +456,6 @@ function onComposerKeydown(event: KeyboardEvent) {
                   :dashboard-id="targetDashboard?.id ?? ''"
                   :draft="draft"
                   :filters="targetDashboard?.filters"
-                  :rationale="rationaleFor(draft)"
                   @saved="onWidgetSaved($event, msg)"
                   @refined="onWidgetRefined"
                 />

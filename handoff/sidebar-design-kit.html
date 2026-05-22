@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maropost AppSidebar — Design Kit (Figma Handover · Dark)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ==========================================================================
+     TOKENS — Dark sidebar (production default).
+     Resolved verbatim from src/styles/sidebar-dark.css.
+     ========================================================================== */
+  :root {
+    /* Page chrome (light document around the dark sidebar frames) */
+    --page-bg: #fafafa;
+    --page-surface: #ffffff;
+    --page-ink: #1a1814;
+    --page-muted: #5a6573;
+    --page-hairline: #e2e8f0;
+
+    /* Sidebar (dark) */
+    --sidebar-bg: #1b1f2b;
+    --sidebar-border: rgba(255, 255, 255, 0.12);
+    --sidebar-line: rgba(255, 255, 255, 0.14);
+    --sidebar-text: rgba(255, 255, 255, 0.92);
+    --sidebar-muted: rgba(255, 255, 255, 0.72);
+    --sidebar-active-text: #ffffff;
+    --sidebar-hover-bg: rgba(255, 255, 255, 0.09);
+    --sidebar-active-bg: rgba(255, 255, 255, 0.16);
+    --sidebar-focus-ring: rgba(255, 255, 255, 0.24);
+    --sidebar-lock: rgba(255, 255, 255, 0.36);
+
+    --sidebar-radius: 8px;
+    --sidebar-radius-sm: 10px;
+  }
+
+  /* ==========================================================================
+     PAGE CHROME — the kit container (light, sits around dark sidebar frames)
+     ========================================================================== */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 14px/1.5 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: var(--page-bg);
+    padding: 48px;
+    color: var(--page-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .kit-header { max-width: 720px; margin-bottom: 56px; }
+  .kit-header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .kit-header p { font-size: 14px; color: var(--page-muted); margin: 0; line-height: 1.55; max-width: 64ch; }
+
+  .kit-section { margin-bottom: 64px; }
+  .kit-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--page-muted);
+    margin: 0 0 6px;
+  }
+  .kit-section-title { font-size: 22px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .kit-section-caption {
+    font-size: 13px;
+    color: var(--page-muted);
+    margin: 0 0 24px;
+    max-width: 64ch;
+    line-height: 1.55;
+  }
+  .kit-frame {
+    display: inline-block;
+    vertical-align: top;
+    background: var(--page-surface);
+    border: 1px solid var(--page-hairline);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .kit-frame--dark {
+    background: var(--sidebar-bg);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .kit-frame-tight { padding: 0; overflow: hidden; }
+  .kit-row { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
+
+  .meta-note {
+    display: block;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--page-muted);
+    font-style: italic;
+    max-width: 64ch;
+  }
+
+  /* ==========================================================================
+     SIDEBAR — container (dark)
+     ========================================================================== */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 720px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    color: var(--sidebar-text);
+    font-family: inherit;
+  }
+  .sidebar--expanded { width: 240px; }
+  .sidebar--rail { width: 64px; }
+  .sidebar--shorter { height: 480px; }
+  .sidebar--auto { height: auto; }
+
+  /* Header + brand */
+  .sidebar-header {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 14px 16px 20px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--sidebar-border);
+    background: var(--sidebar-bg);
+    z-index: 2;
+  }
+  .sidebar-header--rail { justify-content: center; padding: 12px 8px; }
+  .sidebar-brand__wordmark {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--sidebar-text);
+    line-height: 1;
+  }
+  .rail-brand-box {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--sidebar-radius-sm);
+    background: var(--sidebar-text);
+    color: var(--sidebar-bg);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  /* Toggle pill (collapse/expand) */
+  .sidebar-toggle-pill {
+    position: absolute;
+    top: 50%;
+    right: -12px;
+    transform: translateY(-50%);
+    z-index: 1010;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: var(--sidebar-bg);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.40), 0 1px 2px rgba(0, 0, 0, 0.24);
+    color: var(--sidebar-text);
+  }
+  .sidebar-header--rail .sidebar-toggle-pill { top: 100%; }
+  .sidebar-toggle-pill svg { display: block; width: 14px; height: 14px; }
+
+  .sidebar-scroll {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px 8px 12px;
+  }
+
+  /* ==========================================================================
+     NAV ITEM (dark)
+     ========================================================================== */
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 38px;
+    padding: 9px 12px;
+    margin-bottom: 4px;
+    border-radius: var(--sidebar-radius);
+    color: var(--sidebar-text);
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+    position: relative;
+  }
+  .sidebar--rail .nav-item {
+    justify-content: center;
+    padding: 9px 0;
+    gap: 0;
+  }
+  .nav-item__icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    color: var(--sidebar-muted);
+  }
+  .nav-item__icon svg { display: block; width: 18px; height: 18px; }
+  .nav-item__label {
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.2;
+    flex: 1;
+    color: var(--sidebar-text);
+  }
+  .nav-item__chevron, .nav-item__lock {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    color: var(--sidebar-muted);
+  }
+  .nav-item__chevron svg, .nav-item__lock svg { display: block; width: 14px; height: 14px; }
+  .nav-item__lock { color: var(--sidebar-lock); }
+
+  .nav-item--hover {
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-active-text);
+  }
+  .nav-item--hover .nav-item__icon { color: var(--sidebar-active-text); }
+  .nav-item--active, .nav-item--active.nav-item--hover {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+  }
+  .nav-item--active .nav-item__label { font-weight: 600; color: var(--sidebar-active-text); }
+  .nav-item--active .nav-item__icon { color: var(--sidebar-active-text); }
+
+  /* Parent row with chevron-on-hover */
+  .nav-item--parent .nav-item__chevron { opacity: 0; transition: opacity 120ms ease; }
+  .nav-item--parent.nav-item--hover .nav-item__chevron,
+  .nav-item--parent-hover-demo .nav-item__chevron { opacity: 1; }
+  .nav-item--parent-hover-demo {
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-active-text);
+  }
+  .nav-item--parent-hover-demo .nav-item__icon { color: var(--sidebar-active-text); }
+
+  /* "NEW" badge (dark — muted grey pill, matches sidebar-dark.css lines 114–117) */
+  .sidebar-badge {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: var(--sidebar-radius);
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  /* Divider */
+  .sidebar-divider {
+    border: 0;
+    border-top: 1px solid var(--sidebar-border);
+    margin: 4px 8px;
+    height: 0;
+  }
+
+  /* ==========================================================================
+     APPS — installed-app sub-items + toggle button
+     ========================================================================== */
+  .apps-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    background: transparent;
+    color: var(--sidebar-muted);
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 0;
+  }
+  .apps-toggle-btn svg { display: block; width: 14px; height: 14px; }
+
+  .installed-apps { margin: 0 0 6px; padding-left: 8px; }
+  .app-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 34px;
+    padding: 7px 12px;
+    margin-bottom: 4px;
+    border-radius: var(--sidebar-radius);
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+  .app-item__icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    width: 15px;
+    height: 15px;
+    color: var(--sidebar-muted);
+  }
+  .app-item__icon svg { display: block; width: 15px; height: 15px; }
+  .app-item__title { flex: 1; font-size: 13px; font-weight: 500; color: var(--sidebar-text); }
+  .app-item__status {
+    color: var(--sidebar-muted);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ==========================================================================
+     RAIL FLYOUT CARD (dark)
+     ========================================================================== */
+  .rail-flyout-card {
+    background: var(--sidebar-bg);
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--sidebar-radius);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    padding: 6px;
+    min-width: 200px;
+    max-width: 260px;
+    color: var(--sidebar-text);
+  }
+  .rail-flyout-card__header {
+    margin: -2px -2px 4px;
+    padding: 8px 10px 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--sidebar-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    border-bottom: 1px solid var(--sidebar-border);
+  }
+  .rail-flyout-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 34px;
+    padding: 7px 10px;
+    border-radius: var(--sidebar-radius);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--sidebar-text);
+    cursor: pointer;
+    transition: background 100ms ease, color 100ms ease;
+  }
+  .rail-flyout-item--hover {
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-active-text);
+  }
+  .rail-flyout-item--active {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+    font-weight: 600;
+  }
+  .rail-flyout-item svg {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    opacity: 0.65;
+  }
+  .rail-flyout-item--hover svg, .rail-flyout-item--active svg { opacity: 0.9; }
+  .rail-flyout-divider { margin: 4px 6px; border: 0; border-top: 1px solid var(--sidebar-border); height: 0; }
+  .rail-cascade-wrap { display: flex; gap: 4px; align-items: flex-start; }
+
+  /* ==========================================================================
+     DIRECT-NAV REFERENCE CARD (variant 14)
+     Light-on-light documentation cards (NOT sidebar surfaces).
+     ========================================================================== */
+  .ref-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+  .ref-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 200px;
+    padding: 20px;
+    background: var(--page-surface);
+    border: 1px solid var(--page-hairline);
+    border-radius: 12px;
+  }
+  .ref-card__icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--page-muted);
+    background: #f3f4f6;
+    border-radius: 8px;
+  }
+  .ref-card__icon svg { width: 18px; height: 18px; }
+  .ref-card__title-row { display: flex; align-items: center; gap: 8px; }
+  .ref-card__title { font-size: 14px; font-weight: 700; color: var(--page-ink); }
+  .ref-card__badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #f3f4f6;
+    color: var(--page-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .ref-card__note { font-size: 12px; color: var(--page-muted); line-height: 1.45; margin: 0; }
+
+  /* ==========================================================================
+     TOKEN REFERENCE FOOTER
+     ========================================================================== */
+  .kit-footer {
+    margin-top: 64px;
+    padding-top: 40px;
+    border-top: 1px solid var(--page-hairline);
+  }
+  .kit-footer h2 { font-size: 22px; font-weight: 700; margin: 0 0 24px; letter-spacing: -0.01em; }
+  .kit-footer h3 { font-size: 13px; font-weight: 600; margin: 24px 0 12px; color: var(--page-ink); }
+  .token-table {
+    width: 100%;
+    max-width: 760px;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .token-table th, .token-table td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--page-hairline);
+    vertical-align: middle;
+  }
+  .token-table th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--page-muted);
+    border-bottom-width: 2px;
+  }
+  .token-table code {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+  .swatch-dot {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid var(--page-hairline);
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========================================================================
+     ICON LIBRARY — Lucide path data, referenced via <use>
+     ======================================================================== -->
+<svg style="display:none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="ic-layout-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect width="7" height="9" x="3" y="3" rx="1"/>
+    <rect width="7" height="5" x="14" y="3" rx="1"/>
+    <rect width="7" height="9" x="14" y="12" rx="1"/>
+    <rect width="7" height="5" x="3" y="16" rx="1"/>
+  </symbol>
+  <symbol id="ic-line-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 3v18h18"/>
+    <path d="m19 9-5 5-4-4-3 3"/>
+  </symbol>
+  <symbol id="ic-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </symbol>
+  <symbol id="ic-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m7.5 4.27 9 5.15"/>
+    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+    <path d="m3.3 7 8.7 5 8.7-5"/>
+    <path d="M12 22V12"/>
+  </symbol>
+  <symbol id="ic-megaphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m3 11 18-5v12L3 14v-3z"/>
+    <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+  </symbol>
+  <symbol id="ic-shopping-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="8" cy="21" r="1"/>
+    <circle cx="19" cy="21" r="1"/>
+    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+  </symbol>
+  <symbol id="ic-store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+    <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+    <path d="M2 7h20"/>
+    <path d="M22 7v3a2 2 0 0 1-2 2 2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"/>
+  </symbol>
+  <symbol id="ic-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/>
+    <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>
+  </symbol>
+  <symbol id="ic-headset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 11h3a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a8 8 0 0 1 16 0v5a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1h3"/>
+    <path d="M21 16v2a4 4 0 0 1-4 4h-5"/>
+  </symbol>
+  <symbol id="ic-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 8V4H8"/>
+    <rect width="16" height="12" x="4" y="8" rx="2"/>
+    <path d="M2 14h2"/>
+    <path d="M20 14h2"/>
+    <path d="M15 13v2"/>
+    <path d="M9 13v2"/>
+  </symbol>
+  <symbol id="ic-puzzle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.23 8.77c.24-.24.581-.353.917-.303.515.077.877.528 1.073 1.01a2.5 2.5 0 1 0 3.259-3.259c-.482-.196-.933-.558-1.01-1.073-.05-.336.062-.676.303-.917l1.525-1.525A2.402 2.402 0 0 1 12 1.998c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02Z"/>
+  </symbol>
+  <symbol id="ic-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m9 18 6-6-6-6"/>
+  </symbol>
+  <symbol id="ic-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m15 18-6-6 6-6"/>
+  </symbol>
+  <symbol id="ic-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </symbol>
+  <symbol id="ic-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12h14"/>
+    <path d="M12 5v14"/>
+  </symbol>
+  <symbol id="ic-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12h14"/>
+  </symbol>
+  <symbol id="ic-shopping-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+    <path d="M3 6h18"/>
+    <path d="M16 10a4 4 0 0 1-8 0"/>
+  </symbol>
+  <symbol id="ic-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+  </symbol>
+  <symbol id="ic-message-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </symbol>
+</svg>
+
+
+<!-- ========================================================================
+     HEADER
+     ======================================================================== -->
+<header class="kit-header">
+  <p class="kit-label">Design Kit · Figma Handover · Dark</p>
+  <h1>Maropost AppSidebar</h1>
+  <p>Static reference for every sidebar state and submenu in the production <strong>dark</strong> color mode. All measurements, colors, and spacing match the live component (<code>src/components/layout/AppSidebar.vue</code> + <code>src/styles/sidebar-dark.css</code>). The prototype-only dark-sidebar toggle and accent color picker are excluded — this kit ships the dark sidebar itself, not the UI that toggles it.</p>
+</header>
+
+
+<!-- ========================================================================
+     1 — Expanded sidebar (240px) — full
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 01</p>
+  <h2 class="kit-section-title">Expanded sidebar (240px)</h2>
+  <p class="kit-section-caption">Full labels, all 11 nav groups in canonical order. Dividers separate Analytics ↔ CDP, Products ↔ Marketing, Service ↔ Da&nbsp;Vinci&nbsp;AI, and Da&nbsp;Vinci&nbsp;AI ↔ Apps. Dashboards shown active (subtle 16 % white overlay). Da&nbsp;Vinci&nbsp;AI carries the muted "NEW" badge.</p>
+  <div class="kit-frame kit-frame-tight">
+    <div class="sidebar sidebar--expanded">
+      <div class="sidebar-header">
+        <span class="sidebar-brand__wordmark">Maropost</span>
+        <button class="sidebar-toggle-pill" aria-label="Collapse sidebar">
+          <svg><use href="#ic-chevron-left"/></svg>
+        </button>
+      </div>
+      <div class="sidebar-scroll">
+        <div class="nav-item nav-item--parent nav-item--active">
+          <span class="nav-item__icon"><svg><use href="#ic-layout-dashboard"/></svg></span>
+          <span class="nav-item__label">Dashboards</span>
+        </div>
+        <div class="nav-item nav-item--parent">
+          <span class="nav-item__icon"><svg><use href="#ic-line-chart"/></svg></span>
+          <span class="nav-item__label">Analytics</span>
+        </div>
+        <hr class="sidebar-divider">
+        <div class="nav-item nav-item--parent">
+          <span class="nav-item__icon"><svg><use href="#ic-users"/></svg></span>
+          <span class="nav-item__label">CDP</span>
+        </div>
+        <div class="nav-item nav-item--parent">
+          <span class="nav-item__icon"><svg><use href="#ic-package"/></svg></span>
+          <span class="nav-item__label">Products</span>
+        </div>
+        <hr class="sidebar-divider">
+        <div class="nav-item nav-item--parent">
+          <span class="nav-item__icon"><svg><use href="#ic-megaphone"/></svg></span>
+          <span class="nav-item__label">Marketing</span>
+        </div>
+        <div class="nav-item nav-item--parent">
+          <span class="nav-item__icon"><svg><use href="#ic-shopping-cart"/></svg></span>
+          <span class="nav-item__label">Commerce</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item__icon"><svg><use href="#ic-store"/></svg></span>
+          <span class="nav-item__label">Retail</span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item__icon"><svg><use href="#ic-tag"/></svg></span>
+          <span class="nav-item__label">Merchandise</span>
+        </div>
+        <div class="nav-item nav-item--parent">
+          <span class="nav-item__icon"><svg><use href="#ic-headset"/></svg></span>
+          <span class="nav-item__label">Service</span>
+        </div>
+        <hr class="sidebar-divider">
+        <div class="nav-item">
+          <span class="nav-item__icon"><svg><use href="#ic-bot"/></svg></span>
+          <span class="nav-item__label">Da Vinci AI</span>
+          <span class="sidebar-badge">NEW</span>
+        </div>
+        <hr class="sidebar-divider">
+        <div class="nav-item">
+          <span class="nav-item__icon"><svg><use href="#ic-puzzle"/></svg></span>
+          <span class="nav-item__label">Apps</span>
+          <button class="apps-toggle-btn" aria-label="Show installed apps">
+            <svg><use href="#ic-plus"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="meta-note">Width 240px · Height varies (720px shown). Item: 38px min-height, 9 × 12px padding, 8px radius. Active overlay: 16 % white. Hover overlay: 9 % white.</span>
+</section>
+
+
+<!-- ========================================================================
+     2 — Rail sidebar (64px) — full
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 02</p>
+  <h2 class="kit-section-title">Rail sidebar (64px)</h2>
+  <p class="kit-section-caption">Icon-only collapsed mode. Brand becomes the 32px "M" mark in a rounded square (white on dark). Hovering any icon opens its flyout card (see variants 6–13). Toggle pill anchored below the brand.</p>
+  <div class="kit-frame kit-frame-tight">
+    <div class="sidebar sidebar--rail">
+      <div class="sidebar-header sidebar-header--rail">
+        <div class="rail-brand-box">M</div>
+        <button class="sidebar-toggle-pill" aria-label="Expand sidebar">
+          <svg><use href="#ic-chevron-right"/></svg>
+        </button>
+      </div>
+      <div class="sidebar-scroll">
+        <div class="nav-item nav-item--active"><span class="nav-item__icon"><svg><use href="#ic-layout-dashboard"/></svg></span></div>
+        <div class="nav-item"><span class="nav-item__icon"><svg><use href="#ic-line-chart"/></svg></span></div>
+        <hr class="sidebar-divider">
+        <div class="nav-item"><span class="nav-item__icon"><svg><use href="#ic-users"/></svg></span></div>
+        <div class="nav-item"><span class="nav-item__icon"><svg><use href="#ic-package"/></svg></span></div>
+        <hr class="sidebar-divider">
+        <div class="nav-item"><span class="nav-item__icon"><svg><use href="#ic-megaphone"/></svg></span></div>
+        <div class="nav-item"><span class="nav-item__icon"><svg><use href="#ic-shopping-cart"/></svg></span></div>
+        <div class="nav-item"><span class="nav-item__icon"><svg><use href="#ic-store"/></svg></span></div>
+        <div class="nav-item"><span class="nav-item__icon"><svg><use href="#ic-tag"/></svg></span></div>
+        <div class="nav-item"><span class="nav-item__icon"><svg><use href="#ic-headset"/></svg></span></div>
+        <hr class="sidebar-divider">
+        <div class="nav-item"><span class="nav-item__icon"><svg><use href="#ic-bot"/></svg></span></div>
+        <hr class="sidebar-divider">
+        <div class="nav-item"><span class="nav-item__icon"><svg><use href="#ic-puzzle"/></svg></span></div>
+      </div>
+    </div>
+  </div>
+  <span class="meta-note">Width 64px. Brand box 32 × 32, 10px radius, white fill (token-text) on dark bg (token-bg). NEW badges and labels hidden — locked-state lock icon also hidden in rail.</span>
+</section>
+
+
+<!-- ========================================================================
+     3 — Header / brand anatomy
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 03</p>
+  <h2 class="kit-section-title">Header &amp; brand anatomy</h2>
+  <p class="kit-section-caption">Brand block in both modes, with the toggle pill positioned half-outside the right edge (centered vertically when expanded, dropped below brand in rail mode). Pill border at 22 % white, drop shadow deeper in dark mode to read against the navy.</p>
+  <div class="kit-row">
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--expanded sidebar--auto">
+        <div class="sidebar-header">
+          <span class="sidebar-brand__wordmark">Maropost</span>
+          <button class="sidebar-toggle-pill" aria-label="Collapse sidebar">
+            <svg><use href="#ic-chevron-left"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--rail sidebar--auto">
+        <div class="sidebar-header sidebar-header--rail">
+          <div class="rail-brand-box">M</div>
+          <button class="sidebar-toggle-pill" aria-label="Expand sidebar">
+            <svg><use href="#ic-chevron-right"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="meta-note">Wordmark: Inter 17px / 700 / letter-spacing 1.2px / uppercase — white at 92 % alpha. Pill: 24 × 24, 1px border at 22 % white, 999px radius.</span>
+</section>
+
+
+<!-- ========================================================================
+     4 — Nav item state matrix
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 04</p>
+  <h2 class="kit-section-title">Nav item — state matrix</h2>
+  <p class="kit-section-caption">Six discrete states stacked vertically. Default & hover differ only by background tint (9 % white overlay on hover). Active uses 16 % white overlay + weight 600 label. Parent rows reveal a chevron on hover. Locked items append a 14px lock icon at 36 % white. The "NEW" badge appears only in expanded mode (never in rail).</p>
+  <div class="kit-frame kit-frame-tight">
+    <div class="sidebar sidebar--expanded sidebar--auto" style="border-right: 0;">
+      <div style="padding: 4px 8px 12px;">
+        <div class="nav-item">
+          <span class="nav-item__icon"><svg><use href="#ic-line-chart"/></svg></span>
+          <span class="nav-item__label">Default</span>
+        </div>
+        <div class="nav-item nav-item--hover">
+          <span class="nav-item__icon"><svg><use href="#ic-line-chart"/></svg></span>
+          <span class="nav-item__label">Hover</span>
+        </div>
+        <div class="nav-item nav-item--active">
+          <span class="nav-item__icon"><svg><use href="#ic-line-chart"/></svg></span>
+          <span class="nav-item__label">Active / selected</span>
+        </div>
+        <div class="nav-item nav-item--parent nav-item--parent-hover-demo">
+          <span class="nav-item__icon"><svg><use href="#ic-megaphone"/></svg></span>
+          <span class="nav-item__label">Parent (hovered → chevron)</span>
+          <span class="nav-item__chevron"><svg><use href="#ic-chevron-right"/></svg></span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item__icon"><svg><use href="#ic-shopping-cart"/></svg></span>
+          <span class="nav-item__label">Locked (subscription-gated)</span>
+          <span class="nav-item__lock"><svg><use href="#ic-lock"/></svg></span>
+        </div>
+        <div class="nav-item">
+          <span class="nav-item__icon"><svg><use href="#ic-bot"/></svg></span>
+          <span class="nav-item__label">With "NEW" badge</span>
+          <span class="sidebar-badge">NEW</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="meta-note">Hover bg = 9 % white. Active bg = 16 % white. Chevron 14px @ 72 % white. Lock 14px @ 36 % white. Badge: 18px tall, 6px h-padding, bg = 16 % white, text = 72 % white.</span>
+</section>
+
+
+<!-- ========================================================================
+     5 — Group dividers
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 05</p>
+  <h2 class="kit-section-title">Group dividers</h2>
+  <p class="kit-section-caption">1px hairline at 12 % white with 4px vertical margin and 8px horizontal inset so the line doesn't touch the sidebar edge.</p>
+  <div class="kit-frame kit-frame-tight">
+    <div class="sidebar sidebar--expanded sidebar--auto" style="border-right: 0;">
+      <div style="padding: 4px 8px 12px;">
+        <div class="nav-item">
+          <span class="nav-item__icon"><svg><use href="#ic-package"/></svg></span>
+          <span class="nav-item__label">Products</span>
+        </div>
+        <hr class="sidebar-divider">
+        <div class="nav-item">
+          <span class="nav-item__icon"><svg><use href="#ic-megaphone"/></svg></span>
+          <span class="nav-item__label">Marketing</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="meta-note">Used after groups with <code>dividerAfter: true</code> — Analytics, Products, Service, Da Vinci AI.</span>
+</section>
+
+
+<!-- ========================================================================
+     6 — Rail flyout: Dashboards
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 06 · Submenu</p>
+  <h2 class="kit-section-title">Rail flyout — Dashboards</h2>
+  <p class="kit-section-caption">Opens on hover of the Dashboards icon. 3 items: Home, Manage, Live. Single column, no sub-groups.</p>
+  <div class="kit-row">
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--rail sidebar--auto">
+        <div style="padding: 4px 8px 12px;">
+          <div class="nav-item nav-item--active"><span class="nav-item__icon"><svg><use href="#ic-layout-dashboard"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="rail-flyout-card">
+      <div class="rail-flyout-card__header">Dashboards</div>
+      <div class="rail-flyout-item rail-flyout-item--active">Home</div>
+      <div class="rail-flyout-item">Manage</div>
+      <div class="rail-flyout-item">Live</div>
+    </div>
+  </div>
+  <span class="meta-note">Card: 200–260px width, 8px radius, 6px padding. Item: 34px min-height, 13px / 500 label. Shadow: 0 18px 40px rgba(0,0,0,0.34) + inset highlight at 6 % white.</span>
+</section>
+
+
+<!-- ========================================================================
+     7 — Rail flyout: Analytics
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 07 · Submenu</p>
+  <h2 class="kit-section-title">Rail flyout — Analytics</h2>
+  <p class="kit-section-caption">14 items. Tall card scrolls internally when content exceeds available viewport height; otherwise card grows to fit. Order matches the live component.</p>
+  <div class="kit-row">
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--rail sidebar--auto">
+        <div style="padding: 4px 8px 12px;">
+          <div class="nav-item nav-item--active"><span class="nav-item__icon"><svg><use href="#ic-line-chart"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="rail-flyout-card">
+      <div class="rail-flyout-card__header">Analytics</div>
+      <div class="rail-flyout-item">Monthly Totals</div>
+      <div class="rail-flyout-item">Sales by Order</div>
+      <div class="rail-flyout-item">Dispatched Orders</div>
+      <div class="rail-flyout-item">Sales Summary</div>
+      <div class="rail-flyout-item">eRFM Report</div>
+      <div class="rail-flyout-item">Campaign Reports</div>
+      <div class="rail-flyout-item">Recurring Campaign Reports</div>
+      <div class="rail-flyout-item">A/B Campaign Reports</div>
+      <div class="rail-flyout-item">Test Campaign Reports</div>
+      <div class="rail-flyout-item">Website Reports</div>
+      <div class="rail-flyout-item">Journey Reports</div>
+      <div class="rail-flyout-item">Custom Reports</div>
+      <div class="rail-flyout-item">Transactional Email Reports</div>
+      <div class="rail-flyout-item">Log Inspector</div>
+    </div>
+  </div>
+  <span class="meta-note">Longer labels may wrap; max-width 260px constrains overflow.</span>
+</section>
+
+
+<!-- ========================================================================
+     8 — Rail flyout: CDP
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 08 · Submenu</p>
+  <h2 class="kit-section-title">Rail flyout — CDP</h2>
+  <p class="kit-section-caption">9 items. "Segments" shown in hover state for reference.</p>
+  <div class="kit-row">
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--rail sidebar--auto">
+        <div style="padding: 4px 8px 12px;">
+          <div class="nav-item nav-item--active"><span class="nav-item__icon"><svg><use href="#ic-users"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="rail-flyout-card">
+      <div class="rail-flyout-card__header">CDP</div>
+      <div class="rail-flyout-item">All Contacts</div>
+      <div class="rail-flyout-item">Contact Lists</div>
+      <div class="rail-flyout-item rail-flyout-item--hover">Segments</div>
+      <div class="rail-flyout-item">Contact Fields</div>
+      <div class="rail-flyout-item">Contact Tags</div>
+      <div class="rail-flyout-item">Relational Tables</div>
+      <div class="rail-flyout-item">SQL Queries</div>
+      <div class="rail-flyout-item">Secure Lists</div>
+      <div class="rail-flyout-item">Web Tracking</div>
+    </div>
+  </div>
+  <span class="meta-note">Hover state shown on the third item for spec clarity.</span>
+</section>
+
+
+<!-- ========================================================================
+     9 — Rail flyout: Products (locked trigger)
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 09 · Submenu</p>
+  <h2 class="kit-section-title">Rail flyout — Products</h2>
+  <p class="kit-section-caption">6 items. The Products group requires the <code>commerce</code> subscription. The trigger row in the expanded sidebar carries a lock icon (see variant 4); the flyout is shown here unlocked to expose the full menu spec. In production the row would not open when the subscription is missing.</p>
+  <div class="kit-row">
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--rail sidebar--auto">
+        <div style="padding: 4px 8px 12px;">
+          <div class="nav-item nav-item--active"><span class="nav-item__icon"><svg><use href="#ic-package"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="rail-flyout-card">
+      <div class="rail-flyout-card__header">Products</div>
+      <div class="rail-flyout-item">Product Recommendations</div>
+      <div class="rail-flyout-item">Products</div>
+      <div class="rail-flyout-item">Product Tax Category</div>
+      <div class="rail-flyout-item">Collections</div>
+      <div class="rail-flyout-item">Inventory</div>
+      <div class="rail-flyout-item">Reservations</div>
+    </div>
+  </div>
+  <span class="meta-note">Subscription gate: <code>requires: 'commerce'</code>. Lock icon renders only on the trigger row, not inside the flyout.</span>
+</section>
+
+
+<!-- ========================================================================
+     10 — Rail flyout: Marketing (cascade primary)
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 10 · Submenu</p>
+  <h2 class="kit-section-title">Rail flyout — Marketing (cascade primary)</h2>
+  <p class="kit-section-caption">Marketing's primary card shows four sub-groups separated by dividers: Campaigns, Acquisition, Automation, Content. The Content row carries a chevron-right indicating a secondary cascade card (variant 11). Other rows navigate directly.</p>
+  <div class="kit-row">
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--rail sidebar--auto">
+        <div style="padding: 4px 8px 12px;">
+          <div class="nav-item nav-item--active"><span class="nav-item__icon"><svg><use href="#ic-megaphone"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="rail-flyout-card">
+      <div class="rail-flyout-card__header">Marketing</div>
+      <div class="rail-flyout-item">Email Campaigns</div>
+      <div class="rail-flyout-item">Transactional Email</div>
+      <div class="rail-flyout-item">Campaign Tags</div>
+      <hr class="rail-flyout-divider">
+      <div class="rail-flyout-item">Acquisition Forms</div>
+      <div class="rail-flyout-item">Signup Forms</div>
+      <div class="rail-flyout-item">Landing Pages</div>
+      <div class="rail-flyout-item">Surveys</div>
+      <hr class="rail-flyout-divider">
+      <div class="rail-flyout-item">Journeys</div>
+      <div class="rail-flyout-item">Data Journeys</div>
+      <hr class="rail-flyout-divider">
+      <div class="rail-flyout-item rail-flyout-item--active">
+        <span>Content</span>
+        <svg><use href="#ic-chevron-right"/></svg>
+      </div>
+    </div>
+  </div>
+  <span class="meta-note">Cascade chevron: 12px, 65 % opacity default / 90 % on hover. Divider: 1px hairline at 12 % white, 4px / 6px margin.</span>
+</section>
+
+
+<!-- ========================================================================
+     11 — Rail flyout: Marketing → Content (cascade secondary)
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 11 · Submenu</p>
+  <h2 class="kit-section-title">Rail flyout — Marketing → Content (cascade secondary)</h2>
+  <p class="kit-section-caption">Opens to the right of the primary card when the "Content" row is hovered. Same card styling, with the sub-group name as the uppercase header. Shown side-by-side with the primary here — in production both sit at a 4px horizontal gap.</p>
+  <div class="kit-frame kit-frame--dark">
+    <div class="rail-cascade-wrap">
+      <div class="rail-flyout-card">
+        <div class="rail-flyout-card__header">Marketing</div>
+        <div class="rail-flyout-item">Email Campaigns</div>
+        <div class="rail-flyout-item">Transactional Email</div>
+        <div class="rail-flyout-item">Campaign Tags</div>
+        <hr class="rail-flyout-divider">
+        <div class="rail-flyout-item">Acquisition Forms</div>
+        <div class="rail-flyout-item">Signup Forms</div>
+        <div class="rail-flyout-item">Landing Pages</div>
+        <div class="rail-flyout-item">Surveys</div>
+        <hr class="rail-flyout-divider">
+        <div class="rail-flyout-item">Journeys</div>
+        <div class="rail-flyout-item">Data Journeys</div>
+        <hr class="rail-flyout-divider">
+        <div class="rail-flyout-item rail-flyout-item--active">
+          <span>Content</span>
+          <svg><use href="#ic-chevron-right"/></svg>
+        </div>
+      </div>
+      <div class="rail-flyout-card">
+        <div class="rail-flyout-card__header">Content</div>
+        <div class="rail-flyout-item">Email Content</div>
+        <div class="rail-flyout-item">Dynamic Content</div>
+        <div class="rail-flyout-item">Image Library</div>
+        <div class="rail-flyout-item">Footer Management</div>
+        <div class="rail-flyout-item">Optimise on Open</div>
+        <div class="rail-flyout-item">Content Feeds</div>
+        <div class="rail-flyout-item">Coupon Banks</div>
+        <div class="rail-flyout-item">Preference Management</div>
+        <div class="rail-flyout-item">Countdown Timer</div>
+      </div>
+    </div>
+  </div>
+  <span class="meta-note">Cascade gap: 4px between cards. Secondary card uses identical token block to the primary.</span>
+</section>
+
+
+<!-- ========================================================================
+     12 — Rail flyout: Commerce
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 12 · Submenu</p>
+  <h2 class="kit-section-title">Rail flyout — Commerce</h2>
+  <p class="kit-section-caption">Mix of one sub-group (Orders) and flat items (Promos & Coupons, Sales Channels). Divider separates the logical clusters. Subscription gate: <code>commerce</code>.</p>
+  <div class="kit-row">
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--rail sidebar--auto">
+        <div style="padding: 4px 8px 12px;">
+          <div class="nav-item nav-item--active"><span class="nav-item__icon"><svg><use href="#ic-shopping-cart"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="rail-flyout-card">
+      <div class="rail-flyout-card__header">Commerce</div>
+      <div class="rail-flyout-item">Sales Orders</div>
+      <div class="rail-flyout-item">Draft Orders</div>
+      <div class="rail-flyout-item">Fulfillment</div>
+      <hr class="rail-flyout-divider">
+      <div class="rail-flyout-item">Promos &amp; Coupons</div>
+      <div class="rail-flyout-item">Sales Channels</div>
+    </div>
+  </div>
+  <span class="meta-note">Orders sub-group + 2 flat items. No cascade.</span>
+</section>
+
+
+<!-- ========================================================================
+     13 — Rail flyout: Service
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 13 · Submenu</p>
+  <h2 class="kit-section-title">Rail flyout — Service</h2>
+  <p class="kit-section-caption">Single-item flyout. Subscription gate: <code>service</code>. Will gain more items in future iterations (knowledge base, agent inbox, etc.) — card sizing already accommodates growth.</p>
+  <div class="kit-row">
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--rail sidebar--auto">
+        <div style="padding: 4px 8px 12px;">
+          <div class="nav-item nav-item--active"><span class="nav-item__icon"><svg><use href="#ic-headset"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="rail-flyout-card">
+      <div class="rail-flyout-card__header">Service</div>
+      <div class="rail-flyout-item">Tickets</div>
+    </div>
+  </div>
+  <span class="meta-note">Single item — flyout still uses min-width 200px to maintain consistency with other groups.</span>
+</section>
+
+
+<!-- ========================================================================
+     14 — Rail flyout: Da Vinci AI
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 14 · Submenu</p>
+  <h2 class="kit-section-title">Rail flyout — Da Vinci AI</h2>
+  <p class="kit-section-caption">Two items: <strong>Overview</strong> (opens the Da Vinci landing page with Get started + Dashboard tabs) and <strong>Ask Da Vinci</strong> (opens the fullscreen copilot). Subscription gate: <code>davinci</code>. Trigger row carries the NEW badge in expanded mode.</p>
+  <div class="kit-row">
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--rail sidebar--auto">
+        <div style="padding: 4px 8px 12px;">
+          <div class="nav-item nav-item--active"><span class="nav-item__icon"><svg><use href="#ic-bot"/></svg></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="rail-flyout-card">
+      <div class="rail-flyout-card__header">Da Vinci AI</div>
+      <div class="rail-flyout-item rail-flyout-item--active">Overview</div>
+      <div class="rail-flyout-item">Ask Da Vinci</div>
+    </div>
+  </div>
+  <span class="meta-note">Overview is the default landing — singleRoute target. Ask Da Vinci routes to <code>/da-vinci/copilot</code> in fullscreen layout.</span>
+</section>
+
+
+<!-- ========================================================================
+     15 — Direct-nav groups (no flyout)
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 15 · Reference</p>
+  <h2 class="kit-section-title">Direct-nav groups (no submenu)</h2>
+  <p class="kit-section-caption">These two groups navigate directly to a landing page on click — they do not open a flyout in either rail or expanded mode. Documented here so the designer doesn't need to look for missing submenus.</p>
+  <div class="ref-grid">
+    <div class="ref-card">
+      <div class="ref-card__icon"><svg><use href="#ic-store"/></svg></div>
+      <div class="ref-card__title-row">
+        <span class="ref-card__title">Retail</span>
+      </div>
+      <p class="ref-card__note">Direct navigation. No submenu. Subscription: <code>commerce</code>.</p>
+    </div>
+    <div class="ref-card">
+      <div class="ref-card__icon"><svg><use href="#ic-tag"/></svg></div>
+      <div class="ref-card__title-row">
+        <span class="ref-card__title">Merchandise</span>
+      </div>
+      <p class="ref-card__note">Direct navigation. No submenu. Subscription: <code>commerce</code>.</p>
+    </div>
+  </div>
+  <span class="meta-note">These rows still receive hover and active visual states — they just don't trigger a flyout card.</span>
+</section>
+
+
+<!-- ========================================================================
+     16 — Expanded-mode flyout
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 16</p>
+  <h2 class="kit-section-title">Expanded-mode flyout</h2>
+  <p class="kit-section-caption">When a parent row is clicked in expanded mode, this card teleports into <code>&lt;body&gt;</code> at <code>position: fixed; left: 240px</code>, aligned vertically to the trigger row. Markup is identical to the rail flyout but the uppercase <code>__header</code> is omitted (the labeled parent in the sidebar already provides context). Multi-sub-group + cascade variants behave the same as variants 10–12. Analytics's 14 items shown for content reference.</p>
+  <div class="kit-row">
+    <div class="kit-frame kit-frame-tight">
+      <div class="sidebar sidebar--expanded sidebar--shorter">
+        <div class="sidebar-header">
+          <span class="sidebar-brand__wordmark">Maropost</span>
+          <button class="sidebar-toggle-pill" aria-label="Collapse sidebar">
+            <svg><use href="#ic-chevron-left"/></svg>
+          </button>
+        </div>
+        <div class="sidebar-scroll">
+          <div class="nav-item nav-item--parent"><span class="nav-item__icon"><svg><use href="#ic-layout-dashboard"/></svg></span><span class="nav-item__label">Dashboards</span></div>
+          <div class="nav-item nav-item--parent nav-item--active">
+            <span class="nav-item__icon"><svg><use href="#ic-line-chart"/></svg></span>
+            <span class="nav-item__label">Analytics</span>
+            <span class="nav-item__chevron" style="opacity:1;"><svg><use href="#ic-chevron-right"/></svg></span>
+          </div>
+          <hr class="sidebar-divider">
+          <div class="nav-item nav-item--parent"><span class="nav-item__icon"><svg><use href="#ic-users"/></svg></span><span class="nav-item__label">CDP</span></div>
+          <div class="nav-item nav-item--parent"><span class="nav-item__icon"><svg><use href="#ic-package"/></svg></span><span class="nav-item__label">Products</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="rail-flyout-card" style="align-self: flex-start; margin-top: 80px;">
+      <div class="rail-flyout-item">Monthly Totals</div>
+      <div class="rail-flyout-item">Sales by Order</div>
+      <div class="rail-flyout-item">Dispatched Orders</div>
+      <div class="rail-flyout-item">Sales Summary</div>
+      <div class="rail-flyout-item">eRFM Report</div>
+      <div class="rail-flyout-item">Campaign Reports</div>
+      <div class="rail-flyout-item">Recurring Campaign Reports</div>
+      <div class="rail-flyout-item">A/B Campaign Reports</div>
+      <div class="rail-flyout-item">Test Campaign Reports</div>
+      <div class="rail-flyout-item">Website Reports</div>
+      <div class="rail-flyout-item">Journey Reports</div>
+      <div class="rail-flyout-item">Custom Reports</div>
+      <div class="rail-flyout-item">Transactional Email Reports</div>
+      <div class="rail-flyout-item">Log Inspector</div>
+    </div>
+  </div>
+  <span class="meta-note">In production: <code>position: fixed</code>, <code>left: 240px</code>, vertical Y matches the trigger row. Open-flyout parent gets the active background overlay.</span>
+</section>
+
+
+<!-- ========================================================================
+     17 — Installed Apps expansion
+     ======================================================================== -->
+<section class="kit-section">
+  <p class="kit-label">Variant 17</p>
+  <h2 class="kit-section-title">Installed Apps — expansion</h2>
+  <p class="kit-section-caption">The Apps row has a "+ / −" inline toggle. Default state shows just the Apps item with a "+" button. Expanded state lists the installed apps below — each row indented 20px on the left, with a 15px icon, the app name, and an "ACTIVE" status badge on the right (muted white, no green tint in dark mode — color comes through the existing muted token).</p>
+  <div class="kit-row">
+    <div>
+      <p class="kit-label" style="margin-bottom: 8px;">Default · collapsed</p>
+      <div class="kit-frame kit-frame-tight">
+        <div class="sidebar sidebar--expanded sidebar--auto">
+          <div style="padding: 4px 8px 12px;">
+            <div class="nav-item">
+              <span class="nav-item__icon"><svg><use href="#ic-puzzle"/></svg></span>
+              <span class="nav-item__label">Apps</span>
+              <button class="apps-toggle-btn" aria-label="Show installed apps">
+                <svg><use href="#ic-plus"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="kit-label" style="margin-bottom: 8px;">Expanded · installed apps visible</p>
+      <div class="kit-frame kit-frame-tight">
+        <div class="sidebar sidebar--expanded sidebar--auto">
+          <div style="padding: 4px 8px 12px;">
+            <div class="nav-item">
+              <span class="nav-item__icon"><svg><use href="#ic-puzzle"/></svg></span>
+              <span class="nav-item__label">Apps</span>
+              <button class="apps-toggle-btn" aria-label="Hide installed apps">
+                <svg><use href="#ic-minus"/></svg>
+              </button>
+            </div>
+            <div class="installed-apps">
+              <div class="app-item">
+                <span class="app-item__icon"><svg><use href="#ic-shopping-bag"/></svg></span>
+                <span class="app-item__title">Shopify</span>
+                <span class="app-item__status">Active</span>
+              </div>
+              <div class="app-item">
+                <span class="app-item__icon"><svg><use href="#ic-cloud"/></svg></span>
+                <span class="app-item__title">Salesforce</span>
+                <span class="app-item__status">Active</span>
+              </div>
+              <div class="app-item">
+                <span class="app-item__icon"><svg><use href="#ic-megaphone"/></svg></span>
+                <span class="app-item__title">Facebook Ads</span>
+                <span class="app-item__status">Active</span>
+              </div>
+              <div class="app-item">
+                <span class="app-item__icon"><svg><use href="#ic-message-square"/></svg></span>
+                <span class="app-item__title">Twilio</span>
+                <span class="app-item__status">Active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="meta-note">App item: 34px min-height, 15px icon (muted), title 13 / 500, status 10.5 / 600 uppercase muted.</span>
+</section>
+
+
+<!-- ========================================================================
+     TOKEN REFERENCE FOOTER
+     ======================================================================== -->
+<footer class="kit-footer">
+  <h2>Token reference</h2>
+
+  <h3>Dimensions</h3>
+  <table class="token-table">
+    <thead><tr><th>Token</th><th>Value</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td><code>sidebar.width.expanded</code></td><td>240px</td><td>Main expanded mode</td></tr>
+      <tr><td><code>sidebar.width.rail</code></td><td>64px</td><td>Collapsed mode</td></tr>
+      <tr><td><code>nav-item.min-height</code></td><td>38px</td><td>All nav rows in main list</td></tr>
+      <tr><td><code>nav-item.padding</code></td><td>9px 12px</td><td>Vertical · horizontal</td></tr>
+      <tr><td><code>nav-item.margin-bottom</code></td><td>4px</td><td>Between rows</td></tr>
+      <tr><td><code>nav-item.gap</code></td><td>16px</td><td>Icon ↔ label</td></tr>
+      <tr><td><code>icon.size</code></td><td>18px</td><td>Group icon</td></tr>
+      <tr><td><code>icon.size.chevron-lock</code></td><td>14px</td><td>Chevron + lock + toggle pill arrow</td></tr>
+      <tr><td><code>brand.wordmark</code></td><td>17px · 700 · 1.2px letter-spacing · UPPER</td><td>"MAROPOST" expanded</td></tr>
+      <tr><td><code>brand.rail-box</code></td><td>32 × 32, 10px radius, "M" 15px / 700 / -0.5px letter-spacing</td><td>Rail brand mark</td></tr>
+      <tr><td><code>flyout.min-width</code></td><td>200px</td><td>Rail / expanded flyout card</td></tr>
+      <tr><td><code>flyout.max-width</code></td><td>260px</td><td>Rail / expanded flyout card</td></tr>
+      <tr><td><code>flyout-item.min-height</code></td><td>34px</td><td>Items inside flyout card</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Radii</h3>
+  <table class="token-table">
+    <thead><tr><th>Token</th><th>Value</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td><code>sidebar.radius</code></td><td>8px</td><td>Nav item, flyout card, badge</td></tr>
+      <tr><td><code>sidebar.radius-sm</code></td><td>10px</td><td>Rail brand box</td></tr>
+      <tr><td><code>sidebar.pill</code></td><td>999px</td><td>Collapse / expand toggle pill</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Colors — Dark sidebar</h3>
+  <p style="font-size:12px;color:var(--page-muted);margin:0 0 12px;max-width:60ch;">From <code>src/styles/sidebar-dark.css</code>. White-alpha overlays composited over the navy base render at the resolved values below.</p>
+  <table class="token-table">
+    <thead><tr><th>Token</th><th>Value</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td><span class="swatch-dot" style="background:#1b1f2b;"></span><code>--sidebar-bg</code></td><td><code>#1b1f2b</code></td><td>Sidebar + flyout card background</td></tr>
+      <tr><td><span class="swatch-dot" style="background:rgba(255,255,255,0.12);"></span><code>--sidebar-border</code></td><td><code>rgba(255,255,255,0.12)</code></td><td>Right edge + dividers + flyout border</td></tr>
+      <tr><td><span class="swatch-dot" style="background:rgba(255,255,255,0.14);"></span><code>--sidebar-line</code></td><td><code>rgba(255,255,255,0.14)</code></td><td>Tree branch connector lines</td></tr>
+      <tr><td><span class="swatch-dot" style="background:rgba(255,255,255,0.92);"></span><code>--sidebar-text</code></td><td><code>rgba(255,255,255,0.92)</code></td><td>Default item label · wordmark</td></tr>
+      <tr><td><span class="swatch-dot" style="background:rgba(255,255,255,0.72);"></span><code>--sidebar-muted</code></td><td><code>rgba(255,255,255,0.72)</code></td><td>Icons · status · badge text · flyout header</td></tr>
+      <tr><td><span class="swatch-dot" style="background:#ffffff;"></span><code>--sidebar-active-text</code></td><td><code>#ffffff</code></td><td>Active item label + icon</td></tr>
+      <tr><td><span class="swatch-dot" style="background:rgba(255,255,255,0.09);"></span><code>--sidebar-hover-bg</code></td><td><code>rgba(255,255,255,0.09)</code></td><td>Item hover state</td></tr>
+      <tr><td><span class="swatch-dot" style="background:rgba(255,255,255,0.16);"></span><code>--sidebar-active-bg</code></td><td><code>rgba(255,255,255,0.16)</code></td><td>Active item bg · NEW badge bg</td></tr>
+      <tr><td><span class="swatch-dot" style="background:rgba(255,255,255,0.24);"></span><code>--sidebar-focus-ring</code></td><td><code>rgba(255,255,255,0.24)</code></td><td>Keyboard focus outline</td></tr>
+      <tr><td><span class="swatch-dot" style="background:rgba(255,255,255,0.36);"></span><code>--sidebar-lock</code></td><td><code>rgba(255,255,255,0.36)</code></td><td>Lock icon (subscription-gated rows)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Typography</h3>
+  <table class="token-table">
+    <thead><tr><th>Token</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td><code>font-family</code></td><td>Inter, system-ui, -apple-system</td></tr>
+      <tr><td><code>nav-item.label</code></td><td>13.5px / 500 / 1.2 line-height</td></tr>
+      <tr><td><code>nav-item.label--active</code></td><td>13.5px / 600 / 1.2 line-height</td></tr>
+      <tr><td><code>flyout-item.label</code></td><td>13px / 500 / 1.35 line-height</td></tr>
+      <tr><td><code>flyout-card.header</code></td><td>11px / 700 / 1.25 / UPPER / 0.07em letter-spacing</td></tr>
+      <tr><td><code>badge.label</code></td><td>10px / 700 / 0.04em letter-spacing</td></tr>
+      <tr><td><code>app-item.status</code></td><td>10.5px / 600 / 0.04em letter-spacing / UPPER</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Elevation — Dark</h3>
+  <table class="token-table">
+    <thead><tr><th>Token</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td><code>flyout.shadow</code></td><td><code>0 18px 40px rgba(0,0,0,0.34), 0 1px 0 rgba(255,255,255,0.06) inset</code></td></tr>
+      <tr><td><code>toggle-pill.shadow</code></td><td><code>0 2px 6px rgba(0,0,0,0.40), 0 1px 2px rgba(0,0,0,0.24)</code></td></tr>
+    </tbody>
+  </table>
+</footer>
+
+</body>
+</html>

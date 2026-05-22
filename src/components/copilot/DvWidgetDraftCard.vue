@@ -12,8 +12,6 @@ const props = withDefaults(defineProps<{
   dashboardId: string
   draft: DashboardWidgetDraft
   filters?: DashboardFilterState
-  rationale?: string
-  showRationale?: boolean
   selected?: boolean
 }>(), {
   filters: () => ({
@@ -21,8 +19,6 @@ const props = withDefaults(defineProps<{
     grain: 'daily',
     comparison: 'previous_period',
   }),
-  rationale: '',
-  showRationale: true,
   selected: false,
 })
 
@@ -101,6 +97,11 @@ const sourceLabel = computed(() => {
 
 function handleAdd() {
   if (isAdded.value) return
+  refineOpen.value = true
+}
+
+function commitDraft() {
+  if (isAdded.value) return
   if (!currentDashboard.value) return
 
   const widget = dashboardsStore.addWidget(effectiveAccountId.value, {
@@ -123,13 +124,14 @@ function handleRefineApply(payload: { title: string; type: DashboardWidgetType; 
     type: payload.type,
     chartVariant: payload.chartVariant,
   }
-  refineOpen.value = false
   emit('refined', { title: payload.title })
+  refineOpen.value = false
+  commitDraft()
 }
 
 function handleExpandAdd() {
   expandOpen.value = false
-  handleAdd()
+  commitDraft()
 }
 </script>
 
@@ -155,11 +157,6 @@ function handleExpandAdd() {
       <DvDraftPreview :draft="localDraft" />
     </div>
 
-    <div v-if="showRationale && rationale" class="dv-draft__rationale">
-      <v-icon size="14" color="primary">lightbulb</v-icon>
-      <div>{{ rationale }}</div>
-    </div>
-
     <footer class="dv-draft__actions">
       <v-btn
         class="dv-draft__btn dv-draft__btn--primary text-none"
@@ -171,16 +168,6 @@ function handleExpandAdd() {
       >
         <v-icon size="15" start>{{ isAdded ? 'check' : 'plus' }}</v-icon>
         {{ isAdded ? 'Added' : 'Add widget' }}
-      </v-btn>
-      <v-btn
-        class="dv-draft__btn dv-draft__btn--ghost text-none"
-        variant="text"
-        density="comfortable"
-        :disabled="isAdded"
-        @click="refineOpen = true"
-      >
-        <v-icon size="15" start>sliders-horizontal</v-icon>
-        Refine
       </v-btn>
       <div class="dv-draft__actions-spacer"></div>
       <v-btn
@@ -301,21 +288,6 @@ function handleExpandAdd() {
   padding: 0 14px 14px;
 }
 
-.dv-draft__rationale {
-  padding: 10px 14px;
-  background: rgb(var(--v-theme-surface-light, var(--v-theme-surface)));
-  border-top: 1px solid rgb(var(--v-theme-outline-variant));
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: rgb(var(--v-theme-on-surface-variant));
-  display: flex;
-  gap: 8px;
-}
-
-.dv-draft__rationale :deep(.v-icon) {
-  margin-top: 2px;
-  flex-shrink: 0;
-}
 
 .dv-draft__actions {
   display: flex;

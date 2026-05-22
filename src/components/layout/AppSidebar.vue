@@ -114,7 +114,6 @@ function buildNavGroups(accountId: string): NavGroup[] {
       items: [
         { title: 'Product Recommendations', route: `/commerce/${accountId}/product_recommendations` },
         { title: 'Products', route: `/commerce/${accountId}/products` },
-        { title: 'Product Tax Category', route: `/commerce/${accountId}/product_tax_category` },
         { title: 'Collections', route: `/commerce/${accountId}/products/collections` },
         { title: 'Inventory', route: `/commerce/${accountId}/inventory` },
         { title: 'Reservations', route: `/commerce/${accountId}/products/reservations` },
@@ -130,7 +129,9 @@ function buildNavGroups(accountId: string): NavGroup[] {
           isSubGroup: true,
           items: [
             { title: 'Email Campaigns', route: `/accounts/${accountId}/campaigns` },
+            { title: 'SMS Campaigns', route: `/accounts/${accountId}/sms_campaigns` },
             { title: 'Transactional Email', route: `/accounts/${accountId}/transactional_campaigns` },
+            { title: 'Transactional SMS', route: `/accounts/${accountId}/transactional_sms` },
             { title: 'Campaign Tags', route: `/accounts/${accountId}/campaign_tags` },
           ],
         },
@@ -139,9 +140,8 @@ function buildNavGroups(accountId: string): NavGroup[] {
           isSubGroup: true,
           items: [
             { title: 'Acquisition Forms', route: `/accounts/${accountId}/acquisition` },
-            { title: 'Signup Forms', route: `/accounts/${accountId}/signup_forms` },
             { title: 'Landing Pages', route: `/accounts/${accountId}/landing_pages` },
-            { title: 'Surveys', route: `/accounts/${accountId}/surveys` },
+            { title: 'Lead Ads', route: `/accounts/${accountId}/lead_ads` },
           ],
         },
         {
@@ -162,9 +162,8 @@ function buildNavGroups(accountId: string): NavGroup[] {
             { title: 'Footer Management', route: `/accounts/${accountId}/footers` },
             { title: 'Optimise on Open', route: `/accounts/${accountId}/image_groups` },
             { title: 'Content Feeds', route: `/accounts/${accountId}/content_feeds` },
+            { title: 'Product Recommendations', route: `/commerce/${accountId}/product_recommendations` },
             { title: 'Coupon Banks', route: `/accounts/${accountId}/coupon_banks` },
-            { title: 'Preference Management', route: `/accounts/${accountId}/preference_pages` },
-            { title: 'Countdown Timer', route: `/accounts/${accountId}/live_content_images` },
           ],
         },
       ],
@@ -184,7 +183,15 @@ function buildNavGroups(accountId: string): NavGroup[] {
             { title: 'Fulfillment', route: `/commerce/${accountId}/fulfillments` },
           ],
         },
-        { title: 'Promos & Coupons', route: `/commerce/${accountId}/coupons` },
+        {
+          title: 'Promotions',
+          isSubGroup: true,
+          items: [
+            { title: 'Promotions', route: `/commerce/${accountId}/promotions` },
+            { title: 'Custom Gift Cards', route: `/commerce/${accountId}/custom_gift_cards` },
+            { title: 'Purchasable Gift Cards', route: `/commerce/${accountId}/purchasable_gift_cards` },
+          ],
+        },
         { title: 'Sales Channels', route: `/commerce/${accountId}/sales_channels` },
       ],
     },
@@ -210,6 +217,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
       singleRoute: `/accounts/${accountId}/service`,
       items: [
         { title: 'Tickets', route: `/accounts/${accountId}/service` },
+        { title: 'Chatbot', route: `/accounts/${accountId}/chatbot` },
       ],
     },
     {
@@ -217,9 +225,12 @@ function buildNavGroups(accountId: string): NavGroup[] {
       icon: 'bot',
       badge: 'NEW',
       requires: 'davinci',
-      singleRoute: `/accounts/${accountId}/da-vinci/dashboard`,
+      singleRoute: `/accounts/${accountId}/da-vinci`,
       dividerAfter: true,
-      items: [],
+      items: [
+        { title: 'Overview', route: `/accounts/${accountId}/da-vinci` },
+        { title: 'Ask Da Vinci', route: `/accounts/${accountId}/da-vinci/copilot` },
+      ],
     },
     {
       title: 'Apps',
