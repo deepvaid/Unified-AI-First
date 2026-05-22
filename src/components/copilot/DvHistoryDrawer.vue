@@ -140,12 +140,6 @@ function buildSub(item: DaVinciHistoryItem): string {
       </div>
     </div>
 
-    <footer class="dv-history__foot">
-      <button type="button" class="dv-history__newchat" @click="emit('newChat')">
-        <v-icon size="16">square-pen</v-icon>
-        Start a new chat
-      </button>
-    </footer>
   </div>
 </template>
 
@@ -335,35 +329,6 @@ function buildSub(item: DaVinciHistoryItem): string {
   font-size: 12.5px;
   max-width: 240px;
   line-height: 1.4;
-}
-
-.dv-history__foot {
-  margin-top: auto;
-  padding: 12px 14px 16px;
-  border-top: 1px solid rgb(var(--v-theme-outline-variant));
-  background: rgb(var(--v-theme-background));
-}
-
-.dv-history__newchat {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 9999px;
-  border: none;
-  background: var(--dv-grad);
-  color: var(--dv-on-accent);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  justify-content: center;
-  transition: filter 120ms ease;
-}
-
-.dv-history__newchat:hover {
-  filter: brightness(1.05);
 }
 
 .dv-history__menu-danger :deep(.v-list-item-title) {

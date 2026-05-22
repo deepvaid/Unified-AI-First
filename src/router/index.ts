@@ -110,6 +110,7 @@ const routes: RouteRecordRaw[] = [
     path: '/accounts/:accountId/da-vinci/copilot/:conversationId?',
     name: 'DaVinciCopilot',
     component: () => import('@/views/DaVinci/DaVinciCopilot.vue'),
+    meta: { flush: true },
   },
 
   // 9. App Store (formerly Integrations)

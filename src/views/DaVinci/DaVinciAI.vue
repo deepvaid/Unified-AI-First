@@ -12,19 +12,19 @@ const features = [
   {
     title: 'Generate content and grow your audience',
     description: 'Email subject lines, campaign briefs, and creative variations on demand — tuned to your brand voice.',
-    gradient: 'linear-gradient(135deg, #ede9fe 0%, #fce7f3 100%)',
+    gradient: 'linear-gradient(135deg, #ede9fe 0%, #dbeafe 100%)',
     icon: 'sparkles',
   },
   {
     title: 'Scale revenue without scaling complexity',
     description: 'Predictive send times, churn signals, and AI-tuned audience targeting working quietly in the background.',
-    gradient: 'linear-gradient(135deg, #dbeafe 0%, #ede9fe 100%)',
+    gradient: 'linear-gradient(135deg, #dbeafe 0%, #cffafe 100%)',
     icon: 'trending-up',
   },
   {
     title: 'Resolve tickets faster with AI',
     description: 'Auto-summarize threads, draft replies in your tone, and route conversations to the right agent.',
-    gradient: 'linear-gradient(135deg, #fef3c7 0%, #fce7f3 100%)',
+    gradient: 'linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%)',
     icon: 'headset',
   },
 ]
@@ -119,7 +119,7 @@ const metrics = [
 }
 
 .dv-hero {
-  background: linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 50%, #fef3c7 100%);
+  background: linear-gradient(135deg, #ede9fe 0%, #dbeafe 50%, #cffafe 100%);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 

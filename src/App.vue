@@ -37,6 +37,7 @@ watch(width, (w, prevW) => {
 })
 
 const isFullPage = computed(() => !!route.meta?.fullPage)
+const isFlush = computed(() => !!route.meta?.flush)
 // On mobile, sidebar is a temporary overlay (not permanent)
 const sidebarTemporary = computed(() => smAndDown.value)
 const sidebarRail = computed(() => rail.value)
@@ -66,7 +67,7 @@ const copilotDrawerWidth = computed(() => {
       tabindex="-1"
       class="bg-background"
     >
-      <v-container v-if="!isFullPage" fluid class="mp-main-shell">
+      <v-container v-if="!isFullPage && !isFlush" fluid class="mp-main-shell">
         <router-view />
       </v-container>
       <router-view v-else />

@@ -14,69 +14,61 @@ interface Snapshot {
   snapshotAt: number
 }
 
-function readSnapshot(): { messages: unknown[]; conversationId: string | null; title: string } {
+function readSnapshot(): { messages: unknown[]; conversationId: string | null } {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { messages: [], conversationId: null, title: 'New conversation' }
+    if (!raw) return { messages: [], conversationId: null }
     const snap: Snapshot = JSON.parse(raw)
     window.localStorage.removeItem(STORAGE_KEY)
     if (Date.now() - snap.snapshotAt > STALE_MS) {
-      return { messages: [], conversationId: null, title: 'New conversation' }
+      return { messages: [], conversationId: null }
     }
     const msgs = Array.isArray(snap.messages) ? snap.messages : []
-    const firstUser = (msgs as any[]).find((m) => m?.role === 'user' || m?.from === 'user')
-    let title = 'New conversation'
-    const txt = firstUser?.text ?? firstUser?.content
-    if (typeof txt === 'string' && txt.length > 0) {
-      title = txt.length > 60 ? txt.slice(0, 57) + '…' : txt
-    }
-    return { messages: msgs, conversationId: snap.conversationId, title }
+    return { messages: msgs, conversationId: snap.conversationId }
   } catch {
-    return { messages: [], conversationId: null, title: 'New conversation' }
+    return { messages: [], conversationId: null }
   }
 }
 
 const hydrated = readSnapshot()
 const initialMessages = ref<unknown[]>(hydrated.messages)
-const conversationTitle = ref(hydrated.title)
 const hydratedConversationId = ref<string | null>(hydrated.conversationId)
+const botKey = ref(0)
 
-import { useRouter } from 'vue-router'
-const router = useRouter()
-
-function handleBack() {
-  if (window.history.length > 1) {
-    router.back()
-  } else {
-    router.push({ name: 'DashboardView', params: { accountId: '2000290' } })
-  }
+function startNewChat() {
+  initialMessages.value = []
+  hydratedConversationId.value = null
+  botKey.value += 1
+  window.localStorage.removeItem(STORAGE_KEY)
 }
 </script>
 
 <template>
   <div class="davinci-copilot">
-    <!-- Slim breadcrumb header -->
     <header class="davinci-copilot__topbar">
-      <button class="davinci-copilot__crumbs" type="button" @click="handleBack">
-        <v-icon size="14" class="davinci-copilot__crumb-back">arrow-left</v-icon>
-        <span class="davinci-copilot__crumb-root">Active Dashboard</span>
-        <v-icon size="14" class="davinci-copilot__crumb-sep">chevron-right</v-icon>
-        <span class="davinci-copilot__crumb-current">{{ conversationTitle }}</span>
+      <button
+        type="button"
+        class="davinci-copilot__newchat"
+        @click="startNewChat"
+      >
+        <v-icon size="14">square-pen</v-icon>
+        Start new chat
       </button>
     </header>
 
-    <!-- Two-column body -->
     <div class="davinci-copilot__body">
       <aside class="davinci-copilot__rail">
         <DvHistoryDrawer
           :open="true"
           mode="rail"
           :active-id="hydratedConversationId ?? undefined"
+          @new-chat="startNewChat"
         />
       </aside>
 
       <main class="davinci-copilot__main">
         <MpDaVinciBot
+          :key="botKey"
           :headerless="true"
           :initial-messages="(initialMessages as any)"
         />
@@ -91,52 +83,43 @@ function handleBack() {
   flex-direction: column;
   height: 100%;
   min-height: calc(100vh - var(--v-layout-top, 64px));
-  background: rgb(var(--v-theme-background));
+  background: rgb(var(--v-theme-surface));
 }
 
 .davinci-copilot__topbar {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: flex-end;
   height: 48px;
-  padding: 0 20px;
+  padding: 0 16px;
   background: rgb(var(--v-theme-surface));
   border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
   flex: 0 0 auto;
 }
 
-.davinci-copilot__crumbs {
-  display: flex;
+.davinci-copilot__newchat {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(var(--v-theme-on-surface), 0.7);
-  min-width: 0;
-  background: transparent;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
   border: none;
-  padding: 0;
+  border-radius: 9999px;
+  background: var(--dv-grad);
+  color: var(--dv-on-accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
   cursor: pointer;
+  transition: filter 120ms ease;
 }
 
-.davinci-copilot__crumbs:hover .davinci-copilot__crumb-root,
-.davinci-copilot__crumbs:hover .davinci-copilot__crumb-back {
-  color: rgb(var(--v-theme-primary));
+.davinci-copilot__newchat:hover {
+  filter: brightness(1.05);
 }
 
-.davinci-copilot__crumb-back {
-  color: rgba(var(--v-theme-on-surface), 0.6);
-}
-
-.davinci-copilot__crumb-current {
-  color: rgb(var(--v-theme-on-surface));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.davinci-copilot__crumb-sep {
-  color: rgba(var(--v-theme-on-surface), 0.4);
+.davinci-copilot__newchat :deep(.v-icon) {
+  color: var(--dv-on-accent);
 }
 
 .davinci-copilot__body {
@@ -156,7 +139,7 @@ function handleBack() {
 .davinci-copilot__main {
   flex: 1 1 auto;
   min-width: 0;
-  background: rgb(var(--v-theme-background));
+  background: rgb(var(--v-theme-surface));
   overflow: hidden;
   display: flex;
   flex-direction: column;

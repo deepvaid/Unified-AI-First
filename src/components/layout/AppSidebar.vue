@@ -222,7 +222,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
     },
     {
       title: 'Da Vinci AI',
-      icon: 'bot',
+      icon: 'sparkles',
       badge: 'NEW',
       requires: 'davinci',
       singleRoute: `/accounts/${accountId}/da-vinci`,
