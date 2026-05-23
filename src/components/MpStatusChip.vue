@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { MbChip } from '@marobase/ui'
-import type { MbChipTone } from '@marobase/ui'
+
+type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral'
 
 const props = withDefaults(defineProps<{
   status: string
@@ -16,8 +16,7 @@ const props = withDefaults(defineProps<{
   showIcon: false,
 })
 
-// Semantic tone lookup — keys are normalized lower-case status strings
-const toneMap: Record<string, Record<string, MbChipTone>> = {
+const toneMap: Record<string, Record<string, Tone>> = {
   order: {
     processing: 'brand', completed: 'success', cancelled: 'danger',
     refunded: 'danger', 'on hold': 'warning', archived: 'neutral',
@@ -56,6 +55,7 @@ const toneMap: Record<string, Record<string, MbChipTone>> = {
     published: 'success', draft: 'neutral', archived: 'neutral',
     enabled: 'success', disabled: 'neutral', failed: 'danger',
     running: 'brand', paused: 'warning', completed: 'success',
+    connected: 'success', disconnected: 'neutral',
   },
 }
 
@@ -88,9 +88,18 @@ const iconMap: Record<string, Record<string, string>> = {
   },
 }
 
-const chipTone = computed<MbChipTone>(() => {
+const TONE_TO_COLOR: Record<Tone, string> = {
+  brand: 'primary',
+  success: 'success',
+  warning: 'warning',
+  danger: 'error',
+  neutral: 'default',
+}
+
+const chipColor = computed(() => {
   const key = props.status.toLowerCase()
-  return toneMap[props.type]?.[key] ?? toneMap.general?.[key] ?? 'neutral'
+  const tone = toneMap[props.type]?.[key] ?? toneMap.general?.[key] ?? 'neutral'
+  return TONE_TO_COLOR[tone]
 })
 
 const chipIcon = computed(() => {
@@ -103,36 +112,21 @@ const iconPx = computed(() => (props.size === 'x-small' ? 11 : props.size === 's
 </script>
 
 <template>
-  <MbChip
-    :label="status"
-    :tone="chipTone"
-    :dismissible="false"
-    :class="['mp-status-chip', `mp-status-chip--size-${size}`]"
+  <v-chip
+    :size="size"
+    :variant="variant"
+    :color="chipColor"
+    class="mp-status-chip font-weight-medium"
+    label
   >
-    <template v-if="chipIcon" #prepend>
-      <v-icon :size="iconPx" class="mp-status-chip__icon">{{ chipIcon }}</v-icon>
-    </template>
-  </MbChip>
+    <v-icon v-if="chipIcon" :size="iconPx" class="me-1 mp-status-chip__icon">{{ chipIcon }}</v-icon>
+    {{ status }}
+  </v-chip>
 </template>
 
 <style scoped>
 .mp-status-chip__icon {
   color: currentColor;
   flex-shrink: 0;
-}
-
-.mp-status-chip--size-x-small {
-  --mb-chip-padding-x: 8px;
-  --mb-chip-padding-y: 2px;
-  --mb-chip-font-size: 11px;
-  --mb-chip-line-height: 14px;
-  --mb-chip-letter-spacing: 0.02em;
-}
-
-.mp-status-chip--size-small {
-  --mb-chip-padding-x: 10px;
-  --mb-chip-padding-y: 4px;
-  --mb-chip-font-size: 12px;
-  --mb-chip-line-height: 16px;
 }
 </style>

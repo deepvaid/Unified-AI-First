@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { MbButton, MbEmptyState } from '@marobase/ui'
-
 defineProps<{
   icon?: string
   title: string
@@ -15,24 +13,45 @@ defineEmits<{
 </script>
 
 <template>
-  <MbEmptyState :title="title" :description="description">
-    <template v-if="icon" #icon>
+  <div class="mp-empty-state d-flex flex-column align-center justify-center text-center pa-8">
+    <div v-if="icon" class="mp-empty-state__icon mb-4">
       <v-icon size="56" color="medium-emphasis">{{ icon }}</v-icon>
-    </template>
-    <template v-if="actionLabel" #actions>
-      <MbButton
-        style-type="filled"
-        size="md"
-        :label="actionLabel"
-        icon-mode="with-label"
-        :aria-label="actionLabel"
-        @click="$emit('action')"
-      >
-        <template v-if="actionIcon" #leading>
-          <v-icon size="18">{{ actionIcon }}</v-icon>
-        </template>
-        {{ actionLabel }}
-      </MbButton>
-    </template>
-  </MbEmptyState>
+    </div>
+    <div class="text-h6 font-weight-bold mb-2">{{ title }}</div>
+    <div v-if="description" class="text-body-2 text-medium-emphasis mp-empty-state__description">
+      {{ description }}
+    </div>
+    <v-btn
+      v-if="actionLabel"
+      class="text-none mt-5"
+      color="primary"
+      variant="flat"
+      :prepend-icon="actionIcon"
+      @click="$emit('action')"
+    >
+      {{ actionLabel }}
+    </v-btn>
+  </div>
 </template>
+
+<style scoped>
+.mp-empty-state {
+  min-height: 240px;
+  width: 100%;
+}
+
+.mp-empty-state__icon {
+  width: 80px;
+  height: 80px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.mp-empty-state__description {
+  max-width: 420px;
+  line-height: 1.5;
+}
+</style>

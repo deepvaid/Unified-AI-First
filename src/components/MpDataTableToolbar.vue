@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { MbButton, MbChip, MbInputField } from '@marobase/ui'
 import MpFormDrawer from './MpFormDrawer.vue'
 
 const search = defineModel<string>('search', { default: '' })
@@ -68,20 +67,16 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
 
       <div class="d-flex align-center ga-2 flex-wrap justify-end">
         <span class="mp-filter-btn-wrap d-inline-flex align-center">
-          <MbButton
+          <v-btn
             v-if="$slots['filter-content']"
-            style-type="outline"
-            size="md"
-            label="Filter"
-            icon-mode="with-label"
+            variant="outlined"
+            class="text-none mp-filter-btn"
+            prepend-icon="list-filter"
             aria-label="Open table filters"
-            class="mp-filter-btn"
             @click="filterDrawer = true"
           >
-            <template #leading>
-              <v-icon size="18">list-filter</v-icon>
-            </template>
-          </MbButton>
+            Filter
+          </v-btn>
           <v-badge
             v-if="activeFilters?.length"
             :content="activeFilters.length"
@@ -97,25 +92,21 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
           location="bottom end"
         >
           <template #activator="{ props: menuProps }">
-            <MbButton
+            <v-btn
               v-bind="menuProps"
-              style-type="outline"
-              size="md"
-              label="Columns"
-              icon-mode="icon-only"
-              aria-label="Toggle visible columns"
+              variant="outlined"
+              icon="columns-3"
               class="mp-filter-btn mp-filter-btn--icon"
+              aria-label="Toggle visible columns"
             >
-              <template #leading>
-                <v-icon size="18">columns-3</v-icon>
-              </template>
+              <v-icon size="18">columns-3</v-icon>
               <v-badge
                 v-if="hiddenColumns.length"
                 :content="hiddenColumns.length"
                 color="primary"
                 floating
               />
-            </MbButton>
+            </v-btn>
           </template>
           <v-card min-width="220" max-width="280" flat border rounded="lg" class="mt-1 mp-toolbar-panel">
             <div class="pa-3">
@@ -133,13 +124,15 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
             </div>
             <v-divider class="mp-divider-muted" />
             <div class="d-flex justify-end pa-3">
-              <MbButton
-                style-type="plain"
-                size="sm"
-                label="Reset"
+              <v-btn
+                variant="text"
+                size="small"
+                class="text-none"
                 :disabled="!hiddenColumns.length"
                 @click="resetColumns"
-              />
+              >
+                Reset
+              </v-btn>
             </div>
           </v-card>
         </v-menu>
@@ -147,15 +140,14 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
         <slot name="actions" />
 
         <div class="mp-toolbar-search">
-          <MbInputField
-            :model-value="search"
-            label="Search"
+          <v-text-field
+            v-model="search"
             :placeholder="searchPlaceholder ?? 'Search...'"
             :aria-label="searchPlaceholder ?? 'Search records'"
-            trailing-icon="none"
-            :width="300"
-            state="default"
-            @update:model-value="search = $event"
+            variant="outlined"
+            density="comfortable"
+            hide-details
+            prepend-inner-icon="search"
           />
         </div>
       </div>
@@ -168,33 +160,39 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
       class="px-6 pb-4 d-flex align-center ga-2 flex-wrap"
     >
       <span class="text-caption text-medium-emphasis font-weight-medium mr-1">Filter by:</span>
-      <MbChip
+      <v-chip
         v-for="f in visibleChips(activeFilters)"
         :key="f.key"
-        :label="f.label"
-        tone="brand"
-        :dismissible="true"
-        @dismiss="$emit('removeFilter', f.key)"
-      />
-      <MbChip
+        size="small"
+        variant="tonal"
+        color="primary"
+        closable
+        @click:close="$emit('removeFilter', f.key)"
+      >
+        {{ f.label }}
+      </v-chip>
+      <v-chip
         v-if="hiddenCount(activeFilters) > 0"
-        :label="`+ ${hiddenCount(activeFilters)} more`"
-        tone="neutral"
-        :dismissible="false"
-      />
-      <MbButton
-        style-type="plain"
-        size="sm"
-        label="Clear"
-        class="text-medium-emphasis"
+        size="small"
+        variant="tonal"
+        color="default"
+      >
+        + {{ hiddenCount(activeFilters) }} more
+      </v-chip>
+      <v-btn
+        variant="text"
+        size="small"
+        class="text-none text-medium-emphasis"
         @click="$emit('clearFilters')"
-      />
+      >
+        Clear
+      </v-btn>
     </div>
   </v-expand-transition>
 
   <v-expand-transition>
     <div v-if="selectedCount && selectedCount > 0" class="px-6 pb-4">
-      <div class="mp-toolbar-bulk d-flex align-center ga-3 pa-3 rounded-lg bg-surface-variant">
+      <div class="mp-toolbar-bulk d-flex align-center ga-3 pa-3 rounded-lg">
         <span class="text-body-2 font-weight-bold">
           {{ selectedCount }}
           <span v-if="totalCount" class="font-weight-regular text-medium-emphasis">
@@ -202,29 +200,27 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
           </span>
           <span v-else class="font-weight-regular text-medium-emphasis">selected</span>
         </span>
-        <MbButton
+        <v-btn
           v-if="totalCount"
-          style-type="plain"
-          size="sm"
-          label="Select All"
-          class="text-primary font-weight-medium"
+          variant="text"
+          size="small"
+          color="primary"
+          class="text-none font-weight-medium"
           @click="$emit('selectAll')"
-        />
+        >
+          Select All
+        </v-btn>
         <v-divider v-if="$slots['bulk-actions']" vertical class="mx-1 mp-divider-vertical" />
         <slot name="bulk-actions" />
         <v-spacer />
-        <MbButton
-          style-type="plain"
-          size="sm"
-          label=""
-          icon-mode="icon-only"
+        <v-btn
+          icon="x"
+          variant="text"
+          size="small"
+          density="comfortable"
           aria-label="Clear selected rows"
           @click="$emit('clearSelection')"
-        >
-          <template #leading>
-            <v-icon size="18">x</v-icon>
-          </template>
-        </MbButton>
+        />
       </div>
     </div>
   </v-expand-transition>
@@ -239,8 +235,12 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   >
     <slot name="filter-content" />
     <template #footer>
-      <MbButton style-type="plain" size="sm" label="Clear all" @click="$emit('clearFilters')" />
-      <MbButton style-type="filled" size="sm" label="Done" @click="filterDrawer = false" />
+      <v-btn variant="text" size="small" class="text-none" @click="$emit('clearFilters')">
+        Clear all
+      </v-btn>
+      <v-btn variant="flat" size="small" color="primary" class="text-none" @click="filterDrawer = false">
+        Done
+      </v-btn>
     </template>
   </MpFormDrawer>
 </template>
@@ -255,74 +255,51 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
 .mp-toolbar-row {
   min-height: $mp-layout-appbarHeight;
 }
+
 .mp-filter-btn {
   height: 40px;
 }
+
+.mp-filter-btn--icon {
+  min-width: 40px;
+  width: 40px;
+  padding-inline: 0;
+}
+
 .mp-toolbar-search {
   width: 300px;
   min-width: 240px;
 }
 
-.mp-toolbar-search :deep(.mb-if__label) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 .mp-divider-vertical {
   height: $mp-spacing-6;
 }
+
 .mp-divider-muted {
   opacity: 0.4;
 }
+
 .mp-divider-toolbar {
   opacity: 0.12;
 }
+
 .mp-toolbar-panel {
-  border-color: var(--mp-border-subtle);
+  border-color: rgb(var(--v-theme-outline-variant));
 }
+
 .mp-toolbar-heading {
   min-width: 0;
 }
+
 .mp-toolbar-bulk {
-  border: 1px solid var(--mp-border-subtle);
+  background: rgba(var(--v-theme-primary), 0.05);
+  border: 1px solid rgba(var(--v-theme-primary), 0.18);
   box-shadow: none;
 }
-.mp-column-checkbox {
-  :deep(.v-label) {
-    font-size: 13px;
-  }
+
+.mp-column-checkbox :deep(.v-label) {
+  font-size: 13px;
 }
-
-/* Neutral outline: merged classes on MbButton root — avoid `.mp-filter-btn .mb-btn` (non-matching) */
-:deep(.mb-btn.mp-filter-btn[data-style-type='outline']) {
-  --mb-btn-text-outline-default: rgb(var(--v-theme-on-surface-variant));
-  --mb-btn-text-outline-hover: rgb(var(--v-theme-on-surface-variant));
-  --mb-btn-text-outline-active: rgb(var(--v-theme-on-surface));
-  --mb-btn-text-outline-focus: rgb(var(--v-theme-on-surface-variant));
-  --mb-btn-text-outline-loading: rgb(var(--v-theme-on-surface-variant));
-
-  --mb-btn-border-outline-default: var(--mp-border-subtle);
-  --mb-btn-border-outline-hover: rgb(var(--v-theme-outline));
-  --mb-btn-border-outline-active: rgb(var(--v-theme-outline));
-  --mb-btn-border-outline-focus: rgb(var(--v-theme-outline));
-  --mb-btn-border-outline-disabled: var(--mp-border-subtle);
-  --mb-btn-border-outline-loading: var(--mp-border-subtle);
-
-  --mb-btn-bg-outline-default: rgb(var(--v-theme-surface));
-  --mb-btn-bg-outline-hover: rgba(var(--v-theme-on-surface), 0.06);
-  --mb-btn-bg-outline-active: rgba(var(--v-theme-on-surface), 0.1);
-  --mb-btn-bg-outline-focus: rgb(var(--v-theme-surface));
-  --mb-btn-bg-outline-disabled: rgb(var(--v-theme-surface));
-  --mb-btn-bg-outline-loading: rgb(var(--v-theme-surface));
-}
-
 
 @media (max-width: 959px) {
   .mp-toolbar-row {

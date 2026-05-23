@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { MbPageHeader } from '@marobase/ui'
 
 defineProps<{
   title: string
@@ -24,18 +23,20 @@ defineProps<{
           aria-label="Back"
           @click.prevent="navigate"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <v-icon size="20">chevron-left</v-icon>
         </a>
       </RouterLink>
 
-      <div class="mp-page-header__main min-width-0 flex-grow-1">
-        <MbPageHeader :title="title" :subtitle="subtitle" size="sm">
-          <template v-if="$slots.actions" #actions>
-            <slot name="actions" />
-          </template>
-        </MbPageHeader>
+      <div class="mp-page-header__main min-width-0 flex-grow-1 d-flex align-start ga-3">
+        <div class="min-width-0 flex-grow-1">
+          <h1 class="mp-page-header__title text-h5 font-weight-bold">{{ title }}</h1>
+          <div v-if="subtitle" class="mp-page-header__subtitle text-body-2 text-medium-emphasis mt-1">
+            {{ subtitle }}
+          </div>
+        </div>
+        <div v-if="$slots.actions" class="d-flex align-center ga-2 flex-shrink-0">
+          <slot name="actions" />
+        </div>
       </div>
     </div>
   </div>
@@ -44,6 +45,15 @@ defineProps<{
 </template>
 
 <style scoped>
+.mp-page-header__title {
+  line-height: 1.2;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.mp-page-header__subtitle {
+  line-height: 1.4;
+}
+
 .mp-page-header__back {
   display: inline-flex;
   align-items: center;
