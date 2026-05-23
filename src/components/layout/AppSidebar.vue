@@ -203,11 +203,51 @@ function buildNavGroups(accountId: string): NavGroup[] {
       items: [],
     },
     {
-      title: 'Merchandise',
-      icon: 'tag',
+      title: 'Merchandising Cloud',
+      icon: 'wand-sparkles',
       requires: 'commerce',
       singleRoute: `/commerce/${accountId}/merchandising`,
-      items: [],
+      items: [
+        {
+          title: 'Overview',
+          isSubGroup: true,
+          items: [
+            { title: 'Home', route: `/commerce/${accountId}/merchandising` },
+            { title: 'Analytics', route: `/commerce/${accountId}/merchandising/analytics` },
+          ],
+        },
+        {
+          title: 'Search',
+          isSubGroup: true,
+          items: [
+            { title: 'Search Preview', route: `/commerce/${accountId}/merchandising/search/preview` },
+            { title: 'Synonyms', route: `/commerce/${accountId}/merchandising/search/synonyms` },
+            { title: 'Page Redirects', route: `/commerce/${accountId}/merchandising/search/redirects` },
+          ],
+        },
+        {
+          title: 'Smart Collections',
+          isSubGroup: true,
+          items: [
+            { title: 'Collections', route: `/commerce/${accountId}/merchandising/collections` },
+            { title: 'Default Merchandising', route: `/commerce/${accountId}/merchandising/default-merchandising` },
+          ],
+        },
+        {
+          title: 'Recommendations',
+          isSubGroup: true,
+          items: [
+            { title: 'Recommendation Engines', route: `/commerce/${accountId}/merchandising/recommendations` },
+          ],
+        },
+        {
+          title: 'Fields and Filters',
+          isSubGroup: true,
+          items: [
+            { title: 'Field Transformations', route: `/commerce/${accountId}/merchandising/fields` },
+          ],
+        },
+      ],
     },
     {
       title: 'Service',

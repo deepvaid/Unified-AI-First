@@ -66,8 +66,16 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/purchasable_gift_cards', name: 'PurchasableGiftCards', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/sales_channels', name: 'StoreSetup', component: () => import('@/views/Commerce/StoreSetup.vue'), meta: commerceGate },
 
-  // 5.5 Merchandising
-  { path: '/commerce/:accountId/merchandising', name: 'Merchandising', component: () => import('@/views/Commerce/Merchandising.vue'), meta: commerceGate },
+  // 5.5 Merchandising Cloud (former Findify)
+  { path: '/commerce/:accountId/merchandising', name: 'MerchandisingHome', component: () => import('@/views/Merchandising/MerchandisingHome.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/merchandising/analytics', name: 'MerchandisingAnalytics', component: () => import('@/views/Merchandising/MerchandisingAnalytics.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/merchandising/search/preview', name: 'MerchandisingSearchPreview', component: () => import('@/views/Merchandising/SearchPreview.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/merchandising/search/synonyms', name: 'MerchandisingSynonyms', component: () => import('@/views/Merchandising/Synonyms.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/merchandising/search/redirects', name: 'MerchandisingPageRedirects', component: () => import('@/views/Merchandising/PageRedirects.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/merchandising/collections', name: 'MerchandisingCollections', component: () => import('@/views/Merchandising/Collections.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/merchandising/default-merchandising', name: 'MerchandisingDefaults', component: () => import('@/views/Merchandising/DefaultMerchandising.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/merchandising/recommendations', name: 'MerchandisingRecommendations', component: () => import('@/views/Merchandising/RecommendationEngines.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/merchandising/fields', name: 'MerchandisingFields', component: () => import('@/views/Merchandising/FieldTransformations.vue'), meta: commerceGate },
 
   // 5.6 Retail
   { path: '/commerce/:accountId/retail', name: 'Retail', component: () => import('@/views/Commerce/Retail.vue'), meta: commerceGate },
