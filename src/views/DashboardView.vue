@@ -98,7 +98,9 @@ const accountId = computed(() => {
   const routeAccountId = Array.isArray(route.params.accountId)
     ? route.params.accountId[0]
     : route.params.accountId
-  return routeAccountId ?? accountsStore.activeId
+  // Fall back to active account if the route ID isn't a real account (e.g. 'demo' from Commerce routes)
+  const isRealAccount = routeAccountId && accountsStore.accounts.some((a) => a.id === routeAccountId)
+  return isRealAccount ? routeAccountId : accountsStore.activeId
 })
 
 const dashboardIdParam = computed(() => {

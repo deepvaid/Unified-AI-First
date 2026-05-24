@@ -334,7 +334,10 @@ const resolvedAccountId = computed(() => {
     ? route.params.accountId[0]
     : route.params.accountId
 
-  return routeAccountId ?? accountsStore.activeId
+  // If the route accountId is not a real account (e.g. 'demo' on Commerce routes),
+  // fall back to the active account so /accounts/* links stay valid.
+  const isRealAccount = routeAccountId && accountsStore.accounts.some((a) => a.id === routeAccountId)
+  return isRealAccount ? routeAccountId : accountsStore.activeId
 })
 const navGroups = computed(() => buildNavGroups(resolvedAccountId.value))
 const flyoutGroup = computed(() =>
