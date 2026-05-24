@@ -42,14 +42,47 @@ const POS_NAV = [
   { key: 'getapp',       icon: 'download-cloud',  label: 'Get App' },
 ] as const
 
+/* ── Sale sub-mode (smart-grid home vs. catalog) ───────────────── */
+type SaleMode = 'smart-grid' | 'catalog'
+const saleMode = ref<SaleMode>('smart-grid')
+
 /* ── Catalog ───────────────────────────────────────────────────── */
 const catalogSearch = ref('')
+type Collection = 'all' | 'apparel' | 'footwear' | 'accessories'
+const activeCollection = ref<Collection>('all')
+
+const COLLECTION_CHIPS: { value: Collection; label: string }[] = [
+  { value: 'all',         label: 'All items' },
+  { value: 'apparel',     label: 'Apparel' },
+  { value: 'footwear',    label: 'Footwear' },
+  { value: 'accessories', label: 'Accessories' },
+]
 
 const catalog = computed(() =>
   store.channelPriceList.filter((p) =>
     !catalogSearch.value || p.productName.toLowerCase().includes(catalogSearch.value.toLowerCase()) || p.sku.toLowerCase().includes(catalogSearch.value.toLowerCase()),
   ),
 )
+
+/* ── Product tile gradient (Shopify-style placeholder when no image) ─ */
+const TILE_GRADIENTS = [
+  ['#fee2e2', '#fecaca'], // soft rose
+  ['#fef3c7', '#fde68a'], // soft amber
+  ['#dbeafe', '#bfdbfe'], // soft blue
+  ['#dcfce7', '#bbf7d0'], // soft green
+  ['#ede9fe', '#ddd6fe'], // soft violet
+  ['#cffafe', '#a5f3fc'], // soft cyan
+  ['#fce7f3', '#fbcfe8'], // soft pink
+  ['#fed7aa', '#fdba74'], // soft orange
+] as const
+
+function tileGradient(sku: string): string {
+  let hash = 0
+  for (let i = 0; i < sku.length; i++) hash = ((hash << 5) - hash) + sku.charCodeAt(i)
+  const idx = Math.abs(hash) % TILE_GRADIENTS.length
+  const colors = TILE_GRADIENTS[idx]!
+  return `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`
+}
 
 /* ── Cart ──────────────────────────────────────────────────────── */
 interface CartLine {
@@ -197,13 +230,6 @@ const PROCESSING_TEXT: Record<TenderType, string> = {
   gift_card: 'Checking gift card balance',
   split: 'Processing split payment',
 }
-const APPROVED_TEXT: Record<TenderType, string> = {
-  card: 'Payment accepted',
-  tap_to_pay: 'Tap payment accepted',
-  cash: 'Cash received',
-  gift_card: 'Gift card accepted',
-  split: 'Split payment complete',
-}
 
 /* ── Recent transactions (for History tab in POS) ──────────────── */
 const recentTxns = computed(() =>
@@ -211,6 +237,39 @@ const recentTxns = computed(() =>
     .filter((t) => t.associateId === activeAssociateId.value)
     .slice(0, 8),
 )
+
+/* ── Smart Grid (Shopify-style home tiles) ─────────────────────── */
+interface SmartGridTile {
+  key: string
+  label: string
+  icon: string
+  color: string  // tailwind-500ish hex
+  action: () => void
+}
+const gridToast = ref(false)
+const gridToastText = ref('')
+function flashGridToast(text: string) {
+  gridToastText.value = text
+  gridToast.value = true
+}
+
+function addCustomSale() {
+  const lineId = `CUSTOM-${Date.now().toString(36).slice(-4).toUpperCase()}`
+  cart.value.push({ sku: lineId, name: 'Custom item', price: 25, qty: 1 })
+  saleMode.value = 'catalog'
+  flashGridToast('Custom item added to sale')
+}
+
+const SMART_GRID_TILES: SmartGridTile[] = [
+  { key: 'browse',    label: 'Browse products', icon: 'grid-2x2',     color: '#6366f1', action: () => { saleMode.value = 'catalog' } },
+  { key: 'custom',    label: 'Add custom sale', icon: 'plus-circle',  color: '#0d9488', action: addCustomSale },
+  { key: 'discount',  label: 'Apply discount',  icon: 'percent',      color: '#f59e0b', action: () => { discountDialogOpen.value = true; pendingDiscount.value = discountPct.value } },
+  { key: 'email',     label: 'Email customer',  icon: 'mail',         color: '#8b5cf6', action: () => { customerDialogOpen.value = true; pendingCustomer.value = customerName.value } },
+  { key: 'save',      label: 'Save as draft',   icon: 'bookmark',     color: '#64748b', action: () => flashGridToast('Sale saved as draft') },
+  { key: 'ship',      label: 'Ship all items',  icon: 'truck',        color: '#0ea5e9', action: () => flashGridToast('Ship from store flow opened') },
+  { key: 'note',      label: 'Add note',        icon: 'sticky-note',  color: '#f43f5e', action: () => flashGridToast('Note attached to sale') },
+  { key: 'loyalty',   label: 'Loyalty lookup',  icon: 'user-search',  color: '#10b981', action: () => flashGridToast('Loyalty lookup opened') },
+]
 
 /* ── Get App — device-conditional install flow ──────────────────── */
 const isAndroidDevice = computed(() =>
@@ -240,7 +299,6 @@ const apkQrUrl = computed(() =>
       <div class="pos-header__title">
         <v-icon size="16" color="primary" style="margin-right: 6px;">monitor-smartphone</v-icon>
         <span>POS Preview</span>
-        <v-chip size="x-small" variant="tonal" color="info" class="ml-2">Demo mode</v-chip>
       </div>
 
       <div class="pos-header__controls">
@@ -338,84 +396,155 @@ const apkQrUrl = computed(() =>
 
             <!-- ── SALE VIEW ──────────────────────────────────── -->
             <template v-if="posView === 'sale'">
-              <!-- Product catalog pane -->
-              <div class="pos-catalog">
-                <div class="pos-catalog__search">
-                  <v-text-field
-                    v-model="catalogSearch"
-                    placeholder="Search or scan barcode…"
-                    density="compact"
-                    variant="outlined"
-                    prepend-inner-icon="search"
-                    hide-details
-                    bg-color="surface"
-                    style="font-size: 13px;"
-                  />
+              <!-- Main pane: Smart Grid home OR product catalog -->
+              <div class="pos-main">
+
+                <!-- Pane header (mode switcher) -->
+                <div class="pos-pane-head">
+                  <div class="pos-pane-head__title">
+                    {{ saleMode === 'smart-grid' ? 'Smart grid' : 'Products' }}
+                  </div>
+                  <button
+                    v-if="saleMode === 'smart-grid'"
+                    class="pos-pane-head__link"
+                    @click="saleMode = 'catalog'"
+                  >
+                    Show full catalog
+                    <v-icon size="13" style="margin-left: 2px;">chevron-right</v-icon>
+                  </button>
+                  <button
+                    v-else
+                    class="pos-pane-head__link"
+                    @click="saleMode = 'smart-grid'"
+                  >
+                    <v-icon size="13" style="margin-right: 2px;">chevron-left</v-icon>
+                    Smart grid
+                  </button>
                 </div>
 
-                <div class="pos-catalog__grid">
+                <!-- ── SMART GRID home ─────────────────────────── -->
+                <div v-if="saleMode === 'smart-grid'" class="pos-smartgrid">
                   <button
-                    v-for="item in catalog"
-                    :key="item.sku"
-                    class="pos-product-tile"
-                    @click="addToCart(item)"
+                    v-for="tile in SMART_GRID_TILES"
+                    :key="tile.key"
+                    class="pos-smartgrid__tile"
+                    @click="tile.action"
                   >
-                    <div class="pos-product-tile__icon">
-                      <v-icon size="20" color="primary">package</v-icon>
+                    <div class="pos-smartgrid__icon" :style="{ background: tile.color }">
+                      <v-icon size="22" color="white">{{ tile.icon }}</v-icon>
                     </div>
-                    <div class="pos-product-tile__name">{{ item.productName }}</div>
-                    <div class="pos-product-tile__sku">{{ item.sku }}</div>
-                    <div class="pos-product-tile__price">{{ fmt(item.pos) }}</div>
+                    <div class="pos-smartgrid__label">{{ tile.label }}</div>
                   </button>
+                </div>
 
-                  <div v-if="catalog.length === 0" class="pos-catalog__empty">
-                    <v-icon size="32" color="medium-emphasis">search</v-icon>
-                    <div>No products found</div>
+                <!-- ── CATALOG ─────────────────────────────────── -->
+                <div v-else class="pos-catalog">
+                  <div class="pos-catalog__search">
+                    <v-text-field
+                      v-model="catalogSearch"
+                      placeholder="Search or scan barcode"
+                      density="compact"
+                      variant="solo"
+                      flat
+                      prepend-inner-icon="search"
+                      hide-details
+                      bg-color="surface"
+                      rounded="lg"
+                      style="font-size: 13px;"
+                    />
+                  </div>
+
+                  <div class="pos-catalog__chips">
+                    <button
+                      v-for="chip in COLLECTION_CHIPS"
+                      :key="chip.value"
+                      class="pos-chip"
+                      :class="{ 'pos-chip--active': activeCollection === chip.value }"
+                      @click="activeCollection = chip.value"
+                    >
+                      {{ chip.label }}
+                    </button>
+                  </div>
+
+                  <div class="pos-catalog__grid">
+                    <button
+                      v-for="item in catalog"
+                      :key="item.sku"
+                      class="pos-product-tile"
+                      @click="addToCart(item)"
+                    >
+                      <div class="pos-product-tile__image" :style="{ background: tileGradient(item.sku) }">
+                        <v-icon size="22" color="#11182799">package</v-icon>
+                      </div>
+                      <div class="pos-product-tile__body">
+                        <div class="pos-product-tile__name">{{ item.productName }}</div>
+                        <div class="pos-product-tile__price">{{ fmt(item.pos) }}</div>
+                      </div>
+                    </button>
+
+                    <div v-if="catalog.length === 0" class="pos-catalog__empty">
+                      <v-icon size="32" color="medium-emphasis">search</v-icon>
+                      <div>No products found</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Cart / right pane -->
+              <!-- Cart / right pane (Shopify-style) -->
               <div class="pos-cart">
                 <div class="pos-cart__header">
-                  <span class="pos-cart__title">Sale</span>
-                  <span v-if="customerName" class="pos-cart__customer">
-                    <v-icon size="12">user</v-icon> {{ customerName }}
+                  <span class="pos-cart__title">Current sale</span>
+                  <span v-if="cart.length > 0" class="pos-cart__count">
+                    {{ cart.reduce((s, c) => s + c.qty, 0) }} item{{ cart.reduce((s, c) => s + c.qty, 0) !== 1 ? 's' : '' }}
                   </span>
-                  <v-btn
-                    v-if="cart.length > 0"
-                    icon="x"
-                    variant="text"
-                    size="x-small"
-                    class="ml-auto"
-                    @click="clearCart"
-                    title="Clear sale"
-                  />
+                </div>
+
+                <!-- Customer chip -->
+                <div v-if="customerName" class="pos-customer-chip">
+                  <v-icon size="14">user</v-icon>
+                  <span>{{ customerName }}</span>
+                  <button class="pos-customer-chip__x" @click="customerName = ''" aria-label="Remove customer">
+                    <v-icon size="12">x</v-icon>
+                  </button>
                 </div>
 
                 <!-- Line items -->
                 <div class="pos-cart__lines">
                   <div v-if="cart.length === 0" class="pos-cart__empty">
-                    <v-icon size="28" color="medium-emphasis">shopping-cart</v-icon>
-                    <div style="font-size: 12px; margin-top: 6px; color: var(--muted);">Tap a product to add it</div>
+                    <div class="pos-cart__empty-illo">
+                      <v-icon size="42" color="#9ca3af">shopping-bag</v-icon>
+                    </div>
+                    <div class="pos-cart__empty-title">Add a product to get started</div>
+                    <div class="pos-cart__empty-sub">Browse the smart grid or scan a barcode</div>
+                    <div class="pos-cart__empty-chips">
+                      <button class="pos-empty-chip" @click="addCustomSale">
+                        <v-icon size="13">plus</v-icon>
+                        Custom item
+                      </button>
+                      <button class="pos-empty-chip" @click="customerDialogOpen = true; pendingCustomer = customerName">
+                        <v-icon size="13">user-plus</v-icon>
+                        Add customer
+                      </button>
+                    </div>
                   </div>
 
-                  <div v-for="line in cart" :key="line.sku" class="pos-cart__line">
-                    <div class="pos-cart__line-name">{{ line.name }}</div>
-                    <div class="pos-cart__line-controls">
-                      <button class="pos-qty-btn" @click="decrementQty(line.sku)">−</button>
-                      <span class="pos-qty-value">{{ line.qty }}</span>
-                      <button class="pos-qty-btn" @click="incrementQty(line.sku)">+</button>
+                  <div v-for="line in cart" :key="line.sku" class="pos-line">
+                    <div class="pos-line__thumb" :style="{ background: tileGradient(line.sku) }" />
+                    <div class="pos-line__body">
+                      <div class="pos-line__name">{{ line.name }}</div>
+                      <div class="pos-line__sku">{{ line.sku }} · {{ fmt(line.price) }} ea</div>
                     </div>
-                    <div class="pos-cart__line-price">{{ fmt(line.price * line.qty) }}</div>
-                    <button class="pos-cart__line-remove" @click="removeFromCart(line.sku)">
-                      <v-icon size="12">x</v-icon>
-                    </button>
+                    <div class="pos-line__qty">
+                      <button class="pos-qty-btn" @click="decrementQty(line.sku)" aria-label="Decrease quantity">−</button>
+                      <span class="pos-qty-value">{{ line.qty }}</span>
+                      <button class="pos-qty-btn" @click="incrementQty(line.sku)" aria-label="Increase quantity">+</button>
+                    </div>
+                    <div class="pos-line__price">{{ fmt(line.price * line.qty) }}</div>
                   </div>
                 </div>
 
                 <!-- Totals -->
-                <div class="pos-cart__totals">
+                <div v-if="cart.length > 0" class="pos-cart__totals">
                   <div class="pos-total-row">
                     <span>Subtotal</span><span>{{ fmt(subtotal) }}</span>
                   </div>
@@ -431,26 +560,30 @@ const apkQrUrl = computed(() =>
                   </div>
                 </div>
 
-                <!-- Action bar -->
-                <div class="pos-cart__actions">
-                  <button class="pos-action-btn" @click="suspendSale">
-                    <v-icon size="14">pause-circle</v-icon>Suspend
+                <!-- Cart secondary actions -->
+                <div v-if="cart.length > 0" class="pos-cart__secondary">
+                  <button class="pos-secondary-btn" @click="suspendSale" title="Suspend sale">
+                    <v-icon size="14">pause-circle</v-icon>
                   </button>
-                  <button class="pos-action-btn" @click="discountDialogOpen = true; pendingDiscount = discountPct">
-                    <v-icon size="14">percent</v-icon>Discount
+                  <button class="pos-secondary-btn" @click="discountDialogOpen = true; pendingDiscount = discountPct" title="Discount">
+                    <v-icon size="14">percent</v-icon>
                   </button>
-                  <button class="pos-action-btn" @click="customerDialogOpen = true; pendingCustomer = customerName">
-                    <v-icon size="14">user</v-icon>Customer
+                  <button class="pos-secondary-btn" @click="customerDialogOpen = true; pendingCustomer = customerName" title="Customer">
+                    <v-icon size="14">user-plus</v-icon>
                   </button>
-                  <button
-                    class="pos-pay-btn"
-                    :class="{ 'pos-pay-btn--disabled': cart.length === 0 }"
-                    @click="openPay"
-                  >
-                    <v-icon size="16">credit-card</v-icon>
-                    Pay {{ fmt(grandTotal) }}
+                  <button class="pos-secondary-btn" @click="clearCart" title="Clear sale">
+                    <v-icon size="14">trash-2</v-icon>
                   </button>
                 </div>
+
+                <!-- Charge button (Shopify-iconic) -->
+                <button
+                  class="pos-charge-btn"
+                  :class="{ 'pos-charge-btn--disabled': cart.length === 0 }"
+                  @click="openPay"
+                >
+                  Charge {{ fmt(grandTotal) }}
+                </button>
               </div>
             </template>
 
@@ -570,34 +703,46 @@ const apkQrUrl = computed(() =>
       </div><!-- pos-device-frame -->
     </div><!-- pos-stage -->
 
-    <!-- ── Payment overlay (rendered inside the device frame via portal) ── -->
+    <!-- ── Payment sheet (Shopify-style slide-up) ──────────────── -->
     <v-overlay
       :model-value="paymentStep !== 'idle'"
       class="pos-payment-overlay"
       persistent
-      scrim="rgba(0,0,0,0.6)"
+      scrim="rgba(15, 23, 42, 0.55)"
     >
-      <div class="pos-payment-modal">
+      <div class="pos-payment-sheet">
+
+        <!-- Sheet grabber -->
+        <div class="pos-payment-sheet__grabber" />
 
         <!-- Select tender -->
         <template v-if="paymentStep === 'select'">
-          <div class="pos-payment-modal__title">Select payment method</div>
-          <div class="pos-payment-modal__amount">{{ fmt(grandTotal) }}</div>
-          <div class="pos-tender-grid">
+          <div class="pos-payment-sheet__head">
+            <div class="pos-payment-sheet__eyebrow">Tender amount</div>
+            <div class="pos-payment-sheet__amount">{{ fmt(grandTotal) }}</div>
+          </div>
+
+          <div class="pos-tender-list">
             <button
-              v-for="t in (['card', 'tap_to_pay', 'cash', 'split'] as TenderType[])"
+              v-for="t in (['card', 'tap_to_pay', 'cash', 'gift_card', 'split'] as TenderType[])"
               :key="t"
-              class="pos-tender-btn"
-              :class="{ 'pos-tender-btn--selected': selectedTender === t }"
+              class="pos-tender-row"
+              :class="{ 'pos-tender-row--selected': selectedTender === t }"
               @click="selectTender(t)"
             >
-              <v-icon size="22">{{ TENDER_ICONS[t] }}</v-icon>
-              <span>{{ TENDER_DISPLAY[t] }}</span>
+              <div class="pos-tender-row__icon">
+                <v-icon size="20">{{ TENDER_ICONS[t] }}</v-icon>
+              </div>
+              <div class="pos-tender-row__label">{{ TENDER_DISPLAY[t] }}</div>
+              <div class="pos-tender-row__check">
+                <v-icon v-if="selectedTender === t" size="18" color="primary">check</v-icon>
+              </div>
             </button>
           </div>
-          <div class="d-flex gap-3 mt-4">
-            <button class="pos-cancel-btn" @click="paymentStep = 'idle'">Cancel</button>
-            <button class="pos-confirm-btn" @click="processPayment">
+
+          <div class="pos-payment-sheet__actions">
+            <button class="pos-sheet-cancel" @click="paymentStep = 'idle'">Cancel</button>
+            <button class="pos-charge-btn pos-charge-btn--in-sheet" @click="processPayment">
               Charge {{ fmt(grandTotal) }}
             </button>
           </div>
@@ -605,27 +750,38 @@ const apkQrUrl = computed(() =>
 
         <!-- Processing -->
         <template v-else-if="paymentStep === 'processing'">
-          <v-progress-circular indeterminate color="primary" size="52" class="mb-4" />
-          <div class="pos-payment-modal__title">Processing…</div>
-          <div class="pos-payment-modal__sub">{{ PROCESSING_TEXT[selectedTender] }}</div>
+          <div class="pos-payment-sheet__center">
+            <v-progress-circular indeterminate color="primary" size="52" class="mb-4" />
+            <div class="pos-payment-sheet__big-title">Processing…</div>
+            <div class="pos-payment-sheet__sub">{{ PROCESSING_TEXT[selectedTender] }}</div>
+          </div>
         </template>
 
         <!-- Approved -->
         <template v-else-if="paymentStep === 'approved'">
-          <div class="pos-approved-icon">
-            <v-icon size="48" color="success">circle-check-big</v-icon>
+          <div class="pos-payment-sheet__center">
+            <div class="pos-approved-icon">
+              <v-icon size="56" color="success">circle-check-big</v-icon>
+            </div>
+            <div class="pos-payment-sheet__big-title">Approved</div>
+            <div class="pos-payment-sheet__big-amount">{{ fmt(grandTotal) }}</div>
+            <div class="pos-payment-sheet__sub">
+              Paid via {{ TENDER_DISPLAY[selectedTender] }}
+              <span v-if="selectedTender === 'cash'"> · change due {{ fmt(Math.ceil(grandTotal / 10) * 10 - grandTotal) }}</span>
+            </div>
           </div>
-          <div class="pos-payment-modal__title" style="color: #22c55e;">Approved</div>
-          <div class="pos-payment-modal__amount">{{ fmt(grandTotal) }}</div>
-          <div class="pos-payment-modal__sub">
-            {{ APPROVED_TEXT[selectedTender] }}
-            <span v-if="selectedTender === 'cash'"> — change due: {{ fmt(Math.ceil(grandTotal / 10) * 10 - grandTotal) }}</span>
-          </div>
-          <div class="d-flex gap-3 mt-5">
-            <button class="pos-cancel-btn" @click="completeApproved">No receipt</button>
-            <button class="pos-confirm-btn" @click="completeApproved">
-              <v-icon size="16" style="margin-right: 4px;">printer</v-icon>
-              Print receipt
+
+          <div class="pos-payment-sheet__receipt-actions">
+            <button class="pos-receipt-action" @click="completeApproved">
+              <v-icon size="16">mail</v-icon>
+              <span>Email receipt</span>
+            </button>
+            <button class="pos-receipt-action" @click="completeApproved">
+              <v-icon size="16">printer</v-icon>
+              <span>Print receipt</span>
+            </button>
+            <button class="pos-receipt-action pos-receipt-action--primary" @click="completeApproved">
+              <span>Done</span>
             </button>
           </div>
         </template>
@@ -692,6 +848,12 @@ const apkQrUrl = computed(() =>
     <v-snackbar v-model="apkToast" :timeout="3000" location="top">
       <v-icon size="16" class="mr-2">mail</v-icon>
       TestFlight invite sent to your email
+    </v-snackbar>
+
+    <!-- Smart-grid action toast -->
+    <v-snackbar v-model="gridToast" :timeout="2200" location="top">
+      <v-icon size="16" class="mr-2">check-circle</v-icon>
+      {{ gridToastText }}
     </v-snackbar>
 
   </div>
@@ -851,60 +1013,71 @@ const apkQrUrl = computed(() =>
 }
 
 /* ── Rail ──────────────────────────────────────────────────────── */
+/* Shopify POS token vars (scoped to PosPreview) */
+$pos-ink: #111827;
+$pos-muted: #6b7280;
+$pos-hairline: #e5e7eb;
+$pos-surface: #ffffff;
+$pos-bg: #f4f4f5;
+
 .pos-rail {
-  width: 64px;
+  width: 72px;
   flex-shrink: 0;
-  background: #0f172a;
+  background: $pos-ink;
   display: flex;
   flex-direction: column;
-  padding: 8px 0;
+  padding: 10px 0;
 
   &__brand {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px;
-    margin-bottom: 8px;
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
   }
 
   &__nav {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     flex: 1;
+    padding: 0 8px;
   }
 
   &__item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    padding: 8px 4px;
-    border-radius: 8px;
-    margin: 0 4px;
+    gap: 4px;
+    padding: 10px 4px;
+    border-radius: 10px;
     cursor: pointer;
     border: none;
     background: transparent;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 9px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 10px;
     font-weight: 500;
     transition: background 120ms, color 120ms;
 
     &:hover {
       background: rgba(255, 255, 255, 0.06);
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.95);
     }
 
     &--active {
-      background: rgba(13, 148, 136, 0.25);
-      color: #0d9488;
+      background: rgba(13, 148, 136, 0.22);
+      color: #5eead4;
+      font-weight: 600;
     }
   }
 
   &__footer {
     display: flex;
     justify-content: center;
-    padding: 8px;
+    padding: 10px;
   }
 
   &__associate {
@@ -912,24 +1085,135 @@ const apkQrUrl = computed(() =>
   }
 }
 
+/* ── Main pane (smart-grid or catalog) ─────────────────────────── */
+.pos-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: $pos-bg;
+  overflow: hidden;
+}
+
+.pos-pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 10px;
+  flex-shrink: 0;
+
+  &__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: $pos-ink;
+    letter-spacing: -0.2px;
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: $pos-muted;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover { background: rgba(17, 24, 39, 0.05); color: $pos-ink; }
+  }
+}
+
+/* ── Smart Grid (Shopify-iconic home tiles) ─────────────────────── */
+.pos-smartgrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 4px 18px 18px;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.pos-smartgrid__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: $pos-surface;
+  border: 1px solid $pos-hairline;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  min-height: 110px;
+  transition: transform 120ms, box-shadow 120ms, border-color 120ms;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(17, 24, 39, 0.06);
+    border-color: rgba(17, 24, 39, 0.12);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(17, 24, 39, 0.05);
+  }
+}
+
+.pos-smartgrid__icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.pos-smartgrid__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: $pos-ink;
+  line-height: 1.35;
+  margin-top: auto;
+}
+
 /* ── Catalog ───────────────────────────────────────────────────── */
 .pos-catalog {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid color-mix(in oklch, var(--ink) 8%, transparent);
   overflow: hidden;
 
   &__search {
-    padding: 10px 12px 8px;
+    padding: 0 18px 10px;
+    flex-shrink: 0;
+
+    :deep(.v-field) {
+      background: $pos-surface !important;
+      border: 1px solid $pos-hairline;
+      border-radius: 12px !important;
+    }
+    :deep(.v-field:focus-within) {
+      border-color: rgba(17, 24, 39, 0.25);
+      box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.06);
+    }
+  }
+
+  &__chips {
+    display: flex;
+    gap: 6px;
+    padding: 0 18px 12px;
+    overflow-x: auto;
     flex-shrink: 0;
   }
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 8px;
-    padding: 0 10px 10px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 0 18px 18px;
     overflow-y: auto;
     align-content: start;
   }
@@ -940,101 +1224,129 @@ const apkQrUrl = computed(() =>
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 32px;
-    color: var(--muted);
+    padding: 40px;
+    color: $pos-muted;
     font-size: 12px;
     gap: 8px;
   }
 }
 
-/* ── Product tile ──────────────────────────────────────────────── */
+.pos-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border: 1px solid $pos-hairline;
+  border-radius: 999px;
+  background: $pos-surface;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: $pos-muted;
+  white-space: nowrap;
+  transition: background 100ms, color 100ms, border-color 100ms;
+
+  &:hover { background: rgba(17, 24, 39, 0.04); color: $pos-ink; }
+
+  &--active {
+    background: $pos-ink;
+    border-color: $pos-ink;
+    color: white;
+
+    &:hover { background: $pos-ink; color: white; }
+  }
+}
+
+/* ── Product tile (Shopify-style) ──────────────────────────────── */
 .pos-product-tile {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 10px;
-  border: 1px solid color-mix(in oklch, var(--ink) 8%, transparent);
-  border-radius: 10px;
-  background: var(--surface-1);
+  background: $pos-surface;
+  border: 1px solid $pos-hairline;
+  border-radius: 12px;
   cursor: pointer;
   text-align: left;
-  transition: border-color 100ms, background 100ms;
-  min-height: 90px;
+  overflow: hidden;
+  transition: transform 120ms, box-shadow 120ms, border-color 120ms;
 
   &:hover {
-    border-color: var(--cloud-retail-accent);
-    background: color-mix(in oklch, var(--cloud-retail-accent) 5%, var(--surface-1));
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(17, 24, 39, 0.07);
+    border-color: rgba(17, 24, 39, 0.12);
   }
 
   &:active {
-    transform: scale(0.97);
+    transform: translateY(0);
   }
 
-  &__icon {
-    margin-bottom: 2px;
+  &__image {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__body {
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
 
   &__name {
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 600;
-    color: var(--ink);
+    color: $pos-ink;
     line-height: 1.3;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-  }
-
-  &__sku {
-    font-size: 9px;
-    color: var(--muted);
-    font-family: monospace;
+    min-height: 2.6em;
   }
 
   &__price {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
-    color: var(--cloud-retail-accent);
-    margin-top: auto;
+    color: $pos-ink;
+    margin-top: 2px;
   }
 }
 
-/* ── Cart ──────────────────────────────────────────────────────── */
+/* ── Cart panel (Shopify-style) ────────────────────────────────── */
 .pos-cart {
-  width: 240px;
+  width: 320px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: color-mix(in oklch, var(--ink) 1.5%, var(--surface-1));
+  background: $pos-surface;
+  border-left: 1px solid $pos-hairline;
 
   &__header {
     display: flex;
-    align-items: center;
+    align-items: baseline;
+    justify-content: space-between;
     gap: 8px;
-    padding: 10px 12px 8px;
-    border-bottom: 1px solid color-mix(in oklch, var(--ink) 7%, transparent);
+    padding: 14px 18px 10px;
     flex-shrink: 0;
   }
 
   &__title {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
-    color: var(--ink);
+    color: $pos-ink;
+    letter-spacing: -0.2px;
   }
 
-  &__customer {
-    font-size: 11px;
-    color: var(--cloud-retail-accent);
-    display: flex;
-    align-items: center;
-    gap: 3px;
+  &__count {
+    font-size: 12px;
+    color: $pos-muted;
+    font-weight: 500;
   }
 
   &__lines {
     flex: 1;
     overflow-y: auto;
-    padding: 6px 10px;
+    padding: 4px 0 8px;
   }
 
   &__empty {
@@ -1043,44 +1355,69 @@ const apkQrUrl = computed(() =>
     align-items: center;
     justify-content: center;
     height: 100%;
-    padding: 24px;
+    padding: 32px 24px;
+    text-align: center;
   }
 
-  &__line {
-    display: grid;
-    grid-template-columns: 1fr auto auto auto;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 0;
-    border-bottom: 1px solid color-mix(in oklch, var(--ink) 6%, transparent);
-    font-size: 11px;
-
-    &:last-child { border-bottom: none; }
-  }
-
-  &__line-name {
-    font-weight: 500;
-    color: var(--ink);
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    font-size: 11px;
-  }
-
-  &__line-controls {
+  &__empty-illo {
+    width: 72px;
+    height: 72px;
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(17, 24, 39, 0.04);
+    margin-bottom: 14px;
   }
 
-  &__line-price {
-    font-weight: 700;
-    font-size: 11px;
-    color: var(--ink);
-    white-space: nowrap;
+  &__empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: $pos-ink;
+    margin-bottom: 4px;
   }
 
-  &__line-remove {
+  &__empty-sub {
+    font-size: 12px;
+    color: $pos-muted;
+    margin-bottom: 16px;
+  }
+
+  &__empty-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  &__totals {
+    padding: 12px 18px;
+    border-top: 1px solid $pos-hairline;
+    flex-shrink: 0;
+  }
+
+  &__secondary {
+    display: flex;
+    gap: 6px;
+    padding: 8px 18px 0;
+    flex-shrink: 0;
+  }
+}
+
+.pos-customer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 18px 8px;
+  padding: 6px 10px;
+  background: rgba(13, 148, 136, 0.1);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cloud-retail-accent);
+  width: fit-content;
+
+  &__x {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1088,27 +1425,87 @@ const apkQrUrl = computed(() =>
     height: 16px;
     border-radius: 50%;
     border: none;
-    background: color-mix(in oklch, var(--ink) 10%, transparent);
+    background: transparent;
+    color: currentColor;
     cursor: pointer;
-    color: var(--muted);
     padding: 0;
+    opacity: 0.7;
 
-    &:hover { background: #ef4444; color: white; }
+    &:hover { opacity: 1; background: rgba(13, 148, 136, 0.15); }
   }
+}
 
-  &__totals {
-    padding: 8px 12px;
-    border-top: 1px solid color-mix(in oklch, var(--ink) 8%, transparent);
+.pos-empty-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid $pos-hairline;
+  border-radius: 999px;
+  background: $pos-surface;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: $pos-ink;
+
+  &:hover { background: rgba(17, 24, 39, 0.04); }
+}
+
+.pos-line {
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.04);
+
+  &:last-child { border-bottom: none; }
+
+  &__thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     flex-shrink: 0;
   }
 
-  &__actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 4px;
-    padding: 8px;
-    border-top: 1px solid color-mix(in oklch, var(--ink) 8%, transparent);
-    flex-shrink: 0;
+  &__body {
+    min-width: 0;
+  }
+
+  &__name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: $pos-ink;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__sku {
+    font-size: 11px;
+    color: $pos-muted;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__qty {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px;
+    background: rgba(17, 24, 39, 0.04);
+    border-radius: 8px;
+  }
+
+  &__price {
+    font-size: 13px;
+    font-weight: 700;
+    color: $pos-ink;
+    white-space: nowrap;
+    text-align: right;
+    min-width: 56px;
   }
 }
 
@@ -1116,94 +1513,101 @@ const apkQrUrl = computed(() =>
 .pos-total-row {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: var(--muted);
-  padding: 2px 0;
+  font-size: 12px;
+  color: $pos-muted;
+  padding: 3px 0;
 
-  &--discount { color: #22c55e; }
+  &--discount { color: #16a34a; }
 
   &--grand {
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 700;
-    color: var(--ink);
-    margin-top: 4px;
-    padding-top: 4px;
-    border-top: 1px dashed color-mix(in oklch, var(--ink) 12%, transparent);
+    color: $pos-ink;
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid $pos-hairline;
   }
 }
 
 /* ── Qty controls ──────────────────────────────────────────────── */
 .pos-qty-btn {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  border: 1px solid color-mix(in oklch, var(--ink) 15%, transparent);
-  background: var(--surface-1);
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: $pos-surface;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
-  color: var(--ink);
+  color: $pos-ink;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.06);
 
-  &:hover { background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent); border-color: var(--cloud-retail-accent); }
+  &:hover { background: rgba(17, 24, 39, 0.06); }
 }
 
 .pos-qty-value {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: var(--ink);
+  color: $pos-ink;
   min-width: 18px;
   text-align: center;
 }
 
-/* ── Action buttons ────────────────────────────────────────────── */
-.pos-action-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 6px 4px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in oklch, var(--ink) 10%, transparent);
-  background: var(--surface-1);
-  cursor: pointer;
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--muted);
-  transition: border-color 100ms;
-
-  &:hover {
-    border-color: var(--cloud-retail-accent);
-    color: var(--cloud-retail-accent);
-  }
-}
-
-.pos-pay-btn {
-  grid-column: 1 / -1;
+.pos-secondary-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px;
+  width: 38px;
+  height: 38px;
   border-radius: 10px;
-  border: none;
-  background: var(--cloud-retail-accent);
-  color: white;
-  font-size: 12px;
-  font-weight: 700;
+  border: 1px solid $pos-hairline;
+  background: $pos-surface;
+  color: $pos-muted;
   cursor: pointer;
-  transition: opacity 150ms;
+  transition: background 100ms, color 100ms, border-color 100ms;
 
-  &:hover { opacity: 0.9; }
-  &:active { opacity: 0.8; transform: scale(0.99); }
+  &:hover {
+    background: rgba(17, 24, 39, 0.04);
+    color: $pos-ink;
+    border-color: rgba(17, 24, 39, 0.18);
+  }
+}
+
+/* ── Charge button (Shopify-iconic) ────────────────────────────── */
+.pos-charge-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 18px 18px;
+  padding: 16px;
+  border-radius: 12px;
+  border: none;
+  background: $pos-ink;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  transition: opacity 150ms, transform 80ms;
+  flex-shrink: 0;
+
+  &:hover { background: #0b1220; }
+  &:active { transform: scale(0.995); }
 
   &--disabled {
-    background: color-mix(in oklch, var(--ink) 15%, transparent);
-    color: var(--muted);
+    background: rgba(17, 24, 39, 0.12);
+    color: rgba(17, 24, 39, 0.45);
     cursor: not-allowed;
     pointer-events: none;
+  }
+
+  &--in-sheet {
+    flex: 1;
+    margin: 0;
   }
 }
 
@@ -1279,112 +1683,204 @@ const apkQrUrl = computed(() =>
   }
 }
 
-/* ── Payment modal ─────────────────────────────────────────────── */
+/* ── Payment sheet (Shopify-style slide-up) ────────────────────── */
 .pos-payment-overlay :deep(.v-overlay__content) {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   pointer-events: none;
+  padding: 0;
 }
 
-.pos-payment-modal {
+.pos-payment-sheet {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  background: rgb(var(--v-theme-surface));
-  border-radius: 20px;
-  padding: 32px;
-  width: min(380px, calc(100vw - 32px));
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+  background: $pos-surface;
+  border-radius: 20px 20px 0 0;
+  padding: 14px 24px 24px;
+  width: min(440px, calc(100vw - 32px));
+  max-height: 88vh;
+  box-shadow: 0 -16px 64px rgba(15, 23, 42, 0.25);
   pointer-events: all;
+  animation: pos-sheet-up 240ms cubic-bezier(0.16, 1, 0.3, 1);
 
-  &__title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--ink);
-    margin-bottom: 4px;
+  &__grabber {
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(17, 24, 39, 0.12);
+    margin: 0 auto 14px;
+  }
+
+  &__head {
+    text-align: center;
+    margin-bottom: 18px;
+  }
+
+  &__eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    color: $pos-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
   }
 
   &__amount {
+    font-size: 36px;
+    font-weight: 800;
+    color: $pos-ink;
+    letter-spacing: -0.8px;
+    line-height: 1.1;
+    margin-top: 4px;
+  }
+
+  &__center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 16px 0 12px;
+  }
+
+  &__big-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: $pos-ink;
+    margin-bottom: 4px;
+  }
+
+  &__big-amount {
     font-size: 32px;
     font-weight: 800;
-    color: var(--cloud-retail-accent);
-    margin-bottom: 16px;
-    letter-spacing: -0.5px;
+    color: $pos-ink;
+    letter-spacing: -0.6px;
+    margin: 4px 0 8px;
   }
 
   &__sub {
     font-size: 13px;
-    color: var(--muted);
+    color: $pos-muted;
   }
+
+  &__actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  &__receipt-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 18px;
+  }
+}
+
+@keyframes pos-sheet-up {
+  from { transform: translateY(20%); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
 }
 
 .pos-approved-icon {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
-.pos-tender-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  width: 100%;
-}
-
-.pos-tender-btn {
+/* ── Tender rows (full-width Shopify list) ─────────────────────── */
+.pos-tender-list {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
-  padding: 16px;
-  border-radius: 12px;
-  border: 2px solid color-mix(in oklch, var(--ink) 10%, transparent);
-  background: var(--surface-1);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
-  transition: border-color 120ms, background 120ms;
+}
 
-  &:hover { border-color: var(--cloud-retail-accent); }
+.pos-tender-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 22px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px;
+  border: 1px solid $pos-hairline;
+  border-radius: 12px;
+  background: $pos-surface;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: $pos-ink;
+  text-align: left;
+  transition: border-color 100ms, background 100ms;
+
+  &:hover {
+    background: rgba(17, 24, 39, 0.03);
+    border-color: rgba(17, 24, 39, 0.16);
+  }
+
+  &__icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(17, 24, 39, 0.06);
+    color: $pos-ink;
+  }
+
+  &__label { font-size: 14px; font-weight: 600; }
+
+  &__check { display: flex; justify-content: center; }
 
   &--selected {
     border-color: var(--cloud-retail-accent);
-    background: color-mix(in oklch, var(--cloud-retail-accent) 10%, var(--surface-1));
-    color: var(--cloud-retail-accent);
+    background: rgba(13, 148, 136, 0.06);
+  }
+
+  &--selected .pos-tender-row__icon {
+    background: var(--cloud-retail-accent);
+    color: white;
   }
 }
 
-.pos-cancel-btn {
-  flex: 1;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in oklch, var(--ink) 15%, transparent);
-  background: transparent;
+.pos-sheet-cancel {
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 1px solid $pos-hairline;
+  background: $pos-surface;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--muted);
+  color: $pos-ink;
 
-  &:hover { background: color-mix(in oklch, var(--ink) 5%, transparent); }
+  &:hover { background: rgba(17, 24, 39, 0.04); }
 }
 
-.pos-confirm-btn {
-  flex: 2;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  background: var(--cloud-retail-accent);
-  color: white;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
+.pos-receipt-action {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid $pos-hairline;
+  background: $pos-surface;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: $pos-ink;
 
-  &:hover { opacity: 0.9; }
+  &:hover { background: rgba(17, 24, 39, 0.04); }
+
+  &--primary {
+    background: $pos-ink;
+    color: white;
+    border-color: $pos-ink;
+
+    &:hover { background: #0b1220; }
+  }
 }
 
 /* ── Get App pane ───────────────────────────────────────────────── */
