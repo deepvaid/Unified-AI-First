@@ -196,11 +196,48 @@ function buildNavGroups(accountId: string): NavGroup[] {
       ],
     },
     {
-      title: 'Retail',
+      title: 'Retail Cloud',
       icon: 'store',
       requires: 'commerce',
       singleRoute: `/commerce/${accountId}/retail`,
-      items: [],
+      items: [
+        {
+          title: 'Overview',
+          isSubGroup: true,
+          items: [
+            { title: 'Home',         route: `/commerce/${accountId}/retail` },
+            { title: 'POS Preview',  route: `/commerce/${accountId}/retail/pos-preview` },
+            { title: 'Reports',      route: `/commerce/${accountId}/retail/reports` },
+          ],
+        },
+        {
+          title: 'Operations',
+          isSubGroup: true,
+          items: [
+            { title: 'Transactions', route: `/commerce/${accountId}/retail/transactions` },
+            { title: 'Locations',    route: `/commerce/${accountId}/retail/locations` },
+            { title: 'Registers',    route: `/commerce/${accountId}/retail/registers` },
+            { title: 'Associates',   route: `/commerce/${accountId}/retail/associates` },
+          ],
+        },
+        {
+          title: 'Catalog & Stock',
+          isSubGroup: true,
+          items: [
+            { title: 'Stock by Location', route: `/commerce/${accountId}/retail/stock` },
+            { title: 'Bulk Inventory',    route: `/commerce/${accountId}/retail/inventory` },
+            { title: 'Pricing',           route: `/commerce/${accountId}/retail/pricing` },
+          ],
+        },
+        {
+          title: 'Setup',
+          isSubGroup: true,
+          items: [
+            { title: 'Hardware', route: `/commerce/${accountId}/retail/hardware` },
+            { title: 'Settings', route: `/commerce/${accountId}/retail/settings` },
+          ],
+        },
+      ],
     },
     {
       title: 'Merchandising Cloud',

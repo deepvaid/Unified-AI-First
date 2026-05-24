@@ -77,8 +77,19 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/merchandising/recommendations', name: 'MerchandisingRecommendations', component: () => import('@/views/Merchandising/RecommendationEngines.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/fields', name: 'MerchandisingFields', component: () => import('@/views/Merchandising/FieldTransformations.vue'), meta: commerceGate },
 
-  // 5.6 Retail
-  { path: '/commerce/:accountId/retail', name: 'Retail', component: () => import('@/views/Commerce/Retail.vue'), meta: commerceGate },
+  // 5.6 Retail Cloud
+  { path: '/commerce/:accountId/retail',              name: 'RetailHome',         component: () => import('@/views/Retail/RetailHome.vue'),       meta: commerceGate },
+  { path: '/commerce/:accountId/retail/locations',    name: 'RetailLocations',    component: () => import('@/views/Retail/Locations.vue'),        meta: commerceGate },
+  { path: '/commerce/:accountId/retail/registers',    name: 'RetailRegisters',    component: () => import('@/views/Retail/Registers.vue'),        meta: commerceGate },
+  { path: '/commerce/:accountId/retail/transactions', name: 'RetailTransactions', component: () => import('@/views/Retail/Transactions.vue'),     meta: commerceGate },
+  { path: '/commerce/:accountId/retail/associates',   name: 'RetailAssociates',   component: () => import('@/views/Retail/Associates.vue'),       meta: commerceGate },
+  { path: '/commerce/:accountId/retail/pos-preview',  name: 'RetailPosPreview',   component: () => import('@/views/Retail/PosPreview.vue'),       meta: { ...commerceGate, fullPage: true } },
+  { path: '/commerce/:accountId/retail/stock',        name: 'RetailStock',        component: () => import('@/views/Retail/StockByLocation.vue'),  meta: commerceGate },
+  { path: '/commerce/:accountId/retail/inventory',    name: 'RetailBulkInventory',component: () => import('@/views/Retail/BulkInventory.vue'),   meta: commerceGate },
+  { path: '/commerce/:accountId/retail/pricing',      name: 'RetailPricing',      component: () => import('@/views/Retail/Pricing.vue'),          meta: commerceGate },
+  { path: '/commerce/:accountId/retail/reports',      name: 'RetailReports',      component: () => import('@/views/Retail/Reports.vue'),          meta: commerceGate },
+  { path: '/commerce/:accountId/retail/hardware',     name: 'RetailHardware',     component: () => import('@/views/Retail/Hardware.vue'),         meta: commerceGate },
+  { path: '/commerce/:accountId/retail/settings',     name: 'RetailSettings',     component: () => import('@/views/Retail/RetailSettings.vue'),   meta: commerceGate },
 
   // 6. Marketing
   { path: '/accounts/:accountId/marketing', name: 'MarketingHome', component: () => import('@/views/Marketing/MarketingLanding.vue') },

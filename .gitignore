@@ -30,6 +30,9 @@ coverage
 # Cursor / Claude agent worktree mirrors (large; regenerate locally)
 .claude/worktrees/
 
+# Retail Cloud POS APK (204 MB binary — distribute out-of-band, not via git)
+Retail Cloud POS APK/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

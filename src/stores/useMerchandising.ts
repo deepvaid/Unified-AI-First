@@ -215,7 +215,7 @@ function buildAnalytics(): MerchAnalytics {
 
 export const useMerchandisingStore = defineStore('merchandising', () => {
   const merchStores = ref<MerchStore[]>(stores)
-  const activeStoreId = ref<string>(stores[0].id)
+  const activeStoreId = ref<string>(stores[0]!.id)
   const synonymList = ref<Synonym[]>([...synonyms])
   const redirectList = ref<PageRedirect[]>([...pageRedirects])
   const collectionList = ref<SmartCollection[]>([...collections])
@@ -224,7 +224,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
   const analytics = ref<MerchAnalytics>(buildAnalytics())
 
   const activeStore = computed(() =>
-    merchStores.value.find((s) => s.id === activeStoreId.value) ?? merchStores.value[0],
+    merchStores.value.find((s) => s.id === activeStoreId.value) ?? merchStores.value[0]!,
   )
 
   function setActiveStore(id: string) {

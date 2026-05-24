@@ -1,0 +1,357 @@
+/* Shared widget styles for Retail Cloud views.
+   Mirrors the Merchandising Cloud `merch-*` pattern but with the
+   `retail-` prefix and retail accent (teal) as default. */
+
+.retail-widget-card,
+.retail-kpi-card {
+  background: var(--surface-1) !important;
+  border-color: color-mix(in oklch, var(--ink) 7%, transparent) !important;
+  border-radius: var(--r-section) !important;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.retail-widget-card:hover,
+.retail-kpi-card:hover {
+  border-color: color-mix(in oklch, var(--ink) 18%, transparent) !important;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* ── Widget header ────────────────────────────────────────────── */
+.retail-widget-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 22px 14px;
+}
+
+.retail-widget-header__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.retail-widget-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.retail-widget-header__sub {
+  font-size: 12.5px;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.retail-widget-body {
+  padding: 0 22px 20px;
+}
+
+/* ── KPI card ─────────────────────────────────────────────────── */
+.retail-kpi-card {
+  container-type: inline-size;
+}
+
+.retail-kpi-card__inner {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px 18px;
+  height: 100%;
+}
+
+.retail-kpi-card__left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.retail-kpi-card__header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.retail-kpi-card__icon-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-chip);
+  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
+  color: var(--cloud-retail-text);
+}
+
+.retail-kpi-card__icon-chip--primary    { background: var(--accent-soft);                                                color: var(--accent-ink); }
+.retail-kpi-card__icon-chip--retail     { background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);     color: var(--cloud-retail-text); }
+.retail-kpi-card__icon-chip--marketing  { background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent);  color: var(--cloud-marketing-text); }
+.retail-kpi-card__icon-chip--contacts   { background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);   color: var(--cloud-contacts-text); }
+.retail-kpi-card__icon-chip--analytics  { background: color-mix(in oklch, var(--cloud-analytics-accent) 12%, transparent);  color: var(--cloud-analytics-text); }
+.retail-kpi-card__icon-chip--commerce   { background: color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent);   color: var(--cloud-commerce-text); }
+.retail-kpi-card__icon-chip--service    { background: color-mix(in oklch, var(--cloud-service-accent) 12%, transparent);    color: var(--cloud-service-text); }
+.retail-kpi-card__icon-chip--warning    { background: color-mix(in oklch, #f59e0b 14%, transparent);                       color: #b45309; }
+.retail-kpi-card__icon-chip--success    { background: color-mix(in oklch, var(--pos) 12%, transparent);                    color: var(--pos); }
+
+.retail-kpi-card__title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.retail-kpi-card__period {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.retail-kpi-card__value {
+  margin-top: 6px;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.retail-kpi-card__trend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.retail-kpi-card__trend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.retail-kpi-card__trend-pill--pos { color: var(--pos); }
+.retail-kpi-card__trend-pill--neg { color: var(--neg); }
+
+.retail-kpi-card__sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* sparkline */
+.retail-kpi-card__sparkline-col {
+  display: flex;
+  align-items: flex-end;
+  flex: 0 1 38%;
+  max-width: 40%;
+  min-width: 70px;
+  align-self: stretch;
+  padding-top: 8px;
+  color: var(--cloud-retail-accent);
+}
+
+.retail-kpi-card__sparkline {
+  width: 100%;
+  height: 88px;
+  overflow: visible;
+}
+
+.retail-kpi-card__sparkline-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.retail-kpi-card__sparkline-fill {
+  stroke: none;
+}
+
+/* ── Quick action tiles ───────────────────────────────────────── */
+.retail-action-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid color-mix(in oklch, var(--ink) 8%, transparent);
+  border-radius: var(--r-section);
+  background: var(--surface-1);
+  cursor: pointer;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+  height: 100%;
+}
+
+.retail-action-tile:hover {
+  border-color: color-mix(in oklch, var(--cloud-retail-accent) 35%, transparent);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.retail-action-tile:focus-visible {
+  outline: 2px solid var(--cloud-retail-accent);
+  outline-offset: 2px;
+}
+
+.retail-action-tile__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-chip);
+  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
+  color: var(--cloud-retail-text);
+}
+
+.retail-action-tile__icon--primary    { background: var(--accent-soft);                                                color: var(--accent-ink); }
+.retail-action-tile__icon--retail     { background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);     color: var(--cloud-retail-text); }
+.retail-action-tile__icon--marketing  { background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent);  color: var(--cloud-marketing-text); }
+.retail-action-tile__icon--contacts   { background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);   color: var(--cloud-contacts-text); }
+.retail-action-tile__icon--analytics  { background: color-mix(in oklch, var(--cloud-analytics-accent) 12%, transparent);  color: var(--cloud-analytics-text); }
+.retail-action-tile__icon--commerce   { background: color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent);   color: var(--cloud-commerce-text); }
+.retail-action-tile__icon--service    { background: color-mix(in oklch, var(--cloud-service-accent) 12%, transparent);    color: var(--cloud-service-text); }
+.retail-action-tile__icon--warning    { background: color-mix(in oklch, #f59e0b 14%, transparent);                       color: #b45309; }
+.retail-action-tile__icon--success    { background: color-mix(in oklch, var(--pos) 12%, transparent);                    color: var(--pos); }
+
+.retail-action-tile__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.retail-action-tile__desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+/* ── Progress bar ─────────────────────────────────────────────── */
+.retail-widget-progress {
+  padding: 0 22px 12px;
+}
+
+/* ── Lists (todo + recent) ────────────────────────────────────── */
+.retail-list {
+  padding: 4px 10px 12px;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.retail-list .v-list-item {
+  min-height: 44px;
+  padding-block: 8px;
+}
+
+.retail-list .v-list-item__prepend > .v-icon,
+.retail-list .v-list-item__prepend > .retail-row-icon {
+  margin-inline-end: 12px;
+}
+
+.retail-list-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.retail-list-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  line-height: 1.35;
+  opacity: 1 !important;
+}
+
+.retail-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-chip);
+  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
+  color: var(--cloud-retail-text);
+}
+
+.retail-row-icon--contacts   { background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);  color: var(--cloud-contacts-text); }
+.retail-row-icon--marketing  { background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent); color: var(--cloud-marketing-text); }
+.retail-row-icon--success    { background: color-mix(in oklch, var(--pos) 12%, transparent);                   color: var(--pos); }
+.retail-row-icon--warning    { background: color-mix(in oklch, #f59e0b 14%, transparent);                       color: #b45309; }
+
+/* ── Bulk action bar (above tables) ───────────────────────────── */
+.retail-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  background: color-mix(in oklch, var(--cloud-retail-accent) 6%, transparent);
+  border-top: 1px solid color-mix(in oklch, var(--cloud-retail-accent) 25%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--cloud-retail-accent) 25%, transparent);
+}
+
+/* ── Pulse-dot status indicator ──────────────────────────────── */
+.retail-status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.retail-status-dot::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+}
+
+.retail-status-dot--online {
+  color: var(--pos);
+}
+
+.retail-status-dot--online::before {
+  animation: retail-pulse 1.8s infinite;
+}
+
+.retail-status-dot--offline {
+  color: var(--neg);
+}
+
+.retail-status-dot--syncing {
+  color: #b45309;
+}
+
+@keyframes retail-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--pos) 40%, transparent); }
+  70%  { box-shadow: 0 0 0 6px color-mix(in oklch, var(--pos) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--pos) 0%, transparent); }
+}
