@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useRetailStore } from '@/stores/useRetail'
-import type { TenderType } from '@/stores/useRetail'
+import type { TenderType, ChannelPrice } from '@/stores/useRetail'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,15 +12,30 @@ const accountId = computed(() => route.params.accountId as string)
 
 /* ── Device frame select ───────────────────────────────────────── */
 type DeviceFrame = 'ipad' | 'iphone' | 'android-tablet'
-const device = ref<DeviceFrame>('ipad')
+type Orientation = 'portrait' | 'landscape'
 
-const DEVICE_FRAMES: { value: DeviceFrame; label: string; icon: string; w: number; h: number }[] = [
-  { value: 'ipad',           label: 'iPad',           icon: 'tablet',       w: 768, h: 1024 },
-  { value: 'iphone',         label: 'iPhone',         icon: 'smartphone',   w: 390, h: 844 },
-  { value: 'android-tablet', label: 'Android Tablet', icon: 'tablet',       w: 800, h: 1280 },
+const device = ref<DeviceFrame>('ipad')
+const orientation = ref<Orientation>('landscape')
+
+const DEVICE_FRAMES: { value: DeviceFrame; label: string; icon: string; w: number; h: number; supportsLandscape: boolean }[] = [
+  { value: 'ipad',           label: 'iPad',           icon: 'tablet',     w: 820, h: 1180, supportsLandscape: true  },
+  { value: 'iphone',         label: 'iPhone',         icon: 'smartphone', w: 390, h: 844,  supportsLandscape: false },
+  { value: 'android-tablet', label: 'Android Tablet', icon: 'tablet',     w: 800, h: 1280, supportsLandscape: true  },
 ]
 
-// currentFrame available if needed for future device-specific layout tweaks
+const currentFrame = computed(() => DEVICE_FRAMES.find((f) => f.value === device.value)!)
+
+// iPhone is portrait-only — POS-on-phone is universally portrait
+const effectiveOrientation = computed<Orientation>(() =>
+  currentFrame.value.supportsLandscape ? orientation.value : 'portrait',
+)
+
+const frameSize = computed(() => {
+  const f = currentFrame.value
+  return effectiveOrientation.value === 'landscape'
+    ? { w: f.h, h: f.w }
+    : { w: f.w, h: f.h }
+})
 
 /* ── Offline mode toggle ───────────────────────────────────────── */
 const isOffline = computed(() => store.offlineMode)
@@ -58,11 +73,57 @@ const COLLECTION_CHIPS: { value: Collection; label: string }[] = [
   { value: 'accessories', label: 'Accessories' },
 ]
 
-const catalog = computed(() =>
-  store.channelPriceList.filter((p) =>
-    !catalogSearch.value || p.productName.toLowerCase().includes(catalogSearch.value.toLowerCase()) || p.sku.toLowerCase().includes(catalogSearch.value.toLowerCase()),
-  ),
-)
+// Group products by base name — one tile per product, variant picker on tap
+interface VariantGroup {
+  baseName: string
+  representative: ChannelPrice
+  variants: ChannelPrice[]
+}
+
+const catalogGroups = computed<VariantGroup[]>(() => {
+  const map = new Map<string, ChannelPrice[]>()
+  store.channelPriceList
+    .filter((p) =>
+      !catalogSearch.value ||
+      p.productName.toLowerCase().includes(catalogSearch.value.toLowerCase()) ||
+      p.sku.toLowerCase().includes(catalogSearch.value.toLowerCase()),
+    )
+    .forEach((p) => {
+      const { name } = parseTileProduct(p.productName)
+      if (!map.has(name)) map.set(name, [])
+      map.get(name)!.push(p)
+    })
+  return [...map.entries()].map(([baseName, variants]) => ({
+    baseName,
+    representative: variants[0]!,
+    variants,
+  }))
+})
+
+/* ── Variant picker ─────────────────────────────────────────────── */
+const variantPickerOpen = ref(false)
+const variantPickerGroup = ref<VariantGroup | null>(null)
+
+function handleTileClick(group: VariantGroup) {
+  if (group.variants.length === 1) {
+    addToCart(group.variants[0]!)
+  } else {
+    variantPickerGroup.value = group
+    variantPickerOpen.value = true
+  }
+}
+
+function selectVariant(item: ChannelPrice) {
+  addToCart(item)
+  variantPickerOpen.value = false
+}
+
+/* ── Parse product name / variant from "Name — Variant" pattern ─── */
+function parseTileProduct(fullName: string): { name: string; variant: string | null } {
+  const idx = fullName.indexOf(' — ')
+  if (idx === -1) return { name: fullName, variant: null }
+  return { name: fullName.slice(0, idx), variant: fullName.slice(idx + 3) }
+}
 
 /* ── Product tile gradient (Shopify-style placeholder when no image) ─ */
 const TILE_GRADIENTS = [
@@ -325,6 +386,19 @@ const apkQrUrl = computed(() =>
           />
         </v-btn-toggle>
 
+        <!-- Orientation toggle (tablets only) -->
+        <v-btn-toggle
+          v-if="currentFrame.supportsLandscape"
+          v-model="orientation"
+          mandatory
+          density="compact"
+          rounded="lg"
+          border
+        >
+          <v-btn value="portrait"  size="small" icon="rectangle-vertical"   title="Portrait" />
+          <v-btn value="landscape" size="small" icon="rectangle-horizontal" title="Landscape" />
+        </v-btn-toggle>
+
         <!-- Offline toggle -->
         <div class="d-flex align-center ga-2">
           <span class="text-body-2" style="font-size: 12px; color: var(--muted);">Offline</span>
@@ -344,7 +418,11 @@ const apkQrUrl = computed(() =>
     <div class="pos-stage">
       <div
         class="pos-device-frame"
-        :class="`pos-device-frame--${device}`"
+        :class="[`pos-device-frame--${device}`, `pos-device-frame--${effectiveOrientation}`]"
+        :style="{
+          width:  `min(${frameSize.w}px, calc(100vw - var(--frame-margin, 48px)))`,
+          height: `min(${frameSize.h}px, calc(100vh - var(--frame-chrome, 140px)))`,
+        }"
       >
         <!-- Bezel top (camera notch area) -->
         <div class="pos-device-frame__bezel-top">
@@ -468,21 +546,35 @@ const apkQrUrl = computed(() =>
 
                   <div class="pos-catalog__grid">
                     <button
-                      v-for="item in catalog"
-                      :key="item.sku"
+                      v-for="group in catalogGroups"
+                      :key="group.representative.sku"
                       class="pos-product-tile"
-                      @click="addToCart(item)"
+                      @click="handleTileClick(group)"
                     >
-                      <div class="pos-product-tile__image" :style="{ background: tileGradient(item.sku) }">
-                        <v-icon size="22" color="#11182799">package</v-icon>
+                      <div class="pos-product-tile__image" :style="{ background: tileGradient(group.representative.sku) }">
+                        <v-icon size="20" color="#11182766">package</v-icon>
+                        <div v-if="group.variants.length > 1" class="pos-product-tile__variants-badge">
+                          {{ group.variants.length }} variants
+                        </div>
                       </div>
                       <div class="pos-product-tile__body">
-                        <div class="pos-product-tile__name">{{ item.productName }}</div>
-                        <div class="pos-product-tile__price">{{ fmt(item.pos) }}</div>
+                        <div class="pos-product-tile__name">{{ group.baseName }}</div>
+                        <div class="pos-product-tile__variant">
+                          <template v-if="group.variants.length === 1">
+                            {{ parseTileProduct(group.representative.productName).variant }}
+                          </template>
+                          <template v-else>
+                            {{ group.variants.map(v => parseTileProduct(v.productName).variant).filter(Boolean).join(' · ') }}
+                          </template>
+                        </div>
+                        <div class="pos-product-tile__price">
+                          <template v-if="group.variants.length === 1">{{ fmt(group.representative.pos) }}</template>
+                          <template v-else>from {{ fmt(Math.min(...group.variants.map(v => v.pos))) }}</template>
+                        </div>
                       </div>
                     </button>
 
-                    <div v-if="catalog.length === 0" class="pos-catalog__empty">
+                    <div v-if="catalogGroups.length === 0" class="pos-catalog__empty">
                       <v-icon size="32" color="medium-emphasis">search</v-icon>
                       <div>No products found</div>
                     </div>
@@ -694,6 +786,56 @@ const apkQrUrl = computed(() =>
             </div>
 
           </div><!-- pos-layout -->
+
+          <!-- ── Variant picker sheet (Shopify POS style) ──────── -->
+          <transition name="pos-variant-up">
+            <div
+              v-if="variantPickerOpen"
+              class="pos-variant-overlay"
+              @click.self="variantPickerOpen = false"
+            >
+              <div class="pos-variant-sheet">
+                <!-- Grabber -->
+                <div class="pos-variant-sheet__grabber" />
+
+                <!-- Header: product image + name + close -->
+                <div class="pos-variant-sheet__header">
+                  <div
+                    class="pos-variant-sheet__thumb"
+                    :style="{ background: tileGradient(variantPickerGroup!.representative.sku) }"
+                  >
+                    <v-icon size="16" color="#11182766">package</v-icon>
+                  </div>
+                  <div class="pos-variant-sheet__info">
+                    <div class="pos-variant-sheet__title">{{ variantPickerGroup?.baseName }}</div>
+                    <div class="pos-variant-sheet__sub">{{ variantPickerGroup?.variants.length }} variants available</div>
+                  </div>
+                  <button class="pos-variant-sheet__close" @click="variantPickerOpen = false">
+                    <v-icon size="14">x</v-icon>
+                  </button>
+                </div>
+
+                <!-- Variant rows -->
+                <div class="pos-variant-sheet__list">
+                  <button
+                    v-for="v in variantPickerGroup?.variants"
+                    :key="v.sku"
+                    class="pos-variant-row"
+                    @click="selectVariant(v)"
+                  >
+                    <div class="pos-variant-row__swatch" :style="{ background: tileGradient(v.sku) }" />
+                    <div class="pos-variant-row__info">
+                      <div class="pos-variant-row__label">{{ parseTileProduct(v.productName).variant }}</div>
+                      <div class="pos-variant-row__sku">SKU: {{ v.sku }}</div>
+                    </div>
+                    <div class="pos-variant-row__price">{{ fmt(v.pos) }}</div>
+                    <v-icon size="14" color="#9ca3af">chevron-right</v-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
         </div><!-- pos-screen -->
 
         <!-- Bezel bottom (home area) -->
@@ -936,21 +1078,6 @@ const apkQrUrl = computed(() =>
   overflow: hidden;
   transition: width 280ms ease, height 280ms ease;
 
-  &--ipad {
-    width: min(768px, calc(100vw - 48px));
-    height: min(780px, calc(100vh - 140px));
-  }
-
-  &--iphone {
-    width: min(390px, calc(100vw - 48px));
-    height: min(780px, calc(100vh - 140px));
-  }
-
-  &--android-tablet {
-    width: min(800px, calc(100vw - 48px));
-    height: min(780px, calc(100vh - 140px));
-  }
-
   &__bezel-top {
     display: flex;
     align-items: center;
@@ -990,6 +1117,7 @@ const apkQrUrl = computed(() =>
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative; // needed to contain the variant-picker overlay
 }
 
 /* ── Offline banner ────────────────────────────────────────────── */
@@ -1128,7 +1256,7 @@ $pos-bg: #f4f4f5;
 .pos-smartgrid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 12px;
   padding: 4px 18px 18px;
   overflow-y: auto;
@@ -1266,6 +1394,7 @@ $pos-bg: #f4f4f5;
   cursor: pointer;
   text-align: left;
   overflow: hidden;
+  position: relative;
   transition: transform 120ms, box-shadow 120ms, border-color 120ms;
 
   &:hover {
@@ -1279,36 +1408,63 @@ $pos-bg: #f4f4f5;
   }
 
   &__image {
-    aspect-ratio: 1;
+    height: 88px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+  }
+
+  &__variants-badge {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    font-size: 10px;
+    font-weight: 600;
+    color: $pos-ink;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(4px);
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 24, 39, 0.1);
+    pointer-events: none;
   }
 
   &__body {
-    padding: 10px 12px 12px;
+    padding: 8px 10px 10px;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
+    flex: 1;
   }
 
   &__name {
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
     color: $pos-ink;
     line-height: 1.3;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
-    min-height: 2.6em;
+  }
+
+  &__variant {
+    font-size: 11px;
+    font-weight: 400;
+    color: $pos-muted;
+    line-height: 1.3;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   &__price {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: $pos-ink;
-    margin-top: 2px;
+    margin-top: 3px;
   }
 }
 
@@ -2007,5 +2163,189 @@ $pos-bg: #f4f4f5;
     align-items: center;
     justify-content: center;
   }
+}
+
+/* ── Variant picker overlay (contained within .pos-screen) ─────── */
+.pos-variant-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  align-items: flex-end;
+}
+
+.pos-variant-sheet {
+  width: 100%;
+  background: $pos-surface;
+  border-radius: 16px 16px 0 0;
+  padding: 10px 0 8px;
+  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+  max-height: 72%;
+  display: flex;
+  flex-direction: column;
+
+  &__grabber {
+    width: 32px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(17, 24, 39, 0.12);
+    margin: 0 auto 10px;
+    flex-shrink: 0;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px 10px;
+    border-bottom: 1px solid $pos-hairline;
+    flex-shrink: 0;
+  }
+
+  &__thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__info { flex: 1; min-width: 0; }
+
+  &__title {
+    font-size: 13px;
+    font-weight: 700;
+    color: $pos-ink;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__sub {
+    font-size: 11px;
+    color: $pos-muted;
+    margin-top: 1px;
+  }
+
+  &__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: rgba(17, 24, 39, 0.07);
+    border-radius: 50%;
+    cursor: pointer;
+    color: $pos-muted;
+    flex-shrink: 0;
+
+    &:hover { background: rgba(17, 24, 39, 0.12); }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+}
+
+/* ── Variant row ───────────────────────────────────────────────── */
+.pos-variant-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px solid $pos-hairline;
+  transition: background 80ms;
+  width: 100%;
+
+  &:last-child { border-bottom: none; }
+  &:hover      { background: rgba(17, 24, 39, 0.03); }
+  &:active     { background: rgba(17, 24, 39, 0.07); }
+
+  &__swatch {
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    flex-shrink: 0;
+  }
+
+  &__info { flex: 1; min-width: 0; }
+
+  &__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: $pos-ink;
+  }
+
+  &__sku {
+    font-size: 10px;
+    color: $pos-muted;
+    margin-top: 1px;
+  }
+
+  &__price {
+    font-size: 13px;
+    font-weight: 700;
+    color: $pos-ink;
+    flex-shrink: 0;
+  }
+}
+
+/* ── Variant sheet slide-up transition ─────────────────────────── */
+.pos-variant-up-enter-active {
+  animation: pos-sheet-up 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pos-variant-up-leave-active {
+  animation: pos-sheet-up 160ms cubic-bezier(0.55, 0, 1, 0.45) reverse;
+}
+
+/* ── iPhone-frame compression (POS interior shrinks for narrow frame) ── */
+.pos-device-frame--iphone {
+  .pos-cart { width: 160px; }
+  .pos-rail { width: 56px; }
+}
+
+/* ── Responsive page chrome (Vuetify breakpoints) ─────────────── */
+/* Mobile (xs <600): stack header, allow frame to use full width */
+@media (max-width: 600px) {
+  .pos-preview-shell {
+    --frame-margin: 16px;
+    --frame-chrome: 180px;
+  }
+
+  .pos-header {
+    padding: 10px 12px;
+    gap: 8px;
+
+    &__back  { font-size: 12px; }
+    &__title { display: none; }
+    &__controls {
+      width: 100%;
+      margin-left: 0;
+      justify-content: space-between;
+      gap: 8px;
+    }
+  }
+
+  .pos-stage { padding: 12px; }
+
+  .pos-device-frame__bezel-top,
+  .pos-device-frame__bezel-bottom { height: 18px; }
+}
+
+/* Small tablet (sm 601–960): tighten chrome but keep layout intact */
+@media (min-width: 601px) and (max-width: 960px) {
+  .pos-preview-shell { --frame-margin: 32px; }
+  .pos-header        { padding: 10px 16px; gap: 12px; }
+  .pos-stage         { padding: 16px; }
 }
 </style>
