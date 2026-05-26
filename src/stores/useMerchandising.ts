@@ -71,14 +71,14 @@ export interface FieldTransformation {
 
 export interface MerchAnalytics {
   totalRevenue: number
-  findifyRevenue: number
-  findifyShare: number
+  merchCloudRevenue: number
+  merchCloudShare: number
   avgOrderValue: number
   totalRevenueTrend: number
-  findifyRevenueTrend: number
-  findifyShareTrend: number
+  merchCloudRevenueTrend: number
+  merchCloudShareTrend: number
   avgOrderValueTrend: number
-  revenueTrend: Array<{ date: string; total: number; findify: number }>
+  revenueTrend: Array<{ date: string; total: number; merchCloud: number }>
   contribution: Array<{ label: string; value: number }>
 }
 
@@ -86,7 +86,7 @@ export interface MerchAnalytics {
 
 const stores: MerchStore[] = [
   {
-    id: 'findify-demo-shop',
+    id: 'mydemostore',
     domain: 'MyDemostore.com',
     platform: 'Shopify',
     connected: 'active',
@@ -95,7 +95,7 @@ const stores: MerchStore[] = [
     engineCount: 15,
   },
   {
-    id: 'findify-development',
+    id: 'supersalesstore',
     domain: 'SuperSalesStore.com',
     platform: 'Shopify',
     connected: 'active',
@@ -126,9 +126,9 @@ const synonyms: Synonym[] = [
 
 const pageRedirects: PageRedirect[] = [
   { id: 'r1', queries: ['test', '1233', '23'], leadsTo: 'https://wer.com', updatedAt: 'May 12, 2026' },
-  { id: 'r2', queries: ['erwqfsdf', 'sdfsdf', 'sdfsdfdddd'], leadsTo: 'https://findify.myshopify.com/pages/faq', updatedAt: 'May 8, 2026' },
-  { id: 'r3', queries: ['help', 'customer service', 'why'], leadsTo: 'https://findify.myshopify.com/pages/faq', updatedAt: 'May 1, 2026' },
-  { id: 'r4', queries: ['help', 'faq', 'return policy'], leadsTo: 'https://findify.myshopify.com/pages/faq', updatedAt: 'Apr 21, 2026' },
+  { id: 'r2', queries: ['erwqfsdf', 'sdfsdf', 'sdfsdfdddd'], leadsTo: 'https://MyDemostore.com/pages/faq', updatedAt: 'May 8, 2026' },
+  { id: 'r3', queries: ['help', 'customer service', 'why'], leadsTo: 'https://MyDemostore.com/pages/faq', updatedAt: 'May 1, 2026' },
+  { id: 'r4', queries: ['help', 'faq', 'return policy'], leadsTo: 'https://MyDemostore.com/pages/faq', updatedAt: 'Apr 21, 2026' },
 ]
 
 const collections: SmartCollection[] = [
@@ -149,21 +149,21 @@ const collections: SmartCollection[] = [
 ]
 
 const recommendationEngines: RecommendationEngine[] = [
-  { id: 'product-findify-rec-94', name: 'Kristian reco', page: 'product', type: 'new_trending', status: 'active', updatedAt: 'May 19, 2026 at 4:10 PM' },
-  { id: 'home-findify-rec-93', name: 'Test', page: 'product', type: 'personalized', status: 'active', updatedAt: 'May 19, 2026 at 4:22 PM' },
-  { id: 'cart-findify-rec-92', name: 'My Widget', page: 'cart', type: 'personalized', status: 'active', updatedAt: 'May 8, 2026 at 8:22 PM' },
-  { id: 'product-findify-rec-91', name: 'Popular Products', page: 'product', type: 'popular_products', status: 'active', updatedAt: 'Apr 27, 2026 at 11:41 AM' },
-  { id: 'product-findify-rec-90', name: 'Visual Reccomendation - Colour', page: 'product', type: 'visual_recommendations', status: 'active', updatedAt: 'Feb 24, 2026 at 9:05 PM' },
-  { id: 'product-findify-rec-89', name: 'Size', page: 'product', type: 'visual_recommendations', status: 'active', updatedAt: 'Feb 3, 2026 at 2:36 AM' },
-  { id: 'product-findify-rec-88', name: 'test rec', page: 'product', type: 'frequently_purchased_together', status: 'active', updatedAt: 'May 14, 2026 at 9:55 PM' },
-  { id: 'home-findify-rec-87', name: 'hot sale', page: 'home', type: 'popular_products', status: 'active', updatedAt: 'Nov 24, 2025 at 12:25 PM' },
-  { id: 'product-findify-rec-86', name: 'Test demo', page: 'product', type: 'viewed_together', status: 'active', updatedAt: 'Oct 30, 2025 at 5:35 PM' },
-  { id: 'product-findify-rec-85', name: 'Test One', page: 'product', type: 'frequently_purchased_together', status: 'active', updatedAt: 'Oct 30, 2025 at 1:33 AM' },
-  { id: 'product-findify-rec-84', name: 'Test Two', page: 'product', type: 'frequently_purchased_together', status: 'active', updatedAt: 'Oct 30, 2025 at 1:33 AM' },
-  { id: 'product-findify-rec-83', name: 'test', page: 'product', type: 'recently_viewed', status: 'active', updatedAt: 'Aug 28, 2025 at 7:05 PM' },
-  { id: 'product-findify-rec-82', name: 'testing visual reco', page: 'product', type: 'visual_recommendations', status: 'active', updatedAt: 'Aug 25, 2025 at 6:18 PM' },
-  { id: 'home-findify-rec-81', name: 'Filters preview test', page: 'home', type: 'personalized', status: 'active', updatedAt: 'Aug 28, 2025 at 6:46 PM' },
-  { id: 'cart-findify-rec-80', name: 'cart-Freq', page: 'cart', type: 'frequently_purchased_together', status: 'active', updatedAt: 'Jun 16, 2025 at 9:53 PM' },
+  { id: 'product-mc-rec-94', name: 'Kristian reco', page: 'product', type: 'new_trending', status: 'active', updatedAt: 'May 19, 2026 at 4:10 PM' },
+  { id: 'home-mc-rec-93', name: 'Test', page: 'product', type: 'personalized', status: 'active', updatedAt: 'May 19, 2026 at 4:22 PM' },
+  { id: 'cart-mc-rec-92', name: 'My Widget', page: 'cart', type: 'personalized', status: 'active', updatedAt: 'May 8, 2026 at 8:22 PM' },
+  { id: 'product-mc-rec-91', name: 'Popular Products', page: 'product', type: 'popular_products', status: 'active', updatedAt: 'Apr 27, 2026 at 11:41 AM' },
+  { id: 'product-mc-rec-90', name: 'Visual Reccomendation - Colour', page: 'product', type: 'visual_recommendations', status: 'active', updatedAt: 'Feb 24, 2026 at 9:05 PM' },
+  { id: 'product-mc-rec-89', name: 'Size', page: 'product', type: 'visual_recommendations', status: 'active', updatedAt: 'Feb 3, 2026 at 2:36 AM' },
+  { id: 'product-mc-rec-88', name: 'test rec', page: 'product', type: 'frequently_purchased_together', status: 'active', updatedAt: 'May 14, 2026 at 9:55 PM' },
+  { id: 'home-mc-rec-87', name: 'hot sale', page: 'home', type: 'popular_products', status: 'active', updatedAt: 'Nov 24, 2025 at 12:25 PM' },
+  { id: 'product-mc-rec-86', name: 'Test demo', page: 'product', type: 'viewed_together', status: 'active', updatedAt: 'Oct 30, 2025 at 5:35 PM' },
+  { id: 'product-mc-rec-85', name: 'Test One', page: 'product', type: 'frequently_purchased_together', status: 'active', updatedAt: 'Oct 30, 2025 at 1:33 AM' },
+  { id: 'product-mc-rec-84', name: 'Test Two', page: 'product', type: 'frequently_purchased_together', status: 'active', updatedAt: 'Oct 30, 2025 at 1:33 AM' },
+  { id: 'product-mc-rec-83', name: 'test', page: 'product', type: 'recently_viewed', status: 'active', updatedAt: 'Aug 28, 2025 at 7:05 PM' },
+  { id: 'product-mc-rec-82', name: 'testing visual reco', page: 'product', type: 'visual_recommendations', status: 'active', updatedAt: 'Aug 25, 2025 at 6:18 PM' },
+  { id: 'home-mc-rec-81', name: 'Filters preview test', page: 'home', type: 'personalized', status: 'active', updatedAt: 'Aug 28, 2025 at 6:46 PM' },
+  { id: 'cart-mc-rec-80', name: 'cart-Freq', page: 'cart', type: 'frequently_purchased_together', status: 'active', updatedAt: 'Jun 16, 2025 at 9:53 PM' },
 ]
 
 const fieldTransformations: FieldTransformation[] = [
@@ -176,37 +176,37 @@ function buildAnalytics(): MerchAnalytics {
   const today = new Date()
   const trend: MerchAnalytics['revenueTrend'] = []
   let total = 0
-  let findify = 0
+  let merchCloud = 0
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
     // Realistic curve with weekly seasonality
     const base = 14000 + Math.sin(i / 3) * 2200 + (i % 7 === 0 ? 3500 : 0)
     const dayTotal = Math.round(base + (i * 110))
-    const dayFindify = Math.round(dayTotal * (0.42 + Math.sin(i / 5) * 0.05))
+    const dayMerchCloud = Math.round(dayTotal * (0.42 + Math.sin(i / 5) * 0.05))
     total += dayTotal
-    findify += dayFindify
+    merchCloud += dayMerchCloud
     trend.push({
       date: d.toISOString().slice(0, 10),
       total: dayTotal,
-      findify: dayFindify,
+      merchCloud: dayMerchCloud,
     })
   }
-  const share = Math.round((findify / total) * 1000) / 10
+  const share = Math.round((merchCloud / total) * 1000) / 10
   const aov = Math.round((total / 2480) * 100) / 100
   return {
     totalRevenue: total,
-    findifyRevenue: findify,
-    findifyShare: share,
+    merchCloudRevenue: merchCloud,
+    merchCloudShare: share,
     avgOrderValue: aov,
     totalRevenueTrend: 18.4,
-    findifyRevenueTrend: 23.7,
-    findifyShareTrend: 4.5,
+    merchCloudRevenueTrend: 23.7,
+    merchCloudShareTrend: 4.5,
     avgOrderValueTrend: 5.2,
     revenueTrend: trend,
     contribution: [
-      { label: 'Findify-driven', value: findify },
-      { label: 'Other channels', value: total - findify },
+      { label: 'MerchCloud-driven', value: merchCloud },
+      { label: 'Other channels', value: total - merchCloud },
     ],
   }
 }

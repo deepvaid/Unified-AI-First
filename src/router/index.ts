@@ -66,9 +66,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/purchasable_gift_cards', name: 'PurchasableGiftCards', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/sales_channels', name: 'StoreSetup', component: () => import('@/views/Commerce/StoreSetup.vue'), meta: commerceGate },
 
-  // 5.5 Merchandise (former Findify)
+  // 5.5 Merchandise (MerchCloud)
   { path: '/commerce/:accountId/merchandising', name: 'MerchandisingHome', component: () => import('@/views/Merchandising/MerchandisingHome.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/analytics', name: 'MerchandisingAnalytics', component: () => import('@/views/Merchandising/MerchandisingAnalytics.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/search/preview', name: 'MerchandisingSearchPreview', component: () => import('@/views/Merchandising/SearchPreview.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/search/synonyms', name: 'MerchandisingSynonyms', component: () => import('@/views/Merchandising/Synonyms.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/search/redirects', name: 'MerchandisingPageRedirects', component: () => import('@/views/Merchandising/PageRedirects.vue'), meta: commerceGate },
@@ -87,7 +86,6 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/retail/stock',        name: 'RetailStock',        component: () => import('@/views/Retail/StockByLocation.vue'),  meta: commerceGate },
   { path: '/commerce/:accountId/retail/inventory',    name: 'RetailBulkInventory',component: () => import('@/views/Retail/BulkInventory.vue'),   meta: commerceGate },
   { path: '/commerce/:accountId/retail/pricing',      name: 'RetailPricing',      component: () => import('@/views/Retail/Pricing.vue'),          meta: commerceGate },
-  { path: '/commerce/:accountId/retail/reports',      name: 'RetailReports',      component: () => import('@/views/Retail/Reports.vue'),          meta: commerceGate },
   { path: '/commerce/:accountId/retail/hardware',     name: 'RetailHardware',     component: () => import('@/views/Retail/Hardware.vue'),         meta: commerceGate },
   { path: '/commerce/:accountId/retail/settings',     name: 'RetailSettings',     component: () => import('@/views/Retail/RetailSettings.vue'),   meta: commerceGate },
 

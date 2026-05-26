@@ -1,7 +1,7 @@
 export type DashboardKind = 'system' | 'custom'
 export type DashboardWidgetType = 'kpi' | 'timeseries' | 'bar' | 'pie' | 'table' | 'activity' | 'setup'
 export type DashboardChartVariant = 'horizontal' | 'vertical' | 'area' | 'line'
-export type DashboardDataSource = 'commerce' | 'marketing' | 'analytics' | 'contacts' | 'service' | 'neto' | 'retail'
+export type DashboardDataSource = 'commerce' | 'marketing' | 'analytics' | 'contacts' | 'service' | 'neto' | 'retail' | 'merchandising'
 export type DashboardDatePreset =
   | 'today'
   | 'yesterday'
@@ -62,6 +62,18 @@ export type DashboardMetricId =
   | 'retail_discounted_pct'
   | 'retail_avg_sale_value'
   | 'retail_avg_items_per_sale'
+  | 'retail_sales_today'
+  | 'retail_avg_basket'
+  | 'retail_returns_today'
+  | 'retail_sales_by_location'
+  | 'retail_top_skus'
+  | 'retail_top_associates'
+  | 'merch_total_revenue'
+  | 'merch_cloud_revenue'
+  | 'merch_cloud_share'
+  | 'merch_aov'
+  | 'merch_revenue_trend'
+  | 'merch_contribution'
 
 export interface DashboardLayout {
   x: number
@@ -160,7 +172,7 @@ export interface DashboardWidgetLibraryEntry {
   id: string
   title: string
   description: string
-  category: 'commerce' | 'marketing' | 'service' | 'davinci' | 'retail'
+  category: 'commerce' | 'marketing' | 'service' | 'davinci' | 'retail' | 'merchandising'
   type: DashboardWidgetType
   icon: string
   recommended?: boolean

@@ -14,7 +14,13 @@ const snackbar = ref({ visible: false, message: '' })
 function showToast(message: string) { snackbar.value = { visible: true, message } }
 
 const retailBase = computed(() => `/commerce/${accountId.value}/retail`)
-function go(path: string) { router.push(`${retailBase.value}${path}`) }
+function go(path: string) {
+  if (path === 'dashboard') {
+    router.push(`/accounts/${accountId.value}/dashboard/${accountId.value}-retail`)
+    return
+  }
+  router.push(`${retailBase.value}${path}`)
+}
 
 function switchLocation(id: string) {
   store.setActiveLocation(id)
@@ -86,7 +92,7 @@ const quickActions = [
   { icon: 'plus-circle',       title: 'Add register',        desc: 'Pair a new device to a store',   path: '/registers',     color: 'success' },
   { icon: 'user-plus',         title: 'Add associate',       desc: 'Set up a new POS user',          path: '/associates',    color: 'contacts' },
   { icon: 'upload',            title: 'Upload inventory',    desc: 'Bulk stock update by CSV',       path: '/inventory',     color: 'warning' },
-  { icon: 'bar-chart-3',       title: 'View reports',        desc: 'Daily summary by store',         path: '/reports',       color: 'analytics' },
+  { icon: 'bar-chart-3',       title: 'View dashboard',      desc: 'Open the Retail dashboard',      path: 'dashboard',      color: 'analytics' },
 ]
 
 /* ── Setup todos ────────────────────────────────────────────── */

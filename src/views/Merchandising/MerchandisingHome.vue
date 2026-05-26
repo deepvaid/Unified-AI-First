@@ -21,6 +21,10 @@ function showToast(message: string) {
 const merchBase = computed(() => `/commerce/${accountId.value}/merchandising`)
 
 function go(path: string) {
+  if (path === 'dashboard') {
+    router.push(`/accounts/${accountId.value}/dashboard/${accountId.value}-merchandise`)
+    return
+  }
   router.push(`${merchBase.value}${path}`)
 }
 
@@ -44,12 +48,12 @@ function formatCurrency(value: number) {
 
 const kpis = computed(() => [
   {
-    label: 'Findify-driven revenue',
-    value: formatCurrency(store.analytics.findifyRevenue),
+    label: 'MerchCloud-driven revenue',
+    value: formatCurrency(store.analytics.merchCloudRevenue),
     icon: 'trending-up',
     color: 'retail',
-    trend: `${store.analytics.findifyRevenueTrend}% vs prev 30d`,
-    trendPositive: (store.analytics.findifyRevenueTrend ?? 0) >= 0,
+    trend: `${store.analytics.merchCloudRevenueTrend}% vs prev 30d`,
+    trendPositive: (store.analytics.merchCloudRevenueTrend ?? 0) >= 0,
     period: 'Last 30 days',
   },
   {
@@ -79,7 +83,7 @@ const kpis = computed(() => [
 const sparkId = useId()
 
 const revenueSparkline = computed(() => {
-  const delta = store.analytics.findifyRevenueTrend ?? 12
+  const delta = store.analytics.merchCloudRevenueTrend ?? 12
   const slope = Math.max(-0.2, Math.min(0.24, delta / 900))
   const base = [0.2, 0.23, 0.31, 0.28, 0.36, 0.34, 0.43, 0.40, 0.51, 0.47, 0.56]
   const values = base.map((v, i) => Math.min(0.9, Math.max(0.08, v + slope * i)))
@@ -97,7 +101,7 @@ const quickActions = [
   { icon: 'repeat', title: 'Add synonym', desc: 'Map equivalent search terms', path: '/search/synonyms', color: 'contacts' },
   { icon: 'arrow-right', title: 'Page redirect', desc: 'Send shoppers to a page', path: '/search/redirects', color: 'retail' },
   { icon: 'wand-sparkles', title: 'Field rule', desc: 'Transform a product field', path: '/fields', color: 'warning' },
-  { icon: 'bar-chart-3', title: 'View analytics', desc: 'See revenue impact', path: '/analytics', color: 'analytics' },
+  { icon: 'bar-chart-3', title: 'View dashboard', desc: 'Open the Merchandise dashboard', path: 'dashboard', color: 'analytics' },
 ]
 
 /* ── Things to do ───────────────────────────────────────────────── */
@@ -205,9 +209,9 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
           color="primary"
           class="text-none"
           prepend-icon="bar-chart-3"
-          @click="go('/analytics')"
+          @click="go('dashboard')"
         >
-          View analytics
+          View dashboard
         </v-btn>
       </template>
     </MpPageHeader>

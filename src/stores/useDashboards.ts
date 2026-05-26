@@ -43,7 +43,7 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v11'
+const STORAGE_KEY = 'mp.dashboard-hub.v13'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -323,6 +323,7 @@ function buildSeedDashboards(account: Account): Dashboard[] {
         accent: 'success',
         isDefault: false,
         widgets: [
+          // Original 8 retail KPI widgets
           makeRetailKpi('Revenue', 'retail_revenue', createLayout(0, 0, 3, 5)),
           makeRetailKpi('Sale Count', 'retail_sale_count', createLayout(3, 0, 3, 5)),
           makeRetailKpi('Customer Count', 'retail_customer_count', createLayout(6, 0, 3, 5)),
@@ -331,6 +332,35 @@ function buildSeedDashboards(account: Account): Dashboard[] {
           makeRetailKpi('Discounted (%)', 'retail_discounted_pct', createLayout(3, 5, 3, 5)),
           makeRetailKpi('Avg Sale Value', 'retail_avg_sale_value', createLayout(6, 5, 3, 5)),
           makeRetailKpi('Avg Items / Sale', 'retail_avg_items_per_sale', createLayout(9, 5, 3, 5)),
+          // Merged from Retail Reports - daily KPIs
+          makeRetailKpi('Sales Today', 'retail_sales_today', createLayout(0, 10, 3, 5)),
+          makeRetailKpi('Average Basket', 'retail_avg_basket', createLayout(3, 10, 3, 5)),
+          makeRetailKpi('Returns Today', 'retail_returns_today', createLayout(6, 10, 3, 5)),
+          // Merged from Retail Reports - breakdowns
+          makeWidget('Sales by Location', 'retail_sales_by_location', 'bar', createLayout(0, 15, 6, 7)),
+          makeWidget('Top SKUs', 'retail_top_skus', 'table', createLayout(6, 15, 6, 7)),
+          makeWidget('Top Associates', 'retail_top_associates', 'table', createLayout(0, 22, 12, 7)),
+        ],
+        filters: createDefaultFilters(),
+        createdAt,
+        updatedAt: createdAt,
+      },
+      {
+        id: createDashboardId(account.id, 'merchandise'),
+        accountId: account.id,
+        kind: 'system',
+        name: 'Merchandise',
+        description: 'AI-powered discovery, search, and recommendation analytics.',
+        icon: 'wand-sparkles',
+        accent: 'info',
+        isDefault: false,
+        widgets: [
+          makeWidget('Total Revenue', 'merch_total_revenue', 'kpi', createLayout(0, 0, 3, 4)),
+          makeWidget('MerchCloud-driven Revenue', 'merch_cloud_revenue', 'kpi', createLayout(3, 0, 3, 4)),
+          makeWidget('MerchCloud Share', 'merch_cloud_share', 'kpi', createLayout(6, 0, 3, 4)),
+          makeWidget('Avg. Order Value', 'merch_aov', 'kpi', createLayout(9, 0, 3, 4)),
+          makeWidget('Revenue Trend', 'merch_revenue_trend', 'timeseries', createLayout(0, 4, 8, 7)),
+          makeWidget('MerchCloud Contribution', 'merch_contribution', 'bar', createLayout(8, 4, 4, 7)),
         ],
         filters: createDefaultFilters(),
         createdAt,

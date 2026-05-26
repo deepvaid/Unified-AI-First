@@ -3,6 +3,8 @@ import { useAnalyticsStore } from '@/stores/useAnalytics'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
+import { useMerchandisingStore } from '@/stores/useMerchandising'
+import { useRetailStore, ASSOCIATE_ROLE_LABELS } from '@/stores/useRetail'
 import { useTicketsStore } from '@/stores/useTickets'
 import type {
   DashboardFilterState,
@@ -198,6 +200,8 @@ export function useWidgetData(
   const campaigns = useCampaignsStore()
   const commerce = useCommerceStore()
   const contacts = useContactsStore()
+  const merchandising = useMerchandisingStore()
+  const retail = useRetailStore()
   const tickets = useTicketsStore()
 
   const data = computed<DashboardWidgetData>(() => {
@@ -598,6 +602,119 @@ export function useWidgetData(
         const previous = 1.0
         const kpi = buildKpiData(current, pickPreviousValue(filters, current, previous), 'count', 'Average items per sale')
         return { ...kpi, location: 'Newmarket, AKL' } as DashboardWidgetData
+      }
+      case 'retail_sales_today': {
+        const k = retail.kpis
+        return buildKpiData(k.salesToday, pickPreviousValue(filters, k.salesToday, k.salesYesterday), 'currency', 'Sales today across all stores')
+      }
+      case 'retail_avg_basket': {
+        const k = retail.kpis
+        const previous = k.avgBasket / (1 + k.avgBasketTrend / 100)
+        return buildKpiData(k.avgBasket, pickPreviousValue(filters, k.avgBasket, previous), 'currency', 'Average basket per transaction')
+      }
+      case 'retail_returns_today': {
+        const k = retail.kpis
+        return buildKpiData(k.returnsToday, pickPreviousValue(filters, k.returnsToday, Math.round(k.returnsToday * 0.85)), 'count', 'Refunds and partial refunds today')
+      }
+      case 'retail_sales_by_location': {
+        const rows = retail.locationList
+          .map((loc) => {
+            const txns = retail.transactionList.filter((t) => t.locationId === loc.id && t.status === 'completed')
+            return { label: loc.name, value: txns.reduce((s, t) => s + t.total, 0) }
+          })
+          .sort((a, b) => b.value - a.value)
+        return buildSeriesData(rows.map((r) => r.label), rows.map((r) => r.value), 'currency', 'Revenue')
+      }
+      case 'retail_top_skus': {
+        const tally = new Map<string, { count: number; revenue: number }>()
+        const skus = ['TEE-001-BLK-M', 'JEAN-512-DRK-32', 'SNEAK-A1-WHT-10', 'CAP-001-NVY', 'BAG-LTH-BLK'] as const
+        retail.transactionList.forEach((t) => {
+          if (t.status !== 'completed') return
+          const sku = skus[Number(t.id.slice(-1)) % skus.length]!
+          const row = tally.get(sku) ?? { count: 0, revenue: 0 }
+          row.count += t.itemCount
+          row.revenue += t.total
+          tally.set(sku, row)
+        })
+        const rows = Array.from(tally.entries())
+          .map(([sku, v]) => ({ sku, units: v.count.toLocaleString(), revenue: `$${v.revenue.toLocaleString()}` }))
+          .sort((a, b) => Number(b.revenue.replace(/[^0-9.-]/g, '')) - Number(a.revenue.replace(/[^0-9.-]/g, '')))
+          .slice(0, 6)
+        return buildTableData(
+          [
+            { key: 'sku', label: 'SKU' },
+            { key: 'units', label: 'Units', align: 'end' },
+            { key: 'revenue', label: 'Revenue', align: 'end' },
+          ],
+          rows,
+        )
+      }
+      case 'retail_top_associates': {
+        const rows = retail.associateList
+          .map((a) => {
+            const txns = retail.transactionList.filter((t) => t.associateId === a.id && t.status === 'completed')
+            return {
+              associate: a.name,
+              role: ASSOCIATE_ROLE_LABELS[a.role],
+              transactions: txns.length,
+              revenue: txns.reduce((s, t) => s + t.total, 0),
+            }
+          })
+          .filter((r) => r.transactions > 0)
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5)
+          .map((r) => ({
+            associate: r.associate,
+            role: r.role,
+            transactions: r.transactions.toLocaleString(),
+            revenue: `$${r.revenue.toLocaleString()}`,
+          }))
+        return buildTableData(
+          [
+            { key: 'associate', label: 'Associate' },
+            { key: 'role', label: 'Role' },
+            { key: 'transactions', label: 'Txns', align: 'end' },
+            { key: 'revenue', label: 'Revenue', align: 'end' },
+          ],
+          rows,
+        )
+      }
+      case 'merch_total_revenue': {
+        const a = merchandising.analytics
+        const previous = a.totalRevenue / (1 + a.totalRevenueTrend / 100)
+        return buildKpiData(a.totalRevenue, pickPreviousValue(filters, a.totalRevenue, previous), 'currency', 'Storefront revenue across all channels')
+      }
+      case 'merch_cloud_revenue': {
+        const a = merchandising.analytics
+        const previous = a.merchCloudRevenue / (1 + a.merchCloudRevenueTrend / 100)
+        return buildKpiData(a.merchCloudRevenue, pickPreviousValue(filters, a.merchCloudRevenue, previous), 'currency', 'Revenue from MerchCloud-driven sessions')
+      }
+      case 'merch_cloud_share': {
+        const a = merchandising.analytics
+        const previous = a.merchCloudShare - a.merchCloudShareTrend
+        return buildKpiData(a.merchCloudShare, pickPreviousValue(filters, a.merchCloudShare, previous), 'percent', 'MerchCloud share of total revenue')
+      }
+      case 'merch_aov': {
+        const a = merchandising.analytics
+        const previous = a.avgOrderValue / (1 + a.avgOrderValueTrend / 100)
+        return buildKpiData(a.avgOrderValue, pickPreviousValue(filters, a.avgOrderValue, previous), 'currency', 'Average order value')
+      }
+      case 'merch_revenue_trend': {
+        const trend = merchandising.analytics.revenueTrend.slice(-days)
+        const labels = trend.map((p) => p.date.slice(5))
+        return {
+          kind: 'series',
+          unit: 'currency',
+          labels,
+          series: [
+            { name: 'Total revenue', data: trend.map((p) => p.total) },
+            { name: 'MerchCloud-driven', data: trend.map((p) => p.merchCloud) },
+          ],
+        }
+      }
+      case 'merch_contribution': {
+        const data = merchandising.analytics.contribution
+        return buildSeriesData(data.map((d) => d.label), data.map((d) => d.value), 'currency', 'Revenue')
       }
       default:
         return buildKpiData(0, 0, 'count', 'No data available for this widget')

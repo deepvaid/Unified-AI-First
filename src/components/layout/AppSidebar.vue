@@ -207,7 +207,6 @@ function buildNavGroups(accountId: string): NavGroup[] {
           items: [
             { title: 'Home',         route: `/commerce/${accountId}/retail` },
             { title: 'POS Preview',  route: `/commerce/${accountId}/retail/pos-preview` },
-            { title: 'Reports',      route: `/commerce/${accountId}/retail/reports` },
           ],
         },
         {
@@ -250,7 +249,6 @@ function buildNavGroups(accountId: string): NavGroup[] {
           isSubGroup: true,
           items: [
             { title: 'Home', route: `/commerce/${accountId}/merchandising` },
-            { title: 'Analytics', route: `/commerce/${accountId}/merchandising/analytics` },
           ],
         },
         {
