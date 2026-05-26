@@ -87,7 +87,7 @@ export interface MerchAnalytics {
 const stores: MerchStore[] = [
   {
     id: 'findify-demo-shop',
-    domain: 'findify-demo-shop.myshopify.com',
+    domain: 'MyDemostore.com',
     platform: 'Shopify',
     connected: 'active',
     lastActivity: 'May 19, 2026 at 4:22 PM',
@@ -96,7 +96,7 @@ const stores: MerchStore[] = [
   },
   {
     id: 'findify-development',
-    domain: 'findify-development.myshopify.com',
+    domain: 'SuperSalesStore.com',
     platform: 'Shopify',
     connected: 'active',
     lastActivity: 'May 19, 2026 at 2:29 PM',
