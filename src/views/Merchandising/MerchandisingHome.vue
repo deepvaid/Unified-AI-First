@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import {
   useMerchandisingStore,
@@ -163,58 +162,71 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
-    <MpPageHeader
-      title="Merchandise"
-      :subtitle="`AI-powered discovery for ${store.activeStore.domain}`"
-    >
-      <template #actions>
-        <!-- Store switcher -->
-        <v-menu offset="6">
-          <template #activator="{ props: activator }">
-            <v-btn
-              v-bind="activator"
-              variant="outlined"
-              class="text-none merch-home__store-btn"
-              append-icon="chevron-down"
-            >
-              <v-icon size="16" class="me-2">store</v-icon>
-              <span class="text-truncate">{{ store.activeStore.domain }}</span>
-            </v-btn>
-          </template>
-          <v-list density="comfortable" min-width="320">
-            <v-list-subheader>Switch store</v-list-subheader>
-            <v-list-item
-              v-for="merchStore in store.merchStores"
-              :key="merchStore.id"
-              :active="merchStore.id === store.activeStoreId"
-              @click="switchStore(merchStore.id)"
-            >
-              <template #prepend>
-                <v-icon size="18" :color="merchStore.id === store.activeStoreId ? 'primary' : undefined">
-                  {{ merchStore.id === store.activeStoreId ? 'check-circle' : 'store' }}
-                </v-icon>
-              </template>
-              <v-list-item-title class="text-body-2 font-weight-medium">{{ merchStore.domain }}</v-list-item-title>
-              <v-list-item-subtitle class="text-caption">
-                {{ merchStore.platform }} · {{ merchStore.productCount.toLocaleString() }} products · {{ merchStore.engineCount }} engines
-              </v-list-item-subtitle>
-            </v-list-item>
-            <v-divider />
-            <v-list-item prepend-icon="plus" title="Connect another store" @click="showToast('Store onboarding — coming soon')" />
-          </v-list>
-        </v-menu>
+    <!-- Title-level context header -->
+    <div class="merch-header">
+      <div class="merch-header__row">
+        <div class="merch-header__title-group">
+          <span class="merch-header__module">Merchandise</span>
+          <v-icon size="16" class="merch-header__divider">chevron-right</v-icon>
 
-        <v-btn
-          variant="flat"
-          color="primary"
-          class="text-none"
-          prepend-icon="bar-chart-3"
-          @click="go('dashboard')"
-        >
-          View dashboard
-        </v-btn>
-      </template>
-    </MpPageHeader>
+          <v-menu offset="6" :close-on-content-click="true">
+            <template #activator="{ props: activator }">
+              <button v-bind="activator" class="merch-header__store-btn" type="button">
+                <span class="merch-header__store-name">{{ store.activeStore.domain }}</span>
+                <v-icon size="14" class="merch-header__chevron">chevron-down</v-icon>
+              </button>
+            </template>
+            <v-card flat border rounded="lg" min-width="300">
+              <v-list density="compact" class="py-1">
+                <v-list-item
+                  v-for="s in store.merchStores"
+                  :key="s.id"
+                  :active="s.id === store.activeStoreId"
+                  rounded="lg"
+                  @click="switchStore(s.id)"
+                >
+                  <template #prepend>
+                    <v-icon
+                      size="16"
+                      :color="s.id === store.activeStoreId ? 'primary' : undefined"
+                      class="me-1"
+                    >
+                      {{ s.id === store.activeStoreId ? 'check-circle' : 'globe' }}
+                    </v-icon>
+                  </template>
+                  <v-list-item-title class="text-body-2 font-weight-medium">{{ s.domain }}</v-list-item-title>
+                  <v-list-item-subtitle class="text-caption">
+                    {{ s.platform }} · {{ s.productCount.toLocaleString() }} products · {{ s.engineCount }} engines
+                  </v-list-item-subtitle>
+                </v-list-item>
+                <v-divider class="my-1" />
+                <v-list-item
+                  prepend-icon="plus"
+                  title="Connect another store"
+                  @click="showToast('Store onboarding — coming soon')"
+                />
+              </v-list>
+            </v-card>
+          </v-menu>
+        </div>
+
+        <div class="merch-header__actions">
+          <v-btn
+            variant="flat"
+            color="primary"
+            class="text-none"
+            prepend-icon="bar-chart-3"
+            @click="go('dashboard')"
+          >
+            View dashboard
+          </v-btn>
+        </div>
+      </div>
+
+      <div class="merch-header__subtitle">
+        AI-powered storefront discovery · {{ activeEngines }} active engines
+      </div>
+    </div>
 
     <!-- KPI row -->
     <v-row dense>
@@ -445,14 +457,89 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
 </template>
 
 <style scoped lang="scss">
-/* ── Store switcher ───────────────────────────────────────────── */
-.merch-home__store-btn {
-  max-width: 280px;
+/* ── Title-level context header ───────────────────────────────── */
+.merch-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.merch-home__store-btn :deep(.v-btn__content) {
-  max-width: 100%;
+.merch-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.merch-header__title-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.merch-header__module {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.merch-header__divider {
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  flex-shrink: 0;
+}
+
+.merch-header__store-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 6px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 120ms ease;
+  min-width: 0;
+
+  &:hover {
+    background: rgba(var(--v-theme-on-surface), 0.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgb(var(--v-theme-primary));
+    outline-offset: 1px;
+  }
+}
+
+.merch-header__store-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+}
+
+.merch-header__chevron {
+  color: rgb(var(--v-theme-primary));
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.merch-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.merch-header__subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 500;
 }
 
 /* ── Shared card chrome (matches DashboardWidgetCard) ──────────── */

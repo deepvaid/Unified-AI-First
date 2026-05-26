@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
-import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import {
   CHANNEL_HEALTH_LABELS,
@@ -40,11 +39,11 @@ const tabs = computed(() => [
 
 const tableHeaders = [
   { title: 'Sales Channel', key: 'name', sortable: true },
-  { title: 'Type', key: 'type', sortable: true, width: 150 },
-  { title: 'Connected clouds', key: 'connectedClouds', sortable: false, width: 310 },
-  { title: 'Health', key: 'health', sortable: true, width: 160 },
-  { title: 'Last activity', key: 'lastActivityAt', sortable: true, width: 170 },
-  { title: 'Actions', key: 'actions', sortable: false, align: 'end' as const, width: 96 },
+  { title: 'Type', key: 'type', sortable: true, width: 130 },
+  { title: 'Clouds', key: 'connectedClouds', sortable: false, width: 150 },
+  { title: 'Status', key: 'health', sortable: true, width: 140 },
+  { title: 'Activity', key: 'lastActivityAt', sortable: true, width: 120 },
+  { title: '', key: 'actions', sortable: false, align: 'end' as const, width: 56 },
 ]
 
 const filteredChannels = computed(() => {
@@ -82,9 +81,23 @@ function formatDate(iso: string) {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
+    year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
   }).format(new Date(iso))
+}
+
+function formatRelative(iso: string) {
+  const then = new Date(iso).getTime()
+  const now = Date.now()
+  const diffMs = now - then
+  const minute = 60_000
+  const hour = 60 * minute
+  const day = 24 * hour
+  if (diffMs < hour) return `${Math.max(1, Math.round(diffMs / minute))}m ago`
+  if (diffMs < day) return `${Math.round(diffMs / hour)}h ago`
+  if (diffMs < 7 * day) return `${Math.round(diffMs / day)}d ago`
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(iso))
 }
 
 function channelIcon(channel: SalesChannel) {
@@ -98,10 +111,22 @@ function cloudTone(cloud: ConnectedCloud) {
   return 'success'
 }
 
-function healthColor(health: SalesChannel['health']) {
-  if (health === 'healthy') return 'success'
-  if (health === 'attention') return 'warning'
-  return 'default'
+type MergedStatus = { label: string; tone: 'success' | 'warning' | 'danger' | 'default' }
+
+function mergedStatus(channel: SalesChannel): MergedStatus {
+  if (channel.status === 'sync_issue') return { label: 'Sync issue', tone: 'danger' }
+  if (channel.status === 'needs_setup') return { label: 'Needs setup', tone: 'warning' }
+  if (channel.status === 'draft') return { label: 'Draft', tone: 'default' }
+  if (channel.health === 'attention') return { label: 'Needs attention', tone: 'warning' }
+  if (channel.health === 'incomplete') return { label: 'Incomplete', tone: 'warning' }
+  return { label: 'Healthy', tone: 'success' }
+}
+
+function statusChipColor(tone: MergedStatus['tone']) {
+  if (tone === 'success') return 'success'
+  if (tone === 'warning') return 'warning'
+  if (tone === 'danger') return 'error'
+  return undefined
 }
 </script>
 
@@ -134,7 +159,7 @@ function healthColor(health: SalesChannel['health']) {
         :items="filteredChannels"
         item-value="id"
         hover
-        density="comfortable"
+        density="compact"
         :items-per-page="10"
         @click:row="(_event: Event, { item }: { item: SalesChannel }) => openChannel(item)"
       >
@@ -163,32 +188,43 @@ function healthColor(health: SalesChannel['health']) {
         </template>
 
         <template #item.connectedClouds="{ item }">
-          <div class="d-flex align-center ga-1 flex-wrap">
-            <v-chip
+          <div class="d-flex align-center ga-1">
+            <v-tooltip
               v-for="cloud in item.connectedClouds"
               :key="cloud"
-              size="x-small"
-              variant="tonal"
-              :color="cloudTone(cloud)"
-              label
+              :text="CONNECTED_CLOUD_LABELS[cloud]"
+              location="top"
             >
-              <v-icon size="12" class="me-1">{{ CONNECTED_CLOUD_ICONS[cloud] }}</v-icon>
-              {{ CONNECTED_CLOUD_LABELS[cloud] }}
-            </v-chip>
+              <template #activator="{ props: tipProps }">
+                <span
+                  v-bind="tipProps"
+                  class="cloud-pill"
+                  :class="`cloud-pill--${cloudTone(cloud)}`"
+                >
+                  <v-icon size="14">{{ CONNECTED_CLOUD_ICONS[cloud] }}</v-icon>
+                </span>
+              </template>
+            </v-tooltip>
           </div>
         </template>
 
         <template #item.health="{ item }">
-          <div class="d-flex align-center ga-2 flex-wrap">
-            <MpStatusChip :status="CHANNEL_STATUS_LABELS[item.status]" type="general" size="x-small" />
-            <v-chip size="x-small" variant="tonal" :color="healthColor(item.health)" label>
-              {{ CHANNEL_HEALTH_LABELS[item.health] }}
-            </v-chip>
-          </div>
+          <v-chip
+            size="small"
+            variant="tonal"
+            :color="statusChipColor(mergedStatus(item).tone)"
+            label
+          >
+            {{ mergedStatus(item).label }}
+          </v-chip>
         </template>
 
         <template #item.lastActivityAt="{ item }">
-          <span class="text-body-2">{{ formatDate(item.lastActivityAt) }}</span>
+          <v-tooltip :text="formatDate(item.lastActivityAt)" location="top">
+            <template #activator="{ props: tipProps }">
+              <span v-bind="tipProps" class="text-body-2 text-medium-emphasis">{{ formatRelative(item.lastActivityAt) }}</span>
+            </template>
+          </v-tooltip>
         </template>
 
         <template #item.actions="{ item }">
@@ -236,5 +272,36 @@ function healthColor(health: SalesChannel['health']) {
 
 .sales-channel-link:hover {
   text-decoration: underline;
+}
+
+.cloud-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+
+.cloud-pill--success {
+  background: rgba(var(--v-theme-success), 0.12);
+  color: rgb(var(--v-theme-success));
+}
+
+.cloud-pill--info {
+  background: rgba(var(--v-theme-info), 0.12);
+  color: rgb(var(--v-theme-info));
+}
+
+.cloud-pill--secondary {
+  background: rgba(var(--v-theme-secondary), 0.12);
+  color: rgb(var(--v-theme-secondary));
+}
+
+.cloud-pill--primary {
+  background: rgba(var(--v-theme-primary), 0.12);
+  color: rgb(var(--v-theme-primary));
 }
 </style>

@@ -99,9 +99,9 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
       </template>
     </MpPageHeader>
 
-    <v-card flat border rounded="lg" class="retail-widget-card d-flex flex-column">
-      <MpFilterTabs v-model="activeTab" :tabs="tabs" />
+    <MpFilterTabs v-model="activeTab" :tabs="tabs" />
 
+    <v-card flat border rounded="lg" class="retail-widget-card d-flex flex-column">
       <MpDataTableToolbar v-model:search="search" search-placeholder="Search associates…">
         <template #actions>
           <v-btn variant="outlined" size="small" class="text-none" prepend-icon="download" @click="showToast('Export — mock only')">

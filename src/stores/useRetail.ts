@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useSalesChannelsStore, type SalesChannel } from '@/stores/useSalesChannels'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -283,14 +284,44 @@ export const useRetailStore = defineStore('retail', () => {
   const priceOverrideList = ref<LocationPriceOverride[]>([...priceOverrides])
 
   const activeLocationId = ref<string>(locations[0]!.id)
+  const activeChannelId = ref<string>('pos-store')
   const offlineMode = ref(false)
 
   const activeLocation = computed(
     () => locationList.value.find((l) => l.id === activeLocationId.value) ?? locationList.value[0]!,
   )
 
+  const activeChannel = computed<SalesChannel | undefined>(() => {
+    const salesStore = useSalesChannelsStore()
+    return salesStore.channels.find((c) => c.id === activeChannelId.value)
+  })
+
+  function availableContexts(accountId: string): Array<{ channel: SalesChannel; locations: RetailLocation[] }> {
+    const salesStore = useSalesChannelsStore()
+    return salesStore.offlineStoreChannels(accountId).map((channel) => {
+      const ids = channel.offlineStore?.locationIds ?? []
+      const locs = ids
+        .map((id) => locationList.value.find((l) => l.id === id))
+        .filter((l): l is RetailLocation => Boolean(l))
+      return { channel, locations: locs }
+    })
+  }
+
   function setActiveLocation(id: string) {
-    if (locationList.value.some((l) => l.id === id)) activeLocationId.value = id
+    if (!locationList.value.some((l) => l.id === id)) return
+    activeLocationId.value = id
+    const salesStore = useSalesChannelsStore()
+    const parent = salesStore.channels.find(
+      (c) => c.type === 'offline_store' && c.offlineStore?.locationIds.includes(id),
+    )
+    if (parent) activeChannelId.value = parent.id
+  }
+
+  function setActiveContext(channelId: string, locationId: string) {
+    activeChannelId.value = channelId
+    if (locationList.value.some((l) => l.id === locationId)) {
+      activeLocationId.value = locationId
+    }
   }
 
   function locationName(id: string): string {
@@ -305,16 +336,18 @@ export const useRetailStore = defineStore('retail', () => {
     return associateList.value.find((a) => a.id === id)?.name ?? id
   }
 
-  /* KPIs */
+  /* KPIs — filtered by active location */
   const kpis = computed(() => {
-    const txns = transactionList.value
+    const locId = activeLocationId.value
+    const txns = transactionList.value.filter((t) => t.locationId === locId)
     const todayTxns = txns.filter((t) => t.status === 'completed')
     const refunds = txns.filter((t) => t.status === 'refunded' || t.status === 'partial_refund')
     const salesToday = todayTxns.reduce((s, t) => s + t.total, 0)
     const txnCountToday = todayTxns.length
     const avgBasket = txnCountToday > 0 ? salesToday / txnCountToday : 0
-    const onlineRegs = registerList.value.filter((r) => r.status === 'online').length
-    const offlinePending = registerList.value.reduce((s, r) => s + r.pendingOfflineTxns, 0)
+    const locRegs = registerList.value.filter((r) => r.locationId === locId)
+    const onlineRegs = locRegs.filter((r) => r.status === 'online').length
+    const offlinePending = locRegs.reduce((s, r) => s + r.pendingOfflineTxns, 0)
     return {
       salesToday,
       salesYesterday: salesToday * 0.92,
@@ -326,7 +359,7 @@ export const useRetailStore = defineStore('retail', () => {
       avgBasketTrend: 3.1,
       returnsToday: refunds.length,
       registersOnline: onlineRegs,
-      registersTotal: registerList.value.length,
+      registersTotal: locRegs.length,
       offlineTxnsPending: offlinePending,
     }
   })
@@ -451,17 +484,21 @@ export const useRetailStore = defineStore('retail', () => {
     channelPriceList,
     priceOverrideList,
     activeLocationId,
+    activeChannelId,
     offlineMode,
     POS_CATALOG_SKUS,
     // computed
     activeLocation,
+    activeChannel,
     kpis,
     // helpers
     locationName,
     registerName,
     associateName,
+    availableContexts,
     // actions
     setActiveLocation,
+    setActiveContext,
     setOfflineMode,
     forceResync,
     toggleAssociateActive,

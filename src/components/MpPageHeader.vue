@@ -21,7 +21,7 @@ defineProps<{
           class="mp-page-header__back"
           :href="href"
           aria-label="Back"
-          @click.prevent="navigate"
+          @click="navigate"
         >
           <v-icon size="20">chevron-left</v-icon>
         </a>
@@ -58,22 +58,33 @@ defineProps<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 2px;
+  margin-top: 4px;
   flex-shrink: 0;
-  border-radius: 999px;
-  padding: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  background: rgb(var(--v-theme-surface));
   text-decoration: none;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: rgb(var(--v-theme-on-surface));
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  cursor: pointer;
 }
 
 .mp-page-header__back:hover {
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  color: rgb(var(--v-theme-on-surface));
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  border-color: rgba(var(--v-theme-on-surface), 0.22);
+  transform: translateX(-1px);
+}
+
+.mp-page-header__back:active {
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  transform: translateX(-1px);
 }
 
 .mp-page-header__back:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-surface));
+  border-color: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.25);
 }
 </style>

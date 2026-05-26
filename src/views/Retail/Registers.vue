@@ -19,7 +19,7 @@ function showToast(message: string) { snackbar.value = { visible: true, message 
 const activeTab = ref('all')
 
 const tabCounts = computed(() => {
-  const list = store.registerList
+  const list = store.registerList.filter((r) => r.locationId === store.activeLocationId)
   return {
     all: list.length,
     online: list.filter((r) => r.status === 'online').length,
@@ -37,7 +37,6 @@ const tabs = computed(() => [
 
 /* ── Table ─────────────────────────────────────────────────────── */
 const search = ref('')
-const locationFilter = ref('')
 const selectedRows = ref<string[]>([])
 
 const tableHeaders = [
@@ -53,9 +52,8 @@ const tableHeaders = [
 ]
 
 const rows = computed(() => {
-  let list = store.registerList
+  let list = store.registerList.filter((r) => r.locationId === store.activeLocationId)
   if (activeTab.value !== 'all') list = list.filter((r) => r.status === activeTab.value)
-  if (locationFilter.value) list = list.filter((r) => r.locationId === locationFilter.value)
   return list
 })
 
@@ -92,7 +90,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Registers"
-      subtitle="All paired POS devices across your store network. Monitor status, sync events, and offline queues."
+      :subtitle="`POS devices for ${store.activeLocation?.name ?? ''}. Monitor status, sync events, and offline queues.`"
     >
       <template #actions>
         <v-btn variant="outlined" class="text-none" prepend-icon="refresh-cw" @click="showToast('Force sync sent to all online registers')">
@@ -137,27 +135,17 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         <div class="retail-fleet-tile">
           <v-icon size="16" color="warning" style="margin-right: 8px;">clock</v-icon>
           <div>
-            <div class="retail-fleet-tile__value">{{ store.registerList.reduce((s, r) => s + r.pendingOfflineTxns, 0) }}</div>
+            <div class="retail-fleet-tile__value">{{ store.registerList.filter((r) => r.locationId === store.activeLocationId).reduce((s, r) => s + r.pendingOfflineTxns, 0) }}</div>
             <div class="retail-fleet-tile__label">Pending txns</div>
           </div>
         </div>
       </v-col>
     </v-row>
 
-    <v-card flat border rounded="lg" class="retail-widget-card d-flex flex-column">
-      <MpFilterTabs v-model="activeTab" :tabs="tabs" />
+    <MpFilterTabs v-model="activeTab" :tabs="tabs" />
 
+    <v-card flat border rounded="lg" class="retail-widget-card d-flex flex-column">
       <MpDataTableToolbar v-model:search="search" search-placeholder="Search registers…">
-        <template #filters>
-          <v-select
-            v-model="locationFilter"
-            :items="[{ title: 'All locations', value: '' }, ...store.locationList.map((l) => ({ title: l.name, value: l.id }))]"
-            density="compact"
-            variant="outlined"
-            hide-details
-            style="min-width: 180px;"
-          />
-        </template>
         <template #actions>
           <v-btn v-if="selectedRows.length === 0" variant="outlined" size="small" class="text-none" prepend-icon="download" @click="showToast('Export registers — mock only')">
             Export

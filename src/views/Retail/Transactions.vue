@@ -21,7 +21,7 @@ function fmt(n: number) {
 
 /* ── KPIs ──────────────────────────────────────────────────────── */
 const kpis = computed(() => {
-  const txns = store.transactionList
+  const txns = store.transactionList.filter((t) => t.locationId === store.activeLocationId)
   const completed = txns.filter((t) => t.status === 'completed')
   const salesToday = completed.reduce((s, t) => s + t.total, 0)
   const returns = txns.filter((t) => t.status === 'refunded' || t.status === 'partial_refund')
@@ -38,7 +38,7 @@ const kpis = computed(() => {
 const activeTab = ref('all')
 
 const tabCounts = computed(() => {
-  const all = store.transactionList
+  const all = store.transactionList.filter((t) => t.locationId === store.activeLocationId)
   return {
     all: all.length,
     sales: all.filter((t) => t.status === 'completed').length,
@@ -59,7 +59,6 @@ const tabs = computed(() => [
 
 /* ── Table ─────────────────────────────────────────────────────── */
 const search = ref('')
-const locationFilter = ref('')
 const associateFilter = ref('')
 
 const tableHeaders = [
@@ -75,13 +74,12 @@ const tableHeaders = [
 ]
 
 const rows = computed(() => {
-  let list = store.transactionList
+  let list = store.transactionList.filter((t) => t.locationId === store.activeLocationId)
   if (activeTab.value === 'sales') list = list.filter((t) => t.status === 'completed')
   else if (activeTab.value === 'returns') list = list.filter((t) => t.status === 'refunded' || t.status === 'partial_refund')
   else if (activeTab.value === 'voided') list = list.filter((t) => t.status === 'voided')
   else if (activeTab.value === 'suspended') list = list.filter((t) => t.status === 'suspended')
   else if (activeTab.value === 'boris') list = list.filter((t) => t.origin === 'boris')
-  if (locationFilter.value) list = list.filter((t) => t.locationId === locationFilter.value)
   if (associateFilter.value) list = list.filter((t) => t.associateId === associateFilter.value)
   return list
 })
@@ -130,7 +128,7 @@ function registerName(id: string) {
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Transactions"
-      subtitle="Complete transaction history across all registers and locations."
+      :subtitle="`Transaction history for ${store.activeLocation?.name ?? ''}.`"
     >
       <template #actions>
         <v-btn variant="outlined" class="text-none" prepend-icon="download" @click="showToast('Export — mock only')">
@@ -158,19 +156,11 @@ function registerName(id: string) {
       </v-col>
     </v-row>
 
-    <v-card flat border rounded="lg" class="retail-widget-card d-flex flex-column">
-      <MpFilterTabs v-model="activeTab" :tabs="tabs" />
+    <MpFilterTabs v-model="activeTab" :tabs="tabs" />
 
+    <v-card flat border rounded="lg" class="retail-widget-card d-flex flex-column">
       <MpDataTableToolbar v-model:search="search" search-placeholder="Search receipt # or customer…">
         <template #filters>
-          <v-select
-            v-model="locationFilter"
-            :items="[{ title: 'All locations', value: '' }, ...store.locationList.map((l) => ({ title: l.name, value: l.id }))]"
-            density="compact"
-            variant="outlined"
-            hide-details
-            style="min-width: 160px;"
-          />
           <v-select
             v-model="associateFilter"
             :items="[{ title: 'All associates', value: '' }, ...store.associateList.map((a) => ({ title: a.name, value: a.id }))]"

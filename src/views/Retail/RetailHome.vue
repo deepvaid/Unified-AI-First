@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MpPageHeader from '@/components/MpPageHeader.vue'
 import { useRetailStore, TENDER_LABELS } from '@/stores/useRetail'
 import { formatAgo } from '@/composables/useRelativeTime'
 
@@ -22,10 +21,12 @@ function go(path: string) {
   router.push(`${retailBase.value}${path}`)
 }
 
-function switchLocation(id: string) {
-  store.setActiveLocation(id)
-  showToast(`Switched to ${store.activeLocation?.name ?? ''}`)
+function switchContext(channelId: string, locationId: string, locationName: string, channelName: string) {
+  store.setActiveContext(channelId, locationId)
+  showToast(`Switched to ${channelName} · ${locationName}`)
 }
+
+const contextGroups = computed(() => store.availableContexts(accountId.value))
 
 function fmtMoney(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
@@ -43,7 +44,7 @@ const kpis = computed(() => {
       color: 'retail',
       trend: `${k.salesTrend}% vs yesterday`,
       trendPositive: k.salesTrend >= 0,
-      period: 'Across all stores',
+      period: store.activeLocation?.name ?? '',
     },
     {
       label: 'Transactions',
@@ -125,9 +126,14 @@ function onTodoClick(todo: TodoItem) {
 
 /* ── Recent activity ────────────────────────────────────────── */
 
-const recentTransactions = computed(() => store.transactionList.slice(0, 8))
+const recentTransactions = computed(() =>
+  store.transactionList.filter((t) => t.locationId === store.activeLocationId).slice(0, 8),
+)
 const recentRegisters = computed(() =>
-  [...store.registerList].sort((a, b) => a.lastSeenAt < b.lastSeenAt ? 1 : -1).slice(0, 5),
+  [...store.registerList]
+    .filter((r) => r.locationId === store.activeLocationId)
+    .sort((a, b) => (a.lastSeenAt < b.lastSeenAt ? 1 : -1))
+    .slice(0, 5),
 )
 
 function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 'suspended'): string {
@@ -140,58 +146,74 @@ function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
-    <MpPageHeader
-      title="Retail"
-      :subtitle="`In-store POS for ${store.activeLocation?.name ?? ''} · ${store.kpis.registersOnline} of ${store.kpis.registersTotal} registers online`"
-    >
-      <template #actions>
-        <!-- Location switcher -->
-        <v-menu offset="6">
-          <template #activator="{ props: activator }">
-            <v-btn
-              v-bind="activator"
-              variant="outlined"
-              class="text-none retail-home__loc-btn"
-              append-icon="chevron-down"
-            >
-              <v-icon size="16" class="me-2">map-pin</v-icon>
-              <span class="text-truncate">{{ store.activeLocation?.name ?? '' }}</span>
-            </v-btn>
-          </template>
-          <v-list density="comfortable" min-width="320">
-            <v-list-subheader>Switch location</v-list-subheader>
-            <v-list-item
-              v-for="loc in store.locationList"
-              :key="loc.id"
-              :active="loc.id === store.activeLocationId"
-              @click="switchLocation(loc.id)"
-            >
-              <template #prepend>
-                <v-icon size="18" :color="loc.id === store.activeLocationId ? 'primary' : undefined">
-                  {{ loc.id === store.activeLocationId ? 'check-circle' : 'map-pin' }}
-                </v-icon>
+    <!-- Title-level context switcher header -->
+    <div class="retail-header">
+      <div class="retail-header__row">
+        <div class="retail-header__titles">
+          <div class="retail-header__title-line">
+            <h1 class="retail-header__title text-h5 font-weight-bold">Retail</h1>
+            <v-icon size="18" class="retail-header__sep">chevron-right</v-icon>
+            <v-menu offset="6">
+              <template #activator="{ props: activator }">
+                <button
+                  v-bind="activator"
+                  type="button"
+                  class="retail-header__context"
+                  :aria-label="`Switch sales channel and location. Currently ${store.activeChannel?.name ?? ''} · ${store.activeLocation?.name ?? ''}`"
+                >
+                  <v-icon size="16" class="me-2">store</v-icon>
+                  <span class="retail-header__channel">{{ store.activeChannel?.name ?? 'POS Store' }}</span>
+                  <span class="retail-header__divider">/</span>
+                  <span class="retail-header__location">{{ store.activeLocation?.name ?? '' }}</span>
+                  <v-icon size="16" class="ms-2">chevron-down</v-icon>
+                </button>
               </template>
-              <v-list-item-title class="text-body-2 font-weight-medium">{{ loc.name }}</v-list-item-title>
-              <v-list-item-subtitle class="text-caption">
-                {{ loc.country }} · {{ loc.registerCount }} registers · {{ loc.associateCount }} associates
-              </v-list-item-subtitle>
-            </v-list-item>
-            <v-divider />
-            <v-list-item prepend-icon="plus" title="Add a new location" @click="go('/locations')" />
-          </v-list>
-        </v-menu>
-
-        <v-btn
-          variant="flat"
-          color="primary"
-          class="text-none"
-          prepend-icon="tablet-smartphone"
-          @click="go('/pos-preview')"
-        >
-          Launch POS
-        </v-btn>
-      </template>
-    </MpPageHeader>
+              <v-list density="comfortable" min-width="340" class="retail-header__menu">
+                <template v-for="(group, idx) in contextGroups" :key="group.channel.id">
+                  <v-divider v-if="idx > 0" class="my-1" />
+                  <div class="retail-header__group-label">{{ group.channel.name }}</div>
+                  <v-list-item
+                    v-for="loc in group.locations"
+                    :key="`${group.channel.id}-${loc.id}`"
+                    :active="loc.id === store.activeLocationId && group.channel.id === store.activeChannelId"
+                    @click="switchContext(group.channel.id, loc.id, loc.name, group.channel.name)"
+                  >
+                    <template #prepend>
+                      <v-icon
+                        size="18"
+                        :color="loc.id === store.activeLocationId && group.channel.id === store.activeChannelId ? 'primary' : undefined"
+                      >
+                        {{ loc.id === store.activeLocationId && group.channel.id === store.activeChannelId ? 'check-circle' : 'map-pin' }}
+                      </v-icon>
+                    </template>
+                    <v-list-item-title class="text-body-2 font-weight-medium">{{ loc.name }}</v-list-item-title>
+                    <v-list-item-subtitle class="text-caption">
+                      {{ loc.country }} · {{ loc.registerCount }} registers · {{ loc.associateCount }} associates
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </template>
+                <v-divider class="my-1" />
+                <v-list-item prepend-icon="settings" title="Manage locations" @click="go('/locations')" />
+              </v-list>
+            </v-menu>
+          </div>
+          <div class="retail-header__subtitle text-body-2 text-medium-emphasis">
+            In-store POS · {{ store.kpis.registersOnline }} of {{ store.kpis.registersTotal }} registers online
+          </div>
+        </div>
+        <div class="retail-header__actions">
+          <v-btn
+            variant="flat"
+            color="primary"
+            class="text-none"
+            prepend-icon="tablet-smartphone"
+            @click="go('/pos-preview')"
+          >
+            Launch POS
+          </v-btn>
+        </div>
+      </div>
+    </div>
 
     <!-- KPI row -->
     <v-row dense>
@@ -223,12 +245,12 @@ function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 
             <div v-if="kpi.trend" class="retail-kpi-card__sparkline-col" aria-hidden="true">
               <svg class="retail-kpi-card__sparkline" viewBox="0 0 100 52" preserveAspectRatio="none">
                 <defs>
-                  <linearGradient :id="`${sparkId}-${kpi.label}`" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient :id="`${sparkId}-${kpi.label.replace(/\s+/g, '-')}`" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="currentColor" stop-opacity="0.18" />
                     <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
                   </linearGradient>
                 </defs>
-                <polygon :points="`0,52 ${salesSparkline} 100,52`" :fill="`url(#${sparkId}-${kpi.label})`" class="retail-kpi-card__sparkline-fill" />
+                <polygon :points="`0,52 ${salesSparkline} 100,52`" :fill="`url(#${sparkId}-${kpi.label.replace(/\s+/g, '-')})`" class="retail-kpi-card__sparkline-fill" />
                 <polyline :points="salesSparkline" class="retail-kpi-card__sparkline-line" />
               </svg>
             </div>
@@ -406,12 +428,104 @@ function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 
 </template>
 
 <style scoped lang="scss">
-.retail-home__loc-btn {
-  max-width: 280px;
+.retail-header {
+  margin-bottom: 8px;
 }
 
-.retail-home__loc-btn :deep(.v-btn__content) {
-  max-width: 100%;
-  overflow: hidden;
+.retail-header__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.retail-header__titles {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.retail-header__title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.retail-header__title {
+  line-height: 1.2;
+  color: rgb(var(--v-theme-on-surface));
+  margin: 0;
+}
+
+.retail-header__sep {
+  color: rgba(var(--v-theme-on-surface), 0.3);
+}
+
+.retail-header__context {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+  line-height: 1.2;
+}
+
+.retail-header__context:hover {
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  border-color: rgba(var(--v-theme-on-surface), 0.08);
+}
+
+.retail-header__context:focus-visible {
+  outline: none;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  border-color: rgb(var(--v-theme-primary));
+}
+
+.retail-header__channel {
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.retail-header__divider {
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  margin: 0 4px;
+  font-weight: 400;
+}
+
+.retail-header__location {
+  color: rgb(var(--v-theme-primary));
+}
+
+.retail-header__subtitle {
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.retail-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.retail-header__menu {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.retail-header__group-label {
+  padding: 6px 16px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(var(--v-theme-on-surface), 0.55);
 }
 </style>
