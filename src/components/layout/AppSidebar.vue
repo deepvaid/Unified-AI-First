@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 import { useAppTheme, type AccentKey } from '@/composables/useAppTheme'
@@ -324,11 +324,14 @@ function buildNavGroups(accountId: string): NavGroup[] {
 
 const localDrawer = ref(props.modelValue)
 const localRail = ref(props.rail)
+const sidebarMode = computed<'expanded' | 'rail'>(() => localRail.value ? 'rail' : 'expanded')
 const railHoveredSubGroup = ref<string | null>(null)
 const railOpenGroup = ref<string | null>(null)
 const appsExpanded = ref(false)
 const flyoutOpen = ref(false)
 const flyoutGroupTitle = ref<string | null>(null)
+const openedByClick = ref(false)
+const hoveredParentId = ref<string | null>(null)
 const expandedHoveredCascade = ref<string | null>(null)
 const flyoutTop = ref(64)
 const router = useRouter()
@@ -394,33 +397,9 @@ watch(localDrawer, (nextValue) => {
   emit('update:modelValue', nextValue)
 })
 
-watch(localRail, (nextValue) => {
+watch(localRail, (nextValue, previousValue) => {
   emit('update:rail', nextValue)
-})
-
-watch(() => props.rail, (isRail) => {
-  if (isRail) closeFlyout()
-})
-
-function handleOutsideClick(event: MouseEvent) {
-  const target = event.target
-  if (!target) return
-  if (!(target instanceof Element)) return
-  if (target.closest('.sidebar-expanded-flyout')) return
-  if (target.closest('.mp-sidebar')) return
-  closeFlyout()
-}
-
-watch(flyoutOpen, (isOpen) => {
-  if (isOpen) {
-    document.addEventListener('mousedown', handleOutsideClick)
-  } else {
-    document.removeEventListener('mousedown', handleOutsideClick)
-  }
-})
-
-onUnmounted(() => {
-  document.removeEventListener('mousedown', handleOutsideClick)
+  if (nextValue !== previousValue) resetFlyoutState()
 })
 
 function goTo(route: string) {
@@ -510,7 +489,20 @@ function isModuleActive(group: NavGroup): boolean {
 function closeFlyout() {
   flyoutOpen.value = false
   flyoutGroupTitle.value = null
+  openedByClick.value = false
+  hoveredParentId.value = null
   expandedHoveredCascade.value = null
+}
+
+function resetFlyoutState() {
+  closeFlyout()
+  railHoveredSubGroup.value = null
+  railOpenGroup.value = null
+}
+
+function toggleSidebarRail() {
+  localRail.value = !localRail.value
+  resetFlyoutState()
 }
 
 function updateFlyoutTop(event: Event) {
@@ -523,13 +515,15 @@ function updateFlyoutTop(event: Event) {
 }
 
 function onParentClick(group: NavGroup, event: Event) {
-  if (group.singleRoute && !isLocked(group)) {
-    closeFlyout()
-    goTo(group.singleRoute)
+  if (sidebarMode.value !== 'expanded') return
+  if (isLocked(group)) return
+
+  if (!group.items.length) {
+    if (group.singleRoute) goTo(group.singleRoute)
     return
   }
 
-  const isSame = flyoutOpen.value && flyoutGroupTitle.value === group.title
+  const isSame = flyoutOpen.value && openedByClick.value && flyoutGroupTitle.value === group.title
   if (isSame) {
     closeFlyout()
     return
@@ -538,15 +532,24 @@ function onParentClick(group: NavGroup, event: Event) {
   updateFlyoutTop(event)
   flyoutOpen.value = true
   flyoutGroupTitle.value = group.title
+  openedByClick.value = true
+  hoveredParentId.value = group.title
   expandedHoveredCascade.value = null
 }
 
 function onParentHover(group: NavGroup, event: MouseEvent) {
+  hoveredParentId.value = group.title
+  if (sidebarMode.value !== 'expanded') return
+  if (!flyoutOpen.value || !openedByClick.value) return
+  if (isLocked(group)) return
   if (flyoutGroupTitle.value === group.title) return
   updateFlyoutTop(event)
-  flyoutOpen.value = true
   flyoutGroupTitle.value = group.title
   expandedHoveredCascade.value = null
+}
+
+function toggleExpandedCascade(title: string) {
+  expandedHoveredCascade.value = expandedHoveredCascade.value === title ? null : title
 }
 
 function onFlyoutChildClick(item: NavItem) {
@@ -604,7 +607,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
             type="button"
             class="sidebar-toggle-pill sidebar-toggle-pill--anchored"
             :aria-label="localRail ? 'Expand sidebar' : 'Collapse sidebar'"
-            @click.stop="localRail = !localRail"
+            @click.stop="toggleSidebarRail"
           >
             <v-icon size="14">{{ localRail ? 'chevron-right' : 'chevron-left' }}</v-icon>
           </button>
@@ -707,7 +710,10 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
         <div
           v-else-if="!localRail"
           class="sidebar-parent-row"
-          :class="{ 'sidebar-parent--flyout-open': flyoutOpen && flyoutGroupTitle === group.title }"
+          :class="{
+            'sidebar-parent--flyout-open': flyoutOpen && flyoutGroupTitle === group.title,
+            'sidebar-parent--hovered-after-open': flyoutOpen && openedByClick && hoveredParentId === group.title,
+          }"
         >
           <v-list-item
             :prepend-icon="group.icon"
@@ -948,14 +954,16 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           <template v-for="(sub, idx) in railSubGroups(flyoutGroup)" :key="sub.title">
             <div v-if="idx > 0" class="rail-flyout-divider" />
             <template v-if="isCascadeSubGroup(sub)">
-              <div
+              <button
+                type="button"
                 class="rail-flyout-item rail-flyout-item--has-sub"
                 :class="{ 'rail-flyout-item--active': expandedHoveredCascade === sub.title }"
-                @mouseenter="expandedHoveredCascade = sub.title"
+                :aria-expanded="expandedHoveredCascade === sub.title"
+                @click.stop="toggleExpandedCascade(sub.title)"
               >
                 <span>{{ sub.title }}</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-              </div>
+              </button>
             </template>
             <template v-else>
               <button
@@ -967,7 +975,6 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                 @mousedown.stop
                 @pointerdown="onFlyoutChildPointerDown(child, $event); expandedHoveredCascade = null"
                 @click.stop="onFlyoutChildClick(child); expandedHoveredCascade = null"
-                @mouseenter="expandedHoveredCascade = null"
               >{{ child.title }}</button>
             </template>
           </template>
@@ -982,7 +989,6 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               @mousedown.stop
               @pointerdown="onFlyoutChildPointerDown(flat, $event); expandedHoveredCascade = null"
               @click.stop="onFlyoutChildClick(flat); expandedHoveredCascade = null"
-              @mouseenter="expandedHoveredCascade = null"
             >{{ flat.title }}</button>
           </template>
         </div>
