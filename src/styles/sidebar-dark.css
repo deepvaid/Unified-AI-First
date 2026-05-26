@@ -58,7 +58,7 @@
   color: var(--sidebar-muted) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .sidebar-lock {
+[data-sidebar="dark"] .mp-sidebar .sidebar-crown {
   color: rgba(255, 255, 255, 0.36) !important;
 }
 

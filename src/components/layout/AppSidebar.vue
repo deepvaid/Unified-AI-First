@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
+import { Crown } from 'lucide-vue-next'
 import { useAppTheme, type AccentKey } from '@/composables/useAppTheme'
 
 const props = defineProps<{
@@ -516,7 +517,6 @@ function updateFlyoutTop(event: Event) {
 
 function onParentClick(group: NavGroup, event: Event) {
   if (sidebarMode.value !== 'expanded') return
-  if (isLocked(group)) return
 
   if (!group.items.length) {
     if (group.singleRoute) goTo(group.singleRoute)
@@ -541,7 +541,6 @@ function onParentHover(group: NavGroup, event: MouseEvent) {
   hoveredParentId.value = group.title
   if (sidebarMode.value !== 'expanded') return
   if (!flyoutOpen.value || !openedByClick.value) return
-  if (isLocked(group)) return
   if (flyoutGroupTitle.value === group.title) return
   updateFlyoutTop(event)
   flyoutGroupTitle.value = group.title
@@ -699,7 +698,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                 >{{ group.badge }}</v-chip>
                 <v-tooltip v-if="isLocked(group) && !group.badge" location="end" text="Upgrade to unlock">
                   <template v-slot:activator="{ props: lockTipProps }">
-                    <v-icon v-bind="lockTipProps" size="14" class="ml-2 sidebar-lock">lock</v-icon>
+                    <v-icon v-bind="lockTipProps" size="14" class="ml-2 sidebar-crown">crown</v-icon>
                   </template>
                 </v-tooltip>
               </template>
@@ -735,7 +734,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               >chevron-right</v-icon>
               <v-tooltip v-if="isLocked(group)" location="end" text="Upgrade to unlock">
                 <template #activator="{ props: tipProps }">
-                  <v-icon v-bind="tipProps" size="14" class="ml-2 sidebar-lock">lock</v-icon>
+                  <v-icon v-bind="tipProps" size="14" class="ml-2 sidebar-crown">crown</v-icon>
                 </template>
               </v-tooltip>
             </template>
@@ -780,7 +779,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               class="rail-flyout-item"
               :class="{ 'rail-flyout-item--active': ('route' in item) && route.path.startsWith(item.route) }"
               @click="('route' in item) && goTo(item.route)"
-            >{{ ('route' in item) ? item.title : '' }}</div>
+            ><span>{{ ('route' in item) ? item.title : '' }}</span>
+              <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
+            </div>
           </div>
 
           <!-- Inline sub-groups separated by dividers; cascade subs open in 2nd card -->
@@ -807,7 +808,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                     :class="{ 'rail-flyout-item--active': route.path.startsWith(child.route) }"
                     @click="goTo(child.route); railHoveredSubGroup = null"
                     @mouseenter="railHoveredSubGroup = null"
-                  >{{ child.title }}</div>
+                  ><span>{{ child.title }}</span>
+                    <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
+                  </div>
                 </template>
               </template>
               <template v-if="railFlatItems(group).length">
@@ -819,7 +822,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                   :class="{ 'rail-flyout-item--active': route.path.startsWith(flat.route) }"
                   @click="goTo(flat.route); railHoveredSubGroup = null"
                   @mouseenter="railHoveredSubGroup = null"
-                >{{ flat.title }}</div>
+                ><span>{{ flat.title }}</span>
+                  <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
+                </div>
               </template>
             </div>
             <div
@@ -833,7 +838,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                 class="rail-flyout-item"
                 :class="{ 'rail-flyout-item--active': route.path.startsWith(child.route) }"
                 @click="goTo(child.route)"
-              >{{ child.title }}</div>
+              ><span>{{ child.title }}</span>
+                <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
+              </div>
             </div>
           </div>
         </v-menu>
@@ -946,7 +953,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           @mousedown.stop
           @pointerdown="'route' in item && onFlyoutChildPointerDown(item as NavItem, $event)"
           @click.stop="'route' in item && onFlyoutChildClick(item as NavItem)"
-        >{{ 'route' in item ? (item as NavItem).title : '' }}</button>
+        ><span>{{ 'route' in item ? (item as NavItem).title : '' }}</span>
+          <Crown v-if="isLocked(flyoutGroup!)" :size="12" :stroke-width="1.75" />
+        </button>
       </div>
 
       <div v-else class="rail-cascade-wrap">
@@ -975,7 +984,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                 @mousedown.stop
                 @pointerdown="onFlyoutChildPointerDown(child, $event); expandedHoveredCascade = null"
                 @click.stop="onFlyoutChildClick(child); expandedHoveredCascade = null"
-              >{{ child.title }}</button>
+              ><span>{{ child.title }}</span>
+                <Crown v-if="isLocked(flyoutGroup!)" :size="12" :stroke-width="1.75" />
+              </button>
             </template>
           </template>
           <template v-if="railFlatItems(flyoutGroup).length">
@@ -989,7 +1000,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               @mousedown.stop
               @pointerdown="onFlyoutChildPointerDown(flat, $event); expandedHoveredCascade = null"
               @click.stop="onFlyoutChildClick(flat); expandedHoveredCascade = null"
-            >{{ flat.title }}</button>
+            ><span>{{ flat.title }}</span>
+              <Crown v-if="isLocked(flyoutGroup!)" :size="12" :stroke-width="1.75" />
+            </button>
           </template>
         </div>
         <div
@@ -1005,7 +1018,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
             @mousedown.stop
             @pointerdown="onFlyoutChildPointerDown(child, $event)"
             @click.stop="onFlyoutChildClick(child)"
-          >{{ child.title }}</button>
+          ><span>{{ child.title }}</span>
+            <Crown v-if="isLocked(flyoutGroup!)" :size="12" :stroke-width="1.75" />
+          </button>
         </div>
       </div>
     </div>
