@@ -192,7 +192,6 @@ function buildNavGroups(accountId: string): NavGroup[] {
             { title: 'Purchasable Gift Cards', route: `/commerce/${accountId}/purchasable_gift_cards` },
           ],
         },
-        { title: 'Sales Channels', route: `/commerce/${accountId}/sales_channels` },
       ],
     },
     {
@@ -214,7 +213,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
           isSubGroup: true,
           items: [
             { title: 'Transactions', route: `/commerce/${accountId}/retail/transactions` },
-            { title: 'Locations',    route: `/commerce/${accountId}/retail/locations` },
+            { title: 'Locations',    route: `/accounts/${accountId}/sales_channels/pos-store/locations` },
             { title: 'Registers',    route: `/commerce/${accountId}/retail/registers` },
             { title: 'Associates',   route: `/commerce/${accountId}/retail/associates` },
           ],
@@ -240,7 +239,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
     },
     {
       title: 'Merchandise',
-      icon: 'wand-sparkles',
+      icon: 'sliders-horizontal',
       requires: 'commerce',
       singleRoute: `/commerce/${accountId}/merchandising`,
       items: [
@@ -283,6 +282,13 @@ function buildNavGroups(accountId: string): NavGroup[] {
           ],
         },
       ],
+    },
+    {
+      title: 'Sales Channels',
+      icon: 'network',
+      requires: 'commerce',
+      singleRoute: `/accounts/${accountId}/sales_channels`,
+      items: [],
     },
     {
       title: 'Service',

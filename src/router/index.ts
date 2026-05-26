@@ -64,7 +64,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/promotions', name: 'Promotions', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/custom_gift_cards', name: 'CustomGiftCards', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/purchasable_gift_cards', name: 'PurchasableGiftCards', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/sales_channels', name: 'StoreSetup', component: () => import('@/views/Commerce/StoreSetup.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/sales_channels', name: 'StoreSetup', redirect: to => ({ name: 'SalesChannels', params: { accountId: to.params.accountId } }), meta: commerceGate },
 
   // 5.5 Merchandise (MerchCloud)
   { path: '/commerce/:accountId/merchandising', name: 'MerchandisingHome', component: () => import('@/views/Merchandising/MerchandisingHome.vue'), meta: commerceGate },
@@ -78,7 +78,7 @@ const routes: RouteRecordRaw[] = [
 
   // 5.6 Retail
   { path: '/commerce/:accountId/retail',              name: 'RetailHome',         component: () => import('@/views/Retail/RetailHome.vue'),       meta: commerceGate },
-  { path: '/commerce/:accountId/retail/locations',    name: 'RetailLocations',    component: () => import('@/views/Retail/Locations.vue'),        meta: commerceGate },
+  { path: '/commerce/:accountId/retail/locations',    name: 'RetailLocations',    redirect: to => ({ name: 'SalesChannelLocations', params: { accountId: to.params.accountId, channelId: 'pos-store' } }), meta: commerceGate },
   { path: '/commerce/:accountId/retail/registers',    name: 'RetailRegisters',    component: () => import('@/views/Retail/Registers.vue'),        meta: commerceGate },
   { path: '/commerce/:accountId/retail/transactions', name: 'RetailTransactions', component: () => import('@/views/Retail/Transactions.vue'),     meta: commerceGate },
   { path: '/commerce/:accountId/retail/associates',   name: 'RetailAssociates',   component: () => import('@/views/Retail/Associates.vue'),       meta: commerceGate },
@@ -88,6 +88,13 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/retail/pricing',      name: 'RetailPricing',      component: () => import('@/views/Retail/Pricing.vue'),          meta: commerceGate },
   { path: '/commerce/:accountId/retail/hardware',     name: 'RetailHardware',     component: () => import('@/views/Retail/Hardware.vue'),         meta: commerceGate },
   { path: '/commerce/:accountId/retail/settings',     name: 'RetailSettings',     component: () => import('@/views/Retail/RetailSettings.vue'),   meta: commerceGate },
+
+  // 5.7 Sales Channels
+  { path: '/accounts/:accountId/sales_channels', name: 'SalesChannels', component: () => import('@/views/SalesChannels/SalesChannelsList.vue'), meta: commerceGate },
+  { path: '/accounts/:accountId/sales_channels/new', name: 'CreateSalesChannel', component: () => import('@/views/SalesChannels/CreateSalesChannel.vue'), meta: commerceGate },
+  { path: '/accounts/:accountId/sales_channels/:channelId/locations', name: 'SalesChannelLocations', component: () => import('@/views/SalesChannels/SalesChannelLocations.vue'), meta: commerceGate },
+  { path: '/accounts/:accountId/sales_channels/:channelId/locations/:locationId', name: 'SalesChannelLocationDetail', component: () => import('@/views/SalesChannels/SalesChannelLocationDetail.vue'), meta: commerceGate },
+  { path: '/accounts/:accountId/sales_channels/:channelId', name: 'SalesChannelDetail', component: () => import('@/views/SalesChannels/SalesChannelDetail.vue'), meta: commerceGate },
 
   // 6. Marketing
   { path: '/accounts/:accountId/marketing', name: 'MarketingHome', component: () => import('@/views/Marketing/MarketingLanding.vue') },

@@ -41,7 +41,6 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
     title: 'Store Setup',
     items: [
       { slug: 'store-profile', label: 'Store Profile', routeName: 'SettingsStoreProfile' },
-      { slug: 'sales-channels', label: 'Sales Channels', routeName: 'SettingsSalesChannels' },
       { slug: 'payment-account', label: 'Payment Account', routeName: 'SettingsPaymentAccount' },
     ],
   },
