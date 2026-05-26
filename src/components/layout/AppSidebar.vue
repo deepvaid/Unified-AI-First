@@ -17,7 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const accountsStore = useAccountsStore()
-const { accent, darkSidebar, setAccent, setDarkSidebar } = useAppTheme()
+const { accent, setAccent } = useAppTheme()
 
 // ─── Accent Swatches ─────────────────────────────────────────
 interface AccentSwatch {
@@ -841,20 +841,6 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
     <template v-slot:append>
       <!-- Expanded mode -->
       <div v-if="!localRail" class="sidebar-controls">
-        <!-- Dark sidebar toggle -->
-        <div class="sidebar-controls__row">
-          <v-icon size="16" class="sidebar-controls__icon">moon</v-icon>
-          <span class="sidebar-controls__label">Dark sidebar</span>
-          <v-switch
-            :model-value="darkSidebar"
-            @update:model-value="setDarkSidebar($event as boolean)"
-            density="compact"
-            hide-details
-            color="primary"
-            class="sidebar-controls__switch"
-          />
-        </div>
-
         <!-- Accent picker -->
         <div class="sidebar-controls__row sidebar-controls__accents">
           <v-icon size="16" class="sidebar-controls__icon">palette</v-icon>
@@ -876,19 +862,6 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
       <!-- Rail mode -->
       <div v-else class="sidebar-controls sidebar-controls--rail">
-        <v-tooltip location="end" :text="darkSidebar ? 'Light sidebar' : 'Dark sidebar'">
-          <template #activator="{ props: tipProps }">
-            <button
-              v-bind="tipProps"
-              type="button"
-              class="sidebar-rail-btn"
-              @click="setDarkSidebar(!darkSidebar)"
-            >
-              <v-icon size="18">{{ darkSidebar ? 'sun' : 'moon' }}</v-icon>
-            </button>
-          </template>
-        </v-tooltip>
-
         <v-menu location="end" offset="8" v-model="showAccentPicker">
           <template #activator="{ props: menuProps }">
             <button

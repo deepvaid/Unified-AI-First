@@ -163,8 +163,8 @@ export function initAppTheme() {
   migrateLegacyThemeMode()
   const storedAccent = (localStorage.getItem(LS_ACCENT) as AccentKey) || 'cyan'
   const storedMode = normalizeMode(localStorage.getItem(LS_MODE))
-  const storedDarkSidebar = localStorage.getItem(LS_DARK_SIDEBAR) !== 'false'
   applyAccent(storedAccent)
   applyMode(storedMode)
-  applyDarkSidebar(storedDarkSidebar)
+  // Dark sidebar is always on (no user-facing toggle).
+  applyDarkSidebar(true)
 }
