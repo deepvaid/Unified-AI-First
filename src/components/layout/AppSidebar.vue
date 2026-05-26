@@ -397,8 +397,9 @@ watch(() => props.rail, (isRail) => {
 })
 
 function handleOutsideClick(event: MouseEvent) {
-  const target = event.target as HTMLElement | null
+  const target = event.target
   if (!target) return
+  if (!(target instanceof Element)) return
   if (target.closest('.sidebar-expanded-flyout')) return
   if (target.closest('.mp-sidebar')) return
   closeFlyout()
@@ -516,6 +517,12 @@ function updateFlyoutTop(event: Event) {
 }
 
 function onParentClick(group: NavGroup, event: Event) {
+  if (group.singleRoute && !isLocked(group)) {
+    closeFlyout()
+    goTo(group.singleRoute)
+    return
+  }
+
   const isSame = flyoutOpen.value && flyoutGroupTitle.value === group.title
   if (isSame) {
     closeFlyout()
@@ -529,9 +536,9 @@ function onParentClick(group: NavGroup, event: Event) {
 }
 
 function onParentHover(group: NavGroup, event: MouseEvent) {
-  if (!flyoutOpen.value) return
   if (flyoutGroupTitle.value === group.title) return
   updateFlyoutTop(event)
+  flyoutOpen.value = true
   flyoutGroupTitle.value = group.title
   expandedHoveredCascade.value = null
 }
@@ -539,6 +546,13 @@ function onParentHover(group: NavGroup, event: MouseEvent) {
 function onFlyoutChildClick(item: NavItem) {
   goTo(item.route)
   closeFlyout()
+}
+
+function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
+  if (event.button !== 0) return
+  event.preventDefault()
+  event.stopPropagation()
+  onFlyoutChildClick(item)
 }
 </script>
 
@@ -917,7 +931,9 @@ function onFlyoutChildClick(item: NavItem) {
           type="button"
           class="rail-flyout-item"
           :class="{ 'rail-flyout-item--active': 'route' in item && routeMatches((item as NavItem).route) }"
-          @click="'route' in item && onFlyoutChildClick(item as NavItem)"
+          @mousedown.stop
+          @pointerdown="'route' in item && onFlyoutChildPointerDown(item as NavItem, $event)"
+          @click.stop="'route' in item && onFlyoutChildClick(item as NavItem)"
         >{{ 'route' in item ? (item as NavItem).title : '' }}</button>
       </div>
 
@@ -942,7 +958,9 @@ function onFlyoutChildClick(item: NavItem) {
                 type="button"
                 class="rail-flyout-item"
                 :class="{ 'rail-flyout-item--active': routeMatches(child.route) }"
-                @click="onFlyoutChildClick(child); expandedHoveredCascade = null"
+                @mousedown.stop
+                @pointerdown="onFlyoutChildPointerDown(child, $event); expandedHoveredCascade = null"
+                @click.stop="onFlyoutChildClick(child); expandedHoveredCascade = null"
                 @mouseenter="expandedHoveredCascade = null"
               >{{ child.title }}</button>
             </template>
@@ -955,7 +973,9 @@ function onFlyoutChildClick(item: NavItem) {
               type="button"
               class="rail-flyout-item"
               :class="{ 'rail-flyout-item--active': routeMatches(flat.route) }"
-              @click="onFlyoutChildClick(flat); expandedHoveredCascade = null"
+              @mousedown.stop
+              @pointerdown="onFlyoutChildPointerDown(flat, $event); expandedHoveredCascade = null"
+              @click.stop="onFlyoutChildClick(flat); expandedHoveredCascade = null"
               @mouseenter="expandedHoveredCascade = null"
             >{{ flat.title }}</button>
           </template>
@@ -970,7 +990,9 @@ function onFlyoutChildClick(item: NavItem) {
             type="button"
             class="rail-flyout-item"
             :class="{ 'rail-flyout-item--active': routeMatches(child.route) }"
-            @click="onFlyoutChildClick(child)"
+            @mousedown.stop
+            @pointerdown="onFlyoutChildPointerDown(child, $event)"
+            @click.stop="onFlyoutChildClick(child)"
           >{{ child.title }}</button>
         </div>
       </div>
