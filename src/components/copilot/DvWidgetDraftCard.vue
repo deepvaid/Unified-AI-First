@@ -255,13 +255,13 @@ function handleExpandAdd() {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  background: var(--dv-accent);
-  color: var(--dv-on-accent);
-  border: 1px solid var(--dv-accent);
+  background: var(--dv-grad);
+  color: #FFFFFF;
+  border: none;
 }
 
 .dv-draft__badge :deep(.v-icon) {
-  color: var(--dv-on-accent) !important;
+  color: #FFFFFF !important;
 }
 
 .dv-draft__title-block {
