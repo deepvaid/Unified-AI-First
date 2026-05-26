@@ -249,7 +249,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
 @use '@/design-tokens/generated/_variables.scss' as *;
 
 .mp-toolbar-shell {
-  background: transparent;
+  background: rgb(var(--v-theme-surface));
 }
 
 .mp-toolbar-row {
