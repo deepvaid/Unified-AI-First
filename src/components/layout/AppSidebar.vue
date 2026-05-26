@@ -153,20 +153,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
             { title: 'Data Journeys', route: `/accounts/${accountId}/data_journeys` },
           ],
         },
-        {
-          title: 'Content',
-          isSubGroup: true,
-          items: [
-            { title: 'Email Content', route: `/accounts/${accountId}/contents` },
-            { title: 'Dynamic Content', route: `/accounts/${accountId}/dynamic_contents` },
-            { title: 'Image Library', route: `/accounts/${accountId}/images` },
-            { title: 'Footer Management', route: `/accounts/${accountId}/footers` },
-            { title: 'Optimise on Open', route: `/accounts/${accountId}/image_groups` },
-            { title: 'Content Feeds', route: `/accounts/${accountId}/content_feeds` },
-            { title: 'Product Recommendations', route: `/commerce/${accountId}/product_recommendations` },
-            { title: 'Coupon Banks', route: `/accounts/${accountId}/coupon_banks` },
-          ],
-        },
+        { title: 'Content', route: `/accounts/${accountId}/content` },
       ],
     },
     {
@@ -424,7 +411,7 @@ function railFlatItems(group: NavGroup) {
   return group.items.filter((item): item is NavItem => !('isSubGroup' in item))
 }
 
-const CASCADE_SUBGROUPS = new Set(['Content'])
+const CASCADE_SUBGROUPS = new Set<string>()
 
 function isCascadeSubGroup(sub: NavSubGroup): boolean {
   return CASCADE_SUBGROUPS.has(sub.title)

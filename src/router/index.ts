@@ -98,6 +98,7 @@ const routes: RouteRecordRaw[] = [
 
   // 6. Marketing
   { path: '/accounts/:accountId/marketing', name: 'MarketingHome', component: () => import('@/views/Marketing/MarketingLanding.vue') },
+  { path: '/accounts/:accountId/content', name: 'ContentLanding', component: () => import('@/views/Marketing/ContentLanding.vue') },
   { path: '/accounts/:accountId/campaigns/new', name: 'CreateCampaign', component: () => import('@/views/Marketing/CreateCampaign.vue'), meta: { fullPage: true } },
   { path: '/accounts/:accountId/campaigns', name: 'EmailCampaigns', component: () => import('@/views/Marketing/EmailCampaigns.vue') },
   { path: '/accounts/:accountId/journeys/:id/builder', name: 'JourneyBuilder', component: () => import('@/views/Marketing/JourneyBuilder.vue'), meta: { fullPage: true } },
