@@ -631,14 +631,14 @@ const apkQrUrl = computed(() =>
                 <div class="pos-getapp-pane__icon">
                   <v-icon size="36" color="primary">tablet</v-icon>
                 </div>
-                <div class="pos-getapp-pane__title">Install Retail Cloud POS</div>
+                <div class="pos-getapp-pane__title">Install Retail POS</div>
                 <div class="pos-getapp-pane__sub">Scan the QR code with your Android device or tap Download to install the app directly.</div>
 
                 <!-- QR code (served by qrserver.com using local APK URL) -->
                 <div class="pos-getapp-qr">
                   <img
                     :src="apkQrUrl"
-                    alt="QR code to download Retail Cloud POS APK"
+                    alt="QR code to download Retail POS APK"
                     width="160"
                     height="160"
                     style="border-radius: 12px; display: block;"
@@ -676,7 +676,7 @@ const apkQrUrl = computed(() =>
                   <v-icon size="36" color="primary">apple</v-icon>
                 </div>
                 <div class="pos-getapp-pane__title">Install via TestFlight</div>
-                <div class="pos-getapp-pane__sub">Retail Cloud POS for iOS is distributed to beta testers via Apple TestFlight.</div>
+                <div class="pos-getapp-pane__sub">Retail POS for iOS is distributed to beta testers via Apple TestFlight.</div>
 
                 <button class="pos-getapp-download-btn" style="border: none; cursor: pointer;" @click="apkToast = true">
                   <v-icon size="16" style="margin-right: 6px;">mail</v-icon>

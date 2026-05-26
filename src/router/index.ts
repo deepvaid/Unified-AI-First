@@ -66,7 +66,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/purchasable_gift_cards', name: 'PurchasableGiftCards', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/sales_channels', name: 'StoreSetup', component: () => import('@/views/Commerce/StoreSetup.vue'), meta: commerceGate },
 
-  // 5.5 Merchandising Cloud (former Findify)
+  // 5.5 Merchandise (former Findify)
   { path: '/commerce/:accountId/merchandising', name: 'MerchandisingHome', component: () => import('@/views/Merchandising/MerchandisingHome.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/analytics', name: 'MerchandisingAnalytics', component: () => import('@/views/Merchandising/MerchandisingAnalytics.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/search/preview', name: 'MerchandisingSearchPreview', component: () => import('@/views/Merchandising/SearchPreview.vue'), meta: commerceGate },
@@ -77,7 +77,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/merchandising/recommendations', name: 'MerchandisingRecommendations', component: () => import('@/views/Merchandising/RecommendationEngines.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/fields', name: 'MerchandisingFields', component: () => import('@/views/Merchandising/FieldTransformations.vue'), meta: commerceGate },
 
-  // 5.6 Retail Cloud
+  // 5.6 Retail
   { path: '/commerce/:accountId/retail',              name: 'RetailHome',         component: () => import('@/views/Retail/RetailHome.vue'),       meta: commerceGate },
   { path: '/commerce/:accountId/retail/locations',    name: 'RetailLocations',    component: () => import('@/views/Retail/Locations.vue'),        meta: commerceGate },
   { path: '/commerce/:accountId/retail/registers',    name: 'RetailRegisters',    component: () => import('@/views/Retail/Registers.vue'),        meta: commerceGate },

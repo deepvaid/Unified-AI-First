@@ -81,7 +81,7 @@ const productHeaders = [
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Reports"
-      subtitle="Daily trading summary for your Retail Cloud. Phase 2 adds trend comparisons and exports."
+      subtitle="Daily trading summary for your Retail. Phase 2 adds trend comparisons and exports."
     >
       <template #actions>
         <v-btn variant="outlined" class="text-none" prepend-icon="calendar" @click="">Today</v-btn>

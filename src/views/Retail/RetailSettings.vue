@@ -7,7 +7,7 @@ const groups = [
   { icon: 'cloud-off',   title: 'Offline mode',   desc: 'Per-store offline limits, sync cadence, and post-sync reconciliation defaults.' },
   { icon: 'shield',      title: 'Security',       desc: 'Inactivity lock window, PIN policy, manager-override approvals.' },
   { icon: 'tag',         title: 'Tax & rounding', desc: 'Per-region tax tables, rounding rules, surcharging (Phase 2).' },
-  { icon: 'flag',        title: 'Market settings',desc: 'Enable Retail Cloud per country (US / CA / AU / NZ).' },
+  { icon: 'flag',        title: 'Market settings',desc: 'Enable Retail per country (US / CA / AU / NZ).' },
 ]
 </script>
 
@@ -15,7 +15,7 @@ const groups = [
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Retail Settings"
-      subtitle="Platform-level configuration for your Retail Cloud — payments, receipts, offline behavior, security."
+      subtitle="Platform-level configuration for your Retail — payments, receipts, offline behavior, security."
     />
 
     <v-card flat border rounded="lg" class="retail-shell-card pa-6">

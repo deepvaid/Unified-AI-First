@@ -196,7 +196,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
       ],
     },
     {
-      title: 'Retail Cloud',
+      title: 'Retail',
       icon: 'store',
       requires: 'commerce',
       singleRoute: `/commerce/${accountId}/retail`,
@@ -240,7 +240,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
       ],
     },
     {
-      title: 'Merchandising Cloud',
+      title: 'Merchandise',
       icon: 'wand-sparkles',
       requires: 'commerce',
       singleRoute: `/commerce/${accountId}/merchandising`,

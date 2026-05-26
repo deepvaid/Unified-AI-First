@@ -160,7 +160,7 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
-      title="Merchandising Cloud"
+      title="Merchandise"
       :subtitle="`AI-powered discovery for ${store.activeStore.domain}`"
     >
       <template #actions>

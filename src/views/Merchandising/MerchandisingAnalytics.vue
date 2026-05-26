@@ -144,7 +144,7 @@ const donutChartSeries = computed(() => analytics.value.contribution.map((c) => 
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Analytics"
-      :subtitle="`How Merchandising Cloud is driving revenue for ${store.activeStore.domain}`"
+      :subtitle="`How Merchandise is driving revenue for ${store.activeStore.domain}`"
     >
       <template #actions>
         <v-menu v-model="dateMenuOpen" :close-on-content-click="false" location="bottom end">

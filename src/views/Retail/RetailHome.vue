@@ -135,7 +135,7 @@ function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
-      title="Retail Cloud"
+      title="Retail"
       :subtitle="`In-store POS for ${store.activeLocation?.name ?? ''} · ${store.kpis.registersOnline} of ${store.kpis.registersTotal} registers online`"
     >
       <template #actions>

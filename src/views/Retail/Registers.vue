@@ -375,7 +375,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
               <span class="text-body-2 font-weight-medium">Pairing instructions</span>
             </div>
             <div class="text-body-2 text-medium-emphasis">
-              1. Open the Retail Cloud app on your device.<br>
+              1. Open the Retail app on your device.<br>
               2. Go to Settings → Pair device.<br>
               3. Enter the pairing code shown here: <strong>8472-K</strong>
             </div>
