@@ -32,7 +32,7 @@ const trendUp = computed(() => props.trendPositive !== false)
       </div>
     </div>
 
-    <div class="text-h4 font-weight-bold mp-kpi-card__value">{{ value }}</div>
+    <div class="text-h5 font-weight-bold mp-kpi-card__value">{{ value }}</div>
 
     <div v-if="trend" class="d-flex align-center ga-1 mt-2">
       <v-icon size="14" :color="trendUp ? 'success' : 'error'">
