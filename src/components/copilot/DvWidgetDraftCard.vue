@@ -256,12 +256,12 @@ function handleExpandAdd() {
   text-transform: uppercase;
   letter-spacing: 1px;
   background: var(--dv-grad);
-  color: #FFFFFF;
+  color: #1E1B4B;
   border: none;
 }
 
 .dv-draft__badge :deep(.v-icon) {
-  color: #FFFFFF !important;
+  color: #1E1B4B !important;
 }
 
 .dv-draft__title-block {

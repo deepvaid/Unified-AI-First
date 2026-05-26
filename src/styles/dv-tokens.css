@@ -13,8 +13,8 @@
   --dv-text-primary: var(--mp-color-light-aiAccent-textPrimary);
   --dv-text-secondary: var(--mp-color-light-aiAccent-textSecondary);
   --dv-muted: var(--mp-color-light-aiAccent-muted);
-  /* Blue → purple Da Vinci gradient (kept for badge / brand identity) */
-  --dv-grad: linear-gradient(135deg, #1E3A8A 0%, #7E3AF2 100%);
+  /* Da Vinci gradient — soft cyan → blue → violet (brand AI aesthetic) */
+  --dv-grad: linear-gradient(135deg, #5EEAD4 0%, #93C5FD 50%, #A78BFA 100%);
   --dv-header-grad: linear-gradient(
     120deg,
     var(--mp-color-light-aiAccent-soft) 0%,
@@ -37,8 +37,8 @@
   --dv-text-primary: var(--mp-color-dark-aiAccent-textPrimary);
   --dv-text-secondary: var(--mp-color-dark-aiAccent-textSecondary);
   --dv-muted: var(--mp-color-dark-aiAccent-muted);
-  /* Blue → purple Da Vinci gradient (lighter for dark mode) */
-  --dv-grad: linear-gradient(135deg, #818CF8 0%, #C084FC 100%);
+  /* Da Vinci gradient — soft cyan → blue → violet (brand AI aesthetic) */
+  --dv-grad: linear-gradient(135deg, #5EEAD4 0%, #93C5FD 50%, #A78BFA 100%);
   --dv-header-grad: linear-gradient(
     120deg,
     var(--mp-color-dark-aiAccent-soft) 0%,
