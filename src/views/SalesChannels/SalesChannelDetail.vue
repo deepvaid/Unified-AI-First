@@ -1163,7 +1163,7 @@ function locationRoleText(locationId: string) {
 }
 
 .sc-retail-preview--hero {
-  min-height: 344px;
+  align-content: start;
 }
 
 .sc-hero-url {

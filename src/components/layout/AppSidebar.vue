@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { Crown } from 'lucide-vue-next'
 import { useAppTheme, type AccentKey } from '@/composables/useAppTheme'
 
@@ -17,6 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const accountsStore = useAccountsStore()
+const salesChannelsStore = useSalesChannelsStore()
 const { accent, setAccent } = useAppTheme()
 
 // ─── Accent Swatches ─────────────────────────────────────────
@@ -57,6 +59,13 @@ interface InstalledAppItem {
 }
 
 function buildNavGroups(accountId: string): NavGroup[] {
+  const defaultWebStoreId = salesChannelsStore.getDefaultWebStore(accountId)?.id
+  const onlineSalesRoute = defaultWebStoreId
+    ? `/accounts/${accountId}/sales_channels/${defaultWebStoreId}`
+    : `/accounts/${accountId}/sales_channels`
+  const defaultOfflineStoreId = salesChannelsStore.getDefaultOfflineStore(accountId)?.id ?? 'pos-store'
+  const offlinePhysicalRoute = `/accounts/${accountId}/sales_channels/${defaultOfflineStoreId}`
+
   return [
     {
       title: 'Dashboards',
@@ -162,6 +171,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
       requires: 'commerce',
       singleRoute: `/commerce/${accountId}/orders`,
       items: [
+        { title: 'Online Sales', route: onlineSalesRoute },
         {
           title: 'Orders',
           isSubGroup: true,
@@ -186,24 +196,18 @@ function buildNavGroups(accountId: string): NavGroup[] {
       title: 'Retail',
       icon: 'store',
       requires: 'commerce',
-      singleRoute: `/commerce/${accountId}/retail`,
+      singleRoute: `/commerce/${accountId}/retail/transactions`,
       items: [
-        {
-          title: 'Overview',
-          isSubGroup: true,
-          items: [
-            { title: 'Home',         route: `/commerce/${accountId}/retail` },
-            { title: 'POS Preview',  route: `/commerce/${accountId}/retail/pos-preview` },
-          ],
-        },
+        { title: 'Transactions',      route: `/commerce/${accountId}/retail/transactions` },
+        { title: 'POS Preview',       route: `/commerce/${accountId}/retail/pos-preview` },
+        { title: 'Offline / Physical', route: offlinePhysicalRoute },
         {
           title: 'Operations',
           isSubGroup: true,
           items: [
-            { title: 'Transactions', route: `/commerce/${accountId}/retail/transactions` },
-            { title: 'Locations',    route: `/accounts/${accountId}/sales_channels/pos-store/locations` },
-            { title: 'Registers',    route: `/commerce/${accountId}/retail/registers` },
-            { title: 'Associates',   route: `/commerce/${accountId}/retail/associates` },
+            { title: 'Locations',  route: `/accounts/${accountId}/sales_channels/pos-store/locations` },
+            { title: 'Registers',  route: `/commerce/${accountId}/retail/registers` },
+            { title: 'Associates', route: `/commerce/${accountId}/retail/associates` },
           ],
         },
         {
@@ -229,54 +233,16 @@ function buildNavGroups(accountId: string): NavGroup[] {
       title: 'Merchandise',
       icon: 'sliders-horizontal',
       requires: 'commerce',
-      singleRoute: `/commerce/${accountId}/merchandising`,
+      singleRoute: `/commerce/${accountId}/merchandising/collections`,
       items: [
-        {
-          title: 'Overview',
-          isSubGroup: true,
-          items: [
-            { title: 'Home', route: `/commerce/${accountId}/merchandising` },
-          ],
-        },
-        {
-          title: 'Search',
-          isSubGroup: true,
-          items: [
-            { title: 'Search Preview', route: `/commerce/${accountId}/merchandising/search/preview` },
-            { title: 'Synonyms', route: `/commerce/${accountId}/merchandising/search/synonyms` },
-            { title: 'Page Redirects', route: `/commerce/${accountId}/merchandising/search/redirects` },
-          ],
-        },
-        {
-          title: 'Smart Collections',
-          isSubGroup: true,
-          items: [
-            { title: 'Collections', route: `/commerce/${accountId}/merchandising/collections` },
-            { title: 'Default Merchandising', route: `/commerce/${accountId}/merchandising/default-merchandising` },
-          ],
-        },
-        {
-          title: 'Recommendations',
-          isSubGroup: true,
-          items: [
-            { title: 'Recommendation Engines', route: `/commerce/${accountId}/merchandising/recommendations` },
-          ],
-        },
-        {
-          title: 'Fields and Filters',
-          isSubGroup: true,
-          items: [
-            { title: 'Field Transformations', route: `/commerce/${accountId}/merchandising/fields` },
-          ],
-        },
+        { title: 'Collections',            route: `/commerce/${accountId}/merchandising/collections` },
+        { title: 'Default Merchandising',  route: `/commerce/${accountId}/merchandising/default-merchandising` },
+        { title: 'Recommendation Engines', route: `/commerce/${accountId}/merchandising/recommendations` },
+        { title: 'Field Transformations',  route: `/commerce/${accountId}/merchandising/fields` },
+        { title: 'Synonyms',               route: `/commerce/${accountId}/merchandising/search/synonyms` },
+        { title: 'Search Preview',         route: `/commerce/${accountId}/merchandising/search/preview` },
+        { title: 'Page Redirects',         route: `/commerce/${accountId}/merchandising/search/redirects` },
       ],
-    },
-    {
-      title: 'Sales Channels',
-      icon: 'network',
-      requires: 'commerce',
-      singleRoute: `/accounts/${accountId}/sales_channels`,
-      items: [],
     },
     {
       title: 'Service',
