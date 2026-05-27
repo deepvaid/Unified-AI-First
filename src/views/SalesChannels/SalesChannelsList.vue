@@ -155,17 +155,18 @@ function statusChipColor(tone: MergedStatus['tone']) {
       />
 
       <v-data-table
+        class="sales-channels-table"
         :headers="tableHeaders"
         :items="filteredChannels"
         item-value="id"
         hover
-        density="compact"
+        density="default"
         :items-per-page="10"
         @click:row="(_event: Event, { item }: { item: SalesChannel }) => openChannel(item)"
       >
         <template #item.name="{ item }">
-          <div class="d-flex align-center ga-3 min-width-0">
-            <v-avatar size="36" variant="tonal" color="primary">
+          <div class="sales-channel-cell d-flex align-center ga-4 min-width-0">
+            <v-avatar size="42" variant="tonal" color="primary">
               <v-icon size="18">{{ channelIcon(item) }}</v-icon>
             </v-avatar>
             <div class="min-width-0">
@@ -176,7 +177,7 @@ function statusChipColor(tone: MergedStatus['tone']) {
               >
                 {{ item.name }}
               </RouterLink>
-              <div class="text-caption text-medium-emphasis text-truncate">{{ item.description }}</div>
+              <div class="sales-channel-description text-caption text-medium-emphasis text-truncate">{{ item.description }}</div>
             </div>
           </div>
         </template>
@@ -268,6 +269,19 @@ function statusChipColor(tone: MergedStatus['tone']) {
 .sales-channel-link {
   color: rgb(var(--v-theme-primary));
   text-decoration: none;
+}
+
+.sales-channels-table :deep(tbody td) {
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+}
+
+.sales-channel-cell {
+  padding-block: 2px;
+}
+
+.sales-channel-description {
+  margin-top: 3px;
 }
 
 .sales-channel-link:hover {
