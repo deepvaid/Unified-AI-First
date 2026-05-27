@@ -20,12 +20,14 @@ type ProductTarget =
   | 'apps'
   | 'dashboard'
   | 'davinci'
+  | 'chatbot'
   | 'inventory'
   | 'locations'
   | 'pos'
   | 'preview'
   | 'registers'
   | 'settings'
+  | 'shopping_assistant'
   | 'transactions'
 
 interface KpiCard {
@@ -82,6 +84,38 @@ interface ConnectedApp {
   connected: boolean
 }
 
+interface BusinessInfoField {
+  label: string
+  value: string
+}
+
+interface AssistantCard {
+  id: string
+  title: string
+  description: string
+  icon: string
+  color: MetricColor
+  target: ProductTarget
+}
+
+interface CrossSellBanner {
+  title: string
+  description: string
+  actionLabel: string
+  target: ProductTarget
+}
+
+interface CrossSellFeature {
+  id: string
+  title: string
+  description: string
+  icon: string
+  color: MetricColor
+  status: string
+  actionLabel: string
+  target: ProductTarget
+}
+
 const route = useRoute()
 const router = useRouter()
 const salesChannelsStore = useSalesChannelsStore()
@@ -89,6 +123,7 @@ const retailStore = useRetailStore()
 
 const notice = ref('')
 const noticeVisible = ref(false)
+const addedAssistantIds = ref<string[]>([])
 
 const accountId = computed(() => {
   const value = route.params.accountId
@@ -319,6 +354,90 @@ const connectedApps = computed<ConnectedApp[]>(() => {
   ]
 })
 
+const businessInfoFields = computed<BusinessInfoField[]>(() => {
+  if (isWebStore.value) {
+    return [
+      { label: 'Legal name', value: 'Atlas Outfitters Ltd.' },
+      { label: 'Business type', value: 'Limited Liability Company' },
+      { label: 'Reg. number', value: 'AU 2 037 482 116' },
+      { label: 'Phone', value: '+61 412 884 110' },
+      { label: 'Public email', value: 'hello@atlasoutfitters.com' },
+      { label: 'Support email', value: 'support@atlasoutfitters.com' },
+      { label: 'Website', value: 'atlasoutfitters.com' },
+      { label: 'Street', value: '234 Atlantic Avenue, Suite 4B' },
+      { label: 'City / region', value: 'Brooklyn, NY 11201' },
+      { label: 'Country', value: 'United States' },
+    ]
+  }
+
+  return [
+    { label: 'Legal name', value: `${channel.value?.name ?? 'Retail'} Pty Ltd.` },
+    { label: 'Business type', value: 'Multi-location retailer' },
+    { label: 'Reg. number', value: 'AU 9 481 502 774' },
+    { label: 'Phone', value: '+61 412 884 110' },
+    { label: 'Public email', value: 'retail@atlasoutfitters.com' },
+    { label: 'Support email', value: 'support@atlasoutfitters.com' },
+    { label: 'Website', value: 'atlasoutfitters.com/retail' },
+    { label: 'Street', value: locations.value[0]?.address ?? '500 Oxford St' },
+    { label: 'City / region', value: locations.value[0]?.name ?? 'Primary location' },
+    { label: 'Country', value: locations.value[0]?.country ?? 'AU' },
+  ]
+})
+
+const crossSellBanner = computed<CrossSellBanner>(() => ({
+  title: 'Add AI and chat experiences to this channel',
+  description: isWebStore.value
+    ? 'Launch support and shopping assistance from the same storefront data.'
+    : 'Use retail activity to automate support, recommendations, and staff insights.',
+  actionLabel: 'Explore AI',
+  target: 'davinci',
+}))
+
+const assistantCards = computed<AssistantCard[]>(() => [
+  {
+    id: 'service-chatbot',
+    title: 'Service chatbot',
+    description: 'Answer order, return, and policy questions with your support content.',
+    icon: 'message-circle',
+    color: 'contacts',
+    target: 'chatbot',
+  },
+  {
+    id: 'shopping-assistant',
+    title: 'Shopping assistant',
+    description: 'Guide shoppers to products using catalog, inventory, and search signals.',
+    icon: 'bot',
+    color: 'commerce',
+    target: 'shopping_assistant',
+  },
+])
+
+const crossSellFeatures = computed<CrossSellFeature[]>(() => {
+  const merchandiseConnected = Boolean(channel.value?.connectedClouds.includes('merchandise'))
+  return [
+    {
+      id: 'merchandise-cloud',
+      title: 'Merchandise Cloud',
+      description: 'Search, recommendations, synonyms, redirects, and product ranking rules.',
+      icon: CONNECTED_CLOUD_ICONS.merchandise,
+      color: merchandiseConnected ? 'success' : 'commerce',
+      status: merchandiseConnected ? 'Connected' : 'Available',
+      actionLabel: merchandiseConnected ? 'Manage' : 'Connect',
+      target: 'merchandise',
+    },
+    {
+      id: 'davinci-ai',
+      title: 'Da Vinci AI',
+      description: 'Generate product copy, campaign ideas, and dashboard widgets from channel data.',
+      icon: 'sparkles',
+      color: 'analytics',
+      status: 'Available',
+      actionLabel: 'Add',
+      target: 'davinci',
+    },
+  ]
+})
+
 const sparklinePoints = computed(() => {
   const values = isWebStore.value
     ? [0.24, 0.28, 0.33, 0.38, 0.42, 0.47, 0.53, 0.57, 0.64, 0.68, 0.76]
@@ -365,6 +484,19 @@ async function copyValue(value: string, label = 'Value') {
   } catch {
     showNotice(`${label}: ${value}`)
   }
+}
+
+function isAssistantAdded(id: string) {
+  return addedAssistantIds.value.includes(id)
+}
+
+function onAssistantAction(card: AssistantCard) {
+  if (isAssistantAdded(card.id)) {
+    runAction(card.target)
+    return
+  }
+  addedAssistantIds.value = [...addedAssistantIds.value, card.id]
+  showNotice(`${card.title} added to ${channel.value?.name ?? 'this channel'}`)
 }
 
 function openPrimaryAction() {
@@ -436,6 +568,14 @@ function runAction(target: ProductTarget) {
     openSettings()
     return
   }
+  if (target === 'chatbot') {
+    router.push({ name: 'Chatbot', params: { accountId: accountId.value } })
+    return
+  }
+  if (target === 'shopping_assistant') {
+    router.push({ name: 'MerchandisingRecommendations', params: { accountId: accountId.value } })
+    return
+  }
   if (target === 'locations') {
     openLocations()
     return
@@ -471,11 +611,15 @@ function locationRoleText(locationId: string) {
   <div class="sales-channel-detail h-100">
     <template v-if="channel">
       <header class="sc-header">
-        <nav class="sc-breadcrumbs" aria-label="Sales channel breadcrumbs">
-          <RouterLink :to="{ name: 'SalesChannels', params: { accountId } }">Sales Channels</RouterLink>
-          <v-icon size="15">chevron-right</v-icon>
-          <span>{{ channel.name }}</span>
-        </nav>
+        <v-btn
+          class="sc-back-button text-none"
+          variant="outlined"
+          size="small"
+          prepend-icon="arrow-left"
+          :to="{ name: 'SalesChannels', params: { accountId } }"
+        >
+          All sales channels
+        </v-btn>
 
         <div class="sc-header__row">
           <div class="sc-header__identity">
@@ -488,7 +632,6 @@ function locationRoleText(locationId: string) {
                 <h1 class="text-h5 font-weight-bold">{{ channel.name }}</h1>
                 <MpStatusChip :status="CHANNEL_STATUS_LABELS[channel.status]" type="general" size="small" show-icon />
               </div>
-              <p>{{ channel.description }}</p>
               <div class="sc-header__meta" aria-label="Channel metadata">
                 <span v-for="item in headerMeta" :key="item">{{ item }}</span>
               </div>
@@ -681,6 +824,102 @@ function locationRoleText(locationId: string) {
               </div>
             </div>
           </v-card>
+
+          <v-card flat border rounded="lg" class="retail-widget-card">
+            <div class="retail-widget-header">
+              <div>
+                <div class="retail-widget-header__title">Business information</div>
+                <div class="retail-widget-header__sub">Legal, contact, and channel add-ons</div>
+              </div>
+              <v-btn size="small" variant="text" prepend-icon="pencil" class="text-none" @click="openSettings">
+                Edit
+              </v-btn>
+            </div>
+
+            <div class="retail-widget-body">
+              <div class="sc-business-grid">
+                <div v-for="field in businessInfoFields" :key="field.label" class="sc-business-field">
+                  <span>{{ field.label }}</span>
+                  <strong>{{ field.value }}</strong>
+                </div>
+              </div>
+
+              <div v-if="isWebStore" class="sc-favicon-row">
+                <div class="sc-favicon-row__thumb">
+                  <v-icon size="22">image</v-icon>
+                </div>
+                <div class="min-width-0">
+                  <strong>Favicon</strong>
+                  <span>100 x 100 px, square · Not uploaded yet</span>
+                </div>
+                <v-btn variant="outlined" size="small" prepend-icon="upload" class="text-none" @click="showNotice('Favicon upload prototype entry point.')">
+                  Upload
+                </v-btn>
+              </div>
+
+              <div class="sc-cross-sell-banner">
+                <div class="sc-cross-sell-banner__icon">
+                  <v-icon size="18">sparkles</v-icon>
+                </div>
+                <div class="min-width-0">
+                  <strong>{{ crossSellBanner.title }}</strong>
+                  <span>{{ crossSellBanner.description }}</span>
+                </div>
+                <v-btn size="small" variant="tonal" color="primary" class="text-none" @click="runAction(crossSellBanner.target)">
+                  {{ crossSellBanner.actionLabel }}
+                </v-btn>
+              </div>
+
+              <div class="sc-assistant-grid" aria-label="Channel chatbot assistants">
+                <div v-for="assistant in assistantCards" :key="assistant.id" class="sc-assistant-card">
+                  <div class="retail-row-icon" :class="`retail-row-icon--${assistant.color}`">
+                    <v-icon size="15">{{ assistant.icon }}</v-icon>
+                  </div>
+                  <div class="min-width-0">
+                    <div class="sc-assistant-card__header">
+                      <strong>{{ assistant.title }}</strong>
+                      <v-chip v-if="isAssistantAdded(assistant.id)" size="x-small" color="success" variant="tonal" label>
+                        Added
+                      </v-chip>
+                    </div>
+                    <span>{{ assistant.description }}</span>
+                  </div>
+                  <v-btn
+                    size="small"
+                    :variant="isAssistantAdded(assistant.id) ? 'outlined' : 'tonal'"
+                    color="primary"
+                    class="text-none"
+                    @click="onAssistantAction(assistant)"
+                  >
+                    {{ isAssistantAdded(assistant.id) ? 'Manage' : 'Add' }}
+                  </v-btn>
+                </div>
+              </div>
+
+              <div class="sc-feature-list" aria-label="Cross-sell features">
+                <div v-for="feature in crossSellFeatures" :key="feature.id" class="sc-feature-row">
+                  <div class="retail-row-icon" :class="`retail-row-icon--${feature.color}`">
+                    <v-icon size="15">{{ feature.icon }}</v-icon>
+                  </div>
+                  <div class="min-width-0">
+                    <div class="sc-feature-row__title">
+                      <strong>{{ feature.title }}</strong>
+                      <span>{{ feature.status }}</span>
+                    </div>
+                    <p>{{ feature.description }}</p>
+                  </div>
+                  <div class="sc-feature-row__actions">
+                    <v-btn variant="text" size="small" class="text-none" @click="runAction(feature.target)">
+                      Learn more
+                    </v-btn>
+                    <v-btn variant="outlined" size="small" class="text-none" @click="runAction(feature.target)">
+                      {{ feature.actionLabel }}
+                    </v-btn>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </v-card>
         </main>
 
         <aside class="sc-side-stack" aria-label="Channel operations">
@@ -792,31 +1031,8 @@ function locationRoleText(locationId: string) {
   gap: 16px;
 }
 
-.sc-breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.sc-breadcrumbs a {
-  color: var(--muted);
-  text-decoration: none;
-}
-
-.sc-breadcrumbs a:hover {
-  color: var(--ink);
-}
-
-.sc-breadcrumbs span {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--ink);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.sc-back-button {
+  width: fit-content;
 }
 
 .sc-header__row {
@@ -869,14 +1085,6 @@ function locationRoleText(locationId: string) {
   margin: 0;
   color: var(--ink);
   line-height: 1.2;
-}
-
-.sc-header__copy p {
-  max-width: 760px;
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.45;
 }
 
 .sc-header__meta {
@@ -1125,6 +1333,240 @@ function locationRoleText(locationId: string) {
   gap: 2px;
 }
 
+.sc-business-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+
+.sc-business-field {
+  min-width: 0;
+}
+
+.sc-business-field span,
+.sc-business-field strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-business-field span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.sc-business-field strong {
+  margin-top: 5px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.sc-favicon-row,
+.sc-cross-sell-banner,
+.sc-assistant-card,
+.sc-feature-row {
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-section);
+  background: var(--surface-1);
+}
+
+.sc-favicon-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 12px;
+  border-style: dashed;
+  background: color-mix(in oklch, var(--ink) 2%, var(--surface-1));
+}
+
+.sc-favicon-row__thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-section);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.sc-favicon-row strong,
+.sc-favicon-row span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-favicon-row strong {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sc-favicon-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sc-cross-sell-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 12px;
+  background: color-mix(in oklch, var(--accent) 5%, var(--surface-1));
+}
+
+.sc-cross-sell-banner__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-chip);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.sc-cross-sell-banner strong,
+.sc-cross-sell-banner span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-cross-sell-banner strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sc-cross-sell-banner span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.sc-assistant-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.sc-assistant-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 12px;
+}
+
+.sc-assistant-card__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sc-assistant-card strong,
+.sc-assistant-card span {
+  display: block;
+}
+
+.sc-assistant-card strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.sc-assistant-card > div:nth-child(2) > span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.sc-feature-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.sc-feature-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
+
+.sc-feature-row__title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sc-feature-row__title strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.sc-feature-row__title span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sc-feature-row p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.sc-feature-row__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.retail-row-icon--primary {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.retail-row-icon--commerce {
+  background: color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent);
+  color: var(--cloud-commerce-text);
+}
+
+.retail-row-icon--analytics {
+  background: color-mix(in oklch, var(--cloud-analytics-accent) 12%, transparent);
+  color: var(--cloud-analytics-text);
+}
+
 .sc-is-done {
   color: var(--muted);
   text-decoration: line-through;
@@ -1251,6 +1693,8 @@ function locationRoleText(locationId: string) {
   }
 
   .sc-action-grid,
+  .sc-assistant-grid,
+  .sc-business-grid,
   .sc-retail-preview,
   .sc-store-preview__body {
     grid-template-columns: 1fr;
@@ -1277,6 +1721,20 @@ function locationRoleText(locationId: string) {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
+  .sc-cross-sell-banner,
+  .sc-favicon-row,
+  .sc-feature-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .sc-assistant-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .sc-assistant-card > .v-btn,
+  .sc-cross-sell-banner > .v-btn,
+  .sc-favicon-row > .v-btn,
+  .sc-feature-row__actions,
   .sc-resource-row__actions {
     grid-column: 1 / -1;
     justify-content: flex-end;
