@@ -15,6 +15,7 @@ import {
 import { useRetailStore } from '@/stores/useRetail'
 
 type MetricColor = 'primary' | 'retail' | 'commerce' | 'analytics' | 'contacts' | 'success' | 'warning'
+type DetailTab = 'overview' | 'settings' | 'apps' | 'ai' | 'activity'
 type ProductTarget =
   | ConnectedCloud
   | 'apps'
@@ -24,6 +25,7 @@ type ProductTarget =
   | 'inventory'
   | 'locations'
   | 'pos'
+  | 'products'
   | 'preview'
   | 'registers'
   | 'settings'
@@ -56,15 +58,6 @@ interface SetupItem {
   description: string
   done: boolean
   target: ProductTarget
-}
-
-interface PreviewResource {
-  id: string
-  label: string
-  value: string
-  icon: string
-  copyValue?: string
-  target?: ProductTarget
 }
 
 interface ActivityItem {
@@ -124,6 +117,8 @@ const retailStore = useRetailStore()
 const notice = ref('')
 const noticeVisible = ref(false)
 const addedAssistantIds = ref<string[]>([])
+const activeTab = ref<DetailTab>('overview')
+const showCompletedSetup = ref(false)
 
 const accountId = computed(() => {
   const value = route.params.accountId
@@ -178,6 +173,14 @@ const primaryActionLabel = computed(() => {
 
 const secondaryActionLabel = computed(() => (isWebStore.value ? 'Preview' : 'Manage locations'))
 
+const detailTabs = computed<Array<{ label: string; value: DetailTab }>>(() => [
+  { label: 'Overview', value: 'overview' },
+  { label: 'Settings', value: 'settings' },
+  { label: 'Apps', value: 'apps' },
+  { label: 'AI & automation', value: 'ai' },
+  { label: 'Activity', value: 'activity' },
+])
+
 const headerMeta = computed(() => {
   const current = channel.value
   if (!current) return []
@@ -186,7 +189,6 @@ const headerMeta = computed(() => {
     return [
       CHANNEL_TYPE_LABELS[current.type],
       current.webStore?.published ? `Last published ${formatRelative(current.lastActivityAt)}` : `Last saved ${formatRelative(current.lastActivityAt)}`,
-      `Joined ${formatDate(current.createdAt)}`,
     ]
   }
 
@@ -227,23 +229,23 @@ const quickActions = computed<QuickAction[]>(() => {
       {
         id: 'theme',
         title: channel.value?.webStore?.published ? 'Edit theme' : 'Finish theme',
-        description: 'Open Store Builder',
+        description: 'Store Builder',
         icon: 'palette',
         color: 'primary',
         target: 'store_builder',
       },
       {
-        id: 'preview',
-        title: 'Preview storefront',
-        description: channel.value?.webStore?.domain ?? 'Open storefront',
-        icon: 'external-link',
+        id: 'products',
+        title: 'Manage products',
+        description: 'Catalog',
+        icon: 'package',
         color: 'commerce',
-        target: 'preview',
+        target: 'products',
       },
       {
         id: 'merchandise',
         title: 'Merchandising',
-        description: 'Search and recommendation rules',
+        description: 'Rules',
         icon: CONNECTED_CLOUD_ICONS.merchandise,
         color: channel.value?.webStore?.merchandiseConnected ? 'success' : 'warning',
         target: 'merchandise',
@@ -251,7 +253,7 @@ const quickActions = computed<QuickAction[]>(() => {
       {
         id: 'analytics',
         title: 'Analytics',
-        description: 'Open commerce dashboard',
+        description: 'Reports',
         icon: 'bar-chart-3',
         color: 'analytics',
         target: 'dashboard',
@@ -260,12 +262,10 @@ const quickActions = computed<QuickAction[]>(() => {
   }
 
   return [
-    { id: 'pos', title: 'Launch POS', description: 'Open the tablet preview', icon: 'tablet-smartphone', color: 'retail', target: 'pos' },
-    { id: 'locations', title: 'Manage locations', description: `${locations.value.length} linked locations`, icon: 'map-pin', color: 'success', target: 'locations' },
-    { id: 'transactions', title: 'Transactions', description: 'Search and refund POS sales', icon: 'receipt', color: 'primary', target: 'transactions' },
-    { id: 'registers', title: 'Register fleet', description: `${onlineRegisterCount.value} online`, icon: 'tablet-smartphone', color: offlineRegisterCount.value ? 'warning' : 'success', target: 'registers' },
-    { id: 'inventory', title: 'Inventory', description: 'Review store stock', icon: 'package-check', color: 'commerce', target: 'inventory' },
-    { id: 'dashboard', title: 'Dashboard', description: 'Open retail analytics', icon: 'bar-chart-3', color: 'analytics', target: 'dashboard' },
+    { id: 'pos', title: 'Launch POS', description: 'Tablet preview', icon: 'tablet-smartphone', color: 'retail', target: 'pos' },
+    { id: 'locations', title: 'Manage locations', description: `${locations.value.length} linked`, icon: 'map-pin', color: 'success', target: 'locations' },
+    { id: 'inventory', title: 'Inventory', description: 'Store stock', icon: 'package-check', color: 'commerce', target: 'inventory' },
+    { id: 'dashboard', title: 'Analytics', description: 'Reports', icon: 'bar-chart-3', color: 'analytics', target: 'dashboard' },
   ]
 })
 
@@ -293,29 +293,12 @@ const setupChecklist = computed<SetupItem[]>(() => {
 })
 
 const completedSetupCount = computed(() => setupChecklist.value.filter((item) => item.done).length)
+const pendingSetupItems = computed(() => setupChecklist.value.filter((item) => !item.done))
+const completedSetupItems = computed(() => setupChecklist.value.filter((item) => item.done))
+const visibleSetupItems = computed(() => pendingSetupItems.value.slice(0, 2))
 const setupProgress = computed(() => {
   if (!setupChecklist.value.length) return 0
   return Math.round((completedSetupCount.value / setupChecklist.value.length) * 100)
-})
-
-const previewResources = computed<PreviewResource[]>(() => {
-  const current = channel.value
-  if (!current) return []
-
-  if (current.type === 'web_store') {
-    const domain = current.webStore?.domain ?? ''
-    return [
-      { id: 'domain', label: 'Store URL', value: domain, icon: 'globe', copyValue: `https://${domain}`, target: 'preview' },
-      { id: 'merchandise', label: 'Merchandising', value: current.webStore?.merchandiseConnected ? 'Connected' : 'Needs setup', icon: CONNECTED_CLOUD_ICONS.merchandise, target: 'merchandise' },
-      { id: 'catalog', label: 'Catalog', value: '3,412 SKUs synced', icon: CONNECTED_CLOUD_ICONS.commerce, target: 'dashboard' },
-    ]
-  }
-
-  return [
-    { id: 'locations', label: 'Locations', value: `${locations.value.length} linked`, icon: 'map-pin', target: 'locations' },
-    { id: 'registers', label: 'Registers', value: `${onlineRegisterCount.value} online, ${offlineRegisterCount.value} offline`, icon: 'tablet-smartphone', target: 'registers' },
-    { id: 'sync', label: 'Offline sync', value: pendingOfflineTransactions.value ? `${pendingOfflineTransactions.value} pending` : 'Clear', icon: 'refresh-cw', target: 'transactions' },
-  ]
 })
 
 const activityItems = computed<ActivityItem[]>(() => {
@@ -336,6 +319,8 @@ const activityItems = computed<ActivityItem[]>(() => {
     { id: 'staff', icon: 'user-plus', title: 'Associates active', meta: `${activeAssociateCount.value} assigned`, time: 'Yesterday', color: 'primary' },
   ]
 })
+
+const overviewActivityItems = computed(() => activityItems.value.slice(0, 3))
 
 const connectedApps = computed<ConnectedApp[]>(() => {
   if (isWebStore.value) {
@@ -490,6 +475,12 @@ function isAssistantAdded(id: string) {
   return addedAssistantIds.value.includes(id)
 }
 
+function setupActionLabel(item: SetupItem) {
+  if (item.id === 'legal' || item.id === 'receipt') return 'Set up'
+  if (item.id === 'payments') return 'Pair'
+  return 'Review'
+}
+
 function onAssistantAction(card: AssistantCard) {
   if (isAssistantAdded(card.id)) {
     runAction(card.target)
@@ -518,7 +509,7 @@ function openPreview(mode: 'desktop' | 'mobile' | 'pos' = 'desktop') {
 }
 
 function openSettings() {
-  router.push({ name: 'SettingsAccountDefaults', params: { accountId: accountId.value } })
+  activeTab.value = 'settings'
 }
 
 function openLocations() {
@@ -596,6 +587,10 @@ function runAction(target: ProductTarget) {
     router.push({ name: 'RetailBulkInventory', params: { accountId: accountId.value } })
     return
   }
+  if (target === 'products') {
+    router.push({ name: 'Products', params: { accountId: accountId.value } })
+    return
+  }
   if (target === 'apps' || target === 'commerce' || target === 'davinci' || target === 'merchandise' || target === 'retail' || target === 'store_builder') {
     openConnectedProduct(target)
   }
@@ -648,7 +643,7 @@ function locationRoleText(locationId: string) {
               {{ secondaryActionLabel }}
             </v-btn>
             <v-btn variant="outlined" class="text-none" prepend-icon="sliders-horizontal" @click="openSettings">
-              Platform settings
+              Settings
             </v-btn>
             <v-btn
               color="primary"
@@ -663,103 +658,37 @@ function locationRoleText(locationId: string) {
         </div>
       </header>
 
-      <v-row dense>
-        <v-col v-for="kpi in kpiCards" :key="kpi.label" cols="12" sm="6" lg="3">
-          <v-card flat border rounded="lg" class="retail-kpi-card h-100">
-            <div class="retail-kpi-card__inner">
-              <div class="retail-kpi-card__left">
-                <div class="retail-kpi-card__header-row">
-                  <div class="retail-kpi-card__icon-chip" :class="`retail-kpi-card__icon-chip--${kpi.color}`">
-                    <v-icon size="14">{{ kpi.icon }}</v-icon>
-                  </div>
-                  <div class="min-width-0">
-                    <div class="retail-kpi-card__title">{{ kpi.label }}</div>
-                    <div v-if="kpi.period" class="retail-kpi-card__period">{{ kpi.period }}</div>
-                  </div>
-                </div>
-                <div class="retail-kpi-card__value num">{{ kpi.value }}</div>
-                <div v-if="kpi.trend" class="retail-kpi-card__trend">
-                  <span
-                    class="retail-kpi-card__trend-pill"
-                    :class="kpi.trendPositive ? 'retail-kpi-card__trend-pill--pos' : 'retail-kpi-card__trend-pill--neg'"
-                  >
-                    <v-icon size="12">{{ kpi.trendPositive ? 'chevron-up' : 'chevron-down' }}</v-icon>
-                    {{ kpi.trend }}
-                  </span>
-                </div>
-                <div v-else-if="kpi.subStat" class="retail-kpi-card__sub">{{ kpi.subStat }}</div>
-              </div>
+      <v-tabs v-model="activeTab" class="sc-tabs" density="compact" color="primary" show-arrows>
+        <v-tab v-for="tab in detailTabs" :key="tab.value" :value="tab.value" class="text-none">
+          {{ tab.label }}
+        </v-tab>
+      </v-tabs>
 
-              <div v-if="kpi.trend" class="retail-kpi-card__sparkline-col" aria-hidden="true">
-                <svg class="retail-kpi-card__sparkline" viewBox="0 0 100 52" preserveAspectRatio="none">
-                  <polyline :points="sparklinePoints" class="retail-kpi-card__sparkline-line" />
-                </svg>
-              </div>
-            </div>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <div class="sc-grid">
-        <main class="sc-main-stack">
-          <v-card flat border rounded="lg" class="retail-widget-card h-100">
+      <section v-if="activeTab === 'overview'" class="sc-tab-panel">
+        <div class="sc-overview-grid">
+          <v-card flat border rounded="lg" class="retail-widget-card sc-hero-card">
             <div class="retail-widget-header">
               <div>
-                <div class="retail-widget-header__title">Quick actions</div>
-                <div class="retail-widget-header__sub">Common tasks for this channel</div>
-              </div>
-            </div>
-            <div class="retail-widget-body">
-              <div class="sc-action-grid">
-                <button
-                  v-for="action in quickActions"
-                  :key="action.id"
-                  type="button"
-                  class="retail-action-tile"
-                  @click="runAction(action.target)"
-                >
-                  <span class="retail-action-tile__icon" :class="`retail-action-tile__icon--${action.color}`">
-                    <v-icon size="15">{{ action.icon }}</v-icon>
-                  </span>
-                  <span class="retail-action-tile__title">{{ action.title }}</span>
-                  <span class="retail-action-tile__desc">{{ action.description }}</span>
-                </button>
-              </div>
-            </div>
-          </v-card>
-
-          <v-card flat border rounded="lg" class="retail-widget-card">
-            <div class="retail-widget-header">
-              <div>
-                <div class="retail-widget-header__title">{{ isWebStore ? 'Storefront preview' : 'Retail channel' }}</div>
-                <div class="retail-widget-header__sub">{{ isWebStore ? channel.webStore?.domain : `${locations.length} locations linked` }}</div>
+                <div class="retail-widget-header__title">{{ isWebStore ? 'Storefront preview' : 'POS overview' }}</div>
+                <div class="retail-widget-header__sub">{{ isWebStore ? 'Live storefront' : `${locations.length} locations linked` }}</div>
               </div>
               <div class="retail-widget-header__actions">
-                <v-btn
-                  v-if="isWebStore"
-                  size="small"
-                  variant="text"
-                  icon="smartphone"
-                  aria-label="Open mobile preview"
-                  @click="openPreview('mobile')"
-                />
-                <v-btn
-                  size="small"
-                  variant="text"
-                  :icon="isWebStore ? 'external-link' : 'map-pin'"
-                  :aria-label="isWebStore ? 'Open storefront preview' : 'Manage locations'"
-                  @click="isWebStore ? openPreview() : openLocations()"
-                />
+                <v-btn variant="outlined" size="small" class="text-none" prepend-icon="external-link" @click="isWebStore ? openPreview() : openPreview('pos')">
+                  {{ isWebStore ? 'Preview' : 'Launch POS' }}
+                </v-btn>
+                <v-btn variant="flat" color="primary" size="small" class="text-none" :prepend-icon="isWebStore ? 'palette' : 'map-pin'" @click="isWebStore ? openPrimaryAction() : openLocations()">
+                  {{ isWebStore ? 'Edit theme' : 'Locations' }}
+                </v-btn>
               </div>
             </div>
 
             <div class="retail-widget-body">
-              <div v-if="isWebStore" class="sc-store-preview" aria-label="Storefront preview">
+              <div v-if="isWebStore" class="sc-store-preview sc-store-preview--hero" aria-label="Storefront preview">
                 <div class="sc-store-preview__bar">
                   <span />
                   <span />
                   <span />
-                  <strong>{{ channel.webStore?.domain }}</strong>
+                  <strong>Storefront</strong>
                 </div>
                 <div class="sc-store-preview__nav">
                   <strong>ATLAS</strong>
@@ -777,7 +706,7 @@ function locationRoleText(locationId: string) {
                 </div>
               </div>
 
-              <div v-else class="sc-retail-preview" aria-label="Retail location summary">
+              <div v-else class="sc-retail-preview sc-retail-preview--hero" aria-label="Retail location summary">
                 <button
                   v-for="location in locations.slice(0, 3)"
                   :key="location.id"
@@ -793,204 +722,283 @@ function locationRoleText(locationId: string) {
                 </button>
               </div>
 
-              <div class="sc-resource-list">
-                <div v-for="resource in previewResources" :key="resource.id" class="sc-resource-row">
-                  <div class="retail-row-icon">
-                    <v-icon size="15">{{ resource.icon }}</v-icon>
-                  </div>
-                  <div class="min-width-0">
-                    <div class="retail-list-title">{{ resource.label }}</div>
-                    <div class="retail-list-sub">{{ resource.value }}</div>
-                  </div>
-                  <div class="sc-resource-row__actions">
-                    <v-btn
-                      v-if="resource.copyValue"
-                      size="small"
-                      variant="text"
-                      icon="copy"
-                      :aria-label="`Copy ${resource.label}`"
-                      @click="copyValue(resource.copyValue, resource.label)"
-                    />
-                    <v-btn
-                      v-if="resource.target"
-                      size="small"
-                      variant="text"
-                      icon="external-link"
-                      :aria-label="`Open ${resource.label}`"
-                      @click="runAction(resource.target)"
-                    />
-                  </div>
-                </div>
+              <div v-if="isWebStore && channel.webStore?.domain" class="sc-hero-url">
+                <v-icon size="15">globe</v-icon>
+                <span>{{ channel.webStore.domain }}</span>
+                <v-btn
+                  size="small"
+                  variant="text"
+                  icon="copy"
+                  aria-label="Copy store URL"
+                  @click="copyValue(`https://${channel.webStore?.domain}`, 'Store URL')"
+                />
               </div>
             </div>
           </v-card>
 
-          <v-card flat border rounded="lg" class="retail-widget-card">
+          <v-card flat border rounded="lg" class="retail-widget-card sc-setup-card">
             <div class="retail-widget-header">
               <div>
-                <div class="retail-widget-header__title">Business information</div>
-                <div class="retail-widget-header__sub">Legal, contact, and channel add-ons</div>
+                <div class="retail-widget-header__title">Finish setup</div>
+                <div class="retail-widget-header__sub">{{ completedSetupCount }} / {{ setupChecklist.length }} complete</div>
               </div>
-              <v-btn size="small" variant="text" prepend-icon="pencil" class="text-none" @click="openSettings">
-                Edit
-              </v-btn>
-            </div>
-
-            <div class="retail-widget-body">
-              <div class="sc-business-grid">
-                <div v-for="field in businessInfoFields" :key="field.label" class="sc-business-field">
-                  <span>{{ field.label }}</span>
-                  <strong>{{ field.value }}</strong>
-                </div>
-              </div>
-
-              <div v-if="isWebStore" class="sc-favicon-row">
-                <div class="sc-favicon-row__thumb">
-                  <v-icon size="22">image</v-icon>
-                </div>
-                <div class="min-width-0">
-                  <strong>Favicon</strong>
-                  <span>100 x 100 px, square · Not uploaded yet</span>
-                </div>
-                <v-btn variant="outlined" size="small" prepend-icon="upload" class="text-none" @click="showNotice('Favicon upload prototype entry point.')">
-                  Upload
-                </v-btn>
-              </div>
-
-              <div class="sc-cross-sell-banner">
-                <div class="sc-cross-sell-banner__icon">
-                  <v-icon size="18">sparkles</v-icon>
-                </div>
-                <div class="min-width-0">
-                  <strong>{{ crossSellBanner.title }}</strong>
-                  <span>{{ crossSellBanner.description }}</span>
-                </div>
-                <v-btn size="small" variant="tonal" color="primary" class="text-none" @click="runAction(crossSellBanner.target)">
-                  {{ crossSellBanner.actionLabel }}
-                </v-btn>
-              </div>
-
-              <div class="sc-assistant-grid" aria-label="Channel chatbot assistants">
-                <div v-for="assistant in assistantCards" :key="assistant.id" class="sc-assistant-card">
-                  <div class="retail-row-icon" :class="`retail-row-icon--${assistant.color}`">
-                    <v-icon size="15">{{ assistant.icon }}</v-icon>
-                  </div>
-                  <div class="min-width-0">
-                    <div class="sc-assistant-card__header">
-                      <strong>{{ assistant.title }}</strong>
-                      <v-chip v-if="isAssistantAdded(assistant.id)" size="x-small" color="success" variant="tonal" label>
-                        Added
-                      </v-chip>
-                    </div>
-                    <span>{{ assistant.description }}</span>
-                  </div>
-                  <v-btn
-                    size="small"
-                    :variant="isAssistantAdded(assistant.id) ? 'outlined' : 'tonal'"
-                    color="primary"
-                    class="text-none"
-                    @click="onAssistantAction(assistant)"
-                  >
-                    {{ isAssistantAdded(assistant.id) ? 'Manage' : 'Add' }}
-                  </v-btn>
-                </div>
-              </div>
-
-              <div class="sc-feature-list" aria-label="Cross-sell features">
-                <div v-for="feature in crossSellFeatures" :key="feature.id" class="sc-feature-row">
-                  <div class="retail-row-icon" :class="`retail-row-icon--${feature.color}`">
-                    <v-icon size="15">{{ feature.icon }}</v-icon>
-                  </div>
-                  <div class="min-width-0">
-                    <div class="sc-feature-row__title">
-                      <strong>{{ feature.title }}</strong>
-                      <span>{{ feature.status }}</span>
-                    </div>
-                    <p>{{ feature.description }}</p>
-                  </div>
-                  <div class="sc-feature-row__actions">
-                    <v-btn variant="text" size="small" class="text-none" @click="runAction(feature.target)">
-                      Learn more
-                    </v-btn>
-                    <v-btn variant="outlined" size="small" class="text-none" @click="runAction(feature.target)">
-                      {{ feature.actionLabel }}
-                    </v-btn>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </v-card>
-        </main>
-
-        <aside class="sc-side-stack" aria-label="Channel operations">
-          <v-card flat border rounded="lg" class="retail-widget-card">
-            <div class="retail-widget-header">
-              <div class="retail-widget-header__title">Setup checklist</div>
-              <div class="retail-widget-header__sub">{{ completedSetupCount }} / {{ setupChecklist.length }}</div>
             </div>
             <div class="retail-widget-progress">
               <v-progress-linear :model-value="setupProgress" height="5" rounded color="primary" />
             </div>
-            <v-list class="retail-list" density="compact">
-              <v-list-item v-for="item in setupChecklist" :key="item.id" @click="runAction(item.target)">
-                <template #prepend>
-                  <v-icon :color="item.done ? 'success' : undefined" size="18">
-                    {{ item.done ? 'check-circle-2' : 'circle' }}
-                  </v-icon>
-                </template>
-                <v-list-item-title class="retail-list-title" :class="{ 'sc-is-done': item.done }">
-                  {{ item.title }}
-                </v-list-item-title>
-                <v-list-item-subtitle class="retail-list-sub">{{ item.description }}</v-list-item-subtitle>
-                <template #append>
-                  <v-icon size="16">chevron-right</v-icon>
-                </template>
-              </v-list-item>
-            </v-list>
-          </v-card>
-
-          <v-card flat border rounded="lg" class="retail-widget-card">
-            <div class="retail-widget-header">
-              <div class="retail-widget-header__title">Recent activity</div>
-              <button type="button" class="sc-text-button" @click="showNotice('Full activity feed prototype entry point.')">All</button>
-            </div>
-            <v-list class="retail-list" density="compact">
-              <v-list-item v-for="item in activityItems" :key="item.id">
-                <template #prepend>
-                  <span class="retail-row-icon" :class="`retail-row-icon--${item.color}`">
-                    <v-icon size="15">{{ item.icon }}</v-icon>
-                  </span>
-                </template>
-                <v-list-item-title class="retail-list-title">{{ item.title }}</v-list-item-title>
-                <v-list-item-subtitle class="retail-list-sub">{{ item.meta }}</v-list-item-subtitle>
-                <template #append>
-                  <span class="sc-time">{{ item.time }}</span>
-                </template>
-              </v-list-item>
-            </v-list>
-          </v-card>
-
-          <v-card flat border rounded="lg" class="retail-widget-card">
-            <div class="retail-widget-header">
-              <div class="retail-widget-header__title">Connected apps</div>
-              <button type="button" class="sc-text-button" @click="runAction('apps')">
-                <v-icon size="14">plus</v-icon>
-                Browse
-              </button>
-            </div>
-            <div class="sc-app-list">
-              <div v-for="app in connectedApps" :key="app.id" class="sc-app-row">
-                <div class="sc-app-row__initials">{{ app.initials }}</div>
-                <div class="min-width-0">
-                  <strong>{{ app.name }}</strong>
-                  <span>{{ app.category }}</span>
+            <div class="retail-widget-body sc-setup-body">
+              <div v-if="visibleSetupItems.length" class="sc-setup-list">
+                <div v-for="item in visibleSetupItems" :key="item.id" class="sc-setup-row">
+                  <v-icon size="18">circle</v-icon>
+                  <div class="min-width-0">
+                    <strong>{{ item.title }}</strong>
+                    <span>{{ item.description }}</span>
+                  </div>
+                  <v-btn size="small" color="primary" variant="tonal" class="text-none" @click="runAction(item.target)">
+                    {{ setupActionLabel(item) }}
+                  </v-btn>
                 </div>
-                <span class="sc-status-dot" :class="{ 'sc-status-dot--off': !app.connected }" />
+              </div>
+              <div v-else class="sc-setup-empty">
+                <v-icon size="18" color="success">check-circle-2</v-icon>
+                <span>No urgent setup items.</span>
+              </div>
+
+              <button v-if="completedSetupItems.length" type="button" class="sc-text-button sc-completed-toggle" @click="showCompletedSetup = !showCompletedSetup">
+                {{ showCompletedSetup ? 'Hide completed' : 'View completed' }}
+              </button>
+              <div v-if="showCompletedSetup" class="sc-completed-list">
+                <div v-for="item in completedSetupItems" :key="item.id" class="sc-completed-row">
+                  <v-icon size="15" color="success">check-circle-2</v-icon>
+                  <span>{{ item.title }}</span>
+                </div>
               </div>
             </div>
           </v-card>
-        </aside>
-      </div>
+        </div>
+
+        <v-card flat border rounded="lg" class="retail-widget-card sc-quick-card">
+          <div class="retail-widget-header">
+            <div class="retail-widget-header__title">Quick actions</div>
+          </div>
+          <div class="retail-widget-body">
+            <div class="sc-action-grid sc-action-grid--compact">
+              <button
+                v-for="action in quickActions"
+                :key="action.id"
+                type="button"
+                class="retail-action-tile retail-action-tile--compact"
+                @click="runAction(action.target)"
+              >
+                <span class="retail-action-tile__icon" :class="`retail-action-tile__icon--${action.color}`">
+                  <v-icon size="15">{{ action.icon }}</v-icon>
+                </span>
+                <span class="retail-action-tile__title">{{ action.title }}</span>
+                <span class="retail-action-tile__desc">{{ action.description }}</span>
+              </button>
+            </div>
+          </div>
+        </v-card>
+
+        <section class="sc-performance-section" aria-labelledby="sales-channel-performance-title">
+          <div class="sc-section-line">
+            <h2 id="sales-channel-performance-title">Performance snapshot</h2>
+            <span>Last 30 days</span>
+          </div>
+          <div class="sc-performance-grid">
+            <v-card v-for="kpi in kpiCards" :key="kpi.label" flat border rounded="lg" class="sc-mini-kpi">
+              <div class="sc-mini-kpi__top">
+                <span class="retail-row-icon" :class="`retail-row-icon--${kpi.color}`">
+                  <v-icon size="14">{{ kpi.icon }}</v-icon>
+                </span>
+                <span>{{ kpi.label }}</span>
+              </div>
+              <div class="sc-mini-kpi__value num">{{ kpi.value }}</div>
+              <div v-if="kpi.trend" class="sc-mini-kpi__trend">
+                <v-icon size="12">{{ kpi.trendPositive ? 'chevron-up' : 'chevron-down' }}</v-icon>
+                {{ kpi.trend }}
+              </div>
+              <div v-else-if="kpi.subStat" class="sc-mini-kpi__sub">{{ kpi.subStat }}</div>
+              <svg v-if="kpi.trend" class="sc-mini-kpi__sparkline" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+                <polyline :points="sparklinePoints" />
+              </svg>
+            </v-card>
+          </div>
+        </section>
+
+        <v-card flat border rounded="lg" class="retail-widget-card sc-activity-card">
+          <div class="retail-widget-header">
+            <div class="retail-widget-header__title">Recent activity</div>
+            <button type="button" class="sc-text-button" @click="activeTab = 'activity'">View all</button>
+          </div>
+          <v-list class="retail-list" density="compact">
+            <v-list-item v-for="item in overviewActivityItems" :key="item.id">
+              <template #prepend>
+                <span class="retail-row-icon" :class="`retail-row-icon--${item.color}`">
+                  <v-icon size="15">{{ item.icon }}</v-icon>
+                </span>
+              </template>
+              <v-list-item-title class="retail-list-title">{{ item.title }}</v-list-item-title>
+              <v-list-item-subtitle class="retail-list-sub">{{ item.meta }}</v-list-item-subtitle>
+              <template #append>
+                <span class="sc-time">{{ item.time }}</span>
+              </template>
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </section>
+
+      <section v-else-if="activeTab === 'settings'" class="sc-tab-panel">
+        <v-card flat border rounded="lg" class="retail-widget-card">
+          <div class="retail-widget-header">
+            <div>
+              <div class="retail-widget-header__title">Business information</div>
+              <div class="retail-widget-header__sub">Legal, contact, and channel details</div>
+            </div>
+            <v-btn size="small" variant="text" prepend-icon="pencil" class="text-none" @click="showNotice('Business information edit prototype entry point.')">
+              Edit
+            </v-btn>
+          </div>
+          <div class="retail-widget-body">
+            <div class="sc-business-grid">
+              <div v-for="field in businessInfoFields" :key="field.label" class="sc-business-field">
+                <span>{{ field.label }}</span>
+                <strong>{{ field.value }}</strong>
+              </div>
+            </div>
+            <div v-if="isWebStore" class="sc-favicon-row">
+              <div class="sc-favicon-row__thumb">
+                <v-icon size="22">image</v-icon>
+              </div>
+              <div class="min-width-0">
+                <strong>Favicon</strong>
+                <span>100 x 100 px, square · Not uploaded yet</span>
+              </div>
+              <v-btn variant="outlined" size="small" prepend-icon="upload" class="text-none" @click="showNotice('Favicon upload prototype entry point.')">
+                Upload
+              </v-btn>
+            </div>
+          </div>
+        </v-card>
+      </section>
+
+      <section v-else-if="activeTab === 'apps'" class="sc-tab-panel">
+        <v-card flat border rounded="lg" class="retail-widget-card">
+          <div class="retail-widget-header">
+            <div>
+              <div class="retail-widget-header__title">Connected apps</div>
+              <div class="retail-widget-header__sub">Payments, fulfillment, and marketing integrations</div>
+            </div>
+            <v-btn size="small" variant="outlined" prepend-icon="plus" class="text-none" @click="runAction('apps')">
+              Browse apps
+            </v-btn>
+          </div>
+          <div class="sc-app-list sc-app-list--wide">
+            <div v-for="app in connectedApps" :key="app.id" class="sc-app-row">
+              <div class="sc-app-row__initials">{{ app.initials }}</div>
+              <div class="min-width-0">
+                <strong>{{ app.name }}</strong>
+                <span>{{ app.category }}</span>
+              </div>
+              <span class="sc-status-dot" :class="{ 'sc-status-dot--off': !app.connected }" />
+            </div>
+          </div>
+        </v-card>
+      </section>
+
+      <section v-else-if="activeTab === 'ai'" class="sc-tab-panel">
+        <v-card flat border rounded="lg" class="retail-widget-card">
+          <div class="retail-widget-header">
+            <div>
+              <div class="retail-widget-header__title">AI & automation</div>
+              <div class="retail-widget-header__sub">Assistants and optimization tools for this channel</div>
+            </div>
+          </div>
+          <div class="retail-widget-body">
+            <div class="sc-cross-sell-banner">
+              <div class="sc-cross-sell-banner__icon">
+                <v-icon size="18">sparkles</v-icon>
+              </div>
+              <div class="min-width-0">
+                <strong>{{ crossSellBanner.title }}</strong>
+                <span>{{ crossSellBanner.description }}</span>
+              </div>
+              <v-btn size="small" variant="tonal" color="primary" class="text-none" @click="runAction(crossSellBanner.target)">
+                {{ crossSellBanner.actionLabel }}
+              </v-btn>
+            </div>
+            <div class="sc-assistant-grid" aria-label="Channel chatbot assistants">
+              <div v-for="assistant in assistantCards" :key="assistant.id" class="sc-assistant-card">
+                <div class="retail-row-icon" :class="`retail-row-icon--${assistant.color}`">
+                  <v-icon size="15">{{ assistant.icon }}</v-icon>
+                </div>
+                <div class="min-width-0">
+                  <div class="sc-assistant-card__header">
+                    <strong>{{ assistant.title }}</strong>
+                    <v-chip v-if="isAssistantAdded(assistant.id)" size="x-small" color="success" variant="tonal" label>
+                      Added
+                    </v-chip>
+                  </div>
+                  <span>{{ assistant.description }}</span>
+                </div>
+                <v-btn
+                  size="small"
+                  :variant="isAssistantAdded(assistant.id) ? 'outlined' : 'tonal'"
+                  color="primary"
+                  class="text-none"
+                  @click="onAssistantAction(assistant)"
+                >
+                  {{ isAssistantAdded(assistant.id) ? 'Manage' : 'Add' }}
+                </v-btn>
+              </div>
+            </div>
+            <div class="sc-feature-list" aria-label="Cross-sell features">
+              <div v-for="feature in crossSellFeatures" :key="feature.id" class="sc-feature-row">
+                <div class="retail-row-icon" :class="`retail-row-icon--${feature.color}`">
+                  <v-icon size="15">{{ feature.icon }}</v-icon>
+                </div>
+                <div class="min-width-0">
+                  <div class="sc-feature-row__title">
+                    <strong>{{ feature.title }}</strong>
+                    <span>{{ feature.status }}</span>
+                  </div>
+                  <p>{{ feature.description }}</p>
+                </div>
+                <div class="sc-feature-row__actions">
+                  <v-btn variant="text" size="small" class="text-none" @click="runAction(feature.target)">
+                    Learn more
+                  </v-btn>
+                  <v-btn variant="outlined" size="small" class="text-none" @click="runAction(feature.target)">
+                    {{ feature.actionLabel }}
+                  </v-btn>
+                </div>
+              </div>
+            </div>
+          </div>
+        </v-card>
+      </section>
+
+      <section v-else class="sc-tab-panel">
+        <v-card flat border rounded="lg" class="retail-widget-card">
+          <div class="retail-widget-header">
+            <div class="retail-widget-header__title">Activity</div>
+          </div>
+          <v-list class="retail-list" density="compact">
+            <v-list-item v-for="item in activityItems" :key="item.id">
+              <template #prepend>
+                <span class="retail-row-icon" :class="`retail-row-icon--${item.color}`">
+                  <v-icon size="15">{{ item.icon }}</v-icon>
+                </span>
+              </template>
+              <v-list-item-title class="retail-list-title">{{ item.title }}</v-list-item-title>
+              <v-list-item-subtitle class="retail-list-sub">{{ item.meta }}</v-list-item-subtitle>
+              <template #append>
+                <span class="sc-time">{{ item.time }}</span>
+              </template>
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </section>
 
       <v-snackbar v-model="noticeVisible" timeout="2400" color="surface" location="bottom right">
         {{ notice }}
@@ -1110,6 +1118,263 @@ function locationRoleText(locationId: string) {
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.sc-tabs {
+  min-width: 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sc-tabs :deep(.v-slide-group__content) {
+  gap: 4px;
+}
+
+.sc-tabs :deep(.v-tab) {
+  min-height: 36px;
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sc-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.sc-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  align-items: stretch;
+  gap: 20px;
+  min-width: 0;
+}
+
+.sc-hero-card,
+.sc-setup-card {
+  min-width: 0;
+}
+
+.sc-store-preview--hero .sc-store-preview__body {
+  grid-auto-rows: minmax(86px, 1fr);
+  min-height: 344px;
+}
+
+.sc-retail-preview--hero {
+  min-height: 344px;
+}
+
+.sc-hero-url {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-section);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--mp-typography-fontFamily-mono, monospace);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sc-hero-url span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-setup-card .retail-widget-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sc-setup-list,
+.sc-completed-list {
+  display: grid;
+  gap: 10px;
+}
+
+.sc-setup-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in oklch, var(--accent) 22%, var(--hairline));
+  border-radius: var(--r-section);
+  background: color-mix(in oklch, var(--accent) 5%, var(--surface-1));
+}
+
+.sc-setup-row strong,
+.sc-setup-row span,
+.sc-setup-empty span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-setup-row strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.sc-setup-row span,
+.sc-setup-empty span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.sc-setup-empty,
+.sc-completed-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sc-completed-toggle {
+  width: fit-content;
+}
+
+.sc-completed-row {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sc-action-grid--compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.retail-action-tile--compact {
+  min-height: 94px;
+  padding: 13px;
+}
+
+.retail-action-tile--compact .retail-action-tile__desc {
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.sc-performance-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sc-section-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sc-section-line h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.sc-section-line span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sc-performance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.sc-mini-kpi {
+  position: relative;
+  overflow: hidden;
+  min-height: 142px;
+  padding: 14px;
+}
+
+.sc-mini-kpi__top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sc-mini-kpi__top > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-mini-kpi__value {
+  margin-top: 18px;
+  color: var(--ink);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sc-mini-kpi__trend,
+.sc-mini-kpi__sub {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 10px;
+  color: var(--pos);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sc-mini-kpi__sub {
+  color: var(--muted);
+}
+
+.sc-mini-kpi__sparkline {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  width: 42%;
+  height: 36px;
+  color: var(--accent);
+  opacity: 0.72;
+}
+
+.sc-mini-kpi__sparkline polyline {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.sc-app-list--wide {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 0;
 }
 
 .sc-grid {
@@ -1660,7 +1925,8 @@ function locationRoleText(locationId: string) {
 
 @media (max-width: 1180px) {
   .sc-header__row,
-  .sc-grid {
+  .sc-grid,
+  .sc-overview-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1668,7 +1934,9 @@ function locationRoleText(locationId: string) {
     justify-content: flex-start;
   }
 
-  .sc-action-grid {
+  .sc-action-grid,
+  .sc-performance-grid,
+  .sc-app-list--wide {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1693,6 +1961,8 @@ function locationRoleText(locationId: string) {
   }
 
   .sc-action-grid,
+  .sc-performance-grid,
+  .sc-app-list--wide,
   .sc-assistant-grid,
   .sc-business-grid,
   .sc-retail-preview,
@@ -1704,6 +1974,11 @@ function locationRoleText(locationId: string) {
     grid-column: auto;
     grid-row: auto;
     min-height: 150px;
+  }
+
+  .sc-store-preview--hero .sc-store-preview__body,
+  .sc-retail-preview--hero {
+    min-height: auto;
   }
 
   .sc-store-preview__nav {
@@ -1718,6 +1993,11 @@ function locationRoleText(locationId: string) {
   }
 
   .sc-resource-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .sc-setup-row,
+  .sc-hero-url {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
@@ -1738,6 +2018,12 @@ function locationRoleText(locationId: string) {
   .sc-resource-row__actions {
     grid-column: 1 / -1;
     justify-content: flex-end;
+  }
+
+  .sc-setup-row > .v-btn,
+  .sc-hero-url > .v-btn {
+    grid-column: 1 / -1;
+    justify-self: end;
   }
 }
 </style>
