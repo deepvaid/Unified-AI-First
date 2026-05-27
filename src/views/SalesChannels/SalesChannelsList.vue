@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -21,7 +21,14 @@ const router = useRouter()
 const store = useSalesChannelsStore()
 
 const search = ref('')
-const activeTab = ref('all')
+const VALID_TABS = ['all', 'web_store', 'offline_store', 'attention'] as const
+function tabFromRoute(): string {
+  const raw = route.query.tab
+  const value = Array.isArray(raw) ? raw[0] : raw
+  return value && (VALID_TABS as readonly string[]).includes(value) ? value : 'all'
+}
+const activeTab = ref(tabFromRoute())
+watch(() => route.query.tab, () => { activeTab.value = tabFromRoute() })
 
 const accountId = computed(() => {
   const value = route.params.accountId

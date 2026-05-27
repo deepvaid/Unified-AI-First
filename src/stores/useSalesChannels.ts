@@ -237,10 +237,6 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
     return offlineStoreChannels(accountId)[0]
   }
 
-  function getDefaultWebStore(accountId: string) {
-    return webStoreChannels(accountId)[0]
-  }
-
   function createChannel(accountId: string, payload: CreateSalesChannelPayload) {
     const timestamp = nowIso()
     const id = makeId(payload.name, new Set(channels.value.map((channel) => channel.id)))
@@ -315,7 +311,6 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
     offlineStoreChannels,
     channelsNeedingAttention,
     getDefaultOfflineStore,
-    getDefaultWebStore,
     createChannel,
     linkLocationToChannel,
   }

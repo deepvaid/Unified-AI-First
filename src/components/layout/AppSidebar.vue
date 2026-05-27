@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
-import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { Crown } from 'lucide-vue-next'
 import { useAppTheme, type AccentKey } from '@/composables/useAppTheme'
 
@@ -18,7 +17,6 @@ const emit = defineEmits<{
 }>()
 
 const accountsStore = useAccountsStore()
-const salesChannelsStore = useSalesChannelsStore()
 const { accent, setAccent } = useAppTheme()
 
 // ─── Accent Swatches ─────────────────────────────────────────
@@ -59,12 +57,8 @@ interface InstalledAppItem {
 }
 
 function buildNavGroups(accountId: string): NavGroup[] {
-  const defaultWebStoreId = salesChannelsStore.getDefaultWebStore(accountId)?.id
-  const onlineSalesRoute = defaultWebStoreId
-    ? `/accounts/${accountId}/sales_channels/${defaultWebStoreId}`
-    : `/accounts/${accountId}/sales_channels`
-  const defaultOfflineStoreId = salesChannelsStore.getDefaultOfflineStore(accountId)?.id ?? 'pos-store'
-  const offlinePhysicalRoute = `/accounts/${accountId}/sales_channels/${defaultOfflineStoreId}`
+  const onlineSalesRoute = `/accounts/${accountId}/sales_channels?tab=web_store`
+  const offlinePhysicalRoute = `/accounts/${accountId}/sales_channels?tab=offline_store`
 
   return [
     {
@@ -171,7 +165,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
       requires: 'commerce',
       singleRoute: `/commerce/${accountId}/orders`,
       items: [
-        { title: 'Online Sales', route: onlineSalesRoute },
+        { title: 'Sales Channels', route: onlineSalesRoute },
         {
           title: 'Orders',
           isSubGroup: true,
@@ -200,7 +194,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
       items: [
         { title: 'Transactions',      route: `/commerce/${accountId}/retail/transactions` },
         { title: 'POS Preview',       route: `/commerce/${accountId}/retail/pos-preview` },
-        { title: 'Offline / Physical', route: offlinePhysicalRoute },
+        { title: 'Stores', route: offlinePhysicalRoute },
         {
           title: 'Operations',
           isSubGroup: true,
