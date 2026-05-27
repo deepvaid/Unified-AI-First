@@ -235,6 +235,13 @@ function closeActiveTicket() {
                   color="secondary"
                 >{{ tag }}</v-chip>
               </div>
+              <div class="tkt-row__footer">
+                <span>
+                  <v-icon size="13">messages-square</v-icon>
+                  {{ ticket.thread.length }} conversations
+                </span>
+                <span>{{ ticket.category }}</span>
+              </div>
             </div>
           </button>
         </div>
@@ -294,53 +301,74 @@ function closeActiveTicket() {
           </div>
         </div>
 
-        <!-- Customer / Assignee bar -->
-        <div class="tkt-meta-bar pa-3 px-4 d-flex align-center gap-4">
-          <div class="d-flex align-center gap-2">
-            <v-avatar color="primary" variant="tonal" size="32" class="text-caption font-weight-bold flex-shrink-0">{{ activeTicket.avatar }}</v-avatar>
-            <div>
-              <div class="text-body-2 font-weight-medium">{{ activeTicket.customer }}</div>
-              <div class="text-caption text-medium-emphasis">{{ activeTicket.customerEmail }}</div>
+        <!-- Customer / Assignee summary -->
+        <div class="tkt-summary-grid pa-4">
+          <div class="tkt-summary-item">
+            <span class="tkt-summary-item__icon">
+              <v-icon size="15">user</v-icon>
+            </span>
+            <div class="min-w-0">
+              <span>Customer</span>
+              <strong>{{ activeTicket.customer }}</strong>
+              <em>{{ activeTicket.customerEmail }}</em>
             </div>
           </div>
-          <v-divider vertical class="mx-1 tkt-meta-divider" />
-          <div>
-            <div class="text-caption text-medium-emphasis mb-0">Assignee</div>
-            <div class="text-body-2 font-weight-medium">{{ activeTicket.assignee }}</div>
+          <div class="tkt-summary-item">
+            <span class="tkt-summary-item__icon">
+              <v-icon size="15">headset</v-icon>
+            </span>
+            <div class="min-w-0">
+              <span>Assignee</span>
+              <strong>{{ activeTicket.assignee }}</strong>
+            </div>
           </div>
-          <v-spacer />
-          <div class="text-right">
-            <div class="text-caption text-medium-emphasis">Opened</div>
-            <div class="text-body-2 font-weight-medium">{{ timeAgo(activeTicket.createdAt) }}</div>
+          <div class="tkt-summary-item">
+            <span class="tkt-summary-item__icon">
+              <v-icon size="15">clock-3</v-icon>
+            </span>
+            <div class="min-w-0">
+              <span>Opened</span>
+              <strong>{{ timeAgo(activeTicket.createdAt) }}</strong>
+            </div>
+          </div>
+          <div class="tkt-summary-item">
+            <span class="tkt-summary-item__icon">
+              <v-icon size="15">messages-square</v-icon>
+            </span>
+            <div class="min-w-0">
+              <span>Conversation</span>
+              <strong>{{ activeTicket.thread.length }} messages</strong>
+            </div>
           </div>
         </div>
 
         <!-- Thread -->
         <div class="flex-grow-1 overflow-y-auto tkt-thread pa-5">
-          <v-timeline side="end" density="compact" truncate-line="start">
-            <v-timeline-item
+          <div class="tkt-conversation">
+            <article
               v-for="(msg, idx) in activeTicket.thread"
               :key="idx"
-              :dot-color="msg.role === 'agent' ? 'primary' : 'surface-variant'"
-              size="small"
+              class="tkt-message"
+              :class="`tkt-message--${msg.role}`"
             >
-              <template #icon>
-                <span class="text-caption font-weight-bold" :class="msg.role === 'agent' ? 'text-white' : ''">{{ msg.avatar }}</span>
-              </template>
-              <v-card
-                :variant="msg.role === 'agent' ? 'tonal' : 'outlined'"
-                :color="msg.role === 'agent' ? 'primary' : 'surface'"
-                rounded="lg"
-                class="pa-4"
+              <v-avatar
+                :color="msg.role === 'agent' ? 'primary' : 'surface-variant'"
+                :variant="msg.role === 'agent' ? 'flat' : 'tonal'"
+                size="34"
+                class="text-caption font-weight-bold tkt-message__avatar"
               >
-                <div class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-body-2 font-weight-semibold">{{ msg.author }}</span>
-                  <span class="text-caption text-medium-emphasis">{{ msg.time }}</span>
+                {{ msg.avatar }}
+              </v-avatar>
+              <div class="tkt-message__content min-w-0">
+                <div class="tkt-message__meta">
+                  <span>{{ msg.author }}</span>
+                  <em>{{ msg.role === 'agent' ? 'Support' : 'Customer' }}</em>
+                  <time>{{ msg.time }}</time>
                 </div>
-                <div class="text-body-2 tkt-msg-body">{{ msg.body }}</div>
-              </v-card>
-            </v-timeline-item>
-          </v-timeline>
+                <div class="tkt-message__bubble">{{ msg.body }}</div>
+              </div>
+            </article>
+          </div>
         </div>
 
         <!-- Reply box -->
@@ -663,6 +691,25 @@ function closeActiveTicket() {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.tkt-row__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  color: rgba(var(--v-theme-on-surface), 0.56);
+  font-size: 11px;
+  font-weight: 600;
+}
+.tkt-row__footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .min-w-0 { min-width: 0; }
 
 /* ── Detail panel ──────────────────────────────────────────────── */
@@ -677,19 +724,124 @@ function closeActiveTicket() {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
-.tkt-meta-bar {
+.tkt-summary-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.8fr 0.9fr;
+  gap: 12px;
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  background: rgba(var(--v-theme-surface-variant), 0.4);
-  min-height: 56px;
+  background: rgba(var(--v-theme-surface-variant), 0.22);
 }
-.tkt-meta-divider {
-  height: 28px;
-  align-self: center;
+.tkt-summary-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(var(--v-border-color), calc(var(--v-border-opacity) * 0.7));
+  border-radius: 12px;
+  background: rgb(var(--v-theme-surface));
+}
+.tkt-summary-item__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-primary), 0.1);
+  color: rgb(var(--v-theme-primary));
+}
+.tkt-summary-item span,
+.tkt-summary-item strong,
+.tkt-summary-item em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tkt-summary-item span {
+  color: rgba(var(--v-theme-on-surface), 0.58);
+  font-size: 11px;
+  font-weight: 700;
+}
+.tkt-summary-item strong {
+  margin-top: 2px;
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 13px;
+  font-weight: 700;
+}
+.tkt-summary-item em {
+  color: rgba(var(--v-theme-on-surface), 0.56);
+  font-size: 12px;
+  font-style: normal;
 }
 
 /* ── Thread ────────────────────────────────────────────────────── */
 .tkt-thread { background: rgba(var(--v-theme-on-surface), 0.015); }
-.tkt-msg-body { line-height: 1.65; white-space: pre-wrap; }
+.tkt-conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 880px;
+  margin-inline: auto;
+}
+.tkt-message {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.tkt-message__avatar {
+  margin-top: 22px;
+}
+.tkt-message__content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tkt-message__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  min-width: 0;
+  color: rgba(var(--v-theme-on-surface), 0.58);
+  font-size: 12px;
+}
+.tkt-message__meta span {
+  color: rgb(var(--v-theme-on-surface));
+  font-weight: 700;
+}
+.tkt-message__meta em {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  font-style: normal;
+  font-weight: 700;
+}
+.tkt-message__meta time {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.tkt-message__bubble {
+  padding: 14px 16px;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 14px;
+  background: rgb(var(--v-theme-surface));
+  color: rgba(var(--v-theme-on-surface), 0.82);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.tkt-message--agent .tkt-message__bubble {
+  border-color: rgba(var(--v-theme-primary), 0.22);
+  background: rgba(var(--v-theme-primary), 0.06);
+}
+.tkt-message--agent .tkt-message__meta em {
+  background: rgba(var(--v-theme-primary), 0.1);
+  color: rgb(var(--v-theme-primary));
+}
 
 /* ── Reply ─────────────────────────────────────────────────────── */
 .tkt-reply {
@@ -741,6 +893,9 @@ function closeActiveTicket() {
     height: auto;
     min-height: 400px;
   }
+  .tkt-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 640px) {
   .tkt-list-panel { max-height: 36vh; }
@@ -749,5 +904,12 @@ function closeActiveTicket() {
     gap: 8px;
   }
   .tkt-view-toggle { width: 100%; }
+  .tkt-summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .tkt-message__meta time {
+    margin-left: 0;
+    width: 100%;
+  }
 }
 </style>

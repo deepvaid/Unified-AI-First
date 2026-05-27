@@ -15,7 +15,15 @@ export interface Ticket {
   createdAt: string
   updatedAt: string
   tags: string[]
-  thread: { author: string; avatar: string; role: 'customer' | 'agent'; body: string; time: string }[]
+  thread: TicketMessage[]
+}
+
+export interface TicketMessage {
+  author: string
+  avatar: string
+  role: 'customer' | 'agent'
+  body: string
+  time: string
 }
 
 export interface NewTicketPayload {
@@ -56,6 +64,104 @@ const assignees = ['Sarah Connor', 'Mike Zhang', 'Priya Sharma', 'Tom Brady', 'U
 
 let nextId = subjects.length + 1
 
+function initials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map(part => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+
+function messageTime(offsetMs: number): string {
+  return new Date(Date.now() - offsetMs).toLocaleString()
+}
+
+function buildSeedThread(params: {
+  subject: string
+  customer: string
+  avatar: string
+  assignee: string
+  status: Ticket['status']
+  orderNumber: number
+  latestOffsetMs: number
+}): TicketMessage[] {
+  const agentAvatar = initials(params.assignee)
+  const latest = Math.max(params.latestOffsetMs, 5 * 60_000)
+  const resolutionCopy =
+    params.status === 'Resolved'
+      ? 'I have marked this as resolved after confirming the correction on the order. The customer record has been updated for future reference.'
+      : params.status === 'Awaiting Reply'
+        ? 'I can finish this as soon as you confirm the preferred shipping address and whether you want a replacement or refund.'
+        : 'I checked the order record and queued the next action with our operations team. I will keep this ticket updated as soon as the change posts.'
+
+  return [
+    {
+      author: params.customer,
+      avatar: params.avatar,
+      role: 'customer',
+      body: `Hi, I need help with ${params.subject.toLowerCase()}. My order number is #${params.orderNumber}.`,
+      time: messageTime(latest + 6 * 60 * 60_000),
+    },
+    {
+      author: params.assignee,
+      avatar: agentAvatar,
+      role: 'agent',
+      body: 'Thanks for reaching out. I found your order and I am reviewing the shipment, payment, and account notes now.',
+      time: messageTime(latest + 4 * 60 * 60_000),
+    },
+    {
+      author: params.customer,
+      avatar: params.avatar,
+      role: 'customer',
+      body: 'Thanks. I can share any extra details you need. The issue is blocking me from completing the order as expected.',
+      time: messageTime(latest + 2 * 60 * 60_000),
+    },
+    {
+      author: params.assignee,
+      avatar: agentAvatar,
+      role: 'agent',
+      body: resolutionCopy,
+      time: messageTime(latest),
+    },
+  ]
+}
+
+function buildNewTicketThread(payload: NewTicketPayload, avatar: string, assignee: string): TicketMessage[] {
+  const customerMessage = payload.description || `I need help with ${payload.subject}.`
+  return [
+    {
+      author: payload.customer,
+      avatar,
+      role: 'customer',
+      body: customerMessage,
+      time: messageTime(42 * 60_000),
+    },
+    {
+      author: assignee,
+      avatar: initials(assignee),
+      role: 'agent',
+      body: 'Thanks for the details. I am checking the customer profile and recent order history before taking action.',
+      time: messageTime(28 * 60_000),
+    },
+    {
+      author: payload.customer,
+      avatar,
+      role: 'customer',
+      body: 'That works. Please let me know if you need any more information from my side.',
+      time: messageTime(16 * 60_000),
+    },
+    {
+      author: assignee,
+      avatar: initials(assignee),
+      role: 'agent',
+      body: 'I have the ticket queued and will follow up here with the next update.',
+      time: messageTime(5 * 60_000),
+    },
+  ]
+}
+
 export const useTicketsStore = defineStore('tickets', () => {
   const tickets = ref<Ticket[]>(subjects.map((subject, i): Ticket => {
     const cust = customerNames[i % customerNames.length]!
@@ -65,43 +171,31 @@ export const useTicketsStore = defineStore('tickets', () => {
     const statuses: Ticket['status'][] = ['Open', 'In Progress', 'Awaiting Reply', 'Resolved']
     const priorities: Ticket['priority'][] = ['Urgent', 'High', 'Normal', 'Low', 'Normal', 'High']
     const status = statuses[i % statuses.length]!
+    const assignee = assignees[i % assignees.length]!
+    const avatar = `${first[0]}${last[0]}`
     return {
       id: i + 1,
       number: `TKT-${String(10000 + i).padStart(5, '0')}`,
       subject,
       customer: cust,
       customerEmail: `${first.toLowerCase()}@example.com`,
-      avatar: `${first[0]}${last[0]}`,
+      avatar,
       status,
       priority: priorities[i % priorities.length]!,
       category: categories[i % categories.length]!,
-      assignee: assignees[i % assignees.length]!,
+      assignee,
       createdAt: new Date(Date.now() - ((i + 1) * 7200000)).toISOString(),
       updatedAt: new Date(Date.now() - (i * 1800000)).toISOString(),
       tags: i % 3 === 0 ? ['VIP'] : i % 5 === 0 ? ['Flagged'] : [],
-      thread: [
-        {
-          author: cust,
-          avatar: `${first[0]}${last[0]}`,
-          role: 'customer',
-          body: `Hi, I have an issue with my recent order. ${subject}. Could you please help me resolve this as soon as possible? My order number is #${10000 + i}.`,
-          time: new Date(Date.now() - ((i + 1) * 7200000)).toLocaleString(),
-        },
-        ...(status !== 'Open' ? [{
-          author: assignees[i % assignees.length]!,
-          avatar: assignees[i % assignees.length]!.split(' ').map(n => n[0]).join(''),
-          role: 'agent' as const,
-          body: `Thank you for reaching out! I've looked into your request and I'm on it. We'll get this sorted for you within 24 hours. Apologies for any inconvenience caused.`,
-          time: new Date(Date.now() - (i * 3600000)).toLocaleString(),
-        }] : []),
-        ...(status === 'Awaiting Reply' ? [{
-          author: cust,
-          avatar: `${first[0]}${last[0]}`,
-          role: 'customer' as const,
-          body: `Thank you for the update! Just to confirm — will the replacement be shipped to the same address?`,
-          time: new Date(Date.now() - (i * 1800000)).toLocaleString(),
-        }] : []),
-      ],
+      thread: buildSeedThread({
+        subject,
+        customer: cust,
+        avatar,
+        assignee,
+        status,
+        orderNumber: 10000 + i,
+        latestOffsetMs: i * 1800000,
+      }),
     }
   }) as Ticket[])
 
@@ -131,29 +225,23 @@ export const useTicketsStore = defineStore('tickets', () => {
     const first = parts[0] ?? 'U'
     const last = parts[1] ?? first
     const id = nextId++
+    const avatar = `${first[0]?.toUpperCase() ?? '?'}${last[0]?.toUpperCase() ?? '?'}`
+    const assignee = payload.assignee === 'Auto-assign' ? assignees[0]! : payload.assignee
     const ticket: Ticket = {
       id,
       number: `TKT-${String(10000 + id - 1).padStart(5, '0')}`,
       subject: payload.subject,
       customer: payload.customer,
       customerEmail: payload.email,
-      avatar: `${first[0]?.toUpperCase() ?? '?'}${last[0]?.toUpperCase() ?? '?'}`,
+      avatar,
       status: 'Open',
       priority: payload.priority,
       category: payload.category,
-      assignee: payload.assignee === 'Auto-assign' ? assignees[0]! : payload.assignee,
+      assignee,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       tags: [],
-      thread: payload.description
-        ? [{
-            author: payload.customer,
-            avatar: `${first[0]?.toUpperCase() ?? '?'}${last[0]?.toUpperCase() ?? '?'}`,
-            role: 'customer',
-            body: payload.description,
-            time: new Date().toLocaleString(),
-          }]
-        : [],
+      thread: buildNewTicketThread(payload, avatar, assignee),
     }
     tickets.value.unshift(ticket)
     activeTicketId.value = id
