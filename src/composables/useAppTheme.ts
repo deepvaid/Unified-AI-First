@@ -20,11 +20,11 @@ interface AccentDef {
 
 const ACCENT_DEFS: Record<AccentKey, AccentDef> = {
   cyan: {
-    hex: '#00B7F4',
-    rgb: '0, 183, 244',
+    hex: '#0092D4',               // Picton Blue 600 (default brand primary — primary text/lines)
+    rgb: '0, 146, 212',
     onPrimary: '255, 255, 255',
-    container: '204, 240, 253',   // #ccf0fd
-    onContainer: '0, 72, 105',    // #004869
+    container: '222, 243, 255',   // #DEF3FF
+    onContainer: '4, 50, 77',     // #04324D
   },
   blue: {
     hex: '#2D63E8',

@@ -16,10 +16,10 @@
   --v-theme-on-surface-variant:#737373;
 
   /* Brand & semantic */
-  --v-theme-primary:           #1ab7ea;
+  --v-theme-primary:           #0092D4;
   --v-theme-on-primary:        #ffffff;
-  --v-theme-primary-container: #d6eefb;
-  --v-theme-on-primary-container: #0a4f6c;
+  --v-theme-primary-container: #DEF3FF;
+  --v-theme-on-primary-container: #04324D;
 
   --v-theme-secondary:         #4a4a4a;
   --v-theme-on-secondary:      #ffffff;
@@ -36,8 +36,8 @@
   --v-theme-error-container:   #fbe1dc;
   --v-theme-on-error-container: #7a1f15;
 
-  --v-theme-info:              #1ab7ea;
-  --v-theme-info-container:    #d6eefb;
+  --v-theme-info:              #0092D4;
+  --v-theme-info-container:    #DEF3FF;
 
   /* Outlines */
   --v-theme-outline:           #d4d4d4;
@@ -94,10 +94,10 @@
   --v-theme-on-surface-variant: #a3a3a3;
 
   /* Brand & semantic — slightly lifted for AA on dark */
-  --v-theme-primary:            #4ec8f2;
+  --v-theme-primary:            #2CC4FF;
   --v-theme-on-primary:         #06212c;
-  --v-theme-primary-container:  #0e3a4f;
-  --v-theme-on-primary-container:#bfe5f7;
+  --v-theme-primary-container:  #04324D;
+  --v-theme-on-primary-container:#DEF3FF;
 
   --v-theme-secondary:          #c9c4ba;
   --v-theme-on-secondary:       #1a1814;
@@ -114,8 +114,8 @@
   --v-theme-error-container:    #4a1f19;
   --v-theme-on-error-container: #f7c8c1;
 
-  --v-theme-info:               #4ec8f2;
-  --v-theme-info-container:     #0e3a4f;
+  --v-theme-info:               #2CC4FF;
+  --v-theme-info-container:     #04324D;
 
   /* Outlines */
   --v-theme-outline:            #4a443a;

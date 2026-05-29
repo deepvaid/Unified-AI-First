@@ -323,13 +323,13 @@ function formatNumber(value: number) {
             <stop offset="100%" stop-color="rgba(var(--v-theme-primary), 0.02)" />
           </linearGradient>
           <linearGradient :id="`${chartId}-line`" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#22c7ff" />
+            <stop offset="0%" stop-color="#2CC4FF" />
             <stop offset="56%" stop-color="rgb(var(--v-theme-primary))" />
-            <stop offset="100%" stop-color="#4f6dff" />
+            <stop offset="100%" stop-color="#00608D" />
           </linearGradient>
           <linearGradient :id="`${chartId}-bars`" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="rgba(82, 216, 155, 0.56)" />
-            <stop offset="100%" stop-color="rgba(82, 216, 155, 0.1)" />
+            <stop offset="0%" stop-color="rgba(0, 173, 241, 0.5)" />
+            <stop offset="100%" stop-color="rgba(0, 173, 241, 0.08)" />
           </linearGradient>
         </defs>
 
@@ -552,7 +552,7 @@ function formatNumber(value: number) {
   border-radius: 24px;
   border: 1px solid rgba(var(--v-theme-border), 0.8);
   background:
-    radial-gradient(circle at top left, rgba(34, 199, 255, 0.08), transparent 30%),
+    radial-gradient(circle at top left, rgba(0, 173, 241, 0.08), transparent 30%),
     rgb(var(--v-theme-surface));
   overflow: hidden;
   padding: 10px 10px 4px;
@@ -705,11 +705,11 @@ function formatNumber(value: number) {
 }
 
 .mp-overview-chart__legend-swatch--line {
-  background: linear-gradient(135deg, #22c7ff 0%, rgb(var(--v-theme-primary)) 100%);
+  background: linear-gradient(135deg, #2CC4FF 0%, rgb(var(--v-theme-primary)) 100%);
 }
 
 .mp-overview-chart__legend-swatch--bar {
-  background: linear-gradient(180deg, rgba(82, 216, 155, 0.7) 0%, rgba(82, 216, 155, 0.18) 100%);
+  background: linear-gradient(180deg, rgba(0, 173, 241, 0.7) 0%, rgba(0, 173, 241, 0.18) 100%);
 }
 
 .mp-overview-chart__sr-only {

@@ -11,7 +11,7 @@ import {
 
 /**
  * Maropost-aligned palette for chart series.
- * [cyan, deep cyan, teal, green, violet, slate]
+ * Single-hue Picton Blue, well-spaced steps: [600, 300, 500, 900, 400, 700]
  */
 export const chartPalette: string[] = [
   mp_color_chart_light_series1,
