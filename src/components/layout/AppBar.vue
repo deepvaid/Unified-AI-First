@@ -1046,9 +1046,9 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 :deep(.appbar-search .v-field__input) {
   font-size: 13.5px;
   font-weight: 500;
-  min-height: 36px;
-  padding-top: 6px;
-  padding-bottom: 6px;
+  min-height: 34px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
 }
 
 :deep(.appbar-search input::placeholder) {

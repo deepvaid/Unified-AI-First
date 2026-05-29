@@ -497,10 +497,10 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
     v-model="localDrawer"
     :rail="localRail"
     :rail-width="64"
+    width="216"
     :permanent="!props.temporary"
     :temporary="props.temporary"
     :mobile-breakpoint="0"
-    width="240"
     class="mp-sidebar"
   >
     <!-- Brand + anchored toggle -->
@@ -904,7 +904,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 16px 14px 16px 20px;
+  padding: 14px 16px 14px 22px;
   margin-bottom: 6px;
   border-bottom: 1px solid var(--sidebar-border);
   background: var(--sidebar-bg);
@@ -1079,14 +1079,14 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 4px 8px 12px;
+  padding: 4px 6px 12px;
   scrollbar-width: thin;
 }
 
 .sidebar-divider {
   border-color: var(--sidebar-border) !important;
   opacity: 1;
-  margin: 4px 0 !important;
+  margin: 6px 0 !important;
 }
 
 .sidebar-badge {
@@ -1185,9 +1185,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
 .mp-sidebar :deep(.v-list-item) {
   --v-list-prepend-gap: 16px;
-  min-height: 38px;
-  margin-bottom: 4px;
-  padding: 9px 12px;
+  min-height: 36px;
+  margin-bottom: 2px;
+  padding: 9px 10px;
   border-radius: var(--sidebar-radius) !important;
   color: var(--sidebar-text);
 }
@@ -1243,7 +1243,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 /* Expanded-mode click flyout panel (teleported) */
 .sidebar-expanded-flyout {
   position: fixed;
-  left: 240px;
+  left: 216px;
   z-index: 1005;
 }
 
