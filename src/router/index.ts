@@ -151,7 +151,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'general',             name: 'SettingsGeneral',            component: () => import('@/views/Settings/pages/GeneralPage.vue') },
       { path: 'notifications',       name: 'SettingsNotifications',      component: () => import('@/views/Settings/pages/NotificationsPage.vue') },
       { path: 'account-defaults',    name: 'SettingsAccountDefaults',    component: () => import('@/views/Settings/pages/AccountDefaultsPage.vue') },
-      { path: 'account-billing',     name: 'SettingsAccountBilling',     component: () => import('@/views/Settings/pages/AccountBillingPage.vue') },
+      { path: 'account-billing',     redirect: to => ({ name: 'Billing', params: { accountId: to.params.accountId } }) },
       { path: 'users-permissions',   name: 'SettingsUsersPermissions',   component: () => import('@/views/Settings/pages/UsersPermissionsPage.vue') },
       { path: 'audit-log',           name: 'SettingsAuditLog',           component: () => import('@/views/Settings/pages/AuditLogPage.vue') },
       { path: 'connections',         name: 'SettingsConnections',        component: () => import('@/views/Settings/pages/ConnectionsPage.vue') },
@@ -167,6 +167,9 @@ const routes: RouteRecordRaw[] = [
       { path: 'ai-settings',         name: 'SettingsAiSettings',         component: () => import('@/views/Settings/pages/AiSettingsPage.vue') },
     ],
   },
+  // Account & Billing — standalone area, separate from app Settings
+  { path: '/accounts/:accountId/billing', name: 'Billing', component: () => import('@/views/Billing/BillingView.vue') },
+
   { path: '/accounts/:accountId/design-system', name: 'DesignSystemDemo', component: () => import('@/views/Settings/DesignSystemDemo.vue') },
 
   // Redirect root to dashboard

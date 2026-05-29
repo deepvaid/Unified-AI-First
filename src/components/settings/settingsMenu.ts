@@ -2,6 +2,8 @@ export interface SettingsItem {
   slug: string
   label: string
   routeName: string
+  /** Renders a launch (↗) icon and points to an area outside the Settings shell. */
+  external?: boolean
 }
 
 export interface SettingsGroup {
@@ -21,7 +23,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
     title: 'Account Management',
     items: [
       { slug: 'account-defaults', label: 'Account Defaults', routeName: 'SettingsAccountDefaults' },
-      { slug: 'account-billing', label: 'Account & Billing', routeName: 'SettingsAccountBilling' },
+      { slug: 'account-billing', label: 'Account & Billing', routeName: 'Billing', external: true },
       { slug: 'users-permissions', label: 'Users & Permissions', routeName: 'SettingsUsersPermissions' },
       { slug: 'audit-log', label: 'Audit Log', routeName: 'SettingsAuditLog' },
     ],

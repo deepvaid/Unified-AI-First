@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useTheme } from 'vuetify'
 
-export type AccentKey = 'cyan' | 'blue' | 'amber' | 'gray' | 'purple'
+export type AccentKey = 'cyan' | 'blue' | 'gray' | 'purple'
 export type ThemeMode = 'light' | 'dark'
 
 const LS_ACCENT = 'app-accent'
@@ -33,13 +33,6 @@ const ACCENT_DEFS: Record<AccentKey, AccentDef> = {
     container: '235, 240, 255',
     onContainer: '30, 68, 155',
   },
-  amber: {
-    hex: '#B45309',
-    rgb: '180, 83, 9',
-    onPrimary: '255, 255, 255',
-    container: '254, 243, 199',
-    onContainer: '120, 53, 5',
-  },
   gray: {
     hex: '#4B5563',
     rgb: '75, 85, 99',
@@ -58,6 +51,12 @@ const ACCENT_DEFS: Record<AccentKey, AccentDef> = {
 
 function normalizeMode(stored: string | null): ThemeMode {
   return stored === 'dark' ? 'dark' : 'light'
+}
+
+/** Read the stored accent, falling back to 'cyan' if it isn't a known key (e.g. a removed preset). */
+function readStoredAccent(): AccentKey {
+  const stored = localStorage.getItem(LS_ACCENT)
+  return stored && stored in ACCENT_DEFS ? (stored as AccentKey) : 'cyan'
 }
 
 function migrateLegacyThemeMode() {
@@ -81,7 +80,7 @@ function migrateLegacyThemeMode() {
 }
 
 // ─── Reactive state ───────────────────────────────────────────────────────────
-const accent = ref<AccentKey>((localStorage.getItem(LS_ACCENT) as AccentKey) || 'cyan')
+const accent = ref<AccentKey>(readStoredAccent())
 const mode = ref<ThemeMode>(normalizeMode(localStorage.getItem(LS_MODE)))
 const darkSidebar = ref<boolean>(localStorage.getItem(LS_DARK_SIDEBAR) !== 'false')
 
@@ -161,7 +160,7 @@ export function useAppTheme() {
  */
 export function initAppTheme() {
   migrateLegacyThemeMode()
-  const storedAccent = (localStorage.getItem(LS_ACCENT) as AccentKey) || 'cyan'
+  const storedAccent = readStoredAccent()
   const storedMode = normalizeMode(localStorage.getItem(LS_MODE))
   applyAccent(storedAccent)
   applyMode(storedMode)

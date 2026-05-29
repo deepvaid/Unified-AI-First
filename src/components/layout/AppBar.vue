@@ -31,6 +31,7 @@ const appbarNoticeVisible = ref(false)
 
 const currentAccountId = computed(() => accountsStore.activeId)
 const settingsRoute = computed(() => ({ name: 'Settings' as const, params: { accountId: currentAccountId.value } }))
+const billingRoute = computed(() => ({ name: 'Billing' as const, params: { accountId: currentAccountId.value } }))
 const profileRoute = computed(() => ({ name: 'SettingsGeneral' as const, params: { accountId: currentAccountId.value } }))
 const appsRoute = computed(() => ({ name: 'AppStore' as const, params: { accountId: currentAccountId.value } }))
 
@@ -465,7 +466,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                   <v-icon class="um-item__icon" size="20">settings</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Account Settings</div><div class="um-item__sub">Company, users, permissions</div></div>
                 </button>
-                <button type="button" class="um-item" @click="openStub('Billing'); closeUserMenu()">
+                <button type="button" class="um-item" @click="$router.push(billingRoute); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">credit-card</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Billing</div><div class="um-item__sub">Plan, usage, invoices</div></div>
                 </button>

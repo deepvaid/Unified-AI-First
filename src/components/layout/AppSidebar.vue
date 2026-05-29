@@ -3,8 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 import { Crown } from 'lucide-vue-next'
-import { useAppTheme, type AccentKey } from '@/composables/useAppTheme'
-
+import maropostLogo from '@/assets/maropost-logo.svg?raw'
 const props = defineProps<{
   modelValue: boolean
   rail: boolean
@@ -17,24 +16,6 @@ const emit = defineEmits<{
 }>()
 
 const accountsStore = useAccountsStore()
-const { accent, setAccent } = useAppTheme()
-
-// ─── Accent Swatches ─────────────────────────────────────────
-interface AccentSwatch {
-  key: AccentKey
-  label: string
-  color: string
-}
-
-const accentSwatches: AccentSwatch[] = [
-  { key: 'cyan',   label: 'Cyan',   color: '#00B7F4' },
-  { key: 'blue',   label: 'Blue',   color: '#2D63E8' },
-  { key: 'amber',  label: 'Amber',  color: '#B45309' },
-  { key: 'gray',   label: 'Gray',   color: '#4B5563' },
-  { key: 'purple', label: 'Purple', color: '#8B5CF6' },
-]
-
-const showAccentPicker = ref(false)
 
 // ─── Navigation Structure ────────────────────────────────────
 interface NavItem { title: string; route: string; }
@@ -531,7 +512,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           aria-label="Go to dashboard"
           @click="goTo(`/accounts/${resolvedAccountId}/dashboard`)"
         >
-          <span class="sidebar-brand__wordmark">Maropost</span>
+          <span class="sidebar-brand__logo" v-html="maropostLogo" />
         </button>
       </template>
 
@@ -797,62 +778,6 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
     </v-list>
     </div>
 
-    <!-- Bottom: Controls -->
-    <template v-slot:append>
-      <!-- Expanded mode -->
-      <div v-if="!localRail" class="sidebar-controls">
-        <!-- Accent picker -->
-        <div class="sidebar-controls__row sidebar-controls__accents">
-          <v-icon size="16" class="sidebar-controls__icon">palette</v-icon>
-          <div class="accent-picker">
-            <button
-              v-for="swatch in accentSwatches"
-              :key="swatch.key"
-              type="button"
-              class="accent-swatch"
-              :class="{ 'accent-swatch--active': accent === swatch.key }"
-              :style="{ '--swatch-color': swatch.color, background: swatch.color, color: swatch.color }"
-              :aria-label="`Set accent to ${swatch.label}`"
-              :title="swatch.label"
-              @click="setAccent(swatch.key)"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Rail mode -->
-      <div v-else class="sidebar-controls sidebar-controls--rail">
-        <v-menu location="end" offset="8" v-model="showAccentPicker">
-          <template #activator="{ props: menuProps }">
-            <button
-              v-bind="menuProps"
-              type="button"
-              class="sidebar-rail-btn"
-            >
-              <v-icon size="18">palette</v-icon>
-            </button>
-          </template>
-          <v-card flat rounded="lg" class="sidebar-surface rail-popover accent-popover">
-            <div class="accent-popover__inner">
-              <div class="accent-popover__title">Accent Color</div>
-              <div class="accent-picker">
-                <button
-                  v-for="swatch in accentSwatches"
-                  :key="swatch.key"
-                  type="button"
-                  class="accent-swatch accent-swatch--lg"
-                  :class="{ 'accent-swatch--active': accent === swatch.key }"
-                  :style="{ '--swatch-color': swatch.color, background: swatch.color, color: swatch.color }"
-                  :aria-label="`Set accent to ${swatch.label}`"
-                  :title="swatch.label"
-                  @click="setAccent(swatch.key); showAccentPicker = false"
-                />
-              </div>
-            </div>
-          </v-card>
-        </v-menu>
-      </div>
-    </template>
   </v-navigation-drawer>
 
   <Teleport to="body">
@@ -1087,7 +1012,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--sidebar-radius-sm);
+  border-radius: 4px;
   background: var(--sidebar-text);
   color: var(--sidebar-bg);
   font-size: 15px;
@@ -1100,13 +1025,16 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   opacity: 0.82;
 }
 
-.sidebar-brand__wordmark {
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
+.sidebar-brand__logo {
+  display: inline-flex;
+  align-items: center;
   color: var(--sidebar-text);
-  line-height: 1;
+}
+
+.sidebar-brand__logo :deep(svg) {
+  display: block;
+  height: 18px;
+  width: auto;
 }
 
 .sidebar-apps-toggle {
@@ -1154,136 +1082,6 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   padding: 4px 8px 12px;
   scrollbar-width: thin;
 }
-
-.sidebar-controls {
-  padding: 10px 14px;
-  border-top: 1px solid var(--sidebar-border);
-}
-
-.sidebar-controls--rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 0 10px;
-}
-
-.sidebar-controls__row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 32px;
-}
-
-.sidebar-controls__icon {
-  flex-shrink: 0;
-}
-
-.sidebar-controls__label {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--sidebar-muted);
-  flex: 1;
-  white-space: nowrap;
-}
-
-.sidebar-controls__switch {
-  flex: none;
-}
-
-:deep(.sidebar-controls__switch .v-switch__track) {
-  height: 16px;
-  min-width: 28px;
-  width: 28px;
-}
-
-:deep(.sidebar-controls__switch .v-switch__thumb) {
-  width: 12px;
-  height: 12px;
-}
-
-:deep(.sidebar-controls__switch .v-selection-control) {
-  min-height: 24px;
-}
-
-.sidebar-controls__accents {
-  margin-top: 2px;
-}
-
-.accent-picker {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.accent-swatch {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  appearance: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  position: relative;
-}
-
-.accent-swatch:hover {
-  transform: scale(1.18);
-}
-
-.accent-swatch--active {
-  box-shadow: 0 0 0 2px var(--sidebar-bg), 0 0 0 3.5px currentColor;
-}
-
-.accent-swatch--lg {
-  width: 22px;
-  height: 22px;
-}
-
-.sidebar-rail-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--sidebar-radius-sm);
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  appearance: none;
-  padding: 0;
-  color: var(--sidebar-muted);
-  transition: var(--sidebar-transition);
-}
-
-.sidebar-rail-btn:hover {
-  background: var(--sidebar-hover-bg);
-  color: var(--sidebar-active-text);
-}
-
-.sidebar-rail-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--sidebar-focus-ring);
-}
-
-.accent-popover {
-  padding: 0 !important;
-}
-
-.accent-popover__inner {
-  padding: 12px 16px;
-}
-
-.accent-popover__title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--sidebar-muted);
-  margin-bottom: 10px;
-}
-
 
 .sidebar-divider {
   border-color: var(--sidebar-border) !important;

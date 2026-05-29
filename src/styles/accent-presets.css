@@ -24,23 +24,6 @@
   --v-theme-secondary: 45, 99, 232;
 }
 
-/* ─── Amber ────────────────────────────────────────────────── */
-[data-accent="amber"] {
-  --accent: #B45309;
-  --accent-fg: #ffffff;
-  --accent-ink: #783505;
-  --accent-soft: color-mix(in oklch, #B45309 12%, transparent);
-}
-[data-accent="amber"] .v-theme--maropostLight,
-[data-accent="amber"] .v-theme--maropostDark {
-  --v-theme-primary: 180, 83, 9;
-  --v-theme-on-primary: 255, 255, 255;
-  --v-theme-primary-container: 254, 243, 199;
-  --v-theme-on-primary-container: 120, 53, 5;
-  --v-theme-info: 180, 83, 9;
-  --v-theme-secondary: 180, 83, 9;
-}
-
 /* ─── Gray ─────────────────────────────────────────────────── */
 [data-accent="gray"] {
   --accent: #4B5563;

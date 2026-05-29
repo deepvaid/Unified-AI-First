@@ -5,20 +5,20 @@ import {
   mp_color_chart_light_series2,
   mp_color_chart_light_series3,
   mp_color_chart_light_series4,
-  mp_color_chart_light_series5,
   mp_color_chart_light_series6,
+  mp_color_chart_light_series7,
 } from '@/design-tokens/generated/tokens'
 
 /**
  * Maropost-aligned palette for chart series.
- * [blue, cyan, teal, green, amber, slate]
+ * [cyan, deep cyan, teal, green, violet, slate]
  */
 export const chartPalette: string[] = [
   mp_color_chart_light_series1,
   mp_color_chart_light_series2,
   mp_color_chart_light_series3,
   mp_color_chart_light_series4,
-  mp_color_chart_light_series5,
+  mp_color_chart_light_series7,
   mp_color_chart_light_series6,
 ]
 

@@ -61,6 +61,7 @@ function routeTo(item: SettingsItem) {
           :aria-current="isActive(item) ? 'page' : undefined"
         >
           {{ item.label }}
+          <v-icon v-if="item.external" size="14" class="settings-sidebar__launch">external-link</v-icon>
         </router-link>
       </div>
     </nav>
@@ -154,7 +155,9 @@ function routeTo(item: SettingsItem) {
 
 .settings-sidebar__item {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 7px 12px;
   border-radius: 6px;
   color: var(--ink);
@@ -162,6 +165,11 @@ function routeTo(item: SettingsItem) {
   font-weight: 500;
   text-decoration: none;
   transition: background 120ms ease, color 120ms ease;
+}
+
+.settings-sidebar__launch {
+  color: var(--muted);
+  flex-shrink: 0;
 }
 
 .settings-sidebar__item:hover {
