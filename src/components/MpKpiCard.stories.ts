@@ -37,6 +37,7 @@ const meta = {
     trend: { control: 'text' },
     trendPositive: { control: 'boolean' },
     subStat: { control: 'text' },
+    period: { control: 'text' },
   },
 } satisfies Meta<typeof MpKpiCard>
 
@@ -74,6 +75,36 @@ export const NoTrend: Story = {
     icon: 'megaphone',
     color: 'primary',
   },
+}
+
+export const WithPeriod: Story = {
+  args: {
+    label: 'Net Sales',
+    value: '$8,214',
+    icon: 'dollar-sign',
+    color: 'success',
+    trend: '+4.8%',
+    trendPositive: true,
+    period: 'Today',
+  },
+}
+
+export const WithSparkline: Story = {
+  render: () => ({
+    components: { MpKpiCard },
+    template: `
+      <div style="max-width: 320px;">
+        <MpKpiCard label="Revenue" value="$13,420" icon="dollar-sign" color="success" trend="+12.5%" :trendPositive="true" period="Last 30 days">
+          <template #sparkline>
+            <svg viewBox="0 0 96 36" width="96" height="36" fill="none">
+              <path d="M0 30 L12 26 L24 28 L36 20 L48 22 L60 14 L72 16 L84 8 L96 10" stroke="rgb(var(--v-theme-primary))" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </template>
+        </MpKpiCard>
+      </div>
+    `,
+  }),
+  args: {} as any, // Fixes TS strict mode error
 }
 
 export const DashboardRow: Story = {

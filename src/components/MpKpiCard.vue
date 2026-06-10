@@ -9,6 +9,7 @@ const props = defineProps<{
   trend?: string
   trendPositive?: boolean
   subStat?: string
+  period?: string
 }>()
 
 const VALID_COLORS = new Set(['primary', 'success', 'info', 'warning', 'secondary', 'error', 'default'])
@@ -27,23 +28,34 @@ const trendUp = computed(() => props.trendPositive !== false)
       <div v-if="icon" class="mp-kpi-card__icon" :class="`mp-kpi-card__icon--${tone}`">
         <v-icon size="20">{{ icon }}</v-icon>
       </div>
-      <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mp-kpi-card__label">
-        {{ label }}
+      <div class="min-width-0">
+        <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mp-kpi-card__label">
+          {{ label }}
+        </div>
+        <div v-if="period" class="text-caption text-medium-emphasis mp-kpi-card__period">{{ period }}</div>
       </div>
     </div>
 
-    <div class="text-h5 font-weight-bold mp-kpi-card__value">{{ value }}</div>
+    <div class="d-flex align-end ga-3 flex-grow-1">
+      <div class="min-width-0 flex-grow-1">
+        <div class="text-h5 font-weight-bold mp-kpi-card__value">{{ value }}</div>
 
-    <div v-if="trend" class="d-flex align-center ga-1 mt-2">
-      <v-icon size="14" :color="trendUp ? 'success' : 'error'">
-        {{ trendUp ? 'trending-up' : 'trending-down' }}
-      </v-icon>
-      <span class="text-caption font-weight-medium" :class="trendUp ? 'text-success' : 'text-error'">
-        {{ trend }}
-      </span>
+        <div v-if="trend" class="d-flex align-center ga-1 mt-2">
+          <v-icon size="14" :color="trendUp ? 'success' : 'error'">
+            {{ trendUp ? 'trending-up' : 'trending-down' }}
+          </v-icon>
+          <span class="text-caption font-weight-medium" :class="trendUp ? 'text-success' : 'text-error'">
+            {{ trend }}
+          </span>
+        </div>
+
+        <div v-if="subStat" class="text-caption text-medium-emphasis mt-2">{{ subStat }}</div>
+      </div>
+
+      <div v-if="$slots.sparkline" class="mp-kpi-card__sparkline">
+        <slot name="sparkline" />
+      </div>
     </div>
-
-    <div v-if="subStat" class="text-caption text-medium-emphasis mt-2">{{ subStat }}</div>
 
     <slot />
   </v-card>
@@ -101,6 +113,15 @@ const trendUp = computed(() => props.trendPositive !== false)
 
 .mp-kpi-card__label {
   letter-spacing: 0.04em;
+}
+
+.mp-kpi-card__period {
+  line-height: 1.3;
+}
+
+.mp-kpi-card__sparkline {
+  width: 96px;
+  flex-shrink: 0;
 }
 
 .mp-kpi-card__value {

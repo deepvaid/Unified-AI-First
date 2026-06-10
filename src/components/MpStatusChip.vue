@@ -5,7 +5,7 @@ type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral'
 
 const props = withDefaults(defineProps<{
   status: string
-  type?: 'order' | 'fulfillment' | 'payment' | 'campaign' | 'contact' | 'ticket' | 'coupon' | 'general'
+  type?: 'order' | 'fulfillment' | 'payment' | 'campaign' | 'contact' | 'ticket' | 'coupon' | 'priority' | 'connection' | 'general'
   size?: 'x-small' | 'small' | 'default'
   variant?: 'flat' | 'tonal' | 'outlined'
   showIcon?: boolean
@@ -50,6 +50,15 @@ const toneMap: Record<string, Record<string, Tone>> = {
     active: 'success', expired: 'neutral', scheduled: 'brand',
     used: 'neutral', disabled: 'neutral',
   },
+  priority: {
+    critical: 'danger', urgent: 'danger', high: 'danger',
+    medium: 'warning', normal: 'neutral', low: 'neutral',
+  },
+  connection: {
+    connected: 'success', disconnected: 'neutral', 'needs setup': 'warning',
+    'sync issue': 'danger', 'auth expired': 'danger', syncing: 'warning',
+    error: 'danger', healthy: 'success',
+  },
   general: {
     active: 'success', inactive: 'neutral', pending: 'warning', error: 'danger',
     published: 'success', draft: 'neutral', archived: 'neutral',
@@ -89,6 +98,14 @@ const iconMap: Record<string, Record<string, string>> = {
   payment: {
     paid: 'check-circle', refunded: 'corner-down-left',
     failed: 'alert-circle',
+  },
+  priority: {
+    critical: 'alert-octagon', urgent: 'alert-octagon', high: 'alert-triangle',
+    medium: 'circle-alert', normal: 'minus', low: 'minus',
+  },
+  connection: {
+    connected: 'check-circle', disconnected: 'circle-x',
+    'needs setup': 'wrench', 'sync issue': 'refresh-cw', 'auth expired': 'key-round',
   },
 }
 

@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 
-defineProps<{
+withDefaults(defineProps<{
   title: string
   subtitle?: string
   backTo?: string | Record<string, unknown>
-}>()
+  level?: 1 | 2
+  density?: 'default' | 'compact'
+}>(), {
+  level: 1,
+  density: 'default',
+})
 </script>
 
 <template>
-  <div class="mp-page-header mb-2">
+  <div class="mp-page-header" :class="density === 'compact' ? 'mb-1' : 'mb-2'">
     <div class="mp-page-header__top d-flex align-start ga-3">
       <RouterLink
         v-if="backTo"
@@ -29,7 +34,11 @@ defineProps<{
 
       <div class="mp-page-header__main min-width-0 flex-grow-1 d-flex align-start ga-3">
         <div class="min-width-0 flex-grow-1">
-          <h1 class="mp-page-header__title text-h5 font-weight-bold">{{ title }}</h1>
+          <component
+            :is="level === 2 ? 'h2' : 'h1'"
+            class="mp-page-header__title font-weight-bold"
+            :class="level === 2 ? 'text-h6' : 'text-h5'"
+          >{{ title }}</component>
           <div v-if="subtitle" class="mp-page-header__subtitle text-body-2 text-medium-emphasis mt-1">
             {{ subtitle }}
           </div>

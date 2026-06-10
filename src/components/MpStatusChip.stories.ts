@@ -32,7 +32,7 @@ The \`MpStatusChip\` displays the current state of an entity. It automatically a
     status: { control: 'text' },
     type: {
       control: 'select',
-      options: ['order', 'fulfillment', 'payment', 'campaign', 'contact', 'ticket', 'coupon', 'general'],
+      options: ['order', 'fulfillment', 'payment', 'campaign', 'contact', 'ticket', 'coupon', 'priority', 'connection', 'general'],
     },
     size: { control: 'select', options: ['x-small', 'small', 'default'] },
     variant: { control: 'select', options: ['flat', 'tonal', 'outlined'] },
@@ -62,6 +62,37 @@ export const OrderStatuses: Story = {
         <MpStatusChip status="Cancelled" type="order" />
         <MpStatusChip status="Refunded" type="order" />
         <MpStatusChip status="On Hold" type="order" />
+      </div>
+    `,
+  }),
+  args: {} as any,
+}
+
+export const PriorityLevels: Story = {
+  render: () => ({
+    components: { MpStatusChip },
+    template: `
+      <div class="d-flex flex-wrap gap-2 align-center">
+        <MpStatusChip status="Critical" type="priority" showIcon />
+        <MpStatusChip status="High" type="priority" showIcon />
+        <MpStatusChip status="Medium" type="priority" showIcon />
+        <MpStatusChip status="Low" type="priority" showIcon />
+      </div>
+    `,
+  }),
+  args: {} as any,
+}
+
+export const ConnectionStatuses: Story = {
+  render: () => ({
+    components: { MpStatusChip },
+    template: `
+      <div class="d-flex flex-wrap gap-2 align-center">
+        <MpStatusChip status="Connected" type="connection" showIcon />
+        <MpStatusChip status="Disconnected" type="connection" showIcon />
+        <MpStatusChip status="Needs Setup" type="connection" showIcon />
+        <MpStatusChip status="Sync Issue" type="connection" showIcon />
+        <MpStatusChip status="Auth Expired" type="connection" showIcon />
       </div>
     `,
   }),

@@ -32,6 +32,7 @@ The \`MpFloatingBulkBar\` appears highly visible at the bottom of the screen whe
   },
   argTypes: {
     count: { control: { type: 'number', min: 0, max: 100 } },
+    total: { control: { type: 'number', min: 0, max: 100 } },
   },
 } satisfies Meta<typeof MpFloatingBulkBar>
 
@@ -54,6 +55,26 @@ export const Default: Story = {
         <MpFloatingBulkBar :count="count" @clear="count = 0">
           <v-btn size="small" variant="outlined" prepend-icon="truck">Fulfill</v-btn>
           <v-btn size="small" variant="outlined" prepend-icon="download">Export</v-btn>
+          <v-btn size="small" variant="outlined" color="error" prepend-icon="trash-2">Delete</v-btn>
+        </MpFloatingBulkBar>
+      </div>
+    `,
+  }),
+  args: {} as any, // Fixes TS strict mode error
+}
+
+export const WithSelectAll: Story = {
+  render: () => ({
+    components: { MpFloatingBulkBar },
+    setup() {
+      const count = ref(5)
+      const total = ref(42)
+      return { count, total }
+    },
+    template: `
+      <div style="min-height: 200px; position: relative;">
+        <MpFloatingBulkBar :count="count" :total="total" @clear="count = 0" @select-all="count = total">
+          <v-btn size="small" variant="outlined" prepend-icon="tag">Tag</v-btn>
           <v-btn size="small" variant="outlined" color="error" prepend-icon="trash-2">Delete</v-btn>
         </MpFloatingBulkBar>
       </div>

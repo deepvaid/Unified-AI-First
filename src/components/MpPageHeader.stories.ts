@@ -32,6 +32,8 @@ The \`MpPageHeader\` sits at the very top of main application views. It provides
   argTypes: {
     title: { control: 'text' },
     subtitle: { control: 'text' },
+    level: { control: 'select', options: [1, 2] },
+    density: { control: 'select', options: ['default', 'compact'] },
   },
 } satisfies Meta<typeof MpPageHeader>
 
@@ -67,5 +69,14 @@ export const WithActions: Story = {
 export const TitleOnly: Story = {
   args: {
     title: 'Dashboard',
+  },
+}
+
+export const SectionLevel: Story = {
+  args: {
+    title: 'Users & Permissions',
+    subtitle: 'Invite teammates and manage their access levels.',
+    level: 2,
+    density: 'compact',
   },
 }
