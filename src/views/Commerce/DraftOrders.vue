@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -125,12 +126,9 @@ const statusColor = (s: string) => ({Open:'primary','Invoice Sent':'success'})[s
         v-model:search="search"
         title="All Draft Orders"
         :active-filters="activeFilterEntries"
-        :selected-count="selected.length"
         :total-count="(store.draftOrders ?? []).length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-        @clear-selection="selected = []"
-        @select-all="selectAll"
       >
         <template #filter-content>
           <div class="pa-4 pb-2">
@@ -150,10 +148,6 @@ const statusColor = (s: string) => ({Open:'primary','Invoice Sent':'success'})[s
               />
             </div>
           </div>
-        </template>
-        <template #bulk-actions>
-          <v-btn size="small" variant="flat" color="primary" class="text-none" prepend-icon="send" rounded="lg">Send Invoice</v-btn>
-          <v-btn size="small" variant="flat" color="error" class="text-none" prepend-icon="trash-2" rounded="lg">Delete Drafts</v-btn>
         </template>
       </MpDataTableToolbar>
 
@@ -201,6 +195,16 @@ const statusColor = (s: string) => ({Open:'primary','Invoice Sent':'success'})[s
         </template>
       </v-data-table>
     </v-card>
+
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="(store.draftOrders ?? []).length"
+      @clear="selected = []"
+      @select-all="selectAll"
+    >
+      <v-btn size="small" variant="flat" color="primary" class="text-none" prepend-icon="send" rounded="lg">Send Invoice</v-btn>
+      <v-btn size="small" variant="flat" color="error" class="text-none" prepend-icon="trash-2" rounded="lg">Delete Drafts</v-btn>
+    </MpFloatingBulkBar>
 
     <!-- ── Create Draft Order Drawer (3-step) ────────────────────── -->
     <v-navigation-drawer v-model="createDrawer" location="right" temporary :width="560" elevation="4">

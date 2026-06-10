@@ -142,13 +142,10 @@ function toggleSelect(id: string) {
       <MpDataTableToolbar
         v-model:search="search"
         title="App + Storybook Shared Components"
-        :selected-count="selected.length"
         :total-count="filteredRows.length"
         :active-filters="activeTab === 'all' ? [] : [{ key: activeTab, label: `Status: ${activeTab}` }]"
         @remove-filter="activeTab = 'all'"
         @clear-filters="activeTab = 'all'"
-        @clear-selection="selected = []"
-        @select-all="selected = filteredRows.map(r => r.id)"
       >
         <template #actions>
           <v-btn variant="flat" prepend-icon="refresh-cw" color="surface">Refresh preview</v-btn>
@@ -218,7 +215,12 @@ function toggleSelect(id: string) {
       </v-card-text>
     </v-card>
 
-    <MpFloatingBulkBar :count="selected.length" @clear="selected = []">
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="filteredRows.length"
+      @clear="selected = []"
+      @select-all="selected = filteredRows.map(r => r.id)"
+    >
       <v-btn size="small" variant="text">Export selected</v-btn>
       <v-btn size="small" variant="text" color="error">Archive selected</v-btn>
     </MpFloatingBulkBar>

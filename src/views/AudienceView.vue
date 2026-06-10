@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useAudienceStore } from '@/stores/useAudience'
 import { storeToRefs } from 'pinia'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 
 const store = useAudienceStore()
 const { contacts } = storeToRefs(store)
@@ -9,8 +10,6 @@ const { contacts } = storeToRefs(store)
 const selected = ref<number[]>([])
 const editingId = ref<number | null>(null)
 const editName = ref('')
-
-const isBulkActionVisible = computed(() => selected.value.length > 0)
 
 function toggleSelectAll(val: boolean | null) {
   if (val) {
@@ -115,27 +114,15 @@ function saveEdit(contact: any) {
       </v-table>
     </v-card>
 
-    <!-- Floating Bulk Actions Bar -->
-    <v-fade-transition>
-      <div v-if="isBulkActionVisible" class="position-fixed bottom-0 left-0 right-0 d-flex justify-center pb-8 z-index-100" style="z-index: 100; pointer-events: none;">
-        <v-card 
-          elevation="12" 
-          rounded="pill" 
-          class="bg-surface border bento-card d-flex align-center px-6 py-3"
-          style="pointer-events: auto; border: 1px solid rgba(var(--v-theme-primary), 0.3) !important;"
-        >
-          <div class="mr-6 font-weight-bold text-primary">
-            {{ selected.length }} selected
-          </div>
-          <v-divider vertical class="mx-2"></v-divider>
-          <div class="d-flex gap-2">
-            <v-btn variant="text" prepend-icon="tag" class="text-none">Add Tags</v-btn>
-            <v-btn variant="text" prepend-icon="ban" color="error" class="text-none">Unsubscribe</v-btn>
-            <v-btn variant="text" icon="x" density="comfortable" @click="selected = []" class="ml-2"></v-btn>
-          </div>
-        </v-card>
-      </div>
-    </v-fade-transition>
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="contacts.length"
+      @clear="selected = []"
+      @select-all="toggleSelectAll(true)"
+    >
+      <v-btn variant="text" size="small" prepend-icon="tag" class="text-none">Add Tags</v-btn>
+      <v-btn variant="text" size="small" prepend-icon="ban" color="error" class="text-none">Unsubscribe</v-btn>
+    </MpFloatingBulkBar>
   </div>
 </template>
 

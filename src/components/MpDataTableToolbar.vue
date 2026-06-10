@@ -12,7 +12,6 @@ const props = defineProps<{
   filterTitle?: string
   filterSubtitle?: string
   activeFilters?: Array<{ key: string; label: string }>
-  selectedCount?: number
   totalCount?: number
   headers?: Array<{ title: string; key: string; [k: string]: any }>
 }>()
@@ -20,8 +19,6 @@ const props = defineProps<{
 defineEmits<{
   removeFilter: [key: string]
   clearFilters: []
-  clearSelection: []
-  selectAll: []
 }>()
 
 const NON_TOGGLEABLE = new Set(['actions', 'data-table-select', 'data-table-expand'])
@@ -190,41 +187,6 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
     </div>
   </v-expand-transition>
 
-  <v-expand-transition>
-    <div v-if="selectedCount && selectedCount > 0" class="px-6 pb-4">
-      <div class="mp-toolbar-bulk d-flex align-center ga-3 pa-3 rounded-lg">
-        <span class="text-body-2 font-weight-bold">
-          {{ selectedCount }}
-          <span v-if="totalCount" class="font-weight-regular text-medium-emphasis">
-            of {{ totalCount }} selected
-          </span>
-          <span v-else class="font-weight-regular text-medium-emphasis">selected</span>
-        </span>
-        <v-btn
-          v-if="totalCount"
-          variant="text"
-          size="small"
-          color="primary"
-          class="text-none font-weight-medium"
-          @click="$emit('selectAll')"
-        >
-          Select All
-        </v-btn>
-        <v-divider v-if="$slots['bulk-actions']" vertical class="mx-1 mp-divider-vertical" />
-        <slot name="bulk-actions" />
-        <v-spacer />
-        <v-btn
-          icon="x"
-          variant="text"
-          size="small"
-          density="comfortable"
-          aria-label="Clear selected rows"
-          @click="$emit('clearSelection')"
-        />
-      </div>
-    </div>
-  </v-expand-transition>
-
   <v-divider class="mp-divider-toolbar" />
 
   <MpFormDrawer
@@ -271,10 +233,6 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   min-width: 240px;
 }
 
-.mp-divider-vertical {
-  height: $mp-spacing-6;
-}
-
 .mp-divider-muted {
   opacity: 0.4;
 }
@@ -289,12 +247,6 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
 
 .mp-toolbar-heading {
   min-width: 0;
-}
-
-.mp-toolbar-bulk {
-  background: rgba(var(--v-theme-primary), 0.05);
-  border: 1px solid rgba(var(--v-theme-primary), 0.18);
-  box-shadow: none;
 }
 
 .mp-column-checkbox :deep(.v-label) {

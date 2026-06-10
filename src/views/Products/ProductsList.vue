@@ -4,6 +4,7 @@ import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -87,12 +88,9 @@ const statusColor = (s: string) => s === 'In Stock' ? 'success' : s === 'Low Sto
         title="All Products"
         v-model:search="search"
         :active-filters="activeFilterEntries"
-        :selected-count="selected.length"
         :total-count="filteredProducts.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-        @clear-selection="selected = []"
-        @select-all="selectAll"
       >
         <template #filter-content>
           <div class="pa-4 pb-2">
@@ -136,10 +134,6 @@ const statusColor = (s: string) => s === 'In Stock' ? 'success' : s === 'Low Sto
           </div>
         </template>
 
-        <template #bulk-actions>
-          <v-btn variant="text" size="small" prepend-icon="share" class="text-none">Export</v-btn>
-          <v-btn variant="text" size="small" prepend-icon="trash-2" class="text-none text-error">Delete</v-btn>
-        </template>
       </MpDataTableToolbar>
 
       <v-data-table
@@ -219,5 +213,15 @@ const statusColor = (s: string) => s === 'In Stock' ? 'success' : s === 'Low Sto
         </template>
       </v-data-table>
     </v-card>
+
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="filteredProducts.length"
+      @clear="selected = []"
+      @select-all="selectAll"
+    >
+      <v-btn variant="text" size="small" prepend-icon="share" class="text-none">Export</v-btn>
+      <v-btn variant="text" size="small" prepend-icon="trash-2" class="text-none text-error">Delete</v-btn>
+    </MpFloatingBulkBar>
   </div>
 </template>

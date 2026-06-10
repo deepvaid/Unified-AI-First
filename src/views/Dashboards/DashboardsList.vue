@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { MbPageHeader } from '@marobase/ui'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import CreateDashboardDialog from '@/components/dashboards/CreateDashboardDialog.vue'
 import EditDashboardDialog from '@/components/dashboards/EditDashboardDialog.vue'
 import { accentToVuetifyColor, relativeTime } from '@/components/dashboards/dashboardOptions'
@@ -284,45 +285,8 @@ function handleDashboardCreated(dashboardId: string) {
         title="All Dashboards"
         search-placeholder="Search dashboards"
         :headers="headers"
-        :selected-count="selectedIds.length"
         :total-count="totalCount"
-        @clear-selection="clearSelection"
-        @select-all="selectAll"
       >
-        <template #bulk-actions>
-          <v-btn
-            variant="outlined"
-            size="small"
-            class="text-none"
-            rounded="lg"
-            :prepend-icon="selectedAllFavorited ? 'star-off' : 'star'"
-            @click="bulkFavorite"
-          >
-            {{ selectedAllFavorited ? 'Unfavorite' : 'Favorite' }}
-          </v-btn>
-          <v-btn
-            variant="outlined"
-            size="small"
-            class="text-none"
-            rounded="lg"
-            prepend-icon="copy"
-            @click="bulkDuplicate"
-          >
-            Duplicate
-          </v-btn>
-          <v-btn
-            variant="outlined"
-            size="small"
-            color="error"
-            class="text-none"
-            rounded="lg"
-            prepend-icon="trash-2"
-            :disabled="!selectedHasCustom"
-            @click="bulkDelete"
-          >
-            Delete
-          </v-btn>
-        </template>
       </MpDataTableToolbar>
 
       <v-data-table
@@ -476,6 +440,46 @@ function handleDashboardCreated(dashboardId: string) {
         </template>
       </v-data-table>
     </v-card>
+
+    <MpFloatingBulkBar
+      :count="selectedIds.length"
+      :total="totalCount"
+      @clear="clearSelection"
+      @select-all="selectAll"
+    >
+      <v-btn
+        variant="outlined"
+        size="small"
+        class="text-none"
+        rounded="lg"
+        :prepend-icon="selectedAllFavorited ? 'star-off' : 'star'"
+        @click="bulkFavorite"
+      >
+        {{ selectedAllFavorited ? 'Unfavorite' : 'Favorite' }}
+      </v-btn>
+      <v-btn
+        variant="outlined"
+        size="small"
+        class="text-none"
+        rounded="lg"
+        prepend-icon="copy"
+        @click="bulkDuplicate"
+      >
+        Duplicate
+      </v-btn>
+      <v-btn
+        variant="outlined"
+        size="small"
+        color="error"
+        class="text-none"
+        rounded="lg"
+        prepend-icon="trash-2"
+        :disabled="!selectedHasCustom"
+        @click="bulkDelete"
+      >
+        Delete
+      </v-btn>
+    </MpFloatingBulkBar>
 
     <CreateDashboardDialog
       v-model="createDialogOpen"

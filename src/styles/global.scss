@@ -325,12 +325,14 @@ tr:focus-within .action-btns {
 }
 
 /* ─── Floating Bulk Action Bar ──────────────────────────────── */
+/* Centered within the content area (inherits Vuetify layout vars from v-main) */
 .mp-floating-bulk-bar {
   position: fixed;
   bottom: 24px;
-  left: 50%;
+  left: calc(var(--v-layout-left, 0px) + (100vw - var(--v-layout-left, 0px) - var(--v-layout-right, 0px)) / 2);
   transform: translateX(-50%);
   z-index: 100;
+  max-width: calc(100vw - var(--v-layout-left, 0px) - var(--v-layout-right, 0px) - 48px);
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);
   box-shadow: none;

@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -107,12 +108,9 @@ const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed 
         v-model:search="search"
         title="All Coupons"
         :active-filters="activeFilterEntries"
-        :selected-count="selected.length"
         :total-count="store.coupons.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-        @clear-selection="selected = []"
-        @select-all="selectAll"
       >
         <template #filter-content>
           <div class="pa-4 pb-2">
@@ -129,10 +127,6 @@ const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed 
               />
             </div>
           </div>
-        </template>
-        <template #bulk-actions>
-          <v-btn size="small" variant="flat" color="warning" class="text-none" prepend-icon="pause" rounded="lg">Deactivate</v-btn>
-          <v-btn size="small" variant="flat" color="error" class="text-none" prepend-icon="trash-2" rounded="lg">Delete</v-btn>
         </template>
       </MpDataTableToolbar>
 
@@ -193,6 +187,16 @@ const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed 
         </template>
       </v-data-table>
     </v-card>
+
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="store.coupons.length"
+      @clear="selected = []"
+      @select-all="selectAll"
+    >
+      <v-btn size="small" variant="flat" color="warning" class="text-none" prepend-icon="pause" rounded="lg">Deactivate</v-btn>
+      <v-btn size="small" variant="flat" color="error" class="text-none" prepend-icon="trash-2" rounded="lg">Delete</v-btn>
+    </MpFloatingBulkBar>
 
     <!-- ── Create Coupon Wizard Drawer ──────────────────────────── -->
     <MpFormDrawer

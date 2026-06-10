@@ -122,9 +122,6 @@ const submitCampaign = () => {
             />
           </div>
         </template>
-        <template #bulk-actions>
-          <v-btn variant="text" prepend-icon="refresh-cw" class="text-none text-medium-emphasis" size="small">Refresh</v-btn>
-        </template>
       </MpDataTableToolbar>
 
       <v-data-table

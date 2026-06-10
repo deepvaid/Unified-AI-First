@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -85,12 +86,9 @@ function selectAll() {
         v-model:search="search"
         title="Fulfillment Queue"
         :active-filters="activeFilterEntries"
-        :selected-count="selected.length"
         :total-count="store.fulfillments.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-        @clear-selection="selected = []"
-        @select-all="selectAll"
       >
         <template #filter-content>
           <div class="pa-4 pb-2">
@@ -107,10 +105,6 @@ function selectAll() {
               />
             </div>
           </div>
-        </template>
-        <template #bulk-actions>
-          <v-btn size="small" variant="flat" color="success" class="text-none" prepend-icon="truck" rounded="lg">Mark Shipped</v-btn>
-          <v-btn size="small" variant="flat" color="secondary" class="text-none" prepend-icon="printer" rounded="lg">Print Labels</v-btn>
         </template>
       </MpDataTableToolbar>
 
@@ -163,6 +157,16 @@ function selectAll() {
         </template>
       </v-data-table>
     </v-card>
+
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="store.fulfillments.length"
+      @clear="selected = []"
+      @select-all="selectAll"
+    >
+      <v-btn size="small" variant="flat" color="success" class="text-none" prepend-icon="truck" rounded="lg">Mark Shipped</v-btn>
+      <v-btn size="small" variant="flat" color="secondary" class="text-none" prepend-icon="printer" rounded="lg">Print Labels</v-btn>
+    </MpFloatingBulkBar>
   </div>
 </template>
 

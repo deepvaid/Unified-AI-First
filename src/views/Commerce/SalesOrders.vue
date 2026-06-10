@@ -6,6 +6,7 @@ import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -127,12 +128,9 @@ function selectAll() {
         v-model:search="search"
         title="All Orders"
         :active-filters="activeFilterEntries"
-        :selected-count="selected.length"
         :total-count="filteredOrders.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-        @clear-selection="selected = []"
-        @select-all="selectAll"
       >
         <template #filter-content>
           <div class="pa-4 pb-2">
@@ -149,11 +147,6 @@ function selectAll() {
               />
             </div>
           </div>
-        </template>
-        <template #bulk-actions>
-          <v-btn size="small" variant="flat" color="success" prepend-icon="package-check" class="text-none" rounded="lg">Mark Fulfilled</v-btn>
-          <v-btn size="small" variant="flat" color="secondary" prepend-icon="printer" class="text-none" rounded="lg">Print Labels</v-btn>
-          <v-btn size="small" variant="flat" color="error" prepend-icon="ban" class="text-none" rounded="lg">Cancel Orders</v-btn>
         </template>
       </MpDataTableToolbar>
 
@@ -329,6 +322,17 @@ function selectAll() {
         </template>
       </v-data-table>
     </v-card>
+
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="filteredOrders.length"
+      @clear="selected = []"
+      @select-all="selectAll"
+    >
+      <v-btn size="small" variant="flat" color="success" prepend-icon="package-check" class="text-none" rounded="lg">Mark Fulfilled</v-btn>
+      <v-btn size="small" variant="flat" color="secondary" prepend-icon="printer" class="text-none" rounded="lg">Print Labels</v-btn>
+      <v-btn size="small" variant="flat" color="error" prepend-icon="ban" class="text-none" rounded="lg">Cancel Orders</v-btn>
+    </MpFloatingBulkBar>
   </div>
 </template>
 

@@ -7,6 +7,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -162,12 +163,9 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         title="All Contacts"
         :headers="headers"
         :active-filters="activeFilterEntries"
-        :selected-count="selected.length"
         :total-count="filteredContacts.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-        @clear-selection="selected = []"
-        @select-all="selectAll"
       >
         <template #filter-content>
           <div class="pa-4 pb-2">
@@ -184,22 +182,6 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
               />
             </div>
           </div>
-        </template>
-        <template #bulk-actions>
-          <v-btn variant="flat" size="small" class="text-none" prepend-icon="share" rounded="lg" color="surface">Export</v-btn>
-          <v-btn variant="flat" size="small" class="text-none" prepend-icon="copy" rounded="lg" color="surface">Duplicate</v-btn>
-          <v-menu>
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" variant="flat" size="small" class="text-none" append-icon="chevron-down" rounded="lg" color="surface">More Actions</v-btn>
-            </template>
-            <v-list density="compact" rounded="lg" elevation="3" class="py-1">
-              <v-list-item prepend-icon="playlist-plus" title="Add to List" />
-              <v-list-item prepend-icon="tags" title="Apply Tag" />
-              <v-list-item prepend-icon="circle-minus" title="Unsubscribe" />
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
-            </v-list>
-          </v-menu>
         </template>
       </MpDataTableToolbar>
 
@@ -293,6 +275,28 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         </template>
       </v-data-table>
     </v-card>
+
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="filteredContacts.length"
+      @clear="selected = []"
+      @select-all="selectAll"
+    >
+      <v-btn variant="flat" size="small" class="text-none" prepend-icon="share" rounded="lg" color="surface">Export</v-btn>
+      <v-btn variant="flat" size="small" class="text-none" prepend-icon="copy" rounded="lg" color="surface">Duplicate</v-btn>
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-btn v-bind="props" variant="flat" size="small" class="text-none" append-icon="chevron-down" rounded="lg" color="surface">More Actions</v-btn>
+        </template>
+        <v-list density="compact" rounded="lg" class="py-1">
+          <v-list-item prepend-icon="playlist-plus" title="Add to List" />
+          <v-list-item prepend-icon="tags" title="Apply Tag" />
+          <v-list-item prepend-icon="circle-minus" title="Unsubscribe" />
+          <v-divider class="my-1" style="opacity: 0.4" />
+          <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
+        </v-list>
+      </v-menu>
+    </MpFloatingBulkBar>
 
     <!-- Quick-Add Contact Drawer -->
     <MpFormDrawer v-model="addDrawer" title="Add Contact" :subtitle="`Step ${addStep} of 2`" :width="460">
