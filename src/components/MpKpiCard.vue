@@ -12,7 +12,11 @@ const props = defineProps<{
   period?: string
 }>()
 
-const VALID_COLORS = new Set(['primary', 'success', 'info', 'warning', 'secondary', 'error', 'default'])
+const VALID_COLORS = new Set([
+  'primary', 'success', 'info', 'warning', 'secondary', 'error', 'default',
+  // Source-cloud accents (from source-cloud-colors.css)
+  'retail', 'marketing', 'contacts', 'analytics', 'commerce', 'service',
+])
 
 const tone = computed(() => {
   const c = props.color ?? 'primary'
@@ -109,6 +113,36 @@ const trendUp = computed(() => props.trendPositive !== false)
 .mp-kpi-card__icon--default {
   background: rgba(var(--v-theme-on-surface), 0.06);
   color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.mp-kpi-card__icon--retail {
+  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
+  color: var(--cloud-retail-text);
+}
+
+.mp-kpi-card__icon--marketing {
+  background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent);
+  color: var(--cloud-marketing-text);
+}
+
+.mp-kpi-card__icon--contacts {
+  background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);
+  color: var(--cloud-contacts-text);
+}
+
+.mp-kpi-card__icon--analytics {
+  background: color-mix(in oklch, var(--cloud-analytics-accent) 12%, transparent);
+  color: var(--cloud-analytics-text);
+}
+
+.mp-kpi-card__icon--commerce {
+  background: color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent);
+  color: var(--cloud-commerce-text);
+}
+
+.mp-kpi-card__icon--service {
+  background: color-mix(in oklch, var(--cloud-service-accent) 12%, transparent);
+  color: var(--cloud-service-text);
 }
 
 .mp-kpi-card__label {

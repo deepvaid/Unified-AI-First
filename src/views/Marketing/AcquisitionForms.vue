@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -91,7 +92,7 @@ function clearAllFilters() {
       </template>
     </MpPageHeader>
 
-    <div class="kpi-row d-flex gap-4">
+    <v-row dense>
       <v-col
         v-for="s in [
           { label: 'Total Views', value: forms.reduce((a, f) => a + f.views, 0).toLocaleString(), color: 'primary', icon: 'eye' },
@@ -101,19 +102,12 @@ function clearAllFilters() {
         ]"
         :key="s.label"
         cols="12"
-        sm="3"
+        sm="6"
+        md="3"
       >
-        <v-card variant="flat" border rounded="lg" class="pa-5 kpi-card">
-          <div class="d-flex justify-space-between align-center mb-3">
-            <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase">{{ s.label }}</div>
-            <div class="kpi-icon-wrap">
-              <v-icon :color="s.color" size="18">{{ s.icon }}</v-icon>
-            </div>
-          </div>
-          <div class="text-h5 font-weight-bold" :class="`text-${s.color}`">{{ s.value }}</div>
-        </v-card>
+        <MpKpiCard :label="s.label" :value="s.value" :icon="s.icon" :color="s.color" />
       </v-col>
-    </div>
+    </v-row>
 
     <div class="view-toolbar d-flex align-center gap-2 overflow-x-auto hide-scrollbar mt-3">
       <v-btn-toggle
@@ -344,10 +338,6 @@ function clearAllFilters() {
   gap: 24px;
 }
 
-.kpi-row {
-  margin-top: 4px;
-}
-
 .view-toolbar {
   padding: 4px 0;
 }
@@ -359,22 +349,6 @@ function clearAllFilters() {
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-.kpi-card {
-  background: rgb(var(--v-theme-surface));
-  border-color: var(--mp-border-subtle) !important;
-}
-
-.kpi-icon-wrap {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(var(--v-theme-surface-variant), 0.72);
-  border: 1px solid rgba(var(--v-theme-border), 0.92);
 }
 
 .view-toggle-btn {

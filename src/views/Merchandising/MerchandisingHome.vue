@@ -2,6 +2,7 @@
 import { computed, ref, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
 import {
   useMerchandisingStore,
   ENGINE_TYPE_LABELS,
@@ -231,49 +232,37 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
     <!-- KPI row -->
     <v-row dense>
       <v-col v-for="kpi in kpis" :key="kpi.label" cols="12" sm="6" md="3">
-        <v-card flat border rounded="lg" class="merch-kpi-card h-100">
-          <div class="merch-kpi-card__inner">
-            <div class="merch-kpi-card__left">
-              <div class="merch-kpi-card__header-row">
-                <div class="merch-kpi-card__icon-chip" :class="`merch-kpi-card__icon-chip--${kpi.color}`">
-                  <v-icon size="14">{{ kpi.icon }}</v-icon>
-                </div>
-                <div class="min-width-0">
-                  <div class="merch-kpi-card__title">{{ kpi.label }}</div>
-                  <div v-if="kpi.period" class="merch-kpi-card__period">{{ kpi.period }}</div>
-                </div>
-              </div>
-              <div class="merch-kpi-card__value num">{{ kpi.value }}</div>
-              <div v-if="kpi.trend" class="merch-kpi-card__trend">
-                <span
-                  class="merch-kpi-card__trend-pill"
-                  :class="kpi.trendPositive ? 'merch-kpi-card__trend-pill--pos' : 'merch-kpi-card__trend-pill--neg'"
-                >
-                  <v-icon size="12">{{ kpi.trendPositive ? 'chevron-up' : 'chevron-down' }}</v-icon>
-                  {{ kpi.trend }}
-                </span>
-              </div>
-              <div v-else-if="kpi.subStat" class="merch-kpi-card__sub">{{ kpi.subStat }}</div>
-            </div>
-            <!-- Sparkline for KPIs with trend data -->
-            <div v-if="kpi.trend" class="merch-kpi-card__sparkline-col" aria-hidden="true">
-              <svg class="merch-kpi-card__sparkline" viewBox="0 0 100 52" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient :id="`${sparkId}-fill`" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.18" />
-                    <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
-                  </linearGradient>
-                </defs>
-                <polygon
-                  :points="`0,52 ${revenueSparkline} 100,52`"
-                  :fill="`url(#${sparkId}-fill)`"
-                  class="merch-kpi-card__sparkline-fill"
-                />
-                <polyline :points="revenueSparkline" class="merch-kpi-card__sparkline-line" />
-              </svg>
-            </div>
-          </div>
-        </v-card>
+        <MpKpiCard
+          :label="kpi.label"
+          :value="kpi.value"
+          :icon="kpi.icon"
+          :color="kpi.color"
+          :trend="kpi.trend"
+          :trend-positive="kpi.trendPositive"
+          :sub-stat="kpi.subStat"
+          :period="kpi.period"
+        >
+          <template v-if="kpi.trend" #sparkline>
+            <svg class="merch-sparkline" viewBox="0 0 100 52" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient :id="`${sparkId}-fill`" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="currentColor" stop-opacity="0.18" />
+                  <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <polygon :points="`0,52 ${revenueSparkline} 100,52`" :fill="`url(#${sparkId}-fill)`" stroke="none" />
+              <polyline
+                :points="revenueSparkline"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                vector-effect="non-scaling-stroke"
+              />
+            </svg>
+          </template>
+        </MpKpiCard>
       </v-col>
     </v-row>
 
@@ -543,8 +532,7 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
 }
 
 /* ── Shared card chrome (matches DashboardWidgetCard) ──────────── */
-.merch-widget-card,
-.merch-kpi-card {
+.merch-widget-card {
   background: var(--surface-1) !important;
   border-color: color-mix(in oklch, var(--ink) 7%, transparent) !important;
   border-radius: var(--r-section) !important;
@@ -553,10 +541,16 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.merch-widget-card:hover,
-.merch-kpi-card:hover {
+.merch-widget-card:hover {
   border-color: color-mix(in oklch, var(--ink) 18%, transparent) !important;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06) !important;
+}
+
+.merch-sparkline {
+  width: 100%;
+  height: 48px;
+  overflow: visible;
+  color: var(--cloud-retail-accent);
 }
 
 /* ── Widget card header (matches DashboardWidgetCard header) ────── */
@@ -593,160 +587,6 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
 /* ── Widget body ─────────────────────────────────────────────── */
 .merch-widget-body {
   padding: 0 22px 20px;
-}
-
-/* ── KPI card (matches DashboardKpiWidget) ───────────────────── */
-.merch-kpi-card {
-  container-type: inline-size;
-}
-
-.merch-kpi-card__inner {
-  display: flex;
-  align-items: stretch;
-  gap: 12px;
-  padding: 16px 18px;
-  height: 100%;
-}
-
-.merch-kpi-card__left {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.merch-kpi-card__header-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.merch-kpi-card__icon-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-chip);
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-}
-
-.merch-kpi-card__icon-chip--primary {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-}
-
-.merch-kpi-card__icon-chip--retail {
-  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
-  color: var(--cloud-retail-text);
-}
-
-.merch-kpi-card__icon-chip--marketing {
-  background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent);
-  color: var(--cloud-marketing-text);
-}
-
-.merch-kpi-card__icon-chip--contacts {
-  background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);
-  color: var(--cloud-contacts-text);
-}
-
-.merch-kpi-card__icon-chip--analytics {
-  background: color-mix(in oklch, var(--cloud-analytics-accent) 12%, transparent);
-  color: var(--cloud-analytics-text);
-}
-
-.merch-kpi-card__title {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.merch-kpi-card__period {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.merch-kpi-card__value {
-  margin-top: 6px;
-  font-size: 28px;
-  line-height: 1.1;
-  letter-spacing: -0.5px;
-  font-weight: 600;
-  color: var(--ink);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
-.merch-kpi-card__trend {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.merch-kpi-card__trend-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.merch-kpi-card__trend-pill--pos { color: var(--pos); }
-.merch-kpi-card__trend-pill--neg { color: var(--neg); }
-
-.merch-kpi-card__sub {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  margin-top: 4px;
-}
-
-/* Sparkline */
-.merch-kpi-card__sparkline-col {
-  display: flex;
-  align-items: flex-end;
-  flex: 0 1 38%;
-  max-width: 40%;
-  min-width: 70px;
-  align-self: stretch;
-  padding-top: 8px;
-  color: var(--cloud-retail-accent);
-}
-
-.merch-kpi-card__sparkline {
-  width: 100%;
-  height: 88px;
-  overflow: visible;
-}
-
-.merch-kpi-card__sparkline-line {
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-}
-
-.merch-kpi-card__sparkline-fill {
-  stroke: none;
 }
 
 /* ── Quick action tiles ───────────────────────────────────────── */

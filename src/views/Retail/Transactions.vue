@@ -6,6 +6,7 @@ import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
 import { useRetailStore } from '@/stores/useRetail'
 import type { RetailTransaction, TxnStatus } from '@/stores/useRetail'
 import { TENDER_LABELS } from '@/stores/useRetail'
@@ -140,19 +141,12 @@ function registerName(id: string) {
     <!-- KPI row -->
     <v-row dense>
       <v-col v-for="kpi in kpis" :key="kpi.label" cols="12" sm="6" md="3">
-        <v-card flat border rounded="lg" class="retail-kpi-card h-100">
-          <div class="retail-kpi-card__inner">
-            <div class="retail-kpi-card__left">
-              <div class="retail-kpi-card__header-row">
-                <div class="retail-kpi-card__icon-chip" :class="`retail-kpi-card__icon-chip--${kpi.color}`">
-                  <v-icon size="14">{{ kpi.icon }}</v-icon>
-                </div>
-                <div class="retail-kpi-card__title">{{ kpi.label }}</div>
-              </div>
-              <div class="retail-kpi-card__value num">{{ kpi.value }}</div>
-            </div>
-          </div>
-        </v-card>
+        <MpKpiCard
+          :label="kpi.label"
+          :value="kpi.value"
+          :icon="kpi.icon"
+          :color="kpi.color"
+        />
       </v-col>
     </v-row>
 

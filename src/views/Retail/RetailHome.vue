@@ -3,6 +3,7 @@ import { computed, ref, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useRetailStore, TENDER_LABELS } from '@/stores/useRetail'
 import { formatAgo } from '@/composables/useRelativeTime'
+import MpKpiCard from '@/components/MpKpiCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -218,44 +219,37 @@ function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 
     <!-- KPI row -->
     <v-row dense>
       <v-col v-for="kpi in kpis" :key="kpi.label" cols="12" sm="6" md="3">
-        <v-card flat border rounded="lg" class="retail-kpi-card h-100">
-          <div class="retail-kpi-card__inner">
-            <div class="retail-kpi-card__left">
-              <div class="retail-kpi-card__header-row">
-                <div class="retail-kpi-card__icon-chip" :class="`retail-kpi-card__icon-chip--${kpi.color}`">
-                  <v-icon size="14">{{ kpi.icon }}</v-icon>
-                </div>
-                <div style="min-width: 0">
-                  <div class="retail-kpi-card__title">{{ kpi.label }}</div>
-                  <div v-if="kpi.period" class="retail-kpi-card__period">{{ kpi.period }}</div>
-                </div>
-              </div>
-              <div class="retail-kpi-card__value num">{{ kpi.value }}</div>
-              <div v-if="kpi.trend" class="retail-kpi-card__trend">
-                <span
-                  class="retail-kpi-card__trend-pill"
-                  :class="kpi.trendPositive ? 'retail-kpi-card__trend-pill--pos' : 'retail-kpi-card__trend-pill--neg'"
-                >
-                  <v-icon size="12">{{ kpi.trendPositive ? 'chevron-up' : 'chevron-down' }}</v-icon>
-                  {{ kpi.trend }}
-                </span>
-              </div>
-              <div v-else-if="kpi.subStat" class="retail-kpi-card__sub">{{ kpi.subStat }}</div>
-            </div>
-            <div v-if="kpi.trend" class="retail-kpi-card__sparkline-col" aria-hidden="true">
-              <svg class="retail-kpi-card__sparkline" viewBox="0 0 100 52" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient :id="`${sparkId}-${kpi.label.replace(/\s+/g, '-')}`" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.18" />
-                    <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
-                  </linearGradient>
-                </defs>
-                <polygon :points="`0,52 ${salesSparkline} 100,52`" :fill="`url(#${sparkId}-${kpi.label.replace(/\s+/g, '-')})`" class="retail-kpi-card__sparkline-fill" />
-                <polyline :points="salesSparkline" class="retail-kpi-card__sparkline-line" />
-              </svg>
-            </div>
-          </div>
-        </v-card>
+        <MpKpiCard
+          :label="kpi.label"
+          :value="kpi.value"
+          :icon="kpi.icon"
+          :color="kpi.color"
+          :trend="kpi.trend"
+          :trend-positive="kpi.trendPositive"
+          :sub-stat="kpi.subStat"
+          :period="kpi.period"
+        >
+          <template v-if="kpi.trend" #sparkline>
+            <svg class="retail-sparkline" viewBox="0 0 100 52" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient :id="`${sparkId}-${kpi.label.replace(/\s+/g, '-')}`" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="currentColor" stop-opacity="0.18" />
+                  <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <polygon :points="`0,52 ${salesSparkline} 100,52`" :fill="`url(#${sparkId}-${kpi.label.replace(/\s+/g, '-')})`" stroke="none" />
+              <polyline
+                :points="salesSparkline"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                vector-effect="non-scaling-stroke"
+              />
+            </svg>
+          </template>
+        </MpKpiCard>
       </v-col>
     </v-row>
 
@@ -428,6 +422,13 @@ function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 
 </template>
 
 <style scoped lang="scss">
+.retail-sparkline {
+  width: 100%;
+  height: 48px;
+  overflow: visible;
+  color: var(--cloud-retail-accent);
+}
+
 .retail-header {
   margin-bottom: 8px;
 }
