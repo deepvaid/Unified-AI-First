@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import SettingsPageHeader from '@/components/settings/SettingsPageHeader.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 
@@ -43,7 +43,7 @@ function generateKey() {
 
 <template>
   <div class="settings-page">
-    <SettingsPageHeader
+    <MpPageHeader :level="2" density="compact"
       title="Connections"
       subtitle="REST API keys and HTTP Post URLs used by integrations and custom apps."
     />

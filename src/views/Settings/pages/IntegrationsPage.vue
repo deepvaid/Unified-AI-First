@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SettingsPageHeader from '@/components/settings/SettingsPageHeader.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 const integrations = [
@@ -17,7 +17,7 @@ const integrations = [
 
 <template>
   <div class="settings-page">
-    <SettingsPageHeader
+    <MpPageHeader :level="2" density="compact"
       title="Integrations"
       subtitle="Connect Maropost to the tools your team already uses."
     />

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import SettingsPageHeader from '@/components/settings/SettingsPageHeader.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 const sendingDomains = ref([
@@ -20,7 +20,7 @@ function statusColor(s: string) {
 
 <template>
   <div class="settings-page">
-    <SettingsPageHeader
+    <MpPageHeader :level="2" density="compact"
       title="DNS Setup"
       subtitle="Verify sending domains and configure custom link-tracking subdomains."
     />

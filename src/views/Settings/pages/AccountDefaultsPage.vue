@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import SettingsPageHeader from '@/components/settings/SettingsPageHeader.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 const company = ref({
@@ -35,7 +35,7 @@ function discard() { saved.value = false }
 
 <template>
   <div class="settings-page">
-    <SettingsPageHeader
+    <MpPageHeader :level="2" density="compact"
       title="Account Defaults"
       subtitle="Basic account details, locale, and contact address used across this workspace."
     />

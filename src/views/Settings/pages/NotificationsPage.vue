@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import SettingsPageHeader from '@/components/settings/SettingsPageHeader.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 interface NotifPref { key: string; label: string; desc: string; value: boolean }
@@ -20,7 +20,7 @@ function save() { saved.value = true }
 
 <template>
   <div class="settings-page">
-    <SettingsPageHeader
+    <MpPageHeader :level="2" density="compact"
       title="Notifications"
       subtitle="Choose which alerts and digests you want to receive by email."
     />

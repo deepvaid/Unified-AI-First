@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import SettingsPageHeader from '@/components/settings/SettingsPageHeader.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import { useUserProfile } from '@/stores/useUserProfile'
 
@@ -39,7 +39,7 @@ function onFile(e: Event) {
 
 <template>
   <div class="settings-page">
-    <SettingsPageHeader
+    <MpPageHeader :level="2" density="compact"
       title="General"
       subtitle="Personal information and global preferences. These apply only to you."
     />

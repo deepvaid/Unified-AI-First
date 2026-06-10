@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { MbCard } from '@marobase/ui'
 
 const heroMetrics = [
   { label: 'Storefronts', value: '12', icon: 'store' },
@@ -72,7 +71,7 @@ const barPath = computed(() => heroBars
           </v-btn>
         </div>
 
-        <MbCard radius="xl" padding="lg" class="commerce-landing__hero-card">
+        <v-card flat border rounded="xl" class="pa-8 commerce-landing__hero-card">
           <div class="commerce-landing__hero-metrics">
             <div
               v-for="metric in heroMetrics"
@@ -112,7 +111,7 @@ const barPath = computed(() => heroBars
               </span>
             </div>
           </div>
-        </MbCard>
+        </v-card>
       </div>
     </section>
 
@@ -154,12 +153,13 @@ const barPath = computed(() => heroBars
       </header>
 
       <div class="commerce-landing__capabilities-list">
-        <MbCard
+        <v-card
           v-for="capability in capabilities"
           :key="capability.title"
-          radius="xl"
-          padding="lg"
-          class="commerce-landing__capability"
+          flat
+          border
+          rounded="xl"
+          class="pa-8 commerce-landing__capability"
         >
           <div class="commerce-landing__capability-inner">
             <div class="commerce-landing__capability-copy">
@@ -175,7 +175,7 @@ const barPath = computed(() => heroBars
               </span>
             </div>
           </div>
-        </MbCard>
+        </v-card>
       </div>
     </section>
   </div>

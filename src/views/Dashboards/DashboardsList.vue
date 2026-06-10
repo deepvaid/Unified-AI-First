@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { MbPageHeader } from '@marobase/ui'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
@@ -260,10 +260,9 @@ function handleDashboardCreated(dashboardId: string) {
       </v-btn>
     </div>
 
-    <MbPageHeader
-      :title="`Dashboards`"
+    <MpPageHeader
+      title="Dashboards"
       :subtitle="`Browse, organize, and personalize every dashboard for ${account?.name ?? 'this workspace'}.`"
-      size="md"
     >
       <template #actions>
         <v-btn
@@ -276,7 +275,7 @@ function handleDashboardCreated(dashboardId: string) {
           New Dashboard
         </v-btn>
       </template>
-    </MbPageHeader>
+    </MpPageHeader>
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar

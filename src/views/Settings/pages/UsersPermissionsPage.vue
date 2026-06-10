@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
-import SettingsPageHeader from '@/components/settings/SettingsPageHeader.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 const teamUsers = ref([
@@ -19,7 +19,7 @@ const newUserRole = ref('Marketer')
 
 <template>
   <div class="settings-page">
-    <SettingsPageHeader
+    <MpPageHeader :level="2" density="compact"
       title="Users & Permissions"
       :subtitle="`${teamUsers.length} members · Manage role and module access per user.`"
     >
@@ -28,7 +28,7 @@ const newUserRole = ref('Marketer')
           Invite User
         </v-btn>
       </template>
-    </SettingsPageHeader>
+    </MpPageHeader>
 
     <SettingsSection title="Team Members" description="Review access, ownership, and module permissions.">
       <div class="users-table">

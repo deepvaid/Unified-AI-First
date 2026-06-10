@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useAudienceStore } from '@/stores/useAudience'
 import { storeToRefs } from 'pinia'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 
 const store = useAudienceStore()
 const { contacts } = storeToRefs(store)
@@ -32,16 +33,12 @@ function saveEdit(contact: any) {
 
 <template>
   <div class="position-relative h-100 pb-16">
-    <div class="d-flex align-center justify-space-between mb-6">
-      <div>
-        <h1 class="text-h4 font-weight-bold">Audience</h1>
-        <p class="text-medium-emphasis">Manage contacts, lists, and segments.</p>
-      </div>
-      <div class="d-flex gap-4">
+    <MpPageHeader title="Audience" subtitle="Manage contacts, lists, and segments." class="mb-4">
+      <template #actions>
         <v-btn variant="flat" prepend-icon="share" color="surface">Export</v-btn>
-        <v-btn color="primary" prepend-icon="user-plus" class="ml-4">Add Contact</v-btn>
-      </div>
-    </div>
+        <v-btn color="primary" prepend-icon="user-plus">Add Contact</v-btn>
+      </template>
+    </MpPageHeader>
 
     <!-- Data Table Bento Box -->
     <v-card class="bento-card bg-surface pa-0 pb-2">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SettingsPageHeader from './SettingsPageHeader.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from './SettingsSection.vue'
 
 defineProps<{
@@ -10,7 +10,7 @@ defineProps<{
 
 <template>
   <div class="settings-page">
-    <SettingsPageHeader :title="title" :subtitle="description" />
+    <MpPageHeader :level="2" density="compact" :title="title" :subtitle="description" />
     <SettingsSection>
       <div class="settings-placeholder">
         <v-icon size="22" class="settings-placeholder__icon">sparkles</v-icon>
