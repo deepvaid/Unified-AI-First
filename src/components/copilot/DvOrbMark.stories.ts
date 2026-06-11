@@ -23,6 +23,10 @@ const meta = {
       control: 'boolean',
       description: 'Continuously animate (assistant typing/speaking)',
     },
+    ambient: {
+      control: 'boolean',
+      description: 'Idle ambient pulse — keeps the loop running (hero usage)',
+    },
     hoverAnimate: {
       control: 'boolean',
       description: 'Breathe when the closest interactive ancestor is hovered/focused',
@@ -69,7 +73,7 @@ export const Tile: Story = {
 }
 
 export const Landing: Story = {
-  args: { size: 56, variant: 'tile' },
+  args: { size: 104, variant: 'bare', ambient: true },
 }
 
 export const Active: Story = {

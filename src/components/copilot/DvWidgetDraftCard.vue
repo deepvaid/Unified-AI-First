@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  saved: [payload: { title: string; dashboardName: string }]
+  saved: [payload: { title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string }]
   refined: [payload: { title: string }]
 }>()
 
@@ -113,6 +113,9 @@ function commitDraft() {
     emit('saved', {
       title: widget.title || localDraft.value.title || 'Widget',
       dashboardName: currentDashboard.value.name,
+      widgetId: widget.id,
+      dashboardId: effectiveDashboardId.value,
+      accountId: effectiveAccountId.value,
     })
   }
 }

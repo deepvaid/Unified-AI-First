@@ -5,7 +5,7 @@ import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useUserProfile } from '@/stores/useUserProfile'
 import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
-import DvOrbMark from '@/components/copilot/DvOrbMark.vue'
+import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 
 const copilot = useCopilotStore()
 
@@ -18,6 +18,7 @@ const themeToggleValue = computed({
   set: (value: ThemeMode) => setMode(value),
 })
 
+const assistantPillHover = ref(false)
 const notificationCount = ref(18)
 const userName = ref('Ross Andrew Paquette')
 const userInitials = ref('RP')
@@ -374,8 +375,10 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
             type="button"
             class="assistant-pill"
             aria-label="AI Assistant"
+            @mouseenter="assistantPillHover = true"
+            @mouseleave="assistantPillHover = false"
           >
-            <DvOrbMark :size="20" variant="bare" />
+            <DvOrbitOrb :size="20" :speed="3" :inverse="assistantPillHover" pulse />
             <span class="assistant-pill__label">Da Vinci</span>
             <v-icon size="14" class="assistant-pill__chevron">chevron-down</v-icon>
           </button>
@@ -391,7 +394,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
               </div>
             </button>
             <button type="button" class="um-item" @click="openAiExperience">
-              <DvOrbMark class="um-item__icon" :size="20" variant="bare" />
+              <DvOrbitOrb class="um-item__icon" :size="20" />
               <div class="um-item__body">
                 <div class="um-item__title">AI experience</div>
                 <div class="um-item__sub">Talk to Da Vinci in the AI-first workspace</div>
@@ -660,7 +663,22 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 .assistant-pill:hover {
-  background: var(--surface-2);
+  background: var(--dv-orbit-grad);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.assistant-pill:hover :deep(.assistant-pill__chevron) {
+  color: #ffffff;
+}
+
+/* Orb rings rest still in the pill and revolve on hover */
+.assistant-pill :deep(.dv-orbit-orb__ring) {
+  animation-play-state: paused;
+}
+
+.assistant-pill:hover :deep(.dv-orbit-orb__ring) {
+  animation-play-state: running;
 }
 
 .assistant-pill:focus-visible {

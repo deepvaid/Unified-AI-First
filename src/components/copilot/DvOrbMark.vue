@@ -24,6 +24,8 @@ const props = withDefaults(
     tileRadius?: string
     /** Continuously animate (e.g. while the assistant is typing/speaking) */
     active?: boolean
+    /** Keep the loop alive at rest for the idle edge-emission pulse (hero usage) */
+    ambient?: boolean
     /** Breathe when the closest interactive ancestor is hovered/focused */
     hoverAnimate?: boolean
     /** Activity flavor — modulates rotation speed/brightness only */
@@ -36,6 +38,7 @@ const props = withDefaults(
     variant: 'bare',
     tileRadius: '50%',
     active: false,
+    ambient: false,
     hoverAnimate: true,
     state: 'idle',
     ink: 'auto',
@@ -97,9 +100,9 @@ function loop(now: number) {
   spin *= 0.9
   if (spin < 0.02) spin = 0
   const drive = props.active ? DRIVE[props.state] : 0
-  renderer.draw(t, { breath, drive, spin })
+  renderer.draw(t, { breath, drive, spin, pulse: props.ambient || props.active ? 1 : 0 })
   // Self-terminate once the breathe + spin have decayed and nothing keeps us alive
-  if (!props.active && breathTarget.value === 0 && breath < 0.005 && spin === 0) {
+  if (!props.active && !props.ambient && breathTarget.value === 0 && breath < 0.005 && spin === 0) {
     breath = 0
     running = false
     drawStatic()
@@ -130,7 +133,7 @@ function onHoverEnd() {
 }
 function onVisibility() {
   if (document.hidden) stop()
-  else if (props.active || hovered.value || breath > 0.005) start()
+  else if (props.active || props.ambient || hovered.value || breath > 0.005) start()
 }
 
 onMounted(() => {
@@ -146,7 +149,7 @@ onMounted(() => {
     hoverHost.addEventListener('focusin', onHoverStart)
     hoverHost.addEventListener('focusout', onHoverEnd)
   }
-  if (props.active) start()
+  if (props.active || props.ambient) start()
   document.addEventListener('visibilitychange', onVisibility)
 })
 
@@ -166,6 +169,12 @@ watch(
   (active) => {
     if (active) start()
     // inactive: loop self-terminates
+  },
+)
+watch(
+  () => props.ambient,
+  (ambient) => {
+    if (ambient) start()
   },
 )
 watch(

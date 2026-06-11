@@ -8,9 +8,10 @@ import DvToastStack from './copilot/DvToastStack.vue'
 import DvInsightCard from './copilot/DvInsightCard.vue'
 import DvIntentCardList from './copilot/voice/DvIntentCardList.vue'
 import DvOrbMark from './copilot/DvOrbMark.vue'
-// DvOrbCanvas lazy-loads the three.js chunk itself — never import @/lib/davinci-orb here
-import DvOrbCanvas from './copilot/voice/DvOrbCanvas.vue'
-import DvVoiceStatePill from './copilot/voice/DvVoiceStatePill.vue'
+import DvLandingHero from './copilot/DvLandingHero.vue'
+import DvOrbitOrb from './copilot/voice/DvOrbitOrb.vue'
+import DvOrbitVoiceSurface from './copilot/voice/DvOrbitVoiceSurface.vue'
+import type { OrbitState } from './copilot/voice/orbit'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
@@ -184,13 +185,8 @@ const copilot = useCopilotStore()
 
 const ttsEnabled = ref(typeof window !== 'undefined' && window.localStorage.getItem('davinci-drawer-tts') === '1')
 
-// Persisted UI mode — falls back to text when STT is unsupported (Firefox)
-const MODE_KEY = 'davinci-copilot-mode'
-const uiMode = ref<'text' | 'voice'>(
-  typeof window !== 'undefined' && window.localStorage.getItem(MODE_KEY) === 'voice' && voice.sttSupported
-    ? 'voice'
-    : 'text',
-)
+// Text is always the default experience — voice mode is an explicit per-session opt-in
+const uiMode = ref<'text' | 'voice'>('text')
 const isVoiceMode = computed(() => uiMode.value === 'voice')
 
 // The flush DaVinciCopilot page and the drawer can be mounted simultaneously —
@@ -201,10 +197,11 @@ const voiceOwner = computed(() => (props.headerless ? 'copilot-page' : 'drawer')
 // off-canvas) — copilot.isOpen is the visibility signal for pause/cleanup.
 const surfaceVisible = computed(() => props.headerless || copilot.isOpen)
 
-const lastSpeechText = ref('')
-// Voice mode always speaks replies; the "Read replies aloud" toggle keeps its
-// persisted text-mode meaning untouched.
-const speakReplies = computed(() => isVoiceMode.value || ttsEnabled.value)
+// Voice in → voice out (assistant convention): a mic-dictated query gets a
+// spoken reply even in text mode. Typed queries stay silent unless the
+// persisted "Read replies aloud" toggle is on. Voice mode always speaks.
+const lastInputWasVoice = ref(false)
+const speakReplies = computed(() => isVoiceMode.value || ttsEnabled.value || lastInputWasVoice.value)
 
 const isDictating = computed(
   () => voice.state.value === 'listening' && voice.owner.value === voiceOwner.value,
@@ -214,15 +211,100 @@ function stopVoiceActivity() {
   if (voice.owner.value === voiceOwner.value) voice.abortListening()
   voice.cancelSpeech()
   voice.setThinking(false)
-  lastSpeechText.value = ''
+  resetOrbit()
+}
+
+// ─── Orbit voice surface — drawer-local UI state machine ───────────────
+const orbitInput = ref<'voice' | 'keyboard'>('voice')
+const orbitKbText = ref('')
+const orbitError = ref(false) // dictation resolved silent (didn't catch that)
+const orbitPaused = ref(false) // user stopped the mic without speaking
+const orbitLastRequest = ref('') // echo pill while thinking
+const orbitResponse = ref<{ draft: DashboardWidgetDraft | null; caption: string } | null>(null)
+const orbitAdded = ref<{ title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string } | null>(null)
+const orbitDraftKey = ref(0) // bump remounts the draft card after Undo
+let orbitCancelRequested = false
+
+const orbitState = computed<OrbitState>(() => {
+  if (orbitInput.value === 'keyboard') return 'keyboard'
+  if (isDictating.value) return 'listening'
+  if (voice.state.value === 'thinking' || isTyping.value) return 'thinking'
+  if (orbitError.value) return 'error'
+  if (orbitPaused.value) return 'paused'
+  if (orbitAdded.value) return 'added'
+  if (orbitResponse.value) return 'responding'
+  return 'ready'
+})
+
+
+function resetOrbit() {
+  orbitInput.value = 'voice'
+  orbitKbText.value = ''
+  orbitError.value = false
+  orbitPaused.value = false
+  orbitLastRequest.value = ''
+  orbitResponse.value = null
+  orbitAdded.value = null
+  orbitCancelRequested = false
+}
+
+/** Footer ghost ✕ while listening — discard the capture, back to ready. */
+function orbitCancelListening() {
+  orbitCancelRequested = true
+  voice.abortListening()
+}
+
+function orbitTryAgain() {
+  orbitError.value = false
+  void toggleMic()
+}
+
+function orbitEnterKeyboard() {
+  if (isDictating.value) orbitCancelListening()
+  orbitError.value = false
+  orbitPaused.value = false
+  orbitInput.value = 'keyboard'
+}
+
+function orbitSend(text: string) {
+  orbitKbText.value = ''
+  orbitInput.value = 'voice'
+  processQuery(text)
+}
+
+function onOrbitWidgetSaved(payload: { title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string }) {
+  if (currentConversationId.value) incrementAdded(currentConversationId.value)
+  orbitAdded.value = payload
+}
+
+function orbitUndo() {
+  const added = orbitAdded.value
+  if (!added) return
+  dashboardsStore.removeWidget(added.accountId, added.dashboardId, added.widgetId)
+  orbitAdded.value = null
+  orbitDraftKey.value++
+  pushToast({ title: 'Widget removed', sub: added.title })
+}
+
+function orbitOpenDashboard() {
+  const added = orbitAdded.value
+  if (!added) return
+  emit('close')
+  router.push({ name: 'DashboardDetail', params: { accountId: added.accountId, dashboardId: added.dashboardId } })
+}
+
+function orbitAddAnother() {
+  orbitAdded.value = null
+  orbitResponse.value = null
+  void toggleMic()
 }
 
 function setUiMode(mode: 'text' | 'voice') {
   if (mode === uiMode.value) return
   if (mode === 'voice' && !voice.sttSupported) return
   uiMode.value = mode
-  window.localStorage.setItem(MODE_KEY, mode)
   if (mode === 'text') stopVoiceActivity()
+  else resetOrbit()
 }
 
 function toggleTts() {
@@ -235,16 +317,30 @@ function toggleTts() {
 // non-goal for now — surprise always-open mics are an anti-pattern).
 async function toggleMic() {
   if (isDictating.value) {
+    // Orbit: stopping the mic before any speech lands = paused, not error
+    if (isVoiceMode.value && !voice.interimTranscript.value) orbitPaused.value = true
     voice.stopListening()
     return
   }
+  // A fresh capture clears any prior Orbit outcome
+  orbitError.value = false
+  orbitPaused.value = false
+  orbitResponse.value = null
+  orbitAdded.value = null
+  orbitCancelRequested = false
   try {
-    // Analyser only in voice mode — feeds live mic bands to the orb stage
+    // The Orbit orb is time-based CSS — no analyser needed in the drawer
     const finalText = await voice.startListening({
       owner: voiceOwner.value,
-      withAnalyser: isVoiceMode.value,
+      withAnalyser: false,
     })
-    if (finalText) processQuery(finalText)
+    if (finalText) {
+      processQuery(finalText)
+    } else if (isVoiceMode.value && !orbitCancelRequested && !orbitPaused.value) {
+      // Silent resolve the user didn't ask for → "didn't catch that"
+      orbitError.value = true
+    }
+    orbitCancelRequested = false
   } catch (err) {
     if (err instanceof VoiceError && err.code === 'permission') {
       pushToast({ title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
@@ -252,6 +348,9 @@ async function toggleMic() {
       pushToast({ title: 'No microphone found' })
     } else if (err instanceof VoiceError && err.code === 'network') {
       pushToast({ title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
+    }
+    if (isVoiceMode.value && err instanceof VoiceError && (err.code === 'network' || err.code === 'audio')) {
+      orbitError.value = true
     }
   }
 }
@@ -270,9 +369,7 @@ function stripHtml(html: string) {
 
 function maybeSpeak(text: string) {
   if (!speakReplies.value) return
-  const clean = stripHtml(text)
-  lastSpeechText.value = clean
-  void voice.speak(clean)
+  void voice.speak(stripHtml(text))
 }
 
 // Drawer hidden mid-session → release the mic, stop speech, pause cleanly
@@ -294,7 +391,10 @@ function respondWithIntents(text: string) {
   inputText.value = ''
   isTyping.value = true
   generatingStatus.value = 'Working on it…'
-  if (isVoiceMode.value) voice.setThinking(true)
+  if (isVoiceMode.value) {
+    voice.setThinking(true)
+    orbitLastRequest.value = text
+  }
   scrollToBottom()
   setTimeout(() => {
     isTyping.value = false
@@ -309,6 +409,7 @@ function respondWithIntents(text: string) {
           ? [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }]
           : undefined,
     })
+    if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(res.reply) }
     maybeSpeak(res.speech ?? res.reply)
     scrollToBottom()
   }, 900)
@@ -343,7 +444,10 @@ function processQuery(text: string) {
   inputText.value = ''
   isTyping.value = true
   generatingStatus.value = 'Working on it…'
-  if (isVoiceMode.value) voice.setThinking(true)
+  if (isVoiceMode.value) {
+    voice.setThinking(true)
+    orbitLastRequest.value = text
+  }
   scrollToBottom()
 
   let drafts: DashboardWidgetDraft[] | null = null
@@ -385,6 +489,9 @@ function processQuery(text: string) {
           draftedCount: drafts.length,
         })
       }
+      if (isVoiceMode.value) {
+        orbitResponse.value = { draft: drafts[0] ?? null, caption: stripHtml(buildIntro(drafts.length)) }
+      }
       maybeSpeak(buildIntro(drafts.length))
     } else {
       // No widget mapping — try the unified intent layer (campaigns, products,
@@ -397,8 +504,16 @@ function processQuery(text: string) {
           text: res.reply,
           componentData: [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }],
         })
+        if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(res.reply) }
         maybeSpeak(res.speech ?? res.reply)
       } else {
+        if (isVoiceMode.value) {
+          orbitResponse.value = {
+            draft: null,
+            caption:
+              "I couldn't map that to a widget yet. Try revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
+          }
+        }
         messages.value.push({
           id: makeId('a'),
           role: 'assistant',
@@ -536,37 +651,10 @@ function onComposerKeydown(event: KeyboardEvent) {
   <div class="dv-panel">
     <!-- ═══ HEADER ═══ -->
     <header v-if="!headerless" class="dv-panel__header">
-      <DvOrbMark class="dv-panel__avatar" :size="40" variant="tile" :active="isTyping" />
+      <DvOrbitOrb class="dv-panel__avatar" :size="32" :speed="isTyping ? 1.6 : 1" pulse />
       <div class="dv-panel__title">
         <div class="dv-panel__title-name">Da Vinci</div>
         <div class="dv-panel__title-sub">{{ headerStatus }}</div>
-      </div>
-      <div class="dv-mode-toggle" role="group" aria-label="Input mode">
-        <button
-          type="button"
-          class="dv-mode-toggle__seg"
-          :class="{ 'dv-mode-toggle__seg--active': !isVoiceMode }"
-          :aria-pressed="!isVoiceMode"
-          aria-label="Text mode"
-          @click="setUiMode('text')"
-        >
-          <v-icon size="15">keyboard</v-icon>
-          <v-tooltip activator="parent" location="bottom">Text mode</v-tooltip>
-        </button>
-        <button
-          type="button"
-          class="dv-mode-toggle__seg"
-          :class="{ 'dv-mode-toggle__seg--active': isVoiceMode, 'dv-mode-toggle__seg--disabled': !voice.sttSupported }"
-          :aria-pressed="isVoiceMode"
-          :disabled="!voice.sttSupported"
-          aria-label="Voice mode"
-          @click="setUiMode('voice')"
-        >
-          <v-icon size="15">audio-lines</v-icon>
-          <v-tooltip activator="parent" location="bottom">
-            {{ voice.sttSupported ? 'Voice mode' : 'Voice input needs Chrome or Edge' }}
-          </v-tooltip>
-        </button>
       </div>
       <v-btn icon size="34" variant="text" aria-label="Start a new chat" class="dv-panel__icon-btn" @click="newChat">
         <v-icon size="18">square-pen</v-icon>
@@ -594,6 +682,10 @@ function onComposerKeydown(event: KeyboardEvent) {
             <template #prepend><v-icon size="18">maximize-2</v-icon></template>
             <v-list-item-title>Open full screen</v-list-item-title>
           </v-list-item>
+          <v-list-item v-if="isVoiceMode" @click="setUiMode('text')">
+            <template #prepend><v-icon size="18">keyboard</v-icon></template>
+            <v-list-item-title>Switch to text mode</v-list-item-title>
+          </v-list-item>
           <v-list-item v-if="voice.ttsSupported" @click="toggleTts">
             <template #prepend><v-icon size="18">{{ ttsEnabled ? 'volume-2' : 'volume-x' }}</v-icon></template>
             <v-list-item-title>Read replies aloud</v-list-item-title>
@@ -619,52 +711,46 @@ function onComposerKeydown(event: KeyboardEvent) {
       @new-chat="newChat"
     />
 
-    <!-- ═══ VOICE STAGE (voice mode) — fixed above the scrolling thread ═══ -->
-    <div v-if="isVoiceMode" class="dv-voice-stage">
-      <DvOrbCanvas
-        class="dv-voice-stage__orb"
-        :state="voice.state.value"
-        :audio-source="voice.getVoiceFrame"
-        :paused="!surfaceVisible"
-      />
-      <DvVoiceStatePill
-        class="dv-voice-stage__pill"
-        variant="minimal"
-        :state="voice.state.value"
-        :label="voice.state.value === 'speaking' && lastSpeechText ? lastSpeechText : undefined"
-      />
-    </div>
+    <!-- ═══ ORBIT VOICE SURFACE (voice mode) — owns the whole body + footer ═══ -->
+    <DvOrbitVoiceSurface
+      v-if="isVoiceMode"
+      v-model:kb-text="orbitKbText"
+      :state="orbitState"
+      :transcript="voice.interimTranscript.value"
+      :last-request="orbitLastRequest"
+      :caption="orbitResponse?.caption ?? ''"
+      :speaking="voice.state.value === 'speaking'"
+      :suggestions="landingSuggestions"
+      :draft="orbitResponse?.draft ?? null"
+      :account-id="targetAccountId ?? ''"
+      :dashboard-id="targetDashboard?.id ?? ''"
+      :filters="targetDashboard?.filters"
+      :draft-key="orbitDraftKey"
+      :added-to="orbitAdded?.dashboardName ?? ''"
+      @mic="toggleMic"
+      @cancel="orbitCancelListening"
+      @suggestion="sendSuggestion"
+      @try-again="orbitTryAgain"
+      @type-instead="orbitEnterKeyboard"
+      @enter-keyboard="orbitEnterKeyboard"
+      @exit-keyboard="orbitInput = 'voice'"
+      @send="orbitSend"
+      @undo="orbitUndo"
+      @open-dashboard="orbitOpenDashboard"
+      @add-another="orbitAddAnother"
+      @widget-saved="onOrbitWidgetSaved"
+      @widget-refined="onWidgetRefined"
+    />
 
-    <!-- ═══ BODY ═══ -->
-    <div ref="bodyEl" class="dv-panel__body">
+    <!-- ═══ BODY (text mode) ═══ -->
+    <div v-if="!isVoiceMode" ref="bodyEl" class="dv-panel__body">
       <!-- Landing state -->
-      <div v-if="!chatMode" class="dv-landing">
-        <template v-if="isVoiceMode">
-          <h2 class="dv-landing__title">Talk to Da Vinci</h2>
-          <p class="dv-landing__sub">
-            Tap the mic and ask for a metric, trend, comparison, or table — or tap a suggestion below.
-          </p>
-        </template>
-        <template v-else>
-          <DvOrbMark class="dv-landing__avatar" :size="56" variant="tile" />
-          <h2 class="dv-landing__title">What can I help you build?</h2>
-          <p class="dv-landing__sub">
-            Ask Da Vinci for a metric, trend, comparison, or table. I'll draft widgets you can review and add to the active dashboard.
-          </p>
-        </template>
-        <div class="dv-landing__suggestions">
-          <button
-            v-for="text in landingSuggestions"
-            :key="text"
-            type="button"
-            class="dv-landing__pill"
-            @click="sendSuggestion(text)"
-          >
-            <v-icon size="14" color="primary">sparkles</v-icon>
-            {{ text }}
-          </button>
-        </div>
-      </div>
+      <DvLandingHero
+        v-if="!chatMode"
+        class="dv-landing"
+        :suggestions="landingSuggestions"
+        @suggestion="sendSuggestion"
+      />
 
       <!-- Conversation -->
       <template v-for="msg in messages" :key="msg.id">
@@ -755,8 +841,8 @@ function onComposerKeydown(event: KeyboardEvent) {
       </div>
     </div>
 
-    <!-- ═══ COMPOSER ═══ -->
-    <footer class="dv-panel__composer">
+    <!-- ═══ COMPOSER (text mode) ═══ -->
+    <footer v-if="!isVoiceMode" class="dv-panel__composer">
       <div v-if="chatMode" class="dv-composer__pills">
         <button
           v-for="pill in suggestionPills"
@@ -769,7 +855,7 @@ function onComposerKeydown(event: KeyboardEvent) {
           {{ pill.text }}
         </button>
       </div>
-      <div v-if="!isVoiceMode" class="dv-composer__field">
+      <div class="dv-composer__field">
         <v-btn icon size="32" variant="text" aria-label="Attach">
           <v-icon size="16">paperclip</v-icon>
         </v-btn>
@@ -812,42 +898,6 @@ function onComposerKeydown(event: KeyboardEvent) {
         >
           <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
         </button>
-      </div>
-
-      <!-- Voice-only composer -->
-      <div v-else class="dv-voice-composer">
-        <div class="dv-voice-composer__interim" role="status">
-          {{
-            isDictating && voice.interimTranscript.value
-              ? voice.interimTranscript.value
-              : isDictating
-                ? 'Listening…'
-                : ' '
-          }}
-        </div>
-        <div class="dv-voice-composer__row">
-          <span class="dv-voice-composer__spacer" aria-hidden="true"></span>
-          <button
-            type="button"
-            class="dv-voice-composer__mic"
-            :class="{ 'dv-voice-composer__mic--live': isDictating }"
-            :aria-label="isDictating ? 'Stop listening' : 'Tap to talk'"
-            @click="toggleMic"
-          >
-            <v-icon size="24" class="dv-on-accent-icon">{{ isDictating ? 'mic-off' : 'mic' }}</v-icon>
-          </button>
-          <v-btn
-            icon
-            size="36"
-            variant="text"
-            aria-label="Switch to text mode"
-            class="dv-voice-composer__kb"
-            @click="setUiMode('text')"
-          >
-            <v-icon size="18">keyboard</v-icon>
-            <v-tooltip activator="parent" location="top">Switch to text mode</v-tooltip>
-          </v-btn>
-        </div>
       </div>
     </footer>
 
@@ -952,39 +1002,10 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 /* Landing */
 .dv-landing {
-  text-align: center;
   padding: 24px 8px 8px;
 }
 
-.dv-landing__avatar {
-  margin: 0 auto 16px;
-}
-
-.dv-landing__title {
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.3px;
-  color: rgb(var(--v-theme-on-surface));
-  margin: 0 0 8px;
-}
-
-.dv-landing__sub {
-  font-size: var(--mp-typography-fontSize-body);
-  line-height: 1.45;
-  color: var(--dv-text-secondary);
-  max-width: 340px;
-  margin: 0 auto 20px;
-}
-
-.dv-landing__suggestions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: stretch;
-  text-align: left;
-}
-
+/* Quick-reply pills (shared with conversation quick replies) */
 .dv-landing__pill {
   display: inline-flex;
   align-items: center;
@@ -1160,122 +1181,8 @@ function onComposerKeydown(event: KeyboardEvent) {
   margin-top: 8px;
 }
 
-/* ─── Text ↔ voice mode toggle (header) ───────────────────────────── */
-.dv-mode-toggle {
-  display: inline-flex;
-  flex-shrink: 0;
-  padding: 2px;
-  gap: 2px;
-  border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 9999px;
-  background: rgb(var(--v-theme-surface));
-}
-
-.dv-mode-toggle__seg {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 26px;
-  border: none;
-  border-radius: 9999px;
-  background: transparent;
-  cursor: pointer;
-  color: rgb(var(--v-theme-on-surface-variant));
-  transition: background 120ms ease, color 120ms ease;
-}
-
-.dv-mode-toggle__seg--active {
-  background: var(--dv-accent-soft);
-  color: var(--dv-accent);
-}
-
-.dv-mode-toggle__seg--disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-/* ─── Voice stage — fixed orb above the scrolling thread ──────────── */
-.dv-voice-stage {
-  position: relative;
-  flex: 0 0 auto;
-  height: 200px;
-  border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
-  overflow: hidden;
-}
-
-.dv-voice-stage__orb {
-  position: absolute;
-  inset: 0;
-}
-
-.dv-voice-stage__pill {
-  position: absolute;
-  left: 50%;
-  bottom: 12px;
-  transform: translateX(-50%);
-  z-index: 1;
-  max-width: calc(100% - 32px);
-}
-
-/* ─── Voice-only composer ─────────────────────────────────────────── */
-.dv-voice-composer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.dv-voice-composer__interim {
-  min-height: 18px;
-  font-size: 0.78rem;
-  color: var(--dv-text-secondary);
-  text-align: center;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dv-voice-composer__row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  width: 100%;
-}
-
-/* keeps the mic optically centered against the keyboard button */
-.dv-voice-composer__spacer {
-  width: 36px;
-}
-
-.dv-voice-composer__mic {
-  width: 60px;
-  height: 60px;
-  border-radius: 9999px;
-  border: none;
-  background: var(--dv-grad);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: filter 120ms ease, transform 120ms ease;
-}
-
-.dv-voice-composer__mic:hover {
-  filter: brightness(1.05);
-}
-
-.dv-voice-composer__mic:active {
-  transform: scale(0.96);
-}
-
-.dv-voice-composer__mic--live {
-  animation: dvPulse 1.4s ease infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .dv-composer__mic--live,
-  .dv-voice-composer__mic--live {
+  .dv-composer__mic--live {
     animation: none;
   }
 }

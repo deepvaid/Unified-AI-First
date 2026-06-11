@@ -98,10 +98,12 @@ onMounted(() => {
       secondsLeft.value -= 1
     }
   }, 1000)
+  document.addEventListener('fullscreenchange', onFullscreenChange)
 })
 
 onBeforeUnmount(() => {
   if (countdownTimer != null) window.clearInterval(countdownTimer)
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
 })
 
 // ─── Chart-ready (defer mount for smoother perf) ───────────────
@@ -138,9 +140,21 @@ const justNowLabel = computed(() => {
 
 const formattedSales = computed(() => `$${totalSales.value.toLocaleString()}`)
 
-const refreshProgress = computed(
-  () => ((REFRESH_SECONDS - secondsLeft.value) / REFRESH_SECONDS) * 100,
-)
+// ─── Full screen ───────────────────────────────────────────────
+const rootRef = ref<HTMLElement | null>(null)
+const isFullscreen = ref(false)
+
+function toggleFullscreen(): void {
+  if (document.fullscreenElement) {
+    void document.exitFullscreen()
+  } else {
+    void rootRef.value?.requestFullscreen?.()
+  }
+}
+
+function onFullscreenChange(): void {
+  isFullscreen.value = document.fullscreenElement === rootRef.value
+}
 
 // ─── Sparkline factory ─────────────────────────────────────────
 function sparklineOptions(color: string): ApexOptions {
@@ -390,7 +404,7 @@ const recentActivity = computed(() => [
 </script>
 
 <template>
-  <div class="live-view d-flex flex-column gap-5">
+  <div ref="rootRef" class="live-view d-flex flex-column gap-5">
     <!-- Header -->
     <div class="d-flex flex-wrap align-center justify-space-between gap-3">
       <div class="d-flex align-center gap-3">
@@ -412,34 +426,19 @@ const recentActivity = computed(() => [
           prepend-inner-icon="search"
           class="live-view__search"
         />
-        <v-tooltip location="bottom" :text="isRefreshing ? 'Refreshing…' : `Refreshing in ${secondsLeft}s · click to refresh now`">
+        <v-tooltip location="bottom" :text="isFullscreen ? 'Exit full screen' : 'View full screen'">
           <template #activator="{ props: tipProps }">
             <v-btn
               v-bind="tipProps"
-              variant="outlined"
+              variant="flat"
+              :icon="isFullscreen ? 'minimize' : 'maximize'"
               rounded="lg"
-              class="live-view__refresh text-none"
-              :loading="isRefreshing"
-              :disabled="isRefreshing"
-              @click="refreshNow"
-            >
-              <template #prepend>
-                <div class="live-view__refresh-progress">
-                  <v-progress-circular
-                    :model-value="refreshProgress"
-                    size="20"
-                    width="2"
-                    color="primary"
-                    bg-color="rgba(var(--v-theme-on-surface), 0.12)"
-                  />
-                  <v-icon size="12" class="live-view__refresh-icon">refresh-cw</v-icon>
-                </div>
-              </template>
-              <span class="text-body-2">{{ isRefreshing ? 'Refreshing' : `${secondsLeft}s` }}</span>
-            </v-btn>
+              color="surface"
+              :aria-label="isFullscreen ? 'Exit full screen' : 'View full screen'"
+              @click="toggleFullscreen"
+            />
           </template>
         </v-tooltip>
-        <v-btn variant="flat" icon="maximize" rounded="lg" color="surface" />
       </div>
     </div>
 
@@ -752,25 +751,11 @@ const recentActivity = computed(() => [
   min-height: 36px;
 }
 
-// ─── Refresh button with circular progress ─────────────────────
-.live-view__refresh {
-  min-width: 92px;
-  padding-inline: 12px;
-}
-
-.live-view__refresh-progress {
-  position: relative;
-  width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 6px;
-}
-
-.live-view__refresh-icon {
-  position: absolute;
-  color: rgba(var(--v-theme-on-surface), 0.65);
+// ─── Full screen ───────────────────────────────────────────────
+.live-view:fullscreen {
+  background: rgb(var(--v-theme-background));
+  padding: var(--mp-spacing-6);
+  overflow-y: auto;
 }
 
 // ─── Map widget ────────────────────────────────────────────────

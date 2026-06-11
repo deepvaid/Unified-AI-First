@@ -30,6 +30,8 @@ export interface MarkEnergy {
   drive: number
   /** extra rotation speed in rad/s — Gemini-style hover spin impulse */
   spin: number
+  /** 0..1 edge-emission pulse — particles diffusing outward off the ring */
+  pulse: number
 }
 
 export interface MarkRenderer {
@@ -38,11 +40,14 @@ export interface MarkRenderer {
   setSize(size: number, dpr: number): void
 }
 
-export const ZERO_ENERGY: MarkEnergy = { breath: 0, drive: 0, spin: 0 }
+export const ZERO_ENERGY: MarkEnergy = { breath: 0, drive: 0, spin: 0, pulse: 0 }
 
 const TAU = Math.PI * 2
 // Fixed default seed — every instance of the brand mark is the identical glyph
 const DEFAULT_SEED = 0xda71c1
+// Edge-emission pulse: cohort size + wave period (seconds)
+const PULSE_COUNT = 28
+const PULSE_PERIOD = 2.6
 
 export function hexToRgb(hex: string): MarkRGB {
   const h = hex.replace('#', '').trim()
@@ -99,6 +104,13 @@ export function createMarkRenderer(
   let bloom = new Uint8Array(0) // 1 = draws an under-glow halo dot
   let speedMul = new Float32Array(0) // slight differential rotation for life
   let colors = new Float32Array(0) // resolved per-particle r,g,b
+  // pulse-emission particles: spawn in the ring band, drift outward, fade
+  let pAngle = new Float32Array(0)
+  let pStagger = new Float32Array(0) // lifecycle phase offset 0..1
+  let pSpawnR = new Float32Array(0) // normalized spawn radius inside the band
+  let pDot = new Float32Array(0)
+  let pGrad = new Float32Array(0)
+  let pColors = new Float32Array(0) // resolved per-pulse r,g,b
 
   // Rotation integrates incrementally so speed changes (hover spin impulse,
   // active-state transitions) accelerate smoothly instead of snapping.
@@ -154,6 +166,21 @@ export function createMarkRenderer(
       bloom[i] = !isDust && rand() < 0.3 ? 1 : 0
       speedMul[i] = 0.92 + rand() * 0.22
     }
+
+    pAngle = new Float32Array(PULSE_COUNT)
+    pStagger = new Float32Array(PULSE_COUNT)
+    pSpawnR = new Float32Array(PULSE_COUNT)
+    pDot = new Float32Array(PULSE_COUNT)
+    pGrad = new Float32Array(PULSE_COUNT)
+    pColors = new Float32Array(PULSE_COUNT * 3)
+    for (let i = 0; i < PULSE_COUNT; i++) {
+      const a = rand() * TAU
+      pAngle[i] = a
+      pStagger[i] = rand()
+      pSpawnR[i] = 0.7 + rand() * 0.1
+      pDot[i] = (0.4 + rand() * 0.5) * dotScale
+      pGrad[i] = (Math.cos(a - Math.PI * 0.75) + 1) / 2
+    }
     applyPalette()
   }
 
@@ -164,6 +191,12 @@ export function createMarkRenderer(
       colors[i * 3] = lerp(stop.r, 255, lift)
       colors[i * 3 + 1] = lerp(stop.g, 255, lift)
       colors[i * 3 + 2] = lerp(stop.b, 255, lift)
+    }
+    for (let i = 0; i < PULSE_COUNT; i++) {
+      const stop = sampleStops(palette, pGrad[i] ?? 0)
+      pColors[i * 3] = lerp(stop.r, 255, palette.whiteMix)
+      pColors[i * 3 + 1] = lerp(stop.g, 255, palette.whiteMix)
+      pColors[i * 3 + 2] = lerp(stop.b, 255, palette.whiteMix)
     }
   }
 
@@ -206,6 +239,30 @@ export function createMarkRenderer(
         const cr = (colors[ci] ?? 0) | 0
         const cg = (colors[ci + 1] ?? 0) | 0
         const cb = (colors[ci + 2] ?? 0) | 0
+        ctx.fillStyle = `rgba(${cr},${cg},${cb},${alpha.toFixed(3)})`
+        ctx.fillRect(x - s / 2, y - s / 2, s, s)
+      }
+    }
+
+    // pulse emission — dots born in the ring band drift out to the edge and dissolve
+    if (energy.pulse > 0) {
+      for (let i = 0; i < PULSE_COUNT; i++) {
+        const p = (t / PULSE_PERIOD + (pStagger[i] ?? 0)) % 1
+        const ease = 1 - (1 - p) * (1 - p)
+        const r = R * lerp(pSpawnR[i] ?? 0.75, 0.98, ease)
+        const a = (pAngle[i] ?? 0) + rot * 0.6
+        const fadeIn = Math.min(1, p / 0.12)
+        const alpha = Math.min(
+          1,
+          energy.pulse * palette.inkGain * 0.55 * fadeIn * (1 - p) * (1 - p),
+        )
+        const x = center + Math.cos(a) * r
+        const y = center + Math.sin(a) * r
+        const s = pDot[i] ?? dpr
+        const ci = i * 3
+        const cr = (pColors[ci] ?? 0) | 0
+        const cg = (pColors[ci + 1] ?? 0) | 0
+        const cb = (pColors[ci + 2] ?? 0) | 0
         ctx.fillStyle = `rgba(${cr},${cg},${cb},${alpha.toFixed(3)})`
         ctx.fillRect(x - s / 2, y - s / 2, s, s)
       }

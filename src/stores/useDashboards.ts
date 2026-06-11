@@ -253,7 +253,7 @@ function buildSeedDashboards(account: Account): Dashboard[] {
       id: createDashboardId(account.id, 'home'),
       accountId: account.id,
       kind: 'system',
-      name: 'Home',
+      name: 'Overview',
       description: 'Your curated Maropost command center with quick business context.',
       icon: 'layout-dashboard',
       accent: 'primary',

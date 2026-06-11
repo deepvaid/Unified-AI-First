@@ -13,12 +13,14 @@
   --dv-text-primary: var(--mp-color-light-aiAccent-textPrimary);
   --dv-text-secondary: var(--mp-color-light-aiAccent-textSecondary);
   --dv-muted: var(--mp-color-light-aiAccent-muted);
-  /* Da Vinci gradient — soft cyan → blue → violet (brand AI aesthetic) */
-  --dv-grad: linear-gradient(135deg, #5EEAD4 0%, #93C5FD 50%, #A78BFA 100%);
+  /* Da Vinci gradient — vibrant violet → blue → deep cyan (brand AI aesthetic) */
+  --dv-grad: linear-gradient(135deg, #7C3AED 0%, #2563EB 52%, #0891B2 100%);
+  /* Hero greeting gradient text — violet → blue → cyan, left to right */
+  --dv-hero-grad: linear-gradient(90deg, #7C3AED 0%, #2563EB 50%, #0891B2 100%);
   /* Orb particle colors (fed into WebGL uniforms — keep literal hex, never color-mix) */
-  --dv-orb-c1: #5EEAD4;
-  --dv-orb-c2: #93C5FD;
-  --dv-orb-c3: #A78BFA;
+  --dv-orb-c1: #0891B2;
+  --dv-orb-c2: #3B82F6;
+  --dv-orb-c3: #8B5CF6;
   /* Saturated neon stops — hover ring + the mark's particle gradient */
   --dv-ring-c1: #2563EB;
   --dv-ring-c2: #7C3AED;
@@ -36,6 +38,37 @@
   --dv-metric-neutral: var(--mp-color-light-aiMetric-neutral);
 }
 
+/* ── Orbit voice mode (drawer) — high-fidelity handoff values, light-theme spec.
+   Exact hex from the Orbit design handoff; do not derive or color-mix. ── */
+:root {
+  --dv-orbit-grad: linear-gradient(135deg, #8B7CF8 0%, #5EA8F5 55%, #22D3EE 100%);
+  --dv-orbit-strip-grad: linear-gradient(120deg, #F4F1FE, #ECFAFE);
+  --dv-orbit-wave-grad: linear-gradient(180deg, #A78BFA, #22D3EE);
+  --dv-orbit-ink: #14304C;
+  --dv-orbit-slate: #5C7186;
+  --dv-orbit-body: #33506B;
+  --dv-orbit-mist: #8499AF;
+  --dv-orbit-chip: #4A6076;
+  --dv-orbit-line: #E4EAF1;
+  --dv-orbit-hairline: #EEF2F7;
+  --dv-orbit-surface: #F4F7FB;
+  --dv-orbit-echo-bg: #F8FAFC;
+  --dv-orbit-card-line: #E8EEF5;
+  --dv-orbit-blue: #1B9FE0;
+  --dv-orbit-blue-hover: #1690CC;
+  --dv-orbit-bar-light: #A5D8F3;
+  --dv-orbit-sep: #D2DCE6;
+  --dv-orbit-success: #16A34A;
+  --dv-orbit-success-text: #1E5638;
+  --dv-orbit-success-bg: #F0FAF4;
+  --dv-orbit-warn: #B45309;
+  --dv-orbit-warn-bg: #FEF6EC;
+  --dv-orbit-muted: #94A3B8;
+  --dv-orbit-muted-bg: #F1F5F9;
+  --dv-orbit-mic-shadow: 0 10px 26px rgba(99, 125, 247, 0.38);
+  --dv-orbit-input-shadow: 0 6px 18px rgba(15, 42, 67, 0.06);
+}
+
 .v-theme--maropostDark,
 [data-theme='dark'] {
   /* Da Vinci accent — uses app accent (adapts to user's color choice) */
@@ -48,8 +81,10 @@
   --dv-text-primary: var(--mp-color-dark-aiAccent-textPrimary);
   --dv-text-secondary: var(--mp-color-dark-aiAccent-textSecondary);
   --dv-muted: var(--mp-color-dark-aiAccent-muted);
-  /* Da Vinci gradient — soft cyan → blue → violet (brand AI aesthetic) */
-  --dv-grad: linear-gradient(135deg, #5EEAD4 0%, #93C5FD 50%, #A78BFA 100%);
+  /* Da Vinci gradient — vibrant violet → blue → deep cyan (brand AI aesthetic) */
+  --dv-grad: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 52%, #06B6D4 100%);
+  /* Hero greeting gradient text — brighter stops for luminance on dark surfaces */
+  --dv-hero-grad: linear-gradient(90deg, #A78BFA 0%, #60A5FA 50%, #22D3EE 100%);
   /* Orb particle colors — brighter stops so additive glow reads on dark surfaces */
   --dv-orb-c1: #22D3EE;
   --dv-orb-c2: #60A5FA;
