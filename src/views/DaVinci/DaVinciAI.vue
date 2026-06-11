@@ -66,7 +66,7 @@ const metrics = [
     <section v-if="activeTab === 'get-started'" class="dv-landing">
       <v-card flat rounded="lg" class="dv-hero pa-10 mb-6 text-center">
         <div class="dv-hero__brand d-inline-flex align-center justify-center mb-6">
-          <DvOrbitOrb class="mr-2" :size="32" pulse />
+          <DvOrbitOrb class="mr-2" :size="32" />
           <span class="text-h5 font-weight-bold">Da Vinci AI</span>
         </div>
         <h1 class="text-h3 font-weight-bold mb-4 dv-hero__headline">

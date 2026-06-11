@@ -5,7 +5,7 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/storybook/:path*", "destination": "/storybook/:path*" },
-    { "source": "/((?!storybook|assets).*)", "destination": "/index.html" }
+    { "source": "/((?!storybook|assets|main-landing).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

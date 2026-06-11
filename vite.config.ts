@@ -14,6 +14,26 @@ export default defineConfig({
     vuetify({
       autoImport: true,
     }),
+    // Serve the static marketing landing page (public/main-landing/) at /main-landing
+    {
+      name: 'main-landing-rewrite',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const [path, query] = (req.url ?? '').split('?')
+          if (path === '/main-landing') {
+            // redirect so relative asset paths resolve under /main-landing/
+            res.statusCode = 301
+            res.setHeader('Location', '/main-landing/' + (query ? `?${query}` : ''))
+            res.end()
+            return
+          }
+          if (path === '/main-landing/') {
+            req.url = '/main-landing/index.html' + (query ? `?${query}` : '')
+          }
+          next()
+        })
+      },
+    },
     // Serve the Retail Cloud POS APK from its out-of-git location during local dev
     {
       name: 'retail-pos-apk',

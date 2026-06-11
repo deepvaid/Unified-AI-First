@@ -378,7 +378,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
             @mouseenter="assistantPillHover = true"
             @mouseleave="assistantPillHover = false"
           >
-            <DvOrbitOrb :size="20" :speed="3" :inverse="assistantPillHover" pulse />
+            <DvOrbitOrb :size="20" :speed="3" :inverse="assistantPillHover" />
             <span class="assistant-pill__label">Da Vinci</span>
             <v-icon size="14" class="assistant-pill__chevron">chevron-down</v-icon>
           </button>
@@ -387,7 +387,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
         <div class="assistant-menu-card">
           <div class="um-section um-section--last">
             <button type="button" class="um-item" @click="openCopilot">
-              <v-icon class="um-item__icon" size="20">message-circle</v-icon>
+              <DvOrbitOrb class="um-item__icon" :size="20" />
               <div class="um-item__body">
                 <div class="um-item__title">Co-pilot</div>
                 <div class="um-item__sub">Chat with Da Vinci in a side drawer</div>
@@ -663,7 +663,8 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 .assistant-pill:hover {
-  background: var(--dv-orbit-grad);
+  /* same blue→purple gradient as the landing Da Vinci button */
+  background: linear-gradient(125deg, #4f8ef5 0%, #7c5cff 45%, #9a5cff 72%, #5b44d6 100%);
   border-color: transparent;
   color: #ffffff;
 }
@@ -921,6 +922,11 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 .um-item__icon {
   color: var(--muted);
   flex-shrink: 0;
+}
+
+/* The Da Vinci mark stays full-ink in menus — never muted like generic icons */
+.um-item__icon.dv-orbit-orb {
+  color: var(--ink);
 }
 
 .um-item:hover .um-item__icon {

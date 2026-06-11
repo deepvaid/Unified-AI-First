@@ -632,7 +632,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   <div class="dv-panel">
     <!-- ═══ HEADER ═══ -->
     <header v-if="!headerless" class="dv-panel__header">
-      <DvOrbitOrb class="dv-panel__avatar" :size="32" :speed="isTyping ? 1.6 : 1" pulse />
+      <DvOrbitOrb class="dv-panel__avatar" :size="32" :speed="isTyping ? 1.6 : 1" />
       <div class="dv-panel__title">
         <div class="dv-panel__title-name">Da Vinci</div>
         <div class="dv-panel__title-sub">{{ headerStatus }}</div>

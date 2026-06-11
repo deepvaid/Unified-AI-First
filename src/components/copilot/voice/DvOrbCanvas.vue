@@ -3,7 +3,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useElementSize } from '@/composables/useElementSize'
 import { useAppTheme } from '@/composables/useAppTheme'
 // Type-only — the engine itself (and three.js) loads via dynamic import below
-import type { OrbAudioFrame, OrbColorOptions, OrbHandle, OrbState } from '@/lib/davinci-orb/types'
+import type { DvOrbEngineModule, OrbAudioFrame, OrbColorOptions, OrbHandle, OrbState } from '@/lib/davinci-orb/types'
 
 const props = withDefaults(
   defineProps<{
@@ -44,10 +44,19 @@ function resolveColors(el: HTMLElement): OrbColorOptions {
 }
 
 onMounted(async () => {
-  let createOrb: typeof import('@/lib/davinci-orb/orb').createOrb
+  let THREE: typeof import('three')
+  let engine: DvOrbEngineModule
   try {
-    // Import orb.ts directly (not the barrel) so the heavy chunk is named orb-*.js
-    ;({ createOrb } = await import('@/lib/davinci-orb/orb'))
+    // The SHARED engine (also used by the static landing/login pages) lives in
+    // public/ — a real runtime URL, invisible to the bundler (@vite-ignore).
+    // three.js stays bundled (lazy chunk) and is dependency-injected into it.
+    // Full-origin URL on purpose: Vite's dev-time __vite__injectQuery rewrites
+    // root-relative dynamic imports to "?import", which public/ files reject.
+    const engineUrl = new URL(import.meta.env.BASE_URL + 'dv-orb/dv-orb-engine.js', window.location.origin).href
+    ;[THREE, engine] = await Promise.all([
+      import('three'),
+      import(/* @vite-ignore */ engineUrl) as Promise<DvOrbEngineModule>,
+    ])
   } catch {
     failed.value = 'load-failed'
     emit('fallback', failed.value)
@@ -55,7 +64,8 @@ onMounted(async () => {
   }
   if (!canvasEl.value || !rootEl.value) return
   try {
-    handle = createOrb(canvasEl.value, {
+    handle = engine.createDvOrb(canvasEl.value, {
+      THREE,
       colors: resolveColors(rootEl.value),
       dark: mode.value === 'dark',
       maxPixelRatio: props.maxPixelRatio,

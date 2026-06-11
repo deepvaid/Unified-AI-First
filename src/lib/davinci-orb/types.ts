@@ -42,6 +42,24 @@ export interface OrbInitOptions {
   onContextLost?: () => void
 }
 
+/**
+ * Init options for the SHARED runtime engine (public/dv-orb/dv-orb-engine.js).
+ * three.js is dependency-injected so static pages (CDN importmap) and the SPA
+ * (bundled module) share one engine file. `colors` becomes optional — the
+ * engine defaults to the static pages' graphite palette.
+ */
+export interface DvOrbInitOptions extends Omit<OrbInitOptions, 'colors'> {
+  THREE: typeof import('three')
+  colors?: OrbColorOptions
+  /** uShape uniform: 0 = plain outer field, 1 = wavy irregular outer edge (landing) */
+  wavy?: number
+}
+
+/** Shape of the runtime module at /dv-orb/dv-orb-engine.js (for typed dynamic import). */
+export interface DvOrbEngineModule {
+  createDvOrb(canvas: HTMLCanvasElement, opts: DvOrbInitOptions): OrbHandle
+}
+
 export interface OrbHandle {
   setState(state: OrbState): void
   getState(): OrbState

@@ -28,7 +28,7 @@ const emit = defineEmits<{ suggestion: [text: string] }>()
 
 <template>
   <div class="dv-hero">
-    <DvOrbitOrb :size="orbSize" pulse />
+    <DvOrbitOrb :size="orbSize" />
     <h2 class="dv-hero__hi">Hi {{ name }},</h2>
     <div class="dv-hero__ask">{{ prompt }}</div>
     <span class="dv-hero__rule" aria-hidden="true"></span>
