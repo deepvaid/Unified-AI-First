@@ -7,7 +7,6 @@ import DvHistoryDrawer from './copilot/DvHistoryDrawer.vue'
 import DvToastStack from './copilot/DvToastStack.vue'
 import DvInsightCard from './copilot/DvInsightCard.vue'
 import DvIntentCardList from './copilot/voice/DvIntentCardList.vue'
-import DvOrbMark from './copilot/DvOrbMark.vue'
 import DvLandingHero from './copilot/DvLandingHero.vue'
 import DvOrbitOrb from './copilot/voice/DvOrbitOrb.vue'
 import DvOrbitVoiceSurface from './copilot/voice/DvOrbitVoiceSurface.vue'
@@ -215,8 +214,6 @@ function stopVoiceActivity() {
 }
 
 // ─── Orbit voice surface — drawer-local UI state machine ───────────────
-const orbitInput = ref<'voice' | 'keyboard'>('voice')
-const orbitKbText = ref('')
 const orbitError = ref(false) // dictation resolved silent (didn't catch that)
 const orbitPaused = ref(false) // user stopped the mic without speaking
 const orbitLastRequest = ref('') // echo pill while thinking
@@ -226,7 +223,6 @@ const orbitDraftKey = ref(0) // bump remounts the draft card after Undo
 let orbitCancelRequested = false
 
 const orbitState = computed<OrbitState>(() => {
-  if (orbitInput.value === 'keyboard') return 'keyboard'
   if (isDictating.value) return 'listening'
   if (voice.state.value === 'thinking' || isTyping.value) return 'thinking'
   if (orbitError.value) return 'error'
@@ -238,8 +234,6 @@ const orbitState = computed<OrbitState>(() => {
 
 
 function resetOrbit() {
-  orbitInput.value = 'voice'
-  orbitKbText.value = ''
   orbitError.value = false
   orbitPaused.value = false
   orbitLastRequest.value = ''
@@ -257,19 +251,6 @@ function orbitCancelListening() {
 function orbitTryAgain() {
   orbitError.value = false
   void toggleMic()
-}
-
-function orbitEnterKeyboard() {
-  if (isDictating.value) orbitCancelListening()
-  orbitError.value = false
-  orbitPaused.value = false
-  orbitInput.value = 'keyboard'
-}
-
-function orbitSend(text: string) {
-  orbitKbText.value = ''
-  orbitInput.value = 'voice'
-  processQuery(text)
 }
 
 function onOrbitWidgetSaved(payload: { title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string }) {
@@ -714,7 +695,6 @@ function onComposerKeydown(event: KeyboardEvent) {
     <!-- ═══ ORBIT VOICE SURFACE (voice mode) — owns the whole body + footer ═══ -->
     <DvOrbitVoiceSurface
       v-if="isVoiceMode"
-      v-model:kb-text="orbitKbText"
       :state="orbitState"
       :transcript="voice.interimTranscript.value"
       :last-request="orbitLastRequest"
@@ -731,10 +711,7 @@ function onComposerKeydown(event: KeyboardEvent) {
       @cancel="orbitCancelListening"
       @suggestion="sendSuggestion"
       @try-again="orbitTryAgain"
-      @type-instead="orbitEnterKeyboard"
-      @enter-keyboard="orbitEnterKeyboard"
-      @exit-keyboard="orbitInput = 'voice'"
-      @send="orbitSend"
+      @type-instead="setUiMode('text')"
       @undo="orbitUndo"
       @open-dashboard="orbitOpenDashboard"
       @add-another="orbitAddAnother"
@@ -758,7 +735,7 @@ function onComposerKeydown(event: KeyboardEvent) {
           <div class="dv-msg-user__bubble">{{ msg.text }}</div>
         </div>
         <div v-else class="dv-msg-bot">
-          <DvOrbMark class="dv-msg-bot__avatar" :size="28" variant="tile" :hover-animate="false" />
+          <DvOrbitOrb class="dv-msg-bot__avatar" :size="28" />
           <div class="dv-msg-bot__body">
             <div v-if="msg.text" class="dv-msg-bot__intro" v-html="msg.text"></div>
 
@@ -821,7 +798,7 @@ function onComposerKeydown(event: KeyboardEvent) {
 
       <!-- Generating skeleton -->
       <div v-if="isTyping" class="dv-msg-bot">
-        <DvOrbMark class="dv-msg-bot__avatar" :size="28" variant="tile" active state="thinking" />
+        <DvOrbitOrb class="dv-msg-bot__avatar" :size="28" :speed="1.6" arc />
         <div class="dv-msg-bot__body">
           <div class="dv-status">
             <span class="dv-status__dot" aria-hidden="true"></span>

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import DvOrbMark from './DvOrbMark.vue'
+import DvOrbitOrb from './voice/DvOrbitOrb.vue'
 
 // Shared Da Vinci front page — identity orb, gradient greeting, suggestion
 // chips. Used by both the text-mode landing (MpDaVinciBot) and the voice-mode
-// ready/keyboard states (DvOrbitVoiceSurface); only the host footer differs.
+// ready state (DvOrbitVoiceSurface); only the host footer differs.
 withDefaults(
   defineProps<{
     /** First name shown in the greeting ("Hi Ross,") */
@@ -28,7 +28,7 @@ const emit = defineEmits<{ suggestion: [text: string] }>()
 
 <template>
   <div class="dv-hero">
-    <DvOrbMark :size="orbSize" variant="bare" ambient :hover-animate="false" />
+    <DvOrbitOrb :size="orbSize" pulse />
     <h2 class="dv-hero__hi">Hi {{ name }},</h2>
     <div class="dv-hero__ask">{{ prompt }}</div>
     <span class="dv-hero__rule" aria-hidden="true"></span>
@@ -55,7 +55,7 @@ const emit = defineEmits<{ suggestion: [text: string] }>()
 }
 
 .dv-hero__hi {
-  margin: 22px 0 0;
+  margin: 32px 0 0;
   font-size: 34px;
   font-weight: 700;
   line-height: 1.18;

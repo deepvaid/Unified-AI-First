@@ -6,7 +6,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DvOrbCanvas from '@/components/copilot/voice/DvOrbCanvas.vue'
-import DvOrbMark from '@/components/copilot/DvOrbMark.vue'
+import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import DvVoiceStatePill from '@/components/copilot/voice/DvVoiceStatePill.vue'
 import DvIntentCardList from '@/components/copilot/voice/DvIntentCardList.vue'
 import DvToastStack from '@/components/copilot/DvToastStack.vue'
@@ -41,6 +41,7 @@ const threadEl = ref<HTMLElement | null>(null)
 const hasThread = computed(() => messages.value.length > 0)
 const busy = computed(() => voice.state.value !== 'idle')
 const isListening = computed(() => voice.state.value === 'listening' && voice.owner.value === 'experience')
+const avatarSpeed = computed(() => ({ idle: 1, listening: 2.4, thinking: 1.6, speaking: 1.4 })[voice.state.value])
 
 function makeId(prefix = 'x') {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
@@ -177,7 +178,7 @@ onBeforeUnmount(() => {
     <!-- Top bar -->
     <header class="dvx__topbar">
       <div class="dvx__wordmark">
-        <DvOrbMark class="dvx__avatar" :size="30" variant="tile" tile-radius="10px" :state="voice.state.value" />
+        <DvOrbitOrb class="dvx__avatar" :size="30" :speed="avatarSpeed" />
         <span>Da Vinci</span>
       </div>
       <div class="dvx__top-actions">

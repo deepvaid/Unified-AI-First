@@ -16,10 +16,10 @@ const meta = {
       description: {
         component: `
 ## Overview
-DvLandingHero is the shared Da Vinci front page — the ambient particle-pulse
-identity orb, a two-line greeting ("Hi Ross," + gradient prompt), a gradient
-rule, and a 2-column grid of suggestion chips. Used by both the text-mode
-landing (MpDaVinciBot) and the voice-mode ready/keyboard states
+DvLandingHero is the shared Da Vinci front page — the twin-ring Orbit identity
+orb with dotted pulse ripples, a two-line greeting ("Hi Ross," + gradient
+prompt), a gradient rule, and a 2-column grid of suggestion chips. Used by
+both the text-mode landing (MpDaVinciBot) and the voice-mode ready state
 (DvOrbitVoiceSurface); only the host footer differs.
 `,
       },

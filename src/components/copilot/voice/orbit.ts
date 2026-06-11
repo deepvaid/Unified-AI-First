@@ -1,4 +1,4 @@
-/** Orbit voice mode — the drawer's 8-state UI machine (design handoff "Orbit"). */
+/** Orbit voice mode — the drawer's 7-state UI machine (design handoff "Orbit"). */
 export type OrbitState =
   | 'ready'
   | 'listening'
@@ -7,4 +7,3 @@ export type OrbitState =
   | 'added'
   | 'error'
   | 'paused'
-  | 'keyboard'

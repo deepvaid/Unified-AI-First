@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed } from 'vue'
 import DvOrbitOrb from './DvOrbitOrb.vue'
 import DvOrbitStatusPill from './DvOrbitStatusPill.vue'
 import DvOrbitWaveBars from './DvOrbitWaveBars.vue'
@@ -22,7 +22,7 @@ const props = withDefaults(
     caption?: string
     /** True while TTS is actually speaking — drives the strip waveform */
     speaking?: boolean
-    /** Four suggestion chips (ready/keyboard hero) */
+    /** Four suggestion chips (ready hero) */
     suggestions?: string[]
     /** Follow-up ghost chips (responding) */
     chips?: string[]
@@ -59,9 +59,6 @@ const emit = defineEmits<{
   suggestion: [text: string]
   'try-again': []
   'type-instead': []
-  'enter-keyboard': []
-  'exit-keyboard': []
-  send: [text: string]
   undo: []
   'open-dashboard': []
   'add-another': []
@@ -69,17 +66,7 @@ const emit = defineEmits<{
   'widget-refined': []
 }>()
 
-const kbText = defineModel<string>('kbText', { default: '' })
-const kbInput = ref<HTMLInputElement | null>(null)
-
-watch(
-  () => props.state,
-  (state) => {
-    if (state === 'keyboard') nextTick(() => kbInput.value?.focus())
-  },
-)
-
-// Footer mic bar per state (keyboard state shows the input bar instead)
+// Footer mic bar per state
 const micBar = computed(() => {
   switch (props.state) {
     case 'ready':
@@ -96,41 +83,34 @@ const micBar = computed(() => {
       return { micSize: 56 as const, ripple: false, muted: false, ghost: 'keyboard' as const }
     case 'paused':
       return { micSize: 56 as const, ripple: false, muted: true, ghost: 'keyboard' as const }
-    default:
-      return null
   }
 })
 
-const isHeroState = computed(() => ['ready', 'listening', 'error', 'paused', 'keyboard'].includes(props.state))
+const isHeroState = computed(() => ['ready', 'listening', 'error', 'paused'].includes(props.state))
 
 function onGhost() {
   if (props.state === 'listening') emit('cancel')
-  else emit('enter-keyboard')
-}
-
-function sendKb() {
-  const text = kbText.value.trim()
-  if (text) emit('send', text)
+  else emit('type-instead')
 }
 </script>
 
 <template>
   <div class="dv-orbit">
     <Transition name="dv-orbit-state" mode="out-in">
-      <!-- ── Centered hero states: ready / listening / error / paused / keyboard ── -->
+      <!-- ── Centered hero states: ready / listening / error / paused ── -->
       <div v-if="isHeroState" :key="state" class="dv-orbit__hero">
         <DvOrbitOrb v-if="state === 'listening'" :size="118" :speed="2.4" />
         <DvOrbitOrb v-else-if="state === 'error'" :size="118" :speed="0.6" dim />
         <DvOrbitOrb v-else-if="state === 'paused'" :size="118" :speed="0.25" dim />
 
         <DvOrbitStatusPill
-          v-if="state !== 'ready' && state !== 'keyboard'"
+          v-if="state !== 'ready'"
           class="dv-orbit__pill"
           :state="state"
         />
 
         <DvLandingHero
-          v-if="state === 'ready' || state === 'keyboard'"
+          v-if="state === 'ready'"
           :suggestions="suggestions"
           @suggestion="emit('suggestion', $event)"
         />
@@ -230,9 +210,8 @@ function sendKb() {
       </div>
     </Transition>
 
-    <!-- ── Footer: mic bar, or keyboard input pill ── -->
+    <!-- ── Footer: mic bar ── -->
     <DvOrbitMicBar
-      v-if="micBar"
       :mic-size="micBar.micSize"
       :ripple="micBar.ripple"
       :muted="micBar.muted"
@@ -240,28 +219,6 @@ function sendKb() {
       @mic="emit('mic')"
       @ghost="onGhost"
     />
-    <div v-else class="dv-orbit__input">
-      <input
-        ref="kbInput"
-        v-model="kbText"
-        type="text"
-        class="dv-orbit__input-field"
-        placeholder="Ask Da Vinci…"
-        @keydown.enter.prevent="sendKb"
-      />
-      <button type="button" class="dv-orbit__input-mic" aria-label="Switch to voice" @click="emit('exit-keyboard')">
-        <v-icon size="17">mic</v-icon>
-      </button>
-      <button
-        type="button"
-        class="dv-orbit__input-send"
-        aria-label="Send"
-        :disabled="!kbText.trim()"
-        @click="sendKb"
-      >
-        <v-icon size="15" class="dv-orbit__input-send-icon">arrow-up</v-icon>
-      </button>
-    </div>
   </div>
 </template>
 
@@ -510,70 +467,6 @@ function sendKb() {
 .dv-orbit__card :deep(.dv-draft) {
   border: 1px solid var(--dv-orbit-card-line);
   border-radius: 16px;
-}
-
-/* ── Keyboard input pill ── */
-.dv-orbit__input {
-  margin: 0 16px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 7px 7px 7px 18px;
-  border: 1px solid var(--dv-orbit-line);
-  border-radius: 999px;
-  box-shadow: var(--dv-orbit-input-shadow);
-  flex: none;
-}
-
-.dv-orbit__input-field {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: none;
-  font-size: 13.5px;
-  color: var(--dv-orbit-ink);
-}
-
-.dv-orbit__input-field::placeholder {
-  color: var(--dv-orbit-mist);
-}
-
-.dv-orbit__input-mic {
-  border: none;
-  background: none;
-  padding: 0;
-  display: flex;
-  color: var(--dv-orbit-mist);
-  cursor: pointer;
-}
-
-.dv-orbit__input-mic:hover {
-  color: var(--dv-orbit-ink);
-}
-
-.dv-orbit__input-send {
-  width: 38px;
-  height: 38px;
-  flex: none;
-  border: none;
-  border-radius: 50%;
-  background: var(--dv-orbit-grad);
-  box-shadow: 0 6px 16px rgba(99, 125, 247, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-}
-
-.dv-orbit__input-send:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.dv-orbit__input-send-icon {
-  color: #ffffff;
 }
 
 /* ── State transition: cross-fade + 8px upward drift ── */
