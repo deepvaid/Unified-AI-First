@@ -246,9 +246,7 @@ const locationAssociates = computed(() =>
               <span class="font-weight-medium">{{ reg.name }}</span>
             </template>
             <template #append>
-              <v-chip size="x-small" variant="tonal" :color="reg.status === 'online' ? 'success' : reg.status === 'syncing' ? 'warning' : 'error'">
-                {{ reg.status }}
-              </v-chip>
+              <MpStatusChip :status="reg.status" type="connection" size="x-small" />
             </template>
           </v-list-item>
           <div v-if="locationRegisters.length === 0" class="text-body-2 text-medium-emphasis pa-2">No registers at this location.</div>

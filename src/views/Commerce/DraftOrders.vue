@@ -4,6 +4,7 @@ import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -105,7 +106,6 @@ const headers = [
   { title: 'Created', key: 'createdAt' },
   { title: '', key: 'actions', align:'end' as const, sortable:false },
 ]
-const statusColor = (s: string) => ({Open:'primary','Invoice Sent':'success'})[s as string] ?? 'default'
 </script>
 
 <template>
@@ -176,7 +176,7 @@ const statusColor = (s: string) => ({Open:'primary','Invoice Sent':'success'})[s
           <span class="font-weight-bold">${{ parseFloat((item as any).total || '0').toFixed(2) }}</span>
         </template>
         <template v-slot:item.status="{ item }">
-          <v-chip :color="statusColor((item as any).status ?? 'Open')" size="x-small" variant="flat">{{ (item as any).status ?? 'Open' }}</v-chip>
+          <MpStatusChip :status="(item as any).status ?? 'Open'" type="general" size="x-small" />
         </template>
         <template v-slot:item.actions>
           <div class="ActionButtons d-flex justify-end gap-1">

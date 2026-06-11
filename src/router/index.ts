@@ -4,6 +4,7 @@ import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 declare module 'vue-router' {
   interface RouteMeta {
     fullPage?: boolean
+    flush?: boolean
     requires?: SubscriptionKey
   }
 }
@@ -136,6 +137,12 @@ const routes: RouteRecordRaw[] = [
     name: 'DaVinciCopilot',
     component: () => import('@/views/DaVinci/DaVinciCopilot.vue'),
     meta: { flush: true },
+  },
+  {
+    path: '/accounts/:accountId/da-vinci/experience',
+    name: 'DaVinciExperience',
+    component: () => import('@/views/DaVinci/DaVinciExperience.vue'),
+    meta: { fullPage: true },
   },
 
   // 9. App Store (formerly Integrations)

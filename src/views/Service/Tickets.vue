@@ -84,8 +84,6 @@ const statusTabs = computed(() =>
   }))
 )
 
-const priorityColor = (p: string): string =>
-  ({ Urgent: 'error', High: 'warning', Normal: 'primary', Low: 'grey' } as Record<string, string>)[p] ?? 'default'
 
 const filteredTickets = computed(() => {
   const q = search.value.toLowerCase()
@@ -221,12 +219,13 @@ function closeActiveTicket() {
               <div class="text-caption text-medium-emphasis mb-2">{{ ticket.customer }}</div>
               <div class="d-flex align-center gap-1 flex-wrap">
                 <MpStatusChip :status="ticket.status" type="ticket" size="x-small" />
-                <v-chip
+                <MpStatusChip
                   v-if="ticket.priority === 'Urgent' || ticket.priority === 'High'"
-                  :color="priorityColor(ticket.priority)"
+                  :status="ticket.priority"
+                  type="priority"
                   size="x-small"
                   variant="flat"
-                >{{ ticket.priority }}</v-chip>
+                />
                 <v-chip
                   v-for="tag in ticket.tags"
                   :key="tag"
@@ -261,7 +260,7 @@ function closeActiveTicket() {
             <div class="d-flex align-center gap-2 flex-wrap mb-1">
               <span class="text-caption font-weight-medium text-medium-emphasis">{{ activeTicket.number }}</span>
               <MpStatusChip :status="activeTicket.status" type="ticket" size="x-small" />
-              <v-chip :color="priorityColor(activeTicket.priority)" size="x-small" variant="flat">{{ activeTicket.priority }}</v-chip>
+              <MpStatusChip :status="activeTicket.priority" type="priority" size="x-small" variant="flat" />
               <v-chip size="x-small" variant="outlined" color="secondary">{{ activeTicket.category }}</v-chip>
             </div>
             <div class="text-subtitle-1 font-weight-semibold tkt-detail__subject">{{ activeTicket.subject }}</div>
@@ -488,7 +487,7 @@ function closeActiveTicket() {
           >
             <div class="d-flex align-start justify-space-between mb-2 gap-2">
               <span class="text-caption text-medium-emphasis">{{ ticket.number }}</span>
-              <v-chip :color="priorityColor(ticket.priority)" size="x-small" variant="flat">{{ ticket.priority }}</v-chip>
+              <MpStatusChip :status="ticket.priority" type="priority" size="x-small" variant="flat" />
             </div>
             <div class="text-body-2 font-weight-medium mb-3 tkt-kanban-card__subject">{{ ticket.subject }}</div>
             <div class="d-flex align-center justify-space-between">
@@ -569,7 +568,7 @@ function closeActiveTicket() {
           density="comfortable"
         >
           <template #selection="{ item }">
-            <v-chip :color="priorityColor(item.value)" size="x-small" variant="flat">{{ item.title }}</v-chip>
+            <MpStatusChip :status="item.value" type="priority" size="x-small" variant="flat" />
           </template>
         </v-select>
       </v-col>

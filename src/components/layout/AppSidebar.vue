@@ -18,7 +18,7 @@ const emit = defineEmits<{
 const accountsStore = useAccountsStore()
 
 // ─── Navigation Structure ────────────────────────────────────
-interface NavItem { title: string; route: string; }
+interface NavItem { title: string; route: string; external?: boolean }
 interface NavSubGroup { title: string; isSubGroup: true; items: NavItem[] }
 interface NavGroup {
   title: string
@@ -240,6 +240,8 @@ function buildNavGroups(accountId: string): NavGroup[] {
       items: [
         { title: 'Overview', route: `/accounts/${accountId}/da-vinci` },
         { title: 'Ask Da Vinci', route: `/accounts/${accountId}/da-vinci/copilot` },
+        { title: 'AI experience', route: `/accounts/${accountId}/da-vinci/experience` },
+        { title: 'Landing page', route: 'https://davinci-ai-first.vercel.app/landing.html', external: true },
       ],
     },
     {
@@ -334,6 +336,14 @@ watch(localRail, (nextValue, previousValue) => {
 function goTo(route: string) {
   if (router.currentRoute.value.fullPath === route) return
   router.push(route)
+}
+
+function activateNavItem(item: NavItem) {
+  if (item.external) {
+    window.open(item.route, '_blank', 'noopener,noreferrer')
+    return
+  }
+  goTo(item.route)
 }
 
 function isLocked(group: NavGroup) {
@@ -480,7 +490,7 @@ function toggleExpandedCascade(title: string) {
 }
 
 function onFlyoutChildClick(item: NavItem) {
-  goTo(item.route)
+  activateNavItem(item)
   closeFlyout()
 }
 
@@ -497,7 +507,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
     v-model="localDrawer"
     :rail="localRail"
     :rail-width="64"
-    width="216"
+    width="240"
     :permanent="!props.temporary"
     :temporary="props.temporary"
     :mobile-breakpoint="0"
@@ -706,7 +716,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               :key="item.title"
               class="rail-flyout-item"
               :class="{ 'rail-flyout-item--active': ('route' in item) && route.path.startsWith(item.route) }"
-              @click="('route' in item) && goTo(item.route)"
+              @click="('route' in item) && activateNavItem(item as NavItem)"
             ><span>{{ ('route' in item) ? item.title : '' }}</span>
               <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
             </div>
@@ -904,7 +914,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px 14px 22px;
+  padding: 16px 16px 16px 20px;
   margin-bottom: 6px;
   border-bottom: 1px solid var(--sidebar-border);
   background: var(--sidebar-bg);
@@ -1079,7 +1089,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 4px 6px 12px;
+  padding: 4px 8px 12px;
   scrollbar-width: thin;
 }
 
@@ -1185,9 +1195,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
 .mp-sidebar :deep(.v-list-item) {
   --v-list-prepend-gap: 16px;
-  min-height: 36px;
+  min-height: 40px;
   margin-bottom: 2px;
-  padding: 9px 10px;
+  padding: 10px 12px;
   border-radius: var(--sidebar-radius) !important;
   color: var(--sidebar-text);
 }
@@ -1209,7 +1219,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .mp-sidebar :deep(.v-list-item-title) {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1.2;
 }
@@ -1228,7 +1238,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .mp-sidebar :deep(.v-list-item__prepend > .v-icon) {
-  font-size: 18px;
+  font-size: 19px;
   margin-inline-end: 0;
 }
 
@@ -1243,7 +1253,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 /* Expanded-mode click flyout panel (teleported) */
 .sidebar-expanded-flyout {
   position: fixed;
-  left: 216px;
+  left: 240px;
   z-index: 1005;
 }
 

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const search = ref('')
 
@@ -67,7 +68,7 @@ const invoices = [
       </MpDataTableToolbar>
       <v-data-table :headers="headers" :items="invoices" :search="search" hover density="comfortable" :items-per-page="10" fixed-header class="flex-grow-1">
         <template v-slot:item.status="{ item }">
-          <v-chip color="success" size="small">{{ item.status }}</v-chip>
+          <MpStatusChip :status="item.status" type="general" />
         </template>
       </v-data-table>
     </v-card>

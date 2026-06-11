@@ -1,17 +1,25 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import DvWidgetDraftCard from './copilot/DvWidgetDraftCard.vue'
 import DvHistoryDrawer from './copilot/DvHistoryDrawer.vue'
 import DvToastStack from './copilot/DvToastStack.vue'
 import DvInsightCard from './copilot/DvInsightCard.vue'
+import DvIntentCardList from './copilot/voice/DvIntentCardList.vue'
+import DvOrbMark from './copilot/DvOrbMark.vue'
+// DvOrbCanvas lazy-loads the three.js chunk itself — never import @/lib/davinci-orb here
+import DvOrbCanvas from './copilot/voice/DvOrbCanvas.vue'
+import DvVoiceStatePill from './copilot/voice/DvVoiceStatePill.vue'
+import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
+import { useDaVinciIntents, type DvCardDescriptor, type DvQuickReply } from '@/composables/useDaVinciIntents'
+import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
 
 interface DraftSetProps {
   drafts: DashboardWidgetDraft[]
@@ -19,9 +27,14 @@ interface DraftSetProps {
   conversationId: string
 }
 
+interface IntentCardsProps {
+  cards: DvCardDescriptor[]
+  quickReplies?: DvQuickReply[]
+}
+
 interface ChatComponent {
-  type: 'widgetDraftSet' | 'insight'
-  props: DraftSetProps | { headline: string; description: string; severity?: string }
+  type: 'widgetDraftSet' | 'insight' | 'intentCards'
+  props: DraftSetProps | { headline: string; description: string; severity?: string } | IntentCardsProps
 }
 
 interface ChatMessage {
@@ -56,6 +69,8 @@ const accountsStore = useAccountsStore()
 const dashboardsStore = useDashboardsStore()
 const { addItem, incrementAdded, clearAll } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
+const intents = useDaVinciIntents()
+const voice = useDaVinciVoice()
 
 const inputText = ref('')
 const chatMode = ref(props.initialChatMode || props.initialMessages.length > 0)
@@ -164,8 +179,161 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// ─── Voice dictation + TTS + text↔voice mode (drawer surface) ──────────
+const copilot = useCopilotStore()
+
+const ttsEnabled = ref(typeof window !== 'undefined' && window.localStorage.getItem('davinci-drawer-tts') === '1')
+
+// Persisted UI mode — falls back to text when STT is unsupported (Firefox)
+const MODE_KEY = 'davinci-copilot-mode'
+const uiMode = ref<'text' | 'voice'>(
+  typeof window !== 'undefined' && window.localStorage.getItem(MODE_KEY) === 'voice' && voice.sttSupported
+    ? 'voice'
+    : 'text',
+)
+const isVoiceMode = computed(() => uiMode.value === 'voice')
+
+// The flush DaVinciCopilot page and the drawer can be mounted simultaneously —
+// distinct mic owner tokens keep the engine's last-claim-wins arbitration sane.
+const voiceOwner = computed(() => (props.headerless ? 'copilot-page' : 'drawer'))
+
+// The drawer hides without unmounting (v-navigation-drawer just translates it
+// off-canvas) — copilot.isOpen is the visibility signal for pause/cleanup.
+const surfaceVisible = computed(() => props.headerless || copilot.isOpen)
+
+const lastSpeechText = ref('')
+// Voice mode always speaks replies; the "Read replies aloud" toggle keeps its
+// persisted text-mode meaning untouched.
+const speakReplies = computed(() => isVoiceMode.value || ttsEnabled.value)
+
+const isDictating = computed(
+  () => voice.state.value === 'listening' && voice.owner.value === voiceOwner.value,
+)
+
+function stopVoiceActivity() {
+  if (voice.owner.value === voiceOwner.value) voice.abortListening()
+  voice.cancelSpeech()
+  voice.setThinking(false)
+  lastSpeechText.value = ''
+}
+
+function setUiMode(mode: 'text' | 'voice') {
+  if (mode === uiMode.value) return
+  if (mode === 'voice' && !voice.sttSupported) return
+  uiMode.value = mode
+  window.localStorage.setItem(MODE_KEY, mode)
+  if (mode === 'text') stopVoiceActivity()
+}
+
+function toggleTts() {
+  ttsEnabled.value = !ttsEnabled.value
+  window.localStorage.setItem('davinci-drawer-tts', ttsEnabled.value ? '1' : '0')
+  if (!ttsEnabled.value && !isVoiceMode.value) voice.cancelSpeech()
+}
+
+// Manual tap-to-talk. Future: auto-relisten loop after TTS ends (deliberate
+// non-goal for now — surprise always-open mics are an anti-pattern).
+async function toggleMic() {
+  if (isDictating.value) {
+    voice.stopListening()
+    return
+  }
+  try {
+    // Analyser only in voice mode — feeds live mic bands to the orb stage
+    const finalText = await voice.startListening({
+      owner: voiceOwner.value,
+      withAnalyser: isVoiceMode.value,
+    })
+    if (finalText) processQuery(finalText)
+  } catch (err) {
+    if (err instanceof VoiceError && err.code === 'permission') {
+      pushToast({ title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
+    } else if (err instanceof VoiceError && err.code === 'audio') {
+      pushToast({ title: 'No microphone found' })
+    } else if (err instanceof VoiceError && err.code === 'network') {
+      pushToast({ title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
+    }
+  }
+}
+
+// Mirror the live transcript into the composer while dictating in text mode
+// (voice mode shows it as the composer caption instead)
+watch(voice.interimTranscript, (t) => {
+  if (isDictating.value && !isVoiceMode.value && t) inputText.value = t
+})
+
+function stripHtml(html: string) {
+  const el = document.createElement('div')
+  el.innerHTML = html
+  return el.textContent ?? ''
+}
+
+function maybeSpeak(text: string) {
+  if (!speakReplies.value) return
+  const clean = stripHtml(text)
+  lastSpeechText.value = clean
+  void voice.speak(clean)
+}
+
+// Drawer hidden mid-session → release the mic, stop speech, pause cleanly
+watch(surfaceVisible, (visible) => {
+  if (!visible && isVoiceMode.value) stopVoiceActivity()
+})
+
+// The component does unmount when a fullPage route replaces the shell —
+// owner-guarded so it never kills the AI experience's own session.
+onBeforeUnmount(() => {
+  if (isVoiceMode.value) stopVoiceActivity()
+  else if (voice.owner.value === voiceOwner.value) voice.abortListening()
+})
+
+/** Push a user turn and answer through the unified intent layer (Dv* cards). */
+function respondWithIntents(text: string) {
+  messages.value.push({ id: makeId('u'), role: 'user', text })
+  chatMode.value = true
+  inputText.value = ''
+  isTyping.value = true
+  generatingStatus.value = 'Working on it…'
+  if (isVoiceMode.value) voice.setThinking(true)
+  scrollToBottom()
+  setTimeout(() => {
+    isTyping.value = false
+    voice.setThinking(false)
+    const res = intents.handle(text)
+    messages.value.push({
+      id: makeId('a'),
+      role: 'assistant',
+      text: res.reply,
+      componentData:
+        res.cards.length || res.quickReplies?.length
+          ? [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }]
+          : undefined,
+    })
+    maybeSpeak(res.speech ?? res.reply)
+    scrollToBottom()
+  }, 900)
+}
+
+function onIntentCardAction(payload: { card: DvCardDescriptor; action: string }) {
+  const titles: Record<string, string> = {
+    launch: 'Campaign scheduled',
+    save: 'Segment saved',
+    use: 'Copy ready to use',
+    copy: 'Copied to clipboard',
+    edit: 'Opening editor…',
+    preview: 'Preview coming up…',
+    action: 'Done',
+  }
+  pushToast({ title: titles[payload.action] ?? 'Done' })
+}
+
 function processQuery(text: string) {
   if (!text) return
+  // Multi-turn intent clarification takes priority (e.g. campaign audience slot)
+  if (intents.pending.value) {
+    respondWithIntents(text)
+    return
+  }
   const conversationId = currentConversationId.value ?? makeId('c')
   const isFirstPrompt = !currentConversationId.value
   currentConversationId.value = conversationId
@@ -175,6 +343,7 @@ function processQuery(text: string) {
   inputText.value = ''
   isTyping.value = true
   generatingStatus.value = 'Working on it…'
+  if (isVoiceMode.value) voice.setThinking(true)
   scrollToBottom()
 
   let drafts: DashboardWidgetDraft[] | null = null
@@ -192,6 +361,7 @@ function processQuery(text: string) {
 
   setTimeout(() => {
     isTyping.value = false
+    voice.setThinking(false)
     if (drafts && drafts.length > 0) {
       messages.value.push({
         id: makeId('a'),
@@ -215,23 +385,37 @@ function processQuery(text: string) {
           draftedCount: drafts.length,
         })
       }
+      maybeSpeak(buildIntro(drafts.length))
     } else {
-      messages.value.push({
-        id: makeId('a'),
-        role: 'assistant',
-        text: "I couldn't map that to a supported widget yet. Try asking for revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
-        componentData: [
-          {
-            type: 'insight',
-            props: {
-              headline: 'Try a widget-ready prompt',
-              description:
-                'Use prompts like “Create a revenue by channel widget”, “Show open rate trend for last 30 days”, or “Add a recent orders table”.',
-              severity: 'info',
+      // No widget mapping — try the unified intent layer (campaigns, products,
+      // revenue, segments) before falling back to the widget-prompt hint.
+      const res = intents.handle(text)
+      if (res.intent !== 'fallback') {
+        messages.value.push({
+          id: makeId('a'),
+          role: 'assistant',
+          text: res.reply,
+          componentData: [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }],
+        })
+        maybeSpeak(res.speech ?? res.reply)
+      } else {
+        messages.value.push({
+          id: makeId('a'),
+          role: 'assistant',
+          text: "I couldn't map that to a supported widget yet. Try asking for revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
+          componentData: [
+            {
+              type: 'insight',
+              props: {
+                headline: 'Try a widget-ready prompt',
+                description:
+                  'Use prompts like “Create a revenue by channel widget”, “Show open rate trend for last 30 days”, or “Add a recent orders table”.',
+                severity: 'info',
+              },
             },
-          },
-        ],
-      })
+          ],
+        })
+      }
     }
     scrollToBottom()
   }, 1200)
@@ -246,6 +430,7 @@ function sendSuggestion(text: string) {
 }
 
 function newChat() {
+  stopVoiceActivity()
   chatMode.value = false
   messages.value = []
   inputText.value = ''
@@ -300,6 +485,12 @@ function getInsightProps(msg: ChatMessage): { headline: string; description: str
   return comp.props as { headline: string; description: string; severity?: string }
 }
 
+function getIntentCardsProps(msg: ChatMessage): IntentCardsProps | null {
+  const comp = msg.componentData?.[0]
+  if (!comp || comp.type !== 'intentCards') return null
+  return comp.props as IntentCardsProps
+}
+
 function handleOpenInTab() {
   const snapshot = {
     conversationId: currentConversationId.value ?? makeId('c'),
@@ -345,12 +536,37 @@ function onComposerKeydown(event: KeyboardEvent) {
   <div class="dv-panel">
     <!-- ═══ HEADER ═══ -->
     <header v-if="!headerless" class="dv-panel__header">
-      <div class="dv-panel__avatar">
-        <v-icon class="dv-on-accent-icon" size="22">sparkles</v-icon>
-      </div>
+      <DvOrbMark class="dv-panel__avatar" :size="40" variant="tile" :active="isTyping" />
       <div class="dv-panel__title">
         <div class="dv-panel__title-name">Da Vinci</div>
         <div class="dv-panel__title-sub">{{ headerStatus }}</div>
+      </div>
+      <div class="dv-mode-toggle" role="group" aria-label="Input mode">
+        <button
+          type="button"
+          class="dv-mode-toggle__seg"
+          :class="{ 'dv-mode-toggle__seg--active': !isVoiceMode }"
+          :aria-pressed="!isVoiceMode"
+          aria-label="Text mode"
+          @click="setUiMode('text')"
+        >
+          <v-icon size="15">keyboard</v-icon>
+          <v-tooltip activator="parent" location="bottom">Text mode</v-tooltip>
+        </button>
+        <button
+          type="button"
+          class="dv-mode-toggle__seg"
+          :class="{ 'dv-mode-toggle__seg--active': isVoiceMode, 'dv-mode-toggle__seg--disabled': !voice.sttSupported }"
+          :aria-pressed="isVoiceMode"
+          :disabled="!voice.sttSupported"
+          aria-label="Voice mode"
+          @click="setUiMode('voice')"
+        >
+          <v-icon size="15">audio-lines</v-icon>
+          <v-tooltip activator="parent" location="bottom">
+            {{ voice.sttSupported ? 'Voice mode' : 'Voice input needs Chrome or Edge' }}
+          </v-tooltip>
+        </button>
       </div>
       <v-btn icon size="34" variant="text" aria-label="Start a new chat" class="dv-panel__icon-btn" @click="newChat">
         <v-icon size="18">square-pen</v-icon>
@@ -378,6 +594,11 @@ function onComposerKeydown(event: KeyboardEvent) {
             <template #prepend><v-icon size="18">maximize-2</v-icon></template>
             <v-list-item-title>Open full screen</v-list-item-title>
           </v-list-item>
+          <v-list-item v-if="voice.ttsSupported" @click="toggleTts">
+            <template #prepend><v-icon size="18">{{ ttsEnabled ? 'volume-2' : 'volume-x' }}</v-icon></template>
+            <v-list-item-title>Read replies aloud</v-list-item-title>
+            <template #append><v-icon v-if="ttsEnabled" size="16" color="primary">check</v-icon></template>
+          </v-list-item>
           <v-divider />
           <v-list-item class="dv-panel__menu-danger" @click="handleClearAll">
             <template #prepend><v-icon size="18" color="error">trash-2</v-icon></template>
@@ -398,17 +619,39 @@ function onComposerKeydown(event: KeyboardEvent) {
       @new-chat="newChat"
     />
 
+    <!-- ═══ VOICE STAGE (voice mode) — fixed above the scrolling thread ═══ -->
+    <div v-if="isVoiceMode" class="dv-voice-stage">
+      <DvOrbCanvas
+        class="dv-voice-stage__orb"
+        :state="voice.state.value"
+        :audio-source="voice.getVoiceFrame"
+        :paused="!surfaceVisible"
+      />
+      <DvVoiceStatePill
+        class="dv-voice-stage__pill"
+        variant="minimal"
+        :state="voice.state.value"
+        :label="voice.state.value === 'speaking' && lastSpeechText ? lastSpeechText : undefined"
+      />
+    </div>
+
     <!-- ═══ BODY ═══ -->
     <div ref="bodyEl" class="dv-panel__body">
       <!-- Landing state -->
       <div v-if="!chatMode" class="dv-landing">
-        <div class="dv-landing__avatar">
-          <v-icon size="28" class="dv-on-accent-icon">sparkles</v-icon>
-        </div>
-        <h2 class="dv-landing__title">What can I help you build?</h2>
-        <p class="dv-landing__sub">
-          Ask Da Vinci for a metric, trend, comparison, or table. I'll draft widgets you can review and add to the active dashboard.
-        </p>
+        <template v-if="isVoiceMode">
+          <h2 class="dv-landing__title">Talk to Da Vinci</h2>
+          <p class="dv-landing__sub">
+            Tap the mic and ask for a metric, trend, comparison, or table — or tap a suggestion below.
+          </p>
+        </template>
+        <template v-else>
+          <DvOrbMark class="dv-landing__avatar" :size="56" variant="tile" />
+          <h2 class="dv-landing__title">What can I help you build?</h2>
+          <p class="dv-landing__sub">
+            Ask Da Vinci for a metric, trend, comparison, or table. I'll draft widgets you can review and add to the active dashboard.
+          </p>
+        </template>
         <div class="dv-landing__suggestions">
           <button
             v-for="text in landingSuggestions"
@@ -429,9 +672,7 @@ function onComposerKeydown(event: KeyboardEvent) {
           <div class="dv-msg-user__bubble">{{ msg.text }}</div>
         </div>
         <div v-else class="dv-msg-bot">
-          <div class="dv-msg-bot__avatar">
-            <v-icon class="dv-on-accent-icon" size="14">sparkles</v-icon>
-          </div>
+          <DvOrbMark class="dv-msg-bot__avatar" :size="28" variant="tile" :hover-animate="false" />
           <div class="dv-msg-bot__body">
             <div v-if="msg.text" class="dv-msg-bot__intro" v-html="msg.text"></div>
 
@@ -468,15 +709,33 @@ function onComposerKeydown(event: KeyboardEvent) {
               :description="getInsightProps(msg)?.description ?? ''"
               :severity="(getInsightProps(msg)?.severity as 'info' | 'success' | 'warning' | 'error' | undefined)"
             />
+
+            <template v-if="getIntentCardsProps(msg)">
+              <DvIntentCardList
+                v-if="getIntentCardsProps(msg)?.cards?.length"
+                :cards="getIntentCardsProps(msg)?.cards ?? []"
+                @action="onIntentCardAction"
+              />
+              <div v-if="getIntentCardsProps(msg)?.quickReplies?.length" class="dv-quick-replies">
+                <button
+                  v-for="reply in getIntentCardsProps(msg)?.quickReplies ?? []"
+                  :key="reply.value"
+                  type="button"
+                  class="dv-landing__pill"
+                  @click="sendSuggestion(reply.value)"
+                >
+                  <v-icon v-if="reply.icon" size="14" color="primary">{{ reply.icon }}</v-icon>
+                  {{ reply.label }}
+                </button>
+              </div>
+            </template>
           </div>
         </div>
       </template>
 
       <!-- Generating skeleton -->
       <div v-if="isTyping" class="dv-msg-bot">
-        <div class="dv-msg-bot__avatar">
-          <v-icon class="dv-on-accent-icon" size="14">sparkles</v-icon>
-        </div>
+        <DvOrbMark class="dv-msg-bot__avatar" :size="28" variant="tile" active state="thinking" />
         <div class="dv-msg-bot__body">
           <div class="dv-status">
             <span class="dv-status__dot" aria-hidden="true"></span>
@@ -510,7 +769,7 @@ function onComposerKeydown(event: KeyboardEvent) {
           {{ pill.text }}
         </button>
       </div>
-      <div class="dv-composer__field">
+      <div v-if="!isVoiceMode" class="dv-composer__field">
         <v-btn icon size="32" variant="text" aria-label="Attach">
           <v-icon size="16">paperclip</v-icon>
         </v-btn>
@@ -521,6 +780,29 @@ function onComposerKeydown(event: KeyboardEvent) {
           class="dv-composer__input"
           @keydown="onComposerKeydown"
         />
+        <v-btn
+          v-if="voice.sttSupported"
+          icon
+          size="32"
+          variant="text"
+          :aria-label="isDictating ? 'Stop voice input' : 'Start voice input'"
+          class="dv-composer__mic"
+          :class="{ 'dv-composer__mic--live': isDictating }"
+          @click="toggleMic"
+        >
+          <v-icon size="16">{{ isDictating ? 'mic-off' : 'mic' }}</v-icon>
+        </v-btn>
+        <v-btn
+          v-if="voice.sttSupported"
+          icon
+          size="32"
+          variant="text"
+          aria-label="Switch to voice mode"
+          @click="setUiMode('voice')"
+        >
+          <v-icon size="16">audio-lines</v-icon>
+          <v-tooltip activator="parent" location="top">Voice mode</v-tooltip>
+        </v-btn>
         <button
           type="button"
           class="dv-composer__send"
@@ -530,6 +812,42 @@ function onComposerKeydown(event: KeyboardEvent) {
         >
           <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
         </button>
+      </div>
+
+      <!-- Voice-only composer -->
+      <div v-else class="dv-voice-composer">
+        <div class="dv-voice-composer__interim" role="status">
+          {{
+            isDictating && voice.interimTranscript.value
+              ? voice.interimTranscript.value
+              : isDictating
+                ? 'Listening…'
+                : ' '
+          }}
+        </div>
+        <div class="dv-voice-composer__row">
+          <span class="dv-voice-composer__spacer" aria-hidden="true"></span>
+          <button
+            type="button"
+            class="dv-voice-composer__mic"
+            :class="{ 'dv-voice-composer__mic--live': isDictating }"
+            :aria-label="isDictating ? 'Stop listening' : 'Tap to talk'"
+            @click="toggleMic"
+          >
+            <v-icon size="24" class="dv-on-accent-icon">{{ isDictating ? 'mic-off' : 'mic' }}</v-icon>
+          </button>
+          <v-btn
+            icon
+            size="36"
+            variant="text"
+            aria-label="Switch to text mode"
+            class="dv-voice-composer__kb"
+            @click="setUiMode('text')"
+          >
+            <v-icon size="18">keyboard</v-icon>
+            <v-tooltip activator="parent" location="top">Switch to text mode</v-tooltip>
+          </v-btn>
+        </div>
       </div>
     </footer>
 
@@ -562,12 +880,6 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-panel__avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 9999px;
-  background: var(--dv-grad);
-  display: grid;
-  place-items: center;
   flex-shrink: 0;
 }
 
@@ -645,12 +957,6 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-landing__avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 9999px;
-  background: var(--dv-grad);
-  display: grid;
-  place-items: center;
   margin: 0 auto 16px;
 }
 
@@ -725,12 +1031,6 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-msg-bot__avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 9999px;
-  background: var(--dv-grad);
-  display: grid;
-  place-items: center;
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -845,6 +1145,139 @@ function onComposerKeydown(event: KeyboardEvent) {
 @keyframes dvPulse {
   0%, 100% { opacity: 0.55; transform: scale(0.92); }
   50% { opacity: 1; transform: scale(1.08); }
+}
+
+/* ─── Voice dictation + quick replies ─────────────────────────────── */
+.dv-composer__mic--live {
+  color: var(--dv-accent);
+  animation: dvPulse 1.4s ease infinite;
+}
+
+.dv-quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ─── Text ↔ voice mode toggle (header) ───────────────────────────── */
+.dv-mode-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid rgb(var(--v-theme-outline-variant));
+  border-radius: 9999px;
+  background: rgb(var(--v-theme-surface));
+}
+
+.dv-mode-toggle__seg {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 26px;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+  color: rgb(var(--v-theme-on-surface-variant));
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.dv-mode-toggle__seg--active {
+  background: var(--dv-accent-soft);
+  color: var(--dv-accent);
+}
+
+.dv-mode-toggle__seg--disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ─── Voice stage — fixed orb above the scrolling thread ──────────── */
+.dv-voice-stage {
+  position: relative;
+  flex: 0 0 auto;
+  height: 200px;
+  border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
+  overflow: hidden;
+}
+
+.dv-voice-stage__orb {
+  position: absolute;
+  inset: 0;
+}
+
+.dv-voice-stage__pill {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 1;
+  max-width: calc(100% - 32px);
+}
+
+/* ─── Voice-only composer ─────────────────────────────────────────── */
+.dv-voice-composer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.dv-voice-composer__interim {
+  min-height: 18px;
+  font-size: 0.78rem;
+  color: var(--dv-text-secondary);
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv-voice-composer__row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+/* keeps the mic optically centered against the keyboard button */
+.dv-voice-composer__spacer {
+  width: 36px;
+}
+
+.dv-voice-composer__mic {
+  width: 60px;
+  height: 60px;
+  border-radius: 9999px;
+  border: none;
+  background: var(--dv-grad);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: filter 120ms ease, transform 120ms ease;
+}
+
+.dv-voice-composer__mic:hover {
+  filter: brightness(1.05);
+}
+
+.dv-voice-composer__mic:active {
+  transform: scale(0.96);
+}
+
+.dv-voice-composer__mic--live {
+  animation: dvPulse 1.4s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-composer__mic--live,
+  .dv-voice-composer__mic--live {
+    animation: none;
+  }
 }
 
 @keyframes dvShimmer {

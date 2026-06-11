@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 const teamUsers = ref([
@@ -59,7 +60,7 @@ const newUserRole = ref('Marketer')
               <td class="text-center"><v-icon :color="u.marketing ? 'success' : 'grey-lighten-2'" size="18">{{ u.marketing ? 'circle-check' : 'circle-minus' }}</v-icon></td>
               <td class="text-center"><v-icon :color="u.service ? 'success' : 'grey-lighten-2'" size="18">{{ u.service ? 'circle-check' : 'circle-minus' }}</v-icon></td>
               <td class="text-center"><v-icon :color="u.commerce ? 'success' : 'grey-lighten-2'" size="18">{{ u.commerce ? 'circle-check' : 'circle-minus' }}</v-icon></td>
-              <td><v-chip :color="u.status === 'Active' ? 'success' : 'warning'" size="x-small" variant="flat">{{ u.status }}</v-chip></td>
+              <td><MpStatusChip :status="u.status" type="general" size="x-small" /></td>
               <td class="text-right">
                 <v-btn icon="pencil" variant="text" size="small" aria-label="Edit" />
                 <v-btn v-if="u.role !== 'Owner'" icon="trash-2" variant="text" size="small" color="error" aria-label="Remove" />

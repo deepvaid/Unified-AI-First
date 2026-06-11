@@ -15,7 +15,7 @@ setMode(mode.value)
 
 const route = useRoute()
 const drawer = ref(true)
-const rail = ref(true)
+const rail = ref(false)
 const copilot = useCopilotStore()
 const { width, smAndDown } = useDisplay()
 

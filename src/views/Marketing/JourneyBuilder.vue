@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -99,7 +100,7 @@ const typeBadgeColor = (t: NodeType) => ({ trigger:'secondary', email:'primary',
         <div v-if="!editingName" class="font-weight-bold text-body-1 cursor-pointer" @click="editingName=true;nameInput=journeyName">{{ journeyName }}</div>
         <v-text-field v-else v-model="nameInput" variant="outlined" density="compact" hide-details autofocus style="width:300px;"
           @blur="journeyName=nameInput;editingName=false" @keyup.enter="journeyName=nameInput;editingName=false"></v-text-field>
-        <v-chip :color="journeyStatus==='Active'?'success':'grey'" size="x-small" variant="flat" class="font-weight-bold">{{ journeyStatus }}</v-chip>
+        <MpStatusChip :status="journeyStatus" type="general" size="x-small" />
       </div>
       <div class="d-flex align-center gap-2">
         <v-tooltip text="Journey settings" location="bottom">

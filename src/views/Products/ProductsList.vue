@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -68,7 +69,6 @@ const headers = [
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
 
-const statusColor = (s: string) => s === 'In Stock' ? 'success' : s === 'Low Stock' ? 'warning' : 'error'
 </script>
 
 <template>
@@ -185,7 +185,7 @@ const statusColor = (s: string) => s === 'In Stock' ? 'success' : s === 'Low Sto
         </template>
 
         <template v-slot:item.status="{ item }">
-          <v-chip :color="statusColor(item.status)" size="small" variant="tonal">{{ item.status }}</v-chip>
+          <MpStatusChip :status="item.status" type="general" />
         </template>
 
         <template v-slot:item.actions>

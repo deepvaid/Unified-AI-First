@@ -23,9 +23,6 @@ const headers = [
   { title: 'Actions', key: 'actions', align: 'end' as const, sortable: false },
 ]
 
-const priorityColor = (p: string | undefined): string =>
-  p ? ({ 'High': 'error', 'Normal': 'info', 'Low': 'grey' } as Record<string, string>)[p] ?? 'default' : 'default'
-
 // ─── Filters ──────────────────────────────────────────────────────────────────
 const filters = ref({
   status: null as string | null,
@@ -130,7 +127,7 @@ function selectAll() {
         </template>
 
         <template v-slot:item.priority="{ item }">
-          <v-chip :color="priorityColor(item.priority)" size="x-small" variant="flat" class="font-weight-bold px-2">{{ item.priority }}</v-chip>
+          <MpStatusChip :status="item.priority ?? ''" type="priority" size="x-small" />
         </template>
 
         <template v-slot:item.status="{ item }">

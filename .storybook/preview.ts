@@ -16,6 +16,7 @@ import '@marobase/ui/tokens/index.css'
 import '../src/design-tokens/generated/variables.css'
 import '../src/styles/mp-theme-aliases.css'
 import '../src/styles/marobase-tokens.css'
+import '../src/styles/dv-tokens.css'
 import '../src/styles/global.scss'
 
 import { maropostDark, maropostDefaults, maropostLight } from '../src/plugins/maropostTheme'

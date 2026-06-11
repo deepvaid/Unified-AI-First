@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 const sendingDomains = ref([
@@ -13,9 +14,6 @@ const trackingDomains = ref([
   { domain: 'click.scootervillage.io',  status: 'Pending',  ssl: false, isDefault: false },
 ])
 
-function statusColor(s: string) {
-  return s === 'Verified' || s === 'Pass' ? 'success' : s === 'Pending' ? 'warning' : 'error'
-}
 </script>
 
 <template>
@@ -38,7 +36,7 @@ function statusColor(s: string) {
               <v-chip v-if="d.isDefault" size="x-small" variant="tonal" color="primary">Default</v-chip>
             </div>
             <div class="domain-card__actions">
-              <v-chip :color="statusColor(d.status)" size="x-small" variant="flat">{{ d.status }}</v-chip>
+              <MpStatusChip :status="d.status" type="general" size="x-small" />
               <v-btn icon="server" variant="text" size="small" aria-label="View DNS records" />
               <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Remove domain" />
             </div>
@@ -46,9 +44,7 @@ function statusColor(s: string) {
           <div class="domain-card__checks">
             <div v-for="(val, key) in { DKIM: d.dkim, SPF: d.spf, DMARC: d.dmarc }" :key="key" class="domain-check">
               <div class="domain-check__label">{{ key }}</div>
-              <v-chip :color="statusColor(val)" size="x-small" variant="flat" :prepend-icon="val === 'Pass' ? 'check' : 'clock'">
-                {{ val }}
-              </v-chip>
+              <MpStatusChip :status="val" type="general" size="x-small" />
             </div>
           </div>
         </div>
@@ -71,10 +67,8 @@ function statusColor(s: string) {
               <v-chip v-if="d.isDefault" size="x-small" variant="tonal" color="primary">Default</v-chip>
             </div>
             <div class="domain-card__actions">
-              <v-chip :color="d.ssl ? 'success' : 'warning'" size="x-small" variant="flat" prepend-icon="lock">
-                {{ d.ssl ? 'SSL Active' : 'SSL Pending' }}
-              </v-chip>
-              <v-chip :color="statusColor(d.status)" size="x-small" variant="flat">{{ d.status }}</v-chip>
+              <MpStatusChip :status="d.ssl ? 'SSL Active' : 'SSL Pending'" type="general" size="x-small" />
+              <MpStatusChip :status="d.status" type="general" size="x-small" />
               <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Remove" />
             </div>
           </div>

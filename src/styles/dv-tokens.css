@@ -15,6 +15,17 @@
   --dv-muted: var(--mp-color-light-aiAccent-muted);
   /* Da Vinci gradient — soft cyan → blue → violet (brand AI aesthetic) */
   --dv-grad: linear-gradient(135deg, #5EEAD4 0%, #93C5FD 50%, #A78BFA 100%);
+  /* Orb particle colors (fed into WebGL uniforms — keep literal hex, never color-mix) */
+  --dv-orb-c1: #5EEAD4;
+  --dv-orb-c2: #93C5FD;
+  --dv-orb-c3: #A78BFA;
+  /* Saturated neon stops — hover ring + the mark's particle gradient */
+  --dv-ring-c1: #2563EB;
+  --dv-ring-c2: #7C3AED;
+  --dv-ring-c3: #D946EF;
+  /* Immersive AI-experience backdrop — pure white paper (Marojarvis parity):
+     the orb's ink particles were tuned for white; the ambient dust IS the texture */
+  --dv-experience-bg: #ffffff;
   --dv-header-grad: linear-gradient(
     120deg,
     var(--mp-color-light-aiAccent-soft) 0%,
@@ -39,6 +50,20 @@
   --dv-muted: var(--mp-color-dark-aiAccent-muted);
   /* Da Vinci gradient — soft cyan → blue → violet (brand AI aesthetic) */
   --dv-grad: linear-gradient(135deg, #5EEAD4 0%, #93C5FD 50%, #A78BFA 100%);
+  /* Orb particle colors — brighter stops so additive glow reads on dark surfaces */
+  --dv-orb-c1: #22D3EE;
+  --dv-orb-c2: #60A5FA;
+  --dv-orb-c3: #A78BFA;
+  /* Saturated neon stops — hover ring + the mark's particle gradient */
+  --dv-ring-c1: #3B82F6;
+  --dv-ring-c2: #8B5CF6;
+  --dv-ring-c3: #E879F9;
+  /* Immersive AI-experience backdrop */
+  --dv-experience-bg: radial-gradient(
+    1200px 800px at 50% 38%,
+    var(--mp-color-dark-aiAccent-soft) 0%,
+    rgb(var(--v-theme-background)) 70%
+  );
   --dv-header-grad: linear-gradient(
     120deg,
     var(--mp-color-dark-aiAccent-soft) 0%,

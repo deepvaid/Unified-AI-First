@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import {
   CHANNEL_HEALTH_LABELS,
   CHANNEL_STATUS_LABELS,
@@ -129,12 +130,6 @@ function mergedStatus(channel: SalesChannel): MergedStatus {
   return { label: 'Healthy', tone: 'success' }
 }
 
-function statusChipColor(tone: MergedStatus['tone']) {
-  if (tone === 'success') return 'success'
-  if (tone === 'warning') return 'warning'
-  if (tone === 'danger') return 'error'
-  return undefined
-}
 </script>
 
 <template>
@@ -217,14 +212,7 @@ function statusChipColor(tone: MergedStatus['tone']) {
         </template>
 
         <template #item.health="{ item }">
-          <v-chip
-            size="small"
-            variant="tonal"
-            :color="statusChipColor(mergedStatus(item).tone)"
-            label
-          >
-            {{ mergedStatus(item).label }}
-          </v-chip>
+          <MpStatusChip :status="mergedStatus(item).label" type="general" />
         </template>
 
         <template #item.lastActivityAt="{ item }">

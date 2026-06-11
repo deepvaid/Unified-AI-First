@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const store = useCampaignsStore()
 const search = ref('')
@@ -39,9 +40,7 @@ const flows = store.campaigns.filter(c => c.id % 2 === 0)
 
       <v-data-table :headers="headers" :items="flows" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.status="{ item }">
-          <v-chip :color="item.status === 'Sent' ? 'success' : 'primary'" size="small">
-            {{ item.status === 'Sent' ? 'Active' : 'Draft' }}
-          </v-chip>
+          <MpStatusChip :status="item.status === 'Sent' ? 'Active' : 'Draft'" type="general" />
         </template>
         <template v-slot:item.actions>
           <v-menu>

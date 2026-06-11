@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const search = ref('')
 
@@ -95,9 +96,7 @@ const filteredItems = computed(() =>
           </div>
         </template>
         <template v-slot:item.status="{ item }">
-          <v-chip :color="item.status === 'Active Hold' ? 'warning' : 'default'" size="small" variant="tonal">
-            {{ item.status }}
-          </v-chip>
+          <MpStatusChip :status="item.status" type="general" />
         </template>
         <template v-slot:item.actions>
           <v-menu location="bottom end">

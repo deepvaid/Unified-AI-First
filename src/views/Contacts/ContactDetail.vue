@@ -55,15 +55,6 @@ const smsCampaigns = computed(() => detail.value?.campaigns.filter(c => c.type =
 const emailLists = computed(() => detail.value?.lists.filter(l => l.type === 'email') ?? [])
 const smsLists = computed(() => detail.value?.lists.filter(l => l.type === 'sms') ?? [])
 
-// Status chip color for campaign/timeline statuses
-function activityChipColor(status: string) {
-  const map: Record<string, string> = {
-    'Delivered': 'info', 'Opened': 'success', 'Clicked': 'primary',
-    'Re-sent': 'warning', 'Bounced': 'error', 'Completed': 'success',
-    'Processing': 'info', 'Pending': 'warning', 'Open': 'primary', 'Solved': 'success',
-  }
-  return map[status] || 'grey'
-}
 
 // Order table headers
 const orderHeaders = [
@@ -442,7 +433,7 @@ const cartHeaders = [
                     <div class="timeline-v2__content">
                       <div class="text-body-2 font-weight-medium">{{ entry.title }}</div>
                       <div class="d-flex align-center gap-2 mt-1 flex-wrap">
-                        <v-chip v-for="s in entry.statuses" :key="s" size="x-small" variant="outlined" :color="activityChipColor(s)">{{ s }}</v-chip>
+                        <MpStatusChip v-for="s in entry.statuses" :key="s" :status="s" type="campaign" size="x-small" variant="outlined" />
                         <span class="text-caption text-medium-emphasis">{{ entry.date }}</span>
                       </div>
                     </div>
@@ -469,7 +460,7 @@ const cartHeaders = [
                   <div class="flex-grow-1">
                     <div class="text-body-2 font-weight-medium">{{ c.name }}</div>
                     <div class="d-flex gap-2 mt-1 flex-wrap">
-                      <v-chip v-for="s in c.statuses" :key="s" size="x-small" variant="outlined" :color="activityChipColor(s)">{{ s }}</v-chip>
+                      <MpStatusChip v-for="s in c.statuses" :key="s" :status="s" type="campaign" size="x-small" variant="outlined" />
                     </div>
                   </div>
                   <div class="text-caption text-medium-emphasis text-no-wrap mr-3">{{ c.sentDate }}</div>
@@ -486,7 +477,7 @@ const cartHeaders = [
                   <div class="flex-grow-1">
                     <div class="text-body-2 font-weight-medium">{{ c.name }}</div>
                     <div class="d-flex gap-2 mt-1 flex-wrap">
-                      <v-chip v-for="s in c.statuses" :key="s" size="x-small" variant="outlined" :color="activityChipColor(s)">{{ s }}</v-chip>
+                      <MpStatusChip v-for="s in c.statuses" :key="s" :status="s" type="campaign" size="x-small" variant="outlined" />
                     </div>
                   </div>
                   <div class="text-caption text-medium-emphasis text-no-wrap mr-3">{{ c.sentDate }}</div>
@@ -519,7 +510,7 @@ const cartHeaders = [
                     <MpStatusChip :status="item.status" type="ticket" size="x-small" />
                   </template>
                   <template v-slot:item.priority="{ item }">
-                    <v-chip size="x-small" variant="tonal" :color="item.priority === 'High' ? 'error' : item.priority === 'Medium' ? 'warning' : 'info'">{{ item.priority }}</v-chip>
+                    <MpStatusChip :status="item.priority" type="priority" size="x-small" />
                   </template>
                 </v-data-table>
               </v-card>
@@ -585,9 +576,7 @@ const cartHeaders = [
                     <span class="font-weight-medium">${{ item.total.toFixed(2) }}</span>
                   </template>
                   <template v-slot:item.recovered="{ item }">
-                    <v-chip size="x-small" variant="flat" :color="item.recovered ? 'success' : 'warning'">
-                      {{ item.recovered ? 'Recovered' : 'Not Recovered' }}
-                    </v-chip>
+                    <MpStatusChip :status="item.recovered ? 'Recovered' : 'Not Recovered'" type="general" size="x-small" variant="flat" />
                   </template>
                 </v-data-table>
               </v-card>

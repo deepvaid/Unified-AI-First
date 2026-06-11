@@ -6,6 +6,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -87,7 +88,6 @@ const headers = [
   { title: '', key: 'actions', align: 'end' as const, sortable: false },
 ]
 
-const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed Out':'warning' })[s as string] ?? 'default'
 </script>
 
 <template>
@@ -165,7 +165,7 @@ const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed 
         <template v-slot:item.limit="{ item }"><span class="text-body-2">{{ item.limit?item.limit.toLocaleString():'∞ Unlimited' }}</span></template>
         <template v-slot:item.expiry="{ item }"><span class="text-body-2">{{ item.expiry||'Never' }}</span></template>
         <template v-slot:item.status="{ item }">
-          <v-chip :color="statusColor(item.status)" size="x-small" variant="flat">{{ item.status }}</v-chip>
+          <MpStatusChip :status="item.status" type="coupon" size="x-small" />
         </template>
         <template v-slot:item.actions>
           <div class="ActionButtons d-flex justify-end gap-1">
@@ -280,7 +280,7 @@ const statusColor = (s: string) => ({ Active:'success', Expired:'error', 'Maxed 
           <v-card color="primary" variant="tonal" rounded="lg" class="pa-5 mb-5">
             <div class="d-flex align-center justify-space-between mb-3">
               <div class="text-h6 font-weight-bold text-primary">{{ coupon.code || 'AUTO-GENERATED' }}</div>
-              <v-chip color="success" variant="flat" size="small">Active</v-chip>
+              <MpStatusChip status="Active" type="coupon" />
             </div>
             <div class="text-h4 font-weight-bold mb-2">{{ discountPreview }}</div>
             <div class="d-flex gap-4 text-body-2 text-medium-emphasis flex-wrap">

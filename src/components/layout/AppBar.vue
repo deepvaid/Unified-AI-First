@@ -5,6 +5,7 @@ import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useUserProfile } from '@/stores/useUserProfile'
 import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
+import DvOrbMark from '@/components/copilot/DvOrbMark.vue'
 
 const copilot = useCopilotStore()
 
@@ -123,6 +124,18 @@ function askDaVinciFromSearch() {
   copilot.open()
 }
 
+const assistantMenuOpen = ref(false)
+
+function openCopilot() {
+  assistantMenuOpen.value = false
+  copilot.open()
+}
+
+function openAiExperience() {
+  assistantMenuOpen.value = false
+  router.push({ name: 'DaVinciExperience', params: { accountId: currentAccountId.value } })
+}
+
 function openStub(label: string) {
   showAppbarNotice(`${label} is represented as a prototype action.`)
 }
@@ -208,7 +221,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <v-app-bar height="52" color="surface-variant" flat class="mp-appbar">
+  <v-app-bar height="56" color="surface" flat class="mp-appbar">
     <div class="mp-appbar-shell w-100 d-flex align-center px-4 gap-2">
       <div class="appbar-search-group">
         <v-menu v-model="searchOpen" location="bottom start" offset="8" :close-on-content-click="false">
@@ -354,15 +367,39 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
         </v-tooltip>
       </div>
 
-      <button
-        type="button"
-        class="assistant-pill"
-        aria-label="AI Assistant"
-        @click="copilot.toggle()"
-      >
-        <v-icon size="16">sparkles</v-icon>
-        <span class="assistant-pill__label">Da Vinci</span>
-      </button>
+      <v-menu v-model="assistantMenuOpen" location="bottom end" offset="8" :close-on-content-click="false">
+        <template #activator="{ props }">
+          <button
+            v-bind="props"
+            type="button"
+            class="assistant-pill"
+            aria-label="AI Assistant"
+          >
+            <DvOrbMark :size="20" variant="bare" />
+            <span class="assistant-pill__label">Da Vinci</span>
+            <v-icon size="14" class="assistant-pill__chevron">chevron-down</v-icon>
+          </button>
+        </template>
+
+        <div class="assistant-menu-card">
+          <div class="um-section um-section--last">
+            <button type="button" class="um-item" @click="openCopilot">
+              <v-icon class="um-item__icon" size="20">message-circle</v-icon>
+              <div class="um-item__body">
+                <div class="um-item__title">Co-pilot</div>
+                <div class="um-item__sub">Chat with Da Vinci in a side drawer</div>
+              </div>
+            </button>
+            <button type="button" class="um-item" @click="openAiExperience">
+              <DvOrbMark class="um-item__icon" :size="20" variant="bare" />
+              <div class="um-item__body">
+                <div class="um-item__title">AI experience</div>
+                <div class="um-item__sub">Talk to Da Vinci in the AI-first workspace</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </v-menu>
 
       <span class="appbar-divider" aria-hidden="true"></span>
 
@@ -538,18 +575,18 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 <style scoped lang="scss">
 .mp-appbar {
   border-bottom: 1px solid var(--hairline);
-  background: var(--surface-2);
+  background: var(--surface-1);
 }
 
 .mp-appbar :deep(.v-toolbar__content) {
-  background: var(--surface-2);
+  background: var(--surface-1);
 }
 
 .mp-appbar-shell {
   min-width: 0;
   padding: 0 22px;
   height: 100%;
-  background: var(--surface-2);
+  background: var(--surface-1);
 }
 
 .min-width-0 {
@@ -560,20 +597,20 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1 1 460px;
-  max-width: 600px;
+  flex: 1 1 480px;
+  max-width: 640px;
   min-width: 260px;
 }
 
 .appbar-utilities {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .appbar-utilities :deep(.appbar-action-btn) {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--r-pill);
   color: var(--ink);
   opacity: 1;
@@ -640,6 +677,21 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   font-weight: 600;
   line-height: 1.15;
   white-space: nowrap;
+}
+
+.assistant-pill :deep(.assistant-pill__chevron) {
+  color: var(--muted);
+}
+
+.assistant-menu-card {
+  width: 280px;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  box-shadow:
+    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
+    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
+  overflow: hidden;
 }
 
 /* ── User pill ──────────────────────────────────── */

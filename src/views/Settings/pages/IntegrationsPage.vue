@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 const integrations = [
@@ -27,9 +28,7 @@ const integrations = [
         <div v-for="intg in integrations" :key="intg.name" class="integration-card">
           <div class="integration-card__header">
             <v-icon :color="intg.color" size="26">{{ intg.icon }}</v-icon>
-            <v-chip :color="intg.connected ? 'success' : 'grey'" size="x-small" variant="tonal">
-              {{ intg.connected ? 'Connected' : 'Not Connected' }}
-            </v-chip>
+            <MpStatusChip :status="intg.connected ? 'Connected' : 'Disconnected'" type="connection" size="x-small" />
           </div>
           <div class="integration-card__name">{{ intg.name }}</div>
           <div class="integration-card__desc">{{ intg.desc }}</div>

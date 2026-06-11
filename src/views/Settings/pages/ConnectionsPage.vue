@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const apiKeys = ref([
   { id: 1, label: 'Production Key', user: 'Ross@maropost.com', key: 'mp_live_sk_••••••••••••••••••••••4xyz', created: '2024-01-15', lastUsed: '2026-03-07', status: 'Active' },
@@ -64,7 +65,7 @@ function generateKey() {
                 <div class="connection-card__sub">User: {{ k.user }}</div>
               </div>
               <div class="connection-card__actions">
-                <v-chip color="success" size="x-small" variant="flat">{{ k.status }}</v-chip>
+                <MpStatusChip :status="k.status" type="general" size="x-small" />
                 <v-btn icon="copy" variant="text" size="small" color="primary" aria-label="Copy key" />
                 <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Revoke key" />
               </div>
@@ -86,7 +87,7 @@ function generateKey() {
           <div class="connection-card__header">
             <div class="connection-card__title">{{ w.label }}</div>
             <div class="connection-card__actions">
-              <v-chip color="success" size="x-small" variant="flat">{{ w.status }}</v-chip>
+              <MpStatusChip :status="w.status" type="general" size="x-small" />
               <v-btn icon="circle-play" variant="text" size="small" color="primary" aria-label="Test endpoint" />
               <v-btn icon="pencil" variant="text" size="small" aria-label="Edit" />
               <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Delete" />

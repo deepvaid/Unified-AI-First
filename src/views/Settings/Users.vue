@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const search = ref('')
 
@@ -38,7 +39,7 @@ const users = ref([
       />
       <v-data-table :headers="headers" :items="users" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.status="{ item }">
-          <v-chip :color="item.status === 'Active' ? 'success' : 'error'" size="small">{{ item.status }}</v-chip>
+          <MpStatusChip :status="item.status" type="general" />
         </template>
         <template v-slot:item.actions>
           <v-menu>

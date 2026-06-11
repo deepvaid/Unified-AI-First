@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -17,8 +18,6 @@ const forms = ref([
   { id: 5, name: 'Footer Newsletter', type: 'Embedded', views: 32000, conversions: 880, rate: 2.8, status: 'Paused', updated: 'Jan 15, 2026' },
 ])
 
-const statusColor = (s: string) => ({ Active: 'success', Draft: 'grey', Paused: 'warning' })[s as string] ?? 'default'
-const statusIcon = (s: string) => ({ Active: 'circle-check', Draft: 'pencil', Paused: 'circle-pause' })[s as string] ?? 'help-circle'
 
 const chooseDialog = ref(false)
 const selectedTemplate = ref<number | null>(null)
@@ -152,7 +151,7 @@ function clearAllFilters() {
                 <div class="text-body-1 font-weight-bold mb-0.5">{{ form.name }}</div>
                 <div class="d-flex align-center gap-2">
                   <v-chip size="x-small" variant="tonal" color="secondary" rounded="lg">{{ form.type }}</v-chip>
-                  <v-chip :color="statusColor(form.status)" :prepend-icon="statusIcon(form.status)" size="x-small" variant="flat" rounded="lg">{{ form.status }}</v-chip>
+                  <MpStatusChip :status="form.status" type="general" size="x-small" />
                 </div>
               </div>
               <v-menu>
@@ -247,7 +246,7 @@ function clearAllFilters() {
         <template v-slot:item.views="{ item }"><span class="font-weight-medium">{{ item.views.toLocaleString() }}</span></template>
         <template v-slot:item.conversions="{ item }"><span class="font-weight-medium text-success">{{ item.conversions.toLocaleString() }}</span></template>
         <template v-slot:item.rate="{ item }"><span class="font-weight-bold text-primary">{{ item.rate }}%</span></template>
-        <template v-slot:item.status="{ item }"><v-chip :color="statusColor(item.status)" size="x-small" variant="flat" rounded="lg">{{ item.status }}</v-chip></template>
+        <template v-slot:item.status="{ item }"><MpStatusChip :status="item.status" type="general" size="x-small" /></template>
         <template v-slot:item.actions>
           <div class="ActionButtons d-flex justify-end gap-1">
             <v-tooltip text="Edit in Builder" location="top"><template v-slot:activator="{props}"><v-btn v-bind="props" icon="pencil" variant="text" size="small" color="primary" aria-label="Edit in Builder" @click="editInBuilder()"></v-btn></template></v-tooltip>
