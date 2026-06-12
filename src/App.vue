@@ -5,13 +5,18 @@ import { useDisplay } from 'vuetify'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppBar from '@/components/layout/AppBar.vue'
 import MpDaVinciBot from '@/components/MpDaVinciBot.vue'
-import { useAppTheme } from '@/composables/useAppTheme'
+import { useAppTheme, applySidebarTheme } from '@/composables/useAppTheme'
 import { useCopilotStore } from '@/stores/useCopilot'
+import { useAccountsStore } from '@/stores/useAccounts'
 
 // Apply stored accent and theme to Vuetify on initial mount
 const { accent, mode, setAccent, setMode } = useAppTheme()
 setAccent(accent.value)
 setMode(mode.value)
+
+// Sidebar theme follows the active account (light only on accounts that opt in)
+const accountsStore = useAccountsStore()
+watch(() => accountsStore.activeAccount.sidebarTheme ?? 'dark', applySidebarTheme, { immediate: true })
 
 const route = useRoute()
 const drawer = ref(true)

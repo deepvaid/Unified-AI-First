@@ -12,6 +12,7 @@ import './styles/global.scss'
 import './styles/settings-form.scss'
 import './styles/accent-presets.css'
 import './styles/sidebar-dark.css'
+import './styles/sidebar-light.css'
 import './styles/retail-widgets.scss'
 import { initAppTheme } from './composables/useAppTheme'
 

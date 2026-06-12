@@ -3,11 +3,11 @@ import { useTheme } from 'vuetify'
 
 export type AccentKey = 'cyan' | 'blue' | 'gray' | 'purple'
 export type ThemeMode = 'light' | 'dark'
+export type SidebarTheme = 'light' | 'dark'
 
 const LS_ACCENT = 'app-accent'
 const LS_MODE = 'app-theme-mode'
 const LS_LEGACY_MODE = 'mp-theme-mode'
-const LS_DARK_SIDEBAR = 'app-dark-sidebar'
 
 // ─── Accent color definitions ─────────────────────────────────────────────────
 interface AccentDef {
@@ -82,7 +82,6 @@ function migrateLegacyThemeMode() {
 // ─── Reactive state ───────────────────────────────────────────────────────────
 const accent = ref<AccentKey>(readStoredAccent())
 const mode = ref<ThemeMode>(normalizeMode(localStorage.getItem(LS_MODE)))
-const darkSidebar = ref<boolean>(localStorage.getItem(LS_DARK_SIDEBAR) !== 'false')
 
 /** Current accent hex color — reactive, for use in charts and dynamic JS. */
 const accentHex = ref<string>(ACCENT_DEFS[accent.value].hex)
@@ -102,13 +101,9 @@ function applyMode(m: ThemeMode) {
   localStorage.setItem(LS_MODE, m)
 }
 
-function applyDarkSidebar(val: boolean) {
-  if (val) {
-    document.documentElement.dataset.sidebar = 'dark'
-  } else {
-    delete document.documentElement.dataset.sidebar
-  }
-  localStorage.setItem(LS_DARK_SIDEBAR, String(val))
+/** Sidebar theme is derived from the active account (see App.vue), not persisted. */
+export function applySidebarTheme(theme: SidebarTheme) {
+  document.documentElement.dataset.sidebar = theme
 }
 
 export function useAppTheme() {
@@ -146,12 +141,7 @@ export function useAppTheme() {
     }
   }
 
-  function setDarkSidebar(val: boolean) {
-    darkSidebar.value = val
-    applyDarkSidebar(val)
-  }
-
-  return { accent, accentHex, mode, darkSidebar, setAccent, setMode, setDarkSidebar, ACCENT_DEFS }
+  return { accent, accentHex, mode, setAccent, setMode, ACCENT_DEFS }
 }
 
 /**
@@ -164,6 +154,7 @@ export function initAppTheme() {
   const storedMode = normalizeMode(localStorage.getItem(LS_MODE))
   applyAccent(storedAccent)
   applyMode(storedMode)
-  // Dark sidebar is always on (no user-facing toggle).
-  applyDarkSidebar(true)
+  // Pre-mount default; App.vue applies the active account's sidebar theme before first paint.
+  applySidebarTheme('dark')
+  localStorage.removeItem('app-dark-sidebar')
 }
