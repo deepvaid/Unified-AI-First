@@ -129,6 +129,28 @@ export interface LocationPriceOverride {
   reason: string
 }
 
+export type LoyaltyTier = 'member' | 'silver' | 'gold' | 'vip'
+export const LOYALTY_TIER_LABELS: Record<LoyaltyTier, string> = {
+  member: 'Member',
+  silver: 'Silver',
+  gold: 'Gold',
+  vip: 'VIP',
+}
+
+export interface PosCustomer {
+  id: string
+  name: string
+  email: string
+  phone: string
+  tier: LoyaltyTier
+  points: number
+  lifetimeSpend: number
+  visits: number
+  since: string
+  homeLocationId: string
+  notes?: string
+}
+
 /* ── Mock data ────────────────────────────────────────────────── */
 
 const locations: RetailLocation[] = [
@@ -200,36 +222,56 @@ const associates: Associate[] = [
 ]
 
 function buildTransactions(): RetailTransaction[] {
-  const seed: Array<Omit<RetailTransaction, 'id' | 'completedAt'>> = [
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', associateId: 'assoc-1', customerName: 'Hannah Cole',     total: 184.50, tender: 'tap_to_pay', status: 'completed',      itemCount: 3, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', associateId: 'assoc-3', customerName: undefined,         total: 42.00,  tender: 'cash',       status: 'completed',      itemCount: 1, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', associateId: 'assoc-1', customerName: 'Liam O\'Connor',  total: 318.75, tender: 'card',       status: 'completed',      itemCount: 5, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-3', associateId: 'assoc-2', customerName: 'Mia Tan',         total: 95.00,  tender: 'split',      status: 'completed',      itemCount: 2, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', associateId: 'assoc-1', customerName: 'Noah Williams',   total: -78.00, tender: 'card',       status: 'refunded',       itemCount: 1, origin: 'boris',    hasReceipt: true },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', associateId: 'assoc-3', customerName: 'Zoe Patel',       total: 156.20, tender: 'tap_to_pay', status: 'completed',      itemCount: 2, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: 'Aria Singh',      total: 220.00, tender: 'card',       status: 'completed',      itemCount: 3, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: undefined,         total: 12.50,  tender: 'cash',       status: 'completed',      itemCount: 1, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-2',  associateId: 'assoc-2', customerName: 'Lucas Chen',      total: 412.30, tender: 'card',       status: 'partial_refund', itemCount: 4, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: 'Ivy Nguyen',      total: 68.00,  tender: 'gift_card',  status: 'completed',      itemCount: 2, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: undefined,         total: 0,      tender: 'cash',       status: 'voided',         itemCount: 1, origin: 'in_store', hasReceipt: false },
-    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  associateId: 'assoc-6', customerName: 'Olivia Walker',   total: 76.50,  tender: 'tap_to_pay', status: 'completed',      itemCount: 2, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-auckland',  registerId: 'reg-auck-2',  associateId: 'assoc-6', customerName: 'Jack Pierce',     total: 245.00, tender: 'card',       status: 'completed',      itemCount: 4, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  associateId: 'assoc-6', customerName: 'Ruby Anand',      total: 32.00,  tender: 'cash',       status: 'suspended',      itemCount: 1, origin: 'in_store', hasReceipt: false },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Henry Adler',     total: 480.00, tender: 'card',       status: 'completed',      itemCount: 3, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Maya Diaz',       total: 1250.00,tender: 'tap_to_pay', status: 'completed',      itemCount: 6, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  associateId: 'assoc-8', customerName: undefined,         total: 28.50,  tender: 'cash',       status: 'completed',      itemCount: 1, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  associateId: 'assoc-8', customerName: 'Sophia Renner',   total: 312.40, tender: 'tap_to_pay', status: 'completed',      itemCount: 4, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Owen Castillo',   total: -145.00,tender: 'card',       status: 'refunded',       itemCount: 1, origin: 'boris',    hasReceipt: true },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  associateId: 'assoc-8', customerName: 'Lily Brooks',     total: 67.20,  tender: 'card',       status: 'completed',      itemCount: 2, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Caleb Foster',    total: 198.00, tender: 'card',       status: 'completed',      itemCount: 3, origin: 'in_store', hasReceipt: true },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  associateId: 'assoc-8', customerName: 'Ella Ross',       total: 54.00,  tender: 'tap_to_pay', status: 'completed',      itemCount: 1, origin: 'in_store', hasReceipt: true },
+  // Line shorthand — SKUs/prices must match channelPrices so POS receipts and tiles align.
+  const L = (sku: string, name: string, qty: number, price: number): RetailTransactionLine => ({ sku, name, qty, price })
+  const TEE_B = (q = 1) => L('TEE-001-BLK-M', 'Classic crew tee — Black', q, 39)
+  const TEE_W = (q = 1) => L('TEE-001-WHT-M', 'Classic crew tee — White', q, 39)
+  const JEAN  = (q = 1) => L('JEAN-512-DRK-32', 'Slim denim — Dark, 32', q, 129)
+  const SNEAK = (q = 1) => L('SNEAK-A1-WHT-10', 'Court sneaker — White, 10', q, 159)
+  const CAP   = (q = 1) => L('CAP-001-NVY', 'Cap — Navy', q, 35)
+  const BAG   = (q = 1) => L('BAG-LTH-BLK', 'Leather tote — Black', q, 249)
+  const HOOD  = (q = 1) => L('HOOD-101-GRY-L', 'Pullover hoodie — Grey, L', q, 89)
+  const JACK  = (q = 1) => L('JACK-220-OLI-M', 'Field jacket — Olive, M', q, 219)
+
+  // itemCount/total are derived from lines (total = subtotal × 1.1 tax, negated for refunds, 0 for voided).
+  // daysAgo gives each location Today / Yesterday / older groups for the POS history view.
+  const seed: Array<Omit<RetailTransaction, 'id' | 'completedAt' | 'total' | 'itemCount'> & { daysAgo: number; lines: RetailTransactionLine[] }> = [
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', associateId: 'assoc-1', customerName: 'Hannah Cole',     tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_B(2), CAP()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', associateId: 'assoc-3', customerName: undefined,         tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [CAP()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', associateId: 'assoc-1', customerName: 'Liam O\'Connor',  tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JEAN(), TEE_W(2), CAP(), TEE_B()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-3', associateId: 'assoc-2', customerName: 'Mia Tan',         tender: 'split',      status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [HOOD(), CAP()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', associateId: 'assoc-1', customerName: 'Noah Williams',   tender: 'card',       status: 'refunded',       origin: 'boris',    hasReceipt: true,  daysAgo: 2, lines: [HOOD()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', associateId: 'assoc-3', customerName: 'Zoe Patel',       tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 3, lines: [TEE_B(), HOOD()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: 'Aria Singh',      tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_B(2), JEAN()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: undefined,         tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [CAP()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-2',  associateId: 'assoc-2', customerName: 'Lucas Chen',      tender: 'card',       status: 'partial_refund', origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JACK(), HOOD(), TEE_W(2)] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: 'Ivy Nguyen',      tender: 'gift_card',  status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 2, lines: [CAP(), TEE_B()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: undefined,         tender: 'cash',       status: 'voided',         origin: 'in_store', hasReceipt: false, daysAgo: 4, lines: [CAP()] },
+    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  associateId: 'assoc-6', customerName: 'Olivia Walker',   tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_W(), CAP()] },
+    { locationId: 'loc-auckland',  registerId: 'reg-auck-2',  associateId: 'assoc-6', customerName: 'Jack Pierce',     tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [SNEAK(), CAP(2), TEE_B()] },
+    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  associateId: 'assoc-6', customerName: 'Ruby Anand',      tender: 'cash',       status: 'suspended',      origin: 'in_store', hasReceipt: false, daysAgo: 3, lines: [TEE_B()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Henry Adler',     tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [BAG(), CAP(), TEE_B()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Maya Diaz',       tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [BAG(), JACK(), SNEAK(), JEAN(), TEE_B(2)] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  associateId: 'assoc-8', customerName: undefined,         tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [CAP()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  associateId: 'assoc-8', customerName: 'Sophia Renner',   tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JEAN(), HOOD(), TEE_W(2)] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Owen Castillo',   tender: 'card',       status: 'refunded',       origin: 'boris',    hasReceipt: true,  daysAgo: 2, lines: [SNEAK()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  associateId: 'assoc-8', customerName: 'Lily Brooks',     tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 3, lines: [TEE_B(), CAP()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Caleb Foster',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 4, lines: [HOOD(), TEE_W(), CAP()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  associateId: 'assoc-8', customerName: 'Ella Ross',       tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 5, lines: [CAP()] },
   ]
   const now = Date.now()
-  return seed.map((t, i) => ({
-    ...t,
-    id: `POS-${12048 - i}`,
-    completedAt: new Date(now - i * 7 * 60 * 1000).toISOString(),
-  }))
+  return seed.map(({ daysAgo, ...t }, i) => {
+    const subtotal = t.lines.reduce((s, l) => s + l.price * l.qty, 0)
+    const gross = Math.round(subtotal * 1.1 * 100) / 100
+    const total = t.status === 'voided' ? 0 : t.status === 'refunded' ? -gross : gross
+    return {
+      ...t,
+      id: `POS-${12048 - i}`,
+      itemCount: t.lines.reduce((s, l) => s + l.qty, 0),
+      total,
+      completedAt: new Date(now - daysAgo * 86_400_000 - (i * 7 + 25) * 60_000).toISOString(),
+    }
+  })
 }
 
 const stockData: StockRow[] = [
@@ -269,6 +311,19 @@ const priceOverrides: LocationPriceOverride[] = [
   { id: 'po-3', sku: 'BAG-LTH-BLK',   productName: 'Leather tote — Black',     locationId: 'loc-soho',     overridePrice: 269.00, reason: 'Flagship pricing' },
 ]
 
+const posCustomers: PosCustomer[] = [
+  { id: 'cust-1',  name: 'Hannah Cole',    email: 'hannah.cole@example.com',   phone: '+61 412 882 014', tier: 'gold',   points: 2840, lifetimeSpend: 2843.60, visits: 18, since: '2024-03-12', homeLocationId: 'loc-bondi',     notes: 'Prefers email receipts. Size M in outerwear.' },
+  { id: 'cust-2',  name: "Liam O'Connor",  email: 'liam.oconnor@example.com',  phone: '+61 400 233 871', tier: 'vip',    points: 6120, lifetimeSpend: 6118.25, visits: 24, since: '2023-11-02', homeLocationId: 'loc-bondi' },
+  { id: 'cust-3',  name: 'Mia Tan',        email: 'mia.tan@example.com',       phone: '+61 433 190 552', tier: 'silver', points: 1290, lifetimeSpend: 1287.40, visits: 9,  since: '2024-08-21', homeLocationId: 'loc-bondi' },
+  { id: 'cust-4',  name: 'Zoe Patel',      email: 'zoe.patel@example.com',     phone: '+61 421 077 309', tier: 'member', points: 310,  lifetimeSpend: 312.40,  visits: 3,  since: '2025-04-09', homeLocationId: 'loc-bondi' },
+  { id: 'cust-5',  name: 'Aria Singh',     email: 'aria.singh@example.com',    phone: '+61 402 615 488', tier: 'gold',   points: 3470, lifetimeSpend: 3468.90, visits: 15, since: '2024-01-28', homeLocationId: 'loc-chadstone', notes: 'Loyalty birthday voucher pending (July).' },
+  { id: 'cust-6',  name: 'Lucas Chen',     email: 'lucas.chen@example.com',    phone: '+61 415 904 226', tier: 'member', points: 680,  lifetimeSpend: 684.20,  visits: 5,  since: '2025-01-17', homeLocationId: 'loc-chadstone', notes: 'Exchanged field jacket size M→L on POS-12040.' },
+  { id: 'cust-7',  name: 'Ivy Nguyen',     email: 'ivy.nguyen@example.com',    phone: '+61 438 552 901', tier: 'silver', points: 1540, lifetimeSpend: 1536.75, visits: 11, since: '2024-06-05', homeLocationId: 'loc-chadstone' },
+  { id: 'cust-8',  name: 'Henry Adler',    email: 'henry.adler@example.com',   phone: '+1 (212) 555-0184', tier: 'vip',  points: 8930, lifetimeSpend: 8927.10, visits: 22, since: '2023-09-14', homeLocationId: 'loc-soho' },
+  { id: 'cust-9',  name: 'Maya Diaz',      email: 'maya.diaz@example.com',     phone: '+1 (917) 555-0142', tier: 'gold', points: 4210, lifetimeSpend: 4212.85, visits: 13, since: '2024-02-23', homeLocationId: 'loc-soho',      notes: 'Stylist appointments first Friday of the month.' },
+  { id: 'cust-10', name: 'Owen Castillo',  email: 'owen.castillo@example.com', phone: '+1 (646) 555-0117', tier: 'member', points: 450, lifetimeSpend: 446.00, visits: 2,  since: '2025-09-30', homeLocationId: 'loc-soho',      notes: 'Refund processed on sneakers — sizing issue.' },
+]
+
 const POS_CATALOG_SKUS = stockData.slice(0, 8)
 
 /* ── Store ────────────────────────────────────────────────────── */
@@ -282,6 +337,7 @@ export const useRetailStore = defineStore('retail', () => {
   const inventoryAuditList = ref<InventoryAudit[]>([...inventoryAudits])
   const channelPriceList = ref<ChannelPrice[]>([...channelPrices])
   const priceOverrideList = ref<LocationPriceOverride[]>([...priceOverrides])
+  const posCustomerList = ref<PosCustomer[]>([...posCustomers])
 
   const activeLocationId = ref<string>(locations[0]!.id)
   const activeChannelId = ref<string>('pos-store')
@@ -438,6 +494,31 @@ export const useRetailStore = defineStore('retail', () => {
     associateList.value = associateList.value.filter((a) => !ids.includes(a.id))
   }
 
+  function addPosCustomer(payload: { name: string; email: string; phone: string }): PosCustomer {
+    const customer: PosCustomer = {
+      id: `cust-${Date.now()}`,
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      tier: 'member',
+      points: 0,
+      lifetimeSpend: 0,
+      visits: 0,
+      since: new Date().toISOString().slice(0, 10),
+      homeLocationId: activeLocationId.value,
+    }
+    posCustomerList.value.unshift(customer)
+    return customer
+  }
+
+  function recordCustomerPurchase(customerId: string, amount: number) {
+    const c = posCustomerList.value.find((x) => x.id === customerId)
+    if (!c) return
+    c.lifetimeSpend = Math.round((c.lifetimeSpend + amount) * 100) / 100
+    c.points += Math.round(amount)
+    c.visits += 1
+  }
+
   function addAssociate(payload: { name: string; role: AssociateRole; locationIds: string[] }) {
     const id = `assoc-${Date.now()}`
     associateList.value.unshift({
@@ -483,6 +564,7 @@ export const useRetailStore = defineStore('retail', () => {
     inventoryAuditList,
     channelPriceList,
     priceOverrideList,
+    posCustomerList,
     activeLocationId,
     activeChannelId,
     offlineMode,
@@ -507,6 +589,8 @@ export const useRetailStore = defineStore('retail', () => {
     refundTransaction,
     voidTransaction,
     addTransaction,
+    addPosCustomer,
+    recordCustomerPurchase,
     addAssociate,
     deleteAssociates,
     addLocation,

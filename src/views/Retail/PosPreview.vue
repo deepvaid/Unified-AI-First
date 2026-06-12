@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useRetailStore } from '@/stores/useRetail'
-import type { TenderType, ChannelPrice } from '@/stores/useRetail'
+import { useRetailStore, LOYALTY_TIER_LABELS } from '@/stores/useRetail'
+import type { TenderType, ChannelPrice, PosCustomer, RetailTransaction } from '@/stores/useRetail'
+import { useElementSize } from '@/composables/useElementSize'
 
 const route = useRoute()
 const router = useRouter()
@@ -36,6 +37,24 @@ const frameSize = computed(() => {
     ? { w: f.h, h: f.w }
     : { w: f.w, h: f.h }
 })
+
+/* ── POS interior breakpoint ───────────────────────────────────────
+   Driven by the MEASURED .pos-screen width (not frame state): the frame
+   is CSS-clamped to the viewport, so a real phone with "iPad" selected
+   still renders ~374px wide and must get the phone layout. Frame state
+   is only the pre-mount fallback. */
+type PosBreakpoint = 'phone' | 'tablet' | 'wide'
+const screenEl = ref<HTMLElement | null>(null)
+const { size: screenSize } = useElementSize(screenEl)
+const posBreakpoint = computed<PosBreakpoint>(() => {
+  const w = screenSize.value.width || frameSize.value.w
+  return w < 600 ? 'phone' : w < 960 ? 'tablet' : 'wide'
+})
+const isPhone = computed(() => posBreakpoint.value === 'phone')
+
+/* Phone-only: full cart rendered as a slide-up sheet */
+const cartSheetOpen = ref(false)
+watch(posBreakpoint, (bp) => { if (bp !== 'phone') cartSheetOpen.value = false })
 
 /* ── Offline mode toggle ───────────────────────────────────────── */
 const isOffline = computed(() => store.offlineMode)
@@ -184,13 +203,21 @@ function decrementQty(sku: string) {
 
 const subtotal = computed(() => cart.value.reduce((s, c) => s + c.price * c.qty, 0))
 const discountAmount = computed(() => subtotal.value * (discountPct.value / 100))
-const taxAmount = computed(() => (subtotal.value - discountAmount.value) * 0.1)
-const grandTotal = computed(() => subtotal.value - discountAmount.value + taxAmount.value)
+// Tax-inclusive mode (Settings): prices already include 10% GST — back it out instead of adding.
+const taxAmount = computed(() => {
+  const net = subtotal.value - discountAmount.value
+  return posSettings.taxInclusive ? net - net / 1.1 : net * 0.1
+})
+const grandTotal = computed(() => {
+  const net = subtotal.value - discountAmount.value
+  return posSettings.taxInclusive ? net : net + taxAmount.value
+})
 
 function clearCart() {
   cart.value = []
   discountPct.value = 0
   customerName.value = ''
+  attachedCustomerId.value = null
   discountDialogOpen.value = false
   customerDialogOpen.value = false
 }
@@ -210,7 +237,19 @@ const pendingCustomer = ref('')
 
 function applyCustomer() {
   customerName.value = pendingCustomer.value
+  attachedCustomerId.value = null // manual name entry — no loyalty profile attached
   customerDialogOpen.value = false
+}
+
+/* ── Attached loyalty customer (rides alongside customerName) ───── */
+const attachedCustomerId = ref<string | null>(null)
+const attachedCustomer = computed<PosCustomer | null>(
+  () => store.posCustomerList.find((c) => c.id === attachedCustomerId.value) ?? null,
+)
+
+function detachCustomer() {
+  customerName.value = ''
+  attachedCustomerId.value = null
 }
 
 /* ── Payment flow ──────────────────────────────────────────────── */
@@ -220,6 +259,8 @@ const selectedTender = ref<TenderType>('card')
 
 function openPay() {
   if (cart.value.length === 0) return
+  if (!posSettings.enabledTenders[selectedTender.value]) selectedTender.value = enabledTenderList.value[0]!
+  cartSheetOpen.value = false
   paymentStep.value = 'select'
 }
 
@@ -234,12 +275,18 @@ function processPayment() {
   }, 1800)
 }
 
+/* ── Active register (current location's first register) ────────── */
+const activeRegister = computed(() => {
+  const locId = store.activeLocation?.id ?? store.locationList[0]!.id
+  return store.registerList.find((r) => r.locationId === locId) ?? store.registerList[0]!
+})
+
 function completeApproved() {
   // Append real transaction to store — the demo loop
   const locId = store.activeLocation?.id ?? store.locationList[0]!.id
   const txn = store.addTransaction({
     locationId: locId,
-    registerId: store.registerList.find((r) => r.locationId === locId)?.id ?? store.registerList[0]!.id,
+    registerId: activeRegister.value.id,
     associateId: activeAssociateId.value,
     customerName: customerName.value || undefined,
     total: grandTotal.value,
@@ -247,6 +294,7 @@ function completeApproved() {
     itemCount: cart.value.reduce((s, c) => s + c.qty, 0),
     lines: cart.value.map((c) => ({ sku: c.sku, name: c.name, qty: c.qty, price: c.price })),
   })
+  if (attachedCustomerId.value) store.recordCustomerPurchase(attachedCustomerId.value, grandTotal.value)
   lastTxnId.value = txn.id
   paymentStep.value = 'idle'
   clearCart()
@@ -292,12 +340,149 @@ const PROCESSING_TEXT: Record<TenderType, string> = {
   split: 'Processing split payment',
 }
 
-/* ── Recent transactions (for History tab in POS) ──────────────── */
-const recentTxns = computed(() =>
-  store.transactionList
-    .filter((t) => t.associateId === activeAssociateId.value)
-    .slice(0, 8),
+/* ── POS settings (session-local; Payments group filters the tender sheet) ── */
+const TENDER_ORDER: TenderType[] = ['card', 'tap_to_pay', 'cash', 'gift_card', 'split']
+
+const posSettings = reactive({
+  printReceipt: true,
+  emailReceipt: true,
+  receiptFooter: 'Thanks for shopping with us!',
+  taxInclusive: false,
+  enabledTenders: { card: true, tap_to_pay: true, cash: true, gift_card: true, split: true } as Record<TenderType, boolean>,
+})
+
+const enabledTenderList = computed<TenderType[]>(() => TENDER_ORDER.filter((t) => posSettings.enabledTenders[t]))
+
+function toggleTender(t: TenderType) {
+  if (posSettings.enabledTenders[t] && enabledTenderList.value.length === 1) {
+    flashGridToast('At least one tender must stay enabled')
+    return
+  }
+  posSettings.enabledTenders[t] = !posSettings.enabledTenders[t]
+}
+
+/* ── History tab — location-scoped, filterable, grouped by day ──── */
+type HistoryFilter = 'all' | 'sales' | 'refunds'
+const HISTORY_FILTERS: { value: HistoryFilter; label: string }[] = [
+  { value: 'all',     label: 'All' },
+  { value: 'sales',   label: 'Sales' },
+  { value: 'refunds', label: 'Refunds' },
+]
+const historyFilter = ref<HistoryFilter>('all')
+
+const historyTxns = computed(() =>
+  store.transactionList.filter((t) => {
+    if (t.locationId !== store.activeLocationId) return false
+    if (historyFilter.value === 'sales') return t.status === 'completed'
+    if (historyFilter.value === 'refunds') return t.status === 'refunded' || t.status === 'partial_refund'
+    return true
+  }),
 )
+
+function dayLabel(iso: string): string {
+  const d = new Date(iso)
+  const today = new Date()
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
+  const diffDays = Math.round((startOf(today) - startOf(d)) / 86_400_000)
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+function timeLabel(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+const historyGroups = computed<{ label: string; txns: RetailTransaction[] }[]>(() => {
+  const groups: { label: string; txns: RetailTransaction[] }[] = []
+  for (const t of historyTxns.value) {
+    const label = dayLabel(t.completedAt)
+    const last = groups[groups.length - 1]
+    if (last && last.label === label) last.txns.push(t)
+    else groups.push({ label, txns: [t] })
+  }
+  return groups
+})
+
+const STATUS_PILL_META: Record<RetailTransaction['status'], { label: string; cls: string }> = {
+  completed:      { label: 'Completed',      cls: 'pos-status-pill--completed' },
+  refunded:       { label: 'Refunded',       cls: 'pos-status-pill--refunded' },
+  partial_refund: { label: 'Partial refund', cls: 'pos-status-pill--partial' },
+  voided:         { label: 'Voided',         cls: 'pos-status-pill--voided' },
+  suspended:      { label: 'Suspended',      cls: 'pos-status-pill--suspended' },
+}
+
+/* ── Transaction detail sheet ──────────────────────────────────── */
+const detailTxn = ref<RetailTransaction | null>(null)
+function openTxnDetail(t: RetailTransaction) { detailTxn.value = t }
+function closeTxnDetail() { detailTxn.value = null }
+const detailSubtotal = computed(() =>
+  (detailTxn.value?.lines ?? []).reduce((s, l) => s + l.price * l.qty, 0),
+)
+function printDetailReceipt() { flashGridToast('Receipt sent to printer') }
+function emailDetailReceipt() {
+  flashGridToast(detailTxn.value?.customerName ? `Receipt emailed to ${detailTxn.value.customerName}` : 'Receipt emailed')
+}
+function refundDetailTxn() {
+  if (!detailTxn.value) return
+  store.refundTransaction(detailTxn.value.id)
+  flashGridToast('Refund processed')
+}
+
+/* ── Customers tab ─────────────────────────────────────────────── */
+const customerSearch = ref('')
+const selectedCustomerId = ref<string | null>(null)
+
+const filteredCustomers = computed(() => {
+  const q = customerSearch.value.trim().toLowerCase()
+  return store.posCustomerList
+    .filter((c) => !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q))
+    .slice()
+    .sort((a, b) => b.lifetimeSpend - a.lifetimeSpend)
+})
+
+const selectedCustomer = computed<PosCustomer | null>(
+  () => store.posCustomerList.find((c) => c.id === selectedCustomerId.value) ?? null,
+)
+
+const selectedCustomerTxns = computed(() =>
+  selectedCustomer.value
+    ? store.transactionList.filter((t) => t.customerName === selectedCustomer.value!.name).slice(0, 5)
+    : [],
+)
+
+function customerInitials(name: string): string {
+  return name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+}
+
+function memberSince(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+}
+
+function attachCustomerToSale(c: PosCustomer) {
+  customerName.value = c.name
+  attachedCustomerId.value = c.id
+  posView.value = 'sale'
+  flashGridToast(`${c.name} added to sale`)
+}
+
+/* New-customer dialog */
+const newCustomerOpen = ref(false)
+const newCustomerDraft = reactive({ name: '', email: '', phone: '' })
+function saveNewCustomer() {
+  if (!newCustomerDraft.name.trim()) return
+  const c = store.addPosCustomer({
+    name: newCustomerDraft.name.trim(),
+    email: newCustomerDraft.email.trim(),
+    phone: newCustomerDraft.phone.trim(),
+  })
+  selectedCustomerId.value = c.id
+  newCustomerOpen.value = false
+  newCustomerDraft.name = ''
+  newCustomerDraft.email = ''
+  newCustomerDraft.phone = ''
+  flashGridToast('Customer created')
+}
 
 /* ── Smart Grid (Shopify-style home tiles) ─────────────────────── */
 interface SmartGridTile {
@@ -329,7 +514,7 @@ const SMART_GRID_TILES: SmartGridTile[] = [
   { key: 'save',      label: 'Save as draft',   icon: 'bookmark',     color: '#64748b', action: () => flashGridToast('Sale saved as draft') },
   { key: 'ship',      label: 'Ship all items',  icon: 'truck',        color: '#0ea5e9', action: () => flashGridToast('Ship from store flow opened') },
   { key: 'note',      label: 'Add note',        icon: 'sticky-note',  color: '#f43f5e', action: () => flashGridToast('Note attached to sale') },
-  { key: 'loyalty',   label: 'Loyalty lookup',  icon: 'user-search',  color: '#10b981', action: () => flashGridToast('Loyalty lookup opened') },
+  { key: 'loyalty',   label: 'Loyalty lookup',  icon: 'user-search',  color: '#10b981', action: () => { posView.value = 'customers' } },
 ]
 
 /* ── Get App — device-conditional install flow ──────────────────── */
@@ -430,7 +615,7 @@ const apkQrUrl = computed(() =>
         </div>
 
         <!-- POS Screen -->
-        <div class="pos-screen">
+        <div ref="screenEl" class="pos-screen" :class="`pos-screen--${posBreakpoint}`">
 
           <!-- Offline banner -->
           <div v-if="isOffline" class="pos-offline-banner">
@@ -582,20 +767,26 @@ const apkQrUrl = computed(() =>
                 </div>
               </div>
 
-              <!-- Cart / right pane (Shopify-style) -->
-              <div class="pos-cart">
+              <!-- Phone: scrim behind the cart sheet -->
+              <div v-if="isPhone && cartSheetOpen" class="pos-cart-scrim" @click="cartSheetOpen = false" />
+
+              <!-- Cart / right pane (Shopify-style); becomes a slide-up sheet on phone -->
+              <div class="pos-cart" :class="{ 'pos-cart--open': cartSheetOpen }">
                 <div class="pos-cart__header">
                   <span class="pos-cart__title">Current sale</span>
                   <span v-if="cart.length > 0" class="pos-cart__count">
                     {{ cart.reduce((s, c) => s + c.qty, 0) }} item{{ cart.reduce((s, c) => s + c.qty, 0) !== 1 ? 's' : '' }}
                   </span>
+                  <button v-if="isPhone" class="pos-cart__collapse" aria-label="Close cart" @click="cartSheetOpen = false">
+                    <v-icon size="16">chevron-down</v-icon>
+                  </button>
                 </div>
 
                 <!-- Customer chip -->
                 <div v-if="customerName" class="pos-customer-chip">
                   <v-icon size="14">user</v-icon>
-                  <span>{{ customerName }}</span>
-                  <button class="pos-customer-chip__x" @click="customerName = ''" aria-label="Remove customer">
+                  <span>{{ customerName }}<template v-if="attachedCustomer"> · {{ LOYALTY_TIER_LABELS[attachedCustomer.tier] }}</template></span>
+                  <button class="pos-customer-chip__x" @click="detachCustomer" aria-label="Remove customer">
                     <v-icon size="12">x</v-icon>
                   </button>
                 </div>
@@ -620,19 +811,21 @@ const apkQrUrl = computed(() =>
                     </div>
                   </div>
 
-                  <div v-for="line in cart" :key="line.sku" class="pos-line">
-                    <div class="pos-line__thumb" :style="{ background: tileGradient(line.sku) }" />
-                    <div class="pos-line__body">
-                      <div class="pos-line__name">{{ line.name }}</div>
-                      <div class="pos-line__sku">{{ line.sku }} · {{ fmt(line.price) }} ea</div>
+                  <transition-group name="pos-line-in">
+                    <div v-for="line in cart" :key="line.sku" class="pos-line">
+                      <div class="pos-line__thumb" :style="{ background: tileGradient(line.sku) }" />
+                      <div class="pos-line__body">
+                        <div class="pos-line__name">{{ line.name }}</div>
+                        <div class="pos-line__sku">{{ line.sku }} · {{ fmt(line.price) }} ea</div>
+                      </div>
+                      <div class="pos-line__qty">
+                        <button class="pos-qty-btn" @click="decrementQty(line.sku)" aria-label="Decrease quantity">−</button>
+                        <span class="pos-qty-value">{{ line.qty }}</span>
+                        <button class="pos-qty-btn" @click="incrementQty(line.sku)" aria-label="Increase quantity">+</button>
+                      </div>
+                      <div class="pos-line__price">{{ fmt(line.price * line.qty) }}</div>
                     </div>
-                    <div class="pos-line__qty">
-                      <button class="pos-qty-btn" @click="decrementQty(line.sku)" aria-label="Decrease quantity">−</button>
-                      <span class="pos-qty-value">{{ line.qty }}</span>
-                      <button class="pos-qty-btn" @click="incrementQty(line.sku)" aria-label="Increase quantity">+</button>
-                    </div>
-                    <div class="pos-line__price">{{ fmt(line.price * line.qty) }}</div>
-                  </div>
+                  </transition-group>
                 </div>
 
                 <!-- Totals -->
@@ -645,7 +838,7 @@ const apkQrUrl = computed(() =>
                     <span>−{{ fmt(discountAmount) }}</span>
                   </div>
                   <div class="pos-total-row">
-                    <span>Tax (10%)</span><span>{{ fmt(taxAmount) }}</span>
+                    <span>{{ posSettings.taxInclusive ? 'Includes GST (10%)' : 'Tax (10%)' }}</span><span>{{ fmt(taxAmount) }}</span>
                   </div>
                   <div class="pos-total-row pos-total-row--grand">
                     <span>Total</span><span>{{ fmt(grandTotal) }}</span>
@@ -677,42 +870,338 @@ const apkQrUrl = computed(() =>
                   Charge {{ fmt(grandTotal) }}
                 </button>
               </div>
+
+              <!-- Phone: collapsed cart bar (summary + charge), sits above the tab bar -->
+              <div v-if="isPhone" class="pos-cartbar">
+                <button class="pos-cartbar__summary" @click="cartSheetOpen = true">
+                  <v-icon size="16">shopping-bag</v-icon>
+                  <span>{{ cart.reduce((s, c) => s + c.qty, 0) }} item{{ cart.reduce((s, c) => s + c.qty, 0) !== 1 ? 's' : '' }} · {{ fmt(grandTotal) }}</span>
+                  <v-icon size="14">chevron-up</v-icon>
+                </button>
+                <button
+                  class="pos-charge-btn pos-charge-btn--bar"
+                  :class="{ 'pos-charge-btn--disabled': cart.length === 0 }"
+                  @click="openPay"
+                >
+                  Charge
+                </button>
+              </div>
             </template>
 
             <!-- ── CUSTOMERS VIEW ──────────────────────────────── -->
-            <div v-else-if="posView === 'customers'" class="pos-placeholder-pane">
-              <v-icon size="40" color="medium-emphasis">users</v-icon>
-              <div class="pos-placeholder-pane__title">Customer lookup</div>
-              <div class="pos-placeholder-pane__sub">Search by name, email, or phone number to attach a loyalty profile to this sale.</div>
+            <div v-else-if="posView === 'customers'" class="pos-customers" :class="{ 'pos-customers--detail': isPhone && selectedCustomerId }">
+              <!-- List column -->
+              <div class="pos-customers__list">
+                <div class="pos-pane-head">
+                  <div class="pos-pane-head__title">Customers</div>
+                  <button class="pos-pane-head__link" @click="newCustomerOpen = true">
+                    <v-icon size="13" style="margin-right: 2px;">user-plus</v-icon>
+                    New customer
+                  </button>
+                </div>
+                <div class="pos-customers__search">
+                  <v-text-field
+                    v-model="customerSearch"
+                    placeholder="Search name or email"
+                    density="compact"
+                    variant="solo"
+                    flat
+                    prepend-inner-icon="search"
+                    hide-details
+                    bg-color="surface"
+                    rounded="lg"
+                    style="font-size: 13px;"
+                  />
+                </div>
+                <div class="pos-customers__rows">
+                  <button
+                    v-for="c in filteredCustomers"
+                    :key="c.id"
+                    class="pos-customer-row"
+                    :class="{ 'pos-customer-row--selected': selectedCustomerId === c.id }"
+                    @click="selectedCustomerId = c.id"
+                  >
+                    <div class="pos-customer-row__avatar" :style="{ background: tileGradient(c.id) }">{{ customerInitials(c.name) }}</div>
+                    <div class="pos-customer-row__body">
+                      <div class="pos-customer-row__name">{{ c.name }}</div>
+                      <div class="pos-customer-row__email">{{ c.email }}</div>
+                    </div>
+                    <div class="pos-customer-row__chips">
+                      <span class="pos-tier-chip" :class="`pos-tier-chip--${c.tier}`">{{ LOYALTY_TIER_LABELS[c.tier] }}</span>
+                      <span class="pos-customer-row__spend">{{ fmt(c.lifetimeSpend) }}</span>
+                    </div>
+                  </button>
+                  <div v-if="filteredCustomers.length === 0" class="pos-catalog__empty">
+                    <v-icon size="32" color="medium-emphasis">search</v-icon>
+                    <div>No customers match</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Detail pane -->
+              <div class="pos-customers__detail">
+                <div v-if="!selectedCustomer" class="pos-customers__detail-empty">
+                  <v-icon size="40" color="#9ca3af">users</v-icon>
+                  <div class="pos-customers__detail-empty-title">Select a customer</div>
+                  <div class="pos-customers__detail-empty-sub">View their profile, loyalty status, and purchase history.</div>
+                </div>
+
+                <div v-else class="pos-profile">
+                  <!-- Phone: back to list -->
+                  <button v-if="isPhone" class="pos-profile__back" @click="selectedCustomerId = null">
+                    <v-icon size="15">chevron-left</v-icon>
+                    Customers
+                  </button>
+
+                  <div class="pos-profile__header">
+                    <div class="pos-profile__avatar" :style="{ background: tileGradient(selectedCustomer.id) }">{{ customerInitials(selectedCustomer.name) }}</div>
+                    <div class="pos-profile__id">
+                      <div class="pos-profile__name">{{ selectedCustomer.name }}</div>
+                      <div class="pos-profile__meta">
+                        {{ LOYALTY_TIER_LABELS[selectedCustomer.tier] }} · Member since {{ memberSince(selectedCustomer.since) }} · {{ store.locationName(selectedCustomer.homeLocationId) }}
+                      </div>
+                    </div>
+                    <button
+                      v-if="attachedCustomerId !== selectedCustomer.id"
+                      class="pos-action-btn pos-action-btn--primary"
+                      @click="attachCustomerToSale(selectedCustomer)"
+                    >
+                      <v-icon size="14">user-plus</v-icon>
+                      Add to sale
+                    </button>
+                    <div v-else class="pos-action-btn pos-action-btn--attached">
+                      <v-icon size="14">check</v-icon>
+                      On current sale
+                    </div>
+                  </div>
+
+                  <div class="pos-profile__stats">
+                    <div class="pos-stat">
+                      <div class="pos-stat__value">{{ fmt(selectedCustomer.lifetimeSpend) }}</div>
+                      <div class="pos-stat__label">Lifetime spend</div>
+                    </div>
+                    <div class="pos-stat">
+                      <div class="pos-stat__value">{{ selectedCustomer.points.toLocaleString() }}</div>
+                      <div class="pos-stat__label">Points</div>
+                    </div>
+                    <div class="pos-stat">
+                      <div class="pos-stat__value">{{ selectedCustomer.visits }}</div>
+                      <div class="pos-stat__label">Visits</div>
+                    </div>
+                  </div>
+
+                  <div class="pos-profile__section-title">Contact</div>
+                  <div class="pos-profile__card">
+                    <div class="pos-setting-row">
+                      <div class="pos-setting-row__icon"><v-icon size="15">mail</v-icon></div>
+                      <div class="pos-setting-row__label">{{ selectedCustomer.email }}</div>
+                    </div>
+                    <div class="pos-setting-row">
+                      <div class="pos-setting-row__icon"><v-icon size="15">phone</v-icon></div>
+                      <div class="pos-setting-row__label">{{ selectedCustomer.phone }}</div>
+                    </div>
+                  </div>
+
+                  <div class="pos-profile__section-title">Recent purchases</div>
+                  <div class="pos-profile__card">
+                    <button
+                      v-for="txn in selectedCustomerTxns"
+                      :key="txn.id"
+                      class="pos-history-row"
+                      @click="openTxnDetail(txn)"
+                    >
+                      <div>
+                        <div class="pos-history-row__id">{{ txn.id }}</div>
+                        <div class="pos-history-row__meta">{{ dayLabel(txn.completedAt) }} · {{ txn.itemCount }} item{{ txn.itemCount !== 1 ? 's' : '' }}</div>
+                      </div>
+                      <div class="pos-history-row__total" :class="txn.total < 0 ? 'pos-history-row__total--neg' : ''">
+                        {{ fmt(txn.total) }}
+                      </div>
+                    </button>
+                    <div v-if="selectedCustomerTxns.length === 0" class="pos-profile__empty-note">No purchases yet</div>
+                  </div>
+
+                  <div class="pos-profile__section-title">Notes</div>
+                  <div class="pos-profile__card pos-profile__card--notes">
+                    {{ selectedCustomer.notes ?? 'No notes' }}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- ── TRANSACTIONS VIEW ───────────────────────────── -->
             <div v-else-if="posView === 'transactions'" class="pos-history-pane">
-              <div class="pos-history-pane__header">Recent — {{ activeAssociate?.name ?? '' }}</div>
-              <div v-if="recentTxns.length === 0" class="pos-placeholder-pane">
-                <v-icon size="36" color="medium-emphasis">receipt</v-icon>
-                <div class="pos-placeholder-pane__sub">No recent transactions</div>
+              <div class="pos-pane-head">
+                <div class="pos-pane-head__title">History</div>
+                <div class="pos-pane-head__sub">{{ store.activeLocation?.name }}</div>
               </div>
-              <div
-                v-for="txn in recentTxns"
-                :key="txn.id"
-                class="pos-history-row"
-              >
-                <div>
-                  <div class="pos-history-row__id">{{ txn.id }}</div>
-                  <div class="pos-history-row__meta">{{ txn.itemCount }} item{{ txn.itemCount !== 1 ? 's' : '' }} · {{ txn.tender }}</div>
-                </div>
-                <div class="pos-history-row__total" :class="txn.total < 0 ? 'pos-history-row__total--neg' : ''">
-                  {{ fmt(txn.total) }}
+
+              <div class="pos-history-pane__chips">
+                <button
+                  v-for="f in HISTORY_FILTERS"
+                  :key="f.value"
+                  class="pos-chip"
+                  :class="{ 'pos-chip--active': historyFilter === f.value }"
+                  @click="historyFilter = f.value"
+                >
+                  {{ f.label }}
+                </button>
+              </div>
+
+              <div class="pos-history-pane__scroll">
+                <template v-for="group in historyGroups" :key="group.label">
+                  <div class="pos-history-group">{{ group.label }}</div>
+                  <button
+                    v-for="txn in group.txns"
+                    :key="txn.id"
+                    class="pos-history-row"
+                    @click="openTxnDetail(txn)"
+                  >
+                    <div>
+                      <div class="pos-history-row__id">{{ txn.id }}</div>
+                      <div class="pos-history-row__meta">
+                        {{ timeLabel(txn.completedAt) }}<template v-if="txn.customerName"> · {{ txn.customerName }}</template> · {{ txn.itemCount }} item{{ txn.itemCount !== 1 ? 's' : '' }} · {{ TENDER_DISPLAY[txn.tender] }}
+                      </div>
+                    </div>
+                    <div class="pos-history-row__right">
+                      <span v-if="txn.status !== 'completed'" class="pos-status-pill" :class="STATUS_PILL_META[txn.status].cls">
+                        {{ STATUS_PILL_META[txn.status].label }}
+                      </span>
+                      <span class="pos-history-row__total" :class="txn.total < 0 ? 'pos-history-row__total--neg' : ''">
+                        {{ fmt(txn.total) }}
+                      </span>
+                      <v-icon size="14" color="#9ca3af">chevron-right</v-icon>
+                    </div>
+                  </button>
+                </template>
+
+                <div v-if="historyGroups.length === 0" class="pos-catalog__empty">
+                  <v-icon size="32" color="medium-emphasis">receipt</v-icon>
+                  <div>{{ historyFilter === 'refunds' ? 'No refunds yet' : 'No transactions yet' }}</div>
                 </div>
               </div>
             </div>
 
             <!-- ── SETTINGS VIEW ──────────────────────────────── -->
-            <div v-else-if="posView === 'settings'" class="pos-placeholder-pane">
-              <v-icon size="40" color="medium-emphasis">settings</v-icon>
-              <div class="pos-placeholder-pane__title">POS Settings</div>
-              <div class="pos-placeholder-pane__sub">Printer, display, and tax configuration managed from the web back-office.</div>
+            <div v-else-if="posView === 'settings'" class="pos-settings">
+              <div class="pos-pane-head">
+                <div class="pos-pane-head__title">Settings</div>
+              </div>
+
+              <div class="pos-settings__scroll">
+                <div class="pos-settings__group-label">Receipt</div>
+                <div class="pos-settings__group">
+                  <div class="pos-receipt-preview">
+                    <div class="pos-receipt-preview__store">{{ store.activeLocation?.name }}</div>
+                    <div class="pos-receipt-preview__line"><span>Classic crew tee</span><span>$39.00</span></div>
+                    <div class="pos-receipt-preview__line"><span>Cap — Navy</span><span>$35.00</span></div>
+                    <div class="pos-receipt-preview__line pos-receipt-preview__line--total"><span>Total</span><span>$81.40</span></div>
+                    <div class="pos-receipt-preview__footer">{{ posSettings.receiptFooter }}</div>
+                  </div>
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">printer</v-icon></div>
+                    <div class="pos-setting-row__label">Print receipt</div>
+                    <v-switch v-model="posSettings.printReceipt" color="#0d9488" hide-details density="compact" class="pos-setting-row__control" />
+                  </div>
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">mail</v-icon></div>
+                    <div class="pos-setting-row__label">Email receipt</div>
+                    <v-switch v-model="posSettings.emailReceipt" color="#0d9488" hide-details density="compact" class="pos-setting-row__control" />
+                  </div>
+                  <div class="pos-setting-row pos-setting-row--stacked">
+                    <div class="pos-setting-row__label">Footer message</div>
+                    <v-text-field
+                      v-model="posSettings.receiptFooter"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                      style="font-size: 13px;"
+                    />
+                  </div>
+                </div>
+
+                <div class="pos-settings__group-label">Taxes</div>
+                <div class="pos-settings__group">
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">landmark</v-icon></div>
+                    <div class="pos-setting-row__label">Tax rate</div>
+                    <div class="pos-setting-row__value">10% GST</div>
+                  </div>
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">receipt-text</v-icon></div>
+                    <div>
+                      <div class="pos-setting-row__label">Tax-inclusive pricing</div>
+                      <div class="pos-setting-row__sub">Prices shown include tax</div>
+                    </div>
+                    <v-switch v-model="posSettings.taxInclusive" color="#0d9488" hide-details density="compact" class="pos-setting-row__control" />
+                  </div>
+                </div>
+
+                <div class="pos-settings__group-label">Payments</div>
+                <div class="pos-settings__group">
+                  <div v-for="t in TENDER_ORDER" :key="t" class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">{{ TENDER_ICONS[t] }}</v-icon></div>
+                    <div class="pos-setting-row__label">{{ TENDER_DISPLAY[t] }}</div>
+                    <v-switch
+                      :model-value="posSettings.enabledTenders[t]"
+                      color="#0d9488"
+                      hide-details
+                      density="compact"
+                      class="pos-setting-row__control"
+                      @update:model-value="toggleTender(t)"
+                    />
+                  </div>
+                </div>
+
+                <div class="pos-settings__group-label">Hardware</div>
+                <div class="pos-settings__group">
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">credit-card</v-icon></div>
+                    <div class="pos-setting-row__label">{{ activeRegister.pairedTerminal ?? 'No terminal paired' }}</div>
+                    <div class="pos-setting-row__value">
+                      <span class="pos-status-dot" :class="activeRegister.pairedTerminal ? 'pos-status-dot--online' : 'pos-status-dot--off'" />
+                      {{ activeRegister.pairedTerminal ? 'Connected' : 'Not paired' }}
+                    </div>
+                  </div>
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">printer</v-icon></div>
+                    <div class="pos-setting-row__label">{{ activeRegister.pairedPrinter ?? 'No printer paired' }}</div>
+                    <div class="pos-setting-row__value">
+                      <span class="pos-status-dot" :class="activeRegister.pairedPrinter ? 'pos-status-dot--online' : 'pos-status-dot--off'" />
+                      {{ activeRegister.pairedPrinter ? 'Connected' : 'Not paired' }}
+                    </div>
+                  </div>
+                  <div v-if="activeRegister.pendingOfflineTxns > 0" class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">cloud-off</v-icon></div>
+                    <div class="pos-setting-row__label">Offline queue</div>
+                    <div class="pos-setting-row__value">{{ activeRegister.pendingOfflineTxns }} transaction{{ activeRegister.pendingOfflineTxns !== 1 ? 's' : '' }}</div>
+                  </div>
+                </div>
+
+                <div class="pos-settings__group-label">Register</div>
+                <div class="pos-settings__group">
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">map-pin</v-icon></div>
+                    <div class="pos-setting-row__label">Location</div>
+                    <div class="pos-setting-row__value">{{ store.activeLocation?.name }}</div>
+                  </div>
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">monitor</v-icon></div>
+                    <div class="pos-setting-row__label">Register</div>
+                    <div class="pos-setting-row__value">{{ activeRegister.name }}</div>
+                  </div>
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">smartphone</v-icon></div>
+                    <div class="pos-setting-row__label">Device</div>
+                    <div class="pos-setting-row__value">{{ activeRegister.deviceModel }}</div>
+                  </div>
+                  <div class="pos-setting-row">
+                    <div class="pos-setting-row__icon"><v-icon size="15">badge-check</v-icon></div>
+                    <div class="pos-setting-row__label">App version</div>
+                    <div class="pos-setting-row__value">{{ activeRegister.appVersion }}</div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- ── GET APP VIEW ───────────────────────────────── -->
@@ -836,6 +1325,150 @@ const apkQrUrl = computed(() =>
             </div>
           </transition>
 
+          <!-- ── Transaction detail sheet ─────────────────────── -->
+          <transition name="pos-variant-up">
+            <div v-if="detailTxn" class="pos-variant-overlay" @click.self="closeTxnDetail">
+              <div class="pos-txn-sheet">
+                <div class="pos-variant-sheet__grabber" />
+
+                <div class="pos-txn-sheet__header">
+                  <span class="pos-txn-sheet__id">{{ detailTxn.id }}</span>
+                  <span class="pos-status-pill" :class="STATUS_PILL_META[detailTxn.status].cls">
+                    {{ STATUS_PILL_META[detailTxn.status].label }}
+                  </span>
+                  <button class="pos-variant-sheet__close" @click="closeTxnDetail">
+                    <v-icon size="14">x</v-icon>
+                  </button>
+                </div>
+
+                <div class="pos-txn-sheet__meta">
+                  <div class="pos-txn-sheet__meta-row"><span>Date</span><span>{{ dayLabel(detailTxn.completedAt) }} · {{ timeLabel(detailTxn.completedAt) }}</span></div>
+                  <div class="pos-txn-sheet__meta-row"><span>Associate</span><span>{{ store.associateName(detailTxn.associateId) }}</span></div>
+                  <div class="pos-txn-sheet__meta-row"><span>Register</span><span>{{ store.registerName(detailTxn.registerId) }}</span></div>
+                  <div class="pos-txn-sheet__meta-row"><span>Customer</span><span>{{ detailTxn.customerName ?? 'Walk-in' }}</span></div>
+                  <div class="pos-txn-sheet__meta-row"><span>Tender</span><span><v-icon size="13" style="margin-right: 4px;">{{ TENDER_ICONS[detailTxn.tender] }}</v-icon>{{ TENDER_DISPLAY[detailTxn.tender] }}</span></div>
+                </div>
+
+                <div v-if="detailTxn.lines?.length" class="pos-txn-sheet__lines">
+                  <div v-for="l in detailTxn.lines" :key="l.sku" class="pos-txn-sheet__line">
+                    <div class="pos-variant-row__swatch" :style="{ background: tileGradient(l.sku) }" />
+                    <span class="pos-txn-sheet__line-name">{{ l.name }} ×{{ l.qty }}</span>
+                    <span class="pos-txn-sheet__line-total">{{ fmt(l.price * l.qty) }}</span>
+                  </div>
+                  <div class="pos-cart__totals" style="padding: 8px 0 0;">
+                    <div class="pos-total-row"><span>Subtotal</span><span>{{ fmt(detailSubtotal) }}</span></div>
+                    <div class="pos-total-row"><span>Tax (10%)</span><span>{{ fmt(Math.abs(detailTxn.total) - detailSubtotal) }}</span></div>
+                    <div class="pos-total-row pos-total-row--grand"><span>Total</span><span>{{ fmt(detailTxn.total) }}</span></div>
+                  </div>
+                </div>
+                <div v-else class="pos-txn-sheet__no-lines">
+                  {{ detailTxn.itemCount }} item{{ detailTxn.itemCount !== 1 ? 's' : '' }} — line detail unavailable
+                </div>
+
+                <div class="pos-txn-sheet__actions">
+                  <button class="pos-receipt-action" @click="printDetailReceipt">
+                    <v-icon size="16">printer</v-icon>
+                    <span>Print</span>
+                  </button>
+                  <button class="pos-receipt-action" @click="emailDetailReceipt">
+                    <v-icon size="16">mail</v-icon>
+                    <span>Email</span>
+                  </button>
+                  <button
+                    v-if="detailTxn.status === 'completed'"
+                    class="pos-receipt-action pos-receipt-action--danger"
+                    @click="refundDetailTxn"
+                  >
+                    <v-icon size="16">rotate-ccw</v-icon>
+                    <span>Refund</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ── Payment sheet (in-frame slide-up; mirrors the variant-sheet pattern) ── -->
+          <transition name="pos-variant-up">
+            <div v-if="paymentStep !== 'idle'" class="pos-payment-overlay">
+              <div class="pos-payment-sheet">
+
+                <!-- Sheet grabber -->
+                <div class="pos-payment-sheet__grabber" />
+
+                <!-- Select tender -->
+                <template v-if="paymentStep === 'select'">
+                  <div class="pos-payment-sheet__head">
+                    <div class="pos-payment-sheet__eyebrow">Tender amount</div>
+                    <div class="pos-payment-sheet__amount">{{ fmt(grandTotal) }}</div>
+                  </div>
+
+                  <div class="pos-tender-list">
+                    <button
+                      v-for="t in enabledTenderList"
+                      :key="t"
+                      class="pos-tender-row"
+                      :class="{ 'pos-tender-row--selected': selectedTender === t }"
+                      @click="selectTender(t)"
+                    >
+                      <div class="pos-tender-row__icon">
+                        <v-icon size="20">{{ TENDER_ICONS[t] }}</v-icon>
+                      </div>
+                      <div class="pos-tender-row__label">{{ TENDER_DISPLAY[t] }}</div>
+                      <div class="pos-tender-row__check">
+                        <v-icon v-if="selectedTender === t" size="18" color="primary">check</v-icon>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div class="pos-payment-sheet__actions">
+                    <button class="pos-sheet-cancel" @click="paymentStep = 'idle'">Cancel</button>
+                    <button class="pos-charge-btn pos-charge-btn--in-sheet" @click="processPayment">
+                      Charge {{ fmt(grandTotal) }}
+                    </button>
+                  </div>
+                </template>
+
+                <!-- Processing -->
+                <template v-else-if="paymentStep === 'processing'">
+                  <div class="pos-payment-sheet__center">
+                    <v-progress-circular indeterminate color="primary" size="52" class="mb-4" />
+                    <div class="pos-payment-sheet__big-title">Processing…</div>
+                    <div class="pos-payment-sheet__sub">{{ PROCESSING_TEXT[selectedTender] }}</div>
+                  </div>
+                </template>
+
+                <!-- Approved -->
+                <template v-else-if="paymentStep === 'approved'">
+                  <div class="pos-payment-sheet__center">
+                    <div class="pos-approved-icon">
+                      <v-icon size="56" color="success">circle-check-big</v-icon>
+                    </div>
+                    <div class="pos-payment-sheet__big-title">Approved</div>
+                    <div class="pos-payment-sheet__big-amount">{{ fmt(grandTotal) }}</div>
+                    <div class="pos-payment-sheet__sub">
+                      Paid via {{ TENDER_DISPLAY[selectedTender] }}
+                      <span v-if="selectedTender === 'cash'"> · change due {{ fmt(Math.ceil(grandTotal / 10) * 10 - grandTotal) }}</span>
+                    </div>
+                  </div>
+
+                  <div class="pos-payment-sheet__receipt-actions">
+                    <button class="pos-receipt-action" @click="completeApproved">
+                      <v-icon size="16">mail</v-icon>
+                      <span>Email receipt</span>
+                    </button>
+                    <button class="pos-receipt-action" @click="completeApproved">
+                      <v-icon size="16">printer</v-icon>
+                      <span>Print receipt</span>
+                    </button>
+                    <button class="pos-receipt-action pos-receipt-action--primary" @click="completeApproved">
+                      <span>Done</span>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </transition>
+
         </div><!-- pos-screen -->
 
         <!-- Bezel bottom (home area) -->
@@ -844,91 +1477,6 @@ const apkQrUrl = computed(() =>
         </div>
       </div><!-- pos-device-frame -->
     </div><!-- pos-stage -->
-
-    <!-- ── Payment sheet (Shopify-style slide-up) ──────────────── -->
-    <v-overlay
-      :model-value="paymentStep !== 'idle'"
-      class="pos-payment-overlay"
-      persistent
-      scrim="rgba(15, 23, 42, 0.55)"
-    >
-      <div class="pos-payment-sheet">
-
-        <!-- Sheet grabber -->
-        <div class="pos-payment-sheet__grabber" />
-
-        <!-- Select tender -->
-        <template v-if="paymentStep === 'select'">
-          <div class="pos-payment-sheet__head">
-            <div class="pos-payment-sheet__eyebrow">Tender amount</div>
-            <div class="pos-payment-sheet__amount">{{ fmt(grandTotal) }}</div>
-          </div>
-
-          <div class="pos-tender-list">
-            <button
-              v-for="t in (['card', 'tap_to_pay', 'cash', 'gift_card', 'split'] as TenderType[])"
-              :key="t"
-              class="pos-tender-row"
-              :class="{ 'pos-tender-row--selected': selectedTender === t }"
-              @click="selectTender(t)"
-            >
-              <div class="pos-tender-row__icon">
-                <v-icon size="20">{{ TENDER_ICONS[t] }}</v-icon>
-              </div>
-              <div class="pos-tender-row__label">{{ TENDER_DISPLAY[t] }}</div>
-              <div class="pos-tender-row__check">
-                <v-icon v-if="selectedTender === t" size="18" color="primary">check</v-icon>
-              </div>
-            </button>
-          </div>
-
-          <div class="pos-payment-sheet__actions">
-            <button class="pos-sheet-cancel" @click="paymentStep = 'idle'">Cancel</button>
-            <button class="pos-charge-btn pos-charge-btn--in-sheet" @click="processPayment">
-              Charge {{ fmt(grandTotal) }}
-            </button>
-          </div>
-        </template>
-
-        <!-- Processing -->
-        <template v-else-if="paymentStep === 'processing'">
-          <div class="pos-payment-sheet__center">
-            <v-progress-circular indeterminate color="primary" size="52" class="mb-4" />
-            <div class="pos-payment-sheet__big-title">Processing…</div>
-            <div class="pos-payment-sheet__sub">{{ PROCESSING_TEXT[selectedTender] }}</div>
-          </div>
-        </template>
-
-        <!-- Approved -->
-        <template v-else-if="paymentStep === 'approved'">
-          <div class="pos-payment-sheet__center">
-            <div class="pos-approved-icon">
-              <v-icon size="56" color="success">circle-check-big</v-icon>
-            </div>
-            <div class="pos-payment-sheet__big-title">Approved</div>
-            <div class="pos-payment-sheet__big-amount">{{ fmt(grandTotal) }}</div>
-            <div class="pos-payment-sheet__sub">
-              Paid via {{ TENDER_DISPLAY[selectedTender] }}
-              <span v-if="selectedTender === 'cash'"> · change due {{ fmt(Math.ceil(grandTotal / 10) * 10 - grandTotal) }}</span>
-            </div>
-          </div>
-
-          <div class="pos-payment-sheet__receipt-actions">
-            <button class="pos-receipt-action" @click="completeApproved">
-              <v-icon size="16">mail</v-icon>
-              <span>Email receipt</span>
-            </button>
-            <button class="pos-receipt-action" @click="completeApproved">
-              <v-icon size="16">printer</v-icon>
-              <span>Print receipt</span>
-            </button>
-            <button class="pos-receipt-action pos-receipt-action--primary" @click="completeApproved">
-              <span>Done</span>
-            </button>
-          </div>
-        </template>
-      </div>
-    </v-overlay>
 
     <!-- Discount dialog (small floating) -->
     <v-dialog v-model="discountDialogOpen" max-width="340">
@@ -965,6 +1513,40 @@ const apkQrUrl = computed(() =>
         <div class="d-flex justify-end gap-2 mt-3">
           <v-btn variant="text" class="text-none" @click="customerDialogOpen = false">Cancel</v-btn>
           <v-btn color="primary" variant="flat" class="text-none" @click="applyCustomer">Attach</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
+
+    <!-- New customer dialog -->
+    <v-dialog v-model="newCustomerOpen" max-width="360">
+      <v-card rounded="lg" class="pa-5">
+        <div class="text-subtitle-1 font-weight-bold mb-3">New customer</div>
+        <v-text-field
+          v-model="newCustomerDraft.name"
+          label="Full name"
+          variant="outlined"
+          density="compact"
+          prepend-inner-icon="user"
+          class="mb-2"
+        />
+        <v-text-field
+          v-model="newCustomerDraft.email"
+          label="Email"
+          variant="outlined"
+          density="compact"
+          prepend-inner-icon="mail"
+          class="mb-2"
+        />
+        <v-text-field
+          v-model="newCustomerDraft.phone"
+          label="Phone"
+          variant="outlined"
+          density="compact"
+          prepend-inner-icon="phone"
+        />
+        <div class="d-flex justify-end gap-2 mt-3">
+          <v-btn variant="text" class="text-none" @click="newCustomerOpen = false">Cancel</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" :disabled="!newCustomerDraft.name.trim()" @click="saveNewCustomer">Save</v-btn>
         </div>
       </v-card>
     </v-dialog>
@@ -1234,6 +1816,12 @@ $pos-bg: #f4f4f5;
     font-weight: 700;
     color: $pos-ink;
     letter-spacing: -0.2px;
+  }
+
+  &__sub {
+    font-size: 12px;
+    font-weight: 600;
+    color: $pos-muted;
   }
 
   &__link {
@@ -1798,60 +2386,98 @@ $pos-bg: #f4f4f5;
   flex-direction: column;
   overflow: hidden;
 
-  &__header {
-    padding: 12px 16px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    border-bottom: 1px solid color-mix(in oklch, var(--ink) 7%, transparent);
+  &__chips {
+    display: flex;
+    gap: 6px;
+    padding: 4px 16px 10px;
     flex-shrink: 0;
   }
+
+  &__scroll {
+    flex: 1;
+    overflow-y: auto;
+  }
+}
+
+.pos-history-group {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 16px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: $pos-muted;
+  background: $pos-bg;
 }
 
 .pos-history-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  width: 100%;
   padding: 10px 16px;
+  border: none;
   border-bottom: 1px solid color-mix(in oklch, var(--ink) 5%, transparent);
-  cursor: default;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
 
   &:hover { background: color-mix(in oklch, var(--ink) 2%, transparent); }
 
   &__id {
     font-size: 12px;
     font-weight: 600;
-    color: var(--ink);
+    color: $pos-ink;
     font-family: monospace;
   }
 
   &__meta {
     font-size: 11px;
-    color: var(--muted);
+    color: $pos-muted;
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
   }
 
   &__total {
     font-size: 13px;
     font-weight: 700;
-    color: var(--ink);
+    color: $pos-ink;
 
     &--neg { color: #ef4444; }
   }
 }
 
-/* ── Payment sheet (Shopify-style slide-up) ────────────────────── */
-.pos-payment-overlay :deep(.v-overlay__content) {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: none !important;
-  max-height: none !important;
+.pos-status-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+
+  &--completed { background: #dcfce7; color: #15803d; }
+  &--refunded  { background: #fee2e2; color: #b91c1c; }
+  &--partial   { background: #ffedd5; color: #c2410c; }
+  &--voided    { background: #f3f4f6; color: #6b7280; }
+  &--suspended { background: #fef3c7; color: #a16207; }
+}
+
+/* ── Payment sheet (in-frame slide-up, contained by .pos-screen) ── */
+.pos-payment-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: rgba(15, 23, 42, 0.55);
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  pointer-events: none;
-  padding: 0;
 }
 
 .pos-payment-sheet {
@@ -1860,8 +2486,8 @@ $pos-bg: #f4f4f5;
   background: $pos-surface;
   border-radius: 20px 20px 0 0;
   padding: 14px 24px 24px;
-  width: min(440px, calc(100vw - 32px));
-  max-height: 88vh;
+  width: min(440px, calc(100% - 32px));
+  max-height: 88%;
   box-shadow: 0 -16px 64px rgba(15, 23, 42, 0.25);
   pointer-events: all;
   animation: pos-sheet-up 240ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -2308,10 +2934,678 @@ $pos-bg: #f4f4f5;
   animation: pos-sheet-up 160ms cubic-bezier(0.55, 0, 1, 0.45) reverse;
 }
 
-/* ── iPhone-frame compression (POS interior shrinks for narrow frame) ── */
-.pos-device-frame--iphone {
-  .pos-cart { width: 160px; }
-  .pos-rail { width: 56px; }
+/* ── Cart line enter animation ─────────────────────────────────── */
+.pos-line-in-enter-active {
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+.pos-line-in-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+/* ── Customers screen ──────────────────────────────────────────── */
+.pos-customers {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  background: $pos-bg;
+
+  &__list {
+    width: 300px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: $pos-surface;
+    border-right: 1px solid $pos-hairline;
+    overflow: hidden;
+  }
+
+  &__search { padding: 0 12px 10px; }
+
+  &__rows {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  &__detail {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+  }
+
+  &__detail-empty {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  &__detail-empty-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: $pos-ink;
+  }
+
+  &__detail-empty-sub {
+    font-size: 12px;
+    color: $pos-muted;
+    max-width: 240px;
+  }
+}
+
+.pos-customer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid color-mix(in oklch, var(--ink) 5%, transparent);
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { background: rgba(17, 24, 39, 0.03); }
+
+  &--selected {
+    background: color-mix(in oklch, var(--cloud-retail-accent, #0d9488) 7%, transparent);
+    box-shadow: inset 2px 0 0 var(--cloud-retail-accent, #0d9488);
+  }
+
+  &__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(17, 24, 39, 0.6);
+  }
+
+  &__body { flex: 1; min-width: 0; }
+
+  &__name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: $pos-ink;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__email {
+    font-size: 11px;
+    color: $pos-muted;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__chips {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+
+  &__spend {
+    font-size: 11px;
+    font-weight: 600;
+    color: $pos-muted;
+  }
+}
+
+.pos-tier-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+
+  &--member { background: #f3f4f6; color: #4b5563; }
+  &--silver { background: #e2e8f0; color: #475569; }
+  &--gold   { background: #fef3c7; color: #a16207; }
+  &--vip    { background: $pos-ink; color: #5eead4; }
+}
+
+.pos-profile {
+  padding: 16px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 560px;
+
+  &__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    align-self: flex-start;
+    border: none;
+    background: none;
+    padding: 4px 8px 4px 2px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: $pos-muted;
+    cursor: pointer;
+
+    &:hover { color: $pos-ink; }
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: $pos-surface;
+    border: 1px solid $pos-hairline;
+    border-radius: 12px;
+  }
+
+  &__avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(17, 24, 39, 0.6);
+  }
+
+  &__id { flex: 1; min-width: 0; }
+
+  &__name {
+    font-size: 16px;
+    font-weight: 700;
+    color: $pos-ink;
+    letter-spacing: -0.2px;
+  }
+
+  &__meta {
+    font-size: 11.5px;
+    color: $pos-muted;
+    margin-top: 2px;
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  &__section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $pos-muted;
+    margin-top: 6px;
+  }
+
+  &__card {
+    background: $pos-surface;
+    border: 1px solid $pos-hairline;
+    border-radius: 12px;
+    overflow: hidden;
+
+    &--notes {
+      padding: 12px 14px;
+      font-size: 12px;
+      color: $pos-muted;
+      line-height: 1.5;
+    }
+
+    .pos-history-row:last-child,
+    .pos-setting-row:last-child { border-bottom: none; }
+  }
+
+  &__empty-note {
+    padding: 14px;
+    font-size: 12px;
+    color: $pos-muted;
+  }
+}
+
+.pos-stat {
+  background: $pos-surface;
+  border: 1px solid $pos-hairline;
+  border-radius: 12px;
+  padding: 12px 14px;
+
+  &__value {
+    font-size: 18px;
+    font-weight: 800;
+    color: $pos-ink;
+    letter-spacing: -0.4px;
+  }
+
+  &__label {
+    font-size: 11px;
+    color: $pos-muted;
+    margin-top: 2px;
+  }
+}
+
+.pos-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &--primary {
+    background: $pos-ink;
+    color: #fff;
+
+    &:hover { background: #000; }
+  }
+
+  &--attached {
+    background: color-mix(in oklch, var(--cloud-retail-accent, #0d9488) 10%, transparent);
+    color: var(--cloud-retail-accent, #0d9488);
+    cursor: default;
+  }
+}
+
+/* ── Settings screen ───────────────────────────────────────────── */
+.pos-settings {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: $pos-bg;
+
+  &__scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 18px 24px;
+    max-width: 560px;
+    width: 100%;
+  }
+
+  &__group-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $pos-muted;
+    margin: 16px 0 6px;
+  }
+
+  &__group {
+    background: $pos-surface;
+    border: 1px solid $pos-hairline;
+    border-radius: 12px;
+    overflow: hidden;
+
+    .pos-setting-row:last-child { border-bottom: none; }
+  }
+}
+
+.pos-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid color-mix(in oklch, var(--ink) 5%, transparent);
+
+  &__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(17, 24, 39, 0.05);
+    color: $pos-muted;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: $pos-ink;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__sub {
+    font-size: 11px;
+    color: $pos-muted;
+    margin-top: 1px;
+  }
+
+  &__value {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: $pos-muted;
+    flex-shrink: 0;
+  }
+
+  &__control { flex-shrink: 0; }
+
+  &--stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+
+    .pos-setting-row__label { flex: none; }
+  }
+
+  // The label sits inside a wrapping div on two-line rows
+  > div:not([class]) { flex: 1; min-width: 0; }
+}
+
+.pos-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+
+  &--online { background: #16a34a; }
+  &--off    { background: #9ca3af; }
+}
+
+.pos-receipt-preview {
+  margin: 12px 14px;
+  padding: 12px 14px;
+  border: 1px dashed $pos-hairline;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 10px;
+  color: $pos-muted;
+
+  &__store {
+    text-align: center;
+    font-weight: 700;
+    color: $pos-ink;
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+
+  &__line {
+    display: flex;
+    justify-content: space-between;
+    padding: 1px 0;
+
+    &--total {
+      border-top: 1px dashed $pos-hairline;
+      margin-top: 4px;
+      padding-top: 4px;
+      font-weight: 700;
+      color: $pos-ink;
+    }
+  }
+
+  &__footer {
+    text-align: center;
+    margin-top: 8px;
+    font-style: italic;
+  }
+}
+
+/* ── Transaction detail sheet ──────────────────────────────────── */
+.pos-txn-sheet {
+  width: 100%;
+  background: $pos-surface;
+  border-radius: 16px 16px 0 0;
+  padding: 10px 16px 14px;
+  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+  max-height: 86%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid $pos-hairline;
+  }
+
+  &__id {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: monospace;
+    color: $pos-ink;
+  }
+
+  &__meta {
+    padding: 10px 0;
+    border-bottom: 1px solid $pos-hairline;
+  }
+
+  &__meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    font-size: 12px;
+
+    > span:first-child { color: $pos-muted; }
+    > span:last-child { color: $pos-ink; font-weight: 600; }
+  }
+
+  &__lines { padding: 10px 0 4px; }
+
+  &__line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+  }
+
+  &__line-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: $pos-ink;
+  }
+
+  &__line-total {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: $pos-ink;
+  }
+
+  &__no-lines {
+    padding: 14px 0;
+    font-size: 12px;
+    color: $pos-muted;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid $pos-hairline;
+  }
+}
+
+.pos-receipt-action--danger {
+  color: #ef4444;
+
+  &:hover { background: #fee2e2; }
+}
+
+/* ── Tactile press states ──────────────────────────────────────── */
+.pos-smartgrid__tile:active,
+.pos-product-tile:active { transform: scale(0.98); }
+.pos-qty-btn:active { background: rgba(17, 24, 39, 0.1); }
+.pos-rail__item:active { background: rgba(255, 255, 255, 0.12); }
+
+/* ════ POS interior breakpoints — .pos-screen--phone / --tablet ════
+   Class driven by the measured .pos-screen width (useElementSize):
+   wide ≥960 · tablet 600–959 · phone <600. Works inside simulated
+   device frames and on real devices (frame width is CSS-clamped). */
+
+/* — Tablet portrait: 2-pane retained, narrower cart — */
+.pos-screen--tablet .pos-cart { width: 280px; }
+
+/* — Phone: single column · rail → bottom tab bar · cart → sheet — */
+.pos-screen--phone {
+  .pos-layout { flex-direction: column; }
+
+  /* Left rail becomes the bottom tab bar (same DOM, same active styles) */
+  .pos-rail {
+    order: 3;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px));
+
+    .pos-rail__brand,
+    .pos-rail__footer { display: none; }
+
+    .pos-rail__nav {
+      flex-direction: row;
+      flex: 1;
+      gap: 0;
+      padding: 0;
+    }
+
+    .pos-rail__item {
+      flex: 1;
+      gap: 2px;
+      padding: 6px 2px;
+      border-radius: 8px;
+    }
+  }
+
+  .pos-main { order: 1; }
+  .pos-cartbar { order: 2; }
+  .pos-customers, .pos-history-pane, .pos-settings { order: 1; }
+
+  /* Full cart panel becomes a slide-up sheet over the screen */
+  .pos-cart {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: calc(100% - 48px);
+    border-left: none;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -16px 48px rgba(15, 23, 42, 0.25);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 15;
+    transform: translateY(102%);
+    visibility: hidden;
+    transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), visibility 0s 240ms;
+
+    &.pos-cart--open {
+      transform: translateY(0);
+      visibility: visible;
+      transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), visibility 0s;
+    }
+  }
+
+  /* Catalog: 2-col grid, tighter gutters */
+  .pos-pane-head { padding: 12px 12px 8px; }
+  .pos-catalog__search, .pos-catalog__chips { padding-left: 12px; padding-right: 12px; }
+  .pos-catalog__grid { grid-template-columns: repeat(2, 1fr); padding: 0 12px 12px; }
+  .pos-smartgrid { padding: 4px 12px 12px; }
+
+  /* Customers: master-detail collapses to a single pane (list ⇄ detail) */
+  .pos-customers__list { width: 100%; border-right: none; }
+  .pos-customers__detail { display: none; }
+  .pos-customers--detail .pos-customers__list { display: none; }
+  .pos-customers--detail .pos-customers__detail { display: block; }
+
+  /* Settings/profile content uses the full width */
+  .pos-settings__scroll { padding: 0 12px 20px; max-width: none; }
+  .pos-profile { max-width: none; padding: 12px 12px 20px; }
+
+  /* Sheets: full width, taller */
+  .pos-payment-sheet {
+    width: 100%;
+    max-height: 92%;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+  .pos-variant-sheet, .pos-txn-sheet { max-height: 92%; }
+}
+
+/* — Phone-only elements (rendered only when isPhone) — */
+.pos-cart-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.pos-cartbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: $pos-surface;
+  border-top: 1px solid $pos-hairline;
+  flex-shrink: 0;
+
+  &__summary {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: $pos-ink;
+  }
+}
+
+.pos-charge-btn--bar {
+  margin: 0;
+  padding: 10px 18px;
+  font-size: 14px;
+  flex-shrink: 0;
+  width: auto;
+}
+
+.pos-cart__collapse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-left: auto;
+  border: none;
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.07);
+  color: $pos-muted;
+  cursor: pointer;
+
+  &:hover { background: rgba(17, 24, 39, 0.12); }
 }
 
 /* ── Responsive page chrome (Vuetify breakpoints) ─────────────── */
