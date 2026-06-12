@@ -3,6 +3,9 @@
   "buildCommand": "npx vite build && npm run build-storybook && cp -r dist-storybook dist/storybook",
   "outputDirectory": "dist",
   "framework": "vite",
+  "redirects": [
+    { "source": "/main-landing", "destination": "/main-landing/", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/storybook/:path*", "destination": "/storybook/:path*" },
     { "source": "/((?!storybook|assets|main-landing).*)", "destination": "/index.html" }
