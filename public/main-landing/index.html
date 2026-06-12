@@ -71,8 +71,60 @@
   @keyframes dv-orbit-spin{ to{ transform:rotate(360deg); } }
   @keyframes dv-orbit-spin-rev{ to{ transform:rotate(-360deg); } }
   @keyframes dv-orbit-breathe{ 0%,100%{ transform:scale(1); opacity:.85; } 50%{ transform:scale(1.06); opacity:1; } }
+
+  /* ---- Da Vinci FAB — bottom-right, dark idle / gradient + revolve + menu on hover ---- */
+  .dv-fab-wrap{ position:fixed; right:28px; bottom:28px; z-index:40; }
+  .dv-fab{ display:flex; align-items:center; justify-content:center; width:56px; height:56px; padding:0;
+    border:0; border-radius:50%; cursor:pointer; background:#16181D;
+    box-shadow:0 10px 28px -10px rgba(24,27,33,0.55);
+    -webkit-tap-highlight-color:transparent;
+    transition:transform .25s cubic-bezier(.22,1,.36,1), background .25s ease, box-shadow .3s ease; }
+  .dv-fab .dv-orb{ width:34px; height:34px; color:#fff; }
+  .dv-fab:active{ transform:scale(.94); }
+  .dv-fab-wrap:hover .dv-fab,
+  .dv-fab-wrap:focus-within .dv-fab,
+  .dv-fab-wrap.is-open .dv-fab{
+    background:linear-gradient(125deg,#4f8ef5 0%,#7c5cff 45%,#9a5cff 72%,#5b44d6 100%);
+    box-shadow:0 12px 30px -8px rgba(92,68,214,.7); }
+  .dv-fab-wrap:hover .dv-orb__ring,
+  .dv-fab-wrap:focus-within .dv-orb__ring,
+  .dv-fab-wrap.is-open .dv-orb__ring{ animation-play-state:running; }
+  .dv-fab-wrap:hover .dv-orb__ring--outer,
+  .dv-fab-wrap:focus-within .dv-orb__ring--outer,
+  .dv-fab-wrap.is-open .dv-orb__ring--outer{ animation-duration:2.6s; }
+  .dv-fab-wrap:hover .dv-orb__ring--inner,
+  .dv-fab-wrap:focus-within .dv-orb__ring--inner,
+  .dv-fab-wrap.is-open .dv-orb__ring--inner{ animation-duration:1.9s; }
+  .dv-fab-menu{ position:absolute; right:0; bottom:calc(100% + 14px); width:300px; padding:10px;
+    background:#fff; border:1px solid var(--line); border-radius:16px;
+    box-shadow:0 22px 48px -20px rgba(24,27,33,0.35);
+    opacity:0; visibility:hidden; transform:translateY(8px);
+    transition:opacity .22s ease, transform .25s cubic-bezier(.22,1,.36,1), visibility 0s linear .25s; }
+  /* invisible bridge so the cursor can travel from FAB to menu without closing it */
+  .dv-fab-menu::after{ content:''; position:absolute; left:0; right:0; top:100%; height:14px; }
+  .dv-fab-wrap:hover .dv-fab-menu,
+  .dv-fab-wrap:focus-within .dv-fab-menu,
+  .dv-fab-wrap.is-open .dv-fab-menu{ opacity:1; visibility:visible; transform:translateY(0); transition-delay:0s; }
+  .dv-fab-menu__head{ display:flex; flex-direction:column; gap:2px; padding:10px 12px 8px; }
+  .dv-fab-menu__title{ font-size:15px; font-weight:700; color:var(--ink); }
+  .dv-fab-menu__sub{ font-size:12.5px; color:var(--dim); }
+  .dv-fab-menu__item{ display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px;
+    font-size:14px; font-weight:500; color:var(--ink-soft); text-decoration:none; transition:background .15s, color .15s; }
+  .dv-fab-menu__item:hover{ background:rgba(24,27,33,0.05); color:var(--ink); }
+  .dv-fab-menu__dot{ flex:0 0 auto; width:7px; height:7px; border-radius:50%;
+    background:linear-gradient(125deg,#4f8ef5 0%,#7c5cff 60%,#5b44d6 100%); }
+  .dv-fab-menu__cta{ display:flex; align-items:center; justify-content:center; gap:7px; margin:8px 2px 2px; padding:11px;
+    border-radius:10px; background:var(--ink); color:#fff; font-size:14px; font-weight:600; text-decoration:none;
+    transition:background .18s; }
+  .dv-fab-menu__cta:hover{ background:#000; }
+  .dv-fab-menu__cta svg{ width:13px; height:13px; }
+  @media (max-width:640px){
+    .dv-fab-wrap{ right:18px; bottom:18px; }
+    .dv-fab-menu{ width:min(300px, calc(100vw - 36px)); }
+  }
   @media (prefers-reduced-motion: reduce){
     .dv-orb__ring{ animation:none; }
+    .dv-fab-menu{ transform:none; transition:opacity .2s ease, visibility 0s linear .2s; }
   }
   /* mobile menu panel */
   .mobile-menu{ position:fixed; top:76px; left:0; right:0; z-index:19; background:#fff;
@@ -727,30 +779,69 @@
     <div class="footer-watermark">This is Unified Commerce.</div>
   </footer>
 
+  <!-- Da Vinci FAB — hover/click opens the suggestion menu -->
+  <div class="dv-fab-wrap" id="dvFab">
+    <div class="dv-fab-menu" role="menu" aria-label="Da Vinci suggestions">
+      <div class="dv-fab-menu__head">
+        <span class="dv-fab-menu__title">How can I help you?</span>
+        <span class="dv-fab-menu__sub">Ask Da Vinci, Maropost&rsquo;s AI copilot</span>
+      </div>
+      <a class="dv-fab-menu__item" role="menuitem" href="/accounts/2000290/da-vinci/experience"><span class="dv-fab-menu__dot"></span>Show open rate trend for last 30 days</a>
+      <a class="dv-fab-menu__item" role="menuitem" href="/accounts/2000290/da-vinci/experience"><span class="dv-fab-menu__dot"></span>Create a revenue by channel widget</a>
+      <a class="dv-fab-menu__item" role="menuitem" href="/accounts/2000290/da-vinci/experience"><span class="dv-fab-menu__dot"></span>Add a recent orders table</a>
+      <a class="dv-fab-menu__item" role="menuitem" href="/accounts/2000290/da-vinci/experience"><span class="dv-fab-menu__dot"></span>Show contact growth trend</a>
+      <a class="dv-fab-menu__cta" href="/accounts/2000290/da-vinci/experience">Open Da Vinci
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+    <button class="dv-fab" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Ask Da Vinci">
+      <svg class="dv-orb" viewBox="0 0 100 100" aria-hidden="true">
+        <g class="dv-orb__ring dv-orb__ring--outer"></g>
+        <g class="dv-orb__ring dv-orb__ring--inner"></g>
+      </svg>
+    </button>
+  </div>
+
 <script>
-  /* halftone dot-spiral nav mark — same geometry as the app's DvOrbitOrb */
+  /* halftone dot-spiral identity mark — same geometry as the app's DvOrbitOrb (nav button + FAB) */
   (function(){
     var TAU = Math.PI * 2;
-    var gA = document.querySelector('.dv-orb__ring--outer');
-    var gB = document.querySelector('.dv-orb__ring--inner');
-    if (!gA || !gB) return;
-    for (var ri = 0; ri < 7; ri++){
-      var R = 16 + ri * 5;
-      var n = Math.round(TAU * R / 8);
-      var base = 2.9 * (1 - 0.35 * ri / 6);
-      var g = ri % 2 ? gB : gA;
-      for (var i = 0; i < n; i++){
-        var ang = i / n * TAU;
-        var w = Math.pow(0.5 + 0.5 * Math.cos(ang + R * 0.16), 1.8);
-        var j = 0.94 + 0.12 * Math.abs(Math.sin((ri * 131 + i) * 12.9898));
-        var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        c.setAttribute('cx', (50 + Math.cos(ang) * R).toFixed(2));
-        c.setAttribute('cy', (50 + Math.sin(ang) * R).toFixed(2));
-        c.setAttribute('r', Math.min(base * (0.42 + 0.95 * w) * j, 3.6).toFixed(2));
-        c.setAttribute('fill-opacity', (0.7 + 0.3 * w).toFixed(2));
-        g.appendChild(c);
+    document.querySelectorAll('.dv-orb').forEach(function(svg){
+      var gA = svg.querySelector('.dv-orb__ring--outer');
+      var gB = svg.querySelector('.dv-orb__ring--inner');
+      if (!gA || !gB) return;
+      for (var ri = 0; ri < 7; ri++){
+        var R = 16 + ri * 5;
+        var n = Math.round(TAU * R / 8);
+        var base = 2.9 * (1 - 0.35 * ri / 6);
+        var g = ri % 2 ? gB : gA;
+        for (var i = 0; i < n; i++){
+          var ang = i / n * TAU;
+          var w = Math.pow(0.5 + 0.5 * Math.cos(ang + R * 0.16), 1.8);
+          var j = 0.94 + 0.12 * Math.abs(Math.sin((ri * 131 + i) * 12.9898));
+          var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          c.setAttribute('cx', (50 + Math.cos(ang) * R).toFixed(2));
+          c.setAttribute('cy', (50 + Math.sin(ang) * R).toFixed(2));
+          c.setAttribute('r', Math.min(base * (0.42 + 0.95 * w) * j, 3.6).toFixed(2));
+          c.setAttribute('fill-opacity', (0.7 + 0.3 * w).toFixed(2));
+          g.appendChild(c);
+        }
       }
+    });
+  })();
+
+  /* Da Vinci FAB — click/touch toggle (hover handled in CSS), Escape and outside-click close */
+  (function(){
+    var wrap = document.getElementById('dvFab');
+    if (!wrap) return;
+    var btn = wrap.querySelector('.dv-fab');
+    function setOpen(open){
+      wrap.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', String(open));
     }
+    btn.addEventListener('click', function(){ setOpen(!wrap.classList.contains('is-open')); });
+    document.addEventListener('click', function(e){ if (!wrap.contains(e.target)) setOpen(false); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') setOpen(false); });
   })();
 </script>
 
