@@ -387,14 +387,14 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
         <div class="assistant-menu-card">
           <div class="um-section um-section--last">
             <button type="button" class="um-item" @click="openCopilot">
-              <DvOrbitOrb class="um-item__icon" :size="20" />
+              <v-icon class="um-item__icon" size="20">bot-message-square</v-icon>
               <div class="um-item__body">
                 <div class="um-item__title">Co-pilot</div>
                 <div class="um-item__sub">Chat with Da Vinci in a side drawer</div>
               </div>
             </button>
             <button type="button" class="um-item" @click="openAiExperience">
-              <DvOrbitOrb class="um-item__icon" :size="20" />
+              <v-icon class="um-item__icon" size="20">audio-lines</v-icon>
               <div class="um-item__body">
                 <div class="um-item__title">AI experience</div>
                 <div class="um-item__sub">Talk to Da Vinci in the AI-first workspace</div>

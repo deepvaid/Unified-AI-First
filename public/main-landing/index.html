@@ -48,7 +48,7 @@
     background:none; border:0; cursor:pointer; color:var(--ink); border-radius:8px; }
   .nav-toggle svg{ width:24px; height:24px; }
 
-  /* ---- Da Vinci orb button — halftone dot-spiral identity mark (matches main app) ---- */
+  /* ---- Da Vinci orb button — "Glow" particle-orb identity mark (matches main app) ---- */
   .dv-orb-btn{ position:relative; flex:0 0 auto; width:40px; height:40px;
     display:flex; align-items:center; justify-content:center; border-radius:12px;
     background:transparent; text-decoration:none;
@@ -58,15 +58,16 @@
     transition:color .2s ease; }
   .dv-orb circle{ fill:currentColor; }
   .dv-orb__ring{ transform-origin:50% 50%; transform-box:view-box; }
-  .dv-orb__ring--outer{ animation:dv-orbit-spin 16s linear infinite; animation-play-state:paused; }
-  .dv-orb__ring--inner{ animation:dv-orbit-spin-rev 11s linear infinite; animation-play-state:paused; }
+  /* both layers spin as ONE coherent field (same dir + speed); paused at rest */
+  .dv-orb__ring--outer,
+  .dv-orb__ring--inner{ animation:dv-orbit-spin-rev 20s linear infinite; animation-play-state:paused; }
   .dv-orb-btn:hover{ background:linear-gradient(125deg,#4f8ef5 0%,#7c5cff 45%,#9a5cff 72%,#5b44d6 100%);
     box-shadow:0 6px 18px -6px rgba(92,68,214,.7); }
-  .dv-orb-btn:hover .dv-orb{ color:#fff; }
-  /* visible counter-rotation on hover (rest durations are ambient-slow) */
-  .dv-orb-btn:hover .dv-orb__ring{ animation-play-state:running; }
-  .dv-orb-btn:hover .dv-orb__ring--outer{ animation-duration:2.6s; }
-  .dv-orb-btn:hover .dv-orb__ring--inner{ animation-duration:1.9s; }
+  /* subtle at rest — full strength on hover */
+  .dv-orb-btn .dv-orb{ opacity:.7; transition:color .2s ease, opacity .2s ease; }
+  .dv-orb-btn:hover .dv-orb{ color:#fff; opacity:1; }
+  /* gentle coherent spin on hover */
+  .dv-orb-btn:hover .dv-orb__ring{ animation-play-state:running; animation-duration:7s; }
   .dv-orb-btn:active{ transform:scale(.94); }
   @keyframes dv-orbit-spin{ to{ transform:rotate(360deg); } }
   @keyframes dv-orbit-spin-rev{ to{ transform:rotate(-360deg); } }
@@ -88,13 +89,7 @@
     box-shadow:0 12px 30px -8px rgba(92,68,214,.7); }
   .dv-fab-wrap:hover .dv-orb__ring,
   .dv-fab-wrap:focus-within .dv-orb__ring,
-  .dv-fab-wrap.is-open .dv-orb__ring{ animation-play-state:running; }
-  .dv-fab-wrap:hover .dv-orb__ring--outer,
-  .dv-fab-wrap:focus-within .dv-orb__ring--outer,
-  .dv-fab-wrap.is-open .dv-orb__ring--outer{ animation-duration:2.6s; }
-  .dv-fab-wrap:hover .dv-orb__ring--inner,
-  .dv-fab-wrap:focus-within .dv-orb__ring--inner,
-  .dv-fab-wrap.is-open .dv-orb__ring--inner{ animation-duration:1.9s; }
+  .dv-fab-wrap.is-open .dv-orb__ring{ animation-play-state:running; animation-duration:7s; }
   .dv-fab-menu{ position:absolute; right:0; bottom:calc(100% + 14px); width:300px; padding:10px;
     background:#fff; border:1px solid var(--line); border-radius:16px;
     box-shadow:0 22px 48px -20px rgba(24,27,33,0.35);
@@ -397,7 +392,7 @@
     </div>
     <div class="nav-right">
       <a class="dv-orb-btn" href="http://localhost:5173/accounts/2000290/da-vinci/experience" aria-label="Da Vinci AI" title="Try Da Vinci AI">
-        <svg class="dv-orb" viewBox="0 0 100 100" aria-hidden="true">
+        <svg class="dv-orb" viewBox="0 0 512 512" aria-hidden="true">
           <g class="dv-orb__ring dv-orb__ring--outer"></g>
           <g class="dv-orb__ring dv-orb__ring--inner"></g>
         </svg>
@@ -795,7 +790,7 @@
       </a>
     </div>
     <button class="dv-fab" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Ask Da Vinci">
-      <svg class="dv-orb" viewBox="0 0 100 100" aria-hidden="true">
+      <svg class="dv-orb" viewBox="0 0 512 512" aria-hidden="true">
         <g class="dv-orb__ring dv-orb__ring--outer"></g>
         <g class="dv-orb__ring dv-orb__ring--inner"></g>
       </svg>
@@ -803,29 +798,37 @@
   </div>
 
 <script>
-  /* halftone dot-spiral identity mark — same geometry as the app's DvOrbitOrb (nav button + FAB) */
+  /* "Glow" particle-orb identity mark — EXACT reproduction of the Glow variant
+     from logo_compare_nav.html (512 space, center 256). Halo = the every-2nd of
+     1300 dense fine ring; scatter = 364 faint outward motes. Same PRNG + seeds
+     → identical particle field. Both layers share one coherent spin (CSS). */
   (function(){
-    var TAU = Math.PI * 2;
+    var TAU = Math.PI * 2, C = 256;
+    var HALO_R = 3.4, SCAT_R = 6.8; // 512-space dot radii (≈ the reference's fine on-screen size)
+    function rng(s){ var x = Math.sin(s * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+    function circle(g, x, y, r, o){
+      var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', x.toFixed(2)); c.setAttribute('cy', y.toFixed(2));
+      c.setAttribute('r', r.toFixed(2)); c.setAttribute('fill-opacity', o.toFixed(3));
+      g.appendChild(c);
+    }
     document.querySelectorAll('.dv-orb').forEach(function(svg){
-      var gA = svg.querySelector('.dv-orb__ring--outer');
-      var gB = svg.querySelector('.dv-orb__ring--inner');
-      if (!gA || !gB) return;
-      for (var ri = 0; ri < 7; ri++){
-        var R = 16 + ri * 5;
-        var n = Math.round(TAU * R / 8);
-        var base = 2.9 * (1 - 0.35 * ri / 6);
-        var g = ri % 2 ? gB : gA;
-        for (var i = 0; i < n; i++){
-          var ang = i / n * TAU;
-          var w = Math.pow(0.5 + 0.5 * Math.cos(ang + R * 0.16), 1.8);
-          var j = 0.94 + 0.12 * Math.abs(Math.sin((ri * 131 + i) * 12.9898));
-          var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          c.setAttribute('cx', (50 + Math.cos(ang) * R).toFixed(2));
-          c.setAttribute('cy', (50 + Math.sin(ang) * R).toFixed(2));
-          c.setAttribute('r', Math.min(base * (0.42 + 0.95 * w) * j, 3.6).toFixed(2));
-          c.setAttribute('fill-opacity', (0.7 + 0.3 * w).toFixed(2));
-          g.appendChild(c);
-        }
+      var halo = svg.querySelector('.dv-orb__ring--outer');
+      var scatter = svg.querySelector('.dv-orb__ring--inner');
+      if (!halo || !scatter) return;
+      // Halo ring — gR 126, gBW 43.52; draw every 2nd of 1300 (= 650)
+      for (var i = 0; i < 1300; i += 2){
+        var a = (i / 1300) * TAU + (rng(i * 5 + 10) - 0.5) * 0.18;
+        var r = 126 + rng(i * 5 + 11) * 43.52;
+        var alp = 0.12 + rng(i * 5 + 12) * 0.38;
+        circle(halo, C + Math.cos(a) * r, C + Math.sin(a) * r, HALO_R, alp);
+      }
+      // Scatter — gSS 178.74 → gSM 253.95
+      for (var j = 0; j < 364; j++){
+        var a2 = (j / 364) * TAU + (rng(j * 3 + 99) - 0.5) * 0.60;
+        var r2 = 178.74 + rng(j * 7 + 51) * 75.21;
+        var alp2 = (0.08 + rng(j * 3 + 20) * 0.14) * 0.6;
+        circle(scatter, C + Math.cos(a2) * r2, C + Math.sin(a2) * r2, SCAT_R, alp2);
       }
     });
   })();
