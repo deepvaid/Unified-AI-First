@@ -115,9 +115,9 @@ const orb = computed(() => orbFor(renderSize.value))
 
 // Constant on-screen dot size (the reference clamps dots to a fine px) → viewBox
 // radius scales inversely with the rendered size. Halo finest, shimmer a touch larger.
-const haloR = computed(() => +Math.max(0.12, Math.min(8, (0.22 * 100) / renderSize.value)).toFixed(3))
-const scatterR = computed(() => +Math.max(0.12, Math.min(10, (0.45 * 100) / renderSize.value)).toFixed(3))
-const shimmerR = computed(() => +Math.max(0.15, Math.min(9, (0.35 * 100) / renderSize.value)).toFixed(3))
+const haloR = computed(() => +Math.max(0.12, Math.min(8, (0.34 * 100) / renderSize.value)).toFixed(3))
+const scatterR = computed(() => +Math.max(0.12, Math.min(10, (0.6 * 100) / renderSize.value)).toFixed(3))
+const shimmerR = computed(() => +Math.max(0.15, Math.min(9, (0.46 * 100) / renderSize.value)).toFixed(3))
 </script>
 
 <template>
@@ -209,16 +209,16 @@ const shimmerR = computed(() => +Math.max(0.15, Math.min(9, (0.35 * 100) / rende
    so it doesn't touch the shared dv-orbit-breathe used elsewhere. */
 @keyframes dv-orbit-breath {
   0% {
-    transform: scale(1);
-    opacity: 0.94;
+    transform: scale(0.97);
+    opacity: 0.88;
   }
   42% {
-    transform: scale(1.012);
+    transform: scale(1.03);
     opacity: 1;
   }
   100% {
-    transform: scale(1);
-    opacity: 0.94;
+    transform: scale(0.97);
+    opacity: 0.88;
   }
 }
 
