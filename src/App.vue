@@ -47,8 +47,10 @@ const isFlush = computed(() => !!route.meta?.flush)
 const sidebarTemporary = computed(() => smAndDown.value)
 const sidebarRail = computed(() => rail.value)
 const copilotDrawerWidth = computed(() => {
-  const target = copilot.isExpanded ? 880 : 480
-  return Math.min(target, Math.max(320, width.value - 32))
+  // Default ~400px to mirror Google Gemini's Gmail side panel; expand to 720px
+  // for reviewing widget drafts.
+  const target = copilot.isExpanded ? 720 : 400
+  return Math.min(target, Math.max(360, width.value - 32))
 })
 </script>
 

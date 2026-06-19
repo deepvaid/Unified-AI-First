@@ -652,6 +652,17 @@ function onComposerKeydown(event: KeyboardEvent) {
         <v-icon size="18">history</v-icon>
         <v-tooltip activator="parent" location="bottom">Conversation history</v-tooltip>
       </v-btn>
+      <v-btn
+        icon
+        size="34"
+        variant="text"
+        :aria-label="copilot.isExpanded ? 'Collapse panel' : 'Expand panel'"
+        class="dv-panel__icon-btn"
+        @click="emit('expand')"
+      >
+        <v-icon size="18">{{ copilot.isExpanded ? 'chevrons-right' : 'chevrons-left' }}</v-icon>
+        <v-tooltip activator="parent" location="bottom">{{ copilot.isExpanded ? 'Collapse' : 'Expand' }}</v-tooltip>
+      </v-btn>
       <v-menu offset="6" location="bottom end">
         <template #activator="{ props: menuProps }">
           <v-btn icon size="34" variant="text" aria-label="More" class="dv-panel__icon-btn" v-bind="menuProps">
@@ -833,9 +844,6 @@ function onComposerKeydown(event: KeyboardEvent) {
         </button>
       </div>
       <div class="dv-composer__field">
-        <v-btn icon size="32" variant="text" aria-label="Attach">
-          <v-icon size="16">paperclip</v-icon>
-        </v-btn>
         <input
           v-model="inputText"
           type="text"
@@ -843,39 +851,45 @@ function onComposerKeydown(event: KeyboardEvent) {
           class="dv-composer__input"
           @keydown="onComposerKeydown"
         />
-        <v-btn
-          v-if="voice.sttSupported"
-          icon
-          size="32"
-          variant="text"
-          :aria-label="isDictating ? 'Stop voice input' : 'Start voice input'"
-          class="dv-composer__mic"
-          :class="{ 'dv-composer__mic--live': isDictating }"
-          @click="toggleMic"
-        >
-          <v-icon size="16">{{ isDictating ? 'mic-off' : 'mic' }}</v-icon>
-        </v-btn>
-        <v-btn
-          v-if="voice.sttSupported"
-          icon
-          size="32"
-          variant="text"
-          aria-label="Switch to voice mode"
-          @click="setUiMode('voice')"
-        >
-          <v-icon size="16">audio-lines</v-icon>
-          <v-tooltip activator="parent" location="top">Voice mode</v-tooltip>
-        </v-btn>
-        <button
-          type="button"
-          class="dv-composer__send"
-          aria-label="Send"
-          :disabled="!inputText.trim() || isTyping"
-          @click="sendQuery"
-        >
-          <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
-        </button>
+        <div class="dv-composer__actions">
+          <v-btn icon size="32" variant="text" aria-label="Attach">
+            <v-icon size="16">paperclip</v-icon>
+          </v-btn>
+          <v-btn
+            v-if="voice.sttSupported"
+            icon
+            size="32"
+            variant="text"
+            :aria-label="isDictating ? 'Stop voice input' : 'Start voice input'"
+            class="dv-composer__mic"
+            :class="{ 'dv-composer__mic--live': isDictating }"
+            @click="toggleMic"
+          >
+            <v-icon size="16">{{ isDictating ? 'mic-off' : 'mic' }}</v-icon>
+          </v-btn>
+          <v-btn
+            v-if="voice.sttSupported"
+            icon
+            size="32"
+            variant="text"
+            aria-label="Switch to voice mode"
+            @click="setUiMode('voice')"
+          >
+            <v-icon size="16">audio-lines</v-icon>
+            <v-tooltip activator="parent" location="top">Voice mode</v-tooltip>
+          </v-btn>
+          <button
+            type="button"
+            class="dv-composer__send"
+            aria-label="Send"
+            :disabled="!inputText.trim() || isTyping"
+            @click="sendQuery"
+          >
+            <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
+          </button>
+        </div>
       </div>
+      <p class="dv-composer__note">Da Vinci can make mistakes. Check important info.</p>
     </footer>
 
     <DvToastStack />
@@ -898,10 +912,10 @@ function onComposerKeydown(event: KeyboardEvent) {
 .dv-panel__header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  height: 64px;
-  background: var(--dv-header-grad);
+  gap: 10px;
+  padding: 8px 8px 8px 16px;
+  height: 56px;
+  background: rgb(var(--v-theme-surface));
   border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
   flex-shrink: 0;
 }
@@ -1205,14 +1219,16 @@ function onComposerKeydown(event: KeyboardEvent) {
   color: rgb(var(--v-theme-on-surface));
 }
 
+/* Gemini-style composer: tall rounded box — text on top, action row at bottom */
 .dv-composer__field {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px 6px 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 10px 10px 8px 14px;
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-borderRadius-lg);
+  border-radius: 22px;
   box-shadow: inset 0 0 0 1px rgb(var(--v-theme-outline-variant));
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
@@ -1223,15 +1239,33 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-composer__input {
-  flex: 1;
+  width: 100%;
   border: none;
   outline: none;
   background: transparent;
   font-size: var(--mp-typography-fontSize-body);
   line-height: 1.4;
   color: rgb(var(--v-theme-on-surface));
-  padding: 8px 0;
+  padding: 6px 4px 2px;
   font-family: inherit;
+}
+
+.dv-composer__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.dv-composer__actions .dv-composer__send {
+  margin-left: auto;
+}
+
+.dv-composer__note {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .dv-composer__input::placeholder {
