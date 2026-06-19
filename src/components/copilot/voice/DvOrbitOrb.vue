@@ -22,7 +22,12 @@ const props = withDefaults(
 )
 
 const spinDuration = computed(() => `${20 / props.speed}s`)
+const shimmerSpin = computed(() => `${14 / props.speed}s`) // glints drift vs the 20s ring
 const breatheDuration = computed(() => `${7 / Math.min(props.speed, 1.5)}s`)
+
+// All in-app marks render 20% larger than their passed `size` (brand bump to
+// match the landing). renderSize drives the element box, tier, and dot radii.
+const renderSize = computed(() => props.size * 1.2)
 
 // ── orb geometry (module-stable: identical mark on every surface) ────────────
 const TAU = Math.PI * 2
@@ -33,6 +38,13 @@ interface Pt {
   y: number
   o: number
 }
+interface ShPt {
+  x: number
+  y: number
+  c: number // brand colour stop 1|2|3
+  dur: number
+  delay: number
+}
 
 // Reference Glow PRNG — fract(sin(s·127.1+311.7)·43758.5453). Seeded by particle
 // index so the field is deterministic and identical to the landing.
@@ -41,22 +53,23 @@ function rng(s: number) {
   return x - Math.floor(x)
 }
 
-// Counts: the reference draws every 2nd of 1300 halo (=650) + 364 scatter. Tiny
-// repeated marks (chat avatars, pill) step sparser for DOM perf — visually
-// identical at ≤40px. `step` keeps full-ring coverage (angle derives from index).
+// Counts: the reference draws every 2nd of 1300 halo (=650) + 364 scatter, plus a
+// sparse spectral shimmer. Tiny repeated marks (chat avatars, pill) step sparser
+// for DOM perf. `step` keeps full-ring coverage (angle derives from index).
 type TierKey = 's' | 'l'
-const STEPS: Record<TierKey, { hStep: number; sStep: number }> = {
-  s: { hStep: 3, sStep: 2 }, // ≤40px → ~434 halo + 182 scatter
-  l: { hStep: 2, sStep: 1 }, // ≥41px → 650 halo + 364 scatter (exact reference)
+const STEPS: Record<TierKey, { hStep: number; sStep: number; sh: number }> = {
+  s: { hStep: 3, sStep: 2, sh: 24 }, // ≤40px → ~434 halo + 182 scatter + 24 glints
+  l: { hStep: 2, sStep: 1, sh: 56 }, // ≥41px → 650 halo + 364 scatter + 56 glints
 }
 function tierKey(size: number): TierKey {
   return size <= 40 ? 's' : 'l'
 }
 
-function buildOrb(key: TierKey): { halo: Pt[]; scatter: Pt[] } {
-  const { hStep, sStep } = STEPS[key]
+function buildOrb(key: TierKey): { halo: Pt[]; scatter: Pt[]; shimmer: ShPt[] } {
+  const { hStep, sStep, sh } = STEPS[key]
   const halo: Pt[] = []
   const scatter: Pt[] = []
+  const shimmer: ShPt[] = []
   // halo ring — gR 126, gBW 43.52 → ×100/512 = r 24.6 + 8.5
   for (let i = 0; i < 1300; i += hStep) {
     const a = (i / 1300) * TAU + (rng(i * 5 + 10) - 0.5) * 0.18
@@ -71,10 +84,23 @@ function buildOrb(key: TierKey): { halo: Pt[]; scatter: Pt[] } {
     const o = (0.08 + rng(j * 3 + 20) * 0.14) * 0.6
     scatter.push({ x: +(CENTER + Math.cos(a) * r).toFixed(2), y: +(CENTER + Math.sin(a) * r).toFixed(2), o: +o.toFixed(3) })
   }
-  return { halo, scatter }
+  // shimmer — sparse spectral glints on the ring band; each twinkles on its own
+  // phase, the group drifts at a different speed (CSS) for a traveling sparkle
+  for (let k = 0; k < sh; k++) {
+    const a = (k / sh) * TAU + (rng(k * 9 + 7) - 0.5) * 0.5
+    const r = 24.6 + rng(k * 9 + 8) * 8.5
+    shimmer.push({
+      x: +(CENTER + Math.cos(a) * r).toFixed(2),
+      y: +(CENTER + Math.sin(a) * r).toFixed(2),
+      c: 1 + (k % 3),
+      dur: +(2.4 + rng(k * 9 + 9) * 2.2).toFixed(2),
+      delay: +(-rng(k * 9 + 10) * 4).toFixed(2),
+    })
+  }
+  return { halo, scatter, shimmer }
 }
 
-const orbCache = new Map<TierKey, { halo: Pt[]; scatter: Pt[] }>()
+const orbCache = new Map<TierKey, { halo: Pt[]; scatter: Pt[]; shimmer: ShPt[] }>()
 function orbFor(size: number) {
   const key = tierKey(size)
   let g = orbCache.get(key)
@@ -85,19 +111,20 @@ function orbFor(size: number) {
   return g
 }
 
-const orb = computed(() => orbFor(props.size))
+const orb = computed(() => orbFor(renderSize.value))
 
 // Constant on-screen dot size (the reference clamps dots to a fine px) → viewBox
-// radius scales inversely with `size`. Halo finer, scatter a touch larger.
-const haloR = computed(() => +Math.max(0.12, Math.min(8, (0.22 * 100) / props.size)).toFixed(3))
-const scatterR = computed(() => +Math.max(0.12, Math.min(10, (0.45 * 100) / props.size)).toFixed(3))
+// radius scales inversely with the rendered size. Halo finest, shimmer a touch larger.
+const haloR = computed(() => +Math.max(0.12, Math.min(8, (0.22 * 100) / renderSize.value)).toFixed(3))
+const scatterR = computed(() => +Math.max(0.12, Math.min(10, (0.45 * 100) / renderSize.value)).toFixed(3))
+const shimmerR = computed(() => +Math.max(0.15, Math.min(9, (0.35 * 100) / renderSize.value)).toFixed(3))
 </script>
 
 <template>
   <div
     class="dv-orbit-orb"
     :class="{ 'dv-orbit-orb--dim': dim, 'dv-orbit-orb--inverse': inverse }"
-    :style="{ width: `${size}px`, height: `${size}px` }"
+    :style="{ width: `${renderSize}px`, height: `${renderSize}px` }"
     aria-hidden="true"
   >
     <div v-if="arc" class="dv-orbit-orb__arc"></div>
@@ -106,6 +133,18 @@ const scatterR = computed(() => +Math.max(0.12, Math.min(10, (0.45 * 100) / prop
       <g class="dv-orbit-orb__ring" :style="{ animationDuration: spinDuration }">
         <circle v-for="(p, i) in orb.halo" :key="`h${i}`" :cx="p.x" :cy="p.y" :r="haloR" :fill-opacity="p.o" />
         <circle v-for="(p, i) in orb.scatter" :key="`s${i}`" :cx="p.x" :cy="p.y" :r="scatterR" :fill-opacity="p.o" />
+      </g>
+      <!-- spectral shimmer: glints drift on their own spin + twinkle per-dot -->
+      <g class="dv-orbit-orb__ring dv-orbit-orb__shimmer" :style="{ animationDuration: shimmerSpin }">
+        <circle
+          v-for="(p, i) in orb.shimmer"
+          :key="`sh${i}`"
+          :cx="p.x"
+          :cy="p.y"
+          :r="shimmerR"
+          :class="`dv-orbit-orb__sh--${p.c}`"
+          :style="{ animationDuration: `${p.dur}s`, animationDelay: `${p.delay}s` }"
+        />
       </g>
     </svg>
   </div>
@@ -137,6 +176,33 @@ const scatterR = computed(() => +Math.max(0.12, Math.min(10, (0.45 * 100) / prop
   transform-origin: 50% 50%;
   transform-box: view-box;
   animation: dv-orbit-spin-rev linear infinite;
+}
+
+/* Spectral shimmer — sparse teal/blue/violet glints (matches the landing), each
+   twinkling on its own phase; the group drifts at 14s (vs the 20s ring). Selectors
+   outrank `.dv-orbit-orb__svg circle { fill: currentColor }`. */
+.dv-orbit-orb__shimmer circle {
+  animation-name: dv-orbit-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+.dv-orbit-orb__shimmer .dv-orbit-orb__sh--1 {
+  fill: #5eead4;
+}
+.dv-orbit-orb__shimmer .dv-orbit-orb__sh--2 {
+  fill: #93c5fd;
+}
+.dv-orbit-orb__shimmer .dv-orbit-orb__sh--3 {
+  fill: #a78bfa;
+}
+@keyframes dv-orbit-twinkle {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.95;
+  }
 }
 
 /* Subtle breathing — barely-there scale pulse (asymmetric inhale/exhale). Scoped
@@ -183,6 +249,11 @@ const scatterR = computed(() => +Math.max(0.12, Math.min(10, (0.45 * 100) / prop
   animation: none;
 }
 
+/* Dim stays quiet — no spectral shimmer on error/paused */
+.dv-orbit-orb--dim .dv-orbit-orb__shimmer {
+  display: none;
+}
+
 /* Inverse — white mark for dark or gradient backgrounds */
 .dv-orbit-orb--inverse {
   color: #ffffff;
@@ -193,6 +264,9 @@ const scatterR = computed(() => +Math.max(0.12, Math.min(10, (0.45 * 100) / prop
   .dv-orbit-orb__ring,
   .dv-orbit-orb__arc {
     animation: none;
+  }
+  .dv-orbit-orb__shimmer circle {
+    animation: none !important;
   }
 }
 </style>

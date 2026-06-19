@@ -55,22 +55,25 @@
     -webkit-tap-highlight-color:transparent;
     transition:transform .25s cubic-bezier(.22,1,.36,1), background .25s ease, box-shadow .3s ease; }
   .dv-orb{ display:block; width:28px; height:28px; overflow:visible; color:#16181D;
-    transition:color .2s ease; }
+    transition:color .2s ease; animation:dv-orb-breathe 6s ease-in-out infinite; }
   .dv-orb circle{ fill:currentColor; }
   .dv-orb__ring{ transform-origin:50% 50%; transform-box:view-box; }
-  /* both layers spin as ONE coherent field (same dir + speed); paused at rest */
+  /* both layers revolve as ONE coherent field — always alive */
   .dv-orb__ring--outer,
-  .dv-orb__ring--inner{ animation:dv-orbit-spin-rev 20s linear infinite; animation-play-state:paused; }
+  .dv-orb__ring--inner{ animation:dv-orbit-spin-rev 14s linear infinite; }
+  .dv-orb__shimmer{ animation:dv-orbit-spin-rev 10s linear infinite; } /* spectral glints drift faster */
   .dv-orb-btn:hover{ background:linear-gradient(125deg,#4f8ef5 0%,#7c5cff 45%,#9a5cff 72%,#5b44d6 100%);
     box-shadow:0 6px 18px -6px rgba(92,68,214,.7); }
   /* subtle at rest — full strength on hover */
-  .dv-orb-btn .dv-orb{ opacity:.7; transition:color .2s ease, opacity .2s ease; }
+  .dv-orb-btn .dv-orb{ width:34px; height:34px; opacity:1; transition:color .2s ease, opacity .2s ease; }
   .dv-orb-btn:hover .dv-orb{ color:#fff; opacity:1; }
   /* gentle coherent spin on hover */
   .dv-orb-btn:hover .dv-orb__ring{ animation-play-state:running; animation-duration:7s; }
   .dv-orb-btn:active{ transform:scale(.94); }
   @keyframes dv-orbit-spin{ to{ transform:rotate(360deg); } }
   @keyframes dv-orbit-spin-rev{ to{ transform:rotate(-360deg); } }
+  @keyframes dv-orb-breathe{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.03); } }
+  @keyframes dv-orb-twinkle{ 0%,100%{ opacity:.3; } 50%{ opacity:.95; } }
   @keyframes dv-orbit-breathe{ 0%,100%{ transform:scale(1); opacity:.85; } 50%{ transform:scale(1.06); opacity:1; } }
 
   /* ---- Da Vinci FAB — bottom-right, dark idle / gradient + revolve + menu on hover ---- */
@@ -118,7 +121,8 @@
     .dv-fab-menu{ width:min(300px, calc(100vw - 36px)); }
   }
   @media (prefers-reduced-motion: reduce){
-    .dv-orb__ring{ animation:none; }
+    .dv-orb, .dv-orb__ring{ animation:none; }
+    .dv-orb__shimmer circle{ animation:none !important; }
     .dv-fab-menu{ transform:none; transition:opacity .2s ease, visibility 0s linear .2s; }
   }
   /* mobile menu panel */
@@ -395,6 +399,7 @@
         <svg class="dv-orb" viewBox="0 0 512 512" aria-hidden="true">
           <g class="dv-orb__ring dv-orb__ring--outer"></g>
           <g class="dv-orb__ring dv-orb__ring--inner"></g>
+          <g class="dv-orb__ring dv-orb__shimmer"></g>
         </svg>
       </a>
       <a class="btn outline" href="login.html">Log in</a>
@@ -793,6 +798,7 @@
       <svg class="dv-orb" viewBox="0 0 512 512" aria-hidden="true">
         <g class="dv-orb__ring dv-orb__ring--outer"></g>
         <g class="dv-orb__ring dv-orb__ring--inner"></g>
+        <g class="dv-orb__ring dv-orb__shimmer"></g>
       </svg>
     </button>
   </div>
@@ -829,6 +835,24 @@
         var r2 = 178.74 + rng(j * 7 + 51) * 75.21;
         var alp2 = (0.08 + rng(j * 3 + 20) * 0.14) * 0.6;
         circle(scatter, C + Math.cos(a2) * r2, C + Math.sin(a2) * r2, SCAT_R, alp2);
+      }
+      // Shimmer — sparse spectral glints on the ring, each twinkling on its own
+      // phase; the group drifts at a different speed (CSS) for a traveling sparkle
+      var shimmer = svg.querySelector('.dv-orb__shimmer');
+      if (shimmer){
+        var COLORS = ['#5EEAD4', '#93C5FD', '#A78BFA']; // teal · blue · violet
+        for (var k = 0; k < 56; k++){
+          var ak = (k / 56) * TAU + (rng(k * 9 + 7) - 0.5) * 0.5;
+          var rk = 126 + rng(k * 9 + 8) * 43.52;
+          var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          c.setAttribute('cx', (C + Math.cos(ak) * rk).toFixed(2));
+          c.setAttribute('cy', (C + Math.sin(ak) * rk).toFixed(2));
+          c.setAttribute('r', '5.5');
+          c.setAttribute('fill', COLORS[k % 3]);
+          c.style.animation = 'dv-orb-twinkle ' + (2.4 + rng(k * 9 + 9) * 2.2).toFixed(2) + 's ease-in-out infinite';
+          c.style.animationDelay = (-rng(k * 9 + 10) * 4).toFixed(2) + 's';
+          shimmer.appendChild(c);
+        }
       }
     });
   })();
