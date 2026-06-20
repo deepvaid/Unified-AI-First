@@ -21,8 +21,8 @@ const props = withDefaults(
   { speed: 1, dim: false, arc: false, inverse: false },
 )
 
-const spinDuration = computed(() => `${20 / props.speed}s`)
-const shimmerSpin = computed(() => `${14 / props.speed}s`) // glints drift vs the 20s ring
+const spinDuration = computed(() => `${40 / props.speed}s`)
+const shimmerSpin = computed(() => `${28 / props.speed}s`) // glints drift vs the 40s ring
 const breatheDuration = computed(() => `${7 / Math.min(props.speed, 1.5)}s`)
 
 // All in-app marks render 20% larger than their passed `size` (brand bump to
@@ -58,8 +58,8 @@ function rng(s: number) {
 // for DOM perf. `step` keeps full-ring coverage (angle derives from index).
 type TierKey = 's' | 'l'
 const STEPS: Record<TierKey, { hStep: number; sStep: number; sh: number }> = {
-  s: { hStep: 3, sStep: 2, sh: 24 }, // ≤40px → ~434 halo + 182 scatter + 24 glints
-  l: { hStep: 2, sStep: 1, sh: 56 }, // ≥41px → 650 halo + 364 scatter + 56 glints
+  s: { hStep: 3, sStep: 2, sh: 32 }, // ≤40px → ~434 halo + 182 scatter + 32 glints
+  l: { hStep: 2, sStep: 1, sh: 72 }, // ≥41px → 650 halo + 364 scatter + 72 glints
 }
 function tierKey(size: number): TierKey {
   return size <= 40 ? 's' : 'l'
@@ -74,7 +74,9 @@ function buildOrb(key: TierKey): { halo: Pt[]; scatter: Pt[]; shimmer: ShPt[] } 
   for (let i = 0; i < 1300; i += hStep) {
     const a = (i / 1300) * TAU + (rng(i * 5 + 10) - 0.5) * 0.18
     const r = 24.6 + rng(i * 5 + 11) * 8.5
-    const o = 0.12 + rng(i * 5 + 12) * 0.38
+    // radial fade — inner edge a touch lighter (×0.55) → full at the outer rim
+    const t = (r - 24.6) / 8.5
+    const o = (0.16 + rng(i * 5 + 12) * 0.4) * (0.55 + 0.45 * t)
     halo.push({ x: +(CENTER + Math.cos(a) * r).toFixed(2), y: +(CENTER + Math.sin(a) * r).toFixed(2), o: +o.toFixed(3) })
   }
   // scatter — gSS 178.74 → gSM 253.95 → ×100/512 = r 34.91 + 14.69
@@ -115,9 +117,9 @@ const orb = computed(() => orbFor(renderSize.value))
 
 // Constant on-screen dot size (the reference clamps dots to a fine px) → viewBox
 // radius scales inversely with the rendered size. Halo finest, shimmer a touch larger.
-const haloR = computed(() => +Math.max(0.12, Math.min(8, (0.34 * 100) / renderSize.value)).toFixed(3))
+const haloR = computed(() => +Math.max(0.12, Math.min(8, (0.46 * 100) / renderSize.value)).toFixed(3))
 const scatterR = computed(() => +Math.max(0.12, Math.min(10, (0.6 * 100) / renderSize.value)).toFixed(3))
-const shimmerR = computed(() => +Math.max(0.15, Math.min(9, (0.46 * 100) / renderSize.value)).toFixed(3))
+const shimmerR = computed(() => +Math.max(0.15, Math.min(9, (0.5 * 100) / renderSize.value)).toFixed(3))
 </script>
 
 <template>
@@ -198,10 +200,10 @@ const shimmerR = computed(() => +Math.max(0.15, Math.min(9, (0.46 * 100) / rende
 @keyframes dv-orbit-twinkle {
   0%,
   100% {
-    opacity: 0.3;
+    opacity: 0.45;
   }
   50% {
-    opacity: 0.95;
+    opacity: 1;
   }
 }
 

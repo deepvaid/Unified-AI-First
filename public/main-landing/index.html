@@ -60,20 +60,20 @@
   .dv-orb__ring{ transform-origin:50% 50%; transform-box:view-box; }
   /* both layers revolve as ONE coherent field — always alive */
   .dv-orb__ring--outer,
-  .dv-orb__ring--inner{ animation:dv-orbit-spin-rev 14s linear infinite; }
-  .dv-orb__shimmer{ animation:dv-orbit-spin-rev 10s linear infinite; } /* spectral glints drift faster */
+  .dv-orb__ring--inner{ animation:dv-orbit-spin-rev 28s linear infinite; }
+  .dv-orb__shimmer{ animation:dv-orbit-spin-rev 20s linear infinite; } /* spectral glints drift faster */
   .dv-orb-btn:hover{ background:linear-gradient(125deg,#4f8ef5 0%,#7c5cff 45%,#9a5cff 72%,#5b44d6 100%);
     box-shadow:0 6px 18px -6px rgba(92,68,214,.7); }
   /* subtle at rest — full strength on hover */
   .dv-orb-btn .dv-orb{ width:34px; height:34px; opacity:1; transition:color .2s ease, opacity .2s ease; }
   .dv-orb-btn:hover .dv-orb{ color:#fff; opacity:1; }
   /* gentle coherent spin on hover */
-  .dv-orb-btn:hover .dv-orb__ring{ animation-play-state:running; animation-duration:7s; }
+  .dv-orb-btn:hover .dv-orb__ring{ animation-play-state:running; animation-duration:14s; }
   .dv-orb-btn:active{ transform:scale(.94); }
   @keyframes dv-orbit-spin{ to{ transform:rotate(360deg); } }
   @keyframes dv-orbit-spin-rev{ to{ transform:rotate(-360deg); } }
   @keyframes dv-orb-breathe{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.03); } }
-  @keyframes dv-orb-twinkle{ 0%,100%{ opacity:.3; } 50%{ opacity:.95; } }
+  @keyframes dv-orb-twinkle{ 0%,100%{ opacity:.45; } 50%{ opacity:1; } }
   @keyframes dv-orbit-breathe{ 0%,100%{ transform:scale(1); opacity:.85; } 50%{ transform:scale(1.06); opacity:1; } }
 
   /* ---- Da Vinci FAB — bottom-right, dark idle / gradient + revolve + menu on hover ---- */
@@ -92,7 +92,7 @@
     box-shadow:0 12px 30px -8px rgba(92,68,214,.7); }
   .dv-fab-wrap:hover .dv-orb__ring,
   .dv-fab-wrap:focus-within .dv-orb__ring,
-  .dv-fab-wrap.is-open .dv-orb__ring{ animation-play-state:running; animation-duration:7s; }
+  .dv-fab-wrap.is-open .dv-orb__ring{ animation-play-state:running; animation-duration:14s; }
   .dv-fab-menu{ position:absolute; right:0; bottom:calc(100% + 14px); width:300px; padding:10px;
     background:#fff; border:1px solid var(--line); border-radius:16px;
     box-shadow:0 22px 48px -20px rgba(24,27,33,0.35);
@@ -395,7 +395,7 @@
       </div>
     </div>
     <div class="nav-right">
-      <a class="dv-orb-btn" href="http://localhost:5173/accounts/2000290/da-vinci/experience" aria-label="Da Vinci AI" title="Try Da Vinci AI">
+      <a class="dv-orb-btn" href="/accounts/2000290/da-vinci/experience" aria-label="Da Vinci AI" title="Try Da Vinci AI">
         <svg class="dv-orb" viewBox="0 0 512 512" aria-hidden="true">
           <g class="dv-orb__ring dv-orb__ring--outer"></g>
           <g class="dv-orb__ring dv-orb__ring--inner"></g>
@@ -826,7 +826,9 @@
       for (var i = 0; i < 1300; i += 2){
         var a = (i / 1300) * TAU + (rng(i * 5 + 10) - 0.5) * 0.18;
         var r = 126 + rng(i * 5 + 11) * 43.52;
-        var alp = 0.12 + rng(i * 5 + 12) * 0.38;
+        // radial fade — inner edge lighter (×0.4) → full at the outer rim
+        var t = (r - 126) / 43.52;
+        var alp = (0.12 + rng(i * 5 + 12) * 0.38) * (0.4 + 0.6 * t);
         circle(halo, C + Math.cos(a) * r, C + Math.sin(a) * r, HALO_R, alp);
       }
       // Scatter — gSS 178.74 → gSM 253.95
@@ -841,13 +843,13 @@
       var shimmer = svg.querySelector('.dv-orb__shimmer');
       if (shimmer){
         var COLORS = ['#5EEAD4', '#93C5FD', '#A78BFA']; // teal · blue · violet
-        for (var k = 0; k < 56; k++){
-          var ak = (k / 56) * TAU + (rng(k * 9 + 7) - 0.5) * 0.5;
+        for (var k = 0; k < 72; k++){
+          var ak = (k / 72) * TAU + (rng(k * 9 + 7) - 0.5) * 0.5;
           var rk = 126 + rng(k * 9 + 8) * 43.52;
           var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
           c.setAttribute('cx', (C + Math.cos(ak) * rk).toFixed(2));
           c.setAttribute('cy', (C + Math.sin(ak) * rk).toFixed(2));
-          c.setAttribute('r', '5.5');
+          c.setAttribute('r', '6');
           c.setAttribute('fill', COLORS[k % 3]);
           c.style.animation = 'dv-orb-twinkle ' + (2.4 + rng(k * 9 + 9) * 2.2).toFixed(2) + 's ease-in-out infinite';
           c.style.animationDelay = (-rng(k * 9 + 10) * 4).toFixed(2) + 's';
