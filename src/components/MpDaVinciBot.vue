@@ -222,6 +222,14 @@ const orbitAdded = ref<{ title: string; dashboardName: string; widgetId: string;
 const orbitDraftKey = ref(0) // bump remounts the draft card after Undo
 let orbitCancelRequested = false
 
+// Deferred reply timers (the "thinking" delay) — tracked so they're cleared on
+// unmount / hide; otherwise a late callback can speak a reply after you've left.
+const pendingTimers: ReturnType<typeof setTimeout>[] = []
+function clearPendingTimers() {
+  pendingTimers.forEach((id) => clearTimeout(id))
+  pendingTimers.length = 0
+}
+
 const orbitState = computed<OrbitState>(() => {
   if (isDictating.value) return 'listening'
   if (voice.state.value === 'thinking' || isTyping.value) return 'thinking'
@@ -353,16 +361,25 @@ function maybeSpeak(text: string) {
   void voice.speak(stripHtml(text))
 }
 
-// Drawer hidden mid-session → release the mic, stop speech, pause cleanly
+// Drawer hidden mid-session → cancel pending replies, release the mic, stop
+// speech (so a queued reply can't start talking after you've closed it).
 watch(surfaceVisible, (visible) => {
-  if (!visible && isVoiceMode.value) stopVoiceActivity()
+  if (visible) return
+  clearPendingTimers()
+  if (isVoiceMode.value) stopVoiceActivity()
+  else voice.cancelSpeech()
 })
 
-// The component does unmount when a fullPage route replaces the shell —
-// owner-guarded so it never kills the AI experience's own session.
+// The component does unmount when a fullPage route replaces the shell — clear
+// deferred replies and stop any speech; owner-guard only the listen-abort so it
+// never kills the AI experience's own mic session.
 onBeforeUnmount(() => {
+  clearPendingTimers()
   if (isVoiceMode.value) stopVoiceActivity()
-  else if (voice.owner.value === voiceOwner.value) voice.abortListening()
+  else {
+    if (voice.owner.value === voiceOwner.value) voice.abortListening()
+    voice.cancelSpeech()
+  }
 })
 
 /** Push a user turn and answer through the unified intent layer (Dv* cards). */
@@ -377,7 +394,7 @@ function respondWithIntents(text: string) {
     orbitLastRequest.value = text
   }
   scrollToBottom()
-  setTimeout(() => {
+  pendingTimers.push(setTimeout(() => {
     isTyping.value = false
     voice.setThinking(false)
     const res = intents.handle(text)
@@ -393,7 +410,7 @@ function respondWithIntents(text: string) {
     if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(res.reply) }
     maybeSpeak(res.speech ?? res.reply)
     scrollToBottom()
-  }, 900)
+  }, 900))
 }
 
 function onIntentCardAction(payload: { card: DvCardDescriptor; action: string }) {
@@ -444,7 +461,7 @@ function processQuery(text: string) {
     }
   }
 
-  setTimeout(() => {
+  pendingTimers.push(setTimeout(() => {
     isTyping.value = false
     voice.setThinking(false)
     if (drafts && drafts.length > 0) {
@@ -514,7 +531,7 @@ function processQuery(text: string) {
       }
     }
     scrollToBottom()
-  }, 1200)
+  }, 1200))
 }
 
 function sendQuery() {

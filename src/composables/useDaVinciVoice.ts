@@ -325,6 +325,9 @@ let audioCtx: AudioContext | null = null
 let analyser: AnalyserNode | null = null
 let mediaStream: MediaStream | null = null
 let micLevelTimer: ReturnType<typeof setInterval> | null = null
+// Bumped by closeMic(); openMic() bails if it's changed across the async
+// getUserMedia gap (stop/abort/deny/leave) so it can't resurrect a closed mic.
+let micSession = 0
 
 // Preallocated, reused every frame — zero per-frame allocation
 const freqData = new Uint8Array(256)
@@ -333,6 +336,7 @@ const frame: OrbAudioFrame = { micActive: false, micLevel: 0, bands, speakEnergy
 
 async function openMic(): Promise<void> {
   if (analyser) return
+  const session = micSession
   let stream: MediaStream
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -341,6 +345,11 @@ async function openMic(): Promise<void> {
     throw new VoiceError(
       name === 'NotAllowedError' ? 'permission' : name === 'NotFoundError' ? 'audio' : 'unknown',
     )
+  }
+  // closeMic() ran while getUserMedia was pending — don't resurrect the mic
+  if (session !== micSession) {
+    stream.getTracks().forEach((t) => t.stop())
+    return
   }
   mediaStream = stream
   audioCtx = new AudioContext()
@@ -359,6 +368,7 @@ async function openMic(): Promise<void> {
 }
 
 function closeMic() {
+  micSession++
   if (micLevelTimer != null) {
     clearInterval(micLevelTimer)
     micLevelTimer = null
