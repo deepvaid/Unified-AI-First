@@ -54,26 +54,16 @@
     background:transparent; text-decoration:none;
     -webkit-tap-highlight-color:transparent;
     transition:transform .25s cubic-bezier(.22,1,.36,1), background .25s ease, box-shadow .3s ease; }
-  .dv-orb{ display:block; width:28px; height:28px; overflow:visible; color:#16181D;
+  /* canvas mark — spin/glints render in rAF (dv-orb-mark.js); `color` is the dot ink */
+  .dv-orb{ display:block; width:28px; height:28px; color:#16181D;
     transition:color .2s ease; animation:dv-orb-breathe 6s ease-in-out infinite; }
-  .dv-orb circle{ fill:currentColor; }
-  .dv-orb__ring{ transform-origin:50% 50%; transform-box:view-box; }
-  /* both layers revolve as ONE coherent field — always alive */
-  .dv-orb__ring--outer,
-  .dv-orb__ring--inner{ animation:dv-orbit-spin-rev 28s linear infinite; }
-  .dv-orb__shimmer{ animation:dv-orbit-spin-rev 20s linear infinite; } /* spectral glints drift faster */
   .dv-orb-btn:hover{ background:linear-gradient(125deg,#4f8ef5 0%,#7c5cff 45%,#9a5cff 72%,#5b44d6 100%);
     box-shadow:0 6px 18px -6px rgba(92,68,214,.7); }
   /* subtle at rest — full strength on hover */
   .dv-orb-btn .dv-orb{ width:34px; height:34px; opacity:1; transition:color .2s ease, opacity .2s ease; }
   .dv-orb-btn:hover .dv-orb{ color:#fff; opacity:1; }
-  /* gentle coherent spin on hover */
-  .dv-orb-btn:hover .dv-orb__ring{ animation-play-state:running; animation-duration:14s; }
   .dv-orb-btn:active{ transform:scale(.94); }
-  @keyframes dv-orbit-spin{ to{ transform:rotate(360deg); } }
-  @keyframes dv-orbit-spin-rev{ to{ transform:rotate(-360deg); } }
   @keyframes dv-orb-breathe{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.03); } }
-  @keyframes dv-orb-twinkle{ 0%,100%{ opacity:.45; } 50%{ opacity:1; } }
   @keyframes dv-orbit-breathe{ 0%,100%{ transform:scale(1); opacity:.85; } 50%{ transform:scale(1.06); opacity:1; } }
 
   /* ---- Da Vinci FAB — bottom-right, dark idle / gradient + revolve + menu on hover ---- */
@@ -90,9 +80,6 @@
   .dv-fab-wrap.is-open .dv-fab{
     background:linear-gradient(125deg,#4f8ef5 0%,#7c5cff 45%,#9a5cff 72%,#5b44d6 100%);
     box-shadow:0 12px 30px -8px rgba(92,68,214,.7); }
-  .dv-fab-wrap:hover .dv-orb__ring,
-  .dv-fab-wrap:focus-within .dv-orb__ring,
-  .dv-fab-wrap.is-open .dv-orb__ring{ animation-play-state:running; animation-duration:14s; }
   .dv-fab-menu{ position:absolute; right:0; bottom:calc(100% + 14px); width:300px; padding:10px;
     background:#fff; border:1px solid var(--line); border-radius:16px;
     box-shadow:0 22px 48px -20px rgba(24,27,33,0.35);
@@ -121,8 +108,7 @@
     .dv-fab-menu{ width:min(300px, calc(100vw - 36px)); }
   }
   @media (prefers-reduced-motion: reduce){
-    .dv-orb, .dv-orb__ring{ animation:none; }
-    .dv-orb__shimmer circle{ animation:none !important; }
+    .dv-orb{ animation:none; }
     .dv-fab-menu{ transform:none; transition:opacity .2s ease, visibility 0s linear .2s; }
   }
   /* mobile menu panel */
@@ -396,11 +382,7 @@
     </div>
     <div class="nav-right">
       <a class="dv-orb-btn" href="/accounts/2000290/da-vinci/experience" aria-label="Da Vinci AI" title="Try Da Vinci AI">
-        <svg class="dv-orb" viewBox="0 0 512 512" aria-hidden="true">
-          <g class="dv-orb__ring dv-orb__ring--outer"></g>
-          <g class="dv-orb__ring dv-orb__ring--inner"></g>
-          <g class="dv-orb__ring dv-orb__shimmer"></g>
-        </svg>
+        <canvas class="dv-orb" aria-hidden="true"></canvas>
       </a>
       <a class="btn outline" href="login.html">Log in</a>
       <a class="btn dark" href="login.html">Book a demo</a>
@@ -795,70 +777,11 @@
       </a>
     </div>
     <button class="dv-fab" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Ask Da Vinci">
-      <svg class="dv-orb" viewBox="0 0 512 512" aria-hidden="true">
-        <g class="dv-orb__ring dv-orb__ring--outer"></g>
-        <g class="dv-orb__ring dv-orb__ring--inner"></g>
-        <g class="dv-orb__ring dv-orb__shimmer"></g>
-      </svg>
+      <canvas class="dv-orb" aria-hidden="true"></canvas>
     </button>
   </div>
 
 <script>
-  /* "Glow" particle-orb identity mark — EXACT reproduction of the Glow variant
-     from logo_compare_nav.html (512 space, center 256). Halo = the every-2nd of
-     1300 dense fine ring; scatter = 364 faint outward motes. Same PRNG + seeds
-     → identical particle field. Both layers share one coherent spin (CSS). */
-  (function(){
-    var TAU = Math.PI * 2, C = 256;
-    var HALO_R = 3.4, SCAT_R = 6.8; // 512-space dot radii (≈ the reference's fine on-screen size)
-    function rng(s){ var x = Math.sin(s * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
-    function circle(g, x, y, r, o){
-      var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      c.setAttribute('cx', x.toFixed(2)); c.setAttribute('cy', y.toFixed(2));
-      c.setAttribute('r', r.toFixed(2)); c.setAttribute('fill-opacity', o.toFixed(3));
-      g.appendChild(c);
-    }
-    document.querySelectorAll('.dv-orb').forEach(function(svg){
-      var halo = svg.querySelector('.dv-orb__ring--outer');
-      var scatter = svg.querySelector('.dv-orb__ring--inner');
-      if (!halo || !scatter) return;
-      // Halo ring — gR 126, gBW 43.52; draw every 2nd of 1300 (= 650)
-      for (var i = 0; i < 1300; i += 2){
-        var a = (i / 1300) * TAU + (rng(i * 5 + 10) - 0.5) * 0.18;
-        var r = 126 + rng(i * 5 + 11) * 43.52;
-        // radial fade — inner edge lighter (×0.4) → full at the outer rim
-        var t = (r - 126) / 43.52;
-        var alp = (0.12 + rng(i * 5 + 12) * 0.38) * (0.4 + 0.6 * t);
-        circle(halo, C + Math.cos(a) * r, C + Math.sin(a) * r, HALO_R, alp);
-      }
-      // Scatter — gSS 178.74 → gSM 253.95
-      for (var j = 0; j < 364; j++){
-        var a2 = (j / 364) * TAU + (rng(j * 3 + 99) - 0.5) * 0.60;
-        var r2 = 178.74 + rng(j * 7 + 51) * 75.21;
-        var alp2 = (0.08 + rng(j * 3 + 20) * 0.14) * 0.6;
-        circle(scatter, C + Math.cos(a2) * r2, C + Math.sin(a2) * r2, SCAT_R, alp2);
-      }
-      // Shimmer — sparse spectral glints on the ring, each twinkling on its own
-      // phase; the group drifts at a different speed (CSS) for a traveling sparkle
-      var shimmer = svg.querySelector('.dv-orb__shimmer');
-      if (shimmer){
-        var COLORS = ['#5EEAD4', '#93C5FD', '#A78BFA']; // teal · blue · violet
-        for (var k = 0; k < 72; k++){
-          var ak = (k / 72) * TAU + (rng(k * 9 + 7) - 0.5) * 0.5;
-          var rk = 126 + rng(k * 9 + 8) * 43.52;
-          var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          c.setAttribute('cx', (C + Math.cos(ak) * rk).toFixed(2));
-          c.setAttribute('cy', (C + Math.sin(ak) * rk).toFixed(2));
-          c.setAttribute('r', '6');
-          c.setAttribute('fill', COLORS[k % 3]);
-          c.style.animation = 'dv-orb-twinkle ' + (2.4 + rng(k * 9 + 9) * 2.2).toFixed(2) + 's ease-in-out infinite';
-          c.style.animationDelay = (-rng(k * 9 + 10) * 4).toFixed(2) + 's';
-          shimmer.appendChild(c);
-        }
-      }
-    });
-  })();
-
   /* Da Vinci FAB — click/touch toggle (hover handled in CSS), Escape and outside-click close */
   (function(){
     var wrap = document.getElementById('dvFab');
@@ -1110,6 +1033,7 @@
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js" } }
 </script>
+<script type="module" src="/dv-orb/dv-orb-mark.js"></script>
 <script type="module" src="/dv-orb/dv-orb-mount.js"></script>
 
 </body>
