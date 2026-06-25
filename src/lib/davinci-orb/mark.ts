@@ -1,18 +1,16 @@
 // Da Vinci identity *mark* — the small canvas dot-orb ("Glow Mist Medium").
 //
-// Faithful canvas port of the finalized reference (logo_compare_nav · Glow Mist
-// Medium): a dense, evenly-spaced halo RING + a soft power-tapered SCATTER, one
-// slow coherent CCW spin (~20s), with the brand spectral GLINTS retained on top.
+// Canvas port of the finalized reference (logo_compare_nav · Glow Mist Medium),
+// tuned per stakeholder: a dense halo RING (every-2nd dot, soft-feathered inner
+// edge) + a soft power-tapered SCATTER reaching large, with a sparse MONOCHROME
+// SHIMMER twinkling on top, all on one slow CCW spin (~20s). Pure monochrome —
+// the ink is the inherited `color`.
 //
-// Performance is the whole game here — the mark renders on every page (AppBar
-// pill) and can repeat across chat avatars. So:
-//   • the monochrome mist (1000 halo + 650 scatter) is rendered ONCE to an
-//     offscreen sprite per (size × colour) and each frame is a single rotated
-//     drawImage — never ~1650 arc fills per frame;
-//   • the sparse glints (32–72) are drawn live (they twinkle + drift faster);
-//   • ONE shared rAF ticker drives every live instance and stops when none are
-//     left / the tab is hidden (avoids the per-instance rAF leak class fixed in
-//     commit 2d01212).
+// Performance: the mist (500 halo + 650 scatter) is rendered ONCE to an
+// offscreen sprite per (size × colour) — each frame is one rotated drawImage.
+// Only the sparse shimmer (~44 dots) is drawn live. ONE shared rAF ticker drives
+// every instance and stops when idle / the tab is hidden (avoids the per-instance
+// rAF leak class fixed in commit 2d01212).
 //
 // Mirrored verbatim (minus types, plus an auto-mount) at public/dv-orb/
 // dv-orb-mark.js for the static landing/login pages — keep the two in sync, same
@@ -21,13 +19,23 @@
 const TAU = Math.PI * 2
 const S = 512 // reference space
 const C = 256 // reference centre
-
-const GLINT_COLORS: readonly [string, string, string] = ['#5EEAD4', '#93C5FD', '#A78BFA'] // teal · blue · violet
 const MIST_PERIOD = 20000 // ms / revolution (reference SPEED = −2π/(20·60) @60fps)
-const GLINT_PERIOD = 14000 // glints drift faster than the ring
+const MIST_GAIN = 0.9 // mist dark particles 40% lighter than the 1.5 pass (shimmer carries presence)
+
+// Halo band — outer rim is the reference's; inner radius pulled in 10% (smaller
+// centre hole) while the scatter keeps its large outward expansion.
+const HALO_OUTER = 124 + S * 0.088 // 169.06
+const HALO_INNER = 124 * 0.9 // 111.6 — inner circle −10%
+const HALO_BAND = HALO_OUTER - HALO_INNER // 57.46
+
+// Monochrome shimmer — sparse twinkling ink dots drifting faster than the ring.
+const SHIMMER_PERIOD = 14000
+const SHIMMER_COUNT = 76 // more sparkle points
+const SHIMMER_PEAK = 0.55 // peak twinkle α (brighter than the mist → it sparkles)
+const SHIMMER_MINR = 1.2
 
 // Reference Glow PRNG — fract(sin(s·127.1+311.7)·43758.5453), seeded by index so
-// the field is deterministic and identical to the SVG mark it replaces.
+// the field is deterministic.
 function rng(s: number): number {
   const x = Math.sin(s * 127.1 + 311.7) * 43758.5453
   return x - Math.floor(x)
@@ -44,28 +52,54 @@ interface MistDot {
 let mistGeom: MistDot[] | null = null
 function buildMist(): MistDot[] {
   const dots: MistDot[] = []
-  // Halo ring — 1000 dots, band 124→169, flat light α 0.07–0.26, tight jitter.
+  // Halo ring — the reference draws every 2nd of 1000 (≈500); feathered inner edge.
   const haloBR = S * 0.0014
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 1000; i += 2) {
     const a = (i / 1000) * TAU + (rng(i * 5 + 10) - 0.5) * 0.1
-    const r = 124 + rng(i * 5 + 11) * 45.06
-    const o = 0.07 + rng(i * 5 + 12) * 0.19
-    dots.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, o, baseR: haloBR, minR: 0.35 })
+    const rr = rng(i * 5 + 11) // 0 at inner edge → 1 at outer edge
+    const r = HALO_INNER + rr * HALO_BAND
+    // soft inner falloff — inner edge ~30% lighter again, ramping to full at the rim
+    const o = (0.07 + rng(i * 5 + 12) * 0.19) * (0.35 + 0.65 * rr)
+    dots.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, o, baseR: haloBR, minR: 0.9 })
   }
-  // Scatter dust — 650 dots, 169→255, gentle power taper, fainter.
+  // Scatter dust — all 650, kept large (HALO_OUTER → mmSM 254.98), gentle taper.
   const scatBR = S * 0.0016
+  const mmSM = S * 0.498
   for (let i = 0; i < 650; i++) {
     const a = (i / 650) * TAU + (rng(i * 5 + 100) - 0.5) * 0.55
     const t = rng(i * 7 + 51)
-    const r = 169 + t * (255 - 169)
+    const r = HALO_OUTER + t * (mmSM - HALO_OUTER)
     const taper = Math.pow(1 - t, 0.22)
-    const o = (0.04 + rng(i * 3 + 20) * 0.1) * 0.55 * taper
-    dots.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, o, baseR: scatBR, minR: 0.5 })
+    const o = (0.04 + rng(i * 3 + 20) * 0.1) * 0.9 * taper // outer particles more visible
+    dots.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, o, baseR: scatBR, minR: 1.0 })
   }
   return dots
 }
 function getMist(): MistDot[] {
   return mistGeom ?? (mistGeom = buildMist())
+}
+
+// ── shimmer geometry (sparse, on the halo band) ──────────────────────────────
+interface ShDot {
+  x: number
+  y: number
+  rr: number
+  dur: number
+  phase: number
+}
+let shimmerGeom: ShDot[] | null = null
+function buildShimmer(): ShDot[] {
+  const arr: ShDot[] = []
+  for (let k = 0; k < SHIMMER_COUNT; k++) {
+    const a = (k / SHIMMER_COUNT) * TAU + (rng(k * 9 + 7) - 0.5) * 0.5
+    const rr = rng(k * 9 + 8) // 0 inner → 1 outer, so inner glints fade with the mist
+    const r = HALO_INNER + rr * HALO_BAND
+    arr.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, rr, dur: 2.4 + rng(k * 9 + 9) * 2.2, phase: rng(k * 9 + 10) })
+  }
+  return arr
+}
+function getShimmer(): ShDot[] {
+  return shimmerGeom ?? (shimmerGeom = buildShimmer())
 }
 
 // Offscreen mist sprite, cached per backing-store size × colour.
@@ -82,7 +116,7 @@ function getMistSprite(w: number, h: number, color: string): HTMLCanvasElement {
     g.fillStyle = color
     const sc = w / S
     for (const d of getMist()) {
-      g.globalAlpha = d.o
+      g.globalAlpha = Math.min(1, d.o * MIST_GAIN)
       g.beginPath()
       g.arc(d.x * sc, d.y * sc, Math.max(d.baseR * sc, d.minR), 0, TAU)
       g.fill()
@@ -91,31 +125,6 @@ function getMistSprite(w: number, h: number, color: string): HTMLCanvasElement {
   }
   spriteCache.set(key, cv)
   return cv
-}
-
-// ── glint geometry (512-space, cached per count tier) ────────────────────────
-interface Glint {
-  x: number
-  y: number
-  ci: number
-  dur: number
-  phase: number
-}
-type Tier = 's' | 'l'
-const GLINTS: Record<Tier, number> = { s: 32, l: 72 } // ≤40px → 32 · ≥41px → 72
-const glintCache = new Map<Tier, Glint[]>()
-function getGlints(tier: Tier): Glint[] {
-  let arr = glintCache.get(tier)
-  if (arr) return arr
-  const n = GLINTS[tier]
-  arr = []
-  for (let k = 0; k < n; k++) {
-    const a = (k / n) * TAU + (rng(k * 9 + 7) - 0.5) * 0.5
-    const r = 124 + rng(k * 9 + 8) * 45.06
-    arr.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, ci: k % 3, dur: 2.4 + rng(k * 9 + 9) * 2.2, phase: rng(k * 9 + 10) })
-  }
-  glintCache.set(tier, arr)
-  return arr
 }
 
 // ── shared ticker (one rAF for every live instance) ──────────────────────────
@@ -129,7 +138,7 @@ function frame(ts: number): void {
   const dt = lastTs ? Math.min(ts - lastTs, 50) : 16.7 // cap post-blur jumps
   lastTs = ts
   if (hidden) return
-  for (const inst of instances) inst.render(ts, dt)
+  for (const inst of instances) inst.render(dt)
 }
 function ensureTicker(): void {
   if (!rafId) {
@@ -153,15 +162,12 @@ if (typeof document !== 'undefined') {
 export interface MarkOrbOptions {
   /** Spin-speed multiplier (listening 2.4 · thinking 1.6 · strip 1.4 · error 0.6 · paused 0.25) */
   speed?: number
-  /** Slate/dim mark — hide the spectral glints (error/paused) */
-  dim?: boolean
   /** Draw a single static frame, no animation loop */
   reducedMotion?: boolean
 }
 
 export interface MarkOrbHandle {
   setSpeed(speed: number): void
-  setDim(dim: boolean): void
   resize(): void
   /** Unregister from the ticker, drop the ResizeObserver. Idempotent. */
   destroy(): void
@@ -171,16 +177,15 @@ class MarkOrb implements MarkOrbHandle {
   private canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D | null
   private speed: number
-  private dim: boolean
   private reduced: boolean
   private w = 0
   private h = 0
-  private tier: Tier = 'l'
   private color = 'rgb(22, 24, 29)'
-  private glints: Glint[] = []
   private ringAngle = 0
-  private glintAngle = 0
+  private shimmerAngle = 0
+  private elapsed = 0
   private frameNo = 0
+  private shimmer: ShDot[]
   private ro: ResizeObserver | null = null
   private dead = false
 
@@ -188,8 +193,8 @@ class MarkOrb implements MarkOrbHandle {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
     this.speed = opts.speed ?? 1
-    this.dim = opts.dim ?? false
     this.reduced = opts.reducedMotion ?? false
+    this.shimmer = getShimmer()
     this.color = this.readColor()
     this.measure()
     if (typeof ResizeObserver !== 'undefined') {
@@ -222,16 +227,10 @@ class MarkOrb implements MarkOrbHandle {
     this.h = nh
     this.canvas.width = nw
     this.canvas.height = nh
-    this.tier = cw <= 40 ? 's' : 'l'
-    this.glints = getGlints(this.tier)
   }
 
   setSpeed(speed: number): void {
     this.speed = speed || 1
-  }
-
-  setDim(dim: boolean): void {
-    this.dim = dim
   }
 
   resize(): void {
@@ -240,18 +239,20 @@ class MarkOrb implements MarkOrbHandle {
     if (this.reduced) this.draw(true)
   }
 
-  render(ts: number, dt: number): void {
+  render(dt: number): void {
     // Poll the inherited ink colour periodically (picks up theme + :hover fades).
     if (this.frameNo++ % 12 === 0) this.color = this.readColor()
+    this.elapsed += dt
     this.ringAngle -= (TAU / MIST_PERIOD) * this.speed * dt
-    this.glintAngle -= (TAU / GLINT_PERIOD) * this.speed * dt
-    this.draw(false, ts)
+    this.shimmerAngle -= (TAU / SHIMMER_PERIOD) * this.speed * dt
+    this.draw(false)
   }
 
-  private draw(stat: boolean, ts = 0): void {
+  private draw(stat: boolean): void {
     const ctx = this.ctx
     if (!ctx) return
     const { w, h } = this
+    const sc = w / S
     ctx.clearRect(0, 0, w, h)
     ctx.save()
     ctx.translate(w / 2, h / 2)
@@ -262,22 +263,23 @@ class MarkOrb implements MarkOrbHandle {
     ctx.drawImage(getMistSprite(w, h, this.color), -w / 2, -h / 2)
     ctx.restore()
 
-    // Spectral glints — drawn live (twinkle + own faster drift). None when dim.
-    if (!this.dim) {
-      const sc = w / S
-      const gr = Math.max(S * 0.012 * sc, 0.6)
-      ctx.save()
-      ctx.rotate(stat ? 0 : this.glintAngle)
-      for (const gl of this.glints) {
-        ctx.globalAlpha = stat ? 0.7 : 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(TAU * (ts / 1000 / gl.dur + gl.phase)))
-        ctx.fillStyle = GLINT_COLORS[gl.ci]!
-        ctx.beginPath()
-        ctx.arc((gl.x - C) * sc, (gl.y - C) * sc, gr, 0, TAU)
-        ctx.fill()
-      }
-      ctx.globalAlpha = 1
-      ctx.restore()
+    // Monochrome shimmer — sparse ink dots twinkling on their own faster drift.
+    ctx.save()
+    ctx.rotate(stat ? 0 : this.shimmerAngle)
+    ctx.fillStyle = this.color
+    const sr = Math.max(S * 0.0016 * sc, SHIMMER_MINR)
+    const t = this.elapsed / 1000
+    for (const s of this.shimmer) {
+      const tw = stat ? 0.6 : 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(TAU * (t / s.dur + s.phase)))
+      // share the mist's inner falloff so the inner edge stays lighter
+      ctx.globalAlpha = Math.min(1, SHIMMER_PEAK * tw * (0.35 + 0.65 * s.rr))
+      ctx.beginPath()
+      ctx.arc((s.x - C) * sc, (s.y - C) * sc, sr, 0, TAU)
+      ctx.fill()
     }
+    ctx.globalAlpha = 1
+    ctx.restore()
+
     ctx.restore()
   }
 

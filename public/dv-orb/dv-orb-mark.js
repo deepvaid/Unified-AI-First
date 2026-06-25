@@ -7,14 +7,22 @@
 //         <script type="module" src="/dv-orb/dv-orb-mark.js"></script>
 // Auto-mounts every `canvas.dv-orb`; ink colour follows the element's CSS
 // `color` (so existing :hover flips work), hover/focus on the interactive
-// ancestor speeds the spin up.
+// ancestor speeds the spin up. Monochrome mist + monochrome shimmer.
 
 const TAU = Math.PI * 2
 const S = 512
 const C = 256
-const GLINT_COLORS = ['#5EEAD4', '#93C5FD', '#A78BFA']
 const MIST_PERIOD = 20000
-const GLINT_PERIOD = 14000
+const MIST_GAIN = 0.9 // mist dark particles 40% lighter than the 1.5 pass (shimmer carries presence)
+
+const HALO_OUTER = 124 + S * 0.088 // 169.06
+const HALO_INNER = 124 * 0.9 // 111.6 — inner circle −10%
+const HALO_BAND = HALO_OUTER - HALO_INNER // 57.46
+
+const SHIMMER_PERIOD = 14000
+const SHIMMER_COUNT = 76 // more sparkle points
+const SHIMMER_PEAK = 0.55
+const SHIMMER_MINR = 1.2
 
 function rng(s) {
   const x = Math.sin(s * 127.1 + 311.7) * 43758.5453
@@ -25,25 +33,43 @@ let mistGeom = null
 function buildMist() {
   const dots = []
   const haloBR = S * 0.0014
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 1000; i += 2) {
     const a = (i / 1000) * TAU + (rng(i * 5 + 10) - 0.5) * 0.1
-    const r = 124 + rng(i * 5 + 11) * 45.06
-    const o = 0.07 + rng(i * 5 + 12) * 0.19
-    dots.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, o, baseR: haloBR, minR: 0.35 })
+    const rr = rng(i * 5 + 11) // 0 at inner edge → 1 at outer edge
+    const r = HALO_INNER + rr * HALO_BAND
+    // soft inner falloff — inner edge ~30% lighter again, ramping to full at the rim
+    const o = (0.07 + rng(i * 5 + 12) * 0.19) * (0.35 + 0.65 * rr)
+    dots.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, o, baseR: haloBR, minR: 0.9 })
   }
   const scatBR = S * 0.0016
+  const mmSM = S * 0.498
   for (let i = 0; i < 650; i++) {
     const a = (i / 650) * TAU + (rng(i * 5 + 100) - 0.5) * 0.55
     const t = rng(i * 7 + 51)
-    const r = 169 + t * (255 - 169)
+    const r = HALO_OUTER + t * (mmSM - HALO_OUTER)
     const taper = Math.pow(1 - t, 0.22)
-    const o = (0.04 + rng(i * 3 + 20) * 0.1) * 0.55 * taper
-    dots.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, o, baseR: scatBR, minR: 0.5 })
+    const o = (0.04 + rng(i * 3 + 20) * 0.1) * 0.9 * taper // outer particles more visible
+    dots.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, o, baseR: scatBR, minR: 1.0 })
   }
   return dots
 }
 function getMist() {
   return mistGeom || (mistGeom = buildMist())
+}
+
+let shimmerGeom = null
+function buildShimmer() {
+  const arr = []
+  for (let k = 0; k < SHIMMER_COUNT; k++) {
+    const a = (k / SHIMMER_COUNT) * TAU + (rng(k * 9 + 7) - 0.5) * 0.5
+    const rr = rng(k * 9 + 8) // 0 inner → 1 outer, so inner glints fade with the mist
+    const r = HALO_INNER + rr * HALO_BAND
+    arr.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, rr, dur: 2.4 + rng(k * 9 + 9) * 2.2, phase: rng(k * 9 + 10) })
+  }
+  return arr
+}
+function getShimmer() {
+  return shimmerGeom || (shimmerGeom = buildShimmer())
 }
 
 const spriteCache = new Map()
@@ -59,7 +85,7 @@ function getMistSprite(w, h, color) {
     g.fillStyle = color
     const sc = w / S
     for (const d of getMist()) {
-      g.globalAlpha = d.o
+      g.globalAlpha = Math.min(1, d.o * MIST_GAIN)
       g.beginPath()
       g.arc(d.x * sc, d.y * sc, Math.max(d.baseR * sc, d.minR), 0, TAU)
       g.fill()
@@ -68,22 +94,6 @@ function getMistSprite(w, h, color) {
   }
   spriteCache.set(key, cv)
   return cv
-}
-
-const GLINTS = { s: 32, l: 72 }
-const glintCache = new Map()
-function getGlints(tier) {
-  let arr = glintCache.get(tier)
-  if (arr) return arr
-  const n = GLINTS[tier]
-  arr = []
-  for (let k = 0; k < n; k++) {
-    const a = (k / n) * TAU + (rng(k * 9 + 7) - 0.5) * 0.5
-    const r = 124 + rng(k * 9 + 8) * 45.06
-    arr.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, ci: k % 3, dur: 2.4 + rng(k * 9 + 9) * 2.2, phase: rng(k * 9 + 10) })
-  }
-  glintCache.set(tier, arr)
-  return arr
 }
 
 const instances = new Set()
@@ -95,7 +105,7 @@ function frame(ts) {
   const dt = lastTs ? Math.min(ts - lastTs, 50) : 16.7
   lastTs = ts
   if (hidden) return
-  for (const inst of instances) inst.render(ts, dt)
+  for (const inst of instances) inst.render(dt)
 }
 function ensureTicker() {
   if (!rafId) {
@@ -119,16 +129,15 @@ class MarkOrb {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
     this.speed = opts.speed || 1
-    this.dim = !!opts.dim
     this.reduced = !!opts.reducedMotion
     this.w = 0
     this.h = 0
-    this.tier = 'l'
     this.color = this.readColor()
-    this.glints = []
     this.ringAngle = 0
-    this.glintAngle = 0
+    this.shimmerAngle = 0
+    this.elapsed = 0
     this.frameNo = 0
+    this.shimmer = getShimmer()
     this.dead = false
     this.ro = null
     this.measure()
@@ -158,31 +167,28 @@ class MarkOrb {
     this.h = nh
     this.canvas.width = nw
     this.canvas.height = nh
-    this.tier = cw <= 40 ? 's' : 'l'
-    this.glints = getGlints(this.tier)
   }
   setSpeed(speed) {
     this.speed = speed || 1
-  }
-  setDim(dim) {
-    this.dim = !!dim
   }
   resize() {
     if (this.dead) return
     this.measure()
     if (this.reduced) this.draw(true)
   }
-  render(ts, dt) {
+  render(dt) {
     if (this.frameNo++ % 12 === 0) this.color = this.readColor()
+    this.elapsed += dt
     this.ringAngle -= (TAU / MIST_PERIOD) * this.speed * dt
-    this.glintAngle -= (TAU / GLINT_PERIOD) * this.speed * dt
-    this.draw(false, ts)
+    this.shimmerAngle -= (TAU / SHIMMER_PERIOD) * this.speed * dt
+    this.draw(false)
   }
-  draw(stat, ts) {
+  draw(stat) {
     const ctx = this.ctx
     if (!ctx) return
     const w = this.w
     const h = this.h
+    const sc = w / S
     ctx.clearRect(0, 0, w, h)
     ctx.save()
     ctx.translate(w / 2, h / 2)
@@ -190,21 +196,21 @@ class MarkOrb {
     ctx.rotate(stat ? 0 : this.ringAngle)
     ctx.drawImage(getMistSprite(w, h, this.color), -w / 2, -h / 2)
     ctx.restore()
-    if (!this.dim) {
-      const sc = w / S
-      const gr = Math.max(S * 0.012 * sc, 0.6)
-      ctx.save()
-      ctx.rotate(stat ? 0 : this.glintAngle)
-      for (const gl of this.glints) {
-        ctx.globalAlpha = stat ? 0.7 : 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(TAU * ((ts || 0) / 1000 / gl.dur + gl.phase)))
-        ctx.fillStyle = GLINT_COLORS[gl.ci]
-        ctx.beginPath()
-        ctx.arc((gl.x - C) * sc, (gl.y - C) * sc, gr, 0, TAU)
-        ctx.fill()
-      }
-      ctx.globalAlpha = 1
-      ctx.restore()
+    ctx.save()
+    ctx.rotate(stat ? 0 : this.shimmerAngle)
+    ctx.fillStyle = this.color
+    const sr = Math.max(S * 0.0016 * sc, SHIMMER_MINR)
+    const t = this.elapsed / 1000
+    for (const s of this.shimmer) {
+      const tw = stat ? 0.6 : 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(TAU * (t / s.dur + s.phase)))
+      // share the mist's inner falloff so the inner edge stays lighter
+      ctx.globalAlpha = Math.min(1, SHIMMER_PEAK * tw * (0.35 + 0.65 * s.rr))
+      ctx.beginPath()
+      ctx.arc((s.x - C) * sc, (s.y - C) * sc, sr, 0, TAU)
+      ctx.fill()
     }
+    ctx.globalAlpha = 1
+    ctx.restore()
     ctx.restore()
   }
   destroy() {

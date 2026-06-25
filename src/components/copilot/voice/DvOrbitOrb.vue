@@ -22,9 +22,9 @@ const props = withDefaults(
   { speed: 1, dim: false, arc: false, inverse: false },
 )
 
-// All in-app marks render 20% larger than their passed `size` (brand bump to
-// match the landing). renderSize drives the element box; the canvas fills it.
-const renderSize = computed(() => props.size * 1.2)
+// All in-app marks render larger than their passed `size` (brand bump + the
+// stakeholder's +20%). renderSize drives the element box; the canvas fills it.
+const renderSize = computed(() => props.size * 1.44)
 const breatheDuration = computed(() => `${7 / Math.min(props.speed, 1.5)}s`)
 
 const canvasEl = ref<HTMLCanvasElement | null>(null)
@@ -34,7 +34,6 @@ onMounted(() => {
   if (!canvasEl.value) return
   handle = createMarkOrb(canvasEl.value, {
     speed: props.speed,
-    dim: props.dim,
     reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   })
 })
@@ -48,12 +47,9 @@ watch(
   () => props.speed,
   (s) => handle?.setSpeed(s),
 )
-watch(
-  () => props.dim,
-  (d) => handle?.setDim(d),
-)
-// `inverse` only flips colour → handled by the --inverse CSS class; the engine
-// reads the inherited `color`, so no JS wiring is needed.
+// `dim`/`inverse` only change colour (slate / white) and stop breathe — handled
+// by the --dim/--inverse CSS classes; the engine reads the inherited `color`, so
+// no JS wiring is needed.
 </script>
 
 <template>

@@ -49,18 +49,18 @@
   .nav-toggle svg{ width:24px; height:24px; }
 
   /* ---- Da Vinci orb button — "Glow" particle-orb identity mark (matches main app) ---- */
-  .dv-orb-btn{ position:relative; flex:0 0 auto; width:40px; height:40px;
+  .dv-orb-btn{ position:relative; flex:0 0 auto; width:48px; height:48px;
     display:flex; align-items:center; justify-content:center; border-radius:12px;
     background:transparent; text-decoration:none;
     -webkit-tap-highlight-color:transparent;
     transition:transform .25s cubic-bezier(.22,1,.36,1), background .25s ease, box-shadow .3s ease; }
-  /* canvas mark — spin/glints render in rAF (dv-orb-mark.js); `color` is the dot ink */
-  .dv-orb{ display:block; width:28px; height:28px; color:#16181D;
+  /* canvas mark — the mist spins in rAF (dv-orb-mark.js); `color` is the dot ink */
+  .dv-orb{ display:block; width:34px; height:34px; color:#16181D;
     transition:color .2s ease; animation:dv-orb-breathe 6s ease-in-out infinite; }
   .dv-orb-btn:hover{ background:linear-gradient(125deg,#4f8ef5 0%,#7c5cff 45%,#9a5cff 72%,#5b44d6 100%);
     box-shadow:0 6px 18px -6px rgba(92,68,214,.7); }
   /* subtle at rest — full strength on hover */
-  .dv-orb-btn .dv-orb{ width:34px; height:34px; opacity:1; transition:color .2s ease, opacity .2s ease; }
+  .dv-orb-btn .dv-orb{ width:41px; height:41px; opacity:1; transition:color .2s ease, opacity .2s ease; }
   .dv-orb-btn:hover .dv-orb{ color:#fff; opacity:1; }
   .dv-orb-btn:active{ transform:scale(.94); }
   @keyframes dv-orb-breathe{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.03); } }
@@ -73,7 +73,7 @@
     box-shadow:0 10px 28px -10px rgba(24,27,33,0.55);
     -webkit-tap-highlight-color:transparent;
     transition:transform .25s cubic-bezier(.22,1,.36,1), background .25s ease, box-shadow .3s ease; }
-  .dv-fab .dv-orb{ width:34px; height:34px; color:#fff; }
+  .dv-fab .dv-orb{ width:41px; height:41px; color:#fff; }
   .dv-fab:active{ transform:scale(.94); }
   .dv-fab-wrap:hover .dv-fab,
   .dv-fab-wrap:focus-within .dv-fab,
