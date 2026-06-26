@@ -78,10 +78,12 @@ function submit(raw: string) {
 }
 
 function onSend() {
+  voice.unlockSpeech() // prime TTS within the gesture (Safari/iOS autoplay)
   submit(inputText.value)
 }
 
 async function toggleMic() {
+  voice.unlockSpeech() // prime TTS within the tap so the spoken reply is allowed
   if (isListening.value) {
     voice.stopListening()
     return
@@ -109,6 +111,7 @@ watch(voice.interimTranscript, (t) => {
 })
 
 function onQuickReply(value: string) {
+  voice.unlockSpeech() // prime TTS within the gesture (Safari/iOS autoplay)
   submit(value)
 }
 
@@ -191,7 +194,7 @@ onBeforeUnmount(() => {
           class="dvx__ghost-btn"
           @click="newChat"
         >
-          New chat
+          <span class="dvx__btn-label">New chat</span>
         </v-btn>
         <v-btn
           variant="outlined"
@@ -201,10 +204,10 @@ onBeforeUnmount(() => {
           class="dvx__ghost-btn"
           @click="voice.setMuted(!voice.muted.value)"
         >
-          {{ voice.muted.value ? 'Voice off' : 'Voice on' }}
+          <span class="dvx__btn-label">{{ voice.muted.value ? 'Voice off' : 'Voice on' }}</span>
         </v-btn>
-        <v-btn variant="outlined" size="small" rounded="pill" class="dvx__ghost-btn" @click="openClassicUI">
-          Classic UI
+        <v-btn variant="outlined" size="small" rounded="pill" prepend-icon="panel-left" class="dvx__ghost-btn" @click="openClassicUI">
+          <span class="dvx__btn-label">Classic UI</span>
         </v-btn>
         <v-btn icon size="small" variant="text" aria-label="Exit AI experience" @click="exitExperience">
           <v-icon size="18">x</v-icon>
@@ -740,6 +743,37 @@ onBeforeUnmount(() => {
 
   .dvx__thread {
     max-height: 46vh;
+  }
+
+  /* Topbar fits 375px: keep the orb, drop the wordmark text, tighten the pills
+     so all actions stay reachable instead of overflowing off-screen. */
+  .dvx__topbar {
+    padding: 0 12px;
+    min-height: 60px;
+    gap: 8px;
+  }
+
+  .dvx__wordmark span {
+    display: none;
+  }
+
+  .dvx__top-actions {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  /* Icon-only pills on mobile so every action fits without overflow */
+  .dvx__btn-label {
+    display: none;
+  }
+
+  .dvx__top-actions .dvx__ghost-btn {
+    min-width: 0;
+    padding-inline: 9px;
+  }
+
+  .dvx__top-actions .dvx__ghost-btn :deep(.v-btn__prepend) {
+    margin-inline: 0;
   }
 }
 

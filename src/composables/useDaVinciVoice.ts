@@ -45,6 +45,16 @@ const hasWindow = typeof window !== 'undefined'
 const sttSupported = hasWindow && !!(window.SpeechRecognition ?? window.webkitSpeechRecognition)
 const ttsSupported = hasWindow && 'speechSynthesis' in window
 
+// Apple WebKit (iOS + desktop Safari): a getUserMedia analyser running in
+// parallel with SpeechRecognition contends for the mic and can break recognition
+// / double-prompt — so we skip the analyser there (the orb still has TTS energy
+// + idle motion). Also where speechSynthesis needs a user-gesture unlock.
+const ua = hasWindow ? navigator.userAgent : ''
+const isAppleWebKit =
+  /iphone|ipad|ipod/i.test(ua) ||
+  (hasWindow && navigator.platform === 'MacIntel' && (navigator.maxTouchPoints ?? 0) > 1) ||
+  /^((?!chrome|android|crios|fxios|edg|opr).)*safari/i.test(ua)
+
 const MUTED_KEY = 'davinci-voice-muted'
 
 // ── Reactive singleton state ─────────────────────────────────────────────────
@@ -106,7 +116,8 @@ function startListening(opts: StartListeningOptions): Promise<string> {
   recog.maxAlternatives = 1
 
   // Analyser failure is non-fatal — STT capture is independent of getUserMedia.
-  if (opts.withAnalyser) {
+  // Skipped on Apple WebKit (see isAppleWebKit) to avoid mic contention with STT.
+  if (opts.withAnalyser && !isAppleWebKit) {
     void openMic().catch(() => {})
   }
 
@@ -210,6 +221,23 @@ if (ttsSupported) {
   window.speechSynthesis.addEventListener('voiceschanged', refreshVoices)
 }
 
+// Safari/iOS only permit speechSynthesis.speak() that *begins* inside a user
+// gesture. Replies are spoken from timers (the "thinking" delay), so prime the
+// engine once from a real tap/click — then later async speaks are allowed.
+let speechUnlocked = false
+function unlockSpeech() {
+  if (speechUnlocked || !ttsSupported) return
+  speechUnlocked = true
+  try {
+    window.speechSynthesis.resume()
+    const primer = new SpeechSynthesisUtterance(' ')
+    primer.volume = 0
+    window.speechSynthesis.speak(primer)
+  } catch {
+    /* unlock is best-effort */
+  }
+}
+
 function estimateSpeechMs(text: string): number {
   return Math.min(6800, Math.max(1200, text.length * 54))
 }
@@ -247,6 +275,7 @@ function speakChunk(text: string, rate: number, pitch: number): Promise<void> {
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.rate = rate
     utterance.pitch = pitch
+    if (!rankedVoices.length) refreshVoices() // Safari may never fire voiceschanged
     const voice = rankedVoices[0]
     if (voice) utterance.voice = voice
 
@@ -439,6 +468,7 @@ export function useDaVinciVoice() {
     abortListening,
     setThinking,
     speak,
+    unlockSpeech,
     cancelSpeech,
     getVoiceFrame,
     disposeVoice,

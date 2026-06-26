@@ -19,19 +19,19 @@
 const TAU = Math.PI * 2
 const S = 512 // reference space
 const C = 256 // reference centre
-const MIST_PERIOD = 20000 // ms / revolution (reference SPEED = −2π/(20·60) @60fps)
+const MIST_PERIOD = 30000 // ms / revolution — slow, calm spin
 const MIST_GAIN = 0.9 // mist dark particles 40% lighter than the 1.5 pass (shimmer carries presence)
 
 // Halo band — outer rim is the reference's; inner radius pulled in 10% (smaller
 // centre hole) while the scatter keeps its large outward expansion.
 const HALO_OUTER = 124 + S * 0.088 // 169.06
-const HALO_INNER = 124 * 0.9 // 111.6 — inner circle −10%
-const HALO_BAND = HALO_OUTER - HALO_INNER // 57.46
+const HALO_INNER = 138 // thinner ring — inner border pulled tighter toward the rim
+const HALO_BAND = HALO_OUTER - HALO_INNER // ~31
 
 // Monochrome shimmer — sparse twinkling ink dots drifting faster than the ring.
-const SHIMMER_PERIOD = 14000
-const SHIMMER_COUNT = 76 // more sparkle points
-const SHIMMER_PEAK = 0.55 // peak twinkle α (brighter than the mist → it sparkles)
+const SHIMMER_PERIOD = 21000
+const SHIMMER_COUNT = 110 // more sparkle points
+const SHIMMER_PEAK = 0.6 // peak twinkle α (brighter than the mist → it sparkles)
 const SHIMMER_MINR = 1.2
 
 // Reference Glow PRNG — fract(sin(s·127.1+311.7)·43758.5453), seeded by index so
@@ -58,15 +58,15 @@ function buildMist(): MistDot[] {
     const a = (i / 1000) * TAU + (rng(i * 5 + 10) - 0.5) * 0.1
     const rr = rng(i * 5 + 11) // 0 at inner edge → 1 at outer edge
     const r = HALO_INNER + rr * HALO_BAND
-    // soft inner falloff — inner edge ~30% lighter again, ramping to full at the rim
-    const o = (0.07 + rng(i * 5 + 12) * 0.19) * (0.35 + 0.65 * rr)
+    // soft inner falloff — inner edge much less dark (low α), ramping to full at the rim
+    const o = (0.07 + rng(i * 5 + 12) * 0.19) * (0.12 + 0.88 * rr)
     dots.push({ x: C + Math.cos(a) * r, y: C + Math.sin(a) * r, o, baseR: haloBR, minR: 0.9 })
   }
   // Scatter dust — all 650, kept large (HALO_OUTER → mmSM 254.98), gentle taper.
   const scatBR = S * 0.0016
   const mmSM = S * 0.498
-  for (let i = 0; i < 650; i++) {
-    const a = (i / 650) * TAU + (rng(i * 5 + 100) - 0.5) * 0.55
+  for (let i = 0; i < 850; i++) {
+    const a = (i / 850) * TAU + (rng(i * 5 + 100) - 0.5) * 0.55
     const t = rng(i * 7 + 51)
     const r = HALO_OUTER + t * (mmSM - HALO_OUTER)
     const taper = Math.pow(1 - t, 0.22)
@@ -271,8 +271,8 @@ class MarkOrb implements MarkOrbHandle {
     const t = this.elapsed / 1000
     for (const s of this.shimmer) {
       const tw = stat ? 0.6 : 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(TAU * (t / s.dur + s.phase)))
-      // share the mist's inner falloff so the inner edge stays lighter
-      ctx.globalAlpha = Math.min(1, SHIMMER_PEAK * tw * (0.35 + 0.65 * s.rr))
+      // share the mist's inner falloff so the inner edge stays less dark
+      ctx.globalAlpha = Math.min(1, SHIMMER_PEAK * tw * (0.12 + 0.88 * s.rr))
       ctx.beginPath()
       ctx.arc((s.x - C) * sc, (s.y - C) * sc, sr, 0, TAU)
       ctx.fill()

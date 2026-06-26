@@ -305,6 +305,7 @@ function toggleTts() {
 // Manual tap-to-talk. Future: auto-relisten loop after TTS ends (deliberate
 // non-goal for now — surprise always-open mics are an anti-pattern).
 async function toggleMic() {
+  voice.unlockSpeech() // prime TTS within the tap (Safari/iOS autoplay)
   if (isDictating.value) {
     // Orbit: stopping the mic before any speech lands = paused, not error
     if (isVoiceMode.value && !voice.interimTranscript.value) orbitPaused.value = true
@@ -324,6 +325,7 @@ async function toggleMic() {
       withAnalyser: false,
     })
     if (finalText) {
+      lastInputWasVoice.value = true // voice in → voice out (spoken reply even in text mode)
       processQuery(finalText)
     } else if (isVoiceMode.value && !orbitCancelRequested && !orbitPaused.value) {
       // Silent resolve the user didn't ask for → "didn't catch that"
@@ -535,10 +537,14 @@ function processQuery(text: string) {
 }
 
 function sendQuery() {
+  voice.unlockSpeech() // prime TTS within the gesture (Safari/iOS autoplay)
+  lastInputWasVoice.value = false // typed → silent unless "read aloud" is on
   processQuery(inputText.value.trim())
 }
 
 function sendSuggestion(text: string) {
+  voice.unlockSpeech()
+  lastInputWasVoice.value = false
   processQuery(text)
 }
 
