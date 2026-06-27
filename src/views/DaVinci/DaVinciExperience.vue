@@ -35,7 +35,9 @@ const accountId = computed(() => {
 
 const messages = ref<ExperienceTurn[]>([])
 const inputText = ref('')
-const inputFocused = ref(false)
+// Voice-first: typing is opt-in. Default to typing only when voice isn't available.
+const typing = ref(!voice.sttSupported)
+const inputEl = ref<HTMLInputElement | null>(null)
 const captionText = ref('')
 const threadEl = ref<HTMLElement | null>(null)
 const hasThread = computed(() => messages.value.length > 0)
@@ -115,14 +117,10 @@ function onQuickReply(value: string) {
   submit(value)
 }
 
-// Chips reveal on input focus (stakeholder-clean rest state); stay open while
-// focus moves between the input row and the chips themselves (keyboard parity)
-function onComposerFocusIn() {
-  inputFocused.value = true
-}
-function onComposerFocusOut(e: FocusEvent) {
-  const next = e.relatedTarget as HTMLElement | null
-  if (!next || !next.closest('.dvx__inputrow, .dvx__chips')) inputFocused.value = false
+// Voice-first: typing is opt-in via the "Type instead" toggle
+function toggleTyping() {
+  typing.value = !typing.value
+  if (typing.value) nextTick(() => inputEl.value?.focus())
 }
 
 function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
@@ -244,8 +242,8 @@ onBeforeUnmount(() => {
       </section>
 
       <div class="dvx__composer">
-        <!-- Voice-first CTA (hidden once a conversation starts) -->
-        <div v-if="!hasThread" class="dvx__voice-cta">
+        <!-- Persistent voice-first CTA — primary at rest AND during the conversation -->
+        <div class="dvx__voice-cta" :class="{ 'dvx__voice-cta--compact': hasThread }">
           <button
             type="button"
             class="dvx__bigmic"
@@ -254,7 +252,7 @@ onBeforeUnmount(() => {
             :aria-label="isListening ? 'Stop listening' : 'Press to speak'"
             @click="toggleMic"
           >
-            <v-icon size="32">{{ isListening ? 'mic-off' : 'mic' }}</v-icon>
+            <v-icon :size="hasThread ? 24 : 32">{{ isListening ? 'mic-off' : 'mic' }}</v-icon>
             <v-tooltip v-if="!voice.sttSupported" activator="parent" location="bottom">
               Voice input needs Chrome or Edge — you can type instead
             </v-tooltip>
@@ -270,25 +268,16 @@ onBeforeUnmount(() => {
           :label="voice.state.value === 'speaking' && captionText ? captionText : undefined"
         />
 
-        <!-- Input row -->
-        <form class="dvx__inputrow" @submit.prevent="onSend" @focusin="onComposerFocusIn" @focusout="onComposerFocusOut">
+        <!-- Text on demand -->
+        <form v-if="typing" class="dvx__inputrow" @submit.prevent="onSend">
           <input
+            ref="inputEl"
             v-model="inputText"
             type="text"
             placeholder="Ask Da Vinci, or say a command…"
             aria-label="Message Da Vinci"
             class="dvx__input"
           />
-          <button
-            v-if="voice.sttSupported && hasThread"
-            type="button"
-            class="dvx__iconbtn dvx__iconbtn--mic"
-            :class="{ 'dvx__iconbtn--live': isListening }"
-            :aria-label="isListening ? 'Stop listening' : 'Speak'"
-            @click="toggleMic"
-          >
-            <v-icon size="18">{{ isListening ? 'mic-off' : 'mic' }}</v-icon>
-          </button>
           <button
             type="submit"
             class="dvx__iconbtn dvx__iconbtn--send"
@@ -299,15 +288,13 @@ onBeforeUnmount(() => {
           </button>
         </form>
 
-        <!-- Suggestion chips — revealed when the input is focused -->
-        <div
-          v-if="!hasThread"
-          class="dvx__chips"
-          :class="{ 'dvx__chips--on': inputFocused }"
-          :aria-hidden="!inputFocused"
-          @focusin="onComposerFocusIn"
-          @focusout="onComposerFocusOut"
-        >
+        <!-- Type-on-demand toggle (voice stays one tap away via the big mic) -->
+        <button v-if="voice.sttSupported" type="button" class="dvx__typelink" @click="toggleTyping">
+          {{ typing ? 'Use voice' : 'Type instead' }}
+        </button>
+
+        <!-- Starter suggestion chips (shown when typing opens, before a conversation) -->
+        <div v-if="typing && !hasThread" class="dvx__chips">
           <button
             v-for="chip in intents.suggestionChips"
             :key="chip.value"
@@ -501,6 +488,35 @@ onBeforeUnmount(() => {
   gap: 14px;
 }
 
+/* Compact during a conversation so the thread keeps room — still the hero */
+.dvx__voice-cta--compact {
+  gap: 8px;
+}
+
+.dvx__voice-cta--compact .dvx__bigmic {
+  width: 64px;
+  height: 64px;
+}
+
+/* Quiet "Type instead / Use voice" toggle — voice stays one tap away */
+.dvx__typelink {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--dvx-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dv-text-secondary);
+  padding: 4px 8px;
+  transition: color 0.18s;
+}
+
+.dvx__typelink:hover {
+  color: var(--dv-accent);
+}
+
 .dvx__bigmic {
   position: relative;
   width: clamp(78px, 8.5vw, 96px);
@@ -623,17 +639,6 @@ onBeforeUnmount(() => {
   transform: scale(0.94);
 }
 
-.dvx__iconbtn--mic {
-  background: var(--dv-accent-soft);
-  color: var(--dv-text-secondary);
-}
-
-.dvx__iconbtn--live {
-  background: var(--dv-accent);
-  color: var(--dv-on-accent);
-  animation: dvx-micpulse 1.5s ease infinite;
-}
-
 .dvx__iconbtn--send {
   background: var(--dv-accent);
   color: var(--dv-on-accent);
@@ -653,19 +658,6 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
-  /* hidden at rest — revealed on input focus (visibility transition keeps
-     chips clickable during the fade so click-through never drops) */
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition: opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.25s;
-}
-
-.dvx__chips--on {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
 }
 
 .dvx__quick {
@@ -724,18 +716,6 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes dvx-micpulse {
-  0% {
-    box-shadow: 0 0 0 0 var(--dv-accent-soft);
-  }
-  70% {
-    box-shadow: 0 0 0 12px transparent;
-  }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
-
 @media (max-width: 560px) {
   .dvx__msg {
     font-size: 0.875rem;
@@ -779,8 +759,7 @@ onBeforeUnmount(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .dvx__turn,
-  .dvx__bigmic::after,
-  .dvx__iconbtn--live {
+  .dvx__bigmic::after {
     animation: none;
   }
 }
