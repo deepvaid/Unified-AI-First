@@ -300,10 +300,99 @@ function speakChunk(text: string, rate: number, pitch: number): Promise<void> {
   })
 }
 
+// ── Cloud TTS (realistic voice via /api/tts) — falls back to Web Speech ──────
+let cloudTtsEnabled = true // flipped off for the session once the endpoint proves absent
+let cloudAbort: AbortController | null = null
+let playCtx: AudioContext | null = null
+let playAnalyser: AnalyserNode | null = null
+let playSource: AudioBufferSourceNode | null = null
+const playFreq = new Uint8Array(256) // playback FFT → feeds the orb the real voice
+
+/** Decode mp3 bytes and play through an analyser (so the orb reacts to the real audio). */
+async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number): Promise<void> {
+  if (!playCtx) playCtx = new AudioContext()
+  if (playCtx.state === 'suspended') await playCtx.resume().catch(() => {})
+  const audioBuf = await playCtx.decodeAudioData(arrayBuf)
+  if (token !== speakToken) return
+  const src = playCtx.createBufferSource()
+  src.buffer = audioBuf
+  const an = playCtx.createAnalyser()
+  an.fftSize = 512
+  an.smoothingTimeConstant = 0.7
+  src.connect(an)
+  an.connect(playCtx.destination)
+  playSource = src
+  playAnalyser = an
+  speakStartedAt = performance.now()
+  speakEstimateMs = audioBuf.duration * 1000
+  await new Promise<void>((resolve) => {
+    src.onended = () => resolve()
+    try {
+      src.start()
+    } catch {
+      resolve()
+    }
+  })
+  if (playSource === src) playSource = null
+  if (playAnalyser === an) {
+    try {
+      an.disconnect()
+    } catch {
+      /* noop */
+    }
+    playAnalyser = null
+  }
+}
+
+type CloudOutcome = 'played' | 'cancelled' | 'unavailable'
+async function speakViaCloud(text: string, token: number): Promise<CloudOutcome> {
+  const controller = new AbortController()
+  cloudAbort = controller
+  let resp: Response
+  try {
+    resp = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal: controller.signal,
+    })
+  } catch {
+    return token !== speakToken || controller.signal.aborted ? 'cancelled' : 'unavailable'
+  } finally {
+    if (cloudAbort === controller) cloudAbort = null
+  }
+  if (token !== speakToken) return 'cancelled'
+  if (!resp.ok) return 'unavailable' // 503 = not configured, etc.
+  let arrayBuf: ArrayBuffer
+  try {
+    arrayBuf = await resp.arrayBuffer()
+  } catch {
+    return token !== speakToken ? 'cancelled' : 'unavailable'
+  }
+  if (token !== speakToken) return 'cancelled'
+  try {
+    await playCloudBuffer(arrayBuf, token)
+  } catch {
+    return token !== speakToken ? 'cancelled' : 'unavailable'
+  }
+  return token === speakToken ? 'played' : 'cancelled'
+}
+
+async function speakViaBrowser(text: string, token: number, opts: SpeakOptions): Promise<void> {
+  // Chrome drops an utterance enqueued synchronously after cancel()
+  await new Promise((r) => setTimeout(r, 60))
+  if (token !== speakToken) return
+  for (const chunk of chunkSpeech(text)) {
+    if (token !== speakToken) return
+    await speakChunk(chunk, opts.rate ?? 0.99, opts.pitch ?? 1.0)
+  }
+}
+
 /**
- * Speak text aloud (cancels any prior speech first). Muted or unsupported ⇒
- * visual-only: the speaking state + energy envelope still run so the orb
- * pulses identically. Resolves on completion or cancellation — never rejects.
+ * Speak text aloud (cancels any prior speech first). Realistic cloud voice when
+ * /api/tts is configured (orb reacts to the real audio), else the browser voice;
+ * muted ⇒ visual-only (speaking state + energy envelope still run). Resolves on
+ * completion or cancellation — never rejects.
  */
 async function speak(text: string, opts: SpeakOptions = {}): Promise<void> {
   const clean = text.trim()
@@ -315,19 +404,26 @@ async function speak(text: string, opts: SpeakOptions = {}): Promise<void> {
   opts.onstart?.()
 
   try {
-    if (mutedRef.value || !ttsSupported) {
-      // Visual-only fallback (prototype parity)
+    if (mutedRef.value) {
+      // Visual-only (muted): no audio, but the orb still pulses
       speakStartedAt = performance.now()
       speakEstimateMs = estimateSpeechMs(clean)
       await new Promise((r) => setTimeout(r, speakEstimateMs))
       return
     }
-    // Chrome drops an utterance enqueued synchronously after cancel()
-    await new Promise((r) => setTimeout(r, 60))
-    if (token !== speakToken) return
-    for (const chunk of chunkSpeech(clean)) {
-      if (token !== speakToken) return
-      await speakChunk(chunk, opts.rate ?? 0.99, opts.pitch ?? 1.0)
+    // 1. Realistic cloud voice (if /api/tts has a key configured)
+    if (cloudTtsEnabled) {
+      const outcome = await speakViaCloud(clean, token)
+      if (outcome === 'played' || outcome === 'cancelled') return
+      cloudTtsEnabled = false // no working endpoint — stop trying this session
+    }
+    // 2. Browser Web Speech fallback
+    if (ttsSupported) {
+      await speakViaBrowser(clean, token, opts)
+    } else {
+      speakStartedAt = performance.now()
+      speakEstimateMs = estimateSpeechMs(clean)
+      await new Promise((r) => setTimeout(r, speakEstimateMs))
     }
   } finally {
     if (token === speakToken) {
@@ -341,6 +437,25 @@ function cancelSpeech() {
   speakToken++
   liveUtterances.length = 0
   if (ttsSupported) window.speechSynthesis.cancel()
+  // cloud TTS: abort an in-flight fetch and stop any playing buffer
+  cloudAbort?.abort()
+  cloudAbort = null
+  if (playSource) {
+    try {
+      playSource.stop()
+    } catch {
+      /* already stopped */
+    }
+    playSource = null
+  }
+  if (playAnalyser) {
+    try {
+      playAnalyser.disconnect()
+    } catch {
+      /* noop */
+    }
+    playAnalyser = null
+  }
   speakingRef.value = false
 }
 
@@ -437,10 +552,28 @@ function getVoiceFrame(): OrbAudioFrame {
       sum += raw
     }
     frame.micLevel = Math.min(1, (sum / 16) * 1.6)
+    frame.speakEnergy = currentSpeakEnergy()
+  } else if (playAnalyser) {
+    // Real cloud-TTS audio → the orb reacts to the actual voice
+    playAnalyser.getByteFrequencyData(playFreq)
+    const usable = Math.floor(playFreq.length * 0.7)
+    let pSum = 0
+    for (let b = 0; b < 16; b++) {
+      const start = Math.floor((b / 16) * usable)
+      const end = Math.max(start + 1, Math.floor(((b + 1) / 16) * usable))
+      let acc = 0
+      for (let i = start; i < end; i++) acc += playFreq[i] ?? 0
+      const raw = acc / ((end - start) * 255)
+      const prev = bands[b] ?? 0
+      bands[b] = prev + (raw - prev) * 0.4
+      pSum += raw
+    }
+    frame.micLevel = 0
+    frame.speakEnergy = Math.min(1, (pSum / 16) * 2.2)
   } else {
     frame.micLevel = 0
+    frame.speakEnergy = currentSpeakEnergy()
   }
-  frame.speakEnergy = currentSpeakEnergy()
   return frame
 }
 

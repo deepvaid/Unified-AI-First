@@ -8,7 +8,7 @@
   ],
   "rewrites": [
     { "source": "/storybook/:path*", "destination": "/storybook/:path*" },
-    { "source": "/((?!storybook|assets|main-landing).*)", "destination": "/index.html" }
+    { "source": "/((?!storybook|assets|main-landing|api).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
