@@ -1,7 +1,7 @@
 // Vercel serverless function: POST /api/gemini { text, history? } → { reply, speech, card? }.
 // Keeps GEMINI_API_KEY server-side (Vercel env var), so the key is never shipped
 // to the browser. Mirrored by a Vite dev middleware (vite.config.ts) for local dev.
-import { generateReply, GeminiError, type GeminiTurn } from '../src/server/gemini'
+import { generateReply, GeminiError, type GeminiTurn } from '../src/server/gemini.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function readJson(req: any): Promise<Record<string, unknown>> {

@@ -1,7 +1,7 @@
 // Vercel serverless function: POST /api/tts { text, voice?, model? } → audio/mpeg.
 // Keeps OPENAI_API_KEY server-side (Vercel env var), so the key is never shipped
 // to the browser. Mirrored by a Vite dev middleware (vite.config.ts) for local dev.
-import { synthesize, TtsError } from '../src/server/tts'
+import { synthesize, TtsError } from '../src/server/tts.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function readJson(req: any): Promise<Record<string, unknown>> {
