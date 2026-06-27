@@ -3,11 +3,10 @@
 // (formerly linked externally as https://davinci-ai-first.vercel.app).
 // fullPage route: the app shell + copilot drawer are unmounted, so this view
 // owns the mic exclusively and provides its own exits (Esc / Classic UI / close).
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DvOrbCanvas from '@/components/copilot/voice/DvOrbCanvas.vue'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
-import DvVoiceStatePill from '@/components/copilot/voice/DvVoiceStatePill.vue'
 import DvIntentCardList from '@/components/copilot/voice/DvIntentCardList.vue'
 import DvToastStack from '@/components/copilot/DvToastStack.vue'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
@@ -35,13 +34,36 @@ const accountId = computed(() => {
 
 const messages = ref<ExperienceTurn[]>([])
 const inputText = ref('')
-const inputEl = ref<HTMLInputElement | null>(null)
+// Starter chips reveal only while the text field is focused (see template).
+const inputFocused = ref(false)
 const captionText = ref('')
 const threadEl = ref<HTMLElement | null>(null)
 const hasThread = computed(() => messages.value.length > 0)
 const busy = computed(() => voice.state.value !== 'idle')
-const isListening = computed(() => voice.state.value === 'listening' && voice.owner.value === 'experience')
 const avatarSpeed = computed(() => ({ idle: 1, listening: 2.4, thinking: 1.6, speaking: 1.4 })[voice.state.value])
+
+// ── Live (hands-free) conversation ───────────────────────────────────────────
+const liveActive = ref(false)
+let loopToken = 0
+let silenceStreak = 0
+// Short microcopy under the central mic — invites at rest, mirrors state when busy/live.
+const stageHint = computed(() => {
+  if (liveActive.value) {
+    switch (voice.state.value) {
+      case 'listening':
+        return voice.interimTranscript.value || 'Listening…'
+      case 'thinking':
+        return 'Thinking…'
+      case 'speaking':
+        return captionText.value || 'Speaking…'
+      default:
+        return 'Starting…'
+    }
+  }
+  if (voice.state.value === 'thinking') return 'Thinking…'
+  if (voice.state.value === 'speaking') return captionText.value || 'Speaking…'
+  return voice.sttSupported ? 'Tap to talk' : 'Type below to begin'
+})
 
 function makeId(prefix = 'x') {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
@@ -53,19 +75,17 @@ function scrollThread() {
   })
 }
 
-async function submit(raw: string) {
-  const text = raw.trim()
-  if (!text || busy.value) return
+/** Generate + render a reply; speak it (awaiting in live mode so the loop waits for TTS). */
+async function respond(text: string, { awaitSpeech = false } = {}) {
   messages.value.push({ id: makeId('u'), role: 'user', text })
   inputText.value = ''
   scrollThread()
 
   voice.setThinking(true)
-  // Recent turns give Gemini context for open-ended questions (exclude the
-  // just-pushed current turn — the server appends it). Deterministic flows ignore it.
+  // Recent turns give Gemini context for open-ended questions (exclude the just-pushed
+  // current turn — the server appends it). Deterministic flows ignore it.
   const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
-  // Keep the prototype's "thinking" floor so deterministic replies don't feel
-  // instant; it overlaps with Gemini's network time rather than adding to it.
+  // Keep the prototype's "thinking" floor so deterministic replies don't feel instant.
   const minDelay = new Promise<void>((r) => setTimeout(r, 620 + Math.random() * 420))
   const res = await intents.answer(text, { history })
   await minDelay
@@ -77,47 +97,101 @@ async function submit(raw: string) {
     cards: res.cards.length ? res.cards : undefined,
     quickReplies: res.quickReplies,
   })
-  captionText.value = res.speech ?? res.reply
+  const speech = res.speech ?? res.reply
+  captionText.value = speech
   scrollThread()
-  void voice.speak(res.speech ?? res.reply)
+  if (awaitSpeech) await voice.speak(speech)
+  else void voice.speak(speech)
+}
+
+/** Typed / quick-reply turn. In live mode it interjects, then resumes the listen loop. */
+function sendText(raw: string) {
+  voice.unlockSpeech() // prime TTS + mic within the gesture (Safari/iOS autoplay)
+  const text = raw.trim()
+  if (!text) return
+  if (liveActive.value) {
+    loopToken++ // supersede the in-flight listen so its continuation bails
+    voice.abortListening()
+    void (async () => {
+      await respond(text, { awaitSpeech: true })
+      if (liveActive.value) void armListening()
+    })()
+  } else {
+    if (busy.value) return
+    void respond(text)
+  }
 }
 
 function onSend() {
-  voice.unlockSpeech() // prime TTS within the gesture (Safari/iOS autoplay)
-  void submit(inputText.value)
+  sendText(inputText.value)
 }
-
-async function toggleMic() {
-  voice.unlockSpeech() // prime TTS within the tap so the spoken reply is allowed
-  if (isListening.value) {
-    voice.stopListening()
-    return
-  }
-  if (busy.value) return
-  try {
-    const finalText = await voice.startListening({ owner: 'experience', withAnalyser: true })
-    if (finalText) void submit(finalText)
-  } catch (err) {
-    if (err instanceof VoiceError) {
-      if (err.code === 'permission') {
-        pushToast({ title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
-      } else if (err.code === 'network') {
-        pushToast({ title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
-      } else if (err.code === 'audio') {
-        pushToast({ title: 'No microphone found' })
-      }
-    }
-  }
-}
-
-// Mirror the live transcript into the input while dictating (prototype behavior)
-watch(voice.interimTranscript, (t) => {
-  if (isListening.value && t) inputText.value = t
-})
 
 function onQuickReply(value: string) {
-  voice.unlockSpeech() // prime TTS within the gesture (Safari/iOS autoplay)
-  void submit(value)
+  sendText(value)
+}
+
+// Hide the starter chips on blur, but after a beat so a chip tap still registers.
+function onInputBlur() {
+  setTimeout(() => {
+    inputFocused.value = false
+  }, 150)
+}
+
+function reportVoiceError(err: unknown) {
+  if (!(err instanceof VoiceError)) return
+  if (err.code === 'permission') {
+    pushToast({ title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
+  } else if (err.code === 'network') {
+    pushToast({ title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
+  } else if (err.code === 'audio') {
+    pushToast({ title: 'No microphone found' })
+  }
+}
+
+/** One listen → respond turn, then re-arm — the continuous hands-free loop. */
+async function armListening() {
+  if (!liveActive.value) return
+  const myToken = ++loopToken
+  let text = ''
+  try {
+    text = await voice.startListening({ owner: 'experience', withAnalyser: true })
+  } catch (err) {
+    reportVoiceError(err)
+    endLive()
+    return
+  }
+  if (myToken !== loopToken || !liveActive.value) return // superseded by a typed turn / ended
+  if (!text) {
+    if (++silenceStreak >= 3) endLive()
+    else void armListening()
+    return
+  }
+  silenceStreak = 0
+  await respond(text, { awaitSpeech: true })
+  if (myToken === loopToken && liveActive.value) void armListening()
+}
+
+/** Tap to begin a hands-free conversation. */
+function startLive() {
+  voice.unlockSpeech() // mic permission + iOS audio unlock happen inside the tap
+  if (liveActive.value) return
+  liveActive.value = true
+  silenceStreak = 0
+  void armListening()
+}
+
+function endLive() {
+  liveActive.value = false
+  loopToken++ // any in-flight listen continuation bails
+  voice.abortListening()
+  voice.cancelSpeech()
+  voice.setThinking(false)
+}
+
+/** Primary live control: interrupt while speaking, otherwise end the conversation. */
+function onLiveControl() {
+  if (voice.state.value === 'speaking') voice.cancelSpeech() // → awaited speak resolves → loop re-listens
+  else endLive()
 }
 
 function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
@@ -134,9 +208,7 @@ function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
 }
 
 function newChat() {
-  voice.abortListening()
-  voice.cancelSpeech()
-  voice.setThinking(false)
+  endLive()
   intents.reset()
   messages.value = []
   inputText.value = ''
@@ -158,20 +230,18 @@ function onKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
-  // Let users start typing immediately on desktop (avoid popping the mobile keyboard over the orb).
-  if (window.matchMedia('(pointer: fine)').matches) {
-    nextTick(() => inputEl.value?.focus())
-  }
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
+  liveActive.value = false
+  loopToken++
   voice.disposeVoice()
 })
 </script>
 
 <template>
-  <div class="dvx" :data-orb-state="voice.state.value">
+  <div class="dvx" :data-orb-state="voice.state.value" :data-live="liveActive">
     <!-- Orb backdrop -->
     <div class="dvx__backdrop">
       <DvOrbCanvas :state="voice.state.value" :audio-source="voice.getVoiceFrame" class="dvx__orb" />
@@ -242,48 +312,66 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <div class="dvx__composer">
-        <DvVoiceStatePill
-          variant="minimal"
-          :state="voice.state.value"
-          :label="voice.state.value === 'speaking' && captionText ? captionText : undefined"
-        />
-
-        <!-- Unified composer: type any time, or tap the mic to talk — no press-to-speak gate -->
-        <form class="dvx__inputrow" @submit.prevent="onSend">
-          <button
-            type="button"
-            class="dvx__iconbtn dvx__micbtn"
-            :class="{ 'dvx__micbtn--live': isListening, 'dvx__micbtn--disabled': !voice.sttSupported }"
-            :disabled="!voice.sttSupported"
-            :aria-label="isListening ? 'Stop listening' : 'Speak to Da Vinci'"
-            @click="toggleMic"
-          >
-            <v-icon size="18">{{ isListening ? 'mic-off' : 'mic' }}</v-icon>
-            <v-tooltip v-if="!voice.sttSupported" activator="parent" location="top">
-              Voice input needs Chrome or Edge — you can type instead
-            </v-tooltip>
+      <!-- Focal voice control — small mic centered in the orb -->
+      <div class="dvx__stage">
+        <button
+          type="button"
+          class="dvx__centermic"
+          :class="{ 'dvx__centermic--active': liveActive || busy, 'dvx__centermic--disabled': !voice.sttSupported }"
+          :disabled="!voice.sttSupported"
+          :aria-label="
+            liveActive
+              ? voice.state.value === 'speaking'
+                ? 'Interrupt'
+                : 'End conversation'
+              : 'Start voice conversation'
+          "
+          @click="liveActive ? onLiveControl() : startLive()"
+        >
+          <v-icon :size="26">{{ liveActive && voice.state.value === 'speaking' ? 'square' : 'mic' }}</v-icon>
+          <v-tooltip v-if="!voice.sttSupported" activator="parent" location="top">
+            Voice input needs Chrome or Edge — you can type below
+          </v-tooltip>
+        </button>
+        <p class="dvx__hint" :class="{ 'dvx__hint--live': liveActive && voice.state.value === 'listening' }">
+          {{ stageHint }}
+        </p>
+        <div v-if="liveActive" class="dvx__live-controls">
+          <button v-if="voice.state.value === 'speaking'" type="button" class="dvx__live-btn" @click="voice.cancelSpeech()">
+            <v-icon size="15">square</v-icon>
+            Interrupt
           </button>
+          <button type="button" class="dvx__live-btn dvx__live-btn--end" @click="endLive">
+            <v-icon size="15">x</v-icon>
+            End conversation
+          </button>
+        </div>
+      </div>
+
+      <!-- Text composer (secondary) — type any time -->
+      <div class="dvx__composer">
+        <form class="dvx__inputrow" @submit.prevent="onSend">
           <input
-            ref="inputEl"
             v-model="inputText"
             type="text"
-            :placeholder="isListening ? 'Listening…' : 'Message Da Vinci, or tap the mic to talk…'"
+            placeholder="Message Da Vinci…"
             aria-label="Message Da Vinci"
             class="dvx__input"
+            @focus="inputFocused = true"
+            @blur="onInputBlur"
           />
           <button
             type="submit"
             class="dvx__iconbtn dvx__iconbtn--send"
             aria-label="Send"
-            :disabled="!inputText.trim() || busy"
+            :disabled="!inputText.trim() || (!liveActive && busy)"
           >
             <v-icon size="18">arrow-up</v-icon>
           </button>
         </form>
 
-        <!-- Starter suggestion chips (before a conversation) -->
-        <div v-if="!hasThread" class="dvx__chips">
+        <!-- Starter suggestion chips — revealed only while the text field is focused -->
+        <div v-if="inputFocused && !hasThread && !liveActive" class="dvx__chips">
           <button
             v-for="chip in intents.suggestionChips"
             :key="chip.value"
@@ -470,27 +558,141 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
-/* In-bar mic — the voice control now lives inside the unified composer (left) */
-.dvx__micbtn {
-  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 4%, rgb(var(--v-theme-surface)));
-  border: 1px solid var(--dv-border);
-  color: var(--dv-text-secondary);
+/* ─── Stage: focal mic centered in the orb ────────────────────────────────── */
+.dvx__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
 }
 
-.dvx__micbtn:hover:not(:disabled) {
+/* Small mic — the primary "tap to talk" affordance, with a soft accent glow */
+.dvx__centermic {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--dv-accent) 30%, var(--dv-border));
+  background: rgb(var(--v-theme-surface));
+  color: var(--dv-accent);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow:
+    0 10px 30px -12px color-mix(in srgb, var(--dv-accent) 55%, transparent),
+    0 2px 8px rgba(24, 27, 33, 0.06);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s, background 0.2s, color 0.2s,
+    border-color 0.2s;
+}
+
+.dvx__centermic:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow:
+    0 16px 38px -12px color-mix(in srgb, var(--dv-accent) 70%, transparent),
+    0 2px 8px rgba(24, 27, 33, 0.08);
+}
+
+.dvx__centermic:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Active (live or busy): filled accent + pulsing ring */
+.dvx__centermic--active {
+  background: var(--dv-accent);
+  color: var(--dv-on-accent);
+  border-color: var(--dv-accent);
+}
+
+.dvx__centermic--active::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid var(--dv-accent);
+  opacity: 0.5;
+  animation: dvx-livepulse 1.6s ease-out infinite;
+}
+
+.dvx__centermic--disabled {
+  cursor: default;
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+/* Microcopy under the mic */
+.dvx__hint {
+  margin: 0;
+  font-family: var(--dvx-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dv-text-secondary);
+  min-height: 14px;
+  max-width: min(440px, 88vw);
+  transition: color 0.3s;
+}
+
+/* When showing the live interim transcript, switch to readable sentence case */
+.dvx__hint--live {
+  font-family: inherit;
+  font-size: 0.9375rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dv-text-primary);
+  line-height: 1.5;
+}
+
+/* ─── Live conversation controls ──────────────────────────────────────────── */
+.dvx__live-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.dvx__live-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--dvx-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid var(--dv-border);
+  color: var(--dv-text-secondary);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s, transform 0.1s;
+}
+
+.dvx__live-btn:hover {
   border-color: var(--dv-accent);
   color: var(--dv-accent);
 }
 
-.dvx__micbtn--live {
-  background: var(--dv-accent);
-  border-color: var(--dv-accent);
-  color: var(--dv-on-accent);
+.dvx__live-btn:active {
+  transform: scale(0.97);
 }
 
-.dvx__micbtn--disabled {
-  cursor: default;
-  opacity: 0.5;
+.dvx__live-btn--end:hover {
+  border-color: rgb(var(--v-theme-error));
+  color: rgb(var(--v-theme-error));
+}
+
+@keyframes dvx-livepulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
 }
 
 /* ─── Input row ───────────────────────────────────────────────────────── */
@@ -502,7 +704,7 @@ onBeforeUnmount(() => {
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--dv-border);
   border-radius: 999px;
-  padding: 7px;
+  padding: 7px 7px 7px 20px;
   box-shadow: 0 1px 2px rgba(24, 27, 33, 0.03), 0 18px 44px -28px rgba(24, 27, 33, 0.45);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -653,7 +855,8 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dvx__turn {
+  .dvx__turn,
+  .dvx__centermic--active::after {
     animation: none;
   }
 }
