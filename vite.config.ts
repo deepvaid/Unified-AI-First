@@ -5,6 +5,7 @@ import { fileURLToPath, URL } from 'node:url'
 import fs from 'node:fs'
 import path from 'node:path'
 import { synthesize, TtsError } from './src/server/tts'
+import { generateReply, GeminiError } from './src/server/gemini'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -69,6 +70,38 @@ export default defineConfig(({ mode }) => {
               res.statusCode = err instanceof TtsError ? err.status : 500
               res.setHeader('Content-Type', 'application/json')
               res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'tts failed' }))
+            }
+          })
+        },
+      },
+      // Dev parity for the /api/gemini serverless function (api/gemini.ts) — smart
+      // Da Vinci answers in `vite dev` too. Reads the key server-side (never bundled).
+      {
+        name: 'gemini-api-dev',
+        configureServer(server) {
+          server.middlewares.use('/api/gemini', async (req, res) => {
+            if (req.method !== 'POST') {
+              res.statusCode = 405
+              res.end('Method Not Allowed')
+              return
+            }
+            try {
+              const chunks: Buffer[] = []
+              for await (const c of req) chunks.push(c as Buffer)
+              const { text, history } = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
+              const result = await generateReply(text ?? '', {
+                apiKey: env.GEMINI_API_KEY || process.env.GEMINI_API_KEY,
+                model: env.GEMINI_MODEL || process.env.GEMINI_MODEL,
+                history,
+              })
+              res.statusCode = 200
+              res.setHeader('Content-Type', 'application/json')
+              res.setHeader('Cache-Control', 'no-store')
+              res.end(JSON.stringify(result))
+            } catch (err) {
+              res.statusCode = err instanceof GeminiError ? err.status : 500
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'gemini failed' }))
             }
           })
         },

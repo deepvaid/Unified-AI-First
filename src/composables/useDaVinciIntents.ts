@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { askGemini, type GeminiTurn } from '@/services/geminiClient'
 
 // Unified Da Vinci intent layer — port of the Marojarvis prototype's regex
 // classifier + handlers (formerly https://davinci-ai-first.vercel.app), re-domained
@@ -298,6 +299,47 @@ export function useDaVinciIntents() {
     }
   }
 
+  /**
+   * Async variant of `handle`. The multi-turn `pending` slot and the four known
+   * intents (campaign / product / revenue / segment) resolve instantly and
+   * identically to `handle`. Only open-ended (fallback) input is routed to Gemini
+   * Flash for a smart reply, degrading to the canned `buildFallback()` when Gemini
+   * is unavailable (no key / network / provider error).
+   */
+  async function answer(text: string, opts: { history?: GeminiTurn[] } = {}): Promise<DvIntentResult> {
+    const trimmed = text.trim()
+
+    // Deterministic flows stay byte-for-byte: a pending clarification or any known
+    // intent goes straight through the existing synchronous handler.
+    if (pending.value || classifyIntent(trimmed) !== 'fallback') {
+      return handle(text)
+    }
+
+    const smart = await askGemini(trimmed, opts.history ?? [])
+    if (!smart) return buildFallback()
+
+    return {
+      intent: 'fallback',
+      reply: smart.reply,
+      speech: smart.speech,
+      cards: smart.card
+        ? [
+            {
+              type: 'insight',
+              props: {
+                headline: smart.card.headline,
+                description: smart.card.description,
+                severity: smart.card.severity ?? 'info',
+                icon: 'sparkles',
+              },
+            },
+          ]
+        : [],
+      quickReplies: SUGGESTION_CHIPS,
+      pending: null,
+    }
+  }
+
   function reset() {
     pending.value = null
   }
@@ -306,6 +348,7 @@ export function useDaVinciIntents() {
     pending,
     classify: classifyIntent,
     handle,
+    answer,
     reset,
     suggestionChips: SUGGESTION_CHIPS,
   }

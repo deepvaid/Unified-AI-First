@@ -463,7 +463,7 @@ function processQuery(text: string) {
     }
   }
 
-  pendingTimers.push(setTimeout(() => {
+  pendingTimers.push(setTimeout(async () => {
     isTyping.value = false
     voice.setThinking(false)
     if (drafts && drafts.length > 0) {
@@ -506,6 +506,22 @@ function processQuery(text: string) {
         })
         if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(res.reply) }
         maybeSpeak(res.speech ?? res.reply)
+      } else if (!targetDashboard.value) {
+        // Open-ended question outside a dashboard widget-building context — answer
+        // with Gemini Flash (falls back to the canned hint if Gemini is unavailable).
+        const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
+        const smart = await intents.answer(text, { history })
+        messages.value.push({
+          id: makeId('a'),
+          role: 'assistant',
+          text: smart.reply,
+          componentData:
+            smart.cards.length || smart.quickReplies?.length
+              ? [{ type: 'intentCards', props: { cards: smart.cards, quickReplies: smart.quickReplies } }]
+              : undefined,
+        })
+        if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(smart.reply) }
+        maybeSpeak(smart.speech ?? smart.reply)
       } else {
         if (isVoiceMode.value) {
           orbitResponse.value = {
@@ -771,7 +787,11 @@ function onComposerKeydown(event: KeyboardEvent) {
         <div v-else class="dv-msg-bot">
           <DvOrbitOrb class="dv-msg-bot__avatar" :size="28" />
           <div class="dv-msg-bot__body">
-            <div v-if="msg.text" class="dv-msg-bot__intro" v-html="msg.text"></div>
+            <!-- HTML is allowed ONLY for the developer-authored widget-draft intro (buildIntro).
+                 All other assistant text (canned intents, Gemini replies) is interpolated, never
+                 fed to v-html — prevents XSS from model output. -->
+            <div v-if="msg.text && isDraftSetMessage(msg)" class="dv-msg-bot__intro" v-html="msg.text"></div>
+            <div v-else-if="msg.text" class="dv-msg-bot__intro">{{ msg.text }}</div>
 
             <template v-if="isDraftSetMessage(msg)">
               <div v-if="getDraftSetProps(msg)?.rationale" class="dv-msg-bot__rationale">
