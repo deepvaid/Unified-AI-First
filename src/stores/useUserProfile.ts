@@ -8,6 +8,10 @@ export const useUserProfile = defineStore('userProfile', () => {
   const hasAvatar = computed(() => avatarUrl.value.length > 0)
   const objectUrl = ref<string | null>(null)
 
+  // Signed-in user's display name (mock). Used for personalized greetings (e.g. Da Vinci).
+  const name = ref<string>('Ross Andrew Paquette')
+  const firstName = computed(() => name.value.trim().split(/\s+/)[0] || name.value)
+
   function setAvatar(url: string) {
     if (objectUrl.value) URL.revokeObjectURL(objectUrl.value)
     objectUrl.value = url.startsWith('blob:') ? url : null
@@ -20,5 +24,5 @@ export const useUserProfile = defineStore('userProfile', () => {
     avatarUrl.value = ''
   }
 
-  return { avatarUrl, hasAvatar, setAvatar, clearAvatar }
+  return { avatarUrl, hasAvatar, name, firstName, setAvatar, clearAvatar }
 })

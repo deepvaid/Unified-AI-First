@@ -301,7 +301,11 @@ function speakChunk(text: string, rate: number, pitch: number): Promise<void> {
 }
 
 // ── Cloud TTS (realistic voice via /api/tts) — falls back to Web Speech ──────
-let cloudTtsEnabled = true // flipped off for the session once the endpoint proves absent
+// Shipped default: OFF. Prod has no OPENAI_API_KEY, so the cloud endpoint 503s;
+// we use the built-in device voice directly (no wasted round-trip / failure path).
+// To re-enable the realistic cloud voice: set this to true AND configure
+// OPENAI_API_KEY in the environment (see api/tts.ts).
+let cloudTtsEnabled = false
 let cloudAbort: AbortController | null = null
 let playCtx: AudioContext | null = null
 let playAnalyser: AnalyserNode | null = null
@@ -382,6 +386,13 @@ async function speakViaBrowser(text: string, token: number, opts: SpeakOptions):
   // Chrome drops an utterance enqueued synchronously after cancel()
   await new Promise((r) => setTimeout(r, 60))
   if (token !== speakToken) return
+  // Chrome can leave the engine paused (esp. after idle/backgrounding) — silently
+  // swallowing speak(). resume() before each turn keeps the device voice reliable.
+  try {
+    window.speechSynthesis.resume()
+  } catch {
+    /* best-effort */
+  }
   for (const chunk of chunkSpeech(text)) {
     if (token !== speakToken) return
     await speakChunk(chunk, opts.rate ?? 0.99, opts.pitch ?? 1.0)

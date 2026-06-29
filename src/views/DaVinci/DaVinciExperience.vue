@@ -12,6 +12,7 @@ import DvToastStack from '@/components/copilot/DvToastStack.vue'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
 import { useDaVinciIntents, type DvCardDescriptor, type DvQuickReply } from '@/composables/useDaVinciIntents'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
+import { useUserProfile } from '@/stores/useUserProfile'
 
 interface ExperienceTurn {
   id: string
@@ -26,6 +27,7 @@ const router = useRouter()
 const voice = useDaVinciVoice()
 const intents = useDaVinciIntents()
 const { pushToast } = useDaVinciToasts()
+const profile = useUserProfile()
 
 const accountId = computed(() => {
   const id = Array.isArray(route.params.accountId) ? route.params.accountId[0] : route.params.accountId
@@ -312,6 +314,13 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
+      <!-- AI-first greeting — personalized welcome at rest -->
+      <div v-if="!hasThread && !liveActive" class="dvx__greeting">
+        <h1 class="dvx__greeting-title">
+          Hello <span class="dvx__greeting-name">{{ profile.firstName }}</span>, how can I help you today?
+        </h1>
+      </div>
+
       <!-- Focal voice control — small mic centered in the orb -->
       <div class="dvx__stage">
         <button
@@ -556,6 +565,25 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   gap: 16px;
+}
+
+/* ─── AI-first greeting ───────────────────────────────────────────────────── */
+.dvx__greeting {
+  text-align: center;
+  max-width: min(620px, 90vw);
+}
+
+.dvx__greeting-title {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.dvx__greeting-name {
+  color: var(--dv-accent);
 }
 
 /* ─── Stage: focal mic centered in the orb ────────────────────────────────── */
