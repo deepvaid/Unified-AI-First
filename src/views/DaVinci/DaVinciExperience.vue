@@ -49,7 +49,34 @@ const liveActive = ref(false)
 let loopToken = 0
 let silenceStreak = 0
 let autoStarted = false
-const greetingText = computed(() => `Hello ${profile.firstName}, how can I help you today?`)
+// Personalized greeting, split so the name keeps its accent during the typewriter reveal.
+const greetParts = computed(() => ({ pre: 'Hello ', name: profile.firstName, post: ', how can I help you today?' }))
+const greetingText = computed(() => `${greetParts.value.pre}${greetParts.value.name}${greetParts.value.post}`)
+const greetLen = computed(() => greetParts.value.pre.length + greetParts.value.name.length + greetParts.value.post.length)
+const typedCount = ref(0)
+const isTyping = ref(false)
+const typedPre = computed(() => greetParts.value.pre.slice(0, typedCount.value))
+const typedName = computed(() => greetParts.value.name.slice(0, Math.max(0, typedCount.value - greetParts.value.pre.length)))
+const typedPost = computed(() =>
+  greetParts.value.post.slice(0, Math.max(0, typedCount.value - greetParts.value.pre.length - greetParts.value.name.length)),
+)
+let typeTimer: ReturnType<typeof setInterval> | null = null
+/** Type the greeting out (~1.7s) so it appears as Da Vinci speaks it — the open's "wow" moment. */
+function playGreeting() {
+  if (typeTimer) clearInterval(typeTimer)
+  typedCount.value = 0
+  isTyping.value = true
+  const total = greetLen.value
+  const stepMs = Math.max(32, Math.round(1700 / total))
+  typeTimer = setInterval(() => {
+    typedCount.value = Math.min(total, typedCount.value + 1)
+    if (typedCount.value >= total) {
+      if (typeTimer) clearInterval(typeTimer)
+      typeTimer = null
+      isTyping.value = false
+    }
+  }, stepMs)
+}
 // Short microcopy under the central mic — invites at rest, mirrors state when busy/live.
 const stageHint = computed(() => {
   if (liveActive.value) {
@@ -242,6 +269,7 @@ function newChat() {
   messages.value = []
   inputText.value = ''
   captionText.value = ''
+  playGreeting() // re-type the greeting on the fresh rest screen
   pushToast({ title: 'New chat started' })
 }
 
@@ -259,11 +287,13 @@ function onKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
+  playGreeting() // type the greeting out (visual; always runs)
   autoGreet() // speak the greeting + auto-connect the mic (best-effort; see autoGreet)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
+  if (typeTimer) clearInterval(typeTimer)
   liveActive.value = false
   loopToken++
   voice.disposeVoice()
@@ -342,10 +372,13 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <!-- AI-first greeting — personalized welcome at rest -->
+      <!-- AI-first greeting — types out as Da Vinci speaks it -->
       <div v-if="!hasThread && !liveActive" class="dvx__greeting">
-        <h1 class="dvx__greeting-title">
-          Hello <span class="dvx__greeting-name">{{ profile.firstName }}</span>, how can I help you today?
+        <h1 class="dvx__greeting-title" :aria-label="greetingText">
+          <span aria-hidden="true"
+            >{{ typedPre }}<span class="dvx__greeting-name">{{ typedName }}</span
+            >{{ typedPost }}<span v-if="isTyping" class="dvx__caret"></span
+          ></span>
         </h1>
       </div>
 
@@ -612,6 +645,29 @@ onBeforeUnmount(() => {
 
 .dvx__greeting-name {
   color: var(--dv-accent);
+}
+
+/* Blinking typewriter caret */
+.dvx__caret {
+  display: inline-block;
+  width: 0.07em;
+  height: 1.05em;
+  margin-left: 0.06em;
+  vertical-align: -0.14em;
+  background: var(--dv-accent);
+  border-radius: 1px;
+  animation: dvx-caret 0.9s steps(1) infinite;
+}
+
+@keyframes dvx-caret {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* ─── Stage: focal mic centered in the orb ────────────────────────────────── */
@@ -912,7 +968,8 @@ onBeforeUnmount(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .dvx__turn,
-  .dvx__centermic--active::after {
+  .dvx__centermic--active::after,
+  .dvx__caret {
     animation: none;
   }
 }
