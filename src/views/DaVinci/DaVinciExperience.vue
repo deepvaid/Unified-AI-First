@@ -48,6 +48,8 @@ const avatarSpeed = computed(() => ({ idle: 1, listening: 2.4, thinking: 1.6, sp
 const liveActive = ref(false)
 let loopToken = 0
 let silenceStreak = 0
+let autoStarted = false
+const greetingText = computed(() => `Hello ${profile.firstName}, how can I help you today?`)
 // Short microcopy under the central mic — invites at rest, mirrors state when busy/live.
 const stageHint = computed(() => {
   if (liveActive.value) {
@@ -150,15 +152,17 @@ function reportVoiceError(err: unknown) {
   }
 }
 
-/** One listen → respond turn, then re-arm — the continuous hands-free loop. */
-async function armListening() {
+/** One listen → respond turn, then re-arm — the continuous hands-free loop.
+ *  `silent` suppresses the error toast for the first auto-start arm, where a
+ *  cold-load mic may be blocked by the browser until the user interacts. */
+async function armListening(silent = false) {
   if (!liveActive.value) return
   const myToken = ++loopToken
   let text = ''
   try {
     text = await voice.startListening({ owner: 'experience', withAnalyser: true })
   } catch (err) {
-    reportVoiceError(err)
+    if (!silent) reportVoiceError(err)
     endLive()
     return
   }
@@ -194,6 +198,29 @@ function endLive() {
 function onLiveControl() {
   if (voice.state.value === 'speaking') voice.cancelSpeech() // → awaited speak resolves → loop re-listens
   else endLive()
+}
+
+/**
+ * On open: speak the greeting aloud, then auto-connect the mic (hands-free).
+ * Best-effort — browsers block audio/mic without a user gesture, so a cold
+ * refresh may stay silent until the first tap; opening Da Vinci from inside the
+ * app carries the gesture and auto-starts. Degrades to the visible greeting +
+ * tap-to-talk, with no error toast on the initial (possibly blocked) mic arm.
+ */
+function autoGreet() {
+  if (autoStarted) return
+  autoStarted = true
+  if (voice.muted.value) return // respect "Voice off"
+  voice.unlockSpeech()
+  voice.speak(greetingText.value, {
+    onend: () => {
+      if (voice.sttSupported && !liveActive.value && messages.value.length === 0) {
+        liveActive.value = true
+        silenceStreak = 0
+        void armListening(true) // silent: no toast if the cold-load mic is blocked
+      }
+    },
+  })
 }
 
 function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
@@ -232,6 +259,7 @@ function onKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
+  autoGreet() // speak the greeting + auto-connect the mic (best-effort; see autoGreet)
 })
 
 onBeforeUnmount(() => {
