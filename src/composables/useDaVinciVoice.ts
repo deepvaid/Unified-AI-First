@@ -235,7 +235,8 @@ export function rankVoices(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice
     if (MALE_VOICE.test(v.name)) s += 40 // prefer a male voice (Da Vinci's persona)
     else if (FEMALE_VOICE.test(v.name)) s -= 25 // de-prioritize obviously-female voices
     if (/online \(natural\)|natural|neural|premium|enhanced/i.test(v.name)) s += 30
-    if (/^en[-_]/i.test(v.lang)) s += 6
+    if (/^en[-_]?gb/i.test(v.lang)) s += 50 // UK / British English strongly preferred
+    else if (/^en[-_]/i.test(v.lang)) s += 6
     return s
   }
   return [...voices].sort((a, b) => score(b) - score(a))
