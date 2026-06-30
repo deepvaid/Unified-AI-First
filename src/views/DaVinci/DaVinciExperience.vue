@@ -246,7 +246,9 @@ function autoGreet() {
   // fires) and surface the tap-to-start affordance.
   greetProbe = setTimeout(() => {
     greetProbe = null
-    if (!becameAudible && !liveActive.value && messages.value.length === 0) {
+    // !isSpeaking guards Chrome: its onstart can lag past the probe while audio is
+    // genuinely playing — don't cancel a working greeting / flip to "Tap to start".
+    if (!becameAudible && !voice.isSpeaking() && !liveActive.value && messages.value.length === 0) {
       voice.cancelSpeech()
       // The tap-to-start affordance is the focal mic — only offer it where the mic
       // is actually tappable (STT-capable browsers, i.e. Chrome/Edge).
