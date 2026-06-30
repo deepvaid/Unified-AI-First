@@ -49,7 +49,7 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
   const clean = (text ?? '').trim().slice(0, 2000)
   if (!clean) throw new GeminiError(400, 'Empty text')
 
-  const model = opts.model || 'gemini-2.5-flash'
+  const model = opts.model || 'gemini-3.1-flash-lite'
 
   // Trim history to the last 6 turns and map roles to Gemini's ('model' for assistant).
   const history = (opts.history ?? [])
@@ -63,6 +63,10 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
     generationConfig: {
       temperature: 0.7,
       maxOutputTokens: 800,
+      // Disable extended "thinking" — for 1-4 sentence conversational replies it adds
+      // ~1-4s of latency (and billed thinking tokens) with no quality gain. Biggest
+      // latency win for the voice copilot. Honored on the 3.x Flash-Lite line.
+      thinkingConfig: { thinkingBudget: 0 },
       responseMimeType: 'application/json',
       responseSchema: {
         type: 'object',
