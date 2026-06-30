@@ -54,34 +54,8 @@ let autoStarted = false
 // the greeting aloud on the first tap — so it works on a fresh load / shared link.
 const audioBlocked = ref(false)
 let greetProbe: ReturnType<typeof setTimeout> | null = null
-// Personalized greeting, split so the name keeps its accent during the typewriter reveal.
-const greetParts = computed(() => ({ pre: 'Hello ', name: profile.firstName, post: ', how can I help you today?' }))
-const greetingText = computed(() => `${greetParts.value.pre}${greetParts.value.name}${greetParts.value.post}`)
-const greetLen = computed(() => greetParts.value.pre.length + greetParts.value.name.length + greetParts.value.post.length)
-const typedCount = ref(0)
-const isTyping = ref(false)
-const typedPre = computed(() => greetParts.value.pre.slice(0, typedCount.value))
-const typedName = computed(() => greetParts.value.name.slice(0, Math.max(0, typedCount.value - greetParts.value.pre.length)))
-const typedPost = computed(() =>
-  greetParts.value.post.slice(0, Math.max(0, typedCount.value - greetParts.value.pre.length - greetParts.value.name.length)),
-)
-let typeTimer: ReturnType<typeof setInterval> | null = null
-/** Type the greeting out (~1.7s) so it appears as Da Vinci speaks it — the open's "wow" moment. */
-function playGreeting() {
-  if (typeTimer) clearInterval(typeTimer)
-  typedCount.value = 0
-  isTyping.value = true
-  const total = greetLen.value
-  const stepMs = Math.max(32, Math.round(1700 / total))
-  typeTimer = setInterval(() => {
-    typedCount.value = Math.min(total, typedCount.value + 1)
-    if (typedCount.value >= total) {
-      if (typeTimer) clearInterval(typeTimer)
-      typeTimer = null
-      isTyping.value = false
-    }
-  }, stepMs)
-}
+// Personalized greeting — spoken aloud on open (the on-screen heading was removed).
+const greetingText = computed(() => `Hello ${profile.firstName}, how can I help you today?`)
 // Short microcopy under the central mic — invites at rest, mirrors state when busy/live.
 const stageHint = computed(() => {
   if (liveActive.value) {
@@ -282,7 +256,6 @@ function autoGreet() {
 function startGreeting() {
   audioBlocked.value = false
   voice.unlockSpeech()
-  playGreeting() // re-type the greeting as it speaks
   voice.speak(greetingText.value, { onend: listenAfterGreeting })
 }
 
@@ -318,7 +291,6 @@ function newChat() {
   inputText.value = ''
   captionText.value = ''
   audioBlocked.value = false // user has interacted by now — audio is unlocked
-  playGreeting() // re-type the greeting on the fresh rest screen
   pushToast({ title: 'New chat started' })
 }
 
@@ -336,13 +308,11 @@ function onKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
-  playGreeting() // type the greeting out (visual; always runs)
   autoGreet() // speak the greeting + auto-connect the mic (best-effort; see autoGreet)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
-  if (typeTimer) clearInterval(typeTimer)
   if (greetProbe) clearTimeout(greetProbe)
   liveActive.value = false
   loopToken++
@@ -421,16 +391,6 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </section>
-
-      <!-- AI-first greeting — types out as Da Vinci speaks it -->
-      <div v-if="!hasThread && !liveActive" class="dvx__greeting">
-        <h1 class="dvx__greeting-title" :aria-label="greetingText">
-          <span aria-hidden="true"
-            >{{ typedPre }}<span class="dvx__greeting-name">{{ typedName }}</span
-            >{{ typedPost }}<span v-if="isTyping" class="dvx__caret"></span
-          ></span>
-        </h1>
-      </div>
 
       <!-- Focal voice control — small mic centered in the orb -->
       <div class="dvx__stage">
@@ -682,48 +642,6 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   gap: 16px;
-}
-
-/* ─── AI-first greeting ───────────────────────────────────────────────────── */
-.dvx__greeting {
-  text-align: center;
-  max-width: min(620px, 90vw);
-}
-
-.dvx__greeting-title {
-  margin: 0;
-  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
-  font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.dvx__greeting-name {
-  color: var(--dv-accent);
-}
-
-/* Blinking typewriter caret */
-.dvx__caret {
-  display: inline-block;
-  width: 0.07em;
-  height: 1.05em;
-  margin-left: 0.06em;
-  vertical-align: -0.14em;
-  background: var(--dv-accent);
-  border-radius: 1px;
-  animation: dvx-caret 0.9s steps(1) infinite;
-}
-
-@keyframes dvx-caret {
-  0%,
-  50% {
-    opacity: 1;
-  }
-  50.01%,
-  100% {
-    opacity: 0;
-  }
 }
 
 /* ─── Stage: focal mic centered in the orb ────────────────────────────────── */
@@ -1037,7 +955,7 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
   .dvx__turn,
   .dvx__centermic--active::after,
-  .dvx__caret {
+  .dvx__centermic--invite::after {
     animation: none;
   }
 }
