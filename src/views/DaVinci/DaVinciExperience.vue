@@ -54,6 +54,9 @@ let autoStarted = false
 // the greeting aloud on the first tap — so it works on a fresh load / shared link.
 const audioBlocked = ref(false)
 let greetProbe: ReturnType<typeof setTimeout> | null = null
+// When autoplay is blocked, the first interaction anywhere on the screen speaks
+// the greeting — so it plays on every fresh load without hunting for the mic.
+let gestureGreetCleanup: (() => void) | null = null
 // Personalized greeting — spoken aloud on open (the on-screen heading was removed).
 const greetingText = computed(() => `Hello ${profile.firstName}, how can I help you today?`)
 // Short microcopy under the central mic — invites at rest, mirrors state when busy/live.
@@ -248,12 +251,42 @@ function autoGreet() {
       // The tap-to-start affordance is the focal mic — only offer it where the mic
       // is actually tappable (STT-capable browsers, i.e. Chrome/Edge).
       if (voice.sttSupported) audioBlocked.value = true
+      // Also let the first interaction *anywhere* speak the greeting, so it plays
+      // on every fresh load without the user having to find the mic.
+      armGestureGreeting()
     }
   }, 1500)
 }
 
+/** Arm a one-shot listener: the first gesture anywhere (except typing in the
+ *  composer or tapping the mic, which have their own flows) speaks the greeting. */
+function armGestureGreeting() {
+  if (gestureGreetCleanup) return
+  const handler = (e: Event) => {
+    const target = e.target as HTMLElement | null
+    if (target?.closest('.dvx__composer, .dvx__centermic')) return // let typing / mic do their thing
+    if (liveActive.value || messages.value.length > 0 || voice.muted.value) {
+      disarmGestureGreeting()
+      return
+    }
+    startGreeting() // disarms internally + speaks within this gesture
+  }
+  document.addEventListener('pointerdown', handler, true)
+  document.addEventListener('keydown', handler, true)
+  gestureGreetCleanup = () => {
+    document.removeEventListener('pointerdown', handler, true)
+    document.removeEventListener('keydown', handler, true)
+    gestureGreetCleanup = null
+  }
+}
+
+function disarmGestureGreeting() {
+  gestureGreetCleanup?.()
+}
+
 /** Tap-to-start (fresh load): speak the greeting within the user gesture, then listen. */
 function startGreeting() {
+  disarmGestureGreeting()
   audioBlocked.value = false
   voice.unlockSpeech()
   voice.speak(greetingText.value, { onend: listenAfterGreeting })
@@ -314,6 +347,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
   if (greetProbe) clearTimeout(greetProbe)
+  disarmGestureGreeting()
   liveActive.value = false
   loopToken++
   voice.disposeVoice()
