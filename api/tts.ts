@@ -1,6 +1,6 @@
-// Vercel serverless function: POST /api/tts { text, voice?, model? } → audio/mpeg.
-// Keeps OPENAI_API_KEY server-side (Vercel env var), so the key is never shipped
-// to the browser. Mirrored by a Vite dev middleware (vite.config.ts) for local dev.
+// Vercel serverless function: POST /api/tts { text, voice?, model? } → audio/wav.
+// Synthesizes via Gemini TTS, keeping GEMINI_API_KEY server-side (Vercel env var) so
+// the key is never shipped to the browser. Mirrored by a Vite dev middleware for local dev.
 import { synthesize, TtsError } from '../src/server/tts.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,7 +24,7 @@ export default async function handler(req: any, res: any) {
   try {
     const { text, voice, model } = (await readJson(req)) as { text?: string; voice?: string; model?: string }
     const { audio, contentType } = await synthesize(text ?? '', {
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: process.env.GEMINI_API_KEY,
       voice: voice ?? process.env.TTS_VOICE,
       model: model ?? process.env.TTS_MODEL,
     })

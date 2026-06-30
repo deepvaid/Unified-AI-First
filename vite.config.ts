@@ -58,7 +58,7 @@ export default defineConfig(({ mode }) => {
               for await (const c of req) chunks.push(c as Buffer)
               const { text, voice, model } = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
               const { audio, contentType } = await synthesize(text ?? '', {
-                apiKey: env.OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+                apiKey: env.GEMINI_API_KEY || process.env.GEMINI_API_KEY,
                 voice: voice ?? env.TTS_VOICE,
                 model: model ?? env.TTS_MODEL,
               })

@@ -414,22 +414,28 @@ function speakChunk(text: string, rate: number, pitch: number, token: number, on
   })
 }
 
-// ── Cloud TTS (realistic voice via /api/tts) — falls back to Web Speech ──────
-// Shipped default: OFF. Prod has no OPENAI_API_KEY, so the cloud endpoint 503s;
-// we use the built-in device voice directly (no wasted round-trip / failure path).
-// To re-enable the realistic cloud voice: set this to true AND configure
-// OPENAI_API_KEY in the environment (see api/tts.ts).
-let cloudTtsEnabled = false
+// ── Cloud TTS (realistic Gemini voice via /api/tts) — falls back to Web Speech ──
+// ON: the natural Gemini voice. Per-utterance fallback to the browser voice if a
+// synth fails/stalls (we do NOT disable cloud for the whole session). Synthesized
+// WAV is cached by text, so the prefetched greeting + any repeated line play
+// instantly; only a first-seen dynamic reply pays the ~5s synth.
+let cloudTtsEnabled = true
 let cloudAbort: AbortController | null = null
 let playCtx: AudioContext | null = null
 let playAnalyser: AnalyserNode | null = null
 let playSource: AudioBufferSourceNode | null = null
 const playFreq = new Uint8Array(256) // playback FFT → feeds the orb the real voice
+// text → synthesized WAV bytes. Seeded by prefetch() (e.g. the pre-baked greeting);
+// decodeAudioData detaches its input, so always decode a .slice(0) copy.
+const cloudAudioCache = new Map<string, ArrayBuffer>()
 
-/** Decode mp3 bytes and play through an analyser (so the orb reacts to the real audio). */
-async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number): Promise<void> {
+/** Decode WAV bytes and play through an analyser (so the orb reacts to the real audio). */
+async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number, onAudible?: () => void): Promise<void> {
   if (!playCtx) playCtx = new AudioContext()
   if (playCtx.state === 'suspended') await playCtx.resume().catch(() => {})
+  // Autoplay-blocked (cold load, no user gesture yet): don't fake playback — bail so
+  // the caller's probe shows tap-to-start; the gesture-driven retry will play it.
+  if (playCtx.state !== 'running') return
   const audioBuf = await playCtx.decodeAudioData(arrayBuf)
   if (token !== speakToken) return
   const src = playCtx.createBufferSource()
@@ -447,6 +453,7 @@ async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number): Promise<vo
     src.onended = () => resolve()
     try {
       src.start()
+      onAudible?.() // real audio is now playing (ctx is running)
     } catch {
       resolve()
     }
@@ -463,37 +470,63 @@ async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number): Promise<vo
 }
 
 type CloudOutcome = 'played' | 'cancelled' | 'unavailable'
-async function speakViaCloud(text: string, token: number): Promise<CloudOutcome> {
-  const controller = new AbortController()
-  cloudAbort = controller
-  let resp: Response
-  try {
-    resp = await fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-      signal: controller.signal,
-    })
-  } catch {
-    return token !== speakToken || controller.signal.aborted ? 'cancelled' : 'unavailable'
-  } finally {
-    if (cloudAbort === controller) cloudAbort = null
+async function speakViaCloud(text: string, token: number, opts: SpeakOptions): Promise<CloudOutcome> {
+  const key = text.trim()
+  let bytes = cloudAudioCache.get(key) ?? null
+  if (!bytes) {
+    const controller = new AbortController()
+    cloudAbort = controller
+    let resp: Response
+    try {
+      resp = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: key }),
+        signal: controller.signal,
+      })
+    } catch {
+      return token !== speakToken || controller.signal.aborted ? 'cancelled' : 'unavailable'
+    } finally {
+      if (cloudAbort === controller) cloudAbort = null
+    }
+    if (token !== speakToken) return 'cancelled'
+    if (!resp.ok) return 'unavailable' // 503 = not configured, etc.
+    try {
+      bytes = await resp.arrayBuffer()
+    } catch {
+      return token !== speakToken ? 'cancelled' : 'unavailable'
+    }
+    if (token !== speakToken) return 'cancelled'
+    if (bytes.byteLength) cloudAudioCache.set(key, bytes)
   }
-  if (token !== speakToken) return 'cancelled'
-  if (!resp.ok) return 'unavailable' // 503 = not configured, etc.
-  let arrayBuf: ArrayBuffer
   try {
-    arrayBuf = await resp.arrayBuffer()
-  } catch {
-    return token !== speakToken ? 'cancelled' : 'unavailable'
-  }
-  if (token !== speakToken) return 'cancelled'
-  try {
-    await playCloudBuffer(arrayBuf, token)
+    await playCloudBuffer(bytes.slice(0), token, opts.onAudible) // slice: decodeAudioData detaches it
   } catch {
     return token !== speakToken ? 'cancelled' : 'unavailable'
   }
   return token === speakToken ? 'played' : 'cancelled'
+}
+
+/** Warm the cache for a line so it later plays instantly (no ~5s synth at speak time).
+ *  Pass `url` to seed from a pre-baked static asset (e.g. the greeting WAV). Best-effort. */
+async function prefetchSpeech(text: string, url?: string): Promise<void> {
+  if (!cloudTtsEnabled) return
+  const key = text.trim()
+  if (!key || cloudAudioCache.has(key)) return
+  try {
+    const resp = url
+      ? await fetch(url)
+      : await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: key }),
+        })
+    if (!resp.ok) return
+    const buf = await resp.arrayBuffer()
+    if (buf.byteLength) cloudAudioCache.set(key, buf)
+  } catch {
+    /* best-effort prefetch */
+  }
 }
 
 async function speakViaBrowser(text: string, token: number, opts: SpeakOptions, didCancel = false): Promise<void> {
@@ -553,11 +586,12 @@ async function speak(text: string, opts: SpeakOptions = {}): Promise<void> {
       await new Promise((r) => setTimeout(r, speakEstimateMs))
       return
     }
-    // 1. Realistic cloud voice (if /api/tts has a key configured)
+    // 1. Realistic Gemini cloud voice (cached → instant; first synth ~5s)
     if (cloudTtsEnabled) {
-      const outcome = await speakViaCloud(clean, token)
+      const outcome = await speakViaCloud(clean, token, opts)
       if (outcome === 'played' || outcome === 'cancelled') return
-      cloudTtsEnabled = false // no working endpoint — stop trying this session
+      // 'unavailable' → fall through to the browser voice for THIS utterance only
+      // (keep cloud enabled so the next line still tries the natural voice).
     }
     // 2. Browser Web Speech fallback
     if (ttsSupported) {
@@ -744,6 +778,7 @@ export function useDaVinciVoice() {
     abortListening,
     setThinking,
     speak,
+    prefetchSpeech,
     unlockSpeech,
     cancelSpeech,
     getVoiceFrame,

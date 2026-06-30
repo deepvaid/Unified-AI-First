@@ -58,7 +58,7 @@ let greetProbe: ReturnType<typeof setTimeout> | null = null
 // the greeting — so it plays on every fresh load without hunting for the mic.
 let gestureGreetCleanup: (() => void) | null = null
 // Personalized greeting — spoken aloud on open (the on-screen heading was removed).
-const greetingText = computed(() => `Hello ${profile.firstName}, how can I help you today?`)
+const greetingText = computed(() => `Hey ${profile.firstName}, how can I help you today?`)
 // Diagnostic overlay: append ?debug=1 to the URL to see voices / chosen voice
 // (local vs REMOTE) / last TTS lifecycle event / speaking state on the page itself.
 const showDebug = computed(() => route.query.debug === '1')
@@ -347,6 +347,10 @@ function onKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
+  // Seed the greeting audio from the pre-baked static WAV so it plays INSTANTLY in
+  // the natural Gemini voice on the first gesture (no ~5s synth wait). Falls back to
+  // browser TTS if the asset is missing.
+  void voice.prefetchSpeech(greetingText.value, '/davinci/greeting.wav')
   autoGreet() // speak the greeting + auto-connect the mic (best-effort; see autoGreet)
 })
 
