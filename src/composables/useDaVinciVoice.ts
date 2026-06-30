@@ -202,15 +202,35 @@ let speakEstimateMs = 0
 // Chrome GC-collects utterances before onend unless something references them
 const liveUtterances: SpeechSynthesisUtterance[] = []
 
-/** Marojarvis voice-ranking port — prefers natural/neural voices. Pure, testable. */
+// Diagnostic snapshot for the on-screen ?debug=1 readout — lets the failure be
+// inspected on a user's machine (chosen voice local-vs-remote, last lifecycle
+// event) without DevTools. Zero cost when the panel isn't rendered.
+export interface VoiceDebug {
+  voices: number
+  chosen: string
+  lastEvent: string
+}
+const debugRef = ref<VoiceDebug>({ voices: 0, chosen: '—', lastEvent: '—' })
+
+/** Marojarvis voice-ranking port — prefers natural/neural voices. Pure, testable.
+ *  localService is DOMINANT: a local voice always outranks any remote one. Chrome's
+ *  remote/network voices (e.g. "Google UK English Male") intermittently stop
+ *  producing audio — the engine reports speaking===true but onstart/audio never
+ *  fire, especially after a few cancel/re-speak cycles (the greeting + every
+ *  conversational turn). Local voices (Daniel, etc.) start in ~15ms and never
+ *  silently drop. This is why the greeting "worked a couple of times then stopped"
+ *  in Chrome while Safari (local-only voice list) was always fine. The +100 weight
+ *  exceeds the sum of all quality bonuses (max 56), so locals win outright while the
+ *  bonuses still order voices *within* the local set (and remotes remain a
+ *  last-resort fallback on platforms that expose no local voice). */
 export function rankVoices(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice[] {
   const score = (v: SpeechSynthesisVoice) => {
     let s = 0
+    if (v.localService) s += 100 // local always beats remote — see note above
     if (/online \(natural\)|natural|neural|premium|enhanced/i.test(v.name)) s += 30
     if (/google uk english male/i.test(v.name)) s += 12
     if (/\b(daniel|arthur|oliver|george|thomas|aaron)\b/i.test(v.name)) s += 8
     if (/^en[-_]/i.test(v.lang)) s += 6
-    if (v.localService) s += 1
     return s
   }
   return [...voices].sort((a, b) => score(b) - score(a))
@@ -218,6 +238,7 @@ export function rankVoices(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice
 
 function refreshVoices() {
   rankedVoices = rankVoices(window.speechSynthesis.getVoices())
+  debugRef.value = { ...debugRef.value, voices: rankedVoices.length }
 }
 
 if (ttsSupported) {
@@ -332,8 +353,10 @@ function speakChunk(text: string, rate: number, pitch: number, token: number, on
     if (voice) {
       utterance.voice = voice
       utterance.lang = voice.lang || (hasWindow && navigator.language) || 'en-US'
+      debugRef.value = { ...debugRef.value, chosen: `${voice.name} (${voice.localService ? 'local' : 'REMOTE'})` }
     } else {
       utterance.lang = (hasWindow && navigator.language) || 'en-US' // last resort: no voices at all
+      debugRef.value = { ...debugRef.value, chosen: 'none (lang-only)' }
     }
 
     speakStartedAt = performance.now()
@@ -356,10 +379,17 @@ function speakChunk(text: string, rate: number, pitch: number, token: number, on
     const stallGuard = setTimeout(finish, speakEstimateMs * 2 + 2000)
     utterance.onstart = () => {
       started = true
+      debugRef.value = { ...debugRef.value, lastEvent: `onstart @${Math.round(performance.now() - speakStartedAt)}ms` }
       onAudible?.()
     }
-    utterance.onend = finish
-    utterance.onerror = finish
+    utterance.onend = () => {
+      debugRef.value = { ...debugRef.value, lastEvent: 'onend' }
+      finish()
+    }
+    utterance.onerror = (e) => {
+      debugRef.value = { ...debugRef.value, lastEvent: `onerror: ${(e as SpeechSynthesisErrorEvent).error}` }
+      finish()
+    }
     window.speechSynthesis.speak(utterance)
     // Chrome-only self-heal: the cold engine sometimes silently drops the first
     // utterance (speaking flips but onstart/onend never fire). If it hasn't
@@ -707,6 +737,7 @@ export function useDaVinciVoice() {
     micActive: computed(() => micActiveRef.value),
     micLevel: computed(() => micLevelRef.value),
     muted: computed(() => mutedRef.value),
+    voiceDebug: computed(() => debugRef.value),
     setMuted,
     startListening,
     stopListening,

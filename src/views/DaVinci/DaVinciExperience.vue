@@ -59,6 +59,9 @@ let greetProbe: ReturnType<typeof setTimeout> | null = null
 let gestureGreetCleanup: (() => void) | null = null
 // Personalized greeting — spoken aloud on open (the on-screen heading was removed).
 const greetingText = computed(() => `Hello ${profile.firstName}, how can I help you today?`)
+// Diagnostic overlay: append ?debug=1 to the URL to see voices / chosen voice
+// (local vs REMOTE) / last TTS lifecycle event / speaking state on the page itself.
+const showDebug = computed(() => route.query.debug === '1')
 // Short microcopy under the central mic — invites at rest, mirrors state when busy/live.
 const stageHint = computed(() => {
   if (liveActive.value) {
@@ -359,6 +362,16 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="dvx" :data-orb-state="voice.state.value" :data-live="liveActive">
+    <!-- Diagnostic overlay (append ?debug=1) — voice path visibility without DevTools -->
+    <div v-if="showDebug" class="dvx__debug">
+      <div><strong>Da Vinci voice debug</strong></div>
+      <div>state: {{ voice.state.value }}<span v-if="voice.muted.value"> · muted</span></div>
+      <div>voices: {{ voice.voiceDebug.value.voices }}</div>
+      <div>chosen: {{ voice.voiceDebug.value.chosen }}</div>
+      <div>last event: {{ voice.voiceDebug.value.lastEvent }}</div>
+      <div>audioBlocked: {{ audioBlocked }}</div>
+    </div>
+
     <!-- Orb backdrop -->
     <div class="dvx__backdrop">
       <DvOrbCanvas :state="voice.state.value" :audio-source="voice.getVoiceFrame" class="dvx__orb" />
@@ -514,6 +527,21 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* Diagnostic overlay (?debug=1) — intentionally plain; never shipped to users. */
+.dvx__debug {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 9999;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.82);
+  color: #d6fcd6;
+  font: 12px/1.5 ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .dvx {
   /* prototype micro-label character without shipping a new font */
   --dvx-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
