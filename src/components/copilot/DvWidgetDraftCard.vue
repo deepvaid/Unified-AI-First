@@ -258,13 +258,15 @@ function handleExpandAdd() {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  background: var(--dv-grad);
-  color: #1E1B4B;
+  /* Soft Da Vinci accent tint — matches the orb/mic/chips; legible at this size.
+     The brand gradient read muddy and low-contrast as a tiny pill background. */
+  background: var(--dv-accent-soft);
+  color: var(--dv-accent);
   border: none;
 }
 
 .dv-draft__badge :deep(.v-icon) {
-  color: #1E1B4B !important;
+  color: var(--dv-accent) !important;
 }
 
 .dv-draft__title-block {
