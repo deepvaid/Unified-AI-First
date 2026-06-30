@@ -72,7 +72,7 @@ export async function synthesize(text: string, opts: SynthesisOptions): Promise<
   const clean = (text ?? '').trim().slice(0, 2000)
   if (!clean) throw new TtsError(400, 'Empty text')
 
-  const voice = opts.voice || 'Kore' // one of Gemini's 30 prebuilt voices
+  const voice = opts.voice || 'Charon' // male; one of Gemini's 30 prebuilt voices
   const model = opts.model || 'gemini-3.1-flash-tts-preview'
 
   const body = {

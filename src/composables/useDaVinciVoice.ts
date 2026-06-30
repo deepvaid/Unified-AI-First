@@ -223,13 +223,18 @@ const debugRef = ref<VoiceDebug>({ voices: 0, chosen: '—', lastEvent: '—' })
  *  exceeds the sum of all quality bonuses (max 56), so locals win outright while the
  *  bonuses still order voices *within* the local set (and remotes remain a
  *  last-resort fallback on platforms that expose no local voice). */
+// Da Vinci is a male persona — bias the browser (reply) voice toward a male one.
+const MALE_VOICE =
+  /\b(male|alex|daniel|david|fred|tom|thomas|arthur|oliver|george|aaron|james|mark|guy|eric|matthew|brian|nathan|ryan|paul|gordon|rishi|reed|albert|junior)\b/i
+const FEMALE_VOICE =
+  /\b(female|samantha|karen|victoria|tessa|moira|fiona|serena|allison|ava|susan|zira|hazel|catherine|kate|stephanie|veena|nicky|joana)\b/i
 export function rankVoices(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice[] {
   const score = (v: SpeechSynthesisVoice) => {
     let s = 0
     if (v.localService) s += 100 // local always beats remote — see note above
+    if (MALE_VOICE.test(v.name)) s += 40 // prefer a male voice (Da Vinci's persona)
+    else if (FEMALE_VOICE.test(v.name)) s -= 25 // de-prioritize obviously-female voices
     if (/online \(natural\)|natural|neural|premium|enhanced/i.test(v.name)) s += 30
-    if (/google uk english male/i.test(v.name)) s += 12
-    if (/\b(daniel|arthur|oliver|george|thomas|aaron)\b/i.test(v.name)) s += 8
     if (/^en[-_]/i.test(v.lang)) s += 6
     return s
   }
@@ -470,35 +475,13 @@ async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number, onAudible?:
 }
 
 type CloudOutcome = 'played' | 'cancelled' | 'unavailable'
+// CACHE-ONLY: we never synth at speak time (that ~4s Gemini-TTS call is the latency).
+// Only prefetched lines live in the cache — i.e. the pre-baked greeting — so the
+// greeting plays in the realistic Gemini voice instantly, while every dynamic reply
+// is 'unavailable' here and falls through to the instant browser voice.
 async function speakViaCloud(text: string, token: number, opts: SpeakOptions): Promise<CloudOutcome> {
-  const key = text.trim()
-  let bytes = cloudAudioCache.get(key) ?? null
-  if (!bytes) {
-    const controller = new AbortController()
-    cloudAbort = controller
-    let resp: Response
-    try {
-      resp = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: key }),
-        signal: controller.signal,
-      })
-    } catch {
-      return token !== speakToken || controller.signal.aborted ? 'cancelled' : 'unavailable'
-    } finally {
-      if (cloudAbort === controller) cloudAbort = null
-    }
-    if (token !== speakToken) return 'cancelled'
-    if (!resp.ok) return 'unavailable' // 503 = not configured, etc.
-    try {
-      bytes = await resp.arrayBuffer()
-    } catch {
-      return token !== speakToken ? 'cancelled' : 'unavailable'
-    }
-    if (token !== speakToken) return 'cancelled'
-    if (bytes.byteLength) cloudAudioCache.set(key, bytes)
-  }
+  const bytes = cloudAudioCache.get(text.trim())
+  if (!bytes) return 'unavailable'
   try {
     await playCloudBuffer(bytes.slice(0), token, opts.onAudible) // slice: decodeAudioData detaches it
   } catch {
