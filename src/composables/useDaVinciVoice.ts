@@ -38,6 +38,11 @@ export interface SpeakOptions {
   rate?: number
   pitch?: number
   onstart?: () => void
+  /** Fires when audio actually begins (first utterance's real onstart). Unlike
+   *  `onstart` (which fires as soon as we enter the speaking state), this is the
+   *  reliable "the browser let us play" signal — it never fires when autoplay is
+   *  blocked on a cold load, so callers can fall back to a tap-to-start. */
+  onAudible?: () => void
   onend?: () => void
 }
 
@@ -270,7 +275,7 @@ function currentSpeakEnergy(): number {
   return Math.max(0, Math.min(1, attack * release * wobble))
 }
 
-function speakChunk(text: string, rate: number, pitch: number): Promise<void> {
+function speakChunk(text: string, rate: number, pitch: number, onAudible?: () => void): Promise<void> {
   return new Promise<void>((resolve) => {
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.rate = rate
@@ -294,6 +299,7 @@ function speakChunk(text: string, rate: number, pitch: number): Promise<void> {
     }
     // Chrome occasionally swallows onend — never let a chunk hang the chain
     const stallGuard = setTimeout(finish, speakEstimateMs * 2 + 2000)
+    if (onAudible) utterance.onstart = () => onAudible()
     utterance.onend = finish
     utterance.onerror = finish
     window.speechSynthesis.speak(utterance)
@@ -393,9 +399,15 @@ async function speakViaBrowser(text: string, token: number, opts: SpeakOptions):
   } catch {
     /* best-effort */
   }
+  let audibleFired = false
+  const fireAudible = () => {
+    if (audibleFired) return
+    audibleFired = true
+    opts.onAudible?.()
+  }
   for (const chunk of chunkSpeech(text)) {
     if (token !== speakToken) return
-    await speakChunk(chunk, opts.rate ?? 0.99, opts.pitch ?? 1.0)
+    await speakChunk(chunk, opts.rate ?? 0.99, opts.pitch ?? 1.0, fireAudible)
   }
 }
 

@@ -49,6 +49,11 @@ const liveActive = ref(false)
 let loopToken = 0
 let silenceStreak = 0
 let autoStarted = false
+// True when the cold-load greeting couldn't play (browser blocked autoplay until
+// a user gesture). Flips the focal mic into an explicit "Tap to start" that speaks
+// the greeting aloud on the first tap — so it works on a fresh load / shared link.
+const audioBlocked = ref(false)
+let greetProbe: ReturnType<typeof setTimeout> | null = null
 // Personalized greeting, split so the name keeps its accent during the typewriter reveal.
 const greetParts = computed(() => ({ pre: 'Hello ', name: profile.firstName, post: ', how can I help you today?' }))
 const greetingText = computed(() => `${greetParts.value.pre}${greetParts.value.name}${greetParts.value.post}`)
@@ -93,6 +98,7 @@ const stageHint = computed(() => {
   }
   if (voice.state.value === 'thinking') return 'Thinking…'
   if (voice.state.value === 'speaking') return captionText.value || 'Speaking…'
+  if (audioBlocked.value) return 'Tap to start'
   return voice.sttSupported ? 'Tap to talk' : 'Type below to begin'
 })
 
@@ -227,27 +233,69 @@ function onLiveControl() {
   else endLive()
 }
 
+/** After the greeting finishes speaking, drop into the hands-free listen loop. */
+function listenAfterGreeting() {
+  if (voice.sttSupported && !liveActive.value && messages.value.length === 0) {
+    liveActive.value = true
+    silenceStreak = 0
+    void armListening(true) // silent: no toast if the mic arm is blocked
+  }
+}
+
 /**
  * On open: speak the greeting aloud, then auto-connect the mic (hands-free).
- * Best-effort — browsers block audio/mic without a user gesture, so a cold
- * refresh may stay silent until the first tap; opening Da Vinci from inside the
- * app carries the gesture and auto-starts. Degrades to the visible greeting +
- * tap-to-talk, with no error toast on the initial (possibly blocked) mic arm.
+ * Best-effort — browsers block audio without a user gesture, so a cold refresh /
+ * shared link stays silent; opening Da Vinci from inside the app carries the
+ * gesture and auto-starts. We probe whether audio actually began: if it didn't,
+ * we cancel the silent (blocked) utterance and flip to an explicit "Tap to start"
+ * (see audioBlocked) so the first tap greets the user out loud.
  */
 function autoGreet() {
   if (autoStarted) return
   autoStarted = true
   if (voice.muted.value) return // respect "Voice off"
   voice.unlockSpeech()
+  let becameAudible = false
   voice.speak(greetingText.value, {
+    onAudible: () => {
+      becameAudible = true
+    },
     onend: () => {
-      if (voice.sttSupported && !liveActive.value && messages.value.length === 0) {
-        liveActive.value = true
-        silenceStreak = 0
-        void armListening(true) // silent: no toast if the cold-load mic is blocked
-      }
+      if (becameAudible) listenAfterGreeting() // only auto-listen if the greeting truly played
     },
   })
+  // If audio hasn't started shortly after, the browser blocked autoplay. Stop the
+  // silent utterance (so the orb doesn't fake-"speak" and no surprise mic prompt
+  // fires) and surface the tap-to-start affordance.
+  greetProbe = setTimeout(() => {
+    greetProbe = null
+    if (!becameAudible && !liveActive.value && messages.value.length === 0) {
+      voice.cancelSpeech()
+      // The tap-to-start affordance is the focal mic — only offer it where the mic
+      // is actually tappable (STT-capable browsers, i.e. Chrome/Edge).
+      if (voice.sttSupported) audioBlocked.value = true
+    }
+  }, 1500)
+}
+
+/** Tap-to-start (fresh load): speak the greeting within the user gesture, then listen. */
+function startGreeting() {
+  audioBlocked.value = false
+  voice.unlockSpeech()
+  playGreeting() // re-type the greeting as it speaks
+  voice.speak(greetingText.value, { onend: listenAfterGreeting })
+}
+
+/** Focal mic tap. While live it interrupts/ends; at rest it either greets-then-listens
+ *  (when the cold-load greeting was blocked) or starts the live conversation. */
+function onCenterMic() {
+  if (liveActive.value) {
+    onLiveControl()
+  } else if (audioBlocked.value) {
+    startGreeting()
+  } else {
+    startLive()
+  }
 }
 
 function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
@@ -269,6 +317,7 @@ function newChat() {
   messages.value = []
   inputText.value = ''
   captionText.value = ''
+  audioBlocked.value = false // user has interacted by now — audio is unlocked
   playGreeting() // re-type the greeting on the fresh rest screen
   pushToast({ title: 'New chat started' })
 }
@@ -294,6 +343,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
   if (typeTimer) clearInterval(typeTimer)
+  if (greetProbe) clearTimeout(greetProbe)
   liveActive.value = false
   loopToken++
   voice.disposeVoice()
@@ -387,16 +437,22 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="dvx__centermic"
-          :class="{ 'dvx__centermic--active': liveActive || busy, 'dvx__centermic--disabled': !voice.sttSupported }"
+          :class="{
+            'dvx__centermic--active': liveActive || busy,
+            'dvx__centermic--invite': audioBlocked && !busy,
+            'dvx__centermic--disabled': !voice.sttSupported,
+          }"
           :disabled="!voice.sttSupported"
           :aria-label="
             liveActive
               ? voice.state.value === 'speaking'
                 ? 'Interrupt'
                 : 'End conversation'
-              : 'Start voice conversation'
+              : audioBlocked
+                ? 'Tap to start — greet me and begin listening'
+                : 'Start voice conversation'
           "
-          @click="liveActive ? onLiveControl() : startLive()"
+          @click="onCenterMic()"
         >
           <v-icon :size="26">{{ liveActive && voice.state.value === 'speaking' ? 'square' : 'mic' }}</v-icon>
           <v-tooltip v-if="!voice.sttSupported" activator="parent" location="top">
@@ -724,6 +780,18 @@ onBeforeUnmount(() => {
   border: 1.5px solid var(--dv-accent);
   opacity: 0.5;
   animation: dvx-livepulse 1.6s ease-out infinite;
+}
+
+/* Invite (cold load, audio blocked): outlined mic with a gentle pulse ring to
+   signal the first tap is needed before the greeting can play. */
+.dvx__centermic--invite::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid var(--dv-accent);
+  opacity: 0.5;
+  animation: dvx-livepulse 1.8s ease-out infinite;
 }
 
 .dvx__centermic--disabled {
