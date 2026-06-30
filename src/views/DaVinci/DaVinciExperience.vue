@@ -241,14 +241,15 @@ function autoGreet() {
       if (becameAudible) listenAfterGreeting() // only auto-listen if the greeting truly played
     },
   })
-  // If audio hasn't started shortly after, the browser blocked autoplay. Stop the
-  // silent utterance (so the orb doesn't fake-"speak" and no surprise mic prompt
-  // fires) and surface the tap-to-start affordance.
+  // If audio never actually began (onAudible / real utterance.onstart), the browser
+  // blocked autoplay. Trust becameAudible, NOT speechSynthesis.speaking — Chrome can
+  // report speaking===true with no sound. The in-composable watchdog has already
+  // retried once by now, so a still-silent greeting means a genuine block: stop the
+  // dead utterance and surface tap-to-start. Window is generous so a slow-but-real
+  // Chrome onset (after the voices gate + retry) isn't cut off.
   greetProbe = setTimeout(() => {
     greetProbe = null
-    // !isSpeaking guards Chrome: its onstart can lag past the probe while audio is
-    // genuinely playing — don't cancel a working greeting / flip to "Tap to start".
-    if (!becameAudible && !voice.isSpeaking() && !liveActive.value && messages.value.length === 0) {
+    if (!becameAudible && !liveActive.value && messages.value.length === 0) {
       voice.cancelSpeech()
       // The tap-to-start affordance is the focal mic — only offer it where the mic
       // is actually tappable (STT-capable browsers, i.e. Chrome/Edge).
@@ -257,7 +258,7 @@ function autoGreet() {
       // on every fresh load without the user having to find the mic.
       armGestureGreeting()
     }
-  }, 1500)
+  }, 2400) // headroom for the voices gate (≤700ms) + one watchdog retry (450ms) before giving up
 }
 
 /** Arm a one-shot listener: the first gesture anywhere (except typing in the

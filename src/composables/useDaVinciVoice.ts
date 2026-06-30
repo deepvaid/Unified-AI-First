@@ -226,6 +226,41 @@ if (ttsSupported) {
   window.speechSynthesis.addEventListener('voiceschanged', refreshVoices)
 }
 
+// Chrome returns getVoices() empty on a cold load until `voiceschanged` fires;
+// speaking before voices exist ships a voiceless utterance that Chrome silently
+// drops (intermittent silence). Resolve as soon as voices appear, else cap at
+// 700ms — well under the autoGreet probe — so the greeting never hangs. Resolves
+// instantly on Safari (voices are synchronous there), so no added latency.
+let voicesReady: Promise<void> | null = null
+function ensureVoices(): Promise<void> {
+  if (!ttsSupported || rankedVoices.length) return Promise.resolve()
+  if (voicesReady) return voicesReady
+  voicesReady = new Promise<void>((resolve) => {
+    let settled = false
+    let poll: ReturnType<typeof setInterval>
+    let cap: ReturnType<typeof setTimeout>
+    const onChanged = () => {
+      refreshVoices()
+      if (rankedVoices.length) finish()
+    }
+    function finish() {
+      if (settled) return
+      settled = true
+      clearInterval(poll)
+      clearTimeout(cap)
+      window.speechSynthesis.removeEventListener('voiceschanged', onChanged)
+      refreshVoices()
+      resolve()
+    }
+    refreshVoices()
+    if (rankedVoices.length) return finish()
+    window.speechSynthesis.addEventListener('voiceschanged', onChanged)
+    poll = setInterval(onChanged, 100) // some Chrome builds never fire voiceschanged again
+    cap = setTimeout(finish, 700)
+  })
+  return voicesReady
+}
+
 // Safari/iOS only permit speechSynthesis.speak() that *begins* inside a user
 // gesture. Replies are spoken from timers (the "thinking" delay), so prime the
 // engine once from a real tap/click — then later async speaks are allowed.
@@ -284,41 +319,68 @@ function currentSpeakEnergy(): number {
   return Math.max(0, Math.min(1, attack * release * wobble))
 }
 
-function speakChunk(text: string, rate: number, pitch: number, onAudible?: () => void): Promise<void> {
+function speakChunk(text: string, rate: number, pitch: number, token: number, onAudible?: () => void): Promise<void> {
   return new Promise<void>((resolve) => {
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.rate = rate
     utterance.pitch = pitch
     if (!rankedVoices.length) refreshVoices() // Safari may never fire voiceschanged
-    const voice = rankedVoices[0]
+    // Chrome reliably emits audio only with an explicit voice OBJECT (lang alone
+    // is a complement, not a substitute) — fall back to the platform default.
+    const voice =
+      rankedVoices[0] ?? window.speechSynthesis.getVoices().find((v) => v.default) ?? window.speechSynthesis.getVoices()[0]
     if (voice) {
       utterance.voice = voice
-      if (voice.lang) utterance.lang = voice.lang
+      utterance.lang = voice.lang || (hasWindow && navigator.language) || 'en-US'
     } else {
-      // Chrome cold load: voices not ready yet. A bare utterance (no voice, no
-      // lang) can be silent on Chrome — give it a language so it picks a default.
-      utterance.lang = (hasWindow && navigator.language) || 'en-US'
+      utterance.lang = (hasWindow && navigator.language) || 'en-US' // last resort: no voices at all
     }
 
     speakStartedAt = performance.now()
     speakEstimateMs = estimateSpeechMs(text)
     liveUtterances.push(utterance)
 
+    let started = false
     let done = false
+    let retryGuard: ReturnType<typeof setTimeout> | undefined
     const finish = () => {
       if (done) return
       done = true
       clearTimeout(stallGuard)
+      if (retryGuard) clearTimeout(retryGuard)
       const idx = liveUtterances.indexOf(utterance)
       if (idx >= 0) liveUtterances.splice(idx, 1)
       resolve()
     }
     // Chrome occasionally swallows onend — never let a chunk hang the chain
     const stallGuard = setTimeout(finish, speakEstimateMs * 2 + 2000)
-    if (onAudible) utterance.onstart = () => onAudible()
+    utterance.onstart = () => {
+      started = true
+      onAudible?.()
+    }
     utterance.onend = finish
     utterance.onerror = finish
     window.speechSynthesis.speak(utterance)
+    // Chrome-only self-heal: the cold engine sometimes silently drops the first
+    // utterance (speaking flips but onstart/onend never fire). If it hasn't
+    // started and the engine is idle shortly after, retry once. Skipped on Safari
+    // (fires onstart reliably) and bailed if a newer speak/cancel superseded us
+    // (token guard) or it's merely slow-but-working (speaking/pending) — so it can
+    // neither double-speak nor reintroduce the cancel→speak trap on the live path.
+    if (!isAppleWebKit) {
+      retryGuard = setTimeout(() => {
+        if (done || started || token !== speakToken) return
+        const ss = window.speechSynthesis
+        if (ss.speaking || ss.pending) return
+        try {
+          ss.cancel()
+          ss.resume()
+          ss.speak(utterance)
+        } catch {
+          /* best-effort retry */
+        }
+      }, 450)
+    }
   })
 }
 
@@ -417,6 +479,9 @@ async function speakViaBrowser(text: string, token: number, opts: SpeakOptions, 
   } catch {
     /* best-effort */
   }
+  // Wait for Chrome's voice list before the first utterance (no-op on Safari).
+  await ensureVoices()
+  if (token !== speakToken) return
   let audibleFired = false
   const fireAudible = () => {
     if (audibleFired) return
@@ -425,7 +490,7 @@ async function speakViaBrowser(text: string, token: number, opts: SpeakOptions, 
   }
   for (const chunk of chunkSpeech(text)) {
     if (token !== speakToken) return
-    await speakChunk(chunk, opts.rate ?? 0.99, opts.pitch ?? 1.0, fireAudible)
+    await speakChunk(chunk, opts.rate ?? 0.99, opts.pitch ?? 1.0, token, fireAudible)
   }
 }
 
@@ -650,9 +715,6 @@ export function useDaVinciVoice() {
     speak,
     unlockSpeech,
     cancelSpeech,
-    /** True when the synthesizer is actually emitting audio — used to avoid
-     *  cancelling a greeting whose `onstart` lags on Chrome. */
-    isSpeaking: () => ttsSupported && hasWindow && window.speechSynthesis.speaking,
     getVoiceFrame,
     disposeVoice,
   }
