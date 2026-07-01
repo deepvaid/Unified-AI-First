@@ -110,3 +110,78 @@ export async function synthesize(text: string, opts: SynthesisOptions): Promise<
   const rate = Number(/rate=(\d+)/.exec(mime)?.[1]) || 24000
   return { audio: pcmToWav(base64ToBytes(b64), rate), contentType: 'audio/wav' }
 }
+
+/** PCM sample rate of Gemini TTS audio (audio/L16 mono). Client plays raw PCM at this rate. */
+export const TTS_PCM_RATE = 24000
+
+/**
+ * Streaming synthesis — yields raw PCM (L16 24kHz mono LE) chunks as Gemini produces them
+ * via `:streamGenerateContent` (SSE). First chunk arrives ~1.8s vs ~5s for the full clip, so
+ * the client can start playing much sooner. Throws TtsError (503/400/502) before the first
+ * yield if the request can't start; mid-stream failures just end the generator.
+ */
+export async function* synthesizeStream(text: string, opts: SynthesisOptions): AsyncGenerator<Uint8Array> {
+  if (!opts.apiKey) throw new TtsError(503, 'TTS not configured (missing GEMINI_API_KEY)')
+  const clean = (text ?? '').trim().slice(0, 2000)
+  if (!clean) throw new TtsError(400, 'Empty text')
+
+  const voice = opts.voice || 'Charon'
+  const model = opts.model || 'gemini-3.1-flash-tts-preview'
+  const body = {
+    contents: [{ parts: [{ text: clean }] }],
+    generationConfig: {
+      responseModalities: ['AUDIO'],
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
+    },
+  }
+
+  let resp: Response
+  try {
+    resp = await fetch(`${GEMINI_BASE}/${model}:streamGenerateContent?alt=sse`, {
+      method: 'POST',
+      headers: { 'x-goog-api-key': opts.apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch (err) {
+    throw new TtsError(502, `TTS upstream unreachable: ${err instanceof Error ? err.message : 'fetch failed'}`)
+  }
+  if (!resp.ok || !resp.body) {
+    const detail = resp.body ? await resp.text().catch(() => '') : ''
+    throw new TtsError(502, `TTS provider error ${resp.status}: ${detail.slice(0, 200)}`)
+  }
+
+  // Parse SSE `data: {json}` lines; each carries a base64 PCM chunk in inlineData.data.
+  const parseLine = (line: string): Uint8Array | null => {
+    const m = /^data:\s*(.*)$/s.exec(line)
+    const payload = m?.[1]?.trim()
+    if (!payload) return null
+    try {
+      const j = JSON.parse(payload) as {
+        candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string } }> } }>
+      }
+      const d = j?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data
+      return d ? base64ToBytes(d) : null
+    } catch {
+      return null
+    }
+  }
+
+  const reader = resp.body.getReader()
+  const decoder = new TextDecoder()
+  let buf = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += decoder.decode(value, { stream: true })
+    let nl: number
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const pcm = parseLine(buf.slice(0, nl))
+      buf = buf.slice(nl + 1)
+      if (pcm && pcm.length) yield pcm
+    }
+  }
+  if (buf.trim()) {
+    const pcm = parseLine(buf)
+    if (pcm && pcm.length) yield pcm
+  }
+}

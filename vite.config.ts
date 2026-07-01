@@ -4,7 +4,7 @@ import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 import { fileURLToPath, URL } from 'node:url'
 import fs from 'node:fs'
 import path from 'node:path'
-import { synthesize, TtsError } from './src/server/tts'
+import { synthesize, synthesizeStream, TtsError } from './src/server/tts'
 import { generateReply, GeminiError } from './src/server/gemini'
 
 // https://vite.dev/config/
@@ -56,12 +56,36 @@ export default defineConfig(({ mode }) => {
             try {
               const chunks: Buffer[] = []
               for await (const c of req) chunks.push(c as Buffer)
-              const { text, voice, model } = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
-              const { audio, contentType } = await synthesize(text ?? '', {
+              const { text, voice, model, stream } = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
+              const opts = {
                 apiKey: env.GEMINI_API_KEY || process.env.GEMINI_API_KEY,
                 voice: voice ?? env.TTS_VOICE,
                 model: model ?? env.TTS_MODEL,
-              })
+              }
+              if (stream) {
+                let started = false
+                try {
+                  for await (const chunk of synthesizeStream(text ?? '', opts)) {
+                    if (!started) {
+                      started = true
+                      res.statusCode = 200
+                      res.setHeader('Content-Type', 'audio/l16; rate=24000')
+                      res.setHeader('Cache-Control', 'no-store')
+                    }
+                    res.write(Buffer.from(chunk))
+                  }
+                } catch (err) {
+                  if (!started) {
+                    res.statusCode = err instanceof TtsError ? err.status : 500
+                    res.setHeader('Content-Type', 'application/json')
+                    res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'tts failed' }))
+                    return
+                  }
+                }
+                res.end()
+                return
+              }
+              const { audio, contentType } = await synthesize(text ?? '', opts)
               res.statusCode = 200
               res.setHeader('Content-Type', contentType)
               res.setHeader('Cache-Control', 'no-store')

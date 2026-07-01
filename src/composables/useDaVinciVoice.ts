@@ -434,6 +434,10 @@ const playFreq = new Uint8Array(256) // playback FFT → feeds the orb the real 
 // text → synthesized WAV bytes. Seeded by prefetch() (e.g. the pre-baked greeting);
 // decodeAudioData detaches its input, so always decode a .slice(0) copy.
 const cloudAudioCache = new Map<string, ArrayBuffer>()
+// Live streaming playback: PCM chunk sources currently scheduled ahead of the playhead —
+// cancelSpeech() stops them all. Gemini streaming TTS is L16 24kHz mono.
+let streamSources: AudioBufferSourceNode[] | null = null
+const CLOUD_PCM_RATE = 24000
 
 /** Decode WAV bytes and play through an analyser (so the orb reacts to the real audio). */
 async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number, onAudible?: () => void): Promise<void> {
@@ -476,55 +480,145 @@ async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number, onAudible?:
 }
 
 type CloudOutcome = 'played' | 'cancelled' | 'unavailable'
-// LIVE SYNTH: every reply is spoken in the realistic Gemini voice. Cache-first so the
-// pre-baked greeting + any repeated line play instantly; a first-seen dynamic reply pays
-// the ~5s Gemini-TTS synth (user-accepted). 'unavailable' → caller falls back to the
+// Cache HIT (pre-baked greeting / prefetched line) → play the full WAV instantly.
+// Cache MISS (dynamic reply) → STREAM it: play PCM chunks as they arrive so audio starts
+// ~1.8s in instead of after the whole ~5s clip. 'unavailable' → caller falls back to the
 // instant browser voice for THAT utterance only (cloud stays on for the next line).
 async function speakViaCloud(text: string, token: number, opts: SpeakOptions): Promise<CloudOutcome> {
   const key = text.trim()
-  let bytes = cloudAudioCache.get(key) ?? null
-  if (!bytes) {
-    const controller = new AbortController()
-    cloudAbort = controller
-    // Cap the synth wait — Gemini TTS is normally ~5s but can stall/hang (quota,
-    // overload). On timeout, fall back to the instant browser voice for this reply
-    // rather than leaving it silent/hung. Distinguish timeout from a real cancel.
-    let timedOut = false
-    const timeout = setTimeout(() => {
-      timedOut = true
-      controller.abort()
-    }, 12000)
-    let resp: Response
+  const cached = cloudAudioCache.get(key)
+  if (cached) {
     try {
-      resp = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: key }),
-        signal: controller.signal,
-      })
-    } catch {
-      if (timedOut) return 'unavailable' // stall → browser fallback
-      return token !== speakToken || controller.signal.aborted ? 'cancelled' : 'unavailable'
-    } finally {
-      clearTimeout(timeout)
-      if (cloudAbort === controller) cloudAbort = null
-    }
-    if (token !== speakToken) return 'cancelled'
-    if (!resp.ok) return 'unavailable' // 429 (daily cap) / 503 (unconfigured) → browser fallback
-    try {
-      bytes = await resp.arrayBuffer()
+      await playCloudBuffer(cached.slice(0), token, opts.onAudible) // slice: decodeAudioData detaches it
     } catch {
       return token !== speakToken ? 'cancelled' : 'unavailable'
     }
-    if (token !== speakToken) return 'cancelled'
-    if (bytes.byteLength) cloudAudioCache.set(key, bytes)
+    return token === speakToken ? 'played' : 'cancelled'
   }
+  return playCloudStream(key, token, opts)
+}
+
+/** Stream a reply: schedule PCM chunks back-to-back on the AudioContext as they arrive from
+ *  /api/tts (stream), so the voice starts at the first chunk (~1.8s) rather than the full clip. */
+async function playCloudStream(text: string, token: number, opts: SpeakOptions): Promise<CloudOutcome> {
+  if (!playCtx) playCtx = new AudioContext()
+  if (playCtx.state === 'suspended') await playCtx.resume().catch(() => {})
+  if (playCtx.state !== 'running') return 'unavailable' // autoplay-blocked → browser fallback
+  const ctx = playCtx
+
+  const controller = new AbortController()
+  cloudAbort = controller
+  // Time-cap the WAIT FOR FIRST BYTE only (Gemini stall/quota). Cleared once bytes flow.
+  let timedOut = false
+  const firstByteGuard = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, 12000)
+  let resp: Response
   try {
-    await playCloudBuffer(bytes.slice(0), token, opts.onAudible) // slice: decodeAudioData detaches it
+    resp = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, stream: true }),
+      signal: controller.signal,
+    })
   } catch {
-    return token !== speakToken ? 'cancelled' : 'unavailable'
+    clearTimeout(firstByteGuard)
+    if (cloudAbort === controller) cloudAbort = null
+    if (timedOut) return 'unavailable'
+    return token !== speakToken || controller.signal.aborted ? 'cancelled' : 'unavailable'
   }
-  return token === speakToken ? 'played' : 'cancelled'
+  if (cloudAbort === controller) cloudAbort = null
+  if (token !== speakToken) {
+    clearTimeout(firstByteGuard)
+    return 'cancelled'
+  }
+  if (!resp.ok || !resp.body) {
+    clearTimeout(firstByteGuard)
+    return 'unavailable' // 429/503 → browser fallback
+  }
+
+  const an = ctx.createAnalyser()
+  an.fftSize = 512
+  an.smoothingTimeConstant = 0.7
+  an.connect(ctx.destination)
+  playAnalyser = an // orb reacts to the real audio
+  const sources: AudioBufferSourceNode[] = []
+  streamSources = sources
+  let nextTime = 0
+  let leftover = new Uint8Array(0)
+  let started = false
+  speakStartedAt = performance.now()
+
+  const cleanup = () => {
+    clearTimeout(firstByteGuard)
+    if (streamSources === sources) streamSources = null
+    if (playAnalyser === an) {
+      try {
+        an.disconnect()
+      } catch {
+        /* noop */
+      }
+      playAnalyser = null
+    }
+  }
+  const scheduleChunk = (chunk: Uint8Array) => {
+    let bytes = chunk
+    if (leftover.length) {
+      const merged = new Uint8Array(leftover.length + chunk.length)
+      merged.set(leftover)
+      merged.set(chunk, leftover.length)
+      bytes = merged
+    }
+    const usable = bytes.length - (bytes.length % 2) // whole 16-bit samples
+    leftover = bytes.slice(usable)
+    if (usable < 2) return
+    const samples = usable / 2
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, usable)
+    const audioBuf = ctx.createBuffer(1, samples, CLOUD_PCM_RATE)
+    const ch = audioBuf.getChannelData(0)
+    for (let i = 0; i < samples; i++) ch[i] = dv.getInt16(i * 2, true) / 32768
+    const src = ctx.createBufferSource()
+    src.buffer = audioBuf
+    src.connect(an)
+    const at = Math.max(nextTime, ctx.currentTime + 0.08)
+    src.start(at)
+    nextTime = at + audioBuf.duration
+    sources.push(src)
+    if (!started) {
+      started = true
+      clearTimeout(firstByteGuard) // audio is flowing — no longer a stall
+      opts.onAudible?.()
+    }
+  }
+
+  try {
+    const reader = resp.body.getReader()
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (token !== speakToken) throw new Error('cancelled')
+      if (done) break
+      if (value && value.length) scheduleChunk(value)
+    }
+  } catch {
+    for (const s of sources) {
+      try {
+        s.stop()
+      } catch {
+        /* already stopped */
+      }
+    }
+    cleanup()
+    if (token !== speakToken || controller.signal.aborted) return started ? 'cancelled' : timedOut ? 'unavailable' : 'cancelled'
+    return started ? 'played' : 'unavailable'
+  }
+
+  // Let the last scheduled chunk finish before resolving (so the reply loop waits for TTS).
+  const remainMs = Math.max(0, (nextTime - ctx.currentTime) * 1000)
+  await new Promise((r) => setTimeout(r, remainMs))
+  cleanup()
+  if (token !== speakToken) return 'cancelled'
+  return started ? 'played' : 'unavailable'
 }
 
 /** Warm the cache for a line so it later plays instantly (no ~5s synth at speak time).
@@ -643,6 +737,17 @@ function cancelSpeech() {
       /* already stopped */
     }
     playSource = null
+  }
+  // streaming reply: stop every PCM chunk scheduled ahead of the playhead
+  if (streamSources) {
+    for (const s of streamSources) {
+      try {
+        s.stop()
+      } catch {
+        /* already stopped */
+      }
+    }
+    streamSources = null
   }
   if (playAnalyser) {
     try {
