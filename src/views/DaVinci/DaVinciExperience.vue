@@ -102,8 +102,10 @@ async function respond(text: string, { awaitSpeech = false } = {}) {
   // Recent turns give Gemini context for open-ended questions (exclude the just-pushed
   // current turn — the server appends it). Deterministic flows ignore it.
   const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
-  // Keep the prototype's "thinking" floor so deterministic replies don't feel instant.
-  const minDelay = new Promise<void>((r) => setTimeout(r, 620 + Math.random() * 420))
+  // Small pacing floor so a cached/canned reply doesn't pop in jarringly. Trimmed from
+  // ~620-1040ms → ~200-400ms: real TTS latency now supplies the "processing" beat, and
+  // for LLM turns this runs concurrently with the (slower) brain call anyway.
+  const minDelay = new Promise<void>((r) => setTimeout(r, 200 + Math.random() * 200))
   const res = await intents.answer(text, { history })
   await minDelay
   voice.setThinking(false)
