@@ -476,13 +476,49 @@ async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number, onAudible?:
 }
 
 type CloudOutcome = 'played' | 'cancelled' | 'unavailable'
-// CACHE-ONLY: we never synth at speak time (that ~4s Gemini-TTS call is the latency).
-// Only prefetched lines live in the cache — i.e. the pre-baked greeting — so the
-// greeting plays in the realistic Gemini voice instantly, while every dynamic reply
-// is 'unavailable' here and falls through to the instant browser voice.
+// LIVE SYNTH: every reply is spoken in the realistic Gemini voice. Cache-first so the
+// pre-baked greeting + any repeated line play instantly; a first-seen dynamic reply pays
+// the ~5s Gemini-TTS synth (user-accepted). 'unavailable' → caller falls back to the
+// instant browser voice for THAT utterance only (cloud stays on for the next line).
 async function speakViaCloud(text: string, token: number, opts: SpeakOptions): Promise<CloudOutcome> {
-  const bytes = cloudAudioCache.get(text.trim())
-  if (!bytes) return 'unavailable'
+  const key = text.trim()
+  let bytes = cloudAudioCache.get(key) ?? null
+  if (!bytes) {
+    const controller = new AbortController()
+    cloudAbort = controller
+    // Cap the synth wait — Gemini TTS is normally ~5s but can stall/hang (quota,
+    // overload). On timeout, fall back to the instant browser voice for this reply
+    // rather than leaving it silent/hung. Distinguish timeout from a real cancel.
+    let timedOut = false
+    const timeout = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, 12000)
+    let resp: Response
+    try {
+      resp = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: key }),
+        signal: controller.signal,
+      })
+    } catch {
+      if (timedOut) return 'unavailable' // stall → browser fallback
+      return token !== speakToken || controller.signal.aborted ? 'cancelled' : 'unavailable'
+    } finally {
+      clearTimeout(timeout)
+      if (cloudAbort === controller) cloudAbort = null
+    }
+    if (token !== speakToken) return 'cancelled'
+    if (!resp.ok) return 'unavailable' // 429 (daily cap) / 503 (unconfigured) → browser fallback
+    try {
+      bytes = await resp.arrayBuffer()
+    } catch {
+      return token !== speakToken ? 'cancelled' : 'unavailable'
+    }
+    if (token !== speakToken) return 'cancelled'
+    if (bytes.byteLength) cloudAudioCache.set(key, bytes)
+  }
   try {
     await playCloudBuffer(bytes.slice(0), token, opts.onAudible) // slice: decodeAudioData detaches it
   } catch {
