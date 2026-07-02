@@ -7,12 +7,16 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 
 const store = useCommerceStore()
 const search = ref('')
 const expanded = ref<string[]>([])
 const selected = ref<string[]>([])
 const activeTab = ref('all')
+const { loading } = useInitialLoad()
 
 // Tabs matching real Maropost app
 const tabs = computed(() => [
@@ -24,16 +28,18 @@ const tabs = computed(() => [
 
 const headers = [
   { title: 'Order', key: 'orderNumber', sortable: true, width: 110 },
-  { title: 'Date', key: 'date', sortable: true },
+  { title: 'Date', key: 'date', sortable: true, hideBelow: 'md' as const },
   { title: 'Customer', key: 'customer.name' },
-  { title: 'Items', key: 'itemCount', align: 'center' as const, width: 70 },
+  { title: 'Items', key: 'itemCount', align: 'center' as const, width: 70, hideBelow: 'lg' as const },
   { title: 'Total', key: 'total', align: 'end' as const, sortable: true },
-  { title: 'Fulfillment', key: 'fulfillmentStatus' },
-  { title: 'Payment', key: 'paymentStatus' },
+  { title: 'Fulfillment', key: 'fulfillmentStatus', hideBelow: 'md' as const },
+  { title: 'Payment', key: 'paymentStatus', hideBelow: 'lg' as const },
   { title: 'Status', key: 'status' },
   { title: '', key: 'actions', sortable: false, width: 48 },
   { title: '', key: 'data-table-expand', width: 40 },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 // ─── Tab + Filter Filtering ───────────────────────────────────────────────────
 const filteredOrders = computed(() => {
@@ -150,10 +156,13 @@ function selectAll() {
         </template>
       </MpDataTableToolbar>
 
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+
       <v-data-table
+        v-else
         v-model="selected"
         v-model:expanded="expanded"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="filteredOrders"
         :search="search"
         item-value="id"

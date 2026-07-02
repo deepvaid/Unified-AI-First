@@ -20,8 +20,8 @@ interface AccentDef {
 
 const ACCENT_DEFS: Record<AccentKey, AccentDef> = {
   cyan: {
-    hex: '#0092D4',               // Picton Blue 600 (default brand primary — primary text/lines)
-    rgb: '0, 146, 212',
+    hex: '#0073AB',               // Picton Blue, AA-darkened (5.2:1 on white) — matches theme primary token
+    rgb: '0, 115, 171',
     onPrimary: '255, 255, 255',
     container: '222, 243, 255',   // #DEF3FF
     onContainer: '4, 50, 77',     // #04324D

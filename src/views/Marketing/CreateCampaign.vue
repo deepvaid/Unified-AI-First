@@ -67,6 +67,13 @@ const stepValid = computed(() => {
   return true
 })
 
+const stepHint = computed(() => {
+  if (step.value === 1) return 'Add a campaign name and subject line to continue.'
+  if (step.value === 2) return 'Choose a template to continue.'
+  if (step.value === 4) return 'Pick a send date to continue.'
+  return ''
+})
+
 function nextStep() {
   if (step.value < totalSteps) step.value++
 }
@@ -75,9 +82,36 @@ function prevStep() {
   if (step.value > 1) step.value--
 }
 
+const launched = ref(false)
+
+const launchHeadline = computed(() =>
+  scheduleType.value === 'now' ? 'Campaign launched!' : 'Campaign scheduled!',
+)
+const launchMessage = computed(() => {
+  const name = setup.value.name || 'Your campaign'
+  return scheduleType.value === 'now'
+    ? `“${name}” is on its way to ${estimatedAudience.value} recipients.`
+    : `“${name}” will send to ${estimatedAudience.value} recipients on ${scheduleDate.value} at ${scheduleTime.value}.`
+})
+
 function launch() {
   store.createCampaign(setup.value.name)
+  launched.value = true
+}
+
+function viewCampaigns() {
   router.push('/campaigns')
+}
+
+function createAnother() {
+  step.value = 1
+  setup.value = { name: '', subject: '', preheader: '', senderName: 'MaropostX Store', senderEmail: 'hello@mystore.com', replyTo: '' }
+  selectedTemplate.value = null
+  selectedList.value = 'Master Subscriber List'
+  scheduleType.value = 'now'
+  scheduleDate.value = ''
+  scheduleTime.value = '09:00'
+  launched.value = false
 }
 
 function cancel() {
@@ -89,12 +123,13 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
 
 <template>
   <div class="h-100 d-flex flex-column">
+    <template v-if="!launched">
     <!-- Header -->
     <div class="d-flex align-center justify-space-between pa-6 border-b bg-surface">
       <div class="d-flex align-center gap-4">
         <v-tooltip text="Back to Campaigns" location="bottom">
           <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" @click="cancel"></v-btn>
+            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" aria-label="Back to Campaigns" @click="cancel"></v-btn>
           </template>
         </v-tooltip>
         <div>
@@ -301,7 +336,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
                 <template v-slot:append>
                   <v-tooltip :text="`Edit ${item.label}`" location="top">
                     <template v-slot:activator="{ props }">
-                      <v-btn v-bind="props" icon="pencil" variant="text" size="small" color="primary" @click="step = Math.ceil(idx / 2) + 1"></v-btn>
+                      <v-btn v-bind="props" icon="pencil" variant="text" size="small" color="primary" :aria-label="`Edit ${item.label}`" @click="step = Math.ceil(idx / 2) + 1"></v-btn>
                     </template>
                   </v-tooltip>
                 </template>
@@ -322,12 +357,33 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
     <div class="pa-4 border-t bg-surface d-flex justify-space-between align-center">
       <v-btn v-if="step > 1" variant="outlined" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
       <div v-else></div>
-      <div class="d-flex align-center gap-2">
+      <div class="d-flex align-center gap-3">
+        <span v-if="!stepValid && stepHint" class="text-caption text-medium-emphasis">{{ stepHint }}</span>
         <span class="text-caption text-medium-emphasis">{{ step }} / {{ totalSteps }}</span>
         <v-btn v-if="step < totalSteps" color="primary" variant="elevated" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">
           Continue
         </v-btn>
       </div>
+    </div>
+    </template>
+
+    <!-- Success confirmation -->
+    <div v-else class="flex-grow-1 d-flex align-center justify-center pa-8 bg-background">
+      <v-card variant="flat" border rounded="lg" class="pa-10 text-center" style="max-width: 520px;">
+        <v-avatar size="72" color="success" variant="tonal" class="mb-6">
+          <v-icon size="36" color="success">rocket</v-icon>
+        </v-avatar>
+        <div class="text-h5 font-weight-bold mb-2">{{ launchHeadline }}</div>
+        <div class="text-body-1 text-medium-emphasis mb-8">{{ launchMessage }}</div>
+        <div class="d-flex flex-column gap-3">
+          <v-btn color="primary" size="large" block rounded="xl" class="text-none font-weight-bold" prepend-icon="layout-list" @click="viewCampaigns">
+            View campaigns
+          </v-btn>
+          <v-btn variant="text" size="large" block rounded="xl" class="text-none" prepend-icon="plus" @click="createAnother">
+            Create another campaign
+          </v-btn>
+        </div>
+      </v-card>
     </div>
   </div>
 </template>

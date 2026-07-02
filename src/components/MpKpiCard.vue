@@ -161,5 +161,6 @@ const trendUp = computed(() => props.trendPositive !== false)
 .mp-kpi-card__value {
   line-height: 1.2;
   color: rgb(var(--v-theme-on-surface));
+  font-variant-numeric: tabular-nums;
 }
 </style>

@@ -162,13 +162,14 @@ function toggleStatus(journey: typeof store.journeys[0]) {
                   variant="text"
                   size="x-small"
                   color="medium-emphasis"
+                  aria-label="Edit in builder"
                   @click="openBuilder(item.id)"
                 ></v-btn>
               </template>
             </v-tooltip>
             <v-menu>
               <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" icon="more-vertical" variant="text" size="x-small" color="medium-emphasis"></v-btn>
+                <v-btn v-bind="props" icon="more-vertical" variant="text" size="x-small" color="medium-emphasis" aria-label="Journey actions"></v-btn>
               </template>
               <v-list density="compact" min-width="180">
                 <v-list-item prepend-icon="bar-chart-2" title="View analytics" value="analytics"></v-list-item>

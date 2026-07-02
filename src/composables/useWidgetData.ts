@@ -1,6 +1,7 @@
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { useAnalyticsStore } from '@/stores/useAnalytics'
 import { useCampaignsStore } from '@/stores/useCampaigns'
+import { useFoldersStore } from '@/stores/useFolders'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
 import { useMerchandisingStore } from '@/stores/useMerchandising'
@@ -198,6 +199,7 @@ export function useWidgetData(
 ) {
   const analytics = useAnalyticsStore()
   const campaigns = useCampaignsStore()
+  const folders = useFoldersStore()
   const commerce = useCommerceStore()
   const contacts = useContactsStore()
   const merchandising = useMerchandisingStore()
@@ -299,7 +301,8 @@ export function useWidgetData(
         campaigns.campaigns
           .filter((campaign) => campaign.status === 'Sent')
           .forEach((campaign) => {
-            grouped.set(campaign.folder, (grouped.get(campaign.folder) ?? 0) + campaign.metrics.revenue)
+            const folderName = folders.getFolder(campaign.folderId)?.name ?? 'Unfiled'
+            grouped.set(folderName, (grouped.get(folderName) ?? 0) + campaign.metrics.revenue)
           })
         const labels = Array.from(grouped.keys())
         return buildSeriesData(labels, labels.map((label) => grouped.get(label) ?? 0), 'currency', 'Revenue')

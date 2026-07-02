@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 
 const model = defineModel<boolean>({ default: false })
 
@@ -12,6 +12,43 @@ const props = withDefaults(defineProps<{
 })
 
 const drawerWidth = computed(() => props.width)
+
+const titleId = useId()
+const panel = ref<HTMLElement | null>(null)
+let lastFocused: HTMLElement | null = null
+
+// Move focus into the panel on open, restore it to the trigger on close.
+watch(model, async (open) => {
+  if (open) {
+    lastFocused = document.activeElement as HTMLElement | null
+    await nextTick()
+    panel.value?.focus()
+  } else if (lastFocused) {
+    lastFocused.focus?.()
+    lastFocused = null
+  }
+})
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    model.value = false
+    return
+  }
+  if (e.key !== 'Tab' || !panel.value) return
+  const focusable = panel.value.querySelectorAll<HTMLElement>(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  if (!first || !last) return
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
 </script>
 
 <template>
@@ -22,12 +59,15 @@ const drawerWidth = computed(() => props.width)
     temporary
     scrim
     class="mp-form-drawer"
-    aria-label="Side panel"
+    role="dialog"
+    aria-modal="true"
+    :aria-labelledby="titleId"
+    @keydown="onKeydown"
   >
-    <div class="mp-form-drawer__panel d-flex flex-column h-100">
+    <div ref="panel" tabindex="-1" class="mp-form-drawer__panel d-flex flex-column h-100">
       <div class="mp-form-drawer__header d-flex align-start ga-3 pa-5">
         <div class="min-width-0 flex-grow-1">
-          <div class="text-subtitle-1 font-weight-bold">{{ title }}</div>
+          <div :id="titleId" class="text-subtitle-1 font-weight-bold">{{ title }}</div>
           <div v-if="subtitle" class="text-body-2 text-medium-emphasis mt-1">{{ subtitle }}</div>
         </div>
         <v-btn

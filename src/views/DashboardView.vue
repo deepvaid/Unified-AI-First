@@ -556,7 +556,7 @@ function toggleFavoriteActive() {
               <v-btn
                 v-bind="dashMenuProps"
                 variant="text"
-                size="x-small"
+                size="small"
                 append-icon="chevron-down"
                 class="text-none"
                 :disabled="!activeDashboard"
@@ -645,8 +645,9 @@ function toggleFavoriteActive() {
             <template #activator="{ props: menuProps }">
               <v-btn
                 v-bind="menuProps"
-                variant="text"
-                size="x-small"
+                color="primary"
+                variant="flat"
+                size="small"
                 prepend-icon="plus"
                 append-icon="chevron-down"
                 class="text-none"
@@ -1014,7 +1015,8 @@ function toggleFavoriteActive() {
 }
 
 .dashboard-page-header__fav--active {
-  color: #f59e0b;
+  /* Match the favorite-star color used in the dashboard switcher list (color="warning") */
+  color: rgb(var(--v-theme-warning));
 }
 
 .dashboard-page-header__fav--active :deep(.v-icon svg) {

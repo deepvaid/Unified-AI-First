@@ -8,12 +8,16 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 
 const router = useRouter()
 const route = useRoute()
 const store = useContactsStore()
 const search = ref('')
 const selected = ref<number[]>([])
+const { loading } = useInitialLoad()
 
 // Quick-Add drawer
 const addDrawer = ref(false)
@@ -97,19 +101,17 @@ function clearAllFilters() {
 // Table
 const headers = [
   { title: 'Contact', key: 'contact', sortable: true },
-  { title: 'Company', key: 'company' },
-  { title: 'Tags', key: 'tags', sortable: false },
+  { title: 'Company', key: 'company', hideBelow: 'lg' as const },
+  { title: 'Tags', key: 'tags', sortable: false, hideBelow: 'lg' as const },
   { title: 'Status', key: 'status' },
-  { title: 'Score', key: 'score', align: 'end' as const },
-  { title: 'Last Active', key: 'lastActive', align: 'end' as const },
+  { title: 'Score', key: 'score', align: 'end' as const, hideBelow: 'md' as const },
+  { title: 'Last Active', key: 'lastActive', align: 'end' as const, hideBelow: 'md' as const },
   { title: '', key: 'actions', align: 'end' as const, sortable: false, width: '48px' },
 ]
 
-// Column visibility
+// Column visibility — manual hide menu + breakpoint-driven priority hiding
 const hiddenColumns = ref<string[]>([])
-const visibleHeaders = computed(() =>
-  headers.filter(h => !hiddenColumns.value.includes(h.key))
-)
+const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
 
 const scoreColor = (s: number) => s >= 80 ? 'success' : s >= 50 ? 'warning' : 'error'
 const saveSnack = ref(false)
@@ -186,7 +188,10 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       </MpDataTableToolbar>
 
       <!-- Data Table -->
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+
       <v-data-table
+        v-else
         v-model="selected"
         :headers="visibleHeaders"
         :items="filteredContacts"
@@ -252,7 +257,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         <template v-slot:item.actions="{ item }">
           <v-menu location="bottom end">
             <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" @click.stop />
+              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" aria-label="Contact actions" @click.stop />
             </template>
             <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
               <v-list-item prepend-icon="external-link" title="View profile" @click="openContact((item as any).id)" />

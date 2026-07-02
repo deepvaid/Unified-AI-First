@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const items = [
   { name: 'Newsletter Template 2026', type: 'HTML Builder', lastUpdated: '2 hours ago' },
@@ -19,10 +20,10 @@ const items = [
       </template>
     </MpPageHeader>
 
-    <v-row>
+    <v-row v-if="items.length">
       <v-col cols="12" md="4" v-for="item in items" :key="item.name">
         <v-card variant="flat" border rounded="lg" class="h-100 d-flex flex-column">
-          <div class="bg-surface-variant d-flex justify-center align-center rounded-t-xl" style="height: 150px;">
+          <div class="bg-surface-variant d-flex justify-center align-center rounded-t-xl content-thumb">
             <v-icon size="48" color="medium-emphasis">mail</v-icon>
           </div>
           <v-card-text class="pa-4 flex-grow-1">
@@ -37,5 +38,20 @@ const items = [
         </v-card>
       </v-col>
     </v-row>
+    <v-card v-else variant="flat" border rounded="lg">
+      <MpEmptyState
+        icon="mail"
+        title="No email content yet"
+        description="Create a reusable email template to use across campaigns and journeys."
+        action-label="Create Content"
+        action-icon="plus"
+      />
+    </v-card>
   </div>
 </template>
+
+<style scoped>
+.content-thumb {
+  height: 150px;
+}
+</style>

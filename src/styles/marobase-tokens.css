@@ -15,8 +15,8 @@
   --v-theme-on-surface:        #1a1814;
   --v-theme-on-surface-variant:#737373;
 
-  /* Brand & semantic */
-  --v-theme-primary:           #0092D4;
+  /* Brand & semantic — kept in sync with design-tokens/tokens.json (AA contrast) */
+  --v-theme-primary:           #0073AB;
   --v-theme-on-primary:        #ffffff;
   --v-theme-primary-container: #DEF3FF;
   --v-theme-on-primary-container: #04324D;
@@ -24,11 +24,11 @@
   --v-theme-secondary:         #4a4a4a;
   --v-theme-on-secondary:      #ffffff;
 
-  --v-theme-success:           #1f8a5b;
+  --v-theme-success:           #1a7f54;
   --v-theme-success-container: #d6f0e2;
   --v-theme-on-success-container: #0c5238;
 
-  --v-theme-warning:           #c97a16;
+  --v-theme-warning:           #a8630f;
   --v-theme-warning-container: #fbe7c8;
   --v-theme-on-warning-container: #7a4a08;
 
@@ -36,7 +36,7 @@
   --v-theme-error-container:   #fbe1dc;
   --v-theme-on-error-container: #7a1f15;
 
-  --v-theme-info:              #0092D4;
+  --v-theme-info:              #0073AB;
   --v-theme-info-container:    #DEF3FF;
 
   /* Outlines */

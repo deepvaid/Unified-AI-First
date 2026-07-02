@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 
 const store = useCommerceStore()
 const search = ref('')
 const selected = ref<number[]>([])
+const { loading } = useInitialLoad()
 
 // Multi-select filters
 const filters = ref({
@@ -61,13 +65,15 @@ const filteredProducts = computed(() => {
 
 const headers = [
   { title: 'Product', key: 'name', sortable: true, minWidth: '280px' },
-  { title: 'Category', key: 'category' },
-  { title: 'Vendor', key: 'vendor' },
+  { title: 'Category', key: 'category', hideBelow: 'lg' as const },
+  { title: 'Vendor', key: 'vendor', hideBelow: 'lg' as const },
   { title: 'Price', key: 'price', align: 'end' as const, sortable: true },
-  { title: 'Inventory', key: 'inventory', align: 'end' as const, sortable: true },
+  { title: 'Inventory', key: 'inventory', align: 'end' as const, sortable: true, hideBelow: 'md' as const },
   { title: 'Status', key: 'status' },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 </script>
 
@@ -136,8 +142,11 @@ const headers = [
 
       </MpDataTableToolbar>
 
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+
       <v-data-table
-        :headers="headers"
+        v-else
+        :headers="visibleHeaders"
         :items="filteredProducts"
         v-model="selected"
         show-select
@@ -153,6 +162,7 @@ const headers = [
           <div class="d-flex align-center gap-3 py-2">
             <v-img
               :src="`https://picsum.photos/seed/${item.id}/32/32`"
+              alt=""
               :width="32"
               :height="32"
               cover
@@ -191,7 +201,7 @@ const headers = [
         <template v-slot:item.actions>
           <v-menu location="bottom end">
             <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" />
+              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" aria-label="Product actions" />
             </template>
             <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
               <v-list-item prepend-icon="pencil" title="Edit" />

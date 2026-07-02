@@ -1,54 +1,111 @@
 <script setup lang="ts">
 import { useCampaignsStore } from '@/stores/useCampaigns'
+import { useFoldersStore } from '@/stores/useFolders'
 import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFolderSelect from '@/components/MpFolderSelect.vue'
+import MpManageFoldersDrawer from '@/components/MpManageFoldersDrawer.vue'
+import MpMoveToFolderDialog from '@/components/MpMoveToFolderDialog.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 
 const store = useCampaignsStore()
+const foldersStore = useFoldersStore()
+const route = useRoute()
+const router = useRouter()
 
 const creatorDrawer = ref(false)
 const newCampaignName = ref('')
 const creatorStep = ref(1)
 const search = ref('')
+const { loading } = useInitialLoad()
 
-const filters = ref({
-  folder: 'All Folders',
+// Folder filtering
+const selectedFolderId = ref<string | null>(null)
+const manageFoldersOpen = ref(false)
+const campaignFolders = computed(() => foldersStore.foldersByScope('campaigns'))
+
+const folderCounts = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const folder of campaignFolders.value) {
+    const ids = [folder.id, ...foldersStore.childrenOf(folder.id).map(f => f.id)]
+    counts[folder.id] = store.campaigns.filter(c => c.folderId && ids.includes(c.folderId)).length
+  }
+  return counts
 })
 
 const activeFilterEntries = computed(() => {
-  const entries: Array<{ key: string; label: string }> = []
-  if (filters.value.folder !== 'All Folders') entries.push({ key: 'folder', label: `Folder: ${filters.value.folder}` })
-  return entries
+  const folder = foldersStore.getFolder(selectedFolderId.value)
+  return folder ? [{ key: 'folder', label: `Folder: ${folder.name}` }] : []
 })
 
 function removeFilter(key: string) {
-  if (key === 'folder') filters.value.folder = 'All Folders'
+  if (key === 'folder') selectedFolderId.value = null
 }
 
 function clearAllFilters() {
-  filters.value.folder = 'All Folders'
+  selectedFolderId.value = null
 }
 
 const filteredCampaigns = computed(() => {
-  return filters.value.folder === 'All Folders'
-    ? store.campaigns
-    : store.campaigns.filter(c => c.folder === filters.value.folder)
+  if (!selectedFolderId.value) return store.campaigns
+  const ids = [selectedFolderId.value, ...foldersStore.childrenOf(selectedFolderId.value).map(f => f.id)]
+  return store.campaigns.filter(c => c.folderId && ids.includes(c.folderId))
 })
+
+function folderName(folderId: string | null) {
+  return foldersStore.getFolder(folderId)?.name ?? 'Unfiled'
+}
+
+// Move to folder
+const moveTarget = ref<{ id: number; name: string; folderId: string | null } | null>(null)
+const moveDialogOpen = computed({
+  get: () => !!moveTarget.value,
+  set: (open: boolean) => { if (!open) moveTarget.value = null },
+})
+
+function onMove(folderId: string | null) {
+  if (moveTarget.value) store.moveToFolder(moveTarget.value.id, folderId)
+}
+
+function viewReport() {
+  router.push({ name: 'CampaignReports', params: { accountId: route.params.accountId } })
+}
+
+// Bulk selection
+const selected = ref<number[]>([])
+const bulkMoveOpen = ref(false)
+
+function bulkDelete() {
+  store.deleteCampaigns(selected.value)
+  selected.value = []
+}
+
+function onBulkMove(folderId: string | null) {
+  for (const id of selected.value) store.moveToFolder(id, folderId)
+  selected.value = []
+}
 
 const headers = [
   { title: 'Campaign Name', key: 'name', sortable: true },
-  { title: 'List', key: 'listName' },
+  { title: 'List', key: 'listName', hideBelow: 'lg' as const },
   { title: 'Status', key: 'status' },
-  { title: 'Sent Date', key: 'sentDate' },
-  { title: 'Open Rate', key: 'openRate', align: 'end' as const },
-  { title: 'Click Rate', key: 'clickRate', align: 'end' as const },
+  { title: 'Sent Date', key: 'sentDate', hideBelow: 'md' as const },
+  { title: 'Open Rate', key: 'openRate', align: 'end' as const, hideBelow: 'md' as const },
+  { title: 'Click Rate', key: 'clickRate', align: 'end' as const, hideBelow: 'lg' as const },
   { title: 'Revenue', key: 'revenue', align: 'end' as const, sortable: true },
   { title: 'Actions', key: 'actions', align: 'end' as const, sortable: false }
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 const totalRevenue = store.campaigns.reduce((a, c) => a + c.metrics.revenue, 0)
 const totalSent = store.campaigns.reduce((a, c) => a + c.metrics.sent, 0)
@@ -77,7 +134,7 @@ const submitCampaign = () => {
       :subtitle="`${store.campaigns.length} campaigns · $${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 0})} total attributed revenue`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="folder" class="text-none" color="surface">Manage Folders</v-btn>
+        <v-btn variant="flat" prepend-icon="folder" class="text-none" color="surface" @click="manageFoldersOpen = true">Manage Folders</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreator">New Campaign</v-btn>
       </template>
     </MpPageHeader>
@@ -108,27 +165,27 @@ const submitCampaign = () => {
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
-        <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select
-              v-model="filters.folder"
-              label="Folder"
-              :items="['All Folders', 'Promotions', 'Seasonal', 'Announcements', 'Automated', 'Newsletter', 'Transactional', 'General']"
-              variant="outlined"
-              density="compact"
-              hide-details
-              class="mb-3"
-            />
-          </div>
+        <template #actions>
+          <MpFolderSelect
+            v-model="selectedFolderId"
+            :folders="campaignFolders"
+            :counts="folderCounts"
+            :total-count="store.campaigns.length"
+            @manage="manageFoldersOpen = true"
+          />
         </template>
       </MpDataTableToolbar>
 
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+
       <v-data-table
-        :headers="headers"
+        v-else
+        v-model="selected"
+        :headers="visibleHeaders"
         :items="filteredCampaigns"
         :search="search"
         item-value="id"
+        show-select
         hover
         density="comfortable"
         class="flex-grow-1"
@@ -142,7 +199,7 @@ const submitCampaign = () => {
             </v-icon>
             <div>
               <div class="font-weight-medium text-body-2 cursor-pointer text-primary">{{ item.name }}</div>
-              <div class="text-caption text-medium-emphasis">Folder: {{ item.folder }}</div>
+              <div v-if="item.folderId" class="text-caption text-medium-emphasis">{{ folderName(item.folderId) }}</div>
             </div>
           </div>
         </template>
@@ -182,11 +239,31 @@ const submitCampaign = () => {
           </div>
         </template>
 
-        <template v-slot:item.actions>
+        <template v-slot:item.actions="{ item }">
           <div class="action-btns d-flex justify-end pr-2 gap-1">
-            <v-btn icon="bar-chart-2" variant="text" size="small" color="primary"></v-btn>
-            <v-btn icon="copy" variant="text" size="small" color="medium-emphasis"></v-btn>
-            <v-btn icon="more-vertical" variant="text" size="small" color="medium-emphasis" aria-label="More actions"></v-btn>
+            <v-btn v-if="item.status === 'Sent'" icon="bar-chart-2" variant="text" size="small" color="primary" aria-label="View report" @click="viewReport"></v-btn>
+            <v-menu location="bottom end">
+              <template #activator="{ props: menuProps }">
+                <v-btn v-bind="menuProps" icon="more-vertical" variant="text" size="small" color="medium-emphasis" aria-label="More actions"></v-btn>
+              </template>
+              <v-card flat border rounded="lg" min-width="180" class="mt-1">
+                <v-list density="compact" class="py-1">
+                  <v-list-item @click="store.duplicateCampaign(item.id)">
+                    <template #prepend><v-icon size="18">copy</v-icon></template>
+                    <v-list-item-title class="text-body-2">Duplicate</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="moveTarget = { id: item.id, name: item.name, folderId: item.folderId }">
+                    <template #prepend><v-icon size="18">folder-input</v-icon></template>
+                    <v-list-item-title class="text-body-2">Move to folder…</v-list-item-title>
+                  </v-list-item>
+                  <v-divider class="my-1" />
+                  <v-list-item base-color="error" @click="store.deleteCampaigns([item.id])">
+                    <template #prepend><v-icon size="18">trash-2</v-icon></template>
+                    <v-list-item-title class="text-body-2">Delete</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-card>
+            </v-menu>
           </div>
         </template>
         <template #no-data>
@@ -232,5 +309,38 @@ const submitCampaign = () => {
         </v-stepper-item>
       </v-stepper>
     </MpFormDrawer>
+
+    <MpManageFoldersDrawer
+      v-model="manageFoldersOpen"
+      scope="campaigns"
+      :counts="folderCounts"
+      @deleted="store.reassignFolder"
+    />
+
+    <MpMoveToFolderDialog
+      v-model="moveDialogOpen"
+      scope="campaigns"
+      :current-folder-id="moveTarget?.folderId ?? null"
+      :item-label="moveTarget?.name"
+      @move="onMove"
+    />
+
+    <MpMoveToFolderDialog
+      v-model="bulkMoveOpen"
+      scope="campaigns"
+      :current-folder-id="null"
+      :item-label="`${selected.length} campaign${selected.length === 1 ? '' : 's'}`"
+      @move="onBulkMove"
+    />
+
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="filteredCampaigns.length"
+      @clear="selected = []"
+      @select-all="selected = filteredCampaigns.map(c => c.id)"
+    >
+      <v-btn size="small" variant="text" class="text-none" prepend-icon="folder-input" @click="bulkMoveOpen = true">Move to folder</v-btn>
+      <v-btn size="small" variant="text" class="text-none text-error" prepend-icon="trash-2" @click="bulkDelete">Delete</v-btn>
+    </MpFloatingBulkBar>
   </div>
 </template>

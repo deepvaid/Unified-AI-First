@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useContactsStore } from '@/stores/useContacts'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpErrorState from '@/components/MpErrorState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 
 const route = useRoute()
@@ -17,9 +19,9 @@ const contactId = computed(() => Number(route.params.id))
 const contact = computed(() => store.getContactById(contactId.value))
 const detail = computed(() => store.getContactDetail(contactId.value))
 
-onMounted(() => {
-  if (!contact.value) router.replace(`/accounts/${route.params.accountId}/contacts`)
-})
+function goToContacts() {
+  router.push(`/accounts/${route.params.accountId}/contacts`)
+}
 
 // Tab state
 const activeTab = ref('overview')
@@ -56,35 +58,39 @@ const emailLists = computed(() => detail.value?.lists.filter(l => l.type === 'em
 const smsLists = computed(() => detail.value?.lists.filter(l => l.type === 'sms') ?? [])
 
 
-// Order table headers
+// Order table headers — column-priority responsive (core: Order / Total / Status)
 const orderHeaders = [
   { title: 'Order', key: 'id', width: '120px' },
-  { title: 'Date', key: 'date' },
-  { title: 'Items', key: 'items', align: 'center' as const },
+  { title: 'Date', key: 'date', hideBelow: 'md' as const },
+  { title: 'Items', key: 'items', align: 'center' as const, hideBelow: 'lg' as const },
   { title: 'Total', key: 'total', align: 'end' as const },
   { title: 'Status', key: 'status' },
-  { title: 'Payment', key: 'paymentStatus' },
-  { title: 'Fulfillment', key: 'fulfillmentStatus' },
+  { title: 'Payment', key: 'paymentStatus', hideBelow: 'lg' as const },
+  { title: 'Fulfillment', key: 'fulfillmentStatus', hideBelow: 'lg' as const },
 ]
 
-// Ticket table headers
+// Ticket table headers — column-priority responsive (core: Subject / Status)
 const ticketHeaders = [
-  { title: 'ID', key: 'id', width: '80px' },
+  { title: 'ID', key: 'id', width: '80px', hideBelow: 'sm' as const },
   { title: 'Subject', key: 'subject' },
   { title: 'Status', key: 'status' },
-  { title: 'Priority', key: 'priority' },
-  { title: 'Date', key: 'date' },
-  { title: 'Assignee', key: 'assignee' },
+  { title: 'Priority', key: 'priority', hideBelow: 'md' as const },
+  { title: 'Date', key: 'date', hideBelow: 'lg' as const },
+  { title: 'Assignee', key: 'assignee', hideBelow: 'lg' as const },
 ]
 
-// Cart table headers
+// Cart table headers — column-priority responsive (core: Cart ID / Total / Recovered)
 const cartHeaders = [
   { title: 'Cart ID', key: 'id' },
-  { title: 'Date', key: 'date' },
-  { title: 'Items', key: 'items', align: 'center' as const },
+  { title: 'Date', key: 'date', hideBelow: 'md' as const },
+  { title: 'Items', key: 'items', align: 'center' as const, hideBelow: 'md' as const },
   { title: 'Total', key: 'total', align: 'end' as const },
   { title: 'Recovered', key: 'recovered', align: 'center' as const },
 ]
+
+const { visibleHeaders: visibleOrderHeaders } = useResponsiveTableHeaders(orderHeaders)
+const { visibleHeaders: visibleTicketHeaders } = useResponsiveTableHeaders(ticketHeaders)
+const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHeaders)
 </script>
 
 <template>
@@ -102,7 +108,7 @@ const cartHeaders = [
         <v-btn variant="flat" prepend-icon="pencil" @click="openEditDrawer" color="surface">Edit Contact</v-btn>
         <v-menu>
           <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon="more-vertical" variant="text" />
+            <v-btn v-bind="props" icon="more-vertical" variant="text" aria-label="Contact actions" />
           </template>
           <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
             <v-list-item prepend-icon="share" title="Export" />
@@ -210,7 +216,7 @@ const cartHeaders = [
         <v-card flat border rounded="lg" class="pa-5">
           <MpSectionHeader title="Contact Lists">
             <template #actions>
-              <v-btn icon="pencil" variant="text" size="small" density="comfortable" />
+              <v-btn icon="pencil" variant="text" size="small" density="comfortable" aria-label="Edit contact lists" />
             </template>
           </MpSectionHeader>
 
@@ -500,7 +506,7 @@ const cartHeaders = [
             <div class="pa-1">
               <v-card v-if="detail.tickets.length" flat border rounded="lg">
                 <v-data-table
-                  :headers="ticketHeaders"
+                  :headers="visibleTicketHeaders"
                   :items="detail.tickets"
                   items-per-page="10"
                   density="comfortable"
@@ -529,7 +535,7 @@ const cartHeaders = [
               <div class="text-subtitle-1 font-weight-medium mb-3">All Orders ({{ detail.orders.length }})</div>
               <v-card v-if="detail.orders.length" flat border rounded="lg">
                 <v-data-table
-                  :headers="orderHeaders"
+                  :headers="visibleOrderHeaders"
                   :items="detail.orders"
                   items-per-page="10"
                   density="comfortable"
@@ -563,7 +569,7 @@ const cartHeaders = [
             <div class="pa-1">
               <v-card v-if="detail.abandonedCarts.length" flat border rounded="lg">
                 <v-data-table
-                  :headers="cartHeaders"
+                  :headers="visibleCartHeaders"
                   :items="detail.abandonedCarts"
                   items-per-page="10"
                   density="comfortable"
@@ -609,6 +615,18 @@ const cartHeaders = [
     </MpFormDrawer>
 
   </div>
+
+  <!-- ── Not found ──────────────────────────────────────────────────────── -->
+  <div v-else class="pa-10">
+    <MpErrorState
+      icon="user-x"
+      title="Contact not found"
+      description="This contact may have been deleted, or the link is incorrect."
+      action-label="Back to all contacts"
+      action-icon="arrow-left"
+      @action="goToContacts"
+    />
+  </div>
 </template>
 
 <style scoped>
@@ -641,19 +659,6 @@ const cartHeaders = [
   border-color: var(--hairline) !important;
   box-shadow: none !important;
   background: var(--surface-1) !important;
-}
-
-/* Match KPI cards to the main dashboard's white-on-linen style.
-   MbStatCard's tone="soft"/"warm"/"inverse" props would otherwise paint pale-cyan,
-   cream, or dark-blue fills which look inconsistent with the unified palette. We
-   also reset the text/label colors so cards mapped from `color="error"`
-   (tone="inverse") don't end up rendering white text on the forced-white surface. */
-:deep(.mb-stat-card) {
-  --mb-stat-bg: rgb(var(--v-theme-surface)) !important;
-  --mb-stat-border: rgb(var(--v-theme-outline-variant)) !important;
-  --mb-stat-value-color: rgb(var(--v-theme-on-surface)) !important;
-  --mb-stat-label-color: rgba(var(--v-theme-on-surface), 0.72) !important;
-  --mb-stat-unit-color: rgba(var(--v-theme-on-surface), 0.62) !important;
 }
 
 .v-card.bg-transparent {
@@ -955,43 +960,6 @@ const cartHeaders = [
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
-}
-
-/* Tighten MbStatCard density — default 28px / 160px is sized for
-   full-width dashboard rows, not the narrower two-column context */
-:deep(.mp-kpi-card .mb-stat-card) {
-  padding: 16px 18px;
-  min-height: 124px;
-  gap: 10px;
-}
-
-:deep(.mp-kpi-card .mb-stat-card__value-row) {
-  min-width: 0;
-}
-
-:deep(.mp-kpi-card .mb-stat-card__value) {
-  font-size: 22px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-
-:deep(.mp-kpi-card .mb-stat-card__label) {
-  font-size: 11px;
-  white-space: normal;
-  color: rgba(var(--v-theme-on-surface), 0.72);
-}
-
-:deep(.mp-kpi-card .mb-stat-card__icon) {
-  width: 30px;
-  height: 30px;
-  font-size: 16px;
-}
-
-:deep(.mp-kpi-card .mb-stat-card__caption) {
-  color: rgba(var(--v-theme-on-surface), 0.62);
-  line-height: 1.35;
 }
 
 /* ── Detail row contrast lift ───────────────────────── */

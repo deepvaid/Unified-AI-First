@@ -711,15 +711,16 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           <!-- Single-column flyout card (groups without sub-groups) -->
           <div v-if="!hasSubGroups(group)" class="rail-flyout-card">
             <div class="rail-flyout-card__header">{{ group.title }}</div>
-            <div
+            <button
               v-for="item in group.items"
               :key="item.title"
+              type="button"
               class="rail-flyout-item"
               :class="{ 'rail-flyout-item--active': ('route' in item) && route.path.startsWith(item.route) }"
               @click="('route' in item) && activateNavItem(item as NavItem)"
             ><span>{{ ('route' in item) ? item.title : '' }}</span>
               <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
-            </div>
+            </button>
           </div>
 
           <!-- Inline sub-groups separated by dividers; cascade subs open in 2nd card -->
@@ -729,40 +730,44 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               <template v-for="(sub, idx) in railSubGroups(group)" :key="sub.title">
                 <div v-if="idx > 0" class="rail-flyout-divider" />
                 <template v-if="isCascadeSubGroup(sub)">
-                  <div
+                  <button
+                    type="button"
                     class="rail-flyout-item rail-flyout-item--has-sub"
                     :class="{ 'rail-flyout-item--active': railHoveredSubGroup === sub.title }"
                     @mouseenter="railHoveredSubGroup = sub.title"
+                    @click="railHoveredSubGroup = sub.title"
                   >
                     <span>{{ sub.title }}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-                  </div>
+                  </button>
                 </template>
                 <template v-else>
-                  <div
+                  <button
                     v-for="child in sub.items"
                     :key="child.title"
+                    type="button"
                     class="rail-flyout-item"
                     :class="{ 'rail-flyout-item--active': route.path.startsWith(child.route) }"
                     @click="goTo(child.route); railHoveredSubGroup = null"
                     @mouseenter="railHoveredSubGroup = null"
                   ><span>{{ child.title }}</span>
                     <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
-                  </div>
+                  </button>
                 </template>
               </template>
               <template v-if="railFlatItems(group).length">
                 <div class="rail-flyout-divider" />
-                <div
+                <button
                   v-for="flat in railFlatItems(group)"
                   :key="flat.title"
+                  type="button"
                   class="rail-flyout-item"
                   :class="{ 'rail-flyout-item--active': route.path.startsWith(flat.route) }"
                   @click="goTo(flat.route); railHoveredSubGroup = null"
                   @mouseenter="railHoveredSubGroup = null"
                 ><span>{{ flat.title }}</span>
                   <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
-                </div>
+                </button>
               </template>
             </div>
             <div
@@ -770,15 +775,16 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               class="rail-flyout-card"
             >
               <div class="rail-flyout-card__header">{{ railHoveredSubGroup }}</div>
-              <div
+              <button
                 v-for="child in activeRailSubGroupItems(group)"
                 :key="child.title"
+                type="button"
                 class="rail-flyout-item"
                 :class="{ 'rail-flyout-item--active': route.path.startsWith(child.route) }"
                 @click="goTo(child.route)"
               ><span>{{ child.title }}</span>
                 <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
-              </div>
+              </button>
             </div>
           </div>
         </v-menu>
@@ -1257,20 +1263,6 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   z-index: 1005;
 }
 
-.sidebar-expanded-flyout .rail-flyout-item {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  appearance: none;
-  text-align: left;
-  font-family: inherit;
-}
-
-.sidebar-expanded-flyout .rail-flyout-item:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--sidebar-focus-ring);
-}
-
 /* Rail flyout — single card (tokens: sidebar-dark.css + light defaults below) */
 .rail-flyout-card {
   --sidebar-border: var(--hairline);
@@ -1319,6 +1311,18 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   cursor: pointer;
   transition: background 100ms ease, color 100ms ease;
   user-select: none;
+  /* Items render as <button> for keyboard focus + SR semantics — reset UA styles */
+  width: 100%;
+  border: 0;
+  background: transparent;
+  appearance: none;
+  text-align: left;
+  font-family: inherit;
+}
+
+.rail-flyout-item:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--sidebar-text) 45%, transparent);
+  outline-offset: -2px;
 }
 
 .rail-flyout-item:hover {

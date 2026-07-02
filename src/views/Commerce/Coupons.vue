@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -7,11 +9,13 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 
 const store = useCommerceStore()
 const search = ref('')
 const selected = ref<string[]>([])
 const saveSnack = ref(false)
+const { loading } = useInitialLoad()
 
 // ── Create Coupon Wizard ─────────────────────────────────────────
 const createDialog = ref(false)
@@ -80,13 +84,15 @@ function selectAll() {
 const headers = [
   { title: 'Code', key: 'code', sortable: true },
   { title: 'Discount', key: 'value' },
-  { title: 'Min. Order', key: 'minOrder' },
-  { title: 'Usage', key: 'usage' },
-  { title: 'Limit', key: 'limit' },
-  { title: 'Expiry', key: 'expiry' },
+  { title: 'Min. Order', key: 'minOrder', hideBelow: 'lg' as const },
+  { title: 'Usage', key: 'usage', hideBelow: 'md' as const },
+  { title: 'Limit', key: 'limit', hideBelow: 'lg' as const },
+  { title: 'Expiry', key: 'expiry', hideBelow: 'md' as const },
   { title: 'Status', key: 'status' },
   { title: '', key: 'actions', align: 'end' as const, sortable: false },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 </script>
 
@@ -130,9 +136,12 @@ const headers = [
         </template>
       </MpDataTableToolbar>
 
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+
       <v-data-table
+        v-else
         v-model="selected"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="store.coupons"
         :search="search"
         show-select

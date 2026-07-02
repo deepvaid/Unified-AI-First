@@ -1,27 +1,33 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 
 const store = useCommerceStore()
 const search = ref('')
 const selected = ref<number[]>([])
+const { loading } = useInitialLoad()
 
 const headers = [
   { title: 'Order', key: 'orderNumber', sortable: true },
   { title: 'Customer', key: 'customer' },
-  { title: 'Items', key: 'items', align: 'center' as const },
-  { title: 'Weight', key: 'weight' },
-  { title: 'Location', key: 'location' },
-  { title: 'Priority', key: 'priority' },
+  { title: 'Items', key: 'items', align: 'center' as const, hideBelow: 'lg' as const },
+  { title: 'Weight', key: 'weight', hideBelow: 'lg' as const },
+  { title: 'Location', key: 'location', hideBelow: 'md' as const },
+  { title: 'Priority', key: 'priority', hideBelow: 'md' as const },
   { title: 'Status', key: 'status' },
-  { title: 'Date', key: 'date' },
+  { title: 'Date', key: 'date', hideBelow: 'md' as const },
   { title: 'Actions', key: 'actions', align: 'end' as const, sortable: false },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 const filters = ref({
@@ -105,9 +111,12 @@ function selectAll() {
         </template>
       </MpDataTableToolbar>
 
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+
       <v-data-table
+        v-else
         v-model="selected"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="store.fulfillments"
         :search="search"
         item-value="id"

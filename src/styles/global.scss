@@ -143,11 +143,6 @@ a {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 1px 3px rgba(45, 99, 232, 0.24);
 }
 
-/* Filled primary buttons use the brand 500; primary text/lines stay 600 (base token). */
-.v-btn.bg-primary {
-  background-color: #00ADF1 !important;
-}
-
 .v-btn--variant-outlined {
   border-color: var(--mp-border-subtle) !important;
 }
@@ -369,6 +364,13 @@ tr:focus-within .action-btns {
 
 .v-table .v-table__wrapper > table > tbody > tr > td {
   border-bottom-color: var(--mp-border-table-row);
+  /* Tabular figures so numeric columns align (affects digits only — no-op on text). */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pagination range ("1–15 of 100") also reads as aligned figures. */
+.v-data-table-footer {
+  font-variant-numeric: tabular-nums;
 }
 
 .v-table .v-table__wrapper > table > thead > tr > th,

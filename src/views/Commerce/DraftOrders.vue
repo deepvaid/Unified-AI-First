@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 
 const store = useCommerceStore()
 const search = ref('')
 const selected = ref<number[]>([])
 const saveSnack = ref(false)
+const { loading } = useInitialLoad()
 
 // ── Create Draft Order Drawer ────────────────────────────────────
 const createDrawer = ref(false)
@@ -100,12 +104,14 @@ function selectAll() {
 const headers = [
   { title: 'Order', key: 'draftNumber', sortable: true },
   { title: 'Customer', key: 'customer' },
-  { title: 'Items', key: 'items' },
+  { title: 'Items', key: 'items', hideBelow: 'lg' as const },
   { title: 'Total', key: 'total', align:'end' as const },
   { title: 'Status', key: 'status' },
-  { title: 'Created', key: 'createdAt' },
+  { title: 'Created', key: 'createdAt', hideBelow: 'md' as const },
   { title: '', key: 'actions', align:'end' as const, sortable:false },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 </script>
 
 <template>
@@ -151,9 +157,12 @@ const headers = [
         </template>
       </MpDataTableToolbar>
 
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+
       <v-data-table
+        v-else
         v-model="selected"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="store.draftOrders ?? []"
         :search="search"
         show-select
