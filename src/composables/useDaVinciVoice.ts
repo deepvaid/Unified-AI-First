@@ -439,10 +439,43 @@ const cloudAudioCache = new Map<string, ArrayBuffer>()
 let streamSources: AudioBufferSourceNode[] | null = null
 const CLOUD_PCM_RATE = 24000
 
+/**
+ * Probe whether the browser will let us play audio right now (autoplay granted via
+ * enterprise policy / launch flag / Safari per-site Auto-Play / Chrome MEI / carried
+ * activation). Chrome leaves a blocked `resume()` promise PENDING — never await it
+ * bare; race it with a short timeout, then read the state.
+ */
+async function tryUnlockAudio(): Promise<boolean> {
+  if (!hasWindow) return false
+  if (!playCtx) playCtx = new AudioContext()
+  if (playCtx.state === 'suspended') {
+    await Promise.race([playCtx.resume().catch(() => {}), new Promise((r) => setTimeout(r, 250))])
+  }
+  return playCtx.state === 'running'
+}
+
+/**
+ * Notify when the playback AudioContext becomes running — Chrome auto-resumes it on a
+ * later grant/gesture, firing `statechange`. Returns a cleanup fn.
+ */
+function onAudioUnlocked(cb: () => void): () => void {
+  if (!hasWindow) return () => {}
+  if (!playCtx) playCtx = new AudioContext()
+  const ctx = playCtx
+  const handler = () => {
+    if (ctx.state === 'running') cb()
+  }
+  ctx.addEventListener('statechange', handler)
+  return () => ctx.removeEventListener('statechange', handler)
+}
+
 /** Decode WAV bytes and play through an analyser (so the orb reacts to the real audio). */
 async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number, onAudible?: () => void): Promise<void> {
   if (!playCtx) playCtx = new AudioContext()
-  if (playCtx.state === 'suspended') await playCtx.resume().catch(() => {})
+  if (playCtx.state === 'suspended') {
+    // Race the resume — a blocked Chrome resume() stays pending forever (see tryUnlockAudio).
+    await Promise.race([playCtx.resume().catch(() => {}), new Promise((r) => setTimeout(r, 250))])
+  }
   // Autoplay-blocked (cold load, no user gesture yet): don't fake playback — bail so
   // the caller's probe shows tap-to-start; the gesture-driven retry will play it.
   if (playCtx.state !== 'running') return
@@ -501,9 +534,7 @@ async function speakViaCloud(text: string, token: number, opts: SpeakOptions): P
 /** Stream a reply: schedule PCM chunks back-to-back on the AudioContext as they arrive from
  *  /api/tts (stream), so the voice starts at the first chunk (~1.8s) rather than the full clip. */
 async function playCloudStream(text: string, token: number, opts: SpeakOptions): Promise<CloudOutcome> {
-  if (!playCtx) playCtx = new AudioContext()
-  if (playCtx.state === 'suspended') await playCtx.resume().catch(() => {})
-  if (playCtx.state !== 'running') return 'unavailable' // autoplay-blocked → browser fallback
+  if (!(await tryUnlockAudio()) || !playCtx) return 'unavailable' // autoplay-blocked → browser fallback
   const ctx = playCtx
 
   const controller = new AbortController()
@@ -905,6 +936,8 @@ export function useDaVinciVoice() {
     speak,
     prefetchSpeech,
     unlockSpeech,
+    tryUnlockAudio,
+    onAudioUnlocked,
     cancelSpeech,
     getVoiceFrame,
     disposeVoice,

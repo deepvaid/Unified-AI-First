@@ -57,6 +57,10 @@ let greetProbe: ReturnType<typeof setTimeout> | null = null
 // When autoplay is blocked, the first interaction anywhere on the screen speaks
 // the greeting — so it plays on every fresh load without hunting for the mic.
 let gestureGreetCleanup: (() => void) | null = null
+// Grant re-probe: some browsers permit autoplay without any gesture (enterprise
+// AutoplayAllowlist, --autoplay-policy flag, Safari per-site Auto-Play, Chrome MEI).
+// While blocked, poll for that grant and greet the moment audio is allowed — zero tap.
+let grantProbeCleanup: (() => void) | null = null
 // Personalized greeting — spoken aloud on open (the on-screen heading was removed).
 const greetingText = computed(() => `Hey ${profile.firstName}, how can I help you today?`)
 // Diagnostic overlay: append ?debug=1 to the URL to see voices / chosen voice
@@ -262,8 +266,52 @@ function autoGreet() {
       // Also let the first interaction *anywhere* speak the greeting, so it plays
       // on every fresh load without the user having to find the mic.
       armGestureGreeting()
+      // And keep probing for a no-gesture autoplay grant (policy/flag/Safari
+      // setting/MEI) — the moment audio is permitted, greet with zero tap.
+      armGrantReprobe()
     }
   }, 2400) // headroom for the voices gate (≤700ms) + one watchdog retry (450ms) before giving up
+}
+
+/** While blocked, watch for a later autoplay grant and auto-greet the moment audio is
+ *  permitted. Skips while the user is typing (composer focused) — the send flow owns
+ *  that path — and stands down once a conversation starts. Capped at ~20s. */
+function armGrantReprobe() {
+  if (grantProbeCleanup) return
+  let fired = false
+  let tries = 0
+  const atRest = () =>
+    !liveActive.value && messages.value.length === 0 && !voice.muted.value && voice.state.value === 'idle'
+  const composerFocused = () => !!(document.activeElement as HTMLElement | null)?.closest('.dvx__composer')
+  const fire = () => {
+    if (fired || !atRest() || composerFocused()) return
+    fired = true
+    startGreeting() // disarms this probe + the gesture listener internally
+  }
+  const check = async () => {
+    if (fired) return
+    if (!atRest()) {
+      disarmGrantReprobe()
+      return
+    }
+    if (await voice.tryUnlockAudio()) fire()
+    else if (++tries >= 20) disarmGrantReprobe()
+  }
+  const timer = setInterval(() => void check(), 1000)
+  const offUnlock = voice.onAudioUnlocked(fire) // Chrome resolves a queued resume() on grant
+  const onVis = () => void check()
+  document.addEventListener('visibilitychange', onVis)
+  grantProbeCleanup = () => {
+    clearInterval(timer)
+    offUnlock()
+    document.removeEventListener('visibilitychange', onVis)
+    grantProbeCleanup = null
+  }
+  void check() // immediate first probe — a policy-granted browser greets right away
+}
+
+function disarmGrantReprobe() {
+  grantProbeCleanup?.()
 }
 
 /** Arm a one-shot listener: the first gesture anywhere (except typing in the
@@ -292,9 +340,10 @@ function disarmGestureGreeting() {
   gestureGreetCleanup?.()
 }
 
-/** Tap-to-start (fresh load): speak the greeting within the user gesture, then listen. */
+/** Start the greeting (gesture-driven or grant-driven): speak it, then listen. */
 function startGreeting() {
   disarmGestureGreeting()
+  disarmGrantReprobe() // one greeting only — a racing grant/statechange must not re-fire it
   audioBlocked.value = false
   voice.unlockSpeech()
   voice.speak(greetingText.value, { onend: listenAfterGreeting })
@@ -360,6 +409,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
   if (greetProbe) clearTimeout(greetProbe)
   disarmGestureGreeting()
+  disarmGrantReprobe()
   liveActive.value = false
   loopToken++
   voice.disposeVoice()
