@@ -47,7 +47,6 @@ const avatarSpeed = computed(() => ({ idle: 1, listening: 2.4, thinking: 1.6, sp
 // ── Live (hands-free) conversation ───────────────────────────────────────────
 const liveActive = ref(false)
 let loopToken = 0
-let silenceStreak = 0
 let autoStarted = false
 // True when the cold-load greeting couldn't play (browser blocked autoplay until
 // a user gesture). Flips the focal mic into an explicit "Tap to start" that speaks
@@ -57,6 +56,11 @@ let greetProbe: ReturnType<typeof setTimeout> | null = null
 // When autoplay is blocked, the first interaction anywhere on the screen speaks
 // the greeting — so it plays on every fresh load without hunting for the mic.
 let gestureGreetCleanup: (() => void) | null = null
+// Greeting prefetch handle — the speak paths await this (capped) so an immediate
+// auto-greet doesn't race its own cache seed and needlessly stream the greeting.
+let greetingPrefetch: Promise<void> | null = null
+const greetingReady = () =>
+  Promise.race([greetingPrefetch ?? Promise.resolve(), new Promise<void>((r) => setTimeout(r, 600))])
 // Grant re-probe: some browsers permit autoplay without any gesture (enterprise
 // AutoplayAllowlist, --autoplay-policy flag, Safari per-site Auto-Play, Chrome MEI).
 // While blocked, poll for that grant and greet the moment audio is allowed — zero tap.
@@ -82,7 +86,7 @@ const stageHint = computed(() => {
   }
   if (voice.state.value === 'thinking') return 'Thinking…'
   if (voice.state.value === 'speaking') return captionText.value || 'Speaking…'
-  if (audioBlocked.value) return 'Tap to start'
+  if (audioBlocked.value) return 'Click anywhere to begin'
   return voice.sttSupported ? 'Tap to talk' : 'Type below to begin'
 })
 
@@ -187,11 +191,11 @@ async function armListening(silent = false) {
   }
   if (myToken !== loopToken || !liveActive.value) return // superseded by a typed turn / ended
   if (!text) {
-    if (++silenceStreak >= 3) endLive()
-    else void armListening()
+    // Silence never ends hands-free — keep listening until the user explicitly
+    // ends the conversation (End button / Esc / leaving the page).
+    void armListening()
     return
   }
-  silenceStreak = 0
   await respond(text, { awaitSpeech: true })
   if (myToken === loopToken && liveActive.value) void armListening()
 }
@@ -201,7 +205,6 @@ function startLive() {
   voice.unlockSpeech() // mic permission + iOS audio unlock happen inside the tap
   if (liveActive.value) return
   liveActive.value = true
-  silenceStreak = 0
   void armListening()
 }
 
@@ -223,7 +226,6 @@ function onLiveControl() {
 function listenAfterGreeting() {
   if (voice.sttSupported && !liveActive.value && messages.value.length === 0) {
     liveActive.value = true
-    silenceStreak = 0
     void armListening(true) // silent: no toast if the mic arm is blocked
   }
 }
@@ -236,11 +238,12 @@ function listenAfterGreeting() {
  * we cancel the silent (blocked) utterance and flip to an explicit "Tap to start"
  * (see audioBlocked) so the first tap greets the user out loud.
  */
-function autoGreet() {
+async function autoGreet() {
   if (autoStarted) return
   autoStarted = true
   if (voice.muted.value) return // respect "Voice off"
   voice.unlockSpeech()
+  await greetingReady() // let the pre-baked WAV land so the speak is a cache hit
   let becameAudible = false
   voice.speak(greetingText.value, {
     onAudible: () => {
@@ -274,19 +277,21 @@ function autoGreet() {
 }
 
 /** While blocked, watch for a later autoplay grant and auto-greet the moment audio is
- *  permitted. Skips while the user is typing (composer focused) — the send flow owns
- *  that path — and stands down once a conversation starts. Capped at ~20s. */
+ *  permitted — never gives up: probes every 1s for the first ~30s, then every 3s, until
+ *  a conversation starts or the view unmounts. Skips while the user is typing (composer
+ *  focused) — the send flow owns that path. */
 function armGrantReprobe() {
   if (grantProbeCleanup) return
   let fired = false
   let tries = 0
+  let timer: ReturnType<typeof setTimeout> | null = null
   const atRest = () =>
     !liveActive.value && messages.value.length === 0 && !voice.muted.value && voice.state.value === 'idle'
   const composerFocused = () => !!(document.activeElement as HTMLElement | null)?.closest('.dvx__composer')
   const fire = () => {
     if (fired || !atRest() || composerFocused()) return
     fired = true
-    startGreeting() // disarms this probe + the gesture listener internally
+    void startGreeting() // disarms this probe + the gesture listener internally
   }
   const check = async () => {
     if (fired) return
@@ -295,19 +300,25 @@ function armGrantReprobe() {
       return
     }
     if (await voice.tryUnlockAudio()) fire()
-    else if (++tries >= 20) disarmGrantReprobe()
   }
-  const timer = setInterval(() => void check(), 1000)
+  const schedule = () => {
+    timer = setTimeout(async () => {
+      await check()
+      if (grantProbeCleanup && !fired) schedule() // keep probing; back off after ~30s
+    }, ++tries <= 30 ? 1000 : 3000)
+  }
   const offUnlock = voice.onAudioUnlocked(fire) // Chrome resolves a queued resume() on grant
   const onVis = () => void check()
   document.addEventListener('visibilitychange', onVis)
   grantProbeCleanup = () => {
-    clearInterval(timer)
+    if (timer) clearTimeout(timer)
+    timer = null
     offUnlock()
     document.removeEventListener('visibilitychange', onVis)
     grantProbeCleanup = null
   }
   void check() // immediate first probe — a policy-granted browser greets right away
+  schedule()
 }
 
 function disarmGrantReprobe() {
@@ -325,7 +336,7 @@ function armGestureGreeting() {
       disarmGestureGreeting()
       return
     }
-    startGreeting() // disarms internally + speaks within this gesture
+    void startGreeting() // disarms internally + speaks within this gesture
   }
   document.addEventListener('pointerdown', handler, true)
   document.addEventListener('keydown', handler, true)
@@ -341,12 +352,13 @@ function disarmGestureGreeting() {
 }
 
 /** Start the greeting (gesture-driven or grant-driven): speak it, then listen. */
-function startGreeting() {
+async function startGreeting() {
   disarmGestureGreeting()
   disarmGrantReprobe() // one greeting only — a racing grant/statechange must not re-fire it
   audioBlocked.value = false
-  voice.unlockSpeech()
-  voice.speak(greetingText.value, { onend: listenAfterGreeting })
+  voice.unlockSpeech() // synchronously within the gesture, before any await
+  await greetingReady() // cache-hit the pre-baked WAV instead of streaming
+  void voice.speak(greetingText.value, { onend: listenAfterGreeting })
 }
 
 /** Focal mic tap. While live it interrupts/ends; at rest it either greets-then-listens
@@ -355,7 +367,7 @@ function onCenterMic() {
   if (liveActive.value) {
     onLiveControl()
   } else if (audioBlocked.value) {
-    startGreeting()
+    void startGreeting()
   } else {
     startLive()
   }
@@ -400,9 +412,21 @@ onMounted(() => {
   document.addEventListener('keydown', onKeydown)
   // Seed the greeting audio from the pre-baked static WAV so it plays INSTANTLY in
   // the natural Gemini voice on the first gesture (no ~5s synth wait). Falls back to
-  // browser TTS if the asset is missing.
-  void voice.prefetchSpeech(greetingText.value, '/davinci/greeting.wav')
-  autoGreet() // speak the greeting + auto-connect the mic (best-effort; see autoGreet)
+  // browser TTS if the asset is missing. The speak paths await this handle (capped).
+  greetingPrefetch = voice.prefetchSpeech(greetingText.value, '/davinci/greeting.wav')
+  // Seed every pre-baked canned reply line (scripts/bake-lines.mjs) the same way, so
+  // deterministic replies speak instantly too. Missing manifest ⇒ lines just stream.
+  void (async () => {
+    try {
+      const resp = await fetch('/davinci/lines/manifest.json')
+      if (!resp.ok) return
+      const entries = (await resp.json()) as Array<{ text: string; file: string }>
+      for (const entry of entries) void voice.prefetchSpeech(entry.text, `/davinci/lines/${entry.file}`)
+    } catch {
+      /* optional asset — canned lines fall back to streaming synth */
+    }
+  })()
+  void autoGreet() // speak the greeting + auto-connect the mic (best-effort; see autoGreet)
 })
 
 onBeforeUnmount(() => {
@@ -515,7 +539,7 @@ onBeforeUnmount(() => {
                 ? 'Interrupt'
                 : 'End conversation'
               : audioBlocked
-                ? 'Tap to start — greet me and begin listening'
+                ? 'Begin — greet me and start listening'
                 : 'Start voice conversation'
           "
           @click="onCenterMic()"

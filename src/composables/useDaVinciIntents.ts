@@ -1,5 +1,18 @@
 import { ref } from 'vue'
 import { askGemini, type GeminiTurn } from '@/services/geminiClient'
+import {
+  audiences,
+  campaignNames,
+  campaignSpeech,
+  clarifyAudienceSpeech,
+  fallbackSpeech,
+  productDrafts,
+  productSpeech,
+  revenueSpeech,
+  segmentSpeech,
+  segmentVariants,
+  type AudienceKey,
+} from './dvIntentData'
 
 // Unified Da Vinci intent layer — port of the Marojarvis prototype's regex
 // classifier + handlers (formerly https://davinci-ai-first.vercel.app), re-domained
@@ -77,34 +90,9 @@ export interface DvIntentResult {
 }
 
 // ── Mock data (Maropost-flavored) ────────────────────────────────────────────
-type AudienceKey = 'all' | 'vip' | 'lapsed' | 'cart'
-
-const audiences: Record<AudienceKey, { label: string; size: number }> = {
-  all: { label: 'All subscribers', size: 48230 },
-  vip: { label: 'VIP customers', size: 3120 },
-  lapsed: { label: 'Lapsed buyers', size: 7480 },
-  cart: { label: 'Cart abandoners', size: 1985 },
-}
-
-const campaignNames = [
-  'Spring Style Refresh',
-  'Weekend Flash Sale',
-  'New Arrivals Spotlight',
-  'Loyalty Member Exclusive',
-]
-
-const productDrafts = [
-  {
-    title: 'Aurora Trail Jacket',
-    content:
-      'Built for shoulder-season hikes, the Aurora Trail Jacket pairs a windproof ripstop shell with a brushed-mesh lining that breathes when the pace picks up. Zippered chest pocket, packable hood, and reflective seams for low-light returns.',
-  },
-  {
-    title: 'Coastline Canvas Tote',
-    content:
-      'The Coastline Canvas Tote carries beach days and farmers markets alike — 16oz washed canvas, interior zip pocket, and straps reinforced to hold 20kg without complaint. Available in three salt-faded colourways.',
-  },
-]
+// Data + speech templates live in dvIntentData.ts (imported above) — shared with
+// scripts/bake-lines.mjs so every canned speech line is pre-baked to audio whose
+// text matches the runtime string byte-for-byte (the text is the audio-cache key).
 
 export const SUGGESTION_CHIPS: DvQuickReply[] = [
   { label: 'Run a campaign', value: 'Run a campaign', icon: 'megaphone' },
@@ -152,7 +140,7 @@ export function useDaVinciIntents() {
     return {
       intent: 'campaign',
       reply: `Done. I've drafted the "${name}" email to ${audience.label.toLowerCase()} — review it below, then confirm to schedule.`,
-      speech: `Done. I've drafted the ${name} email to ${audience.label.toLowerCase()}, scheduled for tomorrow at 9 AM.`,
+      speech: campaignSpeech(name, audience.label),
       cards: [
         {
           type: 'campaign',
@@ -176,7 +164,7 @@ export function useDaVinciIntents() {
     return {
       intent: 'product',
       reply: `Here's a product description draft for "${draft.title}". Use it as-is or ask me to adjust the tone.`,
-      speech: `Here's a product description draft for ${draft.title}.`,
+      speech: productSpeech(draft.title),
       cards: [{ type: 'content', props: { type: 'product', title: draft.title, content: draft.content } }],
       pending: null,
     }
@@ -186,7 +174,7 @@ export function useDaVinciIntents() {
     return {
       intent: 'revenue',
       reply: 'Revenue is up this week. Here are the last 7 days at a glance.',
-      speech: 'Revenue is up 12 percent this week, at 128 thousand dollars across 1,284 orders.',
+      speech: revenueSpeech,
       cards: [
         {
           type: 'kpis',
@@ -215,21 +203,11 @@ export function useDaVinciIntents() {
 
   function buildSegment(text: string): DvIntentResult {
     const isVip = /vip|loyal|best/.test(text.toLowerCase())
-    const props = isVip
-      ? {
-          name: 'VIP Customers',
-          rules: ['Lifetime spend > $500', 'Ordered in the last 90 days', 'Email engagement: high'],
-          estimatedSize: 3120,
-        }
-      : {
-          name: 'High-intent shoppers',
-          rules: ['Viewed a product 3+ times in 14 days', 'Added to cart in the last 30 days', 'No purchase yet'],
-          estimatedSize: 5240,
-        }
+    const props = isVip ? segmentVariants.vip : segmentVariants.highIntent
     return {
       intent: 'segment',
       reply: `I've built the "${props.name}" segment — about ${props.estimatedSize.toLocaleString()} contacts match right now. It refreshes daily.`,
-      speech: `I've built the ${props.name} segment with about ${props.estimatedSize.toLocaleString()} contacts.`,
+      speech: segmentSpeech(props.name, props.estimatedSize),
       cards: [{ type: 'segment', props }],
       pending: null,
     }
@@ -239,7 +217,7 @@ export function useDaVinciIntents() {
     return {
       intent: 'fallback',
       reply: 'I can run campaigns, draft product copy, report on revenue, or build audience segments. Try one of these:',
-      speech: 'I can run campaigns, draft product copy, report on revenue, or build segments.',
+      speech: fallbackSpeech,
       cards: [
         {
           type: 'insight',
@@ -277,8 +255,8 @@ export function useDaVinciIntents() {
         pending.value = { intent: 'campaign', slot: 'audience', context: {} }
         return {
           intent: 'campaign',
-          reply: 'Happy to. Which audience should this campaign go to?',
-          speech: 'Happy to. Which audience should this campaign go to?',
+          reply: clarifyAudienceSpeech,
+          speech: clarifyAudienceSpeech,
           cards: [],
           quickReplies: [
             { label: 'All subscribers', value: 'Send it to all subscribers', icon: 'users' },
