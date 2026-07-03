@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useTicketsStore } from '@/stores/useTickets'
+import { ref, computed, watch } from 'vue'
+import { useTicketsStore, SUPPORT_INBOXES } from '@/stores/useTickets'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
@@ -8,10 +8,28 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 
 const store = useTicketsStore()
-const tab = ref<'list' | 'kanban'>('list')
 const replyBody = ref('')
 const search = ref('')
 const filterStatus = ref('All')
+
+// ── Inboxes (one per store/sales channel) ────────────────────────────────
+const inboxFilter = ref('all')
+const inboxOptions = [
+  { title: 'All inboxes', value: 'all' },
+  ...SUPPORT_INBOXES.map(i => ({ title: i, value: i })),
+]
+const inboxTickets = computed(() =>
+  inboxFilter.value === 'all'
+    ? store.tickets
+    : store.tickets.filter(t => t.inbox === inboxFilter.value)
+)
+
+// Keep the detail pane in sync with the selected inbox
+watch(inboxFilter, () => {
+  if (!inboxTickets.value.some(t => t.id === store.activeTicketId)) {
+    store.setActive(inboxTickets.value[0]?.id ?? 0)
+  }
+})
 
 const activeTicket = computed(() => store.tickets.find(t => t.id === store.activeTicketId))
 
@@ -28,6 +46,7 @@ const emptyForm = () => ({
   priority: 'Normal' as const,
   description: '',
   assignee: 'Auto-assign',
+  inbox: inboxFilter.value === 'all' ? SUPPORT_INBOXES[0]! : inboxFilter.value,
 })
 const newTicket = ref(emptyForm())
 
@@ -54,7 +73,6 @@ function submitTicket() {
   saveSnack.value = true
   newTicket.value = emptyForm()
   formTouched.value = false
-  tab.value = 'list'
 }
 
 // ── Canned responses ─────────────────────────────────────────────────────
@@ -69,9 +87,9 @@ const cannedResponses = [
 const statusOptions = ['All', 'Open', 'In Progress', 'Awaiting Reply', 'Resolved', 'Closed']
 
 const filterCounts = computed(() => {
-  const map: Record<string, number> = { All: store.tickets.length }
+  const map: Record<string, number> = { All: inboxTickets.value.length }
   for (const s of statusOptions.slice(1)) {
-    map[s] = store.tickets.filter(t => t.status === s).length
+    map[s] = inboxTickets.value.filter(t => t.status === s).length
   }
   return map
 })
@@ -87,7 +105,7 @@ const statusTabs = computed(() =>
 
 const filteredTickets = computed(() => {
   const q = search.value.toLowerCase()
-  return store.tickets.filter(ticket => {
+  return inboxTickets.value.filter(ticket => {
     const matchesStatus = filterStatus.value === 'All' || ticket.status === filterStatus.value
     const matchesSearch =
       !q ||
@@ -98,14 +116,6 @@ const filteredTickets = computed(() => {
     return matchesStatus && matchesSearch
   })
 })
-
-// ── Kanban ────────────────────────────────────────────────────────────────
-const kanbanCols = [
-  { status: 'Open',          color: 'error' },
-  { status: 'In Progress',   color: 'warning' },
-  { status: 'Awaiting Reply', color: 'info' },
-  { status: 'Resolved',      color: 'success' },
-]
 
 // ── Utilities ─────────────────────────────────────────────────────────────
 function timeAgo(dateStr: string) {
@@ -150,8 +160,19 @@ function closeActiveTicket() {
       </template>
     </MpPageHeader>
 
-    <!-- ── Toolbar: Search + View Toggle ───────────────────────── -->
+    <!-- ── Toolbar: Inbox switcher + Search ────────────────────── -->
     <div class="d-flex align-center gap-3 tkt-toolbar">
+      <v-select
+        v-model="inboxFilter"
+        :items="inboxOptions"
+        prepend-inner-icon="inbox"
+        aria-label="Filter tickets by inbox"
+        variant="outlined"
+        density="comfortable"
+        hide-details
+        rounded="lg"
+        class="flex-shrink-0 tkt-inbox-select"
+      />
       <v-text-field
         v-model="search"
         prepend-inner-icon="search"
@@ -164,33 +185,18 @@ function closeActiveTicket() {
         rounded="lg"
         class="flex-grow-1 tkt-search"
       />
-      <v-btn-toggle
-        v-model="tab"
-        density="compact"
-        mandatory
-        rounded="lg"
-        class="tkt-view-toggle"
-        aria-label="Switch view"
-      >
-        <v-btn value="list" size="small" class="text-none" aria-label="List view">
-          <v-icon size="16" class="mr-1">list</v-icon> List
-        </v-btn>
-        <v-btn value="kanban" size="small" class="text-none" aria-label="Kanban view">
-          <v-icon size="16" class="mr-1">columns-3</v-icon> Kanban
-        </v-btn>
-      </v-btn-toggle>
     </div>
 
-    <!-- ── List View ────────────────────────────────────────────── -->
-    <div v-if="tab === 'list'" class="tkt-workspace d-flex gap-4 mt-3">
+    <!-- ── Workspace: list + detail ─────────────────────────────── -->
+    <div class="tkt-workspace d-flex gap-4 mt-3">
       <!-- Left pane: Ticket list -->
       <v-card variant="flat" border rounded="lg" class="tkt-list-panel d-flex flex-column overflow-hidden">
         <div class="flex-grow-1 overflow-y-auto">
           <MpEmptyState
             v-if="filteredTickets.length === 0"
             icon="inbox"
-            :title="search || filterStatus !== 'All' ? 'No matching tickets' : 'No tickets yet'"
-            :description="search || filterStatus !== 'All' ? 'Try adjusting your search or filter.' : 'Create a ticket to start tracking support requests.'"
+            :title="search || filterStatus !== 'All' || inboxFilter !== 'all' ? 'No matching tickets' : 'No tickets yet'"
+            :description="search || filterStatus !== 'All' || inboxFilter !== 'all' ? 'Try adjusting your search, status filter, or inbox.' : 'Create a ticket to start tracking support requests.'"
             :action-label="filterStatus === 'All' && !search ? 'Create ticket' : undefined"
             class="ma-4"
             @action="openNewTicket"
@@ -237,9 +243,12 @@ function closeActiveTicket() {
               <div class="tkt-row__footer">
                 <span>
                   <v-icon size="13">messages-square</v-icon>
-                  {{ ticket.thread.length }} conversations
+                  {{ ticket.thread.length }} messages
                 </span>
-                <span>{{ ticket.category }}</span>
+                <span>
+                  <v-icon size="13">store</v-icon>
+                  {{ ticket.inbox }}
+                </span>
               </div>
             </div>
           </button>
@@ -332,11 +341,11 @@ function closeActiveTicket() {
           </div>
           <div class="tkt-summary-item">
             <span class="tkt-summary-item__icon">
-              <v-icon size="15">messages-square</v-icon>
+              <v-icon size="15">store</v-icon>
             </span>
             <div class="min-w-0">
-              <span>Conversation</span>
-              <strong>{{ activeTicket.thread.length }} messages</strong>
+              <span>Inbox</span>
+              <strong>{{ activeTicket.inbox }}</strong>
             </div>
           </div>
         </div>
@@ -398,7 +407,7 @@ function closeActiveTicket() {
                     :aria-expanded="cannedMenu"
                   />
                 </template>
-                <v-list density="compact" rounded="lg" nav elevation="8" min-width="240">
+                <v-list density="compact" rounded="lg" nav elevation="3" min-width="240">
                   <v-list-subheader>Canned Responses</v-list-subheader>
                   <v-list-item
                     v-for="cr in cannedResponses"
@@ -447,57 +456,6 @@ function closeActiveTicket() {
       </v-card>
     </div>
 
-    <!-- ── Kanban View ───────────────────────────────────────────── -->
-    <div v-if="tab === 'kanban'" class="tkt-kanban d-flex gap-4 mt-3 overflow-x-auto pb-4">
-      <div
-        v-for="col in kanbanCols"
-        :key="col.status"
-        class="tkt-kanban-col d-flex flex-column flex-shrink-0"
-      >
-        <!-- Column header -->
-        <div class="d-flex align-center justify-space-between mb-3 px-1">
-          <div class="d-flex align-center gap-2">
-            <v-chip :color="col.color" size="x-small" variant="flat" class="font-weight-bold">
-              {{ store.tickets.filter(t => t.status === col.status).length }}
-            </v-chip>
-            <span class="text-subtitle-2 font-weight-semibold">{{ col.status }}</span>
-          </div>
-          <v-btn
-            icon="plus"
-            variant="text"
-            size="x-small"
-            :aria-label="`Add ticket to ${col.status}`"
-            @click="openNewTicket"
-          />
-        </div>
-        <!-- Cards -->
-        <div class="d-flex flex-column gap-2 overflow-y-auto flex-grow-1">
-          <v-card
-            v-for="ticket in store.tickets.filter(t => t.status === col.status)"
-            :key="ticket.id"
-            variant="flat"
-            border
-            rounded="lg"
-            class="pa-3 cursor-pointer tkt-kanban-card"
-            tabindex="0"
-            :aria-label="`${ticket.number}: ${ticket.subject}`"
-            @click="store.setActive(ticket.id); tab = 'list'"
-            @keydown.enter="store.setActive(ticket.id); tab = 'list'"
-            @keydown.space.prevent="store.setActive(ticket.id); tab = 'list'"
-          >
-            <div class="d-flex align-start justify-space-between mb-2 gap-2">
-              <span class="text-caption text-medium-emphasis">{{ ticket.number }}</span>
-              <MpStatusChip :status="ticket.priority" type="priority" size="x-small" variant="flat" />
-            </div>
-            <div class="text-body-2 font-weight-medium mb-3 tkt-kanban-card__subject">{{ ticket.subject }}</div>
-            <div class="d-flex align-center justify-space-between">
-              <v-avatar color="primary" variant="tonal" size="24" class="text-caption font-weight-bold">{{ ticket.avatar }}</v-avatar>
-              <span class="text-caption text-medium-emphasis">{{ timeAgo(ticket.updatedAt) }}</span>
-            </div>
-          </v-card>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- ── New Ticket Drawer ─────────────────────────────────────── -->
@@ -583,6 +541,17 @@ function closeActiveTicket() {
       placeholder="Describe the customer's issue in detail…"
     />
     <v-select
+      v-model="newTicket.inbox"
+      label="Inbox"
+      :items="SUPPORT_INBOXES"
+      variant="outlined"
+      density="comfortable"
+      class="mb-3"
+      prepend-inner-icon="store"
+      hint="The store or sales channel this request belongs to"
+      persistent-hint
+    />
+    <v-select
       v-model="newTicket.assignee"
       label="Assign To"
       :items="['Auto-assign', 'Sarah Connor', 'Mike Zhang', 'Priya Sharma']"
@@ -628,24 +597,11 @@ function closeActiveTicket() {
 .tkt-search :deep(.v-field:hover) {
   background: rgb(var(--v-theme-surface));
 }
-.tkt-view-toggle {
-  height: 40px;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+.tkt-inbox-select {
+  width: 240px;
+}
+.tkt-inbox-select :deep(.v-field) {
   background: rgb(var(--v-theme-surface));
-  overflow: hidden;
-}
-.tkt-view-toggle :deep(.v-btn) {
-  height: 100%;
-  border-radius: 0;
-  padding-inline: 14px;
-  color: rgba(var(--v-theme-on-surface), 0.72);
-  letter-spacing: 0;
-  font-weight: 500;
-}
-.tkt-view-toggle :deep(.v-btn.v-btn--active) {
-  background: rgba(var(--v-theme-primary), 0.1);
-  color: rgb(var(--v-theme-primary));
-  font-weight: 700;
 }
 
 /* ── Workspace (list view) ─────────────────────────────────────── */
@@ -725,7 +681,7 @@ function closeActiveTicket() {
 }
 .tkt-summary-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 0.8fr 0.9fr;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 12px;
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   background: rgba(var(--v-theme-surface-variant), 0.22);
@@ -848,25 +804,6 @@ function closeActiveTicket() {
   background: rgb(var(--v-theme-surface));
 }
 
-/* ── Kanban ────────────────────────────────────────────────────── */
-.tkt-kanban {
-  height: calc(100vh - var(--v-layout-top, 56px) - 228px);
-  min-height: 480px;
-}
-.tkt-kanban-col { width: 280px; }
-.tkt-kanban-card { transition: box-shadow 0.12s ease, transform 0.12s ease; }
-.tkt-kanban-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07); }
-.tkt-kanban-card:focus-visible {
-  outline: 2px solid rgb(var(--v-theme-primary));
-  outline-offset: 2px;
-}
-.tkt-kanban-card__subject {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
 /* ── Form drawer ───────────────────────────────────────────────── */
 .tkt-form-section {
   font-size: 10px;
@@ -875,8 +812,7 @@ function closeActiveTicket() {
 
 /* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 860px) {
-  .tkt-workspace,
-  .tkt-kanban {
+  .tkt-workspace {
     flex-direction: column;
     overflow: visible;
     height: auto;
@@ -902,7 +838,7 @@ function closeActiveTicket() {
     flex-wrap: wrap;
     gap: 8px;
   }
-  .tkt-view-toggle { width: 100%; }
+  .tkt-inbox-select { width: 100%; }
   .tkt-summary-grid {
     grid-template-columns: 1fr;
   }

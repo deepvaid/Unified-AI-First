@@ -12,11 +12,15 @@ export interface Ticket {
   priority: 'Low' | 'Normal' | 'High' | 'Urgent'
   category: string
   assignee: string
+  inbox: string
   createdAt: string
   updatedAt: string
   tags: string[]
   thread: TicketMessage[]
 }
+
+// One support inbox per store/sales channel (names mirror useSalesChannels)
+export const SUPPORT_INBOXES = ['Atlas Outfitters', 'POS Store', 'Mall Kiosk POS']
 
 export interface TicketMessage {
   author: string
@@ -34,6 +38,7 @@ export interface NewTicketPayload {
   priority: Ticket['priority']
   description: string
   assignee: string
+  inbox: string
 }
 
 const customerNames = ['James Anderson', 'Sofia Thompson', 'Liam Martinez', 'Emma Johnson', 'Noah Williams', 'Olivia Brown', 'Ethan Davis', 'Ava Miller', 'Mason Wilson', 'Isabella Moore']
@@ -184,6 +189,7 @@ export const useTicketsStore = defineStore('tickets', () => {
       priority: priorities[i % priorities.length]!,
       category: categories[i % categories.length]!,
       assignee,
+      inbox: SUPPORT_INBOXES[i % SUPPORT_INBOXES.length]!,
       createdAt: new Date(Date.now() - ((i + 1) * 7200000)).toISOString(),
       updatedAt: new Date(Date.now() - (i * 1800000)).toISOString(),
       tags: i % 3 === 0 ? ['VIP'] : i % 5 === 0 ? ['Flagged'] : [],
@@ -238,6 +244,7 @@ export const useTicketsStore = defineStore('tickets', () => {
       priority: payload.priority,
       category: payload.category,
       assignee,
+      inbox: payload.inbox,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       tags: [],
