@@ -39,7 +39,26 @@ const headers = [
   { title: '', key: 'data-table-expand', width: 40 },
 ]
 
-const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const hiddenColumns = ref<string[]>([])
+const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
+
+const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const formatDate = (d?: string) => d ? dateFmt.format(new Date(d)) : '—'
+
+// Quiet dot+label treatment for secondary statuses (order status keeps the chip)
+const fulfillmentDots: Record<string, string> = {
+  'Shipped': 'rgb(var(--v-theme-success))',
+  'Ready For Fulfillment': 'rgb(var(--v-theme-primary))',
+  'Not Ready': 'rgb(var(--v-theme-warning))',
+  'Return Requested': 'rgb(var(--v-theme-warning))',
+  'Cancelled': 'rgb(var(--v-theme-error))',
+  'Unapproved': 'rgba(var(--v-theme-on-surface), 0.38)',
+}
+const paymentDots: Record<string, string> = {
+  'Paid': 'rgb(var(--v-theme-success))',
+  'Refunded': 'rgb(var(--v-theme-error))',
+  'Voided': 'rgba(var(--v-theme-on-surface), 0.38)',
+}
 
 // ─── Tab + Filter Filtering ───────────────────────────────────────────────────
 const filteredOrders = computed(() => {
@@ -128,30 +147,28 @@ function selectAll() {
     </MpPageHeader>
 
     <!-- Main Table Card -->
-    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden table-card">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <!-- Toolbar -->
       <MpDataTableToolbar
         v-model:search="search"
-        title="All Orders"
+        v-model:hidden-columns="hiddenColumns"
+        :headers="headers"
         :active-filters="activeFilterEntries"
         :total-count="filteredOrders.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <div v-for="(options, key) in filterOptions" :key="key" class="mb-3">
-              <v-select
-                v-model="filters[key as keyof typeof filters]"
-                :label="filterLabels[key]"
-                :items="options"
-                variant="outlined"
-                density="compact"
-                hide-details
-                clearable
-              />
-            </div>
+          <div v-for="(options, key) in filterOptions" :key="key" class="mb-4">
+            <v-select
+              v-model="filters[key as keyof typeof filters]"
+              :label="filterLabels[key]"
+              :items="options"
+              variant="outlined"
+              density="compact"
+              hide-details
+              clearable
+            />
           </div>
         </template>
       </MpDataTableToolbar>
@@ -179,70 +196,63 @@ function selectAll() {
           <span class="text-primary font-weight-bold cursor-pointer">{{ item.orderNumber }}</span>
         </template>
 
-        <!-- Date — muted -->
+        <!-- Date — muted, humane, single line -->
         <template v-slot:item.date="{ item }">
-          <span class="text-medium-emphasis text-body-2">{{ item.date }}</span>
+          <span class="text-medium-emphasis text-body-2 text-no-wrap">{{ formatDate(item.date) }}</span>
         </template>
 
-        <!-- Customer -->
+        <!-- Customer — name only; email lives in the expanded row -->
         <template v-slot:item.customer.name="{ item }">
-          <div class="d-flex align-center gap-2 py-1">
-            <v-avatar color="primary" variant="tonal" size="32" class="text-caption font-weight-bold">
-              {{ item.customer.avatar }}
-            </v-avatar>
-            <div>
-              <div class="font-weight-medium text-body-2">{{ item.customer.name }}</div>
-              <div class="text-caption text-medium-emphasis">{{ item.customer.email }}</div>
-            </div>
-          </div>
+          <span class="font-weight-medium text-body-2 text-no-wrap">{{ item.customer.name }}</span>
         </template>
 
-        <!-- Items count -->
+        <!-- Items count — plain number -->
         <template v-slot:item.itemCount="{ item }">
-          <v-chip size="x-small" variant="tonal" color="secondary" class="font-weight-bold">{{ item.itemCount }}</v-chip>
+          <span class="text-body-2 text-medium-emphasis">{{ item.itemCount }}</span>
         </template>
 
         <!-- Total -->
         <template v-slot:item.total="{ item }">
-          <span class="font-weight-bold">${{ item.total }}</span>
+          <span class="font-weight-semibold text-no-wrap">${{ item.total }}</span>
         </template>
 
-        <!-- Fulfillment Status — real Maropost values -->
+        <!-- Fulfillment — quiet dot + label (order status keeps the chip) -->
         <template v-slot:item.fulfillmentStatus="{ item }">
-          <MpStatusChip :status="item.fulfillmentStatus ?? ''" type="fulfillment" show-icon />
+          <span class="ord-dot-label text-no-wrap">
+            <span class="ord-dot" :style="{ background: fulfillmentDots[item.fulfillmentStatus ?? ''] ?? 'rgba(var(--v-theme-on-surface), 0.38)' }" />
+            {{ item.fulfillmentStatus }}
+          </span>
         </template>
 
-        <!-- Payment Status -->
+        <!-- Payment — quiet dot + label -->
         <template v-slot:item.paymentStatus="{ item }">
-          <MpStatusChip :status="item.paymentStatus ?? ''" type="payment" />
+          <span class="ord-dot-label text-no-wrap">
+            <span class="ord-dot" :style="{ background: paymentDots[item.paymentStatus ?? ''] ?? 'rgba(var(--v-theme-on-surface), 0.38)' }" />
+            {{ item.paymentStatus }}
+          </span>
         </template>
 
         <!-- Order Status -->
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status ?? ''" type="order" variant="flat" />
+          <MpStatusChip :status="item.status ?? ''" type="order" variant="flat" size="x-small" />
         </template>
 
-        <!-- Row actions — revealed on hover -->
+        <!-- Row actions -->
         <template v-slot:item.actions>
-          <div class="action-btns d-flex">
-            <v-tooltip text="View order" location="top">
-              <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" icon="eye" variant="text" size="x-small" color="medium-emphasis" aria-label="View order"></v-btn>
-              </template>
-            </v-tooltip>
-            <v-menu>
-              <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" icon="more-vertical" variant="text" size="x-small" color="medium-emphasis" aria-label="More actions"></v-btn>
-              </template>
-              <v-list density="compact" min-width="180">
-                <v-list-item prepend-icon="pencil" title="Edit order" value="edit"></v-list-item>
-                <v-list-item prepend-icon="package-check" title="Mark fulfilled" value="fulfill"></v-list-item>
-                <v-list-item prepend-icon="printer" title="Print invoice" value="print"></v-list-item>
-                <v-list-item prepend-icon="banknote" title="Refund" value="refund" class="text-error mt-1"></v-list-item>
-                <v-list-item prepend-icon="ban" title="Cancel order" value="cancel" class="text-error"></v-list-item>
-              </v-list>
-            </v-menu>
-          </div>
+          <v-menu location="bottom end">
+            <template v-slot:activator="{ props }">
+              <v-btn v-bind="props" icon="more-vertical" variant="text" size="small" density="comfortable" color="medium-emphasis" aria-label="Order actions"></v-btn>
+            </template>
+            <v-list density="compact" rounded="lg" min-width="180" elevation="3" class="py-1">
+              <v-list-item prepend-icon="eye" title="View order" value="view"></v-list-item>
+              <v-list-item prepend-icon="pencil" title="Edit order" value="edit"></v-list-item>
+              <v-list-item prepend-icon="package-check" title="Mark fulfilled" value="fulfill"></v-list-item>
+              <v-list-item prepend-icon="printer" title="Print invoice" value="print"></v-list-item>
+              <v-divider class="my-1" style="opacity: 0.4" />
+              <v-list-item prepend-icon="banknote" title="Refund" value="refund" class="text-error"></v-list-item>
+              <v-list-item prepend-icon="ban" title="Cancel order" value="cancel" class="text-error"></v-list-item>
+            </v-list>
+          </v-menu>
         </template>
 
         <!-- Expanded detail row -->
@@ -338,16 +348,31 @@ function selectAll() {
       @clear="selected = []"
       @select-all="selectAll"
     >
-      <v-btn size="small" variant="flat" color="success" prepend-icon="package-check" class="text-none" rounded="lg">Mark Fulfilled</v-btn>
-      <v-btn size="small" variant="flat" color="secondary" prepend-icon="printer" class="text-none" rounded="lg">Print Labels</v-btn>
-      <v-btn size="small" variant="flat" color="error" prepend-icon="ban" class="text-none" rounded="lg">Cancel Orders</v-btn>
+      <v-btn size="small" variant="flat" color="surface" prepend-icon="package-check" class="text-none" rounded="lg">Mark Fulfilled</v-btn>
+      <v-btn size="small" variant="flat" color="surface" prepend-icon="printer" class="text-none" rounded="lg">Print Labels</v-btn>
+      <v-btn size="small" variant="flat" color="surface" prepend-icon="ban" class="text-none text-error" rounded="lg">Cancel Orders</v-btn>
     </MpFloatingBulkBar>
   </div>
 </template>
 
 <style scoped>
-.table-card {
-  background: rgba(var(--v-theme-surface-variant), 0.2);
+:deep(.v-data-table thead th) {
+  white-space: nowrap;
+}
+
+/* Quiet secondary statuses: colored dot + muted label */
+.ord-dot-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(var(--v-theme-on-surface), 0.72);
+  font-size: 13px;
+}
+.ord-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 /* ─── Expanded Row ───────────────────────────────────────────── */
