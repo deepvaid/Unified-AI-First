@@ -142,7 +142,7 @@ function linkLocation() {
     <template v-if="channel && isOfflineChannel">
       <MpPageHeader
         title="Locations"
-        :subtitle="`${channel.name} locations, registers, associates, and fulfillment roles.`"
+        :subtitle="`${locationRows.length} linked locations · ${channel.name}`"
         :back-to="{ name: 'SalesChannelDetail', params: { accountId, channelId: channel.id } }"
       >
         <template #actions>
@@ -197,7 +197,6 @@ function linkLocation() {
       <v-card flat border rounded="lg" class="d-flex flex-column">
         <MpDataTableToolbar
           v-model:search="search"
-          title="Offline Store locations"
           search-placeholder="Search locations..."
           :total-count="filteredLocations.length"
           :headers="tableHeaders"
@@ -213,23 +212,16 @@ function linkLocation() {
           @click:row="(_event: Event, { item }: { item: LocationRow }) => openLocation(item)"
         >
           <template #item.name="{ item }">
-            <div class="d-flex align-center ga-3 min-width-0">
-              <v-avatar size="36" variant="tonal" color="primary">
-                <v-icon size="18">map-pin</v-icon>
-              </v-avatar>
-              <div class="min-width-0">
-                <div class="text-body-2 font-weight-bold">{{ item.name }}</div>
-                <div class="text-caption text-medium-emphasis text-truncate">{{ item.address }}</div>
-              </div>
+            <div class="min-width-0 py-2">
+              <div class="text-body-2 font-weight-bold">{{ item.name }}</div>
+              <div class="text-caption text-medium-emphasis text-truncate">{{ item.address }}</div>
             </div>
           </template>
 
           <template #item.roles="{ item }">
-            <div class="d-flex align-center ga-1 flex-wrap">
-              <v-chip v-for="role in item.roles" :key="role" size="x-small" variant="tonal" label>
-                {{ LOCATION_ROLE_LABELS[role] }}
-              </v-chip>
-            </div>
+            <span class="text-body-2 text-medium-emphasis">
+              {{ item.roles.map((role: LocationRole) => LOCATION_ROLE_LABELS[role]).join(' · ') }}
+            </span>
           </template>
 
           <template #item.registers="{ item }">
