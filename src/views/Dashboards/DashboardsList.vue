@@ -225,14 +225,12 @@ function bulkDelete() {
   }
 }
 
-function backToActiveDashboard() {
+const backTarget = computed(() => {
   const target = dashboardsStore.getDefaultDashboard(accountId.value)
-  if (!target) {
-    router.push({ name: 'Dashboard', params: { accountId: accountId.value } })
-    return
-  }
-  router.push(dashboardRoute(target))
-}
+  return target
+    ? dashboardRoute(target)
+    : { name: 'Dashboard' as const, params: { accountId: accountId.value } }
+})
 
 function performConfirm() {
   if (!confirmAction.value) return
@@ -250,21 +248,10 @@ function handleDashboardCreated(dashboardId: string) {
 
 <template>
   <div class="dashboards-list">
-    <div class="dashboards-list__back-row">
-      <v-btn
-        variant="text"
-        size="small"
-        prepend-icon="arrow-left"
-        class="text-none px-2"
-        @click="backToActiveDashboard"
-      >
-        Back to active dashboard
-      </v-btn>
-    </div>
-
     <MpPageHeader
       title="Dashboards"
-      :subtitle="`Browse, organize, and personalize every dashboard for ${account?.name ?? 'this workspace'}.`"
+      :subtitle="`${dashboards.length} dashboards · ${dashboards.filter(d => d.kind === 'custom').length} custom · ${account?.name ?? 'this workspace'}`"
+      :back-to="backTarget"
     >
       <template #actions>
         <v-btn
@@ -283,7 +270,6 @@ function handleDashboardCreated(dashboardId: string) {
       <MpDataTableToolbar
         v-model:search="search"
         v-model:hidden-columns="hiddenColumns"
-        title="All Dashboards"
         search-placeholder="Search dashboards"
         :headers="headers"
         :total-count="totalCount"
@@ -342,13 +328,7 @@ function handleDashboardCreated(dashboardId: string) {
         </template>
 
         <template #item.kind="{ item }">
-          <v-chip
-            size="x-small"
-            variant="tonal"
-            :color="item.kind === 'system' ? 'secondary' : 'primary'"
-          >
-            {{ item.kind === 'system' ? 'System' : 'Custom' }}
-          </v-chip>
+          <span class="text-body-2 text-medium-emphasis">{{ item.kind === 'system' ? 'System' : 'Custom' }}</span>
         </template>
 
         <template #item.widgetCount="{ item }">
@@ -364,36 +344,7 @@ function handleDashboardCreated(dashboardId: string) {
         </template>
 
         <template #item.actions="{ item }">
-          <div class="d-flex align-center justify-end ga-1" @click.stop>
-            <v-tooltip
-              :text="item.isDefault ? 'Currently default' : 'Set as default'"
-              location="top"
-            >
-              <template #activator="{ props: tipProps }">
-                <v-btn
-                  v-bind="tipProps"
-                  :icon="item.isDefault ? 'bookmark-check' : 'bookmark'"
-                  :color="item.isDefault ? 'success' : undefined"
-                  variant="text"
-                  size="small"
-                  density="comfortable"
-                  :disabled="item.isDefault"
-                  :aria-label="item.isDefault ? `${item.name} is the default dashboard` : `Set ${item.name} as default`"
-                  class="d-none d-sm-inline-flex"
-                  @click="handleSetDefault(item.id)"
-                />
-              </template>
-            </v-tooltip>
-            <v-btn
-              :icon="item.favorite ? 'star' : 'star'"
-              :color="item.favorite ? 'warning' : undefined"
-              variant="text"
-              size="small"
-              density="comfortable"
-              :aria-label="item.favorite ? `Unfavorite ${item.name}` : `Favorite ${item.name}`"
-              class="d-none d-sm-inline-flex"
-              @click="handleToggleFavorite(item.id)"
-            />
+          <div class="d-flex align-center justify-end" @click.stop>
             <v-menu location="bottom end">
               <template #activator="{ props: menuProps }">
                 <v-btn
@@ -402,6 +353,7 @@ function handleDashboardCreated(dashboardId: string) {
                   variant="text"
                   size="small"
                   density="comfortable"
+                  color="medium-emphasis"
                   :aria-label="`More actions for ${item.name}`"
                 />
               </template>
@@ -410,7 +362,6 @@ function handleDashboardCreated(dashboardId: string) {
                 <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item.id)" />
                 <v-list-item prepend-icon="copy" title="Duplicate" @click="handleDuplicate(item.id)" />
                 <v-list-item
-                  class="d-sm-none"
                   :prepend-icon="item.favorite ? 'star-off' : 'star'"
                   :title="item.favorite ? 'Unfavorite' : 'Favorite'"
                   @click="handleToggleFavorite(item.id)"
@@ -460,7 +411,8 @@ function handleDashboardCreated(dashboardId: string) {
       @select-all="selectAll"
     >
       <v-btn
-        variant="outlined"
+        variant="flat"
+        color="surface"
         size="small"
         class="text-none"
         rounded="lg"
@@ -470,7 +422,8 @@ function handleDashboardCreated(dashboardId: string) {
         {{ selectedAllFavorited ? 'Unfavorite' : 'Favorite' }}
       </v-btn>
       <v-btn
-        variant="outlined"
+        variant="flat"
+        color="surface"
         size="small"
         class="text-none"
         rounded="lg"
@@ -480,10 +433,10 @@ function handleDashboardCreated(dashboardId: string) {
         Duplicate
       </v-btn>
       <v-btn
-        variant="outlined"
+        variant="flat"
+        color="surface"
         size="small"
-        color="error"
-        class="text-none"
+        class="text-none text-error"
         rounded="lg"
         prepend-icon="trash-2"
         :disabled="!selectedHasCustom"
@@ -530,12 +483,6 @@ function handleDashboardCreated(dashboardId: string) {
 .dashboards-list {
   display: flex;
   flex-direction: column;
-}
-
-.dashboards-list__back-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
 }
 
 .dashboards-table {
