@@ -5,6 +5,9 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 import CreateDashboardDialog from '@/components/dashboards/CreateDashboardDialog.vue'
 import EditDashboardDialog from '@/components/dashboards/EditDashboardDialog.vue'
 import { accentToVuetifyColor, relativeTime } from '@/components/dashboards/dashboardOptions'
@@ -17,12 +20,12 @@ type DashboardTableItem = Dashboard & {
 }
 
 const headers = [
-  { title: 'Dashboard', key: 'name', sortable: true, minWidth: '320px' },
-  { title: 'Type', key: 'kind', sortable: true, width: '120px' },
-  { title: 'Widgets', key: 'widgetCount', align: 'end' as const, sortable: true, width: '120px' },
-  { title: 'Updated', key: 'updatedAt', sortable: true, width: '140px' },
-  { title: 'Last Viewed', key: 'lastViewedAt', sortable: true, width: '150px' },
-  { title: '', key: 'actions', align: 'end' as const, sortable: false, width: '132px' },
+  { title: 'Dashboard', key: 'name', sortable: true },
+  { title: 'Type', key: 'kind', sortable: true, width: '120px', hideBelow: 'sm' as const },
+  { title: 'Widgets', key: 'widgetCount', align: 'end' as const, sortable: true, width: '120px', hideBelow: 'lg' as const },
+  { title: 'Updated', key: 'updatedAt', sortable: true, width: '140px', hideBelow: 'md' as const },
+  { title: 'Last Viewed', key: 'lastViewedAt', sortable: true, width: '150px', hideBelow: 'lg' as const },
+  { title: '', key: 'actions', align: 'end' as const, sortable: false },
 ]
 
 const route = useRoute()
@@ -66,9 +69,8 @@ const confirmAction = ref<{
   perform: () => void
 } | null>(null)
 
-const visibleHeaders = computed(() =>
-  headers.filter((header) => !hiddenColumns.value.includes(header.key)),
-)
+const { loading } = useInitialLoad()
+const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
 
 const dashboardRows = computed<DashboardTableItem[]>(() =>
   dashboards.value.map((dashboard) => ({
@@ -288,7 +290,10 @@ function handleDashboardCreated(dashboardId: string) {
       >
       </MpDataTableToolbar>
 
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
+
       <v-data-table
+        v-else
         v-model="selectedIds"
         :headers="visibleHeaders"
         :items="filteredDashboards"
@@ -307,7 +312,7 @@ function handleDashboardCreated(dashboardId: string) {
               <v-icon size="18">{{ item.icon ?? 'layout-dashboard' }}</v-icon>
             </v-avatar>
             <div class="min-width-0">
-              <div class="d-flex align-center ga-2 min-width-0">
+              <div class="d-flex align-center ga-2 min-width-0 dashboard-title-row">
                 <button
                   type="button"
                   class="dashboard-link"
@@ -374,6 +379,7 @@ function handleDashboardCreated(dashboardId: string) {
                   density="comfortable"
                   :disabled="item.isDefault"
                   :aria-label="item.isDefault ? `${item.name} is the default dashboard` : `Set ${item.name} as default`"
+                  class="d-none d-sm-inline-flex"
                   @click="handleSetDefault(item.id)"
                 />
               </template>
@@ -385,6 +391,7 @@ function handleDashboardCreated(dashboardId: string) {
               size="small"
               density="comfortable"
               :aria-label="item.favorite ? `Unfavorite ${item.name}` : `Favorite ${item.name}`"
+              class="d-none d-sm-inline-flex"
               @click="handleToggleFavorite(item.id)"
             />
             <v-menu location="bottom end">
@@ -402,6 +409,12 @@ function handleDashboardCreated(dashboardId: string) {
                 <v-list-item prepend-icon="arrow-up-right" title="Open" @click="openDashboard(item.id)" />
                 <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item.id)" />
                 <v-list-item prepend-icon="copy" title="Duplicate" @click="handleDuplicate(item.id)" />
+                <v-list-item
+                  class="d-sm-none"
+                  :prepend-icon="item.favorite ? 'star-off' : 'star'"
+                  :title="item.favorite ? 'Unfavorite' : 'Favorite'"
+                  @click="handleToggleFavorite(item.id)"
+                />
                 <v-list-item
                   v-if="!item.isDefault"
                   prepend-icon="bookmark-check"
@@ -564,5 +577,25 @@ function handleDashboardCreated(dashboardId: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Phones: tighten name/description caps + cell padding so the table fits without horizontal scroll */
+@media (max-width: 599px) {
+  .dashboard-link {
+    max-width: 14ch;
+  }
+
+  .dashboard-description {
+    max-width: 15ch;
+  }
+
+  .dashboards-table :deep(td),
+  .dashboards-table :deep(th) {
+    padding-inline: 8px;
+  }
+
+  .dashboard-title-row {
+    flex-wrap: wrap;
+  }
 }
 </style>
