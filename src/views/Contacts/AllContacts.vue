@@ -224,10 +224,6 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
                 {{ (item as any).firstName + ' ' + ((item as any).lastName ?? '') }}
               </button>
               <div class="text-caption text-medium-emphasis">{{ (item as any).email }}</div>
-              <div class="contact-row-hint">
-                View profile
-                <v-icon size="12">arrow-up-right</v-icon>
-              </div>
             </div>
           </div>
         </template>
@@ -247,10 +243,10 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         </template>
 
         <template v-slot:item.score="{ item }">
-          <div class="d-flex align-center gap-2" style="min-width:80px;">
-            <v-progress-linear :model-value="item.score" :color="scoreColor(item.score)" rounded height="6" bg-color="surface-variant" style="width:48px;" />
-            <span class="text-caption font-weight-bold">{{ item.score }}</span>
-          </div>
+          <span class="contact-score text-no-wrap">
+            <span class="contact-score__dot" :class="`contact-score__dot--${scoreColor(item.score)}`" />
+            {{ item.score }}
+          </span>
         </template>
 
         <template v-slot:item.lastActive="{ item }">
@@ -459,22 +455,23 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
   box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.16);
 }
 
-.contact-row-hint {
+.contact-score {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  margin-top: 2px;
-  color: rgb(var(--v-theme-primary));
-  font-size: 11px;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 600;
-  opacity: 0;
-  transition: opacity 120ms ease;
 }
 
-.contacts-table :deep(tbody tr:hover) .contact-row-hint,
-.contacts-table :deep(tbody tr:focus-within) .contact-row-hint {
-  opacity: 1;
+.contact-score__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
+
+.contact-score__dot--success { background: rgb(var(--v-theme-success)); }
+.contact-score__dot--warning { background: rgb(var(--v-theme-warning)); }
+.contact-score__dot--error { background: rgb(var(--v-theme-error)); }
 
 .avatar-fallback {
   width: 100%;
