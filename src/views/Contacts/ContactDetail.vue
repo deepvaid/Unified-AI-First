@@ -96,14 +96,11 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 <template>
   <div v-if="contact && detail" class="contact-detail-page">
 
-    <!-- ── Back nav ──────────────────────────────────────────────────────── -->
-    <RouterLink :to="`/accounts/${route.params.accountId}/contacts`" class="back-nav">
-      <v-icon size="16">chevron-left</v-icon>
-      Back to all contacts
-    </RouterLink>
-
     <!-- ── Page Header ────────────────────────────────────────────────────── -->
-    <MpPageHeader :title="fullName">
+    <MpPageHeader
+      :title="fullName"
+      :back-to="`/accounts/${route.params.accountId}/contacts`"
+    >
       <template #actions>
         <v-btn variant="flat" prepend-icon="pencil" @click="openEditDrawer" color="surface">Edit Contact</v-btn>
         <v-menu>
@@ -128,16 +125,11 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
       <div class="contact-sidebar">
         <div class="d-flex flex-column gap-4">
 
-        <!-- Card 1: Profile Hero -->
-        <v-card flat border rounded="lg" class="profile-hero-card overflow-hidden">
-          <!-- Gradient hero banner -->
-          <div class="profile-hero-banner">
-            <div class="profile-hero-banner__pattern" />
-          </div>
-
-          <!-- Avatar overlapping banner -->
-          <div class="profile-hero-avatar">
-            <v-avatar size="80" class="profile-hero-avatar__ring">
+        <!-- Card 1: Profile -->
+        <v-card flat border rounded="lg" class="overflow-hidden">
+          <!-- Identity -->
+          <div class="d-flex align-center gap-4 px-5 pt-5 pb-4">
+            <v-avatar size="56" class="flex-shrink-0 border">
               <v-img :src="contact.avatarUrl" :alt="fullName" cover>
                 <template #placeholder>
                   <div class="avatar-fallback-lg">{{ initials }}</div>
@@ -147,21 +139,11 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                 </template>
               </v-img>
             </v-avatar>
-            <MpStatusChip :status="contact.status ?? ''" type="contact" size="x-small" variant="flat" class="profile-hero-avatar__status" />
-          </div>
-
-          <!-- Identity -->
-          <div class="text-center px-5 mt-1 mb-1">
-            <div class="text-h6 font-weight-bold">{{ fullName }}</div>
-            <div v-if="contact.company" class="text-body-2 text-medium-emphasis">{{ contact.company }}</div>
-          </div>
-
-          <!-- Quick contact pills -->
-          <div class="d-flex justify-center gap-2 px-5 mb-4">
-            <v-chip size="small" variant="tonal" color="primary" prepend-icon="mail" :href="`mailto:${contact.email}`" tag="a">{{ contact.email }}</v-chip>
-          </div>
-          <div v-if="contact.phone" class="d-flex justify-center gap-2 px-5 mb-4" style="margin-top:-8px;">
-            <v-chip size="small" variant="tonal" prepend-icon="phone">{{ contact.phone }}</v-chip>
+            <div class="min-w-0">
+              <div class="text-subtitle-1 font-weight-bold text-truncate">{{ fullName }}</div>
+              <div v-if="contact.company" class="text-body-2 text-medium-emphasis text-truncate">{{ contact.company }}</div>
+              <MpStatusChip :status="contact.status ?? ''" type="contact" size="x-small" variant="flat" class="mt-1" />
+            </div>
           </div>
 
           <!-- Score bar -->
@@ -177,6 +159,16 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
           <!-- Detail fields -->
           <div class="d-flex flex-column gap-0 px-5 py-3">
+            <div class="detail-row-v2">
+              <v-icon size="15" class="detail-row-v2__icon">mail</v-icon>
+              <span class="detail-row-v2__label">Email</span>
+              <a :href="`mailto:${contact.email}`" class="detail-row-v2__value detail-row-v2__link text-truncate" style="max-width: 180px;">{{ contact.email }}</a>
+            </div>
+            <div v-if="contact.phone" class="detail-row-v2">
+              <v-icon size="15" class="detail-row-v2__icon">phone</v-icon>
+              <span class="detail-row-v2__label">Phone</span>
+              <span class="detail-row-v2__value">{{ contact.phone }}</span>
+            </div>
             <div class="detail-row-v2">
               <v-icon size="15" class="detail-row-v2__icon">fingerprint</v-icon>
               <span class="detail-row-v2__label">UID</span>
@@ -245,23 +237,16 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
           <div class="d-flex align-center gap-4">
             <div class="d-flex align-center gap-1"><v-icon size="10" color="primary">circle</v-icon><span class="text-caption">Subscribed</span></div>
-            <div class="d-flex align-center gap-1"><v-icon size="10" color="error">circle</v-icon><span class="text-caption">Unsubscribed</span></div>
+            <div class="d-flex align-center gap-1"><v-icon size="10" class="text-medium-emphasis">circle</v-icon><span class="text-caption">Unsubscribed</span></div>
           </div>
         </v-card>
 
-        <!-- Card 4: Brands -->
+        <!-- Card 4: Insights (eRFM · Brands · Keywords) -->
         <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader :title="`Brands (${detail.brands.length})`" />
-          <div v-if="detail.brands.length" class="d-flex flex-wrap gap-2">
-            <v-chip v-for="b in detail.brands" :key="b" size="small" variant="tonal">{{ b }}</v-chip>
-          </div>
-          <div v-else class="text-body-2 text-medium-emphasis">No Brands to show.<br>Add the customer to a Branded List to send emails.</div>
-        </v-card>
+          <MpSectionHeader title="Insights" />
 
-        <!-- Card 5: eRFM -->
-        <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader title="eRFM (Customer Group)" />
-          <div class="d-flex flex-column gap-3">
+          <div class="text-subtitle-2 font-weight-medium mb-2">eRFM Customer Group</div>
+          <div class="d-flex flex-column gap-2 mb-4">
             <div class="detail-row">
               <span class="detail-label">RFM Group</span>
               <span class="detail-value">{{ detail.erfm.rfmGroup }}</span>
@@ -271,11 +256,18 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
               <span class="detail-value">{{ detail.erfm.engagementLevel }}</span>
             </div>
           </div>
-        </v-card>
 
-        <!-- Card 6: Keywords -->
-        <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader :title="`Most Engaging Keywords (${detail.keywords.length})`" />
+          <v-divider class="mb-4" style="opacity:0.5" />
+
+          <div class="text-subtitle-2 font-weight-medium mb-2">Brands ({{ detail.brands.length }})</div>
+          <div v-if="detail.brands.length" class="d-flex flex-wrap gap-2 mb-4">
+            <v-chip v-for="b in detail.brands" :key="b" size="small" variant="tonal">{{ b }}</v-chip>
+          </div>
+          <div v-else class="text-body-2 text-medium-emphasis mb-4">No brands yet — add the customer to a branded list to send emails.</div>
+
+          <v-divider class="mb-4" style="opacity:0.5" />
+
+          <div class="text-subtitle-2 font-weight-medium mb-2">Most Engaging Keywords ({{ detail.keywords.length }})</div>
           <div v-if="detail.keywords.length" class="d-flex flex-wrap gap-2">
             <v-chip v-for="kw in detail.keywords" :key="kw" size="small" variant="tonal" color="info">{{ kw }}</v-chip>
           </div>
@@ -307,18 +299,14 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
           <v-window-item value="overview">
             <div class="d-flex flex-column gap-4 pa-1">
 
-              <!-- KPI Grid (8 cards, auto-fit 4→3→2→1 columns) -->
+              <!-- KPI Grid — four headline metrics; ticket counts live in Engagement > Tickets -->
               <div class="kpi-grid">
-                <MpKpiCard label="Response Rate" :value="detail.responseRate.email" icon="mail" color="error">
+                <MpKpiCard label="Response Rate" :value="detail.responseRate.email" icon="mail" color="primary">
                   <div class="text-body-2 text-medium-emphasis mt-1">{{ detail.responseRate.sms }} SMS</div>
                 </MpKpiCard>
                 <MpKpiCard label="Ideal Response Time" :value="detail.idealResponseTime" icon="clock" color="info" />
-                <MpKpiCard label="Lifetime Value" :value="`$${detail.lifetimeValue.toLocaleString()}`" icon="banknote" color="success" sub-stat="vs. average $310.0M" />
-                <MpKpiCard label="Number of Orders" :value="contact.orders" icon="shopping-cart" color="warning" :sub-stat="`vs. average ${detail.avgOrders} Orders`" />
-                <MpKpiCard label="Total Tickets" :value="detail.engagement.tickets.total" icon="ticket" color="primary" />
-                <MpKpiCard label="Open Tickets" :value="detail.engagement.tickets.open" icon="ticket-check" color="info" />
-                <MpKpiCard label="Solved Tickets" :value="detail.engagement.tickets.solved" icon="circle-check" color="success" />
-                <MpKpiCard label="On-hold Tickets" :value="detail.engagement.tickets.onHold" icon="circle-pause" color="error" />
+                <MpKpiCard label="Lifetime Value" :value="`$${detail.lifetimeValue.toLocaleString()}`" icon="banknote" color="success" sub-stat="vs. $310 average" />
+                <MpKpiCard label="Number of Orders" :value="contact.orders" icon="shopping-cart" color="secondary" :sub-stat="`vs. average ${detail.avgOrders} orders`" />
               </div>
 
               <!-- Customer Engagement Section -->
@@ -470,8 +458,8 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                     </div>
                   </div>
                   <div class="text-caption text-medium-emphasis text-no-wrap mr-3">{{ c.sentDate }}</div>
-                  <v-btn variant="flat" size="small" color="surface">Re-send Campaign</v-btn>
-                  <v-btn variant="tonal" size="small">Details</v-btn>
+                  <v-btn variant="flat" size="small" color="surface" class="text-none">Re-send Campaign</v-btn>
+                  <v-btn variant="text" size="small" class="text-none text-medium-emphasis">Details</v-btn>
                 </v-card>
               </div>
 
@@ -487,8 +475,8 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                     </div>
                   </div>
                   <div class="text-caption text-medium-emphasis text-no-wrap mr-3">{{ c.sentDate }}</div>
-                  <v-btn variant="flat" size="small" color="surface">Re-send</v-btn>
-                  <v-btn variant="tonal" size="small">Details</v-btn>
+                  <v-btn variant="flat" size="small" color="surface" class="text-none">Re-send</v-btn>
+                  <v-btn variant="text" size="small" class="text-none text-medium-emphasis">Details</v-btn>
                 </v-card>
               </div>
 
@@ -636,24 +624,6 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
   gap: 20px;
 }
 
-/* ── Back navigation link ───────────────────────────── */
-.back-nav {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--muted);
-  text-decoration: none;
-  margin-bottom: -8px;
-  padding: 4px 0;
-  transition: color 120ms ease;
-}
-
-.back-nav:hover {
-  color: var(--ink);
-}
-
 /* Ensure all cards use the design kit's subtle border and white background */
 .v-card:not(.bg-transparent) {
   border-color: var(--hairline) !important;
@@ -666,47 +636,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
   box-shadow: none !important;
 }
 
-/* ── Profile Hero Card ──────────────────────────────── */
-.profile-hero-card {
-  background: var(--surface-1);
-}
-
-.profile-hero-banner {
-  height: 72px;
-  background: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, color-mix(in oklch, rgb(var(--v-theme-primary)) 60%, rgb(var(--v-theme-secondary))) 100%);
-  position: relative;
-  overflow: hidden;
-}
-
-.profile-hero-banner__pattern {
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    120deg,
-    rgba(255,255,255,0.04) 0px,
-    rgba(255,255,255,0.04) 1px,
-    transparent 1px,
-    transparent 32px
-  );
-}
-
-.profile-hero-avatar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: -40px;
-  position: relative;
-}
-
-.profile-hero-avatar__ring {
-  border: 3px solid var(--surface-1);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-}
-
-.profile-hero-avatar__status {
-  margin-top: 6px;
-}
-
+/* ── Profile card ───────────────────────────────────── */
 .avatar-fallback-lg {
   width: 100%;
   height: 100%;
@@ -801,6 +731,20 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
   margin-left: auto;
   text-align: right;
 }
+
+.detail-row-v2__link {
+  color: rgb(var(--v-theme-on-surface));
+  text-decoration: none;
+}
+
+.detail-row-v2__link:hover,
+.detail-row-v2__link:focus-visible {
+  color: rgb(var(--v-theme-primary));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.min-w-0 { min-width: 0; }
 
 /* ── Right content area ─────────────────────────────── */
 .right-tab-content {
