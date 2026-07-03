@@ -37,8 +37,8 @@ const drawerTitle = computed(() => {
 
 const drawerSubtitle = computed(() => {
   if (isEditing.value) return 'Update your widget and save the changes.'
-  if (stage.value === 'edit') return 'Refine the title, subtitle, and visualization before adding.'
-  return 'Choose what to monitor and refine before adding.'
+  if (stage.value === 'edit') return 'Step 2 of 2 · Refine and add to dashboard'
+  return 'Step 1 of 2 · Choose what to monitor'
 })
 
 function libraryEntryToDraft(entry: DashboardWidgetLibraryEntry): DashboardWidgetDraft {
@@ -91,11 +91,6 @@ watch(model, (isOpen) => {
     dashboardsStore.closeWidgetEditor()
   }
 })
-
-const stageItems = computed(() => [
-  { label: 'Pick', state: stage.value === 'pick' ? 'active' as const : 'complete' as const },
-  { label: 'Edit', state: stage.value === 'edit' ? 'active' as const : 'pending' as const },
-])
 
 function handleLibrarySelect(entry: DashboardWidgetLibraryEntry) {
   draft.value = libraryEntryToDraft(entry)
@@ -157,18 +152,6 @@ const showFooterPrimary = computed(() => stage.value === 'edit')
     :width="600"
   >
     <div class="widget-wizard">
-      <div v-if="!isEditing" class="widget-wizard__stages" role="status" aria-live="polite">
-        <div
-          v-for="(item, index) in stageItems"
-          :key="`${item.label}-${index}`"
-          class="widget-wizard__stage"
-          :data-state="item.state"
-        >
-          <span class="widget-wizard__stage-index">{{ index + 1 }}</span>
-          <span class="widget-wizard__stage-label">{{ item.label }}</span>
-        </div>
-      </div>
-
       <WidgetLibraryStep
         v-if="stage === 'pick'"
         @select="handleLibrarySelect"
@@ -215,58 +198,5 @@ const showFooterPrimary = computed(() => stage.value === 'edit')
   display: flex;
   flex-direction: column;
   gap: 24px;
-}
-
-.widget-wizard__stages {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.widget-wizard__stage {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--mp-border-subtle);
-  background: rgb(var(--v-theme-surface));
-  font-size: var(--mp-typography-fontSize-xs);
-  color: rgba(var(--v-theme-on-surface), 0.7);
-  font-weight: 600;
-}
-
-.widget-wizard__stage-index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: rgba(var(--v-theme-on-surface), 0.08);
-  font-size: 11px;
-}
-
-.widget-wizard__stage[data-state='active'] {
-  border-color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.08);
-  color: rgb(var(--v-theme-primary));
-}
-
-.widget-wizard__stage[data-state='active'] .widget-wizard__stage-index {
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-}
-
-.widget-wizard__stage[data-state='complete'] {
-  border-color: rgba(var(--v-theme-success), 0.4);
-  background: rgba(var(--v-theme-success), 0.08);
-  color: rgb(var(--v-theme-success));
-}
-
-.widget-wizard__stage[data-state='complete'] .widget-wizard__stage-index {
-  background: rgb(var(--v-theme-success));
-  color: rgb(var(--v-theme-on-success));
 }
 </style>

@@ -366,12 +366,6 @@ function setActiveAsDefault() {
   dashboardsStore.setDefaultDashboard(accountId.value, activeDashboard.value.id)
 }
 
-function setDashboardAsDefault(dashboard: Dashboard) {
-  if (dashboard.isDefault) return
-  dashboardsStore.setDefaultDashboard(accountId.value, dashboard.id)
-  showDashboardNotice(`“${dashboard.name}” is now the default dashboard.`)
-}
-
 function duplicateCurrentDashboard() {
   if (!activeDashboard.value) return
   const duplicate = dashboardsStore.duplicateDashboard(accountId.value, activeDashboard.value.id)
@@ -380,11 +374,6 @@ function duplicateCurrentDashboard() {
 
 function refreshDashboard() {
   showDashboardNotice('Dashboard data refreshed for this prototype session.')
-}
-
-function openEditDashboardFor(dashboard: Dashboard) {
-  editDashboardTarget.value = dashboard
-  editDashboardOpen.value = true
 }
 
 function resetCurrentDashboard() {
@@ -497,34 +486,6 @@ function toggleFavoriteActive() {
                     <v-icon v-if="dashboard.favorite" size="14" color="warning">star</v-icon>
                     <v-chip v-if="dashboard.isDefault" size="x-small" variant="tonal" color="success">Default</v-chip>
                   </div>
-                  <template #append>
-                    <div class="d-flex align-center ga-1">
-                      <v-tooltip
-                        :text="dashboard.isDefault ? 'Currently default' : 'Set as default'"
-                        location="top"
-                      >
-                        <template #activator="{ props: tipProps }">
-                          <v-btn
-                            v-bind="tipProps"
-                            :icon="dashboard.isDefault ? 'bookmark-check' : 'bookmark'"
-                            :color="dashboard.isDefault ? 'success' : undefined"
-                            variant="text"
-                            size="x-small"
-                            :disabled="dashboard.isDefault"
-                            :aria-label="dashboard.isDefault ? `${dashboard.name} is the default dashboard` : `Set ${dashboard.name} as default`"
-                            @click.stop="setDashboardAsDefault(dashboard)"
-                          />
-                        </template>
-                      </v-tooltip>
-                      <v-btn
-                        icon="pencil"
-                        variant="text"
-                        size="x-small"
-                        :aria-label="`Edit ${dashboard.name}`"
-                        @click.stop="openEditDashboardFor(dashboard)"
-                      />
-                    </div>
-                  </template>
                 </v-list-item>
                 <div
                   v-if="filteredDashboards.length === 0"
@@ -564,81 +525,44 @@ function toggleFavoriteActive() {
                 Actions
               </v-btn>
             </template>
-            <v-card width="320" rounded="lg" flat border class="dph-dropdown">
-              <div class="dph-dropdown__label">Actions</div>
-              <div class="dph-dropdown__list">
-                <button type="button" class="dph-dropdown-row" @click="openListingPage">
-                  <v-icon size="20" class="dph-dropdown-row__icon">layout-list</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Manage dashboards</strong>
-                    <small>View, organise, and delete</small>
-                  </span>
-                </button>
-                <button type="button" class="dph-dropdown-row" @click="openCreateDashboard">
-                  <v-icon size="20" class="dph-dropdown-row__icon">plus</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Create dashboard</strong>
-                    <small>Start from a blank or template</small>
-                  </span>
-                </button>
-                <button type="button" class="dph-dropdown-row" :disabled="!activeDashboard" @click="openEditDashboard">
-                  <v-icon size="20" class="dph-dropdown-row__icon">pencil</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Edit dashboard details</strong>
-                    <small>Name, icon, and description</small>
-                  </span>
-                </button>
-                <button type="button" class="dph-dropdown-row" :disabled="!activeDashboard" @click="duplicateCurrentDashboard">
-                  <v-icon size="20" class="dph-dropdown-row__icon">copy-plus</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Duplicate dashboard</strong>
-                    <small>Clone with all widgets</small>
-                  </span>
-                </button>
-                <button v-if="activeDashboard && !activeDashboard.isDefault" type="button" class="dph-dropdown-row" @click="setActiveAsDefault">
-                  <v-icon size="20" class="dph-dropdown-row__icon">bookmark</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Set as default</strong>
-                    <small>Show first on login</small>
-                  </span>
-                </button>
-                <button type="button" class="dph-dropdown-row" @click="editMode = !editMode">
-                  <v-icon size="20" class="dph-dropdown-row__icon">move</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>{{ editMode ? 'Done editing layout' : 'Edit layout' }}</strong>
-                    <small>Drag and resize widgets</small>
-                  </span>
-                </button>
-                <button type="button" class="dph-dropdown-row" @click="openStubAction('Copy dashboard link')">
-                  <v-icon size="20" class="dph-dropdown-row__icon">link</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Copy dashboard link</strong>
-                    <small>Share a direct URL</small>
-                  </span>
-                </button>
-                <button type="button" class="dph-dropdown-row" @click="openStubAction('Invite editors')">
-                  <v-icon size="20" class="dph-dropdown-row__icon">user-plus</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Invite editors</strong>
-                    <small>Collaborate with your team</small>
-                  </span>
-                </button>
-                <button v-if="activeDashboard?.kind === 'system'" type="button" class="dph-dropdown-row" @click="resetCurrentDashboard">
-                  <v-icon size="20" class="dph-dropdown-row__icon">rotate-ccw</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Reset to defaults</strong>
-                    <small>Revert to system template</small>
-                  </span>
-                </button>
-                <button v-if="activeDashboard?.kind === 'custom'" type="button" class="dph-dropdown-row dph-dropdown-row--danger" @click="deleteCurrentDashboard">
-                  <v-icon size="20" class="dph-dropdown-row__icon">trash-2</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Delete dashboard</strong>
-                    <small>Permanently remove</small>
-                  </span>
-                </button>
-              </div>
-            </v-card>
+            <v-list density="compact" rounded="lg" min-width="230" elevation="3" class="py-1">
+              <v-list-item prepend-icon="layout-list" title="Manage dashboards" @click="openListingPage" />
+              <v-list-item prepend-icon="plus" title="Create dashboard" @click="openCreateDashboard" />
+              <v-divider class="my-1" style="opacity: 0.4" />
+              <v-list-item prepend-icon="pencil" title="Edit dashboard details" :disabled="!activeDashboard" @click="openEditDashboard" />
+              <v-list-item prepend-icon="copy-plus" title="Duplicate dashboard" :disabled="!activeDashboard" @click="duplicateCurrentDashboard" />
+              <v-list-item
+                v-if="activeDashboard && !activeDashboard.isDefault"
+                prepend-icon="bookmark"
+                title="Set as default"
+                @click="setActiveAsDefault"
+              />
+              <v-list-item
+                prepend-icon="move"
+                :title="editMode ? 'Done editing layout' : 'Edit layout'"
+                :disabled="!activeDashboard"
+                @click="editMode = !editMode"
+              />
+              <v-divider class="my-1" style="opacity: 0.4" />
+              <v-list-item prepend-icon="link" title="Copy dashboard link" @click="openStubAction('Copy dashboard link')" />
+              <v-list-item prepend-icon="user-plus" title="Invite editors" @click="openStubAction('Invite editors')" />
+              <template v-if="activeDashboard">
+                <v-divider class="my-1" style="opacity: 0.4" />
+                <v-list-item
+                  v-if="activeDashboard.kind === 'system'"
+                  prepend-icon="rotate-ccw"
+                  title="Reset to defaults"
+                  @click="resetCurrentDashboard"
+                />
+                <v-list-item
+                  v-else
+                  prepend-icon="trash-2"
+                  title="Delete dashboard"
+                  class="text-error"
+                  @click="deleteCurrentDashboard"
+                />
+              </template>
+            </v-list>
           </v-menu>
 
           <v-menu location="bottom end" offset="8">
@@ -656,25 +580,10 @@ function toggleFavoriteActive() {
                 Add content
               </v-btn>
             </template>
-            <v-card width="320" rounded="lg" flat border class="dph-dropdown">
-              <div class="dph-dropdown__label">Add content</div>
-              <div class="dph-dropdown__list">
-                <button type="button" class="dph-dropdown-row" @click="openCopilotForWidget">
-                  <v-icon size="20" class="dph-dropdown-row__icon">sparkles</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Create with Da Vinci</strong>
-                    <small>Generate a widget from a prompt</small>
-                  </span>
-                </button>
-                <button type="button" class="dph-dropdown-row" @click="openWidgetBuilder()">
-                  <v-icon size="20" class="dph-dropdown-row__icon">layout-grid</v-icon>
-                  <span class="dph-dropdown-row__body">
-                    <strong>Choose existing widget</strong>
-                    <small>Pick from prebuilt KPIs, charts, tables, and activity</small>
-                  </span>
-                </button>
-              </div>
-            </v-card>
+            <v-list density="compact" rounded="lg" min-width="230" elevation="3" class="py-1">
+              <v-list-item prepend-icon="sparkles" title="Create with Da Vinci" @click="openCopilotForWidget" />
+              <v-list-item prepend-icon="layout-grid" title="Choose existing widget" @click="openWidgetBuilder()" />
+            </v-list>
           </v-menu>
         </div>
       </div>
@@ -1070,96 +979,6 @@ function toggleFavoriteActive() {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-}
-
-.dph-dropdown {
-  border-color: var(--hairline);
-  padding: 8px;
-  overflow: hidden;
-}
-
-.dph-dropdown__label {
-  padding: 8px 8px 6px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.dph-dropdown__list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.dph-dropdown-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 48px;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  appearance: none;
-  transition: background 100ms ease;
-}
-
-.dph-dropdown-row:hover,
-.dph-dropdown-row:focus-visible {
-  background: var(--surface-2);
-}
-
-.dph-dropdown-row:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
-}
-
-.dph-dropdown-row:disabled {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.dph-dropdown-row__icon {
-  color: var(--muted);
-  flex-shrink: 0;
-}
-
-.dph-dropdown-row__body strong,
-.dph-dropdown-row__body small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dph-dropdown-row__body strong {
-  font-size: 13.5px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--ink);
-}
-
-.dph-dropdown-row__body small {
-  margin-top: 1px;
-  color: var(--muted);
-  font-size: 11.5px;
-}
-
-.dph-dropdown-row--danger .dph-dropdown-row__icon,
-.dph-dropdown-row--danger .dph-dropdown-row__body strong {
-  color: rgb(var(--v-theme-error));
-}
-
-.dph-dropdown-row--danger:hover {
-  background: rgba(var(--v-theme-error), 0.06);
 }
 
 .dashboard-page-header__filters {

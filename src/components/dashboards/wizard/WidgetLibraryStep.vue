@@ -53,17 +53,10 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 
 <template>
   <div class="widget-library d-flex flex-column ga-4">
-    <div class="widget-library__header">
-      <div class="text-h6 font-weight-bold">Choose what to monitor</div>
-      <div class="text-body-2 text-medium-emphasis">
-        Start with the business outcome, then adjust the visual format if needed.
-      </div>
-    </div>
-
     <v-text-field
       v-model="search"
       placeholder="Search revenue, orders, campaigns..."
-      density="comfortable"
+      density="compact"
       variant="outlined"
       prepend-inner-icon="search"
       hide-details
@@ -124,9 +117,7 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
           <div class="widget-library__item-description">{{ entry.description }}</div>
         </div>
         <div class="widget-library__item-type">
-          <v-chip size="x-small" variant="outlined" class="widget-library__item-type-chip">
-            {{ TYPE_LABELS[entry.type] }}
-          </v-chip>
+          {{ TYPE_LABELS[entry.type] }}
         </div>
       </button>
     </div>
@@ -134,12 +125,6 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 </template>
 
 <style scoped lang="scss">
-.widget-library__header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .widget-library__categories {
   display: flex;
   flex-wrap: wrap;
@@ -204,8 +189,8 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 10px 12px;
   border: 1px solid var(--hairline);
   border-radius: 12px;
   background: var(--surface-1);
@@ -277,13 +262,12 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   line-height: 1.35;
 }
 
-.widget-library__item-type-chip {
+.widget-library__item-type {
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  border-color: var(--hairline);
   color: var(--muted);
-  background: transparent;
+  white-space: nowrap;
 }
 </style>
