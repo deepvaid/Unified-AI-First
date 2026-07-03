@@ -33,6 +33,14 @@ watch(inboxFilter, () => {
 
 const activeTicket = computed(() => store.tickets.find(t => t.id === store.activeTicketId))
 
+const openCount = computed(() => inboxTickets.value.filter(t => t.status === 'Open').length)
+const inProgressCount = computed(() => inboxTickets.value.filter(t => t.status === 'In Progress').length)
+
+const replyPlaceholder = computed(() => {
+  const first = activeTicket.value?.customer.split(' ')[0]
+  return first ? `Reply to ${first}…` : 'Write a reply…'
+})
+
 // ── New Ticket Drawer ────────────────────────────────────────────────────
 const newTicketDrawer = ref(false)
 const saveSnack = ref(false)
@@ -148,7 +156,7 @@ function closeActiveTicket() {
     <!-- ── Header ────────────────────────────────────────────────── -->
     <MpPageHeader
       title="Support Tickets"
-      :subtitle="`${store.tickets.filter(t => t.status === 'Open').length} open · ${store.tickets.filter(t => t.status === 'In Progress').length} in progress`"
+      :subtitle="`${openCount} open · ${inProgressCount} in progress`"
     >
       <template #actions>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openNewTicket">
@@ -160,37 +168,36 @@ function closeActiveTicket() {
       </template>
     </MpPageHeader>
 
-    <!-- ── Toolbar: Inbox switcher + Search ────────────────────── -->
-    <div class="d-flex align-center gap-3 tkt-toolbar">
-      <v-select
-        v-model="inboxFilter"
-        :items="inboxOptions"
-        prepend-inner-icon="inbox"
-        aria-label="Filter tickets by inbox"
-        variant="outlined"
-        density="comfortable"
-        hide-details
-        rounded="lg"
-        class="flex-shrink-0 tkt-inbox-select"
-      />
-      <v-text-field
-        v-model="search"
-        prepend-inner-icon="search"
-        placeholder="Search by ID, subject, customer, or email…"
-        aria-label="Search tickets"
-        variant="outlined"
-        density="comfortable"
-        hide-details
-        clearable
-        rounded="lg"
-        class="flex-grow-1 tkt-search"
-      />
-    </div>
-
     <!-- ── Workspace: list + detail ─────────────────────────────── -->
-    <div class="tkt-workspace d-flex gap-4 mt-3">
+    <div class="tkt-workspace d-flex gap-4 mt-4">
       <!-- Left pane: Ticket list -->
       <v-card variant="flat" border rounded="lg" class="tkt-list-panel d-flex flex-column overflow-hidden">
+        <!-- In-pane controls: inbox switcher + search -->
+        <div class="tkt-list-head px-3 pt-2 pb-3">
+          <v-select
+            v-model="inboxFilter"
+            :items="inboxOptions"
+            variant="plain"
+            density="compact"
+            hide-details
+            prepend-inner-icon="inbox"
+            aria-label="Switch support inbox"
+            class="tkt-inbox-switch"
+          />
+          <v-text-field
+            v-model="search"
+            prepend-inner-icon="search"
+            placeholder="Search tickets…"
+            aria-label="Search tickets"
+            variant="outlined"
+            density="compact"
+            hide-details
+            clearable
+            rounded="lg"
+          />
+        </div>
+        <v-divider />
+
         <div class="flex-grow-1 overflow-y-auto">
           <MpEmptyState
             v-if="filteredTickets.length === 0"
@@ -204,52 +211,29 @@ function closeActiveTicket() {
           <button
             v-for="ticket in filteredTickets"
             :key="ticket.id"
-            class="tkt-row w-100 d-flex align-start gap-3 pa-4 text-left"
+            class="tkt-row w-100 d-flex flex-column pa-3 text-left"
             :class="{ 'tkt-row--active': store.activeTicketId === ticket.id }"
             :aria-pressed="store.activeTicketId === ticket.id"
             :aria-label="`Ticket ${ticket.number}: ${ticket.subject}`"
             @click="store.setActive(ticket.id)"
           >
-            <v-avatar
-              :color="store.activeTicketId === ticket.id ? 'primary' : 'surface-variant'"
-              variant="flat"
-              size="34"
-              class="tkt-row__avatar text-caption font-weight-bold flex-shrink-0"
-            >{{ ticket.avatar }}</v-avatar>
-            <div class="flex-grow-1 min-w-0">
-              <div class="d-flex justify-space-between align-center mb-1">
-                <span class="text-caption text-medium-emphasis">{{ ticket.number }}</span>
-                <span class="text-caption text-medium-emphasis">{{ timeAgo(ticket.updatedAt) }}</span>
-              </div>
-              <div class="text-body-2 font-weight-medium tkt-row__subject mb-1">{{ ticket.subject }}</div>
-              <div class="text-caption text-medium-emphasis mb-2">{{ ticket.customer }}</div>
-              <div class="d-flex align-center gap-1 flex-wrap">
-                <MpStatusChip :status="ticket.status" type="ticket" size="x-small" />
-                <MpStatusChip
-                  v-if="ticket.priority === 'Urgent' || ticket.priority === 'High'"
-                  :status="ticket.priority"
-                  type="priority"
-                  size="x-small"
-                  variant="flat"
-                />
-                <v-chip
-                  v-for="tag in ticket.tags"
-                  :key="tag"
-                  size="x-small"
-                  variant="outlined"
-                  color="secondary"
-                >{{ tag }}</v-chip>
-              </div>
-              <div class="tkt-row__footer">
-                <span>
-                  <v-icon size="13">messages-square</v-icon>
-                  {{ ticket.thread.length }} messages
-                </span>
-                <span>
-                  <v-icon size="13">store</v-icon>
-                  {{ ticket.inbox }}
-                </span>
-              </div>
+            <div class="d-flex align-center gap-2 w-100 mb-1">
+              <span
+                v-if="ticket.priority === 'Urgent' || ticket.priority === 'High'"
+                class="tkt-row__dot flex-shrink-0"
+                :class="ticket.priority === 'Urgent' ? 'tkt-row__dot--urgent' : 'tkt-row__dot--high'"
+                :title="`${ticket.priority} priority`"
+              />
+              <span class="text-body-2 font-weight-semibold tkt-row__customer flex-grow-1">{{ ticket.customer }}</span>
+              <span class="text-caption text-medium-emphasis flex-shrink-0">{{ timeAgo(ticket.updatedAt) }}</span>
+            </div>
+            <div class="text-body-2 tkt-row__subject w-100 mb-2">{{ ticket.subject }}</div>
+            <div class="d-flex align-center justify-space-between w-100">
+              <MpStatusChip :status="ticket.status" type="ticket" size="x-small" />
+              <span v-if="inboxFilter === 'all'" class="tkt-row__origin text-caption text-medium-emphasis">
+                <v-icon size="12">store</v-icon>
+                {{ ticket.inbox }}
+              </span>
             </div>
           </button>
         </div>
@@ -263,32 +247,39 @@ function closeActiveTicket() {
         rounded="lg"
         class="tkt-detail-panel flex-grow-1 d-flex flex-column overflow-hidden"
       >
-        <!-- Detail header -->
-        <div class="tkt-detail__header pa-4 d-flex align-start justify-space-between gap-3">
+        <!-- Detail header: subject first, quiet meta below -->
+        <div class="tkt-detail__header px-5 py-4 d-flex align-start justify-space-between gap-3">
           <div class="flex-grow-1 min-w-0">
-            <div class="d-flex align-center gap-2 flex-wrap mb-1">
-              <span class="text-caption font-weight-medium text-medium-emphasis">{{ activeTicket.number }}</span>
+            <div class="text-subtitle-1 font-weight-semibold tkt-detail__subject mb-1">{{ activeTicket.subject }}</div>
+            <div class="d-flex align-center gap-2 flex-wrap">
+              <span class="text-caption text-medium-emphasis">{{ activeTicket.number }}</span>
               <MpStatusChip :status="activeTicket.status" type="ticket" size="x-small" />
-              <MpStatusChip :status="activeTicket.priority" type="priority" size="x-small" variant="flat" />
-              <v-chip size="x-small" variant="outlined" color="secondary">{{ activeTicket.category }}</v-chip>
+              <MpStatusChip
+                v-if="activeTicket.priority === 'Urgent' || activeTicket.priority === 'High'"
+                :status="activeTicket.priority"
+                type="priority"
+                size="x-small"
+                variant="flat"
+              />
+              <v-chip
+                v-for="tag in activeTicket.tags"
+                :key="tag"
+                size="x-small"
+                variant="outlined"
+                color="secondary"
+              >{{ tag }}</v-chip>
             </div>
-            <div class="text-subtitle-1 font-weight-semibold tkt-detail__subject">{{ activeTicket.subject }}</div>
           </div>
-          <div class="d-flex gap-1 align-center flex-shrink-0">
-            <v-tooltip text="Mark Resolved" location="top">
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  icon="circle-check"
-                  variant="text"
-                  size="small"
-                  color="success"
-                  aria-label="Mark Resolved"
-                  :disabled="activeTicket.status === 'Resolved' || activeTicket.status === 'Closed'"
-                  @click="markResolved"
-                />
-              </template>
-            </v-tooltip>
+          <div class="d-flex gap-2 align-center flex-shrink-0">
+            <v-btn
+              variant="tonal"
+              color="success"
+              size="small"
+              class="text-none"
+              prepend-icon="circle-check"
+              :disabled="activeTicket.status === 'Resolved' || activeTicket.status === 'Closed'"
+              @click="markResolved"
+            >Resolve</v-btn>
             <v-menu location="bottom end">
               <template #activator="{ props }">
                 <v-btn
@@ -309,44 +300,28 @@ function closeActiveTicket() {
           </div>
         </div>
 
-        <!-- Customer / Assignee summary -->
-        <div class="tkt-summary-grid pa-4">
-          <div class="tkt-summary-item">
-            <span class="tkt-summary-item__icon">
-              <v-icon size="15">user</v-icon>
-            </span>
-            <div class="min-w-0">
-              <span>Customer</span>
-              <strong>{{ activeTicket.customer }}</strong>
-              <em>{{ activeTicket.customerEmail }}</em>
-            </div>
+        <!-- Properties strip -->
+        <div class="tkt-props px-5 py-3">
+          <div class="tkt-prop">
+            <span>Customer</span>
+            <strong>{{ activeTicket.customer }}</strong>
+            <em>{{ activeTicket.customerEmail }}</em>
           </div>
-          <div class="tkt-summary-item">
-            <span class="tkt-summary-item__icon">
-              <v-icon size="15">headset</v-icon>
-            </span>
-            <div class="min-w-0">
-              <span>Assignee</span>
-              <strong>{{ activeTicket.assignee }}</strong>
-            </div>
+          <div class="tkt-prop">
+            <span>Assignee</span>
+            <strong>{{ activeTicket.assignee }}</strong>
           </div>
-          <div class="tkt-summary-item">
-            <span class="tkt-summary-item__icon">
-              <v-icon size="15">clock-3</v-icon>
-            </span>
-            <div class="min-w-0">
-              <span>Opened</span>
-              <strong>{{ timeAgo(activeTicket.createdAt) }}</strong>
-            </div>
+          <div class="tkt-prop">
+            <span>Inbox</span>
+            <strong>{{ activeTicket.inbox }}</strong>
           </div>
-          <div class="tkt-summary-item">
-            <span class="tkt-summary-item__icon">
-              <v-icon size="15">store</v-icon>
-            </span>
-            <div class="min-w-0">
-              <span>Inbox</span>
-              <strong>{{ activeTicket.inbox }}</strong>
-            </div>
+          <div class="tkt-prop">
+            <span>Category</span>
+            <strong>{{ activeTicket.category }}</strong>
+          </div>
+          <div class="tkt-prop">
+            <span>Opened</span>
+            <strong>{{ timeAgo(activeTicket.createdAt) }}</strong>
           </div>
         </div>
 
@@ -370,7 +345,6 @@ function closeActiveTicket() {
               <div class="tkt-message__content min-w-0">
                 <div class="tkt-message__meta">
                   <span>{{ msg.author }}</span>
-                  <em>{{ msg.role === 'agent' ? 'Support' : 'Customer' }}</em>
                   <time>{{ msg.time }}</time>
                 </div>
                 <div class="tkt-message__bubble">{{ msg.body }}</div>
@@ -379,61 +353,62 @@ function closeActiveTicket() {
           </div>
         </div>
 
-        <!-- Reply box -->
+        <!-- Composer -->
         <div class="tkt-reply pa-4">
-          <v-textarea
-            v-model="replyBody"
-            placeholder="Write a reply…"
-            variant="outlined"
-            density="comfortable"
-            rows="3"
-            hide-details
-            class="mb-3"
-            rounded="lg"
-            aria-label="Reply to ticket"
-          />
-          <div class="d-flex justify-space-between align-center">
-            <div class="d-flex gap-1">
-              <v-btn icon="paperclip" variant="text" size="small" aria-label="Attach file" />
-              <v-btn icon="smile" variant="text" size="small" aria-label="Insert emoji" />
-              <v-menu v-model="cannedMenu" location="top start">
-                <template #activator="{ props }">
-                  <v-btn
-                    v-bind="props"
-                    icon="files"
-                    variant="text"
-                    size="small"
-                    aria-label="Insert canned response"
-                    :aria-expanded="cannedMenu"
-                  />
-                </template>
-                <v-list density="compact" rounded="lg" nav elevation="3" min-width="240">
-                  <v-list-subheader>Canned Responses</v-list-subheader>
-                  <v-list-item
-                    v-for="cr in cannedResponses"
-                    :key="cr.label"
-                    :title="cr.label"
-                    @click="replyBody += cr.body; cannedMenu = false"
-                  />
-                </v-list>
-              </v-menu>
-            </div>
-            <div class="d-flex gap-2 align-center">
-              <v-btn
-                variant="text"
-                size="small"
-                class="text-none text-medium-emphasis"
-                :disabled="activeTicket.status === 'Closed'"
-                @click="closeActiveTicket"
-              >Close Ticket</v-btn>
-              <v-btn
-                color="primary"
-                variant="flat"
-                class="text-none"
-                prepend-icon="send"
-                :disabled="!replyBody.trim() || activeTicket.status === 'Closed'"
-                @click="sendReply"
-              >Send Reply</v-btn>
+          <div class="tkt-composer">
+            <v-textarea
+              v-model="replyBody"
+              :placeholder="replyPlaceholder"
+              variant="plain"
+              density="comfortable"
+              rows="3"
+              hide-details
+              class="tkt-composer__input px-4 pt-1"
+              aria-label="Reply to ticket"
+            />
+            <div class="d-flex justify-space-between align-center px-3 pb-3">
+              <div class="d-flex gap-1">
+                <v-btn icon="paperclip" variant="text" size="small" aria-label="Attach file" />
+                <v-btn icon="smile" variant="text" size="small" aria-label="Insert emoji" />
+                <v-menu v-model="cannedMenu" location="top start">
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      icon="files"
+                      variant="text"
+                      size="small"
+                      aria-label="Insert canned response"
+                      :aria-expanded="cannedMenu"
+                    />
+                  </template>
+                  <v-list density="compact" rounded="lg" nav elevation="3" min-width="240">
+                    <v-list-subheader>Canned Responses</v-list-subheader>
+                    <v-list-item
+                      v-for="cr in cannedResponses"
+                      :key="cr.label"
+                      :title="cr.label"
+                      @click="replyBody += cr.body; cannedMenu = false"
+                    />
+                  </v-list>
+                </v-menu>
+              </div>
+              <div class="d-flex gap-2 align-center">
+                <v-btn
+                  variant="text"
+                  size="small"
+                  class="text-none text-medium-emphasis"
+                  :disabled="activeTicket.status === 'Closed'"
+                  @click="closeActiveTicket"
+                >Close Ticket</v-btn>
+                <v-btn
+                  color="primary"
+                  variant="flat"
+                  class="text-none"
+                  prepend-icon="send"
+                  :disabled="!replyBody.trim() || activeTicket.status === 'Closed'"
+                  @click="sendReply"
+                >Send Reply</v-btn>
+              </div>
             </div>
           </div>
         </div>
@@ -455,7 +430,6 @@ function closeActiveTicket() {
         />
       </v-card>
     </div>
-
   </div>
 
   <!-- ── New Ticket Drawer ─────────────────────────────────────── -->
@@ -587,34 +561,17 @@ function closeActiveTicket() {
   gap: 0;
 }
 
-/* ── Toolbar ───────────────────────────────────────────────────── */
-.tkt-toolbar {
-  min-height: 44px;
-}
-.tkt-search :deep(.v-field) {
-  background: rgb(var(--v-theme-surface));
-}
-.tkt-search :deep(.v-field:hover) {
-  background: rgb(var(--v-theme-surface));
-}
-.tkt-inbox-select {
-  width: 240px;
-}
-.tkt-inbox-select :deep(.v-field) {
-  background: rgb(var(--v-theme-surface));
-}
-
-/* ── Workspace (list view) ─────────────────────────────────────── */
+/* ── Workspace ─────────────────────────────────────────────────── */
 /*
  * v-container doesn't propagate a fixed height, so we must size the workspace
  * explicitly. --v-layout-top is Vuetify's CSS var for the app-bar offset (56px).
- * 228px = 32px container-padding-top + 68px page-header + 50px filter-row +
- *         56px toolbar-row + 22px extra buffer.
+ * 172px = 32px container-padding-top + 68px page-header + 50px filter-row +
+ *         22px extra buffer. (List controls now live inside the list pane.)
  */
 .tkt-workspace {
   flex-direction: row;
   overflow: hidden;
-  height: calc(100vh - var(--v-layout-top, 56px) - 228px);
+  height: calc(100vh - var(--v-layout-top, 56px) - 172px);
   min-height: 480px;
 }
 .tkt-list-panel {
@@ -622,6 +579,23 @@ function closeActiveTicket() {
   min-width: 300px;
   flex-shrink: 0;
   height: 100%;
+}
+
+/* ── In-pane list controls ─────────────────────────────────────── */
+.tkt-inbox-switch {
+  flex: 0 0 auto;
+  margin-bottom: 4px;
+}
+.tkt-inbox-switch :deep(.v-field__input) {
+  font-size: 14px;
+  font-weight: 700;
+  min-height: 36px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.tkt-inbox-switch :deep(.v-field__prepend-inner) {
+  padding-top: 6px;
+  color: rgba(var(--v-theme-on-surface), 0.6);
 }
 
 /* ── Ticket rows ───────────────────────────────────────────────── */
@@ -635,28 +609,34 @@ function closeActiveTicket() {
 }
 .tkt-row:last-child { border-bottom: none; }
 .tkt-row:hover { background: rgba(var(--v-theme-primary), 0.04); }
-.tkt-row--active { background: rgba(var(--v-theme-primary), 0.08) !important; }
+.tkt-row--active {
+  background: rgba(var(--v-theme-primary), 0.07) !important;
+  box-shadow: inset 3px 0 0 rgb(var(--v-theme-primary));
+}
 .tkt-row:focus-visible {
   outline: 2px solid rgb(var(--v-theme-primary));
   outline-offset: -2px;
 }
-.tkt-row__avatar { margin-top: 2px; }
+.tkt-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.tkt-row__dot--urgent { background: rgb(var(--v-theme-error)); }
+.tkt-row__dot--high { background: rgb(var(--v-theme-warning)); }
+.tkt-row__customer {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
 .tkt-row__subject {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: rgba(var(--v-theme-on-surface), 0.68);
 }
-.tkt-row__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 10px;
-  color: rgba(var(--v-theme-on-surface), 0.56);
-  font-size: 11px;
-  font-weight: 600;
-}
-.tkt-row__footer span {
+.tkt-row__origin {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -679,54 +659,39 @@ function closeActiveTicket() {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
-.tkt-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
+
+/* ── Properties strip ──────────────────────────────────────────── */
+.tkt-props {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  background: rgba(var(--v-theme-surface-variant), 0.22);
+  background: rgba(var(--v-theme-surface-variant), 0.18);
 }
-.tkt-summary-item {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
+.tkt-prop {
   min-width: 0;
-  padding: 10px;
-  border: 1px solid rgba(var(--v-border-color), calc(var(--v-border-opacity) * 0.7));
-  border-radius: 12px;
-  background: rgb(var(--v-theme-surface));
 }
-.tkt-summary-item__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: rgba(var(--v-theme-primary), 0.1);
-  color: rgb(var(--v-theme-primary));
-}
-.tkt-summary-item span,
-.tkt-summary-item strong,
-.tkt-summary-item em {
+.tkt-prop span,
+.tkt-prop strong,
+.tkt-prop em {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tkt-summary-item span {
-  color: rgba(var(--v-theme-on-surface), 0.58);
+.tkt-prop span {
+  color: rgba(var(--v-theme-on-surface), 0.56);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
-.tkt-summary-item strong {
-  margin-top: 2px;
+.tkt-prop strong {
+  margin-top: 1px;
   color: rgb(var(--v-theme-on-surface));
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
-.tkt-summary-item em {
+.tkt-prop em {
   color: rgba(var(--v-theme-on-surface), 0.56);
   font-size: 12px;
   font-style: normal;
@@ -768,13 +733,6 @@ function closeActiveTicket() {
   color: rgb(var(--v-theme-on-surface));
   font-weight: 700;
 }
-.tkt-message__meta em {
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  font-style: normal;
-  font-weight: 700;
-}
 .tkt-message__meta time {
   margin-left: auto;
   white-space: nowrap;
@@ -793,15 +751,25 @@ function closeActiveTicket() {
   border-color: rgba(var(--v-theme-primary), 0.22);
   background: rgba(var(--v-theme-primary), 0.06);
 }
-.tkt-message--agent .tkt-message__meta em {
-  background: rgba(var(--v-theme-primary), 0.1);
-  color: rgb(var(--v-theme-primary));
-}
 
-/* ── Reply ─────────────────────────────────────────────────────── */
+/* ── Composer ──────────────────────────────────────────────────── */
 .tkt-reply {
   border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   background: rgb(var(--v-theme-surface));
+}
+.tkt-composer {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 12px;
+  background: rgb(var(--v-theme-surface));
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.tkt-composer:focus-within {
+  border-color: rgba(var(--v-theme-primary), 0.5);
+  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.1);
+}
+.tkt-composer__input :deep(textarea) {
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 /* ── Form drawer ───────────────────────────────────────────────── */
@@ -828,23 +796,9 @@ function closeActiveTicket() {
     height: auto;
     min-height: 400px;
   }
-  .tkt-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 @media (max-width: 640px) {
   .tkt-list-panel { max-height: 36vh; }
-  .tkt-toolbar {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .tkt-inbox-select { width: 100%; }
-  .tkt-summary-grid {
-    grid-template-columns: 1fr;
-  }
-  .tkt-message__meta time {
-    margin-left: 0;
-    width: 100%;
-  }
+  .tkt-props { gap: 8px 20px; }
 }
 </style>
