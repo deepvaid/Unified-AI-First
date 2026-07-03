@@ -37,9 +37,9 @@ const toneMap: Record<string, Record<string, Tone>> = {
     archived: 'neutral', aborted: 'danger',
   },
   contact: {
-    active: 'success', unsubscribed: 'neutral', bounced: 'danger',
+    active: 'success', subscribed: 'success', unsubscribed: 'neutral', bounced: 'danger',
     pending: 'warning', confirmed: 'success', suspended: 'danger',
-    suppressed: 'neutral', 'hard bounce': 'danger',
+    suppressed: 'neutral', spam: 'danger', 'hard bounce': 'danger',
   },
   ticket: {
     open: 'brand', 'in progress': 'warning', 'awaiting reply': 'brand',

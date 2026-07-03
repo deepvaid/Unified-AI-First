@@ -22,11 +22,11 @@ const { loading } = useInitialLoad()
 // Quick-Add drawer
 const addDrawer = ref(false)
 const addStep = ref(1)
-const newContact = ref({ firstName: '', lastName: '', email: '', phone: '', company: '', role: '', tags: [] as string[], list: 'Newsletter Subscribers', status: 'Active' })
+const newContact = ref({ firstName: '', lastName: '', email: '', phone: '', company: '', role: '', tags: [] as string[], list: 'Newsletter Subscribers', status: 'Subscribed' })
 const tagInput = ref('')
 function addTag() { if (tagInput.value.trim()) { newContact.value.tags.push(tagInput.value.trim()); tagInput.value = '' } }
 function removeTag(i: number) { newContact.value.tags.splice(i, 1) }
-function saveContact() { addDrawer.value = false; addStep.value = 1; newContact.value = { firstName:'', lastName:'', email:'', phone:'', company:'', role:'', tags:[], list:'Newsletter Subscribers', status:'Active' }; saveSnack.value = true }
+function saveContact() { addDrawer.value = false; addStep.value = 1; newContact.value = { firstName:'', lastName:'', email:'', phone:'', company:'', role:'', tags:[], list:'Newsletter Subscribers', status:'Subscribed' }; saveSnack.value = true }
 
 // Import wizard
 const importDialog = ref(false)
@@ -114,6 +114,8 @@ const hiddenColumns = ref<string[]>([])
 const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
 
 const scoreColor = (s: number) => s >= 80 ? 'success' : s >= 50 ? 'warning' : 'error'
+const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const formatDate = (d?: string) => d ? dateFmt.format(new Date(d)) : '—'
 const saveSnack = ref(false)
 
 function selectAll() {
@@ -146,7 +148,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
     <!-- Header -->
     <MpPageHeader
       title="Contacts"
-      :subtitle="`${store.contacts.length.toLocaleString()} total contacts · ${store.contacts.filter(c => c.status === 'Active').length.toLocaleString()} active`"
+      :subtitle="`${store.contacts.length.toLocaleString()} total contacts · ${store.contacts.filter(c => c.status === 'Subscribed').length.toLocaleString()} subscribed`"
     >
       <template #actions>
         <v-btn variant="flat" prepend-icon="upload" class="text-none" @click="startImport" color="surface">Import</v-btn>
@@ -170,19 +172,16 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <div v-for="(options, key) in filterOptions" :key="key" class="mb-3">
-              <v-select
-                v-model="filters[key as keyof typeof filters]"
-                :label="filterLabels[key]"
-                :items="options"
-                variant="outlined"
-                density="compact"
-                hide-details
-                clearable
-              />
-            </div>
+          <div v-for="(options, key) in filterOptions" :key="key" class="mb-4">
+            <v-select
+              v-model="filters[key as keyof typeof filters]"
+              :label="filterLabels[key]"
+              :items="options"
+              variant="outlined"
+              density="compact"
+              hide-details
+              clearable
+            />
           </div>
         </template>
       </MpDataTableToolbar>
@@ -254,6 +253,10 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
           </div>
         </template>
 
+        <template v-slot:item.lastActive="{ item }">
+          <span class="text-body-2 text-no-wrap">{{ formatDate((item as any).lastActive) }}</span>
+        </template>
+
         <template v-slot:item.actions="{ item }">
           <v-menu location="bottom end">
             <template v-slot:activator="{ props }">
@@ -309,7 +312,8 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       <div v-if="addStep===1">
         <div class="d-flex justify-center mb-5">
           <v-avatar color="primary" size="72" class="text-h4 font-weight-bold">
-            {{ newContact.firstName?.[0]?.toUpperCase() ?? '?' }}
+            <template v-if="newContact.firstName">{{ newContact.firstName.charAt(0).toUpperCase() }}</template>
+            <v-icon v-else size="32">user</v-icon>
           </v-avatar>
         </div>
         <v-row dense>
@@ -324,7 +328,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       <!-- Step 2: List, Tags, Status -->
       <div v-else>
         <v-select v-model="newContact.list" label="Subscribe to List" :items="['Newsletter Subscribers','VIP Customer Circle','Win-Back Segment','All Contacts']" variant="outlined" density="comfortable" class="mb-4" prepend-inner-icon="playlist-check" />
-        <v-select v-model="newContact.status" label="Status" :items="['Active','Unsubscribed']" variant="outlined" density="comfortable" class="mb-4" />
+        <v-select v-model="newContact.status" label="Status" :items="['Subscribed','Unsubscribed']" variant="outlined" density="comfortable" class="mb-4" />
         <div class="text-subtitle-2 font-weight-bold mb-2">Tags</div>
         <div class="d-flex flex-wrap gap-2 mb-3">
           <v-chip v-for="(t,i) in newContact.tags" :key="i" closable size="small" color="secondary" variant="tonal" @click:close="removeTag(i)">{{ t }}</v-chip>
@@ -336,13 +340,13 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       <template #footer>
         <v-btn v-if="addStep===2" variant="text" class="text-none" @click="addStep=1">Back</v-btn>
         <v-btn v-else variant="text" class="text-none" @click="addDrawer=false">Cancel</v-btn>
-        <v-btn v-if="addStep===1" color="primary" variant="elevated" class="text-none" :disabled="!newContact.email||!newContact.firstName" @click="addStep=2">Next</v-btn>
-        <v-btn v-else color="primary" variant="elevated" class="text-none" prepend-icon="check" @click="saveContact">Save Contact</v-btn>
+        <v-btn v-if="addStep===1" color="primary" variant="flat" class="text-none" :disabled="!newContact.email||!newContact.firstName" @click="addStep=2">Next</v-btn>
+        <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveContact">Save Contact</v-btn>
       </template>
     </MpFormDrawer>
 
     <!-- Import Wizard Dialog -->
-    <v-dialog v-model="importDialog" max-width="680" rounded="xl" persistent>
+    <v-dialog v-model="importDialog" max-width="680" persistent>
       <v-card rounded="lg" color="surface">
         <v-stepper v-model="importStep" :items="['Upload File','Map Fields','Review & Import']" flat>
           <template v-slot:item.1>
@@ -384,10 +388,10 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
                 <v-col cols="4"><v-card variant="tonal" color="success" rounded="lg" class="pa-4 text-center"><div class="text-h4 font-weight-bold">1,241</div><div class="text-caption">Valid contacts</div></v-card></v-col>
                 <v-col cols="4"><v-card variant="tonal" color="warning" rounded="lg" class="pa-4 text-center"><div class="text-h4 font-weight-bold">43</div><div class="text-caption">Skipped (invalid)</div></v-card></v-col>
               </v-row>
-              <v-alert type="info" variant="tonal" density="compact" rounded="xl" class="text-body-2 mb-3">
+              <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2 mb-3">
                 <strong>Duplicates:</strong> 23 contacts with matching emails will be <strong>merged</strong> (fields updated, not replaced).
               </v-alert>
-              <v-alert type="success" variant="tonal" density="compact" rounded="xl" class="text-body-2">
+              <v-alert type="success" variant="tonal" density="compact" rounded="lg" class="text-body-2">
                 Importing into: <strong>{{ importList }}</strong>
               </v-alert>
             </div>
@@ -398,8 +402,8 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
               <v-btn variant="text" class="text-none" @click="importStep > 1 ? importStep-- : importDialog=false">
                 {{ importStep === 1 ? 'Cancel' : 'Back' }}
               </v-btn>
-              <v-btn v-if="importStep < 3" color="primary" variant="elevated" class="text-none" @click="importStep++">Continue</v-btn>
-              <v-btn v-else color="success" variant="elevated" class="text-none" prepend-icon="upload" @click="importDialog=false;saveSnack=true">Import 1,241 Contacts</v-btn>
+              <v-btn v-if="importStep < 3" color="primary" variant="flat" class="text-none" @click="importStep++">Continue</v-btn>
+              <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="upload" @click="importDialog=false;saveSnack=true">Import 1,241 Contacts</v-btn>
             </div>
           </template>
         </v-stepper>
@@ -416,6 +420,10 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
 <style scoped>
 :deep(.v-data-table thead tr) {
   border-bottom: 1px solid rgba(var(--v-border-color), 0.15);
+}
+
+.contacts-table :deep(thead th) {
+  white-space: nowrap;
 }
 
 .contacts-table :deep(tbody tr) {
