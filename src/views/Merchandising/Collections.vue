@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import {
   useMerchandisingStore,
   COLLECTION_FILTER_LABELS,
@@ -41,10 +42,9 @@ function onToggle(collection: SmartCollection) {
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Collections"
-      :subtitle="`Smart collections curated for ${store.activeStore.domain}`"
+      :subtitle="`${store.collectionList.length} smart collections · ${store.activeStore.domain}`"
     >
       <template #actions>
-        <v-btn variant="outlined" class="text-none" prepend-icon="filter">Filter</v-btn>
         <v-btn
           color="primary"
           variant="flat"
@@ -60,7 +60,6 @@ function onToggle(collection: SmartCollection) {
     <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
-        title="Collections"
         search-placeholder="Filter collections…"
         :total-count="filteredCollections.length"
       >
@@ -92,22 +91,7 @@ function onToggle(collection: SmartCollection) {
         class="flex-grow-1"
       >
         <template #item.status="{ item }">
-          <div class="d-flex align-center gap-2">
-            <v-switch
-              :model-value="item.status === 'active'"
-              color="success"
-              density="compact"
-              hide-details
-              :aria-label="`Toggle ${item.name}`"
-              @update:model-value="onToggle(item)"
-            />
-            <span
-              class="text-caption font-weight-medium"
-              :class="item.status === 'active' ? 'text-success' : 'text-medium-emphasis'"
-            >
-              {{ item.status === 'active' ? 'Active' : 'Inactive' }}
-            </span>
-          </div>
+          <MpStatusChip :status="item.status === 'active' ? 'Active' : 'Inactive'" type="general" size="x-small" variant="flat" />
         </template>
 
         <template #item.name="{ item }">
@@ -115,14 +99,7 @@ function onToggle(collection: SmartCollection) {
         </template>
 
         <template #item.filterType="{ item }">
-          <v-chip
-            size="x-small"
-            variant="tonal"
-            :color="item.filterType === 'synced' ? 'success' : 'secondary'"
-            class="font-weight-medium"
-          >
-            {{ COLLECTION_FILTER_LABELS[item.filterType] }}
-          </v-chip>
+          <span class="text-body-2 text-medium-emphasis">{{ COLLECTION_FILTER_LABELS[item.filterType] }}</span>
         </template>
 
         <template #item.updatedAt="{ item }">
