@@ -524,7 +524,7 @@ const recentActivity = computed(() => [
 
     <!-- Customer behavior funnel -->
     <v-card variant="flat" border rounded="lg" class="pa-6">
-      <div class="text-subtitle-2 text-medium-emphasis mb-4">Customer behavior</div>
+      <div class="text-subtitle-2 font-weight-bold mb-4">Customer behavior</div>
       <div class="d-flex align-center gap-4 funnel">
         <div class="funnel__step">
           <div class="text-caption text-medium-emphasis">Active carts</div>
@@ -554,9 +554,6 @@ const recentActivity = computed(() => [
                 <div class="text-subtitle-2 font-weight-bold">Sessions by location</div>
                 <div class="text-caption text-medium-emphasis">Top markets right now</div>
               </div>
-              <v-chip size="x-small" variant="tonal" color="success" prepend-icon="circle">
-                Live
-              </v-chip>
             </div>
 
             <div class="live-map">
@@ -619,9 +616,6 @@ const recentActivity = computed(() => [
                 <div class="text-subtitle-2 font-weight-bold">Real-time activity</div>
                 <div class="text-caption text-medium-emphasis">Last 30 minutes</div>
               </div>
-              <v-chip size="small" variant="tonal" color="success" prepend-icon="circle">
-                Live
-              </v-chip>
             </div>
             <div class="flex-grow-1" style="min-height: 320px;">
               <ApexChart
