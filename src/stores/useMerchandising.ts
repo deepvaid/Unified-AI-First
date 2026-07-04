@@ -103,6 +103,10 @@ export interface RecommendationEngine {
   type: EngineType
   status: 'active' | 'inactive'
   updatedAt: string
+  /** Products the widget shows (default 8) */
+  productCount?: number
+  /** Optional include/exclude filters applied to the widget's candidates */
+  conditions?: MerchCondition[]
 }
 
 export interface FieldTransformation {
@@ -399,6 +403,57 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     if (row) row.status = row.status === 'active' ? 'inactive' : 'active'
   }
 
+  /* — Recommendation engines — */
+
+  function getEngine(id: string) {
+    return engineList.value.find((e) => e.id === id)
+  }
+
+  function createEngine(payload: {
+    name: string; page: EnginePage; type: EngineType
+    productCount: number; conditions: MerchCondition[]
+  }): RecommendationEngine {
+    const engine: RecommendationEngine = {
+      id: `${payload.page}-mc-rec-${Date.now() % 100000}`,
+      name: payload.name,
+      page: payload.page,
+      type: payload.type,
+      status: 'active',
+      productCount: payload.productCount,
+      conditions: payload.conditions.map((c) => ({ ...c, values: [...c.values] })),
+      updatedAt: `${todayLabel()} at ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`,
+    }
+    engineList.value.unshift(engine)
+    return engine
+  }
+
+  function saveEngine(payload: Omit<RecommendationEngine, 'updatedAt' | 'status'>) {
+    const engine = engineList.value.find((e) => e.id === payload.id)
+    if (!engine) return
+    engine.name = payload.name
+    engine.page = payload.page
+    engine.type = payload.type
+    engine.productCount = payload.productCount
+    engine.conditions = (payload.conditions ?? []).map((c) => ({ ...c, values: [...c.values] }))
+    engine.updatedAt = `${todayLabel()} at ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+  }
+
+  function duplicateEngine(id: string): RecommendationEngine | undefined {
+    const source = engineList.value.find((e) => e.id === id)
+    if (!source) return undefined
+    return createEngine({
+      name: `${source.name} copy`,
+      page: source.page,
+      type: source.type,
+      productCount: source.productCount ?? 8,
+      conditions: (source.conditions ?? []).map((c) => ({ ...c, values: [...c.values] })),
+    })
+  }
+
+  function deleteEngine(id: string) {
+    engineList.value = engineList.value.filter((e) => e.id !== id)
+  }
+
   function toggleFieldStatus(id: string) {
     const row = fieldList.value.find((f) => f.id === id)
     if (row) row.status = row.status === 'active' ? 'inactive' : 'active'
@@ -502,6 +557,11 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     toggleCollectionStatus,
     createCollection,
     toggleEngineStatus,
+    getEngine,
+    createEngine,
+    saveEngine,
+    duplicateEngine,
+    deleteEngine,
     toggleFieldStatus,
     deleteRedirect,
     createRedirect,
@@ -592,6 +652,56 @@ function productFieldValues(p: MerchProduct, field: string): string[] {
     case 'Discounted': return [p.compareAt ? 'Yes' : 'No']
     default: return []
   }
+}
+
+/** Picker copy + icons for the engine type gallery (mirrors the Findify widget types). */
+export const ENGINE_TYPE_DESCRIPTIONS: Record<EngineType, string> = {
+  personalized: 'Tailored to each shopper from their browsing and purchase history.',
+  popular_products: 'Store-wide best sellers, ranked by popularity.',
+  visual_recommendations: 'Visually similar products, matched on imagery.',
+  frequently_purchased_together: 'Products often bought in the same order.',
+  recently_viewed: 'Picks up where the shopper left off.',
+  viewed_together: 'Products browsed in the same sessions.',
+  new_trending: 'Fresh arrivals gaining traction right now.',
+}
+
+export const ENGINE_TYPE_ICONS: Record<EngineType, string> = {
+  personalized: 'sparkles',
+  popular_products: 'trending-up',
+  visual_recommendations: 'image',
+  frequently_purchased_together: 'shopping-basket',
+  recently_viewed: 'history',
+  viewed_together: 'eye',
+  new_trending: 'flame',
+}
+
+/** Type-appropriate mock ordering + include/exclude filters for engine previews. */
+export function engineRecommendationPreview(
+  engine: Pick<RecommendationEngine, 'type' | 'conditions' | 'productCount'>,
+  products: MerchProduct[],
+): MerchProduct[] {
+  let rows = products.filter((p) =>
+    (engine.conditions ?? []).every((c) => {
+      const matches = c.values.length === 0 || c.values.some((v) => productFieldValues(p, c.field).includes(v))
+      return c.action === 'include' ? matches : c.action === 'exclude' ? !matches : true
+    }),
+  )
+  switch (engine.type) {
+    case 'new_trending':
+      rows = [...rows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      break
+    case 'recently_viewed':
+      rows = [...rows].sort((a, b) => b.id.localeCompare(a.id))
+      break
+    case 'visual_recommendations':
+    case 'viewed_together':
+    case 'frequently_purchased_together':
+      rows = [...rows].sort((a, b) => a.category.localeCompare(b.category) || b.popularity - a.popularity)
+      break
+    default:
+      rows = [...rows].sort((a, b) => b.popularity - a.popularity)
+  }
+  return rows.slice(0, engine.productCount ?? 8)
 }
 
 /** Apply include/exclude filters + promote weights so the rule preview reflects the rule. */

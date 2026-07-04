@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -12,8 +13,31 @@ import {
   type RecommendationEngine,
 } from '@/stores/useMerchandising'
 
+const route = useRoute()
+const router = useRouter()
 const store = useMerchandisingStore()
 const search = ref('')
+
+const editorBase = computed(() => `/commerce/${route.params.accountId}/merchandising/recommendations`)
+
+function openEngine(id: string) {
+  router.push(`${editorBase.value}/${id}`)
+}
+
+const confirmDelete = ref<RecommendationEngine | null>(null)
+
+function performDelete() {
+  if (confirmDelete.value) {
+    store.deleteEngine(confirmDelete.value.id)
+    showToast(`Engine “${confirmDelete.value.name}” deleted`)
+  }
+  confirmDelete.value = null
+}
+
+function duplicate(engine: RecommendationEngine) {
+  const copy = store.duplicateEngine(engine.id)
+  if (copy) showToast(`Engine duplicated as “${copy.name}”`)
+}
 const filterPage = ref<'all' | EnginePage>('all')
 const filterType = ref<'all' | EngineType>('all')
 
@@ -78,15 +102,12 @@ function onToggle(engine: RecommendationEngine) {
       :subtitle="`Personalized engines running for ${store.activeStore.domain}`"
     >
       <template #actions>
-        <v-btn variant="outlined" class="text-none" prepend-icon="eye" @click="showToast('Preview — coming soon')">
-          Preview
-        </v-btn>
         <v-btn
           color="primary"
           variant="flat"
           class="text-none"
           prepend-icon="plus"
-          @click="showToast('New engine wizard — coming soon')"
+          @click="openEngine('new')"
         >
           New engine
         </v-btn>
@@ -195,17 +216,16 @@ function onToggle(engine: RecommendationEngine) {
                 aria-label="Row actions"
               />
             </template>
-            <v-list density="compact" min-width="200">
-              <v-list-item prepend-icon="pencil" title="Edit engine" @click="showToast('Edit — coming soon')" />
-              <v-list-item prepend-icon="eye" title="Preview" @click="showToast('Preview — coming soon')" />
-              <v-list-item prepend-icon="copy" title="Duplicate" @click="showToast('Duplicated')" />
+            <v-list density="compact" rounded="lg" min-width="200" elevation="3" class="py-1">
+              <v-list-item prepend-icon="pencil" title="Edit engine" @click="openEngine(item.id)" />
+              <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
               <v-list-item
                 :prepend-icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
                 :title="item.status === 'active' ? 'Disable' : 'Enable'"
                 @click="onToggle(item)"
               />
-              <v-divider />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="showToast('Deleted')" />
+              <v-divider class="my-1" style="opacity: 0.4" />
+              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="confirmDelete = item" />
             </v-list>
           </v-menu>
         </template>
@@ -217,11 +237,26 @@ function onToggle(engine: RecommendationEngine) {
             :description="search ? 'Try a different keyword or clear filters.' : 'Create your first recommendation engine to start personalizing the storefront.'"
             :action-label="!search ? 'New engine' : undefined"
             action-icon="plus"
-            @action="showToast('New engine wizard — coming soon')"
+            @action="openEngine('new')"
           />
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Delete confirm -->
+    <v-dialog :model-value="!!confirmDelete" max-width="440" @update:model-value="confirmDelete = null">
+      <v-card v-if="confirmDelete" rounded="lg">
+        <v-card-title class="pa-5 text-h6 font-weight-bold">Delete “{{ confirmDelete.name }}”?</v-card-title>
+        <v-card-text class="pb-2 text-body-2 text-medium-emphasis">
+          The widget stops rendering on the storefront immediately.
+        </v-card-text>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="confirmDelete = null">Cancel</v-btn>
+          <v-btn color="error" variant="flat" class="text-none" @click="performDelete">Delete engine</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
       {{ snackbar.message }}
