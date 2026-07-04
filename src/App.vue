@@ -14,9 +14,9 @@ const { accent, mode, setAccent, setMode } = useAppTheme()
 setAccent(accent.value)
 setMode(mode.value)
 
-// Sidebar theme follows the active account (light only on accounts that opt in)
+// Sidebar theme follows the active account (dark only on accounts that opt in)
 const accountsStore = useAccountsStore()
-watch(() => accountsStore.activeAccount.sidebarTheme ?? 'dark', applySidebarTheme, { immediate: true })
+watch(() => accountsStore.activeAccount.sidebarTheme ?? 'light', applySidebarTheme, { immediate: true })
 
 const route = useRoute()
 const drawer = ref(true)

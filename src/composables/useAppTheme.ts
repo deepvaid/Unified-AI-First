@@ -155,6 +155,6 @@ export function initAppTheme() {
   applyAccent(storedAccent)
   applyMode(storedMode)
   // Pre-mount default; App.vue applies the active account's sidebar theme before first paint.
-  applySidebarTheme('dark')
+  applySidebarTheme('light')
   localStorage.removeItem('app-dark-sidebar')
 }

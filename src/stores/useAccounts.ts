@@ -14,7 +14,7 @@ export interface Account {
   initials: string
   color: 'primary' | 'secondary' | 'success'
   subscriptions: SubscriptionKey[]
-  /** Sidebar appearance for this account; omitted = dark (the default). */
+  /** Sidebar appearance for this account; omitted = light (the default). */
   sidebarTheme?: 'light' | 'dark'
 }
 
