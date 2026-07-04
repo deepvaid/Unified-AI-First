@@ -39,6 +39,53 @@ export interface SmartCollection {
   updatedAt: string
 }
 
+/* Default Merchandising (pinning + merchandising rules) */
+
+export interface MerchProduct {
+  id: string
+  title: string
+  image: string
+  price: number
+  compareAt?: number
+  qty: number
+  brand: string
+  color: string
+  size: string
+  category: string
+  tags: string[]
+  popularity: number
+  createdAt: string
+}
+
+export interface PinningRule {
+  id: string
+  collectionId: string
+  pinnedProductIds: string[]
+  updatedAt: string
+}
+
+export type MerchConditionAction = 'include' | 'exclude' | 'promote'
+
+export interface MerchCondition {
+  id: string
+  action: MerchConditionAction
+  /** -100 (bury) … 100 (boost); only for action === 'promote' */
+  weight?: number
+  field: string
+  values: string[]
+}
+
+export interface MerchRule {
+  id: string
+  name: string
+  active: boolean
+  collectionIds: string[]
+  /** Popularity boost multiplier: 0 disables, up to 100 (x) */
+  popularityWeight: number
+  conditions: MerchCondition[]
+  updatedAt: string
+}
+
 export type EnginePage = 'product' | 'cart' | 'home'
 export type EngineType =
   | 'personalized'
@@ -148,6 +195,85 @@ const collections: SmartCollection[] = [
   { id: 'c14', name: 'collections/women', status: 'active', filterType: 'manual', updatedAt: 'Aug 22, 2025 at 7:14 PM' },
 ]
 
+/* Default Merchandising sample data */
+
+const PRODUCT_NAMES = [
+  'Azur Bracelet in Blue Azurite', 'Boyfriend Jeans', 'Lane Bead Bracelet in Gold Brass', 'Salda Earrings',
+  '5 Pocket Jeans', 'Saul Necklace', 'Asymmetric Dress in Black', 'Border Dress in Black/Silver',
+  'Bean Dress', 'Napilla Dress', 'Taib Dress', 'Layered Contrast Dress in Cream',
+  'Neoprene Flower Dress', 'Graphic Dress', 'Elastic Waist Dress', 'Tie Neck Wool Dress',
+  'Tie Waist Dress in Black', 'Davi Dress', 'Sleeveless Hidden Pocket Dress', 'Sleeveless Fitted Dress',
+  'Cape Dress', 'Iranta Leather Dress', 'Rhesus Gown', 'Desna Dress',
+  'Surplice Dress', 'Linen Shirt in White', 'Italian Wool Jacket', 'Mens Chino Pants',
+  'Canvas Weekender Bag', 'Suede Ankle Boots', 'Merino Crew Sweater', 'Silk Scarf in Navy',
+  'Leather Belt in Tan', 'Classic Trench Coat', 'Pleated Midi Skirt', 'Cashmere Beanie',
+  'Aviator Sunglasses', 'Woven Tote Bag', 'Chelsea Boots in Black', 'Quilted Puffer Vest',
+]
+const MERCH_BRANDS = ['Atlas', 'Nordica', 'Verve', 'Kinfolk']
+const MERCH_COLORS = ['Black', 'White', 'Blue', 'Cream', 'Green', 'Gold']
+const MERCH_SIZES = ['XS', 'S', 'M', 'L', 'XL']
+const MERCH_CATEGORIES = ["Women's Dresses", 'Jewelry', 'Denim', 'Tops', 'Accessories', 'Shoes']
+
+const merchProducts: MerchProduct[] = PRODUCT_NAMES.map((title, i) => {
+  const price = 39 + ((i * 37) % 560)
+  const discounted = i % 3 === 0
+  return {
+    id: `p${i + 1}`,
+    title,
+    image: `https://picsum.photos/seed/merch${i + 1}/400/500`,
+    price,
+    compareAt: discounted ? Math.round(price * 1.6) : undefined,
+    qty: 1 + ((i * 7) % 40),
+    brand: MERCH_BRANDS[i % MERCH_BRANDS.length]!,
+    color: MERCH_COLORS[i % MERCH_COLORS.length]!,
+    size: MERCH_SIZES[i % MERCH_SIZES.length]!,
+    category: MERCH_CATEGORIES[i % MERCH_CATEGORIES.length]!,
+    tags: i % 4 === 0 ? ['new'] : i % 5 === 0 ? ['sale'] : [],
+    popularity: (i * 53) % 100,
+    createdAt: new Date(Date.now() - i * 9 * 86400000).toISOString(),
+  }
+})
+
+const pinningRules: PinningRule[] = [
+  { id: 'pin1', collectionId: 'c14', pinnedProductIds: ['p1', 'p2', 'p3', 'p7'], updatedAt: 'May 19, 2026' },
+  { id: 'pin2', collectionId: 'c2', pinnedProductIds: ['p4', 'p5', 'p6', 'p8', 'p9', 'p10', 'p12', 'p15'], updatedAt: 'May 12, 2026' },
+  { id: 'pin3', collectionId: 'c1', pinnedProductIds: ['p11', 'p13'], updatedAt: 'May 8, 2026' },
+  { id: 'pin4', collectionId: 'c4', pinnedProductIds: ['p30', 'p39'], updatedAt: 'Apr 30, 2026' },
+  { id: 'pin5', collectionId: 'c12', pinnedProductIds: ['p16', 'p17', 'p18', 'p20', 'p22'], updatedAt: 'Apr 22, 2026' },
+  { id: 'pin6', collectionId: 'c6', pinnedProductIds: [], updatedAt: 'Apr 10, 2026' },
+]
+
+const merchRules: MerchRule[] = [
+  {
+    id: 'mr1', name: 'Dress Collection Rules', active: true, collectionIds: ['c12'], popularityWeight: 1,
+    conditions: [{ id: 'mc1', action: 'promote', weight: 90, field: 'Color', values: ['Black'] }],
+    updatedAt: 'May 18, 2026',
+  },
+  {
+    id: 'mr2', name: 'Promote new arrivals', active: true, collectionIds: ['c1', 'c14'], popularityWeight: 1,
+    conditions: [{ id: 'mc2', action: 'promote', weight: 60, field: 'Tags', values: ['new'] }],
+    updatedAt: 'May 14, 2026',
+  },
+  {
+    id: 'mr3', name: 'Hide full-price test', active: false, collectionIds: ['c11'], popularityWeight: 0,
+    conditions: [{ id: 'mc3', action: 'include', field: 'Discounted', values: ['Yes'] }],
+    updatedAt: 'May 6, 2026',
+  },
+  {
+    id: 'mr4', name: 'Bury oversized stock', active: true, collectionIds: ['c1'], popularityWeight: 50,
+    conditions: [{ id: 'mc4', action: 'promote', weight: -70, field: 'Size', values: ['XL'] }],
+    updatedAt: 'Apr 28, 2026',
+  },
+  {
+    id: 'mr5', name: 'Jewelry spotlight', active: true, collectionIds: ['c14', 'c2', 'c3', 'c5'], popularityWeight: 1,
+    conditions: [
+      { id: 'mc5', action: 'promote', weight: 40, field: 'Category', values: ['Jewelry'] },
+      { id: 'mc6', action: 'exclude', field: 'Brand', values: ['Verve'] },
+    ],
+    updatedAt: 'Apr 15, 2026',
+  },
+]
+
 const recommendationEngines: RecommendationEngine[] = [
   { id: 'product-mc-rec-94', name: 'Kristian reco', page: 'product', type: 'new_trending', status: 'active', updatedAt: 'May 19, 2026 at 4:10 PM' },
   { id: 'home-mc-rec-93', name: 'Test', page: 'product', type: 'personalized', status: 'active', updatedAt: 'May 19, 2026 at 4:22 PM' },
@@ -219,6 +345,9 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
   const synonymList = ref<Synonym[]>([...synonyms])
   const redirectList = ref<PageRedirect[]>([...pageRedirects])
   const collectionList = ref<SmartCollection[]>([...collections])
+  const merchProductList = ref<MerchProduct[]>([...merchProducts])
+  const pinningRuleList = ref<PinningRule[]>(pinningRules.map((r) => ({ ...r, pinnedProductIds: [...r.pinnedProductIds] })))
+  const merchRuleList = ref<MerchRule[]>(merchRules.map((r) => ({ ...r, collectionIds: [...r.collectionIds], conditions: r.conditions.map((c) => ({ ...c, values: [...c.values] })) })))
   const engineList = ref<RecommendationEngine[]>([...recommendationEngines])
   const fieldList = ref<FieldTransformation[]>([...fieldTransformations])
   const analytics = ref<MerchAnalytics>(buildAnalytics())
@@ -267,6 +396,68 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     redirectList.value = redirectList.value.filter((r) => r.id !== id)
   }
 
+  /* — Default Merchandising: pinning rules — */
+
+  const todayLabel = () =>
+    new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+  function getPinningRule(id: string) {
+    return pinningRuleList.value.find((r) => r.id === id)
+  }
+
+  function createPinningRule(collectionId: string): PinningRule {
+    const rule: PinningRule = { id: `pin${Date.now()}`, collectionId, pinnedProductIds: [], updatedAt: todayLabel() }
+    pinningRuleList.value.unshift(rule)
+    return rule
+  }
+
+  function savePinningRule(id: string, payload: { collectionId: string; pinnedProductIds: string[] }) {
+    const rule = pinningRuleList.value.find((r) => r.id === id)
+    if (!rule) return
+    rule.collectionId = payload.collectionId
+    rule.pinnedProductIds = [...payload.pinnedProductIds]
+    rule.updatedAt = todayLabel()
+  }
+
+  function deletePinningRule(id: string) {
+    pinningRuleList.value = pinningRuleList.value.filter((r) => r.id !== id)
+  }
+
+  /* — Default Merchandising: merchandising rules — */
+
+  function getMerchRule(id: string) {
+    return merchRuleList.value.find((r) => r.id === id)
+  }
+
+  function createMerchRule(): MerchRule {
+    const rule: MerchRule = {
+      id: `mr${Date.now()}`, name: '', active: true, collectionIds: [],
+      popularityWeight: 1, conditions: [], updatedAt: todayLabel(),
+    }
+    merchRuleList.value.unshift(rule)
+    return rule
+  }
+
+  function saveMerchRule(payload: MerchRule) {
+    const idx = merchRuleList.value.findIndex((r) => r.id === payload.id)
+    if (idx === -1) return
+    merchRuleList.value[idx] = {
+      ...payload,
+      collectionIds: [...payload.collectionIds],
+      conditions: payload.conditions.map((c) => ({ ...c, values: [...c.values] })),
+      updatedAt: todayLabel(),
+    }
+  }
+
+  function deleteMerchRule(id: string) {
+    merchRuleList.value = merchRuleList.value.filter((r) => r.id !== id)
+  }
+
+  function toggleMerchRuleActive(id: string) {
+    const rule = merchRuleList.value.find((r) => r.id === id)
+    if (rule) rule.active = !rule.active
+  }
+
   function createRedirect(payload: { queries: string[]; leadsTo: string }) {
     redirectList.value.unshift({
       id: `r${Date.now()}`,
@@ -283,6 +474,9 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     synonymList,
     redirectList,
     collectionList,
+    merchProductList,
+    pinningRuleList,
+    merchRuleList,
     engineList,
     fieldList,
     analytics,
@@ -298,6 +492,15 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     toggleFieldStatus,
     deleteRedirect,
     createRedirect,
+    getPinningRule,
+    createPinningRule,
+    savePinningRule,
+    deletePinningRule,
+    getMerchRule,
+    createMerchRule,
+    saveMerchRule,
+    deleteMerchRule,
+    toggleMerchRuleActive,
   }
 })
 
@@ -327,4 +530,76 @@ export const SYNONYM_TYPE_LABELS: Record<SynonymType, string> = {
 export const COLLECTION_FILTER_LABELS: Record<CollectionFilterType, string> = {
   manual: 'Manual',
   synced: 'Synced',
+}
+
+/* ── Default Merchandising helpers ────────────────────────────── */
+
+/** Curated rule fields → selectable values (mirrors the product feed attributes). */
+export const MERCH_FIELD_OPTIONS: Record<string, string[]> = {
+  Brand: MERCH_BRANDS,
+  Color: MERCH_COLORS,
+  Size: MERCH_SIZES,
+  Category: MERCH_CATEGORIES,
+  Tags: ['new', 'sale'],
+  Discounted: ['Yes', 'No'],
+}
+
+export const MERCH_SORT_OPTIONS = [
+  { title: 'Sort by popularity', value: 'popularity' },
+  { title: 'Newest (created)', value: 'newest' },
+  { title: 'Oldest (created)', value: 'oldest' },
+  { title: 'Title A to Z', value: 'title_asc' },
+  { title: 'Title Z to A', value: 'title_desc' },
+  { title: 'Price high to low', value: 'price_desc' },
+  { title: 'Price low to high', value: 'price_asc' },
+] as const
+
+export type MerchSortKey = (typeof MERCH_SORT_OPTIONS)[number]['value']
+
+export function sortMerchProducts(products: MerchProduct[], sort: MerchSortKey): MerchProduct[] {
+  const rows = [...products]
+  switch (sort) {
+    case 'newest': return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    case 'oldest': return rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    case 'title_asc': return rows.sort((a, b) => a.title.localeCompare(b.title))
+    case 'title_desc': return rows.sort((a, b) => b.title.localeCompare(a.title))
+    case 'price_desc': return rows.sort((a, b) => b.price - a.price)
+    case 'price_asc': return rows.sort((a, b) => a.price - b.price)
+    default: return rows.sort((a, b) => b.popularity - a.popularity)
+  }
+}
+
+function productFieldValues(p: MerchProduct, field: string): string[] {
+  switch (field) {
+    case 'Brand': return [p.brand]
+    case 'Color': return [p.color]
+    case 'Size': return [p.size]
+    case 'Category': return [p.category]
+    case 'Tags': return p.tags
+    case 'Discounted': return [p.compareAt ? 'Yes' : 'No']
+    default: return []
+  }
+}
+
+/** Apply include/exclude filters + promote weights so the rule preview reflects the rule. */
+export function applyRuleToProducts(
+  rule: Pick<MerchRule, 'conditions' | 'popularityWeight'>,
+  products: MerchProduct[],
+): MerchProduct[] {
+  const rows = products.filter((p) =>
+    rule.conditions.every((c) => {
+      if (c.action === 'promote') return true
+      const matches = c.values.length === 0 || c.values.some((v) => productFieldValues(p, c.field).includes(v))
+      return c.action === 'include' ? matches : !matches
+    }),
+  )
+  const score = (p: MerchProduct) => {
+    let s = p.popularity * rule.popularityWeight
+    for (const c of rule.conditions) {
+      if (c.action !== 'promote') continue
+      if (c.values.some((v) => productFieldValues(p, c.field).includes(v))) s += (c.weight ?? 0) * 100
+    }
+    return s
+  }
+  return rows.sort((a, b) => score(b) - score(a))
 }
