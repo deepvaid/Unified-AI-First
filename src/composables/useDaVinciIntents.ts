@@ -24,7 +24,7 @@ import {
 // multi-turn `pending` clarification state. `handle()` is synchronous — each
 // surface owns its own thinking delay.
 
-export type DvIntentKind = 'campaign' | 'product' | 'revenue' | 'segment' | 'fallback'
+export type DvIntentKind = 'campaign' | 'product' | 'revenue' | 'segment' | 'engine' | 'fallback'
 
 export type DvCardDescriptor =
   | {
@@ -117,6 +117,9 @@ export function classifyIntent(text: string): DvIntentKind {
     /\b(campaign|promo|promotion|blast|newsletter)\b|send .*(email|campaign)|email .*(blast|campaign)/.test(t)
   ) {
     return 'campaign'
+  }
+  if (/\brecommendation(s)?\s+(engine|widget|type)\b|which\s+(recommendation|engine)|\bengine\b.*\b(use|pick|choose|recommend)\b|shoppers\s+(should\s+)?see/.test(t)) {
+    return 'engine'
   }
   if (/\b(add|create|new|draft|write)\b.*\b(product|item|sku)\b|\bproduct description\b/.test(t)) {
     return 'product'
@@ -236,6 +239,80 @@ export function useDaVinciIntents() {
   }
 
   /** Synchronous — consumes/sets `pending` for multi-turn clarification. */
+  // ── Recommendation-engine advisor (Merchandise → engine wizard hand-off) ──
+  const ENGINE_ADVICE: Record<string, { label: string; why: string; icon: string }> = {
+    popular: { label: 'Popular Products', why: 'best sellers are the safest high-engagement default for broad traffic', icon: 'trending-up' },
+    newest: { label: 'Newest Products', why: 'it keeps returning shoppers seeing your fresh stock first', icon: 'package-plus' },
+    trending: { label: 'Trending Products', why: 'it surfaces items gaining momentum before they peak', icon: 'flame' },
+    personalized: { label: 'Personalized', why: 'it adapts to each shopper’s browsing and purchase history', icon: 'sparkles' },
+    fbt: { label: 'Frequently Purchased Together', why: 'it lifts basket size right where purchase intent is highest', icon: 'shopping-basket' },
+    recent: { label: 'Recently Viewed', why: 'it picks shoppers up exactly where they left off', icon: 'history' },
+  }
+
+  function detectEngineKey(text: string): string | null {
+    const t = text.toLowerCase()
+    if (/popular|best.?sell|top seller/.test(t)) return 'popular'
+    if (/newest|new arrival|fresh|latest/.test(t)) return 'newest'
+    if (/trend/.test(t)) return 'trending'
+    if (/personal|history|behaviou?r/.test(t)) return 'personalized'
+    if (/frequently|together|basket|bundle/.test(t)) return 'fbt'
+    if (/recently viewed|left off|browsed/.test(t)) return 'recent'
+    return null
+  }
+
+  function detectEnginePage(text: string): string | null {
+    const t = text.toLowerCase()
+    if (/home\s?page|homepage|front page/.test(t)) return 'Home'
+    if (/category|listing|plp/.test(t)) return 'Category'
+    if (/product page|pdp/.test(t)) return 'Product'
+    if (/cart|checkout/.test(t)) return 'Cart'
+    if (/custom page/.test(t)) return 'Custom'
+    return null
+  }
+
+  const ENGINE_PAGE_DEFAULTS: Record<string, string> = {
+    Home: 'personalized',
+    Category: 'trending',
+    Product: 'fbt',
+    Cart: 'fbt',
+    Custom: 'popular',
+  }
+
+  function buildEngineAdvice(text: string, context: Record<string, string>): DvIntentResult {
+    const page = detectEnginePage(text) ?? context.page ?? null
+    const key = detectEngineKey(text) ?? (page ? ENGINE_PAGE_DEFAULTS[page] : null) ?? 'personalized'
+    const advice = ENGINE_ADVICE[key] ?? ENGINE_ADVICE.personalized!
+    const where = page ? `your ${page} page` : 'your store'
+    const alternates = Object.entries(ENGINE_ADVICE)
+      .filter(([k]) => k !== key)
+      .slice(0, 2)
+
+    pending.value = { intent: 'engine', slot: 'type', context: { page: page ?? '' } }
+
+    return {
+      intent: 'engine',
+      reply: `For ${where} I’d start with ${advice.label} — ${advice.why}. Show 4–10 products, add Popular Products as a fallback for first-time visitors, and use an Exclude filter to keep low-stock items out. Pick “${advice.label}” in the wizard and the preview updates live.`,
+      speech: `I’d go with ${advice.label} for ${where}.`,
+      cards: [
+        {
+          type: 'insight',
+          props: {
+            headline: `Recommended: ${advice.label}`,
+            description: `Best fit for ${where} — ${advice.why}.`,
+            severity: 'success',
+            icon: advice.icon,
+          },
+        },
+      ],
+      quickReplies: alternates.map(([, alt]) => ({
+        label: `What about ${alt.label}?`,
+        value: `What about ${alt.label}?`,
+        icon: alt.icon,
+      })),
+      pending: pending.value,
+    }
+  }
+
   function handle(text: string): DvIntentResult {
     const trimmed = text.trim()
 
@@ -244,6 +321,9 @@ export function useDaVinciIntents() {
       pending.value = null
       if (p.intent === 'campaign' && p.slot === 'audience') {
         return buildCampaign(findAudience(trimmed) ?? 'all')
+      }
+      if (p.intent === 'engine') {
+        return buildEngineAdvice(trimmed, p.context)
       }
     }
 
@@ -272,6 +352,8 @@ export function useDaVinciIntents() {
         return buildRevenue()
       case 'segment':
         return buildSegment(trimmed)
+      case 'engine':
+        return buildEngineAdvice(trimmed, {})
       default:
         return buildFallback()
     }

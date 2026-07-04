@@ -196,6 +196,18 @@ const voiceOwner = computed(() => (props.headerless ? 'copilot-page' : 'drawer')
 // off-canvas) — copilot.isOpen is the visibility signal for pause/cleanup.
 const surfaceVisible = computed(() => props.headerless || copilot.isOpen)
 
+// Feature surfaces can queue a prompt (copilot.openWithPrompt) — run it as soon
+// as this surface is visible so the panel never opens blank.
+watch(
+  [surfaceVisible, () => copilot.pendingPrompt],
+  ([visible, prompt]) => {
+    if (!visible || !prompt) return
+    const seeded = copilot.consumePendingPrompt()
+    if (seeded) processQuery(seeded)
+  },
+  { immediate: true },
+)
+
 // Voice in → voice out (assistant convention): a mic-dictated query gets a
 // spoken reply even in text mode. Typed queries stay silent unless the
 // persisted "Read replies aloud" toggle is on. Voice mode always speaks.

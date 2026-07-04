@@ -134,6 +134,12 @@ function removeCondition(id: string) {
   draft.value.conditions = draft.value.conditions.filter((c) => c.id !== id)
 }
 
+/* ── Da Vinci hand-off ────────────────────────────────────────── */
+function askDaVinci() {
+  const where = draft.value.page ? `${ENGINE_PAGE_LABELS[draft.value.page]} page` : 'store'
+  copilot.openWithPrompt(`Which recommendation engine should I use on my ${where}? I want to lift conversions.`)
+}
+
 /* ── Fallbacks ────────────────────────────────────────────────── */
 const remainingFallbacks = computed(() =>
   ENGINE_FALLBACK_OPTIONS.filter((f) => !draft.value.fallbacks.includes(f)),
@@ -296,7 +302,7 @@ function performDelete() {
 
         <!-- Step 2: recommendation type -->
         <template v-if="step === 2">
-          <button type="button" class="engine-davinci text-left" @click="copilot.open()">
+          <button type="button" class="engine-davinci text-left" @click="askDaVinci">
             <v-avatar size="36" variant="tonal" color="primary" class="flex-shrink-0">
               <v-icon size="18">sparkles</v-icon>
             </v-avatar>
