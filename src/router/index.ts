@@ -74,6 +74,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/merchandising/search/redirects', name: 'MerchandisingPageRedirects', component: () => import('@/views/Merchandising/PageRedirects.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/collections', name: 'MerchandisingCollections', component: () => import('@/views/Merchandising/Collections.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/default-merchandising', name: 'MerchandisingDefaults', component: () => import('@/views/Merchandising/DefaultMerchandising.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/merchandising/default-merchandising/pinning/:ruleId', name: 'MerchandisingPinning', component: () => import('@/views/Merchandising/PinningEditor.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/recommendations', name: 'MerchandisingRecommendations', component: () => import('@/views/Merchandising/RecommendationEngines.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/merchandising/fields', name: 'MerchandisingFields', component: () => import('@/views/Merchandising/FieldTransformations.vue'), meta: commerceGate },
 
