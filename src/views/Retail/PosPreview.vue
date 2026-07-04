@@ -255,7 +255,7 @@ function clearCart() {
   customerName.value = ''
   attachedCustomerId.value = null
   discountDialogOpen.value = false
-  customerDialogOpen.value = false
+  customerPickerOpen.value = false
 }
 
 /* ── Discount dialog ───────────────────────────────────────────── */
@@ -267,14 +267,64 @@ function applyDiscount() {
   discountDialogOpen.value = false
 }
 
-/* ── Customer dialog ───────────────────────────────────────────── */
-const customerDialogOpen = ref(false)
-const pendingCustomer = ref('')
+/* ── Customer picker (in-frame sheet: search real customers, attach loyalty, inline create) ── */
+const customerPickerOpen = ref(false)
+const customerPickerSearch = ref('')
+const customerPickerMode = ref<'search' | 'create'>('search')
+const customerPickerFieldRef = ref<{ focus: () => void } | null>(null)
 
-function applyCustomer() {
-  customerName.value = pendingCustomer.value
-  attachedCustomerId.value = null // manual name entry — no loyalty profile attached
-  customerDialogOpen.value = false
+const customerPickerResults = computed<PosCustomer[]>(() => {
+  const q = customerPickerSearch.value.trim().toLowerCase()
+  const list = store.posCustomerList.slice().sort((a, b) => b.lifetimeSpend - a.lifetimeSpend)
+  // Empty query → surface top customers by spend so the sheet is never blank
+  if (!q) return list.slice(0, 6)
+  return list.filter((c) =>
+    c.name.toLowerCase().includes(q) ||
+    c.email.toLowerCase().includes(q) ||
+    c.phone.toLowerCase().includes(q),
+  )
+})
+
+function openCustomerPicker() {
+  customerPickerMode.value = 'search'
+  customerPickerSearch.value = ''
+  customerPickerOpen.value = true
+  nextTick(() => customerPickerFieldRef.value?.focus?.())
+}
+
+function attachExistingCustomer(c: PosCustomer) {
+  customerName.value = c.name
+  attachedCustomerId.value = c.id // real loyalty profile rides into checkout
+  customerPickerOpen.value = false
+  flashGridToast(`${c.name} added to sale`)
+}
+
+function attachTopResult() {
+  const top = customerPickerResults.value[0]
+  if (top) attachExistingCustomer(top)
+}
+
+/* Inline create — prefill from the current query, then attach on save */
+function startCreateFromPicker() {
+  const q = customerPickerSearch.value.trim()
+  const looksLikeEmail = q.includes('@')
+  newCustomerDraft.name = looksLikeEmail ? '' : q
+  newCustomerDraft.email = looksLikeEmail ? q : ''
+  newCustomerDraft.phone = ''
+  customerPickerMode.value = 'create'
+}
+
+function createAndAttachCustomer() {
+  if (!newCustomerDraft.name.trim()) return
+  const c = store.addPosCustomer({
+    name: newCustomerDraft.name.trim(),
+    email: newCustomerDraft.email.trim(),
+    phone: newCustomerDraft.phone.trim(),
+  })
+  newCustomerDraft.name = ''
+  newCustomerDraft.email = ''
+  newCustomerDraft.phone = ''
+  attachExistingCustomer(c)
 }
 
 /* ── Attached loyalty customer (rides alongside customerName) ───── */
@@ -546,11 +596,11 @@ const SMART_GRID_TILES: SmartGridTile[] = [
   { key: 'browse',    label: 'Browse products', icon: 'grid-2x2',     color: '#6366f1', action: () => { saleMode.value = 'catalog' } },
   { key: 'custom',    label: 'Add custom sale', icon: 'plus-circle',  color: '#0d9488', action: addCustomSale },
   { key: 'discount',  label: 'Apply discount',  icon: 'percent',      color: '#f59e0b', action: () => { discountDialogOpen.value = true; pendingDiscount.value = discountPct.value } },
-  { key: 'email',     label: 'Email customer',  icon: 'mail',         color: '#8b5cf6', action: () => { customerDialogOpen.value = true; pendingCustomer.value = customerName.value } },
+  { key: 'email',     label: 'Email customer',  icon: 'mail',         color: '#8b5cf6', action: openCustomerPicker },
   { key: 'save',      label: 'Save as draft',   icon: 'bookmark',     color: '#64748b', action: () => flashGridToast('Sale saved as draft') },
   { key: 'ship',      label: 'Ship all items',  icon: 'truck',        color: '#0ea5e9', action: () => flashGridToast('Ship from store flow opened') },
   { key: 'note',      label: 'Add note',        icon: 'sticky-note',  color: '#f43f5e', action: () => flashGridToast('Note attached to sale') },
-  { key: 'loyalty',   label: 'Loyalty lookup',  icon: 'user-search',  color: '#10b981', action: () => { posView.value = 'customers' } },
+  { key: 'loyalty',   label: 'Loyalty lookup',  icon: 'user-search',  color: '#10b981', action: openCustomerPicker },
 ]
 
 /* ── Get App — device-conditional install flow ──────────────────── */
@@ -845,7 +895,7 @@ const apkQrUrl = computed(() =>
                         <v-icon size="13">plus</v-icon>
                         Custom item
                       </button>
-                      <button class="pos-empty-chip" @click="customerDialogOpen = true; pendingCustomer = customerName">
+                      <button class="pos-empty-chip" @click="openCustomerPicker">
                         <v-icon size="13">user-plus</v-icon>
                         Add customer
                       </button>
@@ -894,7 +944,7 @@ const apkQrUrl = computed(() =>
                   <button class="pos-secondary-btn" @click="discountDialogOpen = true; pendingDiscount = discountPct" title="Discount">
                     <v-icon size="14">percent</v-icon>
                   </button>
-                  <button class="pos-secondary-btn" @click="customerDialogOpen = true; pendingCustomer = customerName" title="Customer">
+                  <button class="pos-secondary-btn" @click="openCustomerPicker" title="Customer">
                     <v-icon size="14">user-plus</v-icon>
                   </button>
                   <button class="pos-secondary-btn" @click="clearCart" title="Clear sale">
@@ -1366,6 +1416,155 @@ const apkQrUrl = computed(() =>
             </div>
           </transition>
 
+          <!-- ── Customer picker sheet (search real customers, attach loyalty, inline create) ── -->
+          <transition name="pos-variant-up">
+            <div
+              v-if="customerPickerOpen"
+              class="pos-variant-overlay"
+              @click.self="customerPickerOpen = false"
+            >
+              <div class="pos-variant-sheet pos-customer-picker">
+                <div class="pos-variant-sheet__grabber" />
+
+                <!-- SEARCH MODE -->
+                <template v-if="customerPickerMode === 'search'">
+                  <div class="pos-variant-sheet__header">
+                    <div class="pos-variant-sheet__info">
+                      <div class="pos-variant-sheet__title">Attach customer</div>
+                      <div class="pos-variant-sheet__sub">Link loyalty, purchase history &amp; receipts</div>
+                    </div>
+                    <button class="pos-variant-sheet__close" @click="customerPickerOpen = false">
+                      <v-icon size="14">x</v-icon>
+                    </button>
+                  </div>
+
+                  <!-- Currently attached -->
+                  <div v-if="attachedCustomer" class="pos-customer-picker__attached">
+                    <div class="pos-customer-row__avatar" :style="{ background: tileGradient(attachedCustomer.id) }">{{ customerInitials(attachedCustomer.name) }}</div>
+                    <div class="pos-customer-picker__attached-body">
+                      <div class="pos-customer-picker__attached-name">
+                        {{ attachedCustomer.name }}
+                        <span class="pos-tier-chip" :class="`pos-tier-chip--${attachedCustomer.tier}`">{{ LOYALTY_TIER_LABELS[attachedCustomer.tier] }}</span>
+                      </div>
+                      <div class="pos-customer-picker__attached-meta">On this sale · {{ attachedCustomer.points.toLocaleString() }} pts</div>
+                    </div>
+                    <button class="pos-customer-picker__remove" @click="detachCustomer">Remove</button>
+                  </div>
+
+                  <!-- Search -->
+                  <div class="pos-customer-picker__search">
+                    <v-text-field
+                      ref="customerPickerFieldRef"
+                      v-model="customerPickerSearch"
+                      placeholder="Search name, email or phone"
+                      density="compact"
+                      variant="solo"
+                      flat
+                      prepend-inner-icon="search"
+                      hide-details
+                      clearable
+                      bg-color="surface"
+                      rounded="lg"
+                      style="font-size: 13px;"
+                      @keydown.enter="attachTopResult"
+                    />
+                  </div>
+
+                  <!-- Results -->
+                  <div class="pos-variant-sheet__list pos-customer-picker__list">
+                    <div v-if="!customerPickerSearch.trim()" class="pos-customer-picker__section">Top customers</div>
+                    <button
+                      v-for="c in customerPickerResults"
+                      :key="c.id"
+                      class="pos-customer-row"
+                      :class="{ 'pos-customer-row--selected': attachedCustomerId === c.id }"
+                      @click="attachExistingCustomer(c)"
+                    >
+                      <div class="pos-customer-row__avatar" :style="{ background: tileGradient(c.id) }">{{ customerInitials(c.name) }}</div>
+                      <div class="pos-customer-row__body">
+                        <div class="pos-customer-row__name">{{ c.name }}</div>
+                        <div class="pos-customer-row__email">{{ c.email }}</div>
+                      </div>
+                      <div class="pos-customer-row__chips">
+                        <span class="pos-tier-chip" :class="`pos-tier-chip--${c.tier}`">{{ LOYALTY_TIER_LABELS[c.tier] }}</span>
+                        <span class="pos-customer-row__spend">{{ fmt(c.lifetimeSpend) }}</span>
+                      </div>
+                    </button>
+
+                    <div v-if="customerPickerResults.length === 0" class="pos-customer-picker__empty">
+                      <v-icon size="26" color="#9ca3af">user-search</v-icon>
+                      <div class="pos-customer-picker__empty-title">No match for “{{ customerPickerSearch.trim() }}”</div>
+                    </div>
+                  </div>
+
+                  <!-- Create CTA -->
+                  <button class="pos-customer-picker__create-cta" @click="startCreateFromPicker">
+                    <v-icon size="16">user-plus</v-icon>
+                    <span>Create new customer<template v-if="customerPickerSearch.trim()"> “{{ customerPickerSearch.trim() }}”</template></span>
+                  </button>
+                </template>
+
+                <!-- CREATE MODE -->
+                <template v-else>
+                  <div class="pos-variant-sheet__header">
+                    <button class="pos-customer-picker__back" @click="customerPickerMode = 'search'">
+                      <v-icon size="15">chevron-left</v-icon>
+                    </button>
+                    <div class="pos-variant-sheet__info">
+                      <div class="pos-variant-sheet__title">New customer</div>
+                      <div class="pos-variant-sheet__sub">Add to loyalty &amp; attach to this sale</div>
+                    </div>
+                    <button class="pos-variant-sheet__close" @click="customerPickerOpen = false">
+                      <v-icon size="14">x</v-icon>
+                    </button>
+                  </div>
+
+                  <div class="pos-customer-picker__form">
+                    <v-text-field
+                      v-model="newCustomerDraft.name"
+                      label="Full name"
+                      variant="outlined"
+                      density="compact"
+                      prepend-inner-icon="user"
+                      hide-details
+                      class="mb-2"
+                      @keydown.enter="createAndAttachCustomer"
+                    />
+                    <v-text-field
+                      v-model="newCustomerDraft.email"
+                      label="Email"
+                      variant="outlined"
+                      density="compact"
+                      prepend-inner-icon="mail"
+                      hide-details
+                      class="mb-2"
+                      @keydown.enter="createAndAttachCustomer"
+                    />
+                    <v-text-field
+                      v-model="newCustomerDraft.phone"
+                      label="Phone"
+                      variant="outlined"
+                      density="compact"
+                      prepend-inner-icon="phone"
+                      hide-details
+                      @keydown.enter="createAndAttachCustomer"
+                    />
+                    <div class="pos-customer-picker__form-actions">
+                      <button class="pos-sheet-cancel" @click="customerPickerMode = 'search'">Back</button>
+                      <button
+                        class="pos-customer-picker__save"
+                        :class="{ 'pos-customer-picker__save--disabled': !newCustomerDraft.name.trim() }"
+                        @click="createAndAttachCustomer"
+                      >
+                        Create &amp; attach
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </transition>
+
           <!-- ── Transaction detail sheet ─────────────────────── -->
           <transition name="pos-variant-up">
             <div v-if="detailTxn" class="pos-variant-overlay" @click.self="closeTxnDetail">
@@ -1536,24 +1735,6 @@ const apkQrUrl = computed(() =>
         <div class="d-flex justify-end gap-2 mt-3">
           <v-btn variant="text" class="text-none" @click="discountDialogOpen = false">Cancel</v-btn>
           <v-btn color="primary" variant="flat" class="text-none" @click="applyDiscount">Apply</v-btn>
-        </div>
-      </v-card>
-    </v-dialog>
-
-    <!-- Customer dialog -->
-    <v-dialog v-model="customerDialogOpen" max-width="360">
-      <v-card rounded="lg" class="pa-5">
-        <div class="text-subtitle-1 font-weight-bold mb-3">Attach customer</div>
-        <v-text-field
-          v-model="pendingCustomer"
-          label="Customer name or email"
-          variant="outlined"
-          density="compact"
-          prepend-inner-icon="user"
-        />
-        <div class="d-flex justify-end gap-2 mt-3">
-          <v-btn variant="text" class="text-none" @click="customerDialogOpen = false">Cancel</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" @click="applyCustomer">Attach</v-btn>
         </div>
       </v-card>
     </v-dialog>
@@ -2973,6 +3154,165 @@ $pos-bg: #f4f4f5;
 }
 .pos-variant-up-leave-active {
   animation: pos-sheet-up 160ms cubic-bezier(0.55, 0, 1, 0.45) reverse;
+}
+
+/* ── Customer picker sheet ─────────────────────────────────────── */
+.pos-customer-picker {
+  max-height: 84%;
+
+  &__attached {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 14px 0;
+    padding: 9px 10px 9px 12px;
+    border-radius: 12px;
+    background: color-mix(in oklch, var(--cloud-retail-accent, #0d9488) 8%, transparent);
+    border: 1px solid color-mix(in oklch, var(--cloud-retail-accent, #0d9488) 22%, transparent);
+    flex-shrink: 0;
+
+    &-body { flex: 1; min-width: 0; }
+
+    &-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: $pos-ink;
+    }
+
+    &-meta {
+      font-size: 11px;
+      color: $pos-muted;
+      margin-top: 2px;
+    }
+  }
+
+  &__remove {
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: $pos-muted;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 7px;
+    flex-shrink: 0;
+
+    &:hover { color: #dc2626; background: rgba(220, 38, 38, 0.08); }
+  }
+
+  &__search {
+    padding: 10px 14px 8px;
+    flex-shrink: 0;
+
+    :deep(.v-field) {
+      background: $pos-bg !important;
+      border-radius: 10px !important;
+    }
+    :deep(.v-field:focus-within) {
+      box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.06);
+    }
+  }
+
+  &__section {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $pos-muted;
+    padding: 2px 14px 6px;
+  }
+
+  &__list { flex: 1; }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 26px 20px;
+    text-align: center;
+
+    &-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: $pos-muted;
+    }
+  }
+
+  &__create-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 8px 14px;
+    padding: 12px;
+    border: 1px dashed color-mix(in oklch, var(--cloud-retail-accent, #0d9488) 45%, $pos-hairline);
+    border-radius: 12px;
+    background: $pos-surface;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cloud-retail-accent, #0d9488);
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover { background: color-mix(in oklch, var(--cloud-retail-accent, #0d9488) 6%, transparent); }
+
+    span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  &__back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: rgba(17, 24, 39, 0.07);
+    border-radius: 50%;
+    cursor: pointer;
+    color: $pos-muted;
+    flex-shrink: 0;
+
+    &:hover { background: rgba(17, 24, 39, 0.12); }
+  }
+
+  &__form {
+    padding: 14px;
+    overflow-y: auto;
+  }
+
+  &__form-actions {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  &__save {
+    border: none;
+    border-radius: 12px;
+    background: var(--cloud-retail-accent, #0d9488);
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 13px;
+    transition: filter 100ms;
+
+    &:hover { filter: brightness(1.05); }
+
+    &--disabled { opacity: 0.5; pointer-events: none; }
+  }
 }
 
 /* ── Cart line enter animation ─────────────────────────────────── */
