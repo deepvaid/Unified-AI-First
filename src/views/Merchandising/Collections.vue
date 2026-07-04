@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -10,8 +11,21 @@ import {
   type SmartCollection,
 } from '@/stores/useMerchandising'
 
+const route = useRoute()
+const router = useRouter()
 const store = useMerchandisingStore()
 const search = ref('')
+
+/** Open the Default Merchandising pinning editor for this collection. */
+function editPins(collection: SmartCollection) {
+  const base = `/commerce/${route.params.accountId}/merchandising/default-merchandising`
+  const existing = store.pinningRuleList.find((r) => r.collectionId === collection.id)
+  if (existing) {
+    router.push(`${base}/pinning/${existing.id}`)
+  } else {
+    router.push(`${base}/pinning/new?collection=${collection.id}`)
+  }
+}
 const filterType = ref<'all' | 'manual' | 'synced'>('all')
 
 const headers = [
@@ -119,7 +133,7 @@ function onToggle(collection: SmartCollection) {
               />
             </template>
             <v-list density="compact" min-width="180">
-              <v-list-item prepend-icon="pencil" title="Edit" @click="showToast('Edit — coming soon')" />
+              <v-list-item prepend-icon="pin" title="Edit pins" @click="editPins(item)" />
               <v-list-item prepend-icon="copy" title="Duplicate" @click="showToast('Duplicated')" />
               <v-list-item
                 :prepend-icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"

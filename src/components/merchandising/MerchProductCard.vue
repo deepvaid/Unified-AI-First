@@ -8,10 +8,13 @@ withDefaults(defineProps<{
   rank?: number
   selected?: boolean
   selectable?: boolean
+  /** false renders a read-only card (no pin/select affordances), e.g. rule previews */
+  interactive?: boolean
 }>(), {
   pinned: false,
   selected: false,
   selectable: true,
+  interactive: true,
 })
 
 const emit = defineEmits<{
@@ -37,7 +40,7 @@ const emit = defineEmits<{
       <span v-if="rank != null" class="merch-card__rank">{{ rank }}</span>
 
       <v-checkbox-btn
-        v-if="selectable"
+        v-if="interactive && selectable"
         class="merch-card__check"
         :class="{ 'merch-card__check--visible': selected }"
         :model-value="selected"
@@ -48,6 +51,7 @@ const emit = defineEmits<{
       />
 
       <v-btn
+        v-if="interactive"
         class="merch-card__pin"
         :class="{ 'merch-card__pin--visible': pinned }"
         :icon="pinned ? 'pin-off' : 'pin'"
