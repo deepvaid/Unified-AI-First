@@ -208,15 +208,34 @@ function buildNavGroups(accountId: string): NavGroup[] {
       title: 'Merchandise',
       icon: 'sliders-horizontal',
       requires: 'commerce',
-      singleRoute: `/commerce/${accountId}/merchandising/collections`,
+      singleRoute: `/commerce/${accountId}/merchandising`,
       items: [
-        { title: 'Collections',            route: `/commerce/${accountId}/merchandising/collections` },
-        { title: 'Default Merchandising',  route: `/commerce/${accountId}/merchandising/default-merchandising` },
-        { title: 'Recommendation Engines', route: `/commerce/${accountId}/merchandising/recommendations` },
-        { title: 'Field Transformations',  route: `/commerce/${accountId}/merchandising/fields` },
-        { title: 'Synonyms',               route: `/commerce/${accountId}/merchandising/search/synonyms` },
-        { title: 'Search Preview',         route: `/commerce/${accountId}/merchandising/search/preview` },
-        { title: 'Page Redirects',         route: `/commerce/${accountId}/merchandising/search/redirects` },
+        {
+          title: 'Overview',
+          isSubGroup: true,
+          items: [
+            { title: 'Overview', route: `/commerce/${accountId}/merchandising` },
+          ],
+        },
+        {
+          title: 'Storefront',
+          isSubGroup: true,
+          items: [
+            { title: 'Collections',            route: `/commerce/${accountId}/merchandising/collections` },
+            { title: 'Default Merchandising',  route: `/commerce/${accountId}/merchandising/default-merchandising` },
+            { title: 'Recommendation Engines', route: `/commerce/${accountId}/merchandising/recommendations` },
+          ],
+        },
+        {
+          title: 'Search',
+          isSubGroup: true,
+          items: [
+            { title: 'Synonyms',       route: `/commerce/${accountId}/merchandising/search/synonyms` },
+            { title: 'Page Redirects', route: `/commerce/${accountId}/merchandising/search/redirects` },
+            { title: 'Search Preview', route: `/commerce/${accountId}/merchandising/search/preview` },
+          ],
+        },
+        { title: 'Field Transformations', route: `/commerce/${accountId}/merchandising/fields` },
       ],
     },
     {
@@ -384,7 +403,16 @@ function isSubGroup(item: NavItem | NavSubGroup): item is NavSubGroup {
 
 // ─── Module-active prefix matching ─────────────────────────
 function routeMatches(target: string): boolean {
-  return route.path === target || route.path.startsWith(`${target}/`)
+  if (route.path === target) return true
+  if (!route.path.startsWith(`${target}/`)) return false
+  // Don't light up a parent hub (e.g. /merchandising) when a more specific
+  // sibling route (e.g. /merchandising/collections) matches the current path.
+  const allRoutes = navGroups.value.flatMap(collectGroupRoutes)
+  return !allRoutes.some((r) =>
+    r !== target
+    && r.length > target.length
+    && (route.path === r || route.path.startsWith(`${r}/`)),
+  )
 }
 
 function collectGroupRoutes(group: NavGroup): string[] {
@@ -747,7 +775,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                     :key="child.title"
                     type="button"
                     class="rail-flyout-item"
-                    :class="{ 'rail-flyout-item--active': route.path.startsWith(child.route) }"
+                    :class="{ 'rail-flyout-item--active': routeMatches(child.route) }"
                     @click="goTo(child.route); railHoveredSubGroup = null"
                     @mouseenter="railHoveredSubGroup = null"
                   ><span>{{ child.title }}</span>
@@ -762,7 +790,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                   :key="flat.title"
                   type="button"
                   class="rail-flyout-item"
-                  :class="{ 'rail-flyout-item--active': route.path.startsWith(flat.route) }"
+                  :class="{ 'rail-flyout-item--active': routeMatches(flat.route) }"
                   @click="goTo(flat.route); railHoveredSubGroup = null"
                   @mouseenter="railHoveredSubGroup = null"
                 ><span>{{ flat.title }}</span>
