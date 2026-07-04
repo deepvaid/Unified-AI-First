@@ -7,10 +7,14 @@ import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import {
   useMerchandisingStore,
   engineRecommendationPreview,
+  engineTypesForPage,
   ENGINE_TYPE_LABELS,
   ENGINE_TYPE_DESCRIPTIONS,
   ENGINE_TYPE_ICONS,
   ENGINE_PAGE_LABELS,
+  ENGINE_PAGE_DESCRIPTIONS,
+  ENGINE_PAGE_ICONS,
+  ENGINE_FALLBACK_OPTIONS,
   MERCH_FIELD_OPTIONS,
   type EnginePage,
   type EngineType,
@@ -29,37 +33,60 @@ const isNew = computed(() => engineId.value === 'new')
 const sourceEngine = computed(() => (isNew.value ? null : store.getEngine(engineId.value)))
 const notFound = computed(() => !isNew.value && !sourceEngine.value)
 
-/* ── Wizard stage (new engines pick a type first) ─────────────── */
-const stage = ref<'type' | 'config'>(isNew.value ? 'type' : 'config')
-
-const ENGINE_TYPES = Object.keys(ENGINE_TYPE_LABELS) as EngineType[]
-
 /* ── Editable draft ───────────────────────────────────────────── */
 const draft = ref({
   name: sourceEngine.value?.name ?? '',
-  page: (sourceEngine.value?.page ?? 'product') as EnginePage,
-  type: (sourceEngine.value?.type ?? 'personalized') as EngineType,
-  productCount: sourceEngine.value?.productCount ?? 8,
+  page: (sourceEngine.value?.page ?? null) as EnginePage | null,
+  type: (sourceEngine.value?.type ?? null) as EngineType | null,
+  minProducts: sourceEngine.value?.minProducts ?? 4,
+  maxProducts: sourceEngine.value?.maxProducts ?? 10,
+  fallbacks: [...(sourceEngine.value?.fallbacks ?? [])],
+  notes: sourceEngine.value?.notes ?? '',
   conditions: (sourceEngine.value?.conditions ?? []).map((c) => ({ ...c, values: [...c.values] })),
 })
 const savedSnapshot = ref(JSON.stringify(draft.value))
 const dirty = computed(() => JSON.stringify(draft.value) !== savedSnapshot.value)
-const canSave = computed(() => (dirty.value || isNew.value) && draft.value.name.trim().length > 0)
 
-function chooseType(type: EngineType) {
-  draft.value.type = type
-  if (!draft.value.name) draft.value.name = ENGINE_TYPE_LABELS[type]
-  stage.value = 'config'
-}
+/* ── Wizard: Page type → Recommendation type → Settings → Filters ── */
+const step = ref(1)
 
-const pageOptions = Object.entries(ENGINE_PAGE_LABELS).map(([value, title]) => ({
-  title: `${title} page`,
-  value,
-}))
+const PAGES = Object.keys(ENGINE_PAGE_LABELS) as EnginePage[]
+const availableTypes = computed(() => (draft.value.page ? engineTypesForPage(draft.value.page) : []))
 
-const countOptions = [4, 8, 12].map((n) => ({ title: `${n} products`, value: n }))
+// A context-dependent type becomes invalid if the page changes beneath it
+watch(() => draft.value.page, () => {
+  if (draft.value.type && !availableTypes.value.includes(draft.value.type)) draft.value.type = null
+})
 
-/* ── Filters (include/exclude only) ───────────────────────────── */
+const countsValid = computed(() =>
+  draft.value.minProducts >= 1 && draft.value.maxProducts >= draft.value.minProducts && draft.value.maxProducts <= 24,
+)
+
+const stepValid = computed(() => {
+  if (step.value === 1) return draft.value.page !== null
+  if (step.value === 2) return draft.value.type !== null
+  if (step.value === 3) return countsValid.value
+  return true
+})
+
+const canSave = computed(() =>
+  draft.value.name.trim().length > 0
+  && draft.value.page !== null
+  && draft.value.type !== null
+  && countsValid.value
+  && (dirty.value || isNew.value),
+)
+
+const stepLabels = computed(() => [
+  draft.value.page ? `${ENGINE_PAGE_LABELS[draft.value.page]} page` : 'Page type',
+  draft.value.type ? ENGINE_TYPE_LABELS[draft.value.type] : 'Recommendation type',
+  'Settings',
+  'Filters',
+])
+
+const STEP_TITLES = ['Select page type', 'Select recommendation type', 'General settings', 'Filters']
+
+/* ── Filters (include/exclude) ────────────────────────────────── */
 const editingId = ref<string | null>(null)
 const conditionDraft = ref<{ action: 'include' | 'exclude'; field: string; values: string[] }>({
   action: 'include', field: '', values: [],
@@ -105,25 +132,44 @@ function removeCondition(id: string) {
   draft.value.conditions = draft.value.conditions.filter((c) => c.id !== id)
 }
 
-/* ── Preview ──────────────────────────────────────────────────── */
-const previewProducts = computed(() =>
-  engineRecommendationPreview(draft.value, store.merchProductList),
+/* ── Fallbacks ────────────────────────────────────────────────── */
+const remainingFallbacks = computed(() =>
+  ENGINE_FALLBACK_OPTIONS.filter((f) => !draft.value.fallbacks.includes(f)),
 )
+
+/* ── Preview (Filters step) ───────────────────────────────────── */
+const previewProducts = computed(() => {
+  if (!draft.value.type) return []
+  return engineRecommendationPreview(
+    { type: draft.value.type, conditions: draft.value.conditions, maxProducts: draft.value.maxProducts },
+    store.merchProductList,
+  )
+})
 
 /* ── Save / delete ────────────────────────────────────────────── */
 const saveSnack = ref(false)
 const confirmDelete = ref(false)
 
 function save() {
-  if (!canSave.value) return
+  if (!canSave.value || !draft.value.page || !draft.value.type) return
+  const payload = {
+    name: draft.value.name,
+    page: draft.value.page,
+    type: draft.value.type,
+    minProducts: draft.value.minProducts,
+    maxProducts: draft.value.maxProducts,
+    fallbacks: draft.value.fallbacks,
+    notes: draft.value.notes,
+    conditions: draft.value.conditions,
+  }
   if (isNew.value) {
-    const created = store.createEngine({ ...draft.value })
+    const created = store.createEngine(payload)
     savedSnapshot.value = JSON.stringify(draft.value)
     saveSnack.value = true
     router.replace(`${listRoute.value}/${created.id}`)
     return
   }
-  store.saveEngine({ id: engineId.value, ...draft.value })
+  store.saveEngine({ id: engineId.value, ...payload })
   savedSnapshot.value = JSON.stringify(draft.value)
   saveSnack.value = true
 }
@@ -133,236 +179,332 @@ function performDelete() {
   confirmDelete.value = false
   router.push(listRoute.value)
 }
-
-const subtitle = computed(() => {
-  if (!isNew.value) return `${ENGINE_TYPE_LABELS[draft.value.type]} · ${ENGINE_PAGE_LABELS[draft.value.page]} page`
-  return stage.value === 'type'
-    ? 'Step 1 of 2 · Choose an engine type'
-    : 'Step 2 of 2 · Configure and preview'
-})
 </script>
 
 <template>
   <div v-if="!notFound" class="d-flex flex-column gap-4">
     <MpPageHeader
-      :title="isNew && stage === 'type' ? 'New engine' : (draft.name || 'New engine')"
-      :subtitle="subtitle"
+      :title="isNew ? 'New recommendation engine' : (draft.name || 'Edit engine')"
+      :subtitle="`Step ${step} of 4 · ${STEP_TITLES[step - 1]}`"
       :back-to="listRoute"
     >
       <template #actions>
-        <template v-if="stage === 'config'">
-          <v-btn
-            v-if="!isNew"
-            variant="flat"
-            color="surface"
-            class="text-none"
-            prepend-icon="trash-2"
-            @click="confirmDelete = true"
-          >
-            Delete
-          </v-btn>
-          <v-btn
-            color="primary"
-            variant="flat"
-            class="text-none"
-            prepend-icon="check"
-            :disabled="!canSave"
-            @click="save"
-          >
-            {{ isNew ? 'Create engine' : 'Save' }}
-          </v-btn>
-        </template>
+        <v-btn variant="text" class="text-none text-medium-emphasis" @click="router.push(listRoute)">Cancel</v-btn>
+        <v-btn
+          v-if="!isNew"
+          variant="flat"
+          color="surface"
+          class="text-none"
+          prepend-icon="trash-2"
+          @click="confirmDelete = true"
+        >
+          Delete
+        </v-btn>
+        <v-btn
+          v-if="step > 1"
+          variant="flat"
+          color="surface"
+          class="text-none"
+          prepend-icon="arrow-left"
+          @click="step -= 1"
+        >
+          Back
+        </v-btn>
+        <v-btn
+          v-if="step < 4"
+          color="primary"
+          variant="flat"
+          class="text-none"
+          append-icon="arrow-right"
+          :disabled="!stepValid"
+          @click="step += 1"
+        >
+          Next
+        </v-btn>
+        <v-btn
+          v-else
+          color="primary"
+          variant="flat"
+          class="text-none"
+          prepend-icon="check"
+          :disabled="!canSave"
+          @click="save"
+        >
+          {{ isNew ? 'Create engine' : 'Save' }}
+        </v-btn>
       </template>
     </MpPageHeader>
 
-    <!-- Step 1: type picker -->
-    <div v-if="stage === 'type'" class="engine-type-grid">
+    <!-- Persistent name + step indicator -->
+    <div class="d-flex align-center gap-4 flex-wrap">
+      <v-text-field
+        v-model="draft.name"
+        label="Engine name"
+        variant="outlined"
+        density="comfortable"
+        hide-details
+        class="engine-name-field"
+      />
+      <div class="engine-steps d-flex align-center gap-2 flex-wrap">
+        <template v-for="(label, index) in stepLabels" :key="index">
+          <v-divider v-if="index > 0" class="engine-steps__line" />
+          <button
+            type="button"
+            class="engine-step"
+            :class="{
+              'engine-step--active': step === index + 1,
+              'engine-step--done': step > index + 1,
+            }"
+            :disabled="index + 1 > step && !stepValid"
+            @click="index + 1 <= step ? (step = index + 1) : null"
+          >
+            <span class="engine-step__index">
+              <v-icon v-if="step > index + 1" size="12">check</v-icon>
+              <template v-else>{{ index + 1 }}</template>
+            </span>
+            {{ label }}
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- Step 1: page type -->
+    <div v-if="step === 1" class="engine-type-grid">
       <button
-        v-for="type in ENGINE_TYPES"
+        v-for="page in PAGES"
+        :key="page"
+        type="button"
+        class="engine-type-card text-left"
+        :class="{ 'engine-type-card--selected': draft.page === page }"
+        @click="draft.page = page"
+      >
+        <v-avatar size="40" variant="tonal" color="primary" class="mb-3">
+          <v-icon size="20">{{ ENGINE_PAGE_ICONS[page] }}</v-icon>
+        </v-avatar>
+        <div class="text-body-2 font-weight-bold mb-1">{{ ENGINE_PAGE_LABELS[page] }} Page</div>
+        <div class="text-caption text-medium-emphasis">{{ ENGINE_PAGE_DESCRIPTIONS[page] }}</div>
+      </button>
+    </div>
+
+    <!-- Step 2: recommendation type -->
+    <div v-else-if="step === 2" class="engine-type-grid">
+      <button
+        v-for="type in availableTypes"
         :key="type"
         type="button"
         class="engine-type-card text-left"
-        @click="chooseType(type)"
+        :class="{ 'engine-type-card--selected': draft.type === type }"
+        @click="draft.type = type"
       >
-        <v-avatar size="40" variant="tonal" color="primary" class="mb-3">
-          <v-icon size="20">{{ ENGINE_TYPE_ICONS[type] }}</v-icon>
-        </v-avatar>
+        <div class="d-flex align-center justify-space-between mb-3">
+          <v-avatar size="40" variant="tonal" color="primary">
+            <v-icon size="20">{{ ENGINE_TYPE_ICONS[type] }}</v-icon>
+          </v-avatar>
+          <v-chip v-if="type === 'personalized'" size="x-small" color="primary" variant="flat">AI powered</v-chip>
+        </div>
         <div class="text-body-2 font-weight-bold mb-1">{{ ENGINE_TYPE_LABELS[type] }}</div>
         <div class="text-caption text-medium-emphasis">{{ ENGINE_TYPE_DESCRIPTIONS[type] }}</div>
       </button>
     </div>
 
-    <!-- Step 2: config + preview -->
-    <div v-else class="engine-layout d-flex gap-4 align-start">
-      <div class="engine-editor d-flex flex-column gap-4 flex-grow-1">
-        <v-card variant="flat" border rounded="lg" class="pa-5">
-          <div class="d-flex align-center justify-space-between mb-4">
-            <div class="d-flex align-center gap-3">
-              <v-avatar size="36" variant="tonal" color="primary">
-                <v-icon size="18">{{ ENGINE_TYPE_ICONS[draft.type] }}</v-icon>
-              </v-avatar>
-              <div>
-                <div class="text-subtitle-2 font-weight-bold">{{ ENGINE_TYPE_LABELS[draft.type] }}</div>
-                <div class="text-caption text-medium-emphasis">{{ ENGINE_TYPE_DESCRIPTIONS[draft.type] }}</div>
-              </div>
-            </div>
-            <v-btn
-              v-if="isNew"
-              variant="text"
-              size="small"
-              class="text-none text-medium-emphasis"
-              @click="stage = 'type'"
-            >
-              Change type
-            </v-btn>
-          </div>
+    <!-- Step 3: settings -->
+    <v-card v-else-if="step === 3" variant="flat" border rounded="lg" class="pa-5 engine-settings">
+      <div class="text-subtitle-2 font-weight-bold mb-1">Number of products displayed</div>
+      <div class="text-body-2 text-medium-emphasis mb-3">
+        The widget renders between the minimum and maximum, depending on available results.
+      </div>
+      <div class="d-flex gap-3 mb-5">
+        <v-number-input
+          v-model="draft.minProducts"
+          label="Min"
+          :min="1"
+          :max="draft.maxProducts"
+          variant="outlined"
+          density="comfortable"
+          hide-details
+          control-variant="stacked"
+          class="engine-count-field"
+        />
+        <v-number-input
+          v-model="draft.maxProducts"
+          label="Max"
+          :min="draft.minProducts"
+          :max="24"
+          variant="outlined"
+          density="comfortable"
+          hide-details
+          control-variant="stacked"
+          class="engine-count-field"
+        />
+      </div>
 
-          <v-text-field
-            v-model="draft.name"
-            label="Engine name"
-            variant="outlined"
-            density="comfortable"
-            class="mb-3"
-          />
+      <v-divider class="mb-5" style="opacity: 0.5" />
+
+      <div class="text-subtitle-2 font-weight-bold mb-1">Fallbacks</div>
+      <div class="text-body-2 text-medium-emphasis mb-3">
+        Shown when the engine doesn’t have enough data for a shopper — applied in order.
+      </div>
+      <div class="d-flex align-center gap-2 flex-wrap mb-5">
+        <v-chip
+          v-for="fallback in draft.fallbacks"
+          :key="fallback"
+          size="small"
+          variant="tonal"
+          closable
+          @click:close="draft.fallbacks = draft.fallbacks.filter((f) => f !== fallback)"
+        >
+          {{ fallback }}
+        </v-chip>
+        <v-menu v-if="remainingFallbacks.length" location="bottom start">
+          <template #activator="{ props: menuProps }">
+            <v-btn v-bind="menuProps" variant="flat" color="surface" size="small" class="text-none" prepend-icon="plus">
+              Add fallback
+            </v-btn>
+          </template>
+          <v-list density="compact" rounded="lg" min-width="200" elevation="3" class="py-1">
+            <v-list-item
+              v-for="fallback in remainingFallbacks"
+              :key="fallback"
+              :title="fallback"
+              @click="draft.fallbacks.push(fallback)"
+            />
+          </v-list>
+        </v-menu>
+        <span v-if="!draft.fallbacks.length" class="text-caption text-medium-emphasis">No fallbacks selected.</span>
+      </div>
+
+      <v-divider class="mb-5" style="opacity: 0.5" />
+
+      <v-textarea
+        v-model="draft.notes"
+        label="Notes"
+        placeholder="Internal notes about this engine…"
+        variant="outlined"
+        density="comfortable"
+        rows="3"
+        hide-details
+      />
+    </v-card>
+
+    <!-- Step 4: filters + preview -->
+    <div v-else class="engine-layout d-flex gap-4 align-start">
+      <v-card variant="flat" border rounded="lg" class="flex-grow-1 engine-filters">
+        <div class="d-flex align-center justify-space-between px-5 py-4">
+          <div>
+            <span class="text-subtitle-2 font-weight-bold">Filters</span>
+            <span class="text-caption text-medium-emphasis ml-2">Narrow which products the engine may recommend</span>
+          </div>
+          <v-btn
+            color="primary"
+            variant="flat"
+            size="small"
+            class="text-none"
+            prepend-icon="plus"
+            :disabled="editingId !== null"
+            @click="startAddCondition"
+          >
+            Add filter
+          </v-btn>
+        </div>
+        <v-divider />
+
+        <div v-if="editingId !== null" class="engine-condition-form px-5 py-4 d-flex flex-column gap-3">
           <div class="d-flex gap-3 flex-wrap">
             <v-select
-              v-model="draft.page"
-              :items="pageOptions"
-              label="Placement"
+              v-model="conditionDraft.action"
+              :items="[{ title: 'Include', value: 'include' }, { title: 'Exclude', value: 'exclude' }]"
+              label="Action"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               hide-details
-              class="flex-grow-1"
+              class="engine-field-action"
             />
             <v-select
-              v-model="draft.productCount"
-              :items="countOptions"
-              label="Products shown"
+              v-model="conditionDraft.field"
+              :items="fieldOptions"
+              label="Field"
               variant="outlined"
-              density="comfortable"
+              density="compact"
               hide-details
-              class="flex-grow-1"
+              class="engine-field-field"
+            />
+            <v-select
+              v-model="conditionDraft.values"
+              :items="valueOptions"
+              label="Values"
+              variant="outlined"
+              density="compact"
+              hide-details
+              multiple
+              chips
+              closable-chips
+              :disabled="!conditionDraft.field"
+              class="flex-grow-1 engine-field-values"
             />
           </div>
-        </v-card>
-
-        <!-- Filters -->
-        <v-card variant="flat" border rounded="lg">
-          <div class="d-flex align-center justify-space-between px-5 py-4">
-            <div>
-              <span class="text-subtitle-2 font-weight-bold">Filters</span>
-              <span class="text-caption text-medium-emphasis ml-2">Narrow which products the engine may recommend</span>
-            </div>
+          <div class="d-flex justify-end gap-2">
+            <v-btn variant="text" size="small" class="text-none" @click="editingId = null">Cancel</v-btn>
             <v-btn
               color="primary"
               variant="flat"
               size="small"
               class="text-none"
-              prepend-icon="plus"
-              :disabled="editingId !== null"
-              @click="startAddCondition"
+              :disabled="!conditionValid"
+              @click="confirmCondition"
             >
-              Add filter
+              {{ editingId === 'new' ? 'Add' : 'Update' }}
             </v-btn>
           </div>
-          <v-divider />
+        </div>
+        <v-divider v-if="editingId !== null" />
 
-          <div v-if="editingId !== null" class="engine-condition-form px-5 py-4 d-flex flex-column gap-3">
-            <div class="d-flex gap-3 flex-wrap">
-              <v-select
-                v-model="conditionDraft.action"
-                :items="[{ title: 'Include', value: 'include' }, { title: 'Exclude', value: 'exclude' }]"
-                label="Action"
-                variant="outlined"
-                density="compact"
-                hide-details
-                class="engine-field-action"
-              />
-              <v-select
-                v-model="conditionDraft.field"
-                :items="fieldOptions"
-                label="Field"
-                variant="outlined"
-                density="compact"
-                hide-details
-                class="engine-field-field"
-              />
-              <v-select
-                v-model="conditionDraft.values"
-                :items="valueOptions"
-                label="Values"
-                variant="outlined"
-                density="compact"
-                hide-details
-                multiple
-                chips
-                closable-chips
-                :disabled="!conditionDraft.field"
-                class="flex-grow-1 engine-field-values"
-              />
-            </div>
-            <div class="d-flex justify-end gap-2">
-              <v-btn variant="text" size="small" class="text-none" @click="editingId = null">Cancel</v-btn>
-              <v-btn
-                color="primary"
-                variant="flat"
-                size="small"
-                class="text-none"
-                :disabled="!conditionValid"
-                @click="confirmCondition"
-              >
-                {{ editingId === 'new' ? 'Add' : 'Update' }}
-              </v-btn>
-            </div>
-          </div>
-          <v-divider v-if="editingId !== null" />
-
-          <v-table v-if="draft.conditions.length" density="comfortable">
-            <tbody>
-              <tr v-for="condition in draft.conditions" :key="condition.id">
-                <td class="text-body-2 font-weight-medium text-no-wrap" style="width: 110px">
-                  {{ condition.action === 'include' ? 'Include' : 'Exclude' }}
-                </td>
-                <td class="text-body-2 text-medium-emphasis" style="width: 140px">{{ condition.field }}</td>
-                <td>
-                  <div class="d-flex gap-1 flex-wrap py-1">
-                    <v-chip v-for="value in condition.values" :key="value" size="x-small" variant="tonal">{{ value }}</v-chip>
-                  </div>
-                </td>
-                <td class="text-end" style="width: 56px">
-                  <v-menu location="bottom end">
-                    <template #activator="{ props: menuProps }">
-                      <v-btn
-                        v-bind="menuProps"
-                        icon="more-vertical"
-                        variant="text"
-                        size="small"
-                        density="comfortable"
-                        color="medium-emphasis"
-                        :aria-label="`Filter actions for ${condition.field}`"
-                      />
-                    </template>
-                    <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-                      <v-list-item prepend-icon="pencil" title="Edit" @click="startEditCondition(condition)" />
-                      <v-divider class="my-1" style="opacity: 0.4" />
-                      <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="removeCondition(condition.id)" />
-                    </v-list>
-                  </v-menu>
-                </td>
-              </tr>
-            </tbody>
-          </v-table>
-          <div v-else-if="editingId === null" class="px-5 py-4 text-body-2 text-medium-emphasis">
-            No filters — the engine may recommend any product in the catalog.
-          </div>
-        </v-card>
-      </div>
+        <v-table v-if="draft.conditions.length" density="comfortable">
+          <tbody>
+            <tr v-for="condition in draft.conditions" :key="condition.id">
+              <td class="text-body-2 font-weight-medium text-no-wrap" style="width: 110px">
+                {{ condition.action === 'include' ? 'Include' : 'Exclude' }}
+              </td>
+              <td class="text-body-2 text-medium-emphasis" style="width: 140px">{{ condition.field }}</td>
+              <td>
+                <div class="d-flex gap-1 flex-wrap py-1">
+                  <v-chip v-for="value in condition.values" :key="value" size="x-small" variant="tonal">{{ value }}</v-chip>
+                </div>
+              </td>
+              <td class="text-end" style="width: 56px">
+                <v-menu location="bottom end">
+                  <template #activator="{ props: menuProps }">
+                    <v-btn
+                      v-bind="menuProps"
+                      icon="more-vertical"
+                      variant="text"
+                      size="small"
+                      density="comfortable"
+                      color="medium-emphasis"
+                      :aria-label="`Filter actions for ${condition.field}`"
+                    />
+                  </template>
+                  <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
+                    <v-list-item prepend-icon="pencil" title="Edit" @click="startEditCondition(condition)" />
+                    <v-divider class="my-1" style="opacity: 0.4" />
+                    <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="removeCondition(condition.id)" />
+                  </v-list>
+                </v-menu>
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
+        <div v-else-if="editingId === null" class="px-5 py-4 text-body-2 text-medium-emphasis">
+          No filters — the engine may recommend any product in the catalog.
+        </div>
+      </v-card>
 
       <!-- Preview -->
       <v-card variant="flat" border rounded="lg" class="engine-preview flex-shrink-0">
         <div class="px-4 py-3 d-flex align-center justify-space-between">
           <span class="text-subtitle-2 font-weight-bold">Preview</span>
-          <span class="text-caption text-medium-emphasis">{{ ENGINE_PAGE_LABELS[draft.page] }} page</span>
+          <span class="text-caption text-medium-emphasis">
+            {{ draft.page ? `${ENGINE_PAGE_LABELS[draft.page]} page` : '' }}
+          </span>
         </div>
         <v-divider />
         <div class="pa-4">
@@ -386,7 +528,7 @@ const subtitle = computed(() => {
       <v-card rounded="lg">
         <v-card-title class="pa-5 text-h6 font-weight-bold">Delete “{{ draft.name }}”?</v-card-title>
         <v-card-text class="pb-2 text-body-2 text-medium-emphasis">
-          The widget stops rendering on the {{ ENGINE_PAGE_LABELS[draft.page].toLowerCase() }} page immediately.
+          The widget stops rendering on the storefront immediately.
         </v-card-text>
         <v-card-actions class="pa-4">
           <v-spacer />
@@ -414,6 +556,74 @@ const subtitle = computed(() => {
 </template>
 
 <style scoped>
+.engine-name-field {
+  width: 360px;
+  flex: 0 0 auto;
+}
+
+/* ── Step indicator ────────────────────────────────────────────── */
+.engine-steps {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.engine-steps__line {
+  flex: 1 1 24px;
+  max-width: 48px;
+  opacity: 0.5;
+}
+
+.engine-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  white-space: nowrap;
+}
+
+.engine-step:disabled {
+  cursor: default;
+}
+
+.engine-step__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  font-size: 11px;
+}
+
+.engine-step--active {
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.engine-step--active .engine-step__index {
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+}
+
+.engine-step--done {
+  color: rgba(var(--v-theme-on-surface), 0.78);
+}
+
+.engine-step--done .engine-step__index {
+  background: rgba(var(--v-theme-success), 0.15);
+  color: rgb(var(--v-theme-success));
+}
+
+/* ── Type/page cards ───────────────────────────────────────────── */
 .engine-type-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -435,12 +645,28 @@ const subtitle = computed(() => {
   background: rgba(var(--v-theme-primary), 0.03);
 }
 
+.engine-type-card--selected {
+  border-color: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 1px rgb(var(--v-theme-primary));
+}
+
 .engine-type-card:focus-visible {
   outline: 2px solid rgb(var(--v-theme-primary));
   outline-offset: 2px;
 }
 
-.engine-editor {
+/* ── Settings ──────────────────────────────────────────────────── */
+.engine-settings {
+  max-width: 720px;
+}
+
+.engine-count-field {
+  width: 160px;
+  flex: 0 0 auto;
+}
+
+/* ── Filters + preview ─────────────────────────────────────────── */
+.engine-filters {
   min-width: 0;
 }
 
@@ -488,6 +714,10 @@ const subtitle = computed(() => {
 
   .engine-preview-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .engine-name-field {
+    width: 100%;
   }
 }
 </style>

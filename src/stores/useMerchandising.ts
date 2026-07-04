@@ -86,10 +86,11 @@ export interface MerchRule {
   updatedAt: string
 }
 
-export type EnginePage = 'product' | 'cart' | 'home'
+export type EnginePage = 'home' | 'category' | 'product' | 'cart' | 'custom'
 export type EngineType =
   | 'personalized'
   | 'popular_products'
+  | 'newest_products'
   | 'visual_recommendations'
   | 'frequently_purchased_together'
   | 'recently_viewed'
@@ -103,8 +104,13 @@ export interface RecommendationEngine {
   type: EngineType
   status: 'active' | 'inactive'
   updatedAt: string
-  /** Products the widget shows (default 8) */
-  productCount?: number
+  /** Product count range the widget renders (defaults 4–10) */
+  minProducts?: number
+  maxProducts?: number
+  /** Fallback strategies when the engine lacks data for a shopper */
+  fallbacks?: string[]
+  /** Internal notes for the team */
+  notes?: string
   /** Optional include/exclude filters applied to the widget's candidates */
   conditions?: MerchCondition[]
 }
@@ -411,7 +417,9 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
 
   function createEngine(payload: {
     name: string; page: EnginePage; type: EngineType
-    productCount: number; conditions: MerchCondition[]
+    minProducts: number; maxProducts: number
+    fallbacks: string[]; notes: string
+    conditions: MerchCondition[]
   }): RecommendationEngine {
     const engine: RecommendationEngine = {
       id: `${payload.page}-mc-rec-${Date.now() % 100000}`,
@@ -419,7 +427,10 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
       page: payload.page,
       type: payload.type,
       status: 'active',
-      productCount: payload.productCount,
+      minProducts: payload.minProducts,
+      maxProducts: payload.maxProducts,
+      fallbacks: [...payload.fallbacks],
+      notes: payload.notes,
       conditions: payload.conditions.map((c) => ({ ...c, values: [...c.values] })),
       updatedAt: `${todayLabel()} at ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`,
     }
@@ -433,7 +444,10 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     engine.name = payload.name
     engine.page = payload.page
     engine.type = payload.type
-    engine.productCount = payload.productCount
+    engine.minProducts = payload.minProducts
+    engine.maxProducts = payload.maxProducts
+    engine.fallbacks = [...(payload.fallbacks ?? [])]
+    engine.notes = payload.notes
     engine.conditions = (payload.conditions ?? []).map((c) => ({ ...c, values: [...c.values] }))
     engine.updatedAt = `${todayLabel()} at ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
   }
@@ -445,7 +459,10 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
       name: `${source.name} copy`,
       page: source.page,
       type: source.type,
-      productCount: source.productCount ?? 8,
+      minProducts: source.minProducts ?? 4,
+      maxProducts: source.maxProducts ?? 10,
+      fallbacks: [...(source.fallbacks ?? [])],
+      notes: source.notes ?? '',
       conditions: (source.conditions ?? []).map((c) => ({ ...c, values: [...c.values] })),
     })
   }
@@ -582,17 +599,36 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
 export const ENGINE_TYPE_LABELS: Record<EngineType, string> = {
   personalized: 'Personalized',
   popular_products: 'Popular Products',
+  newest_products: 'Newest Products',
   visual_recommendations: 'Visual Recommendations',
   frequently_purchased_together: 'Frequently Purchased Together',
   recently_viewed: 'Recently Viewed',
   viewed_together: 'Viewed Together',
-  new_trending: 'New Trending',
+  new_trending: 'Trending Products',
 }
 
 export const ENGINE_PAGE_LABELS: Record<EnginePage, string> = {
+  home: 'Home',
+  category: 'Category',
   product: 'Product',
   cart: 'Cart',
-  home: 'Home',
+  custom: 'Custom',
+}
+
+export const ENGINE_PAGE_DESCRIPTIONS: Record<EnginePage, string> = {
+  home: 'The front page of your online store.',
+  category: 'Category or category listing pages of your store (PLP).',
+  product: 'The product page with product details.',
+  cart: 'The shopping cart page of your online store.',
+  custom: 'Any non-specific page of your online store.',
+}
+
+export const ENGINE_PAGE_ICONS: Record<EnginePage, string> = {
+  home: 'house',
+  category: 'layout-grid',
+  product: 'package',
+  cart: 'shopping-cart',
+  custom: 'file-text',
 }
 
 export const SYNONYM_TYPE_LABELS: Record<SynonymType, string> = {
@@ -654,20 +690,22 @@ function productFieldValues(p: MerchProduct, field: string): string[] {
   }
 }
 
-/** Picker copy + icons for the engine type gallery (mirrors the Findify widget types). */
+/** Picker copy + icons for the engine type gallery (copy mirrors the Findify wizard cards). */
 export const ENGINE_TYPE_DESCRIPTIONS: Record<EngineType, string> = {
-  personalized: 'Tailored to each shopper from their browsing and purchase history.',
-  popular_products: 'Store-wide best sellers, ranked by popularity.',
+  personalized: 'Show recommended products based on purchase history and behavior.',
+  popular_products: 'Inspire customers by showcasing what’s popular in your store.',
+  newest_products: 'Show customers what’s fresh, from your latest stocked products.',
   visual_recommendations: 'Visually similar products, matched on imagery.',
   frequently_purchased_together: 'Products often bought in the same order.',
-  recently_viewed: 'Picks up where the shopper left off.',
+  recently_viewed: 'Remind customers of the products they have recently browsed.',
   viewed_together: 'Products browsed in the same sessions.',
-  new_trending: 'Fresh arrivals gaining traction right now.',
+  new_trending: 'Highlights items gaining momentum by analyzing engagement over time.',
 }
 
 export const ENGINE_TYPE_ICONS: Record<EngineType, string> = {
   personalized: 'sparkles',
   popular_products: 'trending-up',
+  newest_products: 'package-plus',
   visual_recommendations: 'image',
   frequently_purchased_together: 'shopping-basket',
   recently_viewed: 'history',
@@ -675,9 +713,19 @@ export const ENGINE_TYPE_ICONS: Record<EngineType, string> = {
   new_trending: 'flame',
 }
 
+/** Which recommendation types are offered per page placement (context-dependent types need a product). */
+export function engineTypesForPage(page: EnginePage): EngineType[] {
+  const base: EngineType[] = ['popular_products', 'recently_viewed', 'newest_products', 'personalized', 'new_trending']
+  if (page === 'product') return [...base, 'frequently_purchased_together', 'visual_recommendations', 'viewed_together']
+  if (page === 'cart') return [...base, 'frequently_purchased_together']
+  return base
+}
+
+export const ENGINE_FALLBACK_OPTIONS = ['Popular products', 'Newest products', 'Random products']
+
 /** Type-appropriate mock ordering + include/exclude filters for engine previews. */
 export function engineRecommendationPreview(
-  engine: Pick<RecommendationEngine, 'type' | 'conditions' | 'productCount'>,
+  engine: Pick<RecommendationEngine, 'type' | 'conditions' | 'maxProducts'>,
   products: MerchProduct[],
 ): MerchProduct[] {
   let rows = products.filter((p) =>
@@ -687,7 +735,7 @@ export function engineRecommendationPreview(
     }),
   )
   switch (engine.type) {
-    case 'new_trending':
+    case 'newest_products':
       rows = [...rows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       break
     case 'recently_viewed':
@@ -699,9 +747,10 @@ export function engineRecommendationPreview(
       rows = [...rows].sort((a, b) => a.category.localeCompare(b.category) || b.popularity - a.popularity)
       break
     default:
+      // popular, personalized, trending — popularity-driven mock ranking
       rows = [...rows].sort((a, b) => b.popularity - a.popularity)
   }
-  return rows.slice(0, engine.productCount ?? 8)
+  return rows.slice(0, engine.maxProducts ?? 10)
 }
 
 /** Apply include/exclude filters + promote weights so the rule preview reflects the rule. */

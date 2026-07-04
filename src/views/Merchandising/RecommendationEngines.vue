@@ -73,11 +73,14 @@ const pageColor: Record<EnginePage, string> = {
   product: 'secondary',
   cart: 'info',
   home: 'primary',
+  category: 'success',
+  custom: 'warning',
 }
 
 const typeColor: Record<EngineType, string> = {
   personalized: 'primary',
   popular_products: 'success',
+  newest_products: 'info',
   visual_recommendations: 'warning',
   frequently_purchased_together: 'info',
   recently_viewed: 'secondary',
