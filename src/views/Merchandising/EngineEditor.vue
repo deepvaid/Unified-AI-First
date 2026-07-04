@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
+import { useCopilotStore } from '@/stores/useCopilot'
 import {
   useMerchandisingStore,
   engineRecommendationPreview,
@@ -24,6 +25,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
+const copilot = useCopilotStore()
 
 const listRoute = computed(() => `/commerce/${route.params.accountId}/merchandising/recommendations`)
 
@@ -137,7 +139,9 @@ const remainingFallbacks = computed(() =>
   ENGINE_FALLBACK_OPTIONS.filter((f) => !draft.value.fallbacks.includes(f)),
 )
 
-/* ── Preview (Filters step) ───────────────────────────────────── */
+/* ── Preview (persistent from step 2 onward) ──────────────────── */
+const previewDevice = ref<'desktop' | 'mobile'>('desktop')
+
 const previewProducts = computed(() => {
   if (!draft.value.type) return []
   return engineRecommendationPreview(
@@ -286,29 +290,48 @@ function performDelete() {
       </button>
     </div>
 
-    <!-- Step 2: recommendation type -->
-    <div v-else-if="step === 2" class="engine-type-grid">
-      <button
-        v-for="type in availableTypes"
-        :key="type"
-        type="button"
-        class="engine-type-card text-left"
-        :class="{ 'engine-type-card--selected': draft.type === type }"
-        @click="draft.type = type"
-      >
-        <div class="d-flex align-center justify-space-between mb-3">
-          <v-avatar size="40" variant="tonal" color="primary">
-            <v-icon size="20">{{ ENGINE_TYPE_ICONS[type] }}</v-icon>
-          </v-avatar>
-          <v-chip v-if="type === 'personalized'" size="x-small" color="primary" variant="flat">AI powered</v-chip>
-        </div>
-        <div class="text-body-2 font-weight-bold mb-1">{{ ENGINE_TYPE_LABELS[type] }}</div>
-        <div class="text-caption text-medium-emphasis">{{ ENGINE_TYPE_DESCRIPTIONS[type] }}</div>
-      </button>
-    </div>
+    <!-- Steps 2–4: content column + persistent preview -->
+    <div v-else class="engine-layout d-flex gap-4 align-start">
+      <div class="engine-main flex-grow-1 d-flex flex-column gap-4">
 
-    <!-- Step 3: settings -->
-    <v-card v-else-if="step === 3" variant="flat" border rounded="lg" class="pa-5 engine-settings">
+        <!-- Step 2: recommendation type -->
+        <template v-if="step === 2">
+          <button type="button" class="engine-davinci text-left" @click="copilot.open()">
+            <v-avatar size="36" variant="tonal" color="primary" class="flex-shrink-0">
+              <v-icon size="18">sparkles</v-icon>
+            </v-avatar>
+            <span class="min-w-0">
+              <span class="d-block text-body-2 font-weight-bold">Not sure which to pick? Ask Da Vinci</span>
+              <span class="d-block text-caption text-medium-emphasis">
+                Describe what you want shoppers to see — Da Vinci suggests the engine type and settings.
+              </span>
+            </span>
+            <v-icon size="16" class="ml-auto flex-shrink-0 text-medium-emphasis">arrow-right</v-icon>
+          </button>
+
+          <div class="engine-type-grid">
+            <button
+              v-for="type in availableTypes"
+              :key="type"
+              type="button"
+              class="engine-type-card text-left"
+              :class="{ 'engine-type-card--selected': draft.type === type }"
+              @click="draft.type = type"
+            >
+              <div class="d-flex align-center justify-space-between mb-3">
+                <v-avatar size="40" variant="tonal" color="primary">
+                  <v-icon size="20">{{ ENGINE_TYPE_ICONS[type] }}</v-icon>
+                </v-avatar>
+                <v-chip v-if="type === 'personalized'" size="x-small" color="primary" variant="flat">AI powered</v-chip>
+              </div>
+              <div class="text-body-2 font-weight-bold mb-1">{{ ENGINE_TYPE_LABELS[type] }}</div>
+              <div class="text-caption text-medium-emphasis">{{ ENGINE_TYPE_DESCRIPTIONS[type] }}</div>
+            </button>
+          </div>
+        </template>
+
+        <!-- Step 3: settings -->
+        <v-card v-else-if="step === 3" variant="flat" border rounded="lg" class="pa-5 engine-settings">
       <div class="text-subtitle-2 font-weight-bold mb-1">Number of products displayed</div>
       <div class="text-body-2 text-medium-emphasis mb-3">
         The widget renders between the minimum and maximum, depending on available results.
@@ -386,9 +409,8 @@ function performDelete() {
       />
     </v-card>
 
-    <!-- Step 4: filters + preview -->
-    <div v-else class="engine-layout d-flex gap-4 align-start">
-      <v-card variant="flat" border rounded="lg" class="flex-grow-1 engine-filters">
+        <!-- Step 4: filters -->
+        <v-card v-else variant="flat" border rounded="lg" class="engine-filters">
         <div class="d-flex align-center justify-space-between px-5 py-4">
           <div>
             <span class="text-subtitle-2 font-weight-bold">Filters</span>
@@ -496,29 +518,50 @@ function performDelete() {
         <div v-else-if="editingId === null" class="px-5 py-4 text-body-2 text-medium-emphasis">
           No filters — the engine may recommend any product in the catalog.
         </div>
-      </v-card>
+        </v-card>
+      </div>
 
-      <!-- Preview -->
+      <!-- Preview (persistent from step 2) -->
       <v-card variant="flat" border rounded="lg" class="engine-preview flex-shrink-0">
-        <div class="px-4 py-3 d-flex align-center justify-space-between">
+        <div class="px-4 py-2 d-flex align-center justify-space-between gap-2">
           <span class="text-subtitle-2 font-weight-bold">Preview</span>
-          <span class="text-caption text-medium-emphasis">
-            {{ draft.page ? `${ENGINE_PAGE_LABELS[draft.page]} page` : '' }}
-          </span>
+          <div class="d-flex align-center gap-2">
+            <span class="text-caption text-medium-emphasis text-no-wrap">
+              {{ draft.page ? `${ENGINE_PAGE_LABELS[draft.page]} page` : '' }}
+            </span>
+            <v-btn-toggle
+              v-model="previewDevice"
+              density="compact"
+              mandatory
+              rounded="lg"
+              class="engine-device-toggle"
+            >
+              <v-btn value="desktop" size="x-small" icon="monitor" aria-label="Desktop preview" />
+              <v-btn value="mobile" size="x-small" icon="smartphone" aria-label="Mobile preview" />
+            </v-btn-toggle>
+          </div>
         </div>
         <v-divider />
         <div class="pa-4">
-          <div class="engine-preview-grid">
-            <MerchProductCard
-              v-for="product in previewProducts"
-              :key="product.id"
-              :product="product"
-              :interactive="false"
-            />
+          <div v-if="!draft.type" class="text-body-2 text-medium-emphasis text-center py-8">
+            Pick a recommendation type to see a live preview.
           </div>
-          <div v-if="previewProducts.length === 0" class="text-body-2 text-medium-emphasis text-center py-8">
-            No products match the current filters.
-          </div>
+          <template v-else>
+            <div
+              class="engine-preview-grid"
+              :class="{ 'engine-preview-grid--mobile': previewDevice === 'mobile' }"
+            >
+              <MerchProductCard
+                v-for="product in previewProducts"
+                :key="product.id"
+                :product="product"
+                :interactive="false"
+              />
+            </div>
+            <div v-if="previewProducts.length === 0" class="text-body-2 text-medium-emphasis text-center py-8">
+              No products match the current filters.
+            </div>
+          </template>
         </div>
       </v-card>
     </div>
@@ -665,9 +708,36 @@ function performDelete() {
   flex: 0 0 auto;
 }
 
-/* ── Filters + preview ─────────────────────────────────────────── */
+/* ── Content column + persistent preview ───────────────────────── */
+.engine-main {
+  min-width: 0;
+}
+
 .engine-filters {
   min-width: 0;
+}
+
+.engine-davinci {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px dashed rgba(var(--v-theme-primary), 0.4);
+  border-radius: 12px;
+  background: rgba(var(--v-theme-primary), 0.03);
+  cursor: pointer;
+  font: inherit;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.engine-davinci:hover {
+  background: rgba(var(--v-theme-primary), 0.07);
+  border-color: rgba(var(--v-theme-primary), 0.6);
+}
+
+.engine-davinci:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
 }
 
 .engine-preview {
@@ -676,12 +746,26 @@ function performDelete() {
   top: 16px;
 }
 
+.engine-device-toggle {
+  height: 28px;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
 .engine-preview-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   max-height: 64vh;
   overflow-y: auto;
+}
+
+.engine-preview-grid--mobile {
+  max-width: 270px;
+  margin-inline: auto;
+}
+
+.min-w-0 {
+  min-width: 0;
 }
 
 .engine-condition-form {
