@@ -382,6 +382,18 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     if (row) row.status = row.status === 'active' ? 'inactive' : 'active'
   }
 
+  function createCollection(payload: { name: string; filterType: CollectionFilterType }): SmartCollection {
+    const collection: SmartCollection = {
+      id: `c${Date.now()}`,
+      name: payload.name,
+      status: 'active',
+      filterType: payload.filterType,
+      updatedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    }
+    collectionList.value.unshift(collection)
+    return collection
+  }
+
   function toggleEngineStatus(id: string) {
     const row = engineList.value.find((e) => e.id === id)
     if (row) row.status = row.status === 'active' ? 'inactive' : 'active'
@@ -488,6 +500,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     bulkSetSynonymStatus,
     deleteSynonyms,
     toggleCollectionStatus,
+    createCollection,
     toggleEngineStatus,
     toggleFieldStatus,
     deleteRedirect,

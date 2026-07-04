@@ -5,9 +5,11 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import {
   useMerchandisingStore,
   COLLECTION_FILTER_LABELS,
+  type CollectionFilterType,
   type SmartCollection,
 } from '@/stores/useMerchandising'
 
@@ -50,6 +52,23 @@ function showToast(message: string) {
 function onToggle(collection: SmartCollection) {
   store.toggleCollectionStatus(collection.id)
 }
+
+/* ── Create collection drawer ─────────────────────────────────── */
+const createDrawer = ref(false)
+const newCollection = ref<{ name: string; filterType: CollectionFilterType }>({ name: '', filterType: 'manual' })
+
+function openCreate() {
+  newCollection.value = { name: '', filterType: 'manual' }
+  createDrawer.value = true
+}
+
+function submitCreate() {
+  const name = newCollection.value.name.trim()
+  if (!name) return
+  store.createCollection({ name, filterType: newCollection.value.filterType })
+  createDrawer.value = false
+  showToast(`Collection “${name}” created`)
+}
 </script>
 
 <template>
@@ -64,7 +83,7 @@ function onToggle(collection: SmartCollection) {
           variant="flat"
           class="text-none"
           prepend-icon="plus"
-          @click="showToast('Create collection — coming soon')"
+          @click="openCreate"
         >
           Create collection
         </v-btn>
@@ -153,11 +172,49 @@ function onToggle(collection: SmartCollection) {
             :description="search ? 'Try a different keyword or clear filters.' : 'Create your first smart collection to start merchandising.'"
             :action-label="!search ? 'Create collection' : undefined"
             action-icon="plus"
-            @action="showToast('Create collection — coming soon')"
+            @action="openCreate"
           />
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Create collection drawer -->
+    <MpFormDrawer v-model="createDrawer" title="Create collection" subtitle="Add a smart collection to this store">
+      <v-text-field
+        v-model="newCollection.name"
+        label="Collection name"
+        placeholder="collections/summer-sale"
+        variant="outlined"
+        density="comfortable"
+        class="mb-3"
+        autofocus
+      />
+      <v-select
+        v-model="newCollection.filterType"
+        label="Filter type"
+        :items="[
+          { title: 'Manual — curate products by hand', value: 'manual' },
+          { title: 'Synced — mirrors your store platform', value: 'synced' },
+        ]"
+        variant="outlined"
+        density="comfortable"
+        hint="Manual collections can be pinned and merchandised in Default Merchandising"
+        persistent-hint
+      />
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="createDrawer = false">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          class="text-none"
+          prepend-icon="plus"
+          :disabled="!newCollection.name.trim()"
+          @click="submitCreate"
+        >
+          Create collection
+        </v-btn>
+      </template>
+    </MpFormDrawer>
 
     <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
       {{ snackbar.message }}
