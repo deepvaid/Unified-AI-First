@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useRetailStore, LOYALTY_TIER_LABELS } from '@/stores/useRetail'
 import type { TenderType, ChannelPrice, PosCustomer, RetailTransaction } from '@/stores/useRetail'
@@ -136,6 +136,42 @@ function selectVariant(item: ChannelPrice) {
   addToCart(item)
   variantPickerOpen.value = false
 }
+
+/* ── Scan / search from the default sale screen ─────────────────── */
+// Retail feedback: a register session almost always starts by adding a product,
+// so the scan field lives on the sale home (smart grid) — not behind Browse.
+const scanFieldRef = ref<{ focus: () => void } | null>(null)
+
+function focusScanField() {
+  nextTick(() => scanFieldRef.value?.focus?.())
+}
+
+function onScanSubmit() {
+  const query = catalogSearch.value.trim()
+  if (!query) return
+  // Hardware scanners type the barcode + Enter: exact SKU adds instantly
+  const exact = store.channelPriceList.find((p) => p.sku.toLowerCase() === query.toLowerCase())
+  if (exact) {
+    addToCart(exact)
+    catalogSearch.value = ''
+    focusScanField()
+    return
+  }
+  // A single match on Enter behaves like tapping its tile (variant picker aware)
+  const groups = catalogGroups.value
+  if (groups.length === 1) {
+    const group = groups[0]!
+    handleTileClick(group)
+    if (group.variants.length === 1) catalogSearch.value = ''
+    focusScanField()
+  }
+}
+
+// Cashiers scan the moment the sale screen is up — keep the field focused
+onMounted(focusScanField)
+watch(posView, (view) => {
+  if (view === 'sale') focusScanField()
+})
 
 /* ── Parse product name / variant from "Name — Variant" pattern ─── */
 function parseTileProduct(fullName: string): { name: string; variant: string | null } {
@@ -665,7 +701,7 @@ const apkQrUrl = computed(() =>
                 <!-- Pane header (mode switcher) -->
                 <div class="pos-pane-head">
                   <div class="pos-pane-head__title">
-                    {{ saleMode === 'smart-grid' ? 'Smart grid' : 'Products' }}
+                    {{ saleMode === 'catalog' ? 'Products' : (catalogSearch ? 'Search results' : 'Smart grid') }}
                   </div>
                   <button
                     v-if="saleMode === 'smart-grid'"
@@ -685,8 +721,28 @@ const apkQrUrl = computed(() =>
                   </button>
                 </div>
 
+                <!-- Persistent scan / search — always ready on the sale screen -->
+                <div class="pos-scanbar">
+                  <v-text-field
+                    ref="scanFieldRef"
+                    v-model="catalogSearch"
+                    placeholder="Scan barcode or search products"
+                    density="compact"
+                    variant="solo"
+                    flat
+                    prepend-inner-icon="search"
+                    append-inner-icon="scan-line"
+                    hide-details
+                    clearable
+                    bg-color="surface"
+                    rounded="lg"
+                    style="font-size: 13px;"
+                    @keydown.enter="onScanSubmit"
+                  />
+                </div>
+
                 <!-- ── SMART GRID home ─────────────────────────── -->
-                <div v-if="saleMode === 'smart-grid'" class="pos-smartgrid">
+                <div v-if="saleMode === 'smart-grid' && !catalogSearch" class="pos-smartgrid">
                   <button
                     v-for="tile in SMART_GRID_TILES"
                     :key="tile.key"
@@ -700,24 +756,9 @@ const apkQrUrl = computed(() =>
                   </button>
                 </div>
 
-                <!-- ── CATALOG ─────────────────────────────────── -->
+                <!-- ── CATALOG / search results ─────────────────── -->
                 <div v-else class="pos-catalog">
-                  <div class="pos-catalog__search">
-                    <v-text-field
-                      v-model="catalogSearch"
-                      placeholder="Search or scan barcode"
-                      density="compact"
-                      variant="solo"
-                      flat
-                      prepend-inner-icon="search"
-                      hide-details
-                      bg-color="surface"
-                      rounded="lg"
-                      style="font-size: 13px;"
-                    />
-                  </div>
-
-                  <div class="pos-catalog__chips">
+                  <div v-if="saleMode === 'catalog'" class="pos-catalog__chips">
                     <button
                       v-for="chip in COLLECTION_CHIPS"
                       :key="chip.value"
@@ -1896,26 +1937,26 @@ $pos-bg: #f4f4f5;
 }
 
 /* ── Catalog ───────────────────────────────────────────────────── */
+.pos-scanbar {
+  padding: 0 18px 10px;
+  flex-shrink: 0;
+
+  :deep(.v-field) {
+    background: $pos-surface !important;
+    border: 1px solid $pos-hairline;
+    border-radius: 12px !important;
+  }
+  :deep(.v-field:focus-within) {
+    border-color: rgba(17, 24, 39, 0.25);
+    box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.06);
+  }
+}
+
 .pos-catalog {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-
-  &__search {
-    padding: 0 18px 10px;
-    flex-shrink: 0;
-
-    :deep(.v-field) {
-      background: $pos-surface !important;
-      border: 1px solid $pos-hairline;
-      border-radius: 12px !important;
-    }
-    :deep(.v-field:focus-within) {
-      border-color: rgba(17, 24, 39, 0.25);
-      box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.06);
-    }
-  }
 
   &__chips {
     display: flex;
@@ -3528,7 +3569,7 @@ $pos-bg: #f4f4f5;
 
   /* Catalog: 2-col grid, tighter gutters */
   .pos-pane-head { padding: 12px 12px 8px; }
-  .pos-catalog__search, .pos-catalog__chips { padding-left: 12px; padding-right: 12px; }
+  .pos-scanbar, .pos-catalog__chips { padding-left: 12px; padding-right: 12px; }
   .pos-catalog__grid { grid-template-columns: repeat(2, 1fr); padding: 0 12px 12px; }
   .pos-smartgrid { padding: 4px 12px 12px; }
 
