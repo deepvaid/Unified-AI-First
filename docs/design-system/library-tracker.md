@@ -11,7 +11,7 @@
 | P0 | Scaffold (this file + program prompt) | done |
 | P1 | Recon: token audit + inventory (artifacts: audit.md, inventory.md) | done |
 | P2 | Cleanup & extraction (candidates → cleanup-report.md) | done |
-| P3 | Story coverage (5 batches) | in-progress (batch A: dashboards done) |
+| P3 | Story coverage (5 batches) | in-progress (batches A–B done: dashboards, copilot+voice) |
 | P4 | A11y QA (a11y-checklist.md) | pending |
 | P5 | Foundations + docs + handoff + CLAUDE.md refresh | pending |
 
@@ -64,24 +64,24 @@
 | DvContentCard | ✓ | done (standard) |
 | ~~DvDataTable~~ | — | deleted in P2 — unused (`fb9c2b8`) |
 | ~~DvDialogShell~~ | — | deleted in P2 — unused (`28dd311`) |
-| DvDraftPreview | — | pending |
-| DvExpandDialog | — | pending |
+| DvDraftPreview | ✓ | done (standard) |
+| DvExpandDialog | ✓ | done (standard) |
 | DvHistoryDrawer | — | pending |
 | DvInsightCard | ✓ | done (standard) |
 | ~~DvJourneyCard~~ | — | deleted in P2 — unused (`ecc8599`) |
 | DvKpiRow | ✓ | done (standard) |
 | DvLandingHero | ✓ | done (standard) |
-| DvRefineDialog | — | pending |
+| DvRefineDialog | ✓ | done (standard) |
 | DvSegmentCard | ✓ | done (standard) |
-| DvToastStack | — | pending |
-| DvWidgetDraftCard | — | pending |
-| voice/DvOrbCanvas | — | pending |
+| DvToastStack | ✓ | done (standard) |
+| DvWidgetDraftCard | ✓ | done (standard) |
+| voice/DvOrbCanvas | ✓ | done (standard) |
 | voice/DvIntentCardList | ✓ | done (standard) |
-| voice/DvOrbitOrb | — | pending |
-| voice/DvOrbitVoiceSurface | — | pending |
-| voice/DvOrbitMicBar | — | pending |
-| voice/DvOrbitWaveBars | — | pending |
-| voice/DvOrbitStatusPill | — | pending |
+| voice/DvOrbitOrb | ✓ | done (standard) |
+| voice/DvOrbitVoiceSurface | ✓ | done (standard) |
+| voice/DvOrbitMicBar | ✓ | done (standard) |
+| voice/DvOrbitWaveBars | ✓ | done (standard) |
+| voice/DvOrbitStatusPill | ✓ | done (standard) |
 | ~~voice/DvVoiceStatePill~~ | — | deleted in P2 — unused, story-only (`826049a`) |
 
 ### dashboards/ (tier P1)
@@ -152,3 +152,4 @@
 - 2026-07-05 — P1 recon done. Corrected totals: **69 components, 31 stories, 38 gaps**. Audit highlights: token pipeline healthy (3 drift values), Storybook preview already registers Vuetify+Pinia+Router with theme toolbar, a11y addon missing, 33 components with px font-size literals, dark-mode scrollbar bug, tokens.scss deprecation candidate. Inventory adds 10 grep-zero components as cleanup candidate #9 (dynamic-usage re-verification required).
 - 2026-07-06 — P2 cleanup done. All 9 candidates resolved (16 code commits + this docs commit): 5 extractions (MpOptionCard, MpStatusToggle, MpWizardSteps, MpConfirmDialog, MpRowActionsMenu — all with stories; + internal JourneyAddStepMenu), 10 unused components deleted with grep + dynamic-map proof, #7 kept separate, #8 kept for a P3 story. New totals: **65 components, 31 stories, 34 gaps (33 actionable)**. type-check + build-storybook green throughout; preview smokes on account 2000290.
 - 2026-07-06 — P3 batch A (dashboards) done. 14 CSF3 stories added under `Dashboards/` (+`Widgets/`, `Wizard/` subgroups), 40 stories total across the batch: dialogs/drawer rendered open with re-open buttons, grid populated/edit/empty, widget card across all 6 data kinds + editable/preview, widget renderers with mock `Dashboard*Data` payloads, wizard steps with interactive draft wiring. Store-coupled stories use seeded account 2000290 (Pinia registered in preview.ts). No components modified; none skipped. New totals: **45 stories, 20 gaps (19 actionable)**. type-check + build-storybook green.
+- 2026-07-06 — P3 batch B (copilot + voice) done. 11 CSF3 story files added under `Copilot/` + `Copilot/Voice/`, 47 story exports: toast stack drives the `useDaVinciToasts` singleton from story setup (queue reset + long-lived seeds + transient-push button, docs in isolated iframes); widget draft card runs the full add→refine→commit flow against the seeded dashboards store (account 2000290, dashboard `2000290-home`); draft preview covers all 7 render kinds + densities; refine/expand dialogs open in tall decorators with re-open buttons; voice surface staged in a 420×640 drawer frame across all 7 `OrbitState`s; DvOrbCanvas renders the live WebGL engine on a fixed dark stage with synthetic `OrbAudioFrame` sources (built-in CSS fallback covers static builds); orbit mark/mic bar/wave bars/status pill pinned to their per-state size/speed combos. Voice stories import `@/styles/dv-orbit.css` story-side (app loads it via main.ts; preview.ts doesn't). No components modified; none skipped. New totals: **56 stories, 9 gaps (8 actionable)**. type-check + build-storybook green; preview smokes on the dev Storybook (draft add flow, teleported toasts, WebGL ready flag, keyframe resolution).
