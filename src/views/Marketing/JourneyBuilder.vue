@@ -4,20 +4,40 @@ import { useRouter, useRoute } from 'vue-router'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import JourneyFlowColumn from '@/components/marketing/JourneyFlowColumn.vue'
-import { useCampaignsStore } from '@/stores/useCampaigns'
+import { useCampaignsStore, type JourneyStatus } from '@/stores/useCampaigns'
+import { useDataJourneysStore } from '@/stores/useDataJourneys'
 import { useCopilotStore } from '@/stores/useCopilot'
 import type { CatalogItem, FlowNode, NodeCategory } from '@/stores/journeyFlowData'
-import { catalogByKind, nodeCatalog } from '@/stores/journeyFlowData'
+import { catalogByKind, dataNodeCatalog, nodeCatalog } from '@/stores/journeyFlowData'
 import { addNodeAfter as insertNodeAfter, buildSegments, flowValidation, removeNode } from '@/composables/useFlowTree'
 
 const router = useRouter()
 const route = useRoute()
 const accountId = computed(() => route.params.accountId as string)
 
+// One builder, two domains: marketing journeys (default) and data journeys
+// (route meta flowDomain: 'data') — different store, palette, and back route.
+const isData = computed(() => route.meta.flowDomain === 'data')
+const entityLabel = computed(() => (isData.value ? 'data journey' : 'journey'))
+const listRoute = computed(() => ({ name: isData.value ? 'DataJourneys' : 'Journeys', params: { accountId: accountId.value } }))
+
 const store = useCampaignsStore()
+const dataStore = useDataJourneysStore()
 const journeyId = computed(() => Number(route.params.id))
-const journey = computed(() => store.journeys.find(j => j.id === journeyId.value))
-const nodes = computed<FlowNode[]>(() => store.journeyFlows[journeyId.value] ?? [])
+const journey = computed(() =>
+  isData.value
+    ? dataStore.dataJourneys.find(j => j.id === journeyId.value)
+    : store.journeys.find(j => j.id === journeyId.value),
+)
+const nodes = computed<FlowNode[]>(() =>
+  (isData.value ? dataStore.flows[journeyId.value] : store.journeyFlows[journeyId.value]) ?? [],
+)
+const domainCatalog = computed(() => (isData.value ? dataNodeCatalog : nodeCatalog))
+
+function setStatus(status: JourneyStatus) {
+  if (isData.value) dataStore.setDataJourneyStatus(journeyId.value, status)
+  else store.setJourneyStatus(journeyId.value, status)
+}
 
 // Node colour is driven purely by category (the Liquid Sky reference colour-codes
 // by step type, never per-node): triggers=blue, actions=green,
@@ -42,14 +62,23 @@ const selectedNodeId = ref<string | null>(null)
 
 // Step palette — the full legacy node catalog, grouped by category. Section
 // dots reuse the same category colour as the nodes they create (see categoryColor).
+// Data journeys expose triggers + actions only (mirrors the legacy palette).
 interface PaletteSection { key: string; label: string; color: string; items: CatalogItem[] }
 
-const paletteSections: PaletteSection[] = [
-  { key: 'triggers', label: 'Triggers', color: 'primary', items: nodeCatalog.filter(i => i.category === 'trigger') },
-  { key: 'actions', label: 'Actions', color: 'success', items: nodeCatalog.filter(i => i.category === 'action') },
-  { key: 'logic', label: 'Logic & Filters', color: 'secondary', items: nodeCatalog.filter(i => i.category === 'filter') },
-  { key: 'delay', label: 'Delays', color: 'warning', items: nodeCatalog.filter(i => i.category === 'delay') },
-]
+const paletteSections = computed<PaletteSection[]>(() => {
+  const catalog = domainCatalog.value
+  const sections: PaletteSection[] = [
+    { key: 'triggers', label: 'Triggers', color: 'primary', items: catalog.filter(i => i.category === 'trigger') },
+    { key: 'actions', label: 'Actions', color: 'success', items: catalog.filter(i => i.category === 'action') },
+  ]
+  if (!isData.value) {
+    sections.push(
+      { key: 'logic', label: 'Logic & Filters', color: 'secondary', items: catalog.filter(i => i.category === 'filter') },
+      { key: 'delay', label: 'Delays', color: 'warning', items: catalog.filter(i => i.category === 'delay') },
+    )
+  }
+  return sections
+})
 
 const openSections = reactive<Record<string, boolean>>({ triggers: true, actions: true, logic: true, delay: true })
 function toggleSection(key: string) { openSections[key] = !openSections[key] }
@@ -58,8 +87,8 @@ function toggleSection(key: string) { openSections[key] = !openSections[key] }
 const paletteQuery = ref('')
 const visibleSections = computed(() => {
   const q = paletteQuery.value.trim().toLowerCase()
-  if (!q) return paletteSections
-  return paletteSections
+  if (!q) return paletteSections.value
+  return paletteSections.value
     .map(s => ({ ...s, items: s.items.filter(i => `${i.title} ${i.subtitle}`.toLowerCase().includes(q)) }))
     .filter(s => s.items.length > 0)
 })
@@ -177,7 +206,7 @@ function saveDraftJourney() { saveMessage.value = 'Draft saved'; saveSnack.value
 
 const copilot = useCopilotStore()
 function askDaVinci() {
-  copilot.openWithPrompt(`Review my journey "${journeyName.value}" and suggest improvements to timing and copy.`)
+  copilot.openWithPrompt(`Review my ${entityLabel.value} "${journeyName.value}" and suggest improvements to timing and copy.`)
 }
 
 // ── Pre-activate validation ───────────────────────────────────────────────────
@@ -187,7 +216,7 @@ const issuesOpen = ref(false)
 
 function tryActivate() {
   if (journeyStatus.value === 'Active') {
-    store.setJourneyStatus(journeyId.value, 'Paused')
+    setStatus('Paused')
     saveMessage.value = 'Journey paused'
     saveSnack.value = true
     void nextTick(() => { issuesOpen.value = false })
@@ -197,7 +226,7 @@ function tryActivate() {
     issuesOpen.value = true
     return
   }
-  store.setJourneyStatus(journeyId.value, 'Active')
+  setStatus('Active')
   saveMessage.value = 'Journey activated'
   saveSnack.value = true
   void nextTick(() => { issuesOpen.value = false })
@@ -228,19 +257,20 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
 
 <template>
   <div v-if="!journey" class="jb-root d-flex align-center justify-center">
-    <MpEmptyState icon="search-x" title="Journey not found"
-      description="This journey doesn't exist or was deleted." actionLabel="Back to Journeys" actionIcon="arrow-left"
-      @action="router.push({ name: 'Journeys', params: { accountId } })" />
+    <MpEmptyState icon="search-x" :title="`${isData ? 'Data journey' : 'Journey'} not found`"
+      :description="`This ${entityLabel} doesn't exist or was deleted.`" actionLabel="Back to the list" actionIcon="arrow-left"
+      @action="router.push(listRoute)" />
   </div>
 
   <div v-else class="jb-root d-flex flex-column">
     <!-- Toolbar -->
     <div class="jb-toolbar d-flex align-center justify-space-between px-5 border-b bg-surface">
       <div class="d-flex align-center gap-3" style="min-width:0;">
-        <v-tooltip text="Back to Journeys" location="bottom">
+        <v-tooltip :text="isData ? 'Back to Data Journeys' : 'Back to Journeys'" location="bottom">
           <template #activator="{ props }">
-            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" aria-label="Back to Journeys"
-              @click="router.push({ name: 'Journeys', params: { accountId } })"></v-btn>
+            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small"
+              :aria-label="isData ? 'Back to Data Journeys' : 'Back to Journeys'"
+              @click="router.push(listRoute)"></v-btn>
           </template>
         </v-tooltip>
         <div v-if="!editingName" class="font-weight-bold text-body-1 text-truncate jb-name" role="button" tabindex="0"
@@ -345,7 +375,7 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
         <div class="jb-canvas__scroll">
           <div class="d-flex flex-column align-center pa-8" :style="zoomStyle">
             <div class="d-flex flex-column align-center" style="min-width:460px;">
-              <JourneyFlowColumn :segments="segments" :selected-id="selectedNodeId"
+              <JourneyFlowColumn :segments="segments" :selected-id="selectedNodeId" :catalog="domainCatalog"
                 @select="selectNode"
                 @add="(afterId, item, childIndex) => addNodeAfter(afterId, item, childIndex)"
                 @duplicate="duplicateNode"
