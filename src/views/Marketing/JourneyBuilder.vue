@@ -3,6 +3,7 @@ import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } 
 import { useRouter, useRoute } from 'vue-router'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import JourneyFlowColumn from '@/components/marketing/JourneyFlowColumn.vue'
 import { useCampaignsStore, type JourneyStatus } from '@/stores/useCampaigns'
 import { useDataJourneysStore } from '@/stores/useDataJourneys'
@@ -456,22 +457,14 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
       <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ saveMessage }}</div>
     </v-snackbar>
 
-    <v-dialog v-model="deleteDialog" max-width="440">
-      <v-card rounded="lg" border flat class="pa-1">
-        <v-card-title class="text-body-1 font-weight-bold d-flex align-center gap-2">
-          <v-icon color="error" size="20">triangle-alert</v-icon>
-          Delete this split?
-        </v-card-title>
-        <v-card-text class="text-body-2 text-medium-emphasis">
-          Deleting "{{ deleteTarget?.title }}" also removes every step inside its branches.
-          Steps after the point where the branches rejoin are kept.
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" class="text-none" @click="deleteDialog = false">Cancel</v-btn>
-          <v-btn color="error" variant="flat" class="text-none" @click="confirmDelete">Delete split</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <MpConfirmDialog
+      v-model="deleteDialog"
+      danger
+      title="Delete this split?"
+      :message="`Deleting &quot;${deleteTarget?.title}&quot; also removes every step inside its branches. Steps after the point where the branches rejoin are kept.`"
+      confirm-label="Delete split"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
