@@ -78,6 +78,25 @@ a grid of child-page cards (count or status badge), a recent-activity feed, and 
 Da Vinci AI side cards. Only \`title\` and \`childPages\` are required — every other section
 renders conditionally.
 
+**Use when:** a module needs an overview hub that routes into its child pages (Marketing, Content, and future clouds).
+
+**Don't use when:** the page shows actual data or workflows — this is a launcher, not a dashboard; use dashboard widgets or list views for real content.
+
+### Usage
+\`\`\`html
+<!-- Views pass module config only; all links are route paths. -->
+<ModuleLandingPage
+  title="Marketing"
+  description="Plan, send, and automate every customer touch."
+  :primary-actions="[{ label: 'New campaign', icon: 'plus', to: campaignsNewPath }]"
+  :quick-actions="quickActions"
+  :child-pages="childPages"
+  :recent-activity="recentActivity"
+  :setup-card="setupCard"
+  :da-vinci-card="daVinciCard"
+/>
+\`\`\`
+
 ### 🟢 Do's
 - **Do** drive all links from route paths (\`to\`) so account scoping stays in the view.
 - **Do** keep child-page descriptions to one sentence; the cards clamp at ~2 lines.
@@ -87,8 +106,9 @@ renders conditionally.
 - **Don't** exceed ~6 quick actions; the row wraps on tablet and stacks on mobile.
 
 ### A11y
-Quick actions are real \`<button>\`s, child cards are router-links, and both carry visible
-focus rings via the theme tokens.
+- **Provides:** the title renders through \`MpPageHeader\` as the page \`h1\`; quick actions are real \`<button>\`s and child cards are router-links, both with visible \`:focus-visible\` rings via theme tokens; the setup progress bar is a Vuetify progress-linear with proper role; the quick-actions row has an \`aria-label\` landmark.
+- **Consumer must:** keep child-page descriptions meaningful (they are the link's supporting text) and route \`to\` paths valid.
+- **Gaps:** the "Sections" / "Recent activity" eyebrows are styled \`div\`s, not headings, so the page has a single h1 and no sub-heading structure for screen-reader navigation; activity rows are non-interactive text (fine), and setup-list checkmarks convey completion by icon + strikethrough but are not announced as a checklist (Phase 4 candidates).
         `,
       },
     },
@@ -104,9 +124,14 @@ focus rings via the theme tokens.
     daVinciCard: DA_VINCI_CARD,
   },
   argTypes: {
-    childPages: { control: 'object' },
-    setupCard: { control: 'object' },
-    daVinciCard: { control: 'object' },
+    title: { control: 'text', description: 'Module name, rendered by MpPageHeader as the page h1.' },
+    description: { control: 'text', description: 'One-line module summary under the title.' },
+    primaryActions: { control: 'object', description: 'Pill buttons in the header ({ label, icon?, to?/href?, variant? }[]). The first entry defaults to primary color.' },
+    quickActions: { control: 'object', description: 'Shortcut buttons row under the header ({ icon, label, description?, to }[]).' },
+    childPages: { control: 'object', description: 'Required. Grid of section cards ({ icon, title, description, to, count? | status? }[]).' },
+    recentActivity: { control: 'object', description: 'Feed rows ({ icon, eyebrow, title, meta?, tag? }[]); tag colors the icon chip (email/order/audience/automation).' },
+    setupCard: { control: 'object', description: 'Optional setup checklist side card with progress bar ({ title, description, items, ctaLabel?, ctaTo? }); null hides it.' },
+    daVinciCard: { control: 'object', description: 'Optional Da Vinci suggestions side card ({ title, description, suggestions }); null hides it.' },
   },
   render: (args) => ({
     components: { ModuleLandingPage },

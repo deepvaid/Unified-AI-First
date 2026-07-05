@@ -12,6 +12,22 @@ const meta = {
 ### Overview
 The \`MpErrorState\` component replaces the contents of a container (table, list, dashboard widget) when data fails to load. It mirrors \`MpEmptyState\` but signals a recoverable failure and offers a retry.
 
+**Use when:** a fetch failed, a permission was denied, or the client is offline — anywhere data should be but can't load.
+
+**Don't use when:** the request succeeded with zero results (use \`MpEmptyState\`) or for field-level validation errors (use the input's own error messages).
+
+### Usage
+\`\`\`html
+<MpTableSkeleton v-if="loading" :columns="5" />
+<MpErrorState
+  v-else-if="error"
+  title="Couldn’t load campaigns"
+  description="There was a problem reaching the server. Check your connection and try again."
+  @action="reload"
+/>
+\`\`\`
+All props have sensible defaults (\`alert-triangle\` icon, "Something went wrong", "Try again" retry) — often only \`@action\` is needed.
+
 ### 🟢 Do's
 - **Do** explain what failed in plain language and, when possible, what the user can do about it.
 - **Do** provide a retry action (\`action-label\` + \`@action\`) so users can recover without a full page reload.
@@ -23,17 +39,22 @@ The \`MpErrorState\` component replaces the contents of a container (table, list
 
 ### 💡 Best Practices
 - Pair with a skeleton (\`MpTableSkeleton\`) for the loading phase, then swap to this on failure.
-- Uses \`role="alert"\` so assistive tech announces the failure when it appears.
+
+### A11y
+- **Provides:** \`role="alert"\` on the root, so assistive tech announces the failure the moment it renders; the retry CTA is a real \`v-btn\` with a visible focus indicator; the icon is decorative.
+- **Consumer must:** keep the title/description human (no raw stack traces or status codes) and make \`@action\` actually retry — pass \`action-label=""\` to suppress the button when there is no recovery path.
+- **Gaps:** the title is a styled \`div\`, not a heading element (mirrors \`MpEmptyState\`; noted for the Phase 4 a11y pass).
         `,
       },
     },
   },
   argTypes: {
-    icon: { control: 'text' },
-    title: { control: 'text' },
-    description: { control: 'text' },
-    actionLabel: { control: 'text' },
-    actionIcon: { control: 'text' },
+    icon: { control: 'text', description: 'Lucide icon name in the error-tinted circle. Default: alert-triangle.' },
+    title: { control: 'text', description: 'Headline. Default: "Something went wrong".' },
+    description: { control: 'text', description: 'Supporting copy (max-width 420px, wraps).' },
+    actionLabel: { control: 'text', description: 'CTA label. Default: "Try again". Pass an empty string to hide the button.' },
+    actionIcon: { control: 'text', description: 'Lucide icon prepended to the CTA. Default: refresh-cw.' },
+    action: { control: false, description: 'Event — emitted when the CTA button is clicked (wire your retry here).', table: { category: 'events' } },
   },
 } satisfies Meta<typeof MpErrorState>
 
@@ -62,5 +83,18 @@ export const Offline: Story = {
     title: 'You’re offline',
     description: 'Reconnect to the internet to load your data.',
     actionLabel: 'Retry',
+  },
+}
+
+/** Long title + multi-sentence description — copy wraps inside the 420px measure without breaking layout. */
+export const LongCopy: Story = {
+  args: {
+    icon: 'server-crash',
+    title: 'The analytics service didn’t respond before the request timed out',
+    description:
+      'This usually clears up on its own within a minute or two. '
+      + 'If it keeps happening, the report may be too large for the selected date range — '
+      + 'try narrowing the range or removing a breakdown dimension before retrying.',
+    actionLabel: 'Retry with same filters',
   },
 }

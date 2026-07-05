@@ -11,7 +11,7 @@
 | P0 | Scaffold (this file + program prompt) | done |
 | P1 | Recon: token audit + inventory (artifacts: audit.md, inventory.md) | done |
 | P2 | Cleanup & extraction (candidates → cleanup-report.md) | done |
-| P3 | Story coverage (5 batches) | in-progress (batches A–C done: dashboards, copilot+voice, settings/marketing/merchandising) |
+| P3 | Story coverage (5 batches) | in-progress (batches A–C done: dashboards, copilot+voice, settings/marketing/merchandising; batch D1 done: P0 doc upgrades part 1 of 2 + DvHistoryDrawer) |
 | P4 | A11y QA (a11y-checklist.md) | pending |
 | P5 | Foundations + docs + handoff + CLAUDE.md refresh | pending |
 
@@ -23,28 +23,28 @@
 
 | Component | Story | Cleanup verdict | Status |
 |-----------|-------|-----------------|--------|
-| ModuleLandingPage | ✓ | #8: keep (used by ContentLanding + MarketingLanding) | done (standard; P0 doc upgrade pending) |
+| ModuleLandingPage | ✓ | #8: keep (used by ContentLanding + MarketingLanding) | done (P0 full) |
 | MpConfirmDialog *(new, P2)* | ✓ | #4: extracted from JourneyBuilder (`ee50c8b`) | pending (P0 doc upgrade) |
 | MpDaVinciBot | ✓ | | pending (P0 doc upgrade) |
 | MpDataTableToolbar | ✓ | | pending (P0 doc upgrade) |
-| MpEmptyState | ✓ | #7: kept separate (merge rejected — see cleanup report) | pending (P0 doc upgrade) |
-| MpErrorState | ✓ | #7: kept separate (merge rejected — see cleanup report) | pending (P0 doc upgrade) |
-| MpFilterTabs | ✓ | | pending (P0 doc upgrade) |
+| MpEmptyState | ✓ | #7: kept separate (merge rejected — see cleanup report) | done (P0 full) |
+| MpErrorState | ✓ | #7: kept separate (merge rejected — see cleanup report) | done (P0 full) |
+| MpFilterTabs | ✓ | | done (P0 full) |
 | MpFloatingBulkBar | ✓ | | pending (P0 doc upgrade) |
 | MpFolderSelect | ✓ | | pending (P0 doc upgrade) |
 | MpFormDrawer | ✓ | | pending (P0 doc upgrade) |
-| MpKpiCard | ✓ | | pending (P0 doc upgrade) |
+| MpKpiCard | ✓ | | done (P0 full) |
 | MpManageFoldersDrawer | ✓ | | pending (P0 doc upgrade) |
 | MpMoveToFolderDialog | ✓ | #4: kept (form dialog, not a confirm prompt) | pending (P0 doc upgrade) |
-| MpOptionCard *(new, P2)* | ✓ | #1: extracted from CreateJourney/CreateCampaign/DataJourneys (`d230167`) | pending (P0 doc upgrade) |
+| MpOptionCard *(new, P2)* | ✓ | #1: extracted from CreateJourney/CreateCampaign/DataJourneys (`d230167`) | done (P0 full) |
 | ~~MpOverviewChart~~ | — | #9: deleted — unused (`62f26d4`) | done (deleted) |
-| MpPageHeader | ✓ | | pending (P0 doc upgrade) |
+| MpPageHeader | ✓ | | done (P0 full) |
 | MpRowActionsMenu *(new, P2)* | ✓ | #6: extracted from Journeys/DataJourneys (`012496b`) | pending (P0 doc upgrade) |
-| MpSectionHeader | ✓ | | pending (P0 doc upgrade) |
-| MpSourceCloudChip | ✓ | | pending (P0 doc upgrade) |
-| MpStatusChip | ✓ | | pending (P0 doc upgrade) |
+| MpSectionHeader | ✓ | | done (P0 full) |
+| MpSourceCloudChip | ✓ | | done (P0 full) |
+| MpStatusChip | ✓ | | done (P0 full) |
 | MpStatusToggle *(new, P2)* | ✓ | #2: extracted from Journeys/DataJourneys (`ca0c847`) | pending (P0 doc upgrade) |
-| MpTableSkeleton | ✓ | | pending (P0 doc upgrade) |
+| MpTableSkeleton | ✓ | | done (P0 full) |
 | MpWizardSteps *(new, P2)* | ✓ | #3: extracted from CreateJourney; EngineEditor kept its own (`fda29fe`) | pending (P0 doc upgrade) |
 
 ### layout/ (tier P0)
@@ -66,7 +66,7 @@
 | ~~DvDialogShell~~ | — | deleted in P2 — unused (`28dd311`) |
 | DvDraftPreview | ✓ | done (standard) |
 | DvExpandDialog | ✓ | done (standard) |
-| DvHistoryDrawer | — | pending |
+| DvHistoryDrawer | ✓ | done (standard) |
 | DvInsightCard | ✓ | done (standard) |
 | ~~DvJourneyCard~~ | — | deleted in P2 — unused (`ecc8599`) |
 | DvKpiRow | ✓ | done (standard) |
@@ -153,4 +153,5 @@
 - 2026-07-06 — P2 cleanup done. All 9 candidates resolved (16 code commits + this docs commit): 5 extractions (MpOptionCard, MpStatusToggle, MpWizardSteps, MpConfirmDialog, MpRowActionsMenu — all with stories; + internal JourneyAddStepMenu), 10 unused components deleted with grep + dynamic-map proof, #7 kept separate, #8 kept for a P3 story. New totals: **65 components, 31 stories, 34 gaps (33 actionable)**. type-check + build-storybook green throughout; preview smokes on account 2000290.
 - 2026-07-06 — P3 batch A (dashboards) done. 14 CSF3 stories added under `Dashboards/` (+`Widgets/`, `Wizard/` subgroups), 40 stories total across the batch: dialogs/drawer rendered open with re-open buttons, grid populated/edit/empty, widget card across all 6 data kinds + editable/preview, widget renderers with mock `Dashboard*Data` payloads, wizard steps with interactive draft wiring. Store-coupled stories use seeded account 2000290 (Pinia registered in preview.ts). No components modified; none skipped. New totals: **45 stories, 20 gaps (19 actionable)**. type-check + build-storybook green.
 - 2026-07-06 — P3 batch C (settings + marketing + merchandising + ModuleLandingPage) done. 7 CSF3 story files, 27 story exports: SettingsSidebar registers stub routes for the settingsMenu route names story-side (the preview router only ships a catch-all) and navigates to a named route so the active item + aria-current render; JourneyFlowColumn/JourneyMiniPreview build graphs from the template gallery via `buildSegments` (abandoned-cart linear slice, welcome YES/NO rejoin, lapsed-buyer nested A/B split, advocacy empty branch, selectedId ring with click-to-select wiring, `catalog` swap to dataNodeCatalog over a Salesforce data-journey flow); MerchProductCard uses store-shaped mock products (picsum seeds) with stateful pin/select wiring + collection-grid composition; ModuleLandingPage seeded with the MarketingLanding config (Default / Minimal / SetupComplete). Note: ModuleLandingPage DOES take a full props API — the kickoff "no props" assumption was wrong; story renders it prop-driven, no route-meta wrapper needed. No components modified; none skipped. New totals: **63 stories, 2 gaps (1 actionable: DvHistoryDrawer)**. type-check + build-storybook green; dev-Storybook smokes (sidebar active route, nested split branch chips, data palette add-menu, merch grid ranks/sale price, landing sections).
+- 2026-07-06 — P3 batch D1 (P0 doc upgrades part 1 of 2 + DvHistoryDrawer) done. 11 display/feedback P0 stories upgraded in place to full treatment — Use-when/Don't-use bullets, Usage snippets, explicit A11y sections (provides / consumer must / gaps), argTypes descriptions for every prop + slots/events, and state-matrix stories: MpStatusChip full status × type matrix (all 10 tone maps + neutral fallback) + sizes × variants, MpKpiCard trend up/down/flat + all 13 icon tones (loading unsupported — documented), MpEmptyState/MpErrorState long-copy + with/without action, MpTableSkeleton in-card composition, MpSourceCloudChip all-8-sources + size matrix, MpPageHeader backTo + long-title, MpFilterTabs docs added (stories already covered counts/no-counts/overflow), MpSectionHeader/MpOptionCard/ModuleLandingPage docs completed. MpKpiCard + MpSourceCloudChip stories import `@/styles/source-cloud-colors.css` story-side (app loads it via main.ts; preview.ts doesn't — Batch B convention). NEW DvHistoryDrawer standard story (overlay/rail/empty in a 380×560 panel frame; seeds+re-dates the useDaVinciHistory singleton for deterministic Today/Yesterday/Last-7-days/Older groups). Existing story ids/names untouched. A11y gaps flagged for P4: **MpOptionCard not keyboard-operable** (div root, no tabindex/role/focus ring, invalid aria-pressed), MpSectionHeader + empty/error-state titles are divs not headings, MpEmptyState has no live region, MpSourceCloudChip is a role-less span with aria-label, MpFilterTabs lacks aria-controls, ModuleLandingPage section eyebrows aren't headings, DvHistoryDrawer search input has no label + clear-all uses window.confirm. New totals: **64 stories, 1 gap (0 actionable — JourneyAddStepMenu is n/a)**. type-check + build-storybook green; preview smokes on dev Storybook (drawer overlay/rail/empty, status matrix tones, cloud-accent KPI tiles, back-link focus rule, autodocs sections + args table).
 - 2026-07-06 — P3 batch B (copilot + voice) done. 11 CSF3 story files added under `Copilot/` + `Copilot/Voice/`, 47 story exports: toast stack drives the `useDaVinciToasts` singleton from story setup (queue reset + long-lived seeds + transient-push button, docs in isolated iframes); widget draft card runs the full add→refine→commit flow against the seeded dashboards store (account 2000290, dashboard `2000290-home`); draft preview covers all 7 render kinds + densities; refine/expand dialogs open in tall decorators with re-open buttons; voice surface staged in a 420×640 drawer frame across all 7 `OrbitState`s; DvOrbCanvas renders the live WebGL engine on a fixed dark stage with synthetic `OrbAudioFrame` sources (built-in CSS fallback covers static builds); orbit mark/mic bar/wave bars/status pill pinned to their per-state size/speed combos. Voice stories import `@/styles/dv-orbit.css` story-side (app loads it via main.ts; preview.ts doesn't). No components modified; none skipped. New totals: **56 stories, 9 gaps (8 actionable)**. type-check + build-storybook green; preview smokes on the dev Storybook (draft add flow, teleported toasts, WebGL ready flag, keyframe resolution).

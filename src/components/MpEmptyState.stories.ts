@@ -12,10 +12,27 @@ const meta = {
 ### Overview
 The \`MpEmptyState\` component is used when a container (like a table, list, or dashboard widget) has no data to display.
 
+**Use when:** a list/table/grid resolved successfully but has zero items — first use, cleared data, or a search/filter with no matches.
+
+**Don't use when:** the data failed to load (use \`MpErrorState\` — it carries \`role="alert"\` and retry semantics) or is still loading (use \`MpTableSkeleton\`).
+
+### Usage
+\`\`\`html
+<MpEmptyState
+  v-if="!loading && items.length === 0"
+  icon="package"
+  title="No orders yet"
+  description="Once customers start placing orders, they will appear here."
+  action-label="Create Draft Order"
+  action-icon="plus"
+  @action="drawer = true"
+/>
+\`\`\`
+
 ### 🟢 Do's
 - **Do** provide a helpful, action-oriented description explaining *why* it's empty and *what* to do next.
 - **Do** include a primary action button (\`action-label\` and \`@action\`) if the user has permission to create the missing item.
-- **Do** select an appropriate Material Design icon (\`icon\` prop) that semantically relates to the missing content (e.g., \`users\` for missing contacts).
+- **Do** select an appropriate Lucide icon (\`icon\` prop) that semantically relates to the missing content (e.g., \`users\` for missing contacts).
 
 ### 🔴 Don'ts
 - **Don't** leave users dead-ended. Always provide a path forward, even if it's just "Clear filters" or a link to documentation.
@@ -25,16 +42,22 @@ The \`MpEmptyState\` component is used when a container (like a table, list, or 
 ### 💡 Best Practices
 - **Context:** If the empty state is caused by active search/filters yielding zero results, the action button should clear those filters.
 - **First Use:** For "first use" scenarios (zero data ever created), the action button should be the primary "Create New" workflow.
+
+### A11y
+- **Provides:** the CTA is a real \`v-btn\` with a visible focus indicator; the icon is decorative (\`v-icon\` is \`aria-hidden\`), so meaning lives in the title and description text.
+- **Consumer must:** write a title that makes sense out of context ("No orders yet", not "Nothing here"), and point \`@action\` somewhere useful.
+- **Gaps:** the title is a styled \`div\`, not a heading element — screen-reader users cannot jump to it via heading navigation; there is no live region, so a filter change that empties a list is not announced (noted for the Phase 4 a11y pass).
         `,
       },
     },
   },
   argTypes: {
-    icon: { control: 'text' },
-    title: { control: 'text' },
-    description: { control: 'text' },
-    actionLabel: { control: 'text' },
-    actionIcon: { control: 'text' },
+    icon: { control: 'text', description: 'Lucide icon name shown in the circular backdrop. Omit to hide.' },
+    title: { control: 'text', description: 'Required headline. Should make sense read on its own.' },
+    description: { control: 'text', description: 'Supporting copy (max-width 420px, wraps).' },
+    actionLabel: { control: 'text', description: 'CTA button label. Omit to render no button.' },
+    actionIcon: { control: 'text', description: 'Lucide icon prepended to the CTA button.' },
+    action: { control: false, description: 'Event — emitted when the CTA button is clicked.', table: { category: 'events' } },
   },
 } satisfies Meta<typeof MpEmptyState>
 
@@ -76,5 +99,19 @@ export const Contacts: Story = {
     description: 'Import contacts or add them manually to start building your audience.',
     actionLabel: 'Import Contacts',
     actionIcon: 'upload',
+  },
+}
+
+/** Long title + multi-sentence description — copy wraps inside the 420px measure without breaking layout. */
+export const LongCopy: Story = {
+  args: {
+    icon: 'inbox',
+    title: 'No abandoned-cart automations are running for this store yet',
+    description:
+      'Abandoned-cart automations recover revenue by nudging shoppers who left items behind. '
+      + 'Once you publish your first flow, enrolled contacts, sends, and recovered orders will all show up here. '
+      + 'Most merchants start with a three-email sequence spaced over 48 hours.',
+    actionLabel: 'Create abandoned-cart automation',
+    actionIcon: 'plus',
   },
 }

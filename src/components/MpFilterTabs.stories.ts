@@ -38,6 +38,46 @@ const meta = {
   title: 'Navigation/MpFilterTabs',
   component: MpFilterTabs,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Overview
+\`MpFilterTabs\` is the tab strip that filters a list or table by status, placed between \`MpPageHeader\` and the table card. Each tab carries a key, a label, and an optional count badge; the active key is bound via \`v-model\`.
+
+**Use when:** switching a single collection between mutually exclusive status views (All / Completed / Processing…), especially with counts.
+
+**Don't use when:** navigating between different pages or routes (use real navigation tabs), or when more than one filter can be active at once (use filter menus in \`MpDataTableToolbar\`).
+
+### Usage
+\`\`\`html
+<MpFilterTabs
+  v-model="activeTab"
+  :tabs="[
+    { label: 'All', key: 'all', count: total },
+    { label: 'Completed', key: 'completed', count: completedCount },
+    { label: 'Processing', key: 'processing', count: processingCount },
+  ]"
+  aria-label="Filter orders"
+/>
+\`\`\`
+
+### 🟢 Do's
+- **Do** always lead with an "All" tab so users can clear the filter in one click.
+- **Do** keep counts live — they update as the underlying data changes and are the fastest triage signal on the page.
+
+### 🔴 Don'ts
+- **Don't** exceed ~8 tabs; the strip scrolls with overflow arrows (see the ManyTabs story) but scanning suffers.
+- **Don't** use counts for slow/expensive queries — a wrong count is worse than none (counts of 0 are hidden automatically).
+
+### A11y
+- **Provides:** Vuetify \`v-tabs\` semantics — a \`tablist\` with arrow-key navigation and a visible active indicator; the \`ariaLabel\` prop names the tablist (defaults to "Filter results"); count chips render inside the tab so they are part of its accessible name; overflow arrows appear when tabs don't fit.
+- **Consumer must:** pass a domain-specific \`ariaLabel\` ("Filter orders"), and keep tab labels distinct.
+- **Gaps:** the tabs are not linked to a \`tabpanel\` via \`aria-controls\` (the filtered table sits outside the component) — standard for the filter-tab pattern, but worth noting for the Phase 4 pass.
+        `,
+      },
+    },
+  },
   args: {
     modelValue: 'all',
     tabs: orderTabs,
@@ -45,7 +85,8 @@ const meta = {
   },
   argTypes: {
     modelValue: { control: 'text', description: 'Active tab key (v-model)' },
-    tabs: { control: 'object', description: 'Array of tab objects with label, key, and optional count' },
+    tabs: { control: 'object', description: 'Array of tab objects with label, key, and optional count (counts of 0 are hidden)' },
+    ariaLabel: { control: 'text', description: 'Accessible name for the tablist. Default: "Filter results" — always override with the domain ("Filter orders").' },
   },
   render: (args) => ({
     components: { MpFilterTabs },
