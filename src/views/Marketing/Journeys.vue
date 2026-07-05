@@ -15,6 +15,10 @@ const accountId = computed(() => route.params.accountId as string)
 function openBuilder(id: number) {
   router.push({ name: 'JourneyBuilder', params: { accountId: accountId.value, id: String(id) } })
 }
+
+function openCreateWizard() {
+  router.push({ name: 'CreateJourney', params: { accountId: accountId.value } })
+}
 const search = ref('')
 const activeTab = ref('all')
 
@@ -66,7 +70,7 @@ function toggleStatus(journey: typeof store.journeys[0]) {
       :subtitle="`${store.journeys.filter(j => j.status === 'Active').length} active · ${store.journeys.reduce((a, j) => a + j.enrolled, 0).toLocaleString()} total enrolled`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openBuilder(0)">New Journey</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreateWizard()">New Journey</v-btn>
       </template>
       <template #tabs>
         <MpFilterTabs v-model="activeTab" :tabs="tabsWithCounts" aria-label="Filter journeys by status" />
@@ -195,7 +199,7 @@ function toggleStatus(journey: typeof store.journeys[0]) {
             :description="search ? 'Try adjusting your search terms.' : 'Create your first automation journey to engage customers at the right moment.'"
             :action-label="!search ? 'New Journey' : undefined"
             action-icon="plus"
-            @action="openBuilder(0)"
+            @action="openCreateWizard()"
           />
         </template>
       </v-data-table>

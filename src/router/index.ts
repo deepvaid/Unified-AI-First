@@ -105,6 +105,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/content', name: 'ContentLanding', component: () => import('@/views/Marketing/ContentLanding.vue') },
   { path: '/accounts/:accountId/campaigns/new', name: 'CreateCampaign', component: () => import('@/views/Marketing/CreateCampaign.vue'), meta: { fullPage: true } },
   { path: '/accounts/:accountId/campaigns', name: 'EmailCampaigns', component: () => import('@/views/Marketing/EmailCampaigns.vue') },
+  { path: '/accounts/:accountId/journeys/new', name: 'CreateJourney', component: () => import('@/views/Marketing/CreateJourney.vue'), meta: { fullPage: true } },
   { path: '/accounts/:accountId/journeys/:id/builder', name: 'JourneyBuilder', component: () => import('@/views/Marketing/JourneyBuilder.vue'), meta: { fullPage: true } },
   { path: '/accounts/:accountId/acquisition/forms/create', name: 'FormBuilder', component: () => import('@/views/Marketing/FormBuilder.vue'), meta: { fullPage: true } },
   { path: '/accounts/:accountId/sms_campaigns', name: 'SmsCampaigns', component: () => import('@/views/Marketing/TransactionalEmail.vue') },
