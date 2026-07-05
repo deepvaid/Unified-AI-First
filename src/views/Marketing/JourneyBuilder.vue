@@ -3,10 +3,11 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import JourneyFlowColumn from '@/components/marketing/JourneyFlowColumn.vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 import type { CatalogItem, FlowNode, NodeCategory } from '@/stores/journeyFlowData'
 import { catalogByKind, nodeCatalog } from '@/stores/journeyFlowData'
-import { addNodeAfter as insertNodeAfter, removeNode } from '@/composables/useFlowTree'
+import { addNodeAfter as insertNodeAfter, buildSegments, removeNode } from '@/composables/useFlowTree'
 
 const router = useRouter()
 const route = useRoute()
@@ -27,16 +28,6 @@ const categoryColor: Record<NodeCategory, string> = {
   delay: 'warning',
   end: 'grey-darken-1',
 }
-const headerStyle = (c: NodeCategory) => c === 'end'
-  ? {
-      backgroundColor: 'rgba(var(--v-theme-on-surface), 0.06)',
-      borderBottomColor: 'rgba(var(--v-theme-on-surface), 0.12)',
-    }
-  : {
-      backgroundColor: `rgba(var(--v-theme-${categoryColor[c]}), 0.12)`,
-      borderBottomColor: `rgba(var(--v-theme-${categoryColor[c]}), 0.24)`,
-    }
-
 const journeyName = computed({
   get: () => journey.value?.name ?? '',
   set: v => { if (journey.value && v.trim()) journey.value.name = v.trim() },
@@ -62,20 +53,8 @@ const paletteSections: PaletteSection[] = [
 const openSections = reactive<Record<string, boolean>>({ triggers: true, actions: true, logic: true, delay: true })
 function toggleSection(key: string) { openSections[key] = !openSections[key] }
 
-const addableItems = computed(() => paletteSections.filter(s => s.key !== 'triggers').flatMap(s => s.items))
-
 const selectedNode = computed(() => nodes.value.find(n => n.id === selectedNodeId.value))
-const sortedNodes = computed(() => {
-  const result: FlowNode[] = []; const visited = new Set<string>()
-  function walk(id: string) {
-    if (visited.has(id)) return; visited.add(id)
-    const n = nodes.value.find(x => x.id === id)
-    if (n) { result.push(n); n.children.forEach(walk) }
-  }
-  const first = nodes.value[0]
-  if (first) walk(first.id)
-  return result
-})
+const segments = computed(() => buildSegments(nodes.value))
 
 // ── Node interactions ────────────────────────────────────────────────────────
 function selectNode(id: string) { selectedNodeId.value = id }
@@ -122,9 +101,29 @@ function duplicateNode(id: string) {
   selectedNodeId.value = copy.id
 }
 
+const deleteDialog = ref(false)
+const deleteTargetId = ref<string | null>(null)
+const deleteTarget = computed(() => nodes.value.find(n => n.id === deleteTargetId.value))
+
 function deleteNode(id: string) {
   const target = nodes.value.find(n => n.id === id)
   if (!target || target.category === 'trigger') return
+  if (target.category === 'filter') {
+    // Deleting a split removes its branch subtrees — confirm first.
+    deleteTargetId.value = id
+    deleteDialog.value = true
+    return
+  }
+  performDelete(id)
+}
+
+function confirmDelete() {
+  if (deleteTargetId.value) performDelete(deleteTargetId.value)
+  deleteDialog.value = false
+  deleteTargetId.value = null
+}
+
+function performDelete(id: string) {
   const removed = removeNode(nodes.value, id)
   if (selectedNodeId.value && removed.includes(selectedNodeId.value)) selectedNodeId.value = null
 }
@@ -246,75 +245,11 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
         <div class="jb-canvas__scroll">
           <div class="d-flex flex-column align-center pa-8" :style="zoomStyle">
             <div class="d-flex flex-column align-center" style="min-width:460px;">
-              <template v-for="node in sortedNodes" :key="node.id">
-                <div class="d-flex flex-column align-center flow-node-wrap">
-                  <div class="flow-node" :class="{ 'flow-node--selected': selectedNodeId === node.id }">
-                    <button class="flow-node__open" :aria-label="`Configure step: ${node.title}`" @click="selectNode(node.id)">
-                      <span class="flow-node__header" :style="headerStyle(node.category)">
-                        <v-avatar :color="categoryColor[node.category]" size="34" rounded="lg" class="flex-shrink-0">
-                          <v-icon color="white" size="18">{{ node.icon }}</v-icon>
-                        </v-avatar>
-                        <span class="flow-node__heading">
-                          <span class="flow-node__type">{{ categoryLabel(node.category) }}</span>
-                          <span class="flow-node__title">{{ node.title }}</span>
-                          <span v-if="node.contacts != null" class="flow-node__meta">
-                            <v-icon size="11" class="mr-1">users</v-icon>{{ node.contacts.toLocaleString() }} contacts
-                          </span>
-                        </span>
-                      </span>
-                      <span class="flow-node__body">{{ node.subtitle }}</span>
-                    </button>
-
-                    <div class="flow-node__tools">
-                      <v-menu location="bottom end">
-                        <template #activator="{ props }">
-                          <v-btn v-bind="props" icon="more-vertical" variant="text" size="x-small"
-                            :aria-label="`Actions for ${node.title}`" @click.stop></v-btn>
-                        </template>
-                        <v-card rounded="lg" border flat width="180" class="py-1">
-                          <v-list density="compact" nav>
-                            <v-list-item prepend-icon="pencil" title="Configure" @click="selectNode(node.id)"></v-list-item>
-                            <v-list-item prepend-icon="copy" title="Duplicate" :disabled="node.category === 'trigger' || node.category === 'filter'"
-                              @click="duplicateNode(node.id)"></v-list-item>
-                            <v-list-item prepend-icon="trash-2" title="Delete" base-color="error"
-                              :disabled="node.category === 'trigger'" @click="deleteNode(node.id)"></v-list-item>
-                          </v-list>
-                        </v-card>
-                      </v-menu>
-                    </div>
-                  </div>
-
-                  <!-- Connector + add-step -->
-                  <div class="d-flex flex-column align-center">
-                    <div class="flow-connector"></div>
-                    <v-menu :close-on-content-click="true" location="right">
-                      <template #activator="{ props }">
-                        <v-btn v-bind="props" icon="plus" size="x-small" variant="flat" color="primary" class="add-btn"
-                          aria-label="Add step after this one"></v-btn>
-                      </template>
-                      <v-card rounded="lg" border flat width="220" class="py-2">
-                        <div class="px-3 py-1 text-caption text-medium-emphasis font-weight-bold text-uppercase border-b mb-1">Add step</div>
-                        <v-list density="compact" nav>
-                          <v-list-item v-for="tmpl in addableItems" :key="tmpl.kind" rounded="lg" @click="addNodeAfter(node.id, tmpl)">
-                            <template #prepend>
-                              <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">
-                                <v-icon color="white" size="13">{{ tmpl.icon }}</v-icon>
-                              </v-avatar>
-                            </template>
-                            <v-list-item-title class="text-caption ml-2">{{ tmpl.title }}</v-list-item-title>
-                          </v-list-item>
-                        </v-list>
-                      </v-card>
-                    </v-menu>
-                    <div class="flow-connector"></div>
-                  </div>
-                </div>
-              </template>
-
-              <v-card variant="outlined" rounded="lg" class="pa-3 d-flex align-center justify-center gap-2 text-medium-emphasis flow-end">
-                <v-icon size="18">flag</v-icon>
-                <span class="text-caption font-weight-medium">End of journey</span>
-              </v-card>
+              <JourneyFlowColumn :segments="segments" :selected-id="selectedNodeId"
+                @select="selectNode"
+                @add="(afterId, item, childIndex) => addNodeAfter(afterId, item, childIndex)"
+                @duplicate="duplicateNode"
+                @remove="deleteNode" />
             </div>
           </div>
         </div>
@@ -390,6 +325,23 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
     <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
       <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ saveMessage }}</div>
     </v-snackbar>
+
+    <v-dialog v-model="deleteDialog" max-width="440">
+      <v-card rounded="lg" border flat class="pa-1">
+        <v-card-title class="text-body-1 font-weight-bold d-flex align-center gap-2">
+          <v-icon color="error" size="20">triangle-alert</v-icon>
+          Delete this split?
+        </v-card-title>
+        <v-card-text class="text-body-2 text-medium-emphasis">
+          Deleting "{{ deleteTarget?.title }}" also removes every step inside its branches.
+          Steps after the point where the branches rejoin are kept.
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" class="text-none" @click="deleteDialog = false">Cancel</v-btn>
+          <v-btn color="error" variant="flat" class="text-none" @click="confirmDelete">Delete split</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -438,36 +390,7 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
 .jb-canvas { flex: 1 1 auto; position: relative; overflow: hidden; }
 .jb-canvas__scroll { position: absolute; inset: 0; overflow: auto; }
 
-.flow-node {
-  position: relative; width: 460px; background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px; overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s;
-}
-.flow-node:hover { border-color: rgba(var(--v-theme-primary), 0.5); }
-.flow-node--selected { border-color: rgb(var(--v-theme-primary)); box-shadow: 0 0 0 1px rgb(var(--v-theme-primary)); }
-
-.flow-node__open {
-  display: block; width: 100%; padding: 0; margin: 0; border: 0;
-  background: transparent; text-align: left; cursor: pointer; color: inherit;
-}
-.flow-node__open:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; border-radius: 12px; }
-.flow-node__header {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 64px 10px 12px;
-  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-.flow-node__heading { display: flex; flex-direction: column; min-width: 0; }
-.flow-node__type { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(var(--v-theme-on-surface), 0.55); line-height: 1.4; }
-.flow-node__title { font-size: 0.875rem; font-weight: 700; color: rgb(var(--v-theme-on-surface)); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.flow-node__meta { display: inline-flex; align-items: center; margin-top: 2px; font-size: 0.6875rem; font-weight: 600; line-height: 1.3; color: rgba(var(--v-theme-on-surface), 0.6); }
-.flow-node__body { display: block; padding: 10px 14px; font-size: 0.75rem; color: rgba(var(--v-theme-on-surface), 0.65); }
-.flow-node__tools { position: absolute; top: 8px; right: 8px; }
-
-.flow-connector { width: 2px; height: 22px; background: rgba(var(--v-border-color), 0.6); }
-.add-btn { opacity: 0.4; transition: opacity 0.15s, transform 0.15s; }
-.flow-node-wrap:hover .add-btn { opacity: 1; transform: scale(1.08); }
-.add-btn:focus-visible { opacity: 1; }
-.flow-end { border-style: dashed; width: 200px; }
+/* Node card, connector, and branch styles live in JourneyFlowColumn.vue */
 
 /* ── Zoom controls ───────────────────────────────────────────────────────── */
 .jb-zoom { position: absolute; bottom: 16px; right: 16px; padding: 2px; gap: 2px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
