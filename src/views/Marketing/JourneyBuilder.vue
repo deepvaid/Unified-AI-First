@@ -5,6 +5,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import JourneyFlowColumn from '@/components/marketing/JourneyFlowColumn.vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
+import { useCopilotStore } from '@/stores/useCopilot'
 import type { CatalogItem, FlowNode, NodeCategory } from '@/stores/journeyFlowData'
 import { catalogByKind, nodeCatalog } from '@/stores/journeyFlowData'
 import { addNodeAfter as insertNodeAfter, buildSegments, flowValidation, removeNode } from '@/composables/useFlowTree'
@@ -174,6 +175,11 @@ function cancelPanel() { selectedNodeId.value = null }
 
 function saveDraftJourney() { saveMessage.value = 'Draft saved'; saveSnack.value = true }
 
+const copilot = useCopilotStore()
+function askDaVinci() {
+  copilot.openWithPrompt(`Review my journey "${journeyName.value}" and suggest improvements to timing and copy.`)
+}
+
 // ── Pre-activate validation ───────────────────────────────────────────────────
 const issues = computed(() => flowValidation(nodes.value))
 const issueErrors = computed(() => issues.value.filter(i => i.level === 'error'))
@@ -248,6 +254,12 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
         <MpStatusChip :status="journeyStatus" type="general" size="x-small" />
       </div>
       <div class="d-flex align-center gap-2">
+        <v-tooltip text="Ask Da Vinci to review this journey" location="bottom">
+          <template #activator="{ props }">
+            <v-btn v-bind="props" icon="sparkles" variant="text" size="small" color="primary"
+              aria-label="Ask Da Vinci to review this journey" @click="askDaVinci"></v-btn>
+          </template>
+        </v-tooltip>
         <v-tooltip text="Journey settings" location="bottom">
           <template #activator="{ props }">
             <v-btn v-bind="props" icon="settings" variant="text" size="small" aria-label="Journey settings"></v-btn>

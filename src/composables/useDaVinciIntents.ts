@@ -1,5 +1,7 @@
 import { ref } from 'vue'
+import router from '@/router'
 import { askGemini, type GeminiTurn } from '@/services/geminiClient'
+import { generateJourneyDraft, goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
 import {
   audiences,
   campaignNames,
@@ -24,7 +26,7 @@ import {
 // multi-turn `pending` clarification state. `handle()` is synchronous — each
 // surface owns its own thinking delay.
 
-export type DvIntentKind = 'campaign' | 'product' | 'revenue' | 'segment' | 'engine' | 'fallback'
+export type DvIntentKind = 'campaign' | 'product' | 'revenue' | 'segment' | 'engine' | 'journey' | 'fallback'
 
 export type DvCardDescriptor =
   | {
@@ -110,9 +112,29 @@ function findAudience(text: string): AudienceKey | null {
   return null
 }
 
+/** Maps free text onto a journey goal, if one is recognizable. */
+export function detectJourneyGoal(text: string): JourneyGoal | null {
+  const t = text.toLowerCase()
+  if (/welcome|onboard|new subscriber/.test(t)) return 'welcome'
+  if (/abandon|cart/.test(t)) return 'abandoned-cart'
+  if (/nurture|lead/.test(t)) return 'nurture'
+  if (/advoca|referral|refer a friend|vip perk/.test(t)) return 'advocacy'
+  if (/re-?engage|inactive|quiet|dormant/.test(t)) return 're-engagement'
+  if (/win[- ]?back|lapsed|stopped buying/.test(t)) return 'lapsed-buyer'
+  return null
+}
+
 // ── Classifier (Marojarvis port) ─────────────────────────────────────────────
 export function classifyIntent(text: string): DvIntentKind {
   const t = text.toLowerCase()
+  // Journey CREATION only — "review my journey…" style asks fall through to
+  // the generic advisor (Gemini/fallback) instead of drafting a new journey.
+  if (
+    /\b(build|create|draft|make|set ?up|start|want|need)\b[^.]*\b(journey|automation|drip|flow|series|sequence)\b/.test(t)
+    || /welcome series|abandoned cart (journey|flow|recovery)|win[- ]?back (journey|flow|series)/.test(t)
+  ) {
+    return 'journey'
+  }
   if (
     /\b(campaign|promo|promotion|blast|newsletter)\b|send .*(email|campaign)|email .*(blast|campaign)/.test(t)
   ) {
@@ -313,6 +335,54 @@ export function useDaVinciIntents() {
     }
   }
 
+  function openJourneyWizard(goal: JourneyGoal) {
+    const accountId = String(router.currentRoute.value.params.accountId ?? '2000290')
+    void router.push({ name: 'CreateJourney', params: { accountId }, query: { ai: '1', goal } })
+  }
+
+  function buildJourneyDraftIntent(text: string, context: Record<string, string>): DvIntentResult {
+    const goal = detectJourneyGoal(text) ?? (context.goal as JourneyGoal | undefined) ?? null
+
+    if (!goal) {
+      pending.value = { intent: 'journey', slot: 'goal', context: {} }
+      return {
+        intent: 'journey',
+        reply: 'Happy to draft that journey. What should it do?',
+        speech: 'Happy to draft that journey. What should it do?',
+        cards: [],
+        quickReplies: goalOptions.slice(0, 4).map(g => ({ label: g.label, value: g.label, icon: g.icon })),
+        pending: pending.value,
+      }
+    }
+
+    // Summarize the exact draft the wizard will open with (same generator).
+    const draft = generateJourneyDraft({ goal, audience: 'All subscribers' })
+    const emails = draft.sequence.length
+    pending.value = { intent: 'journey', slot: 'open', context: { goal } }
+
+    return {
+      intent: 'journey',
+      reply: `${draft.rationale} I've pre-filled the journey wizard with this brief — nothing is created until you review the draft and accept it.`,
+      speech: `Draft ready: ${emails} emails. Want me to open the journey wizard?`,
+      cards: [
+        {
+          type: 'insight',
+          props: {
+            headline: `Draft ready: ${draft.suggestedName}`,
+            description: `${emails} ${emails === 1 ? 'email' : 'emails'}, branching on contact behaviour. Review it in the wizard — add your brand and offer there to personalize every subject line.`,
+            severity: 'success',
+            icon: 'workflow',
+          },
+        },
+      ],
+      quickReplies: [
+        { label: 'Open in journey wizard', value: 'Open the journey wizard', icon: 'sparkles' },
+        { label: 'Different goal', value: 'Draft a different journey', icon: 'refresh-ccw' },
+      ],
+      pending: pending.value,
+    }
+  }
+
   function handle(text: string): DvIntentResult {
     const trimmed = text.trim()
 
@@ -324,6 +394,22 @@ export function useDaVinciIntents() {
       }
       if (p.intent === 'engine') {
         return buildEngineAdvice(trimmed, p.context)
+      }
+      if (p.intent === 'journey' && p.slot === 'goal') {
+        return buildJourneyDraftIntent(trimmed, {})
+      }
+      if (p.intent === 'journey' && p.slot === 'open') {
+        if (/\b(open|yes|go|sure|please|wizard|do it)\b/i.test(trimmed)) {
+          openJourneyWizard((p.context.goal as JourneyGoal) ?? 'welcome')
+          return {
+            intent: 'journey',
+            reply: 'Opening the journey wizard — your brief is pre-filled and the draft is ready to review.',
+            speech: 'Opening the journey wizard.',
+            cards: [],
+            pending: null,
+          }
+        }
+        // Anything else falls through to a fresh classification below.
       }
     }
 
@@ -354,6 +440,8 @@ export function useDaVinciIntents() {
         return buildSegment(trimmed)
       case 'engine':
         return buildEngineAdvice(trimmed, {})
+      case 'journey':
+        return buildJourneyDraftIntent(trimmed, {})
       default:
         return buildFallback()
     }

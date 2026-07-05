@@ -80,9 +80,9 @@ const copilotDrawerWidth = computed(() => {
       <router-view v-else />
     </v-main>
 
-    <!-- Da Vinci Copilot Drawer -->
+    <!-- Da Vinci Copilot Drawer — also on fullPage routes (journey/campaign
+         builders dock it beside the canvas instead of covering it) -->
     <v-navigation-drawer
-      v-if="!isFullPage"
       v-model="copilot.isOpen"
       location="right"
       :width="copilotDrawerWidth"
