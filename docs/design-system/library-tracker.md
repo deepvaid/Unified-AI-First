@@ -11,7 +11,7 @@
 | P0 | Scaffold (this file + program prompt) | done |
 | P1 | Recon: token audit + inventory (artifacts: audit.md, inventory.md) | done |
 | P2 | Cleanup & extraction (candidates → cleanup-report.md) | done |
-| P3 | Story coverage (5 batches) | pending |
+| P3 | Story coverage (5 batches) | in-progress (batch A: dashboards done) |
 | P4 | A11y QA (a11y-checklist.md) | pending |
 | P5 | Foundations + docs + handoff + CLAUDE.md refresh | pending |
 
@@ -88,22 +88,22 @@
 
 | Component | Story | Status |
 |-----------|-------|--------|
-| CreateDashboardDialog | — | pending |
-| DashboardGrid | — | pending |
+| CreateDashboardDialog | ✓ | done (standard) |
+| DashboardGrid | ✓ | done (standard) |
 | ~~DashboardListCard~~ | — | deleted in P2 — unused (`c2c14d1`) |
 | ~~DashboardListTable~~ | — | deleted in P2 — unused (`c70d568`) |
-| DashboardSetupGuide | — | pending |
-| DashboardWidgetActionMenu | — | pending |
-| DashboardWidgetCard | — | pending |
-| EditDashboardDialog | — | pending |
-| WidgetWizardDrawer | — | pending |
-| widgets/DashboardActivityWidget | — | pending |
-| widgets/DashboardChartWidget | — | pending |
-| widgets/DashboardKpiWidget | — | pending |
-| widgets/DashboardPieWidget | — | pending |
-| widgets/DashboardTableWidget | — | pending |
-| wizard/WidgetEditStep | — | pending |
-| wizard/WidgetLibraryStep | — | pending |
+| DashboardSetupGuide | ✓ | done (standard) |
+| DashboardWidgetActionMenu | ✓ | done (standard) |
+| DashboardWidgetCard | ✓ | done (standard) |
+| EditDashboardDialog | ✓ | done (standard) |
+| WidgetWizardDrawer | ✓ | done (standard) |
+| widgets/DashboardActivityWidget | ✓ | done (standard) |
+| widgets/DashboardChartWidget | ✓ | done (standard) |
+| widgets/DashboardKpiWidget | ✓ | done (standard) |
+| widgets/DashboardPieWidget | ✓ | done (standard) |
+| widgets/DashboardTableWidget | ✓ | done (standard) |
+| wizard/WidgetEditStep | ✓ | done (standard) |
+| wizard/WidgetLibraryStep | ✓ | done (standard) |
 | ~~wizard/WidgetWizardManualSteps~~ | — | deleted in P2 — unused (`a4b9ffb`) |
 | ~~wizard/WidgetWizardModeChooser~~ | — | deleted in P2 — unused (`cf57ffd`) |
 
@@ -151,3 +151,4 @@
 - 2026-07-05 — Program scaffolded: prompt + tracker seeded (52+ components, 29 stories at kickoff; nested dirs copilot/voice, dashboards/widgets, dashboards/wizard pending inventory). Decisions locked: full scope + extractions, full cleanup authority under safety rails, tiered docs, repo-based handoff.
 - 2026-07-05 — P1 recon done. Corrected totals: **69 components, 31 stories, 38 gaps**. Audit highlights: token pipeline healthy (3 drift values), Storybook preview already registers Vuetify+Pinia+Router with theme toolbar, a11y addon missing, 33 components with px font-size literals, dark-mode scrollbar bug, tokens.scss deprecation candidate. Inventory adds 10 grep-zero components as cleanup candidate #9 (dynamic-usage re-verification required).
 - 2026-07-06 — P2 cleanup done. All 9 candidates resolved (16 code commits + this docs commit): 5 extractions (MpOptionCard, MpStatusToggle, MpWizardSteps, MpConfirmDialog, MpRowActionsMenu — all with stories; + internal JourneyAddStepMenu), 10 unused components deleted with grep + dynamic-map proof, #7 kept separate, #8 kept for a P3 story. New totals: **65 components, 31 stories, 34 gaps (33 actionable)**. type-check + build-storybook green throughout; preview smokes on account 2000290.
+- 2026-07-06 — P3 batch A (dashboards) done. 14 CSF3 stories added under `Dashboards/` (+`Widgets/`, `Wizard/` subgroups), 40 stories total across the batch: dialogs/drawer rendered open with re-open buttons, grid populated/edit/empty, widget card across all 6 data kinds + editable/preview, widget renderers with mock `Dashboard*Data` payloads, wizard steps with interactive draft wiring. Store-coupled stories use seeded account 2000290 (Pinia registered in preview.ts). No components modified; none skipped. New totals: **45 stories, 20 gaps (19 actionable)**. type-check + build-storybook green.
