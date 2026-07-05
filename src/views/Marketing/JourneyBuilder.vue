@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -7,7 +7,7 @@ import JourneyFlowColumn from '@/components/marketing/JourneyFlowColumn.vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 import type { CatalogItem, FlowNode, NodeCategory } from '@/stores/journeyFlowData'
 import { catalogByKind, nodeCatalog } from '@/stores/journeyFlowData'
-import { addNodeAfter as insertNodeAfter, buildSegments, removeNode } from '@/composables/useFlowTree'
+import { addNodeAfter as insertNodeAfter, buildSegments, flowValidation, removeNode } from '@/composables/useFlowTree'
 
 const router = useRouter()
 const route = useRoute()
@@ -173,10 +173,33 @@ function saveNode() {
 function cancelPanel() { selectedNodeId.value = null }
 
 function saveDraftJourney() { saveMessage.value = 'Draft saved'; saveSnack.value = true }
-function activateJourney() {
+
+// ── Pre-activate validation ───────────────────────────────────────────────────
+const issues = computed(() => flowValidation(nodes.value))
+const issueErrors = computed(() => issues.value.filter(i => i.level === 'error'))
+const issuesOpen = ref(false)
+
+function tryActivate() {
+  if (journeyStatus.value === 'Active') {
+    store.setJourneyStatus(journeyId.value, 'Paused')
+    saveMessage.value = 'Journey paused'
+    saveSnack.value = true
+    void nextTick(() => { issuesOpen.value = false })
+    return
+  }
+  if (issueErrors.value.length > 0) {
+    issuesOpen.value = true
+    return
+  }
   store.setJourneyStatus(journeyId.value, 'Active')
   saveMessage.value = 'Journey activated'
   saveSnack.value = true
+  void nextTick(() => { issuesOpen.value = false })
+}
+
+function jumpToIssue(nodeId?: string) {
+  if (nodeId) selectedNodeId.value = nodeId
+  issuesOpen.value = false
 }
 
 // ── Canvas zoom ───────────────────────────────────────────────────────────────
@@ -230,9 +253,40 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
             <v-btn v-bind="props" icon="settings" variant="text" size="small" aria-label="Journey settings"></v-btn>
           </template>
         </v-tooltip>
+        <v-btn v-if="issues.length" variant="text" size="small" class="text-none" prepend-icon="triangle-alert"
+          :color="issueErrors.length ? 'error' : 'warning'" @click="issuesOpen = true">
+          {{ issues.length }} {{ issues.length === 1 ? 'issue' : 'issues' }}
+        </v-btn>
         <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
         <v-btn variant="outlined" size="small" class="text-none" prepend-icon="save" @click="saveDraftJourney">Save draft</v-btn>
-        <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="play" @click="activateJourney">Activate</v-btn>
+        <v-menu v-model="issuesOpen" :close-on-content-click="false" :open-on-click="false" location="bottom end">
+          <template #activator="{ props: menu }">
+            <v-btn v-bind="menu" color="primary" variant="flat" size="small" class="text-none"
+              :prepend-icon="journeyStatus === 'Active' ? 'pause' : 'play'" @click.stop="tryActivate">
+              {{ journeyStatus === 'Active' ? 'Pause' : 'Activate' }}
+            </v-btn>
+          </template>
+          <v-card rounded="lg" border flat width="360" class="py-1">
+            <div class="px-4 py-2 border-b d-flex align-center gap-2">
+              <v-icon size="16" :color="issueErrors.length ? 'error' : 'warning'">triangle-alert</v-icon>
+              <span class="text-body-2 font-weight-bold">
+                {{ issueErrors.length ? 'Fix these before activating' : 'Heads up' }}
+              </span>
+              <v-btn icon="x" variant="text" size="x-small" class="ml-auto" aria-label="Close issues" @click="issuesOpen = false"></v-btn>
+            </div>
+            <v-list density="compact" nav max-height="300" class="overflow-y-auto">
+              <v-list-item v-for="(issue, i) in issues" :key="i" rounded="lg"
+                :disabled="!issue.nodeId" @click="jumpToIssue(issue.nodeId)">
+                <template #prepend>
+                  <v-icon size="15" :color="issue.level === 'error' ? 'error' : 'warning'">
+                    {{ issue.level === 'error' ? 'circle-alert' : 'triangle-alert' }}
+                  </v-icon>
+                </template>
+                <v-list-item-title class="text-caption ml-2" style="white-space: normal;">{{ issue.message }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-card>
+        </v-menu>
       </div>
     </div>
 
