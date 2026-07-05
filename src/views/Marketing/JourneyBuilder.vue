@@ -53,6 +53,16 @@ const paletteSections: PaletteSection[] = [
 const openSections = reactive<Record<string, boolean>>({ triggers: true, actions: true, logic: true, delay: true })
 function toggleSection(key: string) { openSections[key] = !openSections[key] }
 
+// Palette search — filters items across sections; matching sections auto-expand.
+const paletteQuery = ref('')
+const visibleSections = computed(() => {
+  const q = paletteQuery.value.trim().toLowerCase()
+  if (!q) return paletteSections
+  return paletteSections
+    .map(s => ({ ...s, items: s.items.filter(i => `${i.title} ${i.subtitle}`.toLowerCase().includes(q)) }))
+    .filter(s => s.items.length > 0)
+})
+
 const selectedNode = computed(() => nodes.value.find(n => n.id === selectedNodeId.value))
 const segments = computed(() => buildSegments(nodes.value))
 
@@ -128,15 +138,34 @@ function performDelete(id: string) {
   if (selectedNodeId.value && removed.includes(selectedNodeId.value)) selectedNodeId.value = null
 }
 
-// ── Config panel draft (real round-trip for name + description) ───────────────
+// ── Config panel draft (name + description + schema-driven fields) ───────────
 const draft = reactive({ title: '', subtitle: '' })
+const draftConfig = ref<Record<string, string | number | boolean>>({})
+const selectedFields = computed(() => catalogByKind[selectedNode.value?.kind ?? '']?.fields ?? [])
+
 watch(selectedNodeId, () => {
   const n = selectedNode.value
-  if (n) { draft.title = n.title; draft.subtitle = n.subtitle }
+  if (!n) return
+  draft.title = n.title
+  draft.subtitle = n.subtitle
+  const config: Record<string, string | number | boolean> = {}
+  for (const f of catalogByKind[n.kind]?.fields ?? []) {
+    config[f.key] = n.config[f.key] ?? (f.type === 'switch' ? false : f.type === 'select' ? f.options?.[0] ?? '' : '')
+  }
+  draftConfig.value = config
 })
+
 function saveNode() {
   const n = selectedNode.value
-  if (n) { n.title = draft.title.trim() || n.title; n.subtitle = draft.subtitle; n.configured = true }
+  if (n) {
+    n.title = draft.title.trim() || n.title
+    n.subtitle = draft.subtitle
+    for (const f of selectedFields.value) {
+      const v = draftConfig.value[f.key]
+      n.config[f.key] = f.type === 'number' ? Number(v) || 0 : v ?? ''
+    }
+    n.configured = true
+  }
   saveMessage.value = 'Step updated'
   saveSnack.value = true
   selectedNodeId.value = null
@@ -213,10 +242,15 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
       <aside class="jb-palette border-r bg-surface d-flex flex-column">
         <div class="pa-3 border-b">
           <div class="text-overline text-medium-emphasis" style="line-height:1.2;">Journey steps</div>
-          <div class="text-caption text-medium-emphasis">Click a step to add it to your flow</div>
+          <div class="text-caption text-medium-emphasis mb-2">Click a step to add it to your flow</div>
+          <v-text-field v-model="paletteQuery" placeholder="Search steps..." variant="outlined" density="compact"
+            hide-details clearable prepend-inner-icon="search" aria-label="Search steps" />
         </div>
         <div class="flex-grow-1 overflow-y-auto pa-2">
-          <div v-for="s in paletteSections" :key="s.key" class="palette-section">
+          <div v-if="visibleSections.length === 0" class="text-caption text-medium-emphasis text-center pa-4">
+            No steps match "{{ paletteQuery }}"
+          </div>
+          <div v-for="s in visibleSections" :key="s.key" class="palette-section">
             <button class="palette-section__header" :aria-expanded="openSections[s.key]" :aria-controls="`palette-${s.key}`"
               @click="toggleSection(s.key)">
               <span class="palette-dot" :style="{ backgroundColor: `rgb(var(--v-theme-${s.color}))` }"></span>
@@ -224,7 +258,7 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
               <span class="text-caption text-disabled mr-1">{{ s.items.length }}</span>
               <v-icon size="18" class="palette-chevron" :class="{ 'palette-chevron--open': openSections[s.key] }">chevron-down</v-icon>
             </button>
-            <div v-show="openSections[s.key]" :id="`palette-${s.key}`" class="palette-section__items">
+            <div v-show="openSections[s.key] || paletteQuery" :id="`palette-${s.key}`" class="palette-section__items">
               <button v-for="item in s.items" :key="item.kind" class="palette-item" @click="addFromPalette(item)">
                 <v-avatar :color="categoryColor[item.category]" size="28" rounded="lg">
                   <v-icon color="white" size="15">{{ item.icon }}</v-icon>
@@ -284,35 +318,35 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
         </div>
 
         <div class="pa-4 flex-grow-1 overflow-y-auto">
+          <v-alert v-if="!selectedNode.configured" type="warning" variant="tonal" density="compact" rounded="lg" class="text-caption mb-4">
+            This step isn't configured yet — review the settings below and save.
+          </v-alert>
+
           <v-text-field v-model="draft.title" label="Step name" variant="outlined" density="compact" class="mb-3"></v-text-field>
           <v-text-field v-model="draft.subtitle" label="Description" variant="outlined" density="compact" class="mb-4"></v-text-field>
-          <v-divider class="mb-4"></v-divider>
+          <v-divider v-if="selectedFields.length" class="mb-4"></v-divider>
 
-          <template v-if="selectedNode.category === 'trigger'">
-            <v-select label="Trigger condition" :items="['Any Order', 'Order > $50', 'First Order Only']" model-value="Any Order" variant="outlined" density="compact" class="mb-3"></v-select>
-            <v-select label="Applies to list" :items="['All Contacts', 'VIP Customer Circle', 'Newsletter Subscribers']" model-value="All Contacts" variant="outlined" density="compact"></v-select>
+          <!-- Schema-driven fields from the node catalog -->
+          <template v-for="f in selectedFields" :key="f.key">
+            <v-select v-if="f.type === 'select'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="f.options"
+              variant="outlined" density="compact" class="mb-3"
+              @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
+            <v-text-field v-else-if="f.type === 'number'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" type="number"
+              variant="outlined" density="compact" class="mb-3"
+              @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
+            <v-switch v-else-if="f.type === 'switch'" v-model="draftConfig[f.key]" :label="f.label"
+              color="primary" density="compact" hide-details class="mb-3"></v-switch>
+            <v-text-field v-else :model-value="String(draftConfig[f.key] ?? '')" :label="f.label"
+              variant="outlined" density="compact" class="mb-3"
+              @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
           </template>
-          <template v-else-if="selectedNode.kind === 'send-email'">
-            <v-select label="Email template" :items="['Thank You Email', 'Review Request', 'Win-Back', 'Upsell Offer']" variant="outlined" density="compact" class="mb-3"></v-select>
-            <v-text-field label="Subject line" :model-value="selectedNode.subtitle" variant="outlined" density="compact" class="mb-3"></v-text-field>
-            <v-text-field label="Sender name" model-value="MaropostX Store" variant="outlined" density="compact"></v-text-field>
-          </template>
-          <template v-else-if="selectedNode.category === 'delay'">
-            <div class="d-flex gap-2 mb-3">
-              <v-text-field label="Duration" model-value="7" variant="outlined" density="compact" type="number" style="width:90px;flex-shrink:0;"></v-text-field>
-              <v-select label="Unit" :items="['Minutes', 'Hours', 'Days', 'Weeks']" model-value="Days" variant="outlined" density="compact"></v-select>
-            </div>
-            <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">Journey pauses here for the specified duration.</v-alert>
-          </template>
-          <template v-else-if="selectedNode.category === 'filter'">
-            <v-select label="Check event" :items="['Email Opened', 'Email Clicked', 'Product Purchased', 'Contact Field']" model-value="Email Opened" variant="outlined" density="compact" class="mb-3"></v-select>
-            <v-select label="Time window" :items="['Since last email', 'Last 24 hours', 'Last 7 days']" model-value="Since last email" variant="outlined" density="compact" class="mb-3"></v-select>
-            <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">YES branch: condition met. NO branch: not met.</v-alert>
-          </template>
-          <template v-else>
-            <v-text-field label="Tag name" model-value="Reviewed" variant="outlined" density="compact" class="mb-3"></v-text-field>
-            <v-select label="Operation" :items="['Apply Tag', 'Remove Tag']" model-value="Apply Tag" variant="outlined" density="compact"></v-select>
-          </template>
+
+          <v-alert v-if="selectedNode.category === 'delay'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
+            Journey pauses here before moving to the next step.
+          </v-alert>
+          <v-alert v-else-if="selectedNode.category === 'filter'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
+            Contacts are routed into one of the branches: {{ (selectedNode.branchLabels ?? []).join(' · ') }}.
+          </v-alert>
         </div>
 
         <div class="pa-4 border-t d-flex gap-2 flex-shrink-0">
