@@ -7,6 +7,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusToggle from '@/components/MpStatusToggle.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 
 const store = useCampaignsStore()
 const router = useRouter()
@@ -159,23 +160,18 @@ function toggleStatus(journey: typeof store.journeys[0]) {
                 ></v-btn>
               </template>
             </v-tooltip>
-            <v-menu>
-              <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" icon="more-vertical" variant="text" size="x-small" color="medium-emphasis" aria-label="Journey actions"></v-btn>
-              </template>
-              <v-list density="compact" min-width="180">
-                <v-list-item prepend-icon="bar-chart-2" title="View analytics" value="analytics"></v-list-item>
-                <v-list-item prepend-icon="copy" title="Duplicate" value="duplicate"></v-list-item>
-                <v-list-item
-                  :prepend-icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
-                  :title="item.status === 'Active' ? 'Pause journey' : 'Activate journey'"
-                  value="toggle"
-                  @click="toggleStatus(item)"
-                ></v-list-item>
-                <v-divider></v-divider>
-                <v-list-item prepend-icon="trash-2" title="Delete" value="delete" class="text-error"></v-list-item>
-              </v-list>
-            </v-menu>
+            <MpRowActionsMenu ariaLabel="Journey actions">
+              <v-list-item prepend-icon="bar-chart-2" title="View analytics" value="analytics"></v-list-item>
+              <v-list-item prepend-icon="copy" title="Duplicate" value="duplicate"></v-list-item>
+              <v-list-item
+                :prepend-icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
+                :title="item.status === 'Active' ? 'Pause journey' : 'Activate journey'"
+                value="toggle"
+                @click="toggleStatus(item)"
+              ></v-list-item>
+              <v-divider></v-divider>
+              <v-list-item prepend-icon="trash-2" title="Delete" value="delete" class="text-error"></v-list-item>
+            </MpRowActionsMenu>
           </div>
         </template>
 

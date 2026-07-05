@@ -8,6 +8,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpStatusToggle from '@/components/MpStatusToggle.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
 import { useDataJourneysStore, type DataJourney } from '@/stores/useDataJourneys'
 import { dataJourneyTemplates } from '@/stores/journeyFlowData'
@@ -171,22 +172,16 @@ function createDataJourney() {
                   aria-label="Edit in builder" @click="openBuilder(item.id)"></v-btn>
               </template>
             </v-tooltip>
-            <v-menu>
-              <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" icon="more-vertical" variant="text" size="x-small" color="medium-emphasis"
-                  aria-label="Data journey actions"></v-btn>
-              </template>
-              <v-list density="compact" min-width="180">
-                <v-list-item
-                  :prepend-icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
-                  :title="item.status === 'Active' ? 'Pause' : 'Activate'"
-                  @click="toggleStatus(item)"
-                ></v-list-item>
-                <v-divider></v-divider>
-                <v-list-item prepend-icon="trash-2" title="Delete" class="text-error"
-                  @click="store.removeDataJourney(item.id)"></v-list-item>
-              </v-list>
-            </v-menu>
+            <MpRowActionsMenu ariaLabel="Data journey actions">
+              <v-list-item
+                :prepend-icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
+                :title="item.status === 'Active' ? 'Pause' : 'Activate'"
+                @click="toggleStatus(item)"
+              ></v-list-item>
+              <v-divider></v-divider>
+              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error"
+                @click="store.removeDataJourney(item.id)"></v-list-item>
+            </MpRowActionsMenu>
           </div>
         </template>
 
