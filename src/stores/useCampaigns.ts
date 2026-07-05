@@ -126,11 +126,19 @@ export const useCampaignsStore = defineStore('campaigns', () => {
     return journeyFlows.value[id]
   }
 
-  /** Creates a journey from a template and returns the new journey id. */
-  function createJourney(payload: { name: string; templateId: string; settings: JourneySettings }): number {
+  /** Creates a journey from a template — or from pre-built nodes (Da Vinci drafts) — and returns the new journey id. */
+  function createJourney(payload: { name: string; templateId?: string; nodes?: FlowNode[]; settings: JourneySettings }): number {
     const id = Math.max(0, ...journeys.value.map(j => j.id)) + 1
-    const flow = instantiateTemplate(payload.templateId, id)
-    const template = templateById[payload.templateId]
+    const flow = payload.nodes
+      ? payload.nodes.map(n => ({
+          ...n,
+          id: `j${id}-${n.id}`,
+          children: n.children.map(c => (c === '' ? '' : `j${id}-${c}`)),
+          config: { ...n.config },
+          branchLabels: n.branchLabels ? [...n.branchLabels] : undefined,
+        }))
+      : instantiateTemplate(payload.templateId ?? 'scratch', id)
+    const template = payload.templateId ? templateById[payload.templateId] : undefined
     journeys.value.unshift({
       id,
       name: payload.name,

@@ -187,8 +187,10 @@ function buildRationale(nodes: FlowNode[], brief: JourneyBrief): string {
   const days = nodes.filter(n => n.category === 'delay')
     .reduce((a, n) => a + (String(n.config.unit) === 'Days' ? Number(n.config.duration) || 0 : 0), 0)
   const brand = brief.brand?.trim()
-  return `A ${goalLabel[brief.goal].toLowerCase()} flow for ${brief.audience}${brand ? ` from ${brand}` : ''}: `
-    + `${emails} ${emails === 1 ? 'email' : 'emails'}${days ? ` over ~${days} days` : ''}`
+  const label = goalLabel[brief.goal].toLowerCase()
+  const article = /^[aeiou]/.test(label) ? 'An' : 'A'
+  return `${article} ${label} flow for ${brief.audience}${brand ? ` from ${brand}` : ''}: `
+    + `${emails} ${emails === 1 ? 'email' : 'emails'}${days ? ` over ~${days} ${days === 1 ? 'day' : 'days'}` : ''}`
     + `${branches ? `, with ${branches} ${branches === 1 ? 'branch' : 'branches'} reacting to what contacts do` : ''}.`
 }
 
@@ -259,7 +261,10 @@ export function applyRefinement(draft: JourneyDraft, kind: RefinementKind, brief
     const alreadyHasCheck = nodes.some(n => n.category === 'filter' && n.title === 'Purchased since?')
     if (!alreadyHasCheck) {
       const ctx = copyContext(brief)
-      const tail = lastMainNodeId(nodes)
+      // The win-back check belongs after the last email touch, not the main-path tail
+      // (which can sit inside an earlier YES branch).
+      const emails = nodes.filter(n => n.kind === 'send-email')
+      const tail = emails.length ? emails[emails.length - 1]!.id : lastMainNodeId(nodes)
       const split = addNodeAfter(nodes, tail, catalogByKind['yes-no']!)
       split.title = 'Purchased since?'
       split.subtitle = 'Check for a completed order'
