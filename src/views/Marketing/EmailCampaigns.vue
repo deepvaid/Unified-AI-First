@@ -7,7 +7,6 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFolderSelect from '@/components/MpFolderSelect.vue'
 import MpManageFoldersDrawer from '@/components/MpManageFoldersDrawer.vue'
@@ -22,9 +21,6 @@ const foldersStore = useFoldersStore()
 const route = useRoute()
 const router = useRouter()
 
-const creatorDrawer = ref(false)
-const newCampaignName = ref('')
-const creatorStep = ref(1)
 const search = ref('')
 const { loading } = useInitialLoad()
 
@@ -113,16 +109,7 @@ const sentCampaigns = store.campaigns.filter(c => c.status === 'Sent')
 const avgOpenRate = sentCampaigns.length ? Math.floor(sentCampaigns.reduce((a, c) => a + (c.metrics.opens / (c.metrics.sent || 1)) * 100, 0) / sentCampaigns.length) : 0
 
 const openCreator = () => {
-  creatorStep.value = 1
-  newCampaignName.value = ''
-  creatorDrawer.value = true
-}
-
-const submitCampaign = () => {
-  if (newCampaignName.value) {
-    store.createCampaign(newCampaignName.value)
-    creatorDrawer.value = false
-  }
+  router.push({ name: 'CreateCampaign', params: { accountId: route.params.accountId } })
 }
 </script>
 
@@ -274,41 +261,11 @@ const submitCampaign = () => {
             action-label="Create Campaign"
             action-icon="plus"
             class="py-10"
-            @action="creatorDrawer = true"
+            @action="openCreator"
           />
         </template>
       </v-data-table>
     </v-card>
-
-    <!-- Campaign Creator Drawer -->
-    <MpFormDrawer v-model="creatorDrawer" title="Create Campaign" :width="500">
-      <v-stepper v-model="creatorStep" vertical elevation="0" class="bg-transparent pa-0">
-        <v-stepper-item title="Setup Basics" value="1" color="primary">
-          <v-card variant="flat" class="mt-2 mb-6">
-            <v-text-field v-model="newCampaignName" label="Campaign Name" variant="outlined" density="comfortable" class="mb-4" placeholder="e.g. Black Friday Sale 2026"></v-text-field>
-            <v-select label="Target Audience List" :items="['All Contacts', 'Newsletter Subscribers', 'VIP Customers', 'Re-engagement List']" variant="outlined" density="comfortable" class="mb-4"></v-select>
-            <v-text-field label="Email Subject Line" variant="outlined" density="comfortable" class="mb-4" placeholder="e.g. 🔥 40% Off Sitewide — Today Only!"></v-text-field>
-            <v-btn color="primary" class="text-none" @click="creatorStep = 2" :disabled="!newCampaignName">Continue</v-btn>
-          </v-card>
-        </v-stepper-item>
-
-        <v-stepper-item title="Design Email" value="2" color="primary">
-          <v-card variant="flat" class="mt-2 mb-6 text-center pa-6 bg-surface-variant border-dashed rounded-xl cursor-pointer">
-            <v-icon size="48" color="primary" class="mb-2">palette</v-icon>
-            <div class="font-weight-bold mb-1">Open Visual Editor</div>
-            <div class="text-caption text-medium-emphasis">Use the drag-and-drop email builder</div>
-          </v-card>
-          <v-btn color="primary" class="text-none mr-2" @click="creatorStep = 3" variant="flat">Skip for now</v-btn>
-        </v-stepper-item>
-
-        <v-stepper-item title="Review & Send" value="3" color="primary">
-          <v-alert type="info" variant="tonal" class="mb-4 text-body-2" rounded="lg">
-            Estimated audience size: <strong>~18,432 contacts.</strong> Scheduled for immediate delivery.
-          </v-alert>
-          <v-btn color="success" size="large" block class="text-none" prepend-icon="rocket" @click="submitCampaign">Launch Campaign</v-btn>
-        </v-stepper-item>
-      </v-stepper>
-    </MpFormDrawer>
 
     <MpManageFoldersDrawer
       v-model="manageFoldersOpen"

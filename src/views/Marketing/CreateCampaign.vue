@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 
 const router = useRouter()
+const route = useRoute()
 const store = useCampaignsStore()
 
 const step = ref(1)
@@ -43,20 +44,31 @@ const estimatedAudience = computed(() => {
   return (base[selectedList.value] || 0).toLocaleString()
 })
 
+// Suppressions — one multi-select instead of the legacy four separate
+// suppress dropdowns (list / journey / segment / secure list).
+const suppressed = ref<string[]>([])
+const suppressOptions = [
+  'Global Suppression List',
+  'Recent Purchasers (journey)',
+  'Unengaged 180 Days (segment)',
+  'Competitor Domains (secure list)',
+]
+
 // Step 4: Schedule
 const scheduleType = ref<'now' | 'scheduled'>('now')
 const scheduleDate = ref('')
 const scheduleTime = ref('09:00')
 const timezone = ref('America/New_York')
 
-// Step 5: Review — computed summary
+// Step 5: Review — computed summary (each row knows which step edits it)
 const reviewItems = computed(() => [
-  { label: 'Campaign Name', value: setup.value.name || '—', icon: 'pencil' },
-  { label: 'Subject Line', value: setup.value.subject || '—', icon: 'mail' },
-  { label: 'Sender', value: `${setup.value.senderName} <${setup.value.senderEmail}>`, icon: 'user' },
-  { label: 'Template', value: templates.find(t => t.id === selectedTemplate.value)?.name || '—', icon: 'palette' },
-  { label: 'Audience', value: `${selectedList.value} (${estimatedAudience.value} contacts)`, icon: 'users' },
-  { label: 'Send Time', value: scheduleType.value === 'now' ? 'Immediately after launch' : `${scheduleDate.value} at ${scheduleTime.value} ${timezone.value}`, icon: 'clock' },
+  { label: 'Campaign Name', value: setup.value.name || '—', icon: 'pencil', step: 1 },
+  { label: 'Subject Line', value: setup.value.subject || '—', icon: 'mail', step: 1 },
+  { label: 'Sender', value: `${setup.value.senderName} <${setup.value.senderEmail}>`, icon: 'user', step: 1 },
+  { label: 'Template', value: templates.find(t => t.id === selectedTemplate.value)?.name || '—', icon: 'palette', step: 2 },
+  { label: 'Audience', value: `${selectedList.value} (${estimatedAudience.value} contacts)`, icon: 'users', step: 3 },
+  { label: 'Suppressed', value: suppressed.value.length ? suppressed.value.join(' · ') : 'None', icon: 'user-x', step: 3 },
+  { label: 'Send Time', value: scheduleType.value === 'now' ? 'Immediately after launch' : `${scheduleDate.value} at ${scheduleTime.value} ${timezone.value}`, icon: 'clock', step: 4 },
 ])
 
 const stepValid = computed(() => {
@@ -100,7 +112,7 @@ function launch() {
 }
 
 function viewCampaigns() {
-  router.push('/campaigns')
+  router.push({ name: 'EmailCampaigns', params: { accountId: route.params.accountId } })
 }
 
 function createAnother() {
@@ -108,6 +120,7 @@ function createAnother() {
   setup.value = { name: '', subject: '', preheader: '', senderName: 'MaropostX Store', senderEmail: 'hello@mystore.com', replyTo: '' }
   selectedTemplate.value = null
   selectedList.value = 'Master Subscriber List'
+  suppressed.value = []
   scheduleType.value = 'now'
   scheduleDate.value = ''
   scheduleTime.value = '09:00'
@@ -115,7 +128,7 @@ function createAnother() {
 }
 
 function cancel() {
-  router.push('/campaigns')
+  router.push({ name: 'EmailCampaigns', params: { accountId: route.params.accountId } })
 }
 
 const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launch']
@@ -220,7 +233,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
               <v-card
                 :variant="selectedTemplate === tmpl.id ? 'elevated' : 'outlined'"
                 :border="selectedTemplate !== tmpl.id"
-                :color="selectedTemplate === tmpl.id ? 'primary' : 'surface'"
+                :color="selectedTemplate === tmpl.id ? 'primary' : undefined"
                 rounded="lg"
                 class="pa-5 cursor-pointer template-card"
                 :class="{ 'border-primary': selectedTemplate === tmpl.id }"
@@ -251,7 +264,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
             <v-col v-for="list in lists" :key="list" cols="12" sm="6">
               <v-card
                 :variant="selectedList === list ? 'tonal' : 'outlined'"
-                :color="selectedList === list ? 'primary' : 'surface'"
+                :color="selectedList === list ? 'primary' : undefined"
                 rounded="lg"
                 class="pa-4 cursor-pointer d-flex align-center gap-3"
                 @click="selectedList = list"
@@ -265,11 +278,29 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
               </v-card>
             </v-col>
           </v-row>
+          <div class="text-subtitle-2 font-weight-bold mb-3">Suppress (optional)</div>
+          <v-select
+            v-model="suppressed"
+            :items="suppressOptions"
+            label="Don't send to…"
+            multiple
+            chips
+            closable-chips
+            clearable
+            variant="outlined"
+            density="comfortable"
+            hint="Lists, journeys, segments, and secure lists — all suppressions in one place"
+            persistent-hint
+            class="mb-6"
+          ></v-select>
+
           <v-card variant="tonal" color="success" rounded="lg" class="pa-4 d-flex align-center gap-4">
             <v-icon color="success" size="32">user-check</v-icon>
             <div>
               <div class="text-h6 font-weight-bold text-success">{{ estimatedAudience }}</div>
-              <div class="text-body-2 text-medium-emphasis">estimated recipients</div>
+              <div class="text-body-2 text-medium-emphasis">
+                estimated recipients{{ suppressed.length ? ' before suppressions' : '' }}
+              </div>
             </div>
           </v-card>
         </v-card>
@@ -336,7 +367,7 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
                 <template v-slot:append>
                   <v-tooltip :text="`Edit ${item.label}`" location="top">
                     <template v-slot:activator="{ props }">
-                      <v-btn v-bind="props" icon="pencil" variant="text" size="small" color="primary" :aria-label="`Edit ${item.label}`" @click="step = Math.ceil(idx / 2) + 1"></v-btn>
+                      <v-btn v-bind="props" icon="pencil" variant="text" size="small" color="primary" :aria-label="`Edit ${item.label}`" @click="step = item.step"></v-btn>
                     </template>
                   </v-tooltip>
                 </template>
