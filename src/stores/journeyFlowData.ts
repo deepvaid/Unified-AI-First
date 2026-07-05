@@ -180,8 +180,66 @@ export const nodeCatalog: CatalogItem[] = [
   { kind: 'end', category: 'end', title: 'End', subtitle: 'Journey stops here', icon: 'flag', fields: [] },
 ]
 
+// ── Data journey node catalog (mirrors the legacy data-journey palette) ──────
+
+const frequencyOptions = ['Every 15 minutes', 'Hourly', 'Daily', 'Weekly']
+const importSources = ['Salesforce CRM', 'Shopify Orders API', 'Contacts CSV (SFTP)', 'Google Sheets']
+const exportTargets = ['Data Warehouse (SFTP)', 'S3 Bucket', 'Relational Tables']
+const dataCampaigns = ['Welcome Email', 'Post-Purchase Thank You', 'Weekly Newsletter']
+
+export const dataNodeCatalog: CatalogItem[] = [
+  // Triggers
+  { kind: 'dj-scheduled', category: 'trigger', title: 'Scheduled', subtitle: 'Run once at a set time', icon: 'calendar-clock', fields: [
+    { key: 'date', label: 'Date', type: 'text' },
+    { key: 'time', label: 'Time', type: 'text' },
+  ] },
+  { kind: 'dj-recurring', category: 'trigger', title: 'Recurring', subtitle: 'Run on a schedule', icon: 'repeat', fields: [
+    { key: 'frequency', label: 'Frequency', type: 'select', options: frequencyOptions },
+    { key: 'time', label: 'At time', type: 'text' },
+  ] },
+  { kind: 'dj-import-finished', category: 'trigger', title: 'Import Finished', subtitle: 'An import completes', icon: 'download', fields: [
+    { key: 'import', label: 'Import', type: 'select', options: ['Any import', ...importSources] },
+  ] },
+  { kind: 'dj-export-finished', category: 'trigger', title: 'Export Finished', subtitle: 'An export completes', icon: 'upload', fields: [
+    { key: 'export', label: 'Export', type: 'select', options: ['Any export', ...exportTargets] },
+  ] },
+  { kind: 'dj-campaign-sent', category: 'trigger', title: 'Campaign Sent', subtitle: 'A campaign finishes sending', icon: 'send', fields: [
+    { key: 'campaign', label: 'Campaign', type: 'select', options: ['Any campaign', ...dataCampaigns] },
+  ] },
+  { kind: 'dj-report-generated', category: 'trigger', title: 'Report Generated', subtitle: 'A report becomes available', icon: 'file-text', fields: [
+    { key: 'report', label: 'Report', type: 'select', options: ['Campaign report', 'Journey report', 'Sales summary'] },
+  ] },
+  { kind: 'dj-file-uploaded', category: 'trigger', title: 'File Uploaded', subtitle: 'A file lands in a location', icon: 'file-plus', fields: [
+    { key: 'location', label: 'Location', type: 'select', options: ['SFTP /inbox', 'S3 bucket', 'Manual upload'] },
+  ] },
+  { kind: 'dj-api-event', category: 'trigger', title: 'API Event', subtitle: 'External webhook received', icon: 'code', fields: [
+    { key: 'event', label: 'Event name', type: 'text' },
+  ] },
+
+  // Actions
+  { kind: 'dj-ftp-upload', category: 'action', title: 'FTP Upload', subtitle: 'Push a file to a server', icon: 'upload', fields: [
+    { key: 'host', label: 'Host', type: 'text' },
+    { key: 'path', label: 'Remote path', type: 'text' },
+  ] },
+  { kind: 'dj-send-campaign', category: 'action', title: 'Send Campaign', subtitle: 'Trigger a campaign send', icon: 'send', fields: [
+    { key: 'campaign', label: 'Campaign', type: 'select', options: dataCampaigns },
+  ] },
+  { kind: 'dj-start-import', category: 'action', title: 'Start Import', subtitle: 'Pull data into Maropost', icon: 'download', fields: [
+    { key: 'source', label: 'Source', type: 'select', options: importSources },
+  ] },
+  { kind: 'dj-start-export', category: 'action', title: 'Start Export', subtitle: 'Push data out of Maropost', icon: 'upload', fields: [
+    { key: 'destination', label: 'Destination', type: 'select', options: exportTargets },
+  ] },
+  { kind: 'dj-send-to-facebook', category: 'action', title: 'Send to Facebook', subtitle: 'Sync to a custom audience', icon: 'facebook', fields: [
+    { key: 'audience', label: 'Audience', type: 'select', options: ['Lookalike Seed', 'Retargeting Pool'] },
+  ] },
+  { kind: 'dj-secure-list-import', category: 'action', title: 'Secure List Import', subtitle: 'Import a hashed list', icon: 'shield', fields: [
+    { key: 'list', label: 'List name', type: 'text' },
+  ] },
+]
+
 export const catalogByKind: Record<string, CatalogItem> = Object.fromEntries(
-  nodeCatalog.map(item => [item.kind, item]),
+  [...nodeCatalog, ...dataNodeCatalog].map(item => [item.kind, item]),
 )
 
 // ── Flow node helper ─────────────────────────────────────────────────────────
@@ -327,11 +385,9 @@ export const templateById: Record<string, JourneyTemplate> = Object.fromEntries(
   journeyTemplates.map(t => [t.id, t]),
 )
 
-/** Clones a template's graph with journey-scoped node ids. */
-export function instantiateTemplate(templateId: string, journeyId: number): FlowNode[] {
-  const tpl = templateById[templateId] ?? journeyTemplates[0]
-  if (!tpl) return []
-  const idMap = new Map(tpl.nodes.map(n => [n.id, `j${journeyId}-${n.id}`]))
+/** Clones a template's node graph with prefixed ids. */
+export function instantiateFrom(tpl: JourneyTemplate, prefix: string): FlowNode[] {
+  const idMap = new Map(tpl.nodes.map(n => [n.id, `${prefix}-${n.id}`]))
   return tpl.nodes.map(n => ({
     ...n,
     id: idMap.get(n.id)!,
@@ -340,6 +396,55 @@ export function instantiateTemplate(templateId: string, journeyId: number): Flow
     config: { ...n.config },
   }))
 }
+
+/** Clones a marketing template's graph with journey-scoped node ids. */
+export function instantiateTemplate(templateId: string, journeyId: number): FlowNode[] {
+  const tpl = templateById[templateId] ?? journeyTemplates[0]
+  if (!tpl) return []
+  return instantiateFrom(tpl, `j${journeyId}`)
+}
+
+// ── Data journey templates (mirror the legacy data-journey flows) ────────────
+
+export const dataJourneyTemplates: JourneyTemplate[] = [
+  {
+    id: 'salesforce-sync',
+    name: 'Salesforce Lead Sync',
+    description: 'Pull new Salesforce leads every hour and greet them with your welcome campaign.',
+    icon: 'repeat',
+    nodes: [
+      makeNode({ id: 't1', kind: 'dj-recurring', subtitle: 'Every hour, on the hour', config: { frequency: 'Hourly' }, children: ['a1'] }),
+      makeNode({ id: 'a1', kind: 'dj-start-import', title: 'Import: Salesforce leads', subtitle: 'Salesforce CRM → Contacts', config: { source: 'Salesforce CRM' }, children: ['a2'] }),
+      makeNode({ id: 'a2', kind: 'dj-send-campaign', title: 'Send: Welcome Email', subtitle: 'To newly imported leads', config: { campaign: 'Welcome Email' } }),
+    ],
+  },
+  {
+    id: 'shopify-orders',
+    name: 'Shopify Order Import',
+    description: 'Sync Shopify orders into relational tables every 15 minutes and thank new buyers.',
+    icon: 'shopping-cart',
+    nodes: [
+      makeNode({ id: 't1', kind: 'dj-recurring', subtitle: 'Every 15 minutes', config: { frequency: 'Every 15 minutes' }, children: ['a1'] }),
+      makeNode({ id: 'a1', kind: 'dj-start-import', title: 'Import: Shopify orders', subtitle: 'Shopify Orders API → Relational Tables', config: { source: 'Shopify Orders API' }, children: ['a2'] }),
+      makeNode({ id: 'a2', kind: 'dj-send-campaign', title: 'Send: Post-Purchase Thank You', subtitle: 'To customers on new orders', config: { campaign: 'Post-Purchase Thank You' } }),
+    ],
+  },
+  {
+    id: 'warehouse-export',
+    name: 'Data Warehouse Export',
+    description: 'Export all contact activity nightly and upload it to your warehouse over SFTP.',
+    icon: 'upload',
+    nodes: [
+      makeNode({ id: 't1', kind: 'dj-recurring', subtitle: 'Daily at 02:00', config: { frequency: 'Daily', time: '02:00' }, children: ['a1'] }),
+      makeNode({ id: 'a1', kind: 'dj-start-export', title: 'Export: Contact activity', subtitle: 'All contacts → Data Warehouse (SFTP)', config: { destination: 'Data Warehouse (SFTP)' }, children: ['a2'] }),
+      makeNode({ id: 'a2', kind: 'dj-ftp-upload', title: 'Upload to warehouse', subtitle: 'sftp://warehouse.internal/exports', config: { host: 'warehouse.internal', path: '/exports' } }),
+    ],
+  },
+]
+
+export const dataTemplateById: Record<string, JourneyTemplate> = Object.fromEntries(
+  dataJourneyTemplates.map(t => [t.id, t]),
+)
 
 // ── Seeded flows for the mock journeys in useCampaigns ───────────────────────
 

@@ -7,6 +7,8 @@ import type { FlowSegment } from '@/composables/useFlowTree'
 const props = defineProps<{
   segments: FlowSegment[]
   selectedId: string | null
+  /** Palette for the add-step menus; defaults to the marketing catalog. */
+  catalog?: CatalogItem[]
 }>()
 
 const emit = defineEmits<{
@@ -34,7 +36,9 @@ const headerStyle = (c: NodeCategory) => c === 'end'
       borderBottomColor: `rgba(var(--v-theme-${categoryColor[c]}), 0.24)`,
     }
 
-const addableItems = nodeCatalog.filter(i => i.category !== 'trigger' && i.category !== 'end')
+const addableItems = computed(() =>
+  (props.catalog ?? nodeCatalog).filter(i => i.category !== 'trigger' && i.category !== 'end'),
+)
 
 const branchChipColor = (label: string) =>
   label.startsWith('YES') ? 'success' : label.startsWith('NO') ? 'error' : 'secondary'
@@ -130,7 +134,7 @@ const endsRun = computed(() => {
 
         <template v-if="!b.empty">
           <div class="flow-connector"></div>
-          <JourneyFlowColumn :segments="b.segments" :selected-id="selectedId"
+          <JourneyFlowColumn :segments="b.segments" :selected-id="selectedId" :catalog="catalog"
             @select="id => emit('select', id)"
             @add="(afterId, item, childIndex) => emit('add', afterId, item, childIndex)"
             @duplicate="id => emit('duplicate', id)"
