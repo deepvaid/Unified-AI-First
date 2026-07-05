@@ -215,6 +215,12 @@ function cancel() {
 }
 .cj-step__rail { width: 32px; height: 1.5px; background: rgba(var(--v-border-color), var(--v-border-opacity)); }
 
+/* Small screens: step chips collapse to numbers so the toolbar fits */
+@media (max-width: 700px) {
+  .cj-step { font-size: 0; gap: 0; }
+  .cj-step__rail { width: 14px; }
+}
+
 /* Template cards */
 .cj-card { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
 .cj-card:hover { border-color: rgba(var(--v-theme-primary), 0.5); }
