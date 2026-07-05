@@ -4,7 +4,7 @@
 // (generateJourneyDraft) can later delegate to /api/gemini structured output.
 
 import type { FlowNode } from '@/stores/journeyFlowData'
-import { catalogByKind, instantiateTemplate } from '@/stores/journeyFlowData'
+import { catalogByKind, dataTemplateById, instantiateTemplate } from '@/stores/journeyFlowData'
 import { addNodeAfter, removeNode } from '@/composables/useFlowTree'
 
 export type JourneyGoal = 'welcome' | 'abandoned-cart' | 'nurture' | 'advocacy' | 're-engagement' | 'lapsed-buyer'
@@ -221,6 +221,33 @@ export function generateJourneyDraft(brief: JourneyBrief, seed = 0): JourneyDraf
   for (const node of nodes) node.configured = node.configured || node.category === 'trigger'
   personalize(nodes, brief, seed)
   return finishDraft(nodes, brief)
+}
+
+// ── Data journeys: describe-to-draft ─────────────────────────────────────────
+
+export interface DataJourneyHint {
+  templateId: string
+  name: string
+  frequency?: string
+}
+
+/** Scripted parse of a plain-English data-journey description. */
+export function parseDataJourneyDescription(text: string): DataJourneyHint | null {
+  const t = text.toLowerCase()
+  let templateId: string | null = null
+  if (/salesforce|crm|lead/.test(t)) templateId = 'salesforce-sync'
+  else if (/shopify|order/.test(t)) templateId = 'shopify-orders'
+  else if (/export|warehouse|sftp|backup|s3/.test(t)) templateId = 'warehouse-export'
+  if (!templateId) return null
+
+  let frequency: string | undefined
+  if (/15 ?min/.test(t)) frequency = 'Every 15 minutes'
+  else if (/hour/.test(t)) frequency = 'Hourly'
+  else if (/daily|nightly|every day|night/.test(t)) frequency = 'Daily'
+  else if (/week/.test(t)) frequency = 'Weekly'
+
+  const base = dataTemplateById[templateId]!.name
+  return { templateId, name: frequency ? `${base} (${frequency.toLowerCase()})` : base, frequency }
 }
 
 /** Applies a one-tap refinement to an existing draft (mutates a copy). */
