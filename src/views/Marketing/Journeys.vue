@@ -6,6 +6,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusToggle from '@/components/MpStatusToggle.vue'
 
 const store = useCampaignsStore()
 const router = useRouter()
@@ -110,20 +111,7 @@ function toggleStatus(journey: typeof store.journeys[0]) {
 
         <!-- Status — inline v-switch (matches real Maropost UX) -->
         <template v-slot:item.status="{ item }">
-          <div class="d-flex align-center gap-2">
-            <v-switch
-              :model-value="item.status === 'Active'"
-              color="success"
-              density="compact"
-              hide-details
-              :disabled="item.status === 'Draft'"
-              @update:model-value="toggleStatus(item)"
-            ></v-switch>
-            <span
-              class="text-caption font-weight-medium"
-              :class="item.status === 'Active' ? 'text-success' : item.status === 'Paused' ? 'text-warning' : 'text-medium-emphasis'"
-            >{{ item.status }}</span>
-          </div>
+          <MpStatusToggle :status="item.status" @toggle="toggleStatus(item)" />
         </template>
 
         <!-- Trigger -->

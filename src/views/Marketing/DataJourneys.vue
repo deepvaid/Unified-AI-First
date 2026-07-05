@@ -7,6 +7,7 @@ import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
+import MpStatusToggle from '@/components/MpStatusToggle.vue'
 import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
 import { useDataJourneysStore, type DataJourney } from '@/stores/useDataJourneys'
 import { dataJourneyTemplates } from '@/stores/journeyFlowData'
@@ -147,19 +148,7 @@ function createDataJourney() {
         </template>
 
         <template v-slot:item.status="{ item }">
-          <div class="d-flex align-center gap-2">
-            <v-switch
-              :model-value="item.status === 'Active'"
-              color="success"
-              density="compact"
-              hide-details
-              :disabled="item.status === 'Draft'"
-              @update:model-value="toggleStatus(item)"
-            ></v-switch>
-            <span class="text-caption font-weight-medium"
-              :class="item.status === 'Active' ? 'text-success' : item.status === 'Paused' ? 'text-warning' : 'text-medium-emphasis'"
-            >{{ item.status }}</span>
-          </div>
+          <MpStatusToggle :status="item.status" @toggle="toggleStatus(item)" />
         </template>
 
         <template v-slot:item.instances="{ item }">
