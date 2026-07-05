@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { CatalogItem, NodeCategory } from '@/stores/journeyFlowData'
 import { nodeCatalog } from '@/stores/journeyFlowData'
 import type { FlowSegment } from '@/composables/useFlowTree'
+import JourneyAddStepMenu from './JourneyAddStepMenu.vue'
 
 const props = defineProps<{
   segments: FlowSegment[]
@@ -101,25 +102,12 @@ const endsRun = computed(() => {
       <!-- Outgoing edge (linear nodes only — filter edges are the branch columns) -->
       <div v-if="!seg.branches" class="d-flex flex-column align-center">
         <div class="flow-connector"></div>
-        <v-menu :close-on-content-click="true" location="right">
-          <template #activator="{ props: menu }">
+        <JourneyAddStepMenu :items="addableItems" @pick="item => emit('add', seg.node.id, item, 0)">
+          <template #default="{ props: menu }">
             <v-btn v-bind="menu" icon="plus" size="x-small" variant="flat" color="primary" class="add-btn"
               aria-label="Add step after this one"></v-btn>
           </template>
-          <v-card rounded="lg" border flat width="220" class="py-2">
-            <div class="px-3 py-1 text-caption text-medium-emphasis font-weight-bold text-uppercase border-b mb-1">Add step</div>
-            <v-list density="compact" nav>
-              <v-list-item v-for="tmpl in addableItems" :key="tmpl.kind" rounded="lg" @click="emit('add', seg.node.id, tmpl, 0)">
-                <template #prepend>
-                  <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">
-                    <v-icon color="white" size="13">{{ tmpl.icon }}</v-icon>
-                  </v-avatar>
-                </template>
-                <v-list-item-title class="text-caption ml-2">{{ tmpl.title }}</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-card>
-        </v-menu>
+        </JourneyAddStepMenu>
         <div class="flow-connector"></div>
       </div>
     </div>
@@ -142,27 +130,14 @@ const endsRun = computed(() => {
         </template>
         <template v-else>
           <div class="flow-connector"></div>
-          <v-menu :close-on-content-click="true" location="right">
-            <template #activator="{ props: menu }">
+          <JourneyAddStepMenu :items="addableItems" @pick="item => emit('add', seg.node.id, item, i)">
+            <template #default="{ props: menu }">
               <button v-bind="menu" class="branch-empty" :aria-label="`Add a step to the ${b.label} branch`">
                 <v-icon size="15" class="mr-1">plus</v-icon>
                 <span class="text-caption font-weight-medium">Add step</span>
               </button>
             </template>
-            <v-card rounded="lg" border flat width="220" class="py-2">
-              <div class="px-3 py-1 text-caption text-medium-emphasis font-weight-bold text-uppercase border-b mb-1">Add step</div>
-              <v-list density="compact" nav>
-                <v-list-item v-for="tmpl in addableItems" :key="tmpl.kind" rounded="lg" @click="emit('add', seg.node.id, tmpl, i)">
-                  <template #prepend>
-                    <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">
-                      <v-icon color="white" size="13">{{ tmpl.icon }}</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="text-caption ml-2">{{ tmpl.title }}</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-card>
-          </v-menu>
+          </JourneyAddStepMenu>
         </template>
 
         <div v-if="seg.joinId" class="branch-drop"></div>
@@ -180,8 +155,6 @@ const endsRun = computed(() => {
 </template>
 
 <style scoped>
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-
 .flow-node {
   position: relative; width: 460px; background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
