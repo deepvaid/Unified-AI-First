@@ -2,99 +2,67 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import { useCampaignsStore } from '@/stores/useCampaigns'
+import type { CatalogItem, FlowNode, NodeCategory } from '@/stores/journeyFlowData'
+import { catalogByKind, nodeCatalog } from '@/stores/journeyFlowData'
+import { addNodeAfter as insertNodeAfter, removeNode } from '@/composables/useFlowTree'
 
 const router = useRouter()
 const route = useRoute()
 const accountId = computed(() => route.params.accountId as string)
 
-type NodeType = 'trigger' | 'email' | 'delay' | 'condition' | 'action'
-
-interface FlowNode {
-  id: string; type: NodeType; title: string; subtitle: string
-  icon: string; contacts?: number; branch?: 'yes' | 'no'; children: string[]
-}
-interface PaletteItem { type: NodeType; title: string; subtitle: string; icon: string }
-interface PaletteSection { key: string; label: string; color: string; items: PaletteItem[] }
+const store = useCampaignsStore()
+const journeyId = computed(() => Number(route.params.id))
+const journey = computed(() => store.journeys.find(j => j.id === journeyId.value))
+const nodes = computed<FlowNode[]>(() => store.journeyFlows[journeyId.value] ?? [])
 
 // Node colour is driven purely by category (the Liquid Sky reference colour-codes
-// by step type, never per-node): triggers=blue, actions/email=green,
-// conditions=purple (stands in for the reference navy), delays=amber (for pink).
-const typeColor: Record<NodeType, string> = {
+// by step type, never per-node): triggers=blue, actions=green,
+// filters=purple (stands in for the reference navy), delays=amber (for pink).
+const categoryColor: Record<NodeCategory, string> = {
   trigger: 'primary',
-  email: 'success',
   action: 'success',
-  condition: 'secondary',
+  filter: 'secondary',
   delay: 'warning',
+  end: 'grey-darken-1',
 }
-const headerStyle = (t: NodeType) => ({
-  backgroundColor: `rgba(var(--v-theme-${typeColor[t]}), 0.12)`,
-  borderBottomColor: `rgba(var(--v-theme-${typeColor[t]}), 0.24)`,
-})
+const headerStyle = (c: NodeCategory) => c === 'end'
+  ? {
+      backgroundColor: 'rgba(var(--v-theme-on-surface), 0.06)',
+      borderBottomColor: 'rgba(var(--v-theme-on-surface), 0.12)',
+    }
+  : {
+      backgroundColor: `rgba(var(--v-theme-${categoryColor[c]}), 0.12)`,
+      borderBottomColor: `rgba(var(--v-theme-${categoryColor[c]}), 0.24)`,
+    }
 
-const journeyName = ref('Post-Purchase — Thank You + Review Request')
-const journeyStatus = ref<'Draft' | 'Active'>('Draft')
+const journeyName = computed({
+  get: () => journey.value?.name ?? '',
+  set: v => { if (journey.value && v.trim()) journey.value.name = v.trim() },
+})
+const journeyStatus = computed(() => journey.value?.status ?? 'Draft')
 const editingName = ref(false)
 const nameInput = ref('')
 const saveSnack = ref(false)
 const saveMessage = ref('Journey saved')
 const selectedNodeId = ref<string | null>(null)
 
-// Step palette — Liquid Sky reference categories. Section dots reuse the same
-// category colour as the nodes they create (see typeColor).
+// Step palette — the full legacy node catalog, grouped by category. Section
+// dots reuse the same category colour as the nodes they create (see categoryColor).
+interface PaletteSection { key: string; label: string; color: string; items: CatalogItem[] }
+
 const paletteSections: PaletteSection[] = [
-  {
-    key: 'triggers', label: 'Triggers', color: 'primary',
-    items: [
-      { type: 'trigger', title: 'New Subscription', subtitle: 'Contact joins a list', icon: 'user-plus' },
-      { type: 'trigger', title: 'Campaign Opened', subtitle: 'Contact opens an email', icon: 'mail-open' },
-      { type: 'trigger', title: 'Link Clicked', subtitle: 'Contact clicks a link', icon: 'mouse-pointer-click' },
-      { type: 'trigger', title: 'Product Purchased', subtitle: 'Order completed', icon: 'shopping-cart' },
-      { type: 'trigger', title: 'Cart Abandoned', subtitle: 'Cart idle for N minutes', icon: 'shopping-cart' },
-      { type: 'trigger', title: 'Form Submitted', subtitle: 'Acquisition form event', icon: 'list-checks' },
-      { type: 'trigger', title: 'Segment Entry', subtitle: 'Contact matches segment', icon: 'users' },
-      { type: 'trigger', title: 'API Event', subtitle: 'External webhook', icon: 'code' },
-    ],
-  },
-  {
-    key: 'actions', label: 'Actions', color: 'success',
-    items: [
-      { type: 'email', title: 'Send Email', subtitle: 'Deliver a campaign email', icon: 'send' },
-      { type: 'action', title: 'Apply Tag', subtitle: 'Add a tag to contact', icon: 'tags' },
-      { type: 'action', title: 'Remove Tag', subtitle: 'Remove tag from contact', icon: 'tag' },
-      { type: 'action', title: 'Update Field', subtitle: 'Set a contact field value', icon: 'pencil' },
-      { type: 'action', title: 'Add to List', subtitle: 'Subscribe to another list', icon: 'list-plus' },
-      { type: 'action', title: 'HTTP Post', subtitle: 'Send to external URL', icon: 'webhook' },
-    ],
-  },
-  {
-    key: 'logic', label: 'Logic & Filters', color: 'secondary',
-    items: [
-      { type: 'condition', title: 'If / Else Condition', subtitle: 'Branch based on event', icon: 'split' },
-    ],
-  },
-  {
-    key: 'delay', label: 'Delay', color: 'warning',
-    items: [
-      { type: 'delay', title: 'Wait / Delay', subtitle: 'Pause before next step', icon: 'hourglass' },
-    ],
-  },
+  { key: 'triggers', label: 'Triggers', color: 'primary', items: nodeCatalog.filter(i => i.category === 'trigger') },
+  { key: 'actions', label: 'Actions', color: 'success', items: nodeCatalog.filter(i => i.category === 'action') },
+  { key: 'logic', label: 'Logic & Filters', color: 'secondary', items: nodeCatalog.filter(i => i.category === 'filter') },
+  { key: 'delay', label: 'Delays', color: 'warning', items: nodeCatalog.filter(i => i.category === 'delay') },
 ]
 
 const openSections = reactive<Record<string, boolean>>({ triggers: true, actions: true, logic: true, delay: true })
 function toggleSection(key: string) { openSections[key] = !openSections[key] }
 
 const addableItems = computed(() => paletteSections.filter(s => s.key !== 'triggers').flatMap(s => s.items))
-
-const nodes = ref<FlowNode[]>([
-  { id: 'n1', type: 'trigger', title: 'Product Purchased', subtitle: 'Any order with total > $0', icon: 'shopping-cart', contacts: 1240, children: ['n2'] },
-  { id: 'n2', type: 'delay', title: 'Wait 2 Hours', subtitle: 'Processing window', icon: 'hourglass', contacts: 1240, children: ['n3'] },
-  { id: 'n3', type: 'email', title: 'Send: Thank You Email', subtitle: 'Subject: "Your order is confirmed! 🎉"', icon: 'send', contacts: 1235, children: ['n4'] },
-  { id: 'n4', type: 'delay', title: 'Wait 7 Days', subtitle: 'Allow delivery + use time', icon: 'hourglass', contacts: 1180, children: ['n5'] },
-  { id: 'n5', type: 'condition', title: 'Opened Thank You Email?', subtitle: 'Check open event on Email #1', icon: 'split', contacts: 1170, children: ['n6', 'n7'] },
-  { id: 'n6', type: 'email', title: 'YES → Send: Review Request', subtitle: 'Subject: "How did we do? ⭐"', icon: 'star', contacts: 690, branch: 'yes', children: ['n8'] },
-  { id: 'n7', type: 'email', title: 'NO → Resend New Subject', subtitle: 'Subject: "One quick question 👋"', icon: 'mail-x', contacts: 480, branch: 'no', children: ['n8'] },
-  { id: 'n8', type: 'action', title: 'Apply Tag: Reviewed', subtitle: 'Mark contact journey complete', icon: 'tags', contacts: 1170, children: [] },
-])
 
 const selectedNode = computed(() => nodes.value.find(n => n.id === selectedNodeId.value))
 const sortedNodes = computed(() => {
@@ -123,22 +91,19 @@ function lastMainNodeId(): string {
   return curId ?? nodes.value[0]?.id ?? ''
 }
 
-function addNodeAfter(afterId: string, tmpl: PaletteItem) {
-  const newId = `n${Date.now()}`
-  const parent = nodes.value.find(n => n.id === afterId)
-  const newNode: FlowNode = {
-    id: newId, type: tmpl.type, title: tmpl.title, subtitle: tmpl.subtitle,
-    icon: tmpl.icon, children: parent ? [...parent.children] : [],
-  }
-  if (parent) parent.children = [newId]
-  nodes.value.push(newNode)
-  selectedNodeId.value = newId
+function addNodeAfter(afterId: string, item: CatalogItem, childIndex = 0) {
+  const newNode = insertNodeAfter(nodes.value, afterId, item, childIndex)
+  selectedNodeId.value = newNode.id
 }
 
-function addFromPalette(item: PaletteItem) {
-  if (item.type === 'trigger') {
+function addFromPalette(item: CatalogItem) {
+  if (item.category === 'trigger') {
     const root = nodes.value[0]
-    if (root) { root.title = item.title; root.subtitle = item.subtitle; root.icon = item.icon; selectedNodeId.value = root.id }
+    if (root) {
+      root.kind = item.kind; root.title = item.title; root.subtitle = item.subtitle
+      root.icon = item.icon; root.config = {}; root.configured = item.fields.length === 0
+      selectedNodeId.value = root.id
+    }
     return
   }
   addNodeAfter(selectedNodeId.value ?? lastMainNodeId(), item)
@@ -146,16 +111,22 @@ function addFromPalette(item: PaletteItem) {
 
 function duplicateNode(id: string) {
   const src = nodes.value.find(n => n.id === id)
-  if (!src || src.type === 'trigger') return
-  addNodeAfter(id, { type: src.type, title: `${src.title} (copy)`, subtitle: src.subtitle, icon: src.icon })
+  if (!src || src.category === 'trigger' || src.category === 'filter') return
+  const item = catalogByKind[src.kind]
+  if (!item) return
+  const copy = insertNodeAfter(nodes.value, id, item)
+  copy.title = `${src.title} (copy)`
+  copy.subtitle = src.subtitle
+  copy.config = { ...src.config }
+  copy.configured = src.configured
+  selectedNodeId.value = copy.id
 }
 
 function deleteNode(id: string) {
   const target = nodes.value.find(n => n.id === id)
-  if (!target || target.type === 'trigger') return
-  nodes.value.forEach(n => { if (n.children.includes(id)) n.children = [...n.children.filter(c => c !== id), ...target.children] })
-  nodes.value = nodes.value.filter(n => n.id !== id)
-  if (selectedNodeId.value === id) selectedNodeId.value = null
+  if (!target || target.category === 'trigger') return
+  const removed = removeNode(nodes.value, id)
+  if (selectedNodeId.value && removed.includes(selectedNodeId.value)) selectedNodeId.value = null
 }
 
 // ── Config panel draft (real round-trip for name + description) ───────────────
@@ -166,7 +137,7 @@ watch(selectedNodeId, () => {
 })
 function saveNode() {
   const n = selectedNode.value
-  if (n) { n.title = draft.title.trim() || n.title; n.subtitle = draft.subtitle }
+  if (n) { n.title = draft.title.trim() || n.title; n.subtitle = draft.subtitle; n.configured = true }
   saveMessage.value = 'Step updated'
   saveSnack.value = true
   selectedNodeId.value = null
@@ -174,7 +145,11 @@ function saveNode() {
 function cancelPanel() { selectedNodeId.value = null }
 
 function saveDraftJourney() { saveMessage.value = 'Draft saved'; saveSnack.value = true }
-function activateJourney() { journeyStatus.value = 'Active'; saveMessage.value = 'Journey activated'; saveSnack.value = true }
+function activateJourney() {
+  store.setJourneyStatus(journeyId.value, 'Active')
+  saveMessage.value = 'Journey activated'
+  saveSnack.value = true
+}
 
 // ── Canvas zoom ───────────────────────────────────────────────────────────────
 const zoom = ref(1)
@@ -191,11 +166,17 @@ function onEscape(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onEscape))
 onBeforeUnmount(() => window.removeEventListener('keydown', onEscape))
 
-const typeLabel = (t: NodeType) => ({ trigger: 'Trigger', email: 'Email', delay: 'Delay', condition: 'Condition', action: 'Action' })[t]
+const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Action', filter: 'Filter', delay: 'Delay', end: 'End' })[c]
 </script>
 
 <template>
-  <div class="jb-root d-flex flex-column">
+  <div v-if="!journey" class="jb-root d-flex align-center justify-center">
+    <MpEmptyState icon="search-x" title="Journey not found"
+      description="This journey doesn't exist or was deleted." actionLabel="Back to Journeys" actionIcon="arrow-left"
+      @action="router.push({ name: 'Journeys', params: { accountId } })" />
+  </div>
+
+  <div v-else class="jb-root d-flex flex-column">
     <!-- Toolbar -->
     <div class="jb-toolbar d-flex align-center justify-space-between px-5 border-b bg-surface">
       <div class="d-flex align-center gap-3" style="min-width:0;">
@@ -245,8 +226,8 @@ const typeLabel = (t: NodeType) => ({ trigger: 'Trigger', email: 'Email', delay:
               <v-icon size="18" class="palette-chevron" :class="{ 'palette-chevron--open': openSections[s.key] }">chevron-down</v-icon>
             </button>
             <div v-show="openSections[s.key]" :id="`palette-${s.key}`" class="palette-section__items">
-              <button v-for="item in s.items" :key="item.title" class="palette-item" @click="addFromPalette(item)">
-                <v-avatar :color="typeColor[item.type]" size="28" rounded="lg">
+              <button v-for="item in s.items" :key="item.kind" class="palette-item" @click="addFromPalette(item)">
+                <v-avatar :color="categoryColor[item.category]" size="28" rounded="lg">
                   <v-icon color="white" size="15">{{ item.icon }}</v-icon>
                 </v-avatar>
                 <span class="palette-item__text">
@@ -266,21 +247,15 @@ const typeLabel = (t: NodeType) => ({ trigger: 'Trigger', email: 'Email', delay:
           <div class="d-flex flex-column align-center pa-8" :style="zoomStyle">
             <div class="d-flex flex-column align-center" style="min-width:460px;">
               <template v-for="node in sortedNodes" :key="node.id">
-                <div v-if="node.branch" class="mb-2">
-                  <v-chip :color="node.branch === 'yes' ? 'success' : 'error'" size="x-small" variant="flat" class="font-weight-bold">
-                    {{ node.branch === 'yes' ? '✓ YES' : '✗ NO' }}
-                  </v-chip>
-                </div>
-
                 <div class="d-flex flex-column align-center flow-node-wrap">
                   <div class="flow-node" :class="{ 'flow-node--selected': selectedNodeId === node.id }">
                     <button class="flow-node__open" :aria-label="`Configure step: ${node.title}`" @click="selectNode(node.id)">
-                      <span class="flow-node__header" :style="headerStyle(node.type)">
-                        <v-avatar :color="typeColor[node.type]" size="34" rounded="lg" class="flex-shrink-0">
+                      <span class="flow-node__header" :style="headerStyle(node.category)">
+                        <v-avatar :color="categoryColor[node.category]" size="34" rounded="lg" class="flex-shrink-0">
                           <v-icon color="white" size="18">{{ node.icon }}</v-icon>
                         </v-avatar>
                         <span class="flow-node__heading">
-                          <span class="flow-node__type">{{ typeLabel(node.type) }}</span>
+                          <span class="flow-node__type">{{ categoryLabel(node.category) }}</span>
                           <span class="flow-node__title">{{ node.title }}</span>
                           <span v-if="node.contacts != null" class="flow-node__meta">
                             <v-icon size="11" class="mr-1">users</v-icon>{{ node.contacts.toLocaleString() }} contacts
@@ -299,10 +274,10 @@ const typeLabel = (t: NodeType) => ({ trigger: 'Trigger', email: 'Email', delay:
                         <v-card rounded="lg" border flat width="180" class="py-1">
                           <v-list density="compact" nav>
                             <v-list-item prepend-icon="pencil" title="Configure" @click="selectNode(node.id)"></v-list-item>
-                            <v-list-item prepend-icon="copy" title="Duplicate" :disabled="node.type === 'trigger'"
+                            <v-list-item prepend-icon="copy" title="Duplicate" :disabled="node.category === 'trigger' || node.category === 'filter'"
                               @click="duplicateNode(node.id)"></v-list-item>
                             <v-list-item prepend-icon="trash-2" title="Delete" base-color="error"
-                              :disabled="node.type === 'trigger'" @click="deleteNode(node.id)"></v-list-item>
+                              :disabled="node.category === 'trigger'" @click="deleteNode(node.id)"></v-list-item>
                           </v-list>
                         </v-card>
                       </v-menu>
@@ -320,9 +295,9 @@ const typeLabel = (t: NodeType) => ({ trigger: 'Trigger', email: 'Email', delay:
                       <v-card rounded="lg" border flat width="220" class="py-2">
                         <div class="px-3 py-1 text-caption text-medium-emphasis font-weight-bold text-uppercase border-b mb-1">Add step</div>
                         <v-list density="compact" nav>
-                          <v-list-item v-for="tmpl in addableItems" :key="tmpl.title" rounded="lg" @click="addNodeAfter(node.id, tmpl)">
+                          <v-list-item v-for="tmpl in addableItems" :key="tmpl.kind" rounded="lg" @click="addNodeAfter(node.id, tmpl)">
                             <template #prepend>
-                              <v-avatar :color="typeColor[tmpl.type]" size="22" rounded="md">
+                              <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">
                                 <v-icon color="white" size="13">{{ tmpl.icon }}</v-icon>
                               </v-avatar>
                             </template>
@@ -362,11 +337,11 @@ const typeLabel = (t: NodeType) => ({ trigger: 'Trigger', email: 'Email', delay:
       <aside v-if="selectedNode" class="jb-panel border-l bg-surface d-flex flex-column">
         <div class="pa-4 border-b d-flex align-center justify-space-between flex-shrink-0">
           <div class="d-flex align-center gap-3" style="min-width:0;">
-            <v-avatar :color="typeColor[selectedNode.type]" size="32" rounded="lg" class="flex-shrink-0">
+            <v-avatar :color="categoryColor[selectedNode.category]" size="32" rounded="lg" class="flex-shrink-0">
               <v-icon color="white" size="17">{{ selectedNode.icon }}</v-icon>
             </v-avatar>
             <div style="min-width:0;">
-              <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase">{{ typeLabel(selectedNode.type) }}</div>
+              <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase">{{ categoryLabel(selectedNode.category) }}</div>
               <div class="text-body-2 font-weight-bold text-truncate">{{ selectedNode.title }}</div>
             </div>
           </div>
@@ -378,23 +353,23 @@ const typeLabel = (t: NodeType) => ({ trigger: 'Trigger', email: 'Email', delay:
           <v-text-field v-model="draft.subtitle" label="Description" variant="outlined" density="compact" class="mb-4"></v-text-field>
           <v-divider class="mb-4"></v-divider>
 
-          <template v-if="selectedNode.type === 'trigger'">
+          <template v-if="selectedNode.category === 'trigger'">
             <v-select label="Trigger condition" :items="['Any Order', 'Order > $50', 'First Order Only']" model-value="Any Order" variant="outlined" density="compact" class="mb-3"></v-select>
             <v-select label="Applies to list" :items="['All Contacts', 'VIP Customer Circle', 'Newsletter Subscribers']" model-value="All Contacts" variant="outlined" density="compact"></v-select>
           </template>
-          <template v-else-if="selectedNode.type === 'email'">
+          <template v-else-if="selectedNode.kind === 'send-email'">
             <v-select label="Email template" :items="['Thank You Email', 'Review Request', 'Win-Back', 'Upsell Offer']" variant="outlined" density="compact" class="mb-3"></v-select>
             <v-text-field label="Subject line" :model-value="selectedNode.subtitle" variant="outlined" density="compact" class="mb-3"></v-text-field>
             <v-text-field label="Sender name" model-value="MaropostX Store" variant="outlined" density="compact"></v-text-field>
           </template>
-          <template v-else-if="selectedNode.type === 'delay'">
+          <template v-else-if="selectedNode.category === 'delay'">
             <div class="d-flex gap-2 mb-3">
               <v-text-field label="Duration" model-value="7" variant="outlined" density="compact" type="number" style="width:90px;flex-shrink:0;"></v-text-field>
               <v-select label="Unit" :items="['Minutes', 'Hours', 'Days', 'Weeks']" model-value="Days" variant="outlined" density="compact"></v-select>
             </div>
             <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">Journey pauses here for the specified duration.</v-alert>
           </template>
-          <template v-else-if="selectedNode.type === 'condition'">
+          <template v-else-if="selectedNode.category === 'filter'">
             <v-select label="Check event" :items="['Email Opened', 'Email Clicked', 'Product Purchased', 'Contact Field']" model-value="Email Opened" variant="outlined" density="compact" class="mb-3"></v-select>
             <v-select label="Time window" :items="['Since last email', 'Last 24 hours', 'Last 7 days']" model-value="Since last email" variant="outlined" density="compact" class="mb-3"></v-select>
             <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">YES branch: condition met. NO branch: not met.</v-alert>

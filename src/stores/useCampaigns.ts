@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import type { FlowNode, JourneySettings } from '@/stores/journeyFlowData'
+import { instantiateTemplate, seedJourneyFlows, templateById } from '@/stores/journeyFlowData'
 
 export interface CampaignMetrics {
   sent: number
@@ -17,6 +19,20 @@ export interface Campaign {
   sentDate: string | null
   listName: string
   metrics: CampaignMetrics
+}
+
+export type JourneyStatus = 'Active' | 'Paused' | 'Draft'
+
+export interface Journey {
+  id: number
+  name: string
+  trigger: string
+  status: JourneyStatus
+  enrolled: number
+  completed: number
+  revenue: number
+  created: string
+  settings?: JourneySettings
 }
 
 export const useCampaignsStore = defineStore('campaigns', () => {
@@ -91,7 +107,7 @@ export const useCampaignsStore = defineStore('campaigns', () => {
     }
   }
 
-  const journeys = ref([
+  const journeys = ref<Journey[]>([
     { id: 1, name: 'Welcome Series — 5-Step Onboarding', trigger: 'List Join', status: 'Active', enrolled: 18432, completed: 14231, revenue: 89432.50, created: '2023-03-01' },
     { id: 2, name: 'Abandoned Cart — 3-Email Recovery', trigger: 'Cart Abandon', status: 'Active', enrolled: 4231, completed: 1892, revenue: 45231.00, created: '2023-05-15' },
     { id: 3, name: 'Post-Purchase — Thank You + Review Request', trigger: 'Order Complete', status: 'Active', enrolled: 28412, completed: 27891, revenue: 12340.00, created: '2023-04-10' },
@@ -102,5 +118,41 @@ export const useCampaignsStore = defineStore('campaigns', () => {
     { id: 8, name: 'SMS Opt-In Confirmation Flow', trigger: 'SMS Opt-In', status: 'Active', enrolled: 7892, completed: 7234, revenue: 0, created: '2024-03-10' },
   ])
 
-  return { campaigns, createCampaign, moveToFolder, duplicateCampaign, deleteCampaigns, reassignFolder, journeys }
+  // ── Journey flow graphs ─────────────────────────────────────────────────────
+
+  const journeyFlows = ref<Record<number, FlowNode[]>>(seedJourneyFlows())
+
+  function getFlow(id: number): FlowNode[] | undefined {
+    return journeyFlows.value[id]
+  }
+
+  /** Creates a journey from a template and returns the new journey id. */
+  function createJourney(payload: { name: string; templateId: string; settings: JourneySettings }): number {
+    const id = Math.max(0, ...journeys.value.map(j => j.id)) + 1
+    const flow = instantiateTemplate(payload.templateId, id)
+    const template = templateById[payload.templateId]
+    journeys.value.unshift({
+      id,
+      name: payload.name,
+      trigger: flow[0]?.title ?? template?.name ?? 'Custom',
+      status: payload.settings.enabled ? 'Active' : 'Draft',
+      enrolled: 0,
+      completed: 0,
+      revenue: 0,
+      created: new Date().toISOString().slice(0, 10),
+      settings: payload.settings,
+    })
+    journeyFlows.value[id] = flow
+    return id
+  }
+
+  function setJourneyStatus(id: number, status: JourneyStatus) {
+    const journey = journeys.value.find(j => j.id === id)
+    if (journey) journey.status = status
+  }
+
+  return {
+    campaigns, createCampaign, moveToFolder, duplicateCampaign, deleteCampaigns, reassignFolder,
+    journeys, journeyFlows, getFlow, createJourney, setJourneyStatus,
+  }
 })
