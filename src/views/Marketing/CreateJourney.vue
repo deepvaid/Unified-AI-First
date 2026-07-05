@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
+import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 import type { JourneyTemplate } from '@/stores/journeyFlowData'
 import { journeyTemplates } from '@/stores/journeyFlowData'
@@ -128,17 +129,7 @@ onMounted(() => {
         <div class="font-weight-bold text-body-1">New Journey</div>
       </div>
 
-      <div v-if="mode === 'template'" class="d-flex align-center gap-2" role="list" aria-label="Wizard steps">
-        <div class="cj-step" :class="{ 'cj-step--active': step === 1, 'cj-step--done': step > 1 }" role="listitem">
-          <span class="cj-step__num"><v-icon v-if="step > 1" size="12">check</v-icon><template v-else>1</template></span>
-          Choose template
-        </div>
-        <div class="cj-step__rail"></div>
-        <div class="cj-step" :class="{ 'cj-step--active': step === 2 }" role="listitem">
-          <span class="cj-step__num">2</span>
-          Settings
-        </div>
-      </div>
+      <MpWizardSteps v-if="mode === 'template'" :steps="['Choose template', 'Settings']" :current="step" />
       <v-chip v-else color="primary" variant="tonal" size="small" class="font-weight-bold">
         <v-icon size="14" class="mr-1">sparkles</v-icon> Build with Da Vinci
       </v-chip>
@@ -371,35 +362,6 @@ onMounted(() => {
 
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-
-/* Step chips */
-.cj-step {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 0.8125rem; font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.5);
-}
-.cj-step__num {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 50%;
-  border: 1.5px solid rgba(var(--v-theme-on-surface), 0.25);
-  font-size: 0.6875rem; font-weight: 700;
-}
-.cj-step--active { color: rgb(var(--v-theme-on-surface)); }
-.cj-step--active .cj-step__num {
-  background: rgb(var(--v-theme-primary)); border-color: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-}
-.cj-step--done .cj-step__num {
-  background: rgba(var(--v-theme-primary), 0.12); border-color: transparent;
-  color: rgb(var(--v-theme-primary));
-}
-.cj-step__rail { width: 32px; height: 1.5px; background: rgba(var(--v-border-color), var(--v-border-opacity)); }
-
-/* Small screens: step chips collapse to numbers so the toolbar fits */
-@media (max-width: 700px) {
-  .cj-step { font-size: 0; gap: 0; }
-  .cj-step__rail { width: 14px; }
-}
 
 /* Build with Da Vinci hero */
 .cj-hero {
