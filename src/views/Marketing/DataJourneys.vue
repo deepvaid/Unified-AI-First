@@ -6,6 +6,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpOptionCard from '@/components/MpOptionCard.vue'
 import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
 import { useDataJourneysStore, type DataJourney } from '@/stores/useDataJourneys'
 import { dataJourneyTemplates } from '@/stores/journeyFlowData'
@@ -220,21 +221,13 @@ function createDataJourney() {
         placeholder="e.g. Nightly warehouse export" />
 
       <div class="text-caption font-weight-bold text-medium-emphasis text-uppercase mb-2">Start from</div>
-      <v-card v-for="tpl in dataJourneyTemplates" :key="tpl.id" flat border rounded="lg"
-        class="pa-4 mb-3 dj-template" :class="{ 'dj-template--selected': selectedTemplateId === tpl.id }"
-        @click="chooseTemplate(tpl.id)">
-        <div class="d-flex align-center gap-3 mb-2">
-          <v-avatar color="primary" variant="tonal" size="30" rounded="lg">
-            <v-icon size="16">{{ tpl.icon }}</v-icon>
-          </v-avatar>
-          <div class="text-body-2 font-weight-bold">{{ tpl.name }}</div>
-          <v-icon v-if="selectedTemplateId === tpl.id" color="primary" size="18" class="ml-auto">circle-check</v-icon>
-        </div>
-        <div class="text-caption text-medium-emphasis mb-3">{{ tpl.description }}</div>
-        <div class="border rounded-lg bg-background pa-3 d-flex justify-center">
+      <MpOptionCard v-for="tpl in dataJourneyTemplates" :key="tpl.id"
+        :selected="selectedTemplateId === tpl.id" :title="tpl.name" :description="tpl.description" :icon="tpl.icon"
+        class="mb-3" @click="chooseTemplate(tpl.id)">
+        <div class="border rounded-lg bg-background pa-3 d-flex justify-center mt-3">
           <JourneyMiniPreview :nodes="tpl.nodes" />
         </div>
-      </v-card>
+      </MpOptionCard>
 
       <v-divider class="my-5" />
 
@@ -259,8 +252,3 @@ function createDataJourney() {
   </div>
 </template>
 
-<style scoped>
-.dj-template { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
-.dj-template:hover { border-color: rgba(var(--v-theme-primary), 0.5); }
-.dj-template--selected { border-color: rgb(var(--v-theme-primary)); box-shadow: 0 0 0 1px rgb(var(--v-theme-primary)); }
-</style>

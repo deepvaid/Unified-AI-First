@@ -1,0 +1,56 @@
+<script setup lang="ts">
+defineProps<{
+  /** Whether this option is currently selected (renders the primary ring + check). */
+  selected: boolean
+  title: string
+  description?: string
+  /** Lucide icon name rendered in a tonal primary avatar before the title. */
+  icon?: string
+}>()
+
+// Click/dblclick are native events that fall through to the root v-card.
+</script>
+
+<template>
+  <v-card
+    flat
+    border
+    rounded="lg"
+    class="mp-option-card d-flex flex-column"
+    :class="{ 'mp-option-card--selected': selected }"
+    :aria-pressed="selected"
+  >
+    <div class="pa-4 d-flex flex-column flex-grow-1">
+      <div class="d-flex align-center gap-3" :class="{ 'mb-2': description || $slots.default }">
+        <v-avatar v-if="icon" color="primary" variant="tonal" size="34" rounded="lg" class="flex-shrink-0">
+          <v-icon size="18">{{ icon }}</v-icon>
+        </v-avatar>
+        <div class="text-body-2 font-weight-bold">{{ title }}</div>
+        <v-icon v-if="selected" color="primary" size="18" class="ml-auto flex-shrink-0">circle-check</v-icon>
+      </div>
+      <div v-if="description" class="text-caption text-medium-emphasis">{{ description }}</div>
+      <slot />
+    </div>
+    <div v-if="$slots.media" class="mp-option-card__media mt-auto">
+      <slot name="media" />
+    </div>
+  </v-card>
+</template>
+
+<style scoped>
+.mp-option-card {
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.mp-option-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.5);
+}
+.mp-option-card--selected {
+  border-color: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 1px rgb(var(--v-theme-primary));
+}
+.mp-option-card__media {
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  background: rgb(var(--v-theme-background));
+}
+</style>

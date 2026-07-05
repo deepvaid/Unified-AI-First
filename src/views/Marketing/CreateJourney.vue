@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
+import MpOptionCard from '@/components/MpOptionCard.vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 import type { JourneyTemplate } from '@/stores/journeyFlowData'
 import { journeyTemplates } from '@/stores/journeyFlowData'
@@ -170,30 +171,22 @@ onMounted(() => {
 
         <v-row>
           <v-col v-for="tpl in journeyTemplates" :key="tpl.id" cols="12" sm="6" md="4">
-            <v-card flat border rounded="lg" class="cj-card h-100 d-flex flex-column"
-              :class="{ 'cj-card--selected': selectedTemplateId === tpl.id }"
-              :aria-pressed="selectedTemplateId === tpl.id"
+            <MpOptionCard :selected="selectedTemplateId === tpl.id" :title="tpl.name" :icon="tpl.icon"
+              class="h-100"
               @click="chooseTemplate(tpl.id)" @dblclick="chooseTemplate(tpl.id); continueToSettings()">
-              <div class="pa-4 pb-3">
-                <div class="d-flex align-center gap-3 mb-2">
-                  <v-avatar color="primary" size="34" rounded="lg" variant="tonal">
-                    <v-icon size="18">{{ tpl.icon }}</v-icon>
-                  </v-avatar>
-                  <div class="font-weight-bold text-body-2">{{ tpl.name }}</div>
-                  <v-icon v-if="selectedTemplateId === tpl.id" color="primary" size="20" class="ml-auto">circle-check</v-icon>
-                </div>
-                <div class="text-caption text-medium-emphasis cj-card__desc">{{ tpl.description }}</div>
-                <div class="d-flex gap-2 mt-3">
-                  <v-chip size="x-small" variant="tonal" color="primary">{{ stepCount(tpl) }} {{ stepCount(tpl) === 1 ? 'step' : 'steps' }}</v-chip>
-                  <v-chip v-if="branchCount(tpl)" size="x-small" variant="tonal" color="secondary">
-                    {{ branchCount(tpl) }} {{ branchCount(tpl) === 1 ? 'branch' : 'branches' }}
-                  </v-chip>
-                </div>
+              <div class="text-caption text-medium-emphasis cj-card__desc">{{ tpl.description }}</div>
+              <div class="d-flex gap-2 mt-3">
+                <v-chip size="x-small" variant="tonal" color="primary">{{ stepCount(tpl) }} {{ stepCount(tpl) === 1 ? 'step' : 'steps' }}</v-chip>
+                <v-chip v-if="branchCount(tpl)" size="x-small" variant="tonal" color="secondary">
+                  {{ branchCount(tpl) }} {{ branchCount(tpl) === 1 ? 'branch' : 'branches' }}
+                </v-chip>
               </div>
-              <div class="cj-card__preview border-t bg-background mt-auto">
-                <JourneyMiniPreview :nodes="tpl.nodes" />
-              </div>
-            </v-card>
+              <template #media>
+                <div class="cj-card__preview">
+                  <JourneyMiniPreview :nodes="tpl.nodes" />
+                </div>
+              </template>
+            </MpOptionCard>
           </v-col>
         </v-row>
       </div>
@@ -418,10 +411,7 @@ onMounted(() => {
 .cj-hero:hover { border-color: rgb(var(--v-theme-primary)); box-shadow: 0 0 0 1px rgba(var(--v-theme-primary), 0.4); }
 .cj-hero:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
 
-/* Template cards */
-.cj-card { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
-.cj-card:hover { border-color: rgba(var(--v-theme-primary), 0.5); }
-.cj-card--selected { border-color: rgb(var(--v-theme-primary)); box-shadow: 0 0 0 1px rgb(var(--v-theme-primary)); }
+/* Template cards (chrome lives in MpOptionCard) */
 .cj-card__desc { min-height: 44px; }
 .cj-card__preview {
   padding: 14px 10px; max-height: 240px; overflow: hidden;

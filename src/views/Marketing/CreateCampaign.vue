@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpOptionCard from '@/components/MpOptionCard.vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 
 const router = useRouter()
@@ -230,23 +231,14 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
           <v-divider class="mb-6"></v-divider>
           <v-row dense>
             <v-col v-for="tmpl in templates" :key="tmpl.id" cols="12" sm="6" md="4">
-              <v-card
-                :variant="selectedTemplate === tmpl.id ? 'elevated' : 'outlined'"
-                :border="selectedTemplate !== tmpl.id"
-                :color="selectedTemplate === tmpl.id ? 'primary' : undefined"
-                rounded="lg"
-                class="pa-5 cursor-pointer template-card"
-                :class="{ 'border-primary': selectedTemplate === tmpl.id }"
+              <MpOptionCard
+                :selected="selectedTemplate === tmpl.id"
+                :title="tmpl.name"
+                :description="tmpl.desc"
+                :icon="tmpl.icon"
+                class="h-100"
                 @click="selectedTemplate = tmpl.id"
-                style="min-height: 140px;"
-              >
-                <div class="d-flex flex-column align-center text-center">
-                  <v-icon :color="selectedTemplate === tmpl.id ? 'white' : tmpl.color" size="36" class="mb-3">{{ tmpl.icon }}</v-icon>
-                  <div class="font-weight-bold mb-1" :class="selectedTemplate === tmpl.id ? 'text-white' : ''">{{ tmpl.name }}</div>
-                  <div class="text-caption" :class="selectedTemplate === tmpl.id ? 'text-white' : 'text-medium-emphasis'">{{ tmpl.desc }}</div>
-                </div>
-                <v-icon v-if="selectedTemplate === tmpl.id" color="white" class="position-absolute top-0 right-0 ma-3" size="18">circle-check</v-icon>
-              </v-card>
+              />
             </v-col>
           </v-row>
           <v-alert type="info" variant="tonal" density="compact" class="mt-6 text-body-2" rounded="lg" icon="palette">
@@ -262,20 +254,13 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
           <div class="text-subtitle-2 font-weight-bold mb-3">Send To</div>
           <v-row dense class="mb-6">
             <v-col v-for="list in lists" :key="list" cols="12" sm="6">
-              <v-card
-                :variant="selectedList === list ? 'tonal' : 'outlined'"
-                :color="selectedList === list ? 'primary' : undefined"
-                rounded="lg"
-                class="pa-4 cursor-pointer d-flex align-center gap-3"
+              <MpOptionCard
+                :selected="selectedList === list"
+                :title="list"
+                icon="users"
+                class="h-100"
                 @click="selectedList = list"
-              >
-                <v-icon :color="selectedList === list ? 'primary' : 'medium-emphasis'" size="20">users</v-icon>
-                <div>
-                  <div class="text-body-2 font-weight-medium">{{ list }}</div>
-                </div>
-                <v-spacer></v-spacer>
-                <v-icon v-if="selectedList === list" color="primary" size="18">circle-check</v-icon>
-              </v-card>
+              />
             </v-col>
           </v-row>
           <div class="text-subtitle-2 font-weight-bold mb-3">Suppress (optional)</div>
@@ -422,7 +407,4 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
 <style scoped>
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.border-primary { border-color: rgb(var(--v-theme-primary)) !important; }
-.template-card { transition: all 0.2s ease; }
-.template-card:hover { transform: translateY(-2px); }
 </style>
