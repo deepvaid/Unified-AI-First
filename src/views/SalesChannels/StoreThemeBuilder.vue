@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
+import { useCopilotStore } from '@/stores/useCopilot'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import {
   getSectionDef,
   sectionCatalog,
   themeFonts,
+  TEMPLATE_TYPES,
+  TEMPLATE_TYPE_LABELS,
   type TemplateType,
   type ThemeSection,
   type ThemeSectionDef,
@@ -53,6 +56,24 @@ const selectedId = ref<string | null>(null)
 function selectSection(id: string) {
   selectedId.value = id
 }
+
+// Switching templates drops the selection — it belongs to the old template.
+watch(activeTemplate, () => {
+  selectedId.value = null
+})
+
+// ── Device frames ─────────────────────────────────────────────────────────────
+type Device = 'desktop' | 'tablet' | 'mobile'
+const device = ref<Device>('desktop')
+const deviceOptions: { value: Device; icon: string; label: string }[] = [
+  { value: 'desktop', icon: 'monitor', label: 'Desktop preview' },
+  { value: 'tablet', icon: 'tablet', label: 'Tablet preview' },
+  { value: 'mobile', icon: 'smartphone', label: 'Mobile preview' },
+]
+
+// Frame widths clamp to the stage (PosPreview pattern); CSS transitions the change.
+const DEVICE_WIDTHS: Record<Device, number> = { desktop: 1080, tablet: 820, mobile: 420 }
+const stageStyle = computed(() => ({ width: `min(${DEVICE_WIDTHS[device.value]}px, 100%)` }))
 
 // Draft has unpublished changes: never published, or edited since last publish.
 const isDirty = computed(() => {
@@ -174,6 +195,55 @@ function setStyle(patch: Partial<ThemeStyles>) {
   if (!theme.value) return
   themesStore.updateStyles(theme.value.id, patch)
 }
+
+// ── Ask Da Vinci ──────────────────────────────────────────────────────────────
+const copilot = useCopilotStore()
+function askDaVinci() {
+  copilot.openWithPrompt(`Review my storefront theme "${theme.value?.name ?? ''}" and suggest improvements to layout and colors.`)
+}
+
+// ── Publish / discard flow ────────────────────────────────────────────────────
+const snack = ref(false)
+const snackMessage = ref('')
+
+const totalSectionCount = computed(() =>
+  TEMPLATE_TYPES.reduce((sum, template) => sum + (theme.value?.templates[template].length ?? 0), 0),
+)
+
+const publishDialog = ref(false)
+const publishMessage = computed(
+  () =>
+    `This publishes ${TEMPLATE_TYPES.length} templates (${totalSectionCount.value} sections) to your live storefront. Visitors see the changes immediately.`,
+)
+
+function confirmPublish() {
+  if (!theme.value) return
+  themesStore.publishTheme(theme.value.id)
+  snackMessage.value = 'Theme published'
+  snack.value = true
+}
+
+const discardDialog = ref(false)
+
+function confirmDiscard() {
+  if (!theme.value) return
+  themesStore.discardDraft(theme.value.id)
+  selectedId.value = null
+  snackMessage.value = 'Draft changes discarded'
+  snack.value = true
+}
+
+// ── Narrow viewport: left panel collapses behind a toolbar toggle ─────────────
+const narrowQuery = window.matchMedia('(max-width: 900px)')
+const isNarrow = ref(narrowQuery.matches)
+const leftPanelOpen = ref(!narrowQuery.matches)
+
+function onNarrowChange(e: MediaQueryListEvent) {
+  isNarrow.value = e.matches
+  leftPanelOpen.value = !e.matches
+}
+onMounted(() => narrowQuery.addEventListener('change', onNarrowChange))
+onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 </script>
 
 <template>
@@ -192,8 +262,8 @@ function setStyle(patch: Partial<ThemeStyles>) {
 
   <div v-else class="tb-root d-flex flex-column">
     <!-- Toolbar -->
-    <div class="tb-toolbar d-flex align-center px-5 border-b bg-surface">
-      <div class="d-flex align-center gap-3" style="min-width:0;">
+    <div class="tb-toolbar d-flex align-center justify-space-between px-5 gap-3 border-b bg-surface">
+      <div class="tb-toolbar__side d-flex align-center gap-3" style="min-width:0;">
         <v-tooltip :text="`Back to ${channel.name}`" location="bottom">
           <template #activator="{ props }">
             <v-btn
@@ -206,6 +276,14 @@ function setStyle(patch: Partial<ThemeStyles>) {
             ></v-btn>
           </template>
         </v-tooltip>
+        <v-btn
+          v-if="isNarrow"
+          :icon="leftPanelOpen ? 'panel-left-close' : 'panel-left'"
+          variant="text"
+          size="small"
+          :aria-label="leftPanelOpen ? 'Hide sections panel' : 'Show sections panel'"
+          @click="leftPanelOpen = !leftPanelOpen"
+        ></v-btn>
         <div class="font-weight-bold text-body-1 text-truncate">{{ theme.name }}</div>
         <MpStatusChip :status="theme.status" type="general" size="x-small" />
         <v-tooltip v-if="isDirty" text="Unpublished changes" location="bottom">
@@ -214,12 +292,72 @@ function setStyle(patch: Partial<ThemeStyles>) {
           </template>
         </v-tooltip>
       </div>
+
+      <v-btn-toggle
+        v-model="activeTemplate"
+        mandatory
+        density="compact"
+        rounded="lg"
+        border
+        class="flex-shrink-0"
+        aria-label="Template type"
+      >
+        <v-btn v-for="t in TEMPLATE_TYPES" :key="t" :value="t" size="small" class="text-none px-3">
+          {{ TEMPLATE_TYPE_LABELS[t] }}
+        </v-btn>
+      </v-btn-toggle>
+
+      <div class="tb-toolbar__side d-flex align-center gap-2 justify-end">
+        <v-btn-toggle v-model="device" mandatory density="compact" rounded="lg" border aria-label="Preview device">
+          <v-btn
+            v-for="option in deviceOptions"
+            :key="option.value"
+            :value="option.value"
+            :icon="option.icon"
+            size="small"
+            :aria-label="option.label"
+          ></v-btn>
+        </v-btn-toggle>
+        <v-tooltip text="Ask Da Vinci to review this theme" location="bottom">
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              icon="sparkles"
+              variant="text"
+              size="small"
+              color="primary"
+              aria-label="Ask Da Vinci to review this theme"
+              @click="askDaVinci"
+            ></v-btn>
+          </template>
+        </v-tooltip>
+        <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
+        <v-btn variant="outlined" size="small" class="text-none" :disabled="!isDirty" @click="discardDialog = true">
+          Discard draft
+        </v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          size="small"
+          class="text-none"
+          prepend-icon="rocket"
+          :disabled="!isDirty"
+          @click="publishDialog = true"
+        >
+          Publish
+        </v-btn>
+      </div>
     </div>
 
     <!-- Body -->
-    <div class="d-flex flex-grow-1" style="overflow:hidden;">
+    <div class="tb-body d-flex flex-grow-1" style="overflow:hidden;">
       <!-- Left panel: Sections / Theme styles -->
-      <aside class="tb-panel-left border-r bg-surface d-flex flex-column">
+      <!-- Scoped flex styles (not d-flex): the utility's !important would defeat v-show -->
+      <aside
+        v-show="leftPanelOpen"
+        class="tb-panel-left border-r bg-surface"
+        :class="{ 'tb-panel-left--overlay': isNarrow }"
+      >
         <v-tabs v-model="leftTab" density="compact" color="primary" grow class="border-b flex-shrink-0">
           <v-tab value="sections" class="text-none">Sections</v-tab>
           <v-tab value="styles" class="text-none">Theme styles</v-tab>
@@ -385,10 +523,11 @@ function setStyle(patch: Partial<ThemeStyles>) {
       <!-- Canvas -->
       <div class="tb-canvas bg-background">
         <div class="tb-canvas__scroll">
-          <div class="tb-stage mx-auto pa-6">
+          <div class="tb-stage mx-auto pa-6" :style="stageStyle">
             <StorefrontPreview
               :sections="activeSections"
               :styles="theme.styles"
+              :device="device"
               interactive
               :selected-id="selectedId"
               @select="selectSection"
@@ -517,12 +656,36 @@ function setStyle(patch: Partial<ThemeStyles>) {
       confirm-label="Remove section"
       @confirm="confirmRemove"
     />
+
+    <MpConfirmDialog
+      v-model="publishDialog"
+      :title="`Publish &quot;${theme.name}&quot;?`"
+      :message="publishMessage"
+      confirm-label="Publish theme"
+      @confirm="confirmPublish"
+    />
+
+    <MpConfirmDialog
+      v-model="discardDialog"
+      danger
+      title="Discard draft changes?"
+      :message="theme.publishedAt
+        ? 'All edits since the last publish will be reverted. This can\'t be undone.'
+        : 'All edits will be reverted to the theme\'s starting point. This can\'t be undone.'"
+      confirm-label="Discard changes"
+      @confirm="confirmDiscard"
+    />
+
+    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackMessage }}</div>
+    </v-snackbar>
   </div>
 </template>
 
 <style scoped>
 .tb-root { height: 100vh; overflow: hidden; }
 .tb-toolbar { height: 56px; flex-shrink: 0; }
+.tb-toolbar__side { flex: 1 1 0; }
 
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
@@ -538,7 +701,24 @@ function setStyle(patch: Partial<ThemeStyles>) {
 }
 
 /* ── Sections panel ──────────────────────────────────────────────── */
-.tb-panel-left { width: 280px; flex-shrink: 0; overflow: hidden; }
+.tb-panel-left {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* <900px: panel overlays the canvas, toggled from the toolbar */
+.tb-body { position: relative; }
+.tb-panel-left--overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  box-shadow: 0 8px 24px rgba(var(--v-theme-on-surface), 0.14);
+}
 
 .tb-section-row {
   display: flex;
@@ -586,7 +766,7 @@ function setStyle(patch: Partial<ThemeStyles>) {
 /* ── Canvas ──────────────────────────────────────────────────────── */
 .tb-canvas { flex: 1 1 auto; position: relative; overflow: hidden; }
 .tb-canvas__scroll { position: absolute; inset: 0; overflow: auto; }
-.tb-stage { max-width: 1080px; }
+.tb-stage { transition: width 280ms ease; }
 
 /* ── Settings panel ──────────────────────────────────────────────── */
 .tb-panel-right { width: 340px; flex-shrink: 0; overflow: hidden; }
