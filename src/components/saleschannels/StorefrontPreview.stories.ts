@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import StorefrontPreview from './StorefrontPreview.vue'
-import { createSection, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
+import { createBlock, createSection, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
 
 function homeSections(): ThemeSection[] {
   return [
@@ -12,6 +12,31 @@ function homeSections(): ThemeSection[] {
     createSection('testimonials', {}, 'story-testimonials'),
     createSection('newsletter', {}, 'story-newsletter'),
     createSection('footer', {}, 'story-footer'),
+  ]
+}
+
+// A block-accepting rich-text section carrying a heading, paragraph, and button
+// block — exercises StorefrontPreview's nested block-mock rendering.
+function sectionsWithBlocks(): ThemeSection[] {
+  const richText = createSection('rich-text', {}, 'story-richtext-blocks')
+  richText.blocks = [
+    createBlock('heading', { text: 'Built for the long way home' }, 'story-block-heading'),
+    createBlock('paragraph', { body: 'Every piece is cut for movement and backed for life.' }, 'story-block-paragraph'),
+    createBlock('button', { label: 'Read our story' }, 'story-block-button'),
+  ]
+  return [
+    createSection('header', {}, 'story-header-blocks'),
+    richText,
+    createSection('footer', {}, 'story-footer-blocks'),
+  ]
+}
+
+// A collection-grid section built from the "4-up" variant preset (columns: 4).
+function collectionGridSections(): ThemeSection[] {
+  return [
+    createSection('header', {}, 'story-header-grid'),
+    createSection('collection-grid', { columns: 4 }, 'story-collection-grid'),
+    createSection('footer', {}, 'story-footer-grid'),
   ]
 }
 
@@ -149,6 +174,32 @@ export const MobileDevice: Story = {
   render: (args) => ({
     components: { StorefrontPreview },
     setup: () => ({ args, sections: homeSections() }),
+    template: `
+      <div style="max-width:720px;">
+        <StorefrontPreview v-bind="args" :sections="sections" />
+      </div>
+    `,
+  }),
+}
+
+/** A rich-text section carrying heading, paragraph, and button blocks — renders the nested block mocks. */
+export const SectionWithBlocks: Story = {
+  render: (args) => ({
+    components: { StorefrontPreview },
+    setup: () => ({ args, sections: sectionsWithBlocks() }),
+    template: `
+      <div style="max-width:720px;">
+        <StorefrontPreview v-bind="args" :sections="sections" />
+      </div>
+    `,
+  }),
+}
+
+/** A collection-grid section from the "4-up" variant preset (columns: 4). */
+export const CollectionGridVariant: Story = {
+  render: (args) => ({
+    components: { StorefrontPreview },
+    setup: () => ({ args, sections: collectionGridSections() }),
     template: `
       <div style="max-width:720px;">
         <StorefrontPreview v-bind="args" :sections="sections" />

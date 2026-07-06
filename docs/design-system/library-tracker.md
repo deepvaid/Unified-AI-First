@@ -148,6 +148,7 @@
 
 ## Progress log
 
+- 2026-07-06 — Theme builder gained a categorized + variant Add Section dialog, blocks-within-sections (layer tree, canvas, settings), and an Edit Code mock IDE; new files `AddSectionDialog.vue`, `themeCodeData.ts`, `useThemeCode.ts`, `StoreThemeCode.vue`; commits `e039600` through `24807b5`; marotools builder still automation-blocked so built from screenshots.
 - 2026-07-06 — Da Vinci theme-builder flow hardened after a two-lens adversarial review (correctness hand-trace + live app-driving). 7 findings fixed across 3 commits (`c0c8176` generator: \b word boundaries, prompt-order, headline-to-nearest, apostrophe-safe quotes, bundle dedupe, unambiguous chip · `7545ba2` store: insert above trailing footer · `f8d05ac` builder: per-template chat/undo, cross-theme reset, dark-mode note contrast, canvas aria-labels, placeholder clip). Re-verification (both lenses) passed clean — 0 regressions, 0 residual.
 
 - 2026-07-06 — Da Vinci in-builder section generator shipped for the store theme builder — `useThemeGenerator` composable, `ThemeDaVinciPanel` (+ CSF3 story, title `Sales Channels/ThemeDaVinciPanel`), Generate-with-AI picker entry, batch `addSections`/`removeSections` store actions, `pendingIds` review highlight + per-turn undo; commits `349a66c`…(this one). Marotools builder internals remain un-crawlable (automation-blocked) — flow built from user screenshots; a future re-crawl could refine catalog fidelity.
