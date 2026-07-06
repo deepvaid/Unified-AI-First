@@ -66,7 +66,8 @@ and \`v-main\` (see \`App.vue\`).
   Crown marker and route to an upsell instead of the module.
 
 ### A11y
-- **Provides:** the underlying \`v-navigation-drawer\` renders as a \`<nav>\` landmark; brand,
+- **Provides:** the underlying \`v-navigation-drawer\` renders as a \`<nav>\` landmark named
+  "Main navigation" via \`aria-label\` *(named in the Phase 4 a11y pass)*; brand,
   collapse-toggle, and apps-toggle buttons all carry \`aria-label\`s; nav entries are
   router-linked \`v-list-item\`s with keyboard focus and Enter activation; the rail flyout panel
   has \`role="menu"\` with a group-specific \`aria-label\`, and cascade triggers expose
@@ -74,10 +75,9 @@ and \`v-main\` (see \`App.vue\`).
 - **Consumer must:** pair it with the shell's skip link and \`v-main\` landmark, and pass
   \`temporary\` on small viewports so the scrim/dismiss behavior is available.
 - **Gaps:** rail-mode flyouts open on hover/click of the icon but are not reachable purely by
-  keyboard in rail mode (hover-driven cascade); the active module is conveyed by color/weight
-  without \`aria-current\` on group headers; locked (Crown) items don't announce that they are
-  locked; the \`<nav>\` landmark has no \`aria-label\` to distinguish it from other navigation
-  (noted for the Phase 4 a11y pass).
+  keyboard in rail mode (hover-driven cascade — backlog, needs a focus-driven flyout rework);
+  the active module is conveyed by color/weight without \`aria-current\` on group headers
+  (backlog); locked (Crown) items don't announce that they are locked (backlog).
         `,
       },
     },

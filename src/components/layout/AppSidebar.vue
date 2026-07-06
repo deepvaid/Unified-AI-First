@@ -540,6 +540,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
     :temporary="props.temporary"
     :mobile-breakpoint="0"
     class="mp-sidebar"
+    aria-label="Main navigation"
   >
     <!-- Brand + anchored toggle -->
     <div class="sidebar-header" :class="{ 'sidebar-header--rail': localRail }">
