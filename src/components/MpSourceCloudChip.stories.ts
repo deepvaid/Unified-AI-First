@@ -36,9 +36,9 @@ It reads label and icon from the canonical \`DASHBOARD_SOURCE_META\` map in the 
 - **Don't** use it as a status indicator. Use \`MpStatusChip\` for status semantics.
 
 ### A11y
-- **Provides:** an \`aria-label\` with the full source name is always set, and icon-only chips additionally get a \`title\` tooltip; text color per cloud comes from the \`--cloud-*-text\` tokens tuned for contrast on the neutral pill.
+- **Provides:** the chip carries \`role="img"\` so its \`aria-label\` (the full source name) is reliably announced even in icon-only usage *(fixed in the Phase 4 a11y pass)*; icon-only chips additionally get a \`title\` tooltip; text color per cloud comes from the \`--cloud-*-text\` tokens tuned for contrast on the neutral pill.
 - **Consumer must:** nothing — the chip is self-labelling and non-interactive.
-- **Gaps:** the chip is a plain \`span\` with an \`aria-label\` but no role, which some screen readers skip for non-interactive elements (low impact — the visible label matches; icon-only usage relies on it, noted for Phase 4); \`merchandising\` has no accent-color rule and renders in neutral ink.
+- **Gaps:** \`merchandising\` has no accent-color rule and renders in neutral ink (visual token gap, not a11y).
         `,
       },
     },

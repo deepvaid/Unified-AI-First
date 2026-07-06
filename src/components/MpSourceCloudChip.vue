@@ -24,6 +24,7 @@ const iconSize = computed(() => (props.size === 'sm' ? 12 : 13))
       `mp-source-cloud-chip--${dataSource}`,
       { 'mp-source-cloud-chip--icon-only': iconOnly },
     ]"
+    role="img"
     :title="iconOnly ? meta.label : undefined"
     :aria-label="meta.label"
   >
