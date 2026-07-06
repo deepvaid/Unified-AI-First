@@ -45,18 +45,14 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   └── personas/              ← 4 merchant personas
 ├── maropost-screenshots/      ← 50+ screenshots of the real app
 ├── src/
-│   ├── components/            ← 11 reusable Mp* components + stories
-│   │   ├── MpPageHeader.vue   ← Page title, breadcrumbs, action slot
-│   │   ├── MpKpiCard.vue      ← KPI metric card with trend
-│   │   ├── MpStatusChip.vue   ← Polymorphic status badge (order/fulfillment/payment/campaign/ticket)
-│   │   ├── MpDataTableToolbar.vue ← Search + filter + action toolbar
-│   │   ├── MpEmptyState.vue   ← Empty state with icon + CTA
-│   │   ├── MpFilterTabs.vue   ← Tab-based filtering with counts
-│   │   ├── MpFloatingBulkBar.vue ← Floating bulk action bar
-│   │   ├── MpFormDrawer.vue   ← Right-side form drawer (480px)
-│   │   ├── MpSectionHeader.vue ← Section heading with action slot
-│   │   ├── layout/AppBar.vue  ← Top bar (search, notifications, user menu)
-│   │   └── layout/AppSidebar.vue ← Left nav (260px, collapsible rail)
+│   ├── components/            ← 65 components, all with stories (see Component Inventory)
+│   │   ├── Mp*.vue / ModuleLandingPage.vue ← 22 top-level design-system components
+│   │   ├── layout/            ← AppBar (top bar) + AppSidebar (left nav, collapsible rail)
+│   │   ├── copilot/           ← 13 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
+│   │   ├── dashboards/        ← 7 dashboard containers + widgets/ (5) + wizard/ (2)
+│   │   ├── marketing/         ← Journey flow column, mini preview, add-step menu
+│   │   ├── merchandising/     ← MerchProductCard
+│   │   └── settings/          ← SettingsSidebar, SettingsSection, SettingsPlaceholder
 │   ├── design-tokens/
 │   │   ├── tokens.json        ← SOURCE OF TRUTH for all design values
 │   │   ├── build.mjs          ← Generates SCSS/CSS/TS from tokens.json
@@ -88,46 +84,51 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ## Component Inventory
 
-### MpPageHeader
-**Props:** `title` (string), `subtitle?` (string), `breadcrumbs?` ({ title, to?, disabled? }[])
-**Slots:** `#actions`, `#tabs`
-**Usage:** Every page's top section. Always include breadcrumbs for nested pages.
+22 top-level components (post design-system program, 2026-07). **Full reference:**
+`docs/design-system/` (structure, Vuetify mapping, token plan, handoff) + Storybook autodocs (`npm run storybook`).
 
-### MpKpiCard
-**Props:** `label`, `value` (string|number), `icon?`, `color?`, `trend?`, `trendPositive?` (boolean), `subStat?`
-**Usage:** Dashboard metric cards. Always in a 4-column row.
+### Layout & structure
 
-### MpStatusChip
-**Props:** `status` (string), `type` ('order'|'fulfillment'|'payment'|'campaign'|'contact'|'ticket'|'coupon'|'general'), `size?`, `variant?`, `showIcon?`
-**Usage:** Status columns in data tables. Color mapping is automatic based on type+status.
+- **MpPageHeader** — `title`, `subtitle?`, `backTo?`, `level?`, `density?` · slots `#actions`, `#tabs`. Every page's top section; `backTo` renders the back link on detail pages.
+- **MpSectionHeader** — `title`, `headingLevel?` · slot `#actions`. Section headings inside dashboard cards.
+- **ModuleLandingPage** — `title`, `childPages`, `primaryActions?`, `quickActions?`, `recentActivity?`, `setupCard?`, `daVinciCard?`. Prop-driven module landing (Marketing/Content).
 
-### MpDataTableToolbar
-**Props:** `searchPlaceholder?`  **Model:** `v-model:search`
-**Slots:** `#filters`, `#actions`
-**Usage:** Always placed above `v-data-table`. Search is instant (debounced 300ms).
+### Data display
 
-### MpEmptyState
-**Props:** `icon?`, `title`, `description?`, `actionLabel?`, `actionIcon?`
-**Emits:** `@action`
-**Usage:** Every table/list MUST have an empty state.
+- **MpKpiCard** — `label`, `value`, `icon?`, `color?`, `trend?`, `trendPositive?`, `subStat?`, `period?` · slot `#sparkline`. Dashboard metric cards, 4-column row.
+- **MpStatusChip** — `status`, `type?` ('order'|'fulfillment'|'payment'|'campaign'|'contact'|'ticket'|'coupon'|'general'), `size?`, `variant?`, `showIcon?`. Workflow states in tables; color maps are automatic per type.
+- **MpSourceCloudChip** — `dataSource`, `size?`, `iconOnly?`. Identifies a widget/KPI's source cloud.
+- **MpDataTableToolbar** — `searchPlaceholder?`, `activeFilters?`, `totalCount?`, `headers?` · model `v-model:search` · slots `#title`, `#actions`, `#filter-content` (filter drawer). Always above `v-data-table`; search debounced 300ms.
+- **MpFolderSelect** — `folders`, `counts?`, `totalCount?`, `label?` · emits `manage`. Folder filter menu above foldered lists.
 
-### MpFilterTabs
-**Props:** `tabs` ({ label, key, count? }[])  **Model:** `v-model` (active key)
-**Usage:** Tab-based filtering above data tables (e.g., All / Completed / Processing).
+### Feedback
 
-### MpFloatingBulkBar
-**Props:** `count` (number)  **Emits:** `@clear`
-**Slots:** Default (action buttons)
-**Usage:** Shows when rows are selected in a data table. Auto-hides when count = 0.
+- **MpEmptyState** — `title`, `icon?`, `description?`, `actionLabel?`, `actionIcon?`, `headingLevel?` · emits `action`. Every table/list MUST have one (empty = nothing to show).
+- **MpErrorState** — same shape, recovery defaults (`role="alert"`). Error = something failed; don't merge with empty states.
+- **MpFloatingBulkBar** — `count`, `total?` · emits `clear` · default slot (actions). Shows on row selection; auto-hides at 0.
+- **MpTableSkeleton** — `rows?`, `columns?`, `showHeader?`. Loading placeholder inside table cards.
 
-### MpFormDrawer
-**Props:** `title`, `subtitle?`, `width?` (default 480)  **Model:** `v-model` (boolean)
-**Slots:** Default (form content), `#footer`
-**Usage:** Right-side drawer for create/edit forms. Never use `v-dialog` for forms.
+### Forms & selection
 
-### MpSectionHeader
-**Props:** `title`  **Slots:** `#actions`
-**Usage:** Section headings inside cards on dashboards.
+- **MpFormDrawer** — `title`, `subtitle?`, `width?` (480) · model `v-model` · slots default, `#footer`. Right-side drawer for create/edit forms. Never `v-dialog` for forms.
+- **MpOptionCard** — `selected`, `title`, `description?`, `icon?` · slots default, `#media`. Keyboard-operable selectable card for wizard galleries.
+- **MpStatusToggle** — `status` ('Active'|'Paused'|'Draft') · emits `toggle`. Status switch + label cell; disabled on Draft.
+- **MpManageFoldersDrawer** — `scope`, `counts?` · emits `deleted`. Folder CRUD drawer (composes MpFormDrawer).
+- **MpMoveToFolderDialog** — `scope`, `currentFolderId`, `itemLabel?` · emits `move`. Move-to-folder form dialog.
+
+### Navigation
+
+- **MpFilterTabs** — `tabs` ({ label, key, count? }[]), `ariaLabel?`, `controlsId?` · model `v-model` (active key). Tab filtering above data tables.
+- **MpWizardSteps** — `steps` (string[]), `current` (1-based). Passive wizard step indicator with `aria-current`.
+
+### Overlays
+
+- **MpConfirmDialog** — model `v-model`, `title`, `message`, `confirmLabel?`, `danger?` · emits `confirm`. All confirm prompts (destructive → `danger`). Never raw `v-dialog`.
+- **MpRowActionsMenu** — `ariaLabel` (required) · default slot (`v-list-item`s). Kebab row-actions menu for list views.
+
+### AI
+
+- **MpDaVinciBot** — `initialChatMode?`, `initialMessages?`, `subtitle?`, `headerless?` · emits `close`, `expand`. Da Vinci copilot surface hosting the `copilot/` Dv* components.
 
 ---
 
