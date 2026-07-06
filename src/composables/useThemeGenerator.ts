@@ -17,8 +17,10 @@ export interface ThemeGenResult {
   matched: boolean
 }
 
-// Keyword → catalog kind. Ordered most-specific first so "image banner" beats the
-// bare "banner"→hero rule, and "new arrivals" is caught before generic products.
+// Keyword → catalog kind. Ordered most-specific first; matched phrases are
+// consumed (stripped from the working prompt) before later rules run, so
+// "image banner" fires image-banner without also triggering the bare
+// "banner"→hero rule. See generateSections.
 const keywordRules: { test: RegExp; kind: string }[] = [
   { test: /image banner|editorial/, kind: 'image-banner' },
   { test: /promo|announcement|shipping|sale bar/, kind: 'announcement-bar' },
@@ -94,9 +96,17 @@ export function generateSections(
   if (bundleTest.test(text)) {
     requested = ['hero', 'featured-products', 'testimonials', 'newsletter']
   } else {
+    // Exclusive-by-precedence: each rule consumes the phrases it matched, so a
+    // generic keyword can't re-fire on words already claimed by a more specific
+    // rule ("image banner" → image-banner only, "image banner and hero" → both).
     requested = []
+    let working = text
     for (const rule of keywordRules) {
-      if (rule.test.test(text) && !requested.includes(rule.kind)) requested.push(rule.kind)
+      const pattern = new RegExp(rule.test.source, 'g')
+      const consumed = working.replace(pattern, ' ')
+      if (consumed === working) continue
+      if (!requested.includes(rule.kind)) requested.push(rule.kind)
+      working = consumed
     }
   }
 
