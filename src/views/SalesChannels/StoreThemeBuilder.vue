@@ -561,6 +561,24 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
             <span v-bind="props" class="tb-dirty-dot" role="status" aria-label="Unpublished changes"></span>
           </template>
         </v-tooltip>
+        <v-menu location="bottom start">
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              icon="more-vertical"
+              variant="text"
+              size="small"
+              aria-label="Theme actions"
+            ></v-btn>
+          </template>
+          <v-list density="compact" class="py-1">
+            <v-list-item
+              prepend-icon="code"
+              title="Edit Code"
+              @click="router.push({ name: 'StoreThemeCode', params: { accountId, channelId } })"
+            ></v-list-item>
+          </v-list>
+        </v-menu>
       </div>
 
       <v-btn-toggle
