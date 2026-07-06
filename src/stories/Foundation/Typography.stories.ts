@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { ref } from 'vue'
-import { VContainer, VRow, VCol, VCard, VCardText } from 'vuetify/components'
+import { VContainer } from 'vuetify/components'
+import {
+  mp_typography_fontFamily_base,
+  mp_typography_fontFamily_mono,
+  mp_typography_fontSize_xs,
+} from '@/design-tokens/generated/tokens'
+import { tokensByPrefix, type TokenEntry } from './foundationTokens'
 
 const meta = {
   title: 'Foundations/Typography',
@@ -10,46 +15,22 @@ const meta = {
     docs: {
       description: {
         component: `
-# Typography Foundation
+### Overview
+Every specimen on this page is styled programmatically from \`src/design-tokens/generated/tokens.ts\`
+(source: \`tokens.json\`, rebuilt via \`npm run tokens:build\`). The base font is **Inter**; mono is
+JetBrains Mono for token values and code.
 
-The Maropost Design System uses a carefully crafted typographic scale based on **Inter** font family for all text content. Our typography system is built on Vuetify 3's text utilities and provides consistent sizing, weights, and emphasis levels across the entire application.
+### The scale
+- **Primitives:** \`typography.fontSize\` (xs → 3xl), \`fontWeight\` (regular → heavy),
+  \`lineHeight\`, \`letterSpacing\`.
+- **Display styles:** composite \`typography.display.{sm,md,lg,xl}\` for hero/marketing surfaces.
+- **Semantic styles:** composite \`typography.semantic.*\` — pageTitle, kpiValue, sectionTitle,
+  body, caption, eyebrow — the styles product pages should actually use.
 
-## Overview
-
-The typography system provides:
-- **6 heading levels** (h1–h6) for content hierarchy
-- **2 body text sizes** for regular content and secondary information
-- **Caption and overline** styles for supplementary information
-- **5 font weights** ranging from regular to bold
-- **Text emphasis levels** (primary, medium, disabled) for information hierarchy
-- **Semantic colors** for success, error, warning, and info states
-
-## Do's ✓
-
-- Use heading levels sequentially (h1 → h2 → h3) to maintain proper document structure
-- Pair headings with body text (body-1 or body-2) for readable contrast
-- Use text-medium-emphasis for secondary information and helper text
-- Leverage text-disabled for inactive or non-interactive elements
-- Apply semantic text colors (success, error, warning) only for status information
-- Maintain consistent capitalization within sections (Title Case for headings, sentence case for body)
-
-## Don'ts ✗
-
-- Don't skip heading levels (e.g., h1 → h3) as it breaks document semantics
-- Don't use headings for body text; use text-h6 at smallest
-- Don't apply multiple font weights in the same phrase for emphasis
-- Don't use text-disabled for interactive elements
-- Don't mix font families or fallback fonts in component text
-- Don't override line-height for typography classes
-
-## Best Practices
-
-1. **Hierarchy**: Use heading levels (h1 → h6) to create visual and semantic hierarchy
-2. **Readability**: Keep line-length under 80 characters for body text in long-form content
-3. **Emphasis**: Use font-weight-medium for callouts within body text, not bold
-4. **Spacing**: Pair typography with spacing utilities (mb-2, mt-3) for vertical rhythm
-5. **Color**: Reserve text-primary for interactive elements, use text-medium-emphasis for labels
-6. **Accessibility**: Ensure color contrast meets WCAG AA standards (4.5:1 for body, 3:1 for large text)
+### Rules
+- Use semantic styles (or Vuetify text utilities) before reaching for raw sizes.
+- **Never** write \`font-size: 13px\` in a component — pick a token stop. The token-sync plan
+  (docs/design-system/token-sync-plan.md) tracks the migration of legacy px literals.
         `,
       },
     },
@@ -59,178 +40,142 @@ The typography system provides:
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const AllTypography: Story = {
+const fontSizes = tokensByPrefix('mp_typography_fontSize_')
+const fontWeights = tokensByPrefix('mp_typography_fontWeight_')
+const lineHeights = tokensByPrefix('mp_typography_lineHeight_')
+const letterSpacings = tokensByPrefix('mp_typography_letterSpacing_')
+
+/** Groups composite tokens like `sm_fontSize`/`sm_lineHeight` into per-style CSS objects. */
+function compositeStyles(entries: TokenEntry[]): { name: string; css: Record<string, string> }[] {
+  const groups = new Map<string, Record<string, string>>()
+  for (const { name, value } of entries) {
+    const split = name.lastIndexOf('_')
+    const group = name.slice(0, split)
+    const prop = name.slice(split + 1)
+    if (!groups.has(group)) groups.set(group, {})
+    groups.get(group)![prop] = value
+  }
+  return Array.from(groups.entries()).map(([name, css]) => ({ name, css }))
+}
+
+const displayStyles = compositeStyles(tokensByPrefix('mp_typography_display_'))
+const semanticStyles = compositeStyles(tokensByPrefix('mp_typography_semantic_'))
+
+const SpecimenLabel = {
+  props: ['entry'],
+  setup() {
+    return { mp_typography_fontFamily_mono, mp_typography_fontSize_xs }
+  },
+  template: `
+    <div
+      class="text-medium-emphasis"
+      :style="{ fontFamily: mp_typography_fontFamily_mono, fontSize: mp_typography_fontSize_xs, minWidth: '220px' }"
+    >{{ entry.name }} · {{ entry.value }}</div>
+  `,
+}
+
+export const TypeScale: Story = {
   render: () => ({
-    components: { VContainer, VRow, VCol, VCard, VCardText },
+    components: { SpecimenLabel },
+    setup() {
+      return { fontSizes, mp_typography_fontFamily_base, mp_typography_fontFamily_mono }
+    },
     template: `
-      <v-container class="py-8">
-        <!-- Headings Section -->
-        <div class="mb-8">
-          <p class="text-overline text-medium-emphasis mb-4">Headings</p>
-          <v-row>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-h1 mb-2">Heading 1</div>
-                <p class="text-caption text-medium-emphasis">text-h1 • 36px • 700 weight • 1.2 line-height</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-h2 mb-2">Heading 2</div>
-                <p class="text-caption text-medium-emphasis">text-h2 • 28px • 700 weight • 1.2 line-height</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-h3 mb-2">Heading 3</div>
-                <p class="text-caption text-medium-emphasis">text-h3 • 22px • 700 weight • 1.3 line-height</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-h4 mb-2">Heading 4</div>
-                <p class="text-caption text-medium-emphasis">text-h4 • 18px • 700 weight • 1.3 line-height</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-h5 mb-2">Heading 5</div>
-                <p class="text-caption text-medium-emphasis">text-h5 • 16px • 600 weight • 1.4 line-height</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-h6 mb-2">Heading 6</div>
-                <p class="text-caption text-medium-emphasis">text-h6 • 14px • 600 weight • 1.4 line-height</p>
-              </v-card>
-            </v-col>
-          </v-row>
+      <div class="pa-6">
+        <p class="text-overline text-medium-emphasis mb-2">Font families</p>
+        <p :style="{ fontFamily: mp_typography_fontFamily_base }" class="mb-1">base — {{ mp_typography_fontFamily_base }}</p>
+        <p :style="{ fontFamily: mp_typography_fontFamily_mono }" class="mb-6">mono — {{ mp_typography_fontFamily_mono }}</p>
+
+        <p class="text-overline text-medium-emphasis mb-2">Font-size scale — typography.fontSize.*</p>
+        <div v-for="s in fontSizes" :key="s.token" class="d-flex align-center ga-4 mb-3">
+          <SpecimenLabel :entry="s" />
+          <div :style="{ fontSize: s.value, fontFamily: mp_typography_fontFamily_base, lineHeight: 1.2, whiteSpace: 'nowrap' }">
+            The quick brown fox
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+}
+
+export const WeightsAndSpacing: Story = {
+  render: () => ({
+    components: { SpecimenLabel },
+    setup() {
+      return { fontWeights, letterSpacings, lineHeights }
+    },
+    template: `
+      <div class="pa-6">
+        <p class="text-overline text-medium-emphasis mb-2">Font weights — typography.fontWeight.*</p>
+        <div v-for="w in fontWeights" :key="w.token" class="d-flex align-center ga-4 mb-2">
+          <SpecimenLabel :entry="w" />
+          <div :style="{ fontWeight: w.value }">The quick brown fox jumps over the lazy dog</div>
         </div>
 
-        <!-- Body Text Section -->
-        <div class="mb-8">
-          <p class="text-overline text-medium-emphasis mb-4">Body Text</p>
-          <v-row>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 mb-2">This is body text size 1. It's used for primary content and regular paragraphs throughout the application. Body 1 provides optimal readability at 14px.</div>
-                <p class="text-caption text-medium-emphasis">text-body-1 • 14px • 400 weight • 1.5 line-height</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-2 mb-2">This is body text size 2. It's used for secondary content, descriptions, and helper text that requires slightly more subtle appearance. Body 2 is slightly smaller at 12px.</div>
-                <p class="text-caption text-medium-emphasis">text-body-2 • 12px • 400 weight • 1.5 line-height</p>
-              </v-card>
-            </v-col>
-          </v-row>
+        <p class="text-overline text-medium-emphasis mb-2 mt-8">Letter spacing — typography.letterSpacing.*</p>
+        <div v-for="l in letterSpacings" :key="l.token" class="d-flex align-center ga-4 mb-2">
+          <SpecimenLabel :entry="l" />
+          <div :style="{ letterSpacing: l.value }">The quick brown fox jumps over the lazy dog</div>
         </div>
 
-        <!-- Subtitles & Captions Section -->
-        <div class="mb-8">
-          <p class="text-overline text-medium-emphasis mb-4">Subtitles & Captions</p>
-          <v-row>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-subtitle-1 mb-2">Subtitle 1</div>
-                <p class="text-caption text-medium-emphasis">text-subtitle-1 • 14px • 500 weight • 1.4 line-height</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-subtitle-2 mb-2">Subtitle 2</div>
-                <p class="text-caption text-medium-emphasis">text-subtitle-2 • 12px • 500 weight • 1.4 line-height</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-caption mb-2">This is caption text used for small labels and annotations.</div>
-                <p class="text-caption text-medium-emphasis">text-caption • 11px • 500 weight • 1.4 line-height</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-overline mb-2">This is overline text</div>
-                <p class="text-caption text-medium-emphasis">text-overline • 11px • 600 weight • 1.6 line-height</p>
-              </v-card>
-            </v-col>
-          </v-row>
+        <p class="text-overline text-medium-emphasis mb-2 mt-8">Line height — typography.lineHeight.*</p>
+        <div class="d-flex flex-wrap ga-6">
+          <div v-for="l in lineHeights" :key="l.token" style="max-width: 240px;">
+            <SpecimenLabel :entry="l" />
+            <p :style="{ lineHeight: l.value }" class="mt-1">
+              Merchants scan dashboards quickly. Line height controls how dense each block of copy feels on the page.
+            </p>
+          </div>
         </div>
+      </div>
+    `,
+  }),
+}
 
-        <!-- Font Weights Section -->
-        <div class="mb-8">
-          <p class="text-overline text-medium-emphasis mb-4">Font Weights</p>
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 font-weight-regular mb-2">Regular Weight (400)</div>
-                <p class="text-caption text-medium-emphasis">font-weight-regular</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 font-weight-medium mb-2">Medium Weight (500)</div>
-                <p class="text-caption text-medium-emphasis">font-weight-medium</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 font-weight-semibold mb-2">Semibold Weight (600)</div>
-                <p class="text-caption text-medium-emphasis">font-weight-semibold</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 font-weight-bold mb-2">Bold Weight (700)</div>
-                <p class="text-caption text-medium-emphasis">font-weight-bold</p>
-              </v-card>
-            </v-col>
-          </v-row>
+export const DisplayStyles: Story = {
+  render: () => ({
+    setup() {
+      return { displayStyles, mp_typography_fontFamily_mono, mp_typography_fontSize_xs }
+    },
+    template: `
+      <div class="pa-6">
+        <p class="text-overline text-medium-emphasis mb-4">Display styles — typography.display.*</p>
+        <div v-for="d in displayStyles" :key="d.name" class="mb-6">
+          <div
+            class="text-medium-emphasis mb-1"
+            :style="{ fontFamily: mp_typography_fontFamily_mono, fontSize: mp_typography_fontSize_xs }"
+          >display.{{ d.name }} · {{ d.css.fontSize }} / {{ d.css.lineHeight }} / {{ d.css.letterSpacing }} / {{ d.css.fontWeight }}</div>
+          <div :style="d.css">Grow revenue</div>
         </div>
+      </div>
+    `,
+  }),
+}
 
-        <!-- Text Emphasis Section -->
-        <div class="mb-8">
-          <p class="text-overline text-medium-emphasis mb-4">Text Emphasis & Color</p>
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 text-primary mb-2">Primary Text</div>
-                <p class="text-caption text-medium-emphasis">text-primary • Used for emphasis and interactive elements</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 text-medium-emphasis mb-2">Medium Emphasis Text</div>
-                <p class="text-caption text-medium-emphasis">text-medium-emphasis • Used for secondary information</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 text-disabled mb-2">Disabled Text</div>
-                <p class="text-caption text-medium-emphasis">text-disabled • Used for inactive or non-interactive elements</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 text-success mb-2">Success Text</div>
-                <p class="text-caption text-medium-emphasis">text-success • Used for positive status information</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 text-error mb-2">Error Text</div>
-                <p class="text-caption text-medium-emphasis">text-error • Used for error messages and invalid states</p>
-              </v-card>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-card flat border class="pa-6 mb-4">
-                <div class="text-body-1 text-warning mb-2">Warning Text</div>
-                <p class="text-caption text-medium-emphasis">text-warning • Used for warning messages</p>
-              </v-card>
-            </v-col>
-          </v-row>
+export const SemanticStyles: Story = {
+  render: () => ({
+    setup() {
+      const samples: Record<string, string> = {
+        pageTitle: 'Sales orders',
+        kpiValue: '$48,920',
+        sectionTitle: 'Recent activity',
+        body: 'Body copy for cards, tables and forms.',
+        caption: 'Updated 4 minutes ago',
+        eyebrow: 'COMMERCE',
+      }
+      return { semanticStyles, samples, mp_typography_fontFamily_mono, mp_typography_fontSize_xs }
+    },
+    template: `
+      <div class="pa-6">
+        <p class="text-overline text-medium-emphasis mb-4">Semantic styles — typography.semantic.*</p>
+        <div v-for="s in semanticStyles" :key="s.name" class="mb-5">
+          <div
+            class="text-medium-emphasis mb-1"
+            :style="{ fontFamily: mp_typography_fontFamily_mono, fontSize: mp_typography_fontSize_xs }"
+          >semantic.{{ s.name }} · {{ Object.entries(s.css).map(([k, v]) => k + ': ' + v).join(' · ') }}</div>
+          <div :style="s.css">{{ samples[s.name] ?? 'Specimen' }}</div>
         </div>
-      </v-container>
+      </div>
     `,
   }),
 }

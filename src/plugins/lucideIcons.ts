@@ -25,7 +25,7 @@ function resolveLucideIcon(name: string): Component | null {
  * Vuetify uses these strings for internal UI icons (expand chevrons, checkboxes, etc.)
  * Routing them through Lucide SVGs avoids the class-doubling bug from the MDI CSS fallback.
  */
-const MDI_TO_LUCIDE: Record<string, string> = {
+export const MDI_TO_LUCIDE: Record<string, string> = {
   'mdi-chevron-down': 'chevron-down',
   'mdi-chevron-up': 'chevron-up',
   'mdi-chevron-left': 'chevron-left',
