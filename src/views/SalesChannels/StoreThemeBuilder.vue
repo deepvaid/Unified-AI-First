@@ -6,6 +6,8 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
+import ThemeDaVinciPanel, { type ThemeChatMessage } from '@/components/saleschannels/ThemeDaVinciPanel.vue'
+import { generateSections } from '@/composables/useThemeGenerator'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
@@ -162,6 +164,15 @@ function onEscape(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onEscape))
 onBeforeUnmount(() => window.removeEventListener('keydown', onEscape))
 
+// ── Left panel mode: the Sections/Styles tabs, or the Da Vinci generator ──────
+// 'davinci' fully replaces the tab strip while active (legacy parity).
+const leftMode = ref<'panel' | 'davinci'>('panel')
+
+function openDaVinci() {
+  leftMode.value = 'davinci'
+  addMenuOpen.value = false
+}
+
 // ── Theme styles panel ────────────────────────────────────────────────────────
 type LeftTab = 'sections' | 'styles'
 const leftTab = ref<LeftTab>('sections')
@@ -205,6 +216,76 @@ function askDaVinci() {
 // ── Publish / discard flow ────────────────────────────────────────────────────
 const snack = ref(false)
 const snackMessage = ref('')
+
+function notify(message: string) {
+  snackMessage.value = message
+  snack.value = true
+}
+
+// ── Da Vinci generator (parent owns state + store writes) ─────────────────────
+const chatMessages = ref<ThemeChatMessage[]>([])
+// Transient "New" cue for sections Da Vinci just added — cleared on select,
+// undo, or template switch. Not persisted (it's a review affordance).
+const newSectionIds = ref<Set<string>>(new Set())
+
+let chatIdCounter = 0
+function chatId(prefix: string) {
+  chatIdCounter += 1
+  return `${prefix}-${chatIdCounter}`
+}
+
+function onGenerate(prompt: string) {
+  if (!theme.value) return
+  chatMessages.value.push({ id: chatId('u'), role: 'user', text: prompt })
+
+  const result = generateSections(prompt, {
+    template: activeTemplate.value,
+    existingKinds: activeSections.value.map((s) => s.kind),
+  })
+
+  if (!result.matched || result.kinds.length === 0) {
+    chatMessages.value.push({ id: chatId('d'), role: 'davinci', text: result.reply })
+    return
+  }
+
+  const created = themesStore.addSections(theme.value.id, activeTemplate.value, result.kinds, result.overrides)
+  if (created.length === 0) {
+    // Everything requested already exists (unique kinds) — reply, no store write.
+    chatMessages.value.push({
+      id: chatId('d'),
+      role: 'davinci',
+      text: 'Those sections are already on this template.',
+    })
+    return
+  }
+
+  const addedIds = created.map((s) => s.id)
+  chatMessages.value.push({
+    id: chatId('d'),
+    role: 'davinci',
+    text: result.reply,
+    addedIds,
+    addedTitles: created.map((s) => s.label),
+  })
+
+  addedIds.forEach((id) => newSectionIds.value.add(id))
+  selectedId.value = created[0]!.id
+  notify(`Da Vinci added ${created.length} section${created.length === 1 ? '' : 's'}`)
+}
+
+function onUndo(ids: string[]) {
+  if (!theme.value) return
+  themesStore.removeSections(theme.value.id, activeTemplate.value, ids)
+  const idSet = new Set(ids)
+  ids.forEach((id) => newSectionIds.value.delete(id))
+  if (selectedId.value && idSet.has(selectedId.value)) selectedId.value = null
+  // Drop the ids off that turn's result card so Undo can't double-fire.
+  const turn = chatMessages.value.find((m) => m.addedIds && m.addedIds.some((id) => idSet.has(id)))
+  if (turn) {
+    turn.addedIds = undefined
+    turn.text = 'Removed.'
+  }
+}
 
 const totalSectionCount = computed(() =>
   TEMPLATE_TYPES.reduce((sum, template) => sum + (theme.value?.templates[template].length ?? 0), 0),
@@ -358,6 +439,16 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         class="tb-panel-left border-r bg-surface"
         :class="{ 'tb-panel-left--overlay': isNarrow }"
       >
+        <!-- Da Vinci generator fully replaces the tab strip while active -->
+        <ThemeDaVinciPanel
+          v-if="leftMode === 'davinci'"
+          :messages="chatMessages"
+          @generate="onGenerate"
+          @undo="onUndo"
+          @close="leftMode = 'panel'"
+        />
+
+        <template v-else>
         <v-tabs v-model="leftTab" density="compact" color="primary" grow class="border-b flex-shrink-0">
           <v-tab value="sections" class="text-none">Sections</v-tab>
           <v-tab value="styles" class="text-none">Theme styles</v-tab>
@@ -495,7 +586,17 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               </v-btn>
             </template>
             <v-card rounded="lg" border flat width="320" class="py-1">
-              <div class="px-4 py-2 border-b text-body-2 font-weight-bold">Add a section</div>
+              <button class="tb-generate-row" @click="openDaVinci">
+                <v-avatar color="primary" size="28" rounded="lg" class="flex-shrink-0">
+                  <v-icon color="white" size="15">sparkles</v-icon>
+                </v-avatar>
+                <span class="tb-generate-row__body">
+                  <span class="tb-generate-row__title text-primary">Generate with AI</span>
+                  <span class="tb-generate-row__sub">Describe it — Da Vinci builds the section</span>
+                </span>
+                <v-icon size="16" class="tb-generate-row__chev">chevron-right</v-icon>
+              </button>
+              <div class="px-4 py-2 border-b border-t text-body-2 font-weight-bold">Add a section</div>
               <v-list density="compact" nav max-height="380" class="overflow-y-auto">
                 <v-list-item
                   v-for="def in sectionCatalog"
@@ -518,6 +619,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
             </v-card>
           </v-menu>
         </div>
+        </template>
       </aside>
 
       <!-- Canvas -->
@@ -699,6 +801,30 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   flex-shrink: 0;
   background: rgb(var(--v-theme-warning));
 }
+
+/* ── Generate-with-AI picker row ─────────────────────────────────── */
+.tb-generate-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  background: rgba(var(--v-theme-primary), 0.06);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.tb-generate-row:hover { background: rgba(var(--v-theme-primary), 0.1); }
+.tb-generate-row:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
+.tb-generate-row__body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.tb-generate-row__title { font-size: 0.8125rem; font-weight: 700; }
+.tb-generate-row__sub {
+  font-size: 0.6875rem;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  line-height: 1.3;
+}
+.tb-generate-row__chev { color: rgb(var(--v-theme-primary)); flex-shrink: 0; }
 
 /* ── Sections panel ──────────────────────────────────────────────── */
 .tb-panel-left {
