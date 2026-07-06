@@ -47,9 +47,9 @@ and any extra body content via slots.
 - **Don't** nest interactive controls inside the card body; the whole card is the click target.
 
 ### A11y
-- **Provides:** \`aria-pressed\` reflects the selection, and the selected state is marked by both a ring **and** a check icon, so it is never color-only.
+- **Provides:** the root is a keyboard-operable toggle button — \`role="button"\`, \`tabindex="0"\`, Enter/Space re-dispatch a native click (so fallthrough \`@click\` handlers fire), and a \`:focus-visible\` ring in the primary theme color; \`aria-pressed\` reflects the selection, and the selected state is marked by both a ring **and** a check icon, so it is never color-only. *(Fixed in the Phase 4 a11y pass.)*
 - **Consumer must:** manage single-selection in view state and pass \`selected\` back down.
-- **Gaps:** the root renders as a non-focusable \`div\` — no \`role="button"\`, no \`tabindex\`, no keydown handling and no \`:focus-visible\` ring, so the card cannot be selected by keyboard (\`aria-pressed\` is also invalid without a button role). This is the biggest a11y gap in the P0 set — flagged for the Phase 4 fix pass.
+- **Gaps:** none known — keyboard double-press does not synthesize \`dblclick\`, so keep any \`@dblclick\` shortcut redundant with a visible button (as the wizards do).
         `,
       },
     },

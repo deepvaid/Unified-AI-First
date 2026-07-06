@@ -9,6 +9,13 @@ defineProps<{
 }>()
 
 // Click/dblclick are native events that fall through to the root v-card.
+// Enter/Space re-dispatch a native click on the root so those fallthrough
+// listeners fire for keyboard users too.
+function onKeyActivate(e: KeyboardEvent) {
+  if (e.target !== e.currentTarget) return
+  e.preventDefault()
+  ;(e.currentTarget as HTMLElement).click()
+}
 </script>
 
 <template>
@@ -18,7 +25,11 @@ defineProps<{
     rounded="lg"
     class="mp-option-card d-flex flex-column"
     :class="{ 'mp-option-card--selected': selected }"
+    role="button"
+    tabindex="0"
     :aria-pressed="selected"
+    @keydown.enter="onKeyActivate"
+    @keydown.space="onKeyActivate"
   >
     <div class="pa-4 d-flex flex-column flex-grow-1">
       <div class="d-flex align-center gap-3" :class="{ 'mb-2': description || $slots.default }">
@@ -44,6 +55,10 @@ defineProps<{
 }
 .mp-option-card:hover {
   border-color: rgba(var(--v-theme-primary), 0.5);
+}
+.mp-option-card:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
 }
 .mp-option-card--selected {
   border-color: rgb(var(--v-theme-primary));
