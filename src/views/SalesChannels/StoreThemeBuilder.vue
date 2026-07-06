@@ -57,11 +57,15 @@ const activeSections = computed<ThemeSection[]>(() => theme.value?.templates[act
 const selectedId = ref<string | null>(null)
 function selectSection(id: string) {
   selectedId.value = id
+  // Selecting/editing a generated section clears its transient "New" cue.
+  newSectionIds.value.delete(id)
 }
 
-// Switching templates drops the selection — it belongs to the old template.
+// Switching templates drops the selection — it belongs to the old template —
+// and clears any pending "New" cues (they're a transient, per-template review aid).
 watch(activeTemplate, () => {
   selectedId.value = null
+  newSectionIds.value.clear()
 })
 
 // ── Device frames ─────────────────────────────────────────────────────────────
@@ -465,6 +469,12 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
             <button class="tb-section-row__main" :aria-label="`Select ${section.label}`" @click="selectSection(section.id)">
               <v-icon size="16" class="tb-section-row__icon">{{ sectionIcon(section.kind) }}</v-icon>
               <span class="tb-section-row__label text-truncate">{{ section.label }}</span>
+              <span
+                v-if="newSectionIds.has(section.id)"
+                class="tb-section-row__new"
+                role="status"
+                aria-label="New — added by Da Vinci"
+              >New</span>
             </button>
             <div class="tb-section-row__actions">
               <v-btn
@@ -632,6 +642,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               :device="device"
               interactive
               :selected-id="selectedId"
+              :pending-ids="[...newSectionIds]"
               @select="selectSection"
             />
           </div>
@@ -877,6 +888,16 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 .tb-section-row__main:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
 .tb-section-row__icon { color: rgba(var(--v-theme-on-surface), 0.6); flex-shrink: 0; }
 .tb-section-row__label { font-size: 0.8125rem; font-weight: 600; }
+.tb-section-row__new {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: var(--mp-borderRadius-full, 999px);
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
 
 .tb-section-row__actions {
   display: flex;
