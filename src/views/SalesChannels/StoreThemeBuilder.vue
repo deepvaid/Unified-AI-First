@@ -6,6 +6,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
+import AddSectionDialog from '@/components/saleschannels/AddSectionDialog.vue'
 import ThemeDaVinciPanel, { type ThemeChatMessage } from '@/components/saleschannels/ThemeDaVinciPanel.vue'
 import { generateSections } from '@/composables/useThemeGenerator'
 import { useCopilotStore } from '@/stores/useCopilot'
@@ -13,7 +14,6 @@ import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import {
   getSectionDef,
-  sectionCatalog,
   themeFonts,
   TEMPLATE_TYPES,
   TEMPLATE_TYPE_LABELS,
@@ -120,18 +120,27 @@ function confirmRemove() {
   removeTargetId.value = null
 }
 
-// ── Add-section picker ────────────────────────────────────────────────────────
-const addMenuOpen = ref(false)
+// ── Add-section picker (two-pane dialog) ──────────────────────────────────────
+const addDialog = ref(false)
 
 function isKindDisabled(def: ThemeSectionDef) {
   return Boolean(def.unique) && activeSections.value.some((s) => s.kind === def.kind)
 }
 
+/** No-variant kind: add immediately (dialog closes on the child's click). */
 function addSection(def: ThemeSectionDef) {
   if (!theme.value) return
   const section = themesStore.addSection(theme.value.id, activeTemplate.value, def.kind)
   if (section) selectedId.value = section.id
-  addMenuOpen.value = false
+  addDialog.value = false
+}
+
+/** Variant-bearing kind: add with the chosen variant's preset merged in. */
+function addSectionVariant(def: ThemeSectionDef, variantId: string) {
+  if (!theme.value) return
+  const section = themesStore.addSection(theme.value.id, activeTemplate.value, def.kind, undefined, variantId)
+  if (section) selectedId.value = section.id
+  addDialog.value = false
 }
 
 // ── Section settings panel (schema-driven, live edits) ───────────────────────
@@ -174,7 +183,7 @@ const leftMode = ref<'panel' | 'davinci'>('panel')
 
 function openDaVinci() {
   leftMode.value = 'davinci'
-  addMenuOpen.value = false
+  addDialog.value = false
 }
 
 // ── Theme styles panel ────────────────────────────────────────────────────────
@@ -611,45 +620,9 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         </div>
 
         <div v-if="leftTab === 'sections'" class="pa-3 border-t">
-          <v-menu v-model="addMenuOpen" :close-on-content-click="false" location="top start">
-            <template #activator="{ props }">
-              <v-btn v-bind="props" variant="outlined" size="small" class="text-none" prepend-icon="plus" block>
-                Add section
-              </v-btn>
-            </template>
-            <v-card rounded="lg" border flat width="320" class="py-1">
-              <button class="tb-generate-row" @click="openDaVinci">
-                <v-avatar color="primary" size="28" rounded="lg" class="flex-shrink-0">
-                  <v-icon color="white" size="15">sparkles</v-icon>
-                </v-avatar>
-                <span class="tb-generate-row__body">
-                  <span class="tb-generate-row__title text-primary">Generate with AI</span>
-                  <span class="tb-generate-row__sub">Describe it — Da Vinci builds the section</span>
-                </span>
-                <v-icon size="16" class="tb-generate-row__chev">chevron-right</v-icon>
-              </button>
-              <div class="px-4 py-2 border-b border-t text-body-2 font-weight-bold">Add a section</div>
-              <v-list density="compact" nav max-height="380" class="overflow-y-auto">
-                <v-list-item
-                  v-for="def in sectionCatalog"
-                  :key="def.kind"
-                  rounded="lg"
-                  :disabled="isKindDisabled(def)"
-                  @click="addSection(def)"
-                >
-                  <template #prepend>
-                    <v-avatar color="primary" variant="tonal" size="28" rounded="lg">
-                      <v-icon size="15">{{ def.icon }}</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="text-body-2 font-weight-medium ml-2">{{ def.title }}</v-list-item-title>
-                  <v-list-item-subtitle class="text-caption ml-2" style="white-space:normal;">
-                    {{ isKindDisabled(def) ? 'Already in this template' : def.description }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-            </v-card>
-          </v-menu>
+          <v-btn variant="outlined" size="small" class="text-none" prepend-icon="plus" block @click="addDialog = true">
+            Add section
+          </v-btn>
         </div>
         </template>
       </aside>
@@ -784,6 +757,14 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
       </aside>
     </div>
 
+    <AddSectionDialog
+      v-model="addDialog"
+      :is-kind-disabled="isKindDisabled"
+      @add="addSection"
+      @add-variant="addSectionVariant"
+      @generate="openDaVinci"
+    />
+
     <MpConfirmDialog
       v-model="removeDialog"
       danger
@@ -845,30 +826,6 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   color: rgb(var(--v-theme-on-surface));
 }
 .tb-note .v-icon { color: rgb(var(--v-theme-primary)); }
-
-/* ── Generate-with-AI picker row ─────────────────────────────────── */
-.tb-generate-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 14px;
-  border: 0;
-  background: rgba(var(--v-theme-primary), 0.06);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.15s;
-}
-.tb-generate-row:hover { background: rgba(var(--v-theme-primary), 0.1); }
-.tb-generate-row:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
-.tb-generate-row__body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.tb-generate-row__title { font-size: 0.8125rem; font-weight: 700; }
-.tb-generate-row__sub {
-  font-size: 0.6875rem;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  line-height: 1.3;
-}
-.tb-generate-row__chev { color: rgb(var(--v-theme-primary)); flex-shrink: 0; }
 
 /* ── Sections panel ──────────────────────────────────────────────── */
 .tb-panel-left {
