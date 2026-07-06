@@ -98,6 +98,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/sales_channels/new', name: 'CreateSalesChannel', component: () => import('@/views/SalesChannels/CreateSalesChannel.vue'), meta: commerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/locations', name: 'SalesChannelLocations', component: () => import('@/views/SalesChannels/SalesChannelLocations.vue'), meta: commerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/locations/:locationId', name: 'SalesChannelLocationDetail', component: () => import('@/views/SalesChannels/SalesChannelLocationDetail.vue'), meta: commerceGate },
+  { path: '/accounts/:accountId/sales_channels/:channelId/theme', name: 'StoreThemeBuilder', component: () => import('@/views/SalesChannels/StoreThemeBuilder.vue'), meta: { ...commerceGate, fullPage: true } },
   { path: '/accounts/:accountId/sales_channels/:channelId', name: 'SalesChannelDetail', component: () => import('@/views/SalesChannels/SalesChannelDetail.vue'), meta: commerceGate },
 
   // 6. Marketing

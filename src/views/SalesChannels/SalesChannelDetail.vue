@@ -497,7 +497,7 @@ function openPrimaryAction() {
     openPreview('pos')
     return
   }
-  showNotice('Store Builder prototype entry point.')
+  router.push({ name: 'StoreThemeBuilder', params: { accountId: accountId.value, channelId: channelId.value } })
 }
 
 function openPreview(mode: 'desktop' | 'mobile' | 'pos' = 'desktop') {
@@ -544,7 +544,7 @@ function openConnectedProduct(target: ConnectedCloud | 'apps' | 'davinci') {
     router.push({ name: 'DaVinciDashboard', params: { accountId: accountId.value } })
     return
   }
-  showNotice('Store Builder prototype entry point.')
+  router.push({ name: 'StoreThemeBuilder', params: { accountId: accountId.value, channelId: channelId.value } })
 }
 
 function runAction(target: ProductTarget) {
