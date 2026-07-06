@@ -1,11 +1,15 @@
 <script setup lang="ts">
-defineProps<{
+withDefaults(defineProps<{
   icon?: string
   title: string
   description?: string
   actionLabel?: string
   actionIcon?: string
-}>()
+  /** Heading level announced to assistive tech (role="heading" + aria-level). */
+  headingLevel?: number
+}>(), {
+  headingLevel: 2,
+})
 
 defineEmits<{
   action: []
@@ -17,7 +21,7 @@ defineEmits<{
     <div v-if="icon" class="mp-empty-state__icon mb-4">
       <v-icon size="56" color="medium-emphasis">{{ icon }}</v-icon>
     </div>
-    <div class="text-h6 font-weight-bold mb-2">{{ title }}</div>
+    <div class="text-h6 font-weight-bold mb-2" role="heading" :aria-level="headingLevel">{{ title }}</div>
     <div v-if="description" class="text-body-2 text-medium-emphasis mp-empty-state__description">
       {{ description }}
     </div>

@@ -44,9 +44,9 @@ The \`MpEmptyState\` component is used when a container (like a table, list, or 
 - **First Use:** For "first use" scenarios (zero data ever created), the action button should be the primary "Create New" workflow.
 
 ### A11y
-- **Provides:** the CTA is a real \`v-btn\` with a visible focus indicator; the icon is decorative (\`v-icon\` is \`aria-hidden\`), so meaning lives in the title and description text.
+- **Provides:** the title carries \`role="heading"\` + \`aria-level\` (default 2, tune via \`headingLevel\`), so screen-reader users can jump to it via heading navigation *(fixed in the Phase 4 a11y pass)*; the CTA is a real \`v-btn\` with a visible focus indicator; the icon is decorative (\`v-icon\` is \`aria-hidden\`), so meaning lives in the title and description text.
 - **Consumer must:** write a title that makes sense out of context ("No orders yet", not "Nothing here"), and point \`@action\` somewhere useful.
-- **Gaps:** the title is a styled \`div\`, not a heading element — screen-reader users cannot jump to it via heading navigation; there is no live region, so a filter change that empties a list is not announced (noted for the Phase 4 a11y pass).
+- **Gaps:** there is no live region, so a filter change that empties a list is not announced — deliberately left to consumers (a global \`role="status"\` here would announce on every initial render); announce result-count changes at the toolbar/page level instead.
         `,
       },
     },

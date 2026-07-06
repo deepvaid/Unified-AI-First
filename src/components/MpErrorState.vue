@@ -5,11 +5,14 @@ withDefaults(defineProps<{
   description?: string
   actionLabel?: string
   actionIcon?: string
+  /** Heading level announced to assistive tech (role="heading" + aria-level). */
+  headingLevel?: number
 }>(), {
   icon: 'alert-triangle',
   title: 'Something went wrong',
   actionLabel: 'Try again',
   actionIcon: 'refresh-cw',
+  headingLevel: 2,
 })
 
 defineEmits<{
@@ -22,7 +25,7 @@ defineEmits<{
     <div class="mp-error-state__icon mb-4">
       <v-icon size="56" color="error">{{ icon }}</v-icon>
     </div>
-    <div class="text-h6 font-weight-bold mb-2">{{ title }}</div>
+    <div class="text-h6 font-weight-bold mb-2" role="heading" :aria-level="headingLevel">{{ title }}</div>
     <div v-if="description" class="text-body-2 text-medium-emphasis mp-error-state__description">
       {{ description }}
     </div>

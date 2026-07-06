@@ -108,7 +108,7 @@ renders conditionally.
 ### A11y
 - **Provides:** the title renders through \`MpPageHeader\` as the page \`h1\`; quick actions are real \`<button>\`s and child cards are router-links, both with visible \`:focus-visible\` rings via theme tokens; the setup progress bar is a Vuetify progress-linear with proper role; the quick-actions row has an \`aria-label\` landmark.
 - **Consumer must:** keep child-page descriptions meaningful (they are the link's supporting text) and route \`to\` paths valid.
-- **Gaps:** the "Sections" / "Recent activity" eyebrows are styled \`div\`s, not headings, so the page has a single h1 and no sub-heading structure for screen-reader navigation; activity rows are non-interactive text (fine), and setup-list checkmarks convey completion by icon + strikethrough but are not announced as a checklist (Phase 4 candidates).
+- **Gaps:** the "Sections" / "Recent activity" eyebrows now carry \`role="heading"\` + \`aria-level="2"\`, giving the page a sub-heading structure under the h1 *(fixed in the Phase 4 a11y pass)*; activity rows are non-interactive text (fine); setup-list checkmarks still convey completion by icon + strikethrough only — not announced as a checklist (backlog).
         `,
       },
     },

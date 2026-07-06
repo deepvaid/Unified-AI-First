@@ -116,7 +116,7 @@ defineProps<{
     <v-row class="module-landing__grid mt-2">
       <v-col cols="12" md="8">
         <!-- Child page cards -->
-        <div class="section-eyebrow">Sections</div>
+        <div class="section-eyebrow" role="heading" aria-level="2">Sections</div>
         <div class="child-grid">
           <router-link
             v-for="cp in childPages"
@@ -141,7 +141,7 @@ defineProps<{
 
         <!-- Recent activity -->
         <div v-if="recentActivity?.length" class="activity-section mt-6">
-          <div class="section-eyebrow">Recent activity</div>
+          <div class="section-eyebrow" role="heading" aria-level="2">Recent activity</div>
           <div class="activity-card">
             <div
               v-for="(item, idx) in recentActivity"

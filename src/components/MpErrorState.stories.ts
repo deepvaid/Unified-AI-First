@@ -43,7 +43,7 @@ All props have sensible defaults (\`alert-triangle\` icon, "Something went wrong
 ### A11y
 - **Provides:** \`role="alert"\` on the root, so assistive tech announces the failure the moment it renders; the retry CTA is a real \`v-btn\` with a visible focus indicator; the icon is decorative.
 - **Consumer must:** keep the title/description human (no raw stack traces or status codes) and make \`@action\` actually retry — pass \`action-label=""\` to suppress the button when there is no recovery path.
-- **Gaps:** the title is a styled \`div\`, not a heading element (mirrors \`MpEmptyState\`; noted for the Phase 4 a11y pass).
+- **Gaps:** none known — the title carries \`role="heading"\` + \`aria-level\` (default 2, tune via \`headingLevel\`), mirroring \`MpEmptyState\`. *(Fixed in the Phase 4 a11y pass.)*
         `,
       },
     },

@@ -38,9 +38,9 @@ The \`MpSectionHeader\` is used to divide content within a single page into logi
 - **Spacing:** The component comes with intrinsic bottom margins (\`mb-4\`). Ensure it has enough top spacing from preceding sections so it clearly anchors to the content below it.
 
 ### A11y
-- **Provides:** visible text-h6 styling that reads as a section label; slot actions keep their own button semantics and focus rings.
-- **Consumer must:** give icon-only buttons in \`#actions\` an \`aria-label\`.
-- **Gaps:** the title renders as a styled \`div\`, not a heading element (\`h2\`/\`h3\`), so it does not appear in screen-reader heading navigation and cannot participate in heading order — a heading-level prop is a Phase 4 candidate.
+- **Provides:** the title carries \`role="heading"\` + \`aria-level\` (default 2, tune via \`headingLevel\`), so it participates in screen-reader heading navigation without changing the visual style *(fixed in the Phase 4 a11y pass)*; slot actions keep their own button semantics and focus rings.
+- **Consumer must:** give icon-only buttons in \`#actions\` an \`aria-label\`, and set \`headingLevel\` when the section nests below another level-2 heading.
+- **Gaps:** none known.
         `,
       },
     },
