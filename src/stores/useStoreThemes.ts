@@ -144,6 +144,13 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     touch(theme)
   }
 
+  // New sections belong above a trailing footer, never after it. Returns the
+  // index of the first footer (the natural "end of body"), else the list end.
+  function contentInsertIndex(sections: ThemeSection[]): number {
+    const footerIdx = sections.findIndex((entry) => entry.kind === 'footer')
+    return footerIdx === -1 ? sections.length : footerIdx
+  }
+
   function addSection(themeId: string, template: TemplateType, kind: string, index?: number): ThemeSection | undefined {
     const theme = getTheme(themeId)
     if (!theme) return undefined
@@ -152,7 +159,7 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     const sections = theme.templates[template]
     if (def.unique && sections.some((entry) => entry.kind === kind)) return undefined
     const section = createSection(kind)
-    sections.splice(index ?? sections.length, 0, section)
+    sections.splice(index ?? contentInsertIndex(sections), 0, section)
     touch(theme)
     return section
   }
@@ -182,12 +189,15 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     if (!theme) return []
     const sections = theme.templates[template]
     const created: ThemeSection[] = []
+    // Insert the batch, in order, above a trailing footer.
+    let at = contentInsertIndex(sections)
     kinds.forEach((kind, i) => {
       const def = getSectionDef(kind)
       if (!def) return
       if (def.unique && sections.some((entry) => entry.kind === kind)) return
       const section = createSection(kind, overridesList[i] ?? {})
-      sections.push(section)
+      sections.splice(at, 0, section)
+      at += 1
       created.push(section)
     })
     if (created.length) touch(theme)
