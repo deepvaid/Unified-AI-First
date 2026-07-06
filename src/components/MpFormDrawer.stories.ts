@@ -70,10 +70,11 @@ the trigger on close.
   scrim blocks interaction with the page behind.
 - **Consumer must:** label every form field (Vuetify \`label\` props), and keep the trigger
   element mounted while the drawer is open so focus can return to it.
-- **Gaps:** the focus trap queries focusable elements without filtering hidden ones, so elements
-  inside collapsed sections could catch the trap; \`width\` is not clamped to the viewport — at
-  375px the 480px panel overflows the screen edge instead of going full-width (noted for the
-  Phase 4 pass).
+- **Provides (Phase 4):** the focus trap skips elements hidden inside collapsed sections
+  (\`offsetParent\` check), so Tab cycles only through visible controls.
+- **Gaps:** \`width\` is not clamped to the viewport — at 375px the 480px panel overflows the
+  screen edge instead of going full-width (backlog: clamping interacts with the drawer's
+  translate-based open/close animation, so it needs its own verified change).
         `,
       },
     },
