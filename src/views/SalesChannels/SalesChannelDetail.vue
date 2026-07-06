@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
@@ -14,6 +15,7 @@ import {
   type ConnectedCloud,
 } from '@/stores/useSalesChannels'
 import { useRetailStore } from '@/stores/useRetail'
+import { useStoreThemesStore } from '@/stores/useStoreThemes'
 
 type MetricColor = 'primary' | 'retail' | 'commerce' | 'analytics' | 'contacts' | 'success' | 'warning'
 type DetailTab = 'overview' | 'settings' | 'apps' | 'ai' | 'activity'
@@ -114,12 +116,15 @@ const route = useRoute()
 const router = useRouter()
 const salesChannelsStore = useSalesChannelsStore()
 const retailStore = useRetailStore()
+const storeThemesStore = useStoreThemesStore()
 
 const notice = ref('')
 const noticeVisible = ref(false)
 const addedAssistantIds = ref<string[]>([])
 const activeTab = ref<DetailTab>('overview')
 const showCompletedSetup = ref(false)
+const previewDialogOpen = ref(false)
+const previewDevice = ref<'desktop' | 'mobile'>('desktop')
 
 const accountId = computed(() => {
   const value = route.params.accountId
@@ -133,6 +138,12 @@ const channelId = computed(() => {
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
 const isWebStore = computed(() => channel.value?.type === 'web_store')
+
+// Published theme for this channel drives the preview dialog; falls back to the
+// default static storefront mock when no theme exists.
+const channelTheme = computed(() => (channelId.value ? storeThemesStore.themeForChannel(channelId.value) : undefined))
+const previewSections = computed(() => channelTheme.value?.templates.home)
+const previewStyles = computed(() => channelTheme.value?.styles)
 
 const locations = computed(() => {
   if (!channel.value?.offlineStore) return []
@@ -424,14 +435,6 @@ const crossSellFeatures = computed<CrossSellFeature[]>(() => {
   ]
 })
 
-const sparklinePoints = computed(() => {
-  const values = isWebStore.value
-    ? [0.24, 0.28, 0.33, 0.38, 0.42, 0.47, 0.53, 0.57, 0.64, 0.68, 0.76]
-    : [0.30, 0.35, 0.43, 0.40, 0.52, 0.48, 0.60, 0.56, 0.68, 0.63, 0.78]
-  const maxIndex = values.length - 1
-  return values.map((value, index) => `${((index / maxIndex) * 100).toFixed(1)},${(48 - value * 38).toFixed(1)}`).join(' ')
-})
-
 function showNotice(message: string) {
   notice.value = message
   noticeVisible.value = true
@@ -506,7 +509,8 @@ function openPreview(mode: 'desktop' | 'mobile' | 'pos' = 'desktop') {
     router.push({ name: 'RetailPosPreview', params: { accountId: accountId.value } })
     return
   }
-  showNotice(mode === 'mobile' ? 'Mobile storefront preview opened.' : 'Storefront preview opened.')
+  previewDevice.value = mode
+  previewDialogOpen.value = true
 }
 
 function openSettings() {
@@ -786,23 +790,18 @@ function locationRoleText(locationId: string) {
             <span>Last 30 days</span>
           </div>
           <div class="sc-performance-grid">
-            <v-card v-for="kpi in kpiCards" :key="kpi.label" flat border rounded="lg" class="sc-mini-kpi">
-              <div class="sc-mini-kpi__top">
-                <span class="retail-row-icon" :class="`retail-row-icon--${kpi.color}`">
-                  <v-icon size="14">{{ kpi.icon }}</v-icon>
-                </span>
-                <span>{{ kpi.label }}</span>
-              </div>
-              <div class="sc-mini-kpi__value num">{{ kpi.value }}</div>
-              <div v-if="kpi.trend" class="sc-mini-kpi__trend">
-                <v-icon size="12">{{ kpi.trendPositive ? 'chevron-up' : 'chevron-down' }}</v-icon>
-                {{ kpi.trend }}
-              </div>
-              <div v-else-if="kpi.subStat" class="sc-mini-kpi__sub">{{ kpi.subStat }}</div>
-              <svg v-if="kpi.trend" class="sc-mini-kpi__sparkline" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
-                <polyline :points="sparklinePoints" />
-              </svg>
-            </v-card>
+            <MpKpiCard
+              v-for="kpi in kpiCards"
+              :key="kpi.label"
+              :label="kpi.label"
+              :value="kpi.value"
+              :icon="kpi.icon"
+              :color="kpi.color"
+              :period="kpi.period"
+              :trend="kpi.trend"
+              :trend-positive="kpi.trendPositive"
+              :sub-stat="kpi.subStat"
+            />
           </div>
         </section>
 
@@ -980,6 +979,25 @@ function locationRoleText(locationId: string) {
         </v-card>
       </section>
 
+      <v-dialog v-model="previewDialogOpen" max-width="1040" scrollable>
+        <v-card flat rounded="lg" class="sc-preview-dialog">
+          <div class="sc-preview-dialog__bar">
+            <div class="min-width-0">
+              <strong>Storefront preview</strong>
+              <span v-if="channel.webStore?.domain">{{ channel.webStore.domain }}</span>
+            </div>
+            <v-btn-toggle v-model="previewDevice" mandatory density="compact" rounded="lg" border>
+              <v-btn value="desktop" size="small" prepend-icon="monitor" class="text-none">Desktop</v-btn>
+              <v-btn value="mobile" size="small" prepend-icon="smartphone" class="text-none">Mobile</v-btn>
+            </v-btn-toggle>
+            <v-btn variant="text" icon="x" size="small" aria-label="Close preview" @click="previewDialogOpen = false" />
+          </div>
+          <div class="sc-preview-dialog__body">
+            <StorefrontPreview :sections="previewSections" :styles="previewStyles" :device="previewDevice" />
+          </div>
+        </v-card>
+      </v-dialog>
+
       <v-snackbar v-model="noticeVisible" timeout="2400" color="surface" location="bottom right">
         {{ notice }}
       </v-snackbar>
@@ -1009,25 +1027,60 @@ function locationRoleText(locationId: string) {
 .sales-channel-detail {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--mp-spacing-6);
   min-width: 0;
 }
 
 .sc-header {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--mp-spacing-4);
 }
 
 .sc-back-button {
   width: fit-content;
 }
 
+.sc-preview-dialog__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-spacing-3);
+  padding: var(--mp-spacing-3) var(--mp-spacing-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sc-preview-dialog__bar > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.sc-preview-dialog__bar strong {
+  display: block;
+  color: var(--ink);
+  font-size: var(--mp-typography-fontSize-body);
+  font-weight: 700;
+}
+
+.sc-preview-dialog__bar span {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--mp-typography-fontFamily-mono, monospace);
+  font-size: var(--mp-typography-fontSize-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-preview-dialog__body {
+  padding: var(--mp-spacing-5);
+  background: var(--surface-2);
+}
+
 .sc-header__row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: 20px;
+  gap: var(--mp-spacing-5);
 }
 
 .sc-header__identity {
@@ -1079,7 +1132,7 @@ function locationRoleText(locationId: string) {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 12px;
+  gap: var(--mp-spacing-1) var(--mp-spacing-3);
   margin-top: 9px;
   color: var(--muted);
   font-size: 13px;
@@ -1097,7 +1150,7 @@ function locationRoleText(locationId: string) {
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--mp-spacing-2);
 }
 
 .sc-tabs {
@@ -1120,7 +1173,7 @@ function locationRoleText(locationId: string) {
 .sc-tab-panel {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--mp-spacing-5);
   min-width: 0;
 }
 
@@ -1128,7 +1181,7 @@ function locationRoleText(locationId: string) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
   align-items: stretch;
-  gap: 20px;
+  gap: var(--mp-spacing-5);
   min-width: 0;
 }
 
@@ -1181,7 +1234,7 @@ function locationRoleText(locationId: string) {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  padding: 12px;
+  padding: var(--mp-spacing-3);
   border: 1px solid color-mix(in oklch, var(--accent) 22%, var(--hairline));
   border-radius: var(--r-section);
   background: color-mix(in oklch, var(--accent) 5%, var(--surface-1));
@@ -1207,7 +1260,7 @@ function locationRoleText(locationId: string) {
 .sc-setup-empty span {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--mp-typography-fontSize-sm);
   font-weight: 500;
   line-height: 1.35;
 }
@@ -1268,7 +1321,7 @@ function locationRoleText(locationId: string) {
 
 .sc-section-line span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--mp-typography-fontSize-sm);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1278,73 +1331,6 @@ function locationRoleText(locationId: string) {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   min-width: 0;
-}
-
-.sc-mini-kpi {
-  position: relative;
-  overflow: hidden;
-  min-height: 142px;
-  padding: 14px;
-}
-
-.sc-mini-kpi__top {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.sc-mini-kpi__top > span:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sc-mini-kpi__value {
-  margin-top: 18px;
-  color: var(--ink);
-  font-size: clamp(28px, 4vw, 40px);
-  font-weight: 800;
-  line-height: 1;
-}
-
-.sc-mini-kpi__trend,
-.sc-mini-kpi__sub {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-top: 10px;
-  color: var(--pos);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.sc-mini-kpi__sub {
-  color: var(--muted);
-}
-
-.sc-mini-kpi__sparkline {
-  position: absolute;
-  right: 14px;
-  bottom: 12px;
-  width: 42%;
-  height: 36px;
-  color: var(--accent);
-  opacity: 0.72;
-}
-
-.sc-mini-kpi__sparkline polyline {
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 3;
 }
 
 .sc-app-list--wide {

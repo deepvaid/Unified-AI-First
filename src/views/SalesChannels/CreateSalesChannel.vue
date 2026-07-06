@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import {
   CHANNEL_TYPE_LABELS,
   CONNECTED_CLOUD_LABELS,
@@ -136,22 +137,7 @@ const reviewRows = computed(() => {
 
     <v-card flat border rounded="lg">
       <div class="create-sales-channel__steps">
-        <button
-          v-for="item in [
-            { value: 1, label: 'Choose type' },
-            { value: 2, label: 'Configure' },
-            { value: 3, label: 'Review' },
-          ]"
-          :key="item.value"
-          type="button"
-          class="create-sales-channel__step"
-          :class="{ 'create-sales-channel__step--active': step === item.value }"
-          :disabled="item.value > step"
-          @click="step = item.value"
-        >
-          <span>{{ item.value }}</span>
-          {{ item.label }}
-        </button>
+        <MpWizardSteps :steps="['Choose type', 'Configure', 'Review']" :current="step" />
       </div>
 
       <v-divider />
@@ -321,45 +307,7 @@ const reviewRows = computed(() => {
 
 <style scoped>
 .create-sales-channel__steps {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   padding: 16px 20px;
-}
-
-.create-sales-channel__step {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: rgb(var(--v-theme-on-surface-variant));
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 12px;
-}
-
-.create-sales-channel__step:disabled {
-  cursor: default;
-  opacity: 0.52;
-}
-
-.create-sales-channel__step span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: rgba(var(--v-theme-on-surface), 0.08);
-}
-
-.create-sales-channel__step--active {
-  background: rgba(var(--v-theme-primary), 0.10);
-  color: rgb(var(--v-theme-primary));
 }
 
 .create-type-card {
