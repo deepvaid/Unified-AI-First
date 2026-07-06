@@ -73,17 +73,17 @@ page in the platform places this directly above the table inside the same \`v-ca
 
 ### A11y
 - **Provides:** the search field has an \`aria-label\` (mirroring the placeholder); the Filter and
-  column-toggle buttons carry \`aria-label\`s ("Open table filters", "Toggle visible columns");
-  filter chips are closable with Vuetify's built-in close-target; the filter drawer inherits
-  \`MpFormDrawer\`'s full dialog semantics (focus trap, Escape-close, labelled title); column
-  checkboxes are real labelled \`v-checkbox\`es.
+  column-toggle buttons carry dynamic \`aria-label\`s that include their badge counts ("Open table
+  filters (2 active)", "Toggle visible columns (1 hidden)") *(counts added in the Phase 4 a11y
+  pass)*; filter chips are closable with Vuetify's built-in close-target; the filter drawer
+  inherits \`MpFormDrawer\`'s full dialog semantics (focus trap, Escape-close, labelled title);
+  column checkboxes are real labelled \`v-checkbox\`es.
 - **Consumer must:** keep \`activeFilters\` labels human-readable ("Status: Active") — the label
   is the chip's only accessible name — and debounce expensive queries themselves (the search
   model updates on every keystroke).
-- **Gaps:** the active-filter badge next to the Filter button is purely visual (its count is not
-  in the button's accessible name); the "+N more" chip is informational only — hidden filters
-  can't be removed from the chip row; the "N records" count is not programmatically associated
-  with the table and doesn't announce on filter changes (noted for the Phase 4 a11y pass).
+- **Gaps:** the "+N more" chip is informational only — hidden filters can't be removed from the
+  chip row; the "N records" count is not programmatically associated with the table and doesn't
+  announce on filter changes (backlog).
         `,
       },
     },

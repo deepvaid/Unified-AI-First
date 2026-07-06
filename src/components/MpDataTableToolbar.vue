@@ -69,7 +69,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
             variant="outlined"
             class="text-none mp-filter-btn"
             prepend-icon="list-filter"
-            aria-label="Open table filters"
+            :aria-label="activeFilters?.length ? `Open table filters (${activeFilters.length} active)` : 'Open table filters'"
             @click="filterDrawer = true"
           >
             Filter
@@ -94,7 +94,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
               variant="outlined"
               icon="columns-3"
               class="mp-filter-btn mp-filter-btn--icon"
-              aria-label="Toggle visible columns"
+              :aria-label="hiddenColumns.length ? `Toggle visible columns (${hiddenColumns.length} hidden)` : 'Toggle visible columns'"
             >
               <v-icon size="18">columns-3</v-icon>
               <v-badge
