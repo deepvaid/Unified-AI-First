@@ -72,8 +72,9 @@ const meta = {
 
 ### A11y
 - **Provides:** Vuetify \`v-tabs\` semantics — a \`tablist\` with arrow-key navigation and a visible active indicator; the \`ariaLabel\` prop names the tablist (defaults to "Filter results"); count chips render inside the tab so they are part of its accessible name; overflow arrows appear when tabs don't fit.
-- **Consumer must:** pass a domain-specific \`ariaLabel\` ("Filter orders"), and keep tab labels distinct.
-- **Gaps:** the tabs are not linked to a \`tabpanel\` via \`aria-controls\` (the filtered table sits outside the component) — standard for the filter-tab pattern, but worth noting for the Phase 4 pass.
+- **Provides (Phase 4):** the \`controlsId\` prop wires every tab's \`aria-controls\` to the filtered results container — set an \`id\` on the table/list wrapper and pass it here.
+- **Consumer must:** pass a domain-specific \`ariaLabel\` ("Filter orders"), keep tab labels distinct, and pass \`controlsId\` so assistive tech can jump from tab to results.
+- **Gaps:** none known — without \`controlsId\` the tabs fall back to the unwired filter-tab pattern.
         `,
       },
     },
@@ -87,6 +88,7 @@ const meta = {
     modelValue: { control: 'text', description: 'Active tab key (v-model)' },
     tabs: { control: 'object', description: 'Array of tab objects with label, key, and optional count (counts of 0 are hidden)' },
     ariaLabel: { control: 'text', description: 'Accessible name for the tablist. Default: "Filter results" — always override with the domain ("Filter orders").' },
+    controlsId: { control: 'text', description: 'id of the filtered results container; wired to each tab\'s aria-controls.' },
   },
   render: (args) => ({
     components: { MpFilterTabs },

@@ -4,8 +4,11 @@ const model = defineModel<string>({ required: true })
 withDefaults(defineProps<{
   tabs: Array<{ label: string; key: string; count?: number }>
   ariaLabel?: string
+  /** id of the filtered results container; wired to each tab's aria-controls. */
+  controlsId?: string
 }>(), {
   ariaLabel: 'Filter results',
+  controlsId: undefined,
 })
 </script>
 
@@ -23,6 +26,7 @@ withDefaults(defineProps<{
       v-for="tab in tabs"
       :key="tab.key"
       :value="tab.key"
+      :aria-controls="controlsId"
       class="text-none mp-filter-tabs__tab"
     >
       <span>{{ tab.label }}</span>
