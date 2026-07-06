@@ -12,7 +12,7 @@
 | P1 | Recon: token audit + inventory (artifacts: audit.md, inventory.md) | done |
 | P2 | Cleanup & extraction (candidates → cleanup-report.md) | done |
 | P3 | Story coverage (5 batches) | done (A: dashboards · B: copilot+voice · C: settings/marketing/merchandising · D1+D2: P0 doc upgrades + DvHistoryDrawer) |
-| P4 | A11y QA (a11y-checklist.md) | pending |
+| P4 | A11y QA (a11y-checklist.md) | done (13 fix commits + addon-a11y; checklist written by orchestrator after agent stall) |
 | P5 | Foundations + docs + handoff + CLAUDE.md refresh | pending |
 
 ## Component table
@@ -143,13 +143,14 @@
 | Storybook structure | docs/design-system/storybook-structure.md | pending |
 | Vuetify mapping | docs/design-system/vuetify-mapping.md | pending |
 | Token sync plan | docs/design-system/token-sync-plan.md | pending |
-| A11y checklist | docs/design-system/a11y-checklist.md | pending |
+| A11y checklist | docs/design-system/a11y-checklist.md | done |
 | Handoff notes | docs/design-system/handoff.md | pending |
 
 ## Progress log
 
 - 2026-07-05 — Program scaffolded: prompt + tracker seeded (52+ components, 29 stories at kickoff; nested dirs copilot/voice, dashboards/widgets, dashboards/wizard pending inventory). Decisions locked: full scope + extractions, full cleanup authority under safety rails, tiered docs, repo-based handoff.
 - 2026-07-05 — P1 recon done. Corrected totals: **69 components, 31 stories, 38 gaps**. Audit highlights: token pipeline healthy (3 drift values), Storybook preview already registers Vuetify+Pinia+Router with theme toolbar, a11y addon missing, 33 components with px font-size literals, dark-mode scrollbar bug, tokens.scss deprecation candidate. Inventory adds 10 grep-zero components as cleanup candidate #9 (dynamic-usage re-verification required).
+- 2026-07-06 — P4 a11y QA done. 13 fix commits (`46a4f6d`…`9e9a06e`, one per component/cluster): MpOptionCard made keyboard-operable (role=button, tabindex, Enter/Space, focus-visible — verified live in the wizard), heading semantics for 4 div-title components, aria-controls on MpFilterTabs, switch-label association on MpStatusToggle, dialog labelling ×3, focus-trap fix on MpFormDrawer, named landmarks/status regions, DvHistoryDrawer labelled search + MpConfirmDialog dogfooding. `@storybook/addon-a11y` installed + registered (`5cfa0ac`). Agent stalled post-fixes; orchestrator re-ran gates (green), verified MpOptionCard live, and wrote a11y-checklist.md. Deferred items recorded in the checklist backlog.
 - 2026-07-06 — P3 batch D2 done (12 interactive/overlay/layout P0 stories upgraded to full treatment: MpDataTableToolbar, MpFloatingBulkBar, MpFormDrawer, MpFolderSelect, MpManageFoldersDrawer, MpMoveToFolderDialog, MpConfirmDialog, MpRowActionsMenu, MpStatusToggle, MpWizardSteps, AppBar, AppSidebar). The batch agent hit a session limit before committing; orchestrator verified the 12 edited story files (type-check + build-storybook green, quality skim, title taxonomy consistent) and landed them. MpDaVinciBot confirmed tier P1 (standard story sufficient). **P3 complete: 0 story gaps across 65 components.** A11y gaps for P4 documented per story (worst: MpOptionCard not keyboard-operable; div-based headings; MpEmptyState no live region; DvHistoryDrawer unlabeled search + window.confirm).
 - 2026-07-06 — P2 cleanup done. All 9 candidates resolved (16 code commits + this docs commit): 5 extractions (MpOptionCard, MpStatusToggle, MpWizardSteps, MpConfirmDialog, MpRowActionsMenu — all with stories; + internal JourneyAddStepMenu), 10 unused components deleted with grep + dynamic-map proof, #7 kept separate, #8 kept for a P3 story. New totals: **65 components, 31 stories, 34 gaps (33 actionable)**. type-check + build-storybook green throughout; preview smokes on account 2000290.
 - 2026-07-06 — P3 batch A (dashboards) done. 14 CSF3 stories added under `Dashboards/` (+`Widgets/`, `Wizard/` subgroups), 40 stories total across the batch: dialogs/drawer rendered open with re-open buttons, grid populated/edit/empty, widget card across all 6 data kinds + editable/preview, widget renderers with mock `Dashboard*Data` payloads, wizard steps with interactive draft wiring. Store-coupled stories use seeded account 2000290 (Pinia registered in preview.ts). No components modified; none skipped. New totals: **45 stories, 20 gaps (19 actionable)**. type-check + build-storybook green.
