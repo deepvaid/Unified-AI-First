@@ -57,14 +57,15 @@ or there is only ever a single selectable item (use row actions instead).
   \`--v-layout-left/right\` variables, so it stays centered when the sidebar collapses.
 
 ### A11y
-- **Provides:** all actions are real buttons with visible focus indicators; the count is visible
-  text ("N selected"), not color-coded; "Select all (N)" states the target count in its label.
+- **Provides:** the bar is a \`role="status"\` region named "Bulk actions", so its appearance and
+  count changes are announced politely and it is discoverable as a named region *(fixed in the
+  Phase 4 a11y pass)*; all actions are real buttons with visible focus indicators; the count is
+  visible text ("N selected"), not color-coded; "Select all (N)" states the target count in its
+  label.
 - **Consumer must:** keep slot buttons text-labeled (no icon-only bulk actions) and wire \`@clear\`
   so keyboard users can exit selection mode.
-- **Gaps:** the bar is a plain \`div\` with no \`role="status"\`/\`aria-live\`, so its appearance
-  and count changes are not announced to screen readers; it is not a named landmark/region, so
-  it is hard to discover after selecting rows elsewhere in the page (noted for the Phase 4 a11y
-  pass).
+- **Gaps:** none known — note the bar mounts with \`v-if\`, so the very first appearance may not
+  announce on all screen readers (subsequent count changes do).
         `,
       },
     },

@@ -12,7 +12,12 @@ defineEmits<{
 
 <template>
   <v-slide-y-transition>
-    <div v-if="count > 0" class="mp-floating-bulk-bar d-flex align-center gap-3">
+    <div
+      v-if="count > 0"
+      class="mp-floating-bulk-bar d-flex align-center gap-3"
+      role="status"
+      aria-label="Bulk actions"
+    >
       <v-chip color="primary" variant="flat" size="small" class="font-weight-bold">{{ count }} selected</v-chip>
       <v-btn
         v-if="total != null && count < total"
