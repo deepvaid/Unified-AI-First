@@ -475,7 +475,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         />
 
         <template v-else>
-        <v-tabs v-model="leftTab" density="compact" color="primary" grow class="border-b flex-shrink-0">
+        <v-tabs v-model="leftTab" density="compact" color="primary" grow class="border-b flex-grow-0 flex-shrink-0">
           <v-tab value="sections" class="text-none">Sections</v-tab>
           <v-tab value="styles" class="text-none">Theme styles</v-tab>
         </v-tabs>
