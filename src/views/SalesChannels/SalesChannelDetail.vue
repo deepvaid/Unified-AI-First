@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
 import {
   CHANNEL_STATUS_LABELS,
   CHANNEL_TYPE_LABELS,
@@ -683,28 +684,7 @@ function locationRoleText(locationId: string) {
             </div>
 
             <div class="retail-widget-body">
-              <div v-if="isWebStore" class="sc-store-preview sc-store-preview--hero" aria-label="Storefront preview">
-                <div class="sc-store-preview__bar">
-                  <span />
-                  <span />
-                  <span />
-                  <strong>Storefront</strong>
-                </div>
-                <div class="sc-store-preview__nav">
-                  <strong>ATLAS</strong>
-                  <span>New</span>
-                  <span>Women</span>
-                  <span>Men</span>
-                  <span>Sale</span>
-                </div>
-                <div class="sc-store-preview__body">
-                  <div class="sc-store-preview__hero">
-                    <strong>Fall 26<br>Drop 02</strong>
-                    <span>Shop now</span>
-                  </div>
-                  <div v-for="n in 5" :key="n" class="sc-store-preview__tile" :class="`sc-store-preview__tile--${n}`" />
-                </div>
-              </div>
+              <StorefrontPreview v-if="isWebStore" />
 
               <div v-else class="sc-retail-preview sc-retail-preview--hero" aria-label="Retail location summary">
                 <button
@@ -1157,11 +1137,6 @@ function locationRoleText(locationId: string) {
   min-width: 0;
 }
 
-.sc-store-preview--hero .sc-store-preview__body {
-  grid-auto-rows: minmax(86px, 1fr);
-  min-height: 344px;
-}
-
 .sc-retail-preview--hero {
   align-content: start;
 }
@@ -1405,117 +1380,6 @@ function locationRoleText(locationId: string) {
 
 .sc-action-grid .retail-action-tile__desc {
   max-width: 100%;
-}
-
-.sc-store-preview {
-  overflow: hidden;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-section);
-  background: var(--surface-1);
-}
-
-.sc-store-preview__bar {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--hairline);
-  background: var(--surface-2);
-}
-
-.sc-store-preview__bar span {
-  width: 9px;
-  height: 9px;
-  border-radius: var(--r-pill);
-  background: color-mix(in oklch, var(--ink) 16%, transparent);
-}
-
-.sc-store-preview__bar strong {
-  overflow: hidden;
-  margin-left: 8px;
-  color: var(--muted);
-  font-family: var(--mp-typography-fontFamily-mono, monospace);
-  font-size: 12px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sc-store-preview__nav {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  min-height: 46px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--hairline);
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.sc-store-preview__nav strong {
-  color: var(--ink);
-  font-size: 18px;
-  letter-spacing: 0.08em;
-}
-
-.sc-store-preview__body {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-rows: minmax(70px, 1fr);
-  gap: 12px;
-  min-height: 218px;
-  padding: 14px;
-  background: color-mix(in oklch, var(--accent) 3%, var(--surface-1));
-}
-
-.sc-store-preview__hero {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  grid-column: span 2;
-  grid-row: span 2;
-  padding: 18px;
-  border-radius: var(--r-section);
-  background: color-mix(in oklch, var(--accent) 13%, var(--surface-1));
-  color: var(--ink);
-}
-
-.sc-store-preview__hero strong {
-  font-size: 22px;
-  line-height: 1.08;
-}
-
-.sc-store-preview__hero span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 12px;
-  border-radius: var(--r-pill);
-  background: var(--ink);
-  color: var(--surface-1);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.sc-store-preview__tile {
-  border-radius: var(--r-section);
-  background: color-mix(in oklch, var(--ink) 7%, var(--surface-1));
-}
-
-.sc-store-preview__tile--2,
-.sc-store-preview__tile--5 {
-  background: color-mix(in oklch, var(--accent) 10%, var(--surface-1));
-}
-
-.sc-store-preview__tile--3 {
-  background: color-mix(in oklch, rgb(var(--v-theme-warning)) 14%, var(--surface-1));
-}
-
-.sc-store-preview__tile--4 {
-  background: color-mix(in oklch, rgb(var(--v-theme-success)) 12%, var(--surface-1));
 }
 
 .sc-retail-preview {
@@ -1965,25 +1829,12 @@ function locationRoleText(locationId: string) {
   .sc-app-list--wide,
   .sc-assistant-grid,
   .sc-business-grid,
-  .sc-retail-preview,
-  .sc-store-preview__body {
+  .sc-retail-preview {
     grid-template-columns: 1fr;
   }
 
-  .sc-store-preview__hero {
-    grid-column: auto;
-    grid-row: auto;
-    min-height: 150px;
-  }
-
-  .sc-store-preview--hero .sc-store-preview__body,
   .sc-retail-preview--hero {
     min-height: auto;
-  }
-
-  .sc-store-preview__nav {
-    gap: 12px;
-    overflow-x: auto;
   }
 }
 

@@ -1,0 +1,949 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { ThemeSection, ThemeStyles } from '@/stores/themeBuilderData'
+
+const props = withDefaults(defineProps<{
+  /** Ordered sections of the active template. Omit for the static default storefront mock. */
+  sections?: ThemeSection[]
+  /** Theme style overrides, applied as CSS vars on the preview root. */
+  styles?: Partial<ThemeStyles>
+  /** Constrains the inner viewport width (desktop full, tablet ~768, mobile ~390). */
+  device?: 'desktop' | 'tablet' | 'mobile'
+  /** Hover outline + click-to-select on sections. */
+  interactive?: boolean
+  /** Section id shown with a labeled selection ring. */
+  selectedId?: string | null
+}>(), {
+  sections: undefined,
+  styles: undefined,
+  device: 'desktop',
+  interactive: false,
+  selectedId: null,
+})
+
+const emit = defineEmits<{
+  select: [id: string]
+  hover: [id: string | null]
+}>()
+
+const visibleSections = computed(() => props.sections?.filter((section) => !section.hidden) ?? [])
+
+const styleVars = computed(() => {
+  const s = props.styles
+  if (!s) return {}
+  const vars: Record<string, string> = {}
+  if (s.brandColor) vars['--sf-brand'] = s.brandColor
+  if (s.accentColor) vars['--sf-accent'] = s.accentColor
+  if (s.background) vars['--sf-bg'] = s.background
+  if (s.textColor) vars['--sf-text'] = s.textColor
+  if (s.cornerRadius !== undefined) vars['--sf-radius'] = `${s.cornerRadius}px`
+  if (s.headingFont) vars['--sf-heading-font'] = s.headingFont
+  if (s.bodyFont) vars['--sf-body-font'] = s.bodyFont
+  return vars
+})
+
+const rootClasses = computed(() => [
+  `sf-preview--${props.device}`,
+  `sf-preview--btn-${props.styles?.buttonStyle ?? 'solid'}`,
+  { 'sf-preview--interactive': props.interactive },
+])
+
+function text(section: ThemeSection, key: string, fallback = ''): string {
+  const value = section.settings[key]
+  return typeof value === 'string' && value.trim() ? value : fallback
+}
+
+function num(section: ThemeSection, key: string, fallback: number): number {
+  const value = section.settings[key]
+  return typeof value === 'number' ? value : fallback
+}
+
+function flag(section: ThemeSection, key: string): boolean {
+  return section.settings[key] === true
+}
+
+function onSelect(section: ThemeSection) {
+  if (props.interactive) emit('select', section.id)
+}
+
+function onHover(id: string | null) {
+  if (props.interactive) emit('hover', id)
+}
+</script>
+
+<template>
+  <div class="sf-preview" :class="rootClasses" :style="styleVars" aria-label="Storefront preview">
+    <div class="sf-preview__bar">
+      <span />
+      <span />
+      <span />
+      <strong>Storefront</strong>
+    </div>
+
+    <div class="sf-preview__viewport" :class="{ 'sf-preview__viewport--page': sections }">
+      <!-- Sectioned mode: schema-driven mocks per section kind -->
+      <template v-if="sections">
+        <div
+          v-for="section in visibleSections"
+          :key="section.id"
+          class="sf-section"
+          :class="{ 'sf-section--selected': section.id === selectedId }"
+          :data-label="section.label"
+          :role="interactive ? 'button' : undefined"
+          :tabindex="interactive ? 0 : undefined"
+          @click="onSelect(section)"
+          @keydown.enter.prevent="onSelect(section)"
+          @keydown.space.prevent="onSelect(section)"
+          @mouseenter="onHover(section.id)"
+          @mouseleave="onHover(null)"
+        >
+          <div v-if="section.kind === 'announcement-bar'" class="sf-announcement">
+            <span>{{ text(section, 'text', 'Announcement') }}</span>
+            <em v-if="text(section, 'link')">{{ text(section, 'link') }}</em>
+          </div>
+
+          <div v-else-if="section.kind === 'header'" class="sf-header" :class="`sf-header--${String(section.settings.menuStyle || 'Inline').toLowerCase()}`">
+            <strong>ATLAS</strong>
+            <nav class="sf-header__menu">
+              <span>New</span>
+              <span>Women</span>
+              <span>Men</span>
+              <span>Sale</span>
+            </nav>
+            <span class="sf-header__cart" />
+          </div>
+
+          <div
+            v-else-if="section.kind === 'hero'"
+            class="sf-hero"
+            :class="{ 'sf-hero--center': section.settings.alignment === 'Center' }"
+            :style="{ '--sf-overlay': `${num(section, 'overlay', 15)}%` }"
+          >
+            <strong>{{ text(section, 'headline', 'Hero headline') }}</strong>
+            <p v-if="text(section, 'subheadline')">{{ text(section, 'subheadline') }}</p>
+            <span class="sf-btn">{{ text(section, 'ctaLabel', 'Shop now') }}</span>
+          </div>
+
+          <div v-else-if="section.kind === 'featured-products'" class="sf-products" :class="{ 'sf-products--carousel': section.settings.layout === 'Carousel' }">
+            <strong class="sf-heading">{{ text(section, 'title', 'Featured products') }}</strong>
+            <div class="sf-products__grid">
+              <div v-for="n in num(section, 'productCount', 4)" :key="n" class="sf-product">
+                <span class="sf-product__img" />
+                <span class="sf-product__line" />
+                <span class="sf-product__price" />
+              </div>
+            </div>
+          </div>
+
+          <div v-else-if="section.kind === 'collection-grid'" class="sf-collections" :style="{ '--sf-cols': num(section, 'columns', 3) }">
+            <strong class="sf-heading">{{ text(section, 'title', 'Shop by collection') }}</strong>
+            <div class="sf-collections__grid">
+              <div v-for="n in num(section, 'columns', 3) * 2" :key="n" class="sf-collections__tile">
+                <span />
+              </div>
+            </div>
+          </div>
+
+          <div v-else-if="section.kind === 'image-banner'" class="sf-banner" :class="`sf-banner--${String(section.settings.height || 'Medium').toLowerCase()}`">
+            <strong>{{ text(section, 'headline', 'Image banner') }}</strong>
+          </div>
+
+          <div v-else-if="section.kind === 'rich-text'" class="sf-richtext" :class="{ 'sf-richtext--center': section.settings.alignment === 'Center' }">
+            <strong class="sf-heading">{{ text(section, 'heading', 'Rich text heading') }}</strong>
+            <p>{{ text(section, 'body', 'Add body copy to tell your brand story.') }}</p>
+          </div>
+
+          <div v-else-if="section.kind === 'testimonials'" class="sf-testimonials">
+            <strong class="sf-heading">{{ text(section, 'title', 'What customers say') }}</strong>
+            <div class="sf-testimonials__row">
+              <figure v-for="n in num(section, 'count', 3)" :key="n" class="sf-testimonials__card">
+                <span class="sf-testimonials__mark">“</span>
+                <span class="sf-line sf-line--full" />
+                <span class="sf-line sf-line--mid" />
+                <span class="sf-line sf-line--name" />
+              </figure>
+            </div>
+          </div>
+
+          <div v-else-if="section.kind === 'newsletter'" class="sf-newsletter">
+            <strong class="sf-heading">{{ text(section, 'headline', 'Join the list') }}</strong>
+            <div class="sf-newsletter__form">
+              <span class="sf-newsletter__input">you@example.com</span>
+              <span class="sf-btn">{{ text(section, 'buttonLabel', 'Subscribe') }}</span>
+            </div>
+          </div>
+
+          <div v-else-if="section.kind === 'product-detail'" class="sf-pdp" :class="{ 'sf-pdp--stacked': section.settings.galleryLayout === 'Stacked' }">
+            <div class="sf-pdp__gallery">
+              <span class="sf-pdp__img" />
+              <span class="sf-pdp__thumbs">
+                <span v-for="n in 3" :key="n" />
+              </span>
+            </div>
+            <div class="sf-pdp__info">
+              <strong class="sf-heading">Ridgeline Parka</strong>
+              <em>$248.00</em>
+              <span v-if="flag(section, 'showReviews')" class="sf-pdp__reviews">★★★★★ · 128 reviews</span>
+              <span class="sf-btn">Add to cart</span>
+            </div>
+          </div>
+
+          <div v-else-if="section.kind === 'cart-summary'" class="sf-cart">
+            <strong class="sf-heading">Your cart</strong>
+            <div v-for="n in 2" :key="n" class="sf-cart__row">
+              <span class="sf-cart__thumb" />
+              <span class="sf-line sf-line--full" />
+              <em>$98.00</em>
+            </div>
+            <div v-if="flag(section, 'showNotes')" class="sf-cart__notes">Order notes</div>
+            <div v-if="flag(section, 'upsells')" class="sf-cart__upsell">
+              <span />
+              <em>Add the matching beanie — $28</em>
+            </div>
+            <div class="sf-cart__total">
+              <span>Subtotal</span>
+              <em>$196.00</em>
+            </div>
+            <span class="sf-btn">Checkout</span>
+          </div>
+
+          <div v-else-if="section.kind === 'footer'" class="sf-footer">
+            <div class="sf-footer__cols" :style="{ '--sf-cols': num(section, 'columns', 3) }">
+              <div v-for="n in num(section, 'columns', 3)" :key="n" class="sf-footer__col">
+                <span class="sf-line sf-line--name" />
+                <span class="sf-line sf-line--mid" />
+                <span class="sf-line sf-line--mid" />
+              </div>
+            </div>
+            <div v-if="flag(section, 'showSocial')" class="sf-footer__social">
+              <span v-for="n in 4" :key="n" />
+            </div>
+          </div>
+
+          <div v-else class="sf-unknown">{{ section.label }}</div>
+        </div>
+
+        <div v-if="!visibleSections.length" class="sf-empty">No sections yet — add sections to build this template.</div>
+      </template>
+
+      <!-- Default static mock (extracted 1:1 from SalesChannelDetail) -->
+      <template v-else>
+        <div class="sf-preview__nav">
+          <strong>ATLAS</strong>
+          <span>New</span>
+          <span>Women</span>
+          <span>Men</span>
+          <span>Sale</span>
+        </div>
+        <div class="sf-preview__body">
+          <div class="sf-preview__hero">
+            <strong>Fall 26<br>Drop 02</strong>
+            <span>Shop now</span>
+          </div>
+          <div v-for="n in 5" :key="n" class="sf-preview__tile" :class="`sf-preview__tile--${n}`" />
+        </div>
+      </template>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.sf-preview {
+  --sf-brand: var(--accent);
+  --sf-accent: var(--accent);
+  --sf-bg: var(--surface-1);
+  --sf-text: var(--ink);
+  --sf-radius: 12px;
+  --sf-heading-font: inherit;
+  --sf-body-font: inherit;
+  --sf-on-brand: var(--mp-color-light-onPrimary);
+  --sf-soft-line: color-mix(in oklch, var(--sf-text) 12%, transparent);
+  --sf-soft-fill: color-mix(in oklch, var(--sf-text) 7%, var(--sf-bg));
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-section);
+  background: var(--surface-1);
+}
+
+/* ── Browser chrome ─────────────────────────────────────────────── */
+.sf-preview__bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--surface-2);
+}
+
+.sf-preview__bar span {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklch, var(--ink) 16%, transparent);
+}
+
+.sf-preview__bar strong {
+  overflow: hidden;
+  margin-left: 8px;
+  color: var(--muted);
+  font-family: var(--mp-typography-fontFamily-mono, monospace);
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Device frames ──────────────────────────────────────────────── */
+.sf-preview--tablet .sf-preview__viewport,
+.sf-preview--mobile .sf-preview__viewport {
+  margin-inline: auto;
+  border-inline: 1px solid var(--hairline);
+}
+
+.sf-preview--tablet .sf-preview__viewport {
+  max-width: 768px;
+}
+
+.sf-preview--mobile .sf-preview__viewport {
+  max-width: 390px;
+}
+
+/* ── Default static mock (extracted from SalesChannelDetail) ────── */
+.sf-preview__nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 46px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sf-preview__nav strong {
+  color: var(--ink);
+  font-size: 18px;
+  letter-spacing: 0.08em;
+}
+
+.sf-preview__body {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(86px, 1fr);
+  gap: 12px;
+  min-height: 344px;
+  padding: 14px;
+  background: color-mix(in oklch, var(--accent) 3%, var(--surface-1));
+}
+
+.sf-preview__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  grid-column: span 2;
+  grid-row: span 2;
+  padding: 18px;
+  border-radius: var(--r-section);
+  background: color-mix(in oklch, var(--accent) 13%, var(--surface-1));
+  color: var(--ink);
+}
+
+.sf-preview__hero strong {
+  font-size: 22px;
+  line-height: 1.08;
+}
+
+.sf-preview__hero span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--surface-1);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sf-preview__tile {
+  border-radius: var(--r-section);
+  background: color-mix(in oklch, var(--ink) 7%, var(--surface-1));
+}
+
+.sf-preview__tile--2,
+.sf-preview__tile--5 {
+  background: color-mix(in oklch, var(--accent) 10%, var(--surface-1));
+}
+
+.sf-preview__tile--3 {
+  background: color-mix(in oklch, rgb(var(--v-theme-warning)) 14%, var(--surface-1));
+}
+
+.sf-preview__tile--4 {
+  background: color-mix(in oklch, rgb(var(--v-theme-success)) 12%, var(--surface-1));
+}
+
+@media (max-width: 760px) {
+  .sf-preview__body {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .sf-preview__hero {
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 150px;
+  }
+
+  .sf-preview__nav {
+    gap: 12px;
+    overflow-x: auto;
+  }
+}
+
+/* Mobile device frame mirrors the responsive collapse */
+.sf-preview--mobile .sf-preview__body {
+  grid-template-columns: 1fr;
+  min-height: auto;
+}
+
+.sf-preview--mobile .sf-preview__hero {
+  grid-column: auto;
+  grid-row: auto;
+  min-height: 150px;
+}
+
+.sf-preview--mobile .sf-preview__nav {
+  gap: 12px;
+  overflow-x: auto;
+}
+
+/* ── Sectioned mode ─────────────────────────────────────────────── */
+.sf-preview__viewport--page {
+  background: var(--sf-bg);
+  color: var(--sf-text);
+  font-family: var(--sf-body-font);
+  font-size: 12px;
+}
+
+.sf-heading {
+  display: block;
+  font-family: var(--sf-heading-font);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 14px;
+  border-radius: var(--sf-radius);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sf-preview--btn-solid .sf-btn {
+  background: var(--sf-brand);
+  color: var(--sf-on-brand);
+}
+
+.sf-preview--btn-outline .sf-btn {
+  box-shadow: inset 0 0 0 1.5px var(--sf-brand);
+  color: var(--sf-brand);
+}
+
+.sf-preview--btn-pill .sf-btn {
+  border-radius: var(--r-pill);
+  background: var(--sf-brand);
+  color: var(--sf-on-brand);
+}
+
+.sf-line {
+  display: block;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--sf-soft-line);
+}
+
+.sf-line--full { width: 100%; }
+.sf-line--mid { width: 70%; }
+.sf-line--name { width: 45%; }
+
+/* Selection + hover chrome (builder UI, uses app tokens not theme vars) */
+.sf-section {
+  position: relative;
+}
+
+.sf-preview--interactive .sf-section {
+  cursor: pointer;
+}
+
+.sf-preview--interactive .sf-section:hover {
+  outline: 2px dashed color-mix(in oklch, var(--accent) 60%, transparent);
+  outline-offset: -2px;
+}
+
+.sf-preview--interactive .sf-section:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.sf-section--selected,
+.sf-preview--interactive .sf-section--selected:hover {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.sf-section--selected::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 1;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 10px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.sf-empty {
+  padding: 48px 16px;
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+/* ── Section mocks ──────────────────────────────────────────────── */
+.sf-announcement {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 26px;
+  padding: 0 12px;
+  background: var(--sf-brand);
+  color: var(--sf-on-brand);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.sf-announcement em {
+  font-style: normal;
+  text-decoration: underline;
+}
+
+.sf-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--sf-soft-line);
+}
+
+.sf-header strong {
+  font-family: var(--sf-heading-font);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+.sf-header__menu {
+  display: flex;
+  gap: 14px;
+  overflow: hidden;
+  color: color-mix(in oklch, var(--sf-text) 72%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sf-header--centered .sf-header__menu {
+  flex: 1;
+  justify-content: center;
+}
+
+.sf-header--minimal .sf-header__menu {
+  display: none;
+}
+
+.sf-header__cart {
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
+  border-radius: var(--r-pill);
+  background: var(--sf-soft-line);
+}
+
+.sf-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 150px;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in oklch, var(--sf-brand) var(--sf-overlay, 15%), var(--sf-bg));
+}
+
+.sf-hero--center {
+  align-items: center;
+  text-align: center;
+}
+
+.sf-hero strong {
+  font-family: var(--sf-heading-font);
+  font-size: 20px;
+  line-height: 1.08;
+}
+
+.sf-hero p {
+  margin: 0;
+  max-width: 340px;
+  color: color-mix(in oklch, var(--sf-text) 78%, transparent);
+  font-size: 11.5px;
+}
+
+.sf-products,
+.sf-collections,
+.sf-richtext,
+.sf-testimonials,
+.sf-newsletter,
+.sf-pdp,
+.sf-cart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 16px;
+}
+
+.sf-products__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sf-products--carousel .sf-products__grid {
+  display: flex;
+  overflow: hidden;
+}
+
+.sf-products--carousel .sf-product {
+  flex: 0 0 26%;
+}
+
+.sf-product {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sf-product__img {
+  aspect-ratio: 4 / 5;
+  border-radius: var(--sf-radius);
+  background: var(--sf-soft-fill);
+}
+
+.sf-product__line {
+  width: 80%;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--sf-soft-line);
+}
+
+.sf-product__price {
+  width: 40%;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklch, var(--sf-brand) 55%, transparent);
+}
+
+.sf-collections__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--sf-cols, 3), minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sf-collections__tile {
+  display: flex;
+  align-items: flex-end;
+  aspect-ratio: 4 / 3;
+  padding: 8px;
+  border-radius: var(--sf-radius);
+  background: var(--sf-soft-fill);
+}
+
+.sf-collections__tile span {
+  width: 50%;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--sf-soft-line);
+}
+
+.sf-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 90px;
+  background: color-mix(in oklch, var(--sf-accent) 18%, var(--sf-bg));
+}
+
+.sf-banner--medium { min-height: 130px; }
+.sf-banner--large { min-height: 180px; }
+
+.sf-banner strong {
+  font-family: var(--sf-heading-font);
+  font-size: 16px;
+}
+
+.sf-richtext {
+  gap: 8px;
+}
+
+.sf-richtext--center {
+  align-items: center;
+  text-align: center;
+}
+
+.sf-richtext p {
+  margin: 0;
+  max-width: 420px;
+  color: color-mix(in oklch, var(--sf-text) 78%, transparent);
+  font-size: 11.5px;
+}
+
+.sf-testimonials__row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.sf-testimonials__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--sf-soft-line);
+  border-radius: var(--sf-radius);
+}
+
+.sf-testimonials__mark {
+  color: var(--sf-brand);
+  font-family: var(--sf-heading-font);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.sf-newsletter {
+  align-items: center;
+  text-align: center;
+  background: var(--sf-soft-fill);
+}
+
+.sf-newsletter__form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sf-newsletter__input {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--sf-soft-line);
+  border-radius: var(--sf-radius);
+  background: var(--sf-bg);
+  color: color-mix(in oklch, var(--sf-text) 55%, transparent);
+  font-size: 11px;
+}
+
+.sf-pdp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.sf-pdp--stacked {
+  grid-template-columns: 1fr;
+}
+
+.sf-pdp__gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sf-pdp__img {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--sf-radius);
+  background: var(--sf-soft-fill);
+}
+
+.sf-pdp__thumbs {
+  display: flex;
+  gap: 6px;
+}
+
+.sf-pdp__thumbs span {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--sf-radius);
+  background: var(--sf-soft-fill);
+}
+
+.sf-pdp__info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sf-pdp__info em {
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.sf-pdp__reviews {
+  color: color-mix(in oklch, var(--sf-text) 65%, transparent);
+  font-size: 10.5px;
+}
+
+.sf-cart {
+  max-width: 460px;
+}
+
+.sf-cart__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.sf-cart__thumb {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--sf-radius);
+  background: var(--sf-soft-fill);
+}
+
+.sf-cart__row em,
+.sf-cart__total em {
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.sf-cart__notes {
+  padding: 8px 10px;
+  border: 1px dashed var(--sf-soft-line);
+  border-radius: var(--sf-radius);
+  color: color-mix(in oklch, var(--sf-text) 55%, transparent);
+  font-size: 10.5px;
+}
+
+.sf-cart__upsell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--sf-radius);
+  background: color-mix(in oklch, var(--sf-accent) 10%, var(--sf-bg));
+  font-size: 10.5px;
+}
+
+.sf-cart__upsell span {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: var(--sf-radius);
+  background: var(--sf-soft-fill);
+}
+
+.sf-cart__upsell em {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.sf-cart__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--sf-soft-line);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sf-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 16px;
+  border-top: 1px solid var(--sf-soft-line);
+  background: var(--sf-soft-fill);
+}
+
+.sf-footer__cols {
+  display: grid;
+  grid-template-columns: repeat(var(--sf-cols, 3), minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sf-footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sf-footer__social {
+  display: flex;
+  gap: 8px;
+}
+
+.sf-footer__social span {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--r-pill);
+  background: var(--sf-soft-line);
+}
+
+.sf-unknown {
+  padding: 16px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Narrow frames: collapse the denser section grids */
+.sf-preview--mobile .sf-products__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sf-preview--mobile .sf-collections__grid,
+.sf-preview--mobile .sf-footer__cols {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sf-preview--mobile .sf-testimonials__row {
+  grid-auto-flow: row;
+}
+
+.sf-preview--mobile .sf-pdp {
+  grid-template-columns: 1fr;
+}
+
+.sf-preview--mobile .sf-header__menu {
+  display: none;
+}
+</style>
