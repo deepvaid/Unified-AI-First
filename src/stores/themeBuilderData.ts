@@ -20,13 +20,37 @@ export interface ThemeSectionField {
   max?: number
 }
 
+export interface ThemeSectionVariant {
+  id: string
+  label: string
+  description?: string
+  preset: Record<string, string | number | boolean>
+}
+
 export interface ThemeSectionDef {
   kind: string
   title: string
   icon: string
   description: string
+  category: string
   fields: ThemeSectionField[]
+  variants?: ThemeSectionVariant[]
+  acceptsBlocks?: boolean
   unique?: boolean
+}
+
+/** A block nested inside a block-accepting section. */
+export interface ThemeBlock {
+  id: string
+  kind: string
+  settings: Record<string, string | number | boolean>
+}
+
+export interface ThemeBlockDef {
+  kind: string
+  title: string
+  icon: string
+  fields: ThemeSectionField[]
 }
 
 export interface ThemeSection {
@@ -34,8 +58,12 @@ export interface ThemeSection {
   kind: string
   label: string
   settings: Record<string, string | number | boolean>
+  blocks?: ThemeBlock[]
   hidden?: boolean
 }
+
+/** Display/group order for the categorized Add Section picker. */
+export const sectionCategories: string[] = ['Layout', 'Media', 'Featured', 'Content', 'Commerce']
 
 export type TemplateType = 'home' | 'product' | 'collection' | 'cart'
 
@@ -95,6 +123,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Announcement bar',
     icon: 'megaphone',
     description: 'Slim strip above the header for promos and shipping notices.',
+    category: 'Layout',
     fields: [
       { key: 'text', label: 'Text', type: 'text' },
       { key: 'link', label: 'Link label', type: 'text' },
@@ -105,6 +134,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Header',
     icon: 'panel-top',
     description: 'Store logo, navigation menu, and cart.',
+    category: 'Layout',
     unique: true,
     fields: [
       { key: 'menuStyle', label: 'Menu style', type: 'select', options: ['Inline', 'Centered', 'Minimal'] },
@@ -116,6 +146,13 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Hero',
     icon: 'image',
     description: 'Full-width banner with headline and call to action.',
+    category: 'Media',
+    acceptsBlocks: true,
+    variants: [
+      { id: 'full-bleed', label: 'Full-bleed', preset: { alignment: 'Left', overlay: 15 } },
+      { id: 'split', label: 'Split with image', preset: { alignment: 'Left', overlay: 0 } },
+      { id: 'minimal', label: 'Minimal', preset: { alignment: 'Center', overlay: 0 } },
+    ],
     fields: [
       { key: 'headline', label: 'Headline', type: 'text' },
       { key: 'subheadline', label: 'Subheadline', type: 'text' },
@@ -129,6 +166,12 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Featured products',
     icon: 'shopping-bag',
     description: 'Curated product cards from a collection.',
+    category: 'Featured',
+    acceptsBlocks: true,
+    variants: [
+      { id: 'grid', label: 'Grid', preset: { layout: 'Grid' } },
+      { id: 'carousel', label: 'Carousel', preset: { layout: 'Carousel' } },
+    ],
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'productCount', label: 'Products', type: 'slider', min: 2, max: 8 },
@@ -140,6 +183,13 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Collection grid',
     icon: 'layout-grid',
     description: 'Tiles linking to product collections.',
+    category: 'Featured',
+    acceptsBlocks: true,
+    variants: [
+      { id: 'two', label: '2-up', preset: { columns: 2 } },
+      { id: 'three', label: '3-up', preset: { columns: 3 } },
+      { id: 'four', label: '4-up', preset: { columns: 4 } },
+    ],
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'columns', label: 'Columns', type: 'slider', min: 2, max: 4 },
@@ -150,6 +200,12 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Image banner',
     icon: 'images',
     description: 'Editorial image break with an optional headline.',
+    category: 'Media',
+    acceptsBlocks: true,
+    variants: [
+      { id: 'container-cta', label: 'With container & CTA', preset: { height: 'Medium' } },
+      { id: 'full-cta', label: 'Full-width with CTA', preset: { height: 'Large' } },
+    ],
     fields: [
       { key: 'headline', label: 'Headline', type: 'text' },
       { key: 'height', label: 'Height', type: 'select', options: ['Small', 'Medium', 'Large'] },
@@ -160,6 +216,8 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Rich text',
     icon: 'text',
     description: 'Heading and paragraph for brand storytelling.',
+    category: 'Content',
+    acceptsBlocks: true,
     fields: [
       { key: 'heading', label: 'Heading', type: 'text' },
       { key: 'body', label: 'Body', type: 'textarea' },
@@ -171,6 +229,11 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Testimonials',
     icon: 'quote',
     description: 'Customer quotes for social proof.',
+    category: 'Content',
+    variants: [
+      { id: 'cards', label: 'Cards', preset: { count: 3 } },
+      { id: 'single', label: 'Single quote', preset: { count: 1 } },
+    ],
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'count', label: 'Quotes', type: 'slider', min: 1, max: 4 },
@@ -181,6 +244,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Newsletter',
     icon: 'mail',
     description: 'Email capture with headline and button.',
+    category: 'Content',
     fields: [
       { key: 'headline', label: 'Headline', type: 'text' },
       { key: 'buttonLabel', label: 'Button label', type: 'text' },
@@ -191,6 +255,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Product detail',
     icon: 'package',
     description: 'Gallery, price, and buy box for the product template.',
+    category: 'Commerce',
     unique: true,
     fields: [
       { key: 'galleryLayout', label: 'Gallery layout', type: 'select', options: ['Thumbnails', 'Stacked'] },
@@ -202,6 +267,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Cart summary',
     icon: 'shopping-cart',
     description: 'Line items, totals, and checkout for the cart template.',
+    category: 'Commerce',
     unique: true,
     fields: [
       { key: 'showNotes', label: 'Order notes', type: 'toggle' },
@@ -213,6 +279,7 @@ export const sectionCatalog: ThemeSectionDef[] = [
     title: 'Footer',
     icon: 'panel-bottom',
     description: 'Link columns, social icons, and legal.',
+    category: 'Layout',
     unique: true,
     fields: [
       { key: 'showSocial', label: 'Show social icons', type: 'toggle' },
@@ -271,5 +338,89 @@ export function createSection(
     // Spread clones — settings values are always flat primitives, so no
     // references are shared between sections or with the defaults map.
     settings: { ...(sectionDefaults[kind] ?? {}), ...overrides },
+  }
+}
+
+// ── Block catalog ────────────────────────────────────────────────────────────
+// Blocks nest inside block-accepting sections (hero, image-banner, rich-text,
+// featured-products, collection-grid). Fields reuse ThemeSectionField so the
+// same schema-driven settings renderer applies to blocks.
+
+export const blockCatalog: ThemeBlockDef[] = [
+  {
+    kind: 'heading',
+    title: 'Heading',
+    icon: 'heading',
+    fields: [{ key: 'text', label: 'Text', type: 'text' }],
+  },
+  {
+    kind: 'paragraph',
+    title: 'Paragraph',
+    icon: 'text',
+    fields: [{ key: 'body', label: 'Body', type: 'textarea' }],
+  },
+  {
+    kind: 'button',
+    title: 'Button',
+    icon: 'square-mouse-pointer',
+    fields: [
+      { key: 'label', label: 'Label', type: 'text' },
+      { key: 'link', label: 'Link', type: 'text' },
+    ],
+  },
+  {
+    kind: 'image',
+    title: 'Image',
+    icon: 'image',
+    fields: [
+      { key: 'alt', label: 'Alt text', type: 'text' },
+      { key: 'ratio', label: 'Ratio', type: 'select', options: ['16:9', '4:3', '1:1'] },
+    ],
+  },
+  {
+    kind: 'divider',
+    title: 'Divider',
+    icon: 'minus',
+    fields: [],
+  },
+  {
+    kind: 'spacer',
+    title: 'Spacer',
+    icon: 'move-vertical',
+    fields: [{ key: 'size', label: 'Size', type: 'slider', min: 8, max: 80 }],
+  },
+]
+
+/** Default settings applied when a block of the given kind is created. */
+const blockDefaults: Record<string, Record<string, string | number | boolean>> = {
+  heading: { text: 'Section heading' },
+  paragraph: { body: 'Add supporting copy to describe this section.' },
+  button: { label: 'Shop now', link: '#' },
+  image: { alt: '', ratio: '4:3' },
+  divider: {},
+  spacer: { size: 32 },
+}
+
+export function getBlockDef(kind: string): ThemeBlockDef | undefined {
+  return blockCatalog.find((def) => def.kind === kind)
+}
+
+let blockIdCounter = 0
+
+/**
+ * Create a new block of the given kind with cloned default settings.
+ * Pass `overrides`/`id` for deterministic seeds; generated ids otherwise.
+ * Mirrors createSection.
+ */
+export function createBlock(
+  kind: string,
+  overrides: Record<string, string | number | boolean> = {},
+  id?: string,
+): ThemeBlock {
+  blockIdCounter += 1
+  return {
+    id: id ?? `${kind}-block-${Date.now().toString(36)}-${blockIdCounter}`,
+    kind,
+    settings: { ...(blockDefaults[kind] ?? {}), ...overrides },
   }
 }

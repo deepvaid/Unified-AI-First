@@ -1,11 +1,13 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
+  createBlock,
   createSection,
   defaultThemeStyles,
   getSectionDef,
   type StoreTheme,
   type TemplateType,
+  type ThemeBlock,
   type ThemeSection,
   type ThemeStyles,
 } from './themeBuilderData'
@@ -39,9 +41,18 @@ function seedThemes(): StoreTheme[] {
         home: [
           createSection('announcement-bar', {}, 'atlas-home-announcement'),
           createSection('header', {}, 'atlas-home-header'),
-          createSection('hero', {}, 'atlas-home-hero'),
+          {
+            ...createSection('hero', {}, 'atlas-home-hero'),
+            blocks: [
+              createBlock('heading', { text: 'Fall 26 Drop 02' }, 'atlas-hero-heading'),
+              createBlock('paragraph', {}, 'atlas-hero-paragraph'),
+            ],
+          },
           createSection('featured-products', {}, 'atlas-home-featured'),
-          createSection('image-banner', {}, 'atlas-home-banner'),
+          {
+            ...createSection('image-banner', {}, 'atlas-home-banner'),
+            blocks: [createBlock('heading', { text: 'The Winter Edit' }, 'atlas-banner-heading')],
+          },
           createSection('testimonials', {}, 'atlas-home-testimonials'),
           createSection('newsletter', { headline: 'Join the Atlas list' }, 'atlas-home-newsletter'),
           createSection('footer', {}, 'atlas-home-footer'),
@@ -151,14 +162,22 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     return footerIdx === -1 ? sections.length : footerIdx
   }
 
-  function addSection(themeId: string, template: TemplateType, kind: string, index?: number): ThemeSection | undefined {
+  function addSection(
+    themeId: string,
+    template: TemplateType,
+    kind: string,
+    index?: number,
+    variantId?: string,
+  ): ThemeSection | undefined {
     const theme = getTheme(themeId)
     if (!theme) return undefined
     const def = getSectionDef(kind)
     if (!def) return undefined
     const sections = theme.templates[template]
     if (def.unique && sections.some((entry) => entry.kind === kind)) return undefined
-    const section = createSection(kind)
+    // When a variant is chosen, seed the section with that variant's preset.
+    const variant = variantId ? def.variants?.find((entry) => entry.id === variantId) : undefined
+    const section = createSection(kind, variant ? { ...variant.preset } : {})
     sections.splice(index ?? contentInsertIndex(sections), 0, section)
     touch(theme)
     return section
@@ -229,6 +248,73 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     touch(theme)
   }
 
+  // ── Block CRUD ────────────────────────────────────────────────────────────
+  // Blocks live on a section's optional `blocks` array (block-accepting kinds).
+  // Each mutation locates the section, guards, then touch()es the theme.
+
+  function findSection(themeId: string, template: TemplateType, sectionId: string) {
+    const theme = getTheme(themeId)
+    const section = theme?.templates[template].find((entry) => entry.id === sectionId)
+    return { theme, section }
+  }
+
+  function addBlock(
+    themeId: string,
+    template: TemplateType,
+    sectionId: string,
+    kind: string,
+  ): ThemeBlock | undefined {
+    const { theme, section } = findSection(themeId, template, sectionId)
+    if (!theme || !section) return undefined
+    const block = createBlock(kind)
+    if (!section.blocks) section.blocks = []
+    section.blocks.push(block)
+    touch(theme)
+    return block
+  }
+
+  function removeBlock(themeId: string, template: TemplateType, sectionId: string, blockId: string) {
+    const { theme, section } = findSection(themeId, template, sectionId)
+    if (!theme || !section?.blocks) return
+    const index = section.blocks.findIndex((entry) => entry.id === blockId)
+    if (index === -1) return
+    section.blocks.splice(index, 1)
+    touch(theme)
+  }
+
+  /** Move a block up (`offset` -1) or down (`offset` +1) within its section. */
+  function moveBlock(
+    themeId: string,
+    template: TemplateType,
+    sectionId: string,
+    blockId: string,
+    offset: number,
+  ) {
+    const { theme, section } = findSection(themeId, template, sectionId)
+    if (!theme || !section?.blocks) return
+    const from = section.blocks.findIndex((entry) => entry.id === blockId)
+    const to = from + offset
+    if (from === -1 || to < 0 || to >= section.blocks.length) return
+    const [block] = section.blocks.splice(from, 1)
+    if (!block) return
+    section.blocks.splice(to, 0, block)
+    touch(theme)
+  }
+
+  function updateBlock(
+    themeId: string,
+    template: TemplateType,
+    sectionId: string,
+    blockId: string,
+    patch: { settings?: Record<string, string | number | boolean> },
+  ) {
+    const { theme, section } = findSection(themeId, template, sectionId)
+    const block = section?.blocks?.find((entry) => entry.id === blockId)
+    if (!theme || !block) return
+    if (patch.settings) block.settings = { ...block.settings, ...patch.settings }
+    touch(theme)
+  }
+
   function publishTheme(themeId: string) {
     const theme = getTheme(themeId)
     if (!theme) return
@@ -271,6 +357,10 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     addSections,
     removeSections,
     moveSection,
+    addBlock,
+    removeBlock,
+    moveBlock,
+    updateBlock,
     publishTheme,
     discardDraft,
   }
