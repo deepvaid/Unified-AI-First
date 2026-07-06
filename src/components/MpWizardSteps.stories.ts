@@ -55,9 +55,9 @@ or \`v-stepper\`), or the flow has 5+ steps (use a full \`v-stepper\`).
   visually collapsed (font-size 0), so screen readers still hear the step names on small screens.
 - **Consumer must:** announce step changes elsewhere (e.g. move focus to the new step's heading)
   — the indicator itself is not a live region.
-- **Gaps:** completed vs upcoming steps are distinguished only visually (check icon is decorative
-  and color-only otherwise) — there is no "completed" text alternative; the numbered circle and
-  label may read as "1 Choose template" without stating state (noted for the Phase 4 a11y pass).
+- **Provides (Phase 4):** completed steps append a visually-hidden "(completed)" text
+  alternative, so state is no longer conveyed by the check icon and color alone.
+- **Gaps:** none known.
         `,
       },
     },

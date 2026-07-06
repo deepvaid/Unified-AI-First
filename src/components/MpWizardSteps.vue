@@ -25,6 +25,7 @@ defineProps<{
           <template v-else>{{ index + 1 }}</template>
         </span>
         {{ label }}
+        <span v-if="current > index + 1" class="d-sr-only">(completed)</span>
       </div>
     </template>
   </div>
