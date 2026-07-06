@@ -11,6 +11,7 @@ const config: StorybookConfig = {
   addons: [
     '@storybook/addon-docs',
     '@storybook/addon-themes',
+    '@storybook/addon-a11y',
   ],
   framework: '@storybook/vue3-vite',
   viteFinal: async (config) => {
