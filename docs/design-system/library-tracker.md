@@ -13,7 +13,7 @@
 | P2 | Cleanup & extraction (candidates → cleanup-report.md) | done |
 | P3 | Story coverage (5 batches) | done (A: dashboards · B: copilot+voice · C: settings/marketing/merchandising · D1+D2: P0 doc upgrades + DvHistoryDrawer) |
 | P4 | A11y QA (a11y-checklist.md) | done (13 fix commits + addon-a11y; checklist written by orchestrator after agent stall) |
-| P5 | Foundations + docs + handoff + CLAUDE.md refresh | pending |
+| P5 | Foundations + docs + handoff + CLAUDE.md refresh | done — **program closed** |
 
 ## Component table
 
@@ -140,14 +140,15 @@
 | Token & theme audit | docs/design-system/audit.md | done |
 | Component inventory | docs/design-system/inventory.md | done |
 | Cleanup report | docs/design-system/cleanup-report.md | done |
-| Storybook structure | docs/design-system/storybook-structure.md | pending |
-| Vuetify mapping | docs/design-system/vuetify-mapping.md | pending |
-| Token sync plan | docs/design-system/token-sync-plan.md | pending |
+| Storybook structure | docs/design-system/storybook-structure.md | done |
+| Vuetify mapping | docs/design-system/vuetify-mapping.md | done |
+| Token sync plan | docs/design-system/token-sync-plan.md | done |
 | A11y checklist | docs/design-system/a11y-checklist.md | done |
-| Handoff notes | docs/design-system/handoff.md | pending |
+| Handoff notes | docs/design-system/handoff.md | done |
 
 ## Progress log
 
+- 2026-07-06 — **P5 done — PROGRAM CLOSED.** Foundations rebuilt tokens-driven in place at `src/stories/Foundation/` (Colors light+dark+scales+charts, Typography ramps+display+semantic composites, Spacing+layout bars at real token width, Radius & Shadows merges the old Radius+Elevation pages, Icons = searchable catalog of all 1934 bridge-resolvable Lucide names + exported MDI_TO_LUCIDE alias grid) — `b9b66a8`. Four handoff artifacts written from the P1–P4 artifacts (`fcca0ec`); CLAUDE.md component inventory + file-structure block refreshed to the 22-component P0 set with a docs/design-system pointer (`33d27c2`); tracker closed (this commit). **Program totals: 65 components, 0 story gaps — 64 component story files + 5 foundations pages (347 story exports across 87 src story files; 508 in the full build incl. Archive + @marobase/ui), 43 commits (`8437dc6`…close-out), all 8 artifacts done.** Final gates green: `npm run type-check` + `npm run build-storybook`.
 - 2026-07-05 — Program scaffolded: prompt + tracker seeded (52+ components, 29 stories at kickoff; nested dirs copilot/voice, dashboards/widgets, dashboards/wizard pending inventory). Decisions locked: full scope + extractions, full cleanup authority under safety rails, tiered docs, repo-based handoff.
 - 2026-07-05 — P1 recon done. Corrected totals: **69 components, 31 stories, 38 gaps**. Audit highlights: token pipeline healthy (3 drift values), Storybook preview already registers Vuetify+Pinia+Router with theme toolbar, a11y addon missing, 33 components with px font-size literals, dark-mode scrollbar bug, tokens.scss deprecation candidate. Inventory adds 10 grep-zero components as cleanup candidate #9 (dynamic-usage re-verification required).
 - 2026-07-06 — P4 a11y QA done. 13 fix commits (`46a4f6d`…`9e9a06e`, one per component/cluster): MpOptionCard made keyboard-operable (role=button, tabindex, Enter/Space, focus-visible — verified live in the wizard), heading semantics for 4 div-title components, aria-controls on MpFilterTabs, switch-label association on MpStatusToggle, dialog labelling ×3, focus-trap fix on MpFormDrawer, named landmarks/status regions, DvHistoryDrawer labelled search + MpConfirmDialog dogfooding. `@storybook/addon-a11y` installed + registered (`5cfa0ac`). Agent stalled post-fixes; orchestrator re-ran gates (green), verified MpOptionCard live, and wrote a11y-checklist.md. Deferred items recorded in the checklist backlog.
