@@ -45,14 +45,14 @@ from the \`@toggle\` handler instead of toggling directly).
 
 ### A11y
 - **Provides:** the switch carries a dynamic \`aria-label\` ("Pause" when Active, "Activate" when
-  Paused) naming the action it performs; the Draft state renders the switch \`disabled\`; the status
+  Paused) naming the action it performs, and the visible status word is associated with the switch
+  input via \`aria-describedby\`, so screen readers hear the current state after the action name
+  *(fixed in the Phase 4 a11y pass)*; the Draft state renders the switch \`disabled\`; the status
   word is always visible as text, so color is not the only carrier.
 - **Consumer must:** re-render with the new \`status\` promptly after \`@toggle\`, and keep row
   identity clear elsewhere in the row (the aria-label does not say which journey it controls).
-- **Gaps:** the visible status label is not programmatically associated with the switch (no
-  \`aria-describedby\`), so screen readers hear only "Pause"/"Activate" without the current state;
-  the disabled Draft switch is skipped by keyboard focus, leaving no focusable element that conveys
-  why it cannot be toggled (noted for the Phase 4 a11y pass).
+- **Gaps:** the disabled Draft switch is skipped by keyboard focus, leaving no focusable element
+  that conveys why it cannot be toggled (backlog — would need aria-disabled instead of disabled).
         `,
       },
     },

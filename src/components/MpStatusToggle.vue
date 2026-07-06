@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 const props = defineProps<{
   status: 'Active' | 'Paused' | 'Draft'
@@ -8,6 +8,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   toggle: []
 }>()
+
+const labelId = useId()
 
 const labelClass = computed(() =>
   props.status === 'Active' ? 'text-success' : props.status === 'Paused' ? 'text-warning' : 'text-medium-emphasis',
@@ -23,8 +25,9 @@ const labelClass = computed(() =>
       hide-details
       :disabled="status === 'Draft'"
       :aria-label="status === 'Active' ? 'Pause' : 'Activate'"
+      :aria-describedby="labelId"
       @update:model-value="emit('toggle')"
     ></v-switch>
-    <span class="text-caption font-weight-medium" :class="labelClass">{{ status }}</span>
+    <span :id="labelId" class="text-caption font-weight-medium" :class="labelClass">{{ status }}</span>
   </div>
 </template>
