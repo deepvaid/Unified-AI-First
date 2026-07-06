@@ -46,15 +46,15 @@ it and offer undo).
 - **Don't** chain two confirm dialogs; if an action needs double confirmation, rethink the flow.
 
 ### A11y
-- **Provides:** Vuetify's \`v-dialog\` traps focus, closes on Escape and backdrop click, and
-  restores focus to the trigger on close; Cancel and confirm are real buttons with visible text;
-  the danger icon is decorative (\`v-icon\` is \`aria-hidden\`) — the title text carries meaning.
+- **Provides:** the dialog surface is wired to its title and message via \`aria-labelledby\`/
+  \`aria-describedby\`, so it announces with its name and consequence on open *(fixed in the
+  Phase 4 a11y pass)*; Vuetify's \`v-dialog\` traps focus, closes on Escape and backdrop click,
+  and restores focus to the trigger on close; Cancel and confirm are real buttons with visible
+  text; the danger icon is decorative (\`v-icon\` is \`aria-hidden\`).
 - **Consumer must:** phrase \`title\` as the question and \`message\` as the consequence — screen
   readers read them in order when the dialog opens.
-- **Gaps:** the dialog surface has no \`aria-labelledby\`/\`aria-describedby\` wiring to the title
-  and message, so the dialog announces without its name on some screen readers; initial focus
-  lands on the first focusable (Cancel) rather than an explicit safe default (noted for the
-  Phase 4 a11y pass).
+- **Gaps:** initial focus lands on the first focusable (Cancel) rather than an explicit safe
+  default (backlog).
         `,
       },
     },

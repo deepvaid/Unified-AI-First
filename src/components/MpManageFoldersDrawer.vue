@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useFoldersStore, type FolderScope } from '@/stores/useFolders'
 import MpFormDrawer from './MpFormDrawer.vue'
 
@@ -56,6 +56,8 @@ function commitRename() {
 // Delete confirm
 const deletingId = ref<string | null>(null)
 const deletingFolder = computed(() => store.getFolder(deletingId.value))
+const deleteTitleId = useId()
+const deleteMessageId = useId()
 
 function confirmDelete() {
   if (!deletingId.value) return
@@ -131,6 +133,7 @@ function confirmDelete() {
             density="compact"
             hide-details
             autofocus
+            :aria-label="`New name for ${folder.name}`"
             @keyup.enter="commitRename"
             @keyup.esc="renamingId = null"
           />
@@ -161,12 +164,18 @@ function confirmDelete() {
   </MpFormDrawer>
 
   <!-- Delete confirmation -->
-  <v-dialog :model-value="!!deletingId" max-width="420" @update:model-value="deletingId = null">
+  <v-dialog
+    :model-value="!!deletingId"
+    max-width="420"
+    :aria-labelledby="deleteTitleId"
+    :aria-describedby="deleteMessageId"
+    @update:model-value="deletingId = null"
+  >
     <v-card flat border rounded="lg" class="pa-2">
-      <v-card-title class="text-subtitle-1 font-weight-bold">
+      <v-card-title :id="deleteTitleId" class="text-subtitle-1 font-weight-bold">
         Delete "{{ deletingFolder?.name }}"?
       </v-card-title>
-      <v-card-text class="text-body-2 text-medium-emphasis">
+      <v-card-text :id="deleteMessageId" class="text-body-2 text-medium-emphasis">
         Items in this folder will be moved to All folders.
         <template v-if="deletingId && store.childrenOf(deletingId).length">
           Its subfolders will be kept and moved to the top level.

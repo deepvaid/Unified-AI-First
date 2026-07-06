@@ -51,9 +51,10 @@ confirming a yes/no decision (\`MpConfirmDialog\`).
   new-folder field autofocuses; Move is disabled while the selection is unchanged.
 - **Consumer must:** pass \`itemLabel\` — without it the dialog announces only "Move to folder"
   with no object.
-- **Gaps:** the dialog has no \`aria-labelledby\` wiring to its title; the selected folder is
-  conveyed by a check icon + active styling without \`aria-selected\` semantics; child indentation
-  is visual only (noted for the Phase 4 a11y pass).
+- **Provides (Phase 4):** the dialog surface is wired to its "Move to folder" title via
+  \`aria-labelledby\`, so it announces with its name on open.
+- **Gaps:** the selected folder is conveyed by a check icon + active styling without
+  \`aria-selected\` semantics; child indentation is visual only (backlog).
         `,
       },
     },

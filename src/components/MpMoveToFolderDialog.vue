@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useFoldersStore, type FolderScope } from '@/stores/useFolders'
 
 const model = defineModel<boolean>({ default: false })
@@ -45,12 +45,14 @@ function move() {
   emit('move', selectedId.value)
   model.value = false
 }
+
+const titleId = useId()
 </script>
 
 <template>
-  <v-dialog v-model="model" max-width="420">
+  <v-dialog v-model="model" max-width="420" :aria-labelledby="titleId">
     <v-card flat border rounded="lg">
-      <v-card-title class="text-subtitle-1 font-weight-bold pt-4 px-5">Move to folder</v-card-title>
+      <v-card-title :id="titleId" class="text-subtitle-1 font-weight-bold pt-4 px-5">Move to folder</v-card-title>
       <v-card-subtitle v-if="itemLabel" class="px-5 text-body-2">{{ itemLabel }}</v-card-subtitle>
 
       <v-card-text class="px-3 py-2">

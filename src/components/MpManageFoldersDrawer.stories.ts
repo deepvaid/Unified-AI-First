@@ -52,10 +52,10 @@ folder (\`MpFolderSelect\`).
   all carry \`aria-label\`s; the rename field autofocuses and commits on Enter / cancels on Escape;
   delete is gated behind a confirmation dialog that names the folder.
 - **Consumer must:** handle \`@deleted\` so items don't silently point at a dead folder id.
-- **Gaps:** the delete confirmation is a raw \`v-dialog\` without \`aria-labelledby\`; entering
-  rename mode replaces the row content, and focus context ("which folder am I renaming?") relies
-  on the autofocused field having no label; the "No folders yet" empty text is not a live region
-  (noted for the Phase 4 a11y pass).
+- **Provides (Phase 4):** the delete confirmation dialog is wired to its title and message via
+  \`aria-labelledby\`/\`aria-describedby\`, and the rename field carries an \`aria-label\` naming
+  the folder being renamed ("New name for X").
+- **Gaps:** the "No folders yet" empty text is not a live region (backlog).
         `,
       },
     },
