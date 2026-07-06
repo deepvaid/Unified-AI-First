@@ -63,10 +63,10 @@ have no folder metadata (use \`MpFilterTabs\` or the filter drawer).
   \`aria-haspopup\`/\`aria-expanded\`; the menu closes on Escape and restores focus; the list has
   \`aria-label="Folders"\` and items are keyboard-navigable \`v-list-item\`s; counts are visible text.
 - **Consumer must:** keep folder names short and unique — the name is each option's only label.
-- **Gaps:** the activator's static \`aria-label="Filter by folder"\` overrides its visible text, so
-  screen readers never hear the currently selected folder; the selected option is conveyed by
-  \`active\` styling only (no \`aria-selected\`/\`role="option"\` semantics); child indentation is
-  visual only — nesting is not announced (noted for the Phase 4 a11y pass).
+- **Provides (Phase 4):** the activator's \`aria-label\` is dynamic ("Filter by folder: X"), so
+  screen readers hear both the control's purpose and the current selection; the selected option
+  carries \`aria-current="true"\` in addition to active styling.
+- **Gaps:** child indentation is visual only — nesting is not announced (backlog).
         `,
       },
     },

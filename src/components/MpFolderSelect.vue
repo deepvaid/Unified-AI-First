@@ -38,7 +38,7 @@ const selectedName = computed(() => {
         class="text-none mp-folder-select__activator"
         prepend-icon="folder"
         append-icon="chevron-down"
-        aria-label="Filter by folder"
+        :aria-label="`Filter by folder: ${selectedName}`"
       >
         {{ selectedName }}
       </v-btn>
@@ -50,6 +50,7 @@ const selectedName = computed(() => {
           rounded="lg"
           class="mx-1"
           :active="model === null"
+          :aria-current="model === null ? 'true' : undefined"
           @click="model = null"
         >
           <template #prepend>
@@ -70,6 +71,7 @@ const selectedName = computed(() => {
           class="mx-1"
           :class="{ 'mp-folder-select__child': folder.parentId }"
           :active="model === folder.id"
+          :aria-current="model === folder.id ? 'true' : undefined"
           @click="model = folder.id"
         >
           <template #prepend>
