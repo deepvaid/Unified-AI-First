@@ -4,6 +4,7 @@ import {
   createBlock,
   createSection,
   defaultThemeStyles,
+  getBlockDef,
   getSectionDef,
   type StoreTheme,
   type TemplateType,
@@ -266,6 +267,10 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
   ): ThemeBlock | undefined {
     const { theme, section } = findSection(themeId, template, sectionId)
     if (!theme || !section) return undefined
+    // Defense in depth: only block-accepting section kinds hold blocks (the UI
+    // already hides the affordance elsewhere, but guard the store too).
+    if (!getSectionDef(section.kind)?.acceptsBlocks) return undefined
+    if (!getBlockDef(kind)) return undefined
     const block = createBlock(kind)
     if (!section.blocks) section.blocks = []
     section.blocks.push(block)

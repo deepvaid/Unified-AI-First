@@ -141,6 +141,7 @@ function confirmRemove() {
   if (theme.value && removeTargetId.value) {
     // Drop the selection if it was on this section, or on one of its blocks.
     if (selectedSectionId.value === removeTargetId.value) selected.value = null
+    newSectionIds.value.delete(removeTargetId.value)
     themesStore.removeSection(theme.value.id, activeTemplate.value, removeTargetId.value)
   }
   removeTargetId.value = null
@@ -498,6 +499,7 @@ function confirmDiscard() {
   if (!theme.value) return
   themesStore.discardDraft(theme.value.id)
   selected.value = null
+  newSectionIds.value.clear()
   newBlockIds.value.clear()
   snackMessage.value = 'Draft changes discarded'
   snack.value = true
