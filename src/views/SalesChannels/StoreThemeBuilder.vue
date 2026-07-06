@@ -238,27 +238,36 @@ function chatId(prefix: string) {
   return `${prefix}-${chatIdCounter}`
 }
 
+// The conversation is per-template: each turn is stamped with the template it
+// ran on, and the panel only shows the active template's turns. That keeps an
+// Undo card from acting on a template the user has since switched away from.
+const visibleMessages = computed(() =>
+  chatMessages.value.filter((m) => !m.template || m.template === activeTemplate.value),
+)
+
 function onGenerate(prompt: string) {
   if (!theme.value) return
-  chatMessages.value.push({ id: chatId('u'), role: 'user', text: prompt })
+  const template = activeTemplate.value
+  chatMessages.value.push({ id: chatId('u'), role: 'user', text: prompt, template })
 
   const result = generateSections(prompt, {
-    template: activeTemplate.value,
+    template,
     existingKinds: activeSections.value.map((s) => s.kind),
   })
 
   if (!result.matched || result.kinds.length === 0) {
-    chatMessages.value.push({ id: chatId('d'), role: 'davinci', text: result.reply })
+    chatMessages.value.push({ id: chatId('d'), role: 'davinci', text: result.reply, template })
     return
   }
 
-  const created = themesStore.addSections(theme.value.id, activeTemplate.value, result.kinds, result.overrides)
+  const created = themesStore.addSections(theme.value.id, template, result.kinds, result.overrides)
   if (created.length === 0) {
     // Everything requested already exists (unique kinds) — reply, no store write.
     chatMessages.value.push({
       id: chatId('d'),
       role: 'davinci',
       text: 'Those sections are already on this template.',
+      template,
     })
     return
   }
@@ -268,6 +277,7 @@ function onGenerate(prompt: string) {
     id: chatId('d'),
     role: 'davinci',
     text: result.reply,
+    template,
     addedIds,
     addedTitles: created.map((s) => s.label),
   })
@@ -279,17 +289,29 @@ function onGenerate(prompt: string) {
 
 function onUndo(ids: string[]) {
   if (!theme.value) return
-  themesStore.removeSections(theme.value.id, activeTemplate.value, ids)
   const idSet = new Set(ids)
+  // Remove from the template the turn ran on (not necessarily the active one).
+  const turn = chatMessages.value.find((m) => m.addedIds && m.addedIds.some((id) => idSet.has(id)))
+  const template = turn?.template ?? activeTemplate.value
+  themesStore.removeSections(theme.value.id, template, ids)
   ids.forEach((id) => newSectionIds.value.delete(id))
   if (selectedId.value && idSet.has(selectedId.value)) selectedId.value = null
   // Drop the ids off that turn's result card so Undo can't double-fire.
-  const turn = chatMessages.value.find((m) => m.addedIds && m.addedIds.some((id) => idSet.has(id)))
   if (turn) {
     turn.addedIds = undefined
     turn.text = 'Removed.'
   }
 }
+
+// Switching channel reuses this component instance (param-only route change) —
+// reset the per-theme conversation + review state so one store's draft chat
+// never leaks into another's panel.
+watch(channelId, () => {
+  chatMessages.value = []
+  newSectionIds.value.clear()
+  selectedId.value = null
+  leftMode.value = 'panel'
+})
 
 const totalSectionCount = computed(() =>
   TEMPLATE_TYPES.reduce((sum, template) => sum + (theme.value?.templates[template].length ?? 0), 0),
@@ -446,7 +468,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         <!-- Da Vinci generator fully replaces the tab strip while active -->
         <ThemeDaVinciPanel
           v-if="leftMode === 'davinci'"
-          :messages="chatMessages"
+          :messages="visibleMessages"
           @generate="onGenerate"
           @undo="onUndo"
           @close="leftMode = 'panel'"
@@ -750,9 +772,10 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
             ></v-text-field>
           </template>
 
-          <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
-            Changes apply to the preview as you type. Publish the theme to make them live.
-          </v-alert>
+          <div class="tb-note d-flex align-start gap-2">
+            <v-icon size="15" class="flex-shrink-0 mt-1">info</v-icon>
+            <span class="text-caption">Changes apply to the preview as you type. Publish the theme to make them live.</span>
+          </div>
         </div>
 
         <div class="pa-4 border-t flex-shrink-0">
@@ -812,6 +835,16 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   flex-shrink: 0;
   background: rgb(var(--v-theme-warning));
 }
+
+/* Settings-panel note — token-based so it reads in light + dark (the old
+   tonal info alert fell below AA on the dark surface). */
+.tb-note {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(var(--v-theme-primary), 0.08);
+  color: rgb(var(--v-theme-on-surface));
+}
+.tb-note .v-icon { color: rgb(var(--v-theme-primary)); }
 
 /* ── Generate-with-AI picker row ─────────────────────────────────── */
 .tb-generate-row {

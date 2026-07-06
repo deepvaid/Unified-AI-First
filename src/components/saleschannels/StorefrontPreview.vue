@@ -96,6 +96,7 @@ function onHover(id: string | null) {
           :data-label="section.label"
           :role="interactive ? 'button' : undefined"
           :tabindex="interactive ? 0 : undefined"
+          :aria-label="interactive ? `Edit ${section.label} section` : undefined"
           @click="onSelect(section)"
           @keydown.enter.prevent="onSelect(section)"
           @keydown.space.prevent="onSelect(section)"

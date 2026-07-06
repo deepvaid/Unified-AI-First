@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { examplePrompts } from '@/composables/useThemeGenerator'
+import type { TemplateType } from '@/stores/themeBuilderData'
 
 /** One conversational turn. Da Vinci turns that generated sections carry the
- *  created ids/titles so the parent can render an Undo affordance. */
+ *  created ids/titles so the parent can render an Undo affordance. `template`
+ *  scopes the turn to the template it ran on. */
 export interface ThemeChatMessage {
   id: string
   role: 'user' | 'davinci'
   text: string
+  template?: TemplateType
   addedIds?: string[]
   addedTitles?: string[]
 }
@@ -179,7 +182,7 @@ watch(
     <div class="tdv__input pa-3 border-t flex-shrink-0">
       <v-textarea
         v-model="draft"
-        placeholder="Ask me to change anything…"
+        placeholder="Ask Da Vinci…"
         variant="outlined"
         density="compact"
         rows="1"
