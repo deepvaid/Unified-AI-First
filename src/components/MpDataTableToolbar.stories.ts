@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpDataTableToolbar from './MpDataTableToolbar.vue'
+import MpFloatingBulkBar from './MpFloatingBulkBar.vue'
 import { ref, computed } from 'vue'
 
 const meta = {
@@ -11,31 +12,97 @@ const meta = {
       description: {
         component: `
 ### Overview
-The \`MpDataTableToolbar\` is the primary control surface above Data Tables. It handles searching, filtering, and bulk actions consistently across the application.
+The \`MpDataTableToolbar\` is the primary control surface above Data Tables. It handles the table
+title + record count, instant search, a filter drawer (\`#filter-content\` slot rendered inside an
+\`MpFormDrawer\`), active-filter chips with per-chip remove and Clear, a column-visibility menu
+(when \`headers\` is passed), and an \`#actions\` slot for view-specific controls like
+\`MpFolderSelect\`.
+
+**Use when:** a \`v-data-table\` or large list needs search/filter/column controls — every table
+page in the platform places this directly above the table inside the same \`v-card\`.
+
+**Don't use when:** the surface is a small embedded list inside a card or drawer (a plain
+\`v-text-field\` is enough), or you need bulk-selection actions — those live in
+\`MpFloatingBulkBar\`, not the toolbar.
+
+### Usage
+\`\`\`html
+<MpDataTableToolbar
+  v-model:search="search"
+  v-model:hidden-columns="hiddenColumns"
+  title="All Products"
+  :total-count="filtered.length"
+  :headers="headers"
+  search-placeholder="Search products…"
+  :active-filters="activeFilters"
+  @remove-filter="removeFilter"
+  @clear-filters="clearFilters"
+>
+  <template #actions>
+    <MpFolderSelect v-model="folderId" :folders="folders" @manage="manageOpen = true" />
+  </template>
+  <template #filter-content>
+    <v-select v-model="status" label="Status" :items="statuses" multiple chips />
+  </template>
+</MpDataTableToolbar>
+\`\`\`
 
 ### 🟢 Do's
 - **Do** always provide a clear \`title\` to give context to the data grid below it.
 - **Do** provide a specific \`searchPlaceholder\` like "Search contacts..." rather than generic "Search".
-- **Do** use the \`#filter-content\` slot for complex filtering needs, preferring \`v-select\` with \`multiple chips\` for array data.
+- **Do** pass your active filters as \`{ key, label }\` objects — the toolbar renders the chips,
+  the "+N more" overflow, and the Clear button for you.
+- **Do** pass \`totalCount\` with the **filtered** length so the "N records" line matches what the
+  table shows.
 
 ### 🔴 Don'ts
-- **Don't** use this component outside of the context of a Data Table or large list view.
-- **Don't** hide primary actions inside the \`#actions\` slot if they are critical to the workflow (like "Create New"). Put those in the \`MpPageHeader\` instead.
-- **Don't** build custom active filter chips below the toolbar. Pass your active filters as an array of \`{key, label}\` to the \`active-filters\` prop and let the component render them.
+- **Don't** use this component outside the context of a Data Table or large list view.
+- **Don't** hide primary actions inside the \`#actions\` slot if they are critical to the workflow
+  (like "Create New") — put those in the \`MpPageHeader\` instead.
+- **Don't** build bulk-selection actions here — selection UI belongs to \`MpFloatingBulkBar\`.
+- **Don't** build custom active-filter chips below the toolbar.
 
 ### 💡 Best Practices
-- **Bulk Actions:** Only show bulk actions (in the \`#bulk-actions\` slot) when rows are actually selected. Make dangerous actions (like Delete) use \`color="error"\`.
-- **Select All:** When feeding the \`selected-count\` and \`total-count\` props, ensure your \`@select-all\` handler accurately grabs all valid IDs to sync with the underlying \`v-data-table\`.
-- **Column Toggle:** Pass all column headers (including the non-toggleable \`actions\` key) via \`:headers\`. The toolbar automatically excludes non-toggleable keys. Bind \`v-model:hidden-columns\` and filter your headers computed before passing to \`v-data-table\`. The columns button is an icon button that shows a badge count of hidden columns.
+- **Filter drawer:** the \`#filter-content\` slot renders inside an \`MpFormDrawer\` titled by
+  \`filterTitle\`/\`filterSubtitle\`, with built-in "Clear all" and "Done" footer buttons.
+- **Column toggle:** pass all column headers (including \`actions\`) via \`:headers\` — the menu
+  automatically excludes \`actions\`/select/expand keys. Bind \`v-model:hidden-columns\` and filter
+  your headers computed before passing it to \`v-data-table\`. The icon button badges the hidden count.
+- **Chip overflow:** only the first 3 filter chips render; the rest collapse into a "+N more"
+  chip — remove hidden filters via the drawer or Clear.
+
+### A11y
+- **Provides:** the search field has an \`aria-label\` (mirroring the placeholder); the Filter and
+  column-toggle buttons carry \`aria-label\`s ("Open table filters", "Toggle visible columns");
+  filter chips are closable with Vuetify's built-in close-target; the filter drawer inherits
+  \`MpFormDrawer\`'s full dialog semantics (focus trap, Escape-close, labelled title); column
+  checkboxes are real labelled \`v-checkbox\`es.
+- **Consumer must:** keep \`activeFilters\` labels human-readable ("Status: Active") — the label
+  is the chip's only accessible name — and debounce expensive queries themselves (the search
+  model updates on every keystroke).
+- **Gaps:** the active-filter badge next to the Filter button is purely visual (its count is not
+  in the button's accessible name); the "+N more" chip is informational only — hidden filters
+  can't be removed from the chip row; the "N records" count is not programmatically associated
+  with the table and doesn't announce on filter changes (noted for the Phase 4 a11y pass).
         `,
       },
     },
   },
   argTypes: {
-    title: { control: 'text' },
-    searchPlaceholder: { control: 'text' },
-    selectedCount: { control: 'number' },
-    totalCount: { control: 'number' },
+    title: { control: 'text', description: 'Table title shown at the left of the toolbar row.' },
+    totalCount: { control: 'number', description: 'Renders an "N records" line under the title. Pass the filtered count.' },
+    searchPlaceholder: { control: 'text', description: 'Placeholder and aria-label for the search field. Be specific ("Search contacts…").' },
+    filterTitle: { control: 'text', description: 'Title of the filter drawer (defaults to "Filters").' },
+    filterSubtitle: { control: 'text', description: 'Optional subtitle of the filter drawer.' },
+    activeFilters: { control: 'object', description: 'Applied filters as { key, label }[]. First 3 render as closable chips, the rest collapse into "+N more".' },
+    headers: { control: 'object', description: 'Table headers ({ title, key }). When passed, the column-visibility menu appears; actions/select/expand keys are excluded automatically.' },
+    search: { control: false, description: 'v-model:search — instant search text (updates every keystroke).', table: { category: 'models' } },
+    filterOpen: { control: false, description: 'v-model:filter-open — filter drawer visibility (usually left internal).', table: { category: 'models' } },
+    hiddenColumns: { control: false, description: 'v-model:hidden-columns — keys of hidden columns; filter your headers with it before v-data-table.', table: { category: 'models' } },
+    removeFilter: { control: false, description: 'Event — a filter chip\'s close was clicked; payload is the filter key.', table: { category: 'events' } },
+    clearFilters: { control: false, description: 'Event — "Clear" (chip row) or "Clear all" (drawer footer) was clicked.', table: { category: 'events' } },
+    actions: { control: false, description: 'Slot — view-specific controls next to search (e.g. MpFolderSelect, Export).', table: { category: 'slots' } },
+    'filter-content': { control: false, description: 'Slot — filter form fields, rendered inside the MpFormDrawer.', table: { category: 'slots' } },
   },
 } satisfies Meta<typeof MpDataTableToolbar>
 
@@ -62,7 +129,57 @@ export const Default: Story = {
   },
 }
 
-// ── 2. With Filter Dropdown (single multi-select) ─────────────────────────────
+// ── 2. Search populated ───────────────────────────────────────────────────────
+/** The search field with a query typed in — the model updates on every keystroke (no built-in debounce). */
+export const SearchPopulated: Story = {
+  render: (args) => ({
+    components: { MpDataTableToolbar },
+    setup() {
+      const search = ref('winter sale')
+      return { args, search }
+    },
+    template: `
+      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+        <MpDataTableToolbar v-bind="args" v-model:search="search" />
+        <div class="pa-4 text-body-2 text-medium-emphasis">Search model: "{{ search }}"</div>
+      </v-card>
+    `,
+  }),
+  args: {
+    title: 'Email Campaigns',
+    totalCount: 3,
+    searchPlaceholder: 'Search campaigns…',
+  },
+}
+
+// ── 3. Total count variants ───────────────────────────────────────────────────
+/** The "N records" line under the title — pass the filtered count so it matches the table. */
+export const WithTotalCount: Story = {
+  render: (args) => ({
+    components: { MpDataTableToolbar },
+    setup() {
+      const search = ref('')
+      return { args, search }
+    },
+    template: `
+      <div class="d-flex flex-column ga-4">
+        <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+          <MpDataTableToolbar v-bind="args" v-model:search="search" />
+        </v-card>
+        <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+          <MpDataTableToolbar title="Segments" :total-count="0" search-placeholder="Search segments…" />
+        </v-card>
+      </div>
+    `,
+  }),
+  args: {
+    title: 'All Contacts',
+    totalCount: 12840,
+    searchPlaceholder: 'Search contacts…',
+  },
+}
+
+// ── 4. With Filter Dropdown (single multi-select) ─────────────────────────────
 export const WithSingleFilter: Story = {
   render: (args) => ({
     components: { MpDataTableToolbar },
@@ -118,7 +235,7 @@ export const WithSingleFilter: Story = {
   },
 }
 
-// ── 3. With Multiple Filters ──────────────────────────────────────────────────
+// ── 5. With Multiple Filters ──────────────────────────────────────────────────
 export const WithMultipleFilters: Story = {
   render: (args) => ({
     components: { MpDataTableToolbar },
@@ -202,7 +319,7 @@ export const WithMultipleFilters: Story = {
   },
 }
 
-// ── 4. With Active Filter Chips ───────────────────────────────────────────────
+// ── 6. With Active Filter Chips ───────────────────────────────────────────────
 export const WithActiveFilters: Story = {
   render: (args) => ({
     components: { MpDataTableToolbar },
@@ -257,37 +374,84 @@ export const WithActiveFilters: Story = {
   },
 }
 
-// ── 5. With Bulk Action Bar ───────────────────────────────────────────────────
-export const WithBulkActions: Story = {
+// ── 7. Chip overflow: >3 active filters ───────────────────────────────────────
+/** Five active filters: the first 3 render as closable chips, the rest collapse into "+2 more", plus Clear. */
+export const ManyActiveFilters: Story = {
   render: (args) => ({
     components: { MpDataTableToolbar },
     setup() {
       const search = ref('')
-      const selectedCount = ref(4)
-      const totalCount = ref(40)
-
-      function selectAll() { selectedCount.value = totalCount.value }
-      function clearSelection() { selectedCount.value = 0 }
-
-      return { args, search, selectedCount, totalCount, selectAll, clearSelection }
+      const activeFilters = ref([
+        { key: 'status', label: 'Status: Active' },
+        { key: 'category', label: 'Category: Electronics' },
+        { key: 'vendor', label: 'Vendor: Acme Corp' },
+        { key: 'price', label: 'Price: $50–$200' },
+        { key: 'stock', label: 'Stock: In stock' },
+      ])
+      function removeFilter(key: string) {
+        activeFilters.value = activeFilters.value.filter(f => f.key !== key)
+      }
+      function clearFilters() { activeFilters.value = [] }
+      return { args, search, activeFilters, removeFilter, clearFilters }
     },
     template: `
       <v-card variant="flat" border rounded="xl" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"
-          :selected-count="selectedCount"
-          :total-count="totalCount"
-          @select-all="selectAll"
-          @clear-selection="clearSelection"
+          :active-filters="activeFilters"
+          @remove-filter="removeFilter"
+          @clear-filters="clearFilters"
         >
-          <template #bulk-actions>
-            <v-btn variant="outlined" size="small" class="text-none" prepend-icon="share" rounded="lg">Export</v-btn>
-            <v-btn variant="outlined" size="small" class="text-none" prepend-icon="tag" rounded="lg">Tag</v-btn>
-            <v-btn variant="outlined" size="small" class="text-none text-error" prepend-icon="trash-2" rounded="lg">Delete</v-btn>
+          <template #filter-content>
+            <div class="pa-4 text-body-2 text-medium-emphasis">Filter fields live here.</div>
           </template>
         </MpDataTableToolbar>
       </v-card>
+    `,
+  }),
+  args: {
+    title: 'All Products',
+    totalCount: 61,
+    searchPlaceholder: 'Search products…',
+  },
+}
+
+// ── 8. Bulk selection (composed with MpFloatingBulkBar) ───────────────────────
+/**
+ * Bulk actions are NOT part of the toolbar — selection UI lives in `MpFloatingBulkBar`.
+ * This story shows the composition on a selectable table page: the toolbar keeps
+ * search/filters, the floating bar appears while rows are selected.
+ */
+export const WithBulkActions: Story = {
+  render: (args) => ({
+    components: { MpDataTableToolbar, MpFloatingBulkBar },
+    setup() {
+      const search = ref('')
+      const selectedCount = ref(4)
+      const totalCount = ref(40)
+      return { args, search, selectedCount, totalCount }
+    },
+    template: `
+      <div style="min-height: 260px; position: relative;">
+        <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+          <MpDataTableToolbar v-bind="args" v-model:search="search" :total-count="totalCount" />
+          <div class="pa-4 text-body-2 text-medium-emphasis">
+            {{ selectedCount }} of {{ totalCount }} rows selected in the table below the toolbar.
+            <v-btn size="small" variant="text" class="text-none" @click="selectedCount = Math.min(totalCount, selectedCount + 1)">Select one more</v-btn>
+          </div>
+        </v-card>
+        <MpFloatingBulkBar
+          :count="selectedCount"
+          :total="totalCount"
+          @clear="selectedCount = 0"
+          @select-all="selectedCount = totalCount"
+        >
+          <v-btn variant="outlined" size="small" class="text-none" prepend-icon="share" rounded="lg">Export</v-btn>
+          <v-btn variant="outlined" size="small" class="text-none" prepend-icon="tag" rounded="lg">Tag</v-btn>
+          <v-btn variant="outlined" size="small" class="text-none text-error" prepend-icon="trash-2" rounded="lg">Delete</v-btn>
+        </MpFloatingBulkBar>
+      </div>
     `,
   }),
   args: {
@@ -296,7 +460,7 @@ export const WithBulkActions: Story = {
   },
 }
 
-// ── 6. With Column Toggle ────────────────────────────────────────────────────
+// ── 9. With Column Toggle ────────────────────────────────────────────────────
 export const WithColumnToggle: Story = {
   render: (args) => ({
     components: { MpDataTableToolbar },
@@ -342,16 +506,50 @@ export const WithColumnToggle: Story = {
   },
 }
 
-// ── 7. Full: Filters + Bulk Actions + Extra Actions ───────────────────────────
-export const FullFeatured: Story = {
+// ── 10. Actions slot ──────────────────────────────────────────────────────────
+/** View-specific controls in the `#actions` slot, rendered between the filter controls and search. */
+export const WithActionsSlot: Story = {
   render: (args) => ({
     components: { MpDataTableToolbar },
     setup() {
       const search = ref('')
-      const selectedCount = ref(3)
-      const totalCount = ref(28)
+      return { args, search }
+    },
+    template: `
+      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+        <MpDataTableToolbar v-bind="args" v-model:search="search">
+          <template #actions>
+            <v-btn variant="outlined" height="40" class="text-none" prepend-icon="folder" append-icon="chevron-down">All folders</v-btn>
+            <v-btn variant="outlined" height="40" class="text-none" prepend-icon="download">Export</v-btn>
+          </template>
+        </MpDataTableToolbar>
+      </v-card>
+    `,
+  }),
+  args: {
+    title: 'Email Campaigns',
+    totalCount: 25,
+    searchPlaceholder: 'Search campaigns…',
+  },
+}
+
+// ── 11. Full: everything the toolbar owns, together ───────────────────────────
+export const FullFeatured: Story = {
+  render: (args) => ({
+    components: { MpDataTableToolbar },
+    setup() {
+      const search = ref('mia')
+      const hiddenColumns = ref<string[]>(['score'])
       const filters = ref({ status: ['Active'] as string[], list: [] as string[] })
       const filterLabels: Record<string, string> = { status: 'Status', list: 'List' }
+
+      const sampleHeaders = [
+        { title: 'Contact', key: 'contact' },
+        { title: 'Company', key: 'company' },
+        { title: 'Status', key: 'status' },
+        { title: 'Score', key: 'score' },
+        { title: '', key: 'actions' },
+      ]
 
       const activeFilters = computed(() =>
         Object.entries(filters.value)
@@ -364,24 +562,19 @@ export const FullFeatured: Story = {
 
       function removeFilter(key: string) { ;(filters.value as any)[key] = [] }
       function clearFilters() { filters.value = { status: [], list: [] } }
-      function selectAll() { selectedCount.value = totalCount.value }
-      function clearSelection() { selectedCount.value = 0 }
 
-      return { args, search, filters, activeFilters, selectedCount, totalCount,
-               removeFilter, clearFilters, selectAll, clearSelection }
+      return { args, search, hiddenColumns, sampleHeaders, filters, activeFilters, removeFilter, clearFilters }
     },
     template: `
       <v-card variant="flat" border rounded="xl" class="overflow-hidden">
         <MpDataTableToolbar
           v-bind="args"
           v-model:search="search"
+          v-model:hidden-columns="hiddenColumns"
+          :headers="sampleHeaders"
           :active-filters="activeFilters"
-          :selected-count="selectedCount"
-          :total-count="totalCount"
           @remove-filter="removeFilter"
           @clear-filters="clearFilters"
-          @select-all="selectAll"
-          @clear-selection="clearSelection"
         >
           <template #filter-content>
             <div class="pa-4 pb-2">
@@ -394,13 +587,8 @@ export const FullFeatured: Story = {
                 multiple chips closable-chips variant="outlined" density="compact" hide-details clearable />
             </div>
           </template>
-          <template #bulk-actions>
-            <v-btn variant="outlined" size="small" class="text-none" prepend-icon="share" rounded="lg">Export</v-btn>
-            <v-btn variant="outlined" size="small" class="text-none" prepend-icon="tags" rounded="lg">Tag</v-btn>
-            <v-btn variant="outlined" size="small" class="text-none text-error" prepend-icon="trash-2" rounded="lg">Delete</v-btn>
-          </template>
           <template #actions>
-            <v-btn variant="outlined" size="small" class="text-none" prepend-icon="download">Export All</v-btn>
+            <v-btn variant="outlined" height="40" class="text-none" prepend-icon="download">Export All</v-btn>
           </template>
         </MpDataTableToolbar>
       </v-card>
@@ -408,6 +596,9 @@ export const FullFeatured: Story = {
   }),
   args: {
     title: 'All Contacts',
+    totalCount: 28,
     searchPlaceholder: 'Search contacts…',
+    filterTitle: 'Contact filters',
+    filterSubtitle: 'Narrow the table by status and list',
   },
 }

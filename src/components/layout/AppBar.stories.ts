@@ -1,5 +1,58 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import type { Router } from 'vue-router'
+import { useRouter } from 'vue-router'
 import AppBar from './AppBar.vue'
+
+const mobile375 = {
+  options: {
+    mobile375: {
+      name: 'Mobile 375',
+      styles: { width: '375px', height: '812px' },
+      type: 'mobile' as const,
+    },
+  },
+}
+
+/**
+ * Story-side workaround (batch C convention): the Storybook preview router only has a
+ * catch-all route, but AppBar resolves named routes eagerly (`:to="settingsRoute"`) and from
+ * its menus. Register a stub per route name so router-link resolution succeeds.
+ */
+const APPBAR_ROUTE_NAMES = [
+  'Settings', 'Billing', 'SettingsGeneral', 'AppStore',
+  'Dashboard', 'DashboardsList', 'SalesOrders', 'EmailCampaigns',
+  'AllContacts', 'DaVinciDashboard', 'DaVinciExperience',
+  'Segments', 'Journeys', 'ContactLists',
+]
+
+function ensureAppBarRoutes(router: Router) {
+  for (const name of APPBAR_ROUTE_NAMES) {
+    if (!router.hasRoute(name)) {
+      router.addRoute({
+        path: `/accounts/:accountId/sb-appbar/${name.toLowerCase()}`,
+        name,
+        component: { template: '<div />' },
+      })
+    }
+  }
+}
+
+function appBarStory() {
+  return () => ({
+    components: { AppBar },
+    setup() {
+      ensureAppBarRoutes(useRouter())
+    },
+    template: `
+      <v-layout>
+        <AppBar />
+        <v-main class="pa-6">
+          <p class="text-body-1">Main content area below the app bar.</p>
+        </v-main>
+      </v-layout>
+    `,
+  })
+}
 
 const meta = {
   title: 'Layout/AppBar',
@@ -11,10 +64,36 @@ const meta = {
       description: {
         component: `
 ### Overview
-\`AppBar\` is the main top navigation bar of the Maropost platform. It provides global search, notification bell, Da Vinci AI toggle, and the user profile menu.
+\`AppBar\` is the main top navigation bar of the Maropost platform (56px). It provides the
+universal AI search menu, the quick-create menu (with single-key shortcuts while open), the
+notification bell, Galaxy and Settings shortcuts, the Da Vinci assistant menu, and the user
+profile menu (account switcher, theme toggle, sign-out). It takes **no props** — everything is
+wired to global state.
+
+**Store coupling:** \`useAccounts\` (active account + switcher list), \`useCopilot\` (opens the
+Da Vinci assistant), \`useUserProfile\` (avatar), and \`useAppTheme\` (light/dark mode). The
+Storybook preview registers Pinia with the stores' seeded defaults (account 2000290), and these
+stories add stub routes for the named routes the bar links to.
+
+**Use when:** composing the app shell — exactly once, inside \`v-layout\`, alongside
+\`AppSidebar\` and \`v-main\` (see \`App.vue\`).
+
+**Don't use when:** a page needs its own header or actions — that's \`MpPageHeader\`. Full-page
+surfaces (login, builders) omit the bar entirely.
+
+### Usage
+\`\`\`html
+<v-layout>
+  <AppSidebar v-model="drawer" :rail="rail" />
+  <AppBar />
+  <v-main id="main-content" role="main">
+    <router-view />
+  </v-main>
+</v-layout>
+\`\`\`
 
 ### 🟢 Do's
-- **Do** always render it inside a \`v-layout\` wrapper so it integrates properly with the sidebar and main content area.
+- **Do** always render it inside a \`v-layout\` wrapper so it integrates with the sidebar and main content.
 - **Do** use it as a singleton — only one AppBar should exist per page.
 
 ### 🔴 Don'ts
@@ -22,7 +101,23 @@ const meta = {
 - **Don't** override its height; it follows the design token \`appbar: 56px\`.
 
 ### 💡 Best Practices
-- The AppBar is fixed to the top. All page content should account for its 56px height via \`v-main\`.
+- The AppBar is fixed to the top; page content accounts for its height via \`v-main\`.
+- The quick-create menu binds single-key shortcuts (D/W/E/S/A/L) only while it is open, and
+  ignores keystrokes typed into inputs.
+
+### A11y
+- **Provides:** every icon-only control carries an \`aria-label\` — search ("Universal AI
+  search"), quick create, notifications (with unread count in the label), Galaxy, Settings,
+  AI Assistant, user menu, and the theme toggle buttons; menus are Vuetify \`v-menu\`s (Escape
+  closes, focus returns to the trigger); the account filter field has an \`aria-label\`; the
+  theme switcher row is a \`role="group"\` with a label.
+- **Consumer must:** provide the skip link and \`v-main\` landmark at the shell level (App.vue
+  does), since the bar itself is chrome.
+- **Gaps:** the notification badge count is visual + label-only (no live region when it
+  changes); the profile menu items are custom \`button.um-item\`s rather than list semantics —
+  arrow-key navigation inside the menu doesn't work (Tab only); the search menu's result list
+  isn't a combobox/listbox pattern, so results aren't announced as suggestions (noted for the
+  Phase 4 a11y pass).
         `,
       },
     },
@@ -33,36 +128,49 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  render: () => ({
-    components: { AppBar },
-    template: `
-      <v-layout>
-        <AppBar />
-        <v-main class="pa-6">
-          <p class="text-body-1">Main content area below the app bar.</p>
-        </v-main>
-      </v-layout>
-    `,
-  }),
+  render: appBarStory(),
 }
 
 export const ProfileMenuOpen: Story = {
   name: 'Profile Menu (Open)',
-  render: () => ({
-    components: { AppBar },
-    template: `
-      <v-layout>
-        <AppBar />
-        <v-main class="pa-6">
-          <p class="text-body-1 text-medium-emphasis">Click the user avatar at top-right to see the profile dropdown with grouped items, role badge, and section headers.</p>
-        </v-main>
-      </v-layout>
-    `,
-  }),
+  render: appBarStory(),
   play: async ({ canvasElement }) => {
     // Auto-open the profile dropdown for Storybook preview
     await new Promise(resolve => setTimeout(resolve, 500))
     const trigger = canvasElement.querySelector('.user-menu-trigger') as HTMLElement
     if (trigger) trigger.click()
+  },
+}
+
+/** The quick-create menu opened — grouped create targets with single-key shortcuts (D/W/E/S/A/L). */
+export const CreateMenuOpen: Story = {
+  name: 'Create Menu (Open)',
+  render: appBarStory(),
+  play: async ({ canvasElement }) => {
+    await new Promise(resolve => setTimeout(resolve, 500))
+    const trigger = canvasElement.querySelector('[aria-label="Quick create"]') as HTMLElement
+    if (trigger) trigger.click()
+  },
+}
+
+/** The universal AI search menu opened — grouped destinations plus the "Ask Da Vinci" escape hatch. */
+export const SearchOpen: Story = {
+  name: 'Search (Open)',
+  render: appBarStory(),
+  play: async ({ canvasElement }) => {
+    await new Promise(resolve => setTimeout(resolve, 500))
+    const trigger = canvasElement.querySelector('[aria-label="Universal AI search"]') as HTMLElement
+    if (trigger) trigger.click()
+  },
+}
+
+/** The bar at a 375px viewport (canvas only — the docs page doesn't resize). */
+export const Mobile375: Story = {
+  render: appBarStory(),
+  globals: {
+    viewport: { value: 'mobile375', isRotated: false },
+  },
+  parameters: {
+    viewport: mobile375,
   },
 }

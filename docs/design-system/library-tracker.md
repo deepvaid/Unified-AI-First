@@ -11,7 +11,7 @@
 | P0 | Scaffold (this file + program prompt) | done |
 | P1 | Recon: token audit + inventory (artifacts: audit.md, inventory.md) | done |
 | P2 | Cleanup & extraction (candidates → cleanup-report.md) | done |
-| P3 | Story coverage (5 batches) | in-progress (batches A–C done: dashboards, copilot+voice, settings/marketing/merchandising; batch D1 done: P0 doc upgrades part 1 of 2 + DvHistoryDrawer) |
+| P3 | Story coverage (5 batches) | done (A: dashboards · B: copilot+voice · C: settings/marketing/merchandising · D1+D2: P0 doc upgrades + DvHistoryDrawer) |
 | P4 | A11y QA (a11y-checklist.md) | pending |
 | P5 | Foundations + docs + handoff + CLAUDE.md refresh | pending |
 
@@ -24,35 +24,35 @@
 | Component | Story | Cleanup verdict | Status |
 |-----------|-------|-----------------|--------|
 | ModuleLandingPage | ✓ | #8: keep (used by ContentLanding + MarketingLanding) | done (P0 full) |
-| MpConfirmDialog *(new, P2)* | ✓ | #4: extracted from JourneyBuilder (`ee50c8b`) | pending (P0 doc upgrade) |
-| MpDaVinciBot | ✓ | | pending (P0 doc upgrade) |
-| MpDataTableToolbar | ✓ | | pending (P0 doc upgrade) |
+| MpConfirmDialog *(new, P2)* | ✓ | #4: extracted from JourneyBuilder (`ee50c8b`) | done (P0 full) |
+| MpDaVinciBot | ✓ | | done (standard — tier P1 per inventory: app surface, not a primitive) |
+| MpDataTableToolbar | ✓ | | done (P0 full) |
 | MpEmptyState | ✓ | #7: kept separate (merge rejected — see cleanup report) | done (P0 full) |
 | MpErrorState | ✓ | #7: kept separate (merge rejected — see cleanup report) | done (P0 full) |
 | MpFilterTabs | ✓ | | done (P0 full) |
-| MpFloatingBulkBar | ✓ | | pending (P0 doc upgrade) |
-| MpFolderSelect | ✓ | | pending (P0 doc upgrade) |
-| MpFormDrawer | ✓ | | pending (P0 doc upgrade) |
+| MpFloatingBulkBar | ✓ | | done (P0 full) |
+| MpFolderSelect | ✓ | | done (P0 full) |
+| MpFormDrawer | ✓ | | done (P0 full) |
 | MpKpiCard | ✓ | | done (P0 full) |
-| MpManageFoldersDrawer | ✓ | | pending (P0 doc upgrade) |
-| MpMoveToFolderDialog | ✓ | #4: kept (form dialog, not a confirm prompt) | pending (P0 doc upgrade) |
+| MpManageFoldersDrawer | ✓ | | done (P0 full) |
+| MpMoveToFolderDialog | ✓ | #4: kept (form dialog, not a confirm prompt) | done (P0 full) |
 | MpOptionCard *(new, P2)* | ✓ | #1: extracted from CreateJourney/CreateCampaign/DataJourneys (`d230167`) | done (P0 full) |
 | ~~MpOverviewChart~~ | — | #9: deleted — unused (`62f26d4`) | done (deleted) |
 | MpPageHeader | ✓ | | done (P0 full) |
-| MpRowActionsMenu *(new, P2)* | ✓ | #6: extracted from Journeys/DataJourneys (`012496b`) | pending (P0 doc upgrade) |
+| MpRowActionsMenu *(new, P2)* | ✓ | #6: extracted from Journeys/DataJourneys (`012496b`) | done (P0 full) |
 | MpSectionHeader | ✓ | | done (P0 full) |
 | MpSourceCloudChip | ✓ | | done (P0 full) |
 | MpStatusChip | ✓ | | done (P0 full) |
-| MpStatusToggle *(new, P2)* | ✓ | #2: extracted from Journeys/DataJourneys (`ca0c847`) | pending (P0 doc upgrade) |
+| MpStatusToggle *(new, P2)* | ✓ | #2: extracted from Journeys/DataJourneys (`ca0c847`) | done (P0 full) |
 | MpTableSkeleton | ✓ | | done (P0 full) |
-| MpWizardSteps *(new, P2)* | ✓ | #3: extracted from CreateJourney; EngineEditor kept its own (`fda29fe`) | pending (P0 doc upgrade) |
+| MpWizardSteps *(new, P2)* | ✓ | #3: extracted from CreateJourney; EngineEditor kept its own (`fda29fe`) | done (P0 full) |
 
 ### layout/ (tier P0)
 
 | Component | Story | Status |
 |-----------|-------|--------|
-| AppBar | ✓ | pending (P0 doc upgrade) |
-| AppSidebar | ✓ | pending (P0 doc upgrade) |
+| AppBar | ✓ | done (P0 full) |
+| AppSidebar | ✓ | done (P0 full) |
 
 ### copilot/ (tier P1)
 
@@ -150,6 +150,7 @@
 
 - 2026-07-05 — Program scaffolded: prompt + tracker seeded (52+ components, 29 stories at kickoff; nested dirs copilot/voice, dashboards/widgets, dashboards/wizard pending inventory). Decisions locked: full scope + extractions, full cleanup authority under safety rails, tiered docs, repo-based handoff.
 - 2026-07-05 — P1 recon done. Corrected totals: **69 components, 31 stories, 38 gaps**. Audit highlights: token pipeline healthy (3 drift values), Storybook preview already registers Vuetify+Pinia+Router with theme toolbar, a11y addon missing, 33 components with px font-size literals, dark-mode scrollbar bug, tokens.scss deprecation candidate. Inventory adds 10 grep-zero components as cleanup candidate #9 (dynamic-usage re-verification required).
+- 2026-07-06 — P3 batch D2 done (12 interactive/overlay/layout P0 stories upgraded to full treatment: MpDataTableToolbar, MpFloatingBulkBar, MpFormDrawer, MpFolderSelect, MpManageFoldersDrawer, MpMoveToFolderDialog, MpConfirmDialog, MpRowActionsMenu, MpStatusToggle, MpWizardSteps, AppBar, AppSidebar). The batch agent hit a session limit before committing; orchestrator verified the 12 edited story files (type-check + build-storybook green, quality skim, title taxonomy consistent) and landed them. MpDaVinciBot confirmed tier P1 (standard story sufficient). **P3 complete: 0 story gaps across 65 components.** A11y gaps for P4 documented per story (worst: MpOptionCard not keyboard-operable; div-based headings; MpEmptyState no live region; DvHistoryDrawer unlabeled search + window.confirm).
 - 2026-07-06 — P2 cleanup done. All 9 candidates resolved (16 code commits + this docs commit): 5 extractions (MpOptionCard, MpStatusToggle, MpWizardSteps, MpConfirmDialog, MpRowActionsMenu — all with stories; + internal JourneyAddStepMenu), 10 unused components deleted with grep + dynamic-map proof, #7 kept separate, #8 kept for a P3 story. New totals: **65 components, 31 stories, 34 gaps (33 actionable)**. type-check + build-storybook green throughout; preview smokes on account 2000290.
 - 2026-07-06 — P3 batch A (dashboards) done. 14 CSF3 stories added under `Dashboards/` (+`Widgets/`, `Wizard/` subgroups), 40 stories total across the batch: dialogs/drawer rendered open with re-open buttons, grid populated/edit/empty, widget card across all 6 data kinds + editable/preview, widget renderers with mock `Dashboard*Data` payloads, wizard steps with interactive draft wiring. Store-coupled stories use seeded account 2000290 (Pinia registered in preview.ts). No components modified; none skipped. New totals: **45 stories, 20 gaps (19 actionable)**. type-check + build-storybook green.
 - 2026-07-06 — P3 batch C (settings + marketing + merchandising + ModuleLandingPage) done. 7 CSF3 story files, 27 story exports: SettingsSidebar registers stub routes for the settingsMenu route names story-side (the preview router only ships a catch-all) and navigates to a named route so the active item + aria-current render; JourneyFlowColumn/JourneyMiniPreview build graphs from the template gallery via `buildSegments` (abandoned-cart linear slice, welcome YES/NO rejoin, lapsed-buyer nested A/B split, advocacy empty branch, selectedId ring with click-to-select wiring, `catalog` swap to dataNodeCatalog over a Salesforce data-journey flow); MerchProductCard uses store-shaped mock products (picsum seeds) with stateful pin/select wiring + collection-grid composition; ModuleLandingPage seeded with the MarketingLanding config (Default / Minimal / SetupComplete). Note: ModuleLandingPage DOES take a full props API — the kickoff "no props" assumption was wrong; story renders it prop-driven, no route-meta wrapper needed. No components modified; none skipped. New totals: **63 stories, 2 gaps (1 actionable: DvHistoryDrawer)**. type-check + build-storybook green; dev-Storybook smokes (sidebar active route, nested split branch chips, data palette add-menu, merch grid ranks/sale price, landing sections).
