@@ -67,7 +67,7 @@ const meta = {
     activeId: { control: false, description: 'Id of the currently open conversation — highlights its row.' },
     mode: {
       control: false,
-      description: '"overlay" (default): slides in over the copilot panel below its 60px header, with a close button. "rail": fills a persistent side rail and swaps the close button for a kebab menu with "Delete all conversations".',
+      description: '"overlay" (default): slides in over the copilot panel below its 60px header, with a close button. "rail": fills a persistent side rail and swaps the close button for a kebab menu with "Delete all conversations" (gated behind an MpConfirmDialog — replaced window.confirm in the Phase 4 a11y pass, which also gave the search input an aria-label).',
     },
     close: { control: false, description: 'Event — X button clicked (overlay mode only).', table: { category: 'events' } },
     select: { control: false, description: 'Event — conversation chosen (click or Enter/Space); payload is the item id.', table: { category: 'events' } },

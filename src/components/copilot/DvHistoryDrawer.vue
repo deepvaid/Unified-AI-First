@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useDaVinciHistory, type DaVinciHistoryItem, type GroupedHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
 const props = defineProps<{
   open: boolean
@@ -20,9 +21,13 @@ const { pushToast } = useDaVinciToasts()
 
 const hasHistory = computed(() => items.value.length > 0)
 
+const clearAllOpen = ref(false)
+
 function handleClearAll() {
-  const confirmed = window.confirm('Delete all Da Vinci conversations? This cannot be undone.')
-  if (!confirmed) return
+  clearAllOpen.value = true
+}
+
+function confirmClearAll() {
   clearAll()
   pushToast({ title: 'All conversations deleted' })
 }
@@ -95,7 +100,7 @@ function buildSub(item: DaVinciHistoryItem): string {
 
     <div class="dv-history__search">
       <v-icon size="18" color="on-surface-variant">search</v-icon>
-      <input v-model="search" type="text" placeholder="Search conversations…" />
+      <input v-model="search" type="text" placeholder="Search conversations…" aria-label="Search conversations" />
     </div>
 
     <div class="dv-history__scroll">
@@ -140,6 +145,14 @@ function buildSub(item: DaVinciHistoryItem): string {
       </div>
     </div>
 
+    <MpConfirmDialog
+      v-model="clearAllOpen"
+      title="Delete all Da Vinci conversations?"
+      message="This cannot be undone."
+      confirm-label="Delete All"
+      danger
+      @confirm="confirmClearAll"
+    />
   </div>
 </template>
 
