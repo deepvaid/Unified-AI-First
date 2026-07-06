@@ -167,6 +167,44 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     touch(theme)
   }
 
+  /**
+   * Append several sections in one pass (Da Vinci generator). Each kind is created
+   * with its matching overrides; `unique` kinds already present are skipped. Only
+   * the sections actually created are returned, and `touch()` runs once.
+   */
+  function addSections(
+    themeId: string,
+    template: TemplateType,
+    kinds: string[],
+    overridesList: Record<string, string | number | boolean>[] = [],
+  ): ThemeSection[] {
+    const theme = getTheme(themeId)
+    if (!theme) return []
+    const sections = theme.templates[template]
+    const created: ThemeSection[] = []
+    kinds.forEach((kind, i) => {
+      const def = getSectionDef(kind)
+      if (!def) return
+      if (def.unique && sections.some((entry) => entry.kind === kind)) return
+      const section = createSection(kind, overridesList[i] ?? {})
+      sections.push(section)
+      created.push(section)
+    })
+    if (created.length) touch(theme)
+    return created
+  }
+
+  /** Remove all matching section ids from a template in one pass (undo a batch). */
+  function removeSections(themeId: string, template: TemplateType, ids: string[]) {
+    const theme = getTheme(themeId)
+    if (!theme) return
+    const idSet = new Set(ids)
+    const sections = theme.templates[template]
+    const before = sections.length
+    theme.templates[template] = sections.filter((entry) => !idSet.has(entry.id))
+    if (theme.templates[template].length !== before) touch(theme)
+  }
+
   /** Move a section up (`offset` -1) or down (`offset` +1) within its template. */
   function moveSection(themeId: string, template: TemplateType, sectionId: string, offset: number) {
     const theme = getTheme(themeId)
@@ -220,6 +258,8 @@ export const useStoreThemesStore = defineStore('storeThemes', () => {
     updateSection,
     addSection,
     removeSection,
+    addSections,
+    removeSections,
     moveSection,
     publishTheme,
     discardDraft,
