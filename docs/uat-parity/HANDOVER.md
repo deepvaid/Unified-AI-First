@@ -18,10 +18,10 @@ Convenience skill: `/uat-parity crawl` and `/uat-parity build` (`.claude/skills/
 ## You are here (2026-07-07)
 
 - **Phase 0 (setup) — DONE.** UAT base URL filled in the tracker Defaults; 11 modules (A01–A11) seeded.
-- **Phase 1 (crawl) — ~80%.** Crawled: A01 Dashboard, A02 Analytics, A03 CDP, A04 Products, A05 Marketing (deep — 33 rows + flow digest), A06 Commerce, A08 Service, A09 Da Vinci, A10 Apps. Still `[crawl-status: pending]`: **A07 Retail** and **A11 Settings** (API Keys / JWT / SFTP rows `blocked` for redaction; Journey Reports `blocked` by a UAT 500).
-- **Phase 2 (Part B gap matrix) — NOT STARTED.** Still the empty template. This is the linchpin and the top analytical priority.
-- **Phase 3 (prioritize) — not started.**
-- **Phase 4 (build) — PARTIAL and out of sequence.** Marketing journeys, data journeys, and the email-campaign create flow are already built (commit hashes are in the tracker Progress log). Note: `JourneyBuilder.vue` and the Journeys CTA were intentionally redesigned per explicit user instruction — an exception to additive-only, not a precedent.
+- **Phase 1 (crawl) — ~80%.** Crawled: A01 Dashboard, A02 Analytics, A03 CDP, A04 Products, A05 Marketing (deep — 33 rows + flow digest), A06 Commerce, A08 Service, A09 Da Vinci, A10 Apps. Still `[crawl-status: pending]`: **A07 Retail** and **A11 Settings** (API Keys / JWT / SFTP rows `blocked` for redaction; Journey Reports `blocked` by a UAT 500). A 2026-07-07 crawl attempt was blocked — live UAT redirected to Maropost Identity (logged out); needs a logged-in Chrome tab to finish.
+- **Phase 2 (Part B gap matrix) — DONE (2026-07-07).** All 112 Part A rows matched to `src/router/index.ts` by feature intent and adversarially verified: **79 exists / 13 partial / 20 missing**; 9 verdicts corrected by the adversarial pass (⚑ in the tracker); built Marketing rows back-filled as `done`. A07 (1) + A11 (35) verdicts are PROVISIONAL — matched from titles only, re-confirm after the logged-in crawl. Build queue = 31 pending partial/missing rows.
+- **Phase 3 (prioritize) — NOT STARTED. ← next slice.** Order the 31-row build queue by value; stop for user approval.
+- **Phase 4 (build) — PARTIAL and out of sequence.** Marketing journeys, data journeys, and the email-campaign create flow are already built (commit hashes are in the tracker Progress log + Part B `done` rows). Note: `JourneyBuilder.vue` and the Journeys CTA were intentionally redesigned per explicit user instruction — an exception to additive-only, not a precedent. Build-phase style directive (2026-07-07): new pages clean/modern, shadcn-like flat cards + Material-style form fields, built with existing Vuetify + `Mp*` + tokens (no new UI dependency).
 - **Phase 5 (sweep) — not started.**
 
 ## Remaining roadmap

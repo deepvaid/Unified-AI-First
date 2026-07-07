@@ -239,13 +239,167 @@ Part A has been seeded with the top-level modules observed in the initial read-o
 <!-- FROZEN RULE: `exists` rows must NEVER trigger a redesign of an existing prototype page. This effort is additive only. -->
 <!-- Row columns: # | UAT page/flow | Prototype route (or —) | Verdict | Build status | Commit | Notes -->
 
-_Populated by Prompt 2._ Table template:
+Built 2026-07-07 from Part A (all 11 modules) diffed against `src/router/index.ts` by feature intent. Every verdict was set by a matcher agent and then adversarially re-checked by a second agent (skeptics tried to refute `missing` calls via grep/nav; `exists` calls were probed for absent sub-flows). 9 verdicts were corrected by the adversarial pass (flagged ⚑ below).
 
-<!--
-| # | UAT page/flow | Prototype route (or —) | Verdict | Build status | Commit | Notes |
-|---|---------------|------------------------|---------|--------------|--------|-------|
-| 1 | <title> | RouteName / — | missing | pending | | |
--->
+**Summary: 112 rows → 79 exists · 13 partial · 20 missing.** Build queue (partial + missing, not counting rows already `done`) = 31 rows.
+
+**Provisional rows:** A07 Retail (1) and A11 Settings (35) were matched from UAT card/nav TITLES only — their deep crawl is still `[crawl-status: pending]` (UAT was logged out this session). Re-confirm these verdicts after the logged-in crawl.
+
+### B-A01 — Dashboard
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Dashboard | Dashboard | exists | | | Widget grid, date presets, dashboard switcher |
+
+### B-A02 — Analytics
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Monthly Totals | MonthlyTotals | exists | | | Monthly totals table |
+| 2 | Sales by Order | OrdersReport | exists | | | Titled "Sales by Order" + status filter |
+| 3 | Dispatched Orders | DispatchedOrders | exists | | | Shipped/Delivered table |
+| 4 | Sales Summary | SalesSummary | partial | pending | | Revenue KPI real; channel chart is a stub |
+| 5 | eRFM Report | ERFMReport | partial | pending | | Header only; coming-soon placeholder body |
+| 6 | Campaign Reports | CampaignReports | exists | | | Sent/opens/clicks table |
+| 7 | Recurring Campaign Reports | RecurringCampaignReports | exists | | | Frequency filter |
+| 8 | A/B Campaign Reports | ABCampaignReports | exists | | | Winning variant, lift |
+| 9 | Test Campaign Reports | TestCampaignReports | exists | | | Inbox placement, spam score |
+| 10 | Website Reports | WebsiteReports | exists | | | Page-level traffic table |
+| 11 | Journey Reports | JourneyReports | exists | | | Journeys list w/ active contacts |
+| 12 | Custom Reports | CustomReports | partial | pending | | 3 placeholder cards; no report builder |
+| 13 | Transactional Email Reports | TransactionalReports | exists | | | Delivery-rate table |
+| 14 | Log Inspector | LogInspector | exists | | | Level filter + export |
+
+### B-A03 — CDP
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | All Contacts | AllContacts | exists | | | Full table + filters + detail route |
+| 2 | Contact Lists | ContactLists | exists | | | Lists table |
+| 3 | Segments | Segments | exists | | | Segments list |
+| 4 | Contact Fields | ContactFields | exists | | | Custom Fields table |
+| 5 | Contact Tags | ContactTags | exists | | | Tags + counts |
+| 6 | Relational Tables | RelationalTables | exists | | | Tables list |
+| 7 | SQL Queries | SQLQueries | exists | | | Saved queries + editor |
+| 8 | Secure Lists | SecureLists | exists | | | Secure lists table |
+| 9 | Web Tracking | WebTracking | partial ⚑ | pending | | Static single-domain snippet; UAT `/websites` list/manage flow absent |
+
+### B-A04 — Products
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Product Recommendations | ProductRecommendations | exists | | | Rules table |
+| 2 | Products | Products | exists | | | Full product list |
+| 3 | Product Tax Category | ProductTaxCategory | exists | | | Tax categories table |
+| 4 | Collections | MerchandisingCollections | exists | | | Full page under Merchandising (Products route is placeholder) |
+| 5 | Inventory | Inventory | exists | | | Stock table + adjust/transfer |
+| 6 | Reservations | Reservations | exists | | | Holds table + release |
+
+### B-A05 — Marketing
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Email Campaigns | EmailCampaigns | exists | | | List + KPIs + folders + bulk |
+| 2 | Transactional Email | TransactionalEmail | exists | | | Flows table (shared w/ SMS routes) |
+| 3 | Campaign Tags | CampaignTags | exists | | | Tags + assigned counts |
+| 4 | Acquisition Forms | AcquisitionForms | exists | | | KPI cards + form grid |
+| 5 | Landing Pages | LandingPages | exists | | | Pages table + status filter |
+| 6 | Signup Forms (Old) | SignupForms | exists | | | Legacy deprecation placeholder |
+| 7 | Surveys | Surveys | exists | | | Surveys table |
+| 8 | Journeys | Journeys | exists | | | Status tabs + toggle |
+| 9 | Data Journeys | DataJourneys | exists | done | 5ade1df…4104bfb | List rebuild + template create drawer (parity build) |
+| 10 | Email Content | EmailContent | exists | | | Template card grid |
+| 11 | Dynamic Content | DynamicContent | exists | | | Content blocks table |
+| 12 | Image Library | ImageLibrary | exists | | | Image grid + upload + bulk delete |
+| 13 | Footer Management | FooterManagement | exists | | | Footers table |
+| 14 | Optimise on Open | OptimizeOnOpen | exists | | | Image groups table |
+| 15 | Content Feeds | ContentFeeds | exists | | | Feeds table |
+| 16 | Coupon Banks | CouponBanks | exists | | | Bank cards + availability bars |
+| 17 | Preference Management | PreferencePages | exists | | | Preference page list |
+| 18 | Countdown Timer | CountdownTimer | exists | | | Timer card + embed code |
+| 19 | Journeys — template gallery | CreateJourney | exists | done | 6b3264e…fadc14e | Step 1 gallery + Da Vinci mode (parity redesign, user-directed) |
+| 20 | Journeys — settings form | CreateJourney | exists | done | 6b3264e…fadc14e | Step 2 name/schedule/enable/retrigger |
+| 21 | Journeys — builder canvas | JourneyBuilder | exists | done | 6b3264e…fadc14e | Palette matches 14/10/4/2/end |
+| 22 | Journeys — node config | JourneyBuilder | exists | done | 6b3264e…fadc14e | Schema-driven side panel (not modal) |
+| 23 | Journey Reports | JourneyReports | exists | | | Journey reports list table |
+| 24 | Email Campaigns — create wizard | CreateCampaign | exists | done | 19f31e3 | 5-step wizard: Setup/Template/Audience/Schedule/Review |
+| 25 | Email Campaign — report (Dashboard/Overlay/ISP/Details tabs) | — | missing | pending | | No per-campaign report page/tabs |
+| 26 | Transactional Email — create form | — | missing | pending | | New Flow button inert; no form |
+| 27 | Campaign Tag — create modal | CampaignTags | partial ⚑ | pending | | Page exists; Create Tag button inert, no modal |
+| 28 | Survey — create modal | Surveys | partial ⚑ | pending | | Page exists; Create Survey button inert, no modal |
+| 29 | Acquisition Forms — template picker | AcquisitionForms | exists | | | Template dialog, 10 templates |
+| 30 | Acquisition Forms — 5-step builder | FormBuilder | exists | | | Multi-step wizard (4 steps vs 5; minor variance) |
+| 31 | Landing Pages — template library | — | missing | pending | | Create Page button inert; no library |
+| 32 | Email Content — drag & drop editor | — | missing | pending | | Edit buttons inert; no editor route |
+| 33 | Data Journeys — builder canvas | DataJourneyBuilder | exists | done | 5ade1df…4104bfb | Shared builder, data domain (8 triggers/6 actions) |
+
+### B-A06 — Commerce
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Sales Orders | SalesOrders | exists | | | Full orders table + tabs |
+| 2 | Draft Orders | DraftOrders | exists | | | Draft list + create drawer |
+| 3 | Fulfillment | Fulfillments | exists | | | Fulfillment queue |
+| 4 | Promotions | Promotions (Coupons.vue) | exists | | | Coupons & Discounts + create wizard |
+| 5 | Custom Gift Cards | — | missing ⚑ | pending | | Coupons.vue is coupons-only; no gift-card content |
+| 6 | Purchasable Gift Cards | PurchasableGiftCards | partial ⚑ | pending | | Route is a coupons-page placeholder; zero gift-card content |
+| 7 | Sales Channels | SalesChannels | exists | | | StoreSetup redirects to list |
+
+### B-A07 — Retail  _(provisional — deep crawl pending)_
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Retail | RetailHome | exists | | | Full Retail section (RetailHome + registers/txns/associates/POS preview/stock/pricing/hardware/settings). UAT deep crawl pending — re-confirm sub-pages then. |
+
+### B-A08 — Service
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Tickets | Tickets | exists | | | List + thread + reply + create drawer |
+| 2 | Chatbots | Chatbot | partial ⚑ | pending | | `/chatbot` routes to Tickets.vue; no chatbot-specific UI |
+
+### B-A09 — Da Vinci AI
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Da Vinci AI | DaVinciAI | exists | | | Get-started landing tab |
+| 2 | Dashboard | DaVinciDashboard | exists | | | AI metric cards tab |
+| 3 | Conversations | DaVinciCopilot | exists | | | Chat + history rail + new chat |
+
+### B-A10 — Apps
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Apps | AppStore | exists | | | App directory grid + connect/manage |
+
+### B-A11 — Settings  _(provisional — deep crawl pending; sensitive cards judged by title only, never opened)_
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Settings landing | Settings | exists | | | SettingsLayout + sidebar nav |
+| 2 | API Keys | SettingsConnections | exists | | | API Keys section (generate/copy/revoke) |
+| 3 | JSON Web Token | — | missing | pending | | No JWT representation |
+| 4 | Relational Tables | RelationalTables | exists | | | Dedicated list (under Contacts) |
+| 5 | SFTP Access | — | missing | pending | | No SFTP credentials surface |
+| 6 | SFTP Import and Export | — | missing | pending | | No SFTP import/export surface |
+| 7 | HTTP Post URL | SettingsConnections | exists | | | "HTTP Post URLs" webhooks section |
+| 8 | Conversion Attribution | — | missing | pending | | Tracking page is placeholder |
+| 9 | Sending Domains | SettingsDnsSetup | exists | | | DKIM/SPF/DMARC section |
+| 10 | Link Tracking Domains | SettingsDnsSetup | exists | | | Link-tracking section + SSL |
+| 11 | Brand Management | — | missing | pending | | No brand-management section |
+| 12 | Global Suppression Lists | — | missing | pending | | No suppression-list surface |
+| 13 | Bulk Delete Contacts | AllContacts | exists ⚑ | | | AllContacts bulk bar has Delete action |
+| 14 | Cleansing Rules | — | missing | pending | | No cleansing-rules surface |
+| 15 | Test Campaign Subject Line | CreateCampaign | partial ⚑ | pending | | Subject-line field exists in create wizard; no dedicated test-subject config |
+| 16 | Region | SettingsAccountDefaults | partial | pending | | Locale present; market Region not exact |
+| 17 | Account Config | SettingsAccountDefaults | exists | | | Identity/locale/address |
+| 18 | Manage Reasons | — | missing | pending | | No reasons management |
+| 19 | Locations | SalesChannelLocations | exists | | | Full locations mgmt |
+| 20 | Product Categories | — | missing ⚑ | pending | | Products/Collections is coming-soon placeholder, different concept |
+| 21 | Taxes | ProductTaxCategory | exists | | | Tax categories + rate maps (under Products) |
+| 22 | Packages | — | missing | pending | | No shipping-packages surface |
+| 23 | Fulfillment Agent | — | missing | pending | | No fulfillment-agent config |
+| 24 | Shipping Settings | — | missing | pending | | No shipping settings area |
+| 25 | Email Templates | — | missing | pending | | No store email-templates config (EmailContent is Marketing) |
+| 26 | 301 Redirects | — | missing | pending | | Merch PageRedirects ≠ URL 301s |
+| 27 | Custom Domains | SettingsDnsSetup | partial | pending | | DNS domains present; storefront custom domain absent |
+| 28 | Custom Fields | ContactFields | exists | | | Contact custom fields list |
+| 29 | Archives | — | missing | pending | | No archives surface |
+| 30 | Reply Templates | SettingsService | exists | | | Reply Templates section |
+| 31 | Ticket Types | SettingsService | partial | pending | | Service page present; no ticket-types config |
+| 32 | Ticket Tags | SettingsService | partial | pending | | Service page present; no ticket-tags config |
+| 33 | Ticket Assignment | SettingsService | exists | | | Auto-Assign Tickets toggle |
+| 34 | SLA | SettingsService | exists | | | Default SLA (hours) field |
+| 35 | Support Email | SettingsService | exists | | | Support Email Address field |
 
 ## Progress log
 
@@ -255,3 +409,6 @@ _Populated by Prompt 2._ Table template:
 - 2026-07-05 — Email campaign create flow fixed (Phase 2, first slice): the list's "New Campaign" CTA now routes to the full-page CreateCampaign wizard and the cramped drawer-stepper in EmailCampaigns.vue was removed; wizard dead-end navigation ('/campaigns' pushes) fixed to named routes; review-step edit pencils now map to the correct steps; the legacy four suppress dropdowns consolidated into one multi-select on the Audience step; invisible white-on-white text on non-selected template/list cards fixed.
 - 2026-07-05 — Marketing module deep crawl completed via delegated read-only browser agents (journeys flow + campaign, acquisition, and content stacks); 15 deep-flow rows appended to A05 and a flow-observations digest added. Journey Reports blocked by a UAT 500. Journeys create flow rebuilt in the prototype (create wizard w/ template previews, branch-rendering builder, full node catalog, schema config, activation validation — commits 6b3264e…fadc14e). NOTE: the playbook's additive-only rule was overridden for the journey views by explicit user instruction ("redesign the best flow"); JourneyBuilder.vue and the Journeys CTA were intentionally modified. Screenshots were not captured (crawl ran without disk capture); URL-only rows per existing convention.
 - 2026-07-07 — Handover brief created at docs/uat-parity/HANDOVER.md (verified current-state + remaining roadmap + guardrails + paste-ready kickoff prompt) so a fresh Claude session can continue the effort. Next pending slices: finish A07 Retail + A11 Settings crawl, then build the empty Part B gap matrix. Scaffolding docs (playbook, phase-prompts, skill) committed alongside the handover.
+- 2026-07-07 — A07/A11 crawl attempted but BLOCKED: live UAT redirected to Maropost Identity (Keycloak, `keycloak-staging.maropost.com`) — no logged-in session available this session, and login credentials are out of scope for the agent. A07 Retail + A11 Settings remain `[crawl-status: pending]`; sensitive Settings cards (API Keys, JWT, SFTP Access, SFTP Import/Export) never opened.
+- 2026-07-07 — **Part B gap matrix BUILT** (Phase 2 complete) from Part A × `src/router/index.ts`, feature-intent matched via a multi-agent workflow (11 matcher agents + one adversarial verifier per row, ~157 agents total). 112 rows → **79 exists / 13 partial / 20 missing**. Adversarial pass corrected 9 verdicts (marked ⚑): A03 Web Tracking→partial, A05 Campaign-Tag-create & Survey-create→partial, A06 Custom Gift Cards→missing & Purchasable Gift Cards→partial, A08 Chatbots→partial, A11 Bulk-Delete-Contacts→exists, A11 Test-Subject→partial, A11 Product-Categories→missing. Already-built Marketing rows back-filled as `done`: Journeys create/builder (6b3264e…fadc14e, user-directed redesign), Data Journeys list+builder (5ade1df…4104bfb), Email campaign create wizard (19f31e3). A07 (1 row) + A11 (35 rows) verdicts are PROVISIONAL — matched from card/nav titles only; re-confirm after the logged-in deep crawl. Build queue = 31 pending partial/missing rows. STOP at gate for Phase 3 (prioritize) review.
+- 2026-07-07 — Build-phase style directive from user (for Phase 4, not yet started): new parity pages should feel clean + modern, shadcn-like flat cards + Material-style form fields — implemented with the EXISTING Vuetify + `Mp*` components and design tokens (NO new UI dependency; CLAUDE.md design-system rules stand). Mobbin MCP now connected (search_screens / search_flows / search_sections) for reference-pattern lookups during build slices.
