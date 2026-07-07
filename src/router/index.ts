@@ -128,6 +128,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/data_journeys', name: 'DataJourneys', component: () => import('@/views/Marketing/DataJourneys.vue') },
   { path: '/accounts/:accountId/data_journeys/:id/builder', name: 'DataJourneyBuilder', component: () => import('@/views/Marketing/JourneyBuilder.vue'), meta: { fullPage: true, flowDomain: 'data' } },
   { path: '/accounts/:accountId/contents', name: 'EmailContent', component: () => import('@/views/Marketing/EmailContent.vue') },
+  { path: '/accounts/:accountId/contents/editor/:id', name: 'EmailContentEditor', component: () => import('@/views/Marketing/EmailContentEditor.vue'), meta: { fullPage: true } },
   { path: '/accounts/:accountId/dynamic_contents', name: 'DynamicContent', component: () => import('@/views/Marketing/DynamicContent.vue') },
   { path: '/accounts/:accountId/images', name: 'ImageLibrary', component: () => import('@/views/Marketing/ImageLibrary.vue') },
   { path: '/accounts/:accountId/footers', name: 'FooterManagement', component: () => import('@/views/Marketing/FooterManagement.vue') },
