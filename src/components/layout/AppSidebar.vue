@@ -126,6 +126,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
           items: [
             { title: 'Acquisition Forms', route: `/accounts/${accountId}/acquisition` },
             { title: 'Landing Pages', route: `/accounts/${accountId}/landing_pages` },
+            { title: 'Landing Page Templates', route: `/accounts/${accountId}/landing_pages/templates` },
             { title: 'Lead Ads', route: `/accounts/${accountId}/lead_ads` },
           ],
         },

@@ -117,6 +117,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/campaign_tags', name: 'CampaignTags', component: () => import('@/views/Marketing/CampaignTags.vue') },
   { path: '/accounts/:accountId/acquisition', name: 'AcquisitionForms', component: () => import('@/views/Marketing/AcquisitionForms.vue') },
   { path: '/accounts/:accountId/landing_pages', name: 'LandingPages', component: () => import('@/views/Marketing/LandingPages.vue') },
+  { path: '/accounts/:accountId/landing_pages/templates', name: 'LandingPageTemplates', component: () => import('@/views/Marketing/LandingPageTemplates.vue') },
   { path: '/accounts/:accountId/lead_ads', name: 'LeadAds', component: () => import('@/views/Marketing/AcquisitionForms.vue') },
   { path: '/accounts/:accountId/signup_forms', name: 'SignupForms', component: () => import('@/views/Marketing/SignupForms.vue') },
   { path: '/accounts/:accountId/surveys', name: 'Surveys', component: () => import('@/views/Marketing/Surveys.vue') },
