@@ -129,5 +129,31 @@ export const useCommerceStore = defineStore('commerce', () => {
     }
   }))
 
-  return { products, orders, coupons, fulfillments, draftOrders }
+  // Custom gift cards — merchant-issued cards with a redeemable balance
+  const customGiftCards = ref([
+    { id: 1, code: 'GC-4KQ9-7XZ2-1MPL', recipient: { name: 'Emma Thompson', email: 'emma.thompson@email.com' }, initialValue: 100, balance: 62.50, status: 'Active', issued: '2026-05-12', expiry: '2027-05-12', lastUsed: '2026-06-28' },
+    { id: 2, code: 'GC-8HTP-3RN6-9WQZ', recipient: { name: 'Liam Martinez', email: 'liam.martinez@email.com' }, initialValue: 50, balance: 50, status: 'Active', issued: '2026-06-01', expiry: '2027-06-01', lastUsed: null },
+    { id: 3, code: 'GC-2LMD-5FKC-7VBX', recipient: { name: 'Olivia Johnson', email: 'olivia.johnson@email.com' }, initialValue: 250, balance: 0, status: 'Redeemed', issued: '2026-02-18', expiry: '2027-02-18', lastUsed: '2026-05-03' },
+    { id: 4, code: 'GC-9QWE-1TYU-4OPA', recipient: { name: 'Noah Williams', email: 'noah.williams@email.com' }, initialValue: 75, balance: 25.00, status: 'Active', issued: '2026-04-22', expiry: '2027-04-22', lastUsed: '2026-06-15' },
+    { id: 5, code: 'GC-6ZXC-8VBN-2MKL', recipient: { name: 'Ava Brown', email: 'ava.brown@email.com' }, initialValue: 200, balance: 0, status: 'Redeemed', issued: '2025-12-10', expiry: '2026-12-10', lastUsed: '2026-03-19' },
+    { id: 6, code: 'GC-3RTY-7UIO-5PAS', recipient: { name: 'Ethan Davis', email: 'ethan.davis@email.com' }, initialValue: 500, balance: 340.00, status: 'Active', issued: '2026-05-30', expiry: '2027-05-30', lastUsed: '2026-06-27' },
+    { id: 7, code: 'GC-1QAZ-2WSX-3EDC', recipient: { name: 'Mia Miller', email: 'mia.miller@email.com' }, initialValue: 100, balance: 100, status: 'Active', issued: '2026-06-25', expiry: '2027-06-25', lastUsed: null },
+    { id: 8, code: 'GC-4RFV-5TGB-6YHN', recipient: { name: 'Lucas Wilson', email: 'lucas.wilson@email.com' }, initialValue: 25, balance: 25, status: 'Expired', issued: '2024-01-15', expiry: '2025-01-15', lastUsed: null },
+    { id: 9, code: 'GC-7UJM-8IK9-0OL1', recipient: { name: 'Charlotte Moore', email: 'charlotte.moore@email.com' }, initialValue: 150, balance: 88.75, status: 'Active', issued: '2026-03-08', expiry: '2027-03-08', lastUsed: '2026-06-20' },
+    { id: 10, code: 'GC-2EDC-3RFV-4TGB', recipient: { name: 'Aiden Taylor', email: 'aiden.taylor@email.com' }, initialValue: 50, balance: 0, status: 'Disabled', issued: '2026-01-30', expiry: '2027-01-30', lastUsed: null },
+    { id: 11, code: 'GC-5TGB-6YHN-7UJM', recipient: { name: 'Amelia Jackson', email: 'amelia.jackson@email.com' }, initialValue: 300, balance: 210.00, status: 'Active', issued: '2026-04-11', expiry: '2027-04-11', lastUsed: '2026-06-12' },
+    { id: 12, code: 'GC-8IKL-9OP0-1QAZ', recipient: { name: 'Jackson White', email: 'jackson.white@email.com' }, initialValue: 40, balance: 12.30, status: 'Active', issued: '2026-05-19', expiry: '2027-05-19', lastUsed: '2026-06-29' },
+  ])
+
+  // Purchasable gift cards — gift-card products sold on the storefront
+  const purchasableGiftCards = ref([
+    { id: 1, name: 'Digital Gift Card', kind: 'Digital', denominations: [25, 50, 100, 200], allowCustom: true, customMin: 10, customMax: 500, sold: 1240, revenue: 86420, status: 'Active', created: '2025-11-02' },
+    { id: 2, name: 'Birthday eGift Card', kind: 'Digital', denominations: [25, 50, 100], allowCustom: false, customMin: 0, customMax: 0, sold: 512, revenue: 28900, status: 'Active', created: '2026-01-15' },
+    { id: 3, name: 'Holiday Gift Card', kind: 'Digital', denominations: [50, 100, 150, 250], allowCustom: true, customMin: 25, customMax: 1000, sold: 2103, revenue: 174300, status: 'Active', created: '2025-10-20' },
+    { id: 4, name: 'Physical Gift Card', kind: 'Physical', denominations: [25, 50, 100], allowCustom: false, customMin: 0, customMax: 0, sold: 348, revenue: 21750, status: 'Active', created: '2025-09-08' },
+    { id: 5, name: 'Thank You Gift Card', kind: 'Digital', denominations: [20, 40, 60], allowCustom: false, customMin: 0, customMax: 0, sold: 87, revenue: 3480, status: 'Draft', created: '2026-06-30' },
+    { id: 6, name: 'Corporate Bulk Gift Card', kind: 'Digital', denominations: [100, 250, 500, 1000], allowCustom: true, customMin: 100, customMax: 5000, sold: 64, revenue: 41200, status: 'Archived', created: '2025-06-14' },
+  ])
+
+  return { products, orders, coupons, fulfillments, draftOrders, customGiftCards, purchasableGiftCards }
 })

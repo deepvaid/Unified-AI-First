@@ -63,8 +63,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/fulfillments', name: 'Fulfillments', component: () => import('@/views/Commerce/Fulfillments.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/coupons', name: 'Coupons', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/promotions', name: 'Promotions', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/custom_gift_cards', name: 'CustomGiftCards', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/purchasable_gift_cards', name: 'PurchasableGiftCards', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/custom_gift_cards', name: 'CustomGiftCards', component: () => import('@/views/Commerce/CustomGiftCards.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/purchasable_gift_cards', name: 'PurchasableGiftCards', component: () => import('@/views/Commerce/PurchasableGiftCards.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/sales_channels', name: 'StoreSetup', redirect: to => ({ name: 'SalesChannels', params: { accountId: to.params.accountId } }), meta: commerceGate },
 
   // 5.5 Merchandise (MerchCloud)
