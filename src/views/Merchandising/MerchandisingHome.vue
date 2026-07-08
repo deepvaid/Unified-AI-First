@@ -51,7 +51,7 @@ const kpis = computed(() => [
     label: 'MerchCloud-driven revenue',
     value: formatCurrency(store.analytics.merchCloudRevenue),
     icon: 'trending-up',
-    color: 'retail',
+    color: 'commerce',
     trend: `${store.analytics.merchCloudRevenueTrend}% vs prev 30d`,
     trendPositive: (store.analytics.merchCloudRevenueTrend ?? 0) >= 0,
     period: 'Last 30 days',
@@ -67,7 +67,7 @@ const kpis = computed(() => [
     label: 'Active synonyms',
     value: String(activeSynonyms.value),
     icon: 'repeat',
-    color: 'contacts',
+    color: 'warning',
     subStat: `${totalRedirects.value} page redirects`,
   },
   {
@@ -96,12 +96,12 @@ const revenueSparkline = computed(() => {
 /* ── Quick actions ──────────────────────────────────────────────── */
 
 const quickActions = [
-  { icon: 'sparkles', title: 'New engine', desc: 'Add a recommendation engine', path: '/recommendations', color: 'primary' },
-  { icon: 'layers', title: 'Create collection', desc: 'Curate a smart collection', path: '/collections', color: 'marketing' },
-  { icon: 'repeat', title: 'Add synonym', desc: 'Map equivalent search terms', path: '/search/synonyms', color: 'contacts' },
-  { icon: 'arrow-right', title: 'Page redirect', desc: 'Send shoppers to a page', path: '/search/redirects', color: 'retail' },
-  { icon: 'wand-sparkles', title: 'Field rule', desc: 'Transform a product field', path: '/fields', color: 'warning' },
-  { icon: 'bar-chart-3', title: 'View dashboard', desc: 'Open the Merchandise dashboard', path: 'dashboard', color: 'analytics' },
+  { icon: 'sparkles', title: 'New engine', desc: 'Add a recommendation engine', path: '/recommendations', color: 'blue' },
+  { icon: 'layers', title: 'Create collection', desc: 'Curate a smart collection', path: '/collections', color: 'violet' },
+  { icon: 'repeat', title: 'Add synonym', desc: 'Map equivalent search terms', path: '/search/synonyms', color: 'rose' },
+  { icon: 'arrow-right', title: 'Page redirect', desc: 'Send shoppers to a page', path: '/search/redirects', color: 'green' },
+  { icon: 'wand-sparkles', title: 'Field rule', desc: 'Transform a product field', path: '/fields', color: 'amber' },
+  { icon: 'bar-chart-3', title: 'View dashboard', desc: 'Open the Merchandise dashboard', path: 'dashboard', color: 'cyan' },
 ]
 
 /* ── Things to do ───────────────────────────────────────────────── */
@@ -413,7 +413,7 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
               @click="go('/search/synonyms')"
             >
               <template #prepend>
-                <div class="merch-row-icon merch-row-icon--contacts">
+                <div class="merch-row-icon merch-row-icon--rose">
                   <v-icon size="14">repeat</v-icon>
                 </div>
               </template>
@@ -624,34 +624,34 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
   color: var(--accent-ink);
 }
 
-.merch-action-tile__icon--primary {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
+.merch-action-tile__icon--blue {
+  background: color-mix(in oklch, #2563eb 12%, transparent);
+  color: #1d4ed8;
 }
 
-.merch-action-tile__icon--retail {
-  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
-  color: var(--cloud-retail-text);
+.merch-action-tile__icon--violet {
+  background: color-mix(in oklch, #7c3aed 12%, transparent);
+  color: #6d28d9;
 }
 
-.merch-action-tile__icon--marketing {
-  background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent);
-  color: var(--cloud-marketing-text);
+.merch-action-tile__icon--rose {
+  background: color-mix(in oklch, #e11d48 12%, transparent);
+  color: #be123c;
 }
 
-.merch-action-tile__icon--contacts {
-  background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);
-  color: var(--cloud-contacts-text);
+.merch-action-tile__icon--green {
+  background: color-mix(in oklch, #16a34a 12%, transparent);
+  color: #15803d;
 }
 
-.merch-action-tile__icon--analytics {
-  background: color-mix(in oklch, var(--cloud-analytics-accent) 12%, transparent);
-  color: var(--cloud-analytics-text);
-}
-
-.merch-action-tile__icon--warning {
+.merch-action-tile__icon--amber {
   background: color-mix(in oklch, #f59e0b 12%, transparent);
   color: #b45309;
+}
+
+.merch-action-tile__icon--cyan {
+  background: color-mix(in oklch, #0891b2 12%, transparent);
+  color: #0e7490;
 }
 
 .merch-action-tile__title {
@@ -720,12 +720,12 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
   width: 28px;
   height: 28px;
   border-radius: var(--r-chip);
-  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
-  color: var(--cloud-retail-text);
+  background: color-mix(in oklch, #2563eb 12%, transparent);
+  color: #1d4ed8;
 }
 
-.merch-row-icon--contacts {
-  background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);
-  color: var(--cloud-contacts-text);
+.merch-row-icon--rose {
+  background: color-mix(in oklch, #e11d48 12%, transparent);
+  color: #be123c;
 }
 </style>
