@@ -278,5 +278,14 @@ export const useTicketsStore = defineStore('tickets', () => {
     }
   }
 
-  return { tickets, activeTicketId, setActive, replyToTicket, createTicket, resolveTicket, closeTicket }
+  function deleteTicket(ticketId: number) {
+    const idx = tickets.value.findIndex(t => t.id === ticketId)
+    if (idx === -1) return
+    tickets.value.splice(idx, 1)
+    if (activeTicketId.value === ticketId) {
+      activeTicketId.value = tickets.value[idx]?.id ?? tickets.value[idx - 1]?.id ?? 0
+    }
+  }
+
+  return { tickets, activeTicketId, setActive, replyToTicket, createTicket, resolveTicket, closeTicket, deleteTicket }
 })

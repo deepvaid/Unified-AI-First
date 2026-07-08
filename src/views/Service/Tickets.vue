@@ -6,6 +6,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
 const store = useTicketsStore()
 const replyBody = ref('')
@@ -149,6 +150,13 @@ function markResolved() {
 function closeActiveTicket() {
   if (activeTicket.value) store.closeTicket(activeTicket.value.id)
 }
+
+// ── Delete (confirmed) ─────────────────────────────────────────────────────
+const confirmDelete = ref(false)
+function deleteActiveTicket() {
+  if (activeTicket.value) store.deleteTicket(activeTicket.value.id)
+  confirmDelete.value = false
+}
 </script>
 
 <template>
@@ -254,13 +262,6 @@ function closeActiveTicket() {
             <div class="d-flex align-center gap-2 flex-wrap">
               <span class="text-caption text-medium-emphasis">{{ activeTicket.number }}</span>
               <MpStatusChip :status="activeTicket.status" type="ticket" size="x-small" />
-              <MpStatusChip
-                v-if="activeTicket.priority === 'Urgent' || activeTicket.priority === 'High'"
-                :status="activeTicket.priority"
-                type="priority"
-                size="x-small"
-                variant="flat"
-              />
               <v-chip
                 v-for="tag in activeTicket.tags"
                 :key="tag"
@@ -292,9 +293,8 @@ function closeActiveTicket() {
               </template>
               <v-list density="compact" rounded="lg" nav min-width="180">
                 <v-list-item prepend-icon="x-circle" title="Close Ticket" @click="closeActiveTicket" />
-                <v-list-item prepend-icon="log-in" title="Reassign Ticket" />
                 <v-divider class="my-1" />
-                <v-list-item prepend-icon="trash-2" title="Delete Ticket" class="text-error" />
+                <v-list-item prepend-icon="trash-2" title="Delete Ticket" class="text-error" @click="confirmDelete = true" />
               </v-list>
             </v-menu>
           </div>
@@ -306,6 +306,10 @@ function closeActiveTicket() {
             <span>Customer</span>
             <strong>{{ activeTicket.customer }}</strong>
             <em>{{ activeTicket.customerEmail }}</em>
+          </div>
+          <div class="tkt-prop">
+            <span>Priority</span>
+            <MpStatusChip :status="activeTicket.priority" type="priority" size="x-small" variant="flat" class="mt-1" />
           </div>
           <div class="tkt-prop">
             <span>Assignee</span>
@@ -368,8 +372,16 @@ function closeActiveTicket() {
             />
             <div class="d-flex justify-space-between align-center px-3 pb-3">
               <div class="d-flex gap-1">
-                <v-btn icon="paperclip" variant="text" size="small" aria-label="Attach file" />
-                <v-btn icon="smile" variant="text" size="small" aria-label="Insert emoji" />
+                <v-tooltip text="Coming soon" location="top">
+                  <template #activator="{ props }">
+                    <v-btn v-bind="props" icon="paperclip" variant="text" size="small" aria-label="Attach file (coming soon)" />
+                  </template>
+                </v-tooltip>
+                <v-tooltip text="Coming soon" location="top">
+                  <template #activator="{ props }">
+                    <v-btn v-bind="props" icon="smile" variant="text" size="small" aria-label="Insert emoji (coming soon)" />
+                  </template>
+                </v-tooltip>
                 <v-menu v-model="cannedMenu" location="top start">
                   <template #activator="{ props }">
                     <v-btn
@@ -545,6 +557,16 @@ function closeActiveTicket() {
       >Create Ticket</v-btn>
     </template>
   </MpFormDrawer>
+
+  <!-- Delete confirmation -->
+  <MpConfirmDialog
+    v-model="confirmDelete"
+    title="Delete ticket?"
+    message="This permanently removes the ticket and its entire conversation thread. This cannot be undone."
+    confirm-label="Delete Ticket"
+    danger
+    @confirm="deleteActiveTicket"
+  />
 
   <!-- Snackbar -->
   <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
@@ -738,9 +760,9 @@ function closeActiveTicket() {
   white-space: nowrap;
 }
 .tkt-message__bubble {
-  padding: 14px 16px;
+  padding: 12px 16px;
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgb(var(--v-theme-surface));
   color: rgba(var(--v-theme-on-surface), 0.82);
   font-size: 14px;
