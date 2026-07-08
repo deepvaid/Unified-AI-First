@@ -2,8 +2,18 @@
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const search = ref('')
+
+const typeIcon: Record<string, string> = {
+  String: 'type',
+  Integer: 'hash',
+  Decimal: 'hash',
+  Date: 'calendar',
+  Boolean: 'toggle-left',
+}
 
 const headers = [
   { title: 'Field Name', key: 'name', sortable: true },
@@ -49,15 +59,26 @@ const fields = [
         fixed-header
         class="flex-grow-1"
       >
-        <template v-slot:item.required="{ item }">
-          <v-icon :color="item.required ? 'success' : 'medium-emphasis'">
-            {{ item.required ? 'check' : 'minus' }}
-          </v-icon>
+        <template v-slot:item.type="{ item }">
+          <div class="d-flex align-center gap-2">
+            <v-icon size="16" color="medium-emphasis">{{ typeIcon[item.type] ?? 'circle-dot' }}</v-icon>
+            <span class="text-body-2">{{ item.type }}</span>
+          </div>
         </template>
+
+        <template v-slot:item.default="{ item }">
+          <span v-if="item.default" class="text-body-2">{{ item.default }}</span>
+          <span v-else class="text-disabled">—</span>
+        </template>
+
+        <template v-slot:item.required="{ item }">
+          <MpStatusChip :status="item.required ? 'Required' : 'Optional'" type="general" size="small" />
+        </template>
+
         <template v-slot:item.actions>
           <v-menu location="bottom end">
             <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" />
+              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" aria-label="Field actions" />
             </template>
             <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
               <v-list-item prepend-icon="pencil" title="Edit" />
@@ -65,6 +86,17 @@ const fields = [
               <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
             </v-list>
           </v-menu>
+        </template>
+
+        <template v-slot:no-data>
+          <MpEmptyState
+            icon="list"
+            :title="search ? 'No fields match your search' : 'No custom fields yet'"
+            :description="search ? 'Try a different search term.' : 'Add a custom field to capture more contact data.'"
+            action-label="Add Field"
+            action-icon="plus"
+            class="py-10"
+          />
         </template>
       </v-data-table>
     </v-card>
