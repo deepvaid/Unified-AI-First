@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
 import type { PreChatFieldType, QuickPromptIntent } from '@/stores/useChatbot'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -71,6 +72,40 @@ function moveField(i: number, dir: -1 | 1) {
 
 const statusColor: Record<string, string> = { Active: 'success', Disabled: 'default', Indexing: 'info' }
 const addSourceTab = ref<'url' | 'upload'>('url')
+
+// ── Knowledge base ─────────────────────────────────────────────────────────
+const sourceKind = (icon: string) => (icon === 'globe' ? 'Website' : 'Files')
+const activeSourceCount = computed(() =>
+  cfg.value.knowledgeSources.filter(s => s.enabled && s.status === 'Active').length
+)
+
+const newUrl = ref('')
+function addUrlSource() {
+  const url = newUrl.value.trim()
+  if (!url) return
+  const label = url.replace(/^https?:\/\//, '').replace(/\/$/, '')
+  const nextId = Math.max(0, ...cfg.value.knowledgeSources.map(s => s.id)) + 1
+  cfg.value.knowledgeSources.push({
+    id: nextId, name: label, icon: 'globe', items: 0, meta: 'Added just now', status: 'Indexing', enabled: true,
+  })
+  newUrl.value = ''
+}
+
+const removeDialog = ref(false)
+const sourceToRemove = ref<number | null>(null)
+const sourceToRemoveName = computed(() =>
+  cfg.value.knowledgeSources.find(s => s.id === sourceToRemove.value)?.name ?? ''
+)
+function askRemoveSource(id: number) {
+  sourceToRemove.value = id
+  removeDialog.value = true
+}
+function confirmRemoveSource() {
+  const i = cfg.value.knowledgeSources.findIndex(s => s.id === sourceToRemove.value)
+  if (i !== -1) cfg.value.knowledgeSources.splice(i, 1)
+  removeDialog.value = false
+  sourceToRemove.value = null
+}
 
 const saved = ref(false)
 function goBack() { router.push({ name: 'ChatbotList', params: { accountId: accountId.value } }) }
@@ -360,21 +395,64 @@ function sendChat() {
               <v-card flat border rounded="lg" class="pa-6 mb-5">
                 <div class="d-flex align-center justify-space-between mb-1">
                   <div class="text-subtitle-1 font-weight-bold">Knowledge base</div>
-                  <span class="text-caption text-medium-emphasis">{{ cfg.knowledgeSources.length }} sources</span>
+                  <span v-if="cfg.knowledgeSources.length" class="text-caption text-medium-emphasis">
+                    <span class="text-success font-weight-bold">{{ activeSourceCount }}</span> of {{ cfg.knowledgeSources.length }} active
+                  </span>
                 </div>
                 <div class="text-body-2 text-medium-emphasis mb-5">Connect and manage the sources that power your AI responses.</div>
-                <div v-for="s in cfg.knowledgeSources" :key="s.id" class="cb-source d-flex align-center ga-3 mb-2">
+
+                <div
+                  v-for="s in cfg.knowledgeSources"
+                  :key="s.id"
+                  class="cb-source d-flex align-center ga-3"
+                  :class="{ 'cb-source--off': !s.enabled }"
+                >
                   <div class="cb-source__icon"><v-icon size="18">{{ s.icon }}</v-icon></div>
                   <div class="flex-grow-1 min-width-0">
                     <div class="d-flex align-center ga-2">
                       <span class="text-body-2 font-weight-medium text-truncate">{{ s.name }}</span>
-                      <v-chip size="x-small" variant="tonal" :color="statusColor[s.status]">{{ s.status }}</v-chip>
+                      <v-chip size="x-small" variant="tonal" :color="statusColor[s.status]" class="flex-shrink-0">
+                        <v-progress-circular
+                          v-if="s.status === 'Indexing'"
+                          indeterminate
+                          size="10"
+                          width="2"
+                          class="me-1"
+                        />
+                        {{ s.status }}
+                      </v-chip>
                     </div>
-                    <div class="text-caption text-medium-emphasis">{{ s.items }} items · {{ s.meta }}</div>
+                    <div class="text-caption text-medium-emphasis text-truncate">
+                      {{ sourceKind(s.icon) }} · {{ s.items }} items · {{ s.meta }}
+                    </div>
                   </div>
-                  <v-switch v-model="s.enabled" color="primary" density="compact" hide-details class="flex-shrink-0" />
-                  <v-btn icon="refresh-cw" variant="text" size="x-small" aria-label="Re-sync" />
-                  <v-btn icon="trash-2" variant="text" size="x-small" color="error" aria-label="Remove source" />
+                  <v-switch
+                    v-model="s.enabled"
+                    color="primary"
+                    density="compact"
+                    hide-details
+                    inset
+                    class="flex-shrink-0"
+                    :aria-label="`Enable ${s.name}`"
+                  />
+                  <div class="cb-source__actions d-flex align-center flex-shrink-0">
+                    <v-tooltip text="Re-sync" location="top">
+                      <template #activator="{ props }">
+                        <v-btn v-bind="props" icon="refresh-cw" variant="text" size="x-small" color="medium-emphasis" aria-label="Re-sync source" />
+                      </template>
+                    </v-tooltip>
+                    <v-tooltip text="Remove" location="top">
+                      <template #activator="{ props }">
+                        <v-btn v-bind="props" icon="trash-2" variant="text" size="x-small" color="error" aria-label="Remove source" @click="askRemoveSource(s.id)" />
+                      </template>
+                    </v-tooltip>
+                  </div>
+                </div>
+
+                <div v-if="!cfg.knowledgeSources.length" class="cb-kb-empty text-center py-8">
+                  <v-icon size="30" class="mb-2 text-medium-emphasis">book-open</v-icon>
+                  <div class="text-body-2 font-weight-medium">No sources connected yet</div>
+                  <div class="text-caption text-medium-emphasis">Add a website or upload files below to power your AI responses.</div>
                 </div>
               </v-card>
 
@@ -384,13 +462,47 @@ function sendChat() {
                   <v-btn value="url" size="small" class="text-none px-4" prepend-icon="link">Website URL</v-btn>
                   <v-btn value="upload" size="small" class="text-none px-4" prepend-icon="upload">Upload files</v-btn>
                 </v-btn-toggle>
-                <v-text-field v-if="addSourceTab === 'url'" label="Website URL" placeholder="https://mystore.com/faq" variant="outlined" density="comfortable" prepend-inner-icon="globe" hide-details />
+
+                <template v-if="addSourceTab === 'url'">
+                  <div class="d-flex align-start ga-2">
+                    <v-text-field
+                      v-model="newUrl"
+                      placeholder="https://mystore.com/faq"
+                      variant="outlined"
+                      density="comfortable"
+                      prepend-inner-icon="globe"
+                      hide-details
+                      class="flex-grow-1"
+                      aria-label="Website URL"
+                      @keyup.enter="addUrlSource"
+                    />
+                    <v-btn
+                      color="primary"
+                      variant="flat"
+                      class="text-none cb-add-btn"
+                      prepend-icon="plus"
+                      :disabled="!newUrl.trim()"
+                      @click="addUrlSource"
+                    >Add source</v-btn>
+                  </div>
+                  <div class="text-caption text-medium-emphasis mt-2">We'll crawl the page and index its text — this can take a minute.</div>
+                </template>
+
                 <div v-else class="cb-drop d-flex flex-column align-center justify-center text-center">
                   <v-icon size="28" class="mb-2 text-medium-emphasis">upload-cloud</v-icon>
                   <div class="text-body-2 font-weight-medium">Drag &amp; drop, or click to upload</div>
-                  <div class="text-caption text-medium-emphasis">Max 5 MB · PDF, TXT, or DOC</div>
+                  <div class="text-caption text-medium-emphasis">Max 5 MB · MD (preferred), TXT, or PDF</div>
                 </div>
               </v-card>
+
+              <MpConfirmDialog
+                v-model="removeDialog"
+                title="Remove source?"
+                :message="`“${sourceToRemoveName}” will stop powering your AI responses. This can't be undone.`"
+                confirm-label="Remove source"
+                danger
+                @confirm="confirmRemoveSource"
+              />
             </template>
 
             <!-- PRE-CHAT FORM -->
@@ -648,12 +760,30 @@ function sendChat() {
 .cb-prompt .cb-grip, .cb-field .cb-grip { cursor: grab; }
 .cb-prompt__intent { max-width: 130px; }
 
+.cb-source {
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.cb-source:hover {
+  border-color: rgba(var(--v-theme-primary), 0.35);
+  background: rgba(var(--v-theme-primary), 0.02);
+}
+.cb-source--off .cb-source__icon,
+.cb-source--off .flex-grow-1 { opacity: 0.5; }
+.cb-source__actions {
+  padding-left: 4px;
+  border-left: 1px solid var(--mp-border-subtle);
+}
 .cb-source__icon {
   width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
   background: rgba(var(--v-theme-primary), 0.1);
   color: rgb(var(--v-theme-primary));
 }
+.cb-add-btn { min-height: 48px; }
 .cb-field {
   border: 1px solid var(--mp-border-subtle);
   border-radius: 10px;
