@@ -5,7 +5,7 @@ type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral'
 
 const props = withDefaults(defineProps<{
   status: string
-  type?: 'order' | 'fulfillment' | 'payment' | 'campaign' | 'contact' | 'ticket' | 'coupon' | 'priority' | 'connection' | 'general'
+  type?: 'order' | 'fulfillment' | 'payment' | 'campaign' | 'contact' | 'ticket' | 'coupon' | 'priority' | 'connection' | 'stock' | 'general'
   size?: 'x-small' | 'small' | 'default'
   variant?: 'flat' | 'tonal' | 'outlined'
   showIcon?: boolean
@@ -59,6 +59,10 @@ const toneMap: Record<string, Record<string, Tone>> = {
     'sync issue': 'danger', 'auth expired': 'danger', syncing: 'warning',
     error: 'danger', healthy: 'success',
   },
+  stock: {
+    'in stock': 'success', 'low stock': 'warning', 'out of stock': 'danger',
+    backordered: 'warning', discontinued: 'neutral',
+  },
   general: {
     active: 'success', inactive: 'neutral', pending: 'warning', error: 'danger',
     published: 'success', draft: 'neutral', archived: 'neutral',
@@ -106,6 +110,9 @@ const iconMap: Record<string, Record<string, string>> = {
   connection: {
     connected: 'check-circle', disconnected: 'circle-x',
     'needs setup': 'wrench', 'sync issue': 'refresh-cw', 'auth expired': 'key-round',
+  },
+  stock: {
+    'in stock': 'circle-check', 'low stock': 'alert-triangle', 'out of stock': 'circle-x',
   },
 }
 

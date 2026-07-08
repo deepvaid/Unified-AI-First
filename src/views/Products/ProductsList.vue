@@ -195,7 +195,7 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="general" />
+          <MpStatusChip :status="item.status" type="stock" show-icon />
         </template>
 
         <template v-slot:item.actions>
