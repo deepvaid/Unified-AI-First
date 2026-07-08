@@ -21,10 +21,10 @@ const primaryActions = computed<PrimaryAction[]>(() => [
 ])
 
 const quickActions = computed<QuickAction[]>(() => [
-  { icon: 'send', label: 'New campaign', description: 'Send an email to a list', to: `${base.value}/campaigns/new` },
-  { icon: 'route', label: 'Build a journey', description: 'Multi-step automation', to: `${base.value}/journeys` },
-  { icon: 'clipboard-list', label: 'Create form', description: 'Capture new contacts', to: `${base.value}/signup_forms` },
-  { icon: 'file-text', label: 'Browse templates', description: 'Reusable email content', to: `${base.value}/contents` },
+  { icon: 'send', label: 'New campaign', description: 'Send an email to a list', to: `${base.value}/campaigns/new`, color: 'blue' },
+  { icon: 'route', label: 'Build a journey', description: 'Multi-step automation', to: `${base.value}/journeys`, color: 'violet' },
+  { icon: 'clipboard-list', label: 'Create form', description: 'Capture new contacts', to: `${base.value}/signup_forms`, color: 'green' },
+  { icon: 'file-text', label: 'Browse templates', description: 'Reusable email content', to: `${base.value}/contents`, color: 'cyan' },
 ])
 
 const childPages = computed<ChildPage[]>(() => [
@@ -34,6 +34,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Email blasts, transactional sends, and campaign tags.',
     to: `${base.value}/campaigns`,
     count: 24,
+    color: 'blue',
   },
   {
     icon: 'route',
@@ -41,6 +42,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Multi-step automated customer journeys with branching logic.',
     to: `${base.value}/journeys`,
     count: 8,
+    color: 'violet',
   },
   {
     icon: 'file-text',
@@ -48,6 +50,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Reusable email content and dynamic blocks for fast composition.',
     to: `${base.value}/contents`,
     count: 47,
+    color: 'cyan',
   },
   {
     icon: 'zap',
@@ -55,6 +58,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Triggered flows: cart abandon, win-back, post-purchase, and more.',
     to: `${base.value}/data_journeys`,
     count: 12,
+    color: 'amber',
   },
   {
     icon: 'clipboard-list',
@@ -62,6 +66,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Signup forms, landing pages, and surveys to grow your audience.',
     to: `${base.value}/signup_forms`,
     count: 6,
+    color: 'green',
   },
   {
     icon: 'bar-chart-3',
@@ -69,6 +74,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Email performance, deliverability, and engagement analytics.',
     to: `${base.value}/reports`,
     count: '13',
+    color: 'rose',
   },
 ])
 
