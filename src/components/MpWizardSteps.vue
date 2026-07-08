@@ -1,24 +1,41 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   /** Ordered step labels. */
   steps: string[]
   /** 1-based index of the currently active step. */
   current: number
+  /** When true, visited steps (<= maxStep) become clickable and emit `select`. */
+  clickable?: boolean
+  /** Highest 1-based step reached; steps up to this are jumpable. Defaults to `current`. */
+  maxStep?: number
 }>()
+
+const emit = defineEmits<{ select: [step: number] }>()
+
+function canJump(oneBased: number) {
+  return !!props.clickable && oneBased <= (props.maxStep ?? props.current)
+}
+function onSelect(oneBased: number) {
+  if (canJump(oneBased)) emit('select', oneBased)
+}
 </script>
 
 <template>
   <div class="d-flex align-center gap-2" role="list" aria-label="Wizard steps">
     <template v-for="(label, index) in steps" :key="index">
       <div v-if="index > 0" class="mp-wizard-step__rail"></div>
-      <div
+      <component
+        :is="canJump(index + 1) ? 'button' : 'div'"
+        type="button"
         class="mp-wizard-step"
         :class="{
           'mp-wizard-step--active': current === index + 1,
           'mp-wizard-step--done': current > index + 1,
+          'mp-wizard-step--jumpable': canJump(index + 1),
         }"
         role="listitem"
         :aria-current="current === index + 1 ? 'step' : undefined"
+        @click="onSelect(index + 1)"
       >
         <span class="mp-wizard-step__num">
           <v-icon v-if="current > index + 1" size="12">check</v-icon>
@@ -26,7 +43,7 @@ defineProps<{
         </span>
         {{ label }}
         <span v-if="current > index + 1" class="d-sr-only">(completed)</span>
-      </div>
+      </component>
     </template>
   </div>
 </template>
@@ -39,6 +56,21 @@ defineProps<{
   font-size: 0.8125rem;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+}
+button.mp-wizard-step--jumpable {
+  cursor: pointer;
+}
+button.mp-wizard-step--jumpable:hover {
+  color: rgb(var(--v-theme-on-surface));
+}
+button.mp-wizard-step--jumpable:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 .mp-wizard-step__num {
   display: inline-flex;
