@@ -76,8 +76,16 @@ function clearAllFilters() {
   filters.value = { status: null, type: null }
 }
 
+// Apply the drawer filters to the table (were previously not applied)
+const filteredCoupons = computed(() => {
+  let rows = store.coupons
+  if (filters.value.status) rows = rows.filter(c => c.status === filters.value.status)
+  if (filters.value.type) rows = rows.filter(c => c.type === filters.value.type)
+  return rows
+})
+
 function selectAll() {
-  selected.value = store.coupons.map((c: any) => c.id ?? c.code)
+  selected.value = filteredCoupons.value.map((c: any) => c.id ?? c.code)
 }
 
 // ── Table ────────────────────────────────────────────────────────
@@ -114,7 +122,7 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         v-model:search="search"
         title="All Coupons"
         :active-filters="activeFilterEntries"
-        :total-count="store.coupons.length"
+        :total-count="filteredCoupons.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
@@ -142,7 +150,7 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         v-else
         v-model="selected"
         :headers="visibleHeaders"
-        :items="store.coupons"
+        :items="filteredCoupons"
         :search="search"
         show-select
         hover
@@ -187,9 +195,9 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         <template v-slot:no-data>
           <MpEmptyState
             icon="tag"
-            title="No coupons yet"
-            description="Create discount codes to reward loyal customers and drive repeat purchases."
-            action-label="Create Coupon"
+            :title="search ? 'No coupons match your search' : 'No coupons yet'"
+            :description="search ? 'Try a different search term.' : 'Create discount codes to reward loyal customers and drive repeat purchases.'"
+            :action-label="!search ? 'Create Coupon' : undefined"
             action-icon="plus"
             @action="createDialog = true; step = 1"
           />
@@ -237,7 +245,11 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
           </v-row>
           <v-text-field v-if="coupon.type!=='Free Shipping'" v-model.number="coupon.value"
             :label="coupon.type==='Percentage'?'Discount Percentage (%)':'Discount Amount ($)'"
-            type="number" variant="outlined" density="comfortable"></v-text-field>
+            type="number" variant="outlined" density="comfortable" hide-details></v-text-field>
+          <div class="d-flex align-center ga-2 mt-3">
+            <span class="text-caption text-medium-emphasis">Customers will see</span>
+            <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold">{{ discountPreview }}</v-chip>
+          </div>
         </div>
 
         <!-- Step 2: Rules & Restrictions -->
