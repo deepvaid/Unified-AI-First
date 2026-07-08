@@ -1,20 +1,31 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useInitialLoad } from '@/composables/useInitialLoad'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 
 const search = ref('')
+const { loading } = useInitialLoad()
 
 const rules = [
-  { name: 'Frequently Bought Together', placement: 'Cart Page', performance: '+12.5% AOV', status: 'Active' },
-  { name: 'Similar Items', placement: 'Product Detail Page', performance: '+8.2% Conv.', status: 'Active' },
-  { name: 'Recently Viewed', placement: 'Homepage & Global Footer', performance: '+3.1% Pageviews', status: 'Active' },
+  { name: 'Frequently Bought Together', placement: 'Cart Page', metric: '+12.5%', metricLabel: 'AOV', status: 'Active' },
+  { name: 'Similar Items', placement: 'Product Detail Page', metric: '+8.2%', metricLabel: 'Conv.', status: 'Active' },
+  { name: 'Recently Viewed', placement: 'Homepage & Global Footer', metric: '+3.1%', metricLabel: 'Pageviews', status: 'Active' },
 ]
+
+const placementIcon: Record<string, string> = {
+  'Cart Page': 'shopping-cart',
+  'Product Detail Page': 'package',
+  'Homepage & Global Footer': 'layout-grid',
+}
 
 const headers = [
   { title: 'Logic / Rule Name', key: 'name', sortable: true },
   { title: 'Placement', key: 'placement' },
-  { title: 'Performance Lift', key: 'performance' },
+  { title: 'Performance Lift', key: 'metric', align: 'end' as const },
   { title: 'Status', key: 'status' },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
@@ -50,7 +61,7 @@ const filteredRules = computed(() => {
       </template>
     </MpPageHeader>
 
-    <v-alert type="info" variant="tonal" rounded="xl" density="compact" class="text-body-2">
+    <v-alert type="info" variant="tonal" rounded="lg" density="compact" class="text-body-2">
       AI-powered recommendation engine automatically places products based on user browsing habits and cohort data.
     </v-alert>
 
@@ -88,7 +99,10 @@ const filteredRules = computed(() => {
         </template>
       </MpDataTableToolbar>
 
+      <MpTableSkeleton v-if="loading" :rows="3" :columns="5" />
+
       <v-data-table
+        v-else
         :headers="headers"
         :items="filteredRules"
         :search="search"
@@ -98,19 +112,50 @@ const filteredRules = computed(() => {
         fixed-header
         class="flex-grow-1"
       >
-        <template v-slot:item.status="{ item }">
-          <v-chip color="success" size="small" variant="tonal">{{ item.status }}</v-chip>
+        <template v-slot:item.name="{ item }">
+          <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
         </template>
+
+        <template v-slot:item.placement="{ item }">
+          <div class="d-flex align-center gap-2">
+            <v-icon size="16" color="medium-emphasis">{{ placementIcon[item.placement] ?? 'map-pin' }}</v-icon>
+            <span class="text-body-2">{{ item.placement }}</span>
+          </div>
+        </template>
+
+        <template v-slot:item.metric="{ item }">
+          <v-chip size="small" variant="tonal" color="success" class="font-weight-bold" label>
+            <v-icon start size="13">trending-up</v-icon>
+            {{ item.metric }}
+            <span class="text-medium-emphasis font-weight-regular ms-1">{{ item.metricLabel }}</span>
+          </v-chip>
+        </template>
+
+        <template v-slot:item.status="{ item }">
+          <MpStatusChip :status="item.status" type="general" />
+        </template>
+
         <template v-slot:item.actions>
           <v-menu location="bottom end">
             <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" />
+              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" aria-label="Rule actions" />
             </template>
             <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
               <v-list-item prepend-icon="pencil" title="Edit Rule" />
               <v-list-item prepend-icon="toggle-left" title="Disable" />
             </v-list>
           </v-menu>
+        </template>
+
+        <template v-slot:no-data>
+          <MpEmptyState
+            icon="sparkles"
+            :title="search ? 'No rules match your search' : 'No recommendation rules'"
+            :description="search ? 'Try a different search term or clear your filters.' : 'Configure a rule to start placing personalised recommendations across your storefront.'"
+            :action-label="search ? undefined : 'Configure Rules'"
+            :action-icon="search ? undefined : 'plus'"
+            class="py-10"
+          />
         </template>
       </v-data-table>
     </v-card>
