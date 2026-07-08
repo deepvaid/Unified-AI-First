@@ -59,8 +59,34 @@ function clearAllFilters() {
   filters.value = { status: null, priority: null }
 }
 
+// Status summary meta — colour per fulfillment stage
+const STAGES = ['Awaiting Fulfillment', 'Picking', 'Packed', 'Ready to Ship', 'Shipped']
+const stageColor: Record<string, string> = {
+  'Awaiting Fulfillment': 'warning',
+  'Picking': 'info',
+  'Packed': 'primary',
+  'Ready to Ship': 'secondary',
+  'Shipped': 'success',
+}
+const stageCount = (s: string) => store.fulfillments.filter(f => f.status === s).length
+function toggleStage(s: string) {
+  filters.value.status = filters.value.status === s ? null : s
+}
+
+// Apply the drawer/summary filters to the table (were previously not applied)
+const filteredFulfillments = computed(() => {
+  let rows = store.fulfillments
+  if (filters.value.status) rows = rows.filter(f => f.status === filters.value.status)
+  if (filters.value.priority) rows = rows.filter(f => f.priority === filters.value.priority)
+  return rows
+})
+
+function rowProps({ item }: { item: { priority?: string } }) {
+  return item.priority === 'High' ? { class: 'row-high' } : {}
+}
+
 function selectAll() {
-  selected.value = store.fulfillments.map((_: any, i: number) => i)
+  selected.value = filteredFulfillments.value.map((f: { id: number }) => f.id)
 }
 </script>
 
@@ -76,11 +102,20 @@ function selectAll() {
       </template>
     </MpPageHeader>
 
-    <!-- Status Summary Chips -->
+    <!-- Status Summary Chips — colour-coded + click to filter -->
     <div class="d-flex gap-2 flex-wrap">
-      <v-chip v-for="s in ['Awaiting Fulfillment', 'Picking', 'Packed', 'Ready to Ship', 'Shipped']" :key="s"
-        variant="tonal" size="small" color="primary">
-        {{ s }}: {{ store.fulfillments.filter(f => f.status === s).length }}
+      <v-chip
+        v-for="s in STAGES"
+        :key="s"
+        :variant="filters.status === s ? 'flat' : 'tonal'"
+        size="small"
+        :color="stageColor[s]"
+        class="cursor-pointer"
+        :aria-pressed="filters.status === s"
+        @click="toggleStage(s)"
+      >
+        {{ s }}
+        <span class="fq-count">{{ stageCount(s) }}</span>
       </v-chip>
     </div>
 
@@ -89,7 +124,7 @@ function selectAll() {
         v-model:search="search"
         title="Fulfillment Queue"
         :active-filters="activeFilterEntries"
-        :total-count="store.fulfillments.length"
+        :total-count="filteredFulfillments.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
@@ -117,8 +152,9 @@ function selectAll() {
         v-else
         v-model="selected"
         :headers="visibleHeaders"
-        :items="store.fulfillments"
+        :items="filteredFulfillments"
         :search="search"
+        :row-props="rowProps"
         item-value="id"
         show-select
         hover
@@ -179,4 +215,18 @@ function selectAll() {
 <style scoped>
 .ActionButtons { opacity: 0; transition: opacity 0.2s ease; }
 tr:hover .ActionButtons { opacity: 1; }
+
+.fq-count {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* High-priority rows get a subtle left accent */
+:deep(.row-high td:first-child) {
+  box-shadow: inset 3px 0 0 0 rgb(var(--v-theme-warning));
+}
 </style>
