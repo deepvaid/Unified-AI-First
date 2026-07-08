@@ -408,6 +408,57 @@ function performConfirm() {
   confirmAction.value = null
 }
 
+// ── Rich menu models (icon + title + description rows, like the global Create-new menu) ──
+interface DashMenuRow {
+  icon: string
+  title: string
+  sub: string
+  on: () => void
+  disabled?: boolean
+  danger?: boolean
+}
+interface DashMenuGroup {
+  label?: string
+  items: DashMenuRow[]
+}
+
+const dashboardActionGroups = computed<DashMenuGroup[]>(() => {
+  const d = activeDashboard.value
+  const groups: DashMenuGroup[] = [
+    { label: 'Dashboards', items: [
+      { icon: 'layout-list', title: 'Manage dashboards', sub: 'Browse and organise all dashboards', on: openListingPage },
+      { icon: 'plus', title: 'Create dashboard', sub: 'Start from a blank or template', on: openCreateDashboard },
+    ] },
+    { label: 'This dashboard', items: [
+      { icon: 'pencil', title: 'Edit dashboard details', sub: 'Rename, description, and icon', on: openEditDashboard, disabled: !d },
+      { icon: 'copy-plus', title: 'Duplicate dashboard', sub: 'Copy this dashboard and its widgets', on: duplicateCurrentDashboard, disabled: !d },
+      ...(d && !d.isDefault
+        ? [{ icon: 'bookmark', title: 'Set as default', sub: 'Open this dashboard on load', on: setActiveAsDefault } as DashMenuRow]
+        : []),
+      { icon: 'move', title: editMode.value ? 'Done editing layout' : 'Edit layout', sub: 'Drag, resize, and arrange widgets', on: () => { editMode.value = !editMode.value }, disabled: !d },
+    ] },
+    { label: 'Share', items: [
+      { icon: 'link', title: 'Copy dashboard link', sub: 'Share a direct link to this view', on: () => openStubAction('Copy dashboard link') },
+      { icon: 'user-plus', title: 'Invite editors', sub: 'Give teammates edit access', on: () => openStubAction('Invite editors') },
+    ] },
+  ]
+  if (d) {
+    groups.push({
+      items: [
+        d.kind === 'system'
+          ? { icon: 'rotate-ccw', title: 'Reset to defaults', sub: 'Restore the original widgets', on: resetCurrentDashboard }
+          : { icon: 'trash-2', title: 'Delete dashboard', sub: 'Permanently remove this dashboard', on: deleteCurrentDashboard, danger: true },
+      ],
+    })
+  }
+  return groups
+})
+
+const addContentRows: DashMenuRow[] = [
+  { icon: 'sparkles', title: 'Create with Da Vinci', sub: 'Generate a widget from a prompt', on: openCopilotForWidget },
+  { icon: 'layout-grid', title: 'Choose existing widget', sub: 'Pick from the widget library', on: () => openWidgetBuilder() },
+]
+
 function toggleFavoriteActive() {
   if (!activeDashboard.value) return
   dashboardsStore.toggleFavorite(accountId.value, activeDashboard.value.id)
@@ -525,44 +576,27 @@ function toggleFavoriteActive() {
                 Actions
               </v-btn>
             </template>
-            <v-list density="compact" rounded="lg" min-width="230" elevation="3" class="py-1">
-              <v-list-item prepend-icon="layout-list" title="Manage dashboards" @click="openListingPage" />
-              <v-list-item prepend-icon="plus" title="Create dashboard" @click="openCreateDashboard" />
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="pencil" title="Edit dashboard details" :disabled="!activeDashboard" @click="openEditDashboard" />
-              <v-list-item prepend-icon="copy-plus" title="Duplicate dashboard" :disabled="!activeDashboard" @click="duplicateCurrentDashboard" />
-              <v-list-item
-                v-if="activeDashboard && !activeDashboard.isDefault"
-                prepend-icon="bookmark"
-                title="Set as default"
-                @click="setActiveAsDefault"
-              />
-              <v-list-item
-                prepend-icon="move"
-                :title="editMode ? 'Done editing layout' : 'Edit layout'"
-                :disabled="!activeDashboard"
-                @click="editMode = !editMode"
-              />
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="link" title="Copy dashboard link" @click="openStubAction('Copy dashboard link')" />
-              <v-list-item prepend-icon="user-plus" title="Invite editors" @click="openStubAction('Invite editors')" />
-              <template v-if="activeDashboard">
-                <v-divider class="my-1" style="opacity: 0.4" />
-                <v-list-item
-                  v-if="activeDashboard.kind === 'system'"
-                  prepend-icon="rotate-ccw"
-                  title="Reset to defaults"
-                  @click="resetCurrentDashboard"
-                />
-                <v-list-item
-                  v-else
-                  prepend-icon="trash-2"
-                  title="Delete dashboard"
-                  class="text-error"
-                  @click="deleteCurrentDashboard"
-                />
+            <v-card width="300" rounded="lg" flat border class="mp-menu">
+              <template v-for="(group, gi) in dashboardActionGroups" :key="gi">
+                <div v-if="group.label" class="mp-menu__label">{{ group.label }}</div>
+                <v-divider v-else class="mp-menu__divider" />
+                <button
+                  v-for="item in group.items"
+                  :key="item.title"
+                  type="button"
+                  class="mp-menu-row"
+                  :class="{ 'mp-menu-row--danger': item.danger }"
+                  :disabled="item.disabled"
+                  @click="item.on"
+                >
+                  <v-icon size="18" class="mp-menu-row__icon">{{ item.icon }}</v-icon>
+                  <span class="mp-menu-row__body">
+                    <strong>{{ item.title }}</strong>
+                    <small>{{ item.sub }}</small>
+                  </span>
+                </button>
               </template>
-            </v-list>
+            </v-card>
           </v-menu>
 
           <v-menu location="bottom end" offset="8">
@@ -580,10 +614,22 @@ function toggleFavoriteActive() {
                 Add content
               </v-btn>
             </template>
-            <v-list density="compact" rounded="lg" min-width="230" elevation="3" class="py-1">
-              <v-list-item prepend-icon="sparkles" title="Create with Da Vinci" @click="openCopilotForWidget" />
-              <v-list-item prepend-icon="layout-grid" title="Choose existing widget" @click="openWidgetBuilder()" />
-            </v-list>
+            <v-card width="300" rounded="lg" flat border class="mp-menu">
+              <div class="mp-menu__label">Add content</div>
+              <button
+                v-for="item in addContentRows"
+                :key="item.title"
+                type="button"
+                class="mp-menu-row"
+                @click="item.on"
+              >
+                <v-icon size="18" class="mp-menu-row__icon">{{ item.icon }}</v-icon>
+                <span class="mp-menu-row__body">
+                  <strong>{{ item.title }}</strong>
+                  <small>{{ item.sub }}</small>
+                </span>
+              </button>
+            </v-card>
           </v-menu>
         </div>
       </div>
@@ -1089,6 +1135,98 @@ function toggleFavoriteActive() {
 
 .dashboard-page-header__refresh :deep(.v-icon) {
   font-size: 13px;
+}
+
+/* ── Rich action menus (Actions, Add content) — matches the global Create-new menu ── */
+.mp-menu {
+  border-color: var(--hairline);
+  padding: 8px;
+  overflow: hidden;
+}
+
+.mp-menu__label {
+  padding: 8px 8px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.mp-menu__divider {
+  margin: 6px 6px;
+  opacity: 0.6;
+}
+
+.mp-menu-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 46px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--r-chip);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.mp-menu-row:hover:not(:disabled),
+.mp-menu-row:focus-visible {
+  background: rgba(var(--v-theme-on-surface), 0.05);
+}
+
+.mp-menu-row:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+}
+
+.mp-menu-row:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.mp-menu-row__icon {
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.mp-menu-row__body {
+  min-width: 0;
+}
+
+.mp-menu-row__body strong,
+.mp-menu-row__body small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-menu-row__body strong {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.mp-menu-row__body small {
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.mp-menu-row--danger .mp-menu-row__icon,
+.mp-menu-row--danger .mp-menu-row__body strong {
+  color: rgb(var(--v-theme-error));
+}
+
+.mp-menu-row--danger:hover:not(:disabled) {
+  background: rgba(var(--v-theme-error), 0.06);
 }
 
 .dashboard-date-menu {
