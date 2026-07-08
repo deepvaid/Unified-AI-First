@@ -247,14 +247,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
       singleRoute: `/accounts/${accountId}/service`,
       items: [
         { title: 'Tickets', route: `/accounts/${accountId}/service` },
-        {
-          title: 'Chatbots',
-          isSubGroup: true,
-          items: [
-            { title: 'All Chatbots', route: `/accounts/${accountId}/chatbot` },
-            { title: 'Archived', route: `/accounts/${accountId}/chatbot/archived` },
-          ],
-        },
+        { title: 'Chatbots', route: `/accounts/${accountId}/chatbot` },
       ],
     },
     {
