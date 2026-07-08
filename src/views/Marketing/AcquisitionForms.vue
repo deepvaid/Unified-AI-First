@@ -231,7 +231,7 @@ function openBuilder() {
                   <template #activator="{ props }">
                     <v-btn v-bind="props" icon="more-vertical" variant="text" size="small" aria-label="More actions" />
                   </template>
-                  <v-list density="compact" rounded="xl" nav min-width="180" class="pa-2">
+                  <v-list density="compact" rounded="lg" nav min-width="180" class="pa-2">
                     <v-list-item prepend-icon="eye" rounded="lg">Preview</v-list-item>
                     <v-list-item prepend-icon="copy" rounded="lg" @click="duplicate(form.id)">Duplicate</v-list-item>
                     <v-list-item prepend-icon="code-2" rounded="lg">Get embed code</v-list-item>

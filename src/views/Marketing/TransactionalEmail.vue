@@ -47,7 +47,7 @@ const flows = store.campaigns.filter(c => c.id % 2 === 0)
             <template v-slot:activator="{ props }">
               <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" />
             </template>
-            <v-list density="compact" rounded="xl" nav min-width="160" elevation="8">
+            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
               <v-list-item prepend-icon="pencil">Edit</v-list-item>
               <v-list-item prepend-icon="copy">Duplicate</v-list-item>
               <v-list-item prepend-icon="trash-2" class="text-error">Delete</v-list-item>

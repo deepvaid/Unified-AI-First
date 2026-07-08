@@ -46,7 +46,7 @@ const users = ref([
             <template v-slot:activator="{ props }">
               <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" />
             </template>
-            <v-list density="compact" rounded="xl" nav min-width="160" elevation="8">
+            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
               <v-list-item prepend-icon="pencil">Edit Role</v-list-item>
               <v-list-item prepend-icon="mail">Resend Invite</v-list-item>
               <v-list-item prepend-icon="user-minus" class="text-error">Remove User</v-list-item>

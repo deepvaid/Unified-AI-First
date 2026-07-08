@@ -280,7 +280,7 @@ function discardAndLeave() {
                   <template #activator="{ props }">
                     <v-btn v-bind="props" size="x-small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" :disabled="!availableFields.length">Add field</v-btn>
                   </template>
-                  <v-list density="compact" rounded="xl" nav min-width="180" elevation="8">
+                  <v-list density="compact" rounded="lg" min-width="180" elevation="3" class="py-1">
                     <v-list-item v-for="lib in availableFields" :key="lib.label" :prepend-icon="lib.icon" @click="addField(lib.type, lib.label)">{{ lib.label }}</v-list-item>
                   </v-list>
                 </v-menu>
