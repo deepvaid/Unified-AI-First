@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
 import type { PreChatFieldType, QuickPromptIntent } from '@/stores/useChatbot'
@@ -45,7 +45,6 @@ const catalogSources = [
 ]
 
 const enabledPrompts = computed(() => cfg.value?.quickPrompts.filter(p => p.enabled) ?? [])
-const showPreChat = computed(() => section.value === 'prechat' && !!cfg.value?.preChatEnabled)
 
 // Quick prompt ops
 let promptSeq = 100
@@ -99,6 +98,61 @@ async function copyScript() {
   } catch { /* clipboard unavailable in preview */ }
 }
 function finishPublish() { publishOpen.value = false; saved.value = true }
+
+// ─── Live preview scenarios ───────────────────────────────────────────
+type Scenario = 'welcome' | 'shopping' | 'tracking' | 'openchat' | 'prechat'
+const previewScenario = ref<Scenario>('welcome')
+const scenarioTabs = computed(() => {
+  const t: { key: Scenario; label: string }[] = [{ key: 'welcome', label: 'Welcome' }]
+  if (cfg.value?.shopping.enabled) t.push({ key: 'shopping', label: 'Shopping' })
+  if (cfg.value?.orderTracking.enabled) t.push({ key: 'tracking', label: 'Order tracking' })
+  t.push({ key: 'openchat', label: 'Open chat' })
+  if (cfg.value?.preChatEnabled) t.push({ key: 'prechat', label: 'Pre-chat' })
+  return t
+})
+// Editing a section jumps the preview to its matching scenario.
+watch(section, s => {
+  if (s === 'shopping' && cfg.value?.shopping.enabled) previewScenario.value = 'shopping'
+  else if (s === 'tracking' && cfg.value?.orderTracking.enabled) previewScenario.value = 'tracking'
+  else if (s === 'prechat' && cfg.value?.preChatEnabled) previewScenario.value = 'prechat'
+})
+// Keep the active scenario valid as capabilities toggle.
+watch(scenarioTabs, tabs => {
+  if (!tabs.some(t => t.key === previewScenario.value)) previewScenario.value = 'welcome'
+})
+// Reset transient demo state when switching scenarios.
+watch(previewScenario, () => { cartAdded.value = false; chatResult.value = null })
+
+const cbProducts = computed(() => cb.previewProducts)
+const money = (n: number) => `$${n.toFixed(2)}`
+
+// Shopping cart demo
+const cartAdded = ref(false)
+function addToCart() { cartAdded.value = true }
+
+// Open-chat intent routing demo
+const chatInput = ref('')
+const chatResult = ref<{ text: string; intent: QuickPromptIntent } | null>(null)
+const intentLabel: Record<QuickPromptIntent, string> = { shopping: 'Shopping', track: 'Order tracking', support: 'Support', faq: 'FAQ' }
+const intentReply: Record<QuickPromptIntent, string> = {
+  shopping: 'Looking for something to buy? I can find it and add it to your cart.',
+  track: "Let's find your order — I can pull up its status right here.",
+  support: 'I can help with that. Connecting you to the right support flow…',
+  faq: "Here's what I found in our help center to answer that.",
+}
+function classify(text: string): QuickPromptIntent {
+  const t = text.toLowerCase()
+  if (/track|order|where|deliver|shipment|arriv|parcel/.test(t)) return 'track'
+  if (/buy|shop|product|boot|shoe|size|price|cart|looking for|red|dress/.test(t)) return 'shopping'
+  if (/refund|return|invoice|cancel|agent|human|complain/.test(t)) return 'support'
+  return 'faq'
+}
+function sendChat() {
+  const t = chatInput.value.trim()
+  if (!t) return
+  chatResult.value = { text: t, intent: classify(t) }
+  chatInput.value = ''
+}
 </script>
 
 <template>
@@ -376,12 +430,23 @@ function finishPublish() { publishOpen.value = false; saved.value = true }
 
         <!-- Live preview -->
         <div class="cb__preview bg-background d-flex flex-column align-center pa-6 flex-shrink-0">
-          <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3 align-self-start">Preview</div>
+          <div class="d-flex align-center justify-space-between w-100 mb-3">
+            <span class="text-caption text-medium-emphasis font-weight-bold text-uppercase">Preview</span>
+          </div>
+          <div class="cb-scenarios d-flex flex-wrap ga-1 mb-3 align-self-start">
+            <button
+              v-for="t in scenarioTabs"
+              :key="t.key"
+              type="button"
+              class="cb-scenario"
+              :class="{ 'cb-scenario--on': previewScenario === t.key }"
+              @click="previewScenario = t.key"
+            >{{ t.label }}</button>
+          </div>
+
           <div class="cb-widget" :style="{ '--brand': cfg.primaryColor }">
             <div class="cb-widget__head">
-              <div class="cb-widget__avatar">
-                <v-icon size="18" color="white">message-circle</v-icon>
-              </div>
+              <div class="cb-widget__avatar"><v-icon size="18" color="white">message-circle</v-icon></div>
               <div class="min-width-0">
                 <div class="cb-widget__name text-truncate">{{ cfg.brandName }}</div>
                 <div class="cb-widget__sub">{{ cfg.brandSubtitle }}</div>
@@ -390,7 +455,74 @@ function finishPublish() { publishOpen.value = false; saved.value = true }
             </div>
 
             <div class="cb-widget__body">
-              <template v-if="showPreChat">
+              <!-- WELCOME -->
+              <template v-if="previewScenario === 'welcome'">
+                <div class="cb-b">{{ cfg.welcomeMessage }}</div>
+                <div class="cb-chips">
+                  <span v-for="p in enabledPrompts" :key="p.id" class="cb-chip">{{ p.text }}</span>
+                </div>
+              </template>
+
+              <!-- SHOPPING -->
+              <template v-else-if="previewScenario === 'shopping'">
+                <div class="cb-b">{{ cfg.shopping.greeting }}</div>
+                <div class="cb-u">red boots size 11</div>
+                <div class="cb-b">Here are a few great matches:</div>
+                <div class="cb-products">
+                  <div v-for="p in cbProducts" :key="p.id" class="cb-product">
+                    <div class="cb-product__thumb">
+                      <v-icon size="22">{{ p.icon }}</v-icon>
+                      <span v-if="p.salePrice" class="cb-product__sale">SALE</span>
+                    </div>
+                    <div class="cb-product__name">{{ p.name }}</div>
+                    <div v-if="cfg.shopping.showPrices" class="cb-product__price">
+                      <span v-if="p.salePrice" class="cb-product__was">{{ money(p.price) }}</span>
+                      <span class="cb-product__now">{{ money(p.salePrice ?? p.price) }}</span>
+                    </div>
+                    <button v-if="cfg.shopping.allowAddToCart" type="button" class="cb-product__add" @click="addToCart">Add to cart</button>
+                  </div>
+                </div>
+                <template v-if="cartAdded">
+                  <div class="cb-b">Added <strong>{{ cbProducts[0]?.name }}</strong> to your cart 🛒</div>
+                  <div class="cb-chips">
+                    <span class="cb-chip cb-chip--solid">Proceed to checkout</span>
+                    <span class="cb-chip">Keep shopping</span>
+                  </div>
+                </template>
+              </template>
+
+              <!-- ORDER TRACKING -->
+              <template v-else-if="previewScenario === 'tracking'">
+                <div class="cb-b">Sure — do you have an account with us?</div>
+                <div class="cb-u">{{ cfg.orderTracking.allowGuest ? 'No, I checked out as guest' : 'Yes, I have an account' }}</div>
+                <div class="cb-b">Here's your latest order:</div>
+                <div class="cb-order">
+                  <div class="cb-order__row"><span>Order</span><strong>#88592</strong></div>
+                  <div class="cb-order__row"><span>Status</span><span class="cb-order__status">Out for delivery</span></div>
+                  <div class="cb-order__row"><span>ETA</span><strong>Fri, 21 Dec</strong></div>
+                </div>
+                <div v-if="cfg.orderTracking.allowGuest" class="cb-links">
+                  <div class="cb-link"><v-icon size="13">external-link</v-icon> Open guest tracking portal</div>
+                  <div v-if="cfg.orderTracking.resendEmail" class="cb-link"><v-icon size="13">mail</v-icon> Resend confirmation email</div>
+                </div>
+                <div class="cb-chips">
+                  <span class="cb-chip">My order hasn't arrived</span>
+                  <span class="cb-chip">Change delivery address</span>
+                </div>
+              </template>
+
+              <!-- OPEN CHAT (intent routing) -->
+              <template v-else-if="previewScenario === 'openchat'">
+                <div class="cb-b">Ask me anything — I'll understand and route you to the right place.</div>
+                <template v-if="chatResult">
+                  <div class="cb-u">{{ chatResult.text }}</div>
+                  <div class="cb-route"><v-icon size="12">git-branch</v-icon> Routed to {{ intentLabel[chatResult.intent] }}</div>
+                  <div class="cb-b">{{ intentReply[chatResult.intent] }}</div>
+                </template>
+              </template>
+
+              <!-- PRE-CHAT -->
+              <template v-else>
                 <div class="cb-pc__title">Welcome to {{ cfg.storeName }}</div>
                 <div class="cb-pc__sub">Share a few details so we can help you faster.</div>
                 <div v-for="f in cfg.preChatFields" :key="f.id" class="cb-pc__field">
@@ -399,17 +531,17 @@ function finishPublish() { publishOpen.value = false; saved.value = true }
                 </div>
                 <div class="cb-widget__cta">Start chat</div>
               </template>
-              <template v-else>
-                <div class="cb-widget__msg">{{ cfg.welcomeMessage }}</div>
-                <div class="cb-widget__chips">
-                  <span v-for="p in enabledPrompts" :key="p.id" class="cb-widget__chip">{{ p.text }}</span>
-                </div>
-              </template>
             </div>
 
             <div class="cb-widget__input">
-              <span class="text-medium-emphasis">Write a message…</span>
-              <v-icon size="16" class="text-medium-emphasis">send</v-icon>
+              <template v-if="previewScenario === 'openchat'">
+                <input v-model="chatInput" class="cb-widget__field" placeholder="Try: where is my order?" aria-label="Message" @keyup.enter="sendChat" />
+                <v-icon size="16" class="cb-widget__send" role="button" aria-label="Send" @click="sendChat">send</v-icon>
+              </template>
+              <template v-else>
+                <span class="text-medium-emphasis">Write a message…</span>
+                <v-icon size="16" class="text-medium-emphasis">send</v-icon>
+              </template>
             </div>
             <div class="cb-widget__foot">Powered by Maropost</div>
           </div>
@@ -595,18 +727,42 @@ function finishPublish() { publishOpen.value = false; saved.value = true }
 .cb-widget__name { font-weight: 700; font-size: 0.875rem; }
 .cb-widget__sub { font-size: 0.6875rem; opacity: 0.85; }
 .cb-widget__x { margin-left: auto; opacity: 0.9; }
-.cb-widget__body { padding: 16px; min-height: 220px; background: rgba(var(--v-theme-on-surface), 0.02); }
-.cb-widget__msg {
-  display: inline-block;
+.cb-widget__body {
+  padding: 16px;
+  min-height: 240px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: rgba(var(--v-theme-on-surface), 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Chat bubbles */
+.cb-b {
+  align-self: flex-start;
+  max-width: 90%;
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 12px 12px 12px 4px;
+  padding: 9px 12px;
   font-size: 0.8125rem;
-  margin-bottom: 12px;
+  line-height: 1.4;
 }
-.cb-widget__chips { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-.cb-widget__chip {
+.cb-u {
+  align-self: flex-end;
+  max-width: 90%;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 12px 12px 4px 12px;
+  padding: 9px 12px;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+/* Quick-reply chips */
+.cb-chips { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.cb-chip {
   border: 1px solid var(--brand);
   color: var(--brand);
   border-radius: 999px;
@@ -615,6 +771,136 @@ function finishPublish() { publishOpen.value = false; saved.value = true }
   font-weight: 600;
   background: rgb(var(--v-theme-surface));
 }
+.cb-chip--solid { background: var(--brand); color: #fff; }
+
+/* Product carousel */
+.cb-products { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.cb-product {
+  flex: 0 0 130px;
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: 10px;
+  background: rgb(var(--v-theme-surface));
+  padding: 8px;
+}
+.cb-product__thumb {
+  position: relative;
+  height: 74px;
+  border-radius: 7px;
+  background: color-mix(in oklch, var(--brand) 10%, transparent);
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.cb-product__sale {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: rgb(var(--v-theme-error));
+  color: #fff;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.cb-product__name {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin-bottom: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cb-product__price { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
+.cb-product__was { font-size: 0.625rem; color: rgba(var(--v-theme-on-surface), 0.45); text-decoration: line-through; }
+.cb-product__now { font-size: 0.75rem; font-weight: 700; }
+.cb-product__add {
+  width: 100%;
+  background: var(--brand);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 5px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Order status card */
+.cb-order {
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: 10px;
+  background: rgb(var(--v-theme-surface));
+  padding: 10px 12px;
+}
+.cb-order__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  padding: 3px 0;
+}
+.cb-order__row span:first-child { color: rgba(var(--v-theme-on-surface), 0.55); }
+.cb-order__status { color: rgb(var(--v-theme-success)); font-weight: 700; }
+.cb-links { display: flex; flex-direction: column; gap: 6px; }
+.cb-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: rgb(var(--v-theme-surface));
+}
+.cb-route {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--brand);
+  background: color-mix(in oklch, var(--brand) 12%, transparent);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+/* Scenario switcher */
+.cb-scenario {
+  border: 1px solid var(--mp-border-subtle);
+  background: rgb(var(--v-theme-surface));
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.cb-scenario:hover { border-color: rgba(var(--v-theme-primary), 0.4); }
+.cb-scenario--on {
+  background: rgb(var(--v-theme-primary));
+  border-color: rgb(var(--v-theme-primary));
+  color: #fff;
+}
+
+/* Open-chat input */
+.cb-widget__field {
+  flex: 1 1 auto;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  color: rgb(var(--v-theme-on-surface));
+}
+.cb-widget__send { color: var(--brand); cursor: pointer; }
 .cb-widget__input {
   display: flex;
   align-items: center;
