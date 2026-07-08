@@ -22,10 +22,10 @@ const primaryActions = computed<PrimaryAction[]>(() => [
 ])
 
 const quickActions = computed<QuickAction[]>(() => [
-  { icon: 'file-text', label: 'New email template', description: 'Start a reusable email block', to: `${base.value}/contents` },
-  { icon: 'image', label: 'Upload images', description: 'Add to your image library', to: `${base.value}/images` },
-  { icon: 'layers', label: 'New dynamic rule', description: 'Personalize content blocks', to: `${base.value}/dynamic_contents` },
-  { icon: 'rss', label: 'Connect a feed', description: 'Stream data into emails', to: `${base.value}/content_feeds` },
+  { icon: 'file-text', label: 'New email template', description: 'Start a reusable email block', to: `${base.value}/contents`, color: 'blue' },
+  { icon: 'image', label: 'Upload images', description: 'Add to your image library', to: `${base.value}/images`, color: 'cyan' },
+  { icon: 'layers', label: 'New dynamic rule', description: 'Personalize content blocks', to: `${base.value}/dynamic_contents`, color: 'violet' },
+  { icon: 'rss', label: 'Connect a feed', description: 'Stream data into emails', to: `${base.value}/content_feeds`, color: 'green' },
 ])
 
 const childPages = computed<ChildPage[]>(() => [
@@ -35,6 +35,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Reusable email templates and modular blocks for fast composition.',
     to: `${base.value}/contents`,
     count: 47,
+    color: 'blue',
   },
   {
     icon: 'layers',
@@ -42,6 +43,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Conditional content blocks that personalize by audience attributes.',
     to: `${base.value}/dynamic_contents`,
     count: 12,
+    color: 'violet',
   },
   {
     icon: 'image',
@@ -49,6 +51,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Centralized media for emails, landing pages, and campaigns.',
     to: `${base.value}/images`,
     count: 234,
+    color: 'cyan',
   },
   {
     icon: 'panel-bottom',
@@ -56,6 +59,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Standardize footers across brands with unsubscribe and compliance.',
     to: `${base.value}/footers`,
     count: 8,
+    color: 'amber',
   },
   {
     icon: 'sparkles',
@@ -63,6 +67,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Real-time images that personalize when the email is opened.',
     to: `${base.value}/image_groups`,
     count: 5,
+    color: 'rose',
   },
   {
     icon: 'rss',
@@ -70,6 +75,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'RSS, JSON, and product feeds streamed into your email content.',
     to: `${base.value}/content_feeds`,
     count: 3,
+    color: 'green',
   },
   {
     icon: 'shopping-bag',
@@ -77,6 +83,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'AI-driven product picks shown inside email and on-site placements.',
     to: `${commerceBase.value}/product_recommendations`,
     count: 18,
+    color: 'indigo',
   },
   {
     icon: 'ticket-percent',
@@ -84,6 +91,7 @@ const childPages = computed<ChildPage[]>(() => [
     description: 'Pools of unique coupon codes assigned per recipient at send time.',
     to: `${base.value}/coupon_banks`,
     count: 6,
+    color: 'teal',
   },
 ])
 

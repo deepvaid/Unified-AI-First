@@ -14,6 +14,8 @@ export interface QuickAction {
   label: string
   description?: string
   to: string
+  /** Accent hue for the icon tile — blue|violet|rose|green|amber|cyan|indigo|teal. Defaults to the module accent. */
+  color?: string
 }
 
 export interface ChildPage {
@@ -23,6 +25,8 @@ export interface ChildPage {
   to: string
   count?: number | string
   status?: string
+  /** Accent hue for the icon tile — blue|violet|rose|green|amber|cyan|indigo|teal. Defaults to the module accent. */
+  color?: string
 }
 
 export type ActivityTag = 'email' | 'order' | 'audience' | 'automation'
@@ -100,6 +104,7 @@ defineProps<{
         :key="qa.label"
         type="button"
         class="quick-action"
+        :class="qa.color ? `tint-${qa.color}` : ''"
         @click="$router.push(qa.to)"
       >
         <span class="quick-action__icon">
@@ -123,6 +128,7 @@ defineProps<{
             :key="cp.title"
             :to="cp.to"
             class="child-card"
+            :class="cp.color ? `tint-${cp.color}` : ''"
           >
             <div class="child-card__top">
               <span class="child-card__icon">
@@ -254,6 +260,16 @@ defineProps<{
   margin-bottom: 10px;
 }
 
+/* ===== Per-tile accent tints (icon tile, count pill, hover/focus) ===== */
+.tint-blue   { --tile-accent: #2563eb; --tile-accent-ink: #1d4ed8; }
+.tint-violet { --tile-accent: #7c3aed; --tile-accent-ink: #6d28d9; }
+.tint-rose   { --tile-accent: #e11d48; --tile-accent-ink: #be123c; }
+.tint-green  { --tile-accent: #16a34a; --tile-accent-ink: #15803d; }
+.tint-amber  { --tile-accent: #f59e0b; --tile-accent-ink: #b45309; }
+.tint-cyan   { --tile-accent: #0891b2; --tile-accent-ink: #0e7490; }
+.tint-indigo { --tile-accent: #4f46e5; --tile-accent-ink: #4338ca; }
+.tint-teal   { --tile-accent: #0d9488; --tile-accent-ink: #0f766e; }
+
 /* ===== Quick actions ===== */
 .quick-actions {
   display: grid;
@@ -279,12 +295,12 @@ defineProps<{
 
 .quick-action:hover {
   background: var(--surface-2);
-  border-color: color-mix(in oklch, var(--accent) 30%, var(--hairline));
+  border-color: color-mix(in oklch, var(--tile-accent, var(--accent)) 30%, var(--hairline));
 }
 
 .quick-action:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--tile-accent, var(--accent)) 18%, transparent);
 }
 
 .quick-action__icon {
@@ -293,8 +309,8 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in oklch, var(--accent) 12%, transparent);
-  color: var(--accent-ink);
+  background: color-mix(in oklch, var(--tile-accent, var(--accent)) 12%, transparent);
+  color: var(--tile-accent-ink, var(--accent-ink));
   border-radius: 8px;
   flex-shrink: 0;
 }
@@ -343,7 +359,7 @@ defineProps<{
 
 .child-card:hover {
   background: var(--surface-2);
-  border-color: color-mix(in oklch, var(--accent) 30%, var(--hairline));
+  border-color: color-mix(in oklch, var(--tile-accent, var(--accent)) 30%, var(--hairline));
 }
 
 .child-card:hover .child-card__arrow {
@@ -353,7 +369,7 @@ defineProps<{
 
 .child-card:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--tile-accent, var(--accent)) 18%, transparent);
 }
 
 .child-card__top {
@@ -369,8 +385,8 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in oklch, var(--accent) 12%, transparent);
-  color: var(--accent-ink);
+  background: color-mix(in oklch, var(--tile-accent, var(--accent)) 12%, transparent);
+  color: var(--tile-accent-ink, var(--accent-ink));
   border-radius: 8px;
   flex-shrink: 0;
 }
@@ -379,8 +395,8 @@ defineProps<{
   margin-left: auto;
   font-size: 11px;
   font-weight: 600;
-  color: var(--accent-ink);
-  background: color-mix(in oklch, var(--accent) 10%, transparent);
+  color: var(--tile-accent-ink, var(--accent-ink));
+  background: color-mix(in oklch, var(--tile-accent, var(--accent)) 10%, transparent);
   padding: 2px 8px;
   border-radius: 999px;
 }
@@ -620,7 +636,7 @@ a.setup-list__label:hover {
 
 .davinci-list__item:hover {
   background: var(--surface-2);
-  border-color: color-mix(in oklch, var(--accent) 30%, var(--hairline));
+  border-color: color-mix(in oklch, var(--tile-accent, var(--accent)) 30%, var(--hairline));
 }
 
 .davinci-list__icon {
