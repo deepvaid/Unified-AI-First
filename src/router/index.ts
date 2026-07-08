@@ -141,7 +141,9 @@ const routes: RouteRecordRaw[] = [
 
   // 7. Service
   { path: '/accounts/:accountId/service', name: 'Tickets', component: () => import('@/views/Service/Tickets.vue') },
-  { path: '/accounts/:accountId/chatbot', name: 'Chatbot', component: () => import('@/views/Service/ChatbotBuilder.vue'), meta: { fullPage: true } },
+  { path: '/accounts/:accountId/chatbot', name: 'ChatbotList', component: () => import('@/views/Service/ChatbotList.vue') },
+  { path: '/accounts/:accountId/chatbot/archived', name: 'ChatbotArchived', component: () => import('@/views/Service/ChatbotArchived.vue') },
+  { path: '/accounts/:accountId/chatbot/:id', name: 'ChatbotBuilder', component: () => import('@/views/Service/ChatbotBuilder.vue'), meta: { fullPage: true } },
 
   // 8. Da Vinci
   { path: '/accounts/:accountId/da-vinci', name: 'DaVinciAI', component: () => import('@/views/DaVinci/DaVinciAI.vue') },

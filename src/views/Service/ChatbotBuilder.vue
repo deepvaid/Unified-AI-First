@@ -1,25 +1,31 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
-import { storeToRefs } from 'pinia'
-import type { PreChatFieldType } from '@/stores/useChatbot'
+import type { PreChatFieldType, QuickPromptIntent } from '@/stores/useChatbot'
 
 const route = useRoute()
 const router = useRouter()
 const accountId = computed(() => route.params.accountId as string)
+const id = computed(() => Number(route.params.id))
 
 const cb = useChatbotStore()
-const {
-  storeName, address1, address2, instagram, storeType, storeUrl,
-  brandName, brandSubtitle, logoName, primaryColor, position, welcomeMessage,
-  businessHours, quickPrompts, knowledgeSources,
-  preChatEnabled, skipForLoggedIn, preChatFields,
-} = storeToRefs(cb)
+const chatbot = computed(() => cb.getById(id.value))
+const cfg = computed(() => chatbot.value!.config)
+
+onMounted(() => {
+  if (!chatbot.value) router.replace({ name: 'ChatbotList', params: { accountId: accountId.value } })
+})
 
 // Static UI config (not reactive state)
 const storeTypes = ['Fashion & Apparel', 'Electronics', 'Home & Living', 'Health & Beauty', 'Food & Beverage', 'Other']
 const swatches = ['#1F2933', '#2563EB', '#6D28D9', '#7CB9D6', '#7BC67B', '#E9C74A', '#DD7A3B', '#C0559A']
+const INTENTS: { title: string; value: QuickPromptIntent }[] = [
+  { title: 'Shopping', value: 'shopping' },
+  { title: 'Order tracking', value: 'track' },
+  { title: 'Support', value: 'support' },
+  { title: 'FAQ', value: 'faq' },
+]
 
 type Section = 'general' | 'appearance' | 'hours' | 'prompts' | 'knowledge' | 'prechat'
 const section = ref<Section>('general')
@@ -32,29 +38,29 @@ const NAV: { key: Section; label: string; icon: string }[] = [
   { key: 'prechat', label: 'Pre-chat form', icon: 'clipboard-list' },
 ]
 
-const enabledPrompts = computed(() => quickPrompts.value.filter(p => p.enabled))
-const showPreChat = computed(() => section.value === 'prechat' && preChatEnabled.value)
+const enabledPrompts = computed(() => cfg.value?.quickPrompts.filter(p => p.enabled) ?? [])
+const showPreChat = computed(() => section.value === 'prechat' && !!cfg.value?.preChatEnabled)
 
 // Quick prompt ops
 let promptSeq = 100
-function addPrompt() { quickPrompts.value.push({ id: ++promptSeq, text: 'New prompt', enabled: true }) }
-function removePrompt(id: number) { quickPrompts.value = quickPrompts.value.filter(p => p.id !== id) }
+function addPrompt() { cfg.value.quickPrompts.push({ id: ++promptSeq, text: 'New prompt', intent: 'support', enabled: true }) }
+function removePrompt(pid: number) { cfg.value.quickPrompts = cfg.value.quickPrompts.filter(p => p.id !== pid) }
 function movePrompt(i: number, dir: -1 | 1) {
   const j = i + dir
-  if (j < 0 || j >= quickPrompts.value.length) return
-  const a = quickPrompts.value
+  const a = cfg.value.quickPrompts
+  if (j < 0 || j >= a.length) return
   ;[a[i], a[j]] = [a[j]!, a[i]!]
 }
 
 // Pre-chat field ops
 let fieldSeq = 100
 const FIELD_TYPES: PreChatFieldType[] = ['Text', 'Email', 'Phone', 'Text Area']
-function addField() { preChatFields.value.push({ id: ++fieldSeq, label: 'New field', type: 'Text', placeholder: '', required: false }) }
-function removeField(id: number) { preChatFields.value = preChatFields.value.filter(f => f.id !== id) }
+function addField() { cfg.value.preChatFields.push({ id: ++fieldSeq, label: 'New field', type: 'Text', placeholder: '', required: false }) }
+function removeField(fid: number) { cfg.value.preChatFields = cfg.value.preChatFields.filter(f => f.id !== fid) }
 function moveField(i: number, dir: -1 | 1) {
   const j = i + dir
-  if (j < 0 || j >= preChatFields.value.length) return
-  const a = preChatFields.value
+  const a = cfg.value.preChatFields
+  if (j < 0 || j >= a.length) return
   ;[a[i], a[j]] = [a[j]!, a[i]!]
 }
 
@@ -62,283 +68,288 @@ const statusColor: Record<string, string> = { Active: 'success', Disabled: 'defa
 const addSourceTab = ref<'url' | 'upload'>('url')
 
 const saved = ref(false)
-function goBack() { router.push({ name: 'Tickets', params: { accountId: accountId.value } }) }
+function goBack() { router.push({ name: 'ChatbotList', params: { accountId: accountId.value } }) }
 function publish() { saved.value = true }
 </script>
 
 <template>
   <div class="cb d-flex flex-column">
-    <!-- Top bar -->
-    <div class="cb__bar d-flex align-center justify-space-between px-5 border-b bg-surface">
-      <div class="d-flex align-center gap-3 min-width-0">
-        <v-tooltip text="Back to Service" location="bottom">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" aria-label="Back to Service" @click="goBack" />
-          </template>
-        </v-tooltip>
-        <div class="min-width-0">
-          <div class="font-weight-bold text-body-1">Customize your widget</div>
-          <div class="text-caption text-medium-emphasis">Customize your chatbot's appearance and branding</div>
+    <template v-if="chatbot && cfg">
+      <!-- Top bar -->
+      <div class="cb__bar d-flex align-center justify-space-between px-5 border-b bg-surface">
+        <div class="d-flex align-center gap-3 min-width-0">
+          <v-tooltip text="Back to Chatbots" location="bottom">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" aria-label="Back to Chatbots" @click="goBack" />
+            </template>
+          </v-tooltip>
+          <div class="min-width-0">
+            <div class="font-weight-bold text-body-1 text-truncate">Customize your widget</div>
+            <div class="text-caption text-medium-emphasis text-truncate">{{ chatbot.store }} · appearance &amp; branding</div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2">
+          <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="eye">Preview Chatbot</v-btn>
+          <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="rocket" @click="publish">Publish Chatbot</v-btn>
         </div>
       </div>
-      <div class="d-flex align-center gap-2">
-        <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="eye">Preview Chatbot</v-btn>
-        <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="rocket" @click="publish">Publish Chatbot</v-btn>
-      </div>
-    </div>
 
-    <div class="cb__body flex-grow-1 d-flex overflow-hidden">
-      <!-- Section nav -->
-      <nav class="cb__nav border-r bg-surface py-3 flex-shrink-0" aria-label="Chatbot settings">
-        <button
-          v-for="n in NAV"
-          :key="n.key"
-          type="button"
-          class="cb__nav-item text-none"
-          :class="{ 'cb__nav-item--on': section === n.key }"
-          @click="section = n.key"
-        >
-          <v-icon size="18">{{ n.icon }}</v-icon>
-          <span>{{ n.label }}</span>
-        </button>
-      </nav>
+      <div class="cb__body flex-grow-1 d-flex overflow-hidden">
+        <!-- Section nav -->
+        <nav class="cb__nav border-r bg-surface py-3 flex-shrink-0" aria-label="Chatbot settings">
+          <button
+            v-for="n in NAV"
+            :key="n.key"
+            type="button"
+            class="cb__nav-item text-none"
+            :class="{ 'cb__nav-item--on': section === n.key }"
+            @click="section = n.key"
+          >
+            <v-icon size="18">{{ n.icon }}</v-icon>
+            <span>{{ n.label }}</span>
+          </button>
+        </nav>
 
-      <!-- Settings panel -->
-      <div class="cb__panel flex-grow-1 overflow-y-auto pa-6">
-        <div class="cb__panel-inner">
-          <!-- GENERAL -->
-          <template v-if="section === 'general'">
-            <v-card flat border rounded="lg" class="pa-6 mb-5">
-              <div class="text-subtitle-1 font-weight-bold mb-1">General</div>
-              <div class="text-body-2 text-medium-emphasis mb-5">Configure your store details shown in the chat widget.</div>
-              <v-text-field v-model="storeName" label="Store name" variant="outlined" density="comfortable" class="mb-4" />
-              <v-text-field v-model="address1" label="Address 1" variant="outlined" density="comfortable" class="mb-4" />
-              <v-text-field v-model="address2" label="Address 2" variant="outlined" density="comfortable" class="mb-4" />
-              <v-text-field v-model="instagram" label="Instagram link" variant="outlined" density="comfortable" prepend-inner-icon="instagram" hide-details />
-            </v-card>
-            <v-card flat border rounded="lg" class="pa-6">
-              <div class="text-subtitle-1 font-weight-bold mb-4">Storefront</div>
-              <v-select v-model="storeType" label="Store type" :items="storeTypes" variant="outlined" density="comfortable" placeholder="Select store type" class="mb-4" />
-              <v-text-field v-model="storeUrl" label="Store URL" variant="outlined" density="comfortable" placeholder="https://mystore.com" prepend-inner-icon="link" hide-details />
-            </v-card>
-          </template>
+        <!-- Settings panel -->
+        <div class="cb__panel flex-grow-1 overflow-y-auto pa-6">
+          <div class="cb__panel-inner">
+            <!-- GENERAL -->
+            <template v-if="section === 'general'">
+              <v-card flat border rounded="lg" class="pa-6 mb-5">
+                <div class="text-subtitle-1 font-weight-bold mb-1">General</div>
+                <div class="text-body-2 text-medium-emphasis mb-5">Configure your store details shown in the chat widget.</div>
+                <v-text-field v-model="cfg.storeName" label="Store name" variant="outlined" density="comfortable" class="mb-4" />
+                <v-text-field v-model="cfg.address1" label="Address 1" variant="outlined" density="comfortable" class="mb-4" />
+                <v-text-field v-model="cfg.address2" label="Address 2" variant="outlined" density="comfortable" class="mb-4" />
+                <v-text-field v-model="cfg.instagram" label="Instagram link" variant="outlined" density="comfortable" prepend-inner-icon="instagram" hide-details />
+              </v-card>
+              <v-card flat border rounded="lg" class="pa-6">
+                <div class="text-subtitle-1 font-weight-bold mb-4">Storefront</div>
+                <v-select v-model="cfg.storeType" label="Store type" :items="storeTypes" variant="outlined" density="comfortable" placeholder="Select store type" class="mb-4" />
+                <v-text-field v-model="cfg.storeUrl" label="Store URL" variant="outlined" density="comfortable" placeholder="https://mystore.com" prepend-inner-icon="link" hide-details />
+              </v-card>
+            </template>
 
-          <!-- APPEARANCE -->
-          <template v-else-if="section === 'appearance'">
-            <v-card flat border rounded="lg" class="pa-6 mb-5">
-              <div class="text-subtitle-1 font-weight-bold mb-1">Brand logo</div>
-              <div class="text-body-2 text-medium-emphasis mb-4">Upload your logo and set your brand colors.</div>
-              <div class="cb-upload d-flex align-center justify-center ga-3 mb-2" @click="logoName = 'logo.png'">
-                <v-icon size="20">upload</v-icon>
-                <span class="text-body-2 font-weight-medium">{{ logoName || 'Upload logo' }}</span>
-              </div>
-              <div class="text-caption text-medium-emphasis">Recommended 160×160px · PNG or SVG</div>
-
-              <v-divider class="my-5" />
-              <div class="text-subtitle-2 font-weight-bold mb-1">Primary color</div>
-              <div class="text-body-2 text-medium-emphasis mb-3">Set your brand color.</div>
-              <div class="d-flex flex-wrap ga-2 mb-4">
-                <button
-                  v-for="c in swatches"
-                  :key="c"
-                  type="button"
-                  class="cb-swatch"
-                  :class="{ 'cb-swatch--on': primaryColor.toLowerCase() === c.toLowerCase() }"
-                  :style="{ background: c }"
-                  :aria-label="`Use ${c}`"
-                  @click="primaryColor = c"
-                >
-                  <v-icon v-if="primaryColor.toLowerCase() === c.toLowerCase()" size="14" color="white">check</v-icon>
-                </button>
-              </div>
-              <div class="text-caption text-medium-emphasis mb-1">Custom color</div>
-              <div class="d-flex align-center ga-2">
-                <v-menu :close-on-content-click="false" location="bottom start">
-                  <template #activator="{ props }">
-                    <button v-bind="props" class="cb-swatch cb-swatch--sm" :style="{ background: primaryColor }" aria-label="Pick custom color" />
-                  </template>
-                  <v-color-picker v-model="primaryColor" mode="hex" :modes="['hex']" />
-                </v-menu>
-                <v-text-field v-model="primaryColor" variant="outlined" density="compact" hide-details style="max-width:160px;" />
-              </div>
-            </v-card>
-
-            <v-card flat border rounded="lg" class="pa-6">
-              <div class="text-subtitle-1 font-weight-bold mb-4">Widget configuration</div>
-              <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Launcher position</div>
-              <v-row dense class="mb-4">
-                <v-col cols="6">
-                  <v-card flat border rounded="lg" class="pa-4 text-center cursor-pointer cb-pos" :class="{ 'cb-pos--on': position === 'left' }" @click="position = 'left'">
-                    <v-icon size="24" class="mb-1">panel-bottom-dashed</v-icon>
-                    <div class="text-body-2 font-weight-medium">Bottom left</div>
-                  </v-card>
-                </v-col>
-                <v-col cols="6">
-                  <v-card flat border rounded="lg" class="pa-4 text-center cursor-pointer cb-pos" :class="{ 'cb-pos--on': position === 'right' }" @click="position = 'right'">
-                    <v-icon size="24" class="mb-1">panel-bottom-dashed</v-icon>
-                    <div class="text-body-2 font-weight-medium">Bottom right</div>
-                  </v-card>
-                </v-col>
-              </v-row>
-              <v-text-field v-model="welcomeMessage" label="Welcome message *" variant="outlined" density="comfortable" hide-details />
-            </v-card>
-          </template>
-
-          <!-- BUSINESS HOURS -->
-          <template v-else-if="section === 'hours'">
-            <v-card flat border rounded="lg" class="pa-6">
-              <div class="text-subtitle-1 font-weight-bold mb-1">Business hours</div>
-              <div class="text-body-2 text-medium-emphasis mb-5">Set when live support is available. Outside these hours the bot handles chats.</div>
-              <div v-for="h in businessHours" :key="h.day" class="cb-hour d-flex align-center ga-3">
-                <v-switch v-model="h.enabled" color="primary" density="compact" hide-details class="flex-shrink-0" />
-                <span class="cb-hour__day font-weight-medium">{{ h.day }}</span>
-                <template v-if="h.enabled">
-                  <v-text-field v-model="h.open" type="time" variant="outlined" density="compact" hide-details class="cb-hour__time" />
-                  <span class="text-medium-emphasis">to</span>
-                  <v-text-field v-model="h.close" type="time" variant="outlined" density="compact" hide-details class="cb-hour__time" />
-                </template>
-                <span v-else class="text-body-2 text-medium-emphasis">Closed</span>
-              </div>
-            </v-card>
-          </template>
-
-          <!-- QUICK PROMPTS -->
-          <template v-else-if="section === 'prompts'">
-            <v-card flat border rounded="lg" class="pa-6">
-              <div class="d-flex align-center justify-space-between mb-1">
-                <div class="text-subtitle-1 font-weight-bold">Quick prompts</div>
-                <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" @click="addPrompt">Add prompt</v-btn>
-              </div>
-              <div class="text-body-2 text-medium-emphasis mb-5">Predefined options shown when a customer starts a chat.</div>
-              <div v-for="(p, i) in quickPrompts" :key="p.id" class="cb-row d-flex align-center ga-2 mb-2">
-                <v-icon size="16" class="text-medium-emphasis cb-grip">grip-vertical</v-icon>
-                <v-text-field v-model="p.text" variant="outlined" density="compact" hide-details class="flex-grow-1" />
-                <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0" aria-label="Move up" @click="movePrompt(i, -1)" />
-                <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === quickPrompts.length - 1" aria-label="Move down" @click="movePrompt(i, 1)" />
-                <v-switch v-model="p.enabled" color="primary" density="compact" hide-details class="flex-shrink-0" />
-                <v-btn icon="trash-2" variant="text" size="x-small" color="error" aria-label="Delete prompt" @click="removePrompt(p.id)" />
-              </div>
-            </v-card>
-          </template>
-
-          <!-- KNOWLEDGE BASE -->
-          <template v-else-if="section === 'knowledge'">
-            <v-card flat border rounded="lg" class="pa-6 mb-5">
-              <div class="d-flex align-center justify-space-between mb-1">
-                <div class="text-subtitle-1 font-weight-bold">Knowledge base</div>
-                <span class="text-caption text-medium-emphasis">{{ knowledgeSources.length }} sources</span>
-              </div>
-              <div class="text-body-2 text-medium-emphasis mb-5">Connect and manage the sources that power your AI responses.</div>
-              <div v-for="s in knowledgeSources" :key="s.id" class="cb-source d-flex align-center ga-3 mb-2">
-                <div class="cb-source__icon"><v-icon size="18">{{ s.icon }}</v-icon></div>
-                <div class="flex-grow-1 min-width-0">
-                  <div class="d-flex align-center ga-2">
-                    <span class="text-body-2 font-weight-medium text-truncate">{{ s.name }}</span>
-                    <v-chip size="x-small" variant="tonal" :color="statusColor[s.status]">{{ s.status }}</v-chip>
-                  </div>
-                  <div class="text-caption text-medium-emphasis">{{ s.items }} items · {{ s.meta }}</div>
+            <!-- APPEARANCE -->
+            <template v-else-if="section === 'appearance'">
+              <v-card flat border rounded="lg" class="pa-6 mb-5">
+                <div class="text-subtitle-1 font-weight-bold mb-1">Brand logo</div>
+                <div class="text-body-2 text-medium-emphasis mb-4">Upload your logo and set your brand colors.</div>
+                <div class="cb-upload d-flex align-center justify-center ga-3 mb-2" @click="cfg.logoName = 'logo.png'">
+                  <v-icon size="20">upload</v-icon>
+                  <span class="text-body-2 font-weight-medium">{{ cfg.logoName || 'Upload logo' }}</span>
                 </div>
-                <v-switch v-model="s.enabled" color="primary" density="compact" hide-details class="flex-shrink-0" />
-                <v-btn icon="refresh-cw" variant="text" size="x-small" aria-label="Re-sync" />
-                <v-btn icon="trash-2" variant="text" size="x-small" color="error" aria-label="Remove source" />
-              </div>
-            </v-card>
+                <div class="text-caption text-medium-emphasis">Recommended 160×160px · PNG or SVG</div>
 
-            <v-card flat border rounded="lg" class="pa-6">
-              <div class="text-subtitle-1 font-weight-bold mb-4">Add a source</div>
-              <v-btn-toggle v-model="addSourceTab" mandatory density="comfortable" variant="outlined" divided rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
-                <v-btn value="url" size="small" class="text-none px-4" prepend-icon="link">Website URL</v-btn>
-                <v-btn value="upload" size="small" class="text-none px-4" prepend-icon="upload">Upload files</v-btn>
-              </v-btn-toggle>
-              <v-text-field v-if="addSourceTab === 'url'" label="Website URL" placeholder="https://mystore.com/faq" variant="outlined" density="comfortable" prepend-inner-icon="globe" hide-details />
-              <div v-else class="cb-drop d-flex flex-column align-center justify-center text-center">
-                <v-icon size="28" class="mb-2 text-medium-emphasis">upload-cloud</v-icon>
-                <div class="text-body-2 font-weight-medium">Drag &amp; drop, or click to upload</div>
-                <div class="text-caption text-medium-emphasis">Max 5 MB · PDF, TXT, or DOC</div>
-              </div>
-            </v-card>
-          </template>
-
-          <!-- PRE-CHAT FORM -->
-          <template v-else>
-            <v-card flat border rounded="lg" class="pa-6 mb-5">
-              <div class="text-subtitle-1 font-weight-bold mb-4">Form settings</div>
-              <v-switch v-model="preChatEnabled" color="primary" density="comfortable" hide-details label="Show a pre-chat form before starting a conversation" class="mb-1" />
-              <v-switch v-model="skipForLoggedIn" color="primary" density="comfortable" hide-details label="Skip the form for logged-in users" :disabled="!preChatEnabled" />
-            </v-card>
-
-            <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !preChatEnabled }">
-              <div class="d-flex align-center justify-space-between mb-4">
-                <div class="text-subtitle-1 font-weight-bold">Form fields</div>
-                <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" :disabled="!preChatEnabled" @click="addField">Add field</v-btn>
-              </div>
-              <div v-for="(f, i) in preChatFields" :key="f.id" class="cb-field mb-3">
-                <div class="d-flex align-center ga-2 mb-2">
-                  <v-icon size="16" class="text-medium-emphasis cb-grip">grip-vertical</v-icon>
-                  <span class="text-caption font-weight-bold text-medium-emphasis">#{{ i + 1 }}</span>
-                  <v-spacer />
-                  <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0 || !preChatEnabled" aria-label="Move up" @click="moveField(i, -1)" />
-                  <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === preChatFields.length - 1 || !preChatEnabled" aria-label="Move down" @click="moveField(i, 1)" />
-                  <v-switch v-model="f.required" color="primary" density="compact" hide-details :disabled="!preChatEnabled" class="flex-shrink-0" />
-                  <span class="text-caption text-medium-emphasis">Required</span>
-                  <v-btn icon="trash-2" variant="text" size="x-small" color="error" :disabled="!preChatEnabled" aria-label="Delete field" @click="removeField(f.id)" />
+                <v-divider class="my-5" />
+                <div class="text-subtitle-2 font-weight-bold mb-1">Primary color</div>
+                <div class="text-body-2 text-medium-emphasis mb-3">Set your brand color.</div>
+                <div class="d-flex flex-wrap ga-2 mb-4">
+                  <button
+                    v-for="c in swatches"
+                    :key="c"
+                    type="button"
+                    class="cb-swatch"
+                    :class="{ 'cb-swatch--on': cfg.primaryColor.toLowerCase() === c.toLowerCase() }"
+                    :style="{ background: c }"
+                    :aria-label="`Use ${c}`"
+                    @click="cfg.primaryColor = c"
+                  >
+                    <v-icon v-if="cfg.primaryColor.toLowerCase() === c.toLowerCase()" size="14" color="white">check</v-icon>
+                  </button>
                 </div>
-                <v-row dense>
-                  <v-col cols="12" sm="6"><v-text-field v-model="f.label" label="Label" variant="outlined" density="compact" hide-details :disabled="!preChatEnabled" /></v-col>
-                  <v-col cols="12" sm="6"><v-select v-model="f.type" label="Type" :items="FIELD_TYPES" variant="outlined" density="compact" hide-details :disabled="!preChatEnabled" /></v-col>
-                  <v-col cols="12"><v-text-field v-model="f.placeholder" label="Placeholder" variant="outlined" density="compact" hide-details :disabled="!preChatEnabled" /></v-col>
+                <div class="text-caption text-medium-emphasis mb-1">Custom color</div>
+                <div class="d-flex align-center ga-2">
+                  <v-menu :close-on-content-click="false" location="bottom start">
+                    <template #activator="{ props }">
+                      <button v-bind="props" class="cb-swatch cb-swatch--sm" :style="{ background: cfg.primaryColor }" aria-label="Pick custom color" />
+                    </template>
+                    <v-color-picker v-model="cfg.primaryColor" mode="hex" :modes="['hex']" />
+                  </v-menu>
+                  <v-text-field v-model="cfg.primaryColor" variant="outlined" density="compact" hide-details style="max-width:160px;" />
+                </div>
+              </v-card>
+
+              <v-card flat border rounded="lg" class="pa-6">
+                <div class="text-subtitle-1 font-weight-bold mb-4">Widget configuration</div>
+                <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Launcher position</div>
+                <v-row dense class="mb-4">
+                  <v-col cols="6">
+                    <v-card flat border rounded="lg" class="pa-4 text-center cursor-pointer cb-pos" :class="{ 'cb-pos--on': cfg.position === 'left' }" @click="cfg.position = 'left'">
+                      <v-icon size="24" class="mb-1">panel-bottom-dashed</v-icon>
+                      <div class="text-body-2 font-weight-medium">Bottom left</div>
+                    </v-card>
+                  </v-col>
+                  <v-col cols="6">
+                    <v-card flat border rounded="lg" class="pa-4 text-center cursor-pointer cb-pos" :class="{ 'cb-pos--on': cfg.position === 'right' }" @click="cfg.position = 'right'">
+                      <v-icon size="24" class="mb-1">panel-bottom-dashed</v-icon>
+                      <div class="text-body-2 font-weight-medium">Bottom right</div>
+                    </v-card>
+                  </v-col>
                 </v-row>
-              </div>
-            </v-card>
-          </template>
-        </div>
-      </div>
-
-      <!-- Live preview -->
-      <div class="cb__preview bg-background d-flex flex-column align-center pa-6 flex-shrink-0">
-        <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3 align-self-start">Preview</div>
-        <div class="cb-widget" :style="{ '--brand': primaryColor }">
-          <div class="cb-widget__head">
-            <div class="cb-widget__avatar">
-              <v-icon size="18" color="white">message-circle</v-icon>
-            </div>
-            <div class="min-width-0">
-              <div class="cb-widget__name text-truncate">{{ brandName }}</div>
-              <div class="cb-widget__sub">{{ brandSubtitle }}</div>
-            </div>
-            <v-icon size="18" color="white" class="cb-widget__x">x</v-icon>
-          </div>
-
-          <div class="cb-widget__body">
-            <template v-if="showPreChat">
-              <div class="cb-pc__title">Welcome to {{ storeName }}</div>
-              <div class="cb-pc__sub">Share a few details so we can help you faster.</div>
-              <div v-for="f in preChatFields" :key="f.id" class="cb-pc__field">
-                <div class="cb-pc__label">{{ f.label }}{{ f.required ? ' *' : '' }}</div>
-                <div class="cb-pc__input" :class="{ 'cb-pc__input--area': f.type === 'Text Area' }">{{ f.placeholder }}</div>
-              </div>
-              <div class="cb-widget__cta">Start chat</div>
+                <v-text-field v-model="cfg.welcomeMessage" label="Welcome message *" variant="outlined" density="comfortable" hide-details />
+              </v-card>
             </template>
+
+            <!-- BUSINESS HOURS -->
+            <template v-else-if="section === 'hours'">
+              <v-card flat border rounded="lg" class="pa-6">
+                <div class="text-subtitle-1 font-weight-bold mb-1">Business hours</div>
+                <div class="text-body-2 text-medium-emphasis mb-5">Set when live support is available. Outside these hours the bot handles chats.</div>
+                <div v-for="h in cfg.businessHours" :key="h.day" class="cb-hour d-flex align-center ga-3">
+                  <v-switch v-model="h.enabled" color="primary" density="compact" hide-details class="flex-shrink-0" />
+                  <span class="cb-hour__day font-weight-medium">{{ h.day }}</span>
+                  <template v-if="h.enabled">
+                    <v-text-field v-model="h.open" type="time" variant="outlined" density="compact" hide-details class="cb-hour__time" />
+                    <span class="text-medium-emphasis">to</span>
+                    <v-text-field v-model="h.close" type="time" variant="outlined" density="compact" hide-details class="cb-hour__time" />
+                  </template>
+                  <span v-else class="text-body-2 text-medium-emphasis">Closed</span>
+                </div>
+              </v-card>
+            </template>
+
+            <!-- QUICK PROMPTS -->
+            <template v-else-if="section === 'prompts'">
+              <v-card flat border rounded="lg" class="pa-6">
+                <div class="d-flex align-center justify-space-between mb-1">
+                  <div class="text-subtitle-1 font-weight-bold">Quick prompts</div>
+                  <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" @click="addPrompt">Add prompt</v-btn>
+                </div>
+                <div class="text-body-2 text-medium-emphasis mb-5">Predefined options shown when a customer starts a chat. The <strong>intent</strong> routes the reply to shopping, order tracking, support, or FAQ.</div>
+                <div v-for="(p, i) in cfg.quickPrompts" :key="p.id" class="cb-prompt mb-2">
+                  <div class="d-flex align-center ga-2">
+                    <v-icon size="16" class="text-medium-emphasis cb-grip">grip-vertical</v-icon>
+                    <v-text-field v-model="p.text" variant="outlined" density="compact" hide-details class="flex-grow-1" />
+                    <v-select v-model="p.intent" :items="INTENTS" variant="outlined" density="compact" hide-details class="cb-prompt__intent" />
+                    <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0" aria-label="Move up" @click="movePrompt(i, -1)" />
+                    <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === cfg.quickPrompts.length - 1" aria-label="Move down" @click="movePrompt(i, 1)" />
+                    <v-switch v-model="p.enabled" color="primary" density="compact" hide-details class="flex-shrink-0" />
+                    <v-btn icon="trash-2" variant="text" size="x-small" color="error" aria-label="Delete prompt" @click="removePrompt(p.id)" />
+                  </div>
+                </div>
+              </v-card>
+            </template>
+
+            <!-- KNOWLEDGE BASE -->
+            <template v-else-if="section === 'knowledge'">
+              <v-card flat border rounded="lg" class="pa-6 mb-5">
+                <div class="d-flex align-center justify-space-between mb-1">
+                  <div class="text-subtitle-1 font-weight-bold">Knowledge base</div>
+                  <span class="text-caption text-medium-emphasis">{{ cfg.knowledgeSources.length }} sources</span>
+                </div>
+                <div class="text-body-2 text-medium-emphasis mb-5">Connect and manage the sources that power your AI responses.</div>
+                <div v-for="s in cfg.knowledgeSources" :key="s.id" class="cb-source d-flex align-center ga-3 mb-2">
+                  <div class="cb-source__icon"><v-icon size="18">{{ s.icon }}</v-icon></div>
+                  <div class="flex-grow-1 min-width-0">
+                    <div class="d-flex align-center ga-2">
+                      <span class="text-body-2 font-weight-medium text-truncate">{{ s.name }}</span>
+                      <v-chip size="x-small" variant="tonal" :color="statusColor[s.status]">{{ s.status }}</v-chip>
+                    </div>
+                    <div class="text-caption text-medium-emphasis">{{ s.items }} items · {{ s.meta }}</div>
+                  </div>
+                  <v-switch v-model="s.enabled" color="primary" density="compact" hide-details class="flex-shrink-0" />
+                  <v-btn icon="refresh-cw" variant="text" size="x-small" aria-label="Re-sync" />
+                  <v-btn icon="trash-2" variant="text" size="x-small" color="error" aria-label="Remove source" />
+                </div>
+              </v-card>
+
+              <v-card flat border rounded="lg" class="pa-6">
+                <div class="text-subtitle-1 font-weight-bold mb-4">Add a source</div>
+                <v-btn-toggle v-model="addSourceTab" mandatory density="comfortable" variant="outlined" divided rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
+                  <v-btn value="url" size="small" class="text-none px-4" prepend-icon="link">Website URL</v-btn>
+                  <v-btn value="upload" size="small" class="text-none px-4" prepend-icon="upload">Upload files</v-btn>
+                </v-btn-toggle>
+                <v-text-field v-if="addSourceTab === 'url'" label="Website URL" placeholder="https://mystore.com/faq" variant="outlined" density="comfortable" prepend-inner-icon="globe" hide-details />
+                <div v-else class="cb-drop d-flex flex-column align-center justify-center text-center">
+                  <v-icon size="28" class="mb-2 text-medium-emphasis">upload-cloud</v-icon>
+                  <div class="text-body-2 font-weight-medium">Drag &amp; drop, or click to upload</div>
+                  <div class="text-caption text-medium-emphasis">Max 5 MB · PDF, TXT, or DOC</div>
+                </div>
+              </v-card>
+            </template>
+
+            <!-- PRE-CHAT FORM -->
             <template v-else>
-              <div class="cb-widget__msg">{{ welcomeMessage }}</div>
-              <div class="cb-widget__chips">
-                <span v-for="p in enabledPrompts" :key="p.id" class="cb-widget__chip">{{ p.text }}</span>
-              </div>
+              <v-card flat border rounded="lg" class="pa-6 mb-5">
+                <div class="text-subtitle-1 font-weight-bold mb-4">Form settings</div>
+                <v-switch v-model="cfg.preChatEnabled" color="primary" density="comfortable" hide-details label="Show a pre-chat form before starting a conversation" class="mb-1" />
+                <v-switch v-model="cfg.skipForLoggedIn" color="primary" density="comfortable" hide-details label="Skip the form for logged-in users" :disabled="!cfg.preChatEnabled" />
+              </v-card>
+
+              <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.preChatEnabled }">
+                <div class="d-flex align-center justify-space-between mb-4">
+                  <div class="text-subtitle-1 font-weight-bold">Form fields</div>
+                  <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" :disabled="!cfg.preChatEnabled" @click="addField">Add field</v-btn>
+                </div>
+                <div v-for="(f, i) in cfg.preChatFields" :key="f.id" class="cb-field mb-3">
+                  <div class="d-flex align-center ga-2 mb-2">
+                    <v-icon size="16" class="text-medium-emphasis cb-grip">grip-vertical</v-icon>
+                    <span class="text-caption font-weight-bold text-medium-emphasis">#{{ i + 1 }}</span>
+                    <v-spacer />
+                    <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0 || !cfg.preChatEnabled" aria-label="Move up" @click="moveField(i, -1)" />
+                    <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === cfg.preChatFields.length - 1 || !cfg.preChatEnabled" aria-label="Move down" @click="moveField(i, 1)" />
+                    <v-switch v-model="f.required" color="primary" density="compact" hide-details :disabled="!cfg.preChatEnabled" class="flex-shrink-0" />
+                    <span class="text-caption text-medium-emphasis">Required</span>
+                    <v-btn icon="trash-2" variant="text" size="x-small" color="error" :disabled="!cfg.preChatEnabled" aria-label="Delete field" @click="removeField(f.id)" />
+                  </div>
+                  <v-row dense>
+                    <v-col cols="12" sm="6"><v-text-field v-model="f.label" label="Label" variant="outlined" density="compact" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
+                    <v-col cols="12" sm="6"><v-select v-model="f.type" label="Type" :items="FIELD_TYPES" variant="outlined" density="compact" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
+                    <v-col cols="12"><v-text-field v-model="f.placeholder" label="Placeholder" variant="outlined" density="compact" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
+                  </v-row>
+                </div>
+              </v-card>
             </template>
           </div>
+        </div>
 
-          <div class="cb-widget__input">
-            <span class="text-medium-emphasis">Write a message…</span>
-            <v-icon size="16" class="text-medium-emphasis">send</v-icon>
+        <!-- Live preview -->
+        <div class="cb__preview bg-background d-flex flex-column align-center pa-6 flex-shrink-0">
+          <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3 align-self-start">Preview</div>
+          <div class="cb-widget" :style="{ '--brand': cfg.primaryColor }">
+            <div class="cb-widget__head">
+              <div class="cb-widget__avatar">
+                <v-icon size="18" color="white">message-circle</v-icon>
+              </div>
+              <div class="min-width-0">
+                <div class="cb-widget__name text-truncate">{{ cfg.brandName }}</div>
+                <div class="cb-widget__sub">{{ cfg.brandSubtitle }}</div>
+              </div>
+              <v-icon size="18" color="white" class="cb-widget__x">x</v-icon>
+            </div>
+
+            <div class="cb-widget__body">
+              <template v-if="showPreChat">
+                <div class="cb-pc__title">Welcome to {{ cfg.storeName }}</div>
+                <div class="cb-pc__sub">Share a few details so we can help you faster.</div>
+                <div v-for="f in cfg.preChatFields" :key="f.id" class="cb-pc__field">
+                  <div class="cb-pc__label">{{ f.label }}{{ f.required ? ' *' : '' }}</div>
+                  <div class="cb-pc__input" :class="{ 'cb-pc__input--area': f.type === 'Text Area' }">{{ f.placeholder }}</div>
+                </div>
+                <div class="cb-widget__cta">Start chat</div>
+              </template>
+              <template v-else>
+                <div class="cb-widget__msg">{{ cfg.welcomeMessage }}</div>
+                <div class="cb-widget__chips">
+                  <span v-for="p in enabledPrompts" :key="p.id" class="cb-widget__chip">{{ p.text }}</span>
+                </div>
+              </template>
+            </div>
+
+            <div class="cb-widget__input">
+              <span class="text-medium-emphasis">Write a message…</span>
+              <v-icon size="16" class="text-medium-emphasis">send</v-icon>
+            </div>
+            <div class="cb-widget__foot">Powered by Maropost</div>
           </div>
-          <div class="cb-widget__foot">Powered by Maropost</div>
         </div>
       </div>
-    </div>
 
-    <v-snackbar v-model="saved" :timeout="2200" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Chatbot published</div>
-    </v-snackbar>
+      <v-snackbar v-model="saved" :timeout="2200" color="success" rounded="pill" location="bottom center">
+        <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Chatbot published</div>
+      </v-snackbar>
+    </template>
   </div>
 </template>
 
@@ -399,7 +410,8 @@ function publish() { saved.value = true }
 .cb-hour__day { width: 108px; flex-shrink: 0; }
 .cb-hour__time { max-width: 130px; }
 
-.cb-row .cb-grip, .cb-field .cb-grip { cursor: grab; }
+.cb-prompt .cb-grip, .cb-field .cb-grip { cursor: grab; }
+.cb-prompt__intent { max-width: 130px; }
 
 .cb-source__icon {
   width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
