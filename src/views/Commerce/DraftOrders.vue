@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useCommerceStore } from '@/stores/useCommerce'
@@ -8,8 +9,10 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const store = useCommerceStore()
+const route = useRoute()
 const search = ref('')
 const selected = ref<number[]>([])
 const saveSnack = ref(false)
@@ -112,6 +115,11 @@ const headers = [
 ]
 
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
+
+// Open the create drawer when arrived via "Create Draft Order" from Sales Orders
+onMounted(() => {
+  if (route.query.new === '1') { createDrawer.value = true; draftStep.value = 1 }
+})
 </script>
 
 <template>
@@ -195,12 +203,15 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
           </div>
         </template>
         <template v-slot:no-data>
-          <div class="d-flex flex-column align-center justify-center pa-12">
-            <v-icon size="64" color="medium-emphasis" class="mb-4">shopping-cart</v-icon>
-            <div class="text-h6 font-weight-medium mb-2">No draft orders yet</div>
-            <div class="text-body-2 text-medium-emphasis mb-5">Create a manual order for a customer or wholesale buyer.</div>
-            <v-btn color="primary" variant="elevated" prepend-icon="plus" class="text-none" @click="createDrawer=true">Create First Draft</v-btn>
-          </div>
+          <MpEmptyState
+            icon="shopping-cart"
+            :title="search ? 'No draft orders match your search' : 'No draft orders yet'"
+            :description="search ? 'Try a different search term.' : 'Create a manual order for a customer or wholesale buyer.'"
+            :action-label="!search ? 'Create Draft Order' : undefined"
+            action-icon="plus"
+            class="py-10"
+            @action="createDrawer = true; draftStep = 1"
+          />
         </template>
       </v-data-table>
     </v-card>
