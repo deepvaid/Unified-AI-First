@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
 import type { PreChatFieldType, QuickPromptIntent } from '@/stores/useChatbot'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -71,10 +72,11 @@ function moveField(i: number, dir: -1 | 1) {
 }
 
 const statusColor: Record<string, string> = { Active: 'success', Disabled: 'default', Indexing: 'info' }
-const addSourceTab = ref<'url' | 'upload'>('url')
+const addSourceTab = ref<'url' | 'questionnaire' | 'upload'>('url')
 
 // ── Knowledge base ─────────────────────────────────────────────────────────
-const sourceKind = (icon: string) => (icon === 'globe' ? 'Website' : 'Files')
+const sourceKind = (icon: string) =>
+  icon === 'globe' ? 'Website' : icon === 'clipboard-list' ? 'Questionnaire' : 'Files'
 const activeSourceCount = computed(() =>
   cfg.value.knowledgeSources.filter(s => s.enabled && s.status === 'Active').length
 )
@@ -89,6 +91,32 @@ function addUrlSource() {
     id: nextId, name: label, icon: 'globe', items: 0, meta: 'Added just now', status: 'Indexing', enabled: true,
   })
   newUrl.value = ''
+}
+
+// KB questionnaire
+const kbDrawer = ref(false)
+const kbQuestions = [
+  { key: 'about', label: 'What does your business do?', placeholder: 'A short description of your store and what you sell.' },
+  { key: 'products', label: 'What are your most popular products or collections?', placeholder: 'List key products, categories, or bestsellers.' },
+  { key: 'shipping', label: 'What are your shipping & delivery policies?', placeholder: 'Regions served, timeframes, costs, carriers…' },
+  { key: 'returns', label: 'What is your return & refund policy?', placeholder: 'Return window, conditions, how refunds are issued…' },
+  { key: 'hours', label: 'What are your support hours & contact channels?', placeholder: 'Hours, email, phone, live chat…' },
+  { key: 'other', label: 'Anything else customers frequently ask?', placeholder: 'Warranties, sizing, gift cards, loyalty program…' },
+] as const
+const emptyAnswers = (): Record<string, string> =>
+  Object.fromEntries(kbQuestions.map(q => [q.key, '']))
+const kbAnswers = ref<Record<string, string>>(emptyAnswers())
+const kbAnsweredCount = computed(() => Object.values(kbAnswers.value).filter(v => v.trim()).length)
+
+function submitQuestionnaire() {
+  if (kbAnsweredCount.value === 0) return
+  const nextId = Math.max(0, ...cfg.value.knowledgeSources.map(s => s.id)) + 1
+  cfg.value.knowledgeSources.push({
+    id: nextId, name: 'Business questionnaire', icon: 'clipboard-list',
+    items: kbAnsweredCount.value, meta: 'Added just now', status: 'Indexing', enabled: true,
+  })
+  kbAnswers.value = emptyAnswers()
+  kbDrawer.value = false
 }
 
 const removeDialog = ref(false)
@@ -460,6 +488,7 @@ function sendChat() {
                 <div class="text-subtitle-1 font-weight-bold mb-4">Add a source</div>
                 <v-btn-toggle v-model="addSourceTab" mandatory density="comfortable" variant="outlined" divided rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
                   <v-btn value="url" size="small" class="text-none px-4" prepend-icon="link">Website URL</v-btn>
+                  <v-btn value="questionnaire" size="small" class="text-none px-4" prepend-icon="clipboard-list">Questionnaire</v-btn>
                   <v-btn value="upload" size="small" class="text-none px-4" prepend-icon="upload">Upload files</v-btn>
                 </v-btn-toggle>
 
@@ -488,6 +517,15 @@ function sendChat() {
                   <div class="text-caption text-medium-emphasis mt-2">We'll crawl the page and index its text — this can take a minute.</div>
                 </template>
 
+                <template v-else-if="addSourceTab === 'questionnaire'">
+                  <div class="text-body-2 text-medium-emphasis mb-4">
+                    Answer a few questions about your business and we'll turn them into a knowledge source. No website or files needed — you can update your answers any time.
+                  </div>
+                  <v-btn color="primary" variant="flat" class="text-none" prepend-icon="clipboard-list" @click="kbDrawer = true">
+                    Fill questionnaire
+                  </v-btn>
+                </template>
+
                 <div v-else class="cb-drop d-flex flex-column align-center justify-center text-center">
                   <v-icon size="28" class="mb-2 text-medium-emphasis">upload-cloud</v-icon>
                   <div class="text-body-2 font-weight-medium">Drag &amp; drop, or click to upload</div>
@@ -503,6 +541,38 @@ function sendChat() {
                 danger
                 @confirm="confirmRemoveSource"
               />
+
+              <MpFormDrawer
+                v-model="kbDrawer"
+                title="Knowledge base questionnaire"
+                subtitle="Answer what you can — we'll turn it into a knowledge source. You can update it later."
+                :width="520"
+              >
+                <div v-for="(q, i) in kbQuestions" :key="q.key" :class="{ 'mb-5': i < kbQuestions.length - 1 }">
+                  <label class="text-body-2 font-weight-medium d-block mb-2">{{ q.label }}</label>
+                  <v-textarea
+                    v-model="kbAnswers[q.key]"
+                    :placeholder="q.placeholder"
+                    variant="outlined"
+                    density="comfortable"
+                    rows="2"
+                    auto-grow
+                    hide-details
+                  />
+                </div>
+                <template #footer>
+                  <span class="text-caption text-medium-emphasis me-auto">{{ kbAnsweredCount }} of {{ kbQuestions.length }} answered</span>
+                  <v-btn variant="text" class="text-none" @click="kbDrawer = false">Cancel</v-btn>
+                  <v-btn
+                    color="primary"
+                    variant="flat"
+                    class="text-none"
+                    prepend-icon="sparkles"
+                    :disabled="kbAnsweredCount === 0"
+                    @click="submitQuestionnaire"
+                  >Create knowledge base</v-btn>
+                </template>
+              </MpFormDrawer>
             </template>
 
             <!-- PRE-CHAT FORM -->
