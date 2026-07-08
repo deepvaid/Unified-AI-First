@@ -1,0 +1,127 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useSmsStore } from '@/stores/useSms'
+import { storeToRefs } from 'pinia'
+import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+
+const store = useSmsStore()
+const { transactionalSms } = storeToRefs(store)
+const search = ref('')
+
+const filtered = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return transactionalSms.value
+  return transactionalSms.value.filter(
+    f => f.name.toLowerCase().includes(q) || f.messagePreview.toLowerCase().includes(q),
+  )
+})
+
+const headers = [
+  { title: 'Transactional Event', key: 'name', sortable: true },
+  { title: 'Message', key: 'messagePreview', sortable: false },
+  { title: 'Sender ID', key: 'senderId' },
+  { title: 'Status', key: 'status' },
+  { title: 'Sent Date', key: 'sentDate' },
+  { title: 'Delivered', key: 'delivered', align: 'end' as const },
+  { title: '', key: 'actions', sortable: false, align: 'end' as const },
+]
+</script>
+
+<template>
+  <div class="h-100 d-flex flex-column gap-5">
+    <MpPageHeader
+      title="Transactional SMS"
+      :subtitle="`${transactionalSms.length} transactional SMS flows`"
+    >
+      <template #actions>
+        <v-btn
+          color="primary"
+          variant="flat"
+          prepend-icon="plus"
+          class="text-none"
+          :to="{ name: 'CreateTransactionalSms', params: { accountId: $route.params.accountId } }"
+        >
+          New SMS
+        </v-btn>
+      </template>
+    </MpPageHeader>
+
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+      <MpDataTableToolbar
+        v-model:search="search"
+        title="Flows"
+        search-placeholder="Search SMS flows..."
+        :total-count="filtered.length"
+      />
+
+      <v-data-table
+        v-if="transactionalSms.length"
+        :headers="headers"
+        :items="filtered"
+        :search="search"
+        hover
+        density="comfortable"
+        :items-per-page="15"
+        fixed-header
+        class="flex-grow-1"
+      >
+        <template #item.name="{ item }">
+          <span class="font-weight-medium">{{ item.name }}</span>
+        </template>
+        <template #item.messagePreview="{ item }">
+          <span class="d-inline-block text-medium-emphasis text-truncate sms-msg">{{ item.messagePreview }}</span>
+        </template>
+        <template #item.senderId="{ item }">
+          <span class="text-caption font-weight-medium sms-sender">{{ item.senderId }}</span>
+        </template>
+        <template #item.status="{ item }">
+          <MpStatusChip :status="item.status" type="general" />
+        </template>
+        <template #item.sentDate="{ item }">
+          <span :class="item.sentDate ? '' : 'text-medium-emphasis'">{{ item.sentDate ?? '—' }}</span>
+        </template>
+        <template #item.delivered="{ item }">
+          <span class="num">{{ item.delivered ? item.delivered.toLocaleString() : '—' }}</span>
+        </template>
+        <template #item.actions>
+          <v-menu>
+            <template #activator="{ props }">
+              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" aria-label="More actions" />
+            </template>
+            <v-list density="compact" rounded="xl" nav min-width="160" elevation="8">
+              <v-list-item prepend-icon="pencil">Edit</v-list-item>
+              <v-list-item prepend-icon="copy">Duplicate</v-list-item>
+              <v-list-item prepend-icon="trash-2" class="text-error">Delete</v-list-item>
+            </v-list>
+          </v-menu>
+        </template>
+      </v-data-table>
+
+      <MpEmptyState
+        v-else
+        icon="message-square"
+        title="No transactional SMS yet"
+        description="Create a triggered SMS like an order confirmation, OTP, or shipping update."
+        action-label="New SMS"
+        action-icon="plus"
+      />
+    </v-card>
+  </div>
+</template>
+
+<style scoped>
+.sms-msg {
+  max-width: 360px;
+  vertical-align: middle;
+}
+.sms-sender {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.02em;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+</style>
