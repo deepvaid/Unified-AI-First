@@ -245,7 +245,7 @@
   --mp-component-button-radius-medium: var(--mp-borderRadius-full);
   --mp-component-button-radius-square: 0px;
   --mp-component-button-radius-default: var(--mp-borderRadius-full);
-  --mp-component-input-radius-default: 16px;
+  --mp-component-input-radius-default: 10px;
   --mp-component-card-radius-sm: 14px;
   --mp-component-card-radius-md: 20px;
   --mp-component-card-radius-lg: 28px;

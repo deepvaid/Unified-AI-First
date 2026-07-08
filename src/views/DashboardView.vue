@@ -713,8 +713,8 @@ function toggleFavoriteActive() {
             </template>
             <v-card width="360" rounded="lg" flat border class="pa-3">
               <div class="text-subtitle-2 font-weight-bold mb-2">Filters</div>
-              <v-select label="Data source" :items="['All sources', 'Commerce', 'Marketing', 'Contacts', 'Service']" density="compact" variant="outlined" hide-details class="mb-3" />
-              <v-select label="Owner" :items="['Everyone', 'Marketing team', 'Commerce team']" density="compact" variant="outlined" hide-details />
+              <v-select label="Data source" :items="['All sources', 'Commerce', 'Marketing', 'Contacts', 'Service']" hide-details class="mb-3" />
+              <v-select label="Owner" :items="['Everyone', 'Marketing team', 'Commerce team']" hide-details />
               <div class="d-flex flex-wrap ga-2 mt-3">
                 <v-chip size="small" variant="tonal" color="primary">Channel</v-chip>
                 <v-chip size="small" variant="tonal" color="primary">Campaign type</v-chip>
