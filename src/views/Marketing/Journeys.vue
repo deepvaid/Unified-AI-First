@@ -8,11 +8,29 @@ import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusToggle from '@/components/MpStatusToggle.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
 
 const store = useCampaignsStore()
 const router = useRouter()
 const route = useRoute()
 const accountId = computed(() => route.params.accountId as string)
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+function fmtDate(s: string) {
+  const [y, m, d] = s.split('-')
+  if (!y || !m || !d) return s
+  return `${MONTHS[+m - 1]} ${+d}, ${y}`
+}
+
+const kpis = computed(() => {
+  const j = store.journeys
+  return [
+    { label: 'Active journeys', value: j.filter(x => x.status === 'Active').length, icon: 'git-branch', color: 'primary' },
+    { label: 'Total enrolled', value: j.reduce((a, x) => a + x.enrolled, 0).toLocaleString(), icon: 'users', color: 'info' },
+    { label: 'Completed', value: j.reduce((a, x) => a + x.completed, 0).toLocaleString(), icon: 'circle-check', color: 'success' },
+    { label: 'Attributed revenue', value: `$${j.reduce((a, x) => a + x.revenue, 0).toLocaleString()}`, icon: 'dollar-sign', color: 'success' },
+  ]
+})
 
 function openBuilder(id: number) {
   router.push({ name: 'JourneyBuilder', params: { accountId: accountId.value, id: String(id) } })
@@ -79,6 +97,13 @@ function toggleStatus(journey: typeof store.journeys[0]) {
       </template>
     </MpPageHeader>
 
+    <!-- KPI row -->
+    <v-row dense>
+      <v-col v-for="k in kpis" :key="k.label" cols="12" sm="6" md="3">
+        <MpKpiCard :label="k.label" :value="k.value" :icon="k.icon" :color="k.color" />
+      </v-col>
+    </v-row>
+
     <!-- Main Table Card -->
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
@@ -141,7 +166,7 @@ function toggleStatus(journey: typeof store.journeys[0]) {
 
         <!-- Created date -->
         <template v-slot:item.created="{ item }">
-          <span class="text-medium-emphasis text-body-2">{{ item.created }}</span>
+          <span class="text-medium-emphasis text-body-2 created-cell">{{ fmtDate(item.created) }}</span>
         </template>
 
         <!-- Actions -->
@@ -193,4 +218,5 @@ function toggleStatus(journey: typeof store.journeys[0]) {
 
 <style scoped>
 .text-primary-hover:hover { color: rgb(var(--v-theme-primary)) !important; }
+.created-cell { white-space: nowrap; }
 </style>
