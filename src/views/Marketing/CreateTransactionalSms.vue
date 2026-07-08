@@ -58,82 +58,114 @@ function create() {
     />
 
     <div class="flex-grow-1 overflow-y-auto">
-      <div class="cts-form mx-auto d-flex flex-column gap-5">
-        <v-card flat border rounded="lg" class="pa-6">
-          <div class="text-subtitle-2 font-weight-bold mb-4">Message</div>
-          <v-text-field
-            v-model="name"
-            label="Transactional event name"
-            placeholder="e.g. Order Confirmation"
-            variant="outlined"
-            density="comfortable"
-            rounded="lg"
-            class="mb-4"
-            :rules="[v => !!v || 'Name is required']"
-          />
-          <v-select
-            v-model="template"
-            label="Start from a template (optional)"
-            :items="TEMPLATES"
-            variant="outlined"
-            density="comfortable"
-            rounded="lg"
-            placeholder="Choose a starting point"
-            clearable
-            class="mb-4"
-            @update:model-value="applyTemplate"
-          />
-          <v-textarea
-            v-model="message"
-            label="Message body"
-            placeholder="Type your SMS. Add personalization tokens for a tailored message."
-            variant="outlined"
-            density="comfortable"
-            rounded="lg"
-            rows="4"
-            auto-grow
-            counter
-            hide-details="auto"
-          />
-          <div class="d-flex align-center justify-space-between mt-2">
-            <span class="text-caption text-medium-emphasis">
-              Personalize with tokens like <code>{{ tokenExample }}</code>
-            </span>
-            <span class="text-caption sms-count" :class="segments > 1 ? 'text-warning' : 'text-medium-emphasis'">
-              {{ charCount }} / {{ segmentCap }} · {{ segments }} segment{{ segments === 1 ? '' : 's' }}
-            </span>
-          </div>
-        </v-card>
+      <div class="cts-grid mx-auto">
+        <!-- Form -->
+        <div class="d-flex flex-column gap-5">
+          <v-card flat border rounded="lg" class="pa-6">
+            <div class="d-flex align-center ga-2 mb-4">
+              <v-icon size="18" class="text-medium-emphasis">message-square</v-icon>
+              <span class="text-subtitle-2 font-weight-bold">Message</span>
+            </div>
+            <v-text-field
+              v-model="name"
+              label="Transactional event name"
+              placeholder="e.g. Order Confirmation"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              class="mb-4"
+              :rules="[v => !!v || 'Name is required']"
+            />
+            <v-select
+              v-model="template"
+              label="Start from a template (optional)"
+              :items="TEMPLATES"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              placeholder="Choose a starting point"
+              clearable
+              class="mb-4"
+              @update:model-value="applyTemplate"
+            />
+            <v-textarea
+              v-model="message"
+              label="Message body"
+              placeholder="Type your SMS. Add personalization tokens for a tailored message."
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              rows="4"
+              auto-grow
+              hide-details
+            />
+            <div class="d-flex align-center justify-space-between mt-2">
+              <span class="text-caption text-medium-emphasis">
+                Personalize with tokens like <code>{{ tokenExample }}</code>
+              </span>
+              <span class="text-caption sms-count" :class="segments > 1 ? 'text-warning' : 'text-medium-emphasis'">
+                {{ charCount }} / {{ segmentCap }} · {{ segments }} segment{{ segments === 1 ? '' : 's' }}
+              </span>
+            </div>
+          </v-card>
 
-        <v-card flat border rounded="lg" class="pa-6">
-          <div class="text-subtitle-2 font-weight-bold mb-4">Sender &amp; audience</div>
-          <v-row dense>
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="senderId"
-                label="Sender ID"
-                variant="outlined"
-                density="comfortable"
-                rounded="lg"
-                :counter="11"
-                :maxlength="11"
-                hint="Up to 11 alphanumeric characters shown as the sender"
-                persistent-hint
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="audience"
-                label="Target audience"
-                :items="AUDIENCES"
-                variant="outlined"
-                density="comfortable"
-                rounded="lg"
-                hide-details
-              />
-            </v-col>
-          </v-row>
-        </v-card>
+          <v-card flat border rounded="lg" class="pa-6">
+            <div class="d-flex align-center ga-2 mb-4">
+              <v-icon size="18" class="text-medium-emphasis">users</v-icon>
+              <span class="text-subtitle-2 font-weight-bold">Sender &amp; audience</span>
+            </div>
+            <v-row dense>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="senderId"
+                  label="Sender ID"
+                  variant="outlined"
+                  density="comfortable"
+                  rounded="lg"
+                  :counter="11"
+                  :maxlength="11"
+                  hint="Up to 11 alphanumeric characters shown as the sender"
+                  persistent-hint
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="audience"
+                  label="Target audience"
+                  :items="AUDIENCES"
+                  variant="outlined"
+                  density="comfortable"
+                  rounded="lg"
+                  hide-details
+                />
+              </v-col>
+            </v-row>
+          </v-card>
+        </div>
+
+        <!-- Live phone preview -->
+        <aside class="cts-preview">
+          <div class="cts-preview__sticky">
+            <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3">Message preview</div>
+            <div class="phone">
+              <div class="phone__notch" />
+              <div class="phone__sender">{{ senderId.trim() || 'SENDER' }}</div>
+              <div class="phone__thread">
+                <div class="phone__bubble">{{ message.trim() || 'Your message preview appears here as the customer will see it.' }}</div>
+                <div class="phone__stamp">Delivered · now</div>
+              </div>
+            </div>
+            <div class="cts-preview__meta">
+              <span :class="segments > 1 ? 'text-warning' : 'text-medium-emphasis'">
+                {{ charCount }} / {{ segmentCap }} · {{ segments }} segment{{ segments === 1 ? '' : 's' }}
+              </span>
+            </div>
+            <div class="cts-preview__note">
+              <v-icon size="13">users</v-icon>
+              To: <strong>{{ audience }}</strong>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
 
@@ -151,16 +183,22 @@ function create() {
 </template>
 
 <style scoped>
-.cts-form {
-  width: 100%;
-  max-width: 720px;
+.cts-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  max-width: 1040px;
+  align-items: start;
 }
+@media (max-width: 900px) {
+  .cts-grid { grid-template-columns: 1fr; }
+  .cts-preview { display: none; }
+}
+.cts-preview__sticky { position: sticky; top: 0; }
 .cts-footer {
   border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
-.sms-count {
-  font-variant-numeric: tabular-nums;
-}
+.sms-count { font-variant-numeric: tabular-nums; }
 code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.75rem;
@@ -168,4 +206,60 @@ code {
   padding: 1px 5px;
   border-radius: 4px;
 }
+
+/* Phone SMS preview */
+.phone {
+  background: linear-gradient(180deg, rgba(var(--v-theme-on-surface), 0.04), rgba(var(--v-theme-on-surface), 0.02));
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: 22px;
+  padding: 18px 14px 20px;
+}
+.phone__notch {
+  width: 42px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-on-surface), 0.18);
+  margin: 0 auto 14px;
+}
+.phone__sender {
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  margin-bottom: 12px;
+}
+.phone__thread { display: flex; flex-direction: column; align-items: flex-start; }
+.phone__bubble {
+  max-width: 85%;
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: 16px 16px 16px 4px;
+  padding: 10px 13px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.phone__stamp {
+  font-size: 0.625rem;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  margin-top: 4px;
+  padding-left: 4px;
+}
+.cts-preview__meta {
+  text-align: right;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  margin-top: 8px;
+}
+.cts-preview__note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+.cts-preview__note :deep(.v-icon) { color: rgb(var(--v-theme-primary)); }
 </style>
