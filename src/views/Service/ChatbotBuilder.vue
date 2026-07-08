@@ -27,15 +27,21 @@ const INTENTS: { title: string; value: QuickPromptIntent }[] = [
   { title: 'FAQ', value: 'faq' },
 ]
 
-type Section = 'general' | 'appearance' | 'hours' | 'prompts' | 'knowledge' | 'prechat'
+type Section = 'general' | 'appearance' | 'hours' | 'prompts' | 'shopping' | 'tracking' | 'knowledge' | 'prechat'
 const section = ref<Section>('general')
 const NAV: { key: Section; label: string; icon: string }[] = [
   { key: 'general', label: 'General', icon: 'building-2' },
   { key: 'appearance', label: 'Appearance', icon: 'palette' },
   { key: 'hours', label: 'Business hours', icon: 'clock' },
   { key: 'prompts', label: 'Quick prompts', icon: 'message-square-more' },
+  { key: 'shopping', label: 'Shopping assistant', icon: 'shopping-bag' },
+  { key: 'tracking', label: 'Order tracking', icon: 'package-search' },
   { key: 'knowledge', label: 'Knowledge base', icon: 'book-open' },
   { key: 'prechat', label: 'Pre-chat form', icon: 'clipboard-list' },
+]
+const catalogSources = [
+  { title: 'Full product catalog', value: 'catalog' },
+  { title: 'Featured products only', value: 'featured' },
 ]
 
 const enabledPrompts = computed(() => cfg.value?.quickPrompts.filter(p => p.enabled) ?? [])
@@ -69,7 +75,30 @@ const addSourceTab = ref<'url' | 'upload'>('url')
 
 const saved = ref(false)
 function goBack() { router.push({ name: 'ChatbotList', params: { accountId: accountId.value } }) }
-function publish() { saved.value = true }
+
+// Publish modal
+const publishOpen = ref(false)
+const copied = ref(false)
+const installScript = computed(() =>
+  `<!-- ${chatbot.value?.store ?? 'Store'} AI Chatbot Widget -->
+<script>
+  (function () {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.maropost.ai/chatbot/widget.js';
+    s.async = true;
+    s.setAttribute('data-chatbot-id', '${id.value}');
+    document.body.appendChild(s);
+  })();
+<\/script>`,
+)
+async function copyScript() {
+  try {
+    await navigator.clipboard.writeText(installScript.value)
+    copied.value = true
+    setTimeout(() => (copied.value = false), 1500)
+  } catch { /* clipboard unavailable in preview */ }
+}
+function finishPublish() { publishOpen.value = false; saved.value = true }
 </script>
 
 <template>
@@ -90,7 +119,7 @@ function publish() { saved.value = true }
         </div>
         <div class="d-flex align-center gap-2">
           <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="eye">Preview Chatbot</v-btn>
-          <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="rocket" @click="publish">Publish Chatbot</v-btn>
+          <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="rocket" @click="publishOpen = true">Publish Chatbot</v-btn>
         </div>
       </div>
 
@@ -231,6 +260,47 @@ function publish() { saved.value = true }
               </v-card>
             </template>
 
+            <!-- SHOPPING ASSISTANT -->
+            <template v-else-if="section === 'shopping'">
+              <v-card flat border rounded="lg" class="pa-6 mb-5">
+                <div class="d-flex align-start justify-space-between ga-4">
+                  <div>
+                    <div class="text-subtitle-1 font-weight-bold mb-1">Shopping assistant</div>
+                    <div class="text-body-2 text-medium-emphasis">Let the bot recommend products, answer product questions, and add items to cart inside the chat.</div>
+                  </div>
+                  <v-switch v-model="cfg.shopping.enabled" color="primary" density="compact" hide-details inset class="flex-shrink-0 mt-n1" />
+                </div>
+              </v-card>
+              <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.shopping.enabled }">
+                <div class="text-subtitle-2 font-weight-bold mb-4">Assistant behaviour</div>
+                <v-textarea v-model="cfg.shopping.greeting" label="Shopping greeting" variant="outlined" density="comfortable" rows="2" auto-grow :disabled="!cfg.shopping.enabled" class="mb-4" />
+                <v-select v-model="cfg.shopping.source" :items="catalogSources" label="Product source" variant="outlined" density="comfortable" :disabled="!cfg.shopping.enabled" class="mb-4" />
+                <v-switch v-model="cfg.shopping.showPrices" color="primary" density="comfortable" hide-details label="Show prices on product cards" :disabled="!cfg.shopping.enabled" class="mb-1" />
+                <v-switch v-model="cfg.shopping.allowAddToCart" color="primary" density="comfortable" hide-details label="Allow add to cart from the chat" :disabled="!cfg.shopping.enabled" class="mb-4" />
+                <v-text-field v-model="cfg.shopping.checkoutUrl" label="Checkout URL" placeholder="https://mystore.com/checkout" variant="outlined" density="comfortable" prepend-inner-icon="link" hide-details :disabled="!cfg.shopping.enabled" />
+              </v-card>
+            </template>
+
+            <!-- ORDER TRACKING -->
+            <template v-else-if="section === 'tracking'">
+              <v-card flat border rounded="lg" class="pa-6 mb-5">
+                <div class="d-flex align-start justify-space-between ga-4">
+                  <div>
+                    <div class="text-subtitle-1 font-weight-bold mb-1">Order tracking</div>
+                    <div class="text-body-2 text-medium-emphasis">Let customers check order status in chat — with an account or as a guest.</div>
+                  </div>
+                  <v-switch v-model="cfg.orderTracking.enabled" color="primary" density="compact" hide-details inset class="flex-shrink-0 mt-n1" />
+                </div>
+              </v-card>
+              <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.orderTracking.enabled }">
+                <div class="text-subtitle-2 font-weight-bold mb-4">Tracking options</div>
+                <v-switch v-model="cfg.orderTracking.allowGuest" color="primary" density="comfortable" hide-details label="Allow guest order tracking (no account required)" :disabled="!cfg.orderTracking.enabled" class="mb-1" />
+                <v-text-field v-model="cfg.orderTracking.guestPortal" label="Guest tracking portal URL" placeholder="https://mystore.com/track" variant="outlined" density="comfortable" prepend-inner-icon="link" :disabled="!cfg.orderTracking.enabled || !cfg.orderTracking.allowGuest" class="my-4" />
+                <v-switch v-model="cfg.orderTracking.resendEmail" color="primary" density="comfortable" hide-details label="Offer to resend the confirmation email" :disabled="!cfg.orderTracking.enabled" class="mb-1" />
+                <v-switch v-model="cfg.orderTracking.accountSync" color="primary" density="comfortable" hide-details label="Sync live order status for logged-in customers" :disabled="!cfg.orderTracking.enabled" />
+              </v-card>
+            </template>
+
             <!-- KNOWLEDGE BASE -->
             <template v-else-if="section === 'knowledge'">
               <v-card flat border rounded="lg" class="pa-6 mb-5">
@@ -349,6 +419,39 @@ function publish() { saved.value = true }
       <v-snackbar v-model="saved" :timeout="2200" color="success" rounded="pill" location="bottom center">
         <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Chatbot published</div>
       </v-snackbar>
+
+      <!-- Publish modal -->
+      <v-dialog v-model="publishOpen" max-width="560">
+        <v-card flat rounded="lg" class="pa-6">
+          <div class="d-flex align-start justify-space-between mb-1">
+            <div class="text-h6 font-weight-bold">Publish chatbot</div>
+            <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="publishOpen = false" />
+          </div>
+          <div class="text-body-2 text-medium-emphasis mb-4">Copy this snippet into your website to make your chatbot live.</div>
+
+          <div class="cb-install">
+            <div class="cb-install__bar d-flex align-center justify-space-between">
+              <span class="text-caption font-weight-bold text-medium-emphasis">Installation script</span>
+              <v-btn size="x-small" variant="tonal" :color="copied ? 'success' : 'primary'" class="text-none" :prepend-icon="copied ? 'check' : 'copy'" @click="copyScript">
+                {{ copied ? 'Copied' : 'Copy' }}
+              </v-btn>
+            </div>
+            <pre class="cb-install__code">{{ installScript }}</pre>
+          </div>
+
+          <div class="text-subtitle-2 font-weight-bold mt-5 mb-2">How to install</div>
+          <ol class="cb-steps text-body-2 text-medium-emphasis">
+            <li>Copy the script above.</li>
+            <li>Paste it just before the closing <code>&lt;/body&gt;</code> tag on your site.</li>
+            <li>Save and publish your website changes.</li>
+            <li>The chatbot appears in the {{ cfg.position === 'left' ? 'bottom-left' : 'bottom-right' }} corner.</li>
+          </ol>
+
+          <div class="d-flex justify-end mt-5">
+            <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket" @click="finishPublish">Publish &amp; done</v-btn>
+          </div>
+        </v-card>
+      </v-dialog>
     </template>
   </div>
 </template>
@@ -431,6 +534,38 @@ function publish() { saved.value = true }
   padding: 28px;
 }
 .cb-dim { opacity: 0.55; }
+
+.cb-install {
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.cb-install__bar {
+  padding: 8px 12px;
+  background: rgba(var(--v-theme-on-surface), 0.03);
+  border-bottom: 1px solid var(--mp-border-subtle);
+}
+.cb-install__code {
+  margin: 0;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: rgb(var(--v-theme-on-surface));
+  max-height: 180px;
+  overflow-y: auto;
+}
+.cb-steps { padding-left: 20px; }
+.cb-steps li { margin-bottom: 4px; }
+.cb-steps code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
 
 /* Live widget preview */
 .cb__preview { width: 380px; }
