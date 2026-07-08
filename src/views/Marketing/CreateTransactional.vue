@@ -33,10 +33,12 @@ function create() {
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column gap-5">
-    <MpPageHeader title="New Transactional Email" subtitle="Triggered emails like receipts, confirmations, and password resets" :back-to="backTo" />
+  <div class="h-100 d-flex flex-column">
+    <div class="px-8 pt-6 pb-4 bg-surface page-head">
+      <MpPageHeader title="New Transactional Email" subtitle="Triggered emails like receipts, confirmations, and password resets" :back-to="backTo" />
+    </div>
 
-    <div class="flex-grow-1 overflow-y-auto">
+    <div class="flex-grow-1 overflow-y-auto px-8 py-6 bg-background">
       <div class="cte-grid mx-auto">
         <!-- Form -->
         <div class="d-flex flex-column gap-5">
@@ -143,7 +145,7 @@ function create() {
       </div>
     </div>
 
-    <div class="cte-footer d-flex justify-end ga-3 pt-3">
+    <div class="px-8 py-4 bg-surface page-foot d-flex justify-end ga-3">
       <v-btn variant="text" class="text-none" :to="backTo">Cancel</v-btn>
       <v-btn color="primary" variant="flat" class="text-none" :disabled="!canCreate" prepend-icon="check" @click="create">
         Create transactional email
@@ -169,9 +171,9 @@ function create() {
   .cte-preview { display: none; }
 }
 .cte-preview__sticky { position: sticky; top: 0; }
-.cte-footer {
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-}
+.page-head { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+.page-head :deep(.mp-page-header) { margin-bottom: 0; }
+.page-foot { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 
 /* Inbox preview */
 .mail {
