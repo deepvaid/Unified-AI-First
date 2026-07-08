@@ -56,7 +56,7 @@ function clearAllFilters() {
       :subtitle="`${items.length} pages`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">Create Page</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" :to="{ name: 'LandingPageTemplates', params: { accountId: $route.params.accountId } }">Create Page</v-btn>
       </template>
     </MpPageHeader>
 

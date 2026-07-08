@@ -72,8 +72,8 @@ function onMove(folderId: string | null) {
   if (moveTarget.value) store.moveToFolder(moveTarget.value.id, folderId)
 }
 
-function viewReport() {
-  router.push({ name: 'CampaignReports', params: { accountId: route.params.accountId } })
+function viewReport(id: number) {
+  router.push({ name: 'CampaignReport', params: { accountId: route.params.accountId, id } })
 }
 
 // Bulk selection
@@ -228,7 +228,7 @@ const openCreator = () => {
 
         <template v-slot:item.actions="{ item }">
           <div class="action-btns d-flex justify-end pr-2 gap-1">
-            <v-btn v-if="item.status === 'Sent'" icon="bar-chart-2" variant="text" size="small" color="primary" aria-label="View report" @click="viewReport"></v-btn>
+            <v-btn v-if="item.status === 'Sent'" icon="bar-chart-2" variant="text" size="small" color="primary" aria-label="View report" @click="viewReport(item.id)"></v-btn>
             <v-menu location="bottom end">
               <template #activator="{ props: menuProps }">
                 <v-btn v-bind="menuProps" icon="more-vertical" variant="text" size="small" color="medium-emphasis" aria-label="More actions"></v-btn>

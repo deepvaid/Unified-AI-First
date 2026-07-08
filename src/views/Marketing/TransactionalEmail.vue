@@ -26,7 +26,7 @@ const flows = store.campaigns.filter(c => c.id % 2 === 0)
       :subtitle="`${flows.length} transactional flows`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">New Flow</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" :to="{ name: 'CreateTransactional', params: { accountId: $route.params.accountId } }">New Flow</v-btn>
       </template>
     </MpPageHeader>
 

@@ -26,7 +26,7 @@ const tags = ref([
       :subtitle="`${tags.length} tags`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">Create Tag</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" :to="{ name: 'CreateCampaignTag', params: { accountId: $route.params.accountId } }">Create Tag</v-btn>
       </template>
     </MpPageHeader>
 

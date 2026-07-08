@@ -55,7 +55,7 @@ function clearAllFilters() {
       :subtitle="`${items.length} surveys`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">Create Survey</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" :to="{ name: 'CreateSurvey', params: { accountId: $route.params.accountId } }">Create Survey</v-btn>
       </template>
     </MpPageHeader>
 
