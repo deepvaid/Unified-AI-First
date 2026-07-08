@@ -233,6 +233,9 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         <div class="text-body-2 text-medium-emphasis">
           {{ form.name ? `For ${form.name}` : 'For your recipient' }}
         </div>
+        <div class="text-caption text-medium-emphasis mt-2">
+          {{ form.sendNow ? 'Delivers immediately' : form.deliveryDate ? `Delivers ${form.deliveryDate}` : 'Delivery date not set' }}<span v-if="form.expiry"> · Expires {{ form.expiry }}</span>
+        </div>
       </v-card>
 
       <div class="text-subtitle-2 font-weight-bold mb-3 text-uppercase text-medium-emphasis">Recipient</div>
@@ -249,11 +252,18 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         prepend-inner-icon="dollar-sign"
         class="mb-3"
       />
-      <v-chip-group class="mb-4">
-        <v-chip v-for="preset in [25, 50, 100, 200]" :key="preset" size="small" variant="outlined" @click="form.amount = preset">
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        <v-chip
+          v-for="preset in [25, 50, 100, 200]"
+          :key="preset"
+          size="small"
+          :variant="Number(form.amount) === preset ? 'flat' : 'outlined'"
+          :color="Number(form.amount) === preset ? 'primary' : undefined"
+          @click="form.amount = preset"
+        >
           {{ money(preset) }}
         </v-chip>
-      </v-chip-group>
+      </div>
 
       <div class="text-subtitle-2 font-weight-bold mb-3 text-uppercase text-medium-emphasis">Delivery</div>
       <v-row dense class="mb-3">
