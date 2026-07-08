@@ -2,6 +2,9 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpOptionCard from '@/components/MpOptionCard.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 
 const router = useRouter()
@@ -10,6 +13,8 @@ const store = useCampaignsStore()
 
 const step = ref(1)
 const totalSteps = 5
+const confirmDiscard = ref(false)
+const campaignsRoute = computed(() => ({ name: 'EmailCampaigns', params: { accountId: route.params.accountId } }))
 
 // Step 1: Setup
 const setup = ref({
@@ -138,31 +143,20 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
 <template>
   <div class="h-100 d-flex flex-column">
     <template v-if="!launched">
-    <!-- Header -->
-    <div class="d-flex align-center justify-space-between pa-6 border-b bg-surface">
-      <div class="d-flex align-center gap-4">
-        <v-tooltip text="Back to Campaigns" location="bottom">
-          <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" aria-label="Back to Campaigns" @click="cancel"></v-btn>
-          </template>
-        </v-tooltip>
-        <div>
-          <div class="text-h6 font-weight-bold">New Email Campaign</div>
-          <div class="text-caption text-medium-emphasis">Step {{ step }} of {{ totalSteps }} — {{ stepTitles[step - 1] }}</div>
-        </div>
-      </div>
-      <v-btn variant="text" color="error" class="text-none" @click="cancel">Discard</v-btn>
-    </div>
-
-    <!-- Stepper Progress Bar -->
-    <div class="border-b bg-surface">
-      <v-stepper v-model="step" :items="stepTitles" flat elevation="0" hide-actions bg-color="surface" class="pa-0 rounded-0">
-        <template v-slot:item.1><!-- content below --></template>
-        <template v-slot:item.2><!-- content below --></template>
-        <template v-slot:item.3><!-- content below --></template>
-        <template v-slot:item.4><!-- content below --></template>
-        <template v-slot:item.5><!-- content below --></template>
-      </v-stepper>
+    <!-- Header + step indicator -->
+    <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">
+      <MpPageHeader
+        title="New Email Campaign"
+        :subtitle="`Step ${step} of ${totalSteps} — ${stepTitles[step - 1]}`"
+        :back-to="campaignsRoute"
+      >
+        <template #actions>
+          <v-btn variant="text" class="text-none text-medium-emphasis" @click="confirmDiscard = true">Discard</v-btn>
+        </template>
+        <template #tabs>
+          <MpWizardSteps :steps="stepTitles" :current="step" class="mt-3" />
+        </template>
+      </MpPageHeader>
     </div>
 
     <!-- Step Content -->
@@ -360,24 +354,26 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
             </template>
           </v-list>
 
-          <v-alert type="success" variant="tonal" density="compact" rounded="xl" class="mb-6">
+          <v-alert type="success" variant="tonal" density="compact" rounded="xl">
             <strong>Everything looks good!</strong> Your campaign is ready to go. Click Launch to send to {{ estimatedAudience }} recipients.
           </v-alert>
-          <v-btn color="success" size="large" block rounded="xl" prepend-icon="rocket" class="text-none font-weight-bold" @click="launch">Launch Campaign</v-btn>
         </v-card>
 
       </div>
     </div>
 
     <!-- Bottom Navigation Bar -->
-    <div class="pa-4 border-t bg-surface d-flex justify-space-between align-center">
-      <v-btn v-if="step > 1" variant="outlined" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
+    <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
+      <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
       <div v-else></div>
       <div class="d-flex align-center gap-3">
         <span v-if="!stepValid && stepHint" class="text-caption text-medium-emphasis">{{ stepHint }}</span>
-        <span class="text-caption text-medium-emphasis">{{ step }} / {{ totalSteps }}</span>
-        <v-btn v-if="step < totalSteps" color="primary" variant="elevated" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">
+        <span class="text-caption text-medium-emphasis num">{{ step }} / {{ totalSteps }}</span>
+        <v-btn v-if="step < totalSteps" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">
           Continue
+        </v-btn>
+        <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="rocket" @click="launch">
+          Launch Campaign
         </v-btn>
       </div>
     </div>
@@ -401,10 +397,21 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
         </div>
       </v-card>
     </div>
+
+    <MpConfirmDialog
+      v-model="confirmDiscard"
+      title="Discard this campaign?"
+      message="Your progress won't be saved. This can't be undone."
+      confirm-label="Discard"
+      danger
+      @confirm="cancel"
+    />
   </div>
 </template>
 
 <style scoped>
+.cc-head .mp-page-header { margin-bottom: 0; }
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
+.num { font-variant-numeric: tabular-nums; }
 </style>
