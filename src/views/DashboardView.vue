@@ -652,7 +652,7 @@ function toggleFavoriteActive() {
                 {{ dateRangeLabel }}
               </v-btn>
             </template>
-            <v-card width="760" rounded="lg" flat border class="dashboard-date-menu">
+            <v-card width="680" rounded="lg" flat border class="dashboard-date-menu">
               <div class="dashboard-date-menu__presets">
                 <template v-for="(option, index) in datePresetOptions" :key="option.value">
                   <div
@@ -681,10 +681,10 @@ function toggleFavoriteActive() {
                   <v-select v-model="dateDraft.grain" :items="grainOptions" item-title="title" item-value="value" label="Grain" density="comfortable" variant="outlined" hide-details />
                   <v-select v-model="dateDraft.comparison" :items="comparisonOptions" item-title="title" item-value="value" label="Comparison" density="comfortable" variant="outlined" hide-details />
                 </div>
-                <v-alert variant="tonal" color="info" class="mt-4" density="compact">
+                <v-alert variant="tonal" color="info" class="mt-4 dashboard-date-menu__note" density="compact">
                   Widgets will show {{ datePresetOptions.find((option) => option.value === dateDraft.rangePreset)?.title ?? 'the selected range' }} with {{ grainOptions.find((option) => option.value === dateDraft.grain)?.title.toLowerCase() ?? 'daily' }} grouping.
                 </v-alert>
-                <div class="d-flex justify-end ga-2 mt-4">
+                <div class="dashboard-date-menu__actions d-flex justify-end ga-2">
                   <v-btn variant="text" class="text-none" @click="dateMenuOpen = false">Cancel</v-btn>
                   <v-btn color="primary" variant="flat" class="text-none" @click="applyDateDraft">Apply</v-btn>
                 </div>
@@ -1231,18 +1231,18 @@ function toggleFavoriteActive() {
 
 .dashboard-date-menu {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 200px 1fr;
   overflow: hidden;
 }
 
 .dashboard-date-menu__presets {
-  padding: 10px;
-  border-right: 1px solid rgb(var(--v-theme-outline-variant));
-  background: rgb(var(--v-theme-surface-variant));
+  padding: 8px;
+  border-right: 1px solid var(--hairline);
+  background: rgba(var(--v-theme-on-surface), 0.025);
 }
 
 .dashboard-date-menu__group {
-  padding: 12px 8px 6px;
+  padding: 10px 8px 4px;
   color: var(--muted);
   font-size: 11px;
   font-weight: 500;
@@ -1250,11 +1250,15 @@ function toggleFavoriteActive() {
   text-transform: uppercase;
 }
 
+.dashboard-date-menu__group:first-child {
+  padding-top: 4px;
+}
+
 .dashboard-date-menu__preset {
   display: block;
   width: 100%;
-  min-height: 34px;
-  padding: 7px 10px;
+  min-height: 32px;
+  padding: 6px 10px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -1263,11 +1267,16 @@ function toggleFavoriteActive() {
   font: inherit;
   font-size: 13px;
   text-align: left;
+  transition: background 120ms ease, color 120ms ease;
 }
 
-.dashboard-date-menu__preset:hover,
-.dashboard-date-menu__preset--active {
-  background: var(--surface-1);
+.dashboard-date-menu__preset:hover {
+  background: rgba(var(--v-theme-on-surface), 0.05);
+}
+
+.dashboard-date-menu__preset--active,
+.dashboard-date-menu__preset--active:hover {
+  background: color-mix(in oklch, var(--accent) 12%, transparent);
   color: var(--accent-ink);
   font-weight: 600;
 }
@@ -1278,7 +1287,18 @@ function toggleFavoriteActive() {
 }
 
 .dashboard-date-menu__body {
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+}
+
+.dashboard-date-menu__note {
+  flex: 0 0 auto;
+}
+
+.dashboard-date-menu__actions {
+  margin-top: auto;
+  padding-top: 16px;
 }
 
 .dashboard-date-menu__fields {
