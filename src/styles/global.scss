@@ -414,6 +414,17 @@ tr:focus-within .action-btns {
   border-top-color: var(--mp-color-dark-borderDividerMuted);
 }
 
+/* Form drawer (v-navigation-drawer renders inline, not inside .v-overlay__content,
+   so it misses the rule above — mute its header/footer/body dividers too) */
+.mp-form-drawer .v-divider {
+  opacity: 1;
+  border-top-color: var(--mp-color-light-borderDividerMuted);
+}
+
+.mp-form-drawer .v-divider.v-theme--maropostDark {
+  border-top-color: var(--mp-color-dark-borderDividerMuted);
+}
+
 /* ─── Popover surfaces (menus + select/autocomplete dropdowns) ─ */
 /* Vuetify renders all v-menu content (including inside v-select,
    v-autocomplete, v-combobox) inside `.v-menu > .v-overlay__content`.
