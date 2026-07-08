@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
@@ -12,6 +13,12 @@ import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeade
 import { useInitialLoad } from '@/composables/useInitialLoad'
 
 const store = useCommerceStore()
+const route = useRoute()
+const router = useRouter()
+const accountId = computed(() => route.params.accountId as string)
+function goCreateDraft() {
+  router.push({ name: 'DraftOrders', params: { accountId: accountId.value }, query: { new: '1' } })
+}
 const search = ref('')
 const expanded = ref<string[]>([])
 const selected = ref<string[]>([])
@@ -139,7 +146,7 @@ function selectAll() {
     >
       <template #actions>
         <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface">Export</v-btn>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">Create Draft Order</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="goCreateDraft">Create Draft Order</v-btn>
       </template>
       <template #tabs>
         <MpFilterTabs v-model="activeTab" :tabs="tabs" />
