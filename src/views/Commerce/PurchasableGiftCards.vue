@@ -216,6 +216,20 @@ function toggleDenomination(amount: number) {
       subtitle="Sell a gift card that customers can buy and send"
       :width="560"
     >
+      <!-- Live preview -->
+      <v-card color="primary" variant="tonal" rounded="lg" class="pa-5 mb-5">
+        <div class="d-flex align-center justify-space-between mb-3">
+          <v-icon size="22">{{ form.kind === 'Physical' ? 'credit-card' : 'gift' }}</v-icon>
+          <span class="text-caption font-weight-bold text-uppercase" style="letter-spacing: 0.08em">{{ form.kind }} gift card</span>
+        </div>
+        <div class="text-h6 font-weight-bold mb-3">{{ form.name || 'Gift card product' }}</div>
+        <div class="d-flex flex-wrap gap-1 align-center">
+          <v-chip v-for="d in form.denominations" :key="d" size="x-small" variant="flat" label class="font-weight-medium">{{ money(d) }}</v-chip>
+          <v-chip v-if="form.allowCustom" size="x-small" variant="outlined" label>Custom {{ money(form.customMin) }}–{{ money(form.customMax) }}</v-chip>
+          <span v-if="!form.denominations.length && !form.allowCustom" class="text-caption text-medium-emphasis">Choose denominations below</span>
+        </div>
+      </v-card>
+
       <div class="text-subtitle-2 font-weight-bold mb-3 text-uppercase text-medium-emphasis">Details</div>
       <v-text-field v-model="form.name" label="Product name" variant="outlined" density="comfortable" placeholder="e.g. Digital Gift Card" class="mb-3" />
       <v-btn-toggle v-model="form.kind" mandatory divided variant="outlined" density="comfortable" class="mb-4">
