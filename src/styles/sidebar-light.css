@@ -12,8 +12,8 @@
   --sidebar-line: #e2e8f0;
   --sidebar-text: #1a1814;
   --sidebar-muted: #5a6573;
-  --sidebar-hover-bg: rgba(26, 24, 20, 0.05);
-  --sidebar-active-bg: rgba(26, 24, 20, 0.09);
+  --sidebar-hover-bg: rgba(26, 24, 20, 0.06);
+  --sidebar-active-bg: rgba(26, 24, 20, 0.13);
   --sidebar-active-text: #1a1814;
   --sidebar-focus-ring: rgba(26, 24, 20, 0.55);
 }
@@ -32,6 +32,9 @@
   background: var(--sidebar-bg) !important;
   border-right-color: var(--sidebar-border) !important;
   color: var(--sidebar-text);
+  /* Give the white panel a solid, defined edge + subtle depth so it reads as a
+     grounded navigation surface rather than blending into the content. */
+  box-shadow: 1px 0 0 var(--sidebar-border), 6px 0 20px -12px rgba(26, 24, 20, 0.14) !important;
 }
 
 [data-sidebar="light"] .mp-sidebar .sidebar-header,
@@ -138,8 +141,8 @@
   --sidebar-border: #e2e8f0 !important;
   --sidebar-text: #1a1814 !important;
   --sidebar-muted: #5a6573 !important;
-  --sidebar-hover-bg: rgba(26, 24, 20, 0.05) !important;
-  --sidebar-active-bg: rgba(26, 24, 20, 0.09) !important;
+  --sidebar-hover-bg: rgba(26, 24, 20, 0.06) !important;
+  --sidebar-active-bg: rgba(26, 24, 20, 0.13) !important;
   --sidebar-active-text: #1a1814 !important;
   background: var(--sidebar-bg) !important;
   border-color: var(--sidebar-border) !important;
