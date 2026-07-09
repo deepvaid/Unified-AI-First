@@ -35,9 +35,9 @@ watch(
   { immediate: true },
 )
 
-// Dashboard chart palette: a ?chart=blue|cool|violet query param (stakeholder demo),
+// Dashboard chart palette: a ?chart=blue|cool|multicolor query param (stakeholder demo),
 // same in-memory-per-tab handling as ?nav=. Independent of, and composes with, ?nav=.
-const VALID_CHART_PALETTES: readonly ChartPalette[] = ['blue', 'cool', 'violet']
+const VALID_CHART_PALETTES: readonly ChartPalette[] = ['blue', 'cool', 'multicolor']
 const isChartPalette = (v: unknown): v is ChartPalette =>
   typeof v === 'string' && (VALID_CHART_PALETTES as readonly string[]).includes(v)
 const chartOverride = ref<ChartPalette | null>(isChartPalette(route.query.chart) ? route.query.chart : null)

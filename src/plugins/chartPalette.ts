@@ -11,7 +11,7 @@ import {
 } from '@/design-tokens/generated/tokens'
 
 /** Selectable chart-series palettes (switchable via the `?chart=` URL param, see App.vue). */
-export type ChartPalette = 'blue' | 'cool' | 'violet'
+export type ChartPalette = 'blue' | 'cool' | 'multicolor'
 
 /**
  * Blue (default): Maropost-aligned single-hue Picton Blue, steps [600,300,500,900,400,700].
@@ -27,7 +27,7 @@ export const CHART_PALETTES: Record<ChartPalette, string[]> = {
     mp_color_chart_light_series6,
   ],
   cool: ['#0073AB', '#0092D4', '#00ADF1', '#00B6DE', '#00C0B7', '#14B8A6'],
-  violet: ['#0092D4', '#4F7AE0', '#6C6BE6', '#8B6CF0', '#A98CF5', '#6D5DE6'],
+  multicolor: ['#8B7CF5', '#34D399', '#F87171', '#FBBF24', '#60A5FA', '#2DD4BF'],
 }
 
 const chartPaletteId = ref<ChartPalette>('blue')
