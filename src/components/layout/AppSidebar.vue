@@ -261,7 +261,6 @@ function buildNavGroups(accountId: string): NavGroup[] {
         { title: 'Overview', route: `/accounts/${accountId}/da-vinci` },
         { title: 'Ask Da Vinci', route: `/accounts/${accountId}/da-vinci/copilot` },
         { title: 'AI experience', route: `/accounts/${accountId}/da-vinci/experience` },
-        { title: 'Landing page', route: 'https://davinci-ai-first.vercel.app/landing.html', external: true },
       ],
     },
     {
