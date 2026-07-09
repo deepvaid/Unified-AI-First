@@ -719,6 +719,45 @@ export function useWidgetData(
         const data = merchandising.analytics.contribution
         return buildSeriesData(data.map((d) => d.label), data.map((d) => d.value), 'currency', 'Revenue')
       }
+      case 'demo_channel_trend': {
+        // Deterministic multi-series demo (6 channels) — exercises all palette colors + a legend.
+        const points = Math.min(Math.max(days, 6), 12)
+        const labels = Array.from({ length: points }, (_, i) => `W${i + 1}`)
+        const channels = [
+          { name: 'Direct', base: 8200, amp: 900, phase: 0 },
+          { name: 'Email', base: 6400, amp: 1200, phase: 1 },
+          { name: 'Paid Search', base: 5200, amp: 800, phase: 2 },
+          { name: 'Social', base: 3800, amp: 1400, phase: 3 },
+          { name: 'Organic', base: 4600, amp: 700, phase: 4 },
+          { name: 'Referral', base: 2400, amp: 600, phase: 5 },
+        ]
+        return {
+          kind: 'series',
+          unit: 'currency',
+          labels,
+          series: channels.map((c) => ({
+            name: c.name,
+            data: labels.map((_, i) => Math.round(c.base + c.amp * Math.sin((i + c.phase) * 0.6) + i * 60)),
+          })),
+        }
+      }
+      case 'demo_channel_mix': {
+        // Single-series 6-slice donut — every slice recolors with the palette.
+        const mix = [
+          { label: 'Direct', value: 31 },
+          { label: 'Email', value: 24 },
+          { label: 'Paid Search', value: 17 },
+          { label: 'Social', value: 12 },
+          { label: 'Organic', value: 10 },
+          { label: 'Referral', value: 6 },
+        ]
+        return {
+          kind: 'series',
+          unit: 'percent',
+          labels: mix.map((m) => m.label),
+          series: [{ name: 'Share', data: mix.map((m) => m.value) }],
+        }
+      }
       default:
         return buildKpiData(0, 0, 'count', 'No data available for this widget')
     }

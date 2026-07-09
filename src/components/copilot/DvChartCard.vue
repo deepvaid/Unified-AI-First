@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { chartPalette } from '@/plugins/chartPalette'
+import { activeChartPalette } from '@/plugins/chartPalette'
 
 defineProps<{
   title?: string
@@ -9,7 +9,7 @@ defineProps<{
   seriesNames?: string[]
 }>()
 
-const colors = chartPalette
+const colors = activeChartPalette
 
 function getMax(bars: number[][]) {
   return Math.max(...bars.map(b => b.reduce((s, v) => s + v, 0)))

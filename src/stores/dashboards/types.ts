@@ -74,6 +74,8 @@ export type DashboardMetricId =
   | 'merch_aov'
   | 'merch_revenue_trend'
   | 'merch_contribution'
+  | 'demo_channel_trend'
+  | 'demo_channel_mix'
 
 export interface DashboardLayout {
   x: number

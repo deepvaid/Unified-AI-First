@@ -6,6 +6,7 @@ import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppBar from '@/components/layout/AppBar.vue'
 import MpDaVinciBot from '@/components/MpDaVinciBot.vue'
 import { useAppTheme, applySidebarTheme, type SidebarTheme } from '@/composables/useAppTheme'
+import { applyChartPalette, type ChartPalette } from '@/plugins/chartPalette'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 
@@ -33,6 +34,18 @@ watch(
   applySidebarTheme,
   { immediate: true },
 )
+
+// Dashboard chart palette: a ?chart=blue|cool|violet query param (stakeholder demo),
+// same in-memory-per-tab handling as ?nav=. Independent of, and composes with, ?nav=.
+const VALID_CHART_PALETTES: readonly ChartPalette[] = ['blue', 'cool', 'violet']
+const isChartPalette = (v: unknown): v is ChartPalette =>
+  typeof v === 'string' && (VALID_CHART_PALETTES as readonly string[]).includes(v)
+const chartOverride = ref<ChartPalette | null>(isChartPalette(route.query.chart) ? route.query.chart : null)
+watch(() => route.query.chart, (chart) => {
+  if (isChartPalette(chart)) chartOverride.value = chart
+})
+watch(() => chartOverride.value ?? 'blue', applyChartPalette, { immediate: true })
+
 const drawer = ref(true)
 const rail = ref(false)
 const copilot = useCopilotStore()

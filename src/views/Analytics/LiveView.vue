@@ -4,7 +4,7 @@ import type { ApexOptions } from 'apexcharts'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import MpKpiCard from '@/components/MpKpiCard.vue'
-import { applyChartTheme, chartPalette } from '@/plugins/chartPalette'
+import { applyChartTheme, activeChartPalette } from '@/plugins/chartPalette'
 
 const ApexChart = defineAsyncComponent({
   loader: async () => (await import('vue3-apexcharts')).default,
@@ -175,16 +175,16 @@ function sparklineOptions(color: string): ApexOptions {
 }
 
 // visitors=cyan, sales=emerald, sessions=indigo, orders=magenta
-const visitorsSparkOptions = computed(() => sparklineOptions(chartPalette[0]!))
-const salesSparkOptions = computed(() => sparklineOptions(chartPalette[3]!))
-const sessionsSparkOptions = computed(() => sparklineOptions(chartPalette[5]!))
-const ordersSparkOptions = computed(() => sparklineOptions(chartPalette[1]!))
+const visitorsSparkOptions = computed(() => sparklineOptions(activeChartPalette.value[0]!))
+const salesSparkOptions = computed(() => sparklineOptions(activeChartPalette.value[3]!))
+const sessionsSparkOptions = computed(() => sparklineOptions(activeChartPalette.value[5]!))
+const ordersSparkOptions = computed(() => sparklineOptions(activeChartPalette.value[1]!))
 
 // ─── Activity area chart ─────────────────────────────────────── cyan + magenta
 const activityBase = applyChartTheme()
 const activityOptions = computed<ApexOptions>(() => ({
   ...activityBase,
-  colors: [chartPalette[0]!, chartPalette[1]!],
+  colors: [activeChartPalette.value[0]!, activeChartPalette.value[1]!],
   chart: {
     ...activityBase.chart,
     zoom: { enabled: false },
@@ -242,7 +242,7 @@ const customerMixSeries = computed(() => {
 const donutOptions = computed<ApexOptions>(() => ({
   chart: { fontFamily: 'Inter, system-ui, sans-serif', toolbar: { show: false } },
   labels: ['New', 'Returning'],
-  colors: [chartPalette[0]!, chartPalette[2]!],
+  colors: [activeChartPalette.value[0]!, activeChartPalette.value[2]!],
   legend: {
     position: 'bottom',
     fontSize: '12px',

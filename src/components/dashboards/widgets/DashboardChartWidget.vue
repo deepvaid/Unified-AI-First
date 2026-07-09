@@ -3,7 +3,7 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 
 import { useTheme } from 'vuetify'
 import type { ApexOptions } from 'apexcharts'
 import type { DashboardChartVariant, DashboardSeriesData, DashboardWidgetType } from '@/stores/dashboards/types'
-import { applyChartTheme, chartPalette } from '@/plugins/chartPalette'
+import { applyChartTheme, activeChartPalette } from '@/plugins/chartPalette'
 import { useAppTheme } from '@/composables/useAppTheme'
 
 const props = withDefaults(defineProps<{
@@ -120,7 +120,7 @@ const chartOptions = computed<ApexOptions>(() => {
     ...base,
     colors: isPrev
       ? [accentHex.value, '#75D6FF']
-      : [accentHex.value, ...chartPalette.slice(1)],
+      : [accentHex.value, ...activeChartPalette.value.slice(1)],
     chart: {
       ...base.chart,
       sparkline: { enabled: false },
@@ -177,7 +177,7 @@ const chartOptions = computed<ApexOptions>(() => {
         }
       : {}),
     dataLabels: { enabled: false },
-    legend: isPrev
+    legend: (isPrev || props.data.series.length > 1)
       ? { show: true, position: 'top', horizontalAlign: 'right', fontSize: '12px', fontWeight: 500 }
       : { show: false },
     xaxis: {

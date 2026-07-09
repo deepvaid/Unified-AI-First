@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
 import type { ApexOptions } from 'apexcharts'
-import { chartPalette } from '@/plugins/chartPalette'
+import { activeChartPalette } from '@/plugins/chartPalette'
 import type { DashboardSeriesData } from '@/stores/dashboards/types'
 
 const props = withDefaults(defineProps<{
@@ -34,7 +34,7 @@ const options = computed<ApexOptions>(() => ({
     toolbar: { show: false },
   },
   labels: props.data.labels,
-  colors: chartPalette,
+  colors: activeChartPalette.value,
   legend: {
     position: 'bottom',
     fontSize: '12px',

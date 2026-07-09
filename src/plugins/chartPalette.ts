@@ -1,3 +1,4 @@
+import { computed, ref } from 'vue'
 import type { ApexOptions } from 'apexcharts'
 
 import {
@@ -9,18 +10,39 @@ import {
   mp_color_chart_light_series7,
 } from '@/design-tokens/generated/tokens'
 
+/** Selectable chart-series palettes (switchable via the `?chart=` URL param, see App.vue). */
+export type ChartPalette = 'blue' | 'cool' | 'violet'
+
 /**
- * Maropost-aligned palette for chart series.
- * Single-hue Picton Blue, well-spaced steps: [600, 300, 500, 900, 400, 700]
+ * Blue (default): Maropost-aligned single-hue Picton Blue, steps [600,300,500,900,400,700].
+ * Cool: blue→teal. Violet: subtle blue→purple. Each has 6 well-spaced series colors.
  */
-export const chartPalette: string[] = [
-  mp_color_chart_light_series1,
-  mp_color_chart_light_series2,
-  mp_color_chart_light_series3,
-  mp_color_chart_light_series4,
-  mp_color_chart_light_series7,
-  mp_color_chart_light_series6,
-]
+export const CHART_PALETTES: Record<ChartPalette, string[]> = {
+  blue: [
+    mp_color_chart_light_series1,
+    mp_color_chart_light_series2,
+    mp_color_chart_light_series3,
+    mp_color_chart_light_series4,
+    mp_color_chart_light_series7,
+    mp_color_chart_light_series6,
+  ],
+  cool: ['#0073AB', '#0092D4', '#00ADF1', '#00B6DE', '#00C0B7', '#14B8A6'],
+  violet: ['#0092D4', '#4F7AE0', '#6C6BE6', '#8B6CF0', '#A98CF5', '#6D5DE6'],
+}
+
+const chartPaletteId = ref<ChartPalette>('blue')
+
+/** Reactive active palette — chart widgets read `activeChartPalette.value` inside their computeds. */
+export const activeChartPalette = computed<string[]>(() => CHART_PALETTES[chartPaletteId.value])
+
+/** Set the active chart palette (and mirror it onto <html data-chart> for parity/debuggability). */
+export function applyChartPalette(id: ChartPalette) {
+  chartPaletteId.value = id
+  document.documentElement.dataset.chart = id
+}
+
+/** Back-compat: the default blue palette as a plain array. Prefer `activeChartPalette` for reactivity. */
+export const chartPalette: string[] = CHART_PALETTES.blue
 
 /** Thin, unobtrusive grid lines that read on both light and dark surfaces. */
 export const chartGridColor = 'rgba(var(--v-theme-on-surface), 0.06)'
@@ -47,7 +69,7 @@ export function applyChartTheme(): Pick<
   'colors' | 'chart' | 'grid' | 'xaxis' | 'yaxis' | 'tooltip'
 > {
   return {
-    colors: chartPalette,
+    colors: activeChartPalette.value,
     chart: {
       toolbar: { show: false },
       fontFamily: 'Inter, system-ui, sans-serif',
