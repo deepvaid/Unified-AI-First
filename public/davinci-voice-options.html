@@ -26,7 +26,8 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 24px 64px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 24px 64px; position: relative; z-index: 1; }
+  #orb { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; pointer-events: none; opacity: 0.6; }
   .page-head { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
   .orb {
     flex: none; width: 44px; height: 44px; border-radius: 50%;
@@ -46,7 +47,6 @@
   }
   .crumb .sep { margin: 0 6px; color: var(--border-subtle); }
   h1 { font-size: 24px; line-height: 1.25; font-weight: 700; margin: 0; text-wrap: balance; }
-  .lede { color: var(--muted); font-size: 14.5px; line-height: 1.6; margin: 12px 0 24px; max-width: 62ch; }
   .script {
     background: var(--ai-soft);
     border: 1px solid var(--ai-border);
@@ -97,7 +97,7 @@
   .desc { color: var(--muted); font-size: 13.5px; line-height: 1.55; margin: 6px 0 14px; }
   .track { height: 4px; border-radius: 2px; background: var(--ai-soft); overflow: hidden; }
   .fill { height: 100%; width: 0%; background: var(--ai); border-radius: 2px; }
-  .score-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: -12px 0 24px; }
+  .score-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 20px 0 24px; }
   .score-toggle {
     display: inline-flex; align-items: center; gap: 8px;
     font: inherit; font-size: 13px; font-weight: 600; color: var(--ai-text-2);
@@ -111,6 +111,7 @@
   .score-toggle[aria-pressed="true"] { background: var(--ai); border-color: var(--ai); color: #fff; }
   .score-hint { font-size: 12.5px; color: var(--muted); }
 </style>
+<canvas id="orb" data-wavy="1"></canvas>
 <div class="wrap">
   <div class="page-head">
     <div class="orb" aria-hidden="true"></div>
@@ -119,7 +120,6 @@
       <h1>Finding Da Vinci’s voice</h1>
     </div>
   </div>
-  <p class="lede">Round four: last round’s Option 6 (Charon) is the anchor — kept unchanged as the reference, then pushed toward a noticeably more refined British delivery. Option 2 is the same voice with a stronger Received Pronunciation read at the same pace; options 3–6 take the strongest accent read at a brisker, more efficient pace. Options 7–8 try a simpler, lighter mid-Atlantic blend — mostly American with a light British polish — at the same brisk pace. Same paragraph throughout, so they compare fairly.</p>
   <div class="score-row">
     <button id="scoreToggle" class="score-toggle" aria-pressed="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
@@ -456,3 +456,7 @@
     })
   })()
 </script>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js" } }
+</script>
+<script type="module" src="/dv-orb/dv-orb-mount.js"></script>
