@@ -5,7 +5,7 @@ import { useDisplay } from 'vuetify'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppBar from '@/components/layout/AppBar.vue'
 import MpDaVinciBot from '@/components/MpDaVinciBot.vue'
-import { useAppTheme, applySidebarTheme } from '@/composables/useAppTheme'
+import { useAppTheme, applySidebarTheme, type SidebarTheme } from '@/composables/useAppTheme'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 
@@ -14,11 +14,25 @@ const { accent, mode, setAccent, setMode } = useAppTheme()
 setAccent(accent.value)
 setMode(mode.value)
 
-// Sidebar theme follows the active account (dark only on accounts that opt in)
 const accountsStore = useAccountsStore()
-watch(() => accountsStore.activeAccount.sidebarTheme ?? 'light', applySidebarTheme, { immediate: true })
-
 const route = useRoute()
+
+// Sidebar theme: a ?nav=light|gray|dark query param wins over the account's
+// preference (for stakeholder demos). Captured in-memory so it sticks across
+// in-SPA navigation for this tab, without touching localStorage (which three
+// side-by-side tabs would otherwise clobber). Otherwise follow the account.
+const VALID_NAV_THEMES: readonly SidebarTheme[] = ['light', 'gray', 'dark']
+const isNavTheme = (v: unknown): v is SidebarTheme =>
+  typeof v === 'string' && (VALID_NAV_THEMES as readonly string[]).includes(v)
+const navOverride = ref<SidebarTheme | null>(isNavTheme(route.query.nav) ? route.query.nav : null)
+watch(() => route.query.nav, (nav) => {
+  if (isNavTheme(nav)) navOverride.value = nav
+})
+watch(
+  () => navOverride.value ?? accountsStore.activeAccount.sidebarTheme ?? 'light',
+  applySidebarTheme,
+  { immediate: true },
+)
 const drawer = ref(true)
 const rail = ref(false)
 const copilot = useCopilotStore()

@@ -1,0 +1,179 @@
+/**
+ * Gray Sidebar — applied when [data-sidebar="gray"] is on <html>.
+ * Rule-for-rule mirror of sidebar-light.css with a soft neutral-gray palette
+ * (Square / ClickUp / Notion feel). Values are pinned so the sidebar stays
+ * gray regardless of the app theme.
+ */
+
+[data-sidebar="gray"] .mp-sidebar,
+[data-sidebar="gray"] .rail-flyout-card {
+  --sidebar-bg: #f6f7f9;
+  --sidebar-border: #e6e8ec;
+  --sidebar-line: #e6e8ec;
+  --sidebar-text: #1a1d21;
+  --sidebar-muted: #667085;
+  --sidebar-hover-bg: rgba(26, 29, 33, 0.05);
+  --sidebar-active-bg: rgba(26, 29, 33, 0.09);
+  --sidebar-active-text: #101317;
+  --sidebar-focus-ring: rgba(26, 29, 33, 0.45);
+}
+
+[data-sidebar="gray"] .mp-sidebar,
+[data-sidebar="gray"] .mp-sidebar *,
+[data-sidebar="gray"] .rail-flyout-card,
+[data-sidebar="gray"] .rail-flyout-card * {
+  transition:
+    background-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-sidebar="gray"] .mp-sidebar {
+  background: var(--sidebar-bg) !important;
+  border-right-color: var(--sidebar-border) !important;
+  color: var(--sidebar-text);
+}
+
+[data-sidebar="gray"] .mp-sidebar .sidebar-header,
+[data-sidebar="gray"] .mp-sidebar .sidebar-controls,
+[data-sidebar="gray"] .mp-sidebar .sidebar-divider {
+  border-color: var(--sidebar-border) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .v-list {
+  background: transparent !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .sidebar-brand__wordmark,
+[data-sidebar="gray"] .mp-sidebar .sidebar-brand__mark-simple,
+[data-sidebar="gray"] .mp-sidebar .v-list-item-title,
+[data-sidebar="gray"] .mp-sidebar .sidebar-subgroup-row__title {
+  color: var(--sidebar-text) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .v-icon,
+[data-sidebar="gray"] .mp-sidebar .sidebar-parent-row__chevron,
+[data-sidebar="gray"] .mp-sidebar .sidebar-apps-toggle,
+[data-sidebar="gray"] .mp-sidebar .sidebar-controls__label,
+[data-sidebar="gray"] .mp-sidebar .sidebar-app-item__status,
+[data-sidebar="gray"] .mp-sidebar .sidebar-tree-row--grandchild .v-list-item-title {
+  color: var(--sidebar-muted) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .sidebar-crown {
+  color: rgba(26, 29, 33, 0.34) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .rail-brand-box {
+  background: var(--sidebar-text);
+  color: var(--sidebar-bg);
+}
+
+[data-sidebar="gray"] .mp-sidebar .v-list-item:hover:not(.v-list-item--active):not(.active-nav-item),
+[data-sidebar="gray"] .mp-sidebar .sidebar-subgroup-row:hover,
+[data-sidebar="gray"] .mp-sidebar .sidebar-menu-btn:hover,
+[data-sidebar="gray"] .mp-sidebar .sidebar-rail-btn:hover,
+[data-sidebar="gray"] .mp-sidebar .sidebar-parent-row__chevron:hover,
+[data-sidebar="gray"] .mp-sidebar .sidebar-apps-toggle:hover {
+  background: var(--sidebar-hover-bg) !important;
+  color: var(--sidebar-active-text) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .v-list-item--active,
+[data-sidebar="gray"] .mp-sidebar .active-nav-item,
+[data-sidebar="gray"] .mp-sidebar .sidebar-parent--active .sidebar-parent-row__label,
+[data-sidebar="gray"] .mp-sidebar .sidebar-tree-row--active .sidebar-tree-link,
+[data-sidebar="gray"] .mp-sidebar .rail-icon-hovered {
+  background: var(--sidebar-active-bg) !important;
+  color: var(--sidebar-active-text) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .v-list-item--active .v-list-item-title,
+[data-sidebar="gray"] .mp-sidebar .v-list-item--active .v-icon,
+[data-sidebar="gray"] .mp-sidebar .active-nav-item .v-list-item-title,
+[data-sidebar="gray"] .mp-sidebar .active-nav-item .v-icon,
+[data-sidebar="gray"] .mp-sidebar .sidebar-parent--active .v-list-item-title,
+[data-sidebar="gray"] .mp-sidebar .sidebar-parent--active .v-icon,
+[data-sidebar="gray"] .mp-sidebar .sidebar-tree-row--active .v-list-item-title,
+[data-sidebar="gray"] .mp-sidebar .sidebar-tree-row--active .v-icon,
+[data-sidebar="gray"] .mp-sidebar .sidebar-tree-branch--active > .sidebar-subgroup-row,
+[data-sidebar="gray"] .mp-sidebar .sidebar-tree-branch--expanded > .sidebar-subgroup-row,
+[data-sidebar="gray"] .mp-sidebar .sidebar-tree-branch--active > .sidebar-subgroup-row .v-icon,
+[data-sidebar="gray"] .mp-sidebar .sidebar-tree-branch--expanded > .sidebar-subgroup-row .v-icon,
+[data-sidebar="gray"] .mp-sidebar .rail-icon-hovered .v-icon {
+  color: var(--sidebar-active-text) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .sidebar-parent__children::before,
+[data-sidebar="gray"] .mp-sidebar .sidebar-subgroup__children::before {
+  background: var(--sidebar-line) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .sidebar-tree-row--active::before {
+  border-color: var(--sidebar-line) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .sidebar-badge {
+  background: var(--sidebar-active-bg) !important;
+  color: var(--sidebar-muted) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .accent-swatch--active {
+  box-shadow: 0 0 0 2px var(--sidebar-bg), 0 0 0 3.5px currentColor !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .v-switch .v-switch__track {
+  background: rgba(26, 29, 33, 0.2) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar ::-webkit-scrollbar-thumb {
+  background: rgba(26, 29, 33, 0.16);
+}
+
+[data-sidebar="gray"] .mp-sidebar ::-webkit-scrollbar-thumb:hover {
+  background: rgba(26, 29, 33, 0.28);
+}
+
+[data-sidebar="gray"] .rail-flyout-card {
+  --sidebar-border: #e6e8ec !important;
+  --sidebar-text: #1a1d21 !important;
+  --sidebar-muted: #667085 !important;
+  --sidebar-hover-bg: rgba(26, 29, 33, 0.05) !important;
+  --sidebar-active-bg: rgba(26, 29, 33, 0.09) !important;
+  --sidebar-active-text: #101317 !important;
+  background: var(--sidebar-bg) !important;
+  border-color: var(--sidebar-border) !important;
+  box-shadow: 0 18px 40px rgba(26, 29, 33, 0.14), 0 2px 8px rgba(26, 29, 33, 0.08) !important;
+}
+
+[data-sidebar="gray"] .rail-flyout-card__header {
+  color: var(--sidebar-muted) !important;
+  border-bottom-color: var(--sidebar-border) !important;
+}
+
+[data-sidebar="gray"] .rail-flyout-item {
+  color: var(--sidebar-text) !important;
+}
+
+[data-sidebar="gray"] .rail-flyout-item:hover {
+  background: var(--sidebar-hover-bg) !important;
+  color: var(--sidebar-active-text) !important;
+}
+
+[data-sidebar="gray"] .rail-flyout-item--active {
+  background: var(--sidebar-active-bg) !important;
+  color: var(--sidebar-active-text) !important;
+}
+
+[data-sidebar="gray"] .rail-flyout-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+[data-sidebar="gray"] .rail-flyout-card::-webkit-scrollbar-thumb {
+  background: rgba(26, 29, 33, 0.16);
+  border-radius: 999px;
+}
+
+[data-sidebar="gray"] .rail-flyout-card::-webkit-scrollbar-thumb:hover {
+  background: rgba(26, 29, 33, 0.28);
+}

@@ -3,7 +3,7 @@ import { useTheme } from 'vuetify'
 
 export type AccentKey = 'cyan' | 'blue' | 'gray' | 'purple'
 export type ThemeMode = 'light' | 'dark'
-export type SidebarTheme = 'light' | 'dark'
+export type SidebarTheme = 'light' | 'gray' | 'dark'
 
 const LS_ACCENT = 'app-accent'
 const LS_MODE = 'app-theme-mode'

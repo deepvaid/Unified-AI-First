@@ -15,7 +15,7 @@ export interface Account {
   color: 'primary' | 'secondary' | 'success'
   subscriptions: SubscriptionKey[]
   /** Sidebar appearance for this account; omitted = light (the default). */
-  sidebarTheme?: 'light' | 'dark'
+  sidebarTheme?: 'light' | 'gray' | 'dark'
 }
 
 const STORAGE_KEY = 'mp.activeAccountId'
