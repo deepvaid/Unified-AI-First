@@ -97,6 +97,19 @@
   .desc { color: var(--muted); font-size: 13.5px; line-height: 1.55; margin: 6px 0 14px; }
   .track { height: 4px; border-radius: 2px; background: var(--ai-soft); overflow: hidden; }
   .fill { height: 100%; width: 0%; background: var(--ai); border-radius: 2px; }
+  .score-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: -12px 0 24px; }
+  .score-toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    font: inherit; font-size: 13px; font-weight: 600; color: var(--ai-text-2);
+    background: var(--ai-soft); border: 1px solid var(--ai-border);
+    border-radius: 999px; padding: 7px 14px; cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .score-toggle:hover { border-color: var(--ai); }
+  .score-toggle:focus-visible { outline: 2px solid var(--ai); outline-offset: 2px; }
+  .score-toggle svg { width: 15px; height: 15px; }
+  .score-toggle[aria-pressed="true"] { background: var(--ai); border-color: var(--ai); color: #fff; }
+  .score-hint { font-size: 12.5px; color: var(--muted); }
 </style>
 <div class="wrap">
   <div class="page-head">
@@ -107,6 +120,13 @@
     </div>
   </div>
   <p class="lede">Round four: last round’s Option 6 (Charon) is the anchor — kept unchanged as the reference, then pushed toward a noticeably more refined British delivery. Option 2 is the same voice with a stronger Received Pronunciation read at the same pace; options 3–6 take the strongest accent read at a brisker, more efficient pace. Options 7–8 try a simpler, lighter mid-Atlantic blend — mostly American with a light British polish — at the same brisk pace. Same paragraph throughout, so they compare fairly.</p>
+  <div class="score-row">
+    <button id="scoreToggle" class="score-toggle" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      Cinematic score: <strong>&nbsp;off</strong>
+    </button>
+    <span class="score-hint">An original heroic bed — plays very quietly and ducks under the samples.</span>
+  </div>
   <div class="script">
     <span class="label">The audition script</span>
     <p>“Good morning, Ross. Revenue is up 12 percent this week — 128 thousand dollars across 1,284 orders. Your Spring Style Refresh campaign is performing well, with a 42 percent open rate so far. One thing needs your attention: eleven orders are waiting on fulfillment because the Aurora Trail Jacket is low on stock. I’ve already drafted a restock request with your supplier, and queued a back-in-stock email for the 86 customers on the waitlist. Just say the word, and I’ll send both.”</p>
@@ -270,4 +290,169 @@
       fill.style.width = '0%'
     })
   })
+</script>
+<script>
+  // Cinematic score — original synthesized heroic bed (Web Audio, no audio file).
+  // Off by default; very quiet; ducks further while any voice sample plays.
+  ;(() => {
+    const BASE_LEVEL = 0.09
+    const DUCK_LEVEL = 0.035
+    const btn = document.getElementById('scoreToggle')
+    const stateLabel = btn.querySelector('strong')
+
+    let ctx = null
+    let master = null
+    let timers = []
+    let nodes = [] // long-lived oscillators to stop on teardown
+
+    const hz = (midi) => 440 * Math.pow(2, (midi - 69) / 12)
+
+    function anySamplePlaying() {
+      return [...document.querySelectorAll('audio')].some((a) => !a.paused)
+    }
+
+    function targetLevel() {
+      return anySamplePlaying() ? DUCK_LEVEL : BASE_LEVEL
+    }
+
+    function updateDuck() {
+      if (ctx && master) master.gain.setTargetAtTime(targetLevel(), ctx.currentTime, 0.4)
+    }
+    document.querySelectorAll('audio').forEach((a) => {
+      a.addEventListener('play', updateDuck)
+      a.addEventListener('pause', updateDuck)
+      a.addEventListener('ended', updateDuck)
+    })
+
+    function startScore() {
+      ctx = new (window.AudioContext || window.webkitAudioContext)()
+      master = ctx.createGain()
+      master.gain.setValueAtTime(0.0001, ctx.currentTime)
+      master.gain.exponentialRampToValueAtTime(targetLevel(), ctx.currentTime + 2.5)
+      master.connect(ctx.destination)
+
+      // — Low string drone: detuned saw pair on D2 + sub sine on D1 —
+      const droneFilter = ctx.createBiquadFilter()
+      droneFilter.type = 'lowpass'
+      droneFilter.frequency.value = 300
+      const droneGain = ctx.createGain()
+      droneGain.gain.value = 0.35
+      droneFilter.connect(droneGain).connect(master)
+      ;[-6, 6].forEach((cents) => {
+        const o = ctx.createOscillator()
+        o.type = 'sawtooth'
+        o.frequency.value = hz(38) // D2
+        o.detune.value = cents
+        o.connect(droneFilter)
+        o.start()
+        nodes.push(o)
+      })
+      const sub = ctx.createOscillator()
+      sub.type = 'sine'
+      sub.frequency.value = hz(26) // D1
+      const subGain = ctx.createGain()
+      subGain.gain.value = 0.25
+      sub.connect(subGain).connect(master)
+      sub.start()
+      nodes.push(sub)
+
+      // — High air pedal: whisper-quiet D5 sine with slow vibrato —
+      const air = ctx.createOscillator()
+      air.type = 'sine'
+      air.frequency.value = hz(74) // D5
+      const vib = ctx.createOscillator()
+      vib.frequency.value = 0.4
+      const vibDepth = ctx.createGain()
+      vibDepth.gain.value = 3
+      vib.connect(vibDepth).connect(air.frequency)
+      const airGain = ctx.createGain()
+      airGain.gain.value = 0.05
+      air.connect(airGain).connect(master)
+      air.start(); vib.start()
+      nodes.push(air, vib)
+
+      // — Pad swells: Dm → Bb → F/A → C/G, one chord per 4s —
+      const CHORDS = [
+        [50, 53, 57], // D3 F3 A3
+        [46, 50, 53], // Bb2 D3 F3
+        [45, 48, 53], // A2 C3 F3
+        [43, 48, 52], // G2 C3 E3
+      ]
+      const padFilter = ctx.createBiquadFilter()
+      padFilter.type = 'lowpass'
+      padFilter.frequency.value = 700
+      padFilter.connect(master)
+      let chordIdx = 0
+      function playChord() {
+        const t = ctx.currentTime
+        CHORDS[chordIdx % CHORDS.length].forEach((midi) => {
+          ;[-5, 5].forEach((cents) => {
+            const o = ctx.createOscillator()
+            o.type = 'sawtooth'
+            o.frequency.value = hz(midi)
+            o.detune.value = cents
+            const g = ctx.createGain()
+            g.gain.setValueAtTime(0.0001, t)
+            g.gain.linearRampToValueAtTime(0.055, t + 1.6) // slow bow-in
+            g.gain.setValueAtTime(0.055, t + 3.4)
+            g.gain.linearRampToValueAtTime(0.0001, t + 5.8) // overlaps next chord
+            o.connect(g).connect(padFilter)
+            o.start(t)
+            o.stop(t + 6)
+          })
+        })
+        chordIdx++
+      }
+
+      // — Soft timpani: pitch-dropping thump on each chord change, deeper accent every 4th —
+      function timpani(accent) {
+        const t = ctx.currentTime
+        const o = ctx.createOscillator()
+        o.type = 'sine'
+        o.frequency.setValueAtTime(accent ? 72 : 62, t)
+        o.frequency.exponentialRampToValueAtTime(38, t + 0.35)
+        const g = ctx.createGain()
+        g.gain.setValueAtTime(accent ? 0.5 : 0.28, t)
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2)
+        o.connect(g).connect(master)
+        o.start(t)
+        o.stop(t + 1.3)
+      }
+
+      let bar = 0
+      playChord()
+      timpani(true)
+      timers.push(
+        setInterval(() => {
+          playChord()
+          bar++
+          timpani(bar % 4 === 0)
+        }, 4000),
+      )
+    }
+
+    function stopScore() {
+      if (!ctx) return
+      const c = ctx
+      master.gain.setTargetAtTime(0.0001, c.currentTime, 0.3)
+      timers.forEach(clearInterval)
+      timers = []
+      const oldNodes = nodes
+      nodes = []
+      setTimeout(() => {
+        oldNodes.forEach((n) => { try { n.stop() } catch (e) { /* already stopped */ } })
+        c.close()
+      }, 1200)
+      ctx = null
+      master = null
+    }
+
+    btn.addEventListener('click', () => {
+      const turningOn = btn.getAttribute('aria-pressed') !== 'true'
+      btn.setAttribute('aria-pressed', String(turningOn))
+      stateLabel.textContent = ' ' + (turningOn ? 'on' : 'off')
+      if (turningOn) startScore()
+      else stopScore()
+    })
+  })()
 </script>
