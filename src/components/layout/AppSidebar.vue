@@ -950,7 +950,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 16px 16px 16px 20px;
+  /* Height matches the app bar (56px + 1px divider) so the two header dividers line up. */
+  height: 57px;
+  padding: 0 16px 0 20px;
   margin-bottom: 6px;
   border-bottom: 1px solid var(--sidebar-border);
   background: var(--sidebar-bg);
@@ -959,7 +961,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
 .sidebar-header--rail {
   justify-content: center;
-  padding: 12px 8px;
+  padding: 0 8px;
 }
 
 .sidebar-toggle-pill {
