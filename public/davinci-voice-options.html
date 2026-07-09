@@ -26,8 +26,7 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 24px 64px; position: relative; z-index: 1; }
-  #orb { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; pointer-events: none; opacity: 0.6; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 24px 64px; }
   .page-head { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
   .orb {
     flex: none; width: 44px; height: 44px; border-radius: 50%;
@@ -111,7 +110,6 @@
   .score-toggle[aria-pressed="true"] { background: var(--ai); border-color: var(--ai); color: #fff; }
   .score-hint { font-size: 12.5px; color: var(--muted); }
 </style>
-<canvas id="orb" data-wavy="1"></canvas>
 <div class="wrap">
   <div class="page-head">
     <div class="orb" aria-hidden="true"></div>
@@ -295,7 +293,7 @@
   // Cinematic score — original synthesized heroic bed (Web Audio, no audio file).
   // Off by default; very quiet; ducks further while any voice sample plays.
   ;(() => {
-    const BASE_LEVEL = 0.09
+    const BASE_LEVEL = 0.11
     const DUCK_LEVEL = 0.035
     const btn = document.getElementById('scoreToggle')
     const stateLabel = btn.querySelector('strong')
@@ -371,17 +369,29 @@
       air.start(); vib.start()
       nodes.push(air, vib)
 
-      // — Pad swells: Dm → Bb → F/A → C/G, one chord per 4s —
+      // — Pad swells: 8-bar journey Dm → Bb → F/A → C/G → Dm → Gm → Bb → A, one chord per 4s —
       const CHORDS = [
-        [50, 53, 57], // D3 F3 A3
-        [46, 50, 53], // Bb2 D3 F3
-        [45, 48, 53], // A2 C3 F3
-        [43, 48, 52], // G2 C3 E3
+        [50, 53, 57, 62], // Dm  (D3 F3 A3 D4)
+        [46, 50, 53, 58], // Bb  (Bb2 D3 F3 Bb3)
+        [45, 48, 53, 57], // F/A (A2 C3 F3 A3)
+        [43, 48, 52, 55], // C/G (G2 C3 E3 G3)
+        [50, 53, 57, 62], // Dm
+        [43, 50, 55, 58], // Gm  (G2 D3 G3 Bb3)
+        [46, 50, 53, 58], // Bb
+        [45, 49, 52, 57], // A   (A2 C#3 E3 A3) — tension back into the loop
       ]
       const padFilter = ctx.createBiquadFilter()
       padFilter.type = 'lowpass'
-      padFilter.frequency.value = 700
+      padFilter.frequency.value = 750
       padFilter.connect(master)
+      // Slow filter "breathing" so the bed feels alive rather than static
+      const padLfo = ctx.createOscillator()
+      padLfo.frequency.value = 0.06
+      const padLfoDepth = ctx.createGain()
+      padLfoDepth.gain.value = 220
+      padLfo.connect(padLfoDepth).connect(padFilter.frequency)
+      padLfo.start()
+      nodes.push(padLfo)
       let chordIdx = 0
       function playChord() {
         const t = ctx.currentTime
@@ -393,8 +403,8 @@
             o.detune.value = cents
             const g = ctx.createGain()
             g.gain.setValueAtTime(0.0001, t)
-            g.gain.linearRampToValueAtTime(0.055, t + 1.6) // slow bow-in
-            g.gain.setValueAtTime(0.055, t + 3.4)
+            g.gain.linearRampToValueAtTime(0.052, t + 1.8) // slow bow-in
+            g.gain.setValueAtTime(0.052, t + 3.4)
             g.gain.linearRampToValueAtTime(0.0001, t + 5.8) // overlaps next chord
             o.connect(g).connect(padFilter)
             o.start(t)
@@ -404,19 +414,51 @@
         chordIdx++
       }
 
-      // — Soft timpani: pitch-dropping thump on each chord change, deeper accent every 4th —
-      function timpani(accent) {
-        const t = ctx.currentTime
+      // — Timpani: pitch-dropping thump each chord change; double-hit accent every 4th bar —
+      function thump(at, freqFrom, level) {
         const o = ctx.createOscillator()
         o.type = 'sine'
-        o.frequency.setValueAtTime(accent ? 72 : 62, t)
-        o.frequency.exponentialRampToValueAtTime(38, t + 0.35)
+        o.frequency.setValueAtTime(freqFrom, at)
+        o.frequency.exponentialRampToValueAtTime(38, at + 0.35)
         const g = ctx.createGain()
-        g.gain.setValueAtTime(accent ? 0.5 : 0.28, t)
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2)
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.linearRampToValueAtTime(level, at + 0.015)
+        g.gain.exponentialRampToValueAtTime(0.0001, at + 1.2)
         o.connect(g).connect(master)
-        o.start(t)
-        o.stop(t + 1.3)
+        o.start(at)
+        o.stop(at + 1.3)
+      }
+      function timpani(accent) {
+        const t = ctx.currentTime
+        if (accent) {
+          thump(t, 62, 0.34) // dum…
+          thump(t + 0.22, 74, 0.55) // …DUM
+        } else {
+          thump(t, 62, 0.28)
+        }
+      }
+
+      // — Riser: filtered-noise crescendo through the bar before each accent —
+      const noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate)
+      const nd = noiseBuf.getChannelData(0)
+      for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1
+      function riser() {
+        const t = ctx.currentTime
+        const src = ctx.createBufferSource()
+        src.buffer = noiseBuf
+        src.loop = true
+        const bp = ctx.createBiquadFilter()
+        bp.type = 'bandpass'
+        bp.Q.value = 1.2
+        bp.frequency.setValueAtTime(400, t)
+        bp.frequency.exponentialRampToValueAtTime(1500, t + 3.6)
+        const g = ctx.createGain()
+        g.gain.setValueAtTime(0.0001, t)
+        g.gain.exponentialRampToValueAtTime(0.05, t + 3.6) // crescendo…
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 4.0) // …cut on the hit
+        src.connect(bp).connect(g).connect(master)
+        src.start(t)
+        src.stop(t + 4.1)
       }
 
       let bar = 0
@@ -427,6 +469,7 @@
           playChord()
           bar++
           timpani(bar % 4 === 0)
+          if (bar % 4 === 3) riser() // swell into the next accent
         }, 4000),
       )
     }
@@ -456,7 +499,3 @@
     })
   })()
 </script>
-<script type="importmap">
-{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js" } }
-</script>
-<script type="module" src="/dv-orb/dv-orb-mount.js"></script>
