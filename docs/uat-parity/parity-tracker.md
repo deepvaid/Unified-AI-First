@@ -146,6 +146,45 @@ Part A has been seeded with the top-level modules observed in the initial read-o
 | 6 | Purchasable Gift Cards | /commerce/2000290/gift-cards/Purchasable | page | — | crawled |
 | 7 | Sales Channels | /commerce/2000290/sales-channel | page | — | crawled |
 
+## A06b — Commerce — Store Editor (Sales Channels ▸ store)   [crawl-status: crawled]
+
+Crawled 2026-07-10 (user-directed slice) on the **sandbox** base `https://sandbox.maropost.com/commerce/112201/stores/4/` (store #4 "Manisha's Testing", account 112201 — different env than the UAT Defaults base; no credentials/cookies recorded). The store editor is a per-store shell: its own left sidebar (9 sections below) + "Switch to Main" back-link + store switcher; breadcrumb `Sales Channels > <store> > <section>`. Screenshots not captured to disk — URL-only rows per existing convention.
+
+| # | UAT page/flow | UAT path (after stores/4) | Type | Screenshot | Crawl status |
+|---|---------------|----------|------|------------|--------------|
+| 1 | General — store profile (identity chips, Store URL, business identity, contact, favicon, official/shipping/return address) | /general | page | — | crawled |
+| 2 | Themes — installed table + "Themes In Focus" gallery + Upload Theme | /themes | page | — | crawled |
+| 3 | Pages — list (Image/Page Name/Status/Published/Updated/kebab) | /pages | page | — | crawled |
+| 4 | Pages — create (Title, WYSIWYG, SEO settings; right rail: Status/Template/Image) | /pages/new | wizard | — | crawled |
+| 5 | Blogs — list (same columns as Pages; empty "No records found") | /blogs | page | — | crawled |
+| 6 | Blogs — SEO Settings modal (Title, Meta Description) | /blogs (modal) | wizard | — | crawled |
+| 7 | Blogs — create (identical form to Pages create) | /blogs/new | wizard | — | crawled |
+| 8 | Navigation — menu list (Menu Name / Menu Items chips / Status / kebab: Update Status·Edit·Delete) | /navigation | page | — | crawled |
+| 9 | Navigation — create menu (same form as edit; status defaults Inactive) | /navigation/new | wizard | — | crawled |
+| 10 | Navigation — edit menu "Navigation Details" (name*, flat item rows: Menu Page Name* + Link To* combobox, drag-grip reorder, row delete, + Add New Page; right rail Navigation Status) | /navigation/:menuId | detail | — | crawled |
+| 11 | Campaigns — "Campaign Settings" list (Name/Targets/Status/From/To/Updated/kebab) | /campaigns | page | — | crawled |
+| 12 | Campaigns — Add New Campaign modal (Name*, Targets, Start/End date+time) | /campaigns (modal) | wizard | — | crawled |
+| 13 | Assets — image grid (filename bars, sort by Uploaded At, Upload Assets, pagination) | /assets | page | — | crawled |
+| 14 | Integrations — cards: Google Analytics / HCaptcha / Google Places (all Inactive) | /integrations | page | — | crawled |
+| 15 | Store Settings — landing cards: Website Configuration / Abandoned Cart / Payments | /settings | page | — | crawled |
+| 16 | Store Settings — Website Configuration (cookie banner toggle+copy, homepage SEO title/description, sitemap URL) | /settings/website-configuration | tab | — | crawled |
+| 17 | Store Settings — Abandoned Cart | /settings (card) | tab | — | pending |
+| 18 | Store Settings — Payments | /settings (card) | tab | — | blocked |
+
+Row 18 blocked by policy (payment configuration is credential-bearing; not opened). Row 17 left for a later settings pass.
+
+## Store editor observations (2026-07-10)
+
+<!-- Compact digest from the store-editor deep crawl. Redesign input; no transcripts. -->
+
+- **Navigation data model is FLAT** — menu = name + status + ordered rows of {Menu Page Name, Link To}; **no nesting/indent anywhere**. Reorder = drag grip on row hover; delete = trash on row hover; "+ ADD NEW PAGE" appends a row. Nesting would be a NEW feature — excluded from the parity rebuild.
+- Link To is a combobox: paste a custom URL, or select **Homepage · Search · Collection List · Collection ▸ (pick from 25) · Product ▸ · Page ▸ (2) · Blog**. Resource picking drills into a near-full-width overlay panel with its own search — it overlaps the editor sidebar and loses context (pain).
+- Menu list shows top-level item names as chips per row; Status = outlined Active (green) / Inactive (red) chip; kebab = Update Status / Edit / Delete. Create defaults status to Inactive.
+- Unsaved-changes guard = native browser `beforeunload` ("Leave site?"). In-app CANCEL opens a modal titled "Cancel Navigation Creation … cannot be undone" **even on the edit screen**, with CANCEL/YES buttons (double-negative; misleading copy) (pain).
+- Pages and Blogs share one create form: Title* + rich-text WYSIWYG + SEO settings; right rail Status (default Inactive) / Template (Default) / Image upload. Blogs list header has a separate SEO Settings modal.
+- Empty lists render bare "No records found" text — no icon, description, or CTA (pain). Full page reloads cold-boot the whole SPA behind a "Preparing an optimised workspace" splash, 5–10s (pain).
+- Store editor chrome: dark sidebar with 9 sections; every form page uses top-right CANCEL/SAVE; required fields flag red only after interaction.
+
 ## A07 — Retail   [crawl-status: pending]
 
 | # | UAT page/flow | UAT path | Type | Screenshot | Crawl status |
@@ -339,6 +378,20 @@ Built 2026-07-07 from Part A (all 11 modules) diffed against `src/router/index.t
 | 6 | Purchasable Gift Cards | PurchasableGiftCards | partial→built | done | d2d836f | New /purchasable_gift_cards; gift-card products (denominations/custom amount/sold/revenue) + Create drawer. Replaces the shared Coupons.vue placeholder |
 | 7 | Sales Channels | SalesChannels | exists | | | StoreSetup redirects to list |
 
+### B-A06b — Commerce — Store Editor
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Store editor shell (per-store 9-section sidebar) | SalesChannelDetail | partial | pending | | Prototype uses a tabbed hub (Overview/Settings/Apps/AI/Activity); no dedicated editor shell. Adopt `/sales_channels/:channelId/<section>` routes so a future StoreEditorLayout can nest them |
+| 2 | General (profile, business identity, contact, favicon, addresses) | SalesChannelDetail | partial | pending | | Settings tab covers some identity fields; favicon + address blocks absent |
+| 3 | Themes (installed table + gallery + upload) | StoreThemeBuilder | partial | pending | | Section/theme editor exists; no installed-themes list, gallery, or upload management |
+| 4 | Pages (list + WYSIWYG create) | — | missing | pending | | No storefront pages CRUD |
+| 5 | Blogs (list + SEO modal + WYSIWYG create) | — | missing | pending | | No storefront blogs CRUD |
+| 6 | Navigation (menu list + create/edit menu) | StoreNavigation | missing→built | done | dadefd9 | Redesigned menu manager: list + single-screen editor + live preview; flat items per crawl (no nesting = no new feature) |
+| 7 | Campaigns (storefront campaign settings) | — | missing | pending | | Store price/banner campaigns ≠ Marketing email campaigns (different intent) |
+| 8 | Assets (per-store image grid) | ImageLibrary | partial | pending | | Marketing Image Library exists account-wide; no per-store asset surface |
+| 9 | Integrations (GA / HCaptcha / Places cards) | AppStore | partial | pending | | Global Apps directory exists; no per-store integration cards |
+| 10 | Store Settings (Website Config / Abandoned Cart / Payments) | SalesChannelDetail | partial | pending | | Settings tab has some store config; cookie banner, homepage SEO, sitemap, abandoned cart, payments absent. Payments crawl blocked (credential-bearing) |
+
 ### B-A07 — Retail  _(provisional — deep crawl pending)_
 | # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
 |---|---|---|---|---|---|---|
@@ -432,4 +485,5 @@ Note #2 vs #3 are close on value; reorder if Analytics polish matters more than 
 - 2026-07-08 — **A05 entry-wiring RESOLVED** (user-approved edit-exception — 3rd sanctioned exception). The deferred limitation from the A05 build slice is closed: the create/detail/editor pages are now reachable by click, not just by URL. Commit b421e37 wired 6 existing Marketing list views: EmailCampaigns "View report"→CampaignReport (passes row id; the handler previously mispointed to the analytics CampaignReports list), TransactionalEmail "New Flow"→CreateTransactional, CampaignTags "Create Tag"→CreateCampaignTag, Surveys "Create Survey"→CreateSurvey, LandingPages "Create Page"→LandingPageTemplates, EmailContent "Edit"→EmailContentEditor(item.id) + "Create Content"→blank-canvas starter. Most wired via a one-attribute `:to` using `$route.params.accountId` (no script changes); EmailContent switched its list to useContentStore (so Edit has a real id) and Clone now calls the store. All 6 verified navigating in preview; type-check clean; 0 console errors. Build queue unchanged at 22 (this was closing a limitation on already-`done` rows, not new queue rows).
 - 2026-07-08 — **Marketing UX pass (user-directed design review, 4th sanctioned edit-exception)** — separate from the parity build queue; polishes already-shipped pages after a screenshot review. Six commits: (1) **Email Campaign wizard aligned** to the design system — custom header/v-stepper/red Discard → MpPageHeader + MpWizardSteps + MpConfirmDialog discard + shared footer (26ce5e2). (2) **Transactional SMS** — the nav item reused the email view; added a real useSms store + TransactionalSms list + CreateTransactionalSms flow with a GSM-7 segment counter, routes repointed (fff75fe). (3) **SMS Campaigns** — real marketing SMS list + compose drawer, route repointed (b4206c2). (4) **Acquisition Forms list** deeper redesign — useForms store, real mini form-preview thumbnails, segmented toggle, grid search, selection + MpFloatingBulkBar, empty states, de-duplicated kebab (91b2ff1; also improves the shared Lead Ads route). (5) **Form Builder** deeper redesign — MpWizardSteps with click-to-jump, real field palette (add/remove/reorder/required) + live preview of actual fields, working v-color-picker, dirty tracking + unsaved-changes guard (04f4798); MpWizardSteps gained an optional backward-compatible `clickable`/`maxStep` + `select` emit. All type-checked + preview-verified; 0 console errors. NOTE: user pasted UAT reference URLs (/acquisition/forms/select, /social_leads) but UAT is behind Keycloak login (not crawlable here) — redesign followed the prototype's own design system. Parity build queue unchanged at 22 (A03 Web Tracking, A08 Chatbots, A11 Settings ×20).
 - 2026-07-08 — **Phase 4 slice — A08 Service Chatbots BUILT** (user-approved; user shared legacy UAT reference screenshots of the "Customize your widget" chatbot flow). Commit e0a982d: the `/chatbot` route reused Tickets.vue (partial ⚑); replaced with a real full-page **Chatbot widget builder** in the prototype design system — new useChatbot store + ChatbotBuilder.vue, 3-pane layout (section nav · settings panel · live widget preview) with six sections (General, Appearance incl. preset + custom v-color-picker + launcher position + welcome msg, Business hours, Quick prompts reorder/toggle, Knowledge base sources + add-source, Pre-chat form settings + editable fields). Live preview reflects brand color / welcome / quick-prompt chips and swaps to the pre-chat form on that section. Route repointed to fullPage; nav item pre-existed. Fixed a real bug found in preview: `swatches`/`storeTypes` were plain const arrays in the store (storeToRefs drops non-refs → undefined) — moved to local component consts. type-check clean; all 6 sections verified; 0 console errors. **Build queue now 21 remaining** (A03 Web Tracking ×1, A11 Settings ×20). Next additive slice: A03 Web Tracking. A11 still deferred pending the logged-in crawl.
+- 2026-07-10 — **A06b Store Editor CRAWLED + Navigation BUILT** (user-directed slice via /uat-parity, approved plan). Deep crawl of the legacy store editor on the SANDBOX env (`sandbox.maropost.com/commerce/112201/stores/4/…`, logged-in claude-in-chrome session; the uat.maropost.com base remains Keycloak-blocked): 18 Part A rows (A06b) + observations digest + 10 new Part B rows (B-A06b: 5 partial, 4 missing remaining, 1 built). KEY CRAWL FACT: legacy storefront menus are FLAT (name + link rows, drag reorder) — the planned nesting/indent UI was dropped as it would be a new feature; the plan's recursive MenuItemTree.vue was simplified to inline flat rows for the same reason. Built the redesigned Navigation manager (commit dadefd9): useStoreNavigation store + StoreNavigation list + StoreNavigationMenuEditor (single-screen master-detail: details/items left, status + live MenuPreviewCard right; link-type select + resource autocomplete replaces legacy's full-width drill-in panel; accurate discard-guard replaces the misleading "Cancel Navigation Creation" modal) + 3 commerce-gated section-style routes + script-only SalesChannelDetail quick-action entry (5th sanctioned edit-exception, user-approved in plan). type-check clean, verified at 1280+375, 0 console errors. Build queue: A06b adds 9 pending rows (Pages, Blogs, Campaigns, Assets ×missing; shell/General/Themes/Assets/Integrations/Store-Settings ×partial) → queue now 30. STOP at slice boundary — next candidates: A06b Pages/Blogs (cohesive WYSIWYG pair) or A03 Web Tracking.
 - 2026-07-08 — **A08 Chatbots REDESIGNED into a full flow** (user-directed; shared legacy reference screens for the chatbot list/archive/publish + shopping/order-tracking conversation flows). Supersedes the single-page builder. 4 commits: (1) restructure — useChatbot → multi-chatbot store (per-store config + shopping/orderTracking blocks + prompt intents + preview catalog + CRUD), ChatbotList (filter/status/archive/quick-create), ChatbotArchived (restore), builder per-:id, routes ChatbotList//archived//:id + Service nav sub-group (cc84946); (2) Shopping Assistant + Order Tracking sections + Publish modal with install-script/copy/steps (cf63ef1); (3) redesigned live preview — scenario switcher (Welcome/Shopping/Order tracking/Open chat/Pre-chat) with chat bubbles, product carousel + add-to-cart, order-status card, and open-chat **intent routing** demonstrating "shows both shopping + support prompts; free-text routes by intent" (94ab034). Per user spec: one chatbot per store, many per user; clicking a chatbot opens its builder. No product images exist → product cards use icon thumbnails. type-check clean; all views + scenarios verified in preview; 0 console errors. Parity build queue unchanged at 21.
