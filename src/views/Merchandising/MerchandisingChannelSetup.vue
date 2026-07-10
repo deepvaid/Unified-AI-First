@@ -16,6 +16,21 @@ const channel = computed(() => salesChannels.getChannel(accountId.value, channel
 function reviewConnection() {
   notice.value = 'Connection review queued for this prototype channel.'
 }
+
+/* — Status & usage (Findify parity) — */
+
+const solutionsEnabled = ref(true)
+
+// Assembled without a literal closing script tag so the SFC parser stays happy.
+const jsTag = computed(() => {
+  const domain = channel.value ? channelDomain(channel.value) : 'store'
+  return `<scr` + `ipt src="//assets.example/${domain}.min.js" async defer></scr` + `ipt>`
+})
+
+function copyJsTag() {
+  navigator.clipboard?.writeText(jsTag.value)
+  notice.value = 'JavaScript tag copied to clipboard.'
+}
 </script>
 
 <template>
@@ -42,6 +57,45 @@ function reviewConnection() {
         <v-btn variant="outlined" class="text-none" prepend-icon="package" @click="reviewConnection">Check product sync</v-btn>
       </div>
     </v-card>
+
+    <v-card flat border rounded="lg" class="pa-6">
+      <div class="text-subtitle-1 font-weight-bold mb-1">Solutions status</div>
+      <div class="d-flex align-start ga-3">
+        <v-switch
+          v-model="solutionsEnabled"
+          color="success"
+          density="compact"
+          hide-details
+          label="Merchandising Cloud solutions"
+        />
+      </div>
+      <p class="text-caption text-medium-emphasis mb-0">
+        Turning this off pauses search, Smart Collections and recommendations across this channel.
+        Mock control — it has no effect in this prototype.
+      </p>
+    </v-card>
+
+    <v-card flat border rounded="lg" class="pa-6">
+      <div class="text-subtitle-1 font-weight-bold mb-4">Integration snippet</div>
+
+      <div class="text-caption text-medium-emphasis mb-1">JavaScript tag</div>
+      <div class="code-chip mb-5">
+        <code class="code-chip__code">{{ jsTag }}</code>
+        <v-btn
+          icon="copy"
+          variant="text"
+          size="x-small"
+          aria-label="Copy JavaScript tag"
+          @click="copyJsTag"
+        />
+      </div>
+
+      <div class="text-caption text-medium-emphasis mb-1">API key</div>
+      <div class="code-chip code-chip--inline">
+        <code class="code-chip__code">••••••••-[REDACTED]</code>
+      </div>
+      <p class="text-caption text-medium-emphasis mt-2 mb-0">Keys are hidden in this prototype.</p>
+    </v-card>
   </div>
 </template>
 
@@ -49,4 +103,22 @@ function reviewConnection() {
 .setup-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .setup-row { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--mp-border-subtle); border-radius: 8px; }
 @media (max-width: 720px) { .setup-grid { grid-template-columns: 1fr; } }
+
+.code-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+.code-chip--inline { display: inline-flex; }
+.code-chip__code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  overflow-x: auto;
+  flex-grow: 1;
+}
 </style>
