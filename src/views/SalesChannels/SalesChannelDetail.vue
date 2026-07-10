@@ -25,9 +25,11 @@ type ProductTarget =
   | 'dashboard'
   | 'davinci'
   | 'chatbot'
+  | 'blogs'
   | 'inventory'
   | 'locations'
   | 'navigation'
+  | 'pages'
   | 'pos'
   | 'products'
   | 'preview'
@@ -270,6 +272,22 @@ const quickActions = computed<QuickAction[]>(() => {
         icon: 'list-tree',
         color: 'primary',
         target: 'navigation',
+      },
+      {
+        id: 'pages',
+        title: 'Pages',
+        description: 'Content pages',
+        icon: 'file-text',
+        color: 'contacts',
+        target: 'pages',
+      },
+      {
+        id: 'blogs',
+        title: 'Blogs',
+        description: 'Posts & guides',
+        icon: 'rss',
+        color: 'warning',
+        target: 'blogs',
       },
       {
         id: 'analytics',
@@ -583,6 +601,14 @@ function runAction(target: ProductTarget) {
   }
   if (target === 'navigation') {
     router.push({ name: 'StoreNavigation', params: { accountId: accountId.value, channelId: channelId.value } })
+    return
+  }
+  if (target === 'pages') {
+    router.push({ name: 'StorePages', params: { accountId: accountId.value, channelId: channelId.value } })
+    return
+  }
+  if (target === 'blogs') {
+    router.push({ name: 'StoreBlogs', params: { accountId: accountId.value, channelId: channelId.value } })
     return
   }
   if (target === 'locations') {

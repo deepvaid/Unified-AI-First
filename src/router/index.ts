@@ -105,6 +105,12 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/sales_channels/:channelId/navigation', name: 'StoreNavigation', component: () => import('@/views/SalesChannels/StoreNavigation.vue'), meta: commerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/navigation/new', name: 'StoreNavigationMenuCreate', component: () => import('@/views/SalesChannels/StoreNavigationMenuEditor.vue'), meta: commerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/navigation/:menuId', name: 'StoreNavigationMenuEdit', component: () => import('@/views/SalesChannels/StoreNavigationMenuEditor.vue'), meta: commerceGate },
+  { path: '/accounts/:accountId/sales_channels/:channelId/pages', name: 'StorePages', component: () => import('@/views/SalesChannels/StoreContentList.vue'), meta: { ...commerceGate, contentKind: 'page' } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/pages/new', name: 'StorePageCreate', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { ...commerceGate, contentKind: 'page' } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/pages/:entryId', name: 'StorePageEdit', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { ...commerceGate, contentKind: 'page' } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/blogs', name: 'StoreBlogs', component: () => import('@/views/SalesChannels/StoreContentList.vue'), meta: { ...commerceGate, contentKind: 'blog' } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/blogs/new', name: 'StoreBlogCreate', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { ...commerceGate, contentKind: 'blog' } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/blogs/:entryId', name: 'StoreBlogEdit', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { ...commerceGate, contentKind: 'blog' } },
   { path: '/accounts/:accountId/sales_channels/:channelId', name: 'SalesChannelDetail', component: () => import('@/views/SalesChannels/SalesChannelDetail.vue'), meta: commerceGate },
 
   // 6. Marketing
