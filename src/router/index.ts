@@ -100,6 +100,11 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/sales_channels/:channelId/locations/:locationId', name: 'SalesChannelLocationDetail', component: () => import('@/views/SalesChannels/SalesChannelLocationDetail.vue'), meta: commerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/theme', name: 'StoreThemeBuilder', component: () => import('@/views/SalesChannels/StoreThemeBuilder.vue'), meta: { ...commerceGate, fullPage: true } },
   { path: '/accounts/:accountId/sales_channels/:channelId/theme/code', name: 'StoreThemeCode', component: () => import('@/views/SalesChannels/StoreThemeCode.vue'), meta: { ...commerceGate, fullPage: true } },
+  // Store editor sections hang off /sales_channels/:channelId/<section>; a shared
+  // StoreEditorLayout can adopt these as children once more sections exist (UAT parity A06b).
+  { path: '/accounts/:accountId/sales_channels/:channelId/navigation', name: 'StoreNavigation', component: () => import('@/views/SalesChannels/StoreNavigation.vue'), meta: commerceGate },
+  { path: '/accounts/:accountId/sales_channels/:channelId/navigation/new', name: 'StoreNavigationMenuCreate', component: () => import('@/views/SalesChannels/StoreNavigationMenuEditor.vue'), meta: commerceGate },
+  { path: '/accounts/:accountId/sales_channels/:channelId/navigation/:menuId', name: 'StoreNavigationMenuEdit', component: () => import('@/views/SalesChannels/StoreNavigationMenuEditor.vue'), meta: commerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId', name: 'SalesChannelDetail', component: () => import('@/views/SalesChannels/SalesChannelDetail.vue'), meta: commerceGate },
 
   // 6. Marketing

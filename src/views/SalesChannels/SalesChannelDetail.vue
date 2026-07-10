@@ -27,6 +27,7 @@ type ProductTarget =
   | 'chatbot'
   | 'inventory'
   | 'locations'
+  | 'navigation'
   | 'pos'
   | 'products'
   | 'preview'
@@ -261,6 +262,14 @@ const quickActions = computed<QuickAction[]>(() => {
         icon: CONNECTED_CLOUD_ICONS.merchandise,
         color: channel.value?.webStore?.merchandiseConnected ? 'success' : 'warning',
         target: 'merchandise',
+      },
+      {
+        id: 'navigation',
+        title: 'Navigation',
+        description: 'Storefront menus',
+        icon: 'list-tree',
+        color: 'primary',
+        target: 'navigation',
       },
       {
         id: 'analytics',
@@ -570,6 +579,10 @@ function runAction(target: ProductTarget) {
   }
   if (target === 'shopping_assistant') {
     router.push({ name: 'MerchandisingRecommendations', params: { accountId: accountId.value } })
+    return
+  }
+  if (target === 'navigation') {
+    router.push({ name: 'StoreNavigation', params: { accountId: accountId.value, channelId: channelId.value } })
     return
   }
   if (target === 'locations') {
