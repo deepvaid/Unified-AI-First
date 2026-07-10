@@ -122,7 +122,6 @@ function confirmDelete() {
     <MpPageHeader
       title="Campaigns"
       :subtitle="`Scheduled storefront campaigns for ${channel.name}`"
-      :back-to="{ name: 'SalesChannelDetail', params: { accountId, channelId } }"
     >
       <template #actions>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New campaign</v-btn>

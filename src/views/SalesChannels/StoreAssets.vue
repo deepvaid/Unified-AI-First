@@ -105,7 +105,6 @@ function onFilesPicked(event: Event) {
     <MpPageHeader
       title="Assets"
       :subtitle="`Images and files for ${channel.name}`"
-      :back-to="{ name: 'SalesChannelDetail', params: { accountId, channelId } }"
     >
       <template #actions>
         <v-select

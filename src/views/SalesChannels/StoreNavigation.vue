@@ -95,7 +95,6 @@ const deleteMessage = computed(() => {
     <MpPageHeader
       title="Navigation"
       :subtitle="`Storefront menus for ${channel.name}`"
-      :back-to="{ name: 'SalesChannelDetail', params: { accountId, channelId } }"
     >
       <template #actions>
         <v-btn

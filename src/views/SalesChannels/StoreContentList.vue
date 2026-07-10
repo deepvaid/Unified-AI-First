@@ -133,7 +133,6 @@ function saveSeo() {
     <MpPageHeader
       :title="copy.title"
       :subtitle="`Storefront ${copy.title.toLowerCase()} for ${channel.name}`"
-      :back-to="{ name: 'SalesChannelDetail', params: { accountId, channelId } }"
     >
       <template #actions>
         <v-btn v-if="isBlog" variant="outlined" prepend-icon="settings" class="text-none" @click="openSeoDrawer">SEO settings</v-btn>

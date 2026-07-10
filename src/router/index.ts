@@ -100,20 +100,28 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/sales_channels/:channelId/locations/:locationId', name: 'SalesChannelLocationDetail', component: () => import('@/views/SalesChannels/SalesChannelLocationDetail.vue'), meta: commerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/theme', name: 'StoreThemeBuilder', component: () => import('@/views/SalesChannels/StoreThemeBuilder.vue'), meta: { ...commerceGate, fullPage: true } },
   { path: '/accounts/:accountId/sales_channels/:channelId/theme/code', name: 'StoreThemeCode', component: () => import('@/views/SalesChannels/StoreThemeCode.vue'), meta: { ...commerceGate, fullPage: true } },
-  // Store editor sections hang off /sales_channels/:channelId/<section>; a shared
-  // StoreEditorLayout can adopt these as children once more sections exist (UAT parity A06b).
-  { path: '/accounts/:accountId/sales_channels/:channelId/navigation', name: 'StoreNavigation', component: () => import('@/views/SalesChannels/StoreNavigation.vue'), meta: commerceGate },
-  { path: '/accounts/:accountId/sales_channels/:channelId/navigation/new', name: 'StoreNavigationMenuCreate', component: () => import('@/views/SalesChannels/StoreNavigationMenuEditor.vue'), meta: commerceGate },
-  { path: '/accounts/:accountId/sales_channels/:channelId/navigation/:menuId', name: 'StoreNavigationMenuEdit', component: () => import('@/views/SalesChannels/StoreNavigationMenuEditor.vue'), meta: commerceGate },
-  { path: '/accounts/:accountId/sales_channels/:channelId/pages', name: 'StorePages', component: () => import('@/views/SalesChannels/StoreContentList.vue'), meta: { ...commerceGate, contentKind: 'page' } },
-  { path: '/accounts/:accountId/sales_channels/:channelId/pages/new', name: 'StorePageCreate', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { ...commerceGate, contentKind: 'page' } },
-  { path: '/accounts/:accountId/sales_channels/:channelId/pages/:entryId', name: 'StorePageEdit', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { ...commerceGate, contentKind: 'page' } },
-  { path: '/accounts/:accountId/sales_channels/:channelId/blogs', name: 'StoreBlogs', component: () => import('@/views/SalesChannels/StoreContentList.vue'), meta: { ...commerceGate, contentKind: 'blog' } },
-  { path: '/accounts/:accountId/sales_channels/:channelId/blogs/new', name: 'StoreBlogCreate', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { ...commerceGate, contentKind: 'blog' } },
-  { path: '/accounts/:accountId/sales_channels/:channelId/blogs/:entryId', name: 'StoreBlogEdit', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { ...commerceGate, contentKind: 'blog' } },
-  { path: '/accounts/:accountId/sales_channels/:channelId/campaigns', name: 'StoreCampaigns', component: () => import('@/views/SalesChannels/StoreCampaigns.vue'), meta: commerceGate },
-  { path: '/accounts/:accountId/sales_channels/:channelId/assets', name: 'StoreAssets', component: () => import('@/views/SalesChannels/StoreAssets.vue'), meta: commerceGate },
-  { path: '/accounts/:accountId/sales_channels/:channelId', name: 'SalesChannelDetail', component: () => import('@/views/SalesChannels/SalesChannelDetail.vue'), meta: commerceGate },
+  // Store editor shell (UAT parity A06b): StoreEditorLayout adds a per-store section
+  // rail around the hub + section pages. URLs/route names unchanged; fullPage theme
+  // routes and POS-oriented locations routes stay standalone above.
+  {
+    path: '/accounts/:accountId/sales_channels/:channelId',
+    component: () => import('@/views/SalesChannels/StoreEditorLayout.vue'),
+    meta: commerceGate,
+    children: [
+      { path: '', name: 'SalesChannelDetail', component: () => import('@/views/SalesChannels/SalesChannelDetail.vue') },
+      { path: 'navigation', name: 'StoreNavigation', component: () => import('@/views/SalesChannels/StoreNavigation.vue') },
+      { path: 'navigation/new', name: 'StoreNavigationMenuCreate', component: () => import('@/views/SalesChannels/StoreNavigationMenuEditor.vue') },
+      { path: 'navigation/:menuId', name: 'StoreNavigationMenuEdit', component: () => import('@/views/SalesChannels/StoreNavigationMenuEditor.vue') },
+      { path: 'pages', name: 'StorePages', component: () => import('@/views/SalesChannels/StoreContentList.vue'), meta: { contentKind: 'page' } },
+      { path: 'pages/new', name: 'StorePageCreate', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { contentKind: 'page' } },
+      { path: 'pages/:entryId', name: 'StorePageEdit', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { contentKind: 'page' } },
+      { path: 'blogs', name: 'StoreBlogs', component: () => import('@/views/SalesChannels/StoreContentList.vue'), meta: { contentKind: 'blog' } },
+      { path: 'blogs/new', name: 'StoreBlogCreate', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { contentKind: 'blog' } },
+      { path: 'blogs/:entryId', name: 'StoreBlogEdit', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { contentKind: 'blog' } },
+      { path: 'campaigns', name: 'StoreCampaigns', component: () => import('@/views/SalesChannels/StoreCampaigns.vue') },
+      { path: 'assets', name: 'StoreAssets', component: () => import('@/views/SalesChannels/StoreAssets.vue') },
+    ],
+  },
 
   // 6. Marketing
   { path: '/accounts/:accountId/marketing', name: 'MarketingHome', component: () => import('@/views/Marketing/MarketingLanding.vue') },
