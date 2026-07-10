@@ -57,18 +57,3 @@ export function isMerchandisingChannel(channel: SalesChannel): boolean {
 export function merchandisingChannels(channels: SalesChannel[], accountId: string): SalesChannel[] {
   return channels.filter((channel) => channel.accountId === accountId && isMerchandisingChannel(channel))
 }
-
-export function merchandisingRoute(accountId: string, channelId: string, section = '') {
-  const suffix = section ? `/${section.replace(/^\/+/, '')}` : ''
-  return `/accounts/${accountId}/sales_channels/${channelId}/merchandising${suffix}`
-}
-
-export function routeSectionForLegacyPath(path: string): string {
-  if (path.includes('/search/preview')) return 'search/preview'
-  if (path.includes('/search/synonyms')) return 'search/synonyms'
-  if (path.includes('/search/redirects')) return 'search/redirects'
-  if (path.includes('/collections')) return 'smart-collections/collections'
-  if (path.includes('/recommendations')) return 'recommendations'
-  if (path.includes('/fields')) return 'setup'
-  return ''
-}
