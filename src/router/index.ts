@@ -8,7 +8,8 @@ declare module 'vue-router' {
     railShell?: boolean
     storeEditor?: boolean
     merchandisingShell?: boolean
-    capability?: string
+    merchScope?: 'search' | 'collections'
+    reportKind?: 'snapshot' | 'search' | 'collections' | 'recommendations'
     requires?: SubscriptionKey
   }
 }
@@ -82,19 +83,36 @@ const routes: RouteRecordRaw[] = [
     meta: { ...commerceGate, merchandisingShell: true },
     children: [
       { path: '', name: 'MerchandisingChannelOverview', component: () => import('@/views/Merchandising/MerchandisingChannelOverview.vue') },
+      // Search tools (Findify parity, A12)
       { path: 'search/preview', name: 'MerchandisingChannelSearchPreview', component: () => import('@/views/Merchandising/SearchPreview.vue') },
+      { path: 'search/pinning', name: 'MerchandisingChannelSearchPinning', component: () => import('@/views/Merchandising/SearchPinning.vue') },
+      { path: 'search/rules', name: 'MerchandisingChannelSearchRules', component: () => import('@/views/Merchandising/SearchRules.vue') },
+      { path: 'search/promo-cards', name: 'MerchandisingChannelSearchPromos', component: () => import('@/views/Merchandising/MerchPromoCards.vue'), meta: { merchScope: 'search' } },
+      { path: 'search/banners', name: 'MerchandisingChannelSearchBanners', component: () => import('@/views/Merchandising/MerchBanners.vue'), meta: { merchScope: 'search' } },
+      { path: 'search/blacklisting', name: 'MerchandisingChannelBlacklisting', component: () => import('@/views/Merchandising/SearchBlacklisting.vue') },
       { path: 'search/synonyms', name: 'MerchandisingChannelSynonyms', component: () => import('@/views/Merchandising/Synonyms.vue') },
       { path: 'search/redirects', name: 'MerchandisingChannelRedirects', component: () => import('@/views/Merchandising/PageRedirects.vue') },
+      { path: 'search/content', name: 'MerchandisingChannelContent', component: () => import('@/views/Merchandising/SearchContent.vue') },
+      // Smart Collections
       { path: 'smart-collections/collections', name: 'MerchandisingChannelCollections', component: () => import('@/views/Merchandising/Collections.vue') },
       { path: 'smart-collections/default-merchandising', name: 'MerchandisingChannelDefaults', component: () => import('@/views/Merchandising/DefaultMerchandising.vue') },
       { path: 'smart-collections/default-merchandising/pinning/:ruleId', name: 'MerchandisingChannelPinning', component: () => import('@/views/Merchandising/PinningEditor.vue') },
       { path: 'smart-collections/default-merchandising/rules/:ruleId', name: 'MerchandisingChannelRuleEdit', component: () => import('@/views/Merchandising/RuleEditor.vue') },
+      { path: 'smart-collections/promo-cards', name: 'MerchandisingChannelCollectionPromos', component: () => import('@/views/Merchandising/MerchPromoCards.vue'), meta: { merchScope: 'collections' } },
+      { path: 'smart-collections/banners', name: 'MerchandisingChannelCollectionBanners', component: () => import('@/views/Merchandising/MerchBanners.vue'), meta: { merchScope: 'collections' } },
+      // Recommendations
       { path: 'recommendations/:engineId', name: 'MerchandisingChannelEngineEdit', component: () => import('@/views/Merchandising/EngineEditor.vue') },
       { path: 'recommendations', name: 'MerchandisingChannelRecommendations', component: () => import('@/views/Merchandising/RecommendationEngines.vue') },
-      { path: 'analytics', name: 'MerchandisingChannelAnalytics', component: () => import('@/views/Merchandising/MerchandisingCapabilityPlaceholder.vue'), meta: { capability: 'analytics' } },
+      // Analytics (one shared view, four reports)
+      { path: 'analytics', name: 'MerchandisingChannelAnalytics', component: () => import('@/views/Merchandising/MerchandisingAnalytics.vue'), meta: { reportKind: 'snapshot' } },
+      { path: 'analytics/search', name: 'MerchandisingChannelAnalyticsSearch', component: () => import('@/views/Merchandising/MerchandisingAnalytics.vue'), meta: { reportKind: 'search' } },
+      { path: 'analytics/collections', name: 'MerchandisingChannelAnalyticsCollections', component: () => import('@/views/Merchandising/MerchandisingAnalytics.vue'), meta: { reportKind: 'collections' } },
+      { path: 'analytics/recommendations', name: 'MerchandisingChannelAnalyticsRecommendations', component: () => import('@/views/Merchandising/MerchandisingAnalytics.vue'), meta: { reportKind: 'recommendations' } },
+      // Settings
       { path: 'setup', name: 'MerchandisingChannelSetup', component: () => import('@/views/Merchandising/MerchandisingChannelSetup.vue') },
+      { path: 'setup/product-sync', name: 'MerchandisingChannelProductSync', component: () => import('@/views/Merchandising/MerchProductSync.vue') },
+      { path: 'setup/integrations', name: 'MerchandisingChannelIntegrations', component: () => import('@/views/Merchandising/MerchIntegrationsPage.vue') },
       { path: 'setup/fields', name: 'MerchandisingChannelFields', component: () => import('@/views/Merchandising/FieldTransformations.vue') },
-      { path: 'capabilities/:capability', name: 'MerchandisingChannelCapability', component: () => import('@/views/Merchandising/MerchandisingCapabilityPlaceholder.vue') },
       { path: ':pathMatch(.*)*', redirect: { name: 'MerchandisingChannelOverview' } },
     ],
   },
