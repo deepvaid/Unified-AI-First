@@ -329,6 +329,44 @@ Authenticated read-only crawl completed 2026-07-10 in the user-authenticated in-
 - Data Journeys: separate node builder — triggers (Scheduled, Recurring, Import/Export Finished, Campaign Sent, Report Generated, File Uploaded, API Event) + actions (FTP Upload, Send Campaign, Start Import/Export, Send to Facebook, Secure List Import); same canvas paradigm as marketing journeys.
 - Cross-cutting UAT pain: slow loads (3–4s), modal-in-modal config, kebab-only row actions, inconsistent CTA labels, terse report tab names.
 
+## A12 — Merchandise Cloud (Findify)   [crawl-status: crawled]
+
+Crawled 2026-07-10 (user-directed; two delegated haiku browser agents) on `https://dashboard.findify.io` — authenticated demo shop (`findify-demo-shop.myshopify.com`, TEST env). Sensitive values (API key, JS tag) recorded as [REDACTED]; Account menu titles-only. Screenshots not captured to disk — URL-only rows per convention.
+
+| # | Findify page/flow | Path | Type | Notes | Crawl status |
+|---|---|---|---|---|---|
+| 1 | Search ▸ Pinning (query search + pin grid + pins table) | /solutions/search/pinning | page+form | Query input, products-per-row/page dropdowns, drag-to-pin grid; table: query, pinned count, edit/delete | crawled |
+| 2 | Search ▸ Merchandising Rules | /solutions/search/rules | page+wizard | Status toggle + name table; multi-step create: Name → search terms → conditions | crawled |
+| 3 | Search ▸ Promo Cards | /solutions/search/promos | page | Card gallery: preview, status toggle, delete | crawled |
+| 4 | Search ▸ Banners | /solutions/search/banners | page | Card gallery: preview, status toggle, delete | crawled |
+| 5 | Search ▸ Blacklisting — Search Suggestions | /solutions/search/blacklisting | tab+form | Logic dropdown (exact-match), term input; table: logic, term, actions | crawled |
+| 6 | Search ▸ Blacklisting — Product Matches | /solutions/search/blacklisting | tab | Product lookup; table: product (image), status toggle | crawled |
+| 7 | Search ▸ Synonyms | → maropost-dashboard.findify.io /search/synonyms | page | NEW dashboard. Table: status toggle, type (two-way/one-way), queries, leads-to; search + status/type filters + UPLOAD + ADD NEW | crawled |
+| 8 | Search ▸ Page Redirects | /solutions/search/redirects | page+form | Terms + URL inputs; table: queries, URL, actions | crawled |
+| 9 | Search ▸ Preview / Content (BETA) | /solutions/search/* | page | BETA; not deep-crawled | crawled |
+| 10 | Smart Collections ▸ Collections | /solutions/smart-collections/collections | page+form | "Seamless Shopify collections" toggle; table: status toggle, collection, updated, filters type (Auto/Manual), delete/edit; edit tabs: Shopify Filters / Activation / Configured Filters & Sorting | crawled |
+| 11 | Smart Collections ▸ Pinning | /solutions/smart-collections/pinning | page | Collection-scoped: CHOOSE COLLECTION dropdown; table: collection, pinned products | crawled |
+| 12 | Smart Collections ▸ Merchandising Rules | /solutions/smart-collections/rules | page | Default rules + All rules sections; CREATE NEW + "USE NEW EXPERIENCE" (→ new dashboard) | crawled |
+| 13 | Smart Collections ▸ Promo Cards / Banners | /solutions/smart-collections/promos, /banners | page | Card grids, collection-scoped variants of #3/#4 | crawled |
+| 14 | Recommendations | → maropost-dashboard /recommendations/engines | page | Table: state toggle, engine name, page, type, updated, actions. Types: Popular, Newest, Recently Viewed, Personalized, Visual, Frequently Purchased Together, Viewed Together | crawled |
+| 15 | Analytics ▸ Snapshot | /analytics/snapshot | report | Date-range picker; KPIs: revenue, MC revenue share, AOV, products sold, visits, unique visitors; revenue line chart + distribution table | crawled |
+| 16 | Analytics ▸ Search | /analytics/search | report | Top searches / zero-results / partial matches / top filters; columns: query, searches, conversion %, orders, revenue | crawled |
+| 17 | Analytics ▸ Smart Collections | /analytics/collections | report | Top collections + most-utilized filters; columns: URL, traffic, conversion, orders, revenue | crawled |
+| 18 | Analytics ▸ Recommendations | /analytics/recommendations | report | Columns: widget, page, orders, sessions, conversion, revenue | crawled |
+| 19 | Settings ▸ Status & usage | /setup/integration | page | Solutions status toggle (LIVE), Shopify liquid toggle, JS tag [REDACTED], API key [REDACTED]; status cards: feed pull, webhooks, active sync, search engine; indexed/create/update/delete counts | crawled |
+| 20 | Settings ▸ Product Sync | /setup/product-sync/overview | page | Sync overview + indexed products count | crawled |
+| 21 | Settings ▸ Integrations | /setup/integrations | page | Rating & Reviews cards: Yotpo, Stamped, Lipscore, Reviews.io, Custom — INTEGRATE buttons | crawled |
+| 22 | Settings ▸ Primary Setup | /setup/primary/* | tabs | Filtering (filter groups table: group, #products, #filters, edit/toggle), Color Mapping, Stock, Translations | crawled |
+| 23 | Settings ▸ Advanced Setup | /setup/advanced/* | tabs | IP Blocking, General, Search/Collections, Autocomplete, Recommendations, Trend scoring (BETA) | crawled |
+| 24 | Account | (menu) | — | Titles only per policy | blocked |
+
+## Findify observations (2026-07-10)
+
+- **Two dashboards in flight**: Recommendations, Smart-Collections Merchandising Rules ("USE NEW EXPERIENCE"), and Synonyms redirect to `maropost-dashboard.findify.io` — a newer Maropost-branded dashboard. The old app is mid-migration; our redesign should follow the NEW experience's spirit (cleaner tables, status toggles, filters), not the legacy chrome.
+- Collection-scoped merchandising tools (Pinning/Rules/Promos/Banners under Smart Collections) are the SAME tools as the Search versions plus a "CHOOSE COLLECTION" selector.
+- Shared legacy patterns: list pages = header + create CTA + filter/search + table w/ inline status toggles + hover edit/delete icons; forms are full pages (no drawers); analytics = date-range picker top-right + KPI/table leaves.
+- Pains: no delete confirmations observed; hover-only row actions; Settings "Status & usage" mixes status, integration snippets, and credentials with no hierarchy; frequent skeleton/spinner waits; cross-dashboard redirects break flow; forms lack inline guidance.
+
 ## Part B — Gap Matrix
 
 <!-- Filled by gap analysis (phase-prompts.md Prompt 2), once, after all modules are crawled. -->
@@ -589,6 +627,32 @@ Built 2026-07-07 from Part A (all 11 modules) diffed against `src/router/index.t
 - Critical implementation prerequisites: canonical Sales Channel provider/capability model, `accountId + channelId` ownership, canonical route family, selector, rail shell, and guarded editor sessions.
 - Existing work worth preserving: `MpSectionRail`, Store Editor invalid-channel/switch-root patterns, collection pinning, merchandising-rule preview, recommendation engine editor, synonym bulk actions, and redirect create/delete.
 - Accessibility verification still required in implementation: keyboard and touch reordering, focus restoration after switch/confirm, live announcements for ranking changes, validation summaries, contrast, 1280px and 375px layouts, and loading/error/empty states.
+
+### B-A12 — Merchandise Cloud (Findify) _(full-parity build directive, 2026-07-10)_
+| # | Findify page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Channel workspace shell + selector | MerchandisingLayout/MerchandisingHome | exists | | | b2066e9 foundation; broken nav/chrome fixed this slice |
+| 2 | Search ▸ Pinning | — | missing | pending | | Query pins: search + pin grid + pins table |
+| 3 | Search ▸ Merchandising Rules | MerchandisingChannelDefaults (rules tab) | partial | pending | | Rules exist collection-oriented; needs search-scoped rules list |
+| 4 | Search ▸ Promo Cards | — | missing | pending | | Card gallery + status toggles |
+| 5 | Search ▸ Banners | — | missing | pending | | Card gallery + target URL |
+| 6 | Search ▸ Blacklisting (suggestions + product matches) | — | missing | pending | | Two tabs |
+| 7 | Search ▸ Synonyms | MerchandisingChannelSynonyms | exists | | | Aligns with new-dashboard table incl. type/status filters |
+| 8 | Search ▸ Page Redirects | MerchandisingChannelRedirects | exists | | | |
+| 9 | Search ▸ Preview | MerchandisingChannelSearchPreview | exists | | | |
+| 10 | Search ▸ Content (BETA) | — | missing | pending | | Light list per BETA scope |
+| 11 | Smart Collections ▸ Collections (+ edit tabs) | MerchandisingChannelCollections | partial | pending | | List exists; edit tabs (filters/activation/sorting) light |
+| 12 | Smart Collections ▸ Pinning (collection-scoped) | MerchandisingChannelDefaults (pinning tab) | exists | | | PinningEditor covers; channel-scoped links fixed this slice |
+| 13 | Smart Collections ▸ Promo Cards / Banners | — | missing | pending | | Reuse Search views w/ collection scope |
+| 14 | Recommendations | MerchandisingChannelRecommendations | exists | | | Engine types align w/ crawl (7 types) |
+| 15 | Analytics ▸ Snapshot | — | missing | pending | | KPIs + revenue chart |
+| 16 | Analytics ▸ Search | — | missing | pending | | Top searches / zero results tables |
+| 17 | Analytics ▸ Smart Collections | — | missing | pending | | Top collections table |
+| 18 | Analytics ▸ Recommendations | — | missing | pending | | Widget performance table |
+| 19 | Settings ▸ Status & usage | MerchandisingChannelSetup | partial | pending | | Setup page exists; needs status cards + [REDACTED] snippet/key blocks |
+| 20 | Settings ▸ Product Sync | — | missing | pending | | Sync overview + indexed counts |
+| 21 | Settings ▸ Integrations | — | missing | pending | | Rating & Reviews cards |
+| 22 | Settings ▸ Primary/Advanced Setup | MerchandisingChannelFields | partial | pending | | Field transformations ≈ primary setup slice; rest recorded, build light |
 
 ## Phase 3 — Proposed build order (awaiting user approval, 2026-07-07)
 
