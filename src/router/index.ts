@@ -191,6 +191,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Settings',
     component: () => import('@/views/Settings/SettingsLayout.vue'),
     redirect: { name: 'SettingsAccountDefaults' },
+    meta: { railShell: true },
     children: [
       { path: 'general',             name: 'SettingsGeneral',            component: () => import('@/views/Settings/pages/GeneralPage.vue') },
       { path: 'notifications',       name: 'SettingsNotifications',      component: () => import('@/views/Settings/pages/NotificationsPage.vue') },

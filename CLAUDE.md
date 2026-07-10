@@ -46,7 +46,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 ├── maropost-screenshots/      ← 50+ screenshots of the real app
 ├── src/
 │   ├── components/            ← 65 components, all with stories (see Component Inventory)
-│   │   ├── Mp*.vue / ModuleLandingPage.vue ← 22 top-level design-system components
+│   │   ├── Mp*.vue / ModuleLandingPage.vue ← 23 top-level design-system components
 │   │   ├── layout/            ← AppBar (top bar) + AppSidebar (left nav, collapsible rail)
 │   │   ├── copilot/           ← 13 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
 │   │   ├── dashboards/        ← 7 dashboard containers + widgets/ (5) + wizard/ (2)
@@ -84,7 +84,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ## Component Inventory
 
-22 top-level components (post design-system program, 2026-07). **Full reference:**
+23 top-level components (post design-system program, 2026-07). **Full reference:**
 `docs/design-system/` (structure, Vuetify mapping, token plan, handoff) + Storybook autodocs (`npm run storybook`).
 
 ### Layout & structure
@@ -119,6 +119,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 ### Navigation
 
 - **MpFilterTabs** — `tabs` ({ label, key, count? }[]), `ariaLabel?`, `controlsId?` · model `v-model` (active key). Tab filtering above data tables.
+- **MpSectionRail** — `ariaLabel` (required), `groups` ({ title?, items: { slug, label, icon?, to, match?, count?, external? }[] }[]), `title?`, `backTo?`/`backLabel?`, `identity?` ({ name, caption?, icon? }), `switcherOptions?`/`switcherLabel?`, `searchable?`/`searchPlaceholder?` · slot `#footer` · emits `switch`. In-content 260px section rail for shell layouts (store editor, Settings-style workspaces); active = `route.name` ∈ item.match. The global AppSidebar auto-minimizes while a rail shell is on screen (route meta `railShell`/`storeEditor`).
 - **MpWizardSteps** — `steps` (string[]), `current` (1-based). Passive wizard step indicator with `aria-current`.
 
 ### Overlays

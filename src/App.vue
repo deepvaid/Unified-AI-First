@@ -77,6 +77,8 @@ const salesChannelsStore = useSalesChannelsStore()
 const railBeforeShell = ref<boolean | null>(null)
 
 const inRailShell = computed(() => {
+  // Unconditional rail shells (e.g. Settings) mark their parent route directly.
+  if (route.meta?.railShell) return true
   if (!route.meta?.storeEditor) return false
   const aId = String(route.params.accountId ?? '')
   const cId = String(route.params.channelId ?? '')
