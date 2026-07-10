@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref, type Ref } from 'vue'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 
 /* ── Types ─────────────────────────────────────────────────────── */
 
@@ -141,6 +142,16 @@ export interface SearchPin {
   channelId: string
   query: string
   pinnedProductIds: string[]
+  updatedAt: string
+}
+
+export interface SearchRule {
+  id: string
+  channelId: string
+  name: string
+  terms: string[]
+  conditions: MerchCondition[]
+  status: 'active' | 'inactive'
   updatedAt: string
 }
 
@@ -459,6 +470,24 @@ const searchPins: SearchPin[] = [
   { id: 'sp5', channelId: FASHION_CHANNEL_ID, query: 'blazer', pinnedProductIds: ['fp2'], updatedAt: 'May 8, 2026' },
 ]
 
+const searchRules: SearchRule[] = [
+  {
+    id: 'srl1', channelId: DEFAULT_CHANNEL_ID, name: 'Boost denim on jeans searches', terms: ['jeans', 'denim'],
+    conditions: [{ id: 'srlc1', action: 'promote', weight: 70, field: 'Category', values: ['Denim'] }],
+    status: 'active', updatedAt: 'May 15, 2026',
+  },
+  {
+    id: 'srl2', channelId: DEFAULT_CHANNEL_ID, name: 'Hide Verve on sale queries', terms: ['sale', 'clearance'],
+    conditions: [{ id: 'srlc2', action: 'exclude', field: 'Brand', values: ['Verve'] }],
+    status: 'inactive', updatedAt: 'May 2, 2026',
+  },
+  {
+    id: 'srl3', channelId: FASHION_CHANNEL_ID, name: 'Promote new season on dress searches', terms: ['dress', 'gown'],
+    conditions: [{ id: 'srlc3', action: 'promote', weight: 60, field: 'Tags', values: ['new'] }],
+    status: 'active', updatedAt: 'May 16, 2026',
+  },
+]
+
 const promoCards: PromoCard[] = [
   { id: 'promo1', channelId: DEFAULT_CHANNEL_ID, scope: 'search', title: 'Summer sale — up to 40% off', imageLabel: 'Summer sale hero', status: 'active', updatedAt: 'May 14, 2026' },
   { id: 'promo2', channelId: DEFAULT_CHANNEL_ID, scope: 'collections', title: 'New denim drop', imageLabel: 'Denim lifestyle shot', status: 'inactive', updatedAt: 'Apr 29, 2026' },
@@ -661,6 +690,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
   const allEngines = ref<RecommendationEngine[]>([...recommendationEngines, ...fashionRecommendationEngines])
   const allFields = ref<FieldTransformation[]>([...fieldTransformations, ...fashionFieldTransformations])
   const allSearchPins = ref<SearchPin[]>(searchPins.map((p) => ({ ...p, pinnedProductIds: [...p.pinnedProductIds] })))
+  const allSearchRules = ref<SearchRule[]>(searchRules.map((r) => ({ ...r, terms: [...r.terms], conditions: r.conditions.map((c) => ({ ...c, values: [...c.values] })) })))
   const allPromoCards = ref<PromoCard[]>([...promoCards])
   const allBanners = ref<MerchBanner[]>([...merchBanners])
   const allBlacklistTerms = ref<BlacklistTerm[]>([...blacklistTerms])
@@ -677,6 +707,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
   const engineList = channelView(allEngines)
   const fieldList = channelView(allFields)
   const searchPinList = channelView(allSearchPins)
+  const searchRuleList = channelView(allSearchRules)
   const promoCardList = channelView(allPromoCards)
   const bannerList = channelView(allBanners)
   const blacklistTermList = channelView(allBlacklistTerms)
@@ -694,9 +725,22 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     syncInfoByChannel[activeChannelId.value] ?? syncInfoByChannel[DEFAULT_CHANNEL_ID]!,
   )
 
-  const activeStore = computed(() =>
-    merchStores.value.find((s) => s.id === activeStoreId.value) ?? merchStores.value[0]!,
-  )
+  // When a sales channel is active (channel-scoped workspace), activeStore
+  // mirrors that channel so view subtitles show the right domain/platform.
+  const salesChannelsStore = useSalesChannelsStore()
+
+  const activeStore = computed<MerchStore>(() => {
+    const base = merchStores.value.find((s) => s.id === activeStoreId.value) ?? merchStores.value[0]!
+    if (!activeChannelId.value) return base
+    const channel = salesChannelsStore.channels.find((c) => c.id === activeChannelId.value)
+    if (!channel?.webStore?.domain) return base
+    return {
+      ...base,
+      id: channel.id,
+      domain: channel.webStore.domain,
+      platform: channel.provider === 'shopify' ? 'Shopify' : base.platform,
+    }
+  })
 
   function setActiveStore(id: string) {
     if (merchStores.value.some((s) => s.id === id)) {
@@ -919,6 +963,40 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     allSearchPins.value = allSearchPins.value.filter((p) => p.id !== id)
   }
 
+  /* — Search merchandising rules — */
+
+  function createSearchRule(payload: { name: string; terms: string[]; conditions: MerchCondition[] }): SearchRule {
+    const rule: SearchRule = {
+      id: `srl${Date.now()}`,
+      channelId: seedChannelId(),
+      name: payload.name,
+      terms: [...payload.terms],
+      conditions: payload.conditions.map((c) => ({ ...c, values: [...c.values] })),
+      status: 'active',
+      updatedAt: todayLabel(),
+    }
+    allSearchRules.value.unshift(rule)
+    return rule
+  }
+
+  function saveSearchRule(id: string, payload: { name: string; terms: string[]; conditions: MerchCondition[] }) {
+    const rule = allSearchRules.value.find((r) => r.id === id)
+    if (!rule) return
+    rule.name = payload.name
+    rule.terms = [...payload.terms]
+    rule.conditions = payload.conditions.map((c) => ({ ...c, values: [...c.values] }))
+    rule.updatedAt = todayLabel()
+  }
+
+  function deleteSearchRule(id: string) {
+    allSearchRules.value = allSearchRules.value.filter((r) => r.id !== id)
+  }
+
+  function toggleSearchRuleStatus(id: string) {
+    const row = allSearchRules.value.find((r) => r.id === id)
+    if (row) row.status = row.status === 'active' ? 'inactive' : 'active'
+  }
+
   /* — Promo cards — */
 
   function togglePromoCard(id: string) {
@@ -1018,6 +1096,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     engineList,
     fieldList,
     searchPinList,
+    searchRuleList,
     promoCardList,
     bannerList,
     blacklistTermList,
@@ -1057,6 +1136,10 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     createSearchPin,
     saveSearchPin,
     deleteSearchPin,
+    createSearchRule,
+    saveSearchRule,
+    deleteSearchRule,
+    toggleSearchRuleStatus,
     togglePromoCard,
     createPromoCard,
     deletePromoCard,
