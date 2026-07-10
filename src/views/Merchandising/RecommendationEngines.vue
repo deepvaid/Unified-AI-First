@@ -18,10 +18,9 @@ const router = useRouter()
 const store = useMerchandisingStore()
 const search = ref('')
 
-const editorBase = computed(() => `/commerce/${route.params.accountId}/merchandising/recommendations`)
-
+// Channel-scoped editor route — this view only mounts inside the merchandising shell.
 function openEngine(id: string) {
-  router.push(`${editorBase.value}/${id}`)
+  router.push({ name: 'MerchandisingChannelEngineEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, engineId: id } })
 }
 
 const confirmDelete = ref<RecommendationEngine | null>(null)

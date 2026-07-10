@@ -33,9 +33,9 @@ function reviewConnection() {
       </div>
       <v-divider class="my-5" />
       <div class="setup-grid">
-        <div class="setup-row"><span>Provider</span><strong>{{ providerLabel(channel) }}</strong></div>
-        <div class="setup-row"><span>Sync health</span><strong>{{ MERCHANDISING_HEALTH_LABELS[merchandisingHealth(channel)] }}</strong></div>
-        <div class="setup-row"><span>Last sync</span><strong>{{ channel.merchandising?.lastSyncAt?.slice(0, 10) ?? 'Not connected' }}</strong></div>
+        <div class="setup-row"><span class="text-caption text-medium-emphasis">Provider</span><strong>{{ providerLabel(channel) }}</strong></div>
+        <div class="setup-row"><span class="text-caption text-medium-emphasis">Sync health</span><strong>{{ MERCHANDISING_HEALTH_LABELS[merchandisingHealth(channel)] }}</strong></div>
+        <div class="setup-row"><span class="text-caption text-medium-emphasis">Last sync</span><strong>{{ channel.merchandising?.lastSyncAt?.slice(0, 10) ?? 'Not connected' }}</strong></div>
       </div>
       <div class="d-flex flex-wrap ga-3 mt-6">
         <v-btn color="primary" variant="flat" class="text-none" prepend-icon="refresh-cw" @click="reviewConnection">Review connection</v-btn>
@@ -48,6 +48,5 @@ function reviewConnection() {
 <style scoped lang="scss">
 .setup-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .setup-row { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--mp-border-subtle); border-radius: 8px; }
-.setup-row span { color: rgba(var(--v-theme-on-surface), 0.64); font-size: 0.78rem; }
 @media (max-width: 720px) { .setup-grid { grid-template-columns: 1fr; } }
 </style>

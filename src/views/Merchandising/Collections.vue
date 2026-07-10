@@ -18,15 +18,14 @@ const router = useRouter()
 const store = useMerchandisingStore()
 const search = ref('')
 
-/** Open the Default Merchandising pinning editor for this collection. */
+/** Open the channel-scoped pinning editor for this collection. */
 function editPins(collection: SmartCollection) {
-  const base = `/commerce/${route.params.accountId}/merchandising/default-merchandising`
   const existing = store.pinningRuleList.find((r) => r.collectionId === collection.id)
-  if (existing) {
-    router.push(`${base}/pinning/${existing.id}`)
-  } else {
-    router.push(`${base}/pinning/new?collection=${collection.id}`)
-  }
+  router.push({
+    name: 'MerchandisingChannelPinning',
+    params: { accountId: route.params.accountId, channelId: route.params.channelId, ruleId: existing?.id ?? 'new' },
+    query: existing ? undefined : { collection: collection.id },
+  })
 }
 const filterType = ref<'all' | 'manual' | 'synced'>('all')
 

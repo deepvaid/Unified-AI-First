@@ -17,7 +17,8 @@ const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
 
-const listRoute = computed(() => `/commerce/${route.params.accountId}/merchandising/default-merchandising`)
+// Channel-scoped routes — this editor only mounts inside the merchandising shell.
+const listRoute = computed(() => ({ name: 'MerchandisingChannelDefaults', params: { accountId: route.params.accountId, channelId: route.params.channelId } }))
 
 /* ── Mode ─────────────────────────────────────────────────────── */
 const ruleId = computed(() => String(route.params.ruleId))
@@ -155,7 +156,7 @@ function save() {
   store.saveMerchRule({ id, ...draft.value, updatedAt: '' })
   savedSnapshot.value = JSON.stringify(draft.value)
   saveSnack.value = true
-  if (isNew.value) router.replace(`${listRoute.value}/rules/${id}`)
+  if (isNew.value) router.replace({ name: 'MerchandisingChannelRuleEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, ruleId: id } })
 }
 
 function performDelete() {

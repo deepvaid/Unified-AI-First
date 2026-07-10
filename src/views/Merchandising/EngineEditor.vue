@@ -27,7 +27,8 @@ const router = useRouter()
 const store = useMerchandisingStore()
 const copilot = useCopilotStore()
 
-const listRoute = computed(() => `/commerce/${route.params.accountId}/merchandising/recommendations`)
+// Channel-scoped routes — this editor only mounts inside the merchandising shell.
+const listRoute = computed(() => ({ name: 'MerchandisingChannelRecommendations', params: { accountId: route.params.accountId, channelId: route.params.channelId } }))
 
 /* ── Mode ─────────────────────────────────────────────────────── */
 const engineId = computed(() => String(route.params.engineId))
@@ -176,7 +177,7 @@ function save() {
     const created = store.createEngine(payload)
     savedSnapshot.value = JSON.stringify(draft.value)
     saveSnack.value = true
-    router.replace(`${listRoute.value}/${created.id}`)
+    router.replace({ name: 'MerchandisingChannelEngineEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, engineId: created.id } })
     return
   }
   store.saveEngine({ id: engineId.value, ...payload })

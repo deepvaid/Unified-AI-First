@@ -206,37 +206,14 @@ function buildNavGroups(accountId: string): NavGroup[] {
       ],
     },
     {
+      // Merchandising is channel-scoped (like Sales Channels): the global entry
+      // opens the channel selector; sections live in the in-workspace rail.
       title: 'Merchandise',
       icon: 'sliders-horizontal',
       requires: 'commerce',
       singleRoute: `/commerce/${accountId}/merchandising`,
       items: [
-        {
-          title: 'Overview',
-          isSubGroup: true,
-          items: [
-            { title: 'Overview', route: `/commerce/${accountId}/merchandising` },
-          ],
-        },
-        {
-          title: 'Storefront',
-          isSubGroup: true,
-          items: [
-            { title: 'Collections',            route: `/commerce/${accountId}/merchandising/collections` },
-            { title: 'Default Merchandising',  route: `/commerce/${accountId}/merchandising/default-merchandising` },
-            { title: 'Recommendation Engines', route: `/commerce/${accountId}/merchandising/recommendations` },
-          ],
-        },
-        {
-          title: 'Search',
-          isSubGroup: true,
-          items: [
-            { title: 'Synonyms',       route: `/commerce/${accountId}/merchandising/search/synonyms` },
-            { title: 'Page Redirects', route: `/commerce/${accountId}/merchandising/search/redirects` },
-            { title: 'Search Preview', route: `/commerce/${accountId}/merchandising/search/preview` },
-          ],
-        },
-        { title: 'Field Transformations', route: `/commerce/${accountId}/merchandising/fields` },
+        { title: 'Select sales channel', route: `/commerce/${accountId}/merchandising` },
       ],
     },
     {

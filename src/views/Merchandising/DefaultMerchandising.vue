@@ -11,7 +11,14 @@ const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
 
-const baseRoute = computed(() => `/commerce/${route.params.accountId}/merchandising/default-merchandising`)
+// Channel-scoped editor routes — this view only mounts inside the merchandising shell.
+function pinningRoute(ruleId: string) {
+  return { name: 'MerchandisingChannelPinning', params: { accountId: route.params.accountId, channelId: route.params.channelId, ruleId } }
+}
+
+function ruleRoute(ruleId: string) {
+  return { name: 'MerchandisingChannelRuleEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, ruleId } }
+}
 
 const activeTab = ref('pinning')
 const tabs = computed(() => [
@@ -41,7 +48,7 @@ const pinningRows = computed(() =>
 )
 
 function openPinning(id: string) {
-  router.push(`${baseRoute.value}/pinning/${id}`)
+  router.push(pinningRoute(id))
 }
 
 /* ── Rules tab ────────────────────────────────────────────────── */
@@ -60,7 +67,7 @@ function ruleCollectionsLabel(rule: MerchRule) {
 }
 
 function openRule(id: string) {
-  router.push(`${baseRoute.value}/rules/${id}`)
+  router.push(ruleRoute(id))
 }
 
 /* ── Row click (both tables) ──────────────────────────────────── */
@@ -116,8 +123,8 @@ function performConfirm() {
             </v-btn>
           </template>
           <v-list density="compact" rounded="lg" min-width="230" elevation="3" class="py-1">
-            <v-list-item prepend-icon="pin" title="Pinning rule" @click="router.push(`${baseRoute}/pinning/new`)" />
-            <v-list-item prepend-icon="sliders-horizontal" title="Merchandising rule" @click="router.push(`${baseRoute}/rules/new`)" />
+            <v-list-item prepend-icon="pin" title="Pinning rule" @click="router.push(pinningRoute('new'))" />
+            <v-list-item prepend-icon="sliders-horizontal" title="Merchandising rule" @click="router.push(ruleRoute('new'))" />
             <v-divider class="my-1" style="opacity: 0.4" />
             <v-list-item prepend-icon="tags" title="Promo card" subtitle="Coming soon" disabled />
           </v-list>
@@ -174,7 +181,7 @@ function performConfirm() {
             action-label="Add pinning rule"
             action-icon="plus"
             class="py-10"
-            @action="router.push(`${baseRoute}/pinning/new`)"
+            @action="router.push(pinningRoute('new'))"
           />
         </template>
       </v-data-table>
@@ -237,7 +244,7 @@ function performConfirm() {
             action-label="Add merchandising rule"
             action-icon="plus"
             class="py-10"
-            @action="router.push(`${baseRoute}/rules/new`)"
+            @action="router.push(ruleRoute('new'))"
           />
         </template>
       </v-data-table>

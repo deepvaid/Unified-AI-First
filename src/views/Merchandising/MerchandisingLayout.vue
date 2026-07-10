@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import { useMerchandisingStore } from '@/stores/useMerchandising'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
-import { channelDomain, merchandisingHealth, merchandisingStatus, MERCHANDISING_HEALTH_LABELS, MERCHANDISING_STATUS_LABELS, providerLabel } from '@/utils/merchandisingChannels'
+import { channelDomain, merchandisingHealth, merchandisingStatus, MERCHANDISING_STATUS_LABELS, providerLabel } from '@/utils/merchandisingChannels'
 import MerchandisingSidebar from './MerchandisingSidebar.vue'
 
 const route = useRoute()
 const router = useRouter()
 const salesChannels = useSalesChannelsStore()
+const merchandising = useMerchandisingStore()
 const accountId = computed(() => String(route.params.accountId ?? '2000290'))
 const channelId = computed(() => String(route.params.channelId ?? ''))
+watch(channelId, (id) => merchandising.setActiveChannel(id), { immediate: true })
 const channel = computed(() => salesChannels.getChannel(accountId.value, channelId.value))
 const status = computed(() => channel.value ? merchandisingStatus(channel.value) : 'unsupported')
 const health = computed(() => channel.value ? merchandisingHealth(channel.value) : 'error')
@@ -81,15 +84,7 @@ function connectChannel() {
         </v-card>
       </div>
 
-      <template v-else>
-        <div class="merch-shell__context mb-5">
-          <div class="text-caption text-medium-emphasis">{{ providerLabel(channel) }} · {{ channelDomain(channel) }}</div>
-          <MpStatusChip :status="MERCHANDISING_STATUS_LABELS[status]" type="general" size="x-small" show-icon />
-          <span v-if="channel.merchandising?.lastSyncAt" class="text-caption text-medium-emphasis">Last sync {{ channel.merchandising.lastSyncAt.slice(0, 10) }}</span>
-          <span v-if="hasHealthIssue" class="text-caption text-warning">{{ MERCHANDISING_HEALTH_LABELS[health] }}</span>
-        </div>
-        <router-view />
-      </template>
+      <router-view v-else />
     </main>
   </div>
 </template>
@@ -108,13 +103,6 @@ function connectChannel() {
   min-height: 0;
   overflow-y: auto;
   padding: 24px 36px 32px 32px;
-}
-
-.merch-shell__context {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
 }
 
 .merch-shell__setup {

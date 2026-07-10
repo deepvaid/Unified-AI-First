@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import MpSectionRail, { type MpSectionRailSwitchOption } from '@/components/MpSectionRail.vue'
 import type { SalesChannel } from '@/stores/useSalesChannels'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
-import { channelDomain, merchandisingChannels, merchandisingRoute, providerLabel } from '@/utils/merchandisingChannels'
+import { channelDomain, merchandisingChannels, providerLabel } from '@/utils/merchandisingChannels'
 import { merchandisingMenu } from './merchandisingMenu'
 
 const props = defineProps<{ accountId: string; channel: SalesChannel }>()
+const route = useRoute()
 const router = useRouter()
 const salesChannels = useSalesChannelsStore()
 
@@ -21,12 +22,16 @@ const switcherOptions = computed<MpSectionRailSwitchOption[]>(() =>
   })),
 )
 
+// Switch channels but stay on the same section; entity editors (rule/pin/engine)
+// fall back to the Overview since their record belongs to the old channel.
 function switchChannel(channelId: string) {
   if (channelId === props.channel.id) return
-  const currentPath = window.location.pathname
-  const section = currentPath.split('/merchandising/')[1] ?? ''
-  const safeSection = section.startsWith('editor') ? '' : section
-  router.push(merchandisingRoute(props.accountId, channelId, safeSection))
+  const name = typeof route.name === 'string' ? route.name : ''
+  const isEntityRoute = 'ruleId' in route.params || 'engineId' in route.params
+  router.push({
+    name: !name || isEntityRoute ? 'MerchandisingChannelOverview' : name,
+    params: { ...route.params, accountId: props.accountId, channelId },
+  })
 }
 </script>
 

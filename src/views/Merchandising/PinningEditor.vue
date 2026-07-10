@@ -17,7 +17,8 @@ const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
 
-const listRoute = computed(() => `/commerce/${route.params.accountId}/merchandising/default-merchandising`)
+// Channel-scoped routes — this editor only mounts inside the merchandising shell.
+const listRoute = computed(() => ({ name: 'MerchandisingChannelDefaults', params: { accountId: route.params.accountId, channelId: route.params.channelId } }))
 
 /* ── Mode: edit existing rule or create a new one ─────────────── */
 const ruleId = computed(() => String(route.params.ruleId))
@@ -132,7 +133,7 @@ function save() {
     const created = store.createPinningRule(collectionId.value)
     store.savePinningRule(created.id, { collectionId: collectionId.value, pinnedProductIds: pinnedIds.value })
     saveSnack.value = true
-    router.replace(`${listRoute.value}/pinning/${created.id}`)
+    router.replace({ name: 'MerchandisingChannelPinning', params: { accountId: route.params.accountId, channelId: route.params.channelId, ruleId: created.id } })
   } else if (rule.value) {
     store.savePinningRule(rule.value.id, { collectionId: collectionId.value, pinnedProductIds: pinnedIds.value })
   }
