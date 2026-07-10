@@ -14,7 +14,7 @@ const editName = ref('')
 
 function toggleSelectAll(val: boolean | null) {
   if (val) {
-    selected.value = contacts.value.map((c: any) => c.id)
+    selected.value = contacts.value.map((c) => c.id)
   } else {
     selected.value = []
   }

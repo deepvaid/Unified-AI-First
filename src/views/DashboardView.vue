@@ -707,7 +707,7 @@ function toggleFavoriteActive() {
                 <span
                   v-if="activeFilterCount > 0"
                   class="dashboard-filter-btn__badge"
-                  aria-label="`${activeFilterCount} active filters`"
+                  :aria-label="`${activeFilterCount} active filters`"
                 >{{ activeFilterCount }}</span>
               </v-btn>
             </template>

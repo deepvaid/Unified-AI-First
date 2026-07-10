@@ -26,7 +26,7 @@
     "supernova:sync:tokens": "node scripts/supernova-sync.mjs --tokens",
     "supernova:sync:storybook": "node scripts/supernova-sync.mjs --storybook",
     "supernova:storybook:sync": "npx @supernovaio/cli sync-storybook --storybookPath ./dist-storybook",
-    "supernova:storybook": "SUPERNOVA_TOKEN=sn.fpMLsDNaTDSzGjhJsc4Df32Hd1pJQKT5Wq8SFvmZv5UMwMwVUsGR6WnqLg79Q9uHplnQ2vLdhh5nKoMIKgrzdpuGO1tpvteD npx @supernovaio/cli storybook-import",
+    "supernova:storybook": "npx @supernovaio/cli storybook-import",
     "supernova:storybook:build-and-sync": "npm run build-storybook && npm run supernova:storybook"
   },
   "dependencies": {

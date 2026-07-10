@@ -40,7 +40,7 @@ const activeFilterEntries = computed(() =>
     .filter(([, v]) => v.length > 0)
     .map(([key, value]) => ({ key, label: `${filterLabels[key as keyof typeof filterLabels]}: ${(value as string[]).join(', ')}` }))
 )
-function removeFilter(key: string) { ;(filters.value as any)[key] = [] }
+function removeFilter(key: string) { filters.value[key as keyof typeof filters.value] = [] }
 function clearAllFilters() { filters.value = { status: [], placement: [] } }
 const filteredRules = computed(() => {
   let r = rules

@@ -50,7 +50,7 @@ function onToggle() {
     return;
   }
 
-  const next = checked.value ? false : true;
+  const next = !checked.value;
   emit('update:modelValue', next);
   emit('change', next);
 }

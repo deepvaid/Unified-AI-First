@@ -15,7 +15,7 @@ export type ChartPalette = 'blue' | 'cool' | 'multicolor'
 
 /**
  * Blue (default): Maropost-aligned single-hue Picton Blue, steps [600,300,500,900,400,700].
- * Cool: blue→teal. Violet: subtle blue→purple. Each has 6 well-spaced series colors.
+ * Cool: blue→teal. Multicolor: mixed accent hues. Each has 6 well-spaced series colors.
  */
 export const CHART_PALETTES: Record<ChartPalette, string[]> = {
   blue: [

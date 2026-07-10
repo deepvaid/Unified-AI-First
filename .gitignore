@@ -34,6 +34,9 @@ coverage
 # Retail Cloud POS APK (204 MB binary — distribute out-of-band, not via git)
 Retail Cloud POS APK/
 
+# UAT parity crawl screenshots (live-product captures — keep on disk, never commit)
+maropost-screenshots/uat/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

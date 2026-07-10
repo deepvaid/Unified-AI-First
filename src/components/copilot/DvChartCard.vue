@@ -61,8 +61,8 @@ function getMax(bars: number[][]) {
 </template>
 
 <style scoped>
-.chart-area { display: flex; gap: $mp-space-1; height: 140px; }
-.chart-y-labels { display: flex; flex-direction: column; justify-content: space-between; font-size: $mp-typography-fontSize-xs; color: rgba(var(--v-theme-on-surface), 0.45); min-width: 36px; text-align: right; padding-right: 6px; }
+.chart-area { display: flex; gap: var(--mp-spacing-1); height: 140px; }
+.chart-y-labels { display: flex; flex-direction: column; justify-content: space-between; font-size: var(--mp-typography-fontSize-xs); color: rgba(var(--v-theme-on-surface), 0.45); min-width: 36px; text-align: right; padding-right: 6px; }
 .chart-bars-wrap { display: flex; align-items: flex-end; gap: 3px; flex: 1; border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); padding: 0 2px; }
 .chart-bar-col { flex: 1; display: flex; flex-direction: column-reverse; }
 </style>

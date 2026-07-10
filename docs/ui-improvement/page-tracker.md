@@ -13,15 +13,15 @@
 - journeyId: `1` (useCampaigns.ts first journey)
 - channelId: `pos-store` · locationId: `loc-bondi` (useSalesChannels.ts — pos-store has locations)
 - contactId: _resolve at runtime_ — uids are seeded-rng ULIDs (useContacts.ts:295); open `/accounts/2000290/contacts`, use the first row's link. Record it here once known: `TBD`
-- Baseline console noise (pre-existing, ignore; filled during pilot): `TBD`
+- Baseline console noise (pre-existing, ignore — recorded 2026-07-03): zero **errors**; recurring **warnings**: `[Vuetify UPGRADE] 'theme.global.name.value = maropostLight' is deprecated` and `[Vue Router warn]: The next() callback in navigation guards is deprecated` (fires on every route change). Bar = zero NEW errors; these warnings don't count.
 
 ## Module 01 — Dashboard   [module-status: pending]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Dashboards/DashboardsList.vue | /accounts/2000290/dashboards | standard | pending | | |
-| 2 | DashboardView.vue | /accounts/2000290/dashboard · /dashboard/2000290-home | standard | pending | | serves 2 routes; roadmap #11 already polished CTA + star |
-| 3 | Analytics/LiveView.vue | /accounts/2000290/analytics/live_view | standard | pending | | 18 `!important` (roadmap #16 cluster) |
+| 1 | Dashboards/DashboardsList.vue | /accounts/2000290/dashboards | standard | done | 028baf7 | skeleton + responsive headers + 375px overflow fixed; ad-hoc redesign: single kebab per row, type chips → text, back-to header, factual subtitle |
+| 2 | DashboardView.vue | /accounts/2000290/dashboard · /dashboard/2000290-home | standard | done | bea16b6 | serves 2 routes; ad-hoc redesign: compact grouped Actions/Add-content menus, switcher row buttons removed, single-header widget wizard |
+| 3 | Analytics/LiveView.vue | /accounts/2000290/analytics/live_view | standard | done | 5ca1f51 | ad-hoc light redesign: single live indicator, heading scale; 18 pre-existing `!important` untouched (roadmap #16 cluster) |
 
 ## Module 02 — Analytics (Reports)   [module-status: pending]
 
@@ -46,8 +46,8 @@
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Contacts/AllContacts.vue | /accounts/2000290/contacts | standard | pending | | polished in roadmap #7/#17 — likely near-compliant |
-| 2 | Contacts/ContactDetail.vue | /accounts/2000290/contacts/:contactId (see Defaults) | standard | pending | | resolve contactId from list first; roadmap #14/#17 touched |
+| 1 | Contacts/AllContacts.vue | /accounts/2000290/contacts | standard | done | a97a169 | ad-hoc polish (subtitle count bug, chip vocab, dates, CTA variants) + redesign (score dots, hover hint removed); touched shared MpStatusChip (additive contact-map entries) — spot-check prior pages at gate |
+| 2 | Contacts/ContactDetail.vue | /accounts/2000290/contacts/:contactId (see Defaults) | standard | done | 4ffb855 | ad-hoc redesign: flat profile (gradient hero removed), KPIs 8→4, sidebar 6→4 cards, back-to header |
 | 3 | Contacts/ContactLists.vue | /accounts/2000290/lists | standard | pending | | |
 | 4 | Contacts/Segments.vue | /accounts/2000290/segments | standard | pending | | |
 | 5 | Contacts/ContactFields.vue | /accounts/2000290/contact_fields | standard | pending | | |
@@ -73,7 +73,7 @@
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
 | 1 | Commerce/CommerceCloudLanding.vue | /accounts/2000290/commerce-cloud | standard | pending | | marketing-style landing |
-| 2 | Commerce/SalesOrders.vue | /commerce/2000290/orders | standard | pending | | roadmap #7/#17 touched |
+| 2 | Commerce/SalesOrders.vue | /commerce/2000290/orders | standard | done | 593f723 | ad-hoc redesign: one status chip + dot labels for payment/fulfillment, kebab-only actions, column menu added |
 | 3 | Commerce/DraftOrders.vue | /commerce/2000290/orders/drafts | standard | pending | | roadmap #7/#17 touched |
 | 4 | Commerce/Fulfillments.vue | /commerce/2000290/fulfillments | standard | pending | | roadmap #7/#17 touched |
 | 5 | Commerce/Coupons.vue | /commerce/2000290/coupons · /promotions · /custom_gift_cards · /purchasable_gift_cards | standard | pending | | serves 4 routes — spot-check each alias (may branch on route name) |
@@ -86,9 +86,9 @@
 | 2 | Merchandising/SearchPreview.vue | /commerce/2000290/merchandising/search/preview | standard | pending | | |
 | 3 | Merchandising/Synonyms.vue | /commerce/2000290/merchandising/search/synonyms | standard | pending | | |
 | 4 | Merchandising/PageRedirects.vue | /commerce/2000290/merchandising/search/redirects | standard | pending | | |
-| 5 | Merchandising/Collections.vue | /commerce/2000290/merchandising/collections | standard | pending | | |
-| 6 | Merchandising/DefaultMerchandising.vue | /commerce/2000290/merchandising/default-merchandising | standard | pending | | |
-| 7 | Merchandising/RecommendationEngines.vue | /commerce/2000290/merchandising/recommendations | standard | pending | | |
+| 5 | Merchandising/Collections.vue | /commerce/2000290/merchandising/collections | standard | done | 55e0ee9 | redesign a846e3a + Edit-pins wired to Default Merchandising pinning editor |
+| 6 | Merchandising/DefaultMerchandising.vue | /commerce/2000290/merchandising/default-merchandising (+ /pinning/:ruleId, /rules/:ruleId) | standard | done | 55e0ee9 | Findify replica built: pinning + rules tabs, pin editor w/ drag reorder (4ec82ca), rule editor w/ live preview, store data layer (7cebe6e) |
+| 7 | Merchandising/RecommendationEngines.vue | /commerce/2000290/merchandising/recommendations (+ /:engineId editor) | standard | pending | c640779 | engine wizard rebuilt to match real Findify flow (page→type→settings→filters, user-verified screenshots); list itself still pre-redesign — polish at module pass |
 | 8 | Merchandising/FieldTransformations.vue | /commerce/2000290/merchandising/fields | standard | pending | | |
 
 ## Module 07 — Retail   [module-status: pending]
@@ -99,7 +99,7 @@
 | 2 | Retail/Registers.vue | /commerce/2000290/retail/registers | standard | pending | | |
 | 3 | Retail/Transactions.vue | /commerce/2000290/retail/transactions | standard | pending | | |
 | 4 | Retail/Associates.vue | /commerce/2000290/retail/associates | standard | pending | | |
-| 5 | Retail/PosPreview.vue | /commerce/2000290/retail/pos-preview | builder | pending | | fullPage; intentional hardcoded hex (device mock — allowlisted) |
+| 5 | Retail/PosPreview.vue | /commerce/2000290/retail/pos-preview | builder | pending | 63e79e1 | fullPage; intentional hardcoded hex (device mock — allowlisted); stakeholder fix: persistent scan/search on sale home (Brendan feedback) |
 | 6 | Retail/StockByLocation.vue | /commerce/2000290/retail/stock | standard | pending | | |
 | 7 | Retail/BulkInventory.vue | /commerce/2000290/retail/inventory | standard | pending | | |
 | 8 | Retail/Pricing.vue | /commerce/2000290/retail/pricing | standard | pending | | |
@@ -112,7 +112,7 @@
 |---|-----------|--------|---------|--------|--------|-------|
 | 1 | SalesChannels/SalesChannelsList.vue | /accounts/2000290/sales_channels | standard | pending | | |
 | 2 | SalesChannels/CreateSalesChannel.vue | /accounts/2000290/sales_channels/new | standard | pending | | |
-| 3 | SalesChannels/SalesChannelLocations.vue | /accounts/2000290/sales_channels/pos-store/locations | standard | pending | | |
+| 3 | SalesChannels/SalesChannelLocations.vue | /accounts/2000290/sales_channels/pos-store/locations | standard | done | 6c807d1 | ad-hoc redesign: role chips → joined text, row avatars removed, toolbar title dropped |
 | 4 | SalesChannels/SalesChannelLocationDetail.vue | /accounts/2000290/sales_channels/pos-store/locations/loc-bondi | standard | pending | | |
 | 5 | SalesChannels/SalesChannelDetail.vue | /accounts/2000290/sales_channels/pos-store | standard | pending | | bespoke identity header is CORRECT (roadmap #9/#14) — don't "fix" it |
 
@@ -148,7 +148,7 @@
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Service/Tickets.vue | /accounts/2000290/service · /chatbot | standard | pending | | serves 2 routes |
+| 1 | Service/Tickets.vue | /accounts/2000290/service · /chatbot | standard | done | 2432296 | serves 2 routes; ad-hoc: multi-inbox (per sales channel), kanban removed per stakeholder, then full agent-inbox redesign (in-pane controls, 3-line rows, props strip, unified composer) |
 
 ## Module 11 — Da Vinci   [module-status: pending]
 

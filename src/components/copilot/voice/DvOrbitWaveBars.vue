@@ -3,15 +3,12 @@ import { computed } from 'vue'
 
 // Animated waveform bars (Orbit handoff `bars()` primitive) — deterministic
 // resting heights so SSR/static renders match the reference.
-const props = withDefaults(
-  defineProps<{
-    count: number
-    maxHeight: number
-    barWidth: number
-    gap: number
-  }>(),
-  {},
-)
+const props = defineProps<{
+  count: number
+  maxHeight: number
+  barWidth: number
+  gap: number
+}>()
 
 const bars = computed(() =>
   Array.from({ length: props.count }, (_, i) => ({

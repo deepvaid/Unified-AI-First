@@ -18,13 +18,11 @@ const webhooks = ref([
 const addKeyDrawer = ref(false)
 const newKeyLabel = ref('')
 const newKeyEnv = ref<'production' | 'test'>('production')
-const newKeyGenerated = ref<string | null>(null)
 const generatedSnack = ref(false)
 
 function generateKey() {
   const prefix = newKeyEnv.value === 'production' ? 'mp_live_sk_' : 'mp_test_sk_'
   const random = Array.from({ length: 24 }, () => Math.random().toString(36)[2]).join('')
-  newKeyGenerated.value = `${prefix}${random}`
   apiKeys.value.push({
     id: Date.now(),
     label: newKeyLabel.value || 'Untitled Key',
@@ -38,7 +36,6 @@ function generateKey() {
   addKeyDrawer.value = false
   newKeyLabel.value = ''
   newKeyEnv.value = 'production'
-  newKeyGenerated.value = null
 }
 </script>
 

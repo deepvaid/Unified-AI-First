@@ -17,13 +17,7 @@ const emit = defineEmits<{
   (event: 'click', payload: MouseEvent): void;
 }>();
 
-const resolvedVariant = computed<MbBadgeVariant>(() => {
-  if (props.variant === 'outline') {
-    return 'outline';
-  }
-
-  return props.variant;
-});
+const resolvedVariant = computed<MbBadgeVariant>(() => props.variant);
 
 const isDisabled = computed(() => props.disabled || !props.interactive);
 const icon = computed<MbBadgeIcon>(() => props.icon);

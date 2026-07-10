@@ -212,6 +212,7 @@ function openSettings() {
             <v-list-item
               prepend-icon="refresh-cw"
               title="Refresh widget"
+              @click="emit('refresh', widget.id)"
             />
             <v-list-item
               prepend-icon="arrow-up-right"

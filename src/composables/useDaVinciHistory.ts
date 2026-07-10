@@ -78,7 +78,6 @@ function buildSubtitle(item: Pick<DaVinciHistoryItem, 'draftedCount' | 'addedCou
 const sortedItems = computed(() => [...items.value].sort((a, b) => b.createdAt - a.createdAt))
 
 const groupedItems = computed<GroupedHistory>(() => {
-  const now = Date.now()
   const startOfToday = new Date()
   startOfToday.setHours(0, 0, 0, 0)
   const startOfYesterday = new Date(startOfToday)
@@ -98,7 +97,6 @@ const groupedItems = computed<GroupedHistory>(() => {
       groups.older.push(item)
     }
   }
-  void now
   return groups
 })
 

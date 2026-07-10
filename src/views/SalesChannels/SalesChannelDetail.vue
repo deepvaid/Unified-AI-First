@@ -1403,21 +1403,6 @@ function locationRoleText(locationId: string) {
   padding-top: 0;
 }
 
-.sc-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(330px, 0.65fr);
-  align-items: start;
-  gap: 24px;
-}
-
-.sc-main-stack,
-.sc-side-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  min-width: 0;
-}
-
 .sc-action-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1488,29 +1473,6 @@ function locationRoleText(locationId: string) {
   font-size: 18px;
   font-weight: 700;
   white-space: nowrap;
-}
-
-.sc-resource-list {
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.sc-resource-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 10px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-section);
-}
-
-.sc-resource-row__actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
 }
 
 .sc-business-grid {
@@ -1747,11 +1709,6 @@ function locationRoleText(locationId: string) {
   color: var(--cloud-analytics-text);
 }
 
-.sc-is-done {
-  color: var(--muted);
-  text-decoration: line-through;
-}
-
 .sc-text-button {
   display: inline-flex;
   align-items: center;
@@ -1840,7 +1797,6 @@ function locationRoleText(locationId: string) {
 
 @media (max-width: 1180px) {
   .sc-header__row,
-  .sc-grid,
   .sc-overview-grid {
     grid-template-columns: 1fr;
   }
@@ -1894,10 +1850,6 @@ function locationRoleText(locationId: string) {
     flex-direction: column;
   }
 
-  .sc-resource-row {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
   .sc-setup-row,
   .sc-hero-url {
     grid-template-columns: auto minmax(0, 1fr);
@@ -1916,8 +1868,7 @@ function locationRoleText(locationId: string) {
   .sc-assistant-card > .v-btn,
   .sc-cross-sell-banner > .v-btn,
   .sc-favicon-row > .v-btn,
-  .sc-feature-row__actions,
-  .sc-resource-row__actions {
+  .sc-feature-row__actions {
     grid-column: 1 / -1;
     justify-content: flex-end;
   }

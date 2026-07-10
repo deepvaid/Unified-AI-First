@@ -2577,30 +2577,6 @@ $pos-bg: #f4f4f5;
   }
 }
 
-/* ── Placeholder pane ──────────────────────────────────────────── */
-.pos-placeholder-pane {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
-  gap: 8px;
-  text-align: center;
-
-  &__title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--ink);
-  }
-
-  &__sub {
-    font-size: 12px;
-    color: var(--muted);
-    max-width: 260px;
-  }
-}
-
 /* ── History pane ──────────────────────────────────────────────── */
 .pos-history-pane {
   flex: 1;

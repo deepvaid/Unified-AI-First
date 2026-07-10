@@ -1073,26 +1073,6 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   background: var(--surface-1);
   box-shadow: 0 1px 3px color-mix(in oklch, var(--ink) 8%, transparent);
 }
-.theme-toggle-item :deep(.v-list-item__append) {
-  align-self: center;
-}
-.sign-out-item {
-  transition: background 120ms ease;
-  color: rgb(var(--v-theme-error));
-}
-.sign-out-item:hover {
-  background: rgba(var(--v-theme-error), 0.06);
-}
-.sign-out-item :deep(.v-list-item__prepend .v-icon),
-.sign-out-item :deep(.v-list-item-title) {
-  color: rgb(var(--v-theme-error));
-}
-
-.appbar-subheader {
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-}
 
 .appbar-search {
   flex: 1 1 auto;
@@ -1265,9 +1245,6 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 /* Mobile: hide search bar entirely, collapse to icon mode */
 @media (max-width: 640px) {
   .appbar-search-group {
-    display: none;
-  }
-  .appbar-account-tabs {
     display: none;
   }
 }

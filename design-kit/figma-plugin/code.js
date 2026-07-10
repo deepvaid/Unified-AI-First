@@ -274,7 +274,7 @@ async function createTextStyles() {
         await upsertTextStyle(styleName, sizePx, weightToStyleKey, TOKENS.typography.lineHeight)
         count++
         log(`  ${styleName}`)
-      } catch (err) {
+      } catch {
         log(`  ⚠ Could not load Inter ${weightToStyleKey} — skipping ${styleName}`, 'error')
       }
     }
@@ -328,11 +328,6 @@ async function createComponentFrames() {
       col = 0
       row++
     }
-  }
-
-  // If last row didn't complete, still record height
-  if (col !== 0) {
-    rowHeights.push(prevRowMaxH)
   }
 
   send('done', { action: `Created ${frames.length} component frames on "Components" page` })

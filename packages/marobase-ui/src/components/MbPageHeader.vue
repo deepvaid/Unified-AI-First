@@ -74,35 +74,6 @@ const activeCrumbId = computed(() => {
   align-items: center;
 }
 
-.mb-page-header__crumbs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--mb-font-size-sm);
-  color: var(--mb-color-text-muted);
-}
-
-.mb-page-header__crumb {
-  color: var(--mb-color-text-muted);
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-
-.mb-page-header__crumb:hover {
-  color: var(--mb-color-primary);
-}
-
-.mb-page-header__crumb--last {
-  color: var(--mb-color-text);
-  font-weight: var(--mb-font-weight-medium);
-}
-
-.mb-page-header__crumb-sep {
-  color: var(--mb-color-text-soft);
-  opacity: 0.64;
-}
-
 .mb-page-header__row {
   display: flex;
   align-items: flex-end;

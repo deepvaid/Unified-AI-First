@@ -53,7 +53,7 @@ const activeFilterEntries = computed(() =>
 )
 
 function removeFilter(key: string) {
-  ;(filters.value as any)[key] = []
+  filters.value[key as keyof typeof filters.value] = []
 }
 
 function clearAllFilters() {

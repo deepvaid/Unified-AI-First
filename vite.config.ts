@@ -150,6 +150,8 @@ export default defineConfig(({ mode }) => {
         },
       },
     ],
+    // Honor the port assigned by dev tooling (e.g. Claude preview) via PORT env var
+    server: process.env.PORT ? { port: Number(process.env.PORT), strictPort: true } : undefined,
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),

@@ -162,7 +162,4 @@ function create() {
 .cct-swatch:hover {
   transform: scale(1.08);
 }
-.cct-footer {
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-}
 </style>

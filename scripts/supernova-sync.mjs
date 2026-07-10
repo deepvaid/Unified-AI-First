@@ -8,14 +8,17 @@
  *
  * Usage:
  *   node scripts/supernova-sync.mjs
- *   SUPERNOVA_API_KEY=sn.xxx node scripts/supernova-sync.mjs
+ *   SUPERNOVA_TOKEN=<token> node scripts/supernova-sync.mjs
  */
 
 import { resolve } from 'path'
 
-const API_KEY =
-  process.env.SUPERNOVA_API_KEY ||
-  'sn.fpMLsDNaTDSzGjhJsc4Df32Hd1pJQKT5Wq8SFvmZv5UMwMwVUsGR6WnqLg79Q9uHplnQ2vLdhh5nKoMIKgrzdpuGO1tpvteD'
+const API_KEY = process.env.SUPERNOVA_TOKEN
+
+if (!API_KEY) {
+  console.error('SUPERNOVA_TOKEN environment variable is required')
+  process.exit(1)
+}
 
 const DESIGN_SYSTEM_ID = '725033'
 const TOKEN_FILE = resolve('design-kit/figma-export/tokens-studio.json')

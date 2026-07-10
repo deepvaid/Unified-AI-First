@@ -88,7 +88,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Frame for every dashboard widget: title/subtitle header, action menu, data body (KPI, chart, pie, table, or activity — resolved from the widget `metricId` via `useWidgetData` mock stores), and a source-cloud footer. `editable` shows drag handles + resize/remove actions; `preview` renders the dashed wizard-preview style.',
+          'Frame for every dashboard widget: title/subtitle header, action menu, data body (KPI, chart, pie, table, or activity — resolved from the widget `metricId` via `useWidgetData` mock stores), and a source-cloud footer. Refresh actions emit the widget ID. `editable` shows drag handles + resize/remove actions; `preview` renders the dashed wizard-preview style.',
       },
     },
   },

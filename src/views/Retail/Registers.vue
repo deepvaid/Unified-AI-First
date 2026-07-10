@@ -201,7 +201,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         </template>
 
         <template #item.pendingOfflineTxns="{ item }">
-          <span v-if="item.pendingOfflineTxns > 0" class="font-weight-bold" style="color: var(--v-theme-warning);">
+          <span v-if="item.pendingOfflineTxns > 0" class="font-weight-bold text-warning">
             {{ item.pendingOfflineTxns }}
           </span>
           <span v-else class="text-medium-emphasis">—</span>

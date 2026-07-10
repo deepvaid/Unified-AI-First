@@ -8,7 +8,6 @@ const spacingEntries = Object.entries(tokens.spacing)
     key,
     value: (val as { $value: string }).$value,
     token: `spacing.${key}`,
-    px: parseInt((val as { $value: string }).$value),
   }))
 
 // Border radius

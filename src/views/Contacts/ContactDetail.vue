@@ -855,21 +855,6 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
   min-width: 0;
 }
 
-/* ── Campaign rows ──────────────────────────────────── */
-.campaign-row {
-  border-bottom: 1px solid rgba(var(--v-border-color), 0.08);
-  transition: background 0.15s ease;
-  border-radius: 8px;
-}
-
-.campaign-row:hover {
-  background: rgba(var(--v-theme-primary), 0.03);
-}
-
-.campaign-row:last-child {
-  border-bottom: none;
-}
-
 /* Legacy (keep for older sections) */
 .detail-row {
   display: flex;
