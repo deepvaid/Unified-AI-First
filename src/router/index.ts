@@ -111,6 +111,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/sales_channels/:channelId/blogs', name: 'StoreBlogs', component: () => import('@/views/SalesChannels/StoreContentList.vue'), meta: { ...commerceGate, contentKind: 'blog' } },
   { path: '/accounts/:accountId/sales_channels/:channelId/blogs/new', name: 'StoreBlogCreate', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { ...commerceGate, contentKind: 'blog' } },
   { path: '/accounts/:accountId/sales_channels/:channelId/blogs/:entryId', name: 'StoreBlogEdit', component: () => import('@/views/SalesChannels/StoreContentEditor.vue'), meta: { ...commerceGate, contentKind: 'blog' } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/campaigns', name: 'StoreCampaigns', component: () => import('@/views/SalesChannels/StoreCampaigns.vue'), meta: commerceGate },
+  { path: '/accounts/:accountId/sales_channels/:channelId/assets', name: 'StoreAssets', component: () => import('@/views/SalesChannels/StoreAssets.vue'), meta: commerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId', name: 'SalesChannelDetail', component: () => import('@/views/SalesChannels/SalesChannelDetail.vue'), meta: commerceGate },
 
   // 6. Marketing
