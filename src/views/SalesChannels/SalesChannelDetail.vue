@@ -574,7 +574,7 @@ function openDashboard() {
 
 function openConnectedProduct(target: ConnectedCloud | 'apps' | 'davinci') {
   if (target === 'merchandise') {
-    router.push({ name: 'MerchandisingHome', params: { accountId: accountId.value }, query: { channel: channel.value?.id } })
+    router.push({ name: 'MerchandisingChannelOverview', params: { accountId: accountId.value, channelId: channelId.value } })
     return
   }
   if (target === 'retail') {

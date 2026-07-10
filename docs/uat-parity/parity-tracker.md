@@ -185,6 +185,68 @@ Row 18 blocked by policy (payment configuration is credential-bearing; not opene
 - Empty lists render bare "No records found" text — no icon, description, or CTA (pain). Full page reloads cold-boot the whole SPA behind a "Preparing an optimised workspace" splash, 5–10s (pain).
 - Store editor chrome: dark sidebar with 9 sections; every form page uses top-right CANCEL/SAVE; required fields flag red only after interaction.
 
+## A06c — Merchandising Cloud   [crawl-status: crawled]
+
+Authenticated read-only crawl completed 2026-07-10 in the user-authenticated in-app browser. The application spans the legacy `dashboard.findify.io` shell and a newer `maropost-dashboard.findify.io/:merchantId` shell. Numeric merchant IDs are replaced with `:merchantId`; queries are omitted. Header/store identifiers were cropped from local screenshots. No cookies, storage, bearer tokens, request bodies, network payloads, API keys, or tracking scripts were inspected or exported, and no configuration was saved, published, deleted, uploaded, invited, or submitted.
+
+| # | UAT page/flow | UAT path | Type | Screenshot | Crawl status |
+|---|---------------|----------|------|------------|--------------|
+| 1 | Merchandising overview / sync snapshot | / | page | merchandising-findify/overview.png | crawled |
+| 2 | Search — Pinning | /solutions/search/pinning | page | merchandising-findify/search-pinning.png | crawled |
+| 3 | Search — Merchandising Rules | /solutions/search/rules | page | merchandising-findify/search-rules.png | crawled |
+| 4 | Search — Promo Cards | /solutions/search/promos | page | merchandising-findify/search-promo-cards.png | crawled |
+| 5 | Search — Banners | /solutions/search/banners | page | merchandising-findify/search-banners.png | crawled |
+| 6 | Search — blacklist suggestions | /solutions/search/blacklisting/suggestions | page | merchandising-findify/search-blacklist-suggestions.png | crawled |
+| 7 | Search — blacklist product matches | /solutions/search/blacklisting/products | page | merchandising-findify/search-blacklist-products.png | crawled |
+| 8 | Search — Synonyms (legacy) | /solutions/search/synonyms | page | merchandising-findify/search-synonyms.png | crawled |
+| 9 | Search — Synonyms (new experience) | /:merchantId/search/synonyms | page/editor | merchandising-findify/search-synonyms-new-dashboard.png | crawled |
+| 10 | Search — Page Redirects | /solutions/search/redirects | page/editor | merchandising-findify/search-redirects.png | crawled |
+| 11 | Search — Preview (legacy handoff) | /solutions/search/preview | page | merchandising-findify/search-preview.png | crawled |
+| 12 | Search — Preview (new experience) | /:merchantId/search/preview | page | merchandising-findify/search-preview-new-dashboard.png | crawled |
+| 13 | Search — Content BETA | /solutions/smart-collections/collections | redirect | merchandising-findify/search-content.png | redirected to Collections |
+| 14 | Smart Collections — Collections | /solutions/smart-collections/collections | page | merchandising-findify/smart-collections-list.png | crawled |
+| 15 | Smart Collections — create collection | /solutions/smart-collections/collections/create | wizard | merchandising-findify/smart-collections-create-products.png | crawled, draft discarded |
+| 16 | Smart Collections — default merchandising | /:merchantId/smart-collections/default-merchandising | page/tabs | merchandising-findify/smart-collections-default-merchandising.png | crawled |
+| 17 | Smart Collections — pinning editor | /:merchantId/smart-collections/default-merchandising/pinning/create | editor | merchandising-findify/smart-collections-pinning-editor.png | crawled, draft discarded |
+| 18 | Smart Collections — rules (legacy) | /solutions/smart-collections/rules | page | merchandising-findify/smart-collections-rules-legacy.png | crawled |
+| 19 | Smart Collections — rule editor + preview | /:merchantId/smart-collections/default-merchandising/merch-rule/create | editor | merchandising-findify/smart-collections-merchandising-rule-editor.png | crawled, draft discarded |
+| 20 | Smart Collections — Promo Cards | /solutions/smart-collections/promos | page | merchandising-findify/smart-collections-promo-cards.png | crawled |
+| 21 | Smart Collections — create promo campaign | /solutions/smart-collections/promos/create | wizard | merchandising-findify/smart-collections-promo-create.png | crawled, draft discarded |
+| 22 | Smart Collections — Banners | /solutions/smart-collections/banners | page | merchandising-findify/smart-collections-banners.png | crawled |
+| 23 | Smart Collections — create banner | /solutions/smart-collections/banners/create | wizard | merchandising-findify/smart-collections-banner-create.png | crawled, draft discarded |
+| 24 | Recommendations — engines | /:merchantId/recommendations/engines | page | merchandising-findify/recommendations-list-new.png | crawled |
+| 25 | Recommendations — create engine | /:merchantId/recommendations/engines/create | four-step wizard | merchandising-findify/recommendations-create-step-1.png | crawled, draft discarded |
+| 26 | Recommendations — preview | /:merchantId/recommendations/engines/preview | detail | merchandising-findify/recommendations-preview.png | crawled |
+| 27 | Analytics — Snapshot | /analytics/snapshot | dashboard | merchandising-findify/analytics-snapshot.png | crawled |
+| 28 | Analytics — Search | /analytics/search | dashboard/sections | merchandising-findify/analytics-search.png | crawled |
+| 29 | Analytics — Smart Collections | /analytics/collections | dashboard/sections | merchandising-findify/analytics-collections.png | crawled |
+| 30 | Analytics — Recommendations | /analytics/recommendations | dashboard | merchandising-findify/analytics-recommendations-verified.png | crawled |
+| 31 | Setup — status, usage, Liquid/JS and API handoff | /setup/integration | page | — | blocked — redacted handoff |
+| 32 | Setup — integrations | /setup/integrations | page | — | crawled, identifiers not retained |
+| 33 | Setup — Search/Collections | /setup/advanced/search | settings | — | crawled |
+| 34 | Setup — Autocomplete | /setup/advanced/autocomplete | settings | — | crawled |
+| 35 | Setup — Recommendations | /setup/advanced/recommendations | settings | — | crawled |
+| 36 | Setup — IP Blocking | /setup/advanced/ip-blocking | settings | — | crawled |
+| 37 | Setup — Trend scoring BETA | /setup/advanced/trend-score | settings | — | crawled |
+
+### Merchandising live observations (2026-07-10)
+
+- Store context is controlled by a persistent top-bar combobox in both shells. The crawl did not enumerate or switch merchant identities; only the presence and scope behavior were recorded.
+- Search and Smart Collections are separate merchandising domains. Search has query-level pinning, rules, promo cards, banners, suggestion/product blacklists, synonyms, redirects, preview, and a Content BETA item. Content currently redirects to the Collections list instead of opening a content workflow.
+- The new Synonyms experience supports search, filters, upload, bulk status/delete, and inline create/edit rows. A blank inline draft was cancelled without submission.
+- Smart Collection creation is a two-step activation/product-membership workflow with query, conditions, filters, sort, and storefront preview. Default merchandising combines Pinning and Rules; Promo Cards is marked coming soon there even though the legacy shell still has separate collection promo-card and banner campaign builders.
+- Recommendation engines have list state, enable toggles, page/type metadata, preview, and a four-step create flow: Page Type, Recommendation Type, Settings, Filters. The empty preview requires both a widget and product selection.
+- Analytics is organized as Snapshot, Search, Smart Collections, and Recommendations dashboards. Snapshot includes revenue, share of total revenue, average order value, products sold, visits, and unique visitors; the other groups expose top-query/filter/collection and recommendation-performance sections.
+- Setup includes status/usage, product sync, integrations, primary catalog setup, and advanced Search/Collections, Autocomplete, Recommendations, IP Blocking, General, and Trend scoring controls. Organization-level Profile, Users, and Billing remain out of Merchandise scope.
+
+### Merchandising documentation observations (2026-07-10)
+
+- Merchandising rules apply weights to product or variant attributes, support include/exclude/promote behavior, can target search queries or one/many collections, and expose a popularity-weight control plus a live ranking preview.
+- Search and Smart Collections have distinct rule and pinning contexts. Search pinning starts from a query; collection pinning starts from a collection. The newer collection pinning interface separates Pinned and Unpinned products, supports search/sort, click-to-pin, drag-and-drop, reordering, bulk selection, and save/edit flows.
+- Smart Collections can be created manually or imported from supported commerce platforms; public documentation names Shopify, Maropost, BigCommerce, and Jetshop.
+- Recommendation creation is page-aware (home, cart, product, category, custom), strategy-aware, and includes presentation, product count, notes, fallbacks, filtering rules, and preview behavior.
+- The documentation also confirms banners, page redirects, stickers, sorting, promo cards, content search, personalized-search analytics, Smart Collections analytics, Recommendations analytics, product sync, and IP controls as broader capability areas. The live crawl above verifies the current dashboard IA; Content BETA remains a redirect rather than a usable workflow in the crawled account.
+
 ## A07 — Retail   [crawl-status: pending]
 
 | # | UAT page/flow | UAT path | Type | Screenshot | Crawl status |
@@ -392,6 +454,36 @@ Built 2026-07-07 from Part A (all 11 modules) diffed against `src/router/index.t
 | 9 | Integrations (GA / HCaptcha / Places cards) | AppStore | partial | pending | | Global Apps directory exists; no per-store integration cards |
 | 10 | Store Settings (Website Config / Abandoned Cart / Payments) | SalesChannelDetail | partial | pending | | Settings tab has some store config; cookie banner, homepage SEO, sitemap, abandoned cart, payments absent. Payments crawl blocked (credential-bearing) |
 
+### B-A06c — Merchandising Cloud
+| # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
+|---|---|---|---|---|---|---|
+| 1 | Online sales-channel selector | MerchandisingHome | exists | done | pending | Global Merchandise now opens a selector backed by `useSalesChannels`, with provider/domain/status/health/activity metadata and offline-channel exclusion |
+| 2 | Channel-scoped workspace + Merchandise section rail | MerchandisingLayout | exists | done | pending | Canonical nested workspace uses `MpSectionRail`, auto-minimizes the global sidebar, and exposes the planned Search/Collections/Recommendations/Analytics/Setup groups |
+| 3 | Channel overview | MerchandisingChannelOverview | partial | done | pending | Channel-scoped overview and KPIs are live; underlying merchandising records remain shared until the ownership slice |
+| 4 | Merchandise connection and sync health | SalesChannelDetail / MerchandisingChannelSetup | partial | done | pending | Provider/capability status, setup state, sync-health banner, last-sync context, and recovery action are represented; real integration actions remain mocked |
+| 5 | Invalid, removed, offline, or cross-account recovery | MerchandisingLayout | exists | done | pending | Missing or cross-account channel IDs render a recovery state; offline channels are excluded from selector and workspace entry |
+| 6 | Search preview | MerchandisingSearchPreview | missing | pending | | Route exists but page is a coming-soon empty state; live reference shows query results with ranking context |
+| 7 | Search pinning | — | missing | pending | | Collection pinning is a different target model and is not functional parity for query-scoped Search pinning |
+| 8 | Search merchandising rules | — | missing | pending | | Collection rules cannot represent query targeting, Search rule ownership, or Search rule lists |
+| 9 | Search promo cards | — | missing | pending | | No Search promo-card model, list, editor, schedule, or preview |
+| 10 | Search banners | — | missing | pending | | No Search banner model, list, editor, schedule, or responsive asset state |
+| 11 | Search blacklisting / inclusion-exclusion | — | missing | pending | | No suggestion blacklist or query-scoped product-match exclusion flow |
+| 12 | Search synonyms | MerchandisingSynonyms | partial | pending | | List/status/delete work in memory; create, edit, duplicate, and upload are toast-only |
+| 13 | Search page redirects | MerchandisingPageRedirects | partial | pending | | Create/delete work in memory; edit/duplicate and stronger URL/collision validation are absent |
+| 14 | Search content | — | missing | pending | | No content source/list/editor; live Content BETA currently redirects to Collections |
+| 15 | Smart Collections — list/create/import/membership | MerchandisingCollections | partial | pending | | List search/status filter and basic create exist; no edit, filter-definition/product membership, platform import, or real delete/duplicate |
+| 16 | Smart Collections — pinning | MerchandisingPinning | partial | pending | | Product search/sort, individual/bulk pinning, drag reorder, save/delete exist; not channel-owned and no guarded switching |
+| 17 | Smart Collections — merchandising rules | MerchandisingRuleEdit | partial | pending | | Conditions, collection selection, popularity weight, preview, and not-found handling exist; no channel ownership or async save/deployment failures |
+| 18 | Smart Collections — promo cards and banners | MerchandisingDefaults | missing | pending | | Promo tab is a placeholder and banners are absent, while live reference has separate legacy list/wizard flows for both |
+| 19 | Recommendation engine lifecycle | MerchandisingRecommendations / MerchandisingEngineEdit | partial | pending | | List + four-step editor + filters/fallbacks/product preview work; missing shopper-visible title/presentation controls, draft/publish semantics, storefront preview, and channel ownership |
+| 20 | Merchandising analytics | MerchandisingHome / DashboardDetail | partial | pending | | Aggregate KPIs plus date/comparison controls exist, but no channel-specific Search, Collections, Recommendations dashboards or drill-down |
+| 21 | Channel setup / integrations / product sync | MerchandisingChannelSetup | partial | done | pending | Channel-scoped setup and sync diagnostics shell is live; provider actions and product sync remain prototype-only |
+| 22 | Canonical provider and Merchandise connection model | useSalesChannels | partial | done | pending | Typed provider plus Merchandise connection status/health/last-sync fields now live; duplicate `MerchStore` data still remains in the existing merchandising store |
+| 23 | `accountId + channelId` data isolation | — | missing | pending | | All merchandising arrays and mutations are singleton/global and entities have no owner key |
+| 24 | Same-section channel switching + editor fallback | MerchandisingSidebar | partial | done | pending | Rail switcher preserves supported list sections across channels and routes editor-like sections to a safe root; entity ownership and dirty guards remain pending |
+| 25 | Dirty editor protection | — | missing | pending | | Editors compute dirty state but do not guard channel switching, rail/browser navigation, or module exit |
+| 26 | Canonical Products entry points | ProductRecommendations / MerchandisingCollections | missing | pending | | Products recommendations remains a separate static surface and collections/recommendations do not resolve through canonical channel context |
+
 ### B-A07 — Retail  _(provisional — deep crawl pending)_
 | # | UAT page/flow | Prototype route | Verdict | Build | Commit | Notes |
 |---|---|---|---|---|---|---|
@@ -453,6 +545,49 @@ Built 2026-07-07 from Part A (all 11 modules) diffed against `src/router/index.t
 | 33 | Ticket Assignment | SettingsService | exists | | | Auto-Assign Tickets toggle |
 | 34 | SLA | SettingsService | exists | | | Default SLA (hours) field |
 | 35 | Support Email | SettingsService | exists | | | Support Email Address field |
+
+## Part C — Merchandising Deep Parity
+
+<!-- Interaction/state audit for A06c. Dashboard evidence is explicitly separated from public documentation and prototype code evidence. -->
+<!-- Functional verdict: exists | partial | missing | blocked-live. Review: verified-code | docs-only | needs-authenticated-review. -->
+
+| # | Area | State / wizard step | Trigger | Sanitized Findify pathname | Redacted screenshot | Prototype route / component | Functional verdict | IA placement | UX / accessibility verdict | Severity | Resolution | Review status |
+|---|------|---------------------|---------|-----------------------------|---------------------|-----------------------------|-------------------|--------------|----------------------------|----------|------------|---------------|
+| 1 | Entry | Global Merchandise navigation | Open module | — | — | `MerchandisingChannelSelector` | partial | Selector before workspace | Selector is live with provider/status/health/activity metadata; it still uses prototype channel mocks | critical | Scope all downstream entities and add richer selector filtering/status detail | verified-code |
+| 2 | Entry | Sales Channel detail handoff | Manage Merchandise | — | — | `SalesChannelDetail.openConnectedProduct` | exists | Direct to channel overview | Connected-channel action now lands on the canonical channel overview without a discarded query context | critical | Keep canonical handoff and add setup/error telemetry in later slice | verified-code |
+| 3 | Workspace | Channel identity and section navigation | Enter connected channel | — | — | `MerchandisingLayout` / `MerchandisingSidebar` | exists | Persistent Merchandise rail | Rail is keyboard-addressable, grouped, and visually consistent with Store Editor; capability pages remain staged | high | Implement capability pages behind the new shell | verified-code |
+| 4 | Switching | Switch channel from list/overview | Choose rail identity option | — | — | `MerchandisingSidebar` | partial | Rail identity switcher | Route context and same-section switching work; entity data is still shared | critical | Add channel ownership to all merchandising records and mutations | verified-code |
+| 5 | Switching | Switch channel from editor | Choose destination channel | — | — | `PinningEditor` / `RuleEditor` / `EngineEditor` | missing | Editor-to-section-list fallback | Reusing entity IDs would risk cross-channel edits; current drafts do not rebind on route ID changes | critical | Map editor routes to destination list roots and reload drafts by owner key | verified-code |
+| 6 | Switching | Dirty editor | Rail, browser, or module exit | — | — | Local `isDirty` only | missing | Shared guarded editor session | No confirmation or focus-safe recovery; unsaved work can be lost | high | Reuse `MpConfirmDialog` + `onBeforeRouteLeave` contract for every editor and switch action | verified-code |
+| 7 | Recovery | Invalid, removed, offline, or cross-account channel | Open deep link | — | — | `MerchandisingLayout` | exists | Workspace recovery state | Missing/cross-account IDs show recovery; offline channels are excluded from the Merchandise selector | high | Add explicit recovery telemetry and server-backed capability validation | verified-code |
+| 8 | Health | Disconnected or setup-required channel | Select channel | — | — | `MerchandisingLayout` / `MerchandisingChannelSetup` | partial | Channel Setup | Setup state and CTA are live, but connection action is mocked | high | Wire provider setup and post-connect refresh | verified-code |
+| 9 | Health | Sync issue | Open affected channel | — | — | `MerchandisingLayout` / `MerchandisingChannelSetup` | partial | Overview health banner | Banner, health label, last-sync context, and recovery action are visible; diagnostics remain coarse | high | Add per-capability sync diagnostics and retry result states | verified-code |
+| 10 | Overview | Connected channel KPIs and activity | Land on overview | — | — | `MerchandisingChannelOverview` | partial | Overview | Channel identity and health are clear; KPI values still come from shared mock data | high | Scope KPIs/activity and route actual create flows | verified-code |
+| 11 | Search | Preview | Open Search Preview | — | — | `MerchandisingSearchPreview` | missing | Search > Preview | Coming-soon empty state; no query input, result grid, ranking explanation, or state handling | high | Build query preview with loading/error/empty/results and ranking context | verified-code |
+| 12 | Search | Query pinning | Enter query, choose products, position, save | — | — | Collection-only `PinningEditor` | partial | Search > Pinning | Core product manipulation exists, but query context and top/bottom/position semantics are absent | high | Reuse product panels with query ownership and explicit placement actions | docs-only |
+| 13 | Search | Query merchandising rule | Name, queries, conditions, weight, preview, save | — | — | Collection-only `RuleEditor` | partial | Search > Rules | Condition UI is strong; query targeting/list ownership is missing | high | Generalize target type to search queries or collections and preserve live preview | docs-only |
+| 14 | Search | Promo cards and banners | Create campaign | — | — | No route/component | missing | Search > Promo Cards / Banners | No discoverable workflow, preview, schedule, responsive asset, or validation state | medium | Add separate list/editor flows sharing campaign scheduling and preview primitives | docs-only |
+| 15 | Search | Blacklisting | Include/exclude products for query | — | — | No route/component | missing | Search > Blacklisting | No safe bulk selection, feedback, or result-count impact | high | Add query-scoped exclusion list with undo/confirmation and live result preview | docs-only |
+| 16 | Search | Synonym lifecycle | Create/edit/import/duplicate/toggle/delete | — | — | `MerchandisingSynonyms` | partial | Search > Synonyms | Table and bulk status/delete work; create/edit/import/duplicate are toast-only | high | Implement drawer/editor, validation, duplicate detection, import result summary, and real duplicate | verified-code |
+| 17 | Search | Page redirect lifecycle | Create/edit/duplicate/delete | — | — | `MerchandisingPageRedirects` | partial | Search > Redirects | Create/delete work; edit/duplicate are toast-only and URL validation is weak | medium | Complete edit/duplicate, normalize destinations, and add collision/error states | verified-code |
+| 18 | Search | Content sources/results | Add or manage searchable content | — | — | No route/component | missing | Search > Content | No source status, sync feedback, result preview, or empty/error state | medium | Add channel-scoped content source list and preview workflow | docs-only |
+| 19 | Smart Collections | List, create, import, edit, membership | Open Collections | /solutions/smart-collections/collections | — | `MerchandisingCollections` | partial | Smart Collections > Collections | Basic list/create/status is clear; delete/duplicate are fake and membership/filter/import flows are absent | critical | Add real CRUD, filters, product membership, platform import, sync status, and confirmations | verified-code |
+| 20 | Smart Collections | Pinning editor | Select collection, pin, reorder, bulk edit, save | — | — | `MerchandisingPinning` | partial | Smart Collections > Pinning | Core desktop flow is functional; no channel ownership, route guard, touch reorder, or live deployment context | high | Scope records, add guarded drafts, keyboard/touch reorder, and live announcements | verified-code |
+| 21 | Smart Collections | Rules editor | Collections, conditions, popularity, preview | — | — | `MerchandisingRuleEdit` | partial | Smart Collections > Rules | Strong in-memory rule editor; lacks channel ownership and server/error/deployment states | high | Preserve editor, add owner keys, async states, validation summary, and guarded navigation | verified-code |
+| 22 | Smart Collections | Promo cards and banners | Create/manage campaign | — | — | Promo tab placeholder / no banner route | missing | Smart Collections > Promo Cards / Banners | Promo Cards is explicitly coming soon; banners absent | medium | Build collection-targeted campaign list/editor and asset preview | verified-code |
+| 23 | Recommendations | Engine lifecycle | Page, strategy, display, fallback, filters, preview | — | — | `MerchandisingRecommendations` / `MerchandisingEngineEdit` | partial | Recommendations | Four-step editor and product preview work; no storefront-context visual preview or channel isolation | high | Add channel ownership, responsive storefront preview, publish lifecycle, and analytics handoff | verified-code |
+| 24 | Analytics | Search, Collections, Recommendations performance | Open analytics and filter period | — | — | Global `MerchandisingHome` analytics | partial | Analytics | Aggregate KPIs exist, but no channel/product-area drill-down, loading/error state, or comparison context | high | Add channel-scoped tabs, date/filter state, drill-down tables, and empty/error handling | docs-only |
+| 25 | Setup | Provider integration and product sync | Connect or recover channel | — | — | `useSalesChannels` + `MerchandisingChannelSetup` | partial | Channel Setup | Typed provider/status/health and setup surface are live; connect/sync actions are still mocked | critical | Wire provider integrations and product-sync lifecycle | verified-code |
+| 26 | Data | Owner isolation | Read or mutate any entity | — | — | `useMerchandising` | missing | Cross-cutting | Every entity and mutation is global; switching labels can expose/mutate another channel's data | critical | Require `accountId + channelId` on every selector, lookup, mutation, and relationship | verified-code |
+| 27 | Consolidation | Products collections/recommendations entry | Open Products shortcuts | — | — | `ProductRecommendations` / `MerchandisingCollections` | partial | Canonical Merchandise routes | Duplicate static recommendations surface and account-level links fragment the workflow | medium | Redirect Products shortcuts into the selected channel or selector, then retire duplicate behavior | verified-code |
+| 28 | Live crawl | Authenticated dashboard route/interaction verification | Open supplied dashboard URL | /solutions/smart-collections/collections | — | — | blocked-live | Audit gate | Authentication handoff is prohibited in this browser session; no screenshots or live state verdicts captured | high | Resume in a permitted user-authenticated tab, sequentially verify every provisional row, and save redacted screenshots locally | needs-authenticated-review |
+
+### Part C audit summary
+
+- Foundation slice verified in code: selector, canonical route family, rail shell, channel switcher, setup/recovery states, typed provider metadata, and sync-health banner. Capability-level parity remains pending, and authenticated live verification remains blocked for all reference-app states.
+- Critical implementation prerequisites: canonical Sales Channel provider/capability model, `accountId + channelId` ownership, canonical route family, selector, rail shell, and guarded editor sessions.
+- Existing work worth preserving: `MpSectionRail`, Store Editor invalid-channel/switch-root patterns, collection pinning, merchandising-rule preview, recommendation engine editor, synonym bulk actions, and redirect create/delete.
+- Accessibility verification still required in implementation: keyboard and touch reordering, focus restoration after switch/confirm, live announcements for ranking changes, validation summaries, contrast, 1280px and 375px layouts, and loading/error/empty states.
 
 ## Phase 3 — Proposed build order (awaiting user approval, 2026-07-07)
 

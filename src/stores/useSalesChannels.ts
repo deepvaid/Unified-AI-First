@@ -5,6 +5,9 @@ export type SalesChannelType = 'web_store' | 'offline_store'
 export type SalesChannelStatus = 'connected' | 'needs_setup' | 'draft' | 'sync_issue'
 export type SalesChannelHealth = 'healthy' | 'attention' | 'incomplete'
 export type ConnectedCloud = 'commerce' | 'retail' | 'merchandise' | 'store_builder'
+export type SalesChannelProvider = 'maropost_store_builder' | 'shopify' | 'bigcommerce' | 'magento' | 'other'
+export type MerchandisingConnectionStatus = 'connected' | 'setup_required' | 'sync_issue' | 'unsupported'
+export type MerchandisingConnectionHealth = 'healthy' | 'warning' | 'error' | 'syncing'
 export type LocationRole = 'pos_selling' | 'pickup' | 'fulfillment' | 'warehouse'
 
 export interface SalesChannel {
@@ -12,6 +15,7 @@ export interface SalesChannel {
   accountId: string
   name: string
   type: SalesChannelType
+  provider: SalesChannelProvider
   status: SalesChannelStatus
   health: SalesChannelHealth
   description?: string
@@ -19,6 +23,12 @@ export interface SalesChannel {
   createdAt: string
   updatedAt: string
   lastActivityAt: string
+  merchandising?: {
+    status: MerchandisingConnectionStatus
+    health: MerchandisingConnectionHealth
+    lastSyncAt?: string
+    lastActivityAt?: string
+  }
   webStore?: {
     domain: string
     storeBuilderEnabled: boolean
@@ -87,6 +97,7 @@ const seedChannels: SalesChannel[] = [
     accountId: '2000290',
     name: 'Atlas Outfitters',
     type: 'web_store',
+    provider: 'maropost_store_builder',
     status: 'connected',
     health: 'healthy',
     description: 'Primary DTC storefront for apparel drops, seasonal campaigns, and unified online commerce.',
@@ -94,6 +105,12 @@ const seedChannels: SalesChannel[] = [
     createdAt: '2025-12-19T09:00:00Z',
     updatedAt: '2026-05-26T06:54:00Z',
     lastActivityAt: '2026-05-26T06:54:00Z',
+    merchandising: {
+      status: 'connected',
+      health: 'healthy',
+      lastSyncAt: '2026-05-26T06:45:00Z',
+      lastActivityAt: '2026-05-26T06:54:00Z',
+    },
     webStore: {
       domain: 'atlas-outfitters.uat.maropost.store',
       storeBuilderEnabled: true,
@@ -106,6 +123,7 @@ const seedChannels: SalesChannel[] = [
     accountId: '2000290',
     name: 'Beta Sales Channel',
     type: 'web_store',
+    provider: 'maropost_store_builder',
     status: 'needs_setup',
     health: 'attention',
     description: 'New Store Builder storefront waiting for merchandising setup.',
@@ -113,6 +131,11 @@ const seedChannels: SalesChannel[] = [
     createdAt: '2026-03-12T13:35:00Z',
     updatedAt: '2026-05-25T03:10:00Z',
     lastActivityAt: '2026-05-25T03:10:00Z',
+    merchandising: {
+      status: 'setup_required',
+      health: 'warning',
+      lastActivityAt: '2026-05-25T03:10:00Z',
+    },
     webStore: {
       domain: 'beta-2000290.uat.maropost.store',
       storeBuilderEnabled: true,
@@ -125,6 +148,7 @@ const seedChannels: SalesChannel[] = [
     accountId: '2000290',
     name: 'Max Test Store',
     type: 'web_store',
+    provider: 'maropost_store_builder',
     status: 'draft',
     health: 'incomplete',
     description: 'Draft web store used for theme and content testing.',
@@ -132,6 +156,11 @@ const seedChannels: SalesChannel[] = [
     createdAt: '2026-02-26T06:04:00Z',
     updatedAt: '2026-05-18T05:30:00Z',
     lastActivityAt: '2026-05-18T05:30:00Z',
+    merchandising: {
+      status: 'setup_required',
+      health: 'warning',
+      lastActivityAt: '2026-05-18T05:30:00Z',
+    },
     webStore: {
       domain: 'max-test.uat.maropost.store',
       storeBuilderEnabled: false,
@@ -144,6 +173,7 @@ const seedChannels: SalesChannel[] = [
     accountId: '2000290',
     name: 'POS Store',
     type: 'offline_store',
+    provider: 'other',
     status: 'connected',
     health: 'healthy',
     description: 'Retail Cloud offline sales channel for in-person selling.',
@@ -166,6 +196,7 @@ const seedChannels: SalesChannel[] = [
     accountId: '2000290',
     name: 'Mall Kiosk POS',
     type: 'offline_store',
+    provider: 'other',
     status: 'needs_setup',
     health: 'attention',
     description: 'New kiosk channel waiting for register setup.',
@@ -179,6 +210,58 @@ const seedChannels: SalesChannel[] = [
       locationRoles: {
         'loc-soho': ['pos_selling'],
       },
+    },
+  },
+  {
+    id: 'shopify-fashion',
+    accountId: '2000290',
+    name: 'Fashion Boutique',
+    type: 'web_store',
+    provider: 'shopify',
+    status: 'connected',
+    health: 'healthy',
+    description: 'Shopify-connected storefront with catalog and search sync enabled.',
+    connectedClouds: ['commerce', 'merchandise'],
+    createdAt: '2026-04-10T10:00:00Z',
+    updatedAt: '2026-05-26T05:22:00Z',
+    lastActivityAt: '2026-05-26T05:22:00Z',
+    merchandising: {
+      status: 'connected',
+      health: 'healthy',
+      lastSyncAt: '2026-05-26T05:18:00Z',
+      lastActivityAt: '2026-05-26T05:22:00Z',
+    },
+    webStore: {
+      domain: 'fashion-boutique.myshopify.com',
+      storeBuilderEnabled: false,
+      published: true,
+      merchandiseConnected: true,
+    },
+  },
+  {
+    id: 'shopify-home-sync',
+    accountId: '2000290',
+    name: 'Home & Living Shopify',
+    type: 'web_store',
+    provider: 'shopify',
+    status: 'sync_issue',
+    health: 'attention',
+    description: 'Shopify-connected channel with a catalog sync requiring attention.',
+    connectedClouds: ['commerce', 'merchandise'],
+    createdAt: '2026-03-18T08:30:00Z',
+    updatedAt: '2026-05-26T04:50:00Z',
+    lastActivityAt: '2026-05-26T04:50:00Z',
+    merchandising: {
+      status: 'sync_issue',
+      health: 'error',
+      lastSyncAt: '2026-05-26T04:42:00Z',
+      lastActivityAt: '2026-05-26T04:50:00Z',
+    },
+    webStore: {
+      domain: 'home-living.myshopify.com',
+      storeBuilderEnabled: false,
+      published: true,
+      merchandiseConnected: true,
     },
   },
 ]
@@ -254,6 +337,7 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
     const channel: SalesChannel = payload.type === 'web_store'
       ? {
           ...base,
+          provider: 'maropost_store_builder',
           status: payload.storeBuilderEnabled ? 'needs_setup' : 'draft',
           health: 'incomplete',
           connectedClouds: [
@@ -270,6 +354,7 @@ export const useSalesChannelsStore = defineStore('salesChannels', () => {
         }
       : {
           ...base,
+          provider: 'other',
           status: payload.locationIds?.length ? 'needs_setup' : 'draft',
           health: 'incomplete',
           connectedClouds: ['retail'],

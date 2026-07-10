@@ -5,6 +5,10 @@ declare module 'vue-router' {
   interface RouteMeta {
     fullPage?: boolean
     flush?: boolean
+    railShell?: boolean
+    storeEditor?: boolean
+    merchandisingShell?: boolean
+    capability?: string
     requires?: SubscriptionKey
   }
 }
@@ -68,17 +72,35 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/sales_channels', name: 'StoreSetup', redirect: to => ({ name: 'SalesChannels', params: { accountId: to.params.accountId } }), meta: commerceGate },
 
   // 5.5 Merchandise (MerchCloud)
-  { path: '/commerce/:accountId/merchandising', name: 'MerchandisingHome', component: () => import('@/views/Merchandising/MerchandisingHome.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/search/preview', name: 'MerchandisingSearchPreview', component: () => import('@/views/Merchandising/SearchPreview.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/search/synonyms', name: 'MerchandisingSynonyms', component: () => import('@/views/Merchandising/Synonyms.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/search/redirects', name: 'MerchandisingPageRedirects', component: () => import('@/views/Merchandising/PageRedirects.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/collections', name: 'MerchandisingCollections', component: () => import('@/views/Merchandising/Collections.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/default-merchandising', name: 'MerchandisingDefaults', component: () => import('@/views/Merchandising/DefaultMerchandising.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/default-merchandising/pinning/:ruleId', name: 'MerchandisingPinning', component: () => import('@/views/Merchandising/PinningEditor.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/default-merchandising/rules/:ruleId', name: 'MerchandisingRuleEdit', component: () => import('@/views/Merchandising/RuleEditor.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/recommendations/:engineId', name: 'MerchandisingEngineEdit', component: () => import('@/views/Merchandising/EngineEditor.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/recommendations', name: 'MerchandisingRecommendations', component: () => import('@/views/Merchandising/RecommendationEngines.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/merchandising/fields', name: 'MerchandisingFields', component: () => import('@/views/Merchandising/FieldTransformations.vue'), meta: commerceGate },
+  // Global entry: select an online channel before entering the workspace.
+  { path: '/commerce/:accountId/merchandising', name: 'MerchandisingHome', component: () => import('@/views/Merchandising/MerchandisingChannelSelector.vue'), meta: commerceGate },
+  // Canonical channel-scoped workspace. Existing merchandising views are reused
+  // inside this shell while their data ownership is migrated in later slices.
+  {
+    path: '/accounts/:accountId/sales_channels/:channelId/merchandising',
+    component: () => import('@/views/Merchandising/MerchandisingLayout.vue'),
+    meta: { ...commerceGate, merchandisingShell: true },
+    children: [
+      { path: '', name: 'MerchandisingChannelOverview', component: () => import('@/views/Merchandising/MerchandisingChannelOverview.vue') },
+      { path: 'search/preview', name: 'MerchandisingChannelSearchPreview', component: () => import('@/views/Merchandising/SearchPreview.vue') },
+      { path: 'search/synonyms', name: 'MerchandisingChannelSynonyms', component: () => import('@/views/Merchandising/Synonyms.vue') },
+      { path: 'search/redirects', name: 'MerchandisingChannelRedirects', component: () => import('@/views/Merchandising/PageRedirects.vue') },
+      { path: 'smart-collections/collections', name: 'MerchandisingChannelCollections', component: () => import('@/views/Merchandising/Collections.vue') },
+      { path: 'smart-collections/default-merchandising', name: 'MerchandisingChannelDefaults', component: () => import('@/views/Merchandising/DefaultMerchandising.vue') },
+      { path: 'smart-collections/default-merchandising/pinning/:ruleId', name: 'MerchandisingChannelPinning', component: () => import('@/views/Merchandising/PinningEditor.vue') },
+      { path: 'smart-collections/default-merchandising/rules/:ruleId', name: 'MerchandisingChannelRuleEdit', component: () => import('@/views/Merchandising/RuleEditor.vue') },
+      { path: 'recommendations/:engineId', name: 'MerchandisingChannelEngineEdit', component: () => import('@/views/Merchandising/EngineEditor.vue') },
+      { path: 'recommendations', name: 'MerchandisingChannelRecommendations', component: () => import('@/views/Merchandising/RecommendationEngines.vue') },
+      { path: 'analytics', name: 'MerchandisingChannelAnalytics', component: () => import('@/views/Merchandising/MerchandisingCapabilityPlaceholder.vue'), meta: { capability: 'analytics' } },
+      { path: 'setup', name: 'MerchandisingChannelSetup', component: () => import('@/views/Merchandising/MerchandisingChannelSetup.vue') },
+      { path: 'setup/fields', name: 'MerchandisingChannelFields', component: () => import('@/views/Merchandising/FieldTransformations.vue') },
+      { path: 'capabilities/:capability', name: 'MerchandisingChannelCapability', component: () => import('@/views/Merchandising/MerchandisingCapabilityPlaceholder.vue') },
+      { path: ':pathMatch(.*)*', redirect: { name: 'MerchandisingChannelOverview' } },
+    ],
+  },
+  // Compatibility redirects keep old bookmarks safe but require a channel
+  // selection before opening a section.
+  { path: '/commerce/:accountId/merchandising/:pathMatch(.*)*', redirect: to => ({ name: 'MerchandisingHome', params: { accountId: to.params.accountId } }), meta: commerceGate },
 
   // 5.6 Retail
   { path: '/commerce/:accountId/retail',              name: 'RetailHome',         component: () => import('@/views/Retail/RetailHome.vue'),       meta: commerceGate },
