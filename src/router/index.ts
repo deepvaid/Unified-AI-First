@@ -106,7 +106,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/accounts/:accountId/sales_channels/:channelId',
     component: () => import('@/views/SalesChannels/StoreEditorLayout.vue'),
-    meta: commerceGate,
+    meta: { ...commerceGate, storeEditor: true },
     children: [
       { path: '', name: 'SalesChannelDetail', component: () => import('@/views/SalesChannels/SalesChannelDetail.vue') },
       { path: 'navigation', name: 'StoreNavigation', component: () => import('@/views/SalesChannels/StoreNavigation.vue') },

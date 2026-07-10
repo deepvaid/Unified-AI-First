@@ -9,6 +9,7 @@ import { useAppTheme, applySidebarTheme, type SidebarTheme } from '@/composables
 import { applyChartPalette, type ChartPalette } from '@/plugins/chartPalette'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 
 // Apply stored accent and theme to Vuetify on initial mount
 const { accent, mode, setAccent, setMode } = useAppTheme()
@@ -67,6 +68,34 @@ watch(width, (w, prevW) => {
     drawer.value = true
   }
 })
+
+// Auto-minimize the main sidebar while a section-rail shell (store editor) is on
+// screen — two full sidebars is redundant. Fires only on context edges, so a
+// manual re-expand inside the shell is respected; the user's prior state is
+// restored on exit (unless the narrow-viewport rule forces rail anyway).
+const salesChannelsStore = useSalesChannelsStore()
+const railBeforeShell = ref<boolean | null>(null)
+
+const inRailShell = computed(() => {
+  if (!route.meta?.storeEditor) return false
+  const aId = String(route.params.accountId ?? '')
+  const cId = String(route.params.channelId ?? '')
+  // POS/offline channels render without the shell rail — don't collapse for them.
+  return salesChannelsStore.getChannel(aId, cId)?.type === 'web_store'
+})
+
+// immediate: deep links straight into the editor collapse on first load too.
+watch(inRailShell, (now, was) => {
+  if (now && !was) {
+    railBeforeShell.value = rail.value
+    rail.value = true
+  } else if (!now && was) {
+    if (railBeforeShell.value === false && width.value >= 1180) {
+      rail.value = false
+    }
+    railBeforeShell.value = null
+  }
+}, { immediate: true })
 
 const isFullPage = computed(() => !!route.meta?.fullPage)
 const isFlush = computed(() => !!route.meta?.flush)
