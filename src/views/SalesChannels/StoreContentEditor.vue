@@ -140,6 +140,7 @@ function requestCancel() {
     backToList()
     return
   }
+  pendingTarget.value = null
   discardDialog.value = true
 }
 
