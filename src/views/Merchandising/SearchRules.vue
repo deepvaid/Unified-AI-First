@@ -8,8 +8,10 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import {
   useMerchandisingStore,
+  MERCH_CONDITION_ACTION_LABELS,
   type MerchCondition,
   type MerchConditionAction,
+  type MerchConditionApplyTo,
   type SearchRule,
 } from '@/stores/useMerchandising'
 
@@ -24,10 +26,23 @@ const headers = [
   { title: '', key: 'actions', sortable: false, width: 64 },
 ]
 
-const actionOptions: Array<{ title: string; value: MerchConditionAction }> = [
-  { title: 'Include', value: 'include' },
-  { title: 'Exclude', value: 'exclude' },
-  { title: 'Promote', value: 'promote' },
+// Findify condition types (crawled order): Promote · Pin · Only include · Exclude
+const actionOptions: Array<{ title: string; value: MerchConditionAction }> = (
+  ['promote', 'pin', 'include', 'exclude'] as MerchConditionAction[]
+).map((value) => ({ title: MERCH_CONDITION_ACTION_LABELS[value], value }))
+
+const applyToOptions: Array<{ title: string; value: MerchConditionApplyTo }> = [
+  { title: 'Both', value: 'both' },
+  { title: 'Product', value: 'product' },
+  { title: 'Variant', value: 'variant' },
+]
+
+// Findify's boost slider quick presets (Bury / Lower / Higher / Boost)
+const WEIGHT_PRESETS = [
+  { label: 'Bury', value: -99 },
+  { label: 'Lower', value: -30 },
+  { label: 'Higher', value: 30 },
+  { label: 'Boost', value: 90 },
 ]
 
 const filteredRules = computed(() => {
@@ -63,7 +78,7 @@ function openEdit(rule: SearchRule) {
   form.value = {
     name: rule.name,
     terms: [...rule.terms],
-    conditions: rule.conditions.map((c) => ({ ...c, values: [...c.values] })),
+    conditions: rule.conditions.map((c) => ({ ...c, applyTo: c.applyTo ?? 'both', values: [...c.values] })),
   }
   editing.value = true
   editingId.value = rule.id
@@ -73,11 +88,21 @@ function openEdit(rule: SearchRule) {
 function addCondition() {
   form.value.conditions.push({
     id: `src${Date.now()}-${form.value.conditions.length}`,
-    action: 'include',
+    action: 'promote',
+    applyTo: 'both',
+    weight: 30,
     field: '',
     values: [],
   })
 }
+
+// Findify defaults a fresh Promote condition to a positive boost.
+function onActionChange(condition: MerchCondition) {
+  if (condition.action === 'promote' && condition.weight === undefined) condition.weight = 30
+}
+
+// Findify caps rules at 9 promote conditions.
+const promoteCount = computed(() => form.value.conditions.filter((c) => c.action === 'promote').length)
 
 function removeCondition(index: number) {
   form.value.conditions.splice(index, 1)
@@ -253,6 +278,14 @@ function confirmDelete() {
               Add condition
             </v-btn>
           </div>
+          <v-alert
+            v-if="promoteCount >= 9"
+            type="warning"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+            text="Rules support a maximum of 9 Promote conditions."
+          />
           <p v-if="form.conditions.length === 0" class="text-body-2 text-medium-emphasis mb-0">
             No conditions yet — add one to target products by field.
           </p>
@@ -270,11 +303,12 @@ function confirmDelete() {
                   <v-select
                     v-model="condition.action"
                     :items="actionOptions"
-                    label="Action"
+                    label="Condition type"
                     variant="outlined"
                     density="comfortable"
                     hide-details
                     class="flex-grow-1"
+                    @update:model-value="onActionChange(condition)"
                   />
                   <v-text-field
                     v-model="condition.field"
@@ -294,6 +328,29 @@ function confirmDelete() {
                     @click="removeCondition(index)"
                   />
                 </div>
+
+                <div class="d-flex align-center gap-3 flex-wrap">
+                  <span class="text-caption text-medium-emphasis">Apply to</span>
+                  <v-btn-toggle
+                    v-model="condition.applyTo"
+                    density="compact"
+                    variant="outlined"
+                    divided
+                    mandatory
+                    rounded="lg"
+                  >
+                    <v-btn
+                      v-for="option in applyToOptions"
+                      :key="option.value"
+                      :value="option.value"
+                      size="x-small"
+                      class="text-none px-3"
+                    >
+                      {{ option.title }}
+                    </v-btn>
+                  </v-btn-toggle>
+                </div>
+
                 <v-combobox
                   v-model="condition.values"
                   label="Values"
@@ -304,6 +361,36 @@ function confirmDelete() {
                   chips
                   closable-chips
                 />
+
+                <div v-if="condition.action === 'promote'" class="rule-weight">
+                  <div class="d-flex align-center justify-space-between mb-1">
+                    <span class="text-caption text-medium-emphasis">Boost strength</span>
+                    <span class="text-caption font-weight-bold">{{ condition.weight ?? 0 }}</span>
+                  </div>
+                  <v-slider
+                    v-model="condition.weight"
+                    :min="-99"
+                    :max="90"
+                    :step="1"
+                    density="compact"
+                    hide-details
+                    color="primary"
+                    aria-label="Boost strength"
+                  />
+                  <div class="d-flex gap-2 mt-1">
+                    <v-chip
+                      v-for="preset in WEIGHT_PRESETS"
+                      :key="preset.label"
+                      size="x-small"
+                      variant="tonal"
+                      :color="(condition.weight ?? 0) === preset.value ? 'primary' : undefined"
+                      class="cursor-pointer"
+                      @click="condition.weight = preset.value"
+                    >
+                      {{ preset.label }}
+                    </v-chip>
+                  </div>
+                </div>
               </div>
             </v-card>
           </div>

@@ -15,6 +15,12 @@ const scope = computed<MerchPromoScope>(() =>
   route.meta.merchScope === 'collections' ? 'collections' : 'search',
 )
 const scopeLabel = computed(() => (scope.value === 'collections' ? 'Smart collections' : 'Search results'))
+const termsLabel = computed(() => (scope.value === 'collections' ? 'Collections' : 'Search terms'))
+const termsHint = computed(() =>
+  scope.value === 'collections'
+    ? 'Collections where this banner appears — press Enter to add'
+    : 'Search terms that trigger this banner — press Enter to add',
+)
 
 const banners = computed(() => store.bannerList.filter((b) => b.scope === scope.value))
 
@@ -25,13 +31,13 @@ function showToast(message: string) {
 
 /* — Create drawer — */
 const drawer = ref(false)
-const form = ref({ title: '', imageLabel: '', targetUrl: '' })
+const form = ref<{ title: string; imageLabel: string; targetUrl: string; terms: string[] }>({ title: '', imageLabel: '', targetUrl: '', terms: [] })
 const canSave = computed(() =>
   form.value.title.trim() !== '' && form.value.imageLabel.trim() !== '' && form.value.targetUrl.trim() !== '',
 )
 
 function openCreate() {
-  form.value = { title: '', imageLabel: '', targetUrl: '' }
+  form.value = { title: '', imageLabel: '', targetUrl: '', terms: [] }
   drawer.value = true
 }
 
@@ -42,6 +48,7 @@ function save() {
     title: form.value.title.trim(),
     imageLabel: form.value.imageLabel.trim(),
     targetUrl: form.value.targetUrl.trim(),
+    terms: form.value.terms,
   })
   drawer.value = false
   showToast('Banner created')
@@ -155,6 +162,17 @@ function doDelete() {
           variant="outlined"
           density="comfortable"
           hide-details
+        />
+        <v-combobox
+          v-model="form.terms"
+          :label="termsLabel"
+          :hint="termsHint"
+          persistent-hint
+          variant="outlined"
+          density="comfortable"
+          multiple
+          chips
+          closable-chips
         />
         <div class="text-caption text-medium-emphasis">
           Placement: {{ scopeLabel }} — preset from the current section.

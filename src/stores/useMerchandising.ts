@@ -34,6 +34,15 @@ export interface PageRedirect {
 }
 
 export type CollectionFilterType = 'manual' | 'synced'
+export type CollectionFilterOperator = 'equals' | 'contains'
+
+export interface CollectionFilter {
+  id: string
+  field: string
+  operator: CollectionFilterOperator
+  value: string
+}
+
 export interface SmartCollection {
   id: string
   channelId: string
@@ -41,6 +50,11 @@ export interface SmartCollection {
   status: 'active' | 'inactive'
   filterType: CollectionFilterType
   updatedAt: string
+  /** Findify collection-edit config (Shopify Filters / Activation / Filters & Sorting tabs). */
+  useShopifyFilters?: boolean
+  pageUrl?: string
+  filters?: CollectionFilter[]
+  sortBy?: string
 }
 
 /* Default Merchandising (pinning + merchandising rules) */
@@ -70,12 +84,24 @@ export interface PinningRule {
   updatedAt: string
 }
 
-export type MerchConditionAction = 'include' | 'exclude' | 'promote'
+export type MerchConditionAction = 'include' | 'exclude' | 'promote' | 'pin'
+
+/** Findify condition-type labels ("include" surfaces as "Only include"). */
+export const MERCH_CONDITION_ACTION_LABELS: Record<MerchConditionAction, string> = {
+  promote: 'Promote',
+  pin: 'Pin',
+  include: 'Only include',
+  exclude: 'Exclude',
+}
+
+export type MerchConditionApplyTo = 'both' | 'product' | 'variant'
 
 export interface MerchCondition {
   id: string
   action: MerchConditionAction
-  /** -100 (bury) … 100 (boost); only for action === 'promote' */
+  /** Findify "Apply to" scope; defaults to both. */
+  applyTo?: MerchConditionApplyTo
+  /** -99 (bury) … 90 (boost); only for action === 'promote' */
   weight?: number
   field: string
   values: string[]
@@ -161,6 +187,8 @@ export interface PromoCard {
   scope: MerchPromoScope
   title: string
   imageLabel: string
+  /** Search terms (or collections) that trigger the card (Findify wizard step 2). */
+  terms: string[]
   status: 'active' | 'inactive'
   updatedAt: string
 }
@@ -172,6 +200,8 @@ export interface MerchBanner {
   title: string
   imageLabel: string
   targetUrl: string
+  /** Search terms (or collections) that trigger the banner (Findify wizard step). */
+  terms: string[]
   status: 'active' | 'inactive'
   updatedAt: string
 }
@@ -489,16 +519,16 @@ const searchRules: SearchRule[] = [
 ]
 
 const promoCards: PromoCard[] = [
-  { id: 'promo1', channelId: DEFAULT_CHANNEL_ID, scope: 'search', title: 'Summer sale — up to 40% off', imageLabel: 'Summer sale hero', status: 'active', updatedAt: 'May 14, 2026' },
-  { id: 'promo2', channelId: DEFAULT_CHANNEL_ID, scope: 'collections', title: 'New denim drop', imageLabel: 'Denim lifestyle shot', status: 'inactive', updatedAt: 'Apr 29, 2026' },
-  { id: 'promo3', channelId: FASHION_CHANNEL_ID, scope: 'search', title: 'New season edit', imageLabel: 'Runway lookbook card', status: 'active', updatedAt: 'May 18, 2026' },
-  { id: 'promo4', channelId: FASHION_CHANNEL_ID, scope: 'collections', title: 'Outerwear event — 20% off', imageLabel: 'Trench coat street style', status: 'active', updatedAt: 'May 6, 2026' },
+  { id: 'promo1', channelId: DEFAULT_CHANNEL_ID, scope: 'search', title: 'Summer sale — up to 40% off', imageLabel: 'Summer sale hero', terms: ['sale', 'summer'], status: 'active', updatedAt: 'May 14, 2026' },
+  { id: 'promo2', channelId: DEFAULT_CHANNEL_ID, scope: 'collections', title: 'New denim drop', imageLabel: 'Denim lifestyle shot', terms: ['collections/new-arrivals'], status: 'inactive', updatedAt: 'Apr 29, 2026' },
+  { id: 'promo3', channelId: FASHION_CHANNEL_ID, scope: 'search', title: 'New season edit', imageLabel: 'Runway lookbook card', terms: ['new', 'dress'], status: 'active', updatedAt: 'May 18, 2026' },
+  { id: 'promo4', channelId: FASHION_CHANNEL_ID, scope: 'collections', title: 'Outerwear event — 20% off', imageLabel: 'Trench coat street style', terms: ['collections/outerwear'], status: 'active', updatedAt: 'May 6, 2026' },
 ]
 
 const merchBanners: MerchBanner[] = [
-  { id: 'bn1', channelId: DEFAULT_CHANNEL_ID, scope: 'search', title: 'Free shipping over $75', imageLabel: 'Free shipping ribbon', targetUrl: 'https://MyDemostore.com/pages/shipping', status: 'active', updatedAt: 'May 12, 2026' },
-  { id: 'bn2', channelId: DEFAULT_CHANNEL_ID, scope: 'collections', title: 'Members get early access', imageLabel: 'Loyalty banner', targetUrl: 'https://MyDemostore.com/pages/rewards', status: 'inactive', updatedAt: 'Apr 24, 2026' },
-  { id: 'bn3', channelId: FASHION_CHANNEL_ID, scope: 'search', title: 'Spring lookbook is live', imageLabel: 'Spring lookbook banner', targetUrl: 'https://fashionboutique.com/pages/lookbook', status: 'active', updatedAt: 'May 15, 2026' },
+  { id: 'bn1', channelId: DEFAULT_CHANNEL_ID, scope: 'search', title: 'Free shipping over $75', imageLabel: 'Free shipping ribbon', targetUrl: 'https://MyDemostore.com/pages/shipping', terms: ['shipping', 'delivery'], status: 'active', updatedAt: 'May 12, 2026' },
+  { id: 'bn2', channelId: DEFAULT_CHANNEL_ID, scope: 'collections', title: 'Members get early access', imageLabel: 'Loyalty banner', targetUrl: 'https://MyDemostore.com/pages/rewards', terms: ['collections/sale'], status: 'inactive', updatedAt: 'Apr 24, 2026' },
+  { id: 'bn3', channelId: FASHION_CHANNEL_ID, scope: 'search', title: 'Spring lookbook is live', imageLabel: 'Spring lookbook banner', targetUrl: 'https://fashionboutique.com/pages/lookbook', terms: ['spring', 'lookbook'], status: 'active', updatedAt: 'May 15, 2026' },
 ]
 
 const blacklistTerms: BlacklistTerm[] = [
@@ -781,6 +811,20 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     return collection
   }
 
+  /** Findify collection-edit config: Shopify Filters / Activation / Filters & Sorting. */
+  function saveCollectionConfig(
+    id: string,
+    payload: { useShopifyFilters: boolean; pageUrl: string; filters: CollectionFilter[]; sortBy: string },
+  ) {
+    const row = allCollections.value.find((c) => c.id === id)
+    if (!row) return
+    row.useShopifyFilters = payload.useShopifyFilters
+    row.pageUrl = payload.pageUrl
+    row.filters = payload.filters.map((f) => ({ ...f }))
+    row.sortBy = payload.sortBy
+    row.updatedAt = todayLabel()
+  }
+
   function toggleEngineStatus(id: string) {
     const row = allEngines.value.find((e) => e.id === id)
     if (row) row.status = row.status === 'active' ? 'inactive' : 'active'
@@ -1004,13 +1048,14 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     if (row) row.status = row.status === 'active' ? 'inactive' : 'active'
   }
 
-  function createPromoCard(payload: { scope: MerchPromoScope; title: string; imageLabel: string }): PromoCard {
+  function createPromoCard(payload: { scope: MerchPromoScope; title: string; imageLabel: string; terms: string[] }): PromoCard {
     const card: PromoCard = {
       id: `promo${Date.now()}`,
       channelId: seedChannelId(),
       scope: payload.scope,
       title: payload.title,
       imageLabel: payload.imageLabel,
+      terms: [...payload.terms],
       status: 'active',
       updatedAt: todayLabel(),
     }
@@ -1029,7 +1074,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     if (row) row.status = row.status === 'active' ? 'inactive' : 'active'
   }
 
-  function createBanner(payload: { scope: MerchPromoScope; title: string; imageLabel: string; targetUrl: string }): MerchBanner {
+  function createBanner(payload: { scope: MerchPromoScope; title: string; imageLabel: string; targetUrl: string; terms: string[] }): MerchBanner {
     const banner: MerchBanner = {
       id: `bn${Date.now()}`,
       channelId: seedChannelId(),
@@ -1037,6 +1082,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
       title: payload.title,
       imageLabel: payload.imageLabel,
       targetUrl: payload.targetUrl,
+      terms: [...payload.terms],
       status: 'active',
       updatedAt: todayLabel(),
     }
@@ -1113,6 +1159,7 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     bulkSetSynonymStatus,
     deleteSynonyms,
     toggleCollectionStatus,
+    saveCollectionConfig,
     createCollection,
     toggleEngineStatus,
     getEngine,

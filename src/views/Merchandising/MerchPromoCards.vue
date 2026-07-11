@@ -15,6 +15,12 @@ const scope = computed<MerchPromoScope>(() =>
   route.meta.merchScope === 'collections' ? 'collections' : 'search',
 )
 const scopeLabel = computed(() => (scope.value === 'collections' ? 'Smart collections' : 'Search results'))
+const termsLabel = computed(() => (scope.value === 'collections' ? 'Collections' : 'Search terms'))
+const termsHint = computed(() =>
+  scope.value === 'collections'
+    ? 'Collections where this card appears — press Enter to add'
+    : 'Search terms that trigger this card — press Enter to add',
+)
 
 const cards = computed(() => store.promoCardList.filter((c) => c.scope === scope.value))
 
@@ -25,11 +31,11 @@ function showToast(message: string) {
 
 /* — Create drawer — */
 const drawer = ref(false)
-const form = ref({ title: '', imageLabel: '' })
+const form = ref<{ title: string; imageLabel: string; terms: string[] }>({ title: '', imageLabel: '', terms: [] })
 const canSave = computed(() => form.value.title.trim() !== '' && form.value.imageLabel.trim() !== '')
 
 function openCreate() {
-  form.value = { title: '', imageLabel: '' }
+  form.value = { title: '', imageLabel: '', terms: [] }
   drawer.value = true
 }
 
@@ -39,6 +45,7 @@ function save() {
     scope: scope.value,
     title: form.value.title.trim(),
     imageLabel: form.value.imageLabel.trim(),
+    terms: form.value.terms,
   })
   drawer.value = false
   showToast('Promo card created')
@@ -141,6 +148,17 @@ function doDelete() {
           density="comfortable"
           hint="Stands in for the artwork upload in this prototype"
           persistent-hint
+        />
+        <v-combobox
+          v-model="form.terms"
+          :label="termsLabel"
+          :hint="termsHint"
+          persistent-hint
+          variant="outlined"
+          density="comfortable"
+          multiple
+          chips
+          closable-chips
         />
         <div class="text-caption text-medium-emphasis">
           Placement: {{ scopeLabel }} — preset from the current section.
