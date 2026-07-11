@@ -33,7 +33,7 @@ export function merchandisingMenu(accountId: string, channelId: string): MpSecti
     {
       title: 'Smart Collections',
       items: [
-        { slug: 'collections', label: 'Collections', icon: 'layers', to: route('MerchandisingChannelCollections', accountId, channelId), match: ['MerchandisingChannelCollections'] },
+        { slug: 'collections', label: 'Collections', icon: 'layers', to: route('MerchandisingChannelCollections', accountId, channelId), match: ['MerchandisingChannelCollections', 'MerchandisingChannelCollectionEdit'] },
         { slug: 'collection-merchandising', label: 'Default merchandising', icon: 'pin', to: route('MerchandisingChannelDefaults', accountId, channelId), match: ['MerchandisingChannelDefaults', 'MerchandisingChannelPinning', 'MerchandisingChannelRuleEdit'] },
         { slug: 'collection-promos', label: 'Promo Cards', icon: 'tags', to: route('MerchandisingChannelCollectionPromos', accountId, channelId), match: ['MerchandisingChannelCollectionPromos'] },
         { slug: 'collection-banners', label: 'Banners', icon: 'image', to: route('MerchandisingChannelCollectionBanners', accountId, channelId), match: ['MerchandisingChannelCollectionBanners'] },

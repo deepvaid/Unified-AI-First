@@ -96,6 +96,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'search/content', name: 'MerchandisingChannelContent', component: () => import('@/views/Merchandising/SearchContent.vue') },
       // Smart Collections
       { path: 'smart-collections/collections', name: 'MerchandisingChannelCollections', component: () => import('@/views/Merchandising/Collections.vue') },
+      { path: 'smart-collections/collections/:collectionId', name: 'MerchandisingChannelCollectionEdit', component: () => import('@/views/Merchandising/CollectionEditor.vue') },
       { path: 'smart-collections/default-merchandising', name: 'MerchandisingChannelDefaults', component: () => import('@/views/Merchandising/DefaultMerchandising.vue') },
       { path: 'smart-collections/default-merchandising/pinning/:ruleId', name: 'MerchandisingChannelPinning', component: () => import('@/views/Merchandising/PinningEditor.vue') },
       { path: 'smart-collections/default-merchandising/rules/:ruleId', name: 'MerchandisingChannelRuleEdit', component: () => import('@/views/Merchandising/RuleEditor.vue') },

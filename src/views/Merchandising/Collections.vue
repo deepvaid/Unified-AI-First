@@ -18,6 +18,11 @@ const router = useRouter()
 const store = useMerchandisingStore()
 const search = ref('')
 
+/** Open the collection configuration editor (Shopify Filters / Activation / Sorting). */
+function editCollection(collection: SmartCollection) {
+  router.push({ name: 'MerchandisingChannelCollectionEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, collectionId: collection.id } })
+}
+
 /** Open the channel-scoped pinning editor for this collection. */
 function editPins(collection: SmartCollection) {
   const existing = store.pinningRuleList.find((r) => r.collectionId === collection.id)
@@ -127,7 +132,7 @@ function submitCreate() {
         </template>
 
         <template #item.name="{ item }">
-          <span class="font-weight-medium text-body-2">{{ item.name }}</span>
+          <a class="font-weight-bold text-body-2 text-primary cursor-pointer" @click="editCollection(item)">{{ item.name }}</a>
         </template>
 
         <template #item.filterType="{ item }">
@@ -151,6 +156,7 @@ function submitCreate() {
               />
             </template>
             <v-list density="compact" min-width="180">
+              <v-list-item prepend-icon="pencil" title="Edit collection" @click="editCollection(item)" />
               <v-list-item prepend-icon="pin" title="Edit pins" @click="editPins(item)" />
               <v-list-item prepend-icon="copy" title="Duplicate" @click="showToast('Duplicated')" />
               <v-list-item
@@ -220,3 +226,9 @@ function submitCreate() {
     </v-snackbar>
   </div>
 </template>
+
+<style scoped>
+.cursor-pointer {
+  cursor: pointer;
+}
+</style>
