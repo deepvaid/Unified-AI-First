@@ -7,6 +7,19 @@ export type DateRangePreset = 'Last 7 days' | 'Last 30 days' | 'Last 90 days' | 
 export const dateRangePresets: DateRangePreset[] = ['Last 7 days', 'Last 30 days', 'Last 90 days', 'This month', 'This year']
 
 /**
+ * Active date-range selection: either a named preset, or a custom window with
+ * ISO `from`/`to` bounds. Shared by every report view via MpDateRangeSelect so a
+ * Custom range is available consistently across the app.
+ */
+export interface DateRangeValue {
+  preset: DateRangePreset | 'Custom'
+  from?: string
+  to?: string
+}
+
+export const DEFAULT_DATE_RANGE: DateRangeValue = { preset: 'Last 30 days' }
+
+/**
  * True when an ISO date string falls within the given preset window (relative to now).
  * Null/blank/invalid dates are excluded so undated rows drop out of date-filtered reports.
  */
@@ -32,6 +45,43 @@ export function isWithinPreset(date: string | null | undefined, preset: DateRang
     case 'This year':
       return d.getFullYear() === now.getFullYear()
   }
+}
+
+/**
+ * True when an ISO date falls within the active DateRangeValue — a Custom window
+ * (inclusive of both bounds; open-ended if one is missing) or a named preset.
+ */
+export function isWithinRange(date: string | null | undefined, value: DateRangeValue): boolean {
+  if (value.preset !== 'Custom') return isWithinPreset(date, value.preset)
+  if (!date) return false
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return false
+  if (value.from) {
+    const from = new Date(value.from)
+    from.setHours(0, 0, 0, 0)
+    if (d < from) return false
+  }
+  if (value.to) {
+    const to = new Date(value.to)
+    to.setHours(23, 59, 59, 999)
+    if (d > to) return false
+  }
+  return true
+}
+
+const RANGE_LABEL_FMT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+function fmtBound(iso?: string): string {
+  if (!iso) return '…'
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '…' : RANGE_LABEL_FMT.format(d)
+}
+
+/** Human label for the active range — the preset name, or "1 Jul – 15 Jul 2026" for Custom. */
+export function dateRangeLabel(value: DateRangeValue): string {
+  if (value.preset !== 'Custom') return value.preset
+  if (!value.from && !value.to) return 'Custom range'
+  return `${fmtBound(value.from)} – ${fmtBound(value.to)}`
 }
 
 export interface SalesChannel {

@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useAnalyticsStore, dateRangePresets, isWithinPreset, type DateRangePreset } from '@/stores/useAnalytics'
+import { useAnalyticsStore, isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useAnalyticsStore()
 const { transactionalReports } = storeToRefs(store)
 const search = ref('')
 const filterType = ref<string[]>([])
-const dateRange = ref<DateRangePreset>('Last 30 days')
+const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
 
 const snackbar = ref(false)
 const snackbarText = ref('')
@@ -43,7 +44,7 @@ function clearAllFilters() {
 const filteredReports = computed(() =>
   transactionalReports.value.filter(
     (r) =>
-      isWithinPreset(r.triggerDate, dateRange.value) &&
+      isWithinRange(r.triggerDate, dateRange.value) &&
       (filterType.value.length === 0 || filterType.value.includes(r.type)),
   ),
 )
@@ -68,16 +69,7 @@ function exportCsv() {
       :subtitle="`${filteredReports.length} transactional flows`"
     >
       <template #actions>
-        <v-select
-          v-model="dateRange"
-          :items="dateRangePresets"
-          variant="outlined"
-          density="compact"
-          hide-details
-          rounded="lg"
-          prepend-inner-icon="calendar-range"
-          class="mp-range-select"
-        />
+        <MpDateRangeSelect v-model="dateRange" />
         <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export CSV</v-btn>
       </template>
     </MpPageHeader>
@@ -132,9 +124,3 @@ function exportCsv() {
     </v-snackbar>
   </div>
 </template>
-
-<style scoped>
-.mp-range-select {
-  max-width: 190px;
-}
-</style>

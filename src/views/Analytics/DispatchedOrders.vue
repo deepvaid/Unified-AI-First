@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useCommerceStore } from '@/stores/useCommerce'
-import { dateRangePresets, isWithinPreset, type DateRangePreset } from '@/stores/useAnalytics'
+import { isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useCommerceStore()
 const search = ref('')
 const filterCourier = ref<string[]>([])
-const dateRange = ref<DateRangePreset>('Last 30 days')
+const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
 
 const snackbar = ref(false)
 const snackbarText = ref('')
@@ -30,7 +31,7 @@ const dispatchedOrders = computed(() =>
   store.orders.filter(
     (o) =>
       o.fulfillmentStatus === 'Shipped' &&
-      isWithinPreset(o.date, dateRange.value) &&
+      isWithinRange(o.date, dateRange.value) &&
       (filterCourier.value.length === 0 || (o.courier != null && filterCourier.value.includes(o.courier))),
   ),
 )
@@ -69,16 +70,7 @@ function exportCsv() {
       :subtitle="`${dispatchedOrders.length} dispatched orders`"
     >
       <template #actions>
-        <v-select
-          v-model="dateRange"
-          :items="dateRangePresets"
-          variant="outlined"
-          density="compact"
-          hide-details
-          rounded="lg"
-          prepend-inner-icon="calendar-range"
-          class="mp-range-select"
-        />
+        <MpDateRangeSelect v-model="dateRange" />
         <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export CSV</v-btn>
       </template>
     </MpPageHeader>
@@ -131,9 +123,3 @@ function exportCsv() {
     </v-snackbar>
   </div>
 </template>
-
-<style scoped>
-.mp-range-select {
-  max-width: 190px;
-}
-</style>

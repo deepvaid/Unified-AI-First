@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useAnalyticsStore, dateRangePresets, type DateRangePreset } from '@/stores/useAnalytics'
+import { useAnalyticsStore, dateRangeLabel, type DateRangeValue } from '@/stores/useAnalytics'
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useAnalyticsStore()
 const { accountMetrics, salesChannels } = storeToRefs(store)
 
 // Channel attribution has no per-row date, so the range is a labelled reporting-window control.
-const dateRange = ref<DateRangePreset>('Last 30 days')
+const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
 
 const snackbar = ref(false)
 const snackbarText = ref('')
@@ -56,16 +57,7 @@ const tableHeaders = [
       subtitle="Revenue attribution and channel performance overview"
     >
       <template #actions>
-        <v-select
-          v-model="dateRange"
-          :items="dateRangePresets"
-          variant="outlined"
-          density="compact"
-          hide-details
-          rounded="lg"
-          prepend-inner-icon="calendar-range"
-          class="mp-range-select"
-        />
+        <MpDateRangeSelect v-model="dateRange" />
         <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export Report</v-btn>
       </template>
     </MpPageHeader>
@@ -117,7 +109,7 @@ const tableHeaders = [
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <div class="d-flex align-center justify-space-between px-5 pt-4 pb-1">
         <div class="text-subtitle-1 font-weight-bold">Revenue by Channel</div>
-        <span class="text-caption text-medium-emphasis">Attributed revenue, {{ dateRange.toLowerCase() }}</span>
+        <span class="text-caption text-medium-emphasis">Attributed revenue, {{ dateRangeLabel(dateRange).toLowerCase() }}</span>
       </div>
 
       <div v-if="salesChannels.length" class="channel-bars px-5 py-4">
@@ -184,10 +176,6 @@ const tableHeaders = [
 </template>
 
 <style scoped>
-.mp-range-select {
-  max-width: 190px;
-}
-
 .channel-bars {
   display: flex;
   flex-direction: column;

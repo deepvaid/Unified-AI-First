@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { dateRangePresets, isWithinPreset, type DateRangePreset } from '@/stores/useAnalytics'
+import { isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
+import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -9,7 +10,7 @@ import { downloadCsv } from '@/utils/exportCsv'
 
 const search = ref('')
 const filterLevel = ref<string[]>([])
-const dateRange = ref<DateRangePreset>('Last 30 days')
+const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
 
 const snackbar = ref(false)
 const snackbarText = ref('')
@@ -43,7 +44,7 @@ function clearAllFilters() {
 const filteredLogs = computed(() =>
   logs.filter(
     (l) =>
-      isWithinPreset(l.time, dateRange.value) &&
+      isWithinRange(l.time, dateRange.value) &&
       (filterLevel.value.length === 0 || (l.level != null && filterLevel.value.includes(l.level))),
   ),
 )
@@ -66,16 +67,7 @@ function exportCsv() {
       subtitle="System service execution logs"
     >
       <template #actions>
-        <v-select
-          v-model="dateRange"
-          :items="dateRangePresets"
-          variant="outlined"
-          density="compact"
-          hide-details
-          rounded="lg"
-          prepend-inner-icon="calendar-range"
-          class="mp-range-select"
-        />
+        <MpDateRangeSelect v-model="dateRange" />
         <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export Logs</v-btn>
       </template>
     </MpPageHeader>
@@ -129,9 +121,3 @@ function exportCsv() {
     </v-snackbar>
   </div>
 </template>
-
-<style scoped>
-.mp-range-select {
-  max-width: 190px;
-}
-</style>

@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useAnalyticsStore, dateRangePresets, type DateRangePreset } from '@/stores/useAnalytics'
+import { useAnalyticsStore, dateRangeLabel, type DateRangeValue } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useAnalyticsStore()
 const search = ref('')
-const dateRange = ref<DateRangePreset>('This year')
+const dateRange = ref<DateRangeValue>({ preset: 'This year' })
 
 const snackbar = ref(false)
 const snackbarText = ref('')
@@ -45,16 +46,7 @@ function exportCsv() {
       subtitle="High-level overview of revenue and audience growth over time."
     >
       <template #actions>
-        <v-select
-          v-model="dateRange"
-          :items="dateRangePresets"
-          variant="outlined"
-          density="compact"
-          hide-details
-          rounded="lg"
-          prepend-inner-icon="calendar-range"
-          class="mp-range-select"
-        />
+        <MpDateRangeSelect v-model="dateRange" />
         <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export CSV</v-btn>
       </template>
     </MpPageHeader>
@@ -62,7 +54,7 @@ function exportCsv() {
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
-        :title="`Historical Performance · ${dateRange}`"
+        :title="`Historical Performance · ${dateRangeLabel(dateRange)}`"
         :total-count="rows.length"
       />
       <v-data-table
@@ -100,9 +92,3 @@ function exportCsv() {
     </v-snackbar>
   </div>
 </template>
-
-<style scoped>
-.mp-range-select {
-  max-width: 190px;
-}
-</style>

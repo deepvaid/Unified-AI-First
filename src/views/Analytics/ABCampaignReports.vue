@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
-import { dateRangePresets, isWithinPreset, type DateRangePreset } from '@/stores/useAnalytics'
+import { isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useCampaignsStore()
 const search = ref('')
 const filterWinner = ref<string[]>([])
-const dateRange = ref<DateRangePreset>('This year')
+const dateRange = ref<DateRangeValue>({ preset: 'This year' })
 
 const snackbar = ref(false)
 const snackbarText = ref('')
@@ -46,7 +47,7 @@ function clearAllFilters() {
 const filteredTests = computed(() =>
   abTests.filter(
     (t) =>
-      isWithinPreset(t.sentDate, dateRange.value) &&
+      isWithinRange(t.sentDate, dateRange.value) &&
       (filterWinner.value.length === 0 || (t.winner != null && filterWinner.value.includes(t.winner))),
   ),
 )
@@ -70,16 +71,7 @@ function exportCsv() {
       :subtitle="`${abTests.length} A/B tests`"
     >
       <template #actions>
-        <v-select
-          v-model="dateRange"
-          :items="dateRangePresets"
-          variant="outlined"
-          density="compact"
-          hide-details
-          rounded="lg"
-          prepend-inner-icon="calendar-range"
-          class="mp-range-select"
-        />
+        <MpDateRangeSelect v-model="dateRange" />
         <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export CSV</v-btn>
       </template>
     </MpPageHeader>
@@ -136,9 +128,3 @@ function exportCsv() {
     </v-snackbar>
   </div>
 </template>
-
-<style scoped>
-.mp-range-select {
-  max-width: 190px;
-}
-</style>

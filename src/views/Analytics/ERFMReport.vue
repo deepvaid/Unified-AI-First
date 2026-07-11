@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useAnalyticsStore, dateRangePresets, type DateRangePreset } from '@/stores/useAnalytics'
+import { useAnalyticsStore, dateRangeLabel, type DateRangeValue } from '@/stores/useAnalytics'
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useAnalyticsStore()
 const { rfmAnalyzed, rfmSegments } = storeToRefs(store)
 
 // Segments are computed over the whole base, so the range is a labelled analysis-window control.
-const dateRange = ref<DateRangePreset>('Last 90 days')
+const dateRange = ref<DateRangeValue>({ preset: 'Last 90 days' })
 
 const snackbar = ref(false)
 const snackbarText = ref('')
@@ -56,16 +57,7 @@ const currency = (n: number) =>
       subtitle="Enhanced Recency, Frequency & Monetary segmentation"
     >
       <template #actions>
-        <v-select
-          v-model="dateRange"
-          :items="dateRangePresets"
-          variant="outlined"
-          density="compact"
-          hide-details
-          rounded="lg"
-          prepend-inner-icon="calendar-range"
-          class="mp-range-select"
-        />
+        <MpDateRangeSelect v-model="dateRange" />
         <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportSegments">Export Segments</v-btn>
       </template>
     </MpPageHeader>
@@ -90,7 +82,7 @@ const currency = (n: number) =>
       <!-- Distribution bar -->
       <v-card variant="flat" border rounded="lg" class="pa-5">
         <div class="text-subtitle-1 font-weight-bold mb-1">Segment Distribution</div>
-        <div class="text-caption text-medium-emphasis mb-4">Share of analyzed customer base · {{ dateRange.toLowerCase() }}</div>
+        <div class="text-caption text-medium-emphasis mb-4">Share of analyzed customer base · {{ dateRangeLabel(dateRange).toLowerCase() }}</div>
         <div class="rfm-dist">
           <div
             v-for="s in rfmSegments"
@@ -165,10 +157,6 @@ const currency = (n: number) =>
 </template>
 
 <style scoped>
-.mp-range-select {
-  max-width: 190px;
-}
-
 .rfm-dist {
   display: flex;
   height: 14px;
