@@ -30,7 +30,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Modal for editing dashboard metadata — name, description, accent color, and icon. The header avatar previews the selected accent + icon live; saving persists via the dashboards store and emits `saved`.',
+          'Modal for editing dashboard details — name and description. The header avatar shows the dashboard identity (read-only); saving persists via the dashboards store and emits `saved`.',
       },
     },
   },

@@ -17,20 +17,16 @@ import type {
   DashboardWidgetDraft,
 } from '@/stores/dashboards/types'
 import { useAccountsStore } from '@/stores/useAccounts'
-import { useCopilotStore } from '@/stores/useCopilot'
 import { useDashboardsStore } from '@/stores/useDashboards'
 
 const route = useRoute()
 const router = useRouter()
 const accountsStore = useAccountsStore()
 const dashboardsStore = useDashboardsStore()
-const copilot = useCopilotStore()
 
 const widgetWizardOpen = ref(false)
-const editMode = ref(false)
 const renderError = ref<string | null>(null)
 const dateMenuOpen = ref(false)
-const advancedFiltersOpen = ref(false)
 const dashboardNotice = ref('')
 const dashboardNoticeVisible = ref(false)
 const expandedWidgetId = ref<string | null>(null)
@@ -248,21 +244,11 @@ watch(widgetWizardOpen, (isOpen) => {
 })
 
 watch(activeDashboardId, () => {
-  editMode.value = false
   expandedWidgetId.value = null
 })
 
 const activeFilters = computed<DashboardFilterState>(() => activeDashboard.value?.filters ?? defaultDashboardFilters)
 
-const activeFilterCount = computed(() => {
-  const f = activeFilters.value
-  const d = defaultDashboardFilters
-  let count = 0
-  if (f.rangePreset !== d.rangePreset) count++
-  if (f.comparison !== d.comparison) count++
-  if (f.grain !== d.grain) count++
-  return count
-})
 const selectedPresetOption = computed(() =>
   datePresetOptions.find((option) => option.value === activeFilters.value.rangePreset) ?? datePresetOptions[3],
 )
@@ -296,10 +282,6 @@ function showDashboardNotice(message: string) {
   dashboardNoticeVisible.value = true
 }
 
-function openStubAction(label: string) {
-  showDashboardNotice(`${label} is represented as a prototype action.`)
-}
-
 function openSetupTask(task: SetupTask) {
   router.push(task.route)
 }
@@ -307,10 +289,6 @@ function openSetupTask(task: SetupTask) {
 function openWidgetBuilder() {
   dashboardsStore.closeWidgetEditor()
   widgetWizardOpen.value = true
-}
-
-function openCopilotForWidget() {
-  copilot.open()
 }
 
 function handleLayoutUpdate(layout: Array<{ i: string; x: number; y: number; w: number; h: number }>) {
@@ -408,7 +386,7 @@ function performConfirm() {
   confirmAction.value = null
 }
 
-// ── Rich menu models (icon + title + description rows, like the global Create-new menu) ──
+// ── Rich menu model (icon + title + description rows, like the global Create-new menu) ──
 interface DashMenuRow {
   icon: string
   title: string
@@ -417,47 +395,27 @@ interface DashMenuRow {
   disabled?: boolean
   danger?: boolean
 }
-interface DashMenuGroup {
-  label?: string
-  items: DashMenuRow[]
-}
 
-const dashboardActionGroups = computed<DashMenuGroup[]>(() => {
+// One small flat menu — dashboard-level verbs only. Manage/Create live in the
+// switcher footer; layout editing is direct manipulation on the grid itself.
+const dashboardActionGroups = computed<DashMenuRow[][]>(() => {
   const d = activeDashboard.value
-  const groups: DashMenuGroup[] = [
-    { label: 'Dashboards', items: [
-      { icon: 'layout-list', title: 'Manage dashboards', sub: 'Browse and organise all dashboards', on: openListingPage },
-      { icon: 'plus', title: 'Create dashboard', sub: 'Start from a blank or template', on: openCreateDashboard },
-    ] },
-    { label: 'This dashboard', items: [
-      { icon: 'pencil', title: 'Edit dashboard details', sub: 'Rename, description, and icon', on: openEditDashboard, disabled: !d },
-      { icon: 'copy-plus', title: 'Duplicate dashboard', sub: 'Copy this dashboard and its widgets', on: duplicateCurrentDashboard, disabled: !d },
-      ...(d && !d.isDefault
-        ? [{ icon: 'bookmark', title: 'Set as default', sub: 'Open this dashboard on load', on: setActiveAsDefault } as DashMenuRow]
-        : []),
-      { icon: 'move', title: editMode.value ? 'Done editing layout' : 'Edit layout', sub: 'Drag, resize, and arrange widgets', on: () => { editMode.value = !editMode.value }, disabled: !d },
-    ] },
-    { label: 'Share', items: [
-      { icon: 'link', title: 'Copy dashboard link', sub: 'Share a direct link to this view', on: () => openStubAction('Copy dashboard link') },
-      { icon: 'user-plus', title: 'Invite editors', sub: 'Give teammates edit access', on: () => openStubAction('Invite editors') },
-    ] },
-  ]
+  const groups: DashMenuRow[][] = [[
+    { icon: 'pencil', title: 'Edit details', sub: 'Rename and update the description', on: openEditDashboard, disabled: !d },
+    { icon: 'copy-plus', title: 'Duplicate', sub: 'Copy this dashboard and its widgets', on: duplicateCurrentDashboard, disabled: !d },
+    ...(d && !d.isDefault
+      ? [{ icon: 'bookmark', title: 'Set as default', sub: 'Open this dashboard on load', on: setActiveAsDefault } as DashMenuRow]
+      : []),
+  ]]
   if (d) {
-    groups.push({
-      items: [
-        d.kind === 'system'
-          ? { icon: 'rotate-ccw', title: 'Reset to defaults', sub: 'Restore the original widgets', on: resetCurrentDashboard }
-          : { icon: 'trash-2', title: 'Delete dashboard', sub: 'Permanently remove this dashboard', on: deleteCurrentDashboard, danger: true },
-      ],
-    })
+    groups.push([
+      d.kind === 'system'
+        ? { icon: 'rotate-ccw', title: 'Reset to defaults', sub: 'Restore the original widgets', on: resetCurrentDashboard }
+        : { icon: 'trash-2', title: 'Delete dashboard', sub: 'Permanently remove this dashboard', on: deleteCurrentDashboard, danger: true },
+    ])
   }
   return groups
 })
-
-const addContentRows: DashMenuRow[] = [
-  { icon: 'sparkles', title: 'Create with Da Vinci', sub: 'Generate a widget from a prompt', on: openCopilotForWidget },
-  { icon: 'layout-grid', title: 'Choose existing widget', sub: 'Pick from the widget library', on: () => openWidgetBuilder() },
-]
 
 function toggleFavoriteActive() {
   if (!activeDashboard.value) return
@@ -550,6 +508,15 @@ function toggleFavoriteActive() {
                 <v-btn
                   block
                   variant="text"
+                  prepend-icon="plus"
+                  class="text-none justify-start"
+                  @click="openCreateDashboard"
+                >
+                  Create dashboard
+                </v-btn>
+                <v-btn
+                  block
+                  variant="text"
                   prepend-icon="layout-list"
                   class="text-none justify-start"
                   @click="openListingPage"
@@ -578,10 +545,9 @@ function toggleFavoriteActive() {
             </template>
             <v-card width="300" rounded="lg" flat border class="mp-menu">
               <template v-for="(group, gi) in dashboardActionGroups" :key="gi">
-                <div v-if="group.label" class="mp-menu__label">{{ group.label }}</div>
-                <v-divider v-else class="mp-menu__divider" />
+                <v-divider v-if="gi > 0" class="mp-menu__divider" />
                 <button
-                  v-for="item in group.items"
+                  v-for="item in group"
                   :key="item.title"
                   type="button"
                   class="mp-menu-row"
@@ -599,38 +565,17 @@ function toggleFavoriteActive() {
             </v-card>
           </v-menu>
 
-          <v-menu location="bottom end" offset="8">
-            <template #activator="{ props: menuProps }">
-              <v-btn
-                v-bind="menuProps"
-                color="primary"
-                variant="flat"
-                size="small"
-                prepend-icon="plus"
-                append-icon="chevron-down"
-                class="text-none"
-                :disabled="!activeDashboard"
-              >
-                Add content
-              </v-btn>
-            </template>
-            <v-card width="300" rounded="lg" flat border class="mp-menu">
-              <div class="mp-menu__label">Add content</div>
-              <button
-                v-for="item in addContentRows"
-                :key="item.title"
-                type="button"
-                class="mp-menu-row"
-                @click="item.on"
-              >
-                <v-icon size="18" class="mp-menu-row__icon">{{ item.icon }}</v-icon>
-                <span class="mp-menu-row__body">
-                  <strong>{{ item.title }}</strong>
-                  <small>{{ item.sub }}</small>
-                </span>
-              </button>
-            </v-card>
-          </v-menu>
+          <v-btn
+            color="primary"
+            variant="flat"
+            size="small"
+            prepend-icon="plus"
+            class="text-none"
+            :disabled="!activeDashboard"
+            @click="openWidgetBuilder()"
+          >
+            Add widget
+          </v-btn>
         </div>
       </div>
 
@@ -691,37 +636,6 @@ function toggleFavoriteActive() {
               </div>
             </v-card>
           </v-menu>
-
-          <v-menu v-model="advancedFiltersOpen" location="bottom start" offset="8" :close-on-content-click="false">
-            <template #activator="{ props: menuProps }">
-              <v-btn
-                v-bind="menuProps"
-                variant="flat"
-                size="small"
-                density="comfortable"
-                prepend-icon="list-filter"
-                append-icon="chevron-down"
-                class="text-none dashboard-filter-btn--pill"
-              >
-                Filters
-                <span
-                  v-if="activeFilterCount > 0"
-                  class="dashboard-filter-btn__badge"
-                  :aria-label="`${activeFilterCount} active filters`"
-                >{{ activeFilterCount }}</span>
-              </v-btn>
-            </template>
-            <v-card width="360" rounded="lg" flat border class="pa-3">
-              <div class="text-subtitle-2 font-weight-bold mb-2">Filters</div>
-              <v-select label="Data source" :items="['All sources', 'Commerce', 'Marketing', 'Contacts', 'Service']" variant="outlined" density="compact" hide-details clearable rounded="lg" class="mb-3" />
-              <v-select label="Owner" :items="['Everyone', 'Marketing team', 'Commerce team']" variant="outlined" density="compact" hide-details clearable rounded="lg" />
-              <div class="d-flex flex-wrap ga-2 mt-3">
-                <v-chip size="small" variant="tonal" color="primary">Channel</v-chip>
-                <v-chip size="small" variant="tonal" color="primary">Campaign type</v-chip>
-                <v-chip size="small" variant="tonal" color="primary">Customer segment</v-chip>
-              </div>
-            </v-card>
-          </v-menu>
         </div>
 
         <div class="dashboard-page-header__filters-right">
@@ -741,24 +655,12 @@ function toggleFavoriteActive() {
       </div>
     </section>
 
-    <v-alert
-      v-if="editMode"
-      type="info"
-      variant="tonal"
-      rounded="xl"
-      class="mt-4"
-      icon="move"
-    >
-      Drag, resize, or pick a size preset (S/M/L/XL). Layout changes save automatically for this account and dashboard.
-    </v-alert>
-
     <DashboardGrid
       v-if="activeDashboard"
       :account-id="accountId"
       :dashboard-id="activeDashboard.id"
       :widgets="activeDashboard.widgets"
       :filters="activeDashboard.filters"
-      :edit-mode="editMode"
       :setup-tasks="setupTasks"
       :setup-completed="completedSetupTasks"
       :setup-progress="setupProgress"
@@ -812,7 +714,6 @@ function toggleFavoriteActive() {
             :account-id="accountId"
             :widget="expandedWidget"
             :filters="activeDashboard?.filters ?? defaultDashboardFilters"
-            :editable="false"
             :show-actions="false"
           />
         </div>
@@ -1093,22 +994,6 @@ function toggleFavoriteActive() {
   opacity: 0 !important;
 }
 
-.dashboard-filter-btn__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  margin-inline-start: 6px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--ink);
-  color: rgb(var(--v-theme-surface));
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-}
-
 .dashboard-page-header__status {
   display: inline-flex;
   align-items: center;
@@ -1137,20 +1022,11 @@ function toggleFavoriteActive() {
   font-size: 13px;
 }
 
-/* ── Rich action menus (Actions, Add content) — matches the global Create-new menu ── */
+/* ── Rich action menu (Actions) — matches the global Create-new menu ── */
 .mp-menu {
   border-color: var(--hairline);
   padding: 8px;
   overflow: hidden;
-}
-
-.mp-menu__label {
-  padding: 8px 8px 4px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 1px;
-  text-transform: uppercase;
 }
 
 .mp-menu__divider {

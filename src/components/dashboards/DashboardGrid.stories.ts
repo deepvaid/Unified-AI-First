@@ -74,7 +74,7 @@ const meta = {
     docs: {
       description: {
         component:
-          '12-column drag-and-drop widget grid (grid-layout-plus). Renders a `DashboardWidgetCard` (or setup guide) per widget, an empty state when there are no widgets, and switches to a stacked list below the md breakpoint. `editMode` enables drag/resize and shows column guides.',
+          '12-column drag-and-drop widget grid (grid-layout-plus). Renders a `DashboardWidgetCard` (or setup guide) per widget, an empty state when there are no widgets, and switches to a stacked list below the md breakpoint. Layout is always directly editable on desktop — drag by the card header/handle, resize from the corner; column guides appear only during an interaction.',
       },
     },
   },
@@ -83,12 +83,10 @@ const meta = {
     dashboardId: '2000290-overview',
     widgets: WIDGETS,
     filters: FILTERS,
-    editMode: false,
   },
   argTypes: {
     widgets: { control: 'object' },
     filters: { control: 'object' },
-    editMode: { control: 'boolean' },
   },
   render: (args) => ({
     components: { DashboardGrid },
@@ -105,10 +103,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Populated: Story = {}
-
-export const EditMode: Story = {
-  args: { editMode: true },
-}
 
 export const Empty: Story = {
   args: { widgets: [] },

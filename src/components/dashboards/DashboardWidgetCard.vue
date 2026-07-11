@@ -7,11 +7,7 @@ import { useLiveAgo } from '@/composables/useRelativeTime'
 import { DASHBOARD_SOURCE_META, getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
 import type { DashboardFilterState, DashboardWidget } from '@/stores/dashboards/types'
 import MpSourceCloudChip from '@/components/MpSourceCloudChip.vue'
-import {
-  WIDGET_SIZES,
-  detectSize,
-  type WidgetSize,
-} from './widgetSizePresets'
+import { detectSize, type WidgetSize } from './widgetSizePresets'
 import DashboardChartWidget from './widgets/DashboardChartWidget.vue'
 import DashboardKpiWidget from './widgets/DashboardKpiWidget.vue'
 import DashboardPieWidget from './widgets/DashboardPieWidget.vue'
@@ -23,11 +19,12 @@ const props = withDefaults(defineProps<{
   accountId: string
   widget: DashboardWidget
   filters: DashboardFilterState
-  editable?: boolean
+  /** Grid context: reveals the drag grip on hover (layout is always directly editable). */
+  draggable?: boolean
   preview?: boolean
   showActions?: boolean
 }>(), {
-  editable: false,
+  draggable: false,
   preview: false,
   showActions: true,
 })
@@ -48,7 +45,6 @@ const { size: bodySize } = useElementSize(bodyEl)
 const currentSize = computed<WidgetSize | null>(() => detectSize(props.widget.type, props.widget.layout.w, props.widget.layout.h))
 const isCompactHeight = computed(() => bodySize.value.height > 0 && bodySize.value.height < 128)
 const isKpiWidget = computed(() => data.value.kind === 'kpi')
-const usesCommonActions = computed(() => data.value.kind === 'kpi' || data.value.kind === 'series')
 const metricIcon = computed(() => getMetricDescriptor(props.widget.metricId)?.icon ?? '')
 const rangeLabels: Record<DashboardFilterState['rangePreset'], string> = {
   today: 'Today',
@@ -124,11 +120,6 @@ function openDrilldown() {
 function chooseSize(size: WidgetSize) {
   emit('resize', { widgetId: props.widget.id, size })
 }
-
-function openSettings() {
-  if (props.preview) return
-  emit('edit', props.widget.id)
-}
 </script>
 
 <template>
@@ -139,26 +130,28 @@ function openSettings() {
     class="dashboard-widget-card h-100 d-flex flex-column"
     :class="{
       'dashboard-widget-card--preview': preview,
-      'dashboard-widget-card--editable': editable,
+      'dashboard-widget-card--draggable': draggable,
       'dashboard-widget-card--kpi': isKpiWidget,
+      'dashboard-widget-drag': draggable && isKpiWidget,
     }"
   >
     <div v-if="isKpiWidget && !preview && showActions" class="dashboard-widget-card__kpi-actions">
-      <v-icon v-if="editable" size="18" class="dashboard-widget-card__drag-handle">grip-vertical</v-icon>
+      <v-icon v-if="draggable" size="18" class="dashboard-widget-card__drag-handle">grip-vertical</v-icon>
       <DashboardWidgetActionMenu
         :widget-title="widget.title"
-        :editable="editable"
+        :current-size="currentSize"
         @expand="emit('expand', widget.id)"
         @edit="emit('edit', widget.id)"
-        @refresh="emit('refresh', widget.id)"
+        @view-report="openDrilldown"
+        @resize="chooseSize"
         @remove="emit('remove', widget.id)"
       />
     </div>
 
-    <div v-if="!isKpiWidget" class="dashboard-widget-card__header">
+    <div v-if="!isKpiWidget" class="dashboard-widget-card__header" :class="{ 'dashboard-widget-drag': draggable }">
       <div class="dashboard-widget-card__header-copy">
         <div class="dashboard-widget-card__title-row">
-          <v-icon v-if="editable" size="18" class="dashboard-widget-card__drag-handle">grip-vertical</v-icon>
+          <v-icon v-if="draggable" size="18" class="dashboard-widget-card__drag-handle">grip-vertical</v-icon>
           <div class="dashboard-widget-card__title">{{ widget.title }}</div>
           <v-tooltip
             v-if="widget.aiProvenance"
@@ -178,67 +171,15 @@ function openSettings() {
 
       <div class="dashboard-widget-card__actions">
         <DashboardWidgetActionMenu
-          v-if="!preview && showActions && usesCommonActions"
+          v-if="!preview && showActions"
           :widget-title="widget.title"
-          :editable="editable"
+          :current-size="currentSize"
           @expand="emit('expand', widget.id)"
           @edit="emit('edit', widget.id)"
-          @refresh="emit('refresh', widget.id)"
+          @view-report="openDrilldown"
+          @resize="chooseSize"
           @remove="emit('remove', widget.id)"
         />
-
-        <v-menu v-else-if="!preview && showActions" location="bottom end">
-          <template #activator="{ props: menuProps }">
-            <v-btn
-              v-bind="menuProps"
-              icon="more-vertical"
-              variant="text"
-              size="small"
-              :aria-label="`Actions for ${widget.title}`"
-            />
-          </template>
-          <v-list density="compact" min-width="180">
-            <v-list-item
-              v-if="editable"
-              prepend-icon="pencil"
-              title="Edit"
-              @click="emit('edit', widget.id)"
-            />
-            <v-list-item
-              prepend-icon="sliders"
-              title="Widget settings"
-              @click="openSettings"
-            />
-            <v-list-item
-              prepend-icon="refresh-cw"
-              title="Refresh widget"
-              @click="emit('refresh', widget.id)"
-            />
-            <v-list-item
-              prepend-icon="arrow-up-right"
-              title="View report"
-              @click="openDrilldown"
-            />
-            <template v-if="editable">
-              <v-divider class="my-1" />
-              <v-list-item
-                v-for="size in WIDGET_SIZES"
-                :key="size"
-                :prepend-icon="currentSize === size ? 'check' : undefined"
-                :title="`Size ${size}`"
-                :active="currentSize === size"
-                @click="chooseSize(size)"
-              />
-              <v-divider class="my-1" />
-              <v-list-item
-                prepend-icon="trash-2"
-                title="Remove"
-                base-color="error"
-                @click="emit('remove', widget.id)"
-              />
-            </template>
-          </v-list>
-        </v-menu>
       </div>
     </div>
 
@@ -436,19 +377,25 @@ function openSettings() {
   gap: 2px;
 }
 
+/* Drag grip is always in-flow (no layout shift) and fades in on card hover. */
 .dashboard-widget-card__drag-handle {
   color: var(--muted);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.dashboard-widget-card:hover .dashboard-widget-card__drag-handle {
+  opacity: 1;
+}
+
+.dashboard-widget-card--draggable .dashboard-widget-drag,
+.dashboard-widget-card--draggable.dashboard-widget-drag {
   cursor: grab;
 }
 
 .dashboard-widget-card--preview {
   border-style: dashed;
-}
-
-.dashboard-widget-card--editable {
-  border-color: color-mix(in oklch, var(--accent) 40%, transparent) !important;
-  box-shadow: 0 0 0 1px color-mix(in oklch, var(--accent) 12%, transparent);
-  cursor: grab;
 }
 
 .dashboard-widget-card__body {

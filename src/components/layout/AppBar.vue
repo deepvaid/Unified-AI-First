@@ -157,17 +157,9 @@ const createItems = computed<CreateItem[]>(() => [
     key: 'dashboard',
     icon: 'layout-dashboard',
     title: 'Dashboard',
-    sub: 'Start from a blank or template',
+    sub: 'Name it and start adding widgets',
     kbd: 'D',
     action: () => router.push({ name: 'DashboardsList', params: { accountId: currentAccountId.value } }),
-  },
-  {
-    key: 'widget',
-    icon: 'blocks',
-    title: 'Widget',
-    sub: 'Add to the current dashboard',
-    kbd: 'W',
-    action: () => openStub('Add widget'),
   },
   {
     key: 'campaign',

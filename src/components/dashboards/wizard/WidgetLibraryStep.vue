@@ -8,17 +8,19 @@ import type {
 
 const emit = defineEmits<{
   select: [entry: DashboardWidgetLibraryEntry]
+  createWithAi: []
 }>()
 
 const search = ref('')
-const activeCategory = ref<'all' | 'commerce' | 'marketing' | 'service' | 'davinci'>('all')
+const activeCategory = ref<'all' | 'commerce' | 'marketing' | 'service' | 'retail' | 'merchandising'>('all')
 
 const CATEGORIES: Array<{ key: typeof activeCategory.value; label: string; icon?: string }> = [
   { key: 'all', label: 'All' },
   { key: 'commerce', label: 'Commerce', icon: 'shopping-cart' },
   { key: 'marketing', label: 'Marketing', icon: 'megaphone' },
   { key: 'service', label: 'Service', icon: 'headset' },
-  { key: 'davinci', label: 'Da Vinci', icon: 'sparkles' },
+  { key: 'retail', label: 'Retail', icon: 'store' },
+  { key: 'merchandising', label: 'Merchandising', icon: 'tag' },
 ]
 
 const TYPE_LABELS: Record<DashboardWidgetType, string> = {
@@ -53,6 +55,17 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 
 <template>
   <div class="widget-library d-flex flex-column ga-4">
+    <button type="button" class="widget-library__ai" @click="emit('createWithAi')">
+      <div class="widget-library__ai-icon">
+        <v-icon size="18">sparkles</v-icon>
+      </div>
+      <div class="widget-library__item-body">
+        <span class="widget-library__item-title">Create with Da Vinci</span>
+        <span class="widget-library__item-description">Describe the widget you want and let AI build it.</span>
+      </div>
+      <v-icon size="16" class="widget-library__ai-chevron">arrow-right</v-icon>
+    </button>
+
     <v-text-field
       v-model="search"
       placeholder="Search revenue, orders, campaigns..."
@@ -125,6 +138,48 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 </template>
 
 <style scoped lang="scss">
+/* Pinned Da Vinci hand-off — same row anatomy as a library item, AI-tinted. */
+.widget-library__ai {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(var(--v-theme-secondary), 0.35);
+  border-radius: 12px;
+  background: linear-gradient(
+    100deg,
+    rgba(var(--v-theme-primary), 0.05),
+    rgba(var(--v-theme-secondary), 0.07)
+  );
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.widget-library__ai:hover {
+  border-color: rgb(var(--v-theme-secondary));
+  box-shadow: 0 0 0 1px rgba(var(--v-theme-secondary), 0.25);
+}
+
+.widget-library__ai-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-secondary), 0.12);
+  color: rgb(var(--v-theme-secondary));
+  flex-shrink: 0;
+}
+
+.widget-library__ai-chevron {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
 .widget-library__categories {
   display: flex;
   flex-wrap: wrap;

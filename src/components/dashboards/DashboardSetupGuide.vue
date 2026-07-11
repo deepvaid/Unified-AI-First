@@ -15,7 +15,8 @@ defineProps<{
   tasks: SetupGuideTask[]
   completedCount: number
   progress: number
-  editable?: boolean
+  /** Grid context: reveals the drag grip on hover (layout is always directly editable). */
+  draggable?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -35,12 +36,12 @@ function toggle() {
     border
     rounded="lg"
     class="setup-guide-widget h-100 d-flex flex-column"
-    :class="{ 'setup-guide-widget--collapsed': collapsed }"
+    :class="{ 'setup-guide-widget--collapsed': collapsed, 'dashboard-widget-drag': draggable }"
     aria-label="Setup guide"
   >
     <header class="setup-guide-widget__header">
       <div class="setup-guide-widget__title-row">
-        <v-icon v-if="editable" size="18" class="setup-guide-widget__drag-handle">grip-vertical</v-icon>
+        <v-icon v-if="draggable" size="18" class="setup-guide-widget__drag-handle">grip-vertical</v-icon>
         <h2 class="setup-guide-widget__title">Setup guide</h2>
       </div>
       <button
@@ -128,8 +129,19 @@ function toggle() {
   min-width: 0;
 }
 
+/* Drag grip fades in on hover; the whole guide is the drag region in grid context. */
 .setup-guide-widget__drag-handle {
   color: var(--muted);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.setup-guide-widget:hover .setup-guide-widget__drag-handle {
+  opacity: 1;
+}
+
+.setup-guide-widget.dashboard-widget-drag {
   cursor: grab;
 }
 

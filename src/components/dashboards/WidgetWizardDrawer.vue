@@ -7,6 +7,7 @@ import type {
   DashboardWidgetDraft,
   DashboardWidgetLibraryEntry,
 } from '@/stores/dashboards/types'
+import { useCopilotStore } from '@/stores/useCopilot'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import WidgetLibraryStep from './wizard/WidgetLibraryStep.vue'
 import WidgetEditStep from './wizard/WidgetEditStep.vue'
@@ -23,6 +24,7 @@ const props = defineProps<{
 }>()
 
 const dashboardsStore = useDashboardsStore()
+const copilot = useCopilotStore()
 
 const stage = ref<WizardStage>('pick')
 const draft = ref<DashboardWidgetDraft | null>(null)
@@ -97,6 +99,12 @@ function handleLibrarySelect(entry: DashboardWidgetLibraryEntry) {
   stage.value = 'edit'
 }
 
+// Hand off to Da Vinci: close the drawer and open the copilot instead.
+function handleCreateWithAi() {
+  close()
+  copilot.open()
+}
+
 function handleDraftUpdate(next: DashboardWidgetDraft) {
   draft.value = next
 }
@@ -155,6 +163,7 @@ const showFooterPrimary = computed(() => stage.value === 'edit')
       <WidgetLibraryStep
         v-if="stage === 'pick'"
         @select="handleLibrarySelect"
+        @create-with-ai="handleCreateWithAi"
       />
 
       <WidgetEditStep

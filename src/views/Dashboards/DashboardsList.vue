@@ -359,7 +359,7 @@ function handleDashboardCreated(dashboardId: string) {
               </template>
               <v-list density="compact" min-width="200" rounded="lg" elevation="3" class="py-1">
                 <v-list-item prepend-icon="arrow-up-right" title="Open" @click="openDashboard(item.id)" />
-                <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item.id)" />
+                <v-list-item prepend-icon="pencil" title="Edit details" @click="openEdit(item.id)" />
                 <v-list-item prepend-icon="copy" title="Duplicate" @click="handleDuplicate(item.id)" />
                 <v-list-item
                   :prepend-icon="item.favorite ? 'star-off' : 'star'"

@@ -1,56 +1,19 @@
 import type { DashboardAccent } from '@/stores/dashboards/types'
 
-export interface DashboardAccentOption {
-  value: DashboardAccent
-  label: string
-  vuetifyColor: string
+// Seeded dashboard accents → Vuetify theme colors. Accents/icons are fixed
+// per dashboard (set by seeds); they are not user-editable.
+const ACCENT_TO_VUETIFY: Record<DashboardAccent, string> = {
+  primary: 'primary',
+  secondary: 'secondary',
+  success: 'success',
+  warning: 'warning',
+  info: 'info',
+  neutral: 'surface-variant',
 }
-
-export const DASHBOARD_ACCENT_OPTIONS: DashboardAccentOption[] = [
-  { value: 'primary', label: 'Primary', vuetifyColor: 'primary' },
-  { value: 'secondary', label: 'Secondary', vuetifyColor: 'secondary' },
-  { value: 'success', label: 'Success', vuetifyColor: 'success' },
-  { value: 'warning', label: 'Warning', vuetifyColor: 'warning' },
-  { value: 'info', label: 'Info', vuetifyColor: 'info' },
-  { value: 'neutral', label: 'Neutral', vuetifyColor: 'surface-variant' },
-]
 
 export function accentToVuetifyColor(accent: DashboardAccent | undefined): string {
-  if (!accent) return 'primary'
-  return DASHBOARD_ACCENT_OPTIONS.find((option) => option.value === accent)?.vuetifyColor ?? 'primary'
+  return accent ? ACCENT_TO_VUETIFY[accent] : 'primary'
 }
-
-export interface DashboardIconOption {
-  icon: string
-  label: string
-}
-
-export const DASHBOARD_ICON_OPTIONS: DashboardIconOption[] = [
-  { icon: 'layout-dashboard', label: 'Dashboard' },
-  { icon: 'grid-2x2-plus', label: 'Grid' },
-  { icon: 'line-chart', label: 'Chart' },
-  { icon: 'bar-chart-2', label: 'Bar Chart' },
-  { icon: 'bar-chart-2', label: 'Chart Box' },
-  { icon: 'shopping-cart', label: 'Commerce' },
-  { icon: 'megaphone', label: 'Marketing' },
-  { icon: 'users', label: 'Audience' },
-  { icon: 'headset', label: 'Service' },
-  { icon: 'sparkles', label: 'Da Vinci' },
-  { icon: 'rocket', label: 'Launch' },
-  { icon: 'target', label: 'Target' },
-  { icon: 'bar-chart-2', label: 'Finance' },
-  { icon: 'truck', label: 'Fulfillment' },
-  { icon: 'mail', label: 'Email' },
-  { icon: 'message-circle', label: 'Mobile' },
-  { icon: 'store', label: 'Store' },
-  { icon: 'user', label: 'VIP' },
-  { icon: 'zap', label: 'Performance' },
-  { icon: 'shield-check', label: 'Health' },
-  { icon: 'tag', label: 'Catalog' },
-  { icon: 'trophy', label: 'Winners' },
-  { icon: 'clipboard-list', label: 'Reports' },
-  { icon: 'eye', label: 'Insights' },
-]
 
 export function relativeTime(iso: string | undefined): string {
   if (!iso) return 'Never'

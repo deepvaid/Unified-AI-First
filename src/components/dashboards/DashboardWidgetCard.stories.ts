@@ -88,7 +88,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Frame for every dashboard widget: title/subtitle header, action menu, data body (KPI, chart, pie, table, or activity — resolved from the widget `metricId` via `useWidgetData` mock stores), and a source-cloud footer. Refresh actions emit the widget ID. `editable` shows drag handles + resize/remove actions; `preview` renders the dashed wizard-preview style.',
+          'Frame for every dashboard widget: title/subtitle header, unified action menu (Expand, Edit, View report, Size presets, Remove), data body (KPI, chart, pie, table, or activity — resolved from the widget `metricId` via `useWidgetData` mock stores), and a source-cloud footer. `draggable` reveals the hover drag grip in grid context; `preview` renders the dashed wizard-preview style.',
       },
     },
   },
@@ -96,14 +96,14 @@ const meta = {
     accountId: '2000290',
     widget: TIMESERIES_WIDGET,
     filters: FILTERS,
-    editable: false,
+    draggable: false,
     preview: false,
     showActions: true,
   },
   argTypes: {
     widget: { control: 'object' },
     filters: { control: 'object' },
-    editable: { control: 'boolean' },
+    draggable: { control: 'boolean' },
     preview: { control: 'boolean' },
     showActions: { control: 'boolean' },
   },
@@ -143,8 +143,8 @@ export const DaVinciGenerated: Story = {
   args: { widget: AI_WIDGET },
 }
 
-export const EditMode: Story = {
-  args: { editable: true },
+export const Draggable: Story = {
+  args: { draggable: true },
 }
 
 export const WizardPreview: Story = {

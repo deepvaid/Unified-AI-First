@@ -52,7 +52,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Collapsible onboarding checklist rendered as a dashboard widget. Shows task completion progress and emits `selectTask` when a task row is clicked. `editable` reveals the drag handle used in dashboard edit mode.',
+          'Collapsible onboarding checklist rendered as a dashboard widget. Shows task completion progress and emits `selectTask` when a task row is clicked. `draggable` reveals the hover drag grip used in grid context.',
       },
     },
   },
@@ -60,13 +60,13 @@ const meta = {
     tasks: TASKS,
     completedCount: 2,
     progress: 40,
-    editable: false,
+    draggable: false,
   },
   argTypes: {
     tasks: { control: 'object' },
     completedCount: { control: { type: 'number', min: 0, max: 5 } },
     progress: { control: { type: 'range', min: 0, max: 100 } },
-    editable: { control: 'boolean' },
+    draggable: { control: 'boolean' },
   },
   render: (args) => ({
     components: { DashboardSetupGuide },
@@ -92,8 +92,8 @@ export const AllComplete: Story = {
   },
 }
 
-export const EditMode: Story = {
+export const Draggable: Story = {
   args: {
-    editable: true,
+    draggable: true,
   },
 }

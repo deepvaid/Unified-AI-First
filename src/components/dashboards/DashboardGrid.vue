@@ -13,7 +13,6 @@ const props = defineProps<{
   dashboardId: string
   widgets: DashboardWidget[]
   filters: DashboardFilterState
-  editMode: boolean
   setupTasks?: SetupGuideTask[]
   setupCompleted?: number
   setupProgress?: number
@@ -114,7 +113,6 @@ watch(
 )
 
 function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number; w: number; h: number }>) {
-  if (!props.editMode) return
   if (layoutsMatch(nextLayout, layoutFromWidgets.value)) return
   emit('updateLayout', nextLayout)
 }
@@ -138,12 +136,11 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
       :col-num="12"
       :row-height="44"
       :margin="[18, 18]"
-      :is-draggable="editMode"
-      :is-resizable="editMode"
+      :is-draggable="true"
+      :is-resizable="true"
       :vertical-compact="true"
       :use-css-transforms="true"
       class="dashboard-grid__layout"
-      :class="{ 'dashboard-grid__layout--editing': editMode }"
       @layout-updated="handleLayoutUpdate"
     >
       <GridItem
@@ -156,6 +153,8 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
         :i="item.i"
         :min-w="item.minW"
         :min-h="item.minH"
+        drag-allow-from=".dashboard-widget-drag"
+        drag-ignore-from="a, button, input, textarea, .v-btn, .v-field"
       >
         <template v-if="widgetsById.get(item.i)">
           <DashboardSetupGuide
@@ -163,7 +162,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
             :tasks="setupTasks ?? []"
             :completed-count="setupCompleted ?? 0"
             :progress="setupProgress ?? 0"
-            :editable="editMode"
+            :draggable="true"
             @select-task="emit('selectSetupTask', $event)"
           />
           <DashboardWidgetCard
@@ -171,7 +170,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
             :account-id="accountId"
             :widget="widgetsById.get(item.i)!"
             :filters="filters"
-            :editable="editMode"
+            :draggable="true"
             @expand="emit('expandWidget', $event)"
             @edit="emit('editWidget', $event)"
             @refresh="emit('refreshWidget', $event)"
@@ -197,7 +196,6 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
           :tasks="setupTasks ?? []"
           :completed-count="setupCompleted ?? 0"
           :progress="setupProgress ?? 0"
-          :editable="editMode"
           @select-task="emit('selectSetupTask', $event)"
         />
         <DashboardWidgetCard
@@ -205,7 +203,6 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
           :account-id="accountId"
           :widget="widget"
           :filters="filters"
-          :editable="editMode"
           @expand="emit('expandWidget', $event)"
           @edit="emit('editWidget', $event)"
           @refresh="emit('refreshWidget', $event)"
@@ -258,7 +255,10 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
   height: 340px;
 }
 
-.dashboard-grid__layout--editing {
+/* Column guides appear only while a card is actively being dragged or resized.
+   (:has() arguments are not scope-rewritten, so the unscoped vgl classes match.) */
+.dashboard-grid__layout:has(.vgl-item--dragging),
+.dashboard-grid__layout:has(.vgl-item--resizing) {
   background-image:
     repeating-linear-gradient(
       to right,
@@ -304,7 +304,9 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
   display: none;
 }
 
-.dashboard-grid__layout--editing :deep(.vgl-item__resizer) {
+/* Resize handle fades in on card hover and stays visible while resizing. */
+.dashboard-grid :deep(.vgl-item:hover .vgl-item__resizer),
+.dashboard-grid :deep(.vgl-item--resizing .vgl-item__resizer) {
   display: block;
   position: absolute;
   right: 0;
@@ -332,7 +334,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
   transition: background-color 120ms ease;
 }
 
-.dashboard-grid__layout--editing :deep(.vgl-item__resizer:hover) {
+.dashboard-grid :deep(.vgl-item__resizer:hover) {
   background-color: rgba(var(--v-theme-primary), 0.12);
   background-image: linear-gradient(
     135deg,

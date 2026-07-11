@@ -9,17 +9,21 @@ const meta = {
     docs: {
       description: {
         component:
-          'Kebab menu shared by dashboard widget cards: Expand, Edit, Refresh, and Remove. Remove is disabled unless `editable` (dashboard edit mode). Click the kebab button to open the menu.',
+          'Unified kebab menu for every dashboard widget card: Expand, Edit, View report, a Size S/M/L/XL preset row (`currentSize` highlighted; none when the widget has a custom dragged size), and Remove. Click the kebab button to open the menu.',
       },
     },
   },
   args: {
     widgetTitle: 'Revenue Over Time',
-    editable: true,
+    currentSize: 'M',
   },
   argTypes: {
     widgetTitle: { control: 'text', description: 'Used for the aria-label on the activator button' },
-    editable: { control: 'boolean', description: 'Enables the destructive Remove action' },
+    currentSize: {
+      control: 'select',
+      options: ['S', 'M', 'L', 'XL', null],
+      description: 'Highlighted size preset; null when the widget was dragged to a custom size',
+    },
   },
   render: (args) => ({
     components: { DashboardWidgetActionMenu },
@@ -35,10 +39,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const EditMode: Story = {}
+export const Default: Story = {}
 
-export const ViewMode: Story = {
+export const CustomSize: Story = {
   args: {
-    editable: false,
+    currentSize: null,
   },
 }
