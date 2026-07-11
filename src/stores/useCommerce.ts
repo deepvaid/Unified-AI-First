@@ -29,6 +29,61 @@ const paymentMethods = ['Visa •••• 4242', 'Mastercard •••• 8888'
 const VENDORS = ['Acme Corp', 'Brand House', 'Global Goods', 'Prime Supplier', 'Local Artisan']
 const LOCATIONS = ['Main Warehouse - FL', 'Secondary Node - CA', 'Retail Hub - TX']
 
+export type ProductType = 'product' | 'kit'
+export type PublishStatus = 'Draft' | 'Published'
+
+export interface ProductOption {
+  name: string
+  values: string[]
+}
+
+export interface ProductVariant {
+  id: number
+  title: string
+  sku: string
+  manageInventory: boolean
+  allowBackorder: boolean
+  costPrice: string
+  price: string
+  /** Per-location on-hand counts, keyed by location name. */
+  stock: Record<string, number>
+}
+
+export interface KitComponent {
+  productId: number
+  name: string
+  sku: string
+  qty: number
+  price: string
+  inStock: number
+}
+
+/** Full wizard payload persisted so the editor can repopulate every field. */
+export interface ProductDetail {
+  subtitle: string
+  url: string
+  description: string
+  hasVariants: boolean
+  options: ProductOption[]
+  variantsList: ProductVariant[]
+  // Organise
+  taxCategory: string
+  material: string
+  brand: string
+  tag: string
+  collection: string
+  categories: string[]
+  width: string
+  length: string
+  height: string
+  weight: string
+  midCode: string
+  hsCode: string
+  countryOfOrigin: string
+  discountable: boolean
+  salesChannels: string[]
+}
+
 export interface Product {
   id: number
   name: string
@@ -41,6 +96,25 @@ export interface Product {
   vendor: string
   images: number
   variants: number
+  type: ProductType
+  publishStatus: PublishStatus
+  detail?: ProductDetail
+  components?: KitComponent[]
+}
+
+/** Input accepted by createProduct / updateProductDraft (the full-page wizards). */
+export interface ProductDraftInput {
+  name: string
+  sku: string
+  category: string
+  vendor: string
+  price: string
+  inventory: number
+  variants: number
+  type: ProductType
+  publishStatus: PublishStatus
+  detail?: ProductDetail
+  components?: KitComponent[]
 }
 
 export interface InventoryItem {
@@ -74,12 +148,19 @@ export const useCommerceStore = defineStore('commerce', () => {
       vendor: VENDORS[i % VENDORS.length]!,
       images: 1,
       variants: Math.floor(Math.random() * 4) + 1,
+      type: 'product',
+      publishStatus: 'Published',
     }
   }))
 
   // ── Product CRUD (mock-persistent) ───────────────────────────────
-  function addProduct(input: { name: string; sku: string; category: string; vendor: string; price: string; inventory: number }): Product {
-    const id = products.value.reduce((max, p) => Math.max(max, p.id), 999) + 1
+  function nextProductId(): number {
+    return products.value.reduce((max, p) => Math.max(max, p.id), 999) + 1
+  }
+
+  /** Create a product or kit from a full-page wizard payload. */
+  function createProduct(input: ProductDraftInput): Product {
+    const id = nextProductId()
     const price = input.price || '0.00'
     const product: Product = {
       id,
@@ -90,25 +171,35 @@ export const useCommerceStore = defineStore('commerce', () => {
       inventory: input.inventory,
       category: input.category,
       status: stockStatus(input.inventory),
-      vendor: input.vendor,
+      vendor: input.vendor || '—',
       images: 1,
-      variants: 1,
+      variants: input.variants,
+      type: input.type,
+      publishStatus: input.publishStatus,
+      detail: input.detail,
+      components: input.components,
     }
     products.value.unshift(product)
     return product
   }
 
-  function updateProduct(id: number, patch: { name: string; sku: string; category: string; vendor: string; price: string; inventory: number }): void {
+  /** Overwrite an existing product/kit with a full wizard payload. */
+  function updateProductDraft(id: number, input: ProductDraftInput): void {
     const product = products.value.find((p) => p.id === id)
     if (!product) return
-    product.name = patch.name
-    product.sku = patch.sku
-    product.category = patch.category
-    product.vendor = patch.vendor
-    product.price = patch.price
-    product.compareAtPrice = (parseFloat(patch.price || '0') * 1.2).toFixed(2)
-    product.inventory = patch.inventory
-    product.status = stockStatus(patch.inventory)
+    product.name = input.name
+    product.sku = input.sku || product.sku
+    product.category = input.category
+    product.vendor = input.vendor || '—'
+    product.price = input.price || '0.00'
+    product.compareAtPrice = (parseFloat(input.price || '0') * 1.2).toFixed(2)
+    product.inventory = input.inventory
+    product.status = stockStatus(input.inventory)
+    product.variants = input.variants
+    product.type = input.type
+    product.publishStatus = input.publishStatus
+    product.detail = input.detail
+    product.components = input.components
   }
 
   function duplicateProduct(id: number): Product | undefined {
@@ -266,7 +357,7 @@ export const useCommerceStore = defineStore('commerce', () => {
   return {
     products, orders, coupons, fulfillments, draftOrders, customGiftCards, purchasableGiftCards,
     inventory,
-    addProduct, updateProduct, duplicateProduct, deleteProduct, deleteProducts,
+    createProduct, updateProductDraft, duplicateProduct, deleteProduct, deleteProducts,
     adjustStock, transferStock,
   }
 })

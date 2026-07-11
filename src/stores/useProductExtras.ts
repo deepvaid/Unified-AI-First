@@ -50,6 +50,28 @@ export interface TaxCategory {
   description: string
 }
 
+export type CollectionType = 'Automated' | 'Manual'
+
+export interface Collection {
+  id: number
+  title: string
+  handle: string
+  type: CollectionType
+  productCount: number
+  status: 'Active' | 'Draft'
+  updatedAt: string
+  root: boolean
+}
+
+/** Slugify a title into a URL handle (lowercase, hyphenated). */
+function toHandle(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 export const useProductExtrasStore = defineStore('productExtras', () => {
   // ── Recommendation rules ─────────────────────────────────────────
   const recommendations = ref<RecommendationRule[]>([
@@ -145,9 +167,49 @@ export const useProductExtrasStore = defineStore('productExtras', () => {
     taxCategories.value = taxCategories.value.filter((c) => c.id !== id)
   }
 
+  // ── Collections ──────────────────────────────────────────────────
+  const collections = ref<Collection[]>([
+    { id: 1, title: 'All Products', handle: 'all-products', type: 'Automated', productCount: 128, status: 'Active', updatedAt: '2026-07-08', root: true },
+    { id: 2, title: 'New Arrivals', handle: 'new-arrivals', type: 'Automated', productCount: 24, status: 'Active', updatedAt: '2026-07-05', root: false },
+    { id: 3, title: 'Best Sellers', handle: 'best-sellers', type: 'Automated', productCount: 32, status: 'Active', updatedAt: '2026-06-28', root: false },
+    { id: 4, title: 'Sale Items', handle: 'sale-items', type: 'Automated', productCount: 47, status: 'Active', updatedAt: '2026-06-20', root: false },
+    { id: 5, title: 'Summer Collection', handle: 'summer-collection', type: 'Manual', productCount: 18, status: 'Draft', updatedAt: '2026-06-12', root: false },
+  ])
+
+  function addCollection(input: { title: string; handle: string; type: CollectionType; status: 'Active' | 'Draft' }): Collection {
+    const id = collections.value.reduce((max, c) => Math.max(max, c.id), 0) + 1
+    const collection: Collection = {
+      id,
+      title: input.title,
+      handle: input.handle || toHandle(input.title),
+      type: input.type,
+      productCount: 0,
+      status: input.status,
+      updatedAt: new Date().toISOString().split('T')[0]!,
+      root: false,
+    }
+    collections.value.unshift(collection)
+    return collection
+  }
+
+  function updateCollection(id: number, patch: { title: string; handle: string; type: CollectionType; status: 'Active' | 'Draft' }): void {
+    const collection = collections.value.find((c) => c.id === id)
+    if (!collection) return
+    collection.title = patch.title
+    collection.handle = patch.handle || toHandle(patch.title)
+    collection.type = patch.type
+    collection.status = patch.status
+    collection.updatedAt = new Date().toISOString().split('T')[0]!
+  }
+
+  function deleteCollection(id: number): void {
+    collections.value = collections.value.filter((c) => c.id !== id)
+  }
+
   return {
     recommendations, addRule, updateRule, toggleRule, deleteRule,
     reservations, addReservation, releaseReservation,
     taxCategories, addTaxCategory, updateTaxCategory, deleteTaxCategory,
+    collections, addCollection, updateCollection, deleteCollection, toHandle,
   }
 })

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useCommerceStore, type Product } from '@/stores/useCommerce'
@@ -15,9 +16,19 @@ import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
 const store = useCommerceStore()
+const route = useRoute()
+const router = useRouter()
 const search = ref('')
 const selected = ref<number[]>([])
+const page = ref(1)
+const ITEMS_PER_PAGE = 15
+const viewMode = ref<'list' | 'grid'>('list')
 const { loading } = useInitialLoad()
+
+const accountId = computed(() => {
+  const value = route.params.accountId
+  return (Array.isArray(value) ? value[0] : value) ?? '2000290'
+})
 
 // Multi-select filters
 const filters = ref({
@@ -79,42 +90,18 @@ const headers = [
 
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
-// ── Add / Edit drawer ───────────────────────────────────────────────
-const drawer = ref(false)
-const editingId = ref<number | null>(null)
-const form = ref({ name: '', sku: '', category: 'Electronics', vendor: 'Acme Corp', price: '', inventory: 0 })
-
-const previewStatus = computed(() => form.value.inventory === 0 ? 'Out of Stock' : form.value.inventory < 20 ? 'Low Stock' : 'In Stock')
-
-function openCreate() {
-  editingId.value = null
-  form.value = { name: '', sku: '', category: 'Electronics', vendor: 'Acme Corp', price: '', inventory: 0 }
-  drawer.value = true
+// ── Create / Edit navigation (full-page wizards) ─────────────────────
+function openNewProduct() {
+  router.push({ name: 'ProductNew', params: { accountId: accountId.value } })
 }
-
+function openNewKit() {
+  router.push({ name: 'ProductKitNew', params: { accountId: accountId.value } })
+}
+function openImport(source: 'csv' | 'ftp') {
+  router.push({ name: source === 'csv' ? 'ProductImportCsv' : 'ProductImportFtp', params: { accountId: accountId.value } })
+}
 function openEdit(product: Product) {
-  editingId.value = product.id
-  form.value = { name: product.name, sku: product.sku, category: product.category, vendor: product.vendor, price: product.price, inventory: product.inventory }
-  drawer.value = true
-}
-
-function saveProduct() {
-  const payload = {
-    name: form.value.name.trim() || 'Untitled product',
-    sku: form.value.sku.trim(),
-    category: form.value.category,
-    vendor: form.value.vendor,
-    price: Number(form.value.price || 0).toFixed(2),
-    inventory: Number(form.value.inventory) || 0,
-  }
-  if (editingId.value !== null) {
-    store.updateProduct(editingId.value, payload)
-    notify('Product updated')
-  } else {
-    store.addProduct(payload)
-    notify('Product added')
-  }
-  drawer.value = false
+  router.push({ name: 'ProductEdit', params: { accountId: accountId.value, productId: product.id } })
 }
 
 function duplicate(product: Product) {
@@ -159,12 +146,53 @@ const deleteMessage = computed(() =>
     : `“${pendingDelete.value?.name}” will be permanently deleted. This cannot be undone.`
 )
 
-// ── Export ──────────────────────────────────────────────────────────
-function exportProducts() {
-  const rows = selected.value.length
-    ? filteredProducts.value.filter(p => selected.value.includes(p.id))
-    : filteredProducts.value
-  downloadCsv('products', rows, [
+// ── Export dialog (scoped) ───────────────────────────────────────────
+const exportDialog = ref(false)
+const exportScope = ref<'current' | 'all' | 'selected' | 'search'>('all')
+const exportFileName = ref('')
+
+const searchedProducts = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return filteredProducts.value
+  return filteredProducts.value.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.sku.toLowerCase().includes(q) ||
+    p.category.toLowerCase().includes(q) ||
+    p.vendor.toLowerCase().includes(q) ||
+    p.status.toLowerCase().includes(q),
+  )
+})
+const currentPageProducts = computed(() =>
+  searchedProducts.value.slice((page.value - 1) * ITEMS_PER_PAGE, page.value * ITEMS_PER_PAGE),
+)
+const selectedProducts = computed(() => filteredProducts.value.filter(p => selected.value.includes(p.id)))
+
+function defaultExportName() {
+  const today = new Date()
+  const y = today.getFullYear()
+  const d = String(today.getDate()).padStart(2, '0')
+  const m = String(today.getMonth() + 1).padStart(2, '0')
+  return `Product_Export_${y}-${d}-${m}`
+}
+
+function openExport() {
+  exportFileName.value = defaultExportName()
+  exportScope.value = selected.value.length ? 'selected' : 'all'
+  exportDialog.value = true
+}
+
+const exportRows = computed<Product[]>(() => {
+  switch (exportScope.value) {
+    case 'current': return currentPageProducts.value
+    case 'selected': return selectedProducts.value
+    case 'search': return searchedProducts.value
+    default: return store.products
+  }
+})
+
+function runExport() {
+  const name = exportFileName.value.trim() || defaultExportName()
+  downloadCsv(name, exportRows.value, [
     { title: 'Name', value: 'name' },
     { title: 'SKU', value: 'sku' },
     { title: 'Category', value: 'category' },
@@ -173,36 +201,32 @@ function exportProducts() {
     { title: 'Inventory', value: 'inventory' },
     { title: 'Status', value: 'status' },
   ])
+  exportDialog.value = false
+  notify(`Exported ${exportRows.value.length} product${exportRows.value.length === 1 ? '' : 's'} as CSV`)
 }
 
-// ── Import wizard (drawer) ──────────────────────────────────────────
-const importDrawer = ref(false)
-const importStep = ref(1)
-const importDelimiter = ref('Comma (,)')
-const importCategory = ref('Electronics')
-const fieldMappings = ref([
-  { csvCol: 'product_name', sample: 'Wireless Earbuds Pro', field: 'Name' },
-  { csvCol: 'sku_code', sample: 'SKU-45012', field: 'SKU' },
-  { csvCol: 'unit_price', sample: '129.00', field: 'Price' },
-  { csvCol: 'stock_qty', sample: '340', field: 'Inventory' },
-  { csvCol: 'supplier', sample: 'Acme Corp', field: 'Vendor' },
-])
-const productFields = ['Name', 'SKU', 'Price', 'Inventory', 'Vendor', 'Category', 'Do not import']
-
-function startImport() {
-  importStep.value = 1
-  importDrawer.value = true
-}
-
-function finishImport() {
-  importDrawer.value = false
-  notify('Import complete — 312 products added')
-}
-
-// ── Snackbar ────────────────────────────────────────────────────────
+// ── Snackbar (incl. cross-page flash from the wizards) ────────────────
 const snack = ref(false)
 const snackText = ref('')
 function notify(text: string) { snackText.value = text; snack.value = true }
+
+const flashMessages: Record<string, string> = {
+  'product-draft': 'Product saved as draft',
+  'product-published': 'Product published',
+  'product-updated': 'Product updated',
+  'kit-draft': 'Kit saved as draft',
+  'kit-published': 'Kit published',
+  'import-complete': 'Import complete — 312 products added',
+}
+
+onMounted(() => {
+  const flash = route.query.flash
+  const key = Array.isArray(flash) ? flash[0] : flash
+  if (key && flashMessages[key]) {
+    notify(flashMessages[key])
+    router.replace({ query: {} })
+  }
+})
 </script>
 
 <template>
@@ -212,8 +236,32 @@ function notify(text: string) { snackText.value = text; snack.value = true }
       :subtitle="`${filteredProducts.length} products`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="upload" class="text-none" color="surface" @click="startImport">Import</v-btn>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">Add Product</v-btn>
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="openExport">Export</v-btn>
+
+        <v-menu location="bottom end">
+          <template #activator="{ props }">
+            <v-btn v-bind="props" variant="flat" prepend-icon="upload" append-icon="chevron-down" class="text-none" color="surface">Import</v-btn>
+          </template>
+          <v-list density="compact">
+            <v-list-item prepend-icon="file-text" title="CSV" @click="openImport('csv')" />
+            <v-list-item prepend-icon="server" title="FTP" @click="openImport('ftp')" />
+          </v-list>
+        </v-menu>
+
+        <v-btn-toggle v-model="viewMode" mandatory density="comfortable" variant="outlined" divided class="mp-view-toggle">
+          <v-btn value="list" icon="list" size="small" aria-label="List view" />
+          <v-btn value="grid" icon="layout-grid" size="small" aria-label="Grid view" />
+        </v-btn-toggle>
+
+        <v-menu location="bottom end">
+          <template #activator="{ props }">
+            <v-btn v-bind="props" color="primary" variant="flat" prepend-icon="plus" append-icon="chevron-down" class="text-none">New Product</v-btn>
+          </template>
+          <v-list density="compact">
+            <v-list-item prepend-icon="package" title="New Product" @click="openNewProduct" />
+            <v-list-item prepend-icon="boxes" title="New Kit" @click="openNewKit" />
+          </v-list>
+        </v-menu>
       </template>
     </MpPageHeader>
 
@@ -277,13 +325,14 @@ function notify(text: string) { snackText.value = text; snack.value = true }
         :headers="visibleHeaders"
         :items="filteredProducts"
         v-model="selected"
+        v-model:page="page"
         show-select
         item-value="id"
         :search="search"
         class="flex-grow-1"
         density="comfortable"
         fixed-header
-        :items-per-page="15"
+        :items-per-page="ITEMS_PER_PAGE"
         hover
       >
         <template v-slot:item.name="{ item }">
@@ -304,7 +353,11 @@ function notify(text: string) { snackText.value = text; snack.value = true }
               </template>
             </v-img>
             <div>
-              <div class="text-body-2 font-weight-medium">{{ item.name }}</div>
+              <div class="text-body-2 font-weight-medium d-flex align-center gap-2">
+                {{ item.name }}
+                <v-chip v-if="item.type === 'kit'" size="x-small" variant="tonal" color="secondary" label>Kit</v-chip>
+                <v-chip v-if="item.publishStatus === 'Draft'" size="x-small" variant="tonal" color="warning" label>Draft</v-chip>
+              </div>
               <div class="text-caption text-medium-emphasis">{{ item.sku }} · {{ item.variants }} variant{{ item.variants > 1 ? 's' : '' }}</div>
             </div>
           </div>
@@ -338,10 +391,10 @@ function notify(text: string) { snackText.value = text; snack.value = true }
             icon="package"
             :title="search ? 'No products match your search' : 'No products found'"
             :description="search ? 'Try a different search term.' : 'Add products to your catalogue to get started.'"
-            action-label="Add Product"
+            action-label="New Product"
             action-icon="plus"
             class="py-10"
-            @action="openCreate"
+            @action="openNewProduct"
           />
         </template>
       </v-data-table>
@@ -353,106 +406,35 @@ function notify(text: string) { snackText.value = text; snack.value = true }
       @clear="selected = []"
       @select-all="selectAll"
     >
-      <v-btn variant="text" size="small" prepend-icon="share" class="text-none" @click="exportProducts">Export</v-btn>
+      <v-btn variant="text" size="small" prepend-icon="download" class="text-none" @click="openExport">Export</v-btn>
       <v-btn variant="text" size="small" prepend-icon="trash-2" class="text-none text-error" @click="askBulkDelete">Delete</v-btn>
     </MpFloatingBulkBar>
 
-    <!-- Add / Edit product drawer -->
+    <!-- Export dialog -->
     <MpFormDrawer
-      v-model="drawer"
-      :title="editingId !== null ? 'Edit Product' : 'Add Product'"
-      subtitle="Catalogue details for this product"
+      v-model="exportDialog"
+      title="Export Products"
+      subtitle="Your products will be downloaded as a CSV file."
     >
-      <v-text-field v-model="form.name" label="Product name" variant="outlined" density="comfortable" class="mb-4" />
-      <v-text-field v-model="form.sku" label="SKU" placeholder="Leave blank to auto-generate" variant="outlined" density="comfortable" class="mb-4" />
-      <v-select v-model="form.category" :items="filterOptions.category" label="Category" variant="outlined" density="comfortable" class="mb-4" />
-      <v-select v-model="form.vendor" :items="filterOptions.vendor" label="Vendor" variant="outlined" density="comfortable" class="mb-4" />
-      <v-row dense>
-        <v-col cols="6">
-          <v-text-field v-model="form.price" label="Price ($)" type="number" min="0" variant="outlined" density="comfortable" />
-        </v-col>
-        <v-col cols="6">
-          <v-text-field v-model.number="form.inventory" label="Inventory" type="number" min="0" variant="outlined" density="comfortable" />
-        </v-col>
-      </v-row>
-      <div class="d-flex align-center ga-2 mt-1">
-        <span class="text-caption text-medium-emphasis">Stock status</span>
-        <MpStatusChip :status="previewStatus" type="stock" size="x-small" show-icon />
-      </div>
+      <div class="text-subtitle-2 font-weight-bold mb-2">What to export</div>
+      <v-radio-group v-model="exportScope" hide-details class="mb-4">
+        <v-radio value="current" label="Current Page" />
+        <v-radio value="all" :label="`All Products (${store.products.length})`" />
+        <v-radio value="selected" :disabled="!selected.length" :label="`Selected: ${selected.length} Products`" />
+        <v-radio value="search" :disabled="!search.trim()" :label="`${searchedProducts.length} Products matching your search`" />
+      </v-radio-group>
+
+      <v-text-field
+        v-model="exportFileName"
+        label="File Name"
+        suffix=".csv"
+        variant="outlined"
+        density="comfortable"
+      />
 
       <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveProduct">
-          {{ editingId !== null ? 'Save Changes' : 'Add Product' }}
-        </v-btn>
-      </template>
-    </MpFormDrawer>
-
-    <!-- Import wizard drawer -->
-    <MpFormDrawer
-      v-model="importDrawer"
-      title="Import Products"
-      :subtitle="`Step ${importStep} of 3`"
-      :width="600"
-    >
-      <v-progress-linear :model-value="(importStep / 3) * 100" color="primary" height="3" rounded class="mb-5" />
-
-      <!-- Step 1: Upload -->
-      <div v-if="importStep === 1">
-        <div class="text-subtitle-2 font-weight-bold mb-1">Upload your file</div>
-        <div class="text-body-2 text-medium-emphasis mb-4">Supported: CSV, XLSX. Max 25MB. First row should be column headers.</div>
-        <v-card variant="outlined" rounded="lg" class="pa-8 text-center mb-4" style="border-style: dashed; cursor: pointer;">
-          <v-icon size="48" color="primary" class="mb-3">cloud-upload</v-icon>
-          <div class="text-body-1 font-weight-medium mb-1">Drag & drop file here</div>
-          <div class="text-caption text-medium-emphasis mb-4">or click to browse</div>
-          <v-btn variant="flat" color="primary" class="text-none" prepend-icon="folder-open">Browse File</v-btn>
-        </v-card>
-        <v-select v-model="importDelimiter" :items="['Comma (,)', 'Semicolon (;)', 'Tab']" label="Delimiter" variant="outlined" density="comfortable" class="mb-4" />
-        <v-select v-model="importCategory" :items="filterOptions.category" label="Import into category" variant="outlined" density="comfortable" />
-      </div>
-
-      <!-- Step 2: Map -->
-      <div v-else-if="importStep === 2">
-        <div class="text-subtitle-2 font-weight-bold mb-1">Map columns to product fields</div>
-        <div class="text-body-2 text-medium-emphasis mb-4">We auto-detected {{ fieldMappings.length }} columns. Adjust mappings if needed.</div>
-        <v-table density="compact">
-          <thead><tr><th>CSV Column</th><th>Sample</th><th>Maps To</th></tr></thead>
-          <tbody>
-            <tr v-for="(m, i) in fieldMappings" :key="i">
-              <td class="py-2 text-body-2 font-weight-medium">{{ m.csvCol }}</td>
-              <td class="text-caption text-medium-emphasis">{{ m.sample }}</td>
-              <td>
-                <v-select v-model="m.field" :items="productFields" variant="outlined" density="compact" hide-details style="min-width: 150px;" />
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
-      </div>
-
-      <!-- Step 3: Review -->
-      <div v-else>
-        <div class="text-subtitle-2 font-weight-bold mb-4">Review before importing</div>
-        <v-row dense class="mb-4">
-          <v-col cols="4"><v-card variant="tonal" color="primary" rounded="lg" class="pa-4 text-center"><div class="text-h5 font-weight-bold">324</div><div class="text-caption">Rows detected</div></v-card></v-col>
-          <v-col cols="4"><v-card variant="tonal" color="success" rounded="lg" class="pa-4 text-center"><div class="text-h5 font-weight-bold">312</div><div class="text-caption">Valid products</div></v-card></v-col>
-          <v-col cols="4"><v-card variant="tonal" color="warning" rounded="lg" class="pa-4 text-center"><div class="text-h5 font-weight-bold">12</div><div class="text-caption">Skipped</div></v-card></v-col>
-        </v-row>
-        <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2 mb-3">
-          <strong>Duplicates:</strong> 18 products with matching SKUs will be <strong>updated</strong>, not duplicated.
-        </v-alert>
-        <v-alert type="success" variant="tonal" density="compact" rounded="lg" class="text-body-2">
-          Importing into: <strong>{{ importCategory }}</strong>
-        </v-alert>
-      </div>
-
-      <template #footer>
-        <div class="w-100 d-flex justify-space-between align-center">
-          <v-btn variant="text" class="text-none" @click="importStep > 1 ? importStep-- : importDrawer = false">
-            {{ importStep === 1 ? 'Cancel' : '← Back' }}
-          </v-btn>
-          <v-btn v-if="importStep < 3" color="primary" variant="flat" class="text-none" @click="importStep++">Continue →</v-btn>
-          <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="upload" @click="finishImport">Import 312 Products</v-btn>
-        </div>
+        <v-btn variant="text" class="text-none" @click="exportDialog = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="download" @click="runExport">Export</v-btn>
       </template>
     </MpFormDrawer>
 
@@ -475,5 +457,8 @@ function notify(text: string) { snackText.value = text; snack.value = true }
 .product-thumb {
   width: 32px;
   height: 32px;
+}
+.mp-view-toggle {
+  height: 40px;
 }
 </style>
