@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import { useMerchandisingStore, type SearchPin } from '@/stores/useMerchandising'
 
+const route = useRoute()
+const router = useRouter()
 const store = useMerchandisingStore()
 const search = ref('')
 
@@ -24,41 +26,9 @@ const filteredPins = computed(() => {
   return store.searchPinList.filter((pin) => pin.query.toLowerCase().includes(term))
 })
 
-const productOptions = computed(() =>
-  store.merchProductList.map((p) => ({ title: p.title, value: p.id })),
-)
-
-// ── Create / edit drawer ─────────────────────────────────────────
-const drawer = ref(false)
-const editing = ref(false)
-const editingId = ref('')
-const form = ref<{ query: string; pinnedProductIds: string[] }>({ query: '', pinnedProductIds: [] })
-
-const formValid = computed(() => Boolean(form.value.query.trim()))
-
-function openCreate() {
-  form.value = { query: '', pinnedProductIds: [] }
-  editing.value = false
-  editingId.value = ''
-  drawer.value = true
-}
-
-function openEdit(pin: SearchPin) {
-  form.value = { query: pin.query, pinnedProductIds: [...pin.pinnedProductIds] }
-  editing.value = true
-  editingId.value = pin.id
-  drawer.value = true
-}
-
-function savePin() {
-  if (!formValid.value) return
-  const payload = { query: form.value.query.trim(), pinnedProductIds: form.value.pinnedProductIds }
-  if (editing.value) {
-    store.saveSearchPin(editingId.value, payload)
-  } else {
-    store.createSearchPin(payload)
-  }
-  drawer.value = false
+// Full-page pin editor (Findify parity: query results grid w/ pin + drag rank)
+function openEditor(pinId: string) {
+  router.push({ name: 'MerchandisingChannelSearchPinEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, pinId } })
 }
 
 // ── Delete flow ──────────────────────────────────────────────────
@@ -83,7 +53,7 @@ function confirmDelete() {
       :subtitle="`Fix products to the top of search results for ${store.activeStore.domain}`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plus" @click="openCreate">
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plus" @click="openEditor('new')">
           New pin
         </v-btn>
       </template>
@@ -110,7 +80,7 @@ function confirmDelete() {
         <template #item.query="{ item }">
           <a
             class="text-body-2 font-weight-bold text-primary cursor-pointer pin-query"
-            @click="openEdit(item)"
+            @click="openEditor(item.id)"
           >
             {{ item.query }}
           </a>
@@ -128,7 +98,7 @@ function confirmDelete() {
 
         <template #item.actions="{ item }">
           <MpRowActionsMenu :ariaLabel="`Actions for ${item.query}`">
-            <v-list-item title="Edit" prepend-icon="pencil" @click="openEdit(item)" />
+            <v-list-item title="Edit" prepend-icon="pencil" @click="openEditor(item.id)" />
             <v-divider class="my-1" />
             <v-list-item title="Delete" prepend-icon="trash-2" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
@@ -141,7 +111,7 @@ function confirmDelete() {
             :description="search ? 'Try a different keyword.' : 'Pin products to a search query so they always appear at the top of results.'"
             :action-label="!search ? 'New pin' : undefined"
             action-icon="plus"
-            @action="openCreate"
+            @action="openEditor('new')"
           />
         </template>
       </v-data-table>
@@ -155,42 +125,6 @@ function confirmDelete() {
       danger
       @confirm="confirmDelete"
     />
-
-    <MpFormDrawer
-      v-model="drawer"
-      :title="editing ? 'Edit pin' : 'New pin'"
-      :subtitle="store.activeStore.domain"
-    >
-      <div class="d-flex flex-column gap-4">
-        <v-text-field
-          v-model="form.query"
-          label="Search query"
-          placeholder="e.g. boots"
-          variant="outlined"
-          density="comfortable"
-          hide-details="auto"
-          :rules="[(v: string) => Boolean(v?.trim()) || 'Search query is required']"
-        />
-        <v-autocomplete
-          v-model="form.pinnedProductIds"
-          :items="productOptions"
-          label="Pinned products"
-          hint="Products appear in this order at the top of results for the query"
-          persistent-hint
-          variant="outlined"
-          density="comfortable"
-          multiple
-          chips
-          closable-chips
-        />
-      </div>
-      <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" :disabled="!formValid" @click="savePin">
-          {{ editing ? 'Save pin' : 'Create pin' }}
-        </v-btn>
-      </template>
-    </MpFormDrawer>
   </div>
 </template>
 

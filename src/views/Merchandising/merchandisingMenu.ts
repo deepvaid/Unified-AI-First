@@ -20,7 +20,7 @@ export function merchandisingMenu(accountId: string, channelId: string): MpSecti
       title: 'Search',
       items: [
         { slug: 'search-preview', label: 'Preview', icon: 'search', to: route('MerchandisingChannelSearchPreview', accountId, channelId), match: ['MerchandisingChannelSearchPreview'] },
-        { slug: 'search-pinning', label: 'Pinning', icon: 'pin', to: route('MerchandisingChannelSearchPinning', accountId, channelId), match: ['MerchandisingChannelSearchPinning'] },
+        { slug: 'search-pinning', label: 'Pinning', icon: 'pin', to: route('MerchandisingChannelSearchPinning', accountId, channelId), match: ['MerchandisingChannelSearchPinning', 'MerchandisingChannelSearchPinEdit'] },
         { slug: 'search-rules', label: 'Rules', icon: 'sliders-horizontal', to: route('MerchandisingChannelSearchRules', accountId, channelId), match: ['MerchandisingChannelSearchRules'] },
         { slug: 'search-promos', label: 'Promo Cards', icon: 'tags', to: route('MerchandisingChannelSearchPromos', accountId, channelId), match: ['MerchandisingChannelSearchPromos'] },
         { slug: 'search-banners', label: 'Banners', icon: 'image', to: route('MerchandisingChannelSearchBanners', accountId, channelId), match: ['MerchandisingChannelSearchBanners'] },

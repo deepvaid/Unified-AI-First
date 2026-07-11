@@ -86,6 +86,7 @@ const routes: RouteRecordRaw[] = [
       // Search tools (Findify parity, A12)
       { path: 'search/preview', name: 'MerchandisingChannelSearchPreview', component: () => import('@/views/Merchandising/SearchPreview.vue') },
       { path: 'search/pinning', name: 'MerchandisingChannelSearchPinning', component: () => import('@/views/Merchandising/SearchPinning.vue') },
+      { path: 'search/pinning/:pinId', name: 'MerchandisingChannelSearchPinEdit', component: () => import('@/views/Merchandising/SearchPinningEditor.vue') },
       { path: 'search/rules', name: 'MerchandisingChannelSearchRules', component: () => import('@/views/Merchandising/SearchRules.vue') },
       { path: 'search/promo-cards', name: 'MerchandisingChannelSearchPromos', component: () => import('@/views/Merchandising/MerchPromoCards.vue'), meta: { merchScope: 'search' } },
       { path: 'search/banners', name: 'MerchandisingChannelSearchBanners', component: () => import('@/views/Merchandising/MerchBanners.vue'), meta: { merchScope: 'search' } },
