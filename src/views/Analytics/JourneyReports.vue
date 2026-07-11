@@ -1,18 +1,29 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
+import { dateRangePresets, type DateRangePreset } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
+import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useCampaignsStore()
 const search = ref('')
 const filterStatus = ref<string[]>([])
+const dateRange = ref<DateRangePreset>('This year')
+
+const snackbar = ref(false)
+const snackbarText = ref('')
 
 const headers = [
   { title: 'Journey Name', key: 'name', sortable: true },
   { title: 'Active Contacts', key: 'activeContacts', align: 'end' as const },
   { title: 'Status', key: 'status' },
 ]
+
+// Contacts still progressing through the journey (enrolled minus completed).
+const activeContacts = (j: { enrolled: number; completed: number }) => j.enrolled - j.completed
 
 const activeFilterEntries = computed(() => {
   const filters: Array<{ key: string; label: string }> = []
@@ -28,9 +39,21 @@ function clearAllFilters() {
   filterStatus.value = []
 }
 
+// Journeys are ongoing entities rather than dated events, so the range acts as a
+// labelled reporting-window control (annotates the header) instead of filtering rows.
 const filteredJourneys = computed(() =>
   store.journeys.filter(j => filterStatus.value.length === 0 || filterStatus.value.includes(j.status))
 )
+
+function exportCsv() {
+  downloadCsv('journey-reports', filteredJourneys.value, [
+    { title: 'Journey Name', value: 'name' },
+    { title: 'Active Contacts', value: (j) => activeContacts(j) },
+    { title: 'Status', value: 'status' },
+  ])
+  snackbarText.value = `Exported ${filteredJourneys.value.length} rows`
+  snackbar.value = true
+}
 </script>
 
 <template>
@@ -40,14 +63,24 @@ const filteredJourneys = computed(() =>
       :subtitle="`${store.journeys.length} journeys`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface">Export CSV</v-btn>
+        <v-select
+          v-model="dateRange"
+          :items="dateRangePresets"
+          variant="outlined"
+          density="compact"
+          hide-details
+          rounded="lg"
+          prepend-inner-icon="calendar-range"
+          class="mp-range-select"
+        />
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export CSV</v-btn>
       </template>
     </MpPageHeader>
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
-        title="All Journeys"
+        :title="`All Journeys · ${dateRange}`"
         :active-filters="activeFilterEntries"
         :total-count="filteredJourneys.length"
         @remove-filter="removeFilter"
@@ -74,10 +107,29 @@ const filteredJourneys = computed(() =>
         </template>
       </MpDataTableToolbar>
       <v-data-table :headers="headers" :items="filteredJourneys" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+        <template v-slot:item.activeContacts="{ item }">{{ activeContacts(item).toLocaleString() }}</template>
         <template v-slot:item.status="{ item }">
-          <v-chip :color="item.status === 'Active' ? 'success' : 'warning'" size="small" variant="tonal">{{ item.status }}</v-chip>
+          <MpStatusChip :status="item.status" type="general" size="x-small" />
+        </template>
+        <template #no-data>
+          <MpEmptyState
+            icon="waypoints"
+            :title="search || filterStatus.length ? 'No journeys match your filters' : 'No journeys yet'"
+            :description="search || filterStatus.length ? 'Try a different search or clear filters.' : 'Journeys will appear here once created.'"
+            class="py-10"
+          />
         </template>
       </v-data-table>
     </v-card>
+
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
   </div>
 </template>
+
+<style scoped>
+.mp-range-select {
+  max-width: 190px;
+}
+</style>

@@ -4,6 +4,7 @@ import type { ApexOptions } from 'apexcharts'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import MpKpiCard from '@/components/MpKpiCard.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import { applyChartTheme, activeChartPalette } from '@/plugins/chartPalette'
 
 const ApexChart = defineAsyncComponent({
@@ -406,18 +407,26 @@ const recentActivity = computed(() => [
 <template>
   <div ref="rootRef" class="live-view d-flex flex-column gap-5">
     <!-- Header -->
-    <div class="d-flex flex-wrap align-center justify-space-between gap-3">
-      <div class="d-flex align-center gap-3">
-        <v-icon size="28" color="primary">radio</v-icon>
-        <div>
-          <div class="text-h5 font-weight-bold">Live View</div>
-          <div class="d-flex align-center gap-2 mt-1">
-            <span class="live-dot" />
-            <span class="text-caption text-medium-emphasis">{{ justNowLabel }}</span>
-          </div>
+    <MpPageHeader title="Live View" subtitle="Real-time store activity across your storefront">
+      <template #actions>
+        <div class="d-flex align-center gap-2 mr-1">
+          <span class="live-dot" />
+          <span class="text-caption text-medium-emphasis">{{ justNowLabel }}</span>
         </div>
-      </div>
-      <div class="d-flex align-center gap-2">
+        <v-tooltip location="bottom" :text="isRefreshing ? 'Refreshing…' : `Auto-refresh in ${secondsLeft}s`">
+          <template #activator="{ props: tipProps }">
+            <v-btn
+              v-bind="tipProps"
+              variant="flat"
+              icon="refresh-cw"
+              rounded="lg"
+              color="surface"
+              :loading="isRefreshing"
+              aria-label="Refresh now"
+              @click="refreshNow"
+            />
+          </template>
+        </v-tooltip>
         <v-text-field
           density="compact"
           variant="outlined"
@@ -439,8 +448,8 @@ const recentActivity = computed(() => [
             />
           </template>
         </v-tooltip>
-      </div>
-    </div>
+      </template>
+    </MpPageHeader>
 
     <!-- KPI strip -->
     <v-row dense>

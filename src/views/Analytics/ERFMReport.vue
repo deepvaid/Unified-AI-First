@@ -1,13 +1,34 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useAnalyticsStore } from '@/stores/useAnalytics'
+import { computed, ref } from 'vue'
+import { useAnalyticsStore, dateRangePresets, type DateRangePreset } from '@/stores/useAnalytics'
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useAnalyticsStore()
 const { rfmAnalyzed, rfmSegments } = storeToRefs(store)
+
+// Segments are computed over the whole base, so the range is a labelled analysis-window control.
+const dateRange = ref<DateRangePreset>('Last 90 days')
+
+const snackbar = ref(false)
+const snackbarText = ref('')
+
+function exportSegments() {
+  downloadCsv('erfm-segments', rfmSegments.value, [
+    { title: 'Segment', value: 'name' },
+    { title: 'Customers', value: 'count' },
+    { title: 'Share', value: (s) => `${s.share.toFixed(1)}%` },
+    { title: 'Avg Recency (days)', value: 'recencyDays' },
+    { title: 'Avg Frequency', value: 'frequency' },
+    { title: 'Avg Value', value: 'avgValue' },
+    { title: 'Recommended Action', value: 'action' },
+  ])
+  snackbarText.value = `Exported ${rfmSegments.value.length} rows`
+  snackbar.value = true
+}
 
 const toneColor: Record<string, string> = {
   success: 'rgb(var(--v-theme-success))',
@@ -35,7 +56,17 @@ const currency = (n: number) =>
       subtitle="Enhanced Recency, Frequency & Monetary segmentation"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface">Export Segments</v-btn>
+        <v-select
+          v-model="dateRange"
+          :items="dateRangePresets"
+          variant="outlined"
+          density="compact"
+          hide-details
+          rounded="lg"
+          prepend-inner-icon="calendar-range"
+          class="mp-range-select"
+        />
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportSegments">Export Segments</v-btn>
       </template>
     </MpPageHeader>
 
@@ -59,7 +90,7 @@ const currency = (n: number) =>
       <!-- Distribution bar -->
       <v-card variant="flat" border rounded="lg" class="pa-5">
         <div class="text-subtitle-1 font-weight-bold mb-1">Segment Distribution</div>
-        <div class="text-caption text-medium-emphasis mb-4">Share of analyzed customer base</div>
+        <div class="text-caption text-medium-emphasis mb-4">Share of analyzed customer base · {{ dateRange.toLowerCase() }}</div>
         <div class="rfm-dist">
           <div
             v-for="s in rfmSegments"
@@ -126,10 +157,18 @@ const currency = (n: number) =>
       title="No segments yet"
       description="RFM segmentation appears once enough order history is available."
     />
+
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
   </div>
 </template>
 
 <style scoped>
+.mp-range-select {
+  max-width: 190px;
+}
+
 .rfm-dist {
   display: flex;
   height: 14px;

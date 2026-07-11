@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { dateRangePresets, isWithinPreset, type DateRangePreset } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
+import { downloadCsv } from '@/utils/exportCsv'
 
 const search = ref('')
 const filterLevel = ref<string[]>([])
+const dateRange = ref<DateRangePreset>('Last 30 days')
+
+const snackbar = ref(false)
+const snackbarText = ref('')
 
 const headers = [
   { title: 'Timestamp', key: 'time', sortable: true },
@@ -33,8 +41,22 @@ function clearAllFilters() {
 }
 
 const filteredLogs = computed(() =>
-  logs.filter(l => filterLevel.value.length === 0 || (l.level != null && filterLevel.value.includes(l.level)))
+  logs.filter(
+    (l) =>
+      isWithinPreset(l.time, dateRange.value) &&
+      (filterLevel.value.length === 0 || (l.level != null && filterLevel.value.includes(l.level))),
+  ),
 )
+
+function exportCsv() {
+  downloadCsv('log-inspector', filteredLogs.value, [
+    { title: 'Timestamp', value: 'time' },
+    { title: 'Level', value: (l) => l.level ?? '' },
+    { title: 'Message', value: 'message' },
+  ])
+  snackbarText.value = `Exported ${filteredLogs.value.length} rows`
+  snackbar.value = true
+}
 </script>
 
 <template>
@@ -44,7 +66,17 @@ const filteredLogs = computed(() =>
       subtitle="System service execution logs"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface">Export Logs</v-btn>
+        <v-select
+          v-model="dateRange"
+          :items="dateRangePresets"
+          variant="outlined"
+          density="compact"
+          hide-details
+          rounded="lg"
+          prepend-inner-icon="calendar-range"
+          class="mp-range-select"
+        />
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export Logs</v-btn>
       </template>
     </MpPageHeader>
 
@@ -79,15 +111,27 @@ const filteredLogs = computed(() =>
       </MpDataTableToolbar>
       <v-data-table :headers="headers" :items="filteredLogs" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.level="{ item }">
-          <v-chip
-            :color="item.level === 'ERROR' ? 'error' : item.level === 'WARNING' ? 'warning' : 'info'"
-            size="x-small"
-            class="font-weight-bold"
-          >
-            {{ item.level }}
-          </v-chip>
+          <MpStatusChip :status="item.level ?? ''" type="general" size="x-small" />
+        </template>
+        <template #no-data>
+          <MpEmptyState
+            icon="scroll-text"
+            :title="search || filterLevel.length ? 'No log entries match your filters' : 'No log entries in this range'"
+            :description="search || filterLevel.length ? 'Try a different search or clear filters.' : 'Try a wider date range.'"
+            class="py-10"
+          />
         </template>
       </v-data-table>
     </v-card>
+
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
   </div>
 </template>
+
+<style scoped>
+.mp-range-select {
+  max-width: 190px;
+}
+</style>

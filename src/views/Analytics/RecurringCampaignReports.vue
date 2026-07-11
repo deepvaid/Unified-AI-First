@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
+import { dateRangePresets, isWithinPreset, type DateRangePreset } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useCampaignsStore()
 const search = ref('')
 const filterFrequency = ref<string[]>([])
+const dateRange = ref<DateRangePreset>('This year')
+
+const snackbar = ref(false)
+const snackbarText = ref('')
 
 const headers = [
   { title: 'Recurring Campaign Name', key: 'name', sortable: true },
@@ -36,8 +43,23 @@ function clearAllFilters() {
 }
 
 const filteredItems = computed(() =>
-  recurringItems.filter(r => filterFrequency.value.length === 0 || (r.frequency != null && filterFrequency.value.includes(r.frequency)))
+  recurringItems.filter(
+    (r) =>
+      isWithinPreset(r.sentDate, dateRange.value) &&
+      (filterFrequency.value.length === 0 || (r.frequency != null && filterFrequency.value.includes(r.frequency))),
+  ),
 )
+
+function exportCsv() {
+  downloadCsv('recurring-campaign-reports', filteredItems.value, [
+    { title: 'Recurring Campaign Name', value: 'name' },
+    { title: 'Frequency', value: (r) => r.frequency ?? '' },
+    { title: 'Next Run', value: 'nextRun' },
+    { title: 'Avg Opens', value: (r) => r.metrics.opens },
+  ])
+  snackbarText.value = `Exported ${filteredItems.value.length} rows`
+  snackbar.value = true
+}
 </script>
 
 <template>
@@ -47,7 +69,17 @@ const filteredItems = computed(() =>
       :subtitle="`${recurringItems.length} recurring campaigns`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface">Export CSV</v-btn>
+        <v-select
+          v-model="dateRange"
+          :items="dateRangePresets"
+          variant="outlined"
+          density="compact"
+          hide-details
+          rounded="lg"
+          prepend-inner-icon="calendar-range"
+          class="mp-range-select"
+        />
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export CSV</v-btn>
       </template>
     </MpPageHeader>
 
@@ -80,7 +112,26 @@ const filteredItems = computed(() =>
           </div>
         </template>
       </MpDataTableToolbar>
-      <v-data-table :headers="headers" :items="filteredItems" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1" />
+      <v-data-table :headers="headers" :items="filteredItems" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+        <template #no-data>
+          <MpEmptyState
+            icon="repeat"
+            :title="search || filterFrequency.length ? 'No recurring campaigns match your filters' : 'No recurring campaigns in this range'"
+            :description="search || filterFrequency.length ? 'Try a different search or clear filters.' : 'Try a wider date range.'"
+            class="py-10"
+          />
+        </template>
+      </v-data-table>
     </v-card>
+
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
   </div>
 </template>
+
+<style scoped>
+.mp-range-select {
+  max-width: 190px;
+}
+</style>

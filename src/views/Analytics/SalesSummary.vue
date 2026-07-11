@@ -1,13 +1,33 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useAnalyticsStore } from '@/stores/useAnalytics'
+import { computed, ref } from 'vue'
+import { useAnalyticsStore, dateRangePresets, type DateRangePreset } from '@/stores/useAnalytics'
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useAnalyticsStore()
 const { accountMetrics, salesChannels } = storeToRefs(store)
+
+// Channel attribution has no per-row date, so the range is a labelled reporting-window control.
+const dateRange = ref<DateRangePreset>('Last 30 days')
+
+const snackbar = ref(false)
+const snackbarText = ref('')
+
+function exportCsv() {
+  downloadCsv('sales-summary', salesChannels.value, [
+    { title: 'Channel', value: 'channel' },
+    { title: 'Revenue', value: 'revenue' },
+    { title: 'Orders', value: 'orders' },
+    { title: 'Avg Order', value: (c) => (c.orders ? Math.round(c.revenue / c.orders) : 0) },
+    { title: 'Share', value: (c) => `${c.share.toFixed(1)}%` },
+    { title: 'vs. prior', value: (c) => `${c.delta >= 0 ? '+' : ''}${c.delta.toFixed(1)}%` },
+  ])
+  snackbarText.value = `Exported ${salesChannels.value.length} rows`
+  snackbar.value = true
+}
 
 const totalOrders = computed(() => salesChannels.value.reduce((sum, c) => sum + c.orders, 0))
 const avgOrderValue = computed(() =>
@@ -36,8 +56,17 @@ const tableHeaders = [
       subtitle="Revenue attribution and channel performance overview"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="calendar-range" class="text-none" color="surface">Last 30 days</v-btn>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface">Export Report</v-btn>
+        <v-select
+          v-model="dateRange"
+          :items="dateRangePresets"
+          variant="outlined"
+          density="compact"
+          hide-details
+          rounded="lg"
+          prepend-inner-icon="calendar-range"
+          class="mp-range-select"
+        />
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export Report</v-btn>
       </template>
     </MpPageHeader>
 
@@ -88,7 +117,7 @@ const tableHeaders = [
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <div class="d-flex align-center justify-space-between px-5 pt-4 pb-1">
         <div class="text-subtitle-1 font-weight-bold">Revenue by Channel</div>
-        <span class="text-caption text-medium-emphasis">Attributed revenue, last 30 days</span>
+        <span class="text-caption text-medium-emphasis">Attributed revenue, {{ dateRange.toLowerCase() }}</span>
       </div>
 
       <div v-if="salesChannels.length" class="channel-bars px-5 py-4">
@@ -147,10 +176,18 @@ const tableHeaders = [
         </template>
       </v-data-table>
     </v-card>
+
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
   </div>
 </template>
 
 <style scoped>
+.mp-range-select {
+  max-width: 190px;
+}
+
 .channel-bars {
   display: flex;
   flex-direction: column;

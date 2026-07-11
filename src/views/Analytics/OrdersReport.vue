@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useCommerceStore } from '@/stores/useCommerce'
+import { dateRangePresets, isWithinPreset, type DateRangePreset } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import { downloadCsv } from '@/utils/exportCsv'
 
 const store = useCommerceStore()
 const search = ref('')
 const filterStatus = ref<string[]>([])
+const dateRange = ref<DateRangePreset>('Last 30 days')
+
+const snackbar = ref(false)
+const snackbarText = ref('')
 
 const headers = [
   { title: 'Order Number', key: 'orderNumber', sortable: true },
@@ -33,8 +39,24 @@ function clearAllFilters() {
 }
 
 const filteredOrders = computed(() =>
-  store.orders.filter(o => filterStatus.value.length === 0 || (o.status != null && filterStatus.value.includes(o.status)))
+  store.orders.filter(
+    (o) =>
+      isWithinPreset(o.date, dateRange.value) &&
+      (filterStatus.value.length === 0 || (o.status != null && filterStatus.value.includes(o.status))),
+  ),
 )
+
+function exportCsv() {
+  downloadCsv('sales-by-order', filteredOrders.value, [
+    { title: 'Order Number', value: 'orderNumber' },
+    { title: 'Customer', value: (o) => o.customer.name },
+    { title: 'Total', value: 'total' },
+    { title: 'Status', value: (o) => o.status ?? '' },
+    { title: 'Date', value: 'date' },
+  ])
+  snackbarText.value = `Exported ${filteredOrders.value.length} rows`
+  snackbar.value = true
+}
 </script>
 
 <template>
@@ -44,7 +66,17 @@ const filteredOrders = computed(() =>
       :subtitle="`${store.orders.length} orders`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface">Export CSV</v-btn>
+        <v-select
+          v-model="dateRange"
+          :items="dateRangePresets"
+          variant="outlined"
+          density="compact"
+          hide-details
+          rounded="lg"
+          prepend-inner-icon="calendar-range"
+          class="mp-range-select"
+        />
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export CSV</v-btn>
       </template>
     </MpPageHeader>
 
@@ -63,7 +95,7 @@ const filteredOrders = computed(() =>
             <v-select
               v-model="filterStatus"
               label="Status"
-              :items="['Completed', 'Processing', 'Shipped', 'Delivered', 'Cancelled']"
+              :items="['Completed', 'Processing', 'Cancelled', 'Refunded', 'On Hold']"
               variant="outlined"
               density="compact"
               hide-details
@@ -78,18 +110,30 @@ const filteredOrders = computed(() =>
         </template>
       </MpDataTableToolbar>
       <v-data-table :headers="headers" :items="filteredOrders" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+        <template v-slot:item.customerName="{ item }">{{ item.customer.name }}</template>
+        <template v-slot:item.total="{ item }">${{ item.total }}</template>
         <template v-slot:item.status="{ item }">
           <MpStatusChip :status="item.status ?? ''" type="order" size="x-small" />
         </template>
         <template #no-data>
           <MpEmptyState
             icon="shopping-bag"
-            :title="search || filterStatus.length ? 'No orders match your filters' : 'No orders yet'"
-            :description="search || filterStatus.length ? 'Try a different search or clear filters.' : 'Orders will appear here once received.'"
+            :title="search || filterStatus.length ? 'No orders match your filters' : 'No orders in this range'"
+            :description="search || filterStatus.length ? 'Try a different search or clear filters.' : 'Try a wider date range.'"
             class="py-10"
           />
         </template>
       </v-data-table>
     </v-card>
+
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
   </div>
 </template>
+
+<style scoped>
+.mp-range-select {
+  max-width: 190px;
+}
+</style>
