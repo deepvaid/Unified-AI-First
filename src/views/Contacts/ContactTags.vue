@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useCdpEntitiesStore, type CdpTag } from '@/stores/useCdpEntities'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
+const store = useCdpEntitiesStore()
 const search = ref('')
 
 const headers = [
@@ -11,23 +17,50 @@ const headers = [
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
 
-const tags = [
-  { name: 'VIP', count: 1250 },
-  { name: 'Tradeshow_2026', count: 450 },
-  { name: 'Abandoned_Cart', count: 3200 },
-  { name: 'Holiday_Shopper', count: 15400 },
-  { name: 'Webinar_Attendee', count: 850 },
-]
+// Snackbar
+const snackbar = ref(false)
+const snackbarText = ref('')
+function notify(text: string) { snackbarText.value = text; snackbar.value = true }
+
+// Create / edit drawer
+const drawer = ref(false)
+const editingId = ref<number | null>(null)
+const tagName = ref('')
+
+function openCreate() { editingId.value = null; tagName.value = ''; drawer.value = true }
+function openEdit(tag: CdpTag) { editingId.value = tag.id; tagName.value = tag.name; drawer.value = true }
+
+function save() {
+  const name = tagName.value.trim()
+  if (!name) return
+  if (editingId.value != null) {
+    store.updateTag(editingId.value, name)
+    notify('Tag updated')
+  } else {
+    store.addTag(name)
+    notify('Tag created')
+  }
+  drawer.value = false
+}
+
+// Delete
+const deleteDialog = ref(false)
+const pendingTag = ref<CdpTag | null>(null)
+function askDelete(tag: CdpTag) { pendingTag.value = tag; deleteDialog.value = true }
+function confirmDelete() {
+  if (pendingTag.value) { store.deleteTag(pendingTag.value.id); notify('Tag deleted') }
+  pendingTag.value = null
+}
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Contact Tags"
-      :subtitle="`${tags.length} tags`"
+      :subtitle="`${store.tags.length} tags`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">Create Tag</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New Tag</v-btn>
       </template>
     </MpPageHeader>
 
@@ -35,11 +68,12 @@ const tags = [
       <MpDataTableToolbar
         v-model:search="search"
         title="All Tags"
+        :total-count="store.tags.length"
       />
 
       <v-data-table
         :headers="headers"
-        :items="tags"
+        :items="store.tags"
         :search="search"
         :items-per-page="15"
         hover
@@ -50,19 +84,55 @@ const tags = [
         <template v-slot:item.count="{ item }">
           <span class="text-body-2 font-weight-medium">{{ item.count.toLocaleString() }}</span>
         </template>
-        <template v-slot:item.actions>
-          <v-menu location="bottom end">
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-              <v-list-item prepend-icon="pencil" title="Rename" />
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
-            </v-list>
-          </v-menu>
+        <template v-slot:item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Tag actions">
+            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-divider class="my-1" style="opacity: 0.4" />
+            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          </MpRowActionsMenu>
+        </template>
+
+        <template v-slot:no-data>
+          <MpEmptyState
+            icon="tags"
+            :title="search ? 'No tags match your search' : 'No tags yet'"
+            :description="search ? 'Try a different search term.' : 'Create a tag to group and target contacts.'"
+            action-label="New Tag"
+            action-icon="plus"
+            class="py-10"
+            @action="openCreate"
+          />
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Create / edit tag -->
+    <MpFormDrawer v-model="drawer" :title="editingId != null ? 'Edit Tag' : 'New Tag'">
+      <v-text-field
+        v-model="tagName"
+        label="Tag Name *"
+        variant="outlined"
+        density="comfortable"
+        autofocus
+        @keyup.enter="save"
+      />
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!tagName.trim()" @click="save">Save</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="deleteDialog"
+      title="Delete tag?"
+      :message="`Delete the tag “${pendingTag?.name}”? Contacts will no longer be grouped by it.`"
+      confirm-label="Delete"
+      danger
+      @confirm="confirmDelete"
+    />
+
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
   </div>
 </template>

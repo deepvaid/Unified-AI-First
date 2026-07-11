@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useContactsStore } from '@/stores/useContacts'
+import { useContactsStore, type Contact } from '@/stores/useContacts'
+import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
+import { downloadCsv, type CsvColumn } from '@/utils/exportCsv'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
@@ -9,15 +11,37 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 
 const router = useRouter()
 const route = useRoute()
 const store = useContactsStore()
+const cdp = useCdpEntitiesStore()
 const search = ref('')
 const selected = ref<number[]>([])
 const { loading } = useInitialLoad()
+
+const listNames = computed(() => cdp.lists.map(l => l.name))
+
+// CSV export column definitions (shared by header Export + bulk Export)
+const contactCsvColumns: CsvColumn<Contact>[] = [
+  { title: 'First Name', value: 'firstName' },
+  { title: 'Last Name', value: 'lastName' },
+  { title: 'Email', value: 'email' },
+  { title: 'Phone', value: 'phone' },
+  { title: 'Company', value: (r) => r.company ?? '' },
+  { title: 'Location', value: 'location' },
+  { title: 'Status', value: 'status' },
+  { title: 'Score', value: 'score' },
+  { title: 'Tags', value: (r) => r.tags.join('; ') },
+  { title: 'Revenue', value: 'revenue' },
+  { title: 'Orders', value: 'orders' },
+  { title: 'Last Active', value: 'lastActive' },
+  { title: 'Created', value: 'createdAt' },
+]
 
 // Quick-Add drawer
 const addDrawer = ref(false)
@@ -26,21 +50,56 @@ const newContact = ref({ firstName: '', lastName: '', email: '', phone: '', comp
 const tagInput = ref('')
 function addTag() { if (tagInput.value.trim()) { newContact.value.tags.push(tagInput.value.trim()); tagInput.value = '' } }
 function removeTag(i: number) { newContact.value.tags.splice(i, 1) }
-function saveContact() { addDrawer.value = false; addStep.value = 1; newContact.value = { firstName:'', lastName:'', email:'', phone:'', company:'', role:'', tags:[], list:'Newsletter Subscribers', status:'Subscribed' }; saveSnack.value = true }
+function saveContact() {
+  store.addContact({
+    firstName: newContact.value.firstName,
+    lastName: newContact.value.lastName,
+    email: newContact.value.email,
+    phone: newContact.value.phone,
+    company: newContact.value.company,
+    tags: [...newContact.value.tags],
+    status: newContact.value.status,
+  })
+  addDrawer.value = false
+  addStep.value = 1
+  newContact.value = { firstName:'', lastName:'', email:'', phone:'', company:'', role:'', tags:[], list:'Newsletter Subscribers', status:'Subscribed' }
+  notify('Contact added')
+}
 
-// Import wizard
-const importDialog = ref(false)
+// Import drawer (2-step, legacy-parity)
+const importDrawer = ref(false)
 const importStep = ref(1)
-const importList = ref('Newsletter Subscribers')
-const fieldMappings = ref([
-  { csvCol: 'First Name', field: 'First Name', sample: 'John' },
-  { csvCol: 'Last Name',  field: 'Last Name',  sample: 'Doe' },
-  { csvCol: 'Email',      field: 'Email',       sample: 'john@example.com' },
-  { csvCol: 'Phone',      field: 'Phone',       sample: '+1 555 000 0000' },
-  { csvCol: 'Company',    field: 'Company',     sample: 'Acme Corp' },
+const importMethod = ref<'file' | 'ftp' | 'automated'>('file')
+const importDelimiter = ref<'Comma' | 'Tab' | 'Colon' | 'Semi-Colon'>('Comma')
+const importList = ref<string | null>(null)
+const importOptions = ref({ importNew: true, triggerJourney: false, updateExisting: true })
+const importFieldOptions = ['Email', 'Phone', 'First Name', 'Last Name', 'Contact Tags', 'List Subscription', 'Custom: Source', 'Custom: Age Group', '— Skip —']
+const importMappings = ref([
+  { csvCol: 'email', field: 'Email' },
+  { csvCol: 'first_name', field: 'First Name' },
+  { csvCol: 'last_name', field: 'Last Name' },
+  { csvCol: 'phone', field: 'Phone' },
+  { csvCol: 'tags', field: 'Contact Tags' },
 ])
-const contactFields = ['Email','First Name','Last Name','Phone','Company','City','Country','Tag','Custom Field 1','— Skip —']
-function startImport() { importDialog.value = true; importStep.value = 1 }
+function startImport() {
+  importDrawer.value = true
+  importStep.value = 1
+  importMethod.value = 'file'
+  importDelimiter.value = 'Comma'
+  importList.value = null
+  importOptions.value = { importNew: true, triggerJourney: false, updateExisting: true }
+}
+function runImport() {
+  importDrawer.value = false
+  importStep.value = 1
+  notify('Import started — contacts will appear once processing completes')
+}
+
+// Export the current filtered set to CSV (header action)
+function exportContacts() {
+  downloadCsv('contacts', filteredContacts.value, contactCsvColumns)
+  notify('Contacts exported')
+}
 
 // Filters — vocab aligned to store enum values
 const filters = ref({
@@ -116,10 +175,54 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
 const scoreColor = (s: number) => s >= 80 ? 'success' : s >= 50 ? 'warning' : 'error'
 const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 const formatDate = (d?: string) => d ? dateFmt.format(new Date(d)) : '—'
-const saveSnack = ref(false)
+
+// Snackbar
+const snackbar = ref(false)
+const snackbarText = ref('')
+function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 function selectAll() {
-  selected.value = store.contacts.map((_, i) => i)
+  selected.value = filteredContacts.value.map(c => c.id)
+}
+
+// Bulk export selected contacts
+function exportSelected() {
+  const rows = store.contacts.filter(c => selected.value.includes(c.id))
+  downloadCsv('contacts-selected', rows, contactCsvColumns)
+  notify('Contacts exported')
+}
+
+// Delete — single row and bulk (both via confirm dialog)
+const deleteDialog = ref(false)
+const pendingContact = ref<Contact | null>(null)
+const bulkDelete = ref(false)
+
+function askDeleteRow(contact: Contact) {
+  pendingContact.value = contact
+  bulkDelete.value = false
+  deleteDialog.value = true
+}
+function askDeleteBulk() {
+  pendingContact.value = null
+  bulkDelete.value = true
+  deleteDialog.value = true
+}
+const deleteMessage = computed(() =>
+  bulkDelete.value
+    ? `Delete ${selected.value.length} selected contact${selected.value.length === 1 ? '' : 's'}? This cannot be undone.`
+    : `Delete ${pendingContact.value?.firstName ?? ''} ${pendingContact.value?.lastName ?? ''}? This cannot be undone.`,
+)
+function confirmDelete() {
+  if (bulkDelete.value) {
+    store.deleteContacts([...selected.value])
+    selected.value = []
+    notify('Contacts deleted')
+  } else if (pendingContact.value) {
+    store.deleteContact(pendingContact.value.id)
+    notify('Contact deleted')
+  }
+  pendingContact.value = null
+  bulkDelete.value = false
 }
 
 function contactPath(contactId: number | string) {
@@ -152,7 +255,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
     >
       <template #actions>
         <v-btn variant="flat" prepend-icon="upload" class="text-none" @click="startImport" color="surface">Import</v-btn>
-        <v-btn variant="flat" prepend-icon="share" class="text-none" @click="startImport" color="surface">Export</v-btn>
+        <v-btn variant="flat" prepend-icon="share" class="text-none" @click="exportContacts" color="surface">Export</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="addDrawer=true;addStep=1">Add Contact</v-btn>
       </template>
     </MpPageHeader>
@@ -254,18 +357,13 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <v-menu location="bottom end">
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" aria-label="Contact actions" @click.stop />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-              <v-list-item prepend-icon="external-link" title="View profile" @click="openContact((item as any).id)" />
-              <v-list-item prepend-icon="pencil" title="Edit" />
-              <v-list-item prepend-icon="copy" title="Duplicate" />
+          <span @click.stop>
+            <MpRowActionsMenu ariaLabel="Contact actions">
+              <v-list-item prepend-icon="pencil" title="Edit" @click="openContact((item as Contact).id)" />
               <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
-            </v-list>
-          </v-menu>
+              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDeleteRow(item as Contact)" />
+            </MpRowActionsMenu>
+          </span>
         </template>
         <template #no-data>
           <MpEmptyState
@@ -286,20 +384,8 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       @clear="selected = []"
       @select-all="selectAll"
     >
-      <v-btn variant="flat" size="small" class="text-none" prepend-icon="share" rounded="lg" color="surface">Export</v-btn>
-      <v-btn variant="flat" size="small" class="text-none" prepend-icon="copy" rounded="lg" color="surface">Duplicate</v-btn>
-      <v-menu>
-        <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" variant="flat" size="small" class="text-none" append-icon="chevron-down" rounded="lg" color="surface">More Actions</v-btn>
-        </template>
-        <v-list density="compact" rounded="lg" class="py-1">
-          <v-list-item prepend-icon="playlist-plus" title="Add to List" />
-          <v-list-item prepend-icon="tags" title="Apply Tag" />
-          <v-list-item prepend-icon="circle-minus" title="Unsubscribe" />
-          <v-divider class="my-1" style="opacity: 0.4" />
-          <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
-        </v-list>
-      </v-menu>
+      <v-btn variant="flat" size="small" class="text-none" prepend-icon="share" rounded="lg" color="surface" @click="exportSelected">Export CSV</v-btn>
+      <v-btn variant="flat" size="small" class="text-none" prepend-icon="trash-2" rounded="lg" color="error" @click="askDeleteBulk">Delete</v-btn>
     </MpFloatingBulkBar>
 
     <!-- Quick-Add Contact Drawer -->
@@ -323,7 +409,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
 
       <!-- Step 2: List, Tags, Status -->
       <div v-else>
-        <v-select v-model="newContact.list" label="Subscribe to List" :items="['Newsletter Subscribers','VIP Customer Circle','Win-Back Segment','All Contacts']" variant="outlined" density="comfortable" class="mb-4" prepend-inner-icon="playlist-check" />
+        <v-select v-model="newContact.list" label="Subscribe to List" :items="listNames" variant="outlined" density="comfortable" class="mb-4" prepend-inner-icon="playlist-check" />
         <v-select v-model="newContact.status" label="Status" :items="['Subscribed','Unsubscribed']" variant="outlined" density="comfortable" class="mb-4" />
         <div class="text-subtitle-2 font-weight-bold mb-2">Tags</div>
         <div class="d-flex flex-wrap gap-2 mb-3">
@@ -341,74 +427,94 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       </template>
     </MpFormDrawer>
 
-    <!-- Import Wizard Dialog -->
-    <v-dialog v-model="importDialog" max-width="680" persistent>
-      <v-card rounded="lg" color="surface">
-        <v-stepper v-model="importStep" :items="['Upload File','Map Fields','Review & Import']" flat>
-          <template v-slot:item.1>
-            <div class="pa-6">
-              <div class="text-subtitle-1 font-weight-bold mb-1">Upload your CSV file</div>
-              <div class="text-body-2 text-medium-emphasis mb-5">Supported: CSV, XLSX. Max 25MB. First row should be column headers.</div>
-              <v-card variant="outlined" rounded="lg" class="pa-8 text-center" style="border-style:dashed;cursor:pointer;">
-                <v-icon size="48" color="primary" class="mb-3">cloud-upload</v-icon>
-                <div class="text-body-1 font-weight-medium mb-1">Drag & drop file here</div>
-                <div class="text-caption text-medium-emphasis mb-4">or click to browse</div>
-                <v-btn variant="flat" color="primary" class="text-none" prepend-icon="folder-open">Browse File</v-btn>
-              </v-card>
-              <v-select v-model="importList" label="Import into list" :items="['Newsletter Subscribers','VIP Customer Circle','Win-Back Segment']" variant="outlined" density="comfortable" class="mt-4" />
-            </div>
-          </template>
-          <template v-slot:item.2>
-            <div class="pa-6">
-              <div class="text-subtitle-1 font-weight-bold mb-1">Map CSV columns to contact fields</div>
-              <div class="text-body-2 text-medium-emphasis mb-4">We auto-detected {{ fieldMappings.length }} columns. Adjust mappings if needed.</div>
-              <v-table density="compact">
-                <thead><tr><th>CSV Column</th><th>Sample Value</th><th>Maps To</th></tr></thead>
-                <tbody>
-                  <tr v-for="(m,i) in fieldMappings" :key="i">
-                    <td class="py-2 text-body-2 font-weight-medium">{{ m.csvCol }}</td>
-                    <td class="text-caption text-medium-emphasis">{{ m.sample }}</td>
-                    <td>
-                      <v-select v-model="m.field" :items="contactFields" variant="outlined" density="compact" hide-details style="min-width:180px;" />
-                    </td>
-                  </tr>
-                </tbody>
-              </v-table>
-            </div>
-          </template>
-          <template v-slot:item.3>
-            <div class="pa-6">
-              <div class="text-subtitle-1 font-weight-bold mb-4">Review before importing</div>
-              <v-row dense class="mb-4">
-                <v-col cols="4"><v-card variant="tonal" color="primary" rounded="lg" class="pa-4 text-center"><div class="text-h4 font-weight-bold">1,284</div><div class="text-caption">Rows detected</div></v-card></v-col>
-                <v-col cols="4"><v-card variant="tonal" color="success" rounded="lg" class="pa-4 text-center"><div class="text-h4 font-weight-bold">1,241</div><div class="text-caption">Valid contacts</div></v-card></v-col>
-                <v-col cols="4"><v-card variant="tonal" color="warning" rounded="lg" class="pa-4 text-center"><div class="text-h4 font-weight-bold">43</div><div class="text-caption">Skipped (invalid)</div></v-card></v-col>
-              </v-row>
-              <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2 mb-3">
-                <strong>Duplicates:</strong> 23 contacts with matching emails will be <strong>merged</strong> (fields updated, not replaced).
-              </v-alert>
-              <v-alert type="success" variant="tonal" density="compact" rounded="lg" class="text-body-2">
-                Importing into: <strong>{{ importList }}</strong>
-              </v-alert>
-            </div>
-          </template>
+    <!-- Import Contacts Drawer (2-step) -->
+    <MpFormDrawer v-model="importDrawer" title="Import Contacts" :subtitle="`Step ${importStep} of 2`" :width="640">
+      <!-- Step 1: Method, delimiter, list -->
+      <div v-if="importStep === 1">
+        <div class="text-subtitle-2 font-weight-bold mb-2">Import Method</div>
+        <v-radio-group v-model="importMethod" hide-details class="mb-3">
+          <v-radio label="File Import" value="file" />
+          <v-radio label="FTP Import" value="ftp" />
+          <v-radio label="Automated Import" value="automated" />
+        </v-radio-group>
 
-          <template v-slot:actions>
-            <div class="pa-4 border-t d-flex justify-space-between w-100">
-              <v-btn variant="text" class="text-none" @click="importStep > 1 ? importStep-- : importDialog=false">
-                {{ importStep === 1 ? 'Cancel' : 'Back' }}
-              </v-btn>
-              <v-btn v-if="importStep < 3" color="primary" variant="flat" class="text-none" @click="importStep++">Continue</v-btn>
-              <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="upload" @click="importDialog=false;saveSnack=true">Import 1,241 Contacts</v-btn>
-            </div>
-          </template>
-        </v-stepper>
-      </v-card>
-    </v-dialog>
+        <div v-if="importMethod === 'file'" class="import-dropzone mb-5">
+          <v-icon size="40" color="primary" class="mb-2">cloud-upload</v-icon>
+          <div class="text-body-2 font-weight-medium mb-1">Drag & drop file here</div>
+          <div class="text-caption text-medium-emphasis mb-3">or click to browse — accepts .csv, .txt, .zip</div>
+          <v-btn variant="flat" color="primary" size="small" class="text-none" prepend-icon="folder-open">Browse File</v-btn>
+        </div>
+        <div v-else-if="importMethod === 'ftp'" class="mb-5">
+          <v-select label="FTP File" :items="['contacts_export.csv', 'weekly_sync.txt', 'crm_dump.zip']" variant="outlined" density="comfortable" placeholder="Select a file from the FTP directory" />
+        </div>
+        <v-alert v-else type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2 mb-5">
+          Automated imports run on a schedule from your configured source. New files are picked up automatically once the source is connected.
+        </v-alert>
+
+        <div class="text-subtitle-2 font-weight-bold mb-2">Delimiter</div>
+        <v-radio-group v-model="importDelimiter" inline hide-details class="mb-5">
+          <v-radio label="Comma" value="Comma" />
+          <v-radio label="Tab" value="Tab" />
+          <v-radio label="Colon" value="Colon" />
+          <v-radio label="Semi-Colon" value="Semi-Colon" />
+        </v-radio-group>
+
+        <v-select
+          v-model="importList"
+          label="Select List *"
+          :items="listNames"
+          variant="outlined"
+          density="comfortable"
+          prepend-inner-icon="playlist-check"
+        />
+      </div>
+
+      <!-- Step 2: Options + mappings -->
+      <div v-else>
+        <div class="text-subtitle-2 font-weight-bold mb-2">Import Options</div>
+        <v-checkbox v-model="importOptions.importNew" label="Import new contacts" hide-details density="compact" />
+        <v-checkbox v-model="importOptions.triggerJourney" label="Trigger journey campaigns" hide-details density="compact" />
+        <v-checkbox v-model="importOptions.updateExisting" label="Update existing contacts" hide-details density="compact" class="mb-4" />
+
+        <div class="text-subtitle-2 font-weight-bold mb-2">Field Mapping</div>
+        <v-table density="compact" class="mb-4">
+          <thead><tr><th>CSV Column</th><th>Contact Field</th></tr></thead>
+          <tbody>
+            <tr v-for="(m, i) in importMappings" :key="i">
+              <td class="py-2 text-body-2 font-weight-medium">{{ m.csvCol }}</td>
+              <td>
+                <v-select v-model="m.field" :items="importFieldOptions" variant="outlined" density="compact" hide-details style="min-width:200px;" />
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
+
+        <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
+          <strong>1,284</strong> rows detected · <strong>1,241</strong> valid · <strong>43</strong> skipped. Importing into <strong>{{ importList }}</strong>.
+        </v-alert>
+      </div>
+
+      <template #footer>
+        <v-btn v-if="importStep === 2" variant="text" class="text-none" @click="importStep = 1">Back</v-btn>
+        <v-btn v-else variant="text" class="text-none" @click="importDrawer = false">Cancel</v-btn>
+        <v-btn v-if="importStep === 1" color="primary" variant="flat" class="text-none" :disabled="!importList" @click="importStep = 2">Continue</v-btn>
+        <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="upload" @click="runImport">Import</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <!-- Delete confirmation (row + bulk) -->
+    <MpConfirmDialog
+      v-model="deleteDialog"
+      title="Delete contact?"
+      :message="deleteMessage"
+      confirm-label="Delete"
+      danger
+      @confirm="confirmDelete"
+    />
 
     <!-- Snackbar -->
-    <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Contact saved successfully</div>
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
     </v-snackbar>
   </div>
 </template>
@@ -428,6 +534,18 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
 
 .contacts-table :deep(tbody tr:hover) {
   background: color-mix(in oklch, var(--accent) 4%, transparent);
+}
+
+.import-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px;
+  border: 1px dashed rgba(var(--v-border-color), 0.35);
+  border-radius: 12px;
+  background: rgba(var(--v-theme-on-surface), 0.015);
+  cursor: pointer;
 }
 
 .contact-link {

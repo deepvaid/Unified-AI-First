@@ -42,6 +42,54 @@ export interface ContactDetail {
   timeline: { id: number; type: string; icon: string; color: string; title: string; date: string; statuses: string[] }[]
 }
 
+// ── Contact record ──────────────────────────────────────────────────────────────
+export interface Contact {
+  id: number
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  company: string | null
+  location: string
+  status: string
+  score: number
+  tags: string[]
+  revenue: string
+  orders: number
+  lastActive: string
+  createdAt: string
+  avatarUrl: string
+}
+
+// ── Segment condition builder ─────────────────────────────────────────────────
+export type SegmentMatchLogic = 'all' | 'any' | 'active'
+
+export interface SegmentCriterion {
+  id: number
+  category: string
+  field: string
+  operator: string
+  value: string
+}
+
+export interface SegmentRule {
+  id: number
+  matchAll: boolean
+  criteria: SegmentCriterion[]
+}
+
+export interface Segment {
+  id: number
+  name: string
+  description: string
+  count: number
+  type: string
+  status: string
+  lastCalc: string
+  matchLogic?: SegmentMatchLogic
+  rules?: SegmentRule[]
+}
+
 const firstNames = ['James', 'Sofia', 'Liam', 'Emma', 'Noah', 'Olivia', 'Ethan', 'Ava', 'Mason', 'Isabella', 'Logan', 'Mia', 'Lucas', 'Charlotte', 'Aiden', 'Amelia', 'Jackson', 'Harper', 'Sebastian', 'Evelyn', 'Mateo', 'Abigail', 'Jack', 'Emily', 'Owen', 'Ella', 'Theodore', 'Scarlett', 'Henry', 'Grace', 'Alexander', 'Chloe', 'Benjamin', 'Zoe', 'William', 'Penelope', 'Daniel', 'Lily', 'Michael', 'Victoria', 'David', 'Aurora', 'Joseph', 'Nora', 'Samuel', 'Hannah', 'Carter', 'Stella', 'Ryan', 'Leah']
 const lastNames = ['Anderson', 'Thompson', 'Martinez', 'Johnson', 'Williams', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor', 'Jackson', 'White', 'Harris', 'Martin', 'Garcia', 'Robinson', 'Clark', 'Lewis', 'Lee', 'Walker', 'Hall', 'Allen', 'Young', 'Hernandez', 'King', 'Wright', 'Lopez', 'Hill', 'Scott', 'Green', 'Adams', 'Baker', 'Gonzalez', 'Nelson', 'Carter', 'Mitchell', 'Perez', 'Roberts', 'Turner', 'Phillips', 'Campbell', 'Parker', 'Evans', 'Edwards', 'Collins', 'Stewart', 'Sanchez', 'Morris', 'Rogers']
 const companies = ['Acme Corp', 'TechFlow Inc', 'BlueSky Ventures', 'Meridian Solutions', 'Apex Digital', 'Horizon Media', 'Stellar Commerce', 'Orbit Labs', 'Nova Group', 'Peak Partners', 'Zenith Corp', 'Summit Digital', 'Atlas Ventures', 'Cascade Media', 'Ridge Analytics', null, null, null, null, null]
@@ -50,10 +98,10 @@ const statuses = ['Subscribed', 'Subscribed', 'Subscribed', 'Unsubscribed', 'Bou
 const tags = [['VIP', 'Loyal'], ['Newsletter'], ['Sale Buyer'], ['Referral'], ['High Value'], [], ['Re-engagement'], ['VIP'], ['Churned'], ['New']]
 
 export const useContactsStore = defineStore('contacts', () => {
-  const contacts = ref(firstNames.map((fName, i) => {
+  const contacts = ref<Contact[]>(firstNames.map((fName, i) => {
     const lName = lastNames[i % lastNames.length]!
-    const status = statuses[i % statuses.length]
-    const company = companies[i % companies.length]
+    const status = statuses[i % statuses.length]!
+    const company = companies[i % companies.length] ?? null
     return {
       id: i + 1,
       firstName: fName,
@@ -61,19 +109,19 @@ export const useContactsStore = defineStore('contacts', () => {
       email: `${fName.toLowerCase()}.${lName.toLowerCase()}@${['gmail.com', 'outlook.com', 'company.io', 'example.com', 'mail.com'][i % 5]}`,
       phone: `+1 (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`,
       company,
-      location: cities[i % cities.length],
+      location: cities[i % cities.length]!,
       status,
       score: Math.floor(Math.random() * 100),
-      tags: tags[i % tags.length],
+      tags: tags[i % tags.length]!,
       revenue: status === 'Subscribed' ? (Math.random() * 2000).toFixed(2) : '0.00',
       orders: status === 'Subscribed' ? Math.floor(Math.random() * 15) : 0,
-      lastActive: new Date(Date.now() - (Math.random() * 7776000000)).toISOString().split('T')[0],
-      createdAt: new Date(Date.now() - (Math.random() * 31536000000)).toISOString().split('T')[0],
+      lastActive: new Date(Date.now() - (Math.random() * 7776000000)).toISOString().split('T')[0]!,
+      createdAt: new Date(Date.now() - (Math.random() * 31536000000)).toISOString().split('T')[0]!,
       avatarUrl: `https://i.pravatar.cc/96?u=contact-${i + 1}`,
     }
   }))
 
-  const segments = ref([
+  const segments = ref<Segment[]>([
     { id: 1, name: 'High Value Customers', description: 'Contacts with LTV > $500', count: 1842, type: 'Dynamic', status: 'Active', lastCalc: '2026-03-07' },
     { id: 2, name: 'Lapsed 90 Days', description: 'No activity in 90+ days', count: 4201, type: 'Dynamic', status: 'Active', lastCalc: '2026-03-07' },
     { id: 3, name: 'Newsletter Subscribers', description: 'Opted in to weekly newsletter', count: 18432, type: 'Static', status: 'Active', lastCalc: '2026-03-06' },
@@ -320,5 +368,97 @@ export const useContactsStore = defineStore('contacts', () => {
     return detail
   }
 
-  return { contacts, segments, lists, getContactById, getContactDetail }
+  // ── Contact mutations ────────────────────────────────────────────────────────
+  function addContact(input: {
+    firstName: string
+    lastName?: string
+    email: string
+    phone?: string
+    company?: string
+    tags?: string[]
+    status?: string
+  }): Contact {
+    const id = contacts.value.reduce((max, c) => Math.max(max, c.id), 0) + 1
+    const today = new Date().toISOString().slice(0, 10)
+    const contact: Contact = {
+      id,
+      firstName: input.firstName,
+      lastName: input.lastName ?? '',
+      email: input.email,
+      phone: input.phone ?? '',
+      company: input.company || null,
+      location: '—',
+      status: input.status ?? 'Subscribed',
+      score: 0,
+      tags: input.tags ?? [],
+      revenue: '0.00',
+      orders: 0,
+      lastActive: today,
+      createdAt: today,
+      avatarUrl: `https://i.pravatar.cc/96?u=contact-${id}`,
+    }
+    contacts.value.unshift(contact)
+    return contact
+  }
+
+  function updateContact(id: number, patch: Partial<Omit<Contact, 'id'>>): void {
+    const contact = contacts.value.find(c => c.id === id)
+    if (contact) Object.assign(contact, patch)
+  }
+
+  function deleteContact(id: number): void {
+    const ix = contacts.value.findIndex(c => c.id === id)
+    if (ix !== -1) contacts.value.splice(ix, 1)
+  }
+
+  function deleteContacts(ids: number[]): void {
+    contacts.value = contacts.value.filter(c => !ids.includes(c.id))
+  }
+
+  function addContactTags(id: number, newTags: string[]): void {
+    const contact = contacts.value.find(c => c.id === id)
+    if (!contact) return
+    for (const tag of newTags) {
+      if (tag && !contact.tags.includes(tag)) contact.tags.push(tag)
+    }
+  }
+
+  // ── Segment mutations ────────────────────────────────────────────────────────
+  function addSegment(input: Omit<Segment, 'id' | 'lastCalc'>): Segment {
+    const id = segments.value.reduce((max, s) => Math.max(max, s.id), 0) + 1
+    const segment: Segment = { ...input, id, lastCalc: new Date().toISOString().slice(0, 10) }
+    segments.value.unshift(segment)
+    return segment
+  }
+
+  function updateSegment(id: number, patch: Partial<Omit<Segment, 'id'>>): void {
+    const segment = segments.value.find(s => s.id === id)
+    if (segment) Object.assign(segment, patch)
+  }
+
+  function deleteSegment(id: number): void {
+    const ix = segments.value.findIndex(s => s.id === id)
+    if (ix !== -1) segments.value.splice(ix, 1)
+  }
+
+  function recalcSegment(id: number): void {
+    updateSegment(id, { lastCalc: new Date().toISOString().slice(0, 10) })
+  }
+
+  return {
+    contacts,
+    segments,
+    lists,
+    getContactById,
+    getContactDetail,
+    addContact,
+    updateContact,
+    deleteContact,
+    deleteContacts,
+    addContactTags,
+    addSegment,
+    updateSegment,
+    deleteSegment,
+    recalcSegment,
+  }
 })

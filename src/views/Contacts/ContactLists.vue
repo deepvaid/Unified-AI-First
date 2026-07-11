@@ -1,35 +1,114 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useCdpEntitiesStore, type CdpList } from '@/stores/useCdpEntities'
+import { useContactsStore } from '@/stores/useContacts'
+import { downloadCsv, type CsvColumn } from '@/utils/exportCsv'
+import type { Contact } from '@/stores/useContacts'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
+const store = useCdpEntitiesStore()
+const contactsStore = useContactsStore()
+const route = useRoute()
+const router = useRouter()
 const search = ref('')
+
+const listTypes = ['Normal', 'Premium', 'Transactional', 'Automation']
+const languages = ['English', 'Spanish', 'French', 'German']
 
 const headers = [
   { title: 'List Name', key: 'name', sortable: true },
   { title: 'Total Contacts', key: 'count', align: 'end' as const },
-  { title: 'Opt-in Type', key: 'type' },
+  { title: 'Type', key: 'type' },
   { title: 'Created', key: 'created' },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
 
-const lists = [
-  { name: 'Master Subscriber List', count: 125000, type: 'Double Opt-in', created: '2023-01-15' },
-  { name: 'Event Attendees 2025', count: 4200, type: 'Single Opt-in', created: '2025-11-20' },
-  { name: 'Webinar Registrants', count: 850, type: 'Single Opt-in', created: '2026-02-10' },
-  { name: 'B2B Leads', count: 32000, type: 'Double Opt-in', created: '2024-06-05' },
+const contactCsvColumns: CsvColumn<Contact>[] = [
+  { title: 'First Name', value: 'firstName' },
+  { title: 'Last Name', value: 'lastName' },
+  { title: 'Email', value: 'email' },
+  { title: 'Phone', value: 'phone' },
+  { title: 'Company', value: (r) => r.company ?? '' },
+  { title: 'Status', value: 'status' },
 ]
+
+// Snackbar
+const snackbar = ref(false)
+const snackbarText = ref('')
+function notify(text: string) { snackbarText.value = text; snackbar.value = true }
+
+// Create / edit drawer
+const drawer = ref(false)
+const editingId = ref<number | null>(null)
+type ListForm = Omit<CdpList, 'id' | 'count' | 'created'>
+function blankForm(): ListForm {
+  return { name: '', type: 'Normal', brand: '', displayName: '', description: '', fromName: '', fromEmail: '', replyTo: '', language: 'English', address: '' }
+}
+const form = ref<ListForm>(blankForm())
+
+function openCreate() { editingId.value = null; form.value = blankForm(); drawer.value = true }
+function openEdit(list: CdpList) {
+  editingId.value = list.id
+  form.value = {
+    name: list.name, type: list.type, brand: list.brand, displayName: list.displayName,
+    description: list.description, fromName: list.fromName, fromEmail: list.fromEmail,
+    replyTo: list.replyTo, language: list.language, address: list.address,
+  }
+  drawer.value = true
+}
+
+const canSave = () => form.value.name.trim().length > 0 && form.value.address.trim().length > 0
+
+function save() {
+  if (!canSave()) return
+  if (editingId.value != null) {
+    store.updateList(editingId.value, { ...form.value })
+    notify('List updated')
+  } else {
+    store.addList({ ...form.value })
+    notify('List created')
+  }
+  drawer.value = false
+}
+
+function viewContacts() {
+  router.push(`/accounts/${route.params.accountId}/contacts`)
+}
+
+function exportContacts(list: CdpList) {
+  downloadCsv(`${list.name.replace(/\s+/g, '-').toLowerCase()}-contacts`, contactsStore.contacts, contactCsvColumns)
+  notify('Contacts exported')
+}
+
+function duplicate(list: CdpList) {
+  store.duplicateList(list.id)
+  notify('List duplicated')
+}
+
+// Delete
+const deleteDialog = ref(false)
+const pendingList = ref<CdpList | null>(null)
+function askDelete(list: CdpList) { pendingList.value = list; deleteDialog.value = true }
+function confirmDelete() {
+  if (pendingList.value) { store.deleteList(pendingList.value.id); notify('List deleted') }
+  pendingList.value = null
+}
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Contact Lists"
-      :subtitle="`${lists.length} lists`"
+      :subtitle="`${store.lists.length} lists`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">Create List</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">Create List</v-btn>
       </template>
     </MpPageHeader>
 
@@ -37,11 +116,12 @@ const lists = [
       <MpDataTableToolbar
         v-model:search="search"
         title="All Lists"
+        :total-count="store.lists.length"
       />
 
       <v-data-table
         :headers="headers"
-        :items="lists"
+        :items="store.lists"
         :search="search"
         :items-per-page="15"
         hover
@@ -52,28 +132,78 @@ const lists = [
         <template v-slot:item.count="{ item }">
           <span class="text-body-2 font-weight-medium">{{ item.count.toLocaleString() }}</span>
         </template>
-        <template v-slot:item.actions>
-          <v-menu location="bottom end">
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-              <v-list-item prepend-icon="pencil" title="Edit" />
-              <v-list-item prepend-icon="copy" title="Duplicate" />
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
-            </v-list>
-          </v-menu>
+        <template v-slot:item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="List actions">
+            <v-list-item prepend-icon="users" title="View Contacts" @click="viewContacts" />
+            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-list-item prepend-icon="share" title="Export Contacts" @click="exportContacts(item)" />
+            <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <v-divider class="my-1" style="opacity: 0.4" />
+            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          </MpRowActionsMenu>
         </template>
 
         <template v-slot:no-data>
           <MpEmptyState
             icon="list"
-            title="No contact lists yet"
-            description="Create a list to organize your contacts and send targeted campaigns."
+            :title="search ? 'No lists match your search' : 'No contact lists yet'"
+            :description="search ? 'Try a different search term.' : 'Create a list to organize your contacts and send targeted campaigns.'"
+            action-label="Create List"
+            action-icon="plus"
+            class="py-10"
+            @action="openCreate"
           />
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Create / edit list -->
+    <MpFormDrawer v-model="drawer" :title="editingId != null ? 'Edit List' : 'Create List'" :width="520">
+      <v-text-field v-model="form.name" label="List Name *" variant="outlined" density="comfortable" counter="150" maxlength="150" class="mb-4" />
+      <v-row dense>
+        <v-col cols="6">
+          <v-select v-model="form.type" label="List Type" :items="listTypes" variant="outlined" density="comfortable" class="mb-4" />
+        </v-col>
+        <v-col cols="6">
+          <v-text-field v-model="form.brand" label="Brand" variant="outlined" density="comfortable" class="mb-4" />
+        </v-col>
+      </v-row>
+      <v-text-field v-model="form.displayName" label="Display Name" variant="outlined" density="comfortable" class="mb-4" />
+      <v-textarea v-model="form.description" label="Description" variant="outlined" density="comfortable" rows="2" auto-grow class="mb-4" />
+      <v-row dense>
+        <v-col cols="6">
+          <v-text-field v-model="form.fromName" label="From Name" variant="outlined" density="comfortable" class="mb-4" />
+        </v-col>
+        <v-col cols="6">
+          <v-text-field v-model="form.fromEmail" label="From Email" type="email" variant="outlined" density="comfortable" class="mb-4" />
+        </v-col>
+      </v-row>
+      <v-row dense>
+        <v-col cols="6">
+          <v-text-field v-model="form.replyTo" label="Reply To" type="email" variant="outlined" density="comfortable" class="mb-4" />
+        </v-col>
+        <v-col cols="6">
+          <v-select v-model="form.language" label="Language" :items="languages" variant="outlined" density="comfortable" class="mb-4" />
+        </v-col>
+      </v-row>
+      <v-text-field v-model="form.address" label="Address *" variant="outlined" density="comfortable" prepend-inner-icon="map-pin" />
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave()" @click="save">Save</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="deleteDialog"
+      title="Delete list?"
+      :message="`Delete “${pendingList?.name}”? This does not delete the contacts, only the list.`"
+      confirm-label="Delete"
+      danger
+      @confirm="confirmDelete"
+    />
+
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
   </div>
 </template>

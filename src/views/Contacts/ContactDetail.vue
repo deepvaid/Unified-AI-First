@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useContactsStore } from '@/stores/useContacts'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { downloadCsv, type CsvColumn } from '@/utils/exportCsv'
+import type { Contact } from '@/stores/useContacts'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
@@ -10,6 +12,7 @@ import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +24,54 @@ const detail = computed(() => store.getContactDetail(contactId.value))
 
 function goToContacts() {
   router.push(`/accounts/${route.params.accountId}/contacts`)
+}
+
+// Snackbar
+const snackbar = ref(false)
+const snackbarText = ref('')
+function notify(text: string) { snackbarText.value = text; snackbar.value = true }
+
+// Export this contact as a single-row CSV
+const contactCsvColumns: CsvColumn<Contact>[] = [
+  { title: 'First Name', value: 'firstName' },
+  { title: 'Last Name', value: 'lastName' },
+  { title: 'Email', value: 'email' },
+  { title: 'Phone', value: 'phone' },
+  { title: 'Company', value: (r) => r.company ?? '' },
+  { title: 'Location', value: 'location' },
+  { title: 'Status', value: 'status' },
+  { title: 'Score', value: 'score' },
+  { title: 'Tags', value: (r) => r.tags.join('; ') },
+  { title: 'Revenue', value: 'revenue' },
+  { title: 'Orders', value: 'orders' },
+  { title: 'Created', value: 'createdAt' },
+]
+function exportContact() {
+  if (!contact.value) return
+  downloadCsv(`contact-${contact.value.firstName}-${contact.value.lastName}`.toLowerCase(), [contact.value], contactCsvColumns)
+  notify('Contact exported')
+}
+
+// Delete
+const deleteDialog = ref(false)
+function confirmDelete() {
+  if (contact.value) store.deleteContact(contact.value.id)
+  goToContacts()
+}
+
+// Add tags
+const tagInput = ref('')
+function addContactTag() {
+  const value = tagInput.value.trim()
+  if (!value || !contact.value) return
+  store.addContactTags(contact.value.id, [value])
+  tagInput.value = ''
+  notify('Tag added')
+}
+function removeContactTag(tag: string) {
+  if (!contact.value) return
+  store.updateContact(contact.value.id, { tags: contact.value.tags.filter(t => t !== tag) })
+  notify('Tag removed')
 }
 
 // Tab state
@@ -41,6 +92,18 @@ function openEditDrawer() {
     company: contact.value.company || '',
   }
   editDrawer.value = true
+}
+function saveEdit() {
+  if (!contact.value) return
+  store.updateContact(contact.value.id, {
+    firstName: editForm.value.firstName,
+    lastName: editForm.value.lastName,
+    email: editForm.value.email,
+    phone: editForm.value.phone,
+    company: editForm.value.company || null,
+  })
+  editDrawer.value = false
+  notify('Changes saved')
 }
 
 // Computed helpers
@@ -108,11 +171,9 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
             <v-btn v-bind="props" icon="more-vertical" variant="text" aria-label="Contact actions" />
           </template>
           <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-            <v-list-item prepend-icon="share" title="Export" />
-            <v-list-item prepend-icon="copy" title="Duplicate" />
-            <v-list-item prepend-icon="merge" title="Merge" />
+            <v-list-item prepend-icon="share" title="Export" @click="exportContact" />
             <v-divider class="my-1" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" />
+            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="deleteDialog = true" />
           </v-list>
         </v-menu>
       </template>
@@ -198,10 +259,27 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
         <v-card flat border rounded="lg" class="pa-5">
           <MpSectionHeader :title="`Contact Tags (${contact.tags?.length ?? 0})`" />
           <div v-if="contact.tags?.length" class="d-flex flex-wrap gap-2 mb-4">
-            <v-chip v-for="tag in contact.tags" :key="tag" size="small" variant="tonal" color="secondary">{{ tag }}</v-chip>
+            <v-chip
+              v-for="tag in contact.tags"
+              :key="tag"
+              size="small"
+              variant="tonal"
+              color="secondary"
+              closable
+              @click:close="removeContactTag(tag)"
+            >{{ tag }}</v-chip>
           </div>
           <div v-else class="text-body-2 text-medium-emphasis mb-4">No contact tags to show.</div>
-          <v-btn variant="flat" size="small" prepend-icon="plus" color="surface">Add Contact Tags</v-btn>
+          <v-text-field
+            v-model="tagInput"
+            label="Add contact tag..."
+            variant="outlined"
+            density="compact"
+            hide-details
+            append-inner-icon="plus"
+            @keyup.enter="addContactTag"
+            @click:append-inner="addContactTag"
+          />
         </v-card>
 
         <!-- Card 3: Lists & Subscriptions -->
@@ -597,10 +675,25 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
         <v-col cols="12"><v-text-field v-model="editForm.company" label="Company" /></v-col>
       </v-row>
       <template #footer>
-        <v-btn variant="text" @click="editDrawer = false">Cancel</v-btn>
-        <v-btn color="primary" @click="editDrawer = false">Save Changes</v-btn>
+        <v-btn variant="text" class="text-none" @click="editDrawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" @click="saveEdit">Save Changes</v-btn>
       </template>
     </MpFormDrawer>
+
+    <!-- Delete confirmation -->
+    <MpConfirmDialog
+      v-model="deleteDialog"
+      title="Delete contact?"
+      :message="`Delete ${fullName}? This permanently removes the contact and cannot be undone.`"
+      confirm-label="Delete"
+      danger
+      @confirm="confirmDelete"
+    />
+
+    <!-- Snackbar -->
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
 
   </div>
 
@@ -674,7 +767,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
 .contact-sidebar::-webkit-scrollbar-thumb {
   background: rgba(var(--v-border-color), 0.3);
-  border-radius: 4px;
+  border-radius: var(--mp-borderRadius-sm);
 }
 
 .right-content {
@@ -758,7 +851,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
 .right-tab-content::-webkit-scrollbar-thumb {
   background: rgba(var(--v-border-color), 0.3);
-  border-radius: 4px;
+  border-radius: var(--mp-borderRadius-sm);
 }
 
 /* ── Engagement metric grid ─────────────────────────── */
@@ -790,7 +883,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--r-chip);
   flex-shrink: 0;
 }
 
