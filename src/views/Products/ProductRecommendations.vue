@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useProductExtrasStore, type RecommendationRule, type RecommendationLogic, type RecommendationPlacement } from '@/stores/useProductExtras'
+import { downloadCsv } from '@/utils/exportCsv'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
+const store = useProductExtrasStore()
 const search = ref('')
 const { loading } = useInitialLoad()
 
-const rules = [
-  { name: 'Frequently Bought Together', placement: 'Cart Page', metric: '+12.5%', metricLabel: 'AOV', status: 'Active' },
-  { name: 'Similar Items', placement: 'Product Detail Page', metric: '+8.2%', metricLabel: 'Conv.', status: 'Active' },
-  { name: 'Recently Viewed', placement: 'Homepage & Global Footer', metric: '+3.1%', metricLabel: 'Pageviews', status: 'Active' },
-]
+const LOGIC_TYPES: RecommendationLogic[] = ['Frequently Bought Together', 'Similar Items', 'Recently Viewed', 'Trending', 'Personalized']
+const PLACEMENTS: RecommendationPlacement[] = ['Cart Page', 'Product Detail Page', 'Homepage & Global Footer']
 
 const placementIcon: Record<string, string> = {
   'Cart Page': 'shopping-cart',
@@ -30,6 +33,7 @@ const headers = [
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
 
+// ── Filters ────────────────────────────────────────────────────────
 const filters = ref({
   status: [] as string[],
   placement: [] as string[],
@@ -43,21 +47,89 @@ const activeFilterEntries = computed(() =>
 function removeFilter(key: string) { filters.value[key as keyof typeof filters.value] = [] }
 function clearAllFilters() { filters.value = { status: [], placement: [] } }
 const filteredRules = computed(() => {
-  let r = rules
+  let r = store.recommendations
   if (filters.value.status.length) r = r.filter(x => filters.value.status.includes(x.status))
   if (filters.value.placement.length) r = r.filter(x => filters.value.placement.includes(x.placement))
   return r
 })
+
+// ── Rule builder drawer ─────────────────────────────────────────────
+const drawer = ref(false)
+const editingId = ref<number | null>(null)
+const form = ref<{ name: string; logicType: RecommendationLogic; placement: RecommendationPlacement; status: 'Active' | 'Paused' }>({
+  name: '', logicType: 'Frequently Bought Together', placement: 'Cart Page', status: 'Active',
+})
+
+function openCreate() {
+  editingId.value = null
+  form.value = { name: '', logicType: 'Frequently Bought Together', placement: 'Cart Page', status: 'Active' }
+  drawer.value = true
+}
+
+function openEdit(rule: RecommendationRule) {
+  editingId.value = rule.id
+  form.value = { name: rule.name, logicType: rule.logicType, placement: rule.placement, status: rule.status }
+  drawer.value = true
+}
+
+function saveRule() {
+  const payload = { ...form.value, name: form.value.name.trim() || form.value.logicType }
+  if (editingId.value !== null) {
+    store.updateRule(editingId.value, payload)
+    notify('Recommendation rule updated')
+  } else {
+    store.addRule(payload)
+    notify('Recommendation rule created')
+  }
+  drawer.value = false
+}
+
+function toggleRule(rule: RecommendationRule) {
+  store.toggleRule(rule.id)
+  notify(rule.status === 'Active' ? 'Rule disabled' : 'Rule enabled')
+}
+
+// ── Delete ──────────────────────────────────────────────────────────
+const confirmDelete = ref(false)
+const pendingDelete = ref<RecommendationRule | null>(null)
+function askDelete(rule: RecommendationRule) {
+  pendingDelete.value = rule
+  confirmDelete.value = true
+}
+function doDelete() {
+  if (pendingDelete.value) {
+    store.deleteRule(pendingDelete.value.id)
+    notify('Rule deleted')
+  }
+  pendingDelete.value = null
+}
+
+// ── Export ──────────────────────────────────────────────────────────
+function exportRules() {
+  downloadCsv('recommendation-rules', filteredRules.value, [
+    { title: 'Rule Name', value: 'name' },
+    { title: 'Logic Type', value: 'logicType' },
+    { title: 'Placement', value: 'placement' },
+    { title: 'Performance Lift', value: (r) => `${r.metric} ${r.metricLabel}` },
+    { title: 'Status', value: 'status' },
+  ])
+}
+
+// ── Snackbar ────────────────────────────────────────────────────────
+const snack = ref(false)
+const snackText = ref('')
+function notify(text: string) { snackText.value = text; snack.value = true }
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Product Recommendations"
-      :subtitle="`${rules.length} active recommendation rules`"
+      :subtitle="`${store.recommendations.filter(r => r.status === 'Active').length} active recommendation rules`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">Configure Rules</v-btn>
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportRules">Export</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">Configure Rules</v-btn>
       </template>
     </MpPageHeader>
 
@@ -87,7 +159,7 @@ const filteredRules = computed(() => {
           />
           <v-select
             v-model="filters.placement"
-            :items="['Cart Page', 'Product Detail Page', 'Homepage & Global Footer']"
+            :items="[...PLACEMENTS] as string[]"
             :label="filterLabels.placement"
             multiple
             chips
@@ -113,7 +185,8 @@ const filteredRules = computed(() => {
         class="flex-grow-1"
       >
         <template v-slot:item.name="{ item }">
-          <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
+          <div class="text-body-2 font-weight-medium">{{ item.name }}</div>
+          <div class="text-caption text-medium-emphasis">{{ item.logicType }}</div>
         </template>
 
         <template v-slot:item.placement="{ item }">
@@ -124,27 +197,29 @@ const filteredRules = computed(() => {
         </template>
 
         <template v-slot:item.metric="{ item }">
-          <v-chip size="small" variant="tonal" color="success" class="font-weight-bold" label>
+          <v-chip v-if="item.metric !== '—'" size="small" variant="tonal" color="success" class="font-weight-bold" label>
             <v-icon start size="13">trending-up</v-icon>
             {{ item.metric }}
             <span class="text-medium-emphasis font-weight-regular ms-1">{{ item.metricLabel }}</span>
           </v-chip>
+          <span v-else class="text-disabled">—</span>
         </template>
 
         <template v-slot:item.status="{ item }">
           <MpStatusChip :status="item.status" type="general" />
         </template>
 
-        <template v-slot:item.actions>
-          <v-menu location="bottom end">
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" aria-label="Rule actions" />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-              <v-list-item prepend-icon="pencil" title="Edit Rule" />
-              <v-list-item prepend-icon="toggle-left" title="Disable" />
-            </v-list>
-          </v-menu>
+        <template v-slot:item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Rule actions">
+            <v-list-item prepend-icon="pencil" title="Edit Rule" @click="openEdit(item)" />
+            <v-list-item
+              :prepend-icon="item.status === 'Active' ? 'toggle-left' : 'toggle-right'"
+              :title="item.status === 'Active' ? 'Disable' : 'Enable'"
+              @click="toggleRule(item)"
+            />
+            <v-divider class="my-1" style="opacity: 0.4" />
+            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          </MpRowActionsMenu>
         </template>
 
         <template v-slot:no-data>
@@ -155,9 +230,71 @@ const filteredRules = computed(() => {
             :action-label="search ? undefined : 'Configure Rules'"
             :action-icon="search ? undefined : 'plus'"
             class="py-10"
+            @action="openCreate"
           />
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Rule builder drawer -->
+    <MpFormDrawer
+      v-model="drawer"
+      :title="editingId !== null ? 'Edit Recommendation Rule' : 'Configure Recommendation Rule'"
+      subtitle="Control what recommendations appear and where"
+    >
+      <v-text-field
+        v-model="form.name"
+        label="Rule name"
+        placeholder="e.g. Cart Cross-Sell"
+        variant="outlined"
+        density="comfortable"
+        hint="Leave blank to use the logic type as the name"
+        persistent-hint
+        class="mb-4"
+      />
+      <v-select
+        v-model="form.logicType"
+        :items="LOGIC_TYPES"
+        label="Logic type"
+        variant="outlined"
+        density="comfortable"
+        class="mb-4"
+      />
+      <v-select
+        v-model="form.placement"
+        :items="PLACEMENTS"
+        label="Placement"
+        variant="outlined"
+        density="comfortable"
+        class="mb-4"
+      />
+      <v-select
+        v-model="form.status"
+        :items="['Active', 'Paused']"
+        label="Status"
+        variant="outlined"
+        density="comfortable"
+      />
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveRule">
+          {{ editingId !== null ? 'Save Changes' : 'Create Rule' }}
+        </v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="confirmDelete"
+      title="Delete recommendation rule?"
+      :message="`“${pendingDelete?.name}” will be removed and stop placing recommendations. This cannot be undone.`"
+      confirm-label="Delete Rule"
+      danger
+      @confirm="doDelete"
+    />
+
+    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
+    </v-snackbar>
   </div>
 </template>

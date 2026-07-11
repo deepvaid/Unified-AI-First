@@ -26,8 +26,40 @@ const orderStatuses = ['Processing', 'Completed', 'Cancelled', 'Refunded', 'On H
 const fulfillmentStatuses = ['Not Ready', 'Ready For Fulfillment', 'Shipped', 'Return Requested', 'Cancelled', 'Unapproved']
 const paymentMethods = ['Visa •••• 4242', 'Mastercard •••• 8888', 'Amex •••• 1234', 'PayPal', 'Shop Pay', 'Apple Pay']
 
+const VENDORS = ['Acme Corp', 'Brand House', 'Global Goods', 'Prime Supplier', 'Local Artisan']
+const LOCATIONS = ['Main Warehouse - FL', 'Secondary Node - CA', 'Retail Hub - TX']
+
+export interface Product {
+  id: number
+  name: string
+  sku: string
+  price: string
+  compareAtPrice: string
+  inventory: number
+  category: string
+  status: string
+  vendor: string
+  images: number
+  variants: number
+}
+
+export interface InventoryItem {
+  id: number
+  name: string
+  sku: string
+  inventory: number
+  incoming: number
+  location: string
+  status: string
+}
+
+/** Derive the stock chip status from an available-inventory count. */
+function stockStatus(inv: number): string {
+  return inv === 0 ? 'Out of Stock' : inv < 20 ? 'Low Stock' : 'In Stock'
+}
+
 export const useCommerceStore = defineStore('commerce', () => {
-  const products = ref(productNames.map((name, i) => {
+  const products = ref<Product[]>(productNames.map((name, i) => {
     const inv = i < 3 ? 0 : Math.floor(Math.random() * 500) + 5
     const price = (Math.random() * 450 + 15).toFixed(2)
     return {
@@ -37,13 +69,89 @@ export const useCommerceStore = defineStore('commerce', () => {
       price,
       compareAtPrice: (parseFloat(price) * 1.2).toFixed(2),
       inventory: inv,
-      category: categories[i % categories.length],
-      status: inv === 0 ? 'Out of Stock' : inv < 20 ? 'Low Stock' : 'In Stock',
-      vendor: ['Acme Corp', 'Brand House', 'Global Goods', 'Prime Supplier', 'Local Artisan'][i % 5],
+      category: categories[i % categories.length]!,
+      status: stockStatus(inv),
+      vendor: VENDORS[i % VENDORS.length]!,
       images: 1,
       variants: Math.floor(Math.random() * 4) + 1,
     }
   }))
+
+  // ── Product CRUD (mock-persistent) ───────────────────────────────
+  function addProduct(input: { name: string; sku: string; category: string; vendor: string; price: string; inventory: number }): Product {
+    const id = products.value.reduce((max, p) => Math.max(max, p.id), 999) + 1
+    const price = input.price || '0.00'
+    const product: Product = {
+      id,
+      name: input.name,
+      sku: input.sku || `SKU-${String(10000 + (id % 90000)).padStart(5, '0')}`,
+      price,
+      compareAtPrice: (parseFloat(price) * 1.2).toFixed(2),
+      inventory: input.inventory,
+      category: input.category,
+      status: stockStatus(input.inventory),
+      vendor: input.vendor,
+      images: 1,
+      variants: 1,
+    }
+    products.value.unshift(product)
+    return product
+  }
+
+  function updateProduct(id: number, patch: { name: string; sku: string; category: string; vendor: string; price: string; inventory: number }): void {
+    const product = products.value.find((p) => p.id === id)
+    if (!product) return
+    product.name = patch.name
+    product.sku = patch.sku
+    product.category = patch.category
+    product.vendor = patch.vendor
+    product.price = patch.price
+    product.compareAtPrice = (parseFloat(patch.price || '0') * 1.2).toFixed(2)
+    product.inventory = patch.inventory
+    product.status = stockStatus(patch.inventory)
+  }
+
+  function duplicateProduct(id: number): Product | undefined {
+    const source = products.value.find((p) => p.id === id)
+    if (!source) return undefined
+    const newId = products.value.reduce((max, p) => Math.max(max, p.id), 999) + 1
+    const clone: Product = { ...source, id: newId, name: `${source.name} (Copy)`, sku: `${source.sku}-COPY` }
+    const index = products.value.findIndex((p) => p.id === id)
+    products.value.splice(index + 1, 0, clone)
+    return clone
+  }
+
+  function deleteProduct(id: number): void {
+    products.value = products.value.filter((p) => p.id !== id)
+  }
+
+  function deleteProducts(ids: number[]): void {
+    const remove = new Set(ids)
+    products.value = products.value.filter((p) => !remove.has(p.id))
+  }
+
+  // ── Inventory slice (mock-persistent) ────────────────────────────
+  const inventory = ref<InventoryItem[]>(products.value.map((p, i) => ({
+    id: p.id,
+    name: p.name,
+    sku: p.sku,
+    inventory: p.inventory,
+    incoming: (i * 37) % 500,
+    location: LOCATIONS[i % LOCATIONS.length]!,
+    status: p.status,
+  })))
+
+  function adjustStock(id: number, newCount: number): void {
+    const item = inventory.value.find((i) => i.id === id)
+    if (!item) return
+    item.inventory = Math.max(0, newCount)
+    item.status = stockStatus(item.inventory)
+  }
+
+  function transferStock(id: number, toLocation: string): void {
+    const item = inventory.value.find((i) => i.id === id)
+    if (item) item.location = toLocation
+  }
 
   const orders = ref(Array.from({ length: 30 }, (_, i) => {
     const fName = customerFirstNames[i % customerFirstNames.length]!
@@ -155,5 +263,10 @@ export const useCommerceStore = defineStore('commerce', () => {
     { id: 6, name: 'Corporate Bulk Gift Card', kind: 'Digital', denominations: [100, 250, 500, 1000], allowCustom: true, customMin: 100, customMax: 5000, sold: 64, revenue: 41200, status: 'Archived', created: '2025-06-14' },
   ])
 
-  return { products, orders, coupons, fulfillments, draftOrders, customGiftCards, purchasableGiftCards }
+  return {
+    products, orders, coupons, fulfillments, draftOrders, customGiftCards, purchasableGiftCards,
+    inventory,
+    addProduct, updateProduct, duplicateProduct, deleteProduct, deleteProducts,
+    adjustStock, transferStock,
+  }
 })

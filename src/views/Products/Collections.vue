@@ -1,19 +1,32 @@
 <script setup lang="ts">
+import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+
+const route = useRoute()
+const router = useRouter()
+
+function goToMerchandising() {
+  router.push({ name: 'MerchandisingHome', params: { accountId: route.params.accountId } })
+}
 </script>
 
 <template>
-  <div>
+  <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Collections"
       subtitle="Manage product collections and groupings"
     />
-    <v-card flat border rounded="lg" class="pa-6 mt-4">
-      <div class="d-flex flex-column align-center justify-center" style="min-height: 300px;">
-        <v-icon size="64" color="medium-emphasis" class="mb-4">folder</v-icon>
-        <h3 class="text-h6 text-medium-emphasis mb-2">Collections</h3>
-        <p class="text-body-2 text-medium-emphasis">Coming soon — product collections management will appear here.</p>
-      </div>
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex align-center justify-center">
+      <MpEmptyState
+        icon="folder"
+        title="Collections live in Merchandising"
+        description="Smart Collections — grouping, pinning, and rule-based merchandising — are managed in the Merchandising workspace for each sales channel."
+        action-label="Open Merchandising"
+        action-icon="arrow-right"
+        class="py-10"
+        @action="goToMerchandising"
+      />
     </v-card>
   </div>
 </template>

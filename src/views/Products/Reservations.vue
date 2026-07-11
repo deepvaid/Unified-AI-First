@@ -1,22 +1,27 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useProductExtrasStore, type Reservation } from '@/stores/useProductExtras'
+import { useCommerceStore } from '@/stores/useCommerce'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
+const store = useProductExtrasStore()
+const commerce = useCommerceStore()
 const search = ref('')
 
-const items = [
-  { id: 'RES-001', product: 'Premium Item 5', qty: 2, holdsUntil: '2026-03-07T18:00:00Z', status: 'Active Hold' },
-  { id: 'RES-002', product: 'Premium Item 12', qty: 1, holdsUntil: '2026-03-08T12:30:00Z', status: 'Active Hold' },
-  { id: 'RES-003', product: 'Premium Item 2', qty: 5, holdsUntil: '2026-03-07T08:00:00Z', status: 'Expired' },
-]
+const LOCATIONS = ['Main Warehouse - FL', 'Secondary Node - CA', 'Retail Hub - TX']
 
 const headers = [
   { title: 'Hold ID', key: 'id', sortable: true },
   { title: 'Product', key: 'product' },
+  { title: 'Order #', key: 'orderNumber' },
+  { title: 'Location', key: 'location' },
   { title: 'Qty Held', key: 'qty', align: 'end' as const },
-  { title: 'Held Until (Expiry)', key: 'holdsUntil' },
   { title: 'Status', key: 'status' },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
@@ -31,16 +36,64 @@ const activeFilterEntries = computed(() =>
 function removeFilter(_key: string) { filters.value.status = [] }
 function clearAllFilters() { filters.value.status = [] }
 const filteredItems = computed(() =>
-  filters.value.status.length ? items.filter(i => filters.value.status.includes(i.status)) : items
+  filters.value.status.length ? store.reservations.filter(i => filters.value.status.includes(i.status)) : store.reservations
 )
+
+// ── New reservation drawer ──────────────────────────────────────────
+const drawer = ref(false)
+const form = ref({ product: '', orderNumber: '', location: LOCATIONS[0]!, description: '', qty: 1 })
+const productOptions = computed(() => commerce.products.map(p => p.name))
+
+function openCreate() {
+  form.value = { product: '', orderNumber: '', location: LOCATIONS[0]!, description: '', qty: 1 }
+  drawer.value = true
+}
+
+function saveReservation() {
+  const sku = commerce.products.find(p => p.name === form.value.product)?.sku ?? ''
+  store.addReservation({
+    product: form.value.product || 'Unnamed product',
+    sku,
+    orderNumber: form.value.orderNumber.trim(),
+    location: form.value.location,
+    description: form.value.description.trim(),
+    qty: Number(form.value.qty) || 1,
+  })
+  drawer.value = false
+  notify('Reservation created')
+}
+
+// ── Release hold ────────────────────────────────────────────────────
+const confirmRelease = ref(false)
+const pendingRelease = ref<Reservation | null>(null)
+function askRelease(item: Reservation) {
+  pendingRelease.value = item
+  confirmRelease.value = true
+}
+function doRelease() {
+  if (pendingRelease.value) {
+    store.releaseReservation(pendingRelease.value.id)
+    notify('Hold released')
+  }
+  pendingRelease.value = null
+}
+
+// ── Snackbar ────────────────────────────────────────────────────────
+const snack = ref(false)
+const snackText = ref('')
+function notify(text: string) { snackText.value = text; snack.value = true }
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Inventory Reservations"
-      :subtitle="`${items.filter(i => i.status === 'Active Hold').length} active holds`"
-    />
+      :subtitle="`${store.reservations.filter(i => i.status === 'Active Hold').length} active holds`"
+    >
+      <template #actions>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New Reservation</v-btn>
+      </template>
+    </MpPageHeader>
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
@@ -78,13 +131,12 @@ const filteredItems = computed(() =>
         <template v-slot:item.product="{ item }">
           <div class="d-flex align-center gap-3 py-2">
             <v-img
-              :src="`https://picsum.photos/seed/${item.id + 200}/32/32`"
+              :src="`https://picsum.photos/seed/${item.id}/32/32`"
               :width="32"
               :height="32"
               cover
               rounded="md"
-              class="flex-shrink-0 border"
-              style="width:32px;height:32px;min-width:32px;max-width:32px"
+              class="flex-shrink-0 border reservation-thumb"
             >
               <template #error>
                 <div class="w-100 h-100 d-flex align-center justify-center bg-surface-variant rounded-md">
@@ -92,23 +144,83 @@ const filteredItems = computed(() =>
                 </div>
               </template>
             </v-img>
-            <div class="text-body-2 font-weight-medium">{{ item.product }}</div>
+            <div>
+              <div class="text-body-2 font-weight-medium">{{ item.product }}</div>
+              <div v-if="item.description" class="text-caption text-medium-emphasis">{{ item.description }}</div>
+            </div>
+          </div>
+        </template>
+        <template v-slot:item.location="{ item }">
+          <div class="d-flex align-center gap-2">
+            <v-icon size="15" color="medium-emphasis">map-pin</v-icon>
+            <span class="text-body-2">{{ item.location }}</span>
           </div>
         </template>
         <template v-slot:item.status="{ item }">
           <MpStatusChip :status="item.status" type="general" />
         </template>
-        <template v-slot:item.actions>
-          <v-menu location="bottom end">
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-              <v-list-item prepend-icon="circle-x" title="Release Hold" />
-            </v-list>
-          </v-menu>
+        <template v-slot:item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Reservation actions">
+            <v-list-item prepend-icon="circle-x" title="Release Hold" class="text-error" @click="askRelease(item)" />
+          </MpRowActionsMenu>
+        </template>
+        <template v-slot:no-data>
+          <MpEmptyState
+            icon="bookmark"
+            :title="search || filters.status.length ? 'No reservations match your filters' : 'No reservations'"
+            :description="search || filters.status.length ? 'Try a different search term or clear your filters.' : 'Create a hold to reserve inventory against an order.'"
+            :action-label="search || filters.status.length ? undefined : 'New Reservation'"
+            :action-icon="search || filters.status.length ? undefined : 'plus'"
+            class="py-10"
+            @action="openCreate"
+          />
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- New reservation drawer -->
+    <MpFormDrawer
+      v-model="drawer"
+      title="New Reservation"
+      subtitle="Hold inventory against an order"
+    >
+      <v-combobox
+        v-model="form.product"
+        :items="productOptions"
+        label="Product"
+        variant="outlined"
+        density="comfortable"
+        class="mb-4"
+      />
+      <v-text-field v-model="form.orderNumber" label="Order #" placeholder="e.g. #10231" variant="outlined" density="comfortable" class="mb-4" />
+      <v-select v-model="form.location" :items="LOCATIONS" label="Location" variant="outlined" density="comfortable" prepend-inner-icon="map-pin" class="mb-4" />
+      <v-text-field v-model.number="form.qty" label="Quantity to hold" type="number" min="1" variant="outlined" density="comfortable" class="mb-4" />
+      <v-textarea v-model="form.description" label="Description" rows="2" variant="outlined" density="comfortable" placeholder="Reason for the hold…" />
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveReservation">Create Hold</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="confirmRelease"
+      title="Release this hold?"
+      :message="`${pendingRelease?.id} (${pendingRelease?.product}) will be released and the held stock returned to available inventory.`"
+      confirm-label="Release Hold"
+      danger
+      @confirm="doRelease"
+    />
+
+    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
+    </v-snackbar>
   </div>
 </template>
+
+<style scoped>
+.reservation-thumb {
+  width: 32px;
+  height: 32px;
+}
+</style>

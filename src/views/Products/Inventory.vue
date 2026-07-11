@@ -1,30 +1,29 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useCommerceStore } from '@/stores/useCommerce'
+import { useCommerceStore, type InventoryItem } from '@/stores/useCommerce'
 import { useInitialLoad } from '@/composables/useInitialLoad'
+import { downloadCsv } from '@/utils/exportCsv'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 
 const store = useCommerceStore()
 const search = ref('')
 const { loading } = useInitialLoad()
 
-const inventoryItems = store.products.map(p => ({
-  ...p,
-  incoming: Math.floor(Math.random() * 500),
-  location: ['Main Warehouse - FL', 'Secondary Node - CA', 'Retail Hub - TX'][Math.floor(Math.random() * 3)]
-}))
+const LOCATIONS = ['Main Warehouse - FL', 'Secondary Node - CA', 'Retail Hub - TX']
 
-// KPI breakdown — computed from actual stock data (display only)
-const totalUnits = inventoryItems.reduce((sum, i) => sum + (i.inventory ?? 0), 0)
+// KPI breakdown — computed from live inventory slice
 const kpis = computed(() => [
-  { label: 'Total Units', value: totalUnits.toLocaleString(), icon: 'library', color: 'primary' },
-  { label: 'In Stock', value: inventoryItems.filter(i => i.status === 'In Stock').length, icon: 'circle-check', color: 'success' },
-  { label: 'Low Stock', value: inventoryItems.filter(i => i.status === 'Low Stock').length, icon: 'alert-triangle', color: 'warning' },
-  { label: 'Out of Stock', value: inventoryItems.filter(i => i.status === 'Out of Stock').length, icon: 'circle-x', color: 'error' },
+  { label: 'Total Units', value: store.inventory.reduce((sum, i) => sum + i.inventory, 0).toLocaleString(), icon: 'library', color: 'primary' },
+  { label: 'In Stock', value: store.inventory.filter(i => i.status === 'In Stock').length, icon: 'circle-check', color: 'success' },
+  { label: 'Low Stock', value: store.inventory.filter(i => i.status === 'Low Stock').length, icon: 'alert-triangle', color: 'warning' },
+  { label: 'Out of Stock', value: store.inventory.filter(i => i.status === 'Out of Stock').length, icon: 'circle-x', color: 'error' },
 ])
 
 // Multi-select filters
@@ -34,7 +33,7 @@ const filters = ref({
 })
 
 const filterOptions = {
-  location: ['Main Warehouse - FL', 'Secondary Node - CA', 'Retail Hub - TX'],
+  location: LOCATIONS,
   status: ['In Stock', 'Low Stock', 'Out of Stock'],
 }
 
@@ -61,9 +60,9 @@ function clearAllFilters() {
 }
 
 const filteredInventory = computed(() => {
-  let items = inventoryItems
-  if (filters.value.location.length) items = items.filter(p => p.location != null && filters.value.location.includes(p.location))
-  if (filters.value.status.length) items = items.filter(p => p.status != null && filters.value.status.includes(p.status))
+  let items = store.inventory
+  if (filters.value.location.length) items = items.filter(p => filters.value.location.includes(p.location))
+  if (filters.value.status.length) items = items.filter(p => filters.value.status.includes(p.status))
   return items
 })
 
@@ -75,30 +74,93 @@ const headers = [
   { title: 'Location', key: 'location' },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+
+// ── Adjust Stock drawer ─────────────────────────────────────────────
+const adjustDrawer = ref(false)
+const adjustItem = ref<InventoryItem | null>(null)
+const adjustMode = ref<'set' | 'delta'>('set')
+const adjustValue = ref(0)
+const adjustReason = ref('Recount')
+const REASONS = ['Recount', 'Received shipment', 'Damaged / shrinkage', 'Customer return', 'Correction']
+
+function openAdjust(item: InventoryItem) {
+  adjustItem.value = item
+  adjustMode.value = 'set'
+  adjustValue.value = item.inventory
+  adjustReason.value = 'Recount'
+  adjustDrawer.value = true
+}
+
+const adjustPreview = computed(() => {
+  if (!adjustItem.value) return 0
+  return adjustMode.value === 'set'
+    ? Math.max(0, Number(adjustValue.value) || 0)
+    : Math.max(0, adjustItem.value.inventory + (Number(adjustValue.value) || 0))
+})
+
+function saveAdjust() {
+  if (adjustItem.value) {
+    store.adjustStock(adjustItem.value.id, adjustPreview.value)
+    notify('Stock adjusted')
+  }
+  adjustDrawer.value = false
+}
+
+// ── Transfer drawer ─────────────────────────────────────────────────
+const transferDrawer = ref(false)
+const transferItem = ref<InventoryItem | null>(null)
+const transferTo = ref('')
+const transferQty = ref(1)
+
+function openTransfer(item: InventoryItem) {
+  transferItem.value = item
+  transferTo.value = LOCATIONS.find(l => l !== item.location) ?? item.location
+  transferQty.value = 1
+  transferDrawer.value = true
+}
+
+const transferOptions = computed(() => LOCATIONS.filter(l => l !== transferItem.value?.location))
+
+function saveTransfer() {
+  if (transferItem.value && transferTo.value) {
+    store.transferStock(transferItem.value.id, transferTo.value)
+    notify('Stock transferred')
+  }
+  transferDrawer.value = false
+}
+
+// ── Export ──────────────────────────────────────────────────────────
+function exportInventory() {
+  downloadCsv('inventory', filteredInventory.value, [
+    { title: 'Product', value: 'name' },
+    { title: 'SKU', value: 'sku' },
+    { title: 'Available', value: 'inventory' },
+    { title: 'Incoming', value: 'incoming' },
+    { title: 'Status', value: 'status' },
+    { title: 'Location', value: 'location' },
+  ])
+}
+
+// ── Snackbar ────────────────────────────────────────────────────────
+const snack = ref(false)
+const snackText = ref('')
+function notify(text: string) { snackText.value = text; snack.value = true }
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Inventory"
-      :subtitle="`${inventoryItems.length} SKUs across ${filterOptions.location.length} locations`"
+      :subtitle="`${store.inventory.length} SKUs across ${filterOptions.location.length} locations`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface">Export</v-btn>
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportInventory">Export</v-btn>
       </template>
     </MpPageHeader>
 
     <v-row dense>
       <v-col v-for="kpi in kpis" :key="kpi.label" cols="6" md="3">
-        <v-card variant="flat" border rounded="lg" class="h-100">
-          <v-card-text class="d-flex align-center justify-space-between py-4">
-            <div>
-              <div class="text-overline text-medium-emphasis">{{ kpi.label }}</div>
-              <div class="text-h4 font-weight-bold" :class="`text-${kpi.color}`">{{ kpi.value }}</div>
-            </div>
-            <v-icon size="36" :color="kpi.color" opacity="0.3">{{ kpi.icon }}</v-icon>
-          </v-card-text>
-        </v-card>
+        <MpKpiCard :label="kpi.label" :value="kpi.value" :icon="kpi.icon" :color="kpi.color" />
       </v-col>
     </v-row>
 
@@ -165,8 +227,7 @@ const headers = [
               :height="32"
               cover
               rounded="md"
-              class="flex-shrink-0 border"
-              style="width:32px;height:32px;min-width:32px;max-width:32px"
+              class="flex-shrink-0 border inventory-thumb"
             >
               <template #error>
                 <div class="w-100 h-100 d-flex align-center justify-center bg-surface-variant rounded-md">
@@ -203,16 +264,11 @@ const headers = [
           </div>
         </template>
 
-        <template v-slot:item.actions>
-          <v-menu location="bottom end">
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" density="comfortable" color="medium-emphasis" aria-label="Inventory item actions" />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-              <v-list-item prepend-icon="pencil" title="Adjust Stock" />
-              <v-list-item prepend-icon="arrow-left-right" title="Transfer" />
-            </v-list>
-          </v-menu>
+        <template v-slot:item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Inventory item actions">
+            <v-list-item prepend-icon="pencil" title="Adjust Stock" @click="openAdjust(item)" />
+            <v-list-item prepend-icon="arrow-left-right" title="Transfer" @click="openTransfer(item)" />
+          </MpRowActionsMenu>
         </template>
 
         <template v-slot:no-data>
@@ -225,5 +281,66 @@ const headers = [
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Adjust Stock drawer -->
+    <MpFormDrawer
+      v-model="adjustDrawer"
+      title="Adjust Stock"
+      :subtitle="adjustItem?.name"
+    >
+      <v-text-field :model-value="adjustItem?.location" label="Location" variant="outlined" density="comfortable" readonly class="mb-4" prepend-inner-icon="map-pin" />
+      <v-btn-toggle v-model="adjustMode" mandatory density="comfortable" variant="outlined" divided class="mb-4 w-100">
+        <v-btn value="set" class="text-none flex-grow-1">Set new count</v-btn>
+        <v-btn value="delta" class="text-none flex-grow-1">Adjust by +/−</v-btn>
+      </v-btn-toggle>
+      <v-text-field
+        v-model.number="adjustValue"
+        :label="adjustMode === 'set' ? 'New count' : 'Change (e.g. -5 or 20)'"
+        type="number"
+        variant="outlined"
+        density="comfortable"
+        class="mb-4"
+      />
+      <v-select v-model="adjustReason" :items="REASONS" label="Reason" variant="outlined" density="comfortable" class="mb-4" />
+      <v-card variant="tonal" color="primary" rounded="lg" class="pa-4 d-flex align-center justify-space-between">
+        <div>
+          <div class="text-caption text-medium-emphasis">New available</div>
+          <div class="text-h5 font-weight-bold">{{ adjustPreview }}</div>
+        </div>
+        <div class="text-caption text-medium-emphasis">was {{ adjustItem?.inventory ?? 0 }}</div>
+      </v-card>
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="adjustDrawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveAdjust">Save Adjustment</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <!-- Transfer drawer -->
+    <MpFormDrawer
+      v-model="transferDrawer"
+      title="Transfer Stock"
+      :subtitle="transferItem?.name"
+    >
+      <v-text-field :model-value="transferItem?.location" label="From location" variant="outlined" density="comfortable" readonly class="mb-4" prepend-inner-icon="map-pin" />
+      <v-select v-model="transferTo" :items="transferOptions" label="To location" variant="outlined" density="comfortable" class="mb-4" prepend-inner-icon="map-pin" />
+      <v-text-field v-model.number="transferQty" label="Quantity" type="number" min="1" variant="outlined" density="comfortable" />
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="transferDrawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="arrow-left-right" :disabled="!transferTo" @click="saveTransfer">Transfer</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
+    </v-snackbar>
   </div>
 </template>
+
+<style scoped>
+.inventory-thumb {
+  width: 32px;
+  height: 32px;
+}
+</style>
