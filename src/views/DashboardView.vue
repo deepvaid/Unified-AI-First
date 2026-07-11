@@ -62,17 +62,17 @@ interface SetupTask {
   route: RouteLocationRaw
 }
 
-const datePresetOptions: Array<{ title: string; value: DashboardDatePreset }> = [
-  { title: 'Today', value: 'today' },
-  { title: 'Yesterday', value: 'yesterday' },
-  { title: 'Last 7 days', value: 'last_7_days' },
-  { title: 'Last 30 days', value: 'last_30_days' },
-  { title: 'Last 90 days', value: 'last_90_days' },
-  { title: 'Month to date', value: 'month_to_date' },
-  { title: 'Quarter to date', value: 'quarter_to_date' },
-  { title: 'Year to date', value: 'year_to_date' },
-  { title: 'Black Friday/Cyber Monday', value: 'black_friday_cyber_monday' },
-  { title: 'Custom range', value: 'custom' },
+const datePresetOptions: Array<{ title: string; value: DashboardDatePreset; group: string }> = [
+  { title: 'Today', value: 'today', group: 'Current' },
+  { title: 'Yesterday', value: 'yesterday', group: 'Current' },
+  { title: 'Last 7 days', value: 'last_7_days', group: 'Last' },
+  { title: 'Last 30 days', value: 'last_30_days', group: 'Last' },
+  { title: 'Last 90 days', value: 'last_90_days', group: 'Last' },
+  { title: 'Month to date', value: 'month_to_date', group: 'Period to date' },
+  { title: 'Quarter to date', value: 'quarter_to_date', group: 'Period to date' },
+  { title: 'Year to date', value: 'year_to_date', group: 'Period to date' },
+  { title: 'Black Friday/Cyber Monday', value: 'black_friday_cyber_monday', group: 'Retail moments' },
+  { title: 'Custom range', value: 'custom', group: 'Custom' },
 ]
 const grainOptions: Array<{ title: string; value: DashboardDateGrain }> = [
   { title: 'Daily', value: 'daily' },
@@ -654,19 +654,22 @@ function toggleFavoriteActive() {
             </template>
             <v-card width="680" rounded="lg" flat border class="dashboard-date-menu">
               <div class="dashboard-date-menu__presets">
-                <button
-                  v-for="option in datePresetOptions"
-                  :key="option.value"
-                  type="button"
-                  class="dashboard-date-menu__preset"
-                  :class="{
-                    'dashboard-date-menu__preset--active': dateDraft.rangePreset === option.value,
-                    'dashboard-date-menu__preset--wide': option.title.length > 16 || option.value === 'custom',
-                  }"
-                  @click="updateDateDraftPreset(option.value)"
-                >
-                  {{ option.title }}
-                </button>
+                <template v-for="(option, index) in datePresetOptions" :key="option.value">
+                  <div
+                    v-if="index === 0 || datePresetOptions[index - 1]?.group !== option.group"
+                    class="dashboard-date-menu__group"
+                  >
+                    {{ option.group }}
+                  </div>
+                  <button
+                    type="button"
+                    class="dashboard-date-menu__preset"
+                    :class="{ 'dashboard-date-menu__preset--active': dateDraft.rangePreset === option.value }"
+                    @click="updateDateDraftPreset(option.value)"
+                  >
+                    {{ option.title }}
+                  </button>
+                </template>
               </div>
               <div class="dashboard-date-menu__body">
                 <div class="dashboard-date-menu__fields">
@@ -1228,22 +1231,33 @@ function toggleFavoriteActive() {
 
 .dashboard-date-menu {
   display: grid;
-  grid-template-columns: 268px 1fr;
+  grid-template-columns: 200px 1fr;
   overflow: hidden;
 }
 
 .dashboard-date-menu__presets {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-content: start;
-  gap: 4px;
-  padding: 12px;
+  padding: 8px;
   border-right: 1px solid var(--hairline);
   background: rgba(var(--v-theme-on-surface), 0.025);
 }
 
+.dashboard-date-menu__group {
+  padding: 10px 8px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.dashboard-date-menu__group:first-child {
+  padding-top: 4px;
+}
+
 .dashboard-date-menu__preset {
-  min-height: 36px;
+  display: block;
+  width: 100%;
+  min-height: 32px;
   padding: 6px 10px;
   border: 0;
   border-radius: 8px;
@@ -1252,12 +1266,8 @@ function toggleFavoriteActive() {
   cursor: pointer;
   font: inherit;
   font-size: 13px;
-  text-align: center;
+  text-align: left;
   transition: background 120ms ease, color 120ms ease;
-}
-
-.dashboard-date-menu__preset--wide {
-  grid-column: 1 / -1;
 }
 
 .dashboard-date-menu__preset:hover {
