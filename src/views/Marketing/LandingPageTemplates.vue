@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useLandingPagesStore } from '@/stores/useLandingPages'
-import type { EditorType } from '@/stores/useLandingPages'
+import { useLandingPagesStore, defaultLandingBlock } from '@/stores/useLandingPages'
+import type { EditorType, LandingPageBlock, LandingPageStyle } from '@/stores/useLandingPages'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -26,17 +26,83 @@ interface LandingTemplate {
   desc: string
   accent: string
   icon: string
+  /** Starter blocks seeded into the page when this template is chosen. */
+  blocks: () => LandingPageBlock[]
+  style?: Partial<LandingPageStyle>
 }
 
 const TEMPLATES: LandingTemplate[] = [
-  { id: 'fresh-drop', name: 'Fresh Drop Announcement', group: 'Usage', tag: 'product-promotion', desc: 'Hero + countdown for a new product launch', accent: 'primary', icon: 'rocket' },
-  { id: 'newsletter-digest', name: 'Newsletter Digest', group: 'Usage', tag: 'newsletter', desc: 'Sign-up form + latest issue preview', accent: 'info', icon: 'newspaper' },
-  { id: 'webinar-rsvp', name: 'Webinar RSVP', group: 'Usage', tag: 'events', desc: 'Event details + registration form', accent: 'secondary', icon: 'video' },
-  { id: 'midnight-mode', name: 'Midnight Mode Showcase', group: 'Usage', tag: 'dark-mode-optimized', desc: 'Dark, high-contrast product showcase', accent: 'marketing', icon: 'moon' },
-  { id: 'boutique-storefront', name: 'Boutique Storefront', group: 'Industry', tag: 'e-commerce', desc: 'Product grid + limited-time offer', accent: 'commerce', icon: 'shopping-bag' },
-  { id: 'neighborhood-spotlight', name: 'Neighborhood Spotlight', group: 'Industry', tag: 'small-business', desc: 'Local story + contact form', accent: 'success', icon: 'store' },
-  { id: 'holiday-wishlist', name: 'Holiday Wishlist', group: 'Seasonal', tag: 'christmas', desc: 'Gift guide + curated picks', accent: 'error', icon: 'gift' },
-  { id: 'countdown-new-year', name: 'Countdown to New Year', group: 'Seasonal', tag: 'new-year', desc: 'Sitewide sale + countdown timer', accent: 'warning', icon: 'sparkles' },
+  {
+    id: 'fresh-drop', name: 'Fresh Drop Announcement', group: 'Usage', tag: 'product-promotion', desc: 'Hero + countdown for a new product launch', accent: 'primary', icon: 'rocket',
+    blocks: () => [
+      { ...defaultLandingBlock('title'), text: 'Something new just dropped', titleSize: 'XL', align: 'center' },
+      { ...defaultLandingBlock('paragraph'), text: 'Be the first to shop our latest release before it sells out.', align: 'center' },
+      { ...defaultLandingBlock('image'), alt: 'New product hero' },
+      { ...defaultLandingBlock('button'), label: 'Shop the drop', align: 'center' },
+    ],
+  },
+  {
+    id: 'newsletter-digest', name: 'Newsletter Digest', group: 'Usage', tag: 'newsletter', desc: 'Sign-up form + latest issue preview', accent: 'info', icon: 'newspaper',
+    blocks: () => [
+      { ...defaultLandingBlock('title'), text: 'Get our newsletter', titleSize: 'L', align: 'center' },
+      { ...defaultLandingBlock('paragraph'), text: 'Product news, tips, and offers — straight to your inbox, every other week.', align: 'center' },
+      { ...defaultLandingBlock('form'), label: 'Subscribe' },
+    ],
+  },
+  {
+    id: 'webinar-rsvp', name: 'Webinar RSVP', group: 'Usage', tag: 'events', desc: 'Event details + registration form', accent: 'secondary', icon: 'video',
+    blocks: () => [
+      { ...defaultLandingBlock('title'), text: 'Join our live webinar', titleSize: 'L', align: 'center' },
+      { ...defaultLandingBlock('paragraph'), text: 'Save your seat for a live walkthrough with our product team.', align: 'center' },
+      { ...defaultLandingBlock('list'), items: ['Live Q&A with the team', 'Free resource pack for attendees', 'Recording sent afterward'] },
+      { ...defaultLandingBlock('form'), label: 'Reserve my seat' },
+    ],
+  },
+  {
+    id: 'midnight-mode', name: 'Midnight Mode Showcase', group: 'Usage', tag: 'dark-mode-optimized', desc: 'Dark, high-contrast product showcase', accent: 'marketing', icon: 'moon',
+    blocks: () => [
+      { ...defaultLandingBlock('title'), text: 'Built for the night owls', titleSize: 'XL', align: 'center', colorOverride: '#F5F5F5' },
+      { ...defaultLandingBlock('paragraph'), text: 'A high-contrast showcase for a product that looks best after dark.', align: 'center', colorOverride: '#D4D4D4' },
+      { ...defaultLandingBlock('button'), label: 'See it in action', align: 'center' },
+    ],
+    style: { backgroundColor: '#121212', accentColor: '#2CC4FF' },
+  },
+  {
+    id: 'boutique-storefront', name: 'Boutique Storefront', group: 'Industry', tag: 'e-commerce', desc: 'Product grid + limited-time offer', accent: 'commerce', icon: 'shopping-bag',
+    blocks: () => [
+      { ...defaultLandingBlock('title'), text: 'This week’s edit', titleSize: 'L', align: 'center' },
+      { ...defaultLandingBlock('image'), alt: 'Featured products' },
+      { ...defaultLandingBlock('paragraph'), text: 'Limited-time picks from our boutique collection — while stocks last.', align: 'center' },
+      { ...defaultLandingBlock('button'), label: 'Shop the edit', align: 'center' },
+    ],
+  },
+  {
+    id: 'neighborhood-spotlight', name: 'Neighborhood Spotlight', group: 'Industry', tag: 'small-business', desc: 'Local story + contact form', accent: 'success', icon: 'store',
+    blocks: () => [
+      { ...defaultLandingBlock('title'), text: 'A local favorite, now online', titleSize: 'L', align: 'center' },
+      { ...defaultLandingBlock('paragraph'), text: 'Our story, our neighborhood, and how to reach us.' },
+      { ...defaultLandingBlock('image'), alt: 'Storefront photo' },
+      { ...defaultLandingBlock('form'), label: 'Get in touch', fieldName: true, fieldPhone: true },
+    ],
+  },
+  {
+    id: 'holiday-wishlist', name: 'Holiday Wishlist', group: 'Seasonal', tag: 'christmas', desc: 'Gift guide + curated picks', accent: 'error', icon: 'gift',
+    blocks: () => [
+      { ...defaultLandingBlock('title'), text: 'The holiday gift guide', titleSize: 'XL', align: 'center' },
+      { ...defaultLandingBlock('list'), items: ['Gifts under $50', 'Best sellers of the season', 'Free gift wrapping'] },
+      { ...defaultLandingBlock('button'), label: 'Browse the guide', align: 'center' },
+    ],
+    style: { accentColor: '#C0392B' },
+  },
+  {
+    id: 'countdown-new-year', name: 'Countdown to New Year', group: 'Seasonal', tag: 'new-year', desc: 'Sitewide sale + countdown timer', accent: 'warning', icon: 'sparkles',
+    blocks: () => [
+      { ...defaultLandingBlock('title'), text: 'New year, new savings', titleSize: 'XL', align: 'center' },
+      { ...defaultLandingBlock('paragraph'), text: 'Sitewide savings end at midnight — don’t miss out.', align: 'center' },
+      { ...defaultLandingBlock('button'), label: 'Shop the sale', align: 'center' },
+    ],
+    style: { accentColor: '#F59E0B' },
+  },
 ]
 
 const USAGE_OPTIONS: UsageTag[] = ['newsletter', 'events', 'product-promotion', 'service-promotion', 'dark-mode-optimized']
@@ -71,9 +137,10 @@ const stage = ref<Stage>('gallery')
 const stageTitles = ['Template', 'Builder', 'Details']
 const stageIndex = computed(() => ({ gallery: 1, 'builder-type': 2, details: 3 }[stage.value]))
 
-const selectedTemplateName = ref<string | null>(null)
-function chooseTemplate(name: string | null) {
-  selectedTemplateName.value = name
+const selectedTemplate = ref<LandingTemplate | null>(null)
+const selectedTemplateName = computed(() => selectedTemplate.value?.name ?? null)
+function chooseTemplate(tpl: LandingTemplate | null) {
+  selectedTemplate.value = tpl
   stage.value = 'builder-type'
 }
 
@@ -113,9 +180,9 @@ function createPage() {
     publishAt: formatDateTime(publishDate.value, publishTime.value),
     expireAt: formatDateTime(expireDate.value, expireTime.value),
     tracking: tracking.value,
+    blocks: selectedTemplate.value?.blocks(),
+    style: selectedTemplate.value?.style,
   })
-  // Required route (not yet registered — see final report): LandingPageEditor at
-  // /accounts/:accountId/landing_pages/editor/:id/edit
   router.push({ name: 'LandingPageEditor', params: { accountId: accountId.value, id: String(id) } })
 }
 
@@ -157,7 +224,7 @@ function createPage() {
               </v-card>
             </v-col>
             <v-col v-for="tpl in filtered" :key="tpl.id" cols="12" sm="6" md="4" lg="3">
-              <v-card flat border rounded="lg" class="lpt-card h-100" role="button" tabindex="0" @click="chooseTemplate(tpl.name)" @keydown.enter="chooseTemplate(tpl.name)">
+              <v-card flat border rounded="lg" class="lpt-card h-100" role="button" tabindex="0" @click="chooseTemplate(tpl)" @keydown.enter="chooseTemplate(tpl)">
                 <div class="lpt-card__preview" :class="`lpt-card__preview--${tpl.accent}`">
                   <v-icon size="30">{{ tpl.icon }}</v-icon>
                   <div class="lpt-card__skeleton">

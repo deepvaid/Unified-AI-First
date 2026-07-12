@@ -1,10 +1,19 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useLandingPagesStore, defaultLandingBlock } from '@/stores/useLandingPages'
-import type { LandingPageBlock, LandingPageBlockType } from '@/stores/useLandingPages'
+import { useLandingPagesStore, defaultLandingBlock, defaultLandingStyle } from '@/stores/useLandingPages'
+import type { LandingPageBlock, LandingPageBlockType, LandingPageStyle, BaseFont } from '@/stores/useLandingPages'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import LandingBlockPalette, { type PaletteItem } from '@/components/marketing/landing/LandingBlockPalette.vue'
+import LandingLayersPanel from '@/components/marketing/landing/LandingLayersPanel.vue'
+import LandingPageStylePanel from '@/components/marketing/landing/LandingPageStylePanel.vue'
+import LandingBlockSettings from '@/components/marketing/landing/LandingBlockSettings.vue'
+import LandingBlockView from '@/components/marketing/landing/LandingBlockView.vue'
+import LandingInsertionPoint from '@/components/marketing/landing/LandingInsertionPoint.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -15,7 +24,7 @@ const pageId = computed(() => Number(route.params.id))
 const page = computed(() => lpStore.pages.find(p => p.id === pageId.value))
 const backTo = computed(() => ({ name: 'LandingPages', params: { accountId: accountId.value } }))
 
-const PALETTE: { type: LandingPageBlockType; label: string; icon: string }[] = [
+const PALETTE: PaletteItem[] = [
   { type: 'title', label: 'Title', icon: 'heading' },
   { type: 'paragraph', label: 'Paragraph', icon: 'text' },
   { type: 'list', label: 'List', icon: 'list' },
@@ -32,68 +41,239 @@ const PALETTE: { type: LandingPageBlockType; label: string; icon: string }[] = [
   { type: 'text', label: 'Text', icon: 'type' },
 ]
 
+// ─── Working copy of page content (autosaved into the store, see below) ───
 const pageName = ref(page.value?.name ?? '')
-const blocks = ref<LandingPageBlock[]>(page.value ? page.value.blocks.map(b => ({ ...b, items: [...b.items] })) : [])
-const selectedId = ref<string | null>(blocks.value[0]?.id ?? null)
+const pageUrl = ref(page.value?.url ?? '')
+const seo = ref(page.value ? { ...page.value.seo } : { description: '', pageTitle: '', redirectAfterExpiry: '', metaKeywords: '', tracking: '' })
+const blocks = ref<LandingPageBlock[]>(page.value ? page.value.blocks.map(b => ({ ...b, items: [...b.items], networks: [...b.networks], iconSet: [...b.iconSet], links: b.links.map(l => ({ ...l })) })) : [])
+const pageStyle = ref<LandingPageStyle>(page.value ? { ...page.value.style } : defaultLandingStyle())
+
+const selectedId = ref<string | null>(null)
 const selected = computed(() => blocks.value.find(b => b.id === selectedId.value) ?? null)
+
+const device = ref<'desktop' | 'mobile'>('desktop')
+const showStructure = ref(false)
+const leftTab = ref<'blocks' | 'layers'>('blocks')
+const settingsOpen = ref(false)
+const previewOpen = ref(route.query.preview === '1')
 const previewDevice = ref<'desktop' | 'mobile'>('desktop')
 
-function addBlock(type: LandingPageBlockType) {
+const FONT_STACK: Record<BaseFont, string> = {
+  Inter: 'Inter, system-ui, -apple-system, sans-serif',
+  Georgia: 'Georgia, "Times New Roman", serif',
+  Mono: "'JetBrains Mono', 'Fira Code', monospace",
+}
+const styleVars = computed(() => ({
+  '--lp-content-width': `${pageStyle.value.contentWidth}px`,
+  '--lp-font': FONT_STACK[pageStyle.value.baseFont],
+  '--lp-accent': pageStyle.value.accentColor,
+  '--lp-radius': `${pageStyle.value.buttonRadius}px`,
+}))
+
+function updatePageStyle(patch: Partial<LandingPageStyle>) {
+  Object.assign(pageStyle.value, patch)
+}
+
+// ─── Block refs (for scroll-into-view from the Layers panel) ─────────────
+const blockRefs = new Map<string, HTMLElement>()
+function setBlockRef(id: string, el: Element | ComponentPublicInstance | null) {
+  if (el instanceof HTMLElement) blockRefs.set(id, el)
+  else blockRefs.delete(id)
+}
+function selectAndScroll(id: string) {
+  selectedId.value = id
+  nextTick(() => blockRefs.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+}
+
+// ─── Undo (structural edits only — max 20 snapshots) ──────────────────────
+interface Snapshot { blocks: LandingPageBlock[]; style: LandingPageStyle }
+const undoStack = ref<Snapshot[]>([])
+function snapshot() {
+  undoStack.value.push({ blocks: JSON.parse(JSON.stringify(blocks.value)), style: { ...pageStyle.value } })
+  if (undoStack.value.length > 20) undoStack.value.shift()
+}
+function undo() {
+  const prev = undoStack.value.pop()
+  if (!prev) return
+  blocks.value = prev.blocks
+  pageStyle.value = prev.style
+  selectedId.value = null
+}
+
+// ─── Flash highlight on newly-added blocks ────────────────────────────────
+const flashId = ref<string | null>(null)
+function flash(id: string) {
+  flashId.value = id
+  setTimeout(() => { if (flashId.value === id) flashId.value = null }, 700)
+}
+
+// ─── Block mutations ──────────────────────────────────────────────────────
+function addBlockAt(index: number, type: LandingPageBlockType) {
+  snapshot()
   const block = defaultLandingBlock(type)
-  const idx = selectedId.value ? blocks.value.findIndex(b => b.id === selectedId.value) : blocks.value.length - 1
-  blocks.value.splice(idx + 1, 0, block)
+  blocks.value.splice(index, 0, block)
   selectedId.value = block.id
+  flash(block.id)
+}
+function addBlock(type: LandingPageBlockType) {
+  const idx = selectedId.value ? blocks.value.findIndex(b => b.id === selectedId.value) + 1 : blocks.value.length
+  addBlockAt(idx, type)
+}
+function duplicateBlock(id: string) {
+  const idx = blocks.value.findIndex(b => b.id === id)
+  if (idx === -1) return
+  const source = blocks.value[idx]
+  if (!source) return
+  snapshot()
+  const copy: LandingPageBlock = { ...source, id: `lpb-copy-${Date.now()}-${idx}`, items: [...source.items], networks: [...source.networks], iconSet: [...source.iconSet], links: source.links.map(l => ({ ...l })) }
+  blocks.value.splice(idx + 1, 0, copy)
+  selectedId.value = copy.id
+  flash(copy.id)
 }
 function removeBlock(id: string) {
   const idx = blocks.value.findIndex(b => b.id === id)
   if (idx === -1) return
+  snapshot()
   blocks.value.splice(idx, 1)
   if (selectedId.value === id) selectedId.value = blocks.value[Math.max(0, idx - 1)]?.id ?? null
 }
-function move(id: string, dir: -1 | 1) {
+function moveBlock(id: string, dir: -1 | 1) {
   const idx = blocks.value.findIndex(b => b.id === id)
   const next = idx + dir
   if (idx === -1 || next < 0 || next >= blocks.value.length) return
+  snapshot()
   const [b] = blocks.value.splice(idx, 1)
   if (b) blocks.value.splice(next, 0, b)
 }
-function listText(block: LandingPageBlock): string {
-  return block.items.join('\n')
+function reorderBlocks(fromIndex: number, toIndex: number) {
+  if (fromIndex === toIndex) return
+  snapshot()
+  const [b] = blocks.value.splice(fromIndex, 1)
+  if (!b) return
+  const adjusted = fromIndex < toIndex ? toIndex - 1 : toIndex
+  blocks.value.splice(adjusted, 0, b)
 }
-function setListText(block: LandingPageBlock, value: string) {
-  block.items = value.split('\n')
-}
-
-// ─── Page settings drawer (SEO / meta / URL / redirect / tracking) ─────
-const settingsOpen = ref(false)
-const seo = ref(page.value ? { ...page.value.seo } : { description: '', pageTitle: '', redirectAfterExpiry: '', metaKeywords: '', tracking: '' })
-const pageUrl = ref(page.value?.url ?? '')
-
-// ─── Topbar actions ──────────────────────────────────────────────────────
-const toast = ref<{ show: boolean; text: string }>({ show: false, text: '' })
-function notify(text: string) { toast.value = { show: true, text } }
-
-function verifyDomain() {
-  if (!page.value) return
-  lpStore.verifyDomain(page.value.id)
-  notify('Domain verified')
-}
-function saveAsTemplate() {
-  if (!page.value) return
-  lpStore.saveAsTemplate(page.value.id)
-  notify('Saved as template')
+function reorderBlockToIndex(id: string, targetIndex: number) {
+  const fromIndex = blocks.value.findIndex(b => b.id === id)
+  if (fromIndex === -1) return
+  reorderBlocks(fromIndex, targetIndex)
 }
 
-const previewOpen = ref(route.query.preview === '1')
+function insertQuickStart(kind: 'hero' | 'feature' | 'cta') {
+  snapshot()
+  const group: LandingPageBlock[] =
+    kind === 'hero'
+      ? [
+          { ...defaultLandingBlock('title'), text: 'Say hello to your next big idea', titleSize: 'XL', align: 'center' },
+          { ...defaultLandingBlock('paragraph'), text: 'A short, confident subhead that tells visitors exactly what this page is about.', align: 'center' },
+          { ...defaultLandingBlock('button'), label: 'Get started', align: 'center' },
+        ]
+      : kind === 'feature'
+        ? [
+            { ...defaultLandingBlock('title'), text: 'Why teams choose us', titleSize: 'L', align: 'center' },
+            { ...defaultLandingBlock('image'), alt: 'Feature preview' },
+            { ...defaultLandingBlock('list'), items: ['Fast to set up', 'Built for scale', 'Loved by 10,000+ merchants'] },
+          ]
+        : [
+            { ...defaultLandingBlock('title'), text: 'Ready when you are', titleSize: 'L', align: 'center' },
+            { ...defaultLandingBlock('button'), label: 'Start free trial', align: 'center' },
+          ]
+  blocks.value.push(...group)
+  selectedId.value = group[0]?.id ?? null
+}
 
-function saveAndClose() {
+// ─── Keyboard: Delete removes selected, Esc deselects, Cmd/Ctrl+Z undo ────
+function onKeydown(e: KeyboardEvent) {
+  if (previewOpen.value || settingsOpen.value) return
+  const target = e.target as HTMLElement | null
+  const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+  if (e.key === 'Escape') {
+    selectedId.value = null
+    return
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault()
+    undo()
+    return
+  }
+  if (typing) return
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId.value) {
+    e.preventDefault()
+    removeBlock(selectedId.value)
+  }
+}
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+
+// ─── Autosave (debounced) ──────────────────────────────────────────────────
+const dirty = ref(false)
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+function flushSave() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
   if (!page.value) return
   lpStore.update(page.value.id, {
     name: pageName.value,
     url: pageUrl.value,
     seo: { ...seo.value },
     blocks: blocks.value,
+    style: { ...pageStyle.value },
   })
+  dirty.value = false
+}
+function markDirty() {
+  dirty.value = true
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(flushSave, 900)
+}
+watch([blocks, pageStyle, pageName, pageUrl, seo], markDirty, { deep: true })
+onUnmounted(() => { if (dirty.value) flushSave() })
+
+// ─── Topbar actions ────────────────────────────────────────────────────────
+const toast = ref<{ show: boolean; text: string }>({ show: false, text: '' })
+function notify(text: string) { toast.value = { show: true, text } }
+
+function verifyDomainAction() {
+  if (!page.value) return
+  lpStore.verifyDomain(page.value.id)
+  notify('Domain verified')
+}
+function saveAsTemplateAction() {
+  if (!page.value) return
+  lpStore.saveAsTemplate(page.value.id)
+  notify('Saved as template')
+}
+function duplicatePageAction() {
+  if (!page.value) return
+  lpStore.duplicate(page.value.id)
+  notify('Page duplicated')
+}
+
+const confirmPublishOpen = ref(false)
+const confirmUnpublishOpen = ref(false)
+function requestPublishToggle() {
+  if (!page.value) return
+  if (page.value.publishStatus === 'published') confirmUnpublishOpen.value = true
+  else confirmPublishOpen.value = true
+}
+function confirmPublish() {
+  if (!page.value) return
+  flushSave()
+  lpStore.publish(page.value.id)
+  notify('Page published')
+}
+function confirmUnpublish() {
+  if (!page.value) return
+  lpStore.unpublish(page.value.id)
+  notify('Page unpublished')
+}
+
+function openPreview() {
+  previewDevice.value = device.value
+  previewOpen.value = true
+}
+
+function saveAndClose() {
+  flushSave()
   router.push(backTo.value)
 }
 </script>
@@ -102,7 +282,7 @@ function saveAndClose() {
   <div class="lpe d-flex flex-column">
     <template v-if="page">
       <!-- top bar -->
-      <header class="lpe-top d-flex align-center ga-3 px-4">
+      <header class="lpe-top d-flex align-center ga-2 px-3">
         <v-btn variant="text" icon="chevron-left" :to="backTo" aria-label="Back to Landing Pages" />
         <v-text-field
           v-model="pageName"
@@ -112,129 +292,117 @@ function saveAndClose() {
           class="lpe-name"
           aria-label="Page name"
         />
+        <v-chip size="x-small" variant="outlined" class="lpe-url-chip text-truncate" @click="settingsOpen = true">{{ pageUrl || 'Set a URL' }}</v-chip>
+        <MpStatusChip :status="page.publishStatus === 'published' ? 'Published' : 'Draft'" type="general" size="x-small" />
+
         <v-spacer />
-        <v-btn variant="text" class="text-none" prepend-icon="settings" @click="settingsOpen = true">Page Settings</v-btn>
-        <v-btn variant="text" class="text-none" prepend-icon="shield-check" @click="verifyDomain">Verify Domain</v-btn>
-        <v-btn variant="text" class="text-none" prepend-icon="eye" @click="previewOpen = true">Preview</v-btn>
-        <v-btn variant="text" class="text-none" prepend-icon="copy-plus" @click="saveAsTemplate">Save as Template</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveAndClose">Save and Close</v-btn>
+
+        <v-btn-toggle v-model="device" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
+          <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop view" />
+          <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile view" />
+        </v-btn-toggle>
+        <v-btn
+          :variant="showStructure ? 'tonal' : 'text'"
+          :color="showStructure ? 'primary' : undefined"
+          size="small"
+          class="text-none"
+          prepend-icon="layout-grid"
+          @click="showStructure = !showStructure"
+        >
+          Structure
+        </v-btn>
+
+        <v-spacer />
+
+        <div class="lpe-savechip" :class="{ 'lpe-savechip--dirty': dirty }">
+          <span class="lpe-savechip__dot" />
+          {{ dirty ? 'Unsaved' : 'Autosaved' }}
+        </div>
+        <v-btn variant="text" icon="eye" size="small" aria-label="Preview page" @click="openPreview" />
+        <v-btn variant="text" icon="settings" size="small" aria-label="Page settings" @click="settingsOpen = true" />
+        <MpRowActionsMenu ariaLabel="More page actions">
+          <v-list-item prepend-icon="shield-check" rounded="lg" :disabled="page.status === 'Verified'" @click="verifyDomainAction">Verify Domain</v-list-item>
+          <v-list-item prepend-icon="copy-plus" rounded="lg" @click="saveAsTemplateAction">Save as Template</v-list-item>
+          <v-list-item prepend-icon="copy" rounded="lg" @click="duplicatePageAction">Duplicate Page</v-list-item>
+        </MpRowActionsMenu>
+        <v-btn variant="outlined" class="text-none" prepend-icon="check" @click="saveAndClose">Save and Close</v-btn>
+        <v-btn
+          :variant="page.publishStatus === 'published' ? 'tonal' : 'flat'"
+          :color="page.publishStatus === 'published' ? 'warning' : 'primary'"
+          class="text-none"
+          :prepend-icon="page.publishStatus === 'published' ? 'circle-slash' : 'rocket'"
+          @click="requestPublishToggle"
+        >
+          {{ page.publishStatus === 'published' ? 'Unpublish' : 'Publish' }}
+        </v-btn>
       </header>
 
       <div class="lpe-body d-flex flex-grow-1 overflow-hidden">
-        <!-- palette -->
-        <aside class="lpe-palette pa-3">
-          <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2 px-1">Blocks</div>
-          <button
-            v-for="p in PALETTE"
-            :key="p.type"
-            type="button"
-            class="lpe-palette__item d-flex align-center ga-2"
-            @click="addBlock(p.type)"
-          >
-            <v-icon size="18">{{ p.icon }}</v-icon>
-            <span class="text-body-2">{{ p.label }}</span>
-            <v-icon size="16" class="lpe-palette__add ml-auto">plus</v-icon>
-          </button>
+        <!-- left: Blocks / Layers -->
+        <aside class="lpe-left d-flex flex-column">
+          <div class="lpe-left__tabs">
+            <button type="button" class="lpe-tab" :class="{ 'lpe-tab--active': leftTab === 'blocks' }" @click="leftTab = 'blocks'">Blocks</button>
+            <button type="button" class="lpe-tab" :class="{ 'lpe-tab--active': leftTab === 'layers' }" @click="leftTab = 'layers'">Layers</button>
+          </div>
+          <div class="lpe-left__body pa-3">
+            <LandingBlockPalette v-if="leftTab === 'blocks'" :palette="PALETTE" @add="addBlock" />
+            <LandingLayersPanel
+              v-else
+              :blocks="blocks"
+              :selected-id="selectedId"
+              :palette="PALETTE"
+              @select="selectAndScroll"
+              @duplicate="duplicateBlock"
+              @remove="removeBlock"
+              @move="moveBlock"
+              @reorder="reorderBlocks"
+            />
+          </div>
         </aside>
 
-        <!-- canvas -->
-        <main class="lpe-canvas flex-grow-1 pa-6 d-flex flex-column align-center">
-          <v-btn-toggle v-model="previewDevice" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
-            <v-btn value="desktop" class="text-none" size="small" prepend-icon="monitor">Desktop</v-btn>
-            <v-btn value="mobile" class="text-none" size="small" prepend-icon="smartphone">Mobile</v-btn>
-          </v-btn-toggle>
-
-          <div class="lpe-doc" :style="{ maxWidth: previewDevice === 'mobile' ? '375px' : '700px' }">
-            <div
-              v-for="block in blocks"
-              :key="block.id"
-              class="lpe-block"
-              :class="{ 'lpe-block--selected': block.id === selectedId }"
-              @click="selectedId = block.id"
-            >
-              <div class="lpe-block__controls">
-                <v-btn size="x-small" variant="text" icon="chevron-up" aria-label="Move up" @click.stop="move(block.id, -1)" />
-                <v-btn size="x-small" variant="text" icon="chevron-down" aria-label="Move down" @click.stop="move(block.id, 1)" />
-                <v-btn size="x-small" variant="text" icon="trash-2" color="error" aria-label="Delete" @click.stop="removeBlock(block.id)" />
+        <!-- center: canvas -->
+        <main class="lpe-canvas flex-grow-1" @click.self="selectedId = null">
+          <div class="lpe-sheet" :class="`lpe-sheet--${device}`" :style="{ background: pageStyle.backgroundColor, ...styleVars }" @click.self="selectedId = null">
+            <div class="lpe-content" @click.self="selectedId = null">
+              <div v-if="!blocks.length" class="lpe-empty text-center py-16 px-6">
+                <v-icon size="34" color="primary" class="mb-3">layout-template</v-icon>
+                <div class="text-h6 font-weight-bold mb-1">Start with a section</div>
+                <div class="text-body-2 text-medium-emphasis mb-6">Add a ready-made block group, or drag one in from the Blocks palette.</div>
+                <div class="d-flex justify-center ga-3 flex-wrap">
+                  <v-btn variant="tonal" color="primary" prepend-icon="sparkles" class="text-none" @click="insertQuickStart('hero')">Hero</v-btn>
+                  <v-btn variant="tonal" color="primary" prepend-icon="layout-grid" class="text-none" @click="insertQuickStart('feature')">Feature</v-btn>
+                  <v-btn variant="tonal" color="primary" prepend-icon="megaphone" class="text-none" @click="insertQuickStart('cta')">CTA</v-btn>
+                </div>
               </div>
-
-              <h2 v-if="block.type === 'title'" class="lpe-title" :style="{ textAlign: block.align }">{{ block.text }}</h2>
-              <p v-else-if="block.type === 'paragraph' || block.type === 'text'" class="lpe-paragraph" :style="{ textAlign: block.align }">{{ block.text }}</p>
-              <ul v-else-if="block.type === 'list'" class="lpe-list">
-                <li v-for="(li, i) in block.items" :key="i">{{ li }}</li>
-              </ul>
-              <div v-else-if="block.type === 'image'" class="lpe-image">
-                <v-icon size="32">image</v-icon>
-                <span class="text-caption text-medium-emphasis">{{ block.alt || 'Image' }}</span>
-              </div>
-              <div v-else-if="block.type === 'video'" class="lpe-image">
-                <v-icon size="32">video</v-icon>
-                <span class="text-caption text-medium-emphasis">{{ block.alt || 'Video embed' }}</span>
-              </div>
-              <div v-else-if="block.type === 'button'" :style="{ textAlign: block.align }">
-                <span class="lpe-button">{{ block.label }}</span>
-              </div>
-              <div v-else-if="block.type === 'form'" class="lpe-form-block">
-                <div class="lpe-form-block__field">Email address</div>
-                <div class="lpe-form-block__submit">{{ block.label || 'Subscribe' }}</div>
-              </div>
-              <hr v-else-if="block.type === 'divider'" class="lpe-divider" />
-              <div v-else-if="block.type === 'spacer'" class="lpe-spacer" :style="{ height: `${block.height}px` }" />
-              <div v-else-if="block.type === 'social'" class="lpe-social" :style="{ textAlign: block.align }">
-                <v-icon>facebook</v-icon><v-icon>instagram</v-icon><v-icon>twitter</v-icon><v-icon>linkedin</v-icon>
-              </div>
-              <div v-else-if="block.type === 'icons'" class="lpe-social" :style="{ textAlign: block.align }">
-                <v-icon>star</v-icon><v-icon>heart</v-icon><v-icon>shield-check</v-icon>
-              </div>
-              <nav v-else-if="block.type === 'menu'" class="lpe-menu" :style="{ textAlign: block.align }">
-                <span v-for="(li, i) in block.items" :key="i" class="lpe-menu__item">{{ li }}</span>
-              </nav>
-              <pre v-else-if="block.type === 'html'" class="lpe-html">{{ block.text }}</pre>
+              <template v-else>
+                <template v-for="(block, index) in blocks" :key="block.id">
+                  <LandingInsertionPoint :palette="PALETTE" @insert="type => addBlockAt(index, type)" @reorder="id => reorderBlockToIndex(id, index)" />
+                  <div :ref="el => setBlockRef(block.id, el)">
+                    <LandingBlockView
+                      :block="block"
+                      editable
+                      :selected="block.id === selectedId"
+                      :show-structure="showStructure"
+                      :palette="PALETTE"
+                      :class="{ 'lp-flash': flashId === block.id }"
+                      @select="selectedId = block.id"
+                      @duplicate="duplicateBlock(block.id)"
+                      @remove="removeBlock(block.id)"
+                    />
+                  </div>
+                </template>
+                <LandingInsertionPoint :palette="PALETTE" @insert="type => addBlockAt(blocks.length, type)" @reorder="id => reorderBlockToIndex(id, blocks.length)" />
+              </template>
             </div>
           </div>
         </main>
 
-        <!-- settings -->
-        <aside class="lpe-settings pa-4">
+        <!-- right: block settings or page style -->
+        <aside class="lpe-right pa-4">
           <template v-if="selected">
-            <div class="text-subtitle-2 font-weight-bold mb-4 text-capitalize">{{ selected.type }} settings</div>
-
-            <template v-if="selected.type === 'title' || selected.type === 'paragraph' || selected.type === 'text'">
-              <v-textarea v-model="selected.text" label="Text" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="3" class="mb-4" hide-details />
-            </template>
-            <template v-else-if="selected.type === 'list' || selected.type === 'menu'">
-              <v-textarea :model-value="listText(selected)" label="Items (one per line)" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="3" class="mb-4" hide-details @update:model-value="v => setListText(selected!, v)" />
-            </template>
-            <template v-else-if="selected.type === 'image' || selected.type === 'video'">
-              <v-text-field v-model="selected.alt" label="Alt text / caption" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
-              <v-btn variant="tonal" block prepend-icon="upload" class="text-none mb-4">Upload media</v-btn>
-            </template>
-            <template v-else-if="selected.type === 'button' || selected.type === 'form'">
-              <v-text-field v-model="selected.label" label="Label" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
-              <v-text-field v-if="selected.type === 'button'" v-model="selected.url" label="Link URL" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
-            </template>
-            <template v-else-if="selected.type === 'spacer'">
-              <v-slider v-model="selected.height" label="Height" :min="8" :max="96" :step="4" thumb-label class="mb-4" hide-details />
-            </template>
-            <template v-else-if="selected.type === 'html'">
-              <v-textarea v-model="selected.text" label="HTML" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="5" class="mb-4 lpe-mono" hide-details />
-            </template>
-            <template v-else>
-              <div class="text-body-2 text-medium-emphasis mb-4">No content options for this block.</div>
-            </template>
-
-            <template v-if="['title', 'paragraph', 'text', 'button', 'social', 'icons', 'menu'].includes(selected.type)">
-              <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2">Alignment</div>
-              <v-btn-toggle v-model="selected.align" mandatory density="comfortable" variant="outlined" divided class="mb-4">
-                <v-btn value="left" icon="align-left" size="small" />
-                <v-btn value="center" icon="align-center" size="small" />
-                <v-btn value="right" icon="align-right" size="small" />
-              </v-btn-toggle>
-            </template>
-
-            <v-btn variant="text" color="error" prepend-icon="trash-2" class="text-none" @click="removeBlock(selected.id)">Delete block</v-btn>
+            <LandingBlockSettings :block="selected" @remove="removeBlock" />
           </template>
-          <div v-else class="text-body-2 text-medium-emphasis pt-4">Select a block to edit it, or add one from the left.</div>
+          <LandingPageStylePanel v-else :style="pageStyle" @update="updatePageStyle" />
         </aside>
       </div>
 
@@ -252,28 +420,43 @@ function saveAndClose() {
         </template>
       </MpFormDrawer>
 
-      <!-- Preview dialog -->
-      <v-dialog v-model="previewOpen" max-width="720" rounded="xl">
-        <v-card rounded="lg" border flat class="pa-5">
-          <div class="d-flex align-center justify-space-between mb-4">
-            <div class="text-h6 font-weight-bold">{{ pageName }}</div>
-            <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="previewOpen = false" />
+      <!-- Preview dialog: clean render, no editor chrome -->
+      <v-dialog v-model="previewOpen" fullscreen :scrim="false" transition="dialog-bottom-transition">
+        <v-card rounded="0" flat class="lpe-preview-card d-flex flex-column">
+          <div class="d-flex align-center ga-3 px-4 lpe-preview-bar">
+            <div class="text-subtitle-2 font-weight-bold text-truncate">{{ pageName }}</div>
+            <v-spacer />
+            <v-btn-toggle v-model="previewDevice" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
+              <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop view" />
+              <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile view" />
+            </v-btn-toggle>
+            <v-btn icon="x" variant="text" size="small" aria-label="Close preview" @click="previewOpen = false" />
           </div>
-          <div class="lpe-preview-stage pa-6">
-            <div class="lpe-doc lpe-doc--preview mx-auto">
-              <div v-for="block in blocks" :key="block.id" class="lpe-block lpe-block--readonly">
-                <h2 v-if="block.type === 'title'" class="lpe-title" :style="{ textAlign: block.align }">{{ block.text }}</h2>
-                <p v-else-if="block.type === 'paragraph' || block.type === 'text'" class="lpe-paragraph" :style="{ textAlign: block.align }">{{ block.text }}</p>
-                <ul v-else-if="block.type === 'list'" class="lpe-list"><li v-for="(li, i) in block.items" :key="i">{{ li }}</li></ul>
-                <div v-else-if="block.type === 'image' || block.type === 'video'" class="lpe-image"><v-icon size="28">{{ block.type === 'video' ? 'video' : 'image' }}</v-icon></div>
-                <div v-else-if="block.type === 'button'" :style="{ textAlign: block.align }"><span class="lpe-button">{{ block.label }}</span></div>
-                <div v-else-if="block.type === 'form'" class="lpe-form-block"><div class="lpe-form-block__field">Email address</div><div class="lpe-form-block__submit">{{ block.label || 'Subscribe' }}</div></div>
-                <hr v-else-if="block.type === 'divider'" class="lpe-divider" />
+          <div class="lpe-preview-stage flex-grow-1">
+            <div class="lpe-sheet" :class="`lpe-sheet--${previewDevice}`" :style="{ background: pageStyle.backgroundColor, ...styleVars }">
+              <div class="lpe-content">
+                <LandingBlockView v-for="block in blocks" :key="block.id" :block="block" :palette="PALETTE" />
               </div>
             </div>
           </div>
         </v-card>
       </v-dialog>
+
+      <MpConfirmDialog
+        v-model="confirmPublishOpen"
+        title="Publish this page?"
+        message="This makes the page publicly live at its published URL."
+        confirm-label="Publish"
+        @confirm="confirmPublish"
+      />
+      <MpConfirmDialog
+        v-model="confirmUnpublishOpen"
+        title="Unpublish this page?"
+        message="Visitors will no longer be able to view this page until it's published again."
+        confirm-label="Unpublish"
+        danger
+        @confirm="confirmUnpublish"
+      />
 
       <v-snackbar v-model="toast.show" color="success" timeout="1600" location="bottom right">{{ toast.text }}</v-snackbar>
     </template>
@@ -297,176 +480,150 @@ function saveAndClose() {
   background: rgb(var(--v-theme-background));
 }
 .lpe-top {
-  height: 60px;
+  height: 56px;
   flex-shrink: 0;
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
   background: rgb(var(--v-theme-surface));
 }
 .lpe-name {
-  max-width: 260px;
+  max-width: 220px;
+  flex-shrink: 0;
   font-weight: 700;
 }
-.lpe-palette {
-  width: 200px;
+.lpe-url-chip {
+  max-width: 220px;
+  cursor: pointer;
+  flex-shrink: 1;
+}
+
+/* autosave dot-chip */
+.lpe-savechip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface-variant));
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  flex-shrink: 0;
+}
+.lpe-savechip__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-success));
+  transition: background 150ms ease;
+}
+.lpe-savechip--dirty .lpe-savechip__dot {
+  background: rgb(var(--v-theme-warning));
+}
+
+/* body layout */
+.lpe-body {
+  min-height: 0;
+}
+.lpe-left {
+  width: 264px;
   flex-shrink: 0;
   border-right: 1px solid rgba(var(--v-theme-on-surface), 0.10);
   background: rgb(var(--v-theme-surface));
-  overflow-y: auto;
 }
-.lpe-palette__item {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  color: rgb(var(--v-theme-on-surface));
-  cursor: pointer;
-  transition: background 100ms ease;
-}
-.lpe-palette__item:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
-}
-.lpe-palette__add {
-  opacity: 0;
-  transition: opacity 100ms ease;
-}
-.lpe-palette__item:hover .lpe-palette__add {
-  opacity: 0.6;
-}
-.lpe-canvas {
-  overflow-y: auto;
-  background: rgb(var(--v-theme-background));
-}
-.lpe-doc {
-  width: 100%;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.10);
-  border-radius: 12px;
-  padding: 16px;
-  min-height: 400px;
-  transition: max-width 0.2s ease;
-}
-.lpe-doc--preview { max-width: 700px; }
-.lpe-block {
-  position: relative;
-  padding: 10px 12px;
-  border: 1.5px solid transparent;
-  border-radius: 8px;
-  transition: border-color 100ms ease;
-}
-.lpe-block:hover {
-  border-color: rgba(var(--v-theme-primary), 0.25);
-}
-.lpe-block--selected {
-  border-color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.03);
-}
-.lpe-block--readonly { cursor: default; }
-.lpe-block__controls {
-  position: absolute;
-  top: -14px;
-  right: 8px;
-  display: none;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  border-radius: 8px;
-  padding: 1px;
-}
-.lpe-block:hover .lpe-block__controls,
-.lpe-block--selected .lpe-block__controls {
+.lpe-left__tabs {
   display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
 }
-.lpe-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.3;
-  color: rgb(var(--v-theme-on-surface));
-}
-.lpe-paragraph {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-.lpe-list {
-  padding-left: 20px;
-  color: rgb(var(--v-theme-on-surface-variant));
-  font-size: 0.95rem;
-  line-height: 1.7;
-}
-.lpe-image {
-  height: 160px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: rgba(var(--v-theme-on-surface), 0.05);
-  border-radius: 8px;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-.lpe-button {
-  display: inline-block;
-  padding: 10px 24px;
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-.lpe-form-block { display: flex; flex-direction: column; gap: 8px; max-width: 320px; }
-.lpe-form-block__field {
-  height: 36px;
-  border-radius: 8px;
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  font-size: 0.85rem;
-  color: rgb(var(--v-theme-on-surface-variant));
-}
-.lpe-form-block__submit {
-  height: 38px;
-  border-radius: 8px;
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-.lpe-divider {
+.lpe-tab {
+  flex: 1;
+  padding: 10px 0;
   border: none;
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.16);
-  margin: 4px 0;
-}
-.lpe-spacer {
-  background: repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(var(--v-theme-on-surface), 0.05) 6px, rgba(var(--v-theme-on-surface), 0.05) 12px);
-  border-radius: 4px;
-}
-.lpe-social {
-  display: flex;
-  gap: 12px;
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 700;
   color: rgb(var(--v-theme-on-surface-variant));
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 100ms ease, border-color 100ms ease;
 }
-.lpe-menu { display: flex; gap: 20px; font-size: 0.85rem; font-weight: 600; }
-.lpe-html {
-  font-family: monospace;
-  font-size: 0.8rem;
-  background: rgba(var(--v-theme-on-surface), 0.05);
-  padding: 10px;
-  border-radius: 6px;
-  color: rgb(var(--v-theme-on-surface-variant));
-  white-space: pre-wrap;
+.lpe-tab:hover {
+  color: rgb(var(--v-theme-on-surface));
 }
-.lpe-settings {
-  width: 300px;
+.lpe-tab--active {
+  color: rgb(var(--v-theme-primary));
+  border-bottom-color: rgb(var(--v-theme-primary));
+}
+.lpe-left__body {
+  overflow-y: auto;
+  flex-grow: 1;
+}
+.lpe-right {
+  width: 320px;
   flex-shrink: 0;
   border-left: 1px solid rgba(var(--v-theme-on-surface), 0.10);
   background: rgb(var(--v-theme-surface));
   overflow-y: auto;
 }
-.lpe-preview-stage { background: rgba(var(--v-theme-on-surface), 0.02); border-radius: 12px; }
-:deep(.lpe-mono textarea) {
-  font-family: monospace;
-  font-size: 0.82rem;
+
+/* canvas */
+.lpe-canvas {
+  overflow-y: auto;
+  background: rgb(var(--v-theme-background));
+  padding: 40px 24px;
+  display: flex;
+  justify-content: center;
+}
+.lpe-sheet {
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -16px rgba(var(--v-theme-on-surface), 0.28), 0 1px 2px rgba(var(--v-theme-on-surface), 0.08);
+  transition: width 0.25s ease, max-width 0.25s ease;
+  min-height: 520px;
+  align-self: flex-start;
+  overflow: hidden;
+}
+.lpe-sheet--desktop {
+  width: 100%;
+  max-width: 960px;
+}
+.lpe-sheet--mobile {
+  width: 390px;
+  max-width: 390px;
+}
+.lpe-content {
+  max-width: min(var(--lp-content-width, 720px), 100%);
+  margin: 0 auto;
+  padding: 40px 32px;
+  font-family: var(--lp-font, inherit);
+  display: flex;
+  flex-direction: column;
+}
+.lpe-empty {
+  border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.16);
+  border-radius: 12px;
+  margin: 20px 0;
+}
+
+/* flash highlight on newly added blocks */
+@keyframes lp-flash-pulse {
+  0% { background: rgba(var(--v-theme-primary), 0.16); }
+  100% { background: transparent; }
+}
+.lp-flash {
+  animation: lp-flash-pulse 700ms ease-out;
+}
+
+/* preview dialog */
+.lpe-preview-bar {
+  height: 52px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+}
+.lpe-preview-stage {
+  overflow-y: auto;
+  background: rgb(var(--v-theme-background));
+  padding: 40px 24px;
+  display: flex;
+  justify-content: center;
 }
 </style>
