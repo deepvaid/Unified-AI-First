@@ -66,7 +66,7 @@ export const chartTooltipTheme = 'light' as const
  */
 export function applyChartTheme(): Pick<
   ApexOptions,
-  'colors' | 'chart' | 'grid' | 'xaxis' | 'yaxis' | 'tooltip'
+  'colors' | 'chart' | 'grid' | 'xaxis' | 'yaxis' | 'tooltip' | 'stroke' | 'dataLabels'
 > {
   return {
     colors: activeChartPalette.value,
@@ -75,8 +75,7 @@ export function applyChartTheme(): Pick<
       fontFamily: 'Inter, system-ui, sans-serif',
     },
     grid: {
-      borderColor: chartGridColor,
-      strokeDashArray: 0,
+      show: false,
       padding: { top: 8, right: 12, bottom: 4, left: 12 },
     },
     xaxis: {
@@ -101,6 +100,12 @@ export function applyChartTheme(): Pick<
     },
     tooltip: {
       theme: chartTooltipTheme,
+    },
+    stroke: {
+      width: 2,
+    },
+    dataLabels: {
+      enabled: false,
     },
   }
 }

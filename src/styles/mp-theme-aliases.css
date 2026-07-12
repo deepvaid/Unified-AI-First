@@ -55,6 +55,13 @@
   --dur-slow: var(--mp-motion-duration-slow);
   --dur-entrance: var(--mp-motion-duration-entrance);
   --stagger-step: var(--mp-motion-stagger-step);
+
+  /* Ink panel (branded inverted surface) */
+  --ink-panel-bg: var(--mp-color-light-inkPanel-bg);
+  --ink-panel-fg: var(--mp-color-light-inkPanel-fg);
+  --ink-panel-muted-fg: var(--mp-color-light-inkPanel-mutedFg);
+  --ink-panel-accent: var(--mp-color-light-inkPanel-accent);
+  --ink-panel-border: var(--mp-color-light-inkPanel-border);
 }
 
 .v-application.v-theme--maropostDark {
@@ -87,4 +94,11 @@
 
   --primary-container: var(--mp-color-dark-primaryContainer);
   --on-primary-container: var(--mp-color-dark-onPrimaryContainer);
+
+  /* Ink panel (branded inverted surface) */
+  --ink-panel-bg: var(--mp-color-dark-inkPanel-bg);
+  --ink-panel-fg: var(--mp-color-dark-inkPanel-fg);
+  --ink-panel-muted-fg: var(--mp-color-dark-inkPanel-mutedFg);
+  --ink-panel-accent: var(--mp-color-dark-inkPanel-accent);
+  --ink-panel-border: var(--mp-color-dark-inkPanel-border);
 }
