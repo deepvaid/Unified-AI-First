@@ -45,5 +45,9 @@ export const useContentStore = defineStore('content', () => {
     }
   }
 
-  return { items, moveToFolder, cloneContent, reassignFolder }
+  function removeContent(id: number) {
+    items.value = items.value.filter(i => i.id !== id)
+  }
+
+  return { items, moveToFolder, cloneContent, reassignFolder, removeContent }
 })

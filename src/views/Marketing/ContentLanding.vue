@@ -10,6 +10,10 @@ import type {
   SetupCardConfig,
   DaVinciCardConfig,
 } from '@/components/ModuleLandingPage.vue'
+import { useContentStore } from '@/stores/useContent'
+import { useImagesStore } from '@/stores/useImages'
+import { useMarketingAssetsStore } from '@/stores/useMarketingAssets'
+import { useProductExtrasStore } from '@/stores/useProductExtras'
 
 const route = useRoute()
 const accountId = computed(() => (route.params.accountId as string) ?? '1')
@@ -17,14 +21,19 @@ const accountId = computed(() => (route.params.accountId as string) ?? '1')
 const base = computed(() => `/accounts/${accountId.value}`)
 const commerceBase = computed(() => `/commerce/${accountId.value}`)
 
+const contentStore = useContentStore()
+const imagesStore = useImagesStore()
+const assetsStore = useMarketingAssetsStore()
+const productExtrasStore = useProductExtrasStore()
+
 const primaryActions = computed<PrimaryAction[]>(() => [
-  { label: 'New email content', icon: 'plus', to: `${base.value}/contents` },
+  { label: 'New Email Content', icon: 'plus', to: `${base.value}/contents` },
 ])
 
 const quickActions = computed<QuickAction[]>(() => [
-  { icon: 'file-text', label: 'New email template', description: 'Start a reusable email block', to: `${base.value}/contents`, color: 'blue' },
+  { icon: 'file-text', label: 'New Email Template', description: 'Start a reusable email block', to: `${base.value}/contents`, color: 'blue' },
   { icon: 'image', label: 'Upload images', description: 'Add to your image library', to: `${base.value}/images`, color: 'cyan' },
-  { icon: 'layers', label: 'New dynamic rule', description: 'Personalize content blocks', to: `${base.value}/dynamic_contents`, color: 'violet' },
+  { icon: 'layers', label: 'New Dynamic Rule', description: 'Personalize content blocks', to: `${base.value}/dynamic_contents`, color: 'violet' },
   { icon: 'rss', label: 'Connect a feed', description: 'Stream data into emails', to: `${base.value}/content_feeds`, color: 'green' },
 ])
 
@@ -34,7 +43,7 @@ const childPages = computed<ChildPage[]>(() => [
     title: 'Email Content',
     description: 'Reusable email templates and modular blocks for fast composition.',
     to: `${base.value}/contents`,
-    count: 47,
+    count: contentStore.items.length,
     color: 'blue',
   },
   {
@@ -42,7 +51,7 @@ const childPages = computed<ChildPage[]>(() => [
     title: 'Dynamic Content',
     description: 'Conditional content blocks that personalize by audience attributes.',
     to: `${base.value}/dynamic_contents`,
-    count: 12,
+    count: assetsStore.dynamicContents.length,
     color: 'violet',
   },
   {
@@ -50,7 +59,7 @@ const childPages = computed<ChildPage[]>(() => [
     title: 'Image Library',
     description: 'Centralized media for emails, landing pages, and campaigns.',
     to: `${base.value}/images`,
-    count: 234,
+    count: imagesStore.items.length,
     color: 'cyan',
   },
   {
@@ -58,7 +67,7 @@ const childPages = computed<ChildPage[]>(() => [
     title: 'Footer Management',
     description: 'Standardize footers across brands with unsubscribe and compliance.',
     to: `${base.value}/footers`,
-    count: 8,
+    count: assetsStore.footers.length,
     color: 'amber',
   },
   {
@@ -66,7 +75,7 @@ const childPages = computed<ChildPage[]>(() => [
     title: 'Optimise on Open',
     description: 'Real-time images that personalize when the email is opened.',
     to: `${base.value}/image_groups`,
-    count: 5,
+    count: assetsStore.imageGroups.length,
     color: 'rose',
   },
   {
@@ -74,7 +83,7 @@ const childPages = computed<ChildPage[]>(() => [
     title: 'Content Feeds',
     description: 'RSS, JSON, and product feeds streamed into your email content.',
     to: `${base.value}/content_feeds`,
-    count: 3,
+    count: assetsStore.feeds.length,
     color: 'green',
   },
   {
@@ -82,7 +91,7 @@ const childPages = computed<ChildPage[]>(() => [
     title: 'Product Recommendations',
     description: 'AI-driven product picks shown inside email and on-site placements.',
     to: `${commerceBase.value}/product_recommendations`,
-    count: 18,
+    count: productExtrasStore.recommendations.length,
     color: 'indigo',
   },
   {
@@ -90,7 +99,7 @@ const childPages = computed<ChildPage[]>(() => [
     title: 'Coupon Banks',
     description: 'Pools of unique coupon codes assigned per recipient at send time.',
     to: `${base.value}/coupon_banks`,
-    count: 6,
+    count: assetsStore.coupons.length,
     color: 'teal',
   },
   {
@@ -98,18 +107,93 @@ const childPages = computed<ChildPage[]>(() => [
     title: 'Preference Management',
     description: 'Subscription, unsubscribe, and profile pages your contacts see.',
     to: `${base.value}/preference_pages`,
-    count: 6,
+    count: assetsStore.preferencePages.length,
     color: 'blue',
   },
 ])
 
-const recentActivity = computed<ActivityItem[]>(() => [
-  { icon: 'file-text', tag: 'email', eyebrow: '8m ago', title: 'Spring Refresh template edited by Sarah Connor', meta: '12 blocks' },
-  { icon: 'image', tag: 'audience', eyebrow: '32m ago', title: '12 new product images uploaded to library', meta: '+12 assets' },
-  { icon: 'layers', tag: 'automation', eyebrow: '1h ago', title: 'Dynamic rule "VIP banner" updated — applied to 4 templates', meta: '4 templates' },
-  { icon: 'panel-bottom', tag: 'email', eyebrow: '2h ago', title: 'Welcome footer marked as default for all brands', meta: 'Default' },
-  { icon: 'ticket-percent', tag: 'order', eyebrow: '3h ago', title: 'Coupon bank "July Promo" generated 500 unique codes', meta: '500 codes' },
-])
+/** Parses the mixed date formats seeded across stores ("2026-03-07", "Yesterday", "Just now") into a sortable timestamp. */
+function looseDateValue(s: string): number {
+  if (s === 'Just now') return Date.now()
+  if (s === 'Yesterday') return Date.now() - 86400000
+  const t = Date.parse(s)
+  return Number.isNaN(t) ? 0 : t
+}
+
+/** Formats an ISO date ("2026-03-07") to a short display date; passes through relative strings unchanged. */
+function fmtEyebrow(s: string) {
+  const t = Date.parse(s)
+  if (Number.isNaN(t) || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+const recentActivity = computed<ActivityItem[]>(() => {
+  const entries: (ActivityItem & { sortKey: number })[] = []
+
+  // ContentItem.lastUpdated is a relative-time string ("2 hours ago", "Last week") rather
+  // than a parseable date — the seed data is already ordered newest-first, so trust that.
+  const recentContent = contentStore.items[0]
+  if (recentContent) {
+    entries.push({
+      icon: 'file-text', tag: 'email',
+      eyebrow: recentContent.lastUpdated,
+      title: `${recentContent.name} updated`,
+      meta: recentContent.type,
+      to: `${base.value}/contents/editor/${recentContent.id}`,
+      sortKey: Date.now(),
+    })
+  }
+
+  const recentImage = [...imagesStore.items].sort((a, b) => looseDateValue(b.date) - looseDateValue(a.date))[0]
+  if (recentImage) {
+    entries.push({
+      icon: 'image', tag: 'audience',
+      eyebrow: fmtEyebrow(recentImage.date),
+      title: `${recentImage.name} uploaded to the image library`,
+      meta: recentImage.size,
+      to: `${base.value}/images`,
+      sortKey: looseDateValue(recentImage.date),
+    })
+  }
+
+  const recentRule = [...assetsStore.dynamicContents].sort((a, b) => looseDateValue(b.updatedAt) - looseDateValue(a.updatedAt))[0]
+  if (recentRule) {
+    entries.push({
+      icon: 'layers', tag: 'automation',
+      eyebrow: fmtEyebrow(recentRule.updatedAt),
+      title: `Dynamic rule "${recentRule.name}" updated`,
+      meta: `${recentRule.rules.length} rule${recentRule.rules.length === 1 ? '' : 's'}`,
+      to: `${base.value}/dynamic_contents`,
+      sortKey: looseDateValue(recentRule.updatedAt),
+    })
+  }
+
+  const defaultFooter = assetsStore.footers.find(f => f.isDefault) ?? assetsStore.footers[0]
+  if (defaultFooter) {
+    entries.push({
+      icon: 'panel-bottom', tag: 'email',
+      eyebrow: fmtEyebrow(defaultFooter.updatedAt),
+      title: `${defaultFooter.name}${defaultFooter.isDefault ? ' marked as default' : ''}`,
+      meta: defaultFooter.isDefault ? 'Default' : undefined,
+      to: `${base.value}/footers`,
+      sortKey: looseDateValue(defaultFooter.updatedAt),
+    })
+  }
+
+  const recentCoupon = [...assetsStore.coupons].sort((a, b) => looseDateValue(b.updatedAt) - looseDateValue(a.updatedAt))[0]
+  if (recentCoupon) {
+    entries.push({
+      icon: 'ticket-percent', tag: 'order',
+      eyebrow: fmtEyebrow(recentCoupon.updatedAt),
+      title: `Coupon bank "${recentCoupon.name}" — ${recentCoupon.unused.toLocaleString()} unused codes`,
+      meta: `${recentCoupon.redeemed.toLocaleString()} redeemed`,
+      to: `${base.value}/coupon_banks`,
+      sortKey: looseDateValue(recentCoupon.updatedAt),
+    })
+  }
+
+  return entries.sort((a, b) => b.sortKey - a.sortKey).slice(0, 5)
+})
 
 const setupCard = computed<SetupCardConfig>(() => ({
   title: 'Content setup',

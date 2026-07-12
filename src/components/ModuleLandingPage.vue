@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 
 export interface PrimaryAction {
@@ -37,6 +38,7 @@ export interface ActivityItem {
   title: string
   meta?: string
   tag?: ActivityTag
+  to?: string
 }
 
 export interface SetupItem {
@@ -149,11 +151,13 @@ defineProps<{
         <div v-if="recentActivity?.length" class="activity-section mt-6">
           <div class="section-eyebrow" role="heading" aria-level="2">Recent activity</div>
           <div class="activity-card">
-            <div
+            <component
+              :is="item.to ? RouterLink : 'div'"
               v-for="(item, idx) in recentActivity"
               :key="idx"
+              :to="item.to"
               class="activity-row"
-              :class="{ 'activity-row--last': idx === recentActivity.length - 1 }"
+              :class="{ 'activity-row--last': idx === recentActivity.length - 1, 'activity-row--link': item.to }"
             >
               <span class="activity-row__chip" :class="`activity-row__chip--${item.tag ?? 'email'}`">
                 <v-icon size="14">{{ item.icon }}</v-icon>
@@ -163,7 +167,7 @@ defineProps<{
                 <div class="activity-row__title">{{ item.title }}</div>
               </div>
               <div v-if="item.meta" class="activity-row__meta">{{ item.meta }}</div>
-            </div>
+            </component>
           </div>
         </div>
       </v-col>
@@ -226,17 +230,25 @@ defineProps<{
           <div class="side-card__desc">{{ daVinciCard.description }}</div>
           <ul class="davinci-list">
             <li v-for="s in daVinciCard.suggestions" :key="s.label">
-              <component
-                :is="s.to ? 'router-link' : (s.href ? 'a' : 'button')"
-                :to="s.to"
-                :href="s.href"
-                :type="(!s.to && !s.href) ? 'button' : undefined"
-                class="davinci-list__item"
-              >
+              <!-- Separate branches per link kind — binding an unconditional :href
+                   alongside RouterLink's :to clobbers the href it computes internally
+                   (fallthrough attrs win over the component's own render), so each
+                   kind gets only the attribute it needs. -->
+              <router-link v-if="s.to" :to="s.to" class="davinci-list__item">
                 <v-icon size="13" class="davinci-list__icon">sparkles</v-icon>
                 <span>{{ s.label }}</span>
                 <v-icon size="13" class="davinci-list__arrow">arrow-right</v-icon>
-              </component>
+              </router-link>
+              <a v-else-if="s.href" :href="s.href" class="davinci-list__item">
+                <v-icon size="13" class="davinci-list__icon">sparkles</v-icon>
+                <span>{{ s.label }}</span>
+                <v-icon size="13" class="davinci-list__arrow">arrow-right</v-icon>
+              </a>
+              <button v-else type="button" class="davinci-list__item">
+                <v-icon size="13" class="davinci-list__icon">sparkles</v-icon>
+                <span>{{ s.label }}</span>
+                <v-icon size="13" class="davinci-list__arrow">arrow-right</v-icon>
+              </button>
             </li>
           </ul>
         </div>
@@ -451,6 +463,26 @@ defineProps<{
 
 .activity-row--last {
   border-bottom: none;
+}
+
+.activity-row--link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  margin: 0 -14px;
+  padding-inline: 14px;
+  border-radius: 8px;
+  transition: background 120ms ease;
+}
+
+.activity-row--link:hover,
+.activity-row--link:focus-visible {
+  background: var(--surface-2);
+}
+
+.activity-row--link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
 }
 
 .activity-row__chip {

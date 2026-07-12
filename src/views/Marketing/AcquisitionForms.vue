@@ -172,7 +172,7 @@ async function copyText(text: string) {
       subtitle="Capture leads and grow your audience across your channels."
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">Create Form</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New Form</v-btn>
       </template>
     </MpPageHeader>
 
@@ -216,7 +216,7 @@ async function copyText(text: string) {
         icon="layout-template"
         title="No acquisition forms yet"
         description="Create a pop-up or embedded form to start capturing leads."
-        action-label="Create Form"
+        action-label="New Form"
         action-icon="plus"
         @action="openCreate"
       />
@@ -319,7 +319,7 @@ async function copyText(text: string) {
         <v-col cols="12" sm="6" md="4">
           <v-card variant="flat" border rounded="lg" class="add-card h-100 d-flex flex-column align-center justify-center text-center pa-6 cursor-pointer" @click="openCreate">
             <v-icon size="40" color="primary" class="mb-3">circle-plus</v-icon>
-            <div class="text-body-1 font-weight-bold mb-1">Create New Form</div>
+            <div class="text-body-1 font-weight-bold mb-1">New Form</div>
             <div class="text-caption text-medium-emphasis">Choose a template and launch the builder</div>
           </v-card>
         </v-col>

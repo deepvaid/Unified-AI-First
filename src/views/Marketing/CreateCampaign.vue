@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpOptionCard from '@/components/MpOptionCard.vue'
+import type { ComponentPublicInstance } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import { useCampaignsStore, type Campaign, type CampaignDraftInput } from '@/stores/useCampaigns'
@@ -26,6 +27,27 @@ const kind = ref<'email' | 'ab_email'>('email')
 function chooseType(next: 'email' | 'ab_email') {
   kind.value = next
   typeChosen.value = true
+}
+
+// Keyboard support: arrow-key navigation between the two type cards, Enter/Space
+// to choose (handled by MpOptionCard itself via its native click fallthrough).
+const emailCardRef = ref<ComponentPublicInstance | null>(null)
+const abCardRef = ref<ComponentPublicInstance | null>(null)
+
+function focusCard(cardRef: typeof emailCardRef) {
+  (cardRef.value?.$el as HTMLElement | undefined)?.focus()
+}
+
+function onTypeGateKeydown(e: KeyboardEvent) {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+  const active = document.activeElement
+  if (e.key === 'ArrowRight' && active === emailCardRef.value?.$el) {
+    e.preventDefault()
+    focusCard(abCardRef)
+  } else if (e.key === 'ArrowLeft' && active === abCardRef.value?.$el) {
+    e.preventDefault()
+    focusCard(emailCardRef)
+  }
 }
 
 // ── Wizard state ──────────────────────────────────────────────────────────────
@@ -286,13 +308,15 @@ function hydrateFrom(campaign: Campaign) {
 
 onMounted(() => {
   const idParam = route.query.id ?? route.params.id
-  if (!idParam) return
-  const existing = store.getCampaign(Number(idParam))
-  if (!existing) return
-  hydrateFrom(existing)
-  typeChosen.value = true
-  step.value = 1
-  maxStepReached.value = totalSteps
+  const existing = idParam ? store.getCampaign(Number(idParam)) : undefined
+  if (existing) {
+    hydrateFrom(existing)
+    typeChosen.value = true
+    step.value = 1
+    maxStepReached.value = totalSteps
+  } else {
+    focusCard(emailCardRef)
+  }
 })
 
 const pageTitle = computed(() => (draftId.value != null ? `Edit ${kind.value === 'ab_email' ? 'A/B ' : ''}Campaign` : `New ${kind.value === 'ab_email' ? 'A/B ' : ''}Email Campaign`))
@@ -330,13 +354,18 @@ const enabledOptimizations = computed(() => {
     <!-- Type gate -->
     <template v-if="!typeChosen">
       <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">
-        <MpPageHeader title="New Email Campaign" subtitle="Choose a campaign type to get started" :back-to="campaignsRoute" />
+        <MpPageHeader title="New Email Campaign" subtitle="Choose a campaign type to get started" :back-to="campaignsRoute">
+          <template #tabs>
+            <MpWizardSteps :steps="stepTitles" :current="0" class="mt-3" />
+          </template>
+        </MpPageHeader>
       </div>
-      <div class="flex-grow-1 overflow-y-auto pa-8 bg-background d-flex align-center justify-center">
-        <div style="max-width: 640px; width: 100%;">
+      <div class="flex-grow-1 overflow-y-auto pa-8 bg-background" @keydown="onTypeGateKeydown">
+        <div style="max-width: 640px; width: 100%; margin: 0 auto;">
           <v-row dense>
             <v-col cols="12" sm="6">
               <MpOptionCard
+                ref="emailCardRef"
                 :selected="false"
                 title="Email Campaign"
                 description="A single email sent to your chosen audience."
@@ -347,6 +376,7 @@ const enabledOptimizations = computed(() => {
             </v-col>
             <v-col cols="12" sm="6">
               <MpOptionCard
+                ref="abCardRef"
                 :selected="false"
                 title="A/B Email Campaign"
                 description="Test two subject lines and automatically send the winner."

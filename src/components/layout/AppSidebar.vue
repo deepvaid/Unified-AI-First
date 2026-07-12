@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 import { Crown } from 'lucide-vue-next'
 import maropostLogo from '@/assets/maropost-logo.svg?raw'
+import { useMobileNav } from '@/composables/useMobileNav'
 const props = defineProps<{
   modelValue: boolean
   rail: boolean
@@ -249,9 +250,26 @@ function buildNavGroups(accountId: string): NavGroup[] {
   ]
 }
 
+const { mobileNavOpen } = useMobileNav()
+
 const localDrawer = ref(props.modelValue)
 const localRail = ref(props.rail)
-const sidebarMode = computed<'expanded' | 'rail'>(() => localRail.value ? 'rail' : 'expanded')
+// On a temporary (mobile) drawer, always render the full expanded nav — rail
+// mode (icon-only + hover flyouts) is a desktop-hover pattern that doesn't
+// work on touch, and there's no width pressure inside an overlay anyway.
+const effectiveRail = computed(() => props.temporary ? false : localRail.value)
+// The drawer's open/closed state is driven by different sources depending on
+// mode: desktop uses the parent-synced `localDrawer`; mobile uses the shared
+// mobile-nav flag so the AppBar hamburger (a sibling component) can open it
+// without App.vue having to wire a prop between the two.
+const drawerModel = computed<boolean>({
+  get: () => (props.temporary ? mobileNavOpen.value : localDrawer.value),
+  set: (value: boolean) => {
+    if (props.temporary) mobileNavOpen.value = value
+    else localDrawer.value = value
+  },
+})
+const sidebarMode = computed<'expanded' | 'rail'>(() => effectiveRail.value ? 'rail' : 'expanded')
 const railHoveredSubGroup = ref<string | null>(null)
 const railOpenGroup = ref<string | null>(null)
 const appsExpanded = ref(false)
@@ -423,7 +441,7 @@ const activeNavGroupTitle = computed(() => {
 })
 
 function isModuleActive(group: NavGroup): boolean {
-  if (!localRail.value && flyoutOpen.value) {
+  if (!effectiveRail.value && flyoutOpen.value) {
     return flyoutGroupTitle.value === group.title
   }
   return activeNavGroupTitle.value === group.title
@@ -509,19 +527,19 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
 <template>
   <v-navigation-drawer
-    v-model="localDrawer"
-    :rail="localRail"
+    v-model="drawerModel"
+    :rail="effectiveRail"
     :rail-width="64"
     width="240"
     :permanent="!props.temporary"
     :temporary="props.temporary"
-    :mobile-breakpoint="0"
+    :mobile-breakpoint="1024"
     class="mp-sidebar"
     aria-label="Main navigation"
   >
     <!-- Brand + anchored toggle -->
-    <div class="sidebar-header" :class="{ 'sidebar-header--rail': localRail }">
-      <template v-if="!localRail">
+    <div class="sidebar-header" :class="{ 'sidebar-header--rail': effectiveRail }">
+      <template v-if="!effectiveRail">
         <button
           type="button"
           class="sidebar-brand"
@@ -543,7 +561,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
         </button>
       </template>
 
-      <v-tooltip location="end" :text="localRail ? 'Expand sidebar' : 'Collapse sidebar'">
+      <v-tooltip v-if="!props.temporary" location="end" :text="localRail ? 'Expand sidebar' : 'Collapse sidebar'">
         <template #activator="{ props: tipProps }">
           <button
             v-bind="tipProps"
@@ -562,7 +580,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
     <div class="sidebar-scroll">
     <v-list density="compact" class="py-1">
       <template v-for="group in navGroups" :key="group.title">
-        <template v-if="isAppsGroup(group) && !localRail">
+        <template v-if="isAppsGroup(group) && !effectiveRail">
           <v-list-item
             :to="group.singleRoute"
             @click="group.singleRoute && goTo(group.singleRoute)"
@@ -625,16 +643,16 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               :to="group.singleRoute"
               @click="group.singleRoute && goTo(group.singleRoute)"
               :prepend-icon="group.icon"
-              :title="!localRail ? group.title : ''"
+              :title="!effectiveRail ? group.title : ''"
               :value="group.title"
               rounded="lg"
               :active="isModuleActive(group)"
               active-class="active-nav-item"
               class="mb-1 sidebar-text"
             >
-              <template v-slot:append v-if="(!localRail && group.badge) || (isLocked(group) && !group.badge)">
+              <template v-slot:append v-if="(!effectiveRail && group.badge) || (isLocked(group) && !group.badge)">
                 <v-chip
-                  v-if="!localRail && group.badge"
+                  v-if="!effectiveRail && group.badge"
                   size="x-small"
                   variant="tonal"
                   color="secondary"
@@ -651,7 +669,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
         </v-tooltip>
 
         <div
-          v-else-if="!localRail"
+          v-else-if="!effectiveRail"
           class="sidebar-parent-row"
           :class="{
             'sidebar-parent--flyout-open': flyoutOpen && flyoutGroupTitle === group.title,
@@ -804,7 +822,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
   <Teleport to="body">
     <div
-      v-if="!localRail && flyoutOpen && flyoutGroup"
+      v-if="!effectiveRail && flyoutOpen && flyoutGroup"
       class="sidebar-expanded-flyout"
       role="menu"
       :aria-label="`${flyoutGroup.title} menu`"

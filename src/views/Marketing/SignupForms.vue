@@ -1,7 +1,11 @@
 <script setup lang="ts">
 // Legacy equivalent of this page is Acquisition Forms (/acquisition/forms).
-// Rather than maintain a parallel "legacy" list, point users to the real page.
-import { computed } from 'vue'
+// Rather than maintain a parallel "legacy" list, redirect straight there —
+// the hub no longer links here, so anyone landing on this URL is following
+// an old bookmark/link and should end up on the real page automatically.
+// The card below is a flash-of-content fallback in case the redirect is
+// interrupted (e.g. slow navigation, user cancels it).
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -11,8 +15,10 @@ const router = useRouter()
 const accountId = computed(() => route.params.accountId as string)
 
 function goToAcquisitionForms() {
-  router.push({ name: 'AcquisitionForms', params: { accountId: accountId.value } })
+  router.replace({ name: 'AcquisitionForms', params: { accountId: accountId.value } })
 }
+
+onMounted(goToAcquisitionForms)
 </script>
 
 <template>

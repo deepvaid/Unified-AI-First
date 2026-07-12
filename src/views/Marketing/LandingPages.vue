@@ -24,12 +24,24 @@ const headers = [
   { title: 'Name', key: 'name', sortable: true },
   { title: 'Editor Type', key: 'editorType' },
   { title: 'Domain / URL', key: 'url' },
-  { title: 'Status', key: 'status' },
+  { title: 'Status', key: 'pageStatus' },
+  { title: 'Domain', key: 'domainStatus' },
   { title: 'Publish At', key: 'publishAt' },
   { title: 'Expire At', key: 'expireAt' },
   { title: 'Updated At', key: 'updatedAt' },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]
+
+/** Draft/Published/Expired lifecycle status — derived, since publishStatus + expireAt
+ * were previously left off the table and conflated with the domain-verification chip. */
+function pageStatus(page: LandingPage): 'Draft' | 'Published' | 'Expired' {
+  if (page.publishStatus === 'draft') return 'Draft'
+  if (page.expireAt) {
+    const expiry = Date.parse(page.expireAt)
+    if (!Number.isNaN(expiry) && expiry < Date.now()) return 'Expired'
+  }
+  return 'Published'
+}
 
 const filters = ref({
   status: [] as string[],
@@ -37,7 +49,7 @@ const filters = ref({
 })
 
 const filterLabels: Record<string, string> = {
-  status: 'Status',
+  status: 'Domain',
   editorType: 'Editor Type',
 }
 
@@ -121,7 +133,7 @@ function confirmDelete() {
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
             <v-select
               v-model="filters.status"
-              label="Status"
+              label="Domain"
               :items="['Verified', 'Unverified']"
               multiple
               chips
@@ -165,7 +177,10 @@ function confirmDelete() {
         <template #item.url="{ item }">
           <span class="text-body-2 text-medium-emphasis">{{ item.url }}</span>
         </template>
-        <template #item.status="{ item }">
+        <template #item.pageStatus="{ item }">
+          <MpStatusChip :status="pageStatus(item)" type="general" size="x-small" />
+        </template>
+        <template #item.domainStatus="{ item }">
           <MpStatusChip :status="item.status" type="general" size="x-small" />
         </template>
         <template #item.publishAt="{ item }">

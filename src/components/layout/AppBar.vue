@@ -5,9 +5,12 @@ import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useUserProfile } from '@/stores/useUserProfile'
 import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
+import { useMobileNav } from '@/composables/useMobileNav'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 
 const copilot = useCopilotStore()
+const mobileNav = useMobileNav()
+const mobileSearchOpen = ref(false)
 
 const router = useRouter()
 const accountsStore = useAccountsStore()
@@ -117,11 +120,13 @@ function showAppbarNotice(message: string) {
 
 function navigateToRoute(routeLocation: object) {
   searchOpen.value = false
+  mobileSearchOpen.value = false
   router.push(routeLocation)
 }
 
 function askDaVinciFromSearch() {
   searchOpen.value = false
+  mobileSearchOpen.value = false
   copilot.open()
 }
 
@@ -217,6 +222,15 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   <v-app-bar height="56" color="surface" flat class="mp-appbar">
     <div class="mp-appbar-shell w-100 d-flex align-center px-4 gap-2">
       <div class="appbar-search-group">
+        <button
+          type="button"
+          class="appbar-hamburger-btn"
+          aria-label="Open navigation menu"
+          @click="mobileNav.toggle()"
+        >
+          <v-icon size="20">menu</v-icon>
+        </button>
+
         <v-menu v-model="searchOpen" location="bottom start" offset="8" :close-on-content-click="false">
           <template #activator="{ props }">
             <v-text-field
@@ -229,7 +243,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
               placeholder="Find or Ask"
               aria-label="Universal AI search"
               rounded="lg"
-              class="appbar-search"
+              class="appbar-search appbar-search--inline"
               bg-color="surface"
               clearable
               @focus="searchOpen = true"
@@ -280,6 +294,15 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
             </div>
           </v-card>
         </v-menu>
+
+        <button
+          type="button"
+          class="appbar-mobile-search-btn"
+          aria-label="Search"
+          @click="mobileSearchOpen = true"
+        >
+          <v-icon size="20">search</v-icon>
+        </button>
 
         <v-menu v-model="createOpen" location="bottom end" offset="8" :close-on-content-click="false">
           <template #activator="{ props }">
@@ -345,7 +368,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 
         <v-tooltip text="Galaxy" location="bottom">
           <template #activator="{ props }">
-            <v-btn v-bind="props" icon variant="text" class="appbar-action-btn" aria-label="Galaxy" @click="openStub('Galaxy')">
+            <v-btn v-bind="props" icon variant="text" class="appbar-action-btn appbar-galaxy-btn" aria-label="Galaxy" @click="openStub('Galaxy')">
               <v-icon>book-open</v-icon>
             </v-btn>
           </template>
@@ -560,6 +583,60 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
           </div>
       </v-menu>
     </div>
+
+    <!-- Mobile search overlay — icon-only trigger above expands into this full-screen search -->
+    <v-dialog v-model="mobileSearchOpen" fullscreen transition="dialog-bottom-transition" class="appbar-mobile-search-dialog">
+      <v-card class="appbar-mobile-search-card">
+        <div class="appbar-mobile-search-card__header">
+          <v-text-field
+            v-model="searchQuery"
+            autofocus
+            density="compact"
+            variant="outlined"
+            hide-details
+            prepend-inner-icon="search"
+            placeholder="Find or Ask"
+            aria-label="Universal AI search"
+            rounded="lg"
+            clearable
+            class="appbar-mobile-search-field"
+            @keydown.enter.prevent="askDaVinciFromSearch"
+          />
+          <v-btn icon variant="text" aria-label="Close search" @click="mobileSearchOpen = false">
+            <v-icon>x</v-icon>
+          </v-btn>
+        </div>
+        <div class="appbar-mobile-search-card__results">
+          <div v-if="filteredSearchGroups.length">
+            <div v-for="[group, items] in filteredSearchGroups" :key="group" class="appbar-search-group-results">
+              <div class="appbar-search-group__label">{{ group }}</div>
+              <button
+                v-for="item in items"
+                :key="`${group}-${item.title}`"
+                type="button"
+                class="appbar-search-result"
+                @click="navigateToRoute(item.route)"
+              >
+                <v-avatar size="30" variant="tonal" color="primary">
+                  <v-icon size="17">{{ item.icon }}</v-icon>
+                </v-avatar>
+                <span class="min-width-0">
+                  <strong>{{ item.title }}</strong>
+                  <small>{{ item.subtitle }}</small>
+                </span>
+                <v-icon size="16">arrow-right</v-icon>
+              </button>
+            </div>
+          </div>
+          <div v-else class="pa-5 text-center text-body-2 text-medium-emphasis">
+            No local prototype results. Ask Da Vinci to explore this request.
+          </div>
+        </div>
+        <div class="appbar-mobile-search-card__footer">
+          <v-btn block color="secondary" variant="flat" class="text-none" @click="askDaVinciFromSearch">Ask Da Vinci</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
 
     <v-snackbar v-model="appbarNoticeVisible" timeout="2400" color="surface" location="bottom right">
       {{ appbarNotice }}
@@ -1234,11 +1311,86 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   }
 }
 
-/* Mobile: hide search bar entirely, collapse to icon mode */
+/* ── Hamburger + mobile search trigger — hidden above the mobile breakpoint ── */
+.appbar-hamburger-btn,
+.appbar-mobile-search-btn {
+  display: none;
+}
+
+/* Mobile: collapse the inline search field to an icon-only trigger that opens
+   a full-screen search overlay, and reveal the nav hamburger. The Create and
+   utility buttons stay reachable — only the min-width squeeze goes away. */
 @media (max-width: 640px) {
   .appbar-search-group {
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+
+  .appbar-search--inline {
     display: none;
   }
+
+  .appbar-hamburger-btn,
+  .appbar-mobile-search-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--ink);
+    appearance: none;
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+
+  .appbar-hamburger-btn:hover,
+  .appbar-hamburger-btn:focus-visible,
+  .appbar-mobile-search-btn:hover,
+  .appbar-mobile-search-btn:focus-visible {
+    background: rgba(var(--v-theme-on-surface), 0.07);
+    outline: none;
+  }
+
+  /* Galaxy is a stub action — first to go to keep the bar from crowding on phones */
+  .appbar-galaxy-btn {
+    display: none;
+  }
+}
+
+.appbar-mobile-search-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 0 !important;
+}
+
+.appbar-mobile-search-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hairline);
+  flex-shrink: 0;
+}
+
+.appbar-mobile-search-field {
+  flex: 1 1 auto;
+}
+
+.appbar-mobile-search-card__results {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.appbar-mobile-search-card__footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--hairline);
+  flex-shrink: 0;
 }
 
 /* ── Quick Create button + menu ─────────────────── */

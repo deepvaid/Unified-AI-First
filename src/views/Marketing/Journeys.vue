@@ -10,6 +10,7 @@ import MpStatusToggle from '@/components/MpStatusToggle.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { formatCurrency } from '@/utils/formatCurrency'
 
 const store = useCampaignsStore()
 const router = useRouter()
@@ -29,7 +30,7 @@ const kpis = computed(() => {
     { label: 'Active journeys', value: j.filter(x => x.status === 'Active').length, icon: 'git-branch', color: 'primary' },
     { label: 'Total enrolled', value: j.reduce((a, x) => a + x.enrolled, 0).toLocaleString(), icon: 'users', color: 'info' },
     { label: 'Completed', value: j.reduce((a, x) => a + x.completed, 0).toLocaleString(), icon: 'circle-check', color: 'success' },
-    { label: 'Attributed revenue', value: `$${j.reduce((a, x) => a + x.revenue, 0).toLocaleString()}`, icon: 'dollar-sign', color: 'success' },
+    { label: 'Attributed revenue', value: formatCurrency(j.reduce((a, x) => a + x.revenue, 0)), icon: 'dollar-sign', color: 'success' },
   ]
 })
 
@@ -51,7 +52,7 @@ const headers = [
   { title: 'Enrolled', key: 'enrolled', align: 'end' as const, sortable: true },
   { title: 'Completed', key: 'completed', align: 'end' as const, sortable: true },
   { title: 'Revenue', key: 'revenue', align: 'end' as const, sortable: true },
-  { title: 'Items', key: 'items', align: 'end' as const, sortable: true, width: 90 },
+  { title: 'Steps', key: 'items', align: 'end' as const, sortable: true, width: 90 },
   { title: 'Created', key: 'created', sortable: true },
   { title: '', key: 'actions', sortable: false, width: 72 },
 ]
@@ -199,7 +200,7 @@ function confirmDelete() {
         <!-- Revenue -->
         <template v-slot:item.revenue="{ item }">
           <span :class="item.revenue > 0 ? 'text-success font-weight-bold' : 'text-medium-emphasis'">
-            {{ item.revenue > 0 ? `$${item.revenue.toLocaleString()}` : '—' }}
+            {{ item.revenue > 0 ? formatCurrency(item.revenue) : '—' }}
           </span>
         </template>
 
