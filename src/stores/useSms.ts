@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+export type SmsScheduleType = 'now' | 'scheduled'
+
 export interface TransactionalSms {
   id: number
   name: string
@@ -10,6 +12,9 @@ export interface TransactionalSms {
   audience: string
   sentDate: string | null
   delivered: number
+  /** Full message body (messagePreview mirrors this, truncated, for table display). */
+  message?: string
+  optOutConfirmed?: boolean
 }
 
 export interface SmsCampaign {
@@ -22,6 +27,31 @@ export interface SmsCampaign {
   sent: number
   delivered: number
   clicks: number
+  /** Full wizard fields — present once a campaign has been through the SMS composer. */
+  message?: string
+  fromNumber?: string
+  optOutConfirmed?: boolean
+  scheduleType?: SmsScheduleType
+  scheduleDate?: string | null
+  scheduleTime?: string | null
+}
+
+export interface TransactionalEmail {
+  id: number
+  name: string
+  subject: string
+  preheader: string
+  fromName: string
+  fromEmail: string
+  replyTo: string
+  language: string
+  contentId: number | null
+  showPreviewLink: boolean
+  brand: string
+  tag: string
+  address: string
+  sends: number
+  updatedAt: string
 }
 
 export const useSmsStore = defineStore('sms', () => {
@@ -44,5 +74,149 @@ export const useSmsStore = defineStore('sms', () => {
     { id: 6, name: 'Loyalty VIP Offer', messagePreview: 'A little thank-you 💝 Members get an extra 15% this week: {{link}}', audience: 'SMS Opted-In', status: 'Draft', sentDate: null, sent: 0, delivered: 0, clicks: 0 },
   ])
 
-  return { transactionalSms, smsCampaigns }
+  const transactionalEmails = ref<TransactionalEmail[]>([
+    { id: 1, name: 'Order Confirmation', subject: 'Your order is confirmed 🎉', preheader: 'Thanks for shopping with us — here are your order details.', fromName: 'Maropost Store', fromEmail: 'hello@maropoststore.com', replyTo: 'support@maropoststore.com', language: 'English (US)', contentId: 4, showPreviewLink: true, brand: 'Maropost', tag: 'Transactional', address: '100 King St, Sydney NSW 2000', sends: 12840, updatedAt: '2026-07-08' },
+    { id: 2, name: 'Shipping Update', subject: 'Your order has shipped 📦', preheader: 'Track your package every step of the way.', fromName: 'Maropost Store', fromEmail: 'hello@maropoststore.com', replyTo: 'support@maropoststore.com', language: 'English (US)', contentId: 4, showPreviewLink: true, brand: 'Maropost', tag: 'Transactional', address: '100 King St, Sydney NSW 2000', sends: 11920, updatedAt: '2026-07-08' },
+    { id: 3, name: 'Password Reset', subject: 'Reset your password', preheader: 'Use the secure link below to reset your password.', fromName: 'Maropost Store', fromEmail: 'security@maropoststore.com', replyTo: 'support@maropoststore.com', language: 'English (US)', contentId: null, showPreviewLink: false, brand: 'Maropost', tag: 'Transactional', address: '100 King St, Sydney NSW 2000', sends: 890, updatedAt: '2026-07-05' },
+    { id: 4, name: 'Welcome Email', subject: 'Welcome to Maropost Store!', preheader: 'Glad to have you — here is what to expect.', fromName: 'Maropost Store', fromEmail: 'hello@maropoststore.com', replyTo: 'support@maropoststore.com', language: 'English (US)', contentId: 2, showPreviewLink: true, brand: 'Maropost', tag: 'Onboarding', address: '100 King St, Sydney NSW 2000', sends: 4231, updatedAt: '2026-07-01' },
+  ])
+
+  function nextId<T extends { id: number }>(list: T[]): number {
+    return Math.max(0, ...list.map(i => i.id)) + 1
+  }
+
+  // ── SMS campaigns ────────────────────────────────────────────────────────────
+
+  function createSmsCampaign(input: Omit<SmsCampaign, 'id' | 'status' | 'sent' | 'delivered' | 'clicks'>, finalize = false): number {
+    const id = nextId(smsCampaigns.value)
+    smsCampaigns.value.unshift({
+      ...input,
+      id,
+      status: finalize ? (input.scheduleType === 'now' ? 'Sending' : 'Scheduled') : 'Draft',
+      sent: 0,
+      delivered: 0,
+      clicks: 0,
+    })
+    return id
+  }
+
+  function updateSmsCampaign(id: number, input: Omit<SmsCampaign, 'id' | 'status' | 'sent' | 'delivered' | 'clicks'>, finalize = false) {
+    const campaign = smsCampaigns.value.find(c => c.id === id)
+    if (!campaign) return
+    Object.assign(campaign, input)
+    if (finalize) campaign.status = input.scheduleType === 'now' ? 'Sending' : 'Scheduled'
+  }
+
+  function getSmsCampaign(id: number): SmsCampaign | undefined {
+    return smsCampaigns.value.find(c => c.id === id)
+  }
+
+  function duplicateSmsCampaign(id: number) {
+    const original = smsCampaigns.value.find(c => c.id === id)
+    if (!original) return
+    const index = smsCampaigns.value.findIndex(c => c.id === id)
+    smsCampaigns.value.splice(index + 1, 0, {
+      ...original,
+      id: nextId(smsCampaigns.value),
+      name: `${original.name} (Copy)`,
+      status: 'Draft',
+      sentDate: null,
+      sent: 0,
+      delivered: 0,
+      clicks: 0,
+    })
+  }
+
+  function deleteSmsCampaigns(ids: number[]) {
+    smsCampaigns.value = smsCampaigns.value.filter(c => !ids.includes(c.id))
+  }
+
+  // ── Transactional SMS ────────────────────────────────────────────────────────
+
+  function createTransactionalSms(input: Omit<TransactionalSms, 'id' | 'status' | 'sentDate' | 'delivered'>): number {
+    const id = nextId(transactionalSms.value)
+    transactionalSms.value.unshift({
+      ...input,
+      id,
+      status: 'Active',
+      sentDate: null,
+      delivered: 0,
+    })
+    return id
+  }
+
+  function updateTransactionalSms(id: number, input: Omit<TransactionalSms, 'id' | 'status' | 'sentDate' | 'delivered'>) {
+    const flow = transactionalSms.value.find(f => f.id === id)
+    if (!flow) return
+    Object.assign(flow, input)
+  }
+
+  function getTransactionalSms(id: number): TransactionalSms | undefined {
+    return transactionalSms.value.find(f => f.id === id)
+  }
+
+  function duplicateTransactionalSms(id: number) {
+    const original = transactionalSms.value.find(f => f.id === id)
+    if (!original) return
+    const index = transactionalSms.value.findIndex(f => f.id === id)
+    transactionalSms.value.splice(index + 1, 0, {
+      ...original,
+      id: nextId(transactionalSms.value),
+      name: `${original.name} (Copy)`,
+      sentDate: null,
+      delivered: 0,
+    })
+  }
+
+  function deleteTransactionalSms(ids: number[]) {
+    transactionalSms.value = transactionalSms.value.filter(f => !ids.includes(f.id))
+  }
+
+  // ── Transactional email ──────────────────────────────────────────────────────
+
+  function createTransactionalEmail(input: Omit<TransactionalEmail, 'id' | 'sends' | 'updatedAt'>): number {
+    const id = nextId(transactionalEmails.value)
+    transactionalEmails.value.unshift({
+      ...input,
+      id,
+      sends: 0,
+      updatedAt: new Date().toISOString().slice(0, 10),
+    })
+    return id
+  }
+
+  function updateTransactionalEmail(id: number, input: Omit<TransactionalEmail, 'id' | 'sends' | 'updatedAt'>) {
+    const flow = transactionalEmails.value.find(f => f.id === id)
+    if (!flow) return
+    Object.assign(flow, input)
+    flow.updatedAt = new Date().toISOString().slice(0, 10)
+  }
+
+  function getTransactionalEmail(id: number): TransactionalEmail | undefined {
+    return transactionalEmails.value.find(f => f.id === id)
+  }
+
+  function duplicateTransactionalEmail(id: number) {
+    const original = transactionalEmails.value.find(f => f.id === id)
+    if (!original) return
+    const index = transactionalEmails.value.findIndex(f => f.id === id)
+    transactionalEmails.value.splice(index + 1, 0, {
+      ...original,
+      id: nextId(transactionalEmails.value),
+      name: `${original.name} (Copy)`,
+      sends: 0,
+      updatedAt: new Date().toISOString().slice(0, 10),
+    })
+  }
+
+  function deleteTransactionalEmails(ids: number[]) {
+    transactionalEmails.value = transactionalEmails.value.filter(f => !ids.includes(f.id))
+  }
+
+  return {
+    transactionalSms, smsCampaigns, transactionalEmails,
+    createSmsCampaign, updateSmsCampaign, getSmsCampaign, duplicateSmsCampaign, deleteSmsCampaigns,
+    createTransactionalSms, updateTransactionalSms, getTransactionalSms, duplicateTransactionalSms, deleteTransactionalSms,
+    createTransactionalEmail, updateTransactionalEmail, getTransactionalEmail, duplicateTransactionalEmail, deleteTransactionalEmails,
+  }
 })

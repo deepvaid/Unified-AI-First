@@ -1,411 +1,636 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
-import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
-import { useCampaignsStore } from '@/stores/useCampaigns'
+import { useCampaignsStore, type Campaign, type CampaignDraftInput } from '@/stores/useCampaigns'
+import { useContactsStore } from '@/stores/useContacts'
+import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
+import { useContentStore } from '@/stores/useContent'
 
 const router = useRouter()
 const route = useRoute()
 const store = useCampaignsStore()
+const contactsStore = useContactsStore()
+const cdpStore = useCdpEntitiesStore()
+const contentStore = useContentStore()
 
+const accountId = computed(() => route.params.accountId as string)
+const campaignsRoute = computed(() => ({ name: 'EmailCampaigns', params: { accountId: accountId.value } }))
+
+// ── Type gate (pre-step, not part of the numbered wizard) ────────────────────
+const typeChosen = ref(false)
+const kind = ref<'email' | 'ab_email'>('email')
+
+function chooseType(next: 'email' | 'ab_email') {
+  kind.value = next
+  typeChosen.value = true
+}
+
+// ── Wizard state ──────────────────────────────────────────────────────────────
+const stepTitles = ['Details', 'Contacts', 'Content', 'Schedule & Review']
+const totalSteps = stepTitles.length
 const step = ref(1)
-const totalSteps = 5
-const confirmDiscard = ref(false)
-const campaignsRoute = computed(() => ({ name: 'EmailCampaigns', params: { accountId: route.params.accountId } }))
+const maxStepReached = ref(1)
+const draftId = ref<number | null>(null)
 
-// Step 1: Setup
-const setup = ref({
-  name: '',
-  subject: '',
-  preheader: '',
-  senderName: 'MaropostX Store',
-  senderEmail: 'hello@mystore.com',
-  replyTo: '',
-})
+// Step 1 — Details
+const name = ref('')
+const subject = ref('')
+const subjectB = ref('')
+const preheader = ref('')
+const tag = ref<string | null>(null)
+const TAG_OPTIONS = ['Newsletter', 'Promo_2026', 'Onboarding', 'Retention']
+const testSplitPercent = ref(50)
 
-// Step 2: Template
-const selectedTemplate = ref<number | null>(null)
-const templates = [
-  { id: 1, name: 'Promotional Sale', icon: 'heart-handshake', color: 'error', desc: 'Highlight discounts and flash deals' },
-  { id: 2, name: 'Newsletter', icon: 'newspaper', color: 'primary', desc: 'Curated content updates' },
-  { id: 3, name: 'Product Launch', icon: 'rocket', color: 'secondary', desc: 'Announce a new product arrival' },
-  { id: 4, name: 'Win-Back', icon: 'heart', color: 'warning', desc: 'Re-engage lapsed customers' },
-  { id: 5, name: 'Seasonal', icon: 'snowflake', color: 'info', desc: 'Holiday & seasonal campaigns' },
-  { id: 6, name: 'Blank', icon: 'file-plus', color: 'grey', desc: 'Start from scratch' },
-]
+// Step 2 — Contacts: audience
+const audienceListIds = ref<number[]>([])
+const audienceSegmentIds = ref<number[]>([])
+const audienceTableIds = ref<number[]>([])
+const brand = ref('Maropost')
+const BRAND_OPTIONS = ['Maropost', 'Storefront Co', 'Wholesale Division']
 
-// Step 3: Audience
-const selectedList = ref('Master Subscriber List')
-const lists = ['Master Subscriber List', 'Newsletter Opt-in', 'VIP Customer Circle', 'Re-engagement 2024']
-const estimatedAudience = computed(() => {
-  const base: Record<string, number> = {
-    'Master Subscriber List': 45231,
-    'Newsletter Opt-in': 18432,
-    'VIP Customer Circle': 312,
-    'Re-engagement 2024': 8912,
-  }
-  return (base[selectedList.value] || 0).toLocaleString()
-})
+const cdpLists = computed(() => cdpStore.lists)
+const segments = computed(() => contactsStore.segments)
+const tables = computed(() => cdpStore.tables)
+const secureLists = computed(() => cdpStore.secureLists)
 
-// Suppressions — one multi-select instead of the legacy four separate
-// suppress dropdowns (list / journey / segment / secure list).
-const suppressed = ref<string[]>([])
-const suppressOptions = [
-  'Global Suppression List',
-  'Recent Purchasers (journey)',
-  'Unengaged 180 Days (segment)',
-  'Competitor Domains (secure list)',
-]
+const listItems = computed(() => cdpLists.value.map(l => ({ title: `${l.name} (${l.count.toLocaleString()})`, value: l.id })))
+const segmentItems = computed(() => segments.value.map(s => ({ title: `${s.name} (${s.count.toLocaleString()})`, value: s.id })))
+const tableItems = computed(() => tables.value.map(t => ({ title: `${t.name} (${t.rows.toLocaleString()})`, value: t.id })))
+const journeyItems = computed(() => store.journeys.map(j => ({ title: j.name, value: j.id })))
+const secureListItems = computed(() => secureLists.value.map(l => ({ title: `${l.name} (${l.contacts.toLocaleString()})`, value: l.id })))
 
-// Step 4: Schedule
+function toggleAllLists() {
+  audienceListIds.value = audienceListIds.value.length === listItems.value.length ? [] : listItems.value.map(i => i.value)
+}
+function toggleAllSegments() {
+  audienceSegmentIds.value = audienceSegmentIds.value.length === segmentItems.value.length ? [] : segmentItems.value.map(i => i.value)
+}
+function toggleAllTables() {
+  audienceTableIds.value = audienceTableIds.value.length === tableItems.value.length ? [] : tableItems.value.map(i => i.value)
+}
+
+// Sender
+const senderName = ref('Maropost Store')
+const senderEmail = ref('hello@maropoststore.com')
+const replyTo = ref('support@maropoststore.com')
+const language = ref('English (US)')
+const address = ref('100 King St, Sydney NSW 2000')
+const LANGUAGES = ['English (US)', 'English (UK)', 'French', 'German', 'Spanish', 'Italian']
+
+// Autofill sender fields from the last-selected list, per legacy behaviour.
+function onAudienceListsChanged(ids: number[]) {
+  if (!ids.length) return
+  const last = cdpLists.value.find(l => l.id === ids[ids.length - 1])
+  if (!last) return
+  senderName.value = last.fromName
+  senderEmail.value = last.fromEmail
+  replyTo.value = last.replyTo
+  language.value = last.language
+  address.value = last.address
+}
+
+// Suppress contacts (collapsible, optional)
+const suppressListIds = ref<number[]>([])
+const suppressJourneyIds = ref<number[]>([])
+const suppressSegmentIds = ref<number[]>([])
+const suppressSecureListIds = ref<number[]>([])
+const suppressCount = computed(() =>
+  suppressListIds.value.length + suppressJourneyIds.value.length + suppressSegmentIds.value.length + suppressSecureListIds.value.length,
+)
+
+// Step 3 — Content
+const contentId = ref<number | null>(null)
+const contentOptions = computed(() => contentStore.items.map(i => ({ title: i.name, value: i.id })))
+const selectedContent = computed(() => contentStore.items.find(i => i.id === contentId.value) ?? null)
+const showPreviewLink = ref(false)
+const dynamicPreview = ref(false)
+const spamCheckResult = ref<string | null>(null)
+
+function runSpamCheck() {
+  spamCheckResult.value = 'Looks good — 0 spam triggers found'
+}
+
+// Merge-tag placeholders shown in the content preview (kept as plain string constants —
+// embedding literal "{{ }}" text directly inside a template interpolation breaks the compiler).
+const mergeTagFirstName = '{{contact.first_name}}'
+const mergeTagAddress = '{{campaign.address}}'
+const mergeTagUnsubscribe = '{{campaign.unsubscribe_link}}'
+
+// Step 4 — Schedule & Review
 const scheduleType = ref<'now' | 'scheduled'>('now')
 const scheduleDate = ref('')
 const scheduleTime = ref('09:00')
 const timezone = ref('America/New_York')
+const TIMEZONES = ['America/New_York', 'America/Chicago', 'America/Los_Angeles', 'UTC', 'Europe/London']
+const optimizations = reactive({ sto: false, tzo: false, cto: false, preSend: false })
+const winnerCriteria = ref<'opens' | 'clicks' | 'revenue'>('opens')
 
-// Step 5: Review — computed summary (each row knows which step edits it)
-const reviewItems = computed(() => [
-  { label: 'Campaign Name', value: setup.value.name || '—', icon: 'pencil', step: 1 },
-  { label: 'Subject Line', value: setup.value.subject || '—', icon: 'mail', step: 1 },
-  { label: 'Sender', value: `${setup.value.senderName} <${setup.value.senderEmail}>`, icon: 'user', step: 1 },
-  { label: 'Template', value: templates.find(t => t.id === selectedTemplate.value)?.name || '—', icon: 'palette', step: 2 },
-  { label: 'Audience', value: `${selectedList.value} (${estimatedAudience.value} contacts)`, icon: 'users', step: 3 },
-  { label: 'Suppressed', value: suppressed.value.length ? suppressed.value.join(' · ') : 'None', icon: 'user-x', step: 3 },
-  { label: 'Send Time', value: scheduleType.value === 'now' ? 'Immediately after launch' : `${scheduleDate.value} at ${scheduleTime.value} ${timezone.value}`, icon: 'clock', step: 4 },
-])
+// ── Validity per step ─────────────────────────────────────────────────────────
+const audienceCount = computed(() => audienceListIds.value.length + audienceSegmentIds.value.length + audienceTableIds.value.length)
+
+const step1Valid = computed(() => {
+  const base = name.value.trim().length > 0 && subject.value.trim().length > 0
+  return kind.value === 'ab_email' ? base && subjectB.value.trim().length > 0 : base
+})
+const step2Valid = computed(() =>
+  audienceCount.value > 0 && senderName.value.trim().length > 0 && senderEmail.value.trim().length > 0
+  && replyTo.value.trim().length > 0 && address.value.trim().length > 0,
+)
+const step3Valid = computed(() => contentId.value !== null)
+const step4Valid = computed(() => scheduleType.value === 'now' || scheduleDate.value.length > 0)
 
 const stepValid = computed(() => {
-  if (step.value === 1) return setup.value.name.length > 0 && setup.value.subject.length > 0
-  if (step.value === 2) return selectedTemplate.value !== null
-  if (step.value === 3) return selectedList.value.length > 0
-  if (step.value === 4) return scheduleType.value === 'now' || (scheduleDate.value.length > 0)
-  return true
+  if (step.value === 1) return step1Valid.value
+  if (step.value === 2) return step2Valid.value
+  if (step.value === 3) return step3Valid.value
+  return step4Valid.value
 })
 
 const stepHint = computed(() => {
   if (step.value === 1) return 'Add a campaign name and subject line to continue.'
-  if (step.value === 2) return 'Choose a template to continue.'
-  if (step.value === 4) return 'Pick a send date to continue.'
+  if (step.value === 2) return 'Select at least one list, segment, or table, and complete the sender details.'
+  if (step.value === 3) return 'Choose content to continue.'
+  if (step.value === 4 && scheduleType.value === 'scheduled') return 'Pick a send date to continue.'
   return ''
 })
 
+// ── Persistence (auto-save on step change) ────────────────────────────────────
+function buildInput(): CampaignDraftInput {
+  const parts: string[] = []
+  if (audienceListIds.value.length) parts.push(`${audienceListIds.value.length} list${audienceListIds.value.length > 1 ? 's' : ''}`)
+  if (audienceSegmentIds.value.length) parts.push(`${audienceSegmentIds.value.length} segment${audienceSegmentIds.value.length > 1 ? 's' : ''}`)
+  if (audienceTableIds.value.length) parts.push(`${audienceTableIds.value.length} table${audienceTableIds.value.length > 1 ? 's' : ''}`)
+
+  return {
+    kind: kind.value,
+    name: name.value,
+    subject: subject.value,
+    subjectB: kind.value === 'ab_email' ? subjectB.value : undefined,
+    preheader: preheader.value,
+    tag: tag.value ?? '',
+    audienceSummary: parts.length ? parts.join(' · ') : '',
+    audienceListIds: [...audienceListIds.value],
+    audienceSegmentIds: [...audienceSegmentIds.value],
+    audienceTableIds: [...audienceTableIds.value],
+    brand: brand.value,
+    senderName: senderName.value,
+    senderEmail: senderEmail.value,
+    replyTo: replyTo.value,
+    language: language.value,
+    address: address.value,
+    suppressListIds: [...suppressListIds.value],
+    suppressJourneyIds: [...suppressJourneyIds.value],
+    suppressSegmentIds: [...suppressSegmentIds.value],
+    suppressSecureListIds: [...suppressSecureListIds.value],
+    contentId: contentId.value,
+    showPreviewLink: showPreviewLink.value,
+    dynamicPreview: dynamicPreview.value,
+    spamCheckResult: spamCheckResult.value,
+    scheduleType: scheduleType.value,
+    scheduleDate: scheduleDate.value || null,
+    scheduleTime: scheduleTime.value || null,
+    timezone: timezone.value,
+    optimizations: { ...optimizations },
+    testSplitPercent: kind.value === 'ab_email' ? testSplitPercent.value : undefined,
+    winnerCriteria: kind.value === 'ab_email' ? winnerCriteria.value : undefined,
+  }
+}
+
+/** Auto-saves the wizard as a Draft (or, on the final action, finalizes it). Silently no-ops until Step 1 is valid. */
+function saveProgress(finalize = false) {
+  if (!step1Valid.value) return
+  const input = buildInput()
+  if (draftId.value == null) {
+    draftId.value = store.createCampaign(input, finalize)
+  } else {
+    store.updateCampaignDraft(draftId.value, input, finalize)
+  }
+}
+
+function goToStep(target: number) {
+  if (target === step.value) return
+  if (target > step.value && !stepValid.value) return
+  if (step.value >= 1) saveProgress()
+  step.value = target
+  maxStepReached.value = Math.max(maxStepReached.value, target)
+}
+
 function nextStep() {
-  if (step.value < totalSteps) step.value++
+  goToStep(Math.min(step.value + 1, totalSteps))
 }
-
 function prevStep() {
-  if (step.value > 1) step.value--
+  goToStep(Math.max(step.value - 1, 1))
 }
 
-const launched = ref(false)
+function saveDraft() {
+  saveProgress(false)
+  router.push(campaignsRoute.value)
+}
 
-const launchHeadline = computed(() =>
-  scheduleType.value === 'now' ? 'Campaign launched!' : 'Campaign scheduled!',
-)
-const launchMessage = computed(() => {
-  const name = setup.value.name || 'Your campaign'
-  return scheduleType.value === 'now'
-    ? `“${name}” is on its way to ${estimatedAudience.value} recipients.`
-    : `“${name}” will send to ${estimatedAudience.value} recipients on ${scheduleDate.value} at ${scheduleTime.value}.`
+function scheduleCampaign() {
+  if (!step4Valid.value) return
+  saveProgress(true)
+  router.push(campaignsRoute.value)
+}
+
+function exitWizard() {
+  saveProgress(false)
+  router.push(campaignsRoute.value)
+}
+
+// ── Edit hydration ────────────────────────────────────────────────────────────
+function hydrateFrom(campaign: Campaign) {
+  draftId.value = campaign.id
+  const c = campaign.config
+  if (!c) {
+    name.value = campaign.name
+    return
+  }
+  kind.value = c.kind
+  name.value = c.name
+  subject.value = c.subject
+  subjectB.value = c.subjectB ?? ''
+  preheader.value = c.preheader
+  tag.value = c.tag || null
+  audienceListIds.value = [...c.audienceListIds]
+  audienceSegmentIds.value = [...c.audienceSegmentIds]
+  audienceTableIds.value = [...c.audienceTableIds]
+  brand.value = c.brand
+  senderName.value = c.senderName
+  senderEmail.value = c.senderEmail
+  replyTo.value = c.replyTo
+  language.value = c.language
+  address.value = c.address
+  suppressListIds.value = [...c.suppressListIds]
+  suppressJourneyIds.value = [...c.suppressJourneyIds]
+  suppressSegmentIds.value = [...c.suppressSegmentIds]
+  suppressSecureListIds.value = [...c.suppressSecureListIds]
+  contentId.value = c.contentId
+  showPreviewLink.value = c.showPreviewLink
+  dynamicPreview.value = c.dynamicPreview
+  spamCheckResult.value = c.spamCheckResult
+  scheduleType.value = c.scheduleType
+  scheduleDate.value = c.scheduleDate ?? ''
+  scheduleTime.value = c.scheduleTime ?? '09:00'
+  timezone.value = c.timezone
+  optimizations.sto = c.optimizations.sto
+  optimizations.tzo = c.optimizations.tzo
+  optimizations.cto = c.optimizations.cto
+  optimizations.preSend = c.optimizations.preSend
+  testSplitPercent.value = c.testSplitPercent ?? 50
+  winnerCriteria.value = c.winnerCriteria ?? 'opens'
+}
+
+onMounted(() => {
+  const idParam = route.query.id ?? route.params.id
+  if (!idParam) return
+  const existing = store.getCampaign(Number(idParam))
+  if (!existing) return
+  hydrateFrom(existing)
+  typeChosen.value = true
+  step.value = 1
+  maxStepReached.value = totalSteps
 })
 
-function launch() {
-  store.createCampaign(setup.value.name)
-  launched.value = true
-}
+const pageTitle = computed(() => (draftId.value != null ? `Edit ${kind.value === 'ab_email' ? 'A/B ' : ''}Campaign` : `New ${kind.value === 'ab_email' ? 'A/B ' : ''}Email Campaign`))
 
-function viewCampaigns() {
-  router.push({ name: 'EmailCampaigns', params: { accountId: route.params.accountId } })
-}
+// Review summary (Step 4)
+const reviewItems = computed(() => {
+  const items: { label: string; value: string; icon: string }[] = [
+    { label: 'Campaign Name', value: name.value || '—', icon: 'pencil' },
+    { label: 'Subject Line', value: kind.value === 'ab_email' ? `A: ${subject.value || '—'}  ·  B: ${subjectB.value || '—'}` : (subject.value || '—'), icon: 'mail' },
+    { label: 'Campaign Tag', value: tag.value || 'None', icon: 'tag' },
+    { label: 'Audience', value: audienceCount.value ? `${audienceCount.value} source${audienceCount.value > 1 ? 's' : ''} selected` : 'None selected', icon: 'users' },
+    { label: 'Suppressed', value: suppressCount.value ? `${suppressCount.value} suppression${suppressCount.value > 1 ? 's' : ''}` : 'None', icon: 'user-x' },
+    { label: 'Sender', value: `${senderName.value} <${senderEmail.value}>`, icon: 'user' },
+    { label: 'Content', value: selectedContent.value?.name ?? 'Not selected', icon: 'file-text' },
+    { label: 'Send Time', value: scheduleType.value === 'now' ? 'Immediately after launch' : `${scheduleDate.value} at ${scheduleTime.value} (${timezone.value})`, icon: 'clock' },
+  ]
+  if (kind.value === 'ab_email') {
+    items.push({ label: 'Test Split', value: `${testSplitPercent.value}% · winner by ${winnerCriteria.value}`, icon: 'split' })
+  }
+  return items
+})
 
-function createAnother() {
-  step.value = 1
-  setup.value = { name: '', subject: '', preheader: '', senderName: 'MaropostX Store', senderEmail: 'hello@mystore.com', replyTo: '' }
-  selectedTemplate.value = null
-  selectedList.value = 'Master Subscriber List'
-  suppressed.value = []
-  scheduleType.value = 'now'
-  scheduleDate.value = ''
-  scheduleTime.value = '09:00'
-  launched.value = false
-}
-
-function cancel() {
-  router.push({ name: 'EmailCampaigns', params: { accountId: route.params.accountId } })
-}
-
-const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launch']
+const enabledOptimizations = computed(() => {
+  const labels: string[] = []
+  if (optimizations.sto) labels.push('Send Time Optimization')
+  if (optimizations.tzo) labels.push('Time Zone Optimization')
+  if (optimizations.cto) labels.push('Conversion Time Optimization')
+  if (optimizations.preSend) labels.push('Pre-Send Calculation')
+  return labels.length ? labels.join(', ') : 'None enabled'
+})
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column">
-    <template v-if="!launched">
-    <!-- Header + step indicator -->
-    <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">
-      <MpPageHeader
-        title="New Email Campaign"
-        :subtitle="`Step ${step} of ${totalSteps} — ${stepTitles[step - 1]}`"
-        :back-to="campaignsRoute"
-      >
-        <template #actions>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="confirmDiscard = true">Discard</v-btn>
-        </template>
-        <template #tabs>
-          <MpWizardSteps :steps="stepTitles" :current="step" class="mt-3" />
-        </template>
-      </MpPageHeader>
-    </div>
-
-    <!-- Step Content -->
-    <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
-      <div style="max-width: 760px; margin: 0 auto;">
-
-        <!-- Step 1: Setup -->
-        <v-card v-if="step === 1" variant="flat" border rounded="lg" class="pa-8">
-          <div class="text-h6 font-weight-bold mb-1">Campaign Setup</div>
-          <div class="text-body-2 text-medium-emphasis mb-6">Name your campaign and configure the sender details that recipients will see.</div>
-          <v-divider class="mb-6"></v-divider>
-          <v-row>
-            <v-col cols="12">
-              <v-text-field
-                v-model="setup.name"
-                label="Campaign Name *"
-                placeholder="e.g. Black Friday 2026 — VIP Early Access"
-                variant="outlined"
-                density="comfortable"
-                hint="Internal name, not shown to recipients"
-                persistent-hint
-                class="mb-4"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12">
-              <v-text-field
-                v-model="setup.subject"
-                label="Email Subject Line *"
-                placeholder="e.g. 🔥 40% Off Sitewide — Today Only!"
-                variant="outlined"
-                density="comfortable"
-                :counter="100"
-                hint="Keep under 60 characters for best open rates"
-                persistent-hint
-                class="mb-4"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12">
-              <v-text-field
-                v-model="setup.preheader"
-                label="Preview Text (Preheader)"
-                placeholder="e.g. Your favourite brands, now at the lowest prices..."
-                variant="outlined"
-                density="comfortable"
-                hint="Shown in inbox previews after the subject line"
-                persistent-hint
-                class="mb-4"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-text-field v-model="setup.senderName" label="Sender Name" variant="outlined" density="comfortable" class="mb-4"></v-text-field>
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-text-field v-model="setup.senderEmail" label="Sender Email" variant="outlined" density="comfortable" class="mb-4"></v-text-field>
-            </v-col>
-            <v-col cols="12">
-              <v-text-field v-model="setup.replyTo" label="Reply-To Email (optional)" variant="outlined" density="comfortable" placeholder="support@mystore.com"></v-text-field>
-            </v-col>
-          </v-row>
-        </v-card>
-
-        <!-- Step 2: Template -->
-        <v-card v-if="step === 2" variant="flat" border rounded="lg" class="pa-8">
-          <div class="text-h6 font-weight-bold mb-1">Choose a Template</div>
-          <div class="text-body-2 text-medium-emphasis mb-6">Select a pre-built layout or start from a blank canvas. You can customize everything in the editor.</div>
-          <v-divider class="mb-6"></v-divider>
+    <!-- Type gate -->
+    <template v-if="!typeChosen">
+      <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">
+        <MpPageHeader title="New Email Campaign" subtitle="Choose a campaign type to get started" :back-to="campaignsRoute" />
+      </div>
+      <div class="flex-grow-1 overflow-y-auto pa-8 bg-background d-flex align-center justify-center">
+        <div style="max-width: 640px; width: 100%;">
           <v-row dense>
-            <v-col v-for="tmpl in templates" :key="tmpl.id" cols="12" sm="6" md="4">
+            <v-col cols="12" sm="6">
               <MpOptionCard
-                :selected="selectedTemplate === tmpl.id"
-                :title="tmpl.name"
-                :description="tmpl.desc"
-                :icon="tmpl.icon"
+                :selected="false"
+                title="Email Campaign"
+                description="A single email sent to your chosen audience."
+                icon="mail"
                 class="h-100"
-                @click="selectedTemplate = tmpl.id"
+                @click="chooseType('email')"
+              />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <MpOptionCard
+                :selected="false"
+                title="A/B Email Campaign"
+                description="Test two subject lines and automatically send the winner."
+                icon="split"
+                class="h-100"
+                @click="chooseType('ab_email')"
               />
             </v-col>
           </v-row>
-          <v-alert type="info" variant="tonal" density="compact" class="mt-6 text-body-2" rounded="lg" icon="palette">
-            You'll be taken to the visual email editor after completing the wizard setup.
-          </v-alert>
-        </v-card>
-
-        <!-- Step 3: Audience -->
-        <v-card v-if="step === 3" variant="flat" border rounded="lg" class="pa-8">
-          <div class="text-h6 font-weight-bold mb-1">Select Audience</div>
-          <div class="text-body-2 text-medium-emphasis mb-6">Choose which list or segment receives this campaign.</div>
-          <v-divider class="mb-6"></v-divider>
-          <div class="text-subtitle-2 font-weight-bold mb-3">Send To</div>
-          <v-row dense class="mb-6">
-            <v-col v-for="list in lists" :key="list" cols="12" sm="6">
-              <MpOptionCard
-                :selected="selectedList === list"
-                :title="list"
-                icon="users"
-                class="h-100"
-                @click="selectedList = list"
-              />
-            </v-col>
-          </v-row>
-          <div class="text-subtitle-2 font-weight-bold mb-3">Suppress (optional)</div>
-          <v-select
-            v-model="suppressed"
-            :items="suppressOptions"
-            label="Don't send to…"
-            multiple
-            chips
-            closable-chips
-            clearable
-            variant="outlined"
-            density="comfortable"
-            hint="Lists, journeys, segments, and secure lists — all suppressions in one place"
-            persistent-hint
-            class="mb-6"
-          ></v-select>
-
-          <v-card variant="tonal" color="success" rounded="lg" class="pa-4 d-flex align-center gap-4">
-            <v-icon color="success" size="32">user-check</v-icon>
-            <div>
-              <div class="text-h6 font-weight-bold text-success">{{ estimatedAudience }}</div>
-              <div class="text-body-2 text-medium-emphasis">
-                estimated recipients{{ suppressed.length ? ' before suppressions' : '' }}
-              </div>
-            </div>
-          </v-card>
-        </v-card>
-
-        <!-- Step 4: Schedule -->
-        <v-card v-if="step === 4" variant="flat" border rounded="lg" class="pa-8">
-          <div class="text-h6 font-weight-bold mb-1">Schedule Sending</div>
-          <div class="text-body-2 text-medium-emphasis mb-6">Choose when to deliver this campaign to your audience.</div>
-          <v-divider class="mb-6"></v-divider>
-          <v-radio-group v-model="scheduleType" class="mb-6">
-            <v-card variant="outlined" rounded="lg" class="pa-4 mb-3 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
-              <v-radio value="now" color="primary">
-                <template v-slot:label>
-                  <div class="ml-2">
-                    <div class="font-weight-bold">Send Immediately</div>
-                    <div class="text-caption text-medium-emphasis">Campaign launches as soon as you click "Launch Campaign"</div>
-                  </div>
-                </template>
-              </v-radio>
-            </v-card>
-            <v-card variant="outlined" rounded="lg" class="pa-4 cursor-pointer" @click="scheduleType = 'scheduled'">
-              <v-radio value="scheduled" color="primary">
-                <template v-slot:label>
-                  <div class="ml-2">
-                    <div class="font-weight-bold">Schedule for Later</div>
-                    <div class="text-caption text-medium-emphasis">Pick a specific date and time for delivery</div>
-                  </div>
-                </template>
-              </v-radio>
-            </v-card>
-          </v-radio-group>
-          <v-expand-transition>
-            <div v-if="scheduleType === 'scheduled'">
-              <v-row>
-                <v-col cols="12" sm="5">
-                  <v-text-field v-model="scheduleDate" label="Date" type="date" variant="outlined" density="comfortable"></v-text-field>
-                </v-col>
-                <v-col cols="12" sm="4">
-                  <v-text-field v-model="scheduleTime" label="Time" type="time" variant="outlined" density="comfortable"></v-text-field>
-                </v-col>
-                <v-col cols="12" sm="3">
-                  <v-select v-model="timezone" label="Timezone" :items="['America/New_York', 'America/Chicago', 'America/Los_Angeles', 'UTC', 'Europe/London']" variant="outlined" density="comfortable"></v-select>
-                </v-col>
-              </v-row>
-            </div>
-          </v-expand-transition>
-        </v-card>
-
-        <!-- Step 5: Review & Launch -->
-        <v-card v-if="step === 5" variant="flat" border rounded="lg" class="pa-8">
-          <div class="text-h6 font-weight-bold mb-1">Review & Launch</div>
-          <div class="text-body-2 text-medium-emphasis mb-6">Double-check your configuration before launching.</div>
-          <v-divider class="mb-6"></v-divider>
-          <v-list lines="two" density="compact" class="mb-6 rounded-xl border pa-0 overflow-hidden">
-            <template v-for="(item, idx) in reviewItems" :key="idx">
-              <v-list-item class="px-5 py-3" :class="{ 'border-b': idx < reviewItems.length - 1 }">
-                <template v-slot:prepend>
-                  <v-avatar size="36" color="primary" variant="tonal" class="mr-3">
-                    <v-icon color="primary" size="18">{{ item.icon }}</v-icon>
-                  </v-avatar>
-                </template>
-                <v-list-item-title class="text-caption text-medium-emphasis font-weight-bold text-uppercase">{{ item.label }}</v-list-item-title>
-                <v-list-item-subtitle class="text-body-2 font-weight-medium mt-1" style="opacity: 1;">{{ item.value }}</v-list-item-subtitle>
-                <template v-slot:append>
-                  <v-tooltip :text="`Edit ${item.label}`" location="top">
-                    <template v-slot:activator="{ props }">
-                      <v-btn v-bind="props" icon="pencil" variant="text" size="small" color="primary" :aria-label="`Edit ${item.label}`" @click="step = item.step"></v-btn>
-                    </template>
-                  </v-tooltip>
-                </template>
-              </v-list-item>
-            </template>
-          </v-list>
-
-          <v-alert type="success" variant="tonal" density="compact" rounded="xl">
-            <strong>Everything looks good!</strong> Your campaign is ready to go. Click Launch to send to {{ estimatedAudience }} recipients.
-          </v-alert>
-        </v-card>
-
+          <div class="d-flex justify-end mt-6">
+            <v-btn variant="text" class="text-none" :to="campaignsRoute">Cancel</v-btn>
+          </div>
+        </div>
       </div>
-    </div>
-
-    <!-- Bottom Navigation Bar -->
-    <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
-      <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
-      <div v-else></div>
-      <div class="d-flex align-center gap-3">
-        <span v-if="!stepValid && stepHint" class="text-caption text-medium-emphasis">{{ stepHint }}</span>
-        <span class="text-caption text-medium-emphasis num">{{ step }} / {{ totalSteps }}</span>
-        <v-btn v-if="step < totalSteps" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">
-          Continue
-        </v-btn>
-        <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="rocket" @click="launch">
-          Launch Campaign
-        </v-btn>
-      </div>
-    </div>
     </template>
 
-    <!-- Success confirmation -->
-    <div v-else class="flex-grow-1 d-flex align-center justify-center pa-8 bg-background">
-      <v-card variant="flat" border rounded="lg" class="pa-10 text-center" style="max-width: 520px;">
-        <v-avatar size="72" color="success" variant="tonal" class="mb-6">
-          <v-icon size="36" color="success">rocket</v-icon>
-        </v-avatar>
-        <div class="text-h5 font-weight-bold mb-2">{{ launchHeadline }}</div>
-        <div class="text-body-1 text-medium-emphasis mb-8">{{ launchMessage }}</div>
-        <div class="d-flex flex-column gap-3">
-          <v-btn color="primary" size="large" block rounded="xl" class="text-none font-weight-bold" prepend-icon="layout-list" @click="viewCampaigns">
-            View campaigns
-          </v-btn>
-          <v-btn variant="text" size="large" block rounded="xl" class="text-none" prepend-icon="plus" @click="createAnother">
-            Create another campaign
-          </v-btn>
-        </div>
-      </v-card>
-    </div>
+    <!-- Wizard -->
+    <template v-else>
+      <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">
+        <MpPageHeader
+          :title="pageTitle"
+          :subtitle="`Step ${step} of ${totalSteps} — ${stepTitles[step - 1]}`"
+          :back-to="campaignsRoute"
+        >
+          <template #actions>
+            <v-btn variant="text" class="text-none text-medium-emphasis" @click="exitWizard">Save &amp; exit</v-btn>
+          </template>
+          <template #tabs>
+            <MpWizardSteps
+              :steps="stepTitles"
+              :current="step"
+              :clickable="maxStepReached > 1"
+              :max-step="maxStepReached"
+              class="mt-3"
+              @select="goToStep"
+            />
+          </template>
+        </MpPageHeader>
+      </div>
 
-    <MpConfirmDialog
-      v-model="confirmDiscard"
-      title="Discard this campaign?"
-      message="Your progress won't be saved. This can't be undone."
-      confirm-label="Discard"
-      danger
-      @confirm="cancel"
-    />
+      <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
+        <div style="max-width: 780px; margin: 0 auto;">
+
+          <!-- Step 1: Details -->
+          <v-card v-if="step === 1" variant="flat" border rounded="lg" class="pa-8">
+            <div class="text-h6 font-weight-bold mb-1">Campaign Details</div>
+            <div class="text-body-2 text-medium-emphasis mb-6">Name your campaign and write the subject line recipients will see.</div>
+            <v-divider class="mb-6"></v-divider>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field v-model="name" label="Campaign Name *" placeholder="e.g. Black Friday 2026 — VIP Early Access" variant="outlined" density="comfortable" hint="Internal name, not shown to recipients" persistent-hint class="mb-4"></v-text-field>
+              </v-col>
+              <v-col cols="12" :sm="kind === 'ab_email' ? 6 : 12">
+                <v-text-field v-model="subject" :label="kind === 'ab_email' ? 'Subject Line A *' : 'Subject Line *'" placeholder="e.g. 🔥 40% Off Sitewide — Today Only!" variant="outlined" density="comfortable" class="mb-4"></v-text-field>
+              </v-col>
+              <v-col v-if="kind === 'ab_email'" cols="12" sm="6">
+                <v-text-field v-model="subjectB" label="Subject Line B *" placeholder="e.g. Today only — 40% off everything" variant="outlined" density="comfortable" class="mb-4"></v-text-field>
+              </v-col>
+              <v-col v-if="kind === 'ab_email'" cols="12" sm="6">
+                <v-slider v-model="testSplitPercent" label="Test split %" min="10" max="50" step="5" thumb-label="always" class="mb-2"></v-slider>
+              </v-col>
+              <v-col cols="12">
+                <v-text-field v-model="preheader" label="Preheader" placeholder="e.g. Your favourite brands, now at the lowest prices..." variant="outlined" density="comfortable" :counter="100" maxlength="100" hint="Shown in inbox previews after the subject line" persistent-hint class="mb-4"></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-combobox v-model="tag" label="Campaign Tag" :items="TAG_OPTIONS" variant="outlined" density="comfortable" clearable hint="Pick an existing tag or type a new one" persistent-hint></v-combobox>
+              </v-col>
+            </v-row>
+          </v-card>
+
+          <!-- Step 2: Contacts -->
+          <v-card v-if="step === 2" variant="flat" border rounded="lg" class="pa-8">
+            <div class="text-h6 font-weight-bold mb-1">Contacts</div>
+            <div class="text-body-2 text-medium-emphasis mb-6">Choose who receives this campaign and the sender details they'll see.</div>
+            <v-divider class="mb-6"></v-divider>
+
+            <v-select v-model="brand" label="Brand" :items="BRAND_OPTIONS" variant="outlined" density="comfortable" class="mb-4"></v-select>
+
+            <v-row dense>
+              <v-col cols="12" md="4">
+                <v-select
+                  v-model="audienceListIds"
+                  :items="listItems"
+                  item-title="title" item-value="value"
+                  :label="`Select List (${audienceListIds.length})`" multiple chips closable-chips variant="outlined" density="comfortable"
+                  @update:model-value="onAudienceListsChanged"
+                >
+                  <template #prepend-item>
+                    <v-list-item title="Select all" @click="toggleAllLists"></v-list-item>
+                    <v-divider class="mt-1"></v-divider>
+                  </template>
+                </v-select>
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-select v-model="audienceSegmentIds" :items="segmentItems" item-title="title" item-value="value" :label="`Select Segment (${audienceSegmentIds.length})`" multiple chips closable-chips variant="outlined" density="comfortable">
+                  <template #prepend-item>
+                    <v-list-item title="Select all" @click="toggleAllSegments"></v-list-item>
+                    <v-divider class="mt-1"></v-divider>
+                  </template>
+                </v-select>
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-select v-model="audienceTableIds" :items="tableItems" item-title="title" item-value="value" :label="`Select Table (${audienceTableIds.length})`" multiple chips closable-chips variant="outlined" density="comfortable">
+                  <template #prepend-item>
+                    <v-list-item title="Select all" @click="toggleAllTables"></v-list-item>
+                    <v-divider class="mt-1"></v-divider>
+                  </template>
+                </v-select>
+              </v-col>
+            </v-row>
+            <v-alert v-if="audienceCount === 0" type="info" variant="tonal" density="compact" rounded="lg" class="mb-6 text-body-2">
+              Please select at least one List, Segment, or Table.
+            </v-alert>
+            <v-alert v-else type="success" variant="tonal" density="compact" rounded="lg" class="mb-6 text-body-2" icon="user-check">
+              {{ audienceCount }} audience source{{ audienceCount > 1 ? 's' : '' }} selected.
+            </v-alert>
+
+            <div class="text-subtitle-2 font-weight-bold mb-3">Sender</div>
+            <v-row dense class="mb-2">
+              <v-col cols="12" sm="6"><v-text-field v-model="senderName" label="From Name *" variant="outlined" density="comfortable"></v-text-field></v-col>
+              <v-col cols="12" sm="6"><v-text-field v-model="senderEmail" label="From Email *" variant="outlined" density="comfortable"></v-text-field></v-col>
+              <v-col cols="12" sm="6"><v-text-field v-model="replyTo" label="Reply To *" variant="outlined" density="comfortable"></v-text-field></v-col>
+              <v-col cols="12" sm="3"><v-select v-model="language" label="Language *" :items="LANGUAGES" variant="outlined" density="comfortable"></v-select></v-col>
+              <v-col cols="12" sm="3"><v-text-field v-model="address" label="Address *" variant="outlined" density="comfortable"></v-text-field></v-col>
+            </v-row>
+            <div class="text-caption text-medium-emphasis mb-6">Selecting a list autofills sender details from that list's saved profile.</div>
+
+            <v-expansion-panels variant="accordion" class="mp-suppress-panel">
+              <v-expansion-panel rounded="lg" elevation="0">
+                <v-expansion-panel-title>
+                  <span class="text-body-2 font-weight-bold">Suppress contacts (optional)</span>
+                  <v-chip v-if="suppressCount" size="x-small" variant="tonal" color="primary" class="ml-3">{{ suppressCount }}</v-chip>
+                </v-expansion-panel-title>
+                <v-expansion-panel-text>
+                  <v-row dense>
+                    <v-col cols="12" sm="6">
+                      <v-select v-model="suppressListIds" :items="listItems" item-title="title" item-value="value" label="Suppress List" multiple chips closable-chips variant="outlined" density="comfortable"></v-select>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <v-select v-model="suppressJourneyIds" :items="journeyItems" item-title="title" item-value="value" label="Suppress Journey" multiple chips closable-chips variant="outlined" density="comfortable"></v-select>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <v-select v-model="suppressSegmentIds" :items="segmentItems" item-title="title" item-value="value" label="Suppress Segment" multiple chips closable-chips variant="outlined" density="comfortable"></v-select>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <v-select v-model="suppressSecureListIds" :items="secureListItems" item-title="title" item-value="value" label="Suppress Secure List" multiple chips closable-chips variant="outlined" density="comfortable"></v-select>
+                    </v-col>
+                  </v-row>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
+          </v-card>
+
+          <!-- Step 3: Content -->
+          <v-card v-if="step === 3" variant="flat" border rounded="lg" class="pa-8">
+            <div class="text-h6 font-weight-bold mb-1">Content</div>
+            <div class="text-body-2 text-medium-emphasis mb-6">Pick the email content this campaign will send.</div>
+            <v-divider class="mb-6"></v-divider>
+
+            <v-autocomplete
+              v-model="contentId"
+              :items="contentOptions"
+              item-title="title" item-value="value"
+              label="Content Name *"
+              placeholder="Search the content library…"
+              variant="outlined" density="comfortable" clearable
+              prepend-inner-icon="search"
+              class="mb-6"
+            ></v-autocomplete>
+
+            <v-card v-if="selectedContent" variant="tonal" color="primary" rounded="lg" class="pa-5 mb-6">
+              <div class="d-flex align-center justify-space-between mb-3">
+                <div class="d-flex align-center gap-2">
+                  <v-icon size="18">file-text</v-icon>
+                  <span class="font-weight-bold">{{ selectedContent.name }}</span>
+                </div>
+                <v-btn icon="pencil" size="small" variant="text" aria-label="Edit content"></v-btn>
+              </div>
+              <div class="mp-content-preview rounded-lg pa-4 text-body-2">
+                <div>Hi {{ mergeTagFirstName }},</div>
+                <div class="my-2">Thanks for shopping with {{ mergeTagAddress }}. Here's what's new for you today…</div>
+                <div class="text-caption text-medium-emphasis">{{ mergeTagUnsubscribe }}</div>
+              </div>
+            </v-card>
+
+            <div class="d-flex flex-wrap align-center gap-6 mb-6">
+              <v-switch v-model="showPreviewLink" color="primary" density="compact" hide-details label="Show email preview link"></v-switch>
+              <v-switch v-model="dynamicPreview" color="primary" density="compact" hide-details label="Dynamic content preview"></v-switch>
+            </div>
+
+            <div class="d-flex align-center gap-4">
+              <v-btn variant="outlined" class="text-none" prepend-icon="shield-check" :disabled="!selectedContent" @click="runSpamCheck">Run spam check</v-btn>
+              <v-chip v-if="spamCheckResult" color="success" variant="tonal" prepend-icon="check-circle">{{ spamCheckResult }}</v-chip>
+            </div>
+          </v-card>
+
+          <!-- Step 4: Schedule & Review -->
+          <v-card v-if="step === 4" variant="flat" border rounded="lg" class="pa-8">
+            <div class="text-h6 font-weight-bold mb-1">Schedule &amp; Review</div>
+            <div class="text-body-2 text-medium-emphasis mb-6">Choose when to send, then confirm your setup.</div>
+            <v-divider class="mb-6"></v-divider>
+
+            <v-radio-group v-model="scheduleType" class="mb-4">
+              <v-card variant="outlined" rounded="lg" class="pa-4 mb-3 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
+                <v-radio value="now" color="primary">
+                  <template #label>
+                    <div class="ml-2">
+                      <div class="font-weight-bold">Send Immediately</div>
+                      <div class="text-caption text-medium-emphasis">Sends as soon as you click "{{ kind === 'ab_email' ? 'Send test' : 'Schedule campaign' }}"</div>
+                    </div>
+                  </template>
+                </v-radio>
+              </v-card>
+              <v-card variant="outlined" rounded="lg" class="pa-4 cursor-pointer" @click="scheduleType = 'scheduled'">
+                <v-radio value="scheduled" color="primary">
+                  <template #label>
+                    <div class="ml-2">
+                      <div class="font-weight-bold">Schedule for Later</div>
+                      <div class="text-caption text-medium-emphasis">Pick a specific date and time for delivery</div>
+                    </div>
+                  </template>
+                </v-radio>
+              </v-card>
+            </v-radio-group>
+            <v-expand-transition>
+              <v-row v-if="scheduleType === 'scheduled'" class="mb-2">
+                <v-col cols="12" sm="5"><v-text-field v-model="scheduleDate" label="Date" type="date" variant="outlined" density="comfortable"></v-text-field></v-col>
+                <v-col cols="12" sm="4"><v-text-field v-model="scheduleTime" label="Time" type="time" variant="outlined" density="comfortable"></v-text-field></v-col>
+                <v-col cols="12" sm="3"><v-select v-model="timezone" label="Timezone" :items="TIMEZONES" variant="outlined" density="comfortable"></v-select></v-col>
+              </v-row>
+            </v-expand-transition>
+
+            <div class="text-subtitle-2 font-weight-bold mt-4 mb-3">Send-time optimization</div>
+            <v-row dense class="mb-2">
+              <v-col cols="6" sm="3"><v-switch v-model="optimizations.sto" color="primary" density="compact" hide-details label="STO"></v-switch></v-col>
+              <v-col cols="6" sm="3"><v-switch v-model="optimizations.tzo" color="primary" density="compact" hide-details label="TZO"></v-switch></v-col>
+              <v-col cols="6" sm="3"><v-switch v-model="optimizations.cto" color="primary" density="compact" hide-details label="CTO"></v-switch></v-col>
+              <v-col cols="6" sm="3"><v-switch v-model="optimizations.preSend" color="primary" density="compact" hide-details label="Pre-Send Calc"></v-switch></v-col>
+            </v-row>
+
+            <template v-if="kind === 'ab_email'">
+              <v-divider class="my-6"></v-divider>
+              <div class="text-subtitle-2 font-weight-bold mb-3">A/B winner criteria</div>
+              <v-select v-model="winnerCriteria" :items="[{title:'Opens', value:'opens'},{title:'Clicks', value:'clicks'},{title:'Revenue', value:'revenue'}]" item-title="title" item-value="value" label="Pick the winner by" variant="outlined" density="comfortable" style="max-width: 320px;"></v-select>
+            </template>
+
+            <v-divider class="my-6"></v-divider>
+            <div class="text-subtitle-2 font-weight-bold mb-3">Review</div>
+            <v-list lines="two" density="compact" class="mb-4 rounded-xl border pa-0 overflow-hidden">
+              <template v-for="(item, idx) in reviewItems" :key="idx">
+                <v-list-item class="px-5 py-3" :class="{ 'border-b': idx < reviewItems.length - 1 }">
+                  <template #prepend>
+                    <v-avatar size="36" color="primary" variant="tonal" class="mr-3"><v-icon color="primary" size="18">{{ item.icon }}</v-icon></v-avatar>
+                  </template>
+                  <v-list-item-title class="text-caption text-medium-emphasis font-weight-bold text-uppercase">{{ item.label }}</v-list-item-title>
+                  <v-list-item-subtitle class="text-body-2 font-weight-medium mt-1" style="opacity: 1;">{{ item.value }}</v-list-item-subtitle>
+                </v-list-item>
+              </template>
+            </v-list>
+            <div class="text-caption text-medium-emphasis">Optimizations: {{ enabledOptimizations }}</div>
+          </v-card>
+
+        </div>
+      </div>
+
+      <!-- Unified footer -->
+      <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
+        <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
+        <div v-else></div>
+        <div class="d-flex align-center gap-3">
+          <span v-if="!stepValid && stepHint" class="text-caption text-medium-emphasis">{{ stepHint }}</span>
+          <span class="text-caption text-medium-emphasis num">{{ step }} / {{ totalSteps }}</span>
+          <v-btn v-if="step < totalSteps" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">
+            Continue
+          </v-btn>
+          <template v-else>
+            <v-btn variant="outlined" class="text-none" @click="saveDraft">Save draft</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket" :disabled="!step4Valid" @click="scheduleCampaign">
+              {{ scheduleType === 'now' ? 'Send campaign now' : 'Schedule campaign' }}
+            </v-btn>
+          </template>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -414,4 +639,6 @@ const stepTitles = ['Setup', 'Template', 'Audience', 'Schedule', 'Review & Launc
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .num { font-variant-numeric: tabular-nums; }
+.mp-content-preview { background: rgba(var(--v-theme-on-surface), 0.03); }
+.mp-suppress-panel :deep(.v-expansion-panel) { border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 </style>

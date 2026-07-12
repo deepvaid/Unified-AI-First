@@ -1,29 +1,42 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import { useSmsStore } from '@/stores/useSms'
 
 const route = useRoute()
 const router = useRouter()
+const store = useSmsStore()
 
 const accountId = computed(() => route.params.accountId as string)
 const backTo = computed(() => ({ name: 'TransactionalSms', params: { accountId: accountId.value } }))
 
+const editId = ref<number | null>(null)
+const tab = ref<'message' | 'compliance'>('message')
+
 const name = ref('')
 const message = ref('')
 const senderId = ref('MAROPOST')
-const audience = ref<string | null>('SMS Opted-In')
 const template = ref<string | null>(null)
+const optOutConfirmed = ref(false)
 const saved = ref(false)
 
 const tokenExample = '{{ first_name }}'
-const AUDIENCES = ['SMS Opted-In', 'SMS Marketing List', 'All contacts']
 const TEMPLATES = [
   { title: 'Order Confirmation', value: 'Your order {{order_no}} is confirmed! 🎉 Track it here: {{link}}' },
   { title: 'Shipping Update', value: 'Good news! Your order has shipped 📦 Follow along: {{link}}' },
   { title: 'Verification Code (OTP)', value: 'Your verification code is {{code}}. It expires in 10 minutes.' },
   { title: 'Abandoned Cart', value: 'You left something behind! Complete your checkout: {{link}}' },
 ]
+const INSERT_CHIPS: { key: string; label: string; icon: string; token: string }[] = [
+  { key: 'tags', label: 'Contact Tags', icon: 'tag', token: '{{contact.tag}}' },
+  { key: 'keywords', label: 'Keywords', icon: 'hash', token: '{{keyword}}' },
+  { key: 'tracking', label: 'Click Tracking', icon: 'link', token: '{{link}}' },
+]
+
+function insertHelper(chip: typeof INSERT_CHIPS[number]) {
+  message.value = `${message.value}${message.value && !message.value.endsWith(' ') ? ' ' : ''}${chip.token}`
+}
 
 // GSM-7 segmentation: 160 chars for a single SMS, 153 per part once concatenated.
 const MAX_SINGLE = 160
@@ -40,29 +53,68 @@ function applyTemplate(val: string | null) {
   if (val) message.value = val
 }
 
-const canCreate = computed(() => name.value.trim() !== '' && message.value.trim() !== '' && !!audience.value)
+const messageValid = computed(() => name.value.trim() !== '' && message.value.trim() !== '')
+const canSave = computed(() => messageValid.value && optOutConfirmed.value)
 
-function create() {
-  if (!canCreate.value) return
+function goToCompliance() {
+  if (messageValid.value) tab.value = 'compliance'
+}
+
+function save() {
+  if (!canSave.value) return
+  const input = {
+    name: name.value.trim(),
+    messagePreview: message.value.trim(),
+    message: message.value.trim(),
+    senderId: senderId.value,
+    audience: 'All contacts',
+    optOutConfirmed: optOutConfirmed.value,
+  }
+  if (editId.value != null) {
+    store.updateTransactionalSms(editId.value, input)
+  } else {
+    store.createTransactionalSms(input)
+  }
   saved.value = true
   setTimeout(() => router.push(backTo.value), 700)
 }
+
+onMounted(() => {
+  const idParam = route.query.id
+  if (!idParam) return
+  const existing = store.getTransactionalSms(Number(idParam))
+  if (!existing) return
+  editId.value = existing.id
+  name.value = existing.name
+  message.value = existing.message ?? existing.messagePreview
+  senderId.value = existing.senderId
+  optOutConfirmed.value = existing.optOutConfirmed ?? false
+})
+
+const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS' : 'New Transactional SMS'))
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column">
     <div class="px-8 pt-6 pb-4 bg-surface page-head">
       <MpPageHeader
-        title="New Transactional SMS"
+        :title="pageTitle"
         subtitle="Triggered text messages like order confirmations, OTPs, and shipping updates"
         :back-to="backTo"
-      />
+      >
+        <template #tabs>
+          <v-tabs v-model="tab" density="comfortable" color="primary" class="mt-3">
+            <v-tab value="message" class="text-none">Message</v-tab>
+            <v-tab value="compliance" class="text-none" :disabled="!messageValid">Compliance</v-tab>
+          </v-tabs>
+        </template>
+      </MpPageHeader>
     </div>
 
     <div class="flex-grow-1 overflow-y-auto px-8 py-6 bg-background">
       <div class="cts-grid mx-auto">
-        <!-- Form -->
-        <div class="d-flex flex-column gap-5">
+        <!-- Message tab -->
+        <div v-if="tab === 'message'" class="d-flex flex-column gap-5">
           <v-card flat border rounded="lg" class="pa-6">
             <div class="d-flex align-center ga-2 mb-4">
               <v-icon size="18" class="text-medium-emphasis">message-square</v-icon>
@@ -78,6 +130,18 @@ function create() {
               class="mb-4"
               :rules="[v => !!v || 'Name is required']"
             />
+            <v-text-field
+              v-model="senderId"
+              label="Sender ID"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              :counter="11"
+              :maxlength="11"
+              hint="Up to 11 alphanumeric characters shown as the sender"
+              persistent-hint
+              class="mb-4"
+            />
             <v-select
               v-model="template"
               label="Start from a template (optional)"
@@ -92,7 +156,7 @@ function create() {
             />
             <v-textarea
               v-model="message"
-              label="Message body"
+              label="Message body *"
               placeholder="Type your SMS. Add personalization tokens for a tailored message."
               variant="outlined"
               density="comfortable"
@@ -101,7 +165,7 @@ function create() {
               auto-grow
               hide-details
             />
-            <div class="d-flex align-center justify-space-between mt-2">
+            <div class="d-flex align-center justify-space-between mt-2 mb-4">
               <span class="text-caption text-medium-emphasis">
                 Personalize with tokens like <code>{{ tokenExample }}</code>
               </span>
@@ -109,39 +173,26 @@ function create() {
                 {{ charCount }} / {{ segmentCap }} · {{ segments }} segment{{ segments === 1 ? '' : 's' }}
               </span>
             </div>
+            <div class="d-flex flex-wrap gap-2">
+              <v-chip v-for="chip in INSERT_CHIPS" :key="chip.key" size="small" variant="outlined" :prepend-icon="chip.icon" class="text-none" @click="insertHelper(chip)">
+                {{ chip.label }}
+              </v-chip>
+            </div>
           </v-card>
+        </div>
 
+        <!-- Compliance tab -->
+        <div v-else class="d-flex flex-column gap-5">
           <v-card flat border rounded="lg" class="pa-6">
             <div class="d-flex align-center ga-2 mb-4">
-              <v-icon size="18" class="text-medium-emphasis">users</v-icon>
-              <span class="text-subtitle-2 font-weight-bold">Sender &amp; audience</span>
+              <v-icon size="18" class="text-medium-emphasis">shield-check</v-icon>
+              <span class="text-subtitle-2 font-weight-bold">Compliance</span>
             </div>
-            <v-row dense>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="senderId"
-                  label="Sender ID"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  :counter="11"
-                  :maxlength="11"
-                  hint="Up to 11 alphanumeric characters shown as the sender"
-                  persistent-hint
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="audience"
-                  label="Target audience"
-                  :items="AUDIENCES"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  hide-details
-                />
-              </v-col>
-            </v-row>
+            <v-checkbox v-model="optOutConfirmed" color="primary" hide-details>
+              <template #label>
+                <span class="text-body-2">This message includes a clear opt-out and complies with local SMS marketing regulations.</span>
+              </template>
+            </v-checkbox>
           </v-card>
         </div>
 
@@ -162,24 +213,27 @@ function create() {
                 {{ charCount }} / {{ segmentCap }} · {{ segments }} segment{{ segments === 1 ? '' : 's' }}
               </span>
             </div>
-            <div class="cts-preview__note">
-              <v-icon size="13">users</v-icon>
-              To: <strong>{{ audience }}</strong>
-            </div>
           </div>
         </aside>
       </div>
     </div>
 
-    <div class="px-8 py-4 bg-surface page-foot d-flex justify-end ga-3">
-      <v-btn variant="text" class="text-none" :to="backTo">Cancel</v-btn>
-      <v-btn color="primary" variant="flat" class="text-none" :disabled="!canCreate" prepend-icon="check" @click="create">
-        Create transactional SMS
-      </v-btn>
+    <div class="px-8 py-4 bg-surface page-foot d-flex justify-space-between ga-3">
+      <v-btn v-if="tab === 'compliance'" variant="text" class="text-none" prepend-icon="arrow-left" @click="tab = 'message'">Back</v-btn>
+      <div v-else></div>
+      <div class="d-flex ga-3">
+        <v-btn variant="text" class="text-none" :to="backTo">Cancel</v-btn>
+        <v-btn v-if="tab === 'message'" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!messageValid" @click="goToCompliance">
+          Continue
+        </v-btn>
+        <v-btn v-else color="primary" variant="flat" class="text-none" :disabled="!canSave" prepend-icon="check" @click="save">
+          {{ editId != null ? 'Save changes' : 'Save' }}
+        </v-btn>
+      </div>
     </div>
 
     <v-snackbar v-model="saved" color="success" timeout="700" location="bottom right">
-      Transactional SMS created
+      {{ editId != null ? 'Transactional SMS updated' : 'Transactional SMS saved' }}
     </v-snackbar>
   </div>
 </template>
@@ -187,7 +241,7 @@ function create() {
 <style scoped>
 .cts-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 24px;
   max-width: 1040px;
   align-items: start;
@@ -233,7 +287,7 @@ code {
 }
 .phone__thread { display: flex; flex-direction: column; align-items: flex-start; }
 .phone__bubble {
-  max-width: 85%;
+  max-width: 100%;
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);
   border-radius: 16px 16px 16px 4px;
@@ -255,13 +309,4 @@ code {
   font-variant-numeric: tabular-nums;
   margin-top: 8px;
 }
-.cts-preview__note {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  font-size: 0.75rem;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-}
-.cts-preview__note :deep(.v-icon) { color: rgb(var(--v-theme-primary)); }
 </style>

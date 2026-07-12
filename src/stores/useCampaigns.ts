@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { FlowNode, JourneySettings } from '@/stores/journeyFlowData'
-import { instantiateTemplate, seedJourneyFlows, templateById } from '@/stores/journeyFlowData'
+import { cloneFlowNodes, instantiateTemplate, seedJourneyFlows, templateById } from '@/stores/journeyFlowData'
 
 export interface CampaignMetrics {
   sent: number
@@ -9,6 +9,51 @@ export interface CampaignMetrics {
   clicks: number
   unsubscribes: number
   revenue: number
+}
+
+export interface CampaignOptimizations {
+  sto: boolean
+  tzo: boolean
+  cto: boolean
+  preSend: boolean
+}
+
+export type CampaignScheduleType = 'now' | 'scheduled'
+
+/** Full wizard configuration for an email (or A/B email) campaign — persisted as `Campaign.config`. */
+export interface CampaignDraftInput {
+  kind: 'email' | 'ab_email'
+  name: string
+  subject: string
+  subjectB?: string
+  preheader: string
+  tag: string
+  /** Human-readable audience summary for list display, e.g. "3 lists · 1 segment". */
+  audienceSummary: string
+  audienceListIds: number[]
+  audienceSegmentIds: number[]
+  audienceTableIds: number[]
+  brand: string
+  senderName: string
+  senderEmail: string
+  replyTo: string
+  language: string
+  address: string
+  suppressListIds: number[]
+  suppressJourneyIds: number[]
+  suppressSegmentIds: number[]
+  suppressSecureListIds: number[]
+  contentId: number | null
+  showPreviewLink: boolean
+  dynamicPreview: boolean
+  spamCheckResult: string | null
+  scheduleType: CampaignScheduleType
+  scheduleDate: string | null
+  scheduleTime: string | null
+  timezone: string
+  optimizations: CampaignOptimizations
+  testSplitPercent?: number
+  winnerCriteria?: 'opens' | 'clicks' | 'revenue'
 }
 
 export interface Campaign {
@@ -19,6 +64,8 @@ export interface Campaign {
   sentDate: string | null
   listName: string
   metrics: CampaignMetrics
+  /** Full wizard configuration — present once a campaign has been through the Create Campaign wizard. */
+  config?: CampaignDraftInput
 }
 
 export type JourneyStatus = 'Active' | 'Paused' | 'Draft'
@@ -32,6 +79,8 @@ export interface Journey {
   completed: number
   revenue: number
   created: string
+  /** Set whenever the flow or status is persisted from the builder. */
+  updatedAt?: string
   settings?: JourneySettings
 }
 
@@ -64,16 +113,47 @@ export const useCampaignsStore = defineStore('campaigns', () => {
     { id: 25, name: 'New Blog: "10 Ways To Boost Your Fitness Routine"', folderId: 'cmp-newsletter', status: 'Draft', sentDate: null, listName: 'Newsletter Opt-in', metrics: { sent: 0, opens: 0, clicks: 0, unsubscribes: 0, revenue: 0 } },
   ])
 
-  function createCampaign(name: string) {
-    campaigns.value.unshift({
-      id: campaigns.value.length + 100,
-      name,
+/** Applies the terminal status once the wizard's final action ("finalize") runs. */
+  function applyFinalizeStatus(campaign: Campaign, input: CampaignDraftInput) {
+    if (input.scheduleType === 'now') {
+      campaign.status = 'Sending'
+      campaign.sentDate = new Date().toISOString().slice(0, 10)
+    } else {
+      campaign.status = 'Scheduled'
+      campaign.sentDate = input.scheduleDate
+    }
+  }
+
+  /** Creates a new Draft campaign from wizard state. Pass `finalize: true` on the final "Schedule/Send" action. */
+  function createCampaign(input: CampaignDraftInput, finalize = false): number {
+    const id = Math.max(0, ...campaigns.value.map(c => c.id)) + 1
+    const campaign: Campaign = {
+      id,
+      name: input.name.trim() || 'Untitled campaign',
       folderId: null,
       status: 'Draft',
       sentDate: null,
-      listName: 'Master Subscriber List',
-      metrics: { sent: 0, opens: 0, clicks: 0, unsubscribes: 0, revenue: 0 }
-    })
+      listName: input.audienceSummary || 'No audience selected',
+      metrics: { sent: 0, opens: 0, clicks: 0, unsubscribes: 0, revenue: 0 },
+      config: input,
+    }
+    if (finalize) applyFinalizeStatus(campaign, input)
+    campaigns.value.unshift(campaign)
+    return id
+  }
+
+  /** Updates an existing (draft or in-progress) campaign from wizard state. Pass `finalize: true` on Schedule/Send. */
+  function updateCampaignDraft(id: number, input: CampaignDraftInput, finalize = false) {
+    const campaign = campaigns.value.find(c => c.id === id)
+    if (!campaign) return
+    campaign.name = input.name.trim() || 'Untitled campaign'
+    campaign.listName = input.audienceSummary || 'No audience selected'
+    campaign.config = input
+    if (finalize) applyFinalizeStatus(campaign, input)
+  }
+
+  function getCampaign(id: number): Campaign | undefined {
+    return campaigns.value.find(c => c.id === id)
   }
 
   function moveToFolder(id: number, folderId: string | null) {
@@ -159,8 +239,47 @@ export const useCampaignsStore = defineStore('campaigns', () => {
     if (journey) journey.status = status
   }
 
+  /** Persists a builder's node graph for a journey and stamps the updated time. */
+  function saveJourneyFlow(id: number, nodes: FlowNode[]) {
+    journeyFlows.value[id] = nodes.map(n => ({
+      ...n,
+      children: [...n.children],
+      config: { ...n.config },
+      branchLabels: n.branchLabels ? [...n.branchLabels] : undefined,
+    }))
+    const journey = journeys.value.find(j => j.id === id)
+    if (journey) journey.updatedAt = new Date().toISOString()
+  }
+
+  /** Clones a journey and its flow, suffixing the name like the legacy list does. */
+  function duplicateJourney(id: number): number | undefined {
+    const original = journeys.value.find(j => j.id === id)
+    if (!original) return undefined
+    const newId = Math.max(0, ...journeys.value.map(j => j.id)) + 1
+    const index = journeys.value.findIndex(j => j.id === id)
+    journeys.value.splice(index + 1, 0, {
+      ...original,
+      id: newId,
+      name: `${original.name} (Copy)`,
+      status: 'Draft',
+      enrolled: 0,
+      completed: 0,
+      revenue: 0,
+      created: new Date().toISOString().slice(0, 10),
+      updatedAt: undefined,
+    })
+    journeyFlows.value[newId] = cloneFlowNodes(journeyFlows.value[id] ?? [], `j${newId}`)
+    return newId
+  }
+
+  function deleteJourney(id: number) {
+    journeys.value = journeys.value.filter(j => j.id !== id)
+    delete journeyFlows.value[id]
+  }
+
   return {
-    campaigns, createCampaign, moveToFolder, duplicateCampaign, deleteCampaigns, reassignFolder,
+    campaigns, createCampaign, updateCampaignDraft, getCampaign, moveToFolder, duplicateCampaign, deleteCampaigns, reassignFolder,
     journeys, journeyFlows, getFlow, createJourney, setJourneyStatus,
+    saveJourneyFlow, duplicateJourney, deleteJourney,
   }
 })

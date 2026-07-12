@@ -1,15 +1,34 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useSmsStore } from '@/stores/useSms'
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
+const route = useRoute()
+const router = useRouter()
 const store = useSmsStore()
 const { transactionalSms } = storeToRefs(store)
 const search = ref('')
+
+function newFlow() {
+  router.push({ name: 'CreateTransactionalSms', params: { accountId: route.params.accountId } })
+}
+function editFlow(id: number) {
+  router.push({ name: 'CreateTransactionalSms', params: { accountId: route.params.accountId }, query: { id } })
+}
+
+const deleteTarget = ref<{ id: number; name: string } | null>(null)
+function confirmDelete() {
+  if (!deleteTarget.value) return
+  store.deleteTransactionalSms([deleteTarget.value.id])
+  deleteTarget.value = null
+}
 
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
@@ -42,7 +61,7 @@ const headers = [
           variant="flat"
           prepend-icon="plus"
           class="text-none"
-          :to="{ name: 'CreateTransactionalSms', params: { accountId: $route.params.accountId } }"
+          @click="newFlow"
         >
           New SMS
         </v-btn>
@@ -86,17 +105,22 @@ const headers = [
         <template #item.delivered="{ item }">
           <span class="num">{{ item.delivered ? item.delivered.toLocaleString() : '—' }}</span>
         </template>
-        <template #item.actions>
-          <v-menu>
-            <template #activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" aria-label="More actions" />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-              <v-list-item prepend-icon="pencil">Edit</v-list-item>
-              <v-list-item prepend-icon="copy">Duplicate</v-list-item>
-              <v-list-item prepend-icon="trash-2" class="text-error">Delete</v-list-item>
-            </v-list>
-          </v-menu>
+        <template #item.actions="{ item }">
+          <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">
+            <v-list-item @click="editFlow(item.id)">
+              <template #prepend><v-icon size="18">pencil</v-icon></template>
+              <v-list-item-title class="text-body-2">Edit</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="store.duplicateTransactionalSms(item.id)">
+              <template #prepend><v-icon size="18">copy</v-icon></template>
+              <v-list-item-title class="text-body-2">Duplicate</v-list-item-title>
+            </v-list-item>
+            <v-divider class="my-1" />
+            <v-list-item class="text-error" @click="deleteTarget = { id: item.id, name: item.name }">
+              <template #prepend><v-icon size="18">trash-2</v-icon></template>
+              <v-list-item-title class="text-body-2">Delete</v-list-item-title>
+            </v-list-item>
+          </MpRowActionsMenu>
         </template>
       </v-data-table>
 
@@ -107,8 +131,19 @@ const headers = [
         description="Create a triggered SMS like an order confirmation, OTP, or shipping update."
         action-label="New SMS"
         action-icon="plus"
+        @action="newFlow"
       />
     </v-card>
+
+    <MpConfirmDialog
+      :model-value="!!deleteTarget"
+      title="Delete this transactional SMS?"
+      :message="`“${deleteTarget?.name}” will be permanently deleted. This can't be undone.`"
+      confirm-label="Delete"
+      danger
+      @update:model-value="(v) => { if (!v) deleteTarget = null }"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 

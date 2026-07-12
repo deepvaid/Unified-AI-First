@@ -1,41 +1,92 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useContentStore } from '@/stores/useContent'
+import { useSmsStore } from '@/stores/useSms'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
 const content = useContentStore()
+const store = useSmsStore()
 
 const accountId = computed(() => route.params.accountId as string)
 const backTo = computed(() => ({ name: 'TransactionalEmail', params: { accountId: accountId.value } }))
 
+const editId = ref<number | null>(null)
 const name = ref('')
 const subject = ref('')
 const fromName = ref('Maropost Store')
 const fromEmail = ref('hello@maropoststore.com')
+const replyTo = ref('support@maropoststore.com')
 const language = ref('English (US)')
 const contentId = ref<number | null>(null)
+const showPreviewLink = ref(false)
 const previewText = ref('')
+const brand = ref('Maropost')
+const tag = ref<string | null>(null)
+const address = ref('100 King St, Sydney NSW 2000')
 const saved = ref(false)
 
 const LANGUAGES = ['English (US)', 'English (UK)', 'French', 'German', 'Spanish', 'Italian']
+const BRAND_OPTIONS = ['Maropost', 'Storefront Co', 'Wholesale Division']
+const TAG_OPTIONS = ['Transactional', 'Onboarding', 'Billing', 'Shipping']
 const contentOptions = computed(() => content.items.map(i => ({ title: i.name, value: i.id })))
 
 const canCreate = computed(() => name.value.trim() !== '' && subject.value.trim() !== '')
 
 function create() {
   if (!canCreate.value) return
+  const input = {
+    name: name.value.trim(),
+    subject: subject.value.trim(),
+    preheader: previewText.value,
+    fromName: fromName.value,
+    fromEmail: fromEmail.value,
+    replyTo: replyTo.value,
+    language: language.value,
+    contentId: contentId.value,
+    showPreviewLink: showPreviewLink.value,
+    brand: brand.value,
+    tag: tag.value ?? '',
+    address: address.value,
+  }
+  if (editId.value != null) {
+    store.updateTransactionalEmail(editId.value, input)
+  } else {
+    store.createTransactionalEmail(input)
+  }
   saved.value = true
   setTimeout(() => router.push(backTo.value), 700)
 }
+
+onMounted(() => {
+  const idParam = route.query.id
+  if (!idParam) return
+  const existing = store.getTransactionalEmail(Number(idParam))
+  if (!existing) return
+  editId.value = existing.id
+  name.value = existing.name
+  subject.value = existing.subject
+  previewText.value = existing.preheader
+  fromName.value = existing.fromName
+  fromEmail.value = existing.fromEmail
+  replyTo.value = existing.replyTo
+  language.value = existing.language
+  contentId.value = existing.contentId
+  showPreviewLink.value = existing.showPreviewLink
+  brand.value = existing.brand
+  tag.value = existing.tag || null
+  address.value = existing.address
+})
+
+const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Email' : 'New Transactional Email'))
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column">
     <div class="px-8 pt-6 pb-4 bg-surface page-head">
-      <MpPageHeader title="New Transactional Email" subtitle="Triggered emails like receipts, confirmations, and password resets" :back-to="backTo" />
+      <MpPageHeader :title="pageTitle" subtitle="Triggered emails like receipts, confirmations, and password resets" :back-to="backTo" />
     </div>
 
     <div class="flex-grow-1 overflow-y-auto px-8 py-6 bg-background">
@@ -74,6 +125,8 @@ function create() {
               variant="outlined"
               density="comfortable"
               rounded="lg"
+              :counter="100"
+              maxlength="100"
               hint="The snippet inboxes show right after the subject"
               persistent-hint
             />
@@ -92,12 +145,24 @@ function create() {
                 <v-text-field v-model="fromEmail" label="From address" variant="outlined" density="comfortable" rounded="lg" />
               </v-col>
               <v-col cols="12" md="6">
+                <v-text-field v-model="replyTo" label="Reply-to address" variant="outlined" density="comfortable" rounded="lg" />
+              </v-col>
+              <v-col cols="12" md="6">
                 <v-select v-model="language" label="Language" :items="LANGUAGES" variant="outlined" density="comfortable" rounded="lg" hide-details />
               </v-col>
+            </v-row>
+          </v-card>
+
+          <v-card flat border rounded="lg" class="pa-6">
+            <div class="d-flex align-center ga-2 mb-4">
+              <v-icon size="18" class="text-medium-emphasis">file-text</v-icon>
+              <span class="text-subtitle-2 font-weight-bold">Content</span>
+            </div>
+            <v-row dense>
               <v-col cols="12" md="6">
                 <v-select
                   v-model="contentId"
-                  label="Content template"
+                  label="Content"
                   :items="contentOptions"
                   variant="outlined"
                   density="comfortable"
@@ -106,6 +171,18 @@ function create() {
                   hide-details
                   clearable
                 />
+              </v-col>
+              <v-col cols="12" md="6" class="d-flex align-center">
+                <v-switch v-model="showPreviewLink" color="primary" density="compact" hide-details label="Show email preview link" />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select v-model="brand" label="Brand" :items="BRAND_OPTIONS" variant="outlined" density="comfortable" rounded="lg" hide-details />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-combobox v-model="tag" label="Campaign tag" :items="TAG_OPTIONS" variant="outlined" density="comfortable" rounded="lg" clearable hide-details />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field v-model="address" label="Address" variant="outlined" density="comfortable" rounded="lg" hide-details />
               </v-col>
             </v-row>
           </v-card>
@@ -148,12 +225,12 @@ function create() {
     <div class="px-8 py-4 bg-surface page-foot d-flex justify-end ga-3">
       <v-btn variant="text" class="text-none" :to="backTo">Cancel</v-btn>
       <v-btn color="primary" variant="flat" class="text-none" :disabled="!canCreate" prepend-icon="check" @click="create">
-        Create transactional email
+        {{ editId != null ? 'Save changes' : 'Create transactional email' }}
       </v-btn>
     </div>
 
     <v-snackbar v-model="saved" color="success" timeout="700" location="bottom right">
-      Transactional email created
+      {{ editId != null ? 'Transactional email updated' : 'Transactional email created' }}
     </v-snackbar>
   </div>
 </template>

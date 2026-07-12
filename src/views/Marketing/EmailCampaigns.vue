@@ -13,6 +13,8 @@ import MpManageFoldersDrawer from '@/components/MpManageFoldersDrawer.vue'
 import MpMoveToFolderDialog from '@/components/MpMoveToFolderDialog.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 
@@ -76,6 +78,20 @@ function viewReport(id: number) {
   router.push({ name: 'CampaignReport', params: { accountId: route.params.accountId, id } })
 }
 
+function editCampaign(id: number) {
+  router.push({ name: 'CreateCampaign', params: { accountId: route.params.accountId }, query: { id } })
+}
+
+// Delete (row + bulk) — always behind a confirm dialog
+const deleteTarget = ref<{ id: number; name: string } | null>(null)
+const bulkDeleteOpen = ref(false)
+
+function confirmDeleteOne() {
+  if (!deleteTarget.value) return
+  store.deleteCampaigns([deleteTarget.value.id])
+  deleteTarget.value = null
+}
+
 // Bulk selection
 const selected = ref<number[]>([])
 const bulkMoveOpen = ref(false)
@@ -83,6 +99,7 @@ const bulkMoveOpen = ref(false)
 function bulkDelete() {
   store.deleteCampaigns(selected.value)
   selected.value = []
+  bulkDeleteOpen.value = false
 }
 
 function onBulkMove(folderId: string | null) {
@@ -229,28 +246,25 @@ const openCreator = () => {
         <template v-slot:item.actions="{ item }">
           <div class="action-btns d-flex justify-end pr-2 gap-1">
             <v-btn v-if="item.status === 'Sent'" icon="bar-chart-2" variant="text" size="small" color="primary" aria-label="View report" @click="viewReport(item.id)"></v-btn>
-            <v-menu location="bottom end">
-              <template #activator="{ props: menuProps }">
-                <v-btn v-bind="menuProps" icon="more-vertical" variant="text" size="small" color="medium-emphasis" aria-label="More actions"></v-btn>
-              </template>
-              <v-card flat border rounded="lg" min-width="180" class="mt-1">
-                <v-list density="compact" class="py-1">
-                  <v-list-item @click="store.duplicateCampaign(item.id)">
-                    <template #prepend><v-icon size="18">copy</v-icon></template>
-                    <v-list-item-title class="text-body-2">Duplicate</v-list-item-title>
-                  </v-list-item>
-                  <v-list-item @click="moveTarget = { id: item.id, name: item.name, folderId: item.folderId }">
-                    <template #prepend><v-icon size="18">folder-input</v-icon></template>
-                    <v-list-item-title class="text-body-2">Move to folder…</v-list-item-title>
-                  </v-list-item>
-                  <v-divider class="my-1" />
-                  <v-list-item base-color="error" @click="store.deleteCampaigns([item.id])">
-                    <template #prepend><v-icon size="18">trash-2</v-icon></template>
-                    <v-list-item-title class="text-body-2">Delete</v-list-item-title>
-                  </v-list-item>
-                </v-list>
-              </v-card>
-            </v-menu>
+            <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">
+              <v-list-item v-if="item.status === 'Draft'" @click="editCampaign(item.id)">
+                <template #prepend><v-icon size="18">pencil</v-icon></template>
+                <v-list-item-title class="text-body-2">Edit</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="store.duplicateCampaign(item.id)">
+                <template #prepend><v-icon size="18">copy</v-icon></template>
+                <v-list-item-title class="text-body-2">Duplicate</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="moveTarget = { id: item.id, name: item.name, folderId: item.folderId }">
+                <template #prepend><v-icon size="18">folder-input</v-icon></template>
+                <v-list-item-title class="text-body-2">Move to folder…</v-list-item-title>
+              </v-list-item>
+              <v-divider class="my-1" />
+              <v-list-item class="text-error" @click="deleteTarget = { id: item.id, name: item.name }">
+                <template #prepend><v-icon size="18">trash-2</v-icon></template>
+                <v-list-item-title class="text-body-2">Delete</v-list-item-title>
+              </v-list-item>
+            </MpRowActionsMenu>
           </div>
         </template>
         <template #no-data>
@@ -297,7 +311,26 @@ const openCreator = () => {
       @select-all="selected = filteredCampaigns.map(c => c.id)"
     >
       <v-btn size="small" variant="text" class="text-none" prepend-icon="folder-input" @click="bulkMoveOpen = true">Move to folder</v-btn>
-      <v-btn size="small" variant="text" class="text-none text-error" prepend-icon="trash-2" @click="bulkDelete">Delete</v-btn>
+      <v-btn size="small" variant="text" class="text-none text-error" prepend-icon="trash-2" @click="bulkDeleteOpen = true">Delete</v-btn>
     </MpFloatingBulkBar>
+
+    <MpConfirmDialog
+      :model-value="!!deleteTarget"
+      title="Delete this campaign?"
+      :message="`“${deleteTarget?.name}” will be permanently deleted. This can't be undone.`"
+      confirm-label="Delete"
+      danger
+      @update:model-value="(v) => { if (!v) deleteTarget = null }"
+      @confirm="confirmDeleteOne"
+    />
+
+    <MpConfirmDialog
+      v-model="bulkDeleteOpen"
+      title="Delete selected campaigns?"
+      :message="`${selected.length} campaign${selected.length === 1 ? '' : 's'} will be permanently deleted. This can't be undone.`"
+      confirm-label="Delete"
+      danger
+      @confirm="bulkDelete"
+    />
   </div>
 </template>

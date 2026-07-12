@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useSmsStore } from '@/stores/useSms'
 import { storeToRefs } from 'pinia'
-import type { SmsCampaign } from '@/stores/useSms'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
+const route = useRoute()
+const router = useRouter()
 const store = useSmsStore()
 const { smsCampaigns } = storeToRefs(store)
 const search = ref('')
@@ -32,44 +35,20 @@ const headers = [
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]
 
-// Compose drawer
-const AUDIENCES = ['SMS Opted-In', 'SMS Marketing List', 'All contacts']
-const drawer = ref(false)
-const blank = (): { name: string; audience: string; message: string } => ({
-  name: '',
-  audience: 'SMS Opted-In',
-  message: '',
-})
-const form = reactive(blank())
-
-const charCount = computed(() => form.message.length)
-const segments = computed(() => {
-  const n = charCount.value
-  if (n === 0) return 0
-  return n <= 160 ? 1 : Math.ceil(n / 153)
-})
-const segmentCap = computed(() => (charCount.value <= 160 ? 160 : segments.value * 153))
-const canCreate = computed(() => form.name.trim() !== '' && form.message.trim() !== '')
-
 function openCompose() {
-  Object.assign(form, blank())
-  drawer.value = true
+  router.push({ name: 'CreateSmsCampaign', params: { accountId: route.params.accountId } })
 }
-function save() {
-  if (!canCreate.value) return
-  const nextId = Math.max(0, ...smsCampaigns.value.map(c => c.id)) + 1
-  smsCampaigns.value.unshift({
-    id: nextId,
-    name: form.name.trim(),
-    messagePreview: form.message.trim(),
-    audience: form.audience,
-    status: 'Draft' as SmsCampaign['status'],
-    sentDate: null,
-    sent: 0,
-    delivered: 0,
-    clicks: 0,
-  })
-  drawer.value = false
+
+function editCampaign(id: number) {
+  router.push({ name: 'CreateSmsCampaign', params: { accountId: route.params.accountId }, query: { id } })
+}
+
+// Delete (row + bulk not needed here — legacy list has no multi-select)
+const deleteTarget = ref<{ id: number; name: string } | null>(null)
+function confirmDelete() {
+  if (!deleteTarget.value) return
+  store.deleteSmsCampaigns([deleteTarget.value.id])
+  deleteTarget.value = null
 }
 </script>
 
@@ -123,18 +102,29 @@ function save() {
         <template #item.clicks="{ item }">
           <span class="num">{{ item.clicks ? item.clicks.toLocaleString() : '—' }}</span>
         </template>
-        <template #item.actions>
-          <v-menu>
-            <template #activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" aria-label="More actions" />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-              <v-list-item prepend-icon="pencil">Edit</v-list-item>
-              <v-list-item prepend-icon="copy">Duplicate</v-list-item>
-              <v-list-item prepend-icon="chart-no-axes-column">View report</v-list-item>
-              <v-list-item prepend-icon="trash-2" class="text-error">Delete</v-list-item>
-            </v-list>
-          </v-menu>
+        <template #item.actions="{ item }">
+          <div class="d-flex justify-end pr-2 gap-1">
+            <v-tooltip v-if="item.status === 'Sent'" text="SMS reports are coming soon" location="top">
+              <template #activator="{ props }">
+                <span v-bind="props"><v-btn icon="bar-chart-2" variant="text" size="small" color="medium-emphasis" aria-label="View report (unavailable)" disabled></v-btn></span>
+              </template>
+            </v-tooltip>
+            <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">
+              <v-list-item v-if="item.status === 'Draft'" @click="editCampaign(item.id)">
+                <template #prepend><v-icon size="18">pencil</v-icon></template>
+                <v-list-item-title class="text-body-2">Edit</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="store.duplicateSmsCampaign(item.id)">
+                <template #prepend><v-icon size="18">copy</v-icon></template>
+                <v-list-item-title class="text-body-2">Duplicate</v-list-item-title>
+              </v-list-item>
+              <v-divider class="my-1" />
+              <v-list-item class="text-error" @click="deleteTarget = { id: item.id, name: item.name }">
+                <template #prepend><v-icon size="18">trash-2</v-icon></template>
+                <v-list-item-title class="text-body-2">Delete</v-list-item-title>
+              </v-list-item>
+            </MpRowActionsMenu>
+          </div>
         </template>
       </v-data-table>
 
@@ -149,45 +139,15 @@ function save() {
       />
     </v-card>
 
-    <MpFormDrawer v-model="drawer" title="New SMS Campaign" subtitle="Compose a one-off SMS to an opted-in audience.">
-      <v-text-field
-        v-model="form.name"
-        label="Campaign name"
-        placeholder="e.g. Weekend Flash Sale"
-        variant="outlined"
-        density="comfortable"
-        autofocus
-        class="mb-3"
-      />
-      <v-select
-        v-model="form.audience"
-        label="Target audience"
-        :items="AUDIENCES"
-        variant="outlined"
-        density="comfortable"
-        class="mb-3"
-      />
-      <v-textarea
-        v-model="form.message"
-        label="Message body"
-        placeholder="Type your SMS. Keep it short and add a clear call to action."
-        variant="outlined"
-        density="comfortable"
-        rows="4"
-        auto-grow
-        hide-details="auto"
-      />
-      <div class="d-flex justify-end mt-2">
-        <span class="text-caption sms-count" :class="segments > 1 ? 'text-warning' : 'text-medium-emphasis'">
-          {{ charCount }} / {{ segmentCap }} · {{ segments }} segment{{ segments === 1 ? '' : 's' }}
-        </span>
-      </div>
-
-      <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" :disabled="!canCreate" @click="save">Create campaign</v-btn>
-      </template>
-    </MpFormDrawer>
+    <MpConfirmDialog
+      :model-value="!!deleteTarget"
+      title="Delete this SMS campaign?"
+      :message="`“${deleteTarget?.name}” will be permanently deleted. This can't be undone.`"
+      confirm-label="Delete"
+      danger
+      @update:model-value="(v) => { if (!v) deleteTarget = null }"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -197,9 +157,6 @@ function save() {
   vertical-align: middle;
 }
 .num {
-  font-variant-numeric: tabular-nums;
-}
-.sms-count {
   font-variant-numeric: tabular-nums;
 }
 </style>
