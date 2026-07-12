@@ -42,9 +42,19 @@
 
   /* Radius */
   --r-pill: 9999px;
-  --r-card: 12px;
-  --r-section: 14px;
+  --r-card: var(--mp-component-card-radius-md);
+  --r-section: var(--mp-component-card-radius-lg);
   --r-chip: 8px;
+
+  /* Motion */
+  --ease: var(--mp-motion-easing-standard);
+  --ease-exit: var(--mp-motion-easing-exit);
+  --dur-instant: var(--mp-motion-duration-instant);
+  --dur-fast: var(--mp-motion-duration-fast);
+  --dur-base: var(--mp-motion-duration-base);
+  --dur-slow: var(--mp-motion-duration-slow);
+  --dur-entrance: var(--mp-motion-duration-entrance);
+  --stagger-step: var(--mp-motion-stagger-step);
 }
 
 .v-application.v-theme--maropostDark {

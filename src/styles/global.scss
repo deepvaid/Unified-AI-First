@@ -502,7 +502,7 @@ tr:focus-within .action-btns {
 /* Ensures v-dialog cards always have consistent radius and surface. */
 .v-dialog > .v-overlay__content > .v-card,
 .v-dialog > .v-overlay__content > .v-sheet {
-  border-radius: 12px !important;
+  border-radius: var(--mp-component-dialog-radius-default) !important;
   background: rgb(var(--v-theme-surface)) !important;
 }
 
