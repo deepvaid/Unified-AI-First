@@ -1,65 +1,58 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
-import { useCommerceStore } from '@/stores/useCommerce'
+import { useCommerceStore, type Promotion } from '@/stores/useCommerce'
+import { downloadCsv } from '@/utils/exportCsv'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
 const store = useCommerceStore()
+const route = useRoute()
+const router = useRouter()
 const search = ref('')
-const selected = ref<string[]>([])
-const saveSnack = ref(false)
+const selected = ref<number[]>([])
 const { loading } = useInitialLoad()
 
-// ── Create Coupon Wizard ─────────────────────────────────────────
-const createDialog = ref(false)
-const step = ref(1)
-
-const coupon = ref({
-  code: '', type: 'Percentage', value: 20, minOrder: 50,
-  limit: 500, expiry: '', applyTo: 'All products',
-  stackable: false, firstOrderOnly: false, autoApply: false,
-  description: '',
+const accountId = computed(() => {
+  const value = route.params.accountId
+  return (Array.isArray(value) ? value[0] : value) ?? '2000290'
 })
 
-function generateCode() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  coupon.value.code = Array.from({length:8}, () => chars[Math.floor(Math.random()*chars.length)]).join('')
-}
+// ── Tabs (All / Active / Inactive) ────────────────────────────────
+const activeTab = ref('all')
+const tabs = computed(() => [
+  { label: 'All', key: 'all', count: store.promotions.length },
+  { label: 'Active', key: 'Active', count: store.promotions.filter(p => p.status === 'Active').length },
+  { label: 'Inactive', key: 'Inactive', count: store.promotions.filter(p => p.status === 'Inactive').length },
+])
 
-function saveCoupon() {
-  createDialog.value = false
-  step.value = 1
-  saveSnack.value = true
-  coupon.value = { code:'', type:'Percentage', value:20, minOrder:50, limit:500, expiry:'', applyTo:'All products', stackable:false, firstOrderOnly:false, autoApply:false, description:'' }
-}
-
-const discountPreview = computed(() => {
-  if (coupon.value.type === 'Free Shipping') return 'Free Shipping'
-  if (coupon.value.type === 'Percentage') return `${coupon.value.value}% off`
-  return `$${coupon.value.value} off`
-})
+const tabbedPromotions = computed(() =>
+  activeTab.value === 'all' ? store.promotions : store.promotions.filter(p => p.status === activeTab.value),
+)
 
 // ── Filters ──────────────────────────────────────────────────────
 const filters = ref({
-  status: null as string | null,
-  type: null as string | null,
+  method: null as string | null,
+  mechanism: null as string | null,
 })
 
 const filterOptions = {
-  status: ['Active', 'Expired', 'Maxed Out'],
-  type: ['Percentage', 'Fixed Amount', 'Free Shipping'],
+  method: ['Order', 'Product'],
+  mechanism: ['Code', 'Automatic'],
 }
 
 const filterLabels: Record<string, string> = {
-  status: 'Status',
-  type: 'Discount Type',
+  method: 'Discount Method',
+  mechanism: 'Mechanism',
 }
 
 const activeFilterEntries = computed(() =>
@@ -73,56 +66,156 @@ function removeFilter(key: string) {
 }
 
 function clearAllFilters() {
-  filters.value = { status: null, type: null }
+  filters.value = { method: null, mechanism: null }
 }
 
-// Apply the drawer filters to the table (were previously not applied)
-const filteredCoupons = computed(() => {
-  let rows = store.coupons
-  if (filters.value.status) rows = rows.filter(c => c.status === filters.value.status)
-  if (filters.value.type) rows = rows.filter(c => c.type === filters.value.type)
+const filteredPromotions = computed(() => {
+  let rows = tabbedPromotions.value
+  if (filters.value.method) rows = rows.filter(p => p.method === filters.value.method)
+  if (filters.value.mechanism) rows = rows.filter(p => p.mechanism === filters.value.mechanism)
   return rows
 })
 
 function selectAll() {
-  selected.value = filteredCoupons.value.map((c: any) => c.id ?? c.code)
+  selected.value = filteredPromotions.value.map(p => p.id)
+}
+
+// ── Create / edit navigation (full-page composer) ─────────────────
+function openNewPromotion() {
+  router.push({ name: 'CreatePromotion', params: { accountId: accountId.value } })
+}
+function openEditPromotion(promotion: Promotion) {
+  router.push({ name: 'EditPromotion', params: { accountId: accountId.value, promoId: promotion.id } })
+}
+
+function duplicate(promotion: Promotion) {
+  store.duplicatePromotion(promotion.id)
+  notify('Promotion duplicated')
+}
+
+function toggleActive(promotion: Promotion) {
+  const next = promotion.status === 'Active' ? 'Inactive' : 'Active'
+  store.setPromotionStatus(promotion.id, next)
+  notify(next === 'Active' ? 'Promotion activated' : 'Promotion deactivated')
+}
+
+function bulkDeactivate() {
+  const count = selected.value.length
+  selected.value.forEach(id => store.setPromotionStatus(id, 'Inactive'))
+  selected.value = []
+  notify(`${count} promotion${count === 1 ? '' : 's'} deactivated`)
+}
+
+// ── Delete (row + bulk) ────────────────────────────────────────────
+const confirmDelete = ref(false)
+const pendingDelete = ref<Promotion | null>(null)
+const bulkDelete = ref(false)
+
+function askDelete(promotion: Promotion) {
+  pendingDelete.value = promotion
+  bulkDelete.value = false
+  confirmDelete.value = true
+}
+
+function askBulkDelete() {
+  pendingDelete.value = null
+  bulkDelete.value = true
+  confirmDelete.value = true
+}
+
+function doDelete() {
+  if (bulkDelete.value) {
+    const count = selected.value.length
+    store.deletePromotions(selected.value)
+    selected.value = []
+    notify(`${count} promotion${count === 1 ? '' : 's'} deleted`)
+  } else if (pendingDelete.value) {
+    store.deletePromotion(pendingDelete.value.id)
+    notify('Promotion deleted')
+  }
+  pendingDelete.value = null
+  bulkDelete.value = false
+}
+
+const deleteMessage = computed(() =>
+  bulkDelete.value
+    ? `${selected.value.length} promotion${selected.value.length === 1 ? '' : 's'} will be permanently deleted. This cannot be undone.`
+    : `“${pendingDelete.value?.title}” will be permanently deleted. This cannot be undone.`
+)
+
+// ── Export CSV ──────────────────────────────────────────────────────
+function exportCsv() {
+  const rows = selected.value.length ? filteredPromotions.value.filter(p => selected.value.includes(p.id)) : filteredPromotions.value
+  downloadCsv('Promotions_Export', rows, [
+    { title: 'Name', value: 'title' },
+    { title: 'Code / Automatic', value: (p) => p.mechanism === 'Code' ? (p.code ?? '') : 'Automatic' },
+    { title: 'Discount Method', value: 'method' },
+    { title: 'Discount Type', value: (p) => p.discountType === 'Percentage' ? `${p.value}%` : `$${p.value}` },
+    { title: 'Sales Channels', value: (p) => p.salesChannels.join('; ') },
+    { title: 'Start Date', value: 'startDate' },
+    { title: 'End Date', value: (p) => p.endDate ?? '' },
+    { title: 'Status', value: 'status' },
+  ])
+  notify(`Exported ${rows.length} promotion${rows.length === 1 ? '' : 's'} as CSV`)
 }
 
 // ── Table ────────────────────────────────────────────────────────
 const headers = [
-  { title: 'Code', key: 'code', sortable: true },
-  { title: 'Discount', key: 'value' },
-  { title: 'Min. Order', key: 'minOrder', hideBelow: 'lg' as const },
+  { title: 'Name', key: 'title', sortable: true, minWidth: '200px' },
+  { title: 'Code / Automatic', key: 'code' },
+  { title: 'Discount Method', key: 'method', hideBelow: 'lg' as const },
+  { title: 'Discount Type', key: 'discount' },
+  { title: 'Sales Channels', key: 'salesChannels', sortable: false, hideBelow: 'lg' as const },
   { title: 'Usage', key: 'usage', hideBelow: 'md' as const },
-  { title: 'Limit', key: 'limit', hideBelow: 'lg' as const },
-  { title: 'Expiry', key: 'expiry', hideBelow: 'md' as const },
+  { title: 'Start Date', key: 'startDate', hideBelow: 'md' as const },
+  { title: 'End Date', key: 'endDate', hideBelow: 'md' as const },
   { title: 'Status', key: 'status' },
   { title: '', key: 'actions', align: 'end' as const, sortable: false },
 ]
 
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
+// ── Snackbar (incl. cross-page flash from the composer) ────────────
+const saveSnack = ref(false)
+const snackText = ref('')
+function notify(text: string) { snackText.value = text; saveSnack.value = true }
+
+const flashMessages: Record<string, string> = {
+  'promotion-created': 'Promotion created',
+  'promotion-updated': 'Promotion updated',
+}
+
+onMounted(() => {
+  const flash = route.query.flash
+  const key = Array.isArray(flash) ? flash[0] : flash
+  if (key && flashMessages[key]) {
+    notify(flashMessages[key])
+    router.replace({ query: {} })
+  }
+})
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
-      title="Coupons & Discounts"
-      :subtitle="`${store.coupons.filter(c => c.status==='Active').length} active codes · ${store.coupons.reduce((a,c)=>a+c.usage,0).toLocaleString()} total uses`"
+      title="Promotions"
+      :subtitle="`${store.promotions.filter(p => p.status==='Active').length} active · ${store.promotions.reduce((a,p)=>a+p.usage,0).toLocaleString()} total uses`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface">Export</v-btn>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="createDialog=true;step=1">Create Coupon</v-btn>
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openNewPromotion">New Promotion</v-btn>
       </template>
     </MpPageHeader>
+
+    <MpFilterTabs v-model="activeTab" :tabs="tabs" />
 
     <!-- Table Card -->
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
-        title="All Coupons"
+        title="All Promotions"
         :active-filters="activeFilterEntries"
-        :total-count="filteredCoupons.length"
+        :total-count="filteredPromotions.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
@@ -144,14 +237,15 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         </template>
       </MpDataTableToolbar>
 
-      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="7" />
 
       <v-data-table
         v-else
         v-model="selected"
         :headers="visibleHeaders"
-        :items="filteredCoupons"
+        :items="filteredPromotions"
         :search="search"
+        item-value="id"
         show-select
         hover
         density="comfortable"
@@ -159,47 +253,69 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         fixed-header
         class="flex-grow-1"
       >
+        <template v-slot:item.title="{ item }">
+          <div class="text-body-2 font-weight-medium">{{ item.title }}</div>
+          <div v-if="item.description" class="text-caption text-medium-emphasis text-truncate" style="max-width: 220px">{{ item.description }}</div>
+        </template>
+
         <template v-slot:item.code="{ item }">
-          <div class="d-flex align-center gap-2">
-            <v-chip variant="outlined" color="secondary" size="small" class="font-weight-bold font-mono">{{ item.code }}</v-chip>
-            <v-tooltip text="Copy code" location="top"><template v-slot:activator="{props}"><v-btn v-bind="props" icon="copy" variant="text" size="x-small" color="medium-emphasis"></v-btn></template></v-tooltip>
+          <v-chip v-if="item.mechanism === 'Code'" variant="outlined" color="secondary" size="small" class="font-weight-bold font-mono">{{ item.code }}</v-chip>
+          <v-chip v-else variant="tonal" color="primary" size="small" prepend-icon="zap">Automatic</v-chip>
+        </template>
+
+        <template v-slot:item.method="{ item }">
+          <span class="text-body-2">{{ item.method }} discount</span>
+        </template>
+
+        <template v-slot:item.discount="{ item }">
+          <span class="font-weight-bold">{{ item.discountType === 'Percentage' ? `${item.value}% off` : `$${item.value} off` }}</span>
+        </template>
+
+        <template v-slot:item.salesChannels="{ item }">
+          <div class="d-flex flex-wrap gap-1">
+            <v-chip v-for="ch in item.salesChannels.slice(0, 2)" :key="ch" size="x-small" variant="tonal" label>{{ ch }}</v-chip>
+            <v-chip v-if="item.salesChannels.length > 2" size="x-small" variant="outlined" label>+{{ item.salesChannels.length - 2 }}</v-chip>
           </div>
         </template>
-        <template v-slot:item.value="{ item }">
-          <span class="font-weight-bold">{{ item.type==='Free Shipping'?'Free Shipping':item.type==='Percentage'?`${item.value}% off`:`$${item.value} off` }}</span>
-          <div class="text-caption text-medium-emphasis">{{ item.type }}</div>
-        </template>
-        <template v-slot:item.minOrder="{ item }">
-          <span class="text-body-2">{{ item.minOrder>0?`$${item.minOrder}`:'No minimum' }}</span>
-        </template>
+
         <template v-slot:item.usage="{ item }">
-          <div>
+          <div style="min-width: 88px">
             <span class="font-weight-bold text-body-2">{{ item.usage.toLocaleString() }}</span>
             <v-progress-linear v-if="item.limit" :model-value="(item.usage/item.limit)*100"
               :color="item.usage/item.limit>0.9?'error':'primary'" height="4" rounded class="mt-1"></v-progress-linear>
+            <div v-else class="text-caption text-medium-emphasis">∞ Unlimited</div>
           </div>
         </template>
-        <template v-slot:item.limit="{ item }"><span class="text-body-2">{{ item.limit?item.limit.toLocaleString():'∞ Unlimited' }}</span></template>
-        <template v-slot:item.expiry="{ item }"><span class="text-body-2">{{ item.expiry||'Never' }}</span></template>
+
+        <template v-slot:item.startDate="{ item }"><span class="text-body-2">{{ item.startDate }}</span></template>
+        <template v-slot:item.endDate="{ item }"><span class="text-body-2">{{ item.endDate || 'No end date' }}</span></template>
+
         <template v-slot:item.status="{ item }">
           <MpStatusChip :status="item.status" type="coupon" size="x-small" />
         </template>
-        <template v-slot:item.actions>
-          <div class="ActionButtons d-flex justify-end gap-1">
-            <v-tooltip text="Edit" location="top"><template v-slot:activator="{props}"><v-btn v-bind="props" icon="pencil" variant="text" size="small" color="primary"></v-btn></template></v-tooltip>
-            <v-tooltip text="Duplicate" location="top"><template v-slot:activator="{props}"><v-btn v-bind="props" icon="copy" variant="text" size="small"></v-btn></template></v-tooltip>
-            <v-tooltip text="Delete" location="top"><template v-slot:activator="{props}"><v-btn v-bind="props" icon="trash-2" variant="text" size="small" color="error"></v-btn></template></v-tooltip>
-          </div>
+
+        <template v-slot:item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Promotion actions">
+            <v-list-item prepend-icon="pencil" title="Edit" @click="openEditPromotion(item)" />
+            <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <v-list-item
+              :prepend-icon="item.status === 'Active' ? 'pause' : 'play'"
+              :title="item.status === 'Active' ? 'Deactivate' : 'Activate'"
+              @click="toggleActive(item)"
+            />
+            <v-divider class="my-1" style="opacity: 0.4" />
+            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          </MpRowActionsMenu>
         </template>
 
         <template v-slot:no-data>
           <MpEmptyState
             icon="tag"
-            :title="search ? 'No coupons match your search' : 'No coupons yet'"
-            :description="search ? 'Try a different search term.' : 'Create discount codes to reward loyal customers and drive repeat purchases.'"
-            :action-label="!search ? 'Create Coupon' : undefined"
+            :title="search || activeFilterEntries.length ? 'No promotions match your filters' : 'No promotions yet'"
+            :description="search || activeFilterEntries.length ? 'Try a different search term or clear filters.' : 'Create discount codes and automatic promotions to drive sales.'"
+            :action-label="!search && !activeFilterEntries.length ? 'New Promotion' : undefined"
             action-icon="plus"
-            @action="createDialog = true; step = 1"
+            @action="openNewPromotion"
           />
         </template>
       </v-data-table>
@@ -207,136 +323,30 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
     <MpFloatingBulkBar
       :count="selected.length"
-      :total="store.coupons.length"
+      :total="filteredPromotions.length"
       @clear="selected = []"
       @select-all="selectAll"
     >
-      <v-btn size="small" variant="flat" color="warning" class="text-none" prepend-icon="pause" rounded="lg">Deactivate</v-btn>
-      <v-btn size="small" variant="flat" color="error" class="text-none" prepend-icon="trash-2" rounded="lg">Delete</v-btn>
+      <v-btn size="small" variant="flat" color="surface" class="text-none" prepend-icon="download" rounded="lg" @click="exportCsv">Export</v-btn>
+      <v-btn size="small" variant="flat" color="warning" class="text-none" prepend-icon="pause" rounded="lg" @click="bulkDeactivate">Deactivate</v-btn>
+      <v-btn size="small" variant="flat" color="error" class="text-none" prepend-icon="trash-2" rounded="lg" @click="askBulkDelete">Delete</v-btn>
     </MpFloatingBulkBar>
 
-    <!-- ── Create Coupon Wizard Drawer ──────────────────────────── -->
-    <MpFormDrawer
-      v-model="createDialog"
-      title="Create Coupon Code"
-      :subtitle="`Step ${step} of 3`"
-      :width="700"
-    >
-      <!-- Progress -->
-      <v-progress-linear :model-value="(step/3)*100" color="primary" height="3" rounded class="mb-4"></v-progress-linear>
-
-      <!-- Step 1: Code & Discount -->
-      <div v-if="step===1" class="pa-1">
-          <div class="text-subtitle-2 font-weight-bold mb-4 text-uppercase text-medium-emphasis">Coupon Code</div>
-          <div class="d-flex gap-3 mb-5">
-            <v-text-field v-model="coupon.code" label="Coupon Code" variant="outlined" density="comfortable"
-              placeholder="e.g. SUMMER20" class="flex-grow-1" hint="Leave blank to auto-generate" persistent-hint></v-text-field>
-            <v-btn variant="flat" color="primary" class="text-none mt-1 coupon-code-btn" prepend-icon="refresh-cw" @click="generateCode">Auto-Generate</v-btn>
-          </div>
-          <div class="text-subtitle-2 font-weight-bold mb-3 text-uppercase text-medium-emphasis">Discount Type</div>
-          <v-row dense class="mb-4">
-            <v-col v-for="t in [{val:'Percentage',icon:'percent',label:'Percentage Off'},{val:'Fixed Amount',icon:'dollar-sign',label:'Fixed $ Amount'},{val:'Free Shipping',icon:'truck',label:'Free Shipping'}]" :key="t.val" cols="4">
-              <v-card @click="coupon.type=t.val" :variant="coupon.type===t.val?'tonal':'outlined'" :color="coupon.type===t.val?'primary':'default'"
-                rounded="lg" class="pa-4 text-center cursor-pointer type-card" :class="{selected:coupon.type===t.val}">
-                <v-icon :color="coupon.type===t.val?'primary':'medium-emphasis'" size="28" class="mb-2">{{ t.icon }}</v-icon>
-                <div class="text-body-2 font-weight-medium">{{ t.label }}</div>
-              </v-card>
-            </v-col>
-          </v-row>
-          <v-text-field v-if="coupon.type!=='Free Shipping'" v-model.number="coupon.value"
-            :label="coupon.type==='Percentage'?'Discount Percentage (%)':'Discount Amount ($)'"
-            type="number" variant="outlined" density="comfortable" hide-details></v-text-field>
-          <div class="d-flex align-center ga-2 mt-3">
-            <span class="text-caption text-medium-emphasis">Customers will see</span>
-            <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold">{{ discountPreview }}</v-chip>
-          </div>
-        </div>
-
-        <!-- Step 2: Rules & Restrictions -->
-      <div v-else-if="step===2" class="pa-1">
-          <div class="text-subtitle-2 font-weight-bold mb-4 text-uppercase text-medium-emphasis">Usage Rules</div>
-          <v-row dense class="mb-4">
-            <v-col cols="6">
-              <v-text-field v-model.number="coupon.minOrder" label="Minimum Order Value ($)" type="number" variant="outlined" density="comfortable" hint="Set 0 for no minimum" persistent-hint></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field v-model.number="coupon.limit" label="Total Usage Limit" type="number" variant="outlined" density="comfortable" hint="Leave 0 for unlimited" persistent-hint></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-text-field v-model="coupon.expiry" label="Expiry Date" type="date" variant="outlined" density="comfortable"></v-text-field>
-            </v-col>
-            <v-col cols="6">
-              <v-select v-model="coupon.applyTo" label="Applies To" :items="['All products','Specific collections','Specific products']" variant="outlined" density="comfortable"></v-select>
-            </v-col>
-          </v-row>
-          <v-divider class="mb-4"></v-divider>
-          <div class="text-subtitle-2 font-weight-bold mb-3">Behaviour Flags</div>
-          <div class="d-flex flex-column gap-2">
-            <v-card variant="flat" border rounded="lg" class="pa-3">
-              <div class="d-flex align-center justify-space-between">
-                <div><div class="text-body-2 font-weight-medium">First order only</div><div class="text-caption text-medium-emphasis">Only valid for a customer's first purchase</div></div>
-                <v-switch v-model="coupon.firstOrderOnly" color="primary" hide-details density="compact" inset></v-switch>
-              </div>
-            </v-card>
-            <v-card variant="flat" border rounded="lg" class="pa-3">
-              <div class="d-flex align-center justify-space-between">
-                <div><div class="text-body-2 font-weight-medium">Stackable</div><div class="text-caption text-medium-emphasis">Can be combined with other discount codes</div></div>
-                <v-switch v-model="coupon.stackable" color="primary" hide-details density="compact" inset></v-switch>
-              </div>
-            </v-card>
-            <v-card variant="flat" border rounded="lg" class="pa-3">
-              <div class="d-flex align-center justify-space-between">
-                <div><div class="text-body-2 font-weight-medium">Auto-apply at checkout</div><div class="text-caption text-medium-emphasis">Automatically apply without customer entering code</div></div>
-                <v-switch v-model="coupon.autoApply" color="primary" hide-details density="compact" inset></v-switch>
-              </div>
-            </v-card>
-          </div>
-        </div>
-
-        <!-- Step 3: Preview & Confirm -->
-      <div v-else class="pa-1">
-          <div class="text-subtitle-2 font-weight-bold mb-4 text-uppercase text-medium-emphasis">Review & Confirm</div>
-
-          <!-- Preview card -->
-          <v-card color="primary" variant="tonal" rounded="lg" class="pa-5 mb-5">
-            <div class="d-flex align-center justify-space-between mb-3">
-              <div class="text-h6 font-weight-bold text-primary">{{ coupon.code || 'AUTO-GENERATED' }}</div>
-              <MpStatusChip status="Active" type="coupon" />
-            </div>
-            <div class="text-h4 font-weight-bold mb-2">{{ discountPreview }}</div>
-            <div class="d-flex gap-4 text-body-2 text-medium-emphasis flex-wrap">
-              <span v-if="coupon.minOrder>0">Min. ${{ coupon.minOrder }} order</span>
-              <span v-if="coupon.limit>0">Limit: {{ coupon.limit }} uses</span>
-              <span v-if="coupon.expiry">Expires: {{ coupon.expiry }}</span>
-              <span v-if="coupon.firstOrderOnly">First order only</span>
-              <span v-if="coupon.stackable">Stackable</span>
-            </div>
-          </v-card>
-
-          <v-textarea v-model="coupon.description" label="Internal note (optional)" variant="outlined" density="comfortable" rows="2" placeholder="Add a note for your team about what this coupon is for…"></v-textarea>
-        </div>
-
-      <template #footer>
-        <div class="w-100 d-flex justify-space-between align-center">
-          <v-btn variant="text" class="text-none" @click="step>1?step--:createDialog=false">{{ step===1?'Cancel':'← Back' }}</v-btn>
-          <v-btn v-if="step<3" color="primary" variant="elevated" class="text-none" :disabled="step===1&&!coupon.type" @click="step++">Continue →</v-btn>
-          <v-btn v-else color="success" variant="elevated" class="text-none" prepend-icon="check" @click="saveCoupon">Create Coupon</v-btn>
-        </div>
-      </template>
-    </MpFormDrawer>
+    <MpConfirmDialog
+      v-model="confirmDelete"
+      :title="bulkDelete ? 'Delete selected promotions?' : 'Delete promotion?'"
+      :message="deleteMessage"
+      confirm-label="Delete"
+      danger
+      @confirm="doDelete"
+    />
 
     <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Coupon created successfully</div>
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
     </v-snackbar>
   </div>
 </template>
 
 <style scoped>
-.ActionButtons { opacity: 0; transition: opacity 0.2s; }
-tr:hover .ActionButtons { opacity: 1; }
 .font-mono { font-family: monospace; }
-.type-card { transition: all 0.15s; cursor:pointer; }
-.type-card:hover { border-color: rgb(var(--v-theme-primary)); }
-.type-card.selected { border-color: rgb(var(--v-theme-primary)); }
-.coupon-code-btn { height: 56px; }
 </style>
