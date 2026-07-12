@@ -1,48 +1,61 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
-import { useCommerceStore } from '@/stores/useCommerce'
+import { useCommerceStore, FULFILLMENT_QUEUE_STATUSES, type FulfillmentQueueItem, type FulfillmentQueueStatus } from '@/stores/useCommerce'
+import { downloadCsv } from '@/utils/exportCsv'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 
 const store = useCommerceStore()
+const route = useRoute()
+const router = useRouter()
+const accountId = computed(() => route.params.accountId as string)
 const search = ref('')
 const selected = ref<number[]>([])
 const { loading } = useInitialLoad()
 
+// Snackbar
+const snackbar = ref(false)
+const snackbarText = ref('')
+function notify(text: string) { snackbarText.value = text; snackbar.value = true }
+
+// Legacy-parity columns: ID | Order | Customer | Location | Fulfillment Status |
+// Payment Status | Product QTY | Order Status | Sales Channel | Total | Created At | Actions
 const headers = [
+  { title: 'ID', key: 'id', sortable: true, width: 90 },
   { title: 'Order', key: 'orderNumber', sortable: true },
   { title: 'Customer', key: 'customer' },
-  { title: 'Items', key: 'items', align: 'center' as const, hideBelow: 'lg' as const },
-  { title: 'Weight', key: 'weight', hideBelow: 'lg' as const },
-  { title: 'Location', key: 'location', hideBelow: 'md' as const },
-  { title: 'Priority', key: 'priority', hideBelow: 'md' as const },
-  { title: 'Status', key: 'status' },
-  { title: 'Date', key: 'date', hideBelow: 'md' as const },
-  { title: 'Actions', key: 'actions', align: 'end' as const, sortable: false },
+  { title: 'Location', key: 'location', hideBelow: 'lg' as const },
+  { title: 'Fulfillment', key: 'status' },
+  { title: 'Payment', key: 'paymentStatus', hideBelow: 'lg' as const },
+  { title: 'Qty', key: 'productQty', align: 'center' as const, hideBelow: 'lg' as const },
+  { title: 'Order Status', key: 'orderStatus', hideBelow: 'md' as const },
+  { title: 'Sales Channel', key: 'salesChannel', hideBelow: 'lg' as const },
+  { title: 'Total', key: 'total', align: 'end' as const, sortable: true },
+  { title: 'Created At', key: 'createdAt', hideBelow: 'md' as const },
+  { title: '', key: 'actions', align: 'end' as const, sortable: false, width: 48 },
 ]
 
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 const filters = ref({
-  status: null as string | null,
-  priority: null as string | null,
+  status: null as FulfillmentQueueStatus | null,
+  location: null as string | null,
 })
 
-const filterOptions = {
-  status: ['Awaiting Fulfillment', 'Picking', 'Packed', 'Ready to Ship', 'Shipped'],
-  priority: ['High', 'Normal', 'Low'],
-}
+const locationOptions = computed(() => [...new Set(store.fulfillments.map(f => f.location))])
 
 const filterLabels: Record<string, string> = {
-  status: 'Status',
-  priority: 'Priority',
+  status: 'Fulfillment Status',
+  location: 'Location',
 }
 
 const activeFilterEntries = computed(() =>
@@ -56,56 +69,106 @@ function removeFilter(key: string) {
 }
 
 function clearAllFilters() {
-  filters.value = { status: null, priority: null }
+  filters.value = { status: null, location: null }
 }
 
-// Status summary meta — colour per fulfillment stage
-const STAGES = ['Awaiting Fulfillment', 'Picking', 'Packed', 'Ready to Ship', 'Shipped']
+// Status summary chips — colour per fulfillment stage (beats the legacy FILTERS dropdown)
 const stageColor: Record<string, string> = {
-  'Awaiting Fulfillment': 'warning',
-  'Picking': 'info',
-  'Packed': 'primary',
-  'Ready to Ship': 'secondary',
+  'Picked': 'warning',
+  'Packed': 'info',
+  'Label Created': 'primary',
   'Shipped': 'success',
 }
 const stageCount = (s: string) => store.fulfillments.filter(f => f.status === s).length
-function toggleStage(s: string) {
+function toggleStage(s: FulfillmentQueueStatus) {
   filters.value.status = filters.value.status === s ? null : s
 }
 
-// Apply the drawer/summary filters to the table (were previously not applied)
 const filteredFulfillments = computed(() => {
   let rows = store.fulfillments
   if (filters.value.status) rows = rows.filter(f => f.status === filters.value.status)
-  if (filters.value.priority) rows = rows.filter(f => f.priority === filters.value.priority)
+  if (filters.value.location) rows = rows.filter(f => f.location === filters.value.location)
   return rows
 })
 
-function rowProps({ item }: { item: { priority?: string } }) {
-  return item.priority === 'High' ? { class: 'row-high' } : {}
+function selectAll() {
+  selected.value = filteredFulfillments.value.map(f => f.id)
 }
 
-function selectAll() {
-  selected.value = filteredFulfillments.value.map((f: { id: number }) => f.id)
+// ─── Actions ──────────────────────────────────────────────────────────────────
+function goToOrder(item: FulfillmentQueueItem) {
+  router.push({ name: 'OrderDetail', params: { accountId: accountId.value, orderId: String(item.orderId) } })
+}
+
+const NEXT_STAGE: Record<string, string> = { 'Picked': 'Packed', 'Packed': 'Label Created', 'Label Created': 'Shipped' }
+
+function advanceStage(item: FulfillmentQueueItem) {
+  const next = NEXT_STAGE[item.status]
+  if (!next) return
+  if (next === 'Shipped') {
+    askShip([item.id])
+    return
+  }
+  store.advanceFulfillment(item.id)
+  notify(`${item.orderNumber} moved to ${next}`)
+}
+
+// Ship dialog (row + bulk) with optional tracking number
+const shipDialog = ref(false)
+const shipIds = ref<number[]>([])
+const shipTracking = ref('')
+function askShip(ids: number[]) {
+  shipIds.value = ids
+  shipTracking.value = ''
+  shipDialog.value = true
+}
+function confirmShip() {
+  store.markShipped([...shipIds.value], shipTracking.value.trim() || undefined)
+  notify(`${shipIds.value.length} fulfillment${shipIds.value.length === 1 ? '' : 's'} marked shipped`)
+  selected.value = selected.value.filter(id => !shipIds.value.includes(id))
+  shipDialog.value = false
+}
+
+function printPackingSlips() {
+  const count = selected.value.length || filteredFulfillments.value.length
+  notify(`${count} packing slip${count === 1 ? '' : 's'} sent to printer`)
+}
+
+function exportFulfillments() {
+  downloadCsv('fulfillments', filteredFulfillments.value, [
+    { title: 'ID', value: (f) => `FF-${String(f.id).padStart(4, '0')}` },
+    { title: 'Order', value: 'orderNumber' },
+    { title: 'Customer', value: 'customer' },
+    { title: 'Location', value: 'location' },
+    { title: 'Fulfillment Status', value: 'status' },
+    { title: 'Payment Status', value: 'paymentStatus' },
+    { title: 'Product QTY', value: 'productQty' },
+    { title: 'Order Status', value: 'orderStatus' },
+    { title: 'Sales Channel', value: 'salesChannel' },
+    { title: 'Total', value: 'total' },
+    { title: 'Created At', value: 'createdAt' },
+  ])
+  notify(`Exported ${filteredFulfillments.value.length} fulfillments`)
 }
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
-      title="Fulfillment Queue"
+      title="Fulfillment"
       :subtitle="`${store.fulfillments.filter(f => f.status !== 'Shipped').length} orders awaiting fulfillment`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="printer" class="text-none" color="surface">Print Packing Slips</v-btn>
-        <v-btn color="primary" variant="flat" prepend-icon="truck" class="text-none" :disabled="selected.length === 0">Mark Shipped{{ selected.length > 0 ? ` (${selected.length})` : '' }}</v-btn>
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportFulfillments">Export</v-btn>
+        <v-btn variant="flat" prepend-icon="printer" class="text-none" color="surface" @click="printPackingSlips">Print Packing Slips</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="truck" class="text-none" :disabled="selected.length === 0" @click="askShip([...selected])">Mark Shipped{{ selected.length > 0 ? ` (${selected.length})` : '' }}</v-btn>
       </template>
     </MpPageHeader>
 
     <!-- Status Summary Chips — colour-coded + click to filter -->
     <div class="d-flex gap-2 flex-wrap">
       <v-chip
-        v-for="s in STAGES"
+        v-for="s in FULFILLMENT_QUEUE_STATUSES"
         :key="s"
         :variant="filters.status === s ? 'flat' : 'tonal'"
         size="small"
@@ -131,11 +194,22 @@ function selectAll() {
         <template #filter-content>
           <div class="pa-4 pb-2">
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <div v-for="(options, key) in filterOptions" :key="key" class="mb-3">
+            <div class="mb-3">
               <v-select
-                v-model="filters[key as keyof typeof filters]"
-                :label="filterLabels[key]"
-                :items="options"
+                v-model="filters.status"
+                label="Fulfillment Status"
+                :items="[...FULFILLMENT_QUEUE_STATUSES]"
+                variant="outlined"
+                density="compact"
+                hide-details
+                clearable
+              />
+            </div>
+            <div class="mb-3">
+              <v-select
+                v-model="filters.location"
+                label="Location"
+                :items="locationOptions"
                 variant="outlined"
                 density="compact"
                 hide-details
@@ -154,7 +228,6 @@ function selectAll() {
         :headers="visibleHeaders"
         :items="filteredFulfillments"
         :search="search"
-        :row-props="rowProps"
         item-value="id"
         show-select
         hover
@@ -163,38 +236,60 @@ function selectAll() {
         fixed-header
         class="flex-grow-1"
       >
+        <template v-slot:item.id="{ item }">
+          <span class="text-body-2 text-medium-emphasis text-no-wrap">FF-{{ String(item.id).padStart(4, '0') }}</span>
+        </template>
+
         <template v-slot:item.orderNumber="{ item }">
-          <span class="text-primary font-weight-bold cursor-pointer">{{ item.orderNumber }}</span>
-        </template>
-
-        <template v-slot:item.items="{ item }">
-          <v-chip size="x-small" variant="tonal" color="secondary" class="font-weight-bold">{{ item.items }}</v-chip>
-        </template>
-
-        <template v-slot:item.priority="{ item }">
-          <MpStatusChip :status="item.priority ?? ''" type="priority" size="x-small" />
+          <span class="text-primary font-weight-bold cursor-pointer" @click="goToOrder(item)">{{ item.orderNumber }}</span>
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status ?? ''" type="fulfillment" size="small" />
+          <MpStatusChip :status="item.status" type="fulfillment" size="small" />
         </template>
 
-        <template v-slot:item.date="{ item }">
-          <span class="text-medium-emphasis text-caption">{{ item.date }}</span>
+        <template v-slot:item.paymentStatus="{ item }">
+          <MpStatusChip :status="item.paymentStatus" type="payment" size="x-small" />
         </template>
 
-        <template v-slot:item.actions>
-          <div class="ActionButtons d-flex justify-end gap-1">
-            <v-btn icon="eye" variant="text" size="small" color="primary"></v-btn>
-            <v-btn icon="truck" variant="text" size="small" color="success"></v-btn>
-          </div>
+        <template v-slot:item.productQty="{ item }">
+          <v-chip size="x-small" variant="tonal" color="secondary" class="font-weight-bold">{{ item.productQty }}</v-chip>
+        </template>
+
+        <template v-slot:item.orderStatus="{ item }">
+          <MpStatusChip :status="item.orderStatus" type="order" size="x-small" />
+        </template>
+
+        <template v-slot:item.salesChannel="{ item }">
+          <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.salesChannel }}</span>
+        </template>
+
+        <template v-slot:item.total="{ item }">
+          <span class="font-weight-bold text-no-wrap">${{ item.total }}</span>
+        </template>
+
+        <template v-slot:item.createdAt="{ item }">
+          <span class="text-medium-emphasis text-caption text-no-wrap">{{ item.createdAt }}</span>
+        </template>
+
+        <template v-slot:item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Fulfillment actions">
+            <v-list-item prepend-icon="eye" title="View order" @click="goToOrder(item)"></v-list-item>
+            <v-list-item
+              v-if="NEXT_STAGE[item.status] && NEXT_STAGE[item.status] !== 'Shipped'"
+              prepend-icon="arrow-right"
+              :title="`Advance to ${NEXT_STAGE[item.status]}`"
+              @click="advanceStage(item)"
+            ></v-list-item>
+            <v-list-item prepend-icon="truck" title="Mark shipped" :disabled="item.status === 'Shipped'" @click="askShip([item.id])"></v-list-item>
+          </MpRowActionsMenu>
         </template>
 
         <template v-slot:no-data>
           <MpEmptyState
             icon="truck"
-            title="No fulfillments found"
-            description="Fulfillment orders will appear here once customers place orders."
+            :title="search || activeFilterEntries.length ? 'No fulfillments match' : 'No fulfillments found'"
+            :description="search || activeFilterEntries.length ? 'Try a different search term or clear the filters.' : 'Fulfillment orders will appear here once customers place orders.'"
           />
         </template>
       </v-data-table>
@@ -202,20 +297,47 @@ function selectAll() {
 
     <MpFloatingBulkBar
       :count="selected.length"
-      :total="store.fulfillments.length"
+      :total="filteredFulfillments.length"
       @clear="selected = []"
       @select-all="selectAll"
     >
-      <v-btn size="small" variant="flat" color="success" class="text-none" prepend-icon="truck" rounded="lg">Mark Shipped</v-btn>
-      <v-btn size="small" variant="flat" color="secondary" class="text-none" prepend-icon="printer" rounded="lg">Print Labels</v-btn>
+      <v-btn size="small" variant="flat" color="success" class="text-none" prepend-icon="truck" rounded="lg" @click="askShip([...selected])">Mark Shipped</v-btn>
+      <v-btn size="small" variant="flat" color="secondary" class="text-none" prepend-icon="printer" rounded="lg" @click="printPackingSlips">Print Packing Slips</v-btn>
     </MpFloatingBulkBar>
+
+    <!-- ── Mark Shipped dialog (tracking number) ───────────────────── -->
+    <v-dialog v-model="shipDialog" max-width="440">
+      <v-card rounded="lg" border flat class="pa-1">
+        <v-card-title class="text-body-1 font-weight-bold">
+          Mark {{ shipIds.length === 1 ? 'fulfillment' : `${shipIds.length} fulfillments` }} shipped?
+        </v-card-title>
+        <v-card-text class="pt-1">
+          <div class="text-body-2 text-medium-emphasis mb-4">
+            The linked order{{ shipIds.length === 1 ? '' : 's' }} will be updated to Shipped and the customer{{ shipIds.length === 1 ? '' : 's' }} notified.
+          </div>
+          <v-text-field
+            v-model="shipTracking"
+            label="Tracking number (optional)"
+            placeholder="e.g. 1Z999AA10123456784"
+            variant="outlined"
+            density="comfortable"
+            hide-details
+          />
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" class="text-none" @click="shipDialog = false">Cancel</v-btn>
+          <v-btn color="success" variant="flat" class="text-none" prepend-icon="truck" @click="confirmShip">Mark Shipped</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
   </div>
 </template>
 
 <style scoped>
-.ActionButtons { opacity: 0; transition: opacity 0.2s ease; }
-tr:hover .ActionButtons { opacity: 1; }
-
 .fq-count {
   margin-left: 6px;
   padding: 0 6px;
@@ -223,10 +345,5 @@ tr:hover .ActionButtons { opacity: 1; }
   background: rgba(255, 255, 255, 0.35);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-/* High-priority rows get a subtle left accent */
-:deep(.row-high td:first-child) {
-  box-shadow: inset 3px 0 0 0 rgb(var(--v-theme-warning));
 }
 </style>

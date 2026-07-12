@@ -127,6 +127,270 @@ export interface InventoryItem {
   status: string
 }
 
+// ── Promotions (coupons & automatic discounts) ─────────────────────────
+export type PromotionMethod = 'Order' | 'Product'
+export type PromotionMechanism = 'Code' | 'Automatic'
+export type PromotionDiscountType = 'Percentage' | 'Fixed'
+export type PromotionStatus = 'Active' | 'Inactive'
+
+export interface Promotion {
+  id: number
+  title: string
+  description?: string
+  method: PromotionMethod
+  mechanism: PromotionMechanism
+  code?: string
+  discountType: PromotionDiscountType
+  value: number
+  salesChannels: string[]
+  startDate: string
+  endDate?: string
+  status: PromotionStatus
+  usage: number
+  limit: number | null
+}
+
+/** Input accepted by createPromotion / updatePromotion (the full-page composer). */
+export interface PromotionInput {
+  title: string
+  description?: string
+  method: PromotionMethod
+  mechanism: PromotionMechanism
+  code?: string
+  discountType: PromotionDiscountType
+  value: number
+  salesChannels: string[]
+  startDate: string
+  endDate?: string
+  status: PromotionStatus
+  limit?: number | null
+}
+
+// ── Custom (merchant-issued) gift cards ────────────────────────────────
+export type GiftCardStatus = 'Active' | 'Redeemed' | 'Expired' | 'Disabled'
+
+export interface CustomGiftCard {
+  id: number
+  code: string
+  /** Existing CRM contact this card is linked to, or '—' for a guest recipient. */
+  contact: string
+  recipient: { name: string; email: string }
+  initialValue: number
+  balance: number
+  message?: string
+  expiration: 'none' | 'date'
+  status: GiftCardStatus
+  issued: string
+  expiry: string | null
+  lastUsed: string | null
+  image?: string
+}
+
+/** Input accepted by issueGiftCard / updateGiftCard (the issue drawer). */
+export interface GiftCardInput {
+  initialValue: number
+  email: string
+  contact?: string
+  message?: string
+  expiration: 'none' | 'date'
+  expiry?: string | null
+  status: 'Active' | 'Disabled'
+  image?: string
+}
+
+// ── Purchasable gift card products ─────────────────────────────────────
+export type PurchasableGiftCardStatus = 'Active' | 'Draft' | 'Archived'
+
+export interface PurchasableGiftCard {
+  id: number
+  name: string
+  slug: string
+  kind: 'Digital' | 'Physical'
+  message?: string
+  denominations: number[]
+  sold: number
+  revenue: number
+  status: PurchasableGiftCardStatus
+  created: string
+  taxCategory?: string
+  brand?: string
+  tags: string[]
+  collections: string[]
+}
+
+/** Input accepted by createPurchasableGiftCard / updatePurchasableGiftCard. */
+export interface PurchasableGiftCardInput {
+  name: string
+  slug: string
+  kind: 'Digital' | 'Physical'
+  message?: string
+  denominations: number[]
+  status: PurchasableGiftCardStatus
+  taxCategory?: string
+  brand?: string
+  tags: string[]
+  collections: string[]
+}
+
+// ── Orders / Draft Orders / Fulfillments (Commerce > Orders domain) ────
+export const SALES_CHANNELS = ['Online Store', 'POS', 'Amazon', 'eBay', 'Instagram Shop']
+export const SHIPPING_RATES: Record<string, number> = { Standard: 9.99, Express: 24.99, Overnight: 49.99, Free: 0 }
+const ORDER_TAG_POOL = ['VIP', 'Wholesale', 'Repeat Customer', 'Gift', 'Rush', 'Local Pickup']
+const STREET_NAMES = ['Market St', 'Main St', 'Broadway', 'Oak Ave', 'Elm St', '5th Ave', 'Sunset Blvd', 'Congress Ave']
+/** Order-detail fulfillment step indicators (legacy: Picked → Pack → Carrier → Shipped). */
+export const FULFILLMENT_STAGES = ['Picked', 'Pack', 'Carrier', 'Shipped'] as const
+export type FulfillmentStage = typeof FULFILLMENT_STAGES[number]
+/** Fulfillment-queue statuses (legacy list statuses). */
+export const FULFILLMENT_QUEUE_STATUSES = ['Picked', 'Packed', 'Label Created', 'Shipped'] as const
+export type FulfillmentQueueStatus = typeof FULFILLMENT_QUEUE_STATUSES[number]
+const WAREHOUSE_LOCATIONS = ['Oxford warehouse', 'Main Warehouse - FL', 'Retail Hub - TX']
+
+export interface OrderAddress {
+  name: string
+  line1: string
+  city: string
+  region: string
+  postalCode: string
+  country: string
+}
+
+export interface OrderLineItem {
+  product: string
+  sku: string
+  qty: number
+  price: string
+  status: string
+  coupon: string | null
+  discountPct: number
+}
+
+export interface OrderTimelineEvent {
+  id: number
+  kind: 'note' | 'event'
+  text: string
+  date: string
+}
+
+export interface Order {
+  id: number
+  orderNumber: string
+  customer: { name: string; email: string; avatar: string }
+  city: string
+  itemCount: number
+  subtotal: string
+  shipping: string
+  total: string
+  status: string
+  fulfillmentStatus: string
+  paymentStatus: string
+  paymentMethod: string
+  paymentReference: string
+  paymentCapturedAt: string | null
+  trackingNumber: string | null
+  courier: string | null
+  date: string
+  lineItems: OrderLineItem[]
+  notes: string | null
+  tags: string[]
+  salesChannel: string
+  currency: string
+  region: string
+  country: string
+  phone: string
+  shippingAddress: OrderAddress
+  billingAddress: OrderAddress
+  fulfillmentStage: FulfillmentStage
+  fulfilledFromLocation: string
+  timeline: OrderTimelineEvent[]
+}
+
+export interface DraftLineItem {
+  id: number
+  name: string
+  sku: string
+  price: number
+  qty: number
+  custom: boolean
+}
+
+export interface DraftOrder {
+  id: number
+  draftNumber: string
+  customer: string
+  email: string
+  phone: string
+  salesChannel: string
+  items: number
+  lineItems: DraftLineItem[]
+  total: string
+  status: string
+  createdAt: string
+  shippingAddress: OrderAddress | null
+  billingAddress: OrderAddress | null
+  shippingMethod: string
+  discount: { type: string; value: number }
+  notes: string
+}
+
+/** Input accepted by createDraftOrder / updateDraftOrder (the full-page composer). */
+export interface DraftOrderInput {
+  customer: string
+  email: string
+  phone: string
+  salesChannel: string
+  lineItems: DraftLineItem[]
+  shippingAddress: OrderAddress | null
+  billingAddress: OrderAddress | null
+  shippingMethod: string
+  discount: { type: string; value: number }
+  notes: string
+}
+
+export interface FulfillmentQueueItem {
+  id: number
+  orderId: number
+  orderNumber: string
+  customer: string
+  location: string
+  status: FulfillmentQueueStatus
+  paymentStatus: string
+  orderStatus: string
+  salesChannel: string
+  productQty: number
+  total: string
+  createdAt: string
+  trackingNumber: string | null
+}
+
+function buildAddress(name: string, cityState: string, seed: number): OrderAddress {
+  const [city, region] = (cityState ?? '—, —').split(', ')
+  return {
+    name,
+    line1: `${100 + (seed * 7) % 900} ${STREET_NAMES[seed % STREET_NAMES.length]}`,
+    city: city ?? '—',
+    region: region ?? '',
+    postalCode: String(10000 + (seed * 137) % 89999),
+    country: 'United States',
+  }
+}
+
+function pickOrderTags(i: number): string[] {
+  const tags: string[] = []
+  if (i % 3 === 0) tags.push(ORDER_TAG_POOL[i % ORDER_TAG_POOL.length]!)
+  if (i % 7 === 0) tags.push(ORDER_TAG_POOL[(i + 2) % ORDER_TAG_POOL.length]!)
+  return tags
+}
+
+/** Compute the draft total from line items, discount, and shipping method. */
+export function draftOrderTotal(input: Pick<DraftOrderInput, 'lineItems' | 'discount' | 'shippingMethod'>): number {
+  const subtotal = input.lineItems.reduce((sum, li) => sum + li.price * li.qty, 0)
+  const discount = input.discount.type === 'Percentage'
+    ? subtotal * (input.discount.value / 100)
+    : input.discount.type === 'Fixed' ? input.discount.value : 0
+  const shipping = input.lineItems.length ? (SHIPPING_RATES[input.shippingMethod] ?? 0) : 0
+  return Math.max(0, subtotal - discount) + shipping
+}
+
 /** Derive the stock chip status from an available-inventory count. */
 function stockStatus(inv: number): string {
   return inv === 0 ? 'Out of Stock' : inv < 20 ? 'Low Stock' : 'In Stock'
@@ -244,120 +508,575 @@ export const useCommerceStore = defineStore('commerce', () => {
     if (item) item.location = toLocation
   }
 
-  const orders = ref(Array.from({ length: 30 }, (_, i) => {
+  const orders = ref<Order[]>(Array.from({ length: 30 }, (_, i) => {
     const fName = customerFirstNames[i % customerFirstNames.length]!
     const lName = customerLastNames[i % customerLastNames.length]!
+    const customerName = `${fName} ${lName}`
     const itemCount = Math.floor(Math.random() * 5) + 1
     const subtotal = (Math.random() * 980 + 45).toFixed(2)
     const shipping = (Math.random() * 25 + 4.99).toFixed(2)
     const total = (parseFloat(subtotal) + parseFloat(shipping)).toFixed(2)
-    const status = orderStatuses[i % orderStatuses.length]
-    const fulfillmentStatus = fulfillmentStatuses[i % fulfillmentStatuses.length]
+    const status = orderStatuses[i % orderStatuses.length]!
+    const fulfillmentStatus = fulfillmentStatuses[i % fulfillmentStatuses.length]!
     const trackingNum = `1Z${Math.random().toString(36).substring(2, 11).toUpperCase()}`
+    const city = cities[i % cities.length]!
+    const date = new Date(Date.now() - (i * 86400000 * 1.2)).toISOString().split('T')[0]!
+    const shipped = fulfillmentStatus === 'Shipped'
+    const paymentStatus = status === 'Refunded' ? 'Refunded' : status === 'Cancelled' ? 'Voided' : 'Paid'
+    // Map queue state onto the detail step indicator
+    const fulfillmentStage: FulfillmentStage = shipped ? 'Shipped'
+      : fulfillmentStatus === 'Ready For Fulfillment' ? 'Carrier'
+      : fulfillmentStatus === 'Not Ready' ? 'Picked' : 'Pack'
+
+    const timeline: OrderTimelineEvent[] = [
+      { id: 1, kind: 'event', text: `Order placed via ${SALES_CHANNELS[i % SALES_CHANNELS.length]}`, date },
+    ]
+    if (paymentStatus === 'Paid') timeline.push({ id: 2, kind: 'event', text: `Payment of $${total} captured (${paymentMethods[i % paymentMethods.length]})`, date })
+    if (shipped) timeline.push({ id: 3, kind: 'event', text: `Shipped via ${['UPS', 'FedEx', 'USPS', 'DHL'][i % 4]} — tracking ${trackingNum}`, date })
+    if (status === 'Cancelled') timeline.push({ id: 4, kind: 'event', text: 'Order cancelled', date })
+    if (status === 'Refunded') timeline.push({ id: 5, kind: 'event', text: `Refund of $${total} issued`, date })
 
     return {
       id: i + 1,
       orderNumber: `#${10000 + i}`,
-      customer: { name: `${fName} ${lName}`, email: `${fName.toLowerCase()}.${lName.toLowerCase()}@email.com`, avatar: `${fName[0]}${lName[0]}` },
-      city: cities[i % cities.length],
+      customer: { name: customerName, email: `${fName.toLowerCase()}.${lName.toLowerCase()}@email.com`, avatar: `${fName[0]}${lName[0]}` },
+      city,
       itemCount,
       subtotal,
       shipping,
       total,
       status,
       fulfillmentStatus,
-      paymentStatus: status === 'Refunded' ? 'Refunded' : status === 'Cancelled' ? 'Voided' : 'Paid',
-      paymentMethod: paymentMethods[i % paymentMethods.length],
-      trackingNumber: fulfillmentStatus === 'Shipped' ? trackingNum : null,
-      courier: fulfillmentStatus === 'Shipped' ? ['UPS', 'FedEx', 'USPS', 'DHL'][i % 4] : null,
-      date: new Date(Date.now() - (i * 86400000 * 1.2)).toISOString().split('T')[0],
-      lineItems: Array.from({ length: itemCount }, (_, j) => ({
-        product: productNames[(i + j) % productNames.length],
+      paymentStatus,
+      paymentMethod: paymentMethods[i % paymentMethods.length]!,
+      paymentReference: `pay_${String(910000 + i * 731)}`,
+      paymentCapturedAt: paymentStatus === 'Paid' || paymentStatus === 'Refunded' ? date : null,
+      trackingNumber: shipped ? trackingNum : null,
+      courier: shipped ? ['UPS', 'FedEx', 'USPS', 'DHL'][i % 4]! : null,
+      date,
+      lineItems: Array.from({ length: itemCount }, (_, j): OrderLineItem => ({
+        product: productNames[(i + j) % productNames.length]!,
         sku: `SKU-${String(10000 + (i + j) % productNames.length).padStart(5, '0')}`,
         qty: Math.floor(Math.random() * 3) + 1,
         price: (Math.random() * 150 + 10).toFixed(2),
+        status: shipped ? 'Shipped' : status === 'Cancelled' ? 'Cancelled' : 'Processing',
+        coupon: (i + j) % 6 === 0 ? 'WELCOME20' : null,
+        discountPct: (i + j) % 6 === 0 ? 20 : 0,
       })),
       notes: i % 7 === 0 ? 'Customer requested gift wrapping.' : null,
+      tags: pickOrderTags(i),
+      salesChannel: SALES_CHANNELS[i % SALES_CHANNELS.length]!,
+      currency: 'USD',
+      region: city.split(', ')[1] ?? '—',
+      country: 'United States',
+      phone: `+1 (${200 + (i * 13) % 700}) 555-${String(1000 + i * 41).slice(-4)}`,
+      shippingAddress: buildAddress(customerName, city, i),
+      billingAddress: buildAddress(customerName, city, i + 3),
+      fulfillmentStage,
+      fulfilledFromLocation: WAREHOUSE_LOCATIONS[i % WAREHOUSE_LOCATIONS.length]!,
+      timeline,
     }
   }))
 
-  const coupons = ref([
-    { id: 1, code: 'WELCOME20', type: 'Percentage', value: 20, minOrder: 50, usage: 342, limit: 1000, expiry: '2026-06-30', status: 'Active' },
-    { id: 2, code: 'FREESHIP', type: 'Free Shipping', value: 0, minOrder: 75, usage: 1204, limit: null, expiry: null, status: 'Active' },
-    { id: 3, code: 'BLACKFRI50', type: 'Percentage', value: 50, minOrder: 100, usage: 8921, limit: 10000, expiry: '2025-11-30', status: 'Expired' },
-    { id: 4, code: 'SUMMER15', type: 'Percentage', value: 15, minOrder: 0, usage: 567, limit: 500, expiry: '2026-08-31', status: 'Maxed Out' },
-    { id: 5, code: 'VIP30OFF', type: 'Fixed Amount', value: 30, minOrder: 150, usage: 89, limit: 200, expiry: '2026-12-31', status: 'Active' },
-    { id: 6, code: 'NEWUSER10', type: 'Fixed Amount', value: 10, minOrder: 0, usage: 2341, limit: null, expiry: '2026-03-31', status: 'Active' },
-    { id: 7, code: 'LOYALTY25', type: 'Percentage', value: 25, minOrder: 200, usage: 156, limit: 500, expiry: '2026-09-30', status: 'Active' },
-    { id: 8, code: 'FLASH5', type: 'Fixed Amount', value: 5, minOrder: 0, usage: 4523, limit: 5000, expiry: '2025-12-31', status: 'Expired' },
-    { id: 9, code: 'REFER20', type: 'Percentage', value: 20, minOrder: 0, usage: 234, limit: null, expiry: null, status: 'Active' },
-    { id: 10, code: 'HOLIDAY40', type: 'Percentage', value: 40, minOrder: 75, usage: 12, limit: 300, expiry: '2026-12-25', status: 'Active' },
-    { id: 11, code: 'BUNDLESAVE', type: 'Fixed Amount', value: 25, minOrder: 120, usage: 78, limit: 200, expiry: '2026-06-30', status: 'Active' },
-    { id: 12, code: 'SPRING10', type: 'Percentage', value: 10, minOrder: 0, usage: 892, limit: null, expiry: '2026-05-31', status: 'Active' },
+  // ── Order actions (mock-persistent) ──────────────────────────────
+  function getOrderById(id: number): Order | undefined {
+    return orders.value.find((o) => o.id === id)
+  }
+
+  function logOrderEvent(order: Order, text: string, kind: 'note' | 'event' = 'event'): void {
+    const nextId = order.timeline.reduce((max, e) => Math.max(max, e.id), 0) + 1
+    order.timeline.push({ id: nextId, kind, text, date: new Date().toISOString().split('T')[0]! })
+  }
+
+  /** Append an internal note to the order timeline. */
+  function addOrderNote(id: number, text: string): void {
+    const order = getOrderById(id)
+    if (order && text.trim()) logOrderEvent(order, text.trim(), 'note')
+  }
+
+  function setOrderTags(id: number, tags: string[]): void {
+    const order = getOrderById(id)
+    if (order) order.tags = [...tags]
+  }
+
+  function updateOrderAddress(id: number, which: 'shipping' | 'billing', address: OrderAddress): void {
+    const order = getOrderById(id)
+    if (!order) return
+    if (which === 'shipping') order.shippingAddress = { ...address }
+    else order.billingAddress = { ...address }
+    logOrderEvent(order, `${which === 'shipping' ? 'Shipping' : 'Billing'} address updated`)
+  }
+
+  function cancelOrder(id: number): void {
+    const order = getOrderById(id)
+    if (!order || order.status === 'Cancelled') return
+    order.status = 'Cancelled'
+    order.fulfillmentStatus = 'Cancelled'
+    order.lineItems.forEach((li) => { li.status = 'Cancelled' })
+    logOrderEvent(order, 'Order cancelled')
+  }
+
+  function cancelOrders(ids: number[]): void {
+    ids.forEach(cancelOrder)
+  }
+
+  function refundOrder(id: number, amount: string, reason: string): void {
+    const order = getOrderById(id)
+    if (!order) return
+    order.paymentStatus = 'Refunded'
+    logOrderEvent(order, `Refund of $${amount} issued${reason ? ` — ${reason}` : ''}`)
+  }
+
+  function markOrderFulfilled(id: number): void {
+    const order = getOrderById(id)
+    if (!order || order.fulfillmentStatus === 'Shipped') return
+    order.fulfillmentStatus = 'Shipped'
+    order.fulfillmentStage = 'Shipped'
+    order.lineItems.forEach((li) => { li.status = 'Shipped' })
+    if (!order.trackingNumber) {
+      order.trackingNumber = `1Z${Math.random().toString(36).substring(2, 11).toUpperCase()}`
+      order.courier = 'UPS'
+    }
+    logOrderEvent(order, `Marked fulfilled — tracking ${order.trackingNumber}`)
+  }
+
+  function markOrdersFulfilled(ids: number[]): void {
+    ids.forEach(markOrderFulfilled)
+  }
+
+  const promotions = ref<Promotion[]>([
+    { id: 1, title: 'Welcome offer', method: 'Order', mechanism: 'Code', code: 'WELCOME20', discountType: 'Percentage', value: 20, salesChannels: ['Online Store'], startDate: '2026-01-01', endDate: '2026-06-30', usage: 342, limit: 1000, status: 'Active' },
+    { id: 2, title: 'Free shipping over $75', description: 'Waives shipping on qualifying orders.', method: 'Order', mechanism: 'Automatic', discountType: 'Fixed', value: 0, salesChannels: ['Online Store', 'POS'], startDate: '2026-01-01', usage: 1204, limit: null, status: 'Active' },
+    { id: 3, title: 'Black Friday 50', method: 'Order', mechanism: 'Code', code: 'BLACKFRI50', discountType: 'Percentage', value: 50, salesChannels: ['Online Store'], startDate: '2025-11-01', endDate: '2025-11-30', usage: 8921, limit: 10000, status: 'Inactive' },
+    { id: 4, title: 'Summer save 15', method: 'Product', mechanism: 'Automatic', discountType: 'Percentage', value: 15, salesChannels: ['Online Store', 'Instagram Shop'], startDate: '2026-06-01', endDate: '2026-08-31', usage: 567, limit: 500, status: 'Active' },
+    { id: 5, title: 'VIP $30 off', method: 'Order', mechanism: 'Code', code: 'VIP30OFF', discountType: 'Fixed', value: 30, salesChannels: ['Online Store'], startDate: '2026-01-01', endDate: '2026-12-31', usage: 89, limit: 200, status: 'Active' },
+    { id: 6, title: 'New user $10 off', method: 'Order', mechanism: 'Code', code: 'NEWUSER10', discountType: 'Fixed', value: 10, salesChannels: ['Online Store', 'Amazon'], startDate: '2026-01-01', endDate: '2026-03-31', usage: 2341, limit: null, status: 'Active' },
+    { id: 7, title: 'Loyalty 25', method: 'Product', mechanism: 'Code', code: 'LOYALTY25', discountType: 'Percentage', value: 25, salesChannels: ['Online Store'], startDate: '2026-01-01', endDate: '2026-09-30', usage: 156, limit: 500, status: 'Active' },
+    { id: 8, title: 'Flash $5 off', method: 'Order', mechanism: 'Code', code: 'FLASH5', discountType: 'Fixed', value: 5, salesChannels: ['Online Store'], startDate: '2025-01-01', endDate: '2025-12-31', usage: 4523, limit: 5000, status: 'Inactive' },
+    { id: 9, title: 'Refer a friend', method: 'Order', mechanism: 'Code', code: 'REFER20', discountType: 'Percentage', value: 20, salesChannels: ['Online Store', 'POS'], startDate: '2026-01-01', usage: 234, limit: null, status: 'Active' },
+    { id: 10, title: 'Holiday 40', method: 'Product', mechanism: 'Code', code: 'HOLIDAY40', discountType: 'Percentage', value: 40, salesChannels: ['Online Store'], startDate: '2026-11-01', endDate: '2026-12-25', usage: 12, limit: 300, status: 'Active' },
+    { id: 11, title: 'Bundle save', method: 'Product', mechanism: 'Automatic', discountType: 'Fixed', value: 25, salesChannels: ['Online Store', 'eBay'], startDate: '2026-01-01', endDate: '2026-06-30', usage: 78, limit: 200, status: 'Active' },
+    { id: 12, title: 'Spring 10', method: 'Order', mechanism: 'Code', code: 'SPRING10', discountType: 'Percentage', value: 10, salesChannels: ['Online Store'], startDate: '2026-03-01', endDate: '2026-05-31', usage: 892, limit: null, status: 'Active' },
   ])
 
-  const fulfillments = ref(Array.from({ length: 18 }, (_, i) => {
-    const fName = customerFirstNames[(i + 5) % customerFirstNames.length]!
-    const lName = customerLastNames[(i + 5) % customerLastNames.length]!
-    const statuses = ['Awaiting Fulfillment', 'Picking', 'Packed', 'Ready to Ship', 'Shipped']
+  function nextPromotionId(): number {
+    return promotions.value.reduce((max, p) => Math.max(max, p.id), 0) + 1
+  }
+
+  function createPromotion(input: PromotionInput): Promotion {
+    const promotion: Promotion = {
+      id: nextPromotionId(),
+      title: input.title,
+      description: input.description,
+      method: input.method,
+      mechanism: input.mechanism,
+      code: input.mechanism === 'Code' ? input.code : undefined,
+      discountType: input.discountType,
+      value: input.value,
+      salesChannels: [...input.salesChannels],
+      startDate: input.startDate,
+      endDate: input.endDate,
+      status: input.status,
+      usage: 0,
+      limit: input.limit ?? null,
+    }
+    promotions.value.unshift(promotion)
+    return promotion
+  }
+
+  function updatePromotion(id: number, input: PromotionInput): void {
+    const promotion = promotions.value.find((p) => p.id === id)
+    if (!promotion) return
+    promotion.title = input.title
+    promotion.description = input.description
+    promotion.method = input.method
+    promotion.mechanism = input.mechanism
+    promotion.code = input.mechanism === 'Code' ? input.code : undefined
+    promotion.discountType = input.discountType
+    promotion.value = input.value
+    promotion.salesChannels = [...input.salesChannels]
+    promotion.startDate = input.startDate
+    promotion.endDate = input.endDate
+    promotion.status = input.status
+    promotion.limit = input.limit ?? null
+  }
+
+  function duplicatePromotion(id: number): Promotion | undefined {
+    const source = promotions.value.find((p) => p.id === id)
+    if (!source) return undefined
+    const index = promotions.value.findIndex((p) => p.id === id)
+    const clone: Promotion = { ...source, id: nextPromotionId(), title: `${source.title} (Copy)`, code: source.code ? `${source.code}COPY` : undefined, usage: 0 }
+    promotions.value.splice(index + 1, 0, clone)
+    return clone
+  }
+
+  function setPromotionStatus(id: number, status: PromotionStatus): void {
+    const promotion = promotions.value.find((p) => p.id === id)
+    if (promotion) promotion.status = status
+  }
+
+  function deletePromotion(id: number): void {
+    promotions.value = promotions.value.filter((p) => p.id !== id)
+  }
+
+  function deletePromotions(ids: number[]): void {
+    const remove = new Set(ids)
+    promotions.value = promotions.value.filter((p) => !remove.has(p.id))
+  }
+
+  // Fulfillment queue — one entry per order being fulfilled (orderId links to `orders`)
+  const fulfillments = ref<FulfillmentQueueItem[]>(Array.from({ length: 18 }, (_, i) => {
+    const orderId = (i % 30) + 1
+    const source = orders.value.find((o) => o.id === orderId)!
     return {
       id: i + 1,
-      orderNumber: `#${10015 + i}`,
-      customer: `${fName} ${lName}`,
-      items: Math.floor(Math.random() * 4) + 1,
-      weight: `${(Math.random() * 5 + 0.3).toFixed(1)} lbs`,
-      status: statuses[i % statuses.length],
-      location: cities[i % cities.length],
-      date: new Date(Date.now() - (i * 43200000)).toISOString().split('T')[0],
-      priority: i < 3 ? 'High' : i < 8 ? 'Normal' : 'Low',
+      orderId,
+      orderNumber: source.orderNumber,
+      customer: source.customer.name,
+      location: WAREHOUSE_LOCATIONS[i % WAREHOUSE_LOCATIONS.length]!,
+      status: FULFILLMENT_QUEUE_STATUSES[i % FULFILLMENT_QUEUE_STATUSES.length]!,
+      paymentStatus: source.paymentStatus,
+      orderStatus: source.status,
+      salesChannel: source.salesChannel,
+      productQty: source.lineItems.reduce((sum, li) => sum + li.qty, 0),
+      total: source.total,
+      createdAt: new Date(Date.now() - (i * 43200000)).toISOString().split('T')[0]!,
+      trackingNumber: i % FULFILLMENT_QUEUE_STATUSES.length === 3 ? source.trackingNumber : null,
     }
   }))
 
-  const draftOrders = ref(Array.from({ length: 8 }, (_, i) => {
+  // ── Fulfillment actions (mock-persistent) ────────────────────────
+  /** Move a fulfillment one stage forward: Picked → Packed → Label Created → Shipped. */
+  function advanceFulfillment(id: number): void {
+    const item = fulfillments.value.find((f) => f.id === id)
+    if (!item) return
+    const index = FULFILLMENT_QUEUE_STATUSES.indexOf(item.status)
+    if (index < 0 || index >= FULFILLMENT_QUEUE_STATUSES.length - 1) return
+    const next = FULFILLMENT_QUEUE_STATUSES[index + 1]!
+    item.status = next
+    if (next === 'Shipped') markShipped([id])
+  }
+
+  /** Mark fulfillments shipped (with optional tracking number) and sync their orders. */
+  function markShipped(ids: number[], trackingNumber?: string): void {
+    for (const id of ids) {
+      const item = fulfillments.value.find((f) => f.id === id)
+      if (!item) continue
+      item.status = 'Shipped'
+      if (trackingNumber) item.trackingNumber = trackingNumber
+      const order = getOrderById(item.orderId)
+      if (order && order.fulfillmentStatus !== 'Shipped') {
+        order.fulfillmentStatus = 'Shipped'
+        order.fulfillmentStage = 'Shipped'
+        if (trackingNumber) order.trackingNumber = trackingNumber
+        logOrderEvent(order, `Shipped from ${item.location}${trackingNumber ? ` — tracking ${trackingNumber}` : ''}`)
+      }
+      if (!item.trackingNumber) item.trackingNumber = order?.trackingNumber ?? null
+    }
+  }
+
+  const draftOrders = ref<DraftOrder[]>(Array.from({ length: 8 }, (_, i) => {
     const fName = customerFirstNames[(i + 15) % customerFirstNames.length]!
     const lName = customerLastNames[(i + 15) % customerLastNames.length]!
+    const customerName = `${fName} ${lName}`
+    const lineItems: DraftLineItem[] = Array.from({ length: (i % 3) + 1 }, (_, j) => {
+      const productIndex = (i * 3 + j) % productNames.length
+      return {
+        id: j + 1,
+        name: productNames[productIndex]!,
+        sku: `SKU-${String(10000 + productIndex).padStart(5, '0')}`,
+        price: Math.round((Math.random() * 180 + 20) * 100) / 100,
+        qty: (j % 2) + 1,
+        custom: false,
+      }
+    })
+    const shippingMethod = ['Standard', 'Express', 'Free'][i % 3]!
+    const discount = { type: 'None', value: 0 }
     return {
       id: i + 1,
       draftNumber: `D-${500 + i}`,
-      customer: `${fName} ${lName}`,
+      customer: customerName,
       email: `${fName.toLowerCase()}@example.com`,
-      items: Math.floor(Math.random() * 5) + 1,
-      total: (Math.random() * 600 + 30).toFixed(2),
-      status: ['Open', 'Invoice Sent', 'Invoice Sent'][i % 3],
-      createdAt: new Date(Date.now() - (i * 86400000 * 2)).toISOString().split('T')[0],
+      phone: `+1 (${300 + (i * 17) % 600}) 555-${String(2000 + i * 53).slice(-4)}`,
+      salesChannel: SALES_CHANNELS[i % SALES_CHANNELS.length]!,
+      items: lineItems.length,
+      lineItems,
+      total: draftOrderTotal({ lineItems, discount, shippingMethod }).toFixed(2),
+      status: ['Open', 'Invoice Sent', 'Invoice Sent'][i % 3]!,
+      createdAt: new Date(Date.now() - (i * 86400000 * 2)).toISOString().split('T')[0]!,
+      shippingAddress: buildAddress(customerName, cities[(i + 4) % cities.length]!, i + 20),
+      billingAddress: null,
+      shippingMethod,
+      discount,
+      notes: '',
     }
   }))
 
+  // ── Draft-order actions (mock-persistent) ────────────────────────
+  function nextDraftId(): number {
+    return draftOrders.value.reduce((max, d) => Math.max(max, d.id), 0) + 1
+  }
+
+  function createDraftOrder(input: DraftOrderInput): DraftOrder {
+    const id = nextDraftId()
+    const draft: DraftOrder = {
+      id,
+      draftNumber: `D-${499 + id}`,
+      customer: input.customer,
+      email: input.email,
+      phone: input.phone,
+      salesChannel: input.salesChannel,
+      items: input.lineItems.length,
+      lineItems: input.lineItems.map((li) => ({ ...li })),
+      total: draftOrderTotal(input).toFixed(2),
+      status: 'Open',
+      createdAt: new Date().toISOString().split('T')[0]!,
+      shippingAddress: input.shippingAddress ? { ...input.shippingAddress } : null,
+      billingAddress: input.billingAddress ? { ...input.billingAddress } : null,
+      shippingMethod: input.shippingMethod,
+      discount: { ...input.discount },
+      notes: input.notes,
+    }
+    draftOrders.value.unshift(draft)
+    return draft
+  }
+
+  function updateDraftOrder(id: number, input: DraftOrderInput): void {
+    const draft = draftOrders.value.find((d) => d.id === id)
+    if (!draft) return
+    draft.customer = input.customer
+    draft.email = input.email
+    draft.phone = input.phone
+    draft.salesChannel = input.salesChannel
+    draft.items = input.lineItems.length
+    draft.lineItems = input.lineItems.map((li) => ({ ...li }))
+    draft.total = draftOrderTotal(input).toFixed(2)
+    draft.shippingAddress = input.shippingAddress ? { ...input.shippingAddress } : null
+    draft.billingAddress = input.billingAddress ? { ...input.billingAddress } : null
+    draft.shippingMethod = input.shippingMethod
+    draft.discount = { ...input.discount }
+    draft.notes = input.notes
+  }
+
+  function setDraftOrderStatus(id: number, status: string): void {
+    const draft = draftOrders.value.find((d) => d.id === id)
+    if (draft) draft.status = status
+  }
+
+  function deleteDraftOrders(ids: number[]): void {
+    const remove = new Set(ids)
+    draftOrders.value = draftOrders.value.filter((d) => !remove.has(d.id))
+  }
+
+  /** Convert a draft to a real sales order (Mark as Paid); removes the draft. */
+  function convertDraftToOrder(id: number): Order | undefined {
+    const draft = draftOrders.value.find((d) => d.id === id)
+    if (!draft) return undefined
+    const orderId = orders.value.reduce((max, o) => Math.max(max, o.id), 0) + 1
+    const nameParts = draft.customer.trim().split(/\s+/)
+    const avatar = `${nameParts[0]?.[0] ?? '?'}${nameParts[1]?.[0] ?? ''}`
+    const subtotal = draft.lineItems.reduce((sum, li) => sum + li.price * li.qty, 0)
+    const shipping = draft.lineItems.length ? (SHIPPING_RATES[draft.shippingMethod] ?? 0) : 0
+    const today = new Date().toISOString().split('T')[0]!
+    const address = draft.shippingAddress ?? buildAddress(draft.customer, cities[orderId % cities.length]!, orderId)
+    const order: Order = {
+      id: orderId,
+      orderNumber: `#${10000 + orderId - 1}`,
+      customer: { name: draft.customer, email: draft.email, avatar },
+      city: `${address.city}, ${address.region}`,
+      itemCount: draft.lineItems.length,
+      subtotal: subtotal.toFixed(2),
+      shipping: shipping.toFixed(2),
+      total: draft.total,
+      status: 'Processing',
+      fulfillmentStatus: 'Not Ready',
+      paymentStatus: 'Paid',
+      paymentMethod: 'Manual — Marked as Paid',
+      paymentReference: `pay_${String(910000 + orderId * 731)}`,
+      paymentCapturedAt: today,
+      trackingNumber: null,
+      courier: null,
+      date: today,
+      lineItems: draft.lineItems.map((li): OrderLineItem => ({
+        product: li.name,
+        sku: li.sku || '—',
+        qty: li.qty,
+        price: li.price.toFixed(2),
+        status: 'Processing',
+        coupon: null,
+        discountPct: 0,
+      })),
+      notes: draft.notes || null,
+      tags: [],
+      salesChannel: draft.salesChannel,
+      currency: 'USD',
+      region: address.region || '—',
+      country: address.country,
+      phone: draft.phone,
+      shippingAddress: { ...address },
+      billingAddress: draft.billingAddress ? { ...draft.billingAddress } : { ...address },
+      fulfillmentStage: 'Picked',
+      fulfilledFromLocation: WAREHOUSE_LOCATIONS[orderId % WAREHOUSE_LOCATIONS.length]!,
+      timeline: [
+        { id: 1, kind: 'event', text: `Order placed via Draft Order ${draft.draftNumber}`, date: today },
+        { id: 2, kind: 'event', text: `Payment of $${draft.total} captured (marked as paid)`, date: today },
+      ],
+    }
+    orders.value.unshift(order)
+    draftOrders.value = draftOrders.value.filter((d) => d.id !== id)
+    return order
+  }
+
   // Custom gift cards — merchant-issued cards with a redeemable balance
-  const customGiftCards = ref([
-    { id: 1, code: 'GC-4KQ9-7XZ2-1MPL', recipient: { name: 'Emma Thompson', email: 'emma.thompson@email.com' }, initialValue: 100, balance: 62.50, status: 'Active', issued: '2026-05-12', expiry: '2027-05-12', lastUsed: '2026-06-28' },
-    { id: 2, code: 'GC-8HTP-3RN6-9WQZ', recipient: { name: 'Liam Martinez', email: 'liam.martinez@email.com' }, initialValue: 50, balance: 50, status: 'Active', issued: '2026-06-01', expiry: '2027-06-01', lastUsed: null },
-    { id: 3, code: 'GC-2LMD-5FKC-7VBX', recipient: { name: 'Olivia Johnson', email: 'olivia.johnson@email.com' }, initialValue: 250, balance: 0, status: 'Redeemed', issued: '2026-02-18', expiry: '2027-02-18', lastUsed: '2026-05-03' },
-    { id: 4, code: 'GC-9QWE-1TYU-4OPA', recipient: { name: 'Noah Williams', email: 'noah.williams@email.com' }, initialValue: 75, balance: 25.00, status: 'Active', issued: '2026-04-22', expiry: '2027-04-22', lastUsed: '2026-06-15' },
-    { id: 5, code: 'GC-6ZXC-8VBN-2MKL', recipient: { name: 'Ava Brown', email: 'ava.brown@email.com' }, initialValue: 200, balance: 0, status: 'Redeemed', issued: '2025-12-10', expiry: '2026-12-10', lastUsed: '2026-03-19' },
-    { id: 6, code: 'GC-3RTY-7UIO-5PAS', recipient: { name: 'Ethan Davis', email: 'ethan.davis@email.com' }, initialValue: 500, balance: 340.00, status: 'Active', issued: '2026-05-30', expiry: '2027-05-30', lastUsed: '2026-06-27' },
-    { id: 7, code: 'GC-1QAZ-2WSX-3EDC', recipient: { name: 'Mia Miller', email: 'mia.miller@email.com' }, initialValue: 100, balance: 100, status: 'Active', issued: '2026-06-25', expiry: '2027-06-25', lastUsed: null },
-    { id: 8, code: 'GC-4RFV-5TGB-6YHN', recipient: { name: 'Lucas Wilson', email: 'lucas.wilson@email.com' }, initialValue: 25, balance: 25, status: 'Expired', issued: '2024-01-15', expiry: '2025-01-15', lastUsed: null },
-    { id: 9, code: 'GC-7UJM-8IK9-0OL1', recipient: { name: 'Charlotte Moore', email: 'charlotte.moore@email.com' }, initialValue: 150, balance: 88.75, status: 'Active', issued: '2026-03-08', expiry: '2027-03-08', lastUsed: '2026-06-20' },
-    { id: 10, code: 'GC-2EDC-3RFV-4TGB', recipient: { name: 'Aiden Taylor', email: 'aiden.taylor@email.com' }, initialValue: 50, balance: 0, status: 'Disabled', issued: '2026-01-30', expiry: '2027-01-30', lastUsed: null },
-    { id: 11, code: 'GC-5TGB-6YHN-7UJM', recipient: { name: 'Amelia Jackson', email: 'amelia.jackson@email.com' }, initialValue: 300, balance: 210.00, status: 'Active', issued: '2026-04-11', expiry: '2027-04-11', lastUsed: '2026-06-12' },
-    { id: 12, code: 'GC-8IKL-9OP0-1QAZ', recipient: { name: 'Jackson White', email: 'jackson.white@email.com' }, initialValue: 40, balance: 12.30, status: 'Active', issued: '2026-05-19', expiry: '2027-05-19', lastUsed: '2026-06-29' },
+  const customGiftCards = ref<CustomGiftCard[]>([
+    { id: 1, code: 'GC-4KQ9-7XZ2-1MPL', contact: 'Emma Thompson', recipient: { name: 'Emma Thompson', email: 'emma.thompson@email.com' }, initialValue: 100, balance: 62.50, expiration: 'date', status: 'Active', issued: '2026-05-12', expiry: '2027-05-12', lastUsed: '2026-06-28' },
+    { id: 2, code: 'GC-8HTP-3RN6-9WQZ', contact: 'Liam Martinez', recipient: { name: 'Liam Martinez', email: 'liam.martinez@email.com' }, initialValue: 50, balance: 50, expiration: 'date', status: 'Active', issued: '2026-06-01', expiry: '2027-06-01', lastUsed: null },
+    { id: 3, code: 'GC-2LMD-5FKC-7VBX', contact: 'Olivia Johnson', recipient: { name: 'Olivia Johnson', email: 'olivia.johnson@email.com' }, initialValue: 250, balance: 0, expiration: 'date', status: 'Redeemed', issued: '2026-02-18', expiry: '2027-02-18', lastUsed: '2026-05-03' },
+    { id: 4, code: 'GC-9QWE-1TYU-4OPA', contact: '—', recipient: { name: 'Noah Williams', email: 'noah.williams@email.com' }, initialValue: 75, balance: 25.00, expiration: 'date', status: 'Active', issued: '2026-04-22', expiry: '2027-04-22', lastUsed: '2026-06-15' },
+    { id: 5, code: 'GC-6ZXC-8VBN-2MKL', contact: 'Ava Brown', recipient: { name: 'Ava Brown', email: 'ava.brown@email.com' }, initialValue: 200, balance: 0, expiration: 'date', status: 'Redeemed', issued: '2025-12-10', expiry: '2026-12-10', lastUsed: '2026-03-19' },
+    { id: 6, code: 'GC-3RTY-7UIO-5PAS', contact: 'Ethan Davis', recipient: { name: 'Ethan Davis', email: 'ethan.davis@email.com' }, initialValue: 500, balance: 340.00, expiration: 'none', status: 'Active', issued: '2026-05-30', expiry: null, lastUsed: '2026-06-27' },
+    { id: 7, code: 'GC-1QAZ-2WSX-3EDC', contact: '—', recipient: { name: 'Mia Miller', email: 'mia.miller@email.com' }, initialValue: 100, balance: 100, expiration: 'none', status: 'Active', issued: '2026-06-25', expiry: null, lastUsed: null },
+    { id: 8, code: 'GC-4RFV-5TGB-6YHN', contact: 'Lucas Wilson', recipient: { name: 'Lucas Wilson', email: 'lucas.wilson@email.com' }, initialValue: 25, balance: 25, expiration: 'date', status: 'Expired', issued: '2024-01-15', expiry: '2025-01-15', lastUsed: null },
+    { id: 9, code: 'GC-7UJM-8IK9-0OL1', contact: 'Charlotte Moore', recipient: { name: 'Charlotte Moore', email: 'charlotte.moore@email.com' }, initialValue: 150, balance: 88.75, expiration: 'date', status: 'Active', issued: '2026-03-08', expiry: '2027-03-08', lastUsed: '2026-06-20' },
+    { id: 10, code: 'GC-2EDC-3RFV-4TGB', contact: '—', recipient: { name: 'Aiden Taylor', email: 'aiden.taylor@email.com' }, initialValue: 50, balance: 0, expiration: 'date', status: 'Disabled', issued: '2026-01-30', expiry: '2027-01-30', lastUsed: null },
+    { id: 11, code: 'GC-5TGB-6YHN-7UJM', contact: 'Amelia Jackson', recipient: { name: 'Amelia Jackson', email: 'amelia.jackson@email.com' }, initialValue: 300, balance: 210.00, expiration: 'none', status: 'Active', issued: '2026-04-11', expiry: null, lastUsed: '2026-06-12' },
+    { id: 12, code: 'GC-8IKL-9OP0-1QAZ', contact: 'Jackson White', recipient: { name: 'Jackson White', email: 'jackson.white@email.com' }, initialValue: 40, balance: 12.30, expiration: 'date', status: 'Active', issued: '2026-05-19', expiry: '2027-05-19', lastUsed: '2026-06-29' },
   ])
+
+  function generateGiftCardCode(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    const group = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+    return `GC-${group()}-${group()}-${group()}`
+  }
+
+  function nextGiftCardId(): number {
+    return customGiftCards.value.reduce((max, c) => Math.max(max, c.id), 0) + 1
+  }
+
+  function issueGiftCard(input: GiftCardInput): CustomGiftCard {
+    const today = new Date().toISOString().split('T')[0]!
+    const card: CustomGiftCard = {
+      id: nextGiftCardId(),
+      code: generateGiftCardCode(),
+      contact: input.contact?.trim() || '—',
+      recipient: { name: input.contact?.trim() || '—', email: input.email },
+      initialValue: input.initialValue,
+      balance: input.initialValue,
+      message: input.message,
+      expiration: input.expiration,
+      status: input.status,
+      issued: today,
+      expiry: input.expiration === 'date' ? (input.expiry ?? null) : null,
+      lastUsed: null,
+      image: input.image,
+    }
+    customGiftCards.value.unshift(card)
+    return card
+  }
+
+  function updateGiftCard(id: number, input: GiftCardInput): void {
+    const card = customGiftCards.value.find((c) => c.id === id)
+    if (!card) return
+    card.contact = input.contact?.trim() || '—'
+    card.recipient = { name: input.contact?.trim() || card.recipient.name, email: input.email }
+    card.initialValue = input.initialValue
+    card.message = input.message
+    card.expiration = input.expiration
+    card.status = input.status
+    card.expiry = input.expiration === 'date' ? (input.expiry ?? null) : null
+    card.image = input.image
+  }
+
+  function disableGiftCard(id: number): void {
+    const card = customGiftCards.value.find((c) => c.id === id)
+    if (card) card.status = 'Disabled'
+  }
+
+  function deleteGiftCards(ids: number[]): void {
+    const remove = new Set(ids)
+    customGiftCards.value = customGiftCards.value.filter((c) => !remove.has(c.id))
+  }
 
   // Purchasable gift cards — gift-card products sold on the storefront
-  const purchasableGiftCards = ref([
-    { id: 1, name: 'Digital Gift Card', kind: 'Digital', denominations: [25, 50, 100, 200], allowCustom: true, customMin: 10, customMax: 500, sold: 1240, revenue: 86420, status: 'Active', created: '2025-11-02' },
-    { id: 2, name: 'Birthday eGift Card', kind: 'Digital', denominations: [25, 50, 100], allowCustom: false, customMin: 0, customMax: 0, sold: 512, revenue: 28900, status: 'Active', created: '2026-01-15' },
-    { id: 3, name: 'Holiday Gift Card', kind: 'Digital', denominations: [50, 100, 150, 250], allowCustom: true, customMin: 25, customMax: 1000, sold: 2103, revenue: 174300, status: 'Active', created: '2025-10-20' },
-    { id: 4, name: 'Physical Gift Card', kind: 'Physical', denominations: [25, 50, 100], allowCustom: false, customMin: 0, customMax: 0, sold: 348, revenue: 21750, status: 'Active', created: '2025-09-08' },
-    { id: 5, name: 'Thank You Gift Card', kind: 'Digital', denominations: [20, 40, 60], allowCustom: false, customMin: 0, customMax: 0, sold: 87, revenue: 3480, status: 'Draft', created: '2026-06-30' },
-    { id: 6, name: 'Corporate Bulk Gift Card', kind: 'Digital', denominations: [100, 250, 500, 1000], allowCustom: true, customMin: 100, customMax: 5000, sold: 64, revenue: 41200, status: 'Archived', created: '2025-06-14' },
+  const purchasableGiftCards = ref<PurchasableGiftCard[]>([
+    { id: 1, name: 'Digital Gift Card', slug: 'digital-gift-card', kind: 'Digital', denominations: [25, 50, 100, 200], sold: 1240, revenue: 86420, status: 'Active', created: '2025-11-02', taxCategory: 'Standard', brand: 'Acme Corp', tags: ['Featured'], collections: [] },
+    { id: 2, name: 'Birthday eGift Card', slug: 'birthday-egift-card', kind: 'Digital', denominations: [25, 50, 100], sold: 512, revenue: 28900, status: 'Active', created: '2026-01-15', taxCategory: 'Standard', brand: 'Acme Corp', tags: ['Seasonal'], collections: [] },
+    { id: 3, name: 'Holiday Gift Card', slug: 'holiday-gift-card', kind: 'Digital', denominations: [50, 100, 150, 250], sold: 2103, revenue: 174300, status: 'Active', created: '2025-10-20', taxCategory: 'Standard', brand: 'Brand House', tags: ['Seasonal', 'Sale'], collections: [] },
+    { id: 4, name: 'Physical Gift Card', slug: 'physical-gift-card', kind: 'Physical', denominations: [25, 50, 100], sold: 348, revenue: 21750, status: 'Active', created: '2025-09-08', taxCategory: 'Standard', brand: 'Acme Corp', tags: [], collections: [] },
+    { id: 5, name: 'Thank You Gift Card', slug: 'thank-you-gift-card', kind: 'Digital', denominations: [20, 40, 60], sold: 87, revenue: 3480, status: 'Draft', created: '2026-06-30', taxCategory: 'Standard', brand: 'Local Artisan', tags: [], collections: [] },
+    { id: 6, name: 'Corporate Bulk Gift Card', slug: 'corporate-bulk-gift-card', kind: 'Digital', denominations: [100, 250, 500, 1000], sold: 64, revenue: 41200, status: 'Archived', created: '2025-06-14', taxCategory: 'Standard', brand: 'Global Goods', tags: ['Clearance'], collections: [] },
   ])
 
+  function nextPurchasableGiftCardId(): number {
+    return purchasableGiftCards.value.reduce((max, p) => Math.max(max, p.id), 0) + 1
+  }
+
+  function createPurchasableGiftCard(input: PurchasableGiftCardInput): PurchasableGiftCard {
+    const today = new Date().toISOString().split('T')[0]!
+    const product: PurchasableGiftCard = {
+      id: nextPurchasableGiftCardId(),
+      name: input.name,
+      slug: input.slug,
+      kind: input.kind,
+      message: input.message,
+      denominations: [...input.denominations],
+      sold: 0,
+      revenue: 0,
+      status: input.status,
+      created: today,
+      taxCategory: input.taxCategory,
+      brand: input.brand,
+      tags: [...input.tags],
+      collections: [...input.collections],
+    }
+    purchasableGiftCards.value.unshift(product)
+    return product
+  }
+
+  function updatePurchasableGiftCard(id: number, input: PurchasableGiftCardInput): void {
+    const product = purchasableGiftCards.value.find((p) => p.id === id)
+    if (!product) return
+    product.name = input.name
+    product.slug = input.slug
+    product.kind = input.kind
+    product.message = input.message
+    product.denominations = [...input.denominations]
+    product.status = input.status
+    product.taxCategory = input.taxCategory
+    product.brand = input.brand
+    product.tags = [...input.tags]
+    product.collections = [...input.collections]
+  }
+
+  function duplicatePurchasableGiftCard(id: number): PurchasableGiftCard | undefined {
+    const source = purchasableGiftCards.value.find((p) => p.id === id)
+    if (!source) return undefined
+    const index = purchasableGiftCards.value.findIndex((p) => p.id === id)
+    const clone: PurchasableGiftCard = { ...source, id: nextPurchasableGiftCardId(), name: `${source.name} (Copy)`, slug: `${source.slug}-copy`, sold: 0, revenue: 0, status: 'Draft' }
+    purchasableGiftCards.value.splice(index + 1, 0, clone)
+    return clone
+  }
+
+  function setPurchasableGiftCardStatus(id: number, status: PurchasableGiftCardStatus): void {
+    const product = purchasableGiftCards.value.find((p) => p.id === id)
+    if (product) product.status = status
+  }
+
+  function deletePurchasableGiftCards(ids: number[]): void {
+    const remove = new Set(ids)
+    purchasableGiftCards.value = purchasableGiftCards.value.filter((p) => !remove.has(p.id))
+  }
+
   return {
-    products, orders, coupons, fulfillments, draftOrders, customGiftCards, purchasableGiftCards,
+    products, orders, promotions, fulfillments, draftOrders, customGiftCards, purchasableGiftCards,
     inventory,
     createProduct, updateProductDraft, duplicateProduct, deleteProduct, deleteProducts,
     adjustStock, transferStock,
+    getOrderById, addOrderNote, setOrderTags, updateOrderAddress, cancelOrder, cancelOrders, refundOrder, markOrderFulfilled, markOrdersFulfilled,
+    advanceFulfillment, markShipped,
+    createDraftOrder, updateDraftOrder, setDraftOrderStatus, deleteDraftOrders, convertDraftToOrder,
+    createPromotion, updatePromotion, duplicatePromotion, setPromotionStatus, deletePromotion, deletePromotions,
+    issueGiftCard, updateGiftCard, disableGiftCard, deleteGiftCards,
+    createPurchasableGiftCard, updatePurchasableGiftCard, duplicatePurchasableGiftCard, setPurchasableGiftCardStatus, deletePurchasableGiftCards,
   }
 })

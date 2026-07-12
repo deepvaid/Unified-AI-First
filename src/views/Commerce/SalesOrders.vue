@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useCommerceStore } from '@/stores/useCommerce'
+import { useCommerceStore, type Order } from '@/stores/useCommerce'
+import { downloadCsv } from '@/utils/exportCsv'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -9,6 +10,8 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 
@@ -17,13 +20,21 @@ const route = useRoute()
 const router = useRouter()
 const accountId = computed(() => route.params.accountId as string)
 function goCreateDraft() {
-  router.push({ name: 'DraftOrders', params: { accountId: accountId.value }, query: { new: '1' } })
+  router.push({ name: 'CreateDraftOrder', params: { accountId: accountId.value } })
+}
+function goToOrder(id: number) {
+  router.push({ name: 'OrderDetail', params: { accountId: accountId.value, orderId: String(id) } })
 }
 const search = ref('')
 const expanded = ref<string[]>([])
-const selected = ref<string[]>([])
+const selected = ref<number[]>([])
 const activeTab = ref('all')
 const { loading } = useInitialLoad()
+
+// Snackbar
+const snackbar = ref(false)
+const snackbarText = ref('')
+function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 // Tabs matching real Maropost app
 const tabs = computed(() => [
@@ -42,6 +53,8 @@ const headers = [
   { title: 'Fulfillment', key: 'fulfillmentStatus', hideBelow: 'md' as const },
   { title: 'Payment', key: 'paymentStatus', hideBelow: 'lg' as const },
   { title: 'Status', key: 'status' },
+  { title: 'Sales Channel', key: 'salesChannel', hideBelow: 'lg' as const },
+  { title: 'Tags', key: 'tags', sortable: false, hideBelow: 'lg' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
   { title: '', key: 'data-table-expand', width: 40 },
 ]
@@ -133,7 +146,71 @@ function clearAllFilters() {
 }
 
 function selectAll() {
-  selected.value = filteredOrders.value.map((o: any) => o.id)
+  selected.value = filteredOrders.value.map((o) => o.id)
+}
+
+// ─── Row / bulk actions ───────────────────────────────────────────────────────
+function markFulfilled(order: Order) {
+  store.markOrderFulfilled(order.id)
+  notify(`${order.orderNumber} marked fulfilled`)
+}
+
+const cancelDialog = ref(false)
+const pendingCancel = ref<Order | null>(null)
+const bulkCancel = ref(false)
+function askCancelRow(order: Order) {
+  pendingCancel.value = order
+  bulkCancel.value = false
+  cancelDialog.value = true
+}
+function askCancelBulk() {
+  pendingCancel.value = null
+  bulkCancel.value = true
+  cancelDialog.value = true
+}
+const cancelMessage = computed(() =>
+  bulkCancel.value
+    ? `Cancel ${selected.value.length} selected order${selected.value.length === 1 ? '' : 's'}? Customers will be notified and fulfillment will stop. This cannot be undone.`
+    : `Cancel ${pendingCancel.value?.orderNumber ?? ''} for ${pendingCancel.value?.customer.name ?? ''}? The customer will be notified and fulfillment will stop. This cannot be undone.`,
+)
+function confirmCancel() {
+  if (bulkCancel.value) {
+    store.cancelOrders([...selected.value])
+    notify(`${selected.value.length} order${selected.value.length === 1 ? '' : 's'} cancelled`)
+    selected.value = []
+  } else if (pendingCancel.value) {
+    store.cancelOrder(pendingCancel.value.id)
+    notify(`${pendingCancel.value.orderNumber} cancelled`)
+  }
+}
+
+const bulkFulfillDialog = ref(false)
+function confirmBulkFulfill() {
+  store.markOrdersFulfilled([...selected.value])
+  notify(`${selected.value.length} order${selected.value.length === 1 ? '' : 's'} marked fulfilled`)
+  selected.value = []
+}
+
+function printInvoice(order: Order) {
+  notify(`Invoice for ${order.orderNumber} sent to printer`)
+}
+
+// Export the currently visible (tab + filter) rows
+function exportOrders() {
+  downloadCsv('sales-orders', filteredOrders.value, [
+    { title: 'Order', value: 'orderNumber' },
+    { title: 'Date', value: 'date' },
+    { title: 'Customer', value: (o) => o.customer.name },
+    { title: 'Email', value: (o) => o.customer.email },
+    { title: 'Items', value: 'itemCount' },
+    { title: 'Total', value: 'total' },
+    { title: 'Fulfillment Status', value: 'fulfillmentStatus' },
+    { title: 'Payment Status', value: 'paymentStatus' },
+    { title: 'Status', value: 'status' },
+    { title: 'Sales Channel', value: 'salesChannel' },
+    { title: 'Tags', value: (o) => o.tags.join('; ') },
+  ])
+  notify(`Exported ${filteredOrders.value.length} orders`)
 }
 </script>
 
@@ -145,7 +222,7 @@ function selectAll() {
       :subtitle="`${store.orders.length} orders total · $${store.orders.reduce((a,o) => a + parseFloat(o.total), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lifetime revenue`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface">Export</v-btn>
+        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportOrders">Export</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="goCreateDraft">Create Draft Order</v-btn>
       </template>
       <template #tabs>
@@ -196,7 +273,8 @@ function selectAll() {
         density="comfortable"
         :items-per-page="15"
         fixed-header
-        class="flex-grow-1"
+        class="flex-grow-1 orders-table"
+        @click:row="(_e: unknown, { item }: { item: Order }) => goToOrder(item.id)"
       >
         <!-- Order number — clickable link style -->
         <template v-slot:item.orderNumber="{ item }">
@@ -244,27 +322,49 @@ function selectAll() {
           <MpStatusChip :status="item.status ?? ''" type="order" variant="flat" size="x-small" />
         </template>
 
+        <!-- Sales Channel -->
+        <template v-slot:item.salesChannel="{ item }">
+          <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.salesChannel }}</span>
+        </template>
+
+        <!-- Tags -->
+        <template v-slot:item.tags="{ item }">
+          <div v-if="item.tags.length" class="d-flex gap-1 flex-nowrap">
+            <v-chip v-for="tag in item.tags.slice(0, 2)" :key="tag" size="x-small" variant="tonal" color="secondary">{{ tag }}</v-chip>
+            <v-chip v-if="item.tags.length > 2" size="x-small" variant="tonal">+{{ item.tags.length - 2 }}</v-chip>
+          </div>
+          <span v-else class="text-caption text-medium-emphasis">—</span>
+        </template>
+
         <!-- Row actions -->
-        <template v-slot:item.actions>
-          <v-menu location="bottom end">
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-vertical" variant="text" size="small" density="comfortable" color="medium-emphasis" aria-label="Order actions"></v-btn>
-            </template>
-            <v-list density="compact" rounded="lg" min-width="180" elevation="3" class="py-1">
-              <v-list-item prepend-icon="eye" title="View order" value="view"></v-list-item>
-              <v-list-item prepend-icon="pencil" title="Edit order" value="edit"></v-list-item>
-              <v-list-item prepend-icon="package-check" title="Mark fulfilled" value="fulfill"></v-list-item>
-              <v-list-item prepend-icon="printer" title="Print invoice" value="print"></v-list-item>
+        <template v-slot:item.actions="{ item }">
+          <div @click.stop>
+            <MpRowActionsMenu ariaLabel="Order actions">
+              <v-list-item prepend-icon="eye" title="View order" @click="goToOrder(item.id)"></v-list-item>
+              <v-list-item prepend-icon="package-check" title="Mark fulfilled" :disabled="item.fulfillmentStatus === 'Shipped' || item.status === 'Cancelled'" @click="markFulfilled(item)"></v-list-item>
+              <v-list-item prepend-icon="printer" title="Print invoice" @click="printInvoice(item)"></v-list-item>
               <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="banknote" title="Refund" value="refund" class="text-error"></v-list-item>
-              <v-list-item prepend-icon="ban" title="Cancel order" value="cancel" class="text-error"></v-list-item>
-            </v-list>
-          </v-menu>
+              <v-list-item prepend-icon="ban" title="Cancel order" class="text-error" :disabled="item.status === 'Cancelled'" @click="askCancelRow(item)"></v-list-item>
+            </MpRowActionsMenu>
+          </div>
+        </template>
+
+        <!-- Expand toggle — stop propagation so it doesn't trigger row navigation -->
+        <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
+          <v-btn
+            :icon="isExpanded(internalItem) ? 'chevron-up' : 'chevron-down'"
+            variant="text"
+            size="small"
+            density="comfortable"
+            color="medium-emphasis"
+            aria-label="Toggle order details"
+            @click.stop="toggleExpand(internalItem)"
+          ></v-btn>
         </template>
 
         <!-- Expanded detail row -->
         <template v-slot:expanded-row="{ columns, item }">
-          <tr>
+          <tr @click.stop>
             <td :colspan="columns.length" class="pa-0" style="border-bottom: none !important;">
               <div class="expanded-row-content">
                 <!-- Top bar: Customer + Payment + Fulfillment status + Actions -->
@@ -287,8 +387,8 @@ function selectAll() {
                   </div>
                   <v-spacer />
                   <div class="d-flex gap-1">
-                    <v-btn variant="flat" color="primary" size="x-small" class="text-none" prepend-icon="package-check">Mark Fulfilled</v-btn>
-                    <v-btn variant="tonal" size="x-small" class="text-none" prepend-icon="printer">Print Invoice</v-btn>
+                    <v-btn variant="flat" color="primary" size="x-small" class="text-none" prepend-icon="package-check" :disabled="item.fulfillmentStatus === 'Shipped' || item.status === 'Cancelled'" @click="markFulfilled(item)">Mark Fulfilled</v-btn>
+                    <v-btn variant="tonal" size="x-small" class="text-none" prepend-icon="printer" @click="printInvoice(item)">Print Invoice</v-btn>
                   </div>
                 </div>
 
@@ -355,16 +455,43 @@ function selectAll() {
       @clear="selected = []"
       @select-all="selectAll"
     >
-      <v-btn size="small" variant="flat" color="surface" prepend-icon="package-check" class="text-none" rounded="lg">Mark Fulfilled</v-btn>
-      <v-btn size="small" variant="flat" color="surface" prepend-icon="printer" class="text-none" rounded="lg">Print Labels</v-btn>
-      <v-btn size="small" variant="flat" color="surface" prepend-icon="ban" class="text-none text-error" rounded="lg">Cancel Orders</v-btn>
+      <v-btn size="small" variant="flat" color="surface" prepend-icon="package-check" class="text-none" rounded="lg" @click="bulkFulfillDialog = true">Mark Fulfilled</v-btn>
+      <v-btn size="small" variant="flat" color="surface" prepend-icon="ban" class="text-none text-error" rounded="lg" @click="askCancelBulk">Cancel Orders</v-btn>
     </MpFloatingBulkBar>
+
+    <!-- Cancel confirmation (row + bulk) -->
+    <MpConfirmDialog
+      v-model="cancelDialog"
+      title="Cancel order?"
+      :message="cancelMessage"
+      confirm-label="Cancel Order"
+      danger
+      @confirm="confirmCancel"
+    />
+
+    <!-- Bulk fulfill confirmation -->
+    <MpConfirmDialog
+      v-model="bulkFulfillDialog"
+      title="Mark orders fulfilled?"
+      :message="`Mark ${selected.length} selected order${selected.length === 1 ? '' : 's'} as fulfilled? Tracking numbers will be generated where missing.`"
+      confirm-label="Mark Fulfilled"
+      @confirm="confirmBulkFulfill"
+    />
+
+    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
+    </v-snackbar>
   </div>
 </template>
 
 <style scoped>
 :deep(.v-data-table thead th) {
   white-space: nowrap;
+}
+
+/* Row click navigates to the order detail */
+.orders-table :deep(tbody tr:not(.v-data-table__expanded__content)) {
+  cursor: pointer;
 }
 
 /* Quiet secondary statuses: colored dot + muted label */
