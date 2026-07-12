@@ -52,7 +52,17 @@ The \`MpEmptyState\` component is used when a container (like a table, list, or 
     },
   },
   argTypes: {
-    icon: { control: 'text', description: 'Lucide icon name shown in the circular backdrop. Omit to hide.' },
+    variant: {
+      control: 'select',
+      options: ['default', 'expressive', 'launcher'],
+      description: "Visual treatment: 'default' (bare icon + text), 'expressive' (illustration-led), 'launcher' (menu of starting points in the default slot).",
+    },
+    illustration: {
+      control: 'select',
+      options: ['no-results', 'empty-orders', 'empty-contacts', 'empty-campaigns', 'empty-products', 'empty-generic', 'start-here', 'error'],
+      description: "MpIllustration name rendered in the 'expressive' variant (or override via the #illustration slot in any variant).",
+    },
+    icon: { control: 'text', description: 'Lucide icon name rendered bare (size 40, medium-emphasis) above the title in the default variant. Omit to hide.' },
     title: { control: 'text', description: 'Required headline. Should make sense read on its own.' },
     description: { control: 'text', description: 'Supporting copy (max-width 420px, wraps).' },
     actionLabel: { control: 'text', description: 'CTA button label. Omit to render no button.' },
@@ -100,6 +110,37 @@ export const Contacts: Story = {
     actionLabel: 'Import Contacts',
     actionIcon: 'upload',
   },
+}
+
+/** Expressive — illustration-led with a larger, verb-first headline for high-visibility first-run moments. */
+export const Expressive: Story = {
+  args: {
+    variant: 'expressive',
+    illustration: 'empty-campaigns',
+    title: 'Launch your first campaign',
+    description: 'Reach your audience with a broadcast email. Design it, pick a segment, and send — you can track opens and clicks the moment it goes out.',
+    actionLabel: 'Create campaign',
+    actionIcon: 'plus',
+  },
+}
+
+/** Launcher — a vertical menu of starting points passed via the default slot. */
+export const Launcher: Story = {
+  args: {
+    title: 'How do you want to start?',
+    description: 'Pick a starting point for your new campaign.',
+  },
+  render: (args) => ({
+    components: { MpEmptyState },
+    setup: () => ({ args }),
+    template: `
+      <MpEmptyState v-bind="args" variant="launcher">
+        <v-btn variant="outlined" class="text-none justify-start" prepend-icon="file">Start from scratch</v-btn>
+        <v-btn variant="outlined" class="text-none justify-start" prepend-icon="layout-template">Use a template</v-btn>
+        <v-btn variant="outlined" class="text-none justify-start" prepend-icon="sparkles">Draft with Da Vinci</v-btn>
+      </MpEmptyState>
+    `,
+  }),
 }
 
 /** Long title + multi-sentence description — copy wraps inside the 420px measure without breaking layout. */

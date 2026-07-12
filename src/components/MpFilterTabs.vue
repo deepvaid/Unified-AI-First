@@ -44,16 +44,45 @@ withDefaults(defineProps<{
 </template>
 
 <style scoped>
-.mp-filter-tabs :deep(.v-tab.v-tab--selected .mp-filter-tabs__count) {
-  color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.10);
-}
-
 .mp-filter-tabs__tab {
   min-width: 0;
   padding-inline: 14px;
   letter-spacing: 0;
+}
+
+/* Unselected: quiet 500 weight, muted ink. */
+.mp-filter-tabs :deep(.v-tab.mp-filter-tabs__tab) {
   font-weight: 500;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+/* Selected: 600 weight, full ink — the primary accent lives only in the slider. */
+.mp-filter-tabs :deep(.v-tab.mp-filter-tabs__tab.v-tab--selected) {
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+/* Keep the underline, hold it to a 2px primary hairline. */
+.mp-filter-tabs :deep(.v-tab__slider) {
+  height: 2px;
+  background-color: rgb(var(--v-theme-primary));
+}
+
+/* Count reads as a plain tabular figure, not a pill. */
+.mp-filter-tabs__count.v-chip {
+  background: transparent !important;
+  border: none;
+  padding-inline: 0;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-filter-tabs__count :deep(.v-chip__underlay) {
+  opacity: 0;
+}
+
+.mp-filter-tabs :deep(.v-tab--selected) .mp-filter-tabs__count.v-chip {
+  color: rgb(var(--v-theme-primary));
 }
 
 .mp-filter-tabs :deep(.v-slide-group__content) {

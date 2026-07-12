@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpKpiCard from './MpKpiCard.vue'
+import { formatMoneyParts } from '@/utils/formatMoneyParts'
 // The app loads the --cloud-* accent tokens via main.ts; preview.ts doesn't.
 import '@/styles/source-cloud-colors.css'
 
@@ -69,7 +70,12 @@ const meta = {
     trendPositive: { control: 'boolean', description: 'Whether the movement is good news (green, up arrow) or bad (red, down arrow). Defaults to positive.' },
     subStat: { control: 'text', description: 'Small context line under the value ("vs last month").' },
     period: { control: 'text', description: 'Time window shown under the label ("Today", "Last 30 days").' },
-    sparkline: { control: false, description: 'Slot — 96px-wide mini chart aligned with the value.', table: { category: 'slots' } },
+    emphasis: {
+      control: 'inline-radio',
+      options: ['default', 'hero'],
+      description: 'Value scale: `default` (32px/700) or `hero` (48px/800) for a single headline metric.',
+    },
+    sparkline: { control: false, description: 'Slot — 96px-wide mini chart aligned with the value. A `#value` slot also exists to replace the default value rendering (e.g. demoted-cents money).', table: { category: 'slots' } },
     default: { control: false, description: 'Slot — extra content below the stat block.', table: { category: 'slots' } },
   },
 } satisfies Meta<typeof MpKpiCard>
@@ -184,6 +190,41 @@ export const IconTones: Story = {
             <MpKpiCard :label="tone" value="1,024" icon="activity" :color="tone" />
           </v-col>
         </v-row>
+      </div>
+    `,
+  }),
+  args: {} as any, // Fixes TS strict mode error
+}
+
+/** `emphasis="hero"` renders the value at display scale (48px/800) for a single headline metric. */
+export const Hero: Story = {
+  args: {
+    label: 'Total Revenue',
+    value: '$128,940',
+    icon: 'dollar-sign',
+    color: 'success',
+    trend: '+18.2%',
+    trendPositive: true,
+    subStat: 'vs last quarter',
+    emphasis: 'hero',
+  },
+}
+
+/** Demoted-cents composition via the `#value` slot + `formatMoneyParts()` — cents shrink and fade. */
+export const DemotedCents: Story = {
+  render: () => ({
+    components: { MpKpiCard },
+    setup() {
+      const money = formatMoneyParts(84213.5)
+      return { money }
+    },
+    template: `
+      <div style="max-width: 320px;">
+        <MpKpiCard label="Net Sales" icon="dollar-sign" color="commerce" trend="+6.4%" :trendPositive="true" subStat="vs last month" value="">
+          <template #value>
+            <span class="mp-kpi-value mp-money">{{ money.symbol }}{{ money.integer }}<span class="mp-money__cents">.{{ money.cents }}</span></span>
+          </template>
+        </MpKpiCard>
       </div>
     `,
   }),

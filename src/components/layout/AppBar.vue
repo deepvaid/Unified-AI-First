@@ -646,7 +646,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 
 <style scoped lang="scss">
 .mp-appbar {
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   background: var(--surface-1);
 }
 
@@ -686,7 +686,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   border-radius: var(--r-pill);
   color: var(--ink);
   opacity: 1;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 
 .appbar-utilities :deep(.appbar-action-btn:hover),
@@ -795,7 +795,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   cursor: pointer;
   font: inherit;
   appearance: none;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
 
 .user-pill:hover {
@@ -952,7 +952,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   padding: 10px 12px;
   border-radius: 10px;
   cursor: pointer;
-  transition: background 120ms ease, transform 80ms ease;
+  transition: background var(--dur-fast) var(--ease), transform 80ms ease;
   width: 100%;
   text-align: left;
   background: none;
@@ -1055,7 +1055,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   border: 1px solid var(--hairline);
   border-radius: 10px;
   background: var(--surface-2);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 
 .um-switch-search:focus-within {
@@ -1177,7 +1177,8 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 :deep(.appbar-search input::placeholder) {
-  color: color-mix(in oklch, var(--muted) 70%, var(--ink) 30%);
+  color: var(--muted);
+  font-size: 13px;
   font-weight: 500;
   opacity: 1;
 }
@@ -1344,7 +1345,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
     color: var(--ink);
     appearance: none;
     cursor: pointer;
-    transition: background 120ms ease;
+    transition: background var(--dur-fast) var(--ease);
   }
 
   .appbar-hamburger-btn:hover,
@@ -1408,7 +1409,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   appearance: none;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 
 .appbar-create-btn :deep(svg) {

@@ -920,12 +920,12 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   --sidebar-text: var(--mp-color-sidebar-text, var(--ink));
   --sidebar-muted: var(--mp-color-sidebar-textMuted, var(--muted));
   --sidebar-hover-bg: color-mix(in oklch, var(--sidebar-text) 5%, transparent);
-  --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 9%, transparent);
+  --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 7%, transparent);
   --sidebar-active-text: var(--sidebar-text);
   --sidebar-focus-ring: color-mix(in oklch, var(--sidebar-text) 22%, transparent);
   --sidebar-radius: 8px;
   --sidebar-radius-sm: 10px;
-  --sidebar-transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  --sidebar-transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
   background: var(--sidebar-bg) !important;
   border-right: 1px solid var(--sidebar-border) !important;
   color: var(--sidebar-text);
@@ -970,13 +970,13 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   cursor: pointer;
   flex-shrink: 0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.30), 0 1px 2px rgba(0, 0, 0, 0.16);
-  transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 
 .sidebar-toggle-pill :deep(.v-icon) {
   color: var(--sidebar-text) !important;
   opacity: 0.95;
-  transition: opacity 120ms ease;
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
 .sidebar-toggle-pill:hover {
@@ -1003,9 +1003,9 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   transform: translateY(-50%);
   z-index: 1010;
   transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              background 120ms ease,
-              border-color 120ms ease,
-              box-shadow 120ms ease;
+              background var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease),
+              box-shadow var(--dur-fast) var(--ease);
 }
 
 /* Rail state — drop the pill to overlap the divider below the brand */
@@ -1040,7 +1040,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   color: var(--sidebar-text);
   font-size: 18px;
   font-weight: 800;
-  transition: opacity 120ms ease;
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
 .sidebar-brand--rail {
@@ -1060,7 +1060,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  transition: opacity 120ms ease;
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
 .sidebar-brand--rail:hover .rail-brand-box {
@@ -1146,7 +1146,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   background: var(--sidebar-active-bg) !important;
   box-shadow: none;
   color: var(--sidebar-active-text) !important;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 /* ─── Expanded-mode parent row: hover chevron (HubSpot-style) ─── */
@@ -1161,7 +1161,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .mp-sidebar :deep(.sidebar-parent-row__chevron) {
   opacity: 0 !important;
   color: var(--sidebar-muted);
-  transition: opacity 120ms ease;
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
 .mp-sidebar :deep(.sidebar-parent-row:hover .sidebar-parent-row__chevron) {
@@ -1172,7 +1172,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .mp-sidebar :deep(.sidebar-parent--flyout-open) {
   background: var(--sidebar-active-bg) !important;
   color: var(--sidebar-active-text) !important;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .mp-sidebar :deep(.sidebar-parent--flyout-open > .v-list-item__overlay) {
@@ -1182,7 +1182,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .mp-sidebar :deep(.sidebar-parent--flyout-open .v-list-item__prepend > .v-icon),
 .mp-sidebar :deep(.sidebar-parent--flyout-open .v-list-item-title) {
   color: var(--sidebar-active-text) !important;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .mp-sidebar :deep(.active-nav-item::before) {
@@ -1200,7 +1200,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
 .mp-sidebar :deep(.active-nav-item .v-list-item-title),
 .mp-sidebar :deep(.v-list-item--active .v-list-item-title) {
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .mp-sidebar :deep(.v-list-item__prepend .v-icon),
@@ -1251,8 +1251,8 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .mp-sidebar :deep(.v-list-item-title) {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 550;
   line-height: 1.2;
 }
 
@@ -1295,7 +1295,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   --sidebar-text: var(--ink);
   --sidebar-muted: color-mix(in oklch, var(--ink) 62%, transparent);
   --sidebar-hover-bg: color-mix(in oklch, var(--sidebar-text) 7%, transparent);
-  --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 14%, transparent);
+  --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 11%, transparent);
   --sidebar-active-text: var(--sidebar-text);
   --sidebar-radius: 8px;
   background: var(--surface-1);
@@ -1313,11 +1313,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   margin: -2px -2px 4px;
   padding: 8px 10px 7px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.25;
   color: var(--sidebar-muted);
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
   border-bottom: 1px solid var(--sidebar-border);
   background: inherit;
 }

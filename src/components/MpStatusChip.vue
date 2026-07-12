@@ -145,7 +145,7 @@ const iconPx = computed(() => (props.size === 'x-small' ? 11 : props.size === 's
     :size="size"
     :variant="variant"
     :color="chipColor"
-    class="mp-status-chip font-weight-medium"
+    class="mp-status-chip"
     label
   >
     <v-icon v-if="chipIcon" :size="iconPx" class="me-1 mp-status-chip__icon">{{ chipIcon }}</v-icon>
@@ -154,6 +154,21 @@ const iconPx = computed(() => (props.size === 'x-small' ? 11 : props.size === 's
 </template>
 
 <style scoped>
+/* Quiet, editorial chips: smaller tracked label, on-container text kept at full
+   strength for contrast, tonal fill dropped to ~60% of Vuetify's default. */
+.mp-status-chip.v-chip {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Reduce the tonal underlay to ~60% of Vuetify's default (0.12 → 0.072) so the
+   container reads as a whisper of colour. Text stays the dark on-container colour,
+   so contrast only improves. */
+.mp-status-chip.v-chip--variant-tonal :deep(.v-chip__underlay) {
+  opacity: 0.072;
+}
+
 .mp-status-chip__icon {
   color: currentColor;
   flex-shrink: 0;

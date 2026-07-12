@@ -7,9 +7,14 @@ withDefaults(defineProps<{
   backTo?: string | Record<string, unknown>
   level?: 1 | 2
   density?: 'default' | 'compact'
+  /** Muted, uppercase, tracked label above the title (e.g. "COMMERCE · ORDERS"). */
+  eyebrow?: string
+  /** 'display' renders the title (and subtitle) as a two-tone display-scale masthead. */
+  variant?: 'default' | 'display'
 }>(), {
   level: 1,
   density: 'default',
+  variant: 'default',
 })
 </script>
 
@@ -34,14 +39,26 @@ withDefaults(defineProps<{
 
       <div class="mp-page-header__main min-width-0 flex-grow-1 d-flex align-start ga-3">
         <div class="min-width-0 flex-grow-1">
-          <component
-            :is="level === 2 ? 'h2' : 'h1'"
-            class="mp-page-header__title font-weight-bold"
-            :class="level === 2 ? 'text-h6' : 'text-h5'"
-          >{{ title }}</component>
-          <div v-if="subtitle" class="mp-page-header__subtitle text-body-2 text-medium-emphasis mt-1">
-            {{ subtitle }}
+          <span v-if="eyebrow" class="mp-page-header__eyebrow mp-meta-label">{{ eyebrow }}</span>
+
+          <div v-if="variant === 'display'" class="mp-headline-duo">
+            <component
+              :is="level === 2 ? 'h2' : 'h1'"
+              class="is-ink mp-display-sm"
+            >{{ title }}</component>
+            <span v-if="subtitle" class="is-muted mp-display-sm">{{ subtitle }}</span>
           </div>
+
+          <template v-else>
+            <component
+              :is="level === 2 ? 'h2' : 'h1'"
+              class="mp-page-header__title mp-page-title"
+              :class="{ 'mp-page-title--sm': level === 2 }"
+            >{{ title }}</component>
+            <div v-if="subtitle" class="mp-page-header__subtitle mp-page-subtitle mt-1">
+              {{ subtitle }}
+            </div>
+          </template>
         </div>
         <div v-if="$slots.actions" class="d-flex align-center ga-2 flex-shrink-0">
           <slot name="actions" />
@@ -57,6 +74,19 @@ withDefaults(defineProps<{
 .mp-page-header__title {
   line-height: 1.2;
   color: rgb(var(--v-theme-on-surface));
+}
+
+/* Level-2 (drawer / settings-page) title: modest scale, not the full masthead. */
+.mp-page-title--sm {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.mp-page-header__eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .mp-page-header__subtitle {
