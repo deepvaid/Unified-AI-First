@@ -7,8 +7,10 @@ export type NodeCategory = 'trigger' | 'action' | 'filter' | 'delay' | 'end'
 export interface ConfigField {
   key: string
   label: string
-  type: 'text' | 'number' | 'select' | 'switch'
+  type: 'text' | 'number' | 'select' | 'switch' | 'content-picker' | 'multi-select'
   options?: string[]
+  /** Prefilled value when a node has no explicit config for this key yet. */
+  default?: string | number | boolean
 }
 
 export interface CatalogItem {
@@ -39,8 +41,11 @@ export interface FlowNode {
    * entry pointing at the flow's rejoin node marks an empty branch that joins.
    */
   children: string[]
-  config: Record<string, string | number | boolean>
+  config: Record<string, string | number | boolean | string[]>
   configured: boolean
+  /** Set by "Detach" in the node config panel: unlinked from the flow but kept
+   * around (visible in the builder's "detached steps" tray) instead of deleted. */
+  detached?: boolean
 }
 
 export interface JourneySettings {
@@ -62,7 +67,6 @@ export interface JourneyTemplate {
 
 const listOptions = ['All Contacts', 'Newsletter Subscribers', 'VIP Customer Circle', 'Win-Back Pool']
 const segmentOptions = ['High Spenders', 'Inactive 60 Days', 'Cart Abandoners', 'New This Month']
-const templateOptions = ['Welcome Email', 'Thank You Email', 'Review Request', 'Win-Back Offer', 'Upsell Offer']
 const fieldOptions = ['First Name', 'City', 'Loyalty Tier', 'Last Purchase Date']
 
 export const nodeCatalog: CatalogItem[] = [
@@ -116,9 +120,18 @@ export const nodeCatalog: CatalogItem[] = [
 
   // Actions
   { kind: 'send-email', category: 'action', title: 'Send Email', subtitle: 'Deliver a campaign email', icon: 'send', fields: [
-    { key: 'template', label: 'Email template', type: 'select', options: templateOptions },
-    { key: 'subject', label: 'Subject line', type: 'text' },
-    { key: 'sender', label: 'Sender name', type: 'text' },
+    { key: 'subject', label: 'Subject line*', type: 'text' },
+    { key: 'preheader', label: 'Preheader', type: 'text' },
+    { key: 'fromName', label: 'From Name*', type: 'text' },
+    { key: 'fromEmail', label: 'From Email*', type: 'text' },
+    { key: 'replyTo', label: 'Reply To*', type: 'text' },
+    { key: 'content', label: 'Content*', type: 'content-picker' },
+    { key: 'previewLink', label: 'Show email preview link', type: 'switch' },
+    { key: 'address', label: 'Address*', type: 'text' },
+    { key: 'brand', label: 'Brand', type: 'select', options: ['Default Brand', 'Secondary Brand'] },
+    { key: 'campaignTags', label: 'Campaign Tags', type: 'multi-select', options: ['VIP', 'Promo', 'Newsletter', 'Automated'] },
+    { key: 'secureSuppressionList', label: 'Secure Suppression List', type: 'multi-select', options: ['Do Not Mail', 'Legal Hold', 'Bounced Hard'] },
+    { key: 'language', label: 'Language*', type: 'select', options: ['English', 'Spanish', 'French', 'German'], default: 'English' },
   ] },
   { kind: 'http-post', category: 'action', title: 'HTTP Post', subtitle: 'Send data to external URL', icon: 'webhook', fields: [
     { key: 'url', label: 'Endpoint URL', type: 'text' },
@@ -168,8 +181,10 @@ export const nodeCatalog: CatalogItem[] = [
 
   // Delays
   { kind: 'delay', category: 'delay', title: 'Delay', subtitle: 'Pause for a fixed duration', icon: 'hourglass', fields: [
-    { key: 'duration', label: 'Duration', type: 'number' },
-    { key: 'unit', label: 'Unit', type: 'select', options: ['Minutes', 'Hours', 'Days', 'Weeks'] },
+    { key: 'months', label: 'Months', type: 'number', default: 0 },
+    { key: 'days', label: 'Days', type: 'number', default: 0 },
+    { key: 'hours', label: 'Hours', type: 'number', default: 0 },
+    { key: 'minutes', label: 'Minutes', type: 'number', default: 1 },
   ] },
   { kind: 'delay-until', category: 'delay', title: 'Delay Until', subtitle: 'Pause until a date or time', icon: 'calendar-clock', fields: [
     { key: 'date', label: 'Date', type: 'text' },
@@ -252,7 +267,7 @@ interface NodeSeed {
   contacts?: number
   branchLabels?: string[]
   children?: string[]
-  config?: Record<string, string | number | boolean>
+  config?: Record<string, string | number | boolean | string[]>
   configured?: boolean
 }
 
@@ -289,13 +304,13 @@ export const journeyTemplates: JourneyTemplate[] = [
   },
   {
     id: 'welcome',
-    name: 'Welcome Series',
+    name: 'Welcome',
     description: 'Greet new subscribers, follow up with your brand story, and tag everyone who finishes onboarding.',
     icon: 'hand-metal',
     nodes: [
       makeNode({ id: 'w1', kind: 'new-subscription', subtitle: 'Newsletter Subscribers', config: { list: 'Newsletter Subscribers' }, children: ['w2'] }),
-      makeNode({ id: 'w2', kind: 'send-email', title: 'Send: Welcome Email', subtitle: 'Subject: "Welcome aboard! 👋"', config: { template: 'Welcome Email' }, children: ['w3'] }),
-      makeNode({ id: 'w3', kind: 'delay', title: 'Wait 2 Days', subtitle: 'Let the welcome land', config: { duration: 2, unit: 'Days' }, children: ['w4'] }),
+      makeNode({ id: 'w2', kind: 'send-email', title: 'Send: Welcome Email', subtitle: 'Subject: "Welcome aboard! 👋"', config: { content: 'Welcome Email' }, children: ['w3'] }),
+      makeNode({ id: 'w3', kind: 'delay', title: 'Wait 2 Days', subtitle: 'Let the welcome land', config: { months: 0, days: 2, hours: 0, minutes: 0 }, children: ['w4'] }),
       makeNode({ id: 'w4', kind: 'yes-no', title: 'Opened welcome email?', subtitle: 'Check open event on Email #1', children: ['w5', 'w6'] }),
       makeNode({ id: 'w5', kind: 'send-email', title: 'Send: Our Brand Story', subtitle: 'Subject: "How it all started"', children: ['w7'] }),
       makeNode({ id: 'w6', kind: 'send-email', title: 'Resend: New Subject', subtitle: 'Subject: "You forgot something 👀"', children: ['w7'] }),
@@ -309,9 +324,9 @@ export const journeyTemplates: JourneyTemplate[] = [
     icon: 'shopping-basket',
     nodes: [
       makeNode({ id: 'c1', kind: 'abandoned-cart', subtitle: 'Cart idle for 60 minutes', config: { idle: 60 }, children: ['c2'] }),
-      makeNode({ id: 'c2', kind: 'delay', title: 'Wait 1 Hour', subtitle: 'Grace period', config: { duration: 1, unit: 'Hours' }, children: ['c3'] }),
+      makeNode({ id: 'c2', kind: 'delay', title: 'Wait 1 Hour', subtitle: 'Grace period', config: { months: 0, days: 0, hours: 1, minutes: 0 }, children: ['c3'] }),
       makeNode({ id: 'c3', kind: 'send-email', title: 'Send: You Left Something', subtitle: 'Subject: "Your cart misses you"', children: ['c4'] }),
-      makeNode({ id: 'c4', kind: 'delay', title: 'Wait 1 Day', subtitle: 'Give them time to return', config: { duration: 1, unit: 'Days' }, children: ['c5'] }),
+      makeNode({ id: 'c4', kind: 'delay', title: 'Wait 1 Day', subtitle: 'Give them time to return', config: { months: 0, days: 1, hours: 0, minutes: 0 }, children: ['c5'] }),
       makeNode({ id: 'c5', kind: 'yes-no', title: 'Purchased?', subtitle: 'Check for a completed order', children: ['c6', 'c7'] }),
       makeNode({ id: 'c6', kind: 'change-tags', title: 'Apply Tag: Recovered', subtitle: 'Cart recovered — journey ends', config: { tag: 'Recovered', operation: 'Apply tag' } }),
       makeNode({ id: 'c7', kind: 'send-email', title: 'Send: 10% Off Your Cart', subtitle: 'Subject: "Still thinking it over? Here\'s 10% off"', children: [] }),
@@ -325,9 +340,9 @@ export const journeyTemplates: JourneyTemplate[] = [
     nodes: [
       makeNode({ id: 'n1', kind: 'form-event', subtitle: 'Footer Signup form', config: { form: 'Footer Signup' }, children: ['n2'] }),
       makeNode({ id: 'n2', kind: 'send-email', title: 'Send: Getting-Started Guide', subtitle: 'Subject: "Your guide is inside"', children: ['n3'] }),
-      makeNode({ id: 'n3', kind: 'delay', title: 'Wait 3 Days', subtitle: 'Reading time', config: { duration: 3, unit: 'Days' }, children: ['n4'] }),
+      makeNode({ id: 'n3', kind: 'delay', title: 'Wait 3 Days', subtitle: 'Reading time', config: { months: 0, days: 3, hours: 0, minutes: 0 }, children: ['n4'] }),
       makeNode({ id: 'n4', kind: 'send-email', title: 'Send: Customer Case Study', subtitle: 'Subject: "How Mia doubled her sales"', children: ['n5'] }),
-      makeNode({ id: 'n5', kind: 'delay', title: 'Wait 4 Days', subtitle: 'Follow-up window', config: { duration: 4, unit: 'Days' }, children: ['n6'] }),
+      makeNode({ id: 'n5', kind: 'delay', title: 'Wait 4 Days', subtitle: 'Follow-up window', config: { months: 0, days: 4, hours: 0, minutes: 0 }, children: ['n6'] }),
       makeNode({ id: 'n6', kind: 'yes-no', title: 'Clicked any link?', subtitle: 'Engagement check across both emails', children: ['n7', 'n8'] }),
       makeNode({ id: 'n7', kind: 'change-tags', title: 'Apply Tag: Sales-Ready', subtitle: 'Hand off to the sales pipeline', config: { tag: 'Sales-Ready', operation: 'Apply tag' } }),
       makeNode({ id: 'n8', kind: 'change-subscription', title: 'Move to Long-Term List', subtitle: 'Keep nurturing monthly', config: { list: 'Newsletter Subscribers', operation: 'Subscribe' } }),
@@ -342,24 +357,24 @@ export const journeyTemplates: JourneyTemplate[] = [
       makeNode({ id: 'a1', kind: 'total-revenue', subtitle: 'Lifetime spend over $500', config: { threshold: 500 }, children: ['a2'] }),
       makeNode({ id: 'a2', kind: 'change-tags', title: 'Apply Tag: VIP', subtitle: 'Unlock VIP segment perks', config: { tag: 'VIP', operation: 'Apply tag' }, children: ['a3'] }),
       makeNode({ id: 'a3', kind: 'send-email', title: 'Send: VIP Welcome', subtitle: 'Subject: "You\'re in — welcome to the inner circle"', children: ['a4'] }),
-      makeNode({ id: 'a4', kind: 'delay', title: 'Wait 7 Days', subtitle: 'Let the perks sink in', config: { duration: 7, unit: 'Days' }, children: ['a5'] }),
+      makeNode({ id: 'a4', kind: 'delay', title: 'Wait 7 Days', subtitle: 'Let the perks sink in', config: { months: 0, days: 7, hours: 0, minutes: 0 }, children: ['a5'] }),
       makeNode({ id: 'a5', kind: 'yes-no', title: 'Opened VIP welcome?', subtitle: 'Only invite engaged VIPs', children: ['a6', ''] }),
       makeNode({ id: 'a6', kind: 'send-email', title: 'Send: Referral Invite', subtitle: 'Subject: "Give $20, get $20"', children: [] }),
     ],
   },
   {
     id: 're-engagement',
-    name: 'Email Re-Engagement',
+    name: 'Email Re-engagement',
     description: 'Win back quiet subscribers — and stop mailing the ones who stay silent.',
     icon: 'refresh-ccw',
     nodes: [
       makeNode({ id: 'r1', kind: 'segment-event', subtitle: 'Enters "Inactive 60 Days"', config: { segment: 'Inactive 60 Days', direction: 'Enters segment' }, children: ['r2'] }),
       makeNode({ id: 'r2', kind: 'send-email', title: 'Send: We Miss You', subtitle: 'Subject: "It\'s been a while…"', children: ['r3'] }),
-      makeNode({ id: 'r3', kind: 'delay', title: 'Wait 3 Days', subtitle: 'Response window', config: { duration: 3, unit: 'Days' }, children: ['r4'] }),
+      makeNode({ id: 'r3', kind: 'delay', title: 'Wait 3 Days', subtitle: 'Response window', config: { months: 0, days: 3, hours: 0, minutes: 0 }, children: ['r4'] }),
       makeNode({ id: 'r4', kind: 'yes-no', title: 'Opened the email?', subtitle: 'Re-engagement check', children: ['r5', 'r6'] }),
       makeNode({ id: 'r5', kind: 'change-tags', title: 'Apply Tag: Re-Engaged', subtitle: 'Back in the active pool', config: { tag: 'Re-Engaged', operation: 'Apply tag' } }),
       makeNode({ id: 'r6', kind: 'send-email', title: 'Send: Last Chance', subtitle: 'Subject: "Should we stop emailing you?"', children: ['r7'] }),
-      makeNode({ id: 'r7', kind: 'delay', title: 'Wait 4 Days', subtitle: 'Final response window', config: { duration: 4, unit: 'Days' }, children: ['r8'] }),
+      makeNode({ id: 'r7', kind: 'delay', title: 'Wait 4 Days', subtitle: 'Final response window', config: { months: 0, days: 4, hours: 0, minutes: 0 }, children: ['r8'] }),
       makeNode({ id: 'r8', kind: 'add-to-dnm', title: 'Add to Do Not Mail', subtitle: 'No response — suppress sends', config: { reason: 'Unresponsive 60+ days' } }),
     ],
   },
@@ -371,7 +386,7 @@ export const journeyTemplates: JourneyTemplate[] = [
     nodes: [
       makeNode({ id: 'l1', kind: 'segment-event', subtitle: 'Enters "No purchase in 90 days"', config: { segment: 'Inactive 60 Days', direction: 'Enters segment' }, children: ['l2'] }),
       makeNode({ id: 'l2', kind: 'send-email', title: 'Send: Win-Back 15% Off', subtitle: 'Subject: "We saved you a seat (and 15%)"', children: ['l3'] }),
-      makeNode({ id: 'l3', kind: 'delay', title: 'Wait 5 Days', subtitle: 'Redemption window', config: { duration: 5, unit: 'Days' }, children: ['l4'] }),
+      makeNode({ id: 'l3', kind: 'delay', title: 'Wait 5 Days', subtitle: 'Redemption window', config: { months: 0, days: 5, hours: 0, minutes: 0 }, children: ['l4'] }),
       makeNode({ id: 'l4', kind: 'yes-no', title: 'Purchased?', subtitle: 'Check for a completed order', children: ['l5', 'l6'] }),
       makeNode({ id: 'l5', kind: 'change-tags', title: 'Apply Tag: Won Back', subtitle: 'Recovered customer', config: { tag: 'Won Back', operation: 'Apply tag' } }),
       makeNode({ id: 'l6', kind: 'ab-split', title: 'Test final offer subject', subtitle: 'Split remaining contacts 50/50', children: ['l7', 'l8'] }),
@@ -385,16 +400,21 @@ export const templateById: Record<string, JourneyTemplate> = Object.fromEntries(
   journeyTemplates.map(t => [t.id, t]),
 )
 
-/** Clones a template's node graph with prefixed ids. */
-export function instantiateFrom(tpl: JourneyTemplate, prefix: string): FlowNode[] {
-  const idMap = new Map(tpl.nodes.map(n => [n.id, `${prefix}-${n.id}`]))
-  return tpl.nodes.map(n => ({
+/** Clones a node graph with prefixed ids (edges rewritten to match). */
+export function cloneFlowNodes(nodes: FlowNode[], prefix: string): FlowNode[] {
+  const idMap = new Map(nodes.map(n => [n.id, `${prefix}-${n.id}`]))
+  return nodes.map(n => ({
     ...n,
     id: idMap.get(n.id)!,
     branchLabels: n.branchLabels ? [...n.branchLabels] : undefined,
     children: n.children.map(c => (c === '' ? '' : idMap.get(c) ?? '')),
     config: { ...n.config },
   }))
+}
+
+/** Clones a template's node graph with prefixed ids. */
+export function instantiateFrom(tpl: JourneyTemplate, prefix: string): FlowNode[] {
+  return cloneFlowNodes(tpl.nodes, prefix)
 }
 
 /** Clones a marketing template's graph with journey-scoped node ids. */
@@ -466,9 +486,9 @@ export function seedJourneyFlows(): Record<number, FlowNode[]> {
     // Journey 3 keeps its original post-purchase graph (converted to the new shape).
     3: [
       makeNode({ id: 'j3-n1', kind: 'product-purchased', subtitle: 'Any order with total > $0', contacts: 1240, config: { condition: 'Any order' }, children: ['j3-n2'] }),
-      makeNode({ id: 'j3-n2', kind: 'delay', title: 'Wait 2 Hours', subtitle: 'Processing window', contacts: 1240, config: { duration: 2, unit: 'Hours' }, children: ['j3-n3'] }),
-      makeNode({ id: 'j3-n3', kind: 'send-email', title: 'Send: Thank You Email', subtitle: 'Subject: "Your order is confirmed! 🎉"', contacts: 1235, config: { template: 'Thank You Email' }, children: ['j3-n4'] }),
-      makeNode({ id: 'j3-n4', kind: 'delay', title: 'Wait 7 Days', subtitle: 'Allow delivery + use time', contacts: 1180, config: { duration: 7, unit: 'Days' }, children: ['j3-n5'] }),
+      makeNode({ id: 'j3-n2', kind: 'delay', title: 'Wait 2 Hours', subtitle: 'Processing window', contacts: 1240, config: { months: 0, days: 0, hours: 2, minutes: 0 }, children: ['j3-n3'] }),
+      makeNode({ id: 'j3-n3', kind: 'send-email', title: 'Send: Thank You Email', subtitle: 'Subject: "Your order is confirmed! 🎉"', contacts: 1235, config: { content: 'Thank You Email' }, children: ['j3-n4'] }),
+      makeNode({ id: 'j3-n4', kind: 'delay', title: 'Wait 7 Days', subtitle: 'Allow delivery + use time', contacts: 1180, config: { months: 0, days: 7, hours: 0, minutes: 0 }, children: ['j3-n5'] }),
       makeNode({ id: 'j3-n5', kind: 'yes-no', title: 'Opened Thank You Email?', subtitle: 'Check open event on Email #1', contacts: 1170, children: ['j3-n6', 'j3-n7'] }),
       makeNode({ id: 'j3-n6', kind: 'send-email', title: 'Send: Review Request', subtitle: 'Subject: "How did we do? ⭐"', contacts: 690, children: ['j3-n8'] }),
       makeNode({ id: 'j3-n7', kind: 'send-email', title: 'Resend: New Subject', subtitle: 'Subject: "One quick question 👋"', contacts: 480, children: ['j3-n8'] }),

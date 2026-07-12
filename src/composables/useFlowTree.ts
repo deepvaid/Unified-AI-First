@@ -156,6 +156,28 @@ export function addNodeAfter(nodes: FlowNode[], afterId: string, item: CatalogIt
 }
 
 /**
+ * Detaches a linear (action/delay) node from the flow: rewires its parent to
+ * skip it, like {@link removeNode}, but keeps the node in the array — flagged
+ * `detached` — instead of deleting it, so it stays visible in the builder's
+ * "detached steps" tray. Not supported for triggers, filters, or end steps.
+ */
+export function detachNode(nodes: FlowNode[], id: string): void {
+  const target = nodeById(nodes, id)
+  if (!target || isFilter(target) || target.category === 'trigger' || target.category === 'end') return
+  const replacement = target.children[0] ?? ''
+  for (const n of nodes) {
+    if (n.id === id || !n.children.includes(id)) continue
+    if (isFilter(n)) {
+      n.children = n.children.map(c => (c === id ? replacement : c))
+    } else {
+      n.children = replacement ? [replacement] : []
+    }
+  }
+  target.children = []
+  target.detached = true
+}
+
+/**
  * Removes a node. Linear nodes splice out; filter nodes remove their whole
  * branch subtrees down to the join (if any) and reconnect parents to it.
  * Returns the ids of every removed node.

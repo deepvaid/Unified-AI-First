@@ -80,6 +80,13 @@ const endsRun = computed(() => {
         </button>
 
         <div class="flow-node__tools">
+          <!-- Hover badges (legacy parity): quick duplicate/delete without opening the kebab -->
+          <v-btn icon="copy" variant="text" size="x-small" class="flow-node__hover-badge"
+            :disabled="seg.node.category === 'trigger' || seg.node.category === 'filter'"
+            :aria-label="`Duplicate ${seg.node.title}`" @click.stop="emit('duplicate', seg.node.id)"></v-btn>
+          <v-btn icon="trash-2" variant="text" size="x-small" color="error" class="flow-node__hover-badge"
+            :disabled="seg.node.category === 'trigger'"
+            :aria-label="`Delete ${seg.node.title}`" @click.stop="emit('remove', seg.node.id)"></v-btn>
           <v-menu location="bottom end">
             <template #activator="{ props: menu }">
               <v-btn v-bind="menu" icon="more-vertical" variant="text" size="x-small"
@@ -178,7 +185,10 @@ const endsRun = computed(() => {
 .flow-node__title { font-size: 0.875rem; font-weight: 700; color: rgb(var(--v-theme-on-surface)); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .flow-node__meta { display: inline-flex; align-items: center; margin-top: 2px; font-size: 0.6875rem; font-weight: 600; line-height: 1.3; color: rgba(var(--v-theme-on-surface), 0.6); }
 .flow-node__body { display: block; padding: 10px 14px; font-size: 0.75rem; color: rgba(var(--v-theme-on-surface), 0.65); }
-.flow-node__tools { position: absolute; top: 8px; right: 8px; }
+.flow-node__tools { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; }
+.flow-node__hover-badge { opacity: 0; transition: opacity 0.15s; }
+.flow-node-wrap:hover .flow-node__hover-badge,
+.flow-node__hover-badge:focus-visible { opacity: 1; }
 .flow-node__warn { margin-left: auto; flex-shrink: 0; }
 
 .flow-connector { width: 2px; height: 22px; background: rgba(var(--v-border-color), 0.6); flex-shrink: 0; }

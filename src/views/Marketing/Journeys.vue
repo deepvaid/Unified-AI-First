@@ -9,6 +9,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusToggle from '@/components/MpStatusToggle.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
 const store = useCampaignsStore()
 const router = useRouter()
@@ -50,9 +51,15 @@ const headers = [
   { title: 'Enrolled', key: 'enrolled', align: 'end' as const, sortable: true },
   { title: 'Completed', key: 'completed', align: 'end' as const, sortable: true },
   { title: 'Revenue', key: 'revenue', align: 'end' as const, sortable: true },
+  { title: 'Items', key: 'items', align: 'end' as const, sortable: true, width: 90 },
   { title: 'Created', key: 'created', sortable: true },
   { title: '', key: 'actions', sortable: false, width: 72 },
 ]
+
+/** Node count in a journey's flow — mirrors the legacy list's "Items" column. */
+function itemsCount(id: number) {
+  return store.journeyFlows[id]?.length ?? 0
+}
 
 const tabs = [
   { label: 'All', key: 'all' },
@@ -79,6 +86,38 @@ const tabCount = (key: string) => {
 // Toggle journey status between Active and Paused
 function toggleStatus(journey: typeof store.journeys[0]) {
   journey.status = journey.status === 'Active' ? 'Paused' : 'Active'
+}
+
+const toastOpen = ref(false)
+const toastMessage = ref('')
+
+function duplicateJourney(journey: typeof store.journeys[0]) {
+  store.duplicateJourney(journey.id)
+  toastMessage.value = `Duplicated "${journey.name}"`
+  toastOpen.value = true
+}
+
+function viewAnalytics() {
+  router.push({ name: 'JourneyReports', params: { accountId: accountId.value } })
+}
+
+const deleteDialogOpen = ref(false)
+const deleteTarget = ref<typeof store.journeys[0] | null>(null)
+
+function requestDelete(journey: typeof store.journeys[0]) {
+  if (journey.status === 'Active') {
+    toastMessage.value = `Pause "${journey.name}" before deleting.`
+    toastOpen.value = true
+    return
+  }
+  deleteTarget.value = journey
+  deleteDialogOpen.value = true
+}
+
+function confirmDelete() {
+  if (deleteTarget.value) store.deleteJourney(deleteTarget.value.id)
+  deleteDialogOpen.value = false
+  deleteTarget.value = null
 }
 </script>
 
@@ -164,6 +203,11 @@ function toggleStatus(journey: typeof store.journeys[0]) {
           </span>
         </template>
 
+        <!-- Items (node count) -->
+        <template v-slot:item.items="{ item }">
+          <span class="text-medium-emphasis">{{ itemsCount(item.id) }}</span>
+        </template>
+
         <!-- Created date -->
         <template v-slot:item.created="{ item }">
           <span class="text-medium-emphasis text-body-2 created-cell">{{ fmtDate(item.created) }}</span>
@@ -186,8 +230,8 @@ function toggleStatus(journey: typeof store.journeys[0]) {
               </template>
             </v-tooltip>
             <MpRowActionsMenu ariaLabel="Journey actions">
-              <v-list-item prepend-icon="bar-chart-2" title="View analytics" value="analytics"></v-list-item>
-              <v-list-item prepend-icon="copy" title="Duplicate" value="duplicate"></v-list-item>
+              <v-list-item prepend-icon="bar-chart-2" title="View analytics" value="analytics" @click="viewAnalytics()"></v-list-item>
+              <v-list-item prepend-icon="copy" title="Duplicate" value="duplicate" @click="duplicateJourney(item)"></v-list-item>
               <v-list-item
                 :prepend-icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
                 :title="item.status === 'Active' ? 'Pause journey' : 'Activate journey'"
@@ -195,7 +239,7 @@ function toggleStatus(journey: typeof store.journeys[0]) {
                 @click="toggleStatus(item)"
               ></v-list-item>
               <v-divider></v-divider>
-              <v-list-item prepend-icon="trash-2" title="Delete" value="delete" class="text-error"></v-list-item>
+              <v-list-item prepend-icon="trash-2" title="Delete" value="delete" class="text-error" @click="requestDelete(item)"></v-list-item>
             </MpRowActionsMenu>
           </div>
         </template>
@@ -213,6 +257,19 @@ function toggleStatus(journey: typeof store.journeys[0]) {
         </template>
       </v-data-table>
     </v-card>
+
+    <MpConfirmDialog
+      v-model="deleteDialogOpen"
+      danger
+      title="Delete this journey?"
+      :message="`&quot;${deleteTarget?.name}&quot; and its flow will be permanently deleted. This can't be undone.`"
+      confirm-label="Delete journey"
+      @confirm="confirmDelete"
+    />
+
+    <v-snackbar v-model="toastOpen" :timeout="3000" rounded="pill" location="bottom center">
+      {{ toastMessage }}
+    </v-snackbar>
   </div>
 </template>
 

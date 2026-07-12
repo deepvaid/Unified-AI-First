@@ -8,9 +8,10 @@ import JourneyFlowColumn from '@/components/marketing/JourneyFlowColumn.vue'
 import { useCampaignsStore, type JourneyStatus } from '@/stores/useCampaigns'
 import { useDataJourneysStore } from '@/stores/useDataJourneys'
 import { useCopilotStore } from '@/stores/useCopilot'
+import { useContentStore } from '@/stores/useContent'
 import type { CatalogItem, FlowNode, NodeCategory } from '@/stores/journeyFlowData'
 import { catalogByKind, dataNodeCatalog, nodeCatalog } from '@/stores/journeyFlowData'
-import { addNodeAfter as insertNodeAfter, buildSegments, flowValidation, removeNode } from '@/composables/useFlowTree'
+import { addNodeAfter as insertNodeAfter, buildSegments, detachNode, flowValidation, removeNode } from '@/composables/useFlowTree'
 
 const router = useRouter()
 const route = useRoute()
@@ -24,6 +25,8 @@ const listRoute = computed(() => ({ name: isData.value ? 'DataJourneys' : 'Journ
 
 const store = useCampaignsStore()
 const dataStore = useDataJourneysStore()
+const contentStore = useContentStore()
+const contentNames = computed(() => contentStore.items.map(c => c.name))
 const journeyId = computed(() => Number(route.params.id))
 const journey = computed(() =>
   isData.value
@@ -38,6 +41,20 @@ const domainCatalog = computed(() => (isData.value ? dataNodeCatalog : nodeCatal
 function setStatus(status: JourneyStatus) {
   if (isData.value) dataStore.setDataJourneyStatus(journeyId.value, status)
   else store.setJourneyStatus(journeyId.value, status)
+}
+
+// ── Save persistence + dirty indicator ───────────────────────────────────────
+// Node edits already mutate the store's live flow array; "persisting" stamps an
+// updated timestamp (marketing journeys only — data journeys have no such API)
+// and moves the dirty snapshot forward so the "Unsaved changes" chip clears.
+const savedSnapshot = ref('')
+function snapshotNodes() { savedSnapshot.value = JSON.stringify(nodes.value) }
+watch(journeyId, () => snapshotNodes(), { immediate: true })
+const isDirty = computed(() => JSON.stringify(nodes.value) !== savedSnapshot.value)
+
+function persistFlow() {
+  if (!isData.value) store.saveJourneyFlow(journeyId.value, nodes.value)
+  snapshotNodes()
 }
 
 // Node colour is driven purely by category (the Liquid Sky reference colour-codes
@@ -169,9 +186,27 @@ function performDelete(id: string) {
   if (selectedNodeId.value && removed.includes(selectedNodeId.value)) selectedNodeId.value = null
 }
 
+// ── Detach ────────────────────────────────────────────────────────────────────
+// "Detach" (config panel footer) unlinks a step from the flow but keeps it
+// around — parked in a "detached steps" tray — rather than deleting it outright.
+const detachedNodes = computed(() => nodes.value.filter(n => n.detached))
+const canDetach = computed(() => {
+  const c = selectedNode.value?.category
+  return c === 'action' || c === 'delay'
+})
+function detachSelected() {
+  if (!selectedNode.value || !canDetach.value) return
+  detachNode(nodes.value, selectedNode.value.id)
+  selectedNodeId.value = null
+}
+function purgeDetached(id: string) {
+  const idx = nodes.value.findIndex(n => n.id === id)
+  if (idx !== -1) nodes.value.splice(idx, 1)
+}
+
 // ── Config panel draft (name + description + schema-driven fields) ───────────
 const draft = reactive({ title: '', subtitle: '' })
-const draftConfig = ref<Record<string, string | number | boolean>>({})
+const draftConfig = ref<Record<string, string | number | boolean | string[]>>({})
 const selectedFields = computed(() => catalogByKind[selectedNode.value?.kind ?? '']?.fields ?? [])
 
 watch(selectedNodeId, () => {
@@ -179,9 +214,15 @@ watch(selectedNodeId, () => {
   if (!n) return
   draft.title = n.title
   draft.subtitle = n.subtitle
-  const config: Record<string, string | number | boolean> = {}
+  const config: Record<string, string | number | boolean | string[]> = {}
   for (const f of catalogByKind[n.kind]?.fields ?? []) {
-    config[f.key] = n.config[f.key] ?? (f.type === 'switch' ? false : f.type === 'select' ? f.options?.[0] ?? '' : '')
+    const existing = n.config[f.key]
+    if (existing != null) { config[f.key] = existing; continue }
+    if (f.default != null) { config[f.key] = f.default; continue }
+    config[f.key] = f.type === 'switch' ? false
+      : f.type === 'multi-select' ? []
+      : f.type === 'select' || f.type === 'content-picker' ? f.options?.[0] ?? ''
+      : ''
   }
   draftConfig.value = config
 })
@@ -193,7 +234,7 @@ function saveNode() {
     n.subtitle = draft.subtitle
     for (const f of selectedFields.value) {
       const v = draftConfig.value[f.key]
-      n.config[f.key] = f.type === 'number' ? Number(v) || 0 : v ?? ''
+      n.config[f.key] = f.type === 'number' ? Number(v) || 0 : (v ?? (f.type === 'multi-select' ? [] : ''))
     }
     n.configured = true
   }
@@ -203,7 +244,16 @@ function saveNode() {
 }
 function cancelPanel() { selectedNodeId.value = null }
 
-function saveDraftJourney() { saveMessage.value = 'Draft saved'; saveSnack.value = true }
+function removeSelected() {
+  if (!selectedNode.value) return
+  deleteNode(selectedNode.value.id)
+}
+
+function saveDraftJourney() {
+  persistFlow()
+  saveMessage.value = 'Draft saved'
+  saveSnack.value = true
+}
 
 const copilot = useCopilotStore()
 function askDaVinci() {
@@ -218,6 +268,7 @@ const issuesOpen = ref(false)
 function tryActivate() {
   if (journeyStatus.value === 'Active') {
     setStatus('Paused')
+    persistFlow()
     saveMessage.value = 'Journey paused'
     saveSnack.value = true
     void nextTick(() => { issuesOpen.value = false })
@@ -228,6 +279,7 @@ function tryActivate() {
     return
   }
   setStatus('Active')
+  persistFlow()
   saveMessage.value = 'Journey activated'
   saveSnack.value = true
   void nextTick(() => { issuesOpen.value = false })
@@ -237,6 +289,44 @@ function jumpToIssue(nodeId?: string) {
   if (nodeId) selectedNodeId.value = nodeId
   issuesOpen.value = false
 }
+
+// ── Node config panel: live-stats strip ──────────────────────────────────────
+// Mock, deterministic contact stats per node (no Math.random in render): seeded
+// from the node's own contact count where the store has one, otherwise from a
+// hash of its id; the refresh icon bumps a per-node counter to vary the number.
+const statsRefreshSeed = reactive<Record<string, number>>({})
+function hashSeed(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+function refreshStats(nodeId: string) {
+  statsRefreshSeed[nodeId] = (statsRefreshSeed[nodeId] ?? 0) + 1
+}
+const nodeStatValue = computed(() => {
+  const n = selectedNode.value
+  if (!n) return 0
+  const seed = statsRefreshSeed[n.id] ?? 0
+  if (n.contacts != null) {
+    if (seed === 0) return n.contacts
+    const delta = (hashSeed(`${n.id}:${seed}`) % 41) - 20
+    return Math.max(0, n.contacts + delta)
+  }
+  return 50 + (hashSeed(`${n.id}:${seed}`) % 950)
+})
+const statsLabel = computed(() => {
+  const n = selectedNode.value
+  if (!n) return ''
+  const count = nodeStatValue.value
+  const v = count.toLocaleString()
+  switch (n.category) {
+    case 'trigger': return `${v} contact${count === 1 ? '' : 's'} entered through this trigger`
+    case 'delay': return `${v} contact${count === 1 ? '' : 's'} waiting in this delay`
+    case 'filter': return `${v} contact${count === 1 ? '' : 's'} routed through this split`
+    case 'action': return `${v} contact${count === 1 ? '' : 's'} passed through this step`
+    default: return ''
+  }
+})
 
 // ── Canvas zoom ───────────────────────────────────────────────────────────────
 const zoom = ref(1)
@@ -283,17 +373,13 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
           style="width:320px;" aria-label="Journey name"
           @blur="journeyName = nameInput; editingName = false" @keyup.enter="journeyName = nameInput; editingName = false"></v-text-field>
         <MpStatusChip :status="journeyStatus" type="general" size="x-small" />
+        <v-chip v-if="isDirty" size="x-small" color="warning" variant="tonal" class="font-weight-bold">Unsaved changes</v-chip>
       </div>
       <div class="d-flex align-center gap-2">
         <v-tooltip text="Ask Da Vinci to review this journey" location="bottom">
           <template #activator="{ props }">
             <v-btn v-bind="props" icon="sparkles" variant="text" size="small" color="primary"
               aria-label="Ask Da Vinci to review this journey" @click="askDaVinci"></v-btn>
-          </template>
-        </v-tooltip>
-        <v-tooltip text="Journey settings" location="bottom">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" icon="settings" variant="text" size="small" aria-label="Journey settings"></v-btn>
           </template>
         </v-tooltip>
         <v-btn v-if="issues.length" variant="text" size="small" class="text-none" prepend-icon="triangle-alert"
@@ -331,6 +417,18 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
           </v-card>
         </v-menu>
       </div>
+    </div>
+
+    <!-- Detached steps tray -->
+    <div v-if="detachedNodes.length" class="jb-detached d-flex align-center flex-wrap gap-2 px-5 py-2 border-b bg-surface flex-shrink-0">
+      <v-icon size="16" class="text-medium-emphasis">unlink</v-icon>
+      <span class="text-caption font-weight-bold text-medium-emphasis">
+        {{ detachedNodes.length }} detached step{{ detachedNodes.length === 1 ? '' : 's' }}
+      </span>
+      <v-chip v-for="n in detachedNodes" :key="n.id" size="small" variant="tonal" closable
+        :aria-label="`Permanently remove detached step: ${n.title}`" @click:close="purgeDetached(n.id)">
+        {{ n.title }}
+      </v-chip>
     </div>
 
     <!-- Body -->
@@ -419,6 +517,17 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
             This step isn't configured yet — review the settings below and save.
           </v-alert>
 
+          <!-- Live-stats strip -->
+          <div v-if="statsLabel" class="jb-stats d-flex align-center gap-2 pa-3 mb-4 border rounded-lg bg-background">
+            <v-icon size="16" class="text-medium-emphasis flex-shrink-0">users</v-icon>
+            <span class="text-caption flex-grow-1">{{ statsLabel }}</span>
+            <router-link :to="{ name: 'AllContacts', params: { accountId } }" class="text-caption font-weight-bold text-primary jb-stats__link">
+              View contacts
+            </router-link>
+            <v-btn icon="refresh-cw" variant="text" size="x-small" aria-label="Refresh contact stats"
+              @click="refreshStats(selectedNode.id)"></v-btn>
+          </div>
+
           <v-text-field v-model="draft.title" label="Step name" variant="outlined" density="compact" class="mb-3"></v-text-field>
           <v-text-field v-model="draft.subtitle" label="Description" variant="outlined" density="compact" class="mb-4"></v-text-field>
           <v-divider v-if="selectedFields.length" class="mb-4"></v-divider>
@@ -428,6 +537,12 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
             <v-select v-if="f.type === 'select'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="f.options"
               variant="outlined" density="compact" class="mb-3"
               @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
+            <v-select v-else-if="f.type === 'content-picker'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="contentNames"
+              variant="outlined" density="compact" class="mb-3" prepend-inner-icon="file-text"
+              @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
+            <v-select v-else-if="f.type === 'multi-select'" :model-value="(draftConfig[f.key] as string[] ?? [])" :label="f.label" :items="f.options"
+              variant="outlined" density="compact" class="mb-3" multiple chips closable-chips
+              @update:model-value="(v: string[]) => draftConfig[f.key] = v"></v-select>
             <v-text-field v-else-if="f.type === 'number'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" type="number"
               variant="outlined" density="compact" class="mb-3"
               @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
@@ -447,8 +562,10 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
         </div>
 
         <div class="pa-4 border-t d-flex gap-2 flex-shrink-0">
-          <v-btn variant="outlined" class="text-none flex-grow-1" @click="cancelPanel">Cancel</v-btn>
           <v-btn color="primary" variant="flat" class="text-none flex-grow-1" @click="saveNode">Save</v-btn>
+          <v-btn variant="outlined" class="text-none" :disabled="!canDetach" @click="detachSelected">Detach</v-btn>
+          <v-btn variant="outlined" color="error" class="text-none" :disabled="selectedNode.category === 'trigger'"
+            @click="removeSelected">Remove</v-btn>
         </div>
       </aside>
     </div>
@@ -521,4 +638,11 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
 
 /* ── Config panel ────────────────────────────────────────────────────────── */
 .jb-panel { width: 340px; flex-shrink: 0; overflow: hidden; }
+
+/* ── Detached steps tray ─────────────────────────────────────────────────── */
+.jb-detached { min-height: 40px; }
+
+/* ── Live-stats strip ────────────────────────────────────────────────────── */
+.jb-stats__link { text-decoration: none; white-space: nowrap; }
+.jb-stats__link:hover { text-decoration: underline; }
 </style>
