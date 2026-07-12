@@ -1,111 +1,264 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useLandingPagesStore } from '@/stores/useLandingPages'
+import type { EditorType } from '@/stores/useLandingPages'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpOptionCard from '@/components/MpOptionCard.vue'
+
+const router = useRouter()
+const route = useRoute()
+const accountId = computed(() => route.params.accountId as string)
+const lpStore = useLandingPagesStore()
+
+type UsageTag = 'newsletter' | 'events' | 'product-promotion' | 'service-promotion' | 'dark-mode-optimized'
+type IndustryTag = 'e-commerce' | 'small-business' | 'home-goods'
+type SeasonalTag = 'christmas' | 'new-year'
 
 interface LandingTemplate {
   id: string
   name: string
-  category: 'Usage' | 'Industry' | 'Seasonal'
-  tag: string
+  group: 'Usage' | 'Industry' | 'Seasonal'
+  tag: UsageTag | IndustryTag | SeasonalTag
+  desc: string
   accent: string
   icon: string
 }
 
 const TEMPLATES: LandingTemplate[] = [
-  { id: 'lead-capture', name: 'Lead Capture', category: 'Usage', tag: 'Sign-up form + hero', accent: 'primary', icon: 'user-plus' },
-  { id: 'product-launch', name: 'Product Launch', category: 'Usage', tag: 'Announcement + CTA', accent: 'marketing', icon: 'rocket' },
-  { id: 'webinar', name: 'Webinar Registration', category: 'Usage', tag: 'Event + agenda', accent: 'info', icon: 'video' },
-  { id: 'coming-soon', name: 'Coming Soon', category: 'Usage', tag: 'Countdown + notify', accent: 'secondary', icon: 'clock' },
-  { id: 'ecommerce', name: 'Storefront Promo', category: 'Industry', tag: 'Product grid + offer', accent: 'commerce', icon: 'shopping-bag' },
-  { id: 'saas', name: 'SaaS Trial', category: 'Industry', tag: 'Features + pricing', accent: 'analytics', icon: 'layout-dashboard' },
-  { id: 'realestate', name: 'Real Estate Listing', category: 'Industry', tag: 'Gallery + enquiry', accent: 'retail', icon: 'home' },
-  { id: 'nonprofit', name: 'Nonprofit Donation', category: 'Industry', tag: 'Story + donate', accent: 'success', icon: 'heart' },
-  { id: 'blackfriday', name: 'Black Friday', category: 'Seasonal', tag: 'Deal grid + timer', accent: 'error', icon: 'tag' },
-  { id: 'holiday', name: 'Holiday Gift Guide', category: 'Seasonal', tag: 'Curated picks', accent: 'marketing', icon: 'gift' },
-  { id: 'newyear', name: 'New Year Sale', category: 'Seasonal', tag: 'Sitewide offer', accent: 'warning', icon: 'sparkles' },
-  { id: 'summer', name: 'Summer Collection', category: 'Seasonal', tag: 'Lookbook + shop', accent: 'info', icon: 'sun' },
+  { id: 'fresh-drop', name: 'Fresh Drop Announcement', group: 'Usage', tag: 'product-promotion', desc: 'Hero + countdown for a new product launch', accent: 'primary', icon: 'rocket' },
+  { id: 'newsletter-digest', name: 'Newsletter Digest', group: 'Usage', tag: 'newsletter', desc: 'Sign-up form + latest issue preview', accent: 'info', icon: 'newspaper' },
+  { id: 'webinar-rsvp', name: 'Webinar RSVP', group: 'Usage', tag: 'events', desc: 'Event details + registration form', accent: 'secondary', icon: 'video' },
+  { id: 'midnight-mode', name: 'Midnight Mode Showcase', group: 'Usage', tag: 'dark-mode-optimized', desc: 'Dark, high-contrast product showcase', accent: 'marketing', icon: 'moon' },
+  { id: 'boutique-storefront', name: 'Boutique Storefront', group: 'Industry', tag: 'e-commerce', desc: 'Product grid + limited-time offer', accent: 'commerce', icon: 'shopping-bag' },
+  { id: 'neighborhood-spotlight', name: 'Neighborhood Spotlight', group: 'Industry', tag: 'small-business', desc: 'Local story + contact form', accent: 'success', icon: 'store' },
+  { id: 'holiday-wishlist', name: 'Holiday Wishlist', group: 'Seasonal', tag: 'christmas', desc: 'Gift guide + curated picks', accent: 'error', icon: 'gift' },
+  { id: 'countdown-new-year', name: 'Countdown to New Year', group: 'Seasonal', tag: 'new-year', desc: 'Sitewide sale + countdown timer', accent: 'warning', icon: 'sparkles' },
 ]
 
-const view = ref<'library' | 'mine'>('library')
+const USAGE_OPTIONS: UsageTag[] = ['newsletter', 'events', 'product-promotion', 'service-promotion', 'dark-mode-optimized']
+const INDUSTRY_OPTIONS: IndustryTag[] = ['e-commerce', 'small-business', 'home-goods']
+const SEASONAL_OPTIONS: SeasonalTag[] = ['christmas', 'new-year']
+
+// ─── Stage 1: gallery ────────────────────────────────────────────────────
+const galleryView = ref<'library' | 'mine'>('library')
 const viewTabs = [
-  { label: 'Template Library', key: 'library', count: TEMPLATES.length },
+  { label: 'Library', key: 'library', count: TEMPLATES.length },
   { label: 'My Templates', key: 'mine', count: 0 },
 ]
 
-const CATEGORIES = ['All', 'Usage', 'Industry', 'Seasonal'] as const
-const category = ref<(typeof CATEGORIES)[number]>('All')
+const usageFilter = ref<UsageTag[]>([])
+const industryFilter = ref<IndustryTag[]>([])
+const seasonalFilter = ref<SeasonalTag[]>([])
+const hasActiveFilters = computed(() => usageFilter.value.length + industryFilter.value.length + seasonalFilter.value.length > 0)
+function clearAllFilters() { usageFilter.value = []; industryFilter.value = []; seasonalFilter.value = [] }
 
 const filtered = computed(() =>
-  category.value === 'All' ? TEMPLATES : TEMPLATES.filter(t => t.category === category.value),
+  TEMPLATES.filter(t => {
+    if (!hasActiveFilters.value) return true
+    if (t.group === 'Usage') return usageFilter.value.includes(t.tag as UsageTag)
+    if (t.group === 'Industry') return industryFilter.value.includes(t.tag as IndustryTag)
+    return seasonalFilter.value.includes(t.tag as SeasonalTag)
+  }),
 )
+
+// ─── Stage machine: gallery → builder-type → details ────────────────────
+type Stage = 'gallery' | 'builder-type' | 'details'
+const stage = ref<Stage>('gallery')
+const stageTitles = ['Template', 'Builder', 'Details']
+const stageIndex = computed(() => ({ gallery: 1, 'builder-type': 2, details: 3 }[stage.value]))
+
+const selectedTemplateName = ref<string | null>(null)
+function chooseTemplate(name: string | null) {
+  selectedTemplateName.value = name
+  stage.value = 'builder-type'
+}
+
+const builderType = ref<EditorType>('wysiwyg')
+function goToDetails() { stage.value = 'details' }
+function backToGallery() { stage.value = 'gallery' }
+function backToBuilderType() { stage.value = 'builder-type' }
+
+// ─── Stage 3: details ────────────────────────────────────────────────────
+const pageName = ref('')
+const pageUrl = ref('')
+const publishDate = ref('')
+const publishTime = ref('')
+const expireDate = ref('')
+const expireTime = ref('')
+const tracking = ref('')
+
+const urlPattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(\/[\w-]*)*\/?$/i
+const urlTouched = ref(false)
+const urlValid = computed(() => urlPattern.test(pageUrl.value.trim()))
+const detailsValid = computed(() => pageName.value.trim().length > 0 && pageUrl.value.trim().length > 0 && urlValid.value)
+
+function formatDateTime(date: string, time: string): string {
+  if (!date) return ''
+  if (!time) return date
+  const d = new Date(`${date}T${time}`)
+  if (Number.isNaN(d.getTime())) return date
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
+function createPage() {
+  if (!detailsValid.value) return
+  const id = lpStore.create({
+    name: pageName.value.trim(),
+    url: pageUrl.value.trim(),
+    editorType: builderType.value,
+    publishAt: formatDateTime(publishDate.value, publishTime.value),
+    expireAt: formatDateTime(expireDate.value, expireTime.value),
+    tracking: tracking.value,
+  })
+  // Required route (not yet registered — see final report): LandingPageEditor at
+  // /accounts/:accountId/landing_pages/editor/:id/edit
+  router.push({ name: 'LandingPageEditor', params: { accountId: accountId.value, id: String(id) } })
+}
+
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
-    <MpPageHeader title="Landing Page Templates" subtitle="Start from a template or build from scratch">
-      <template #actions>
-        <v-btn variant="flat" color="surface" prepend-icon="file-plus" class="text-none">Start from scratch</v-btn>
+    <MpPageHeader
+      :title="stage === 'gallery' ? 'Landing Page Templates' : 'Create Landing Page'"
+      :subtitle="stage === 'gallery' ? 'Start from a template or build from scratch' : undefined"
+      :back-to="stage === 'gallery' ? { name: 'LandingPages', params: { accountId } } : undefined"
+    >
+      <template v-if="stage === 'gallery'" #actions>
+        <v-btn variant="flat" color="surface" prepend-icon="file-plus" class="text-none" @click="chooseTemplate(null)">Start from scratch</v-btn>
       </template>
-      <template #tabs>
-        <MpFilterTabs v-model="view" :tabs="viewTabs" aria-label="Template source" class="mt-2" />
+      <template v-if="stage === 'gallery'" #tabs>
+        <MpFilterTabs v-model="galleryView" :tabs="viewTabs" aria-label="Template source" class="mt-2" />
       </template>
     </MpPageHeader>
 
-    <template v-if="view === 'library'">
-      <div class="d-flex ga-2 flex-wrap">
-        <v-chip
-          v-for="cat in CATEGORIES"
-          :key="cat"
-          :variant="category === cat ? 'flat' : 'outlined'"
-          :color="category === cat ? 'primary' : undefined"
-          size="small"
-          class="text-none"
-          @click="category = cat"
-        >{{ cat }}</v-chip>
-      </div>
+    <!-- STAGE 1: Gallery -->
+    <template v-if="stage === 'gallery'">
+      <template v-if="galleryView === 'library'">
+        <div class="d-flex ga-3 flex-wrap align-center">
+          <v-select v-model="usageFilter" :items="USAGE_OPTIONS" label="Usage" multiple chips closable-chips clearable variant="outlined" density="compact" hide-details class="lpt-filter" />
+          <v-select v-model="industryFilter" :items="INDUSTRY_OPTIONS" label="Industry" multiple chips closable-chips clearable variant="outlined" density="compact" hide-details class="lpt-filter" />
+          <v-select v-model="seasonalFilter" :items="SEASONAL_OPTIONS" label="Seasonal" multiple chips closable-chips clearable variant="outlined" density="compact" hide-details class="lpt-filter" />
+          <v-btn v-if="hasActiveFilters" variant="text" size="small" class="text-none" @click="clearAllFilters">Clear All</v-btn>
+        </div>
 
-      <div class="flex-grow-1 overflow-y-auto">
-        <v-row dense>
-          <v-col v-for="tpl in filtered" :key="tpl.id" cols="12" sm="6" md="4" lg="3">
-            <v-card flat border rounded="lg" class="lpt-card h-100" role="button" tabindex="0">
-              <div class="lpt-card__preview" :class="`lpt-card__preview--${tpl.accent}`">
-                <v-icon size="30">{{ tpl.icon }}</v-icon>
-                <div class="lpt-card__skeleton">
-                  <span class="lpt-bar lpt-bar--wide" />
-                  <span class="lpt-bar" />
-                  <span class="lpt-bar lpt-bar--btn" />
+        <div class="flex-grow-1 overflow-y-auto">
+          <v-row dense>
+            <v-col cols="12" sm="6" md="4" lg="3">
+              <v-card flat border rounded="lg" class="lpt-card lpt-card--blank h-100 d-flex flex-column align-center justify-center text-center pa-6" role="button" tabindex="0" @click="chooseTemplate(null)" @keydown.enter="chooseTemplate(null)">
+                <v-icon size="32" color="primary" class="mb-2">file-plus</v-icon>
+                <div class="text-body-2 font-weight-bold mb-1">Blank Template</div>
+                <div class="text-caption text-medium-emphasis mb-3">Start from scratch</div>
+                <v-btn variant="tonal" color="primary" size="small" class="text-none">Start designing</v-btn>
+              </v-card>
+            </v-col>
+            <v-col v-for="tpl in filtered" :key="tpl.id" cols="12" sm="6" md="4" lg="3">
+              <v-card flat border rounded="lg" class="lpt-card h-100" role="button" tabindex="0" @click="chooseTemplate(tpl.name)" @keydown.enter="chooseTemplate(tpl.name)">
+                <div class="lpt-card__preview" :class="`lpt-card__preview--${tpl.accent}`">
+                  <v-icon size="30">{{ tpl.icon }}</v-icon>
+                  <div class="lpt-card__skeleton">
+                    <span class="lpt-bar lpt-bar--wide" />
+                    <span class="lpt-bar" />
+                    <span class="lpt-bar lpt-bar--btn" />
+                  </div>
                 </div>
-              </div>
-              <div class="pa-4">
-                <div class="d-flex align-center justify-space-between ga-2">
-                  <div class="text-subtitle-2 font-weight-bold text-truncate">{{ tpl.name }}</div>
-                  <v-chip size="x-small" variant="tonal" class="flex-shrink-0">{{ tpl.category }}</v-chip>
+                <div class="pa-4">
+                  <div class="d-flex align-center justify-space-between ga-2">
+                    <div class="text-subtitle-2 font-weight-bold text-truncate">{{ tpl.name }}</div>
+                    <v-chip size="x-small" variant="tonal" class="flex-shrink-0">{{ tpl.group }}</v-chip>
+                  </div>
+                  <div class="text-caption text-medium-emphasis mt-1">{{ tpl.desc }}</div>
+                  <v-btn variant="tonal" color="primary" size="small" block class="text-none mt-3">Use template</v-btn>
                 </div>
-                <div class="text-caption text-medium-emphasis mt-1">{{ tpl.tag }}</div>
-                <v-btn variant="tonal" color="primary" size="small" block class="text-none mt-3">Use template</v-btn>
-              </div>
-            </v-card>
-          </v-col>
-        </v-row>
-      </div>
+              </v-card>
+            </v-col>
+          </v-row>
+        </div>
+      </template>
+
+      <MpEmptyState
+        v-else
+        icon="layout-template"
+        title="No saved templates yet"
+        description="Save any landing page as a template and it will show up here for reuse."
+        action-label="Browse the library"
+        action-icon="layout-template"
+        class="my-auto"
+        @action="galleryView = 'library'"
+      />
     </template>
 
-    <MpEmptyState
-      v-else
-      icon="layout-template"
-      title="No saved templates yet"
-      description="Save any landing page as a template and it will show up here for reuse."
-      action-label="Browse the library"
-      action-icon="layout-template"
-      class="my-auto"
-      @action="view = 'library'"
-    />
+    <!-- STAGE 2 & 3: builder-type / details -->
+    <template v-else>
+      <div class="d-flex justify-center px-5">
+        <MpWizardSteps :steps="stageTitles" :current="stageIndex" />
+      </div>
+
+      <div class="d-flex justify-center pt-4 pa-4 flex-grow-1 overflow-y-auto">
+        <!-- STAGE 2: builder type -->
+        <v-card v-if="stage === 'builder-type'" variant="flat" border rounded="lg" style="max-width:640px;width:100%;" class="pa-8 align-self-start">
+          <div class="text-h5 font-weight-bold mb-1">Select a Builder</div>
+          <div class="text-body-2 text-medium-emphasis mb-6">
+            {{ selectedTemplateName ? `Starting from “${selectedTemplateName}”` : 'Starting from a blank page' }} — choose how you want to edit it.
+          </div>
+          <v-row dense>
+            <v-col cols="6">
+              <MpOptionCard :selected="builderType === 'wysiwyg'" title="WYSIWYG" description="Structured sections — fast to edit, less freeform" icon="layout-template" @click="builderType = 'wysiwyg'" />
+            </v-col>
+            <v-col cols="6">
+              <MpOptionCard :selected="builderType === 'dnd'" title="Drag & Drop" description="Freeform canvas — full control over layout" icon="move" @click="builderType = 'dnd'" />
+            </v-col>
+          </v-row>
+          <div class="d-flex justify-space-between mt-6">
+            <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="backToGallery">Back</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="goToDetails">Continue</v-btn>
+          </div>
+        </v-card>
+
+        <!-- STAGE 3: details -->
+        <v-card v-else variant="flat" border rounded="lg" style="max-width:640px;width:100%;" class="pa-8 align-self-start">
+          <div class="text-h5 font-weight-bold mb-1">Page Details</div>
+          <div class="text-body-2 text-medium-emphasis mb-6">Name your page and set its URL and schedule.</div>
+
+          <v-text-field v-model="pageName" label="Name *" placeholder="e.g. Spring Promo Landing Page" variant="outlined" density="comfortable" class="mb-4" />
+          <v-text-field
+            v-model="pageUrl"
+            label="Page URL *"
+            placeholder="promo.mystore.com/spring"
+            variant="outlined"
+            density="comfortable"
+            class="mb-1"
+            :error="urlTouched && !!pageUrl && !urlValid"
+            :error-messages="urlTouched && !!pageUrl && !urlValid ? ['Invalid URL'] : []"
+            @blur="urlTouched = true"
+          />
+
+          <v-row dense class="mt-3">
+            <v-col cols="6"><v-text-field v-model="publishDate" type="date" label="Publish at — Date" variant="outlined" density="comfortable" /></v-col>
+            <v-col cols="6"><v-text-field v-model="publishTime" type="time" label="Publish at — Time" variant="outlined" density="comfortable" /></v-col>
+            <v-col cols="6"><v-text-field v-model="expireDate" type="date" label="Expire at — Date" variant="outlined" density="comfortable" /></v-col>
+            <v-col cols="6"><v-text-field v-model="expireTime" type="time" label="Expire at — Time" variant="outlined" density="comfortable" /></v-col>
+          </v-row>
+
+          <v-textarea v-model="tracking" label="Page Tracking (optional)" placeholder="Paste analytics / pixel tracking code" variant="outlined" density="comfortable" rows="3" class="mt-2" />
+
+          <div class="d-flex justify-space-between mt-6">
+            <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="backToBuilderType">Back</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!detailsValid" @click="createPage">Create Page</v-btn>
+          </div>
+        </v-card>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
+.lpt-filter { max-width: 200px; }
+
 .lpt-card {
   overflow: hidden;
   transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
@@ -121,6 +274,7 @@ const filtered = computed(() =>
   border-color: rgb(var(--v-theme-primary));
   box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.25);
 }
+.lpt-card--blank { background: rgba(var(--v-theme-primary), 0.03); border-style: dashed !important; }
 .lpt-card__preview {
   height: 132px;
   display: flex;
@@ -139,8 +293,6 @@ const filtered = computed(() =>
 .lpt-card__preview--secondary { background: rgba(var(--v-theme-secondary), 0.10); color: rgb(var(--v-theme-secondary)); }
 .lpt-card__preview--marketing { background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent); color: var(--cloud-marketing-text); }
 .lpt-card__preview--commerce { background: color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent); color: var(--cloud-commerce-text); }
-.lpt-card__preview--analytics { background: color-mix(in oklch, var(--cloud-analytics-accent) 12%, transparent); color: var(--cloud-analytics-text); }
-.lpt-card__preview--retail { background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent); color: var(--cloud-retail-text); }
 .lpt-card__skeleton {
   display: flex;
   flex-direction: column;

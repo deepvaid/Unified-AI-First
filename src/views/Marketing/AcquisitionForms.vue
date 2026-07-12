@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useFormsStore } from '@/stores/useForms'
+import { useFormsStore, newFormDefaults, embedScriptFor } from '@/stores/useForms'
+import type { AcquisitionForm, FormType, PopupPosition } from '@/stores/useForms'
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -9,6 +10,8 @@ import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -43,12 +46,19 @@ function toggleSelect(id: number) {
 }
 
 // Actions
-function editInBuilder() {
-  router.push({ name: 'FormBuilder', params: { accountId: accountId.value } })
+function editInBuilder(form: AcquisitionForm) {
+  router.push({ name: 'FormBuilder', params: { accountId: accountId.value }, query: { formId: String(form.id) } })
 }
 function duplicate(id: number) { formsStore.duplicate(id) }
 function removeForms(ids: number[]) { formsStore.remove(ids); selected.value = [] }
 function setStatus(ids: number[], status: 'Active' | 'Paused') { formsStore.setStatus(ids, status); selected.value = [] }
+
+const confirmDeleteIds = ref<number[] | null>(null)
+function askDelete(ids: number[]) { confirmDeleteIds.value = ids }
+function confirmDelete() {
+  if (confirmDeleteIds.value) removeForms(confirmDeleteIds.value)
+  confirmDeleteIds.value = null
+}
 
 // Filters (list mode)
 const filters = ref({ status: '', type: '' })
@@ -82,26 +92,33 @@ const listHeaders = [
   { title: '', key: 'actions', align: 'end' as const, sortable: false },
 ]
 
-// Template picker
-const chooseDialog = ref(false)
-const selectedTemplate = ref<number | null>(null)
-const templateSearch = ref('')
-const filterType = ref('All')
-const templates = [
-  { id: 0, name: 'Blank Canvas', type: 'Modal', desc: 'Start from scratch with full creative control', icon: 'square-dashed', color: 'grey', popular: false },
-  { id: 1, name: 'Newsletter Sign-up', type: 'Modal', desc: 'Simple email capture with high conversion rate', icon: 'newspaper', color: 'primary', popular: true },
-  { id: 2, name: 'Exit Intent', type: 'Modal', desc: 'Appear just as visitors are about to leave', icon: 'log-out', color: 'warning', popular: true },
-  { id: 3, name: 'Discount Offer', type: 'Modal', desc: 'Offer a coupon code in exchange for email', icon: 'percent', color: 'success', popular: true },
-  { id: 4, name: 'VIP Club Invite', type: 'Modal', desc: 'Exclusive membership feel for top customers', icon: 'crown', color: 'warning', popular: false },
-  { id: 5, name: 'Product Announcement', type: 'Modal', desc: 'Announce new products with email capture', icon: 'badge', color: 'secondary', popular: false },
-  { id: 6, name: 'Sidebar Newsletter', type: 'Embedded', desc: 'Non-intrusive embedded form for blog/content pages', icon: 'columns-2', color: 'primary', popular: true },
-  { id: 7, name: 'Footer Subscribe', type: 'Embedded', desc: 'Footer-anchored form following GDPR best practices', icon: 'panel-bottom', color: 'info', popular: false },
-  { id: 8, name: 'Two-Step Lead Capture', type: 'Modal', desc: 'Button click reveals form to improve qualified leads', icon: 'circle', color: 'purple', popular: false },
-  { id: 9, name: 'Countdown Urgency', type: 'Modal', desc: 'Timer-driven popup for limited-time offers', icon: 'timer', color: 'error', popular: false },
+// ─── Template gallery (aligned to crawl: scratch + 6 named templates) ───
+interface FormTemplate {
+  id: string
+  name: string
+  type: FormType | null
+  position: PopupPosition | null
+  desc: string
+  icon: string
+  color: string
+}
+const FORM_TEMPLATES: FormTemplate[] = [
+  { id: 'scratch', name: 'Create from scratch', type: null, position: null, desc: 'Start with a blank form and build it your way.', icon: 'square-dashed', color: 'grey' },
+  { id: 'first-order-discount', name: 'First order discount', type: 'Popup', position: 'classic-center', desc: 'Offer a first-purchase discount in exchange for an email.', icon: 'percent', color: 'success' },
+  { id: 'neutral-modern', name: 'Neutral modern', type: 'Popup', position: 'classic-center', desc: 'A clean, on-brand popup for general list growth.', icon: 'square', color: 'secondary' },
+  { id: 'looking-for-something', name: 'Looking for something?', type: 'Popup', position: 'classic-center', desc: 'Help visitors find what they need while capturing an email.', icon: 'search', color: 'info' },
+  { id: 'be-first-to-know', name: 'Be the first to know', type: 'Embedded', position: null, desc: 'Inline form for product-launch announcements.', icon: 'bell', color: 'warning' },
+  { id: 'join-the-club', name: 'Join the club', type: 'Embedded', position: null, desc: 'Membership-style embedded sign-up.', icon: 'crown', color: 'warning' },
+  { id: 'welcome-coupon', name: 'Welcome coupon', type: 'Embedded', position: null, desc: 'Embedded coupon capture for footers and blog pages.', icon: 'ticket', color: 'primary' },
 ]
+
+const chooseDialog = ref(false)
+const selectedTemplate = ref<string | null>(null)
+const templateSearch = ref('')
+const filterType = ref<'All' | FormType>('All')
 const filteredTemplates = computed(() =>
-  templates.filter(t =>
-    (filterType.value === 'All' || t.type === filterType.value) &&
+  FORM_TEMPLATES.filter(t =>
+    (filterType.value === 'All' || t.type === filterType.value || t.id === 'scratch') &&
     (!templateSearch.value || t.name.toLowerCase().includes(templateSearch.value.toLowerCase())),
   ),
 )
@@ -113,8 +130,38 @@ function openCreate() {
 }
 function openBuilder() {
   if (selectedTemplate.value === null) return
+  const tmpl = FORM_TEMPLATES.find(t => t.id === selectedTemplate.value)
   chooseDialog.value = false
-  router.push({ name: 'FormBuilder', params: { accountId: accountId.value } })
+  if (!tmpl || tmpl.id === 'scratch') {
+    router.push({ name: 'FormBuilder', params: { accountId: accountId.value } })
+    return
+  }
+  const base = newFormDefaults()
+  const id = formsStore.createForm({
+    ...base,
+    name: tmpl.name,
+    type: tmpl.type ?? 'Popup',
+    design: tmpl.position ? { ...base.design, position: tmpl.position } : base.design,
+    headline: tmpl.name,
+  })
+  router.push({ name: 'FormBuilder', params: { accountId: accountId.value }, query: { formId: String(id) } })
+}
+
+// ─── Preview & embed-code dialogs ───────────────────────────────────────
+const previewDialog = ref(false)
+const embedDialog = ref(false)
+const activeForm = ref<AcquisitionForm | null>(null)
+function openPreview(form: AcquisitionForm) { activeForm.value = form; previewDialog.value = true }
+function openEmbed(form: AcquisitionForm) { activeForm.value = form; embedDialog.value = true }
+const embedSnippets = computed(() => (activeForm.value ? embedScriptFor(activeForm.value) : { script: '', manual: '' }))
+const copiedSnack = ref(false)
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    copiedSnack.value = true
+  } catch {
+    // clipboard unavailable — no-op in this prototype
+  }
 }
 </script>
 
@@ -203,7 +250,7 @@ function openBuilder() {
                 @update:model-value="toggleSelect(form.id)"
                 @click.stop
               />
-              <div v-if="form.type === 'Modal'" class="fp__modal">
+              <div v-if="form.type === 'Popup'" class="fp__modal">
                 <div class="fp__headline">{{ form.headline }}</div>
                 <div class="fp__field">Email address</div>
                 <div v-if="form.collectName" class="fp__field">First name</div>
@@ -227,29 +274,24 @@ function openBuilder() {
                     <MpStatusChip :status="form.status" type="general" size="x-small" />
                   </div>
                 </div>
-                <v-menu>
-                  <template #activator="{ props }">
-                    <v-btn v-bind="props" icon="more-vertical" variant="text" size="small" aria-label="More actions" />
-                  </template>
-                  <v-list density="compact" rounded="lg" nav min-width="180" class="pa-2">
-                    <v-list-item prepend-icon="eye" rounded="lg">Preview</v-list-item>
-                    <v-list-item prepend-icon="copy" rounded="lg" @click="duplicate(form.id)">Duplicate</v-list-item>
-                    <v-list-item prepend-icon="code-2" rounded="lg">Get embed code</v-list-item>
-                    <v-list-item
-                      v-if="form.status !== 'Active'"
-                      prepend-icon="play"
-                      rounded="lg"
-                      @click="setStatus([form.id], 'Active')"
-                    >Activate</v-list-item>
-                    <v-list-item
-                      v-else
-                      prepend-icon="pause"
-                      rounded="lg"
-                      @click="setStatus([form.id], 'Paused')"
-                    >Pause</v-list-item>
-                    <v-list-item prepend-icon="trash-2" rounded="lg" class="text-error mt-1" @click="removeForms([form.id])">Delete</v-list-item>
-                  </v-list>
-                </v-menu>
+                <MpRowActionsMenu :ariaLabel="`${form.name} actions`">
+                  <v-list-item prepend-icon="eye" rounded="lg" @click="openPreview(form)">Preview</v-list-item>
+                  <v-list-item prepend-icon="copy" rounded="lg" @click="duplicate(form.id)">Duplicate</v-list-item>
+                  <v-list-item prepend-icon="code-2" rounded="lg" @click="openEmbed(form)">Get embed code</v-list-item>
+                  <v-list-item
+                    v-if="form.status !== 'Active'"
+                    prepend-icon="play"
+                    rounded="lg"
+                    @click="setStatus([form.id], 'Active')"
+                  >Activate</v-list-item>
+                  <v-list-item
+                    v-else
+                    prepend-icon="pause"
+                    rounded="lg"
+                    @click="setStatus([form.id], 'Paused')"
+                  >Pause</v-list-item>
+                  <v-list-item prepend-icon="trash-2" rounded="lg" class="text-error mt-1" @click="askDelete([form.id])">Delete</v-list-item>
+                </MpRowActionsMenu>
               </div>
 
               <div class="form-stats d-flex ga-4 mt-auto pt-4">
@@ -269,7 +311,7 @@ function openBuilder() {
             </div>
 
             <div class="px-5 pb-5">
-              <v-btn block variant="tonal" color="primary" size="small" class="text-none" prepend-icon="pencil" @click="editInBuilder">Edit in Builder</v-btn>
+              <v-btn block variant="tonal" color="primary" size="small" class="text-none" prepend-icon="pencil" @click="editInBuilder(form)">Edit in Builder</v-btn>
             </div>
           </v-card>
         </v-col>
@@ -298,8 +340,8 @@ function openBuilder() {
         <template #filter-content>
           <div class="pa-4 pb-2">
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select v-model="filters.status" label="Status" :items="['', 'Active', 'Draft', 'Paused']" variant="outlined" density="compact" hide-details class="mb-3" />
-            <v-select v-model="filters.type" label="Type" :items="['', 'Modal', 'Embedded']" variant="outlined" density="compact" hide-details class="mb-3" />
+            <v-select v-model="filters.status" label="Status" :items="['', 'Active', 'Draft', 'Published', 'Paused']" variant="outlined" density="compact" hide-details class="mb-3" />
+            <v-select v-model="filters.type" label="Type" :items="['', 'Popup', 'Embedded']" variant="outlined" density="compact" hide-details class="mb-3" />
           </div>
         </template>
       </MpDataTableToolbar>
@@ -324,17 +366,13 @@ function openBuilder() {
         <template #item.rate="{ item }"><span class="font-weight-bold text-primary num">{{ item.rate }}%</span></template>
         <template #item.status="{ item }"><MpStatusChip :status="item.status" type="general" size="x-small" /></template>
         <template #item.actions="{ item }">
-          <div class="acq-actions d-flex justify-end ga-1">
-            <v-tooltip text="Edit in Builder" location="top">
-              <template #activator="{ props }"><v-btn v-bind="props" icon="pencil" variant="text" size="small" color="primary" aria-label="Edit in Builder" @click="editInBuilder" /></template>
-            </v-tooltip>
-            <v-tooltip text="Duplicate" location="top">
-              <template #activator="{ props }"><v-btn v-bind="props" icon="copy" variant="text" size="small" aria-label="Duplicate" @click="duplicate(item.id)" /></template>
-            </v-tooltip>
-            <v-tooltip text="Delete" location="top">
-              <template #activator="{ props }"><v-btn v-bind="props" icon="trash-2" variant="text" size="small" color="error" aria-label="Delete" @click="removeForms([item.id])" /></template>
-            </v-tooltip>
-          </div>
+          <MpRowActionsMenu :ariaLabel="`${item.name} actions`">
+            <v-list-item prepend-icon="pencil" rounded="lg" @click="editInBuilder(item)">Edit in Builder</v-list-item>
+            <v-list-item prepend-icon="eye" rounded="lg" @click="openPreview(item)">Preview</v-list-item>
+            <v-list-item prepend-icon="copy" rounded="lg" @click="duplicate(item.id)">Duplicate</v-list-item>
+            <v-list-item prepend-icon="code-2" rounded="lg" @click="openEmbed(item)">Get embed code</v-list-item>
+            <v-list-item prepend-icon="trash-2" rounded="lg" class="text-error mt-1" @click="askDelete([item.id])">Delete</v-list-item>
+          </MpRowActionsMenu>
         </template>
       </v-data-table>
     </v-card>
@@ -344,7 +382,7 @@ function openBuilder() {
       <v-btn variant="text" size="small" class="text-none" prepend-icon="copy" @click="selected.forEach(duplicate); selected = []">Duplicate</v-btn>
       <v-btn variant="text" size="small" class="text-none" prepend-icon="play" @click="setStatus(selected, 'Active')">Activate</v-btn>
       <v-btn variant="text" size="small" class="text-none" prepend-icon="pause" @click="setStatus(selected, 'Paused')">Pause</v-btn>
-      <v-btn variant="text" size="small" class="text-none text-error" prepend-icon="trash-2" @click="removeForms(selected)">Delete</v-btn>
+      <v-btn variant="text" size="small" class="text-none text-error" prepend-icon="trash-2" @click="askDelete(selected)">Delete</v-btn>
     </MpFloatingBulkBar>
 
     <!-- Template picker -->
@@ -360,7 +398,7 @@ function openBuilder() {
         <div class="pa-5 pt-0">
           <div class="d-flex align-center ga-3 mb-4">
             <v-btn-toggle v-model="filterType" density="compact" variant="outlined" divided rounded="lg" mandatory class="mp-toggle-group mp-toggle-group--segmented">
-              <v-btn v-for="t in ['All', 'Modal', 'Embedded']" :key="t" :value="t" size="small" class="text-none px-4">{{ t }}</v-btn>
+              <v-btn v-for="t in ['All', 'Popup', 'Embedded']" :key="t" :value="t" size="small" class="text-none px-4">{{ t }}</v-btn>
             </v-btn-toggle>
             <v-text-field v-model="templateSearch" prepend-inner-icon="search" placeholder="Search templates…" variant="outlined" density="compact" hide-details rounded="lg" class="flex-grow-1" />
           </div>
@@ -377,9 +415,9 @@ function openBuilder() {
               >
                 <div class="d-flex align-start justify-space-between mb-2">
                   <v-icon :color="tmpl.color" size="28">{{ tmpl.icon }}</v-icon>
-                  <div class="d-flex ga-1">
-                    <v-chip v-if="tmpl.popular" color="primary" size="x-small" variant="flat" class="font-weight-bold">Popular</v-chip>
+                  <div v-if="tmpl.type" class="d-flex ga-1">
                     <v-chip size="x-small" variant="tonal" rounded="lg">{{ tmpl.type }}</v-chip>
+                    <v-chip v-if="tmpl.position" size="x-small" variant="outlined" rounded="lg">Center</v-chip>
                   </div>
                 </div>
                 <div class="text-body-2 font-weight-bold mb-1">{{ tmpl.name }}</div>
@@ -395,6 +433,71 @@ function openBuilder() {
         </div>
       </v-card>
     </v-dialog>
+
+    <!-- Preview dialog: readonly render of the form's blocks -->
+    <v-dialog v-model="previewDialog" max-width="520" rounded="xl">
+      <v-card v-if="activeForm" rounded="lg" border flat class="pa-5">
+        <div class="d-flex align-center justify-space-between mb-4">
+          <div class="text-h6 font-weight-bold">{{ activeForm.name }}</div>
+          <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="previewDialog = false" />
+        </div>
+        <div class="preview-stage d-flex justify-center pa-6">
+          <div
+            class="preview-form"
+            :style="{
+              width: Math.min(activeForm.design.width, 340) + 'px',
+              padding: `${activeForm.design.paddingTop}px ${activeForm.design.paddingRight}px ${activeForm.design.paddingBottom}px ${activeForm.design.paddingLeft}px`,
+              background: activeForm.design.backgroundType === 'color' ? activeForm.design.backgroundColor : '#1A1A2E',
+              borderRadius: activeForm.design.borderRadius + 'px',
+              border: `${activeForm.design.borderThickness}px solid ${activeForm.design.borderColor}`,
+            }"
+          >
+            <div v-for="b in activeForm.mainFormBlocks" :key="b.id" class="preview-block" :style="{ textAlign: b.align }">
+              <div v-if="b.type === 'title'" class="preview-block__title">{{ b.text }}</div>
+              <div v-else-if="b.type === 'paragraph' || b.type === 'text'" class="preview-block__paragraph">{{ b.text }}</div>
+              <ul v-else-if="b.type === 'list'" class="preview-block__list"><li v-for="(li, i) in b.items" :key="i">{{ li }}</li></ul>
+              <div v-else-if="b.type === 'image' || b.type === 'video'" class="preview-block__media"><v-icon size="24" color="white">{{ b.type === 'video' ? 'video' : 'image' }}</v-icon></div>
+              <hr v-else-if="b.type === 'divider'" class="preview-block__divider" />
+              <div v-else-if="b.type === 'email_submit'">
+                <div class="preview-block__field">Email address</div>
+                <div class="preview-block__submit">{{ b.text || activeForm.buttonLabel }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </v-card>
+    </v-dialog>
+
+    <!-- Embed code dialog -->
+    <v-dialog v-model="embedDialog" max-width="560" rounded="xl">
+      <v-card v-if="activeForm" rounded="lg" border flat class="pa-5">
+        <div class="d-flex align-center justify-space-between mb-4">
+          <div class="text-h6 font-weight-bold">Embed “{{ activeForm.name }}”</div>
+          <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="embedDialog = false" />
+        </div>
+        <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Website Embed</div>
+        <v-textarea :model-value="embedSnippets.script" readonly variant="outlined" density="compact" rows="2" class="embed-mono mb-2" hide-details />
+        <v-btn variant="tonal" size="small" class="text-none mb-4" prepend-icon="copy" @click="copyText(embedSnippets.script)">Copy script</v-btn>
+
+        <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Manual Integration</div>
+        <v-textarea :model-value="embedSnippets.manual" readonly variant="outlined" density="compact" rows="4" class="embed-mono mb-2" hide-details />
+        <v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedSnippets.manual)">Copy snippet</v-btn>
+      </v-card>
+    </v-dialog>
+
+    <MpConfirmDialog
+      :model-value="confirmDeleteIds !== null"
+      title="Delete form(s)?"
+      message="This will permanently remove the selected form(s). This can't be undone."
+      confirm-label="Delete"
+      danger
+      @update:model-value="confirmDeleteIds = null"
+      @confirm="confirmDelete"
+    />
+
+    <v-snackbar v-model="copiedSnack" :timeout="1800" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Copied to clipboard</div>
+    </v-snackbar>
   </div>
 </template>
 
@@ -507,8 +610,6 @@ function openBuilder() {
 }
 .acquisition-data-table :deep(th),
 .acquisition-data-table :deep(td) { padding-inline: 20px !important; }
-.acq-actions { opacity: 0; transition: opacity 0.2s; }
-tr:hover .acq-actions { opacity: 1; }
 
 .add-card {
   transition: border-color $mp-transition-base, background-color $mp-transition-base;
@@ -536,4 +637,20 @@ tr:hover .acq-actions { opacity: 1; }
 }
 .template-card.selected { background: rgba(var(--v-theme-primary), 0.08); }
 .selected-check { position: absolute; top: 10px; right: 10px; }
+
+/* Preview & embed dialogs */
+.preview-stage { background: rgba(var(--v-theme-on-surface), 0.03); border-radius: 12px; }
+.preview-form { color: #fff; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25); }
+.preview-block { margin-bottom: 8px; }
+.preview-block__title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.preview-block__paragraph { font-size: 12px; opacity: 0.8; }
+.preview-block__list { font-size: 12px; opacity: 0.85; padding-left: 18px; }
+.preview-block__media { height: 80px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.1); border-radius: 8px; }
+.preview-block__divider { border: none; border-top: 1px solid rgba(255, 255, 255, 0.2); }
+.preview-block__field, .preview-block__submit {
+  height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-bottom: 6px;
+}
+.preview-block__field { background: rgba(255, 255, 255, 0.12); justify-content: flex-start; padding: 0 10px; opacity: 0.85; }
+.preview-block__submit { background: rgb(var(--v-theme-primary)); font-weight: 600; }
+:deep(.embed-mono textarea) { font-family: monospace; font-size: 0.78rem; }
 </style>
