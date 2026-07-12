@@ -1,32 +1,98 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useMarketingAssetsStore, type CampaignTag } from '@/stores/useMarketingAssets'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
+const store = useMarketingAssetsStore()
 const search = ref('')
 
 const headers = [
   { title: 'Tag Name', key: 'name', sortable: true },
-  { title: 'Assigned Campaigns', key: 'count', align: 'end' as const },
+  { title: 'Created', key: 'createdAt', sortable: true },
+  { title: 'Updated', key: 'updatedAt', sortable: true },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]
 
-const tags = ref([
-  { name: 'Newsletter', count: 42 },
-  { name: 'Promo_2026', count: 18 },
-  { name: 'Onboarding', count: 5 },
-  { name: 'Retention', count: 12 },
-])
+// ── Create / rename drawer ───────────────────────────────────────────────
+const drawer = ref(false)
+const editingId = ref<number | null>(null)
+const tagName = ref('')
+const canSave = computed(() => tagName.value.trim() !== '')
+
+function openCreate() {
+  editingId.value = null
+  tagName.value = ''
+  drawer.value = true
+}
+
+function openEdit(tag: CampaignTag) {
+  editingId.value = tag.id
+  tagName.value = tag.name
+  drawer.value = true
+}
+
+function saveTag() {
+  if (!canSave.value) return
+  if (editingId.value !== null) {
+    store.renameTag(editingId.value, tagName.value.trim())
+    notify('Tag updated')
+  } else {
+    store.addTag(tagName.value.trim())
+    notify('Tag created')
+  }
+  drawer.value = false
+}
+
+// ── Import tags dialog ───────────────────────────────────────────────────
+const importDialog = ref(false)
+const importText = ref('')
+const importPreview = computed(() =>
+  importText.value.split(/[\n,]/).map(s => s.trim()).filter(Boolean)
+)
+
+function importTags() {
+  if (!importPreview.value.length) return
+  store.addTags(importPreview.value)
+  notify(`${importPreview.value.length} tag${importPreview.value.length === 1 ? '' : 's'} imported`)
+  importText.value = ''
+  importDialog.value = false
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────
+const confirmDelete = ref(false)
+const pendingDelete = ref<CampaignTag | null>(null)
+function askDelete(tag: CampaignTag) {
+  pendingDelete.value = tag
+  confirmDelete.value = true
+}
+function doDelete() {
+  if (pendingDelete.value) {
+    store.deleteTag(pendingDelete.value.id)
+    notify('Tag deleted')
+  }
+  pendingDelete.value = null
+}
+
+// ── Snackbar ──────────────────────────────────────────────────────────────
+const snack = ref(false)
+const snackText = ref('')
+function notify(text: string) { snackText.value = text; snack.value = true }
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Campaign Tags"
-      :subtitle="`${tags.length} tags`"
+      :subtitle="`${store.tags.length} tags`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" :to="{ name: 'CreateCampaignTag', params: { accountId: $route.params.accountId } }">Create Tag</v-btn>
+        <v-btn variant="flat" prepend-icon="upload" class="text-none" color="surface" @click="importDialog = true">Import Tags</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New Tag</v-btn>
       </template>
     </MpPageHeader>
 
@@ -35,22 +101,96 @@ const tags = ref([
         v-model:search="search"
         title="Tags"
         search-placeholder="Search tags..."
-        :total-count="tags.length"
+        :total-count="store.tags.length"
       />
 
-      <v-data-table :headers="headers" :items="tags" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
-        <template v-slot:item.actions>
-          <v-menu>
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-              <v-list-item prepend-icon="pencil">Edit</v-list-item>
-              <v-list-item prepend-icon="trash-2" class="text-error">Delete</v-list-item>
-            </v-list>
-          </v-menu>
+      <v-data-table :headers="headers" :items="store.tags" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+        <template v-slot:item.name="{ item }">
+          <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
+        </template>
+        <template v-slot:item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Tag actions">
+            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-divider class="my-1" style="opacity: 0.4" />
+            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          </MpRowActionsMenu>
+        </template>
+        <template v-slot:no-data>
+          <MpEmptyState
+            icon="tag"
+            :title="search ? 'No tags match your search' : 'No campaign tags yet'"
+            :description="search ? 'Try a different search term.' : 'Create tags to group and filter your campaigns.'"
+            :action-label="!search ? 'New Tag' : undefined"
+            action-icon="plus"
+            class="py-10"
+            @action="openCreate"
+          />
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Create / edit drawer -->
+    <MpFormDrawer
+      v-model="drawer"
+      :title="editingId !== null ? 'Edit Tag' : 'New Tag'"
+      :width="420"
+    >
+      <v-text-field
+        v-model="tagName"
+        label="Tag name"
+        placeholder="e.g. Promotions"
+        variant="outlined"
+        density="comfortable"
+        autofocus
+        :rules="[v => !!v || 'Name is required']"
+        @keydown.enter="saveTag"
+      />
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave" @click="saveTag">
+          {{ editingId !== null ? 'Save' : 'Create' }}
+        </v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <!-- Import tags dialog -->
+    <v-dialog v-model="importDialog" max-width="480">
+      <v-card rounded="lg" border flat class="pa-1">
+        <v-card-title class="text-body-1 font-weight-bold">Import Tags</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 text-medium-emphasis mb-3">
+            Paste tag names separated by commas or new lines. Each one becomes a new tag.
+          </p>
+          <v-textarea
+            v-model="importText"
+            variant="outlined"
+            density="comfortable"
+            rows="6"
+            placeholder="Newsletter, Promo_2026, Onboarding"
+            hide-details
+          />
+          <div v-if="importPreview.length" class="text-caption text-medium-emphasis mt-2">
+            {{ importPreview.length }} tag{{ importPreview.length === 1 ? '' : 's' }} ready to import
+          </div>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" class="text-none" @click="importDialog = false">Cancel</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" :disabled="!importPreview.length" @click="importTags">Import</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <MpConfirmDialog
+      v-model="confirmDelete"
+      title="Delete tag?"
+      :message="`“${pendingDelete?.name}” will be permanently deleted and removed from any campaigns using it.`"
+      confirm-label="Delete"
+      danger
+      @confirm="doDelete"
+    />
+
+    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
+      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
+    </v-snackbar>
   </div>
 </template>

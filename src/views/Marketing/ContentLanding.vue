@@ -93,6 +93,14 @@ const childPages = computed<ChildPage[]>(() => [
     count: 6,
     color: 'teal',
   },
+  {
+    icon: 'sliders-horizontal',
+    title: 'Preference Management',
+    description: 'Subscription, unsubscribe, and profile pages your contacts see.',
+    to: `${base.value}/preference_pages`,
+    count: 6,
+    color: 'blue',
+  },
 ])
 
 const recentActivity = computed<ActivityItem[]>(() => [
