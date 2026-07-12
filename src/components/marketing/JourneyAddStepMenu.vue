@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { CatalogItem, NodeCategory } from '@/stores/journeyFlowData'
+import type { CatalogItem } from '@/stores/journeyFlowData'
+import { categoryColor } from './flowTheme'
 
 defineProps<{
   /** Addable catalog items shown in the menu. */
@@ -14,14 +15,6 @@ defineSlots<{
   /** Menu activator — bind the provided `props` onto the trigger element. */
   default(slotProps: { props: Record<string, unknown> }): unknown
 }>()
-
-const categoryColor: Record<NodeCategory, string> = {
-  trigger: 'primary',
-  action: 'success',
-  filter: 'secondary',
-  delay: 'warning',
-  end: 'grey-darken-1',
-}
 </script>
 
 <template>

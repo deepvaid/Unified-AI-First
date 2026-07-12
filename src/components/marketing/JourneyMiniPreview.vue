@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { FlowNode, NodeCategory } from '@/stores/journeyFlowData'
 import { buildSegments, type FlowSegment } from '@/composables/useFlowTree'
+import { categoryColor } from './flowTheme'
 
 // Read-only miniature of a journey flow. Pass `nodes` at the root; recursive
 // branch columns pass `segments` directly.
@@ -12,17 +13,16 @@ const props = defineProps<{
 
 const segs = computed(() => props.segments ?? buildSegments(props.nodes ?? []))
 
-const categoryColor: Record<NodeCategory, string> = {
-  trigger: 'primary',
-  action: 'success',
-  filter: 'secondary',
-  delay: 'warning',
-  end: 'secondary',
-}
-const pillStyle = (c: NodeCategory) => ({
-  backgroundColor: `rgba(var(--v-theme-${categoryColor[c]}), 0.12)`,
-  color: `rgb(var(--v-theme-${categoryColor[c]}))`,
-})
+// 'end' has no theme CSS var (grey-darken-1 is a Material class name) → neutral mix.
+const pillStyle = (c: NodeCategory) => c === 'end'
+  ? {
+      backgroundColor: 'rgba(var(--v-theme-on-surface), 0.08)',
+      color: 'rgba(var(--v-theme-on-surface), 0.65)',
+    }
+  : {
+      backgroundColor: `rgba(var(--v-theme-${categoryColor[c]}), 0.12)`,
+      color: `rgb(var(--v-theme-${categoryColor[c]}))`,
+    }
 </script>
 
 <template>

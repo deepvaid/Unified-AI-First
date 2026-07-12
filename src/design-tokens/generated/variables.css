@@ -81,6 +81,9 @@
   --mp-color-light-aiMetric-positive: var(--mp-color-light-success);
   --mp-color-light-aiMetric-negative: var(--mp-color-light-error);
   --mp-color-light-aiMetric-neutral: var(--mp-color-light-textMuted);
+  --mp-color-light-flowLogic-primary: #6D28D9;
+  --mp-color-light-flowLogic-onPrimary: #FFFFFF;
+  --mp-color-light-flowLogic-container: #EDE9FE;
   --mp-color-light-daVinci-iconFrom: var(--mp-color-light-aiAccent-gradientFrom);
   --mp-color-light-daVinci-iconTo: var(--mp-color-light-aiAccent-gradientTo);
   --mp-color-light-daVinci-text: var(--mp-color-light-aiAccent-textPrimary);
@@ -153,6 +156,9 @@
   --mp-color-dark-aiMetric-positive: var(--mp-color-dark-success);
   --mp-color-dark-aiMetric-negative: var(--mp-color-dark-error);
   --mp-color-dark-aiMetric-neutral: var(--mp-color-dark-textMuted);
+  --mp-color-dark-flowLogic-primary: #A78BFA;
+  --mp-color-dark-flowLogic-onPrimary: #1E1B4B;
+  --mp-color-dark-flowLogic-container: #2E2352;
   --mp-color-dark-daVinci-iconFrom: var(--mp-color-dark-aiAccent-gradientFrom);
   --mp-color-dark-daVinci-iconTo: var(--mp-color-dark-aiAccent-gradientTo);
   --mp-color-dark-daVinci-text: var(--mp-color-dark-aiAccent-textPrimary);

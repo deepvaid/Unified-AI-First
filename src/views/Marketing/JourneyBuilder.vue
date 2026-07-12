@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import JourneyFlowColumn from '@/components/marketing/JourneyFlowColumn.vue'
+import { categoryColor, categoryLabel } from '@/components/marketing/flowTheme'
 import { useCampaignsStore, type JourneyStatus } from '@/stores/useCampaigns'
 import { useDataJourneysStore } from '@/stores/useDataJourneys'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useContentStore } from '@/stores/useContent'
-import type { CatalogItem, FlowNode, NodeCategory } from '@/stores/journeyFlowData'
+import type { CatalogItem, FlowNode } from '@/stores/journeyFlowData'
 import { catalogByKind, dataNodeCatalog, nodeCatalog } from '@/stores/journeyFlowData'
-import { addNodeAfter as insertNodeAfter, buildSegments, detachNode, flowValidation, removeNode } from '@/composables/useFlowTree'
+import { addNodeAfter as insertNodeAfter, buildSegments, detachNode, flowValidation, removeNode, type FlowSegment } from '@/composables/useFlowTree'
 
 const router = useRouter()
 const route = useRoute()
@@ -57,16 +58,6 @@ function persistFlow() {
   snapshotNodes()
 }
 
-// Node colour is driven purely by category (the Liquid Sky reference colour-codes
-// by step type, never per-node): triggers=blue, actions=green,
-// filters=purple (stands in for the reference navy), delays=amber (for pink).
-const categoryColor: Record<NodeCategory, string> = {
-  trigger: 'primary',
-  action: 'success',
-  filter: 'secondary',
-  delay: 'warning',
-  end: 'grey-darken-1',
-}
 const journeyName = computed({
   get: () => journey.value?.name ?? '',
   set: v => { if (journey.value && v.trim()) journey.value.name = v.trim() },
@@ -78,21 +69,27 @@ const saveSnack = ref(false)
 const saveMessage = ref('Journey saved')
 const selectedNodeId = ref<string | null>(null)
 
+// Icon-tile accent (soft container + colored glyph) shared by palette rows and
+// the config-panel header; 'end' has no theme CSS var → neutral mix.
+const tileStyle = (c: keyof typeof categoryColor) => c === 'end'
+  ? { background: 'rgba(var(--v-theme-on-surface), 0.08)', color: 'rgba(var(--v-theme-on-surface), 0.65)' }
+  : { background: `rgba(var(--v-theme-${categoryColor[c]}), 0.12)`, color: `rgb(var(--v-theme-${categoryColor[c]}))` }
+
 // Step palette — the full legacy node catalog, grouped by category. Section
-// dots reuse the same category colour as the nodes they create (see categoryColor).
+// dots reuse the same category colour as the nodes they create (flowTheme).
 // Data journeys expose triggers + actions only (mirrors the legacy palette).
 interface PaletteSection { key: string; label: string; color: string; items: CatalogItem[] }
 
 const paletteSections = computed<PaletteSection[]>(() => {
   const catalog = domainCatalog.value
   const sections: PaletteSection[] = [
-    { key: 'triggers', label: 'Triggers', color: 'primary', items: catalog.filter(i => i.category === 'trigger') },
-    { key: 'actions', label: 'Actions', color: 'success', items: catalog.filter(i => i.category === 'action') },
+    { key: 'triggers', label: 'Triggers', color: categoryColor.trigger, items: catalog.filter(i => i.category === 'trigger') },
+    { key: 'actions', label: 'Actions', color: categoryColor.action, items: catalog.filter(i => i.category === 'action') },
   ]
   if (!isData.value) {
     sections.push(
-      { key: 'logic', label: 'Logic & Filters', color: 'secondary', items: catalog.filter(i => i.category === 'filter') },
-      { key: 'delay', label: 'Delays', color: 'warning', items: catalog.filter(i => i.category === 'delay') },
+      { key: 'logic', label: 'Logic & Filters', color: categoryColor.filter, items: catalog.filter(i => i.category === 'filter') },
+      { key: 'delay', label: 'Delays', color: categoryColor.delay, items: catalog.filter(i => i.category === 'delay') },
     )
   }
   return sections
@@ -227,6 +224,17 @@ watch(selectedNodeId, () => {
   draftConfig.value = config
 })
 
+// Keep the selected card in view — the config panel narrows the canvas and can
+// otherwise hide the very node being edited. Instant (non-smooth) scroll: smooth
+// scrolling is rAF-driven and silently stalls in hidden/backgrounded tabs.
+watch(selectedNodeId, id => {
+  if (!id) return
+  void nextTick(() => {
+    canvasEl.value?.querySelector('.flow-node--selected')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  })
+})
+
 function saveNode() {
   const n = selectedNode.value
   if (n) {
@@ -285,9 +293,17 @@ function tryActivate() {
   void nextTick(() => { issuesOpen.value = false })
 }
 
+// Jump-to-issue: select, scroll to, and pulse the offending node once.
+const flashNodeId = ref<string | null>(null)
+let flashTimer: ReturnType<typeof setTimeout> | undefined
 function jumpToIssue(nodeId?: string) {
-  if (nodeId) selectedNodeId.value = nodeId
   issuesOpen.value = false
+  if (!nodeId) return
+  selectedNodeId.value = nodeId
+  flashNodeId.value = null
+  void nextTick(() => { flashNodeId.value = nodeId })
+  clearTimeout(flashTimer)
+  flashTimer = setTimeout(() => { flashNodeId.value = null }, 1400)
 }
 
 // ── Node config panel: live-stats strip ──────────────────────────────────────
@@ -314,36 +330,143 @@ const nodeStatValue = computed(() => {
   }
   return 50 + (hashSeed(`${n.id}:${seed}`) % 950)
 })
-const statsLabel = computed(() => {
-  const n = selectedNode.value
-  if (!n) return ''
-  const count = nodeStatValue.value
-  const v = count.toLocaleString()
-  switch (n.category) {
-    case 'trigger': return `${v} contact${count === 1 ? '' : 's'} entered through this trigger`
-    case 'delay': return `${v} contact${count === 1 ? '' : 's'} waiting in this delay`
-    case 'filter': return `${v} contact${count === 1 ? '' : 's'} routed through this split`
-    case 'action': return `${v} contact${count === 1 ? '' : 's'} passed through this step`
+const statsDescription = computed(() => {
+  switch (selectedNode.value?.category) {
+    case 'trigger': return 'contacts entered through this trigger'
+    case 'delay': return 'contacts waiting in this delay'
+    case 'filter': return 'contacts routed through this split'
+    case 'action': return 'contacts passed through this step'
     default: return ''
   }
 })
 
-// ── Canvas zoom ───────────────────────────────────────────────────────────────
+// ── Canvas zoom + pan ─────────────────────────────────────────────────────────
+// Zoom uses the CSS `zoom` property (not transform:scale) so the scrollable
+// area grows/shrinks with the content and nothing clips off-screen; focal-point
+// compensation then works in plain layout coordinates.
+const canvasEl = ref<HTMLElement | null>(null)
 const zoom = ref(1)
 const zoomPct = computed(() => Math.round(zoom.value * 100))
-const zoomStyle = computed(() => ({ transform: `scale(${zoom.value})`, transformOrigin: 'top center' }))
-function zoomIn() { zoom.value = Math.min(1.5, +(zoom.value + 0.1).toFixed(2)) }
-function zoomOut() { zoom.value = Math.max(0.5, +(zoom.value - 0.1).toFixed(2)) }
-function resetZoom() { zoom.value = 1 }
+const zoomStyle = computed(() => ({ zoom: String(zoom.value) }))
 
-// ── Keyboard: Escape closes the config panel ──────────────────────────────────
-function onEscape(e: KeyboardEvent) {
-  if (e.key === 'Escape' && selectedNodeId.value) selectedNodeId.value = null
+function setZoomAround(next: number, focalX?: number, focalY?: number) {
+  const el = canvasEl.value
+  const clamped = Math.min(1.5, Math.max(0.5, +next.toFixed(2)))
+  if (clamped === zoom.value) return
+  if (!el) { zoom.value = clamped; return }
+  const fx = focalX ?? el.clientWidth / 2
+  const fy = focalY ?? el.clientHeight / 2
+  const ratio = clamped / zoom.value
+  const sl = el.scrollLeft
+  const st = el.scrollTop
+  zoom.value = clamped
+  void nextTick(() => {
+    el.scrollLeft = (sl + fx) * ratio - fx
+    el.scrollTop = (st + fy) * ratio - fy
+  })
 }
-onMounted(() => window.addEventListener('keydown', onEscape))
-onBeforeUnmount(() => window.removeEventListener('keydown', onEscape))
+function zoomIn() { setZoomAround(zoom.value + 0.1) }
+function zoomOut() { setZoomAround(zoom.value - 0.1) }
+function resetZoom() { setZoomAround(1) }
 
-const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Action', filter: 'Filter', delay: 'Delay', end: 'End' })[c]
+function fitToView() {
+  const el = canvasEl.value
+  if (!el) return
+  const contentW = el.scrollWidth / zoom.value
+  const contentH = el.scrollHeight / zoom.value
+  const next = Math.min(1.5, Math.max(0.5, Math.min(el.clientWidth / contentW, el.clientHeight / contentH) * 0.97))
+  zoom.value = +next.toFixed(2)
+  void nextTick(() => {
+    el.scrollLeft = Math.max(0, (el.scrollWidth - el.clientWidth) / 2)
+    el.scrollTop = 0
+  })
+}
+
+// Ctrl/Cmd + wheel zooms around the cursor; plain wheel keeps scrolling.
+// Needs a non-passive listener to preventDefault the browser page-zoom.
+function onCanvasWheel(e: WheelEvent) {
+  if (!(e.ctrlKey || e.metaKey) || !canvasEl.value) return
+  e.preventDefault()
+  const rect = canvasEl.value.getBoundingClientRect()
+  setZoomAround(zoom.value + (e.deltaY < 0 ? 0.1 : -0.1), e.clientX - rect.left, e.clientY - rect.top)
+}
+watch(canvasEl, (el, old) => {
+  old?.removeEventListener('wheel', onCanvasWheel)
+  el?.addEventListener('wheel', onCanvasWheel, { passive: false })
+})
+
+// Drag-to-pan on empty canvas: 3px threshold so node clicks stay clicks.
+const isPanning = ref(false)
+let panPointer: number | null = null
+let panStart = { x: 0, y: 0, left: 0, top: 0 }
+
+function onCanvasPointerDown(e: PointerEvent) {
+  const el = canvasEl.value
+  if (e.button !== 0 || !el) return
+  if ((e.target as HTMLElement).closest('.flow-node, button, a, input, .v-chip')) return
+  panPointer = e.pointerId
+  panStart = { x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop }
+}
+function onCanvasPointerMove(e: PointerEvent) {
+  const el = canvasEl.value
+  if (panPointer !== e.pointerId || !el) return
+  const dx = e.clientX - panStart.x
+  const dy = e.clientY - panStart.y
+  if (!isPanning.value && Math.hypot(dx, dy) < 3) return
+  if (!isPanning.value) {
+    isPanning.value = true
+    // Pointer may already be gone (released off-window / synthetic events).
+    try { el.setPointerCapture(e.pointerId) } catch { /* pan still works, uncaptured */ }
+  }
+  el.scrollLeft = panStart.left - dx
+  el.scrollTop = panStart.top - dy
+}
+function onCanvasPointerUp(e: PointerEvent) {
+  if (panPointer !== e.pointerId) return
+  panPointer = null
+  isPanning.value = false
+}
+
+// ── Keyboard: arrows walk the flow, Delete removes, Escape closes ────────────
+function flattenSegs(segs: FlowSegment[], out: string[] = []): string[] {
+  for (const s of segs) {
+    out.push(s.node.id)
+    if (s.branches) for (const b of s.branches) { if (!b.empty) flattenSegs(b.segments, out) }
+  }
+  return out
+}
+const flatIds = computed(() => flattenSegs(segments.value))
+
+function onKeydown(e: KeyboardEvent) {
+  const t = e.target as HTMLElement | null
+  if (t && (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable)) return
+  if (e.key === 'Escape') {
+    if (selectedNodeId.value) selectedNodeId.value = null
+    return
+  }
+  const down = e.key === 'ArrowDown' || e.key === 'Down'
+  const up = e.key === 'ArrowUp' || e.key === 'Up'
+  if (down || up) {
+    const ids = flatIds.value
+    if (!ids.length) return
+    e.preventDefault()
+    const idx = selectedNodeId.value ? ids.indexOf(selectedNodeId.value) : -1
+    selectedNodeId.value = down
+      ? ids[Math.min(ids.length - 1, idx + 1)] ?? null
+      : ids[Math.max(0, idx <= 0 ? 0 : idx - 1)] ?? null
+    return
+  }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNode.value && selectedNode.value.category !== 'trigger') {
+    e.preventDefault()
+    deleteNode(selectedNode.value.id)
+  }
+}
+window.addEventListener('keydown', onKeydown)
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  canvasEl.value?.removeEventListener('wheel', onCanvasWheel)
+  clearTimeout(flashTimer)
+})
 </script>
 
 <template>
@@ -368,12 +491,18 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
           aria-label="Rename journey" @click="editingName = true; nameInput = journeyName"
           @keydown.enter.prevent="editingName = true; nameInput = journeyName">
           {{ journeyName }}
+          <v-icon size="13" class="jb-name__pencil ml-1">pencil</v-icon>
         </div>
         <v-text-field v-else v-model="nameInput" variant="outlined" density="compact" hide-details autofocus
           style="width:320px;" aria-label="Journey name"
           @blur="journeyName = nameInput; editingName = false" @keyup.enter="journeyName = nameInput; editingName = false"></v-text-field>
         <MpStatusChip :status="journeyStatus" type="general" size="x-small" />
-        <v-chip v-if="isDirty" size="x-small" color="warning" variant="tonal" class="font-weight-bold">Unsaved changes</v-chip>
+        <v-chip v-if="isDirty" size="x-small" color="warning" variant="tonal" class="font-weight-bold flex-shrink-0">
+          <v-icon start size="11">circle-dashed</v-icon>Unsaved changes
+        </v-chip>
+        <v-chip v-else size="x-small" variant="text" class="font-weight-medium text-medium-emphasis flex-shrink-0">
+          <v-icon start size="11" color="success">circle-check</v-icon>Saved
+        </v-chip>
       </div>
       <div class="d-flex align-center gap-2">
         <v-tooltip text="Ask Da Vinci to review this journey" location="bottom">
@@ -382,7 +511,7 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
               aria-label="Ask Da Vinci to review this journey" @click="askDaVinci"></v-btn>
           </template>
         </v-tooltip>
-        <v-btn v-if="issues.length" variant="text" size="small" class="text-none" prepend-icon="triangle-alert"
+        <v-btn v-if="issues.length" variant="tonal" size="small" rounded="pill" class="text-none" prepend-icon="triangle-alert"
           :color="issueErrors.length ? 'error' : 'warning'" @click="issuesOpen = true">
           {{ issues.length }} {{ issues.length === 1 ? 'issue' : 'issues' }}
         </v-btn>
@@ -412,6 +541,9 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
                   </v-icon>
                 </template>
                 <v-list-item-title class="text-caption ml-2" style="white-space: normal;">{{ issue.message }}</v-list-item-title>
+                <template v-if="issue.nodeId" #append>
+                  <v-icon size="13" class="text-disabled">locate</v-icon>
+                </template>
               </v-list-item>
             </v-list>
           </v-card>
@@ -441,7 +573,7 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
           <v-text-field v-model="paletteQuery" placeholder="Search steps..." variant="outlined" density="compact"
             hide-details clearable prepend-inner-icon="search" aria-label="Search steps" />
         </div>
-        <div class="flex-grow-1 overflow-y-auto pa-2">
+        <div class="flex-grow-1 overflow-y-auto pa-2 jb-palette__scroll">
           <div v-if="visibleSections.length === 0" class="text-caption text-medium-emphasis text-center pa-4">
             No steps match "{{ paletteQuery }}"
           </div>
@@ -450,14 +582,15 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
               @click="toggleSection(s.key)">
               <span class="palette-dot" :style="{ backgroundColor: `rgb(var(--v-theme-${s.color}))` }"></span>
               <span class="palette-section__label">{{ s.label }}</span>
-              <span class="text-caption text-disabled mr-1">{{ s.items.length }}</span>
+              <span class="palette-count">{{ s.items.length }}</span>
               <v-icon size="18" class="palette-chevron" :class="{ 'palette-chevron--open': openSections[s.key] }">chevron-down</v-icon>
             </button>
             <div v-show="openSections[s.key] || paletteQuery" :id="`palette-${s.key}`" class="palette-section__items">
-              <button v-for="item in s.items" :key="item.kind" class="palette-item" @click="addFromPalette(item)">
-                <v-avatar :color="categoryColor[item.category]" size="28" rounded="lg">
-                  <v-icon color="white" size="15">{{ item.icon }}</v-icon>
-                </v-avatar>
+              <button v-for="item in s.items" :key="item.kind" class="palette-item" :title="item.subtitle"
+                @click="addFromPalette(item)">
+                <span class="palette-tile" :style="tileStyle(item.category)">
+                  <v-icon size="15">{{ item.icon }}</v-icon>
+                </span>
                 <span class="palette-item__text">
                   <span class="palette-item__title">{{ item.title }}</span>
                   <span class="palette-item__sub">{{ item.subtitle }}</span>
@@ -470,11 +603,13 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
       </aside>
 
       <!-- Canvas -->
-      <div class="jb-canvas bg-background">
-        <div class="jb-canvas__scroll">
+      <div class="jb-canvas">
+        <div ref="canvasEl" class="jb-canvas__scroll" :class="{ 'jb-canvas__scroll--panning': isPanning }"
+          @pointerdown="onCanvasPointerDown" @pointermove="onCanvasPointerMove"
+          @pointerup="onCanvasPointerUp" @pointercancel="onCanvasPointerUp">
           <div class="d-flex flex-column align-center pa-8" :style="zoomStyle">
-            <div class="d-flex flex-column align-center" style="min-width:460px;">
-              <JourneyFlowColumn :segments="segments" :selected-id="selectedNodeId" :catalog="domainCatalog"
+            <div class="d-flex flex-column align-center" style="min-width:320px;">
+              <JourneyFlowColumn :segments="segments" :selected-id="selectedNodeId" :catalog="domainCatalog" :flash-id="flashNodeId"
                 @select="selectNode"
                 @add="(afterId, item, childIndex) => addNodeAfter(afterId, item, childIndex)"
                 @duplicate="duplicateNode"
@@ -485,88 +620,101 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
 
         <!-- Zoom controls -->
         <div class="jb-zoom d-flex align-center bg-surface border rounded-lg">
-          <v-tooltip text="Reset zoom" location="top">
+          <v-tooltip text="Fit to view" location="top">
             <template #activator="{ props }">
-              <v-btn v-bind="props" icon="maximize" variant="text" size="small" aria-label="Reset zoom" @click="resetZoom"></v-btn>
+              <v-btn v-bind="props" icon="maximize" variant="text" size="small" aria-label="Fit to view" @click="fitToView"></v-btn>
             </template>
           </v-tooltip>
           <v-divider vertical style="height:20px;"></v-divider>
           <v-btn icon="zoom-out" variant="text" size="small" aria-label="Zoom out" :disabled="zoom <= 0.5" @click="zoomOut"></v-btn>
-          <span class="jb-zoom__pct text-caption font-weight-medium">{{ zoomPct }}%</span>
+          <v-tooltip text="Reset to 100%" location="top">
+            <template #activator="{ props }">
+              <button v-bind="props" class="jb-zoom__pct text-caption font-weight-medium" aria-label="Reset zoom to 100%"
+                @click="resetZoom">{{ zoomPct }}%</button>
+            </template>
+          </v-tooltip>
           <v-btn icon="zoom-in" variant="text" size="small" aria-label="Zoom in" :disabled="zoom >= 1.5" @click="zoomIn"></v-btn>
         </div>
       </div>
 
       <!-- Config panel -->
       <aside v-if="selectedNode" class="jb-panel border-l bg-surface d-flex flex-column">
-        <div class="pa-4 border-b d-flex align-center justify-space-between flex-shrink-0">
-          <div class="d-flex align-center gap-3" style="min-width:0;">
-            <v-avatar :color="categoryColor[selectedNode.category]" size="32" rounded="lg" class="flex-shrink-0">
-              <v-icon color="white" size="17">{{ selectedNode.icon }}</v-icon>
-            </v-avatar>
-            <div style="min-width:0;">
-              <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase">{{ categoryLabel(selectedNode.category) }}</div>
-              <div class="text-body-2 font-weight-bold text-truncate">{{ selectedNode.title }}</div>
+          <div class="pa-4 border-b d-flex align-center justify-space-between flex-shrink-0">
+            <div class="d-flex align-center gap-3" style="min-width:0;">
+              <span class="jb-panel__tile flex-shrink-0" :style="tileStyle(selectedNode.category)">
+                <v-icon size="17">{{ selectedNode.icon }}</v-icon>
+              </span>
+              <div style="min-width:0;">
+                <div class="jb-panel__eyebrow" :style="{ color: tileStyle(selectedNode.category).color }">
+                  {{ categoryLabel[selectedNode.category] }}
+                </div>
+                <div class="text-body-2 font-weight-bold text-truncate">{{ selectedNode.title }}</div>
+              </div>
             </div>
-          </div>
-          <v-btn icon="x" variant="text" size="small" aria-label="Close settings panel" @click="cancelPanel"></v-btn>
-        </div>
-
-        <div class="pa-4 flex-grow-1 overflow-y-auto">
-          <v-alert v-if="!selectedNode.configured" type="warning" variant="tonal" density="compact" rounded="lg" class="text-caption mb-4">
-            This step isn't configured yet — review the settings below and save.
-          </v-alert>
-
-          <!-- Live-stats strip -->
-          <div v-if="statsLabel" class="jb-stats d-flex align-center gap-2 pa-3 mb-4 border rounded-lg bg-background">
-            <v-icon size="16" class="text-medium-emphasis flex-shrink-0">users</v-icon>
-            <span class="text-caption flex-grow-1">{{ statsLabel }}</span>
-            <router-link :to="{ name: 'AllContacts', params: { accountId } }" class="text-caption font-weight-bold text-primary jb-stats__link">
-              View contacts
-            </router-link>
-            <v-btn icon="refresh-cw" variant="text" size="x-small" aria-label="Refresh contact stats"
-              @click="refreshStats(selectedNode.id)"></v-btn>
+            <v-btn icon="x" variant="text" size="small" aria-label="Close settings panel" @click="cancelPanel"></v-btn>
           </div>
 
-          <v-text-field v-model="draft.title" label="Step name" variant="outlined" density="compact" class="mb-3"></v-text-field>
-          <v-text-field v-model="draft.subtitle" label="Description" variant="outlined" density="compact" class="mb-4"></v-text-field>
-          <v-divider v-if="selectedFields.length" class="mb-4"></v-divider>
+          <div class="pa-4 flex-grow-1 overflow-y-auto">
+            <v-alert v-if="!selectedNode.configured" type="warning" variant="tonal" density="compact" rounded="lg" class="text-caption mb-4">
+              This step isn't configured yet — review the settings below and save.
+            </v-alert>
 
-          <!-- Schema-driven fields from the node catalog -->
-          <template v-for="f in selectedFields" :key="f.key">
-            <v-select v-if="f.type === 'select'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="f.options"
-              variant="outlined" density="compact" class="mb-3"
-              @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
-            <v-select v-else-if="f.type === 'content-picker'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="contentNames"
-              variant="outlined" density="compact" class="mb-3" prepend-inner-icon="file-text"
-              @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
-            <v-select v-else-if="f.type === 'multi-select'" :model-value="(draftConfig[f.key] as string[] ?? [])" :label="f.label" :items="f.options"
-              variant="outlined" density="compact" class="mb-3" multiple chips closable-chips
-              @update:model-value="(v: string[]) => draftConfig[f.key] = v"></v-select>
-            <v-text-field v-else-if="f.type === 'number'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" type="number"
-              variant="outlined" density="compact" class="mb-3"
-              @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
-            <v-switch v-else-if="f.type === 'switch'" v-model="draftConfig[f.key]" :label="f.label"
-              color="primary" density="compact" hide-details class="mb-3"></v-switch>
-            <v-text-field v-else :model-value="String(draftConfig[f.key] ?? '')" :label="f.label"
-              variant="outlined" density="compact" class="mb-3"
-              @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
-          </template>
+            <!-- Live-stats strip -->
+            <div v-if="statsDescription" class="jb-stats d-flex align-center gap-3 pa-3 mb-4 border rounded-lg">
+              <v-icon size="16" class="text-medium-emphasis flex-shrink-0">users</v-icon>
+              <div class="flex-grow-1" style="min-width:0;">
+                <div class="text-body-2 font-weight-bold" style="line-height:1.2;">{{ nodeStatValue.toLocaleString() }}</div>
+                <div class="text-caption text-medium-emphasis">{{ statsDescription }}</div>
+              </div>
+              <router-link :to="{ name: 'AllContacts', params: { accountId } }" class="text-caption font-weight-bold text-primary jb-stats__link">
+                View contacts
+              </router-link>
+              <v-btn icon="refresh-cw" variant="text" size="x-small" aria-label="Refresh contact stats"
+                @click="refreshStats(selectedNode.id)"></v-btn>
+            </div>
 
-          <v-alert v-if="selectedNode.category === 'delay'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
-            Journey pauses here before moving to the next step.
-          </v-alert>
-          <v-alert v-else-if="selectedNode.category === 'filter'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
-            Contacts are routed into one of the branches: {{ (selectedNode.branchLabels ?? []).join(' · ') }}.
-          </v-alert>
-        </div>
+            <div class="jb-section-label">Step details</div>
+            <v-text-field v-model="draft.title" label="Step name" variant="outlined" density="compact" class="mb-3"></v-text-field>
+            <v-text-field v-model="draft.subtitle" label="Description" variant="outlined" density="compact" class="mb-4"></v-text-field>
 
-        <div class="pa-4 border-t d-flex gap-2 flex-shrink-0">
-          <v-btn color="primary" variant="flat" class="text-none flex-grow-1" @click="saveNode">Save</v-btn>
-          <v-btn variant="outlined" class="text-none" :disabled="!canDetach" @click="detachSelected">Detach</v-btn>
-          <v-btn variant="outlined" color="error" class="text-none" :disabled="selectedNode.category === 'trigger'"
-            @click="removeSelected">Remove</v-btn>
-        </div>
+            <template v-if="selectedFields.length">
+              <div class="jb-section-label">Configuration</div>
+              <!-- Schema-driven fields from the node catalog -->
+              <template v-for="f in selectedFields" :key="f.key">
+                <v-select v-if="f.type === 'select'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="f.options"
+                  variant="outlined" density="compact" class="mb-3"
+                  @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
+                <v-select v-else-if="f.type === 'content-picker'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="contentNames"
+                  variant="outlined" density="compact" class="mb-3" prepend-inner-icon="file-text"
+                  @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
+                <v-select v-else-if="f.type === 'multi-select'" :model-value="(draftConfig[f.key] as string[] ?? [])" :label="f.label" :items="f.options"
+                  variant="outlined" density="compact" class="mb-3" multiple chips closable-chips
+                  @update:model-value="(v: string[]) => draftConfig[f.key] = v"></v-select>
+                <v-text-field v-else-if="f.type === 'number'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" type="number"
+                  variant="outlined" density="compact" class="mb-3"
+                  @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
+                <v-switch v-else-if="f.type === 'switch'" v-model="draftConfig[f.key]" :label="f.label"
+                  color="primary" density="compact" hide-details class="mb-3"></v-switch>
+                <v-text-field v-else :model-value="String(draftConfig[f.key] ?? '')" :label="f.label"
+                  variant="outlined" density="compact" class="mb-3"
+                  @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
+              </template>
+            </template>
+
+            <v-alert v-if="selectedNode.category === 'delay'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
+              Journey pauses here before moving to the next step.
+            </v-alert>
+            <v-alert v-else-if="selectedNode.category === 'filter'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
+              Contacts are routed into one of the branches: {{ (selectedNode.branchLabels ?? []).join(' · ') }}.
+            </v-alert>
+          </div>
+
+          <div class="pa-4 border-t d-flex align-center gap-2 flex-shrink-0">
+            <v-btn color="primary" variant="flat" class="text-none flex-grow-1" @click="saveNode">Save</v-btn>
+            <v-btn variant="tonal" class="text-none" :disabled="!canDetach" @click="detachSelected">Detach</v-btn>
+            <v-btn variant="text" color="error" class="text-none px-2" :disabled="selectedNode.category === 'trigger'"
+              @click="removeSelected">Remove</v-btn>
+          </div>
       </aside>
     </div>
 
@@ -591,6 +739,8 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
 .jb-name { cursor: pointer; border-radius: 6px; padding: 2px 6px; margin: -2px -6px; transition: background 0.15s; }
 .jb-name:hover { background: rgba(var(--v-theme-on-surface), 0.06); }
 .jb-name:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
+.jb-name__pencil { opacity: 0; color: rgba(var(--v-theme-on-surface), 0.5); transition: opacity 0.15s; }
+.jb-name:hover .jb-name__pencil, .jb-name:focus-visible .jb-name__pencil { opacity: 1; }
 
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
@@ -599,6 +749,7 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
 
 /* ── Palette ─────────────────────────────────────────────────────────────── */
 .jb-palette { width: 248px; flex-shrink: 0; overflow: hidden; }
+.jb-palette__scroll { scrollbar-width: thin; scrollbar-color: rgba(var(--v-theme-on-surface), 0.2) transparent; }
 .palette-section { margin-bottom: 4px; }
 .palette-section__header {
   display: flex; align-items: center; gap: 8px; width: 100%;
@@ -609,10 +760,20 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
 .palette-section__header:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
 .palette-dot { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
 .palette-section__label { flex: 1; font-size: 0.8125rem; font-weight: 700; }
+.palette-count {
+  font-size: 0.625rem; font-weight: 700; line-height: 1;
+  padding: 3px 7px; border-radius: 999px; margin-right: 2px;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  background: rgba(var(--v-theme-on-surface), 0.06);
+}
 .palette-chevron { transition: transform 0.2s ease; color: rgba(var(--v-theme-on-surface), 0.5); }
 .palette-chevron--open { transform: rotate(180deg); }
 .palette-section__items { padding: 2px 0 6px; }
 
+.palette-tile {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+}
 .palette-item {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 7px 8px; border: 0; background: transparent; cursor: pointer;
@@ -628,21 +789,48 @@ const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Actio
 
 /* ── Canvas ──────────────────────────────────────────────────────────────── */
 .jb-canvas { flex: 1 1 auto; position: relative; overflow: hidden; }
-.jb-canvas__scroll { position: absolute; inset: 0; overflow: auto; }
+.jb-canvas__scroll {
+  position: absolute; inset: 0; overflow: auto;
+  cursor: grab; touch-action: none;
+  background-color: rgb(var(--v-theme-background));
+  background-image: radial-gradient(circle, rgba(var(--v-theme-on-surface), 0.13) 1.1px, transparent 1.1px);
+  background-size: 22px 22px;
+  background-attachment: local;
+}
+.jb-canvas__scroll--panning { cursor: grabbing; user-select: none; }
 
 /* Node card, connector, and branch styles live in JourneyFlowColumn.vue */
 
 /* ── Zoom controls ───────────────────────────────────────────────────────── */
-.jb-zoom { position: absolute; bottom: 16px; right: 16px; padding: 2px; gap: 2px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-.jb-zoom__pct { min-width: 40px; text-align: center; color: rgba(var(--v-theme-on-surface), 0.7); }
+.jb-zoom { position: absolute; bottom: 16px; right: 16px; padding: 2px; gap: 2px; box-shadow: var(--mp-shadow-md); }
+.jb-zoom__pct {
+  min-width: 44px; text-align: center; color: rgba(var(--v-theme-on-surface), 0.7);
+  border: 0; background: transparent; cursor: pointer; padding: 6px 2px; border-radius: 6px;
+}
+.jb-zoom__pct:hover { background: rgba(var(--v-theme-on-surface), 0.05); }
+.jb-zoom__pct:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
 
 /* ── Config panel ────────────────────────────────────────────────────────── */
-.jb-panel { width: 340px; flex-shrink: 0; overflow: hidden; }
+/* No entrance animation: hidden/backgrounded renderers freeze animation frames,
+   which would leave the panel stuck invisible at 0%. Instant + elevated is safe. */
+.jb-panel { width: 380px; flex-shrink: 0; overflow: hidden; box-shadow: var(--mp-shadow-lg); }
+.jb-panel__tile {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 10px;
+}
+.jb-panel__eyebrow {
+  font-size: 0.625rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; line-height: 1.4;
+}
+.jb-section-label {
+  font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+  color: rgba(var(--v-theme-on-surface), 0.45); margin-bottom: 10px;
+}
 
 /* ── Detached steps tray ─────────────────────────────────────────────────── */
 .jb-detached { min-height: 40px; }
 
 /* ── Live-stats strip ────────────────────────────────────────────────────── */
+.jb-stats { background: rgba(var(--v-theme-on-surface), 0.03); }
 .jb-stats__link { text-decoration: none; white-space: nowrap; }
 .jb-stats__link:hover { text-decoration: underline; }
 </style>

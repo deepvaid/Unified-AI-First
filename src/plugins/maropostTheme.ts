@@ -33,6 +33,9 @@ import {
   mp_color_light_outlineVariant,
   mp_color_light_border,
   mp_color_light_textPrimary,
+  mp_color_light_flowLogic_primary,
+  mp_color_light_flowLogic_onPrimary,
+  mp_color_light_flowLogic_container,
   mp_color_blue_50,
   mp_color_blue_100,
   mp_color_blue_200,
@@ -66,6 +69,9 @@ import {
   mp_color_dark_outlineVariant,
   mp_color_dark_border,
   mp_color_dark_textPrimary,
+  mp_color_dark_flowLogic_primary,
+  mp_color_dark_flowLogic_onPrimary,
+  mp_color_dark_flowLogic_container,
   mp_typography_fontFamily_base,
   mp_component_button_typography_fontSize,
   mp_component_button_typography_fontWeight,
@@ -122,6 +128,9 @@ export const maropostLight = {
     'outline-variant': mp_color_light_outlineVariant,
     'neutral-100': mp_color_neutral_100,
     'neutral-200': mp_color_neutral_200,
+    'flow-logic': mp_color_light_flowLogic_primary,
+    'on-flow-logic': mp_color_light_flowLogic_onPrimary,
+    'flow-logic-container': mp_color_light_flowLogic_container,
   },
 }
 
@@ -155,6 +164,9 @@ export const maropostDark = {
     'surface-bright': mp_color_dark_surfaceBright,
     outline: mp_color_dark_outline,
     'outline-variant': mp_color_dark_outlineVariant,
+    'flow-logic': mp_color_dark_flowLogic_primary,
+    'on-flow-logic': mp_color_dark_flowLogic_onPrimary,
+    'flow-logic-container': mp_color_dark_flowLogic_container,
   },
 }
 

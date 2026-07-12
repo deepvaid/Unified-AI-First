@@ -4,12 +4,15 @@ import type { CatalogItem, NodeCategory } from '@/stores/journeyFlowData'
 import { nodeCatalog } from '@/stores/journeyFlowData'
 import type { FlowSegment } from '@/composables/useFlowTree'
 import JourneyAddStepMenu from './JourneyAddStepMenu.vue'
+import { branchChipColor, categoryColor, categoryLabel } from './flowTheme'
 
 const props = defineProps<{
   segments: FlowSegment[]
   selectedId: string | null
   /** Palette for the add-step menus; defaults to the marketing catalog. */
   catalog?: CatalogItem[]
+  /** Node to pulse once (jump-to-issue); cleared by the parent on a timer. */
+  flashId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -19,30 +22,25 @@ const emit = defineEmits<{
   remove: [id: string]
 }>()
 
-const categoryColor: Record<NodeCategory, string> = {
-  trigger: 'primary',
-  action: 'success',
-  filter: 'secondary',
-  delay: 'warning',
-  end: 'grey-darken-1',
-}
-const categoryLabel = (c: NodeCategory) => ({ trigger: 'Trigger', action: 'Action', filter: 'Filter', delay: 'Delay', end: 'End' })[c]
-const headerStyle = (c: NodeCategory) => c === 'end'
+// Per-card accent fed to the CSS via custom properties — the spine, icon tile,
+// and eyebrow all derive from the one category color. 'end' has no theme key
+// (grey-darken-1 is a Material class name, not a --v-theme var) → neutral mix.
+const accentVars = (c: NodeCategory) => c === 'end'
   ? {
-      backgroundColor: 'rgba(var(--v-theme-on-surface), 0.06)',
-      borderBottomColor: 'rgba(var(--v-theme-on-surface), 0.12)',
+      '--node-accent': 'rgba(var(--v-theme-on-surface), 0.55)',
+      '--node-accent-soft': 'rgba(var(--v-theme-on-surface), 0.08)',
     }
   : {
-      backgroundColor: `rgba(var(--v-theme-${categoryColor[c]}), 0.12)`,
-      borderBottomColor: `rgba(var(--v-theme-${categoryColor[c]}), 0.24)`,
+      '--node-accent': `rgb(var(--v-theme-${categoryColor[c]}))`,
+      '--node-accent-soft': `rgba(var(--v-theme-${categoryColor[c]}), 0.12)`,
     }
 
 const addableItems = computed(() =>
   (props.catalog ?? nodeCatalog).filter(i => i.category !== 'trigger' && i.category !== 'end'),
 )
 
-const branchChipColor = (label: string) =>
-  label.startsWith('YES') ? 'success' : label.startsWith('NO') ? 'error' : 'secondary'
+const nodeAria = (seg: FlowSegment) =>
+  `${categoryLabel[seg.node.category]} step: ${seg.node.title}${seg.node.configured ? '' : ' — needs setup'}`
 
 /** The run ends here (no join to continue to, and not an explicit End step). */
 const endsRun = computed(() => {
@@ -57,26 +55,31 @@ const endsRun = computed(() => {
   <template v-for="seg in segments" :key="seg.node.id">
     <!-- Node card -->
     <div class="d-flex flex-column align-center flow-node-wrap">
-      <div class="flow-node" :class="{ 'flow-node--selected': selectedId === seg.node.id }">
-        <button class="flow-node__open" :aria-label="`Configure step: ${seg.node.title}`" @click="emit('select', seg.node.id)">
-          <span class="flow-node__header" :style="headerStyle(seg.node.category)">
-            <v-avatar :color="categoryColor[seg.node.category]" size="34" rounded="lg" class="flex-shrink-0">
-              <v-icon color="white" size="18">{{ seg.node.icon }}</v-icon>
-            </v-avatar>
-            <span class="flow-node__heading">
-              <span class="flow-node__type">{{ categoryLabel(seg.node.category) }}</span>
-              <span class="flow-node__title">{{ seg.node.title }}</span>
-              <span v-if="seg.node.contacts != null" class="flow-node__meta">
-                <v-icon size="11" class="mr-1">users</v-icon>{{ seg.node.contacts.toLocaleString() }} contacts
-              </span>
+      <div class="flow-node"
+        :class="{
+          'flow-node--selected': selectedId === seg.node.id,
+          'flow-node--warn': !seg.node.configured,
+          'flow-node--flash': flashId === seg.node.id,
+        }"
+        :style="accentVars(seg.node.category)">
+        <button class="flow-node__open" :aria-label="nodeAria(seg)" @click="emit('select', seg.node.id)">
+          <span class="flow-node__main">
+            <span class="flow-node__icon" aria-hidden="true">
+              <v-icon size="17">{{ seg.node.icon }}</v-icon>
             </span>
-            <v-tooltip v-if="!seg.node.configured" text="This step isn't configured yet" location="top">
-              <template #activator="{ props: tip }">
-                <v-icon v-bind="tip" size="16" color="warning" class="flow-node__warn">triangle-alert</v-icon>
-              </template>
-            </v-tooltip>
+            <span class="flow-node__heading">
+              <span class="flow-node__type">{{ categoryLabel[seg.node.category] }}</span>
+              <span class="flow-node__title">{{ seg.node.title }}</span>
+              <span v-if="seg.node.subtitle" class="flow-node__body">{{ seg.node.subtitle }}</span>
+            </span>
           </span>
-          <span class="flow-node__body">{{ seg.node.subtitle }}</span>
+          <span v-if="seg.node.contacts != null" class="flow-node__foot">
+            <v-icon size="11" class="mr-1">users</v-icon>{{ seg.node.contacts.toLocaleString() }} contacts
+          </span>
+          <span v-if="!seg.node.configured" class="flow-node__setup">
+            <v-icon size="13" class="mr-1 flex-shrink-0">triangle-alert</v-icon>
+            Needs setup — open to configure
+          </span>
         </button>
 
         <div class="flow-node__tools">
@@ -111,7 +114,7 @@ const endsRun = computed(() => {
         <div class="flow-connector"></div>
         <JourneyAddStepMenu :items="addableItems" @pick="item => emit('add', seg.node.id, item, 0)">
           <template #default="{ props: menu }">
-            <v-btn v-bind="menu" icon="plus" size="x-small" variant="flat" color="primary" class="add-btn"
+            <v-btn v-bind="menu" icon="plus" size="x-small" variant="flat" class="add-btn"
               aria-label="Add step after this one"></v-btn>
           </template>
         </JourneyAddStepMenu>
@@ -123,13 +126,14 @@ const endsRun = computed(() => {
     <div v-if="seg.branches" class="branch-row">
       <div v-for="(b, i) in seg.branches" :key="i" class="branch-col" :class="{ 'branch-col--joins': !!seg.joinId }">
         <div class="branch-stub"></div>
-        <v-chip :color="branchChipColor(b.label)" size="x-small" variant="flat" class="font-weight-bold mb-2 flex-shrink-0">
+        <v-chip :color="branchChipColor(b.label)" size="x-small" variant="outlined"
+          class="branch-chip font-weight-bold mb-2 flex-shrink-0">
           {{ b.label }}
         </v-chip>
 
         <template v-if="!b.empty">
           <div class="flow-connector"></div>
-          <JourneyFlowColumn :segments="b.segments" :selected-id="selectedId" :catalog="catalog"
+          <JourneyFlowColumn :segments="b.segments" :selected-id="selectedId" :catalog="catalog" :flash-id="flashId"
             @select="id => emit('select', id)"
             @add="(afterId, item, childIndex) => emit('add', afterId, item, childIndex)"
             @duplicate="id => emit('duplicate', id)"
@@ -151,83 +155,183 @@ const endsRun = computed(() => {
       </div>
     </div>
     <!-- Converge into the join node (rendered as the next segment) -->
-    <div v-if="seg.branches && seg.joinId" class="flow-connector"></div>
+    <div v-if="seg.branches && seg.joinId" class="flow-connector flow-connector--arrow"></div>
   </template>
 
-  <v-card v-if="endsRun" variant="outlined" rounded="lg"
-    class="pa-3 d-flex align-center justify-center gap-2 text-medium-emphasis flow-end flex-shrink-0">
-    <v-icon size="18">flag</v-icon>
-    <span class="text-caption font-weight-medium">End of journey</span>
-  </v-card>
+  <div v-if="endsRun" class="flow-end flex-shrink-0" role="note" aria-label="End of journey">
+    <v-icon size="13" class="mr-1">flag</v-icon>
+    <span>End of journey</span>
+  </div>
 </template>
 
 <style scoped>
+/* ── Node card ──────────────────────────────────────────────────────────────
+   Single surface with a 4px category spine; accent colors arrive via
+   --node-accent / --node-accent-soft custom props set per card. */
 .flow-node {
-  position: relative; width: 460px; background: rgb(var(--v-theme-surface));
+  position: relative; width: 320px; background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px; overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s;
+  border-radius: 12px; overflow: hidden;
+  box-shadow: var(--mp-shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.flow-node:hover { border-color: rgba(var(--v-theme-primary), 0.5); }
-.flow-node--selected { border-color: rgb(var(--v-theme-primary)); box-shadow: 0 0 0 1px rgb(var(--v-theme-primary)); }
+.flow-node::before {
+  content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
+  background: var(--node-accent); opacity: 0.9; transition: opacity 0.15s;
+}
+.flow-node:hover { box-shadow: var(--mp-shadow-lg); border-color: rgba(var(--v-theme-on-surface), 0.18); }
+.flow-node:hover::before { opacity: 1; }
+.flow-node--selected {
+  border-color: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 2px rgb(var(--v-theme-primary)), var(--mp-shadow-lg);
+}
+.flow-node--warn::before { background: rgb(var(--v-theme-warning)); }
+.flow-node--flash { animation: node-flash 1.2s ease-out 1; }
+@keyframes node-flash {
+  0%, 100% { box-shadow: var(--mp-shadow-sm); }
+  35% { box-shadow: 0 0 0 6px rgba(var(--v-theme-warning), 0.35), var(--mp-shadow-lg); }
+  70% { box-shadow: 0 0 0 3px rgba(var(--v-theme-warning), 0.2), var(--mp-shadow-md); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-node--flash { animation: none; }
+}
 
 .flow-node__open {
   display: block; width: 100%; padding: 0; margin: 0; border: 0;
   background: transparent; text-align: left; cursor: pointer; color: inherit;
 }
 .flow-node__open:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; border-radius: 12px; }
-.flow-node__header {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 64px 10px 12px;
-  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+.flow-node__main { display: flex; align-items: flex-start; gap: 10px; padding: 12px 64px 12px 16px; }
+.flow-node__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  background: var(--node-accent-soft); color: var(--node-accent);
 }
 .flow-node__heading { display: flex; flex-direction: column; min-width: 0; }
-.flow-node__type { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(var(--v-theme-on-surface), 0.55); line-height: 1.4; }
-.flow-node__title { font-size: 0.875rem; font-weight: 700; color: rgb(var(--v-theme-on-surface)); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.flow-node__meta { display: inline-flex; align-items: center; margin-top: 2px; font-size: 0.6875rem; font-weight: 600; line-height: 1.3; color: rgba(var(--v-theme-on-surface), 0.6); }
-.flow-node__body { display: block; padding: 10px 14px; font-size: 0.75rem; color: rgba(var(--v-theme-on-surface), 0.65); }
+.flow-node__type {
+  font-size: 0.625rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--node-accent); line-height: 1.4;
+}
+.flow-node--warn .flow-node__type { color: rgb(var(--v-theme-warning)); }
+.flow-node__title {
+  font-size: 0.875rem; font-weight: 700; color: rgb(var(--v-theme-on-surface));
+  line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.flow-node__body {
+  margin-top: 2px; font-size: 0.75rem; line-height: 1.4;
+  color: rgba(var(--v-theme-on-surface), 0.62);
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.flow-node__foot {
+  display: flex; align-items: center; padding: 6px 16px 8px 60px;
+  font-size: 0.6875rem; font-weight: 600; color: rgba(var(--v-theme-on-surface), 0.55);
+  border-top: 1px solid rgba(var(--v-border-color), calc(var(--v-border-opacity) * 0.7));
+}
+.flow-node__setup {
+  display: flex; align-items: center; padding: 7px 16px 7px 14px;
+  font-size: 0.6875rem; font-weight: 600; line-height: 1.3;
+  color: rgb(var(--v-theme-warning));
+  background: rgba(var(--v-theme-warning), 0.08);
+  border-top: 1px solid rgba(var(--v-theme-warning), 0.25);
+}
 .flow-node__tools { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; }
 .flow-node__hover-badge { opacity: 0; transition: opacity 0.15s; }
 .flow-node-wrap:hover .flow-node__hover-badge,
+.flow-node--selected .flow-node__hover-badge,
 .flow-node__hover-badge:focus-visible { opacity: 1; }
-.flow-node__warn { margin-left: auto; flex-shrink: 0; }
 
-.flow-connector { width: 2px; height: 22px; background: rgba(var(--v-border-color), 0.6); flex-shrink: 0; }
-.add-btn { opacity: 0.4; transition: opacity 0.15s, transform 0.15s; }
-.flow-node-wrap:hover .add-btn { opacity: 1; transform: scale(1.08); }
-.add-btn:focus-visible { opacity: 1; }
-.flow-end { border-style: dashed; width: 200px; }
+/* ── Connectors ─────────────────────────────────────────────────────────── */
+.flow-connector { width: 2.5px; height: 22px; background: rgba(var(--v-theme-on-surface), 0.22); flex-shrink: 0; }
+.flow-connector--arrow { position: relative; height: 26px; }
+.flow-connector--arrow::after {
+  content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+  border-left: 5px solid transparent; border-right: 5px solid transparent;
+  border-top: 6px solid rgba(var(--v-theme-on-surface), 0.32);
+}
+.add-btn {
+  width: 24px; height: 24px; min-width: 24px;
+  background: rgb(var(--v-theme-surface));
+  border: 1.5px solid rgba(var(--v-theme-on-surface), 0.28);
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  opacity: 0.55; transition: opacity 0.15s, transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+}
+.flow-node-wrap:hover .add-btn, .add-btn:hover, .add-btn:focus-visible { opacity: 1; }
+.add-btn:hover, .add-btn:focus-visible {
+  background: rgb(var(--v-theme-primary)); border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary)); transform: scale(1.12);
+}
+.flow-end {
+  display: inline-flex; align-items: center; padding: 5px 14px;
+  border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.3); border-radius: 999px;
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: rgba(var(--v-theme-on-surface), 0.55); background: rgb(var(--v-theme-surface));
+}
 
-/* ── Branch columns ─────────────────────────────────────────────────────── */
+/* ── Branch columns ─────────────────────────────────────────────────────────
+   Split/join rails are pseudo-elements; the outermost columns draw rounded
+   elbows (border-top/bottom + border-left/right + radius) instead of hard
+   right angles; middle columns keep a straight rail + stub. */
 .branch-row { display: flex; align-items: stretch; }
 .branch-col {
   position: relative; display: flex; flex-direction: column; align-items: center;
-  padding: 0 24px;
+  padding: 0 20px;
 }
 .branch-col::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: rgba(var(--v-border-color), 0.6);
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2.5px;
+  background: rgba(var(--v-theme-on-surface), 0.22);
 }
-.branch-col:first-child::before { left: 50%; }
-.branch-col:last-child::before { right: 50%; }
+.branch-col:first-child::before {
+  left: calc(50% - 1.25px); height: 16px; background: transparent;
+  border-top: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-left: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-top-left-radius: 12px;
+}
+.branch-col:last-child::before {
+  right: calc(50% - 1.25px); left: 0; height: 16px; background: transparent;
+  border-top: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-right: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-top-right-radius: 12px;
+}
 .branch-col:only-child::before { display: none; }
 .branch-col--joins::after {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-  background: rgba(var(--v-border-color), 0.6);
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2.5px;
+  background: rgba(var(--v-theme-on-surface), 0.22);
 }
-.branch-col--joins:first-child::after { left: 50%; }
-.branch-col--joins:last-child::after { right: 50%; }
+.branch-col--joins:first-child::after {
+  left: calc(50% - 1.25px); height: 16px; background: transparent;
+  border-bottom: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-left: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-bottom-left-radius: 12px;
+}
+.branch-col--joins:last-child::after {
+  right: calc(50% - 1.25px); left: 0; height: 16px; background: transparent;
+  border-bottom: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-right: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-bottom-right-radius: 12px;
+}
 .branch-col--joins:only-child::after { display: none; }
 
-.branch-stub { width: 2px; height: 14px; background: rgba(var(--v-border-color), 0.6); margin-bottom: 8px; flex-shrink: 0; }
-.branch-drop { flex: 1 1 auto; width: 2px; min-height: 14px; background: rgba(var(--v-border-color), 0.6); margin-top: 8px; }
+/* Outer columns: the elbow's border-left/right already draws the descender —
+   keep the stub for spacing but paint it only on middle columns. */
+.branch-stub { width: 2.5px; height: 16px; background: transparent; margin-bottom: 8px; flex-shrink: 0; }
+.branch-col:not(:first-child):not(:last-child) .branch-stub { background: rgba(var(--v-theme-on-surface), 0.22); }
+.branch-drop { flex: 1 1 auto; width: 2.5px; min-height: 14px; background: rgba(var(--v-theme-on-surface), 0.22); margin-top: 8px; }
+.branch-col--joins:first-child .branch-drop,
+.branch-col--joins:last-child .branch-drop { margin-bottom: 14px; }
+
+.branch-chip { background: rgb(var(--v-theme-surface)) !important; }
 
 .branch-empty {
   display: flex; align-items: center; justify-content: center;
-  width: 460px; padding: 14px;
-  border: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));
+  width: 320px; padding: 12px;
+  border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.25);
   border-radius: 12px; background: transparent; cursor: pointer;
-  color: rgba(var(--v-theme-on-surface), 0.6); transition: border-color 0.15s, color 0.15s;
+  color: rgba(var(--v-theme-on-surface), 0.6); transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.branch-empty:hover { border-color: rgba(var(--v-theme-primary), 0.6); color: rgb(var(--v-theme-primary)); }
+.branch-empty:hover {
+  border-color: rgba(var(--v-theme-primary), 0.6); color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.04);
+}
 .branch-empty:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
 </style>
