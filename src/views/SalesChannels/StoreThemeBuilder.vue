@@ -340,6 +340,12 @@ function openDaVinci() {
 type LeftTab = 'sections' | 'styles'
 const leftTab = ref<LeftTab>('sections')
 
+// The styles tab and the section/block settings panel both edit state — keep
+// them from fighting over the right rail by clearing the selection on switch.
+watch(leftTab, (t) => {
+  if (t === 'styles') selected.value = null
+})
+
 /** Preset swatches from the token palette (shared by style rows + color fields). */
 const swatchPalette = [
   { label: 'Maropost blue', value: mp_color_light_primary },
@@ -368,6 +374,38 @@ const buttonStyleOptions: { value: ThemeStyles['buttonStyle']; title: string; de
 function setStyle(patch: Partial<ThemeStyles>) {
   if (!theme.value) return
   themesStore.updateStyles(theme.value.id, patch)
+}
+
+// ── Swatch radiogroup keyboard support (roving tabindex) ─────────────────────
+// Both swatch loops (styles tab + inspector color field) render swatchPalette
+// in the same order, so array-index alignment resolves the next value without
+// extra DOM data attributes.
+function swatchTabindex(swatch: { value: string }, currentValue: string): number {
+  const checkedIndex = swatchPalette.findIndex((s) => s.value === currentValue)
+  const targetIndex = checkedIndex === -1 ? 0 : checkedIndex
+  return swatchPalette[targetIndex]?.value === swatch.value ? 0 : -1
+}
+
+function onSwatchKeydown(e: KeyboardEvent, setValue: (value: string) => void) {
+  const key = e.key
+  if (!['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'].includes(key)) return
+  e.preventDefault()
+  const target = e.currentTarget as HTMLButtonElement | null
+  const row = target?.closest('.tb-swatch-row')
+  const buttons = Array.from(row?.querySelectorAll<HTMLButtonElement>('button[role="radio"]') ?? [])
+  const currentIndex = target ? buttons.indexOf(target) : -1
+  if (currentIndex === -1 || buttons.length === 0) return
+
+  let nextIndex = currentIndex
+  if (key === 'ArrowRight' || key === 'ArrowDown') nextIndex = (currentIndex + 1) % buttons.length
+  else if (key === 'ArrowLeft' || key === 'ArrowUp') nextIndex = (currentIndex - 1 + buttons.length) % buttons.length
+  else if (key === 'Home') nextIndex = 0
+  else if (key === 'End') nextIndex = buttons.length - 1
+
+  const nextSwatch = swatchPalette[nextIndex]
+  if (!nextSwatch) return
+  setValue(nextSwatch.value)
+  buttons[nextIndex]?.focus()
 }
 
 // ── Ask Da Vinci ──────────────────────────────────────────────────────────────
@@ -599,15 +637,19 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 
       <div class="tb-toolbar__side d-flex align-center gap-2 justify-end">
         <v-btn-toggle v-model="device" mandatory density="compact" rounded="lg" border aria-label="Preview device">
-          <v-btn
-            v-for="option in deviceOptions"
-            :key="option.value"
-            :value="option.value"
-            :icon="option.icon"
-            size="small"
-            :aria-label="option.label"
-          ></v-btn>
+          <v-tooltip v-for="option in deviceOptions" :key="option.value" :text="option.label" location="bottom">
+            <template #activator="{ props }">
+              <v-btn
+                v-bind="props"
+                :value="option.value"
+                :icon="option.icon"
+                size="small"
+                :aria-label="option.label"
+              ></v-btn>
+            </template>
+          </v-tooltip>
         </v-btn-toggle>
+        <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
         <v-tooltip text="Ask Da Vinci to review this theme" location="bottom">
           <template #activator="{ props }">
             <v-btn
@@ -630,11 +672,11 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
           variant="flat"
           size="small"
           class="text-none"
-          prepend-icon="rocket"
+          :prepend-icon="isDirty ? 'rocket' : 'circle-check'"
           :disabled="!isDirty"
           @click="publishDialog = true"
         >
-          Publish
+          {{ isDirty ? 'Publish' : 'Published' }}
         </v-btn>
       </div>
     </div>
@@ -828,9 +870,11 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 :class="{ 'tb-swatch--selected': theme.styles[row.key] === swatch.value }"
                 :style="{ background: swatch.value }"
                 role="radio"
+                :tabindex="swatchTabindex(swatch, theme.styles[row.key])"
                 :aria-checked="theme.styles[row.key] === swatch.value"
                 :aria-label="`${row.label}: ${swatch.label}`"
                 @click="setStyle({ [row.key]: swatch.value })"
+                @keydown="onSwatchKeydown($event, (v: string) => setStyle({ [row.key]: v }))"
               ></button>
             </div>
           </div>
@@ -856,7 +900,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
             @update:model-value="(v: string) => setStyle({ bodyFont: v })"
           ></v-select>
 
-          <div class="text-caption font-weight-bold mb-1">Corner radius</div>
+          <div class="text-caption font-weight-bold mb-2">Corner radius</div>
           <v-slider
             :model-value="theme.styles.cornerRadius"
             :min="0"
@@ -924,9 +968,6 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               <v-icon size="17">{{ (isBlockSelected ? selectedBlockDef : selectedSectionDef)?.icon }}</v-icon>
             </v-avatar>
             <div style="min-width:0;">
-              <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase">
-                {{ (isBlockSelected ? selectedBlockDef : selectedSectionDef)?.title }}
-              </div>
               <div class="text-body-2 font-weight-bold text-truncate">
                 {{ isBlockSelected ? blockLabel(selectedBlock!) : selectedSection.label }}
               </div>
@@ -995,9 +1036,11 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                   :class="{ 'tb-swatch--selected': panelText(f.key) === swatch.value }"
                   :style="{ background: swatch.value }"
                   role="radio"
+                  :tabindex="swatchTabindex(swatch, panelText(f.key))"
                   :aria-checked="panelText(f.key) === swatch.value"
                   :aria-label="`${f.label}: ${swatch.label}`"
                   @click="panelSet(f.key, swatch.value)"
+                  @keydown="onSwatchKeydown($event, (v: string) => panelSet(f.key, v))"
                 ></button>
               </div>
             </div>
@@ -1031,10 +1074,6 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
             <v-icon size="15" class="flex-shrink-0 mt-1">info</v-icon>
             <span class="text-caption">Changes apply to the preview as you type. Publish the theme to make them live.</span>
           </div>
-        </div>
-
-        <div class="pa-4 border-t flex-shrink-0">
-          <v-btn color="primary" variant="flat" class="text-none" block @click="closePanel">Done</v-btn>
         </div>
       </aside>
     </div>
@@ -1095,10 +1134,10 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 .tb-toolbar { height: 56px; flex-shrink: 0; }
 .tb-toolbar__side { flex: 1 1 0; }
 
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-l { border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+.border-b { border-bottom: 1px solid var(--hairline); }
+.border-t { border-top: 1px solid var(--hairline); }
+.border-r { border-right: 1px solid var(--hairline); }
+.border-l { border-left: 1px solid var(--hairline); }
 
 .tb-dirty-dot {
   width: 8px;
@@ -1112,11 +1151,11 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
    tonal info alert fell below AA on the dark surface). */
 .tb-note {
   padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(var(--v-theme-primary), 0.08);
-  color: rgb(var(--v-theme-on-surface));
+  border-radius: var(--r-section);
+  background: var(--accent-soft);
+  color: var(--ink);
 }
-.tb-note .v-icon { color: rgb(var(--v-theme-primary)); }
+.tb-note .v-icon { color: var(--accent); }
 
 /* ── Sections panel ──────────────────────────────────────────────── */
 .tb-panel-left {
@@ -1143,12 +1182,13 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   align-items: center;
   gap: 2px;
   padding: 2px 4px 2px 0;
-  border-radius: 8px;
+  border-radius: var(--r-chip);
   transition: background 0.15s;
 }
-.tb-section-row:hover { background: rgba(var(--v-theme-on-surface), 0.05); }
+.tb-section-row:hover { background: var(--surface-2); }
 .tb-section-row--selected,
-.tb-section-row--selected:hover { background: rgba(var(--v-theme-primary), 0.1); }
+.tb-section-row--selected:hover { background: var(--accent-soft); }
+.tb-section-row--selected .tb-section-row__main { color: var(--accent); }
 .tb-section-row--hidden .tb-section-row__icon,
 .tb-section-row--hidden .tb-section-row__label { opacity: 0.45; }
 
@@ -1162,18 +1202,18 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--r-chip);
   text-align: left;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--ink);
 }
-.tb-section-row__main:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
-.tb-section-row__icon { color: rgba(var(--v-theme-on-surface), 0.6); flex-shrink: 0; }
+.tb-section-row__main:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tb-section-row__icon { color: var(--muted); flex-shrink: 0; }
 .tb-section-row__label { font-size: 0.8125rem; font-weight: 600; }
 .tb-section-row__new {
   flex-shrink: 0;
   padding: 1px 6px;
-  border-radius: var(--mp-borderRadius-full, 999px);
-  background: rgb(var(--v-theme-primary));
+  border-radius: var(--r-pill);
+  background: var(--accent);
   color: rgb(var(--v-theme-on-primary));
   font-size: 0.625rem;
   font-weight: 700;
@@ -1184,6 +1224,8 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  width: 0;
+  overflow: hidden;
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -1192,7 +1234,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 .tb-section-row--selected .tb-section-row__actions,
 .tb-block-row:hover .tb-section-row__actions,
 .tb-block-row:focus-within .tb-section-row__actions,
-.tb-block-row--selected .tb-section-row__actions { opacity: 1; }
+.tb-block-row--selected .tb-section-row__actions { width: auto; overflow: visible; opacity: 1; }
 
 /* Expand chevron + spacer keep section rows aligned whether or not they nest */
 .tb-section-row__expand { flex-shrink: 0; }
@@ -1204,7 +1246,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   flex-direction: column;
   margin: 0 0 4px 26px;
   padding-left: 8px;
-  border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-left: 1px solid var(--hairline);
 }
 
 .tb-block-row {
@@ -1212,12 +1254,13 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   align-items: center;
   gap: 2px;
   padding: 1px 4px 1px 0;
-  border-radius: 8px;
+  border-radius: var(--r-chip);
   transition: background 0.15s;
 }
-.tb-block-row:hover { background: rgba(var(--v-theme-on-surface), 0.05); }
+.tb-block-row:hover { background: var(--surface-2); }
 .tb-block-row--selected,
-.tb-block-row--selected:hover { background: rgba(var(--v-theme-primary), 0.1); }
+.tb-block-row--selected:hover { background: var(--accent-soft); }
+.tb-block-row--selected .tb-block-row__main { color: var(--accent); }
 
 .tb-block-row__main {
   display: flex;
@@ -1229,12 +1272,12 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--r-chip);
   text-align: left;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--ink);
 }
-.tb-block-row__main:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
-.tb-block-row__icon { color: rgba(var(--v-theme-on-surface), 0.55); flex-shrink: 0; }
+.tb-block-row__main:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tb-block-row__icon { color: var(--muted); flex-shrink: 0; }
 .tb-block-row__label { font-size: 0.75rem; font-weight: 500; }
 
 .tb-block-add {
@@ -1246,42 +1289,43 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--r-chip);
   text-align: left;
-  color: rgb(var(--v-theme-primary));
+  color: var(--accent);
 }
-.tb-block-add:hover { background: rgba(var(--v-theme-primary), 0.08); }
-.tb-block-add:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
-.tb-block-add .tb-block-row__icon { color: rgb(var(--v-theme-primary)); }
+.tb-block-add:hover { background: var(--accent-soft); }
+.tb-block-add:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tb-block-add .tb-block-row__icon { color: var(--accent); }
 .tb-block-add .tb-block-row__label { font-weight: 600; }
 
 /* ── Canvas ──────────────────────────────────────────────────────── */
-.tb-canvas { flex: 1 1 auto; position: relative; overflow: hidden; }
+.tb-canvas { flex: 1 1 auto; position: relative; overflow: hidden; background: var(--surface-0); }
 .tb-canvas__scroll { position: absolute; inset: 0; overflow: auto; }
-.tb-stage { transition: width 280ms ease; }
+.tb-stage { transition: width 280ms ease; margin-inline: auto; }
+.tb-stage :deep(.sf-preview) { box-shadow: var(--mp-shadow-md); }
 
 /* ── Settings panel ──────────────────────────────────────────────── */
 .tb-panel-right { width: 340px; flex-shrink: 0; overflow: hidden; }
 
 /* ── Color swatches (token palette presets) ──────────────────────── */
-.tb-swatch-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.tb-swatch-row { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .tb-swatch {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgba(var(--v-border-color), var(--v-border-opacity));
+  box-shadow: inset 0 0 0 1px var(--hairline);
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .tb-swatch:hover { transform: scale(1.12); }
-.tb-swatch:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
+.tb-swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tb-swatch--selected {
   box-shadow:
-    inset 0 0 0 1px rgba(var(--v-border-color), var(--v-border-opacity)),
-    0 0 0 2px rgb(var(--v-theme-surface)),
-    0 0 0 4px rgb(var(--v-theme-primary));
+    inset 0 0 0 1px var(--hairline),
+    0 0 0 2px var(--surface-1),
+    0 0 0 4px var(--accent);
 }
 </style>

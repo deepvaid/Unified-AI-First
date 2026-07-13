@@ -104,10 +104,10 @@ const previewItems = computed(() =>
 
 <style scoped>
 .mpv-frame {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-chip);
   overflow: hidden;
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-1);
 }
 
 .mpv-topbar {
@@ -116,14 +116,14 @@ const previewItems = computed(() =>
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-bottom: 1px solid var(--hairline);
 }
 
 .mpv-logo {
   width: 14px;
   height: 14px;
   border-radius: 4px;
-  background: rgb(var(--v-theme-primary));
+  background: var(--accent);
   flex-shrink: 0;
 }
 
@@ -133,7 +133,7 @@ const previewItems = computed(() =>
   gap: 12px;
   flex-wrap: wrap;
   padding: 8px 12px;
-  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-bottom: 1px solid var(--hairline);
 }
 
 .mpv-link {
