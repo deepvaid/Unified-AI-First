@@ -266,8 +266,8 @@ function chooseSize(size: WidgetSize) {
 }
 
 .dashboard-widget-card:hover {
-  border-color: color-mix(in oklch, var(--ink) 18%, transparent) !important;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06);
+  border-color: color-mix(in oklch, var(--ink) 14%, transparent) !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 10px 24px -8px rgba(15, 23, 42, 0.12);
 }
 
 .dashboard-widget-card__header {

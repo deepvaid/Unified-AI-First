@@ -320,49 +320,39 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
   display: none;
 }
 
-/* Resize handle fades in on card hover and stays visible while resizing. */
+/* Resize handle fades in on card hover and stays visible while resizing.
+   A refined three-dot corner grip (rounded, soft) instead of hard diagonal
+   ticks — reads as a gentle affordance, not a CAD handle. */
 .dashboard-grid :deep(.vgl-item:hover .vgl-item__resizer),
 .dashboard-grid :deep(.vgl-item--resizing .vgl-item__resizer) {
   display: block;
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   cursor: nwse-resize;
   z-index: 4;
-  background-color: transparent;
   background-repeat: no-repeat;
-  background-position: bottom 5px right 5px;
-  background-size: 12px 12px;
-  background-image: linear-gradient(
-    135deg,
-    transparent 0,
-    transparent 33%,
-    rgba(var(--v-theme-on-surface), 0.45) 33%,
-    rgba(var(--v-theme-on-surface), 0.45) 38%,
-    transparent 38%,
-    transparent 66%,
-    rgba(var(--v-theme-on-surface), 0.45) 66%,
-    rgba(var(--v-theme-on-surface), 0.45) 71%,
-    transparent 71%
-  );
-  transition: background-color 120ms ease;
+  background-image:
+    radial-gradient(circle at 18px 18px, rgba(var(--v-theme-on-surface), 0.34) 1.5px, transparent 2.1px),
+    radial-gradient(circle at 12px 18px, rgba(var(--v-theme-on-surface), 0.34) 1.5px, transparent 2.1px),
+    radial-gradient(circle at 18px 12px, rgba(var(--v-theme-on-surface), 0.34) 1.5px, transparent 2.1px);
+  opacity: 0;
+  transition: opacity 140ms ease, background-image 120ms ease;
+  animation: mp-resizer-in 160ms ease forwards;
+}
+
+@keyframes mp-resizer-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .dashboard-grid :deep(.vgl-item__resizer:hover) {
-  background-color: rgba(var(--v-theme-primary), 0.12);
-  background-image: linear-gradient(
-    135deg,
-    transparent 0,
-    transparent 33%,
-    rgb(var(--v-theme-primary)) 33%,
-    rgb(var(--v-theme-primary)) 38%,
-    transparent 38%,
-    transparent 66%,
-    rgb(var(--v-theme-primary)) 66%,
-    rgb(var(--v-theme-primary)) 71%,
-    transparent 71%
-  );
+  background-image:
+    radial-gradient(circle at 18px 18px, rgb(var(--v-theme-primary)) 1.7px, transparent 2.3px),
+    radial-gradient(circle at 12px 18px, rgb(var(--v-theme-primary)) 1.7px, transparent 2.3px),
+    radial-gradient(circle at 18px 12px, rgb(var(--v-theme-primary)) 1.7px, transparent 2.3px),
+    radial-gradient(130% 130% at 100% 100%, rgba(var(--v-theme-primary), 0.12), transparent 68%);
 }
 </style>
