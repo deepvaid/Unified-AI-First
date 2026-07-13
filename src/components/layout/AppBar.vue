@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useUserProfile } from '@/stores/useUserProfile'
-import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
+import { useAppTheme, type ShellVariant, type ThemeMode } from '@/composables/useAppTheme'
 import { useMobileNav } from '@/composables/useMobileNav'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 
@@ -14,7 +14,14 @@ const mobileSearchOpen = ref(false)
 
 const router = useRouter()
 const accountsStore = useAccountsStore()
-const { mode, setMode } = useAppTheme()
+const { mode, setMode, resolvedShell, resolvedFrame, setShell, setFrame } = useAppTheme()
+
+// Reflect the shell actually in effect (share-link override included) so a
+// click on any other value always registers, and commits + clears the override.
+const shellToggleValue = computed({
+  get: () => resolvedShell.value,
+  set: (value: ShellVariant) => setShell(value),
+})
 
 const themeToggleValue = computed({
   get: () => mode.value,
@@ -242,7 +249,6 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
               prepend-inner-icon="search"
               placeholder="Find or Ask"
               aria-label="Universal AI search"
-              rounded="lg"
               class="appbar-search appbar-search--inline"
               bg-color="surface"
               clearable
@@ -303,7 +309,11 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
         >
           <v-icon size="20">search</v-icon>
         </button>
+      </div>
 
+      <v-spacer />
+
+      <div class="appbar-utilities">
         <v-menu v-model="createOpen" location="bottom end" offset="8" :close-on-content-click="false">
           <template #activator="{ props }">
             <button
@@ -346,11 +356,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
             </div>
           </v-card>
         </v-menu>
-      </div>
 
-      <v-spacer />
-
-      <div class="appbar-utilities">
         <v-tooltip text="Notifications" location="bottom">
           <template #activator="{ props }">
             <v-btn
@@ -362,14 +368,6 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
             >
               <v-icon>bell</v-icon>
               <v-badge v-if="notificationCount > 0" :content="notificationCount" color="error" floating class="notification-badge" />
-            </v-btn>
-          </template>
-        </v-tooltip>
-
-        <v-tooltip text="Galaxy" location="bottom">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" icon variant="text" class="appbar-action-btn appbar-galaxy-btn" aria-label="Galaxy" @click="openStub('Galaxy')">
-              <v-icon>book-open</v-icon>
             </v-btn>
           </template>
         </v-tooltip>
@@ -439,8 +437,6 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                 </template>
               </v-img>
             </v-avatar>
-            <span class="user-pill__name d-none d-md-block">{{ userName }}</span>
-            <v-icon size="14" class="user-pill__chevron">chevron-down</v-icon>
           </button>
         </template>
           <div class="um-cascade-wrap">
@@ -574,6 +570,39 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                     <v-btn value="dark" icon="moon" variant="text" aria-label="Dark theme" />
                   </v-btn-toggle>
                 </div>
+                <div class="um-item" role="group" aria-label="Shell layout">
+                  <v-icon class="um-item__icon" size="20">panel-left</v-icon>
+                  <div class="um-item__body">
+                    <div class="um-item__title">Shell</div>
+                    <div class="um-item__sub">Navigation &amp; layout style</div>
+                  </div>
+                  <v-btn-toggle
+                    v-model="shellToggleValue"
+                    density="comfortable"
+                    mandatory
+                    class="theme-segment ml-auto"
+                  >
+                    <v-btn value="classic" variant="text" size="small" class="text-none px-2" aria-label="Classic shell">Classic</v-btn>
+                    <v-btn value="studio" variant="text" size="small" class="text-none px-2" aria-label="Studio shell">Studio</v-btn>
+                    <v-btn value="rail" variant="text" size="small" class="text-none px-2" aria-label="Rail shell">Rail</v-btn>
+                  </v-btn-toggle>
+                </div>
+                <div class="um-item" role="group" aria-label="Framed content">
+                  <v-icon class="um-item__icon" size="20">square</v-icon>
+                  <div class="um-item__body">
+                    <div class="um-item__title">Framed content</div>
+                    <div class="um-item__sub">Rounded container around pages</div>
+                  </div>
+                  <v-switch
+                    :model-value="resolvedFrame"
+                    density="compact"
+                    hide-details
+                    color="primary"
+                    class="ml-auto flex-grow-0"
+                    aria-label="Framed content"
+                    @update:model-value="setFrame($event ? 'on' : 'off')"
+                  />
+                </div>
                 <button type="button" class="um-item um-item--danger" @click="openStub('Sign out'); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">log-out</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Sign Out</div></div>
@@ -645,13 +674,14 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 </template>
 
 <style scoped lang="scss">
+/* Classic chrome; the studio shell overrides this in shell-variants.css. */
 .mp-appbar {
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   background: var(--surface-1);
 }
 
 .mp-appbar :deep(.v-toolbar__content) {
-  background: var(--surface-1);
+  background: transparent;
 }
 
 .mp-appbar-shell {
@@ -783,23 +813,25 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 /* ── User pill ──────────────────────────────────── */
+/* Avatar-only trigger — the menu carries the identity details. */
 .user-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 32px;
   height: 32px;
-  padding: 3px 8px 3px 4px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-pill);
-  background: var(--surface-1);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   cursor: pointer;
   font: inherit;
   appearance: none;
-  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  transition: box-shadow var(--dur-fast) var(--ease);
 }
 
 .user-pill:hover {
-  background: var(--surface-2);
+  box-shadow: 0 0 0 3px var(--surface-2);
 }
 
 .user-pill:focus-visible {
@@ -830,21 +862,6 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 
 .user-avatar-fallback--lg {
   font-size: 20px;
-}
-
-.user-pill__name {
-  max-width: 96px;
-  overflow: hidden;
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.15;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-pill__chevron {
-  color: var(--muted);
 }
 
 /* ── Profile dropdown ───────────────────────────── */
@@ -1304,9 +1321,6 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
     min-width: 160px;
     flex: 1 1 200px;
   }
-  .user-pill__name {
-    display: none;
-  }
   .assistant-pill {
     display: none;
   }
@@ -1356,10 +1370,6 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
     outline: none;
   }
 
-  /* Galaxy is a stub action — first to go to keep the bar from crowding on phones */
-  .appbar-galaxy-btn {
-    display: none;
-  }
 }
 
 .appbar-mobile-search-card {
@@ -1395,31 +1405,32 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 /* ── Quick Create button + menu ─────────────────── */
+/* Quiet utility icon — same voice as the bell/settings buttons beside it. */
 .appbar-create-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--hairline);
+  border: 0;
   border-radius: 50%;
-  background: var(--surface-1);
-  color: var(--accent);
+  background: transparent;
+  color: var(--muted);
   font: inherit;
   appearance: none;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 
 .appbar-create-btn :deep(svg) {
-  stroke-width: 2.5;
+  stroke-width: 2;
 }
 
 .appbar-create-btn:hover,
 .appbar-create-btn--open {
   background: var(--surface-2);
-  color: var(--accent-ink);
+  color: var(--ink);
 }
 
 .appbar-create-btn:focus-visible {

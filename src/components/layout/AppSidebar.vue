@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 import { Crown } from 'lucide-vue-next'
@@ -465,7 +465,24 @@ function resetFlyoutState() {
 function toggleSidebarRail() {
   localRail.value = !localRail.value
   resetFlyoutState()
+  // Persist only deliberate choices — auto-collapse (narrow viewport,
+  // rail-shell routes) arrives via the `rail` prop and is never stored.
+  localStorage.setItem('app-sidebar-rail', localRail.value ? 'rail' : 'expanded')
 }
+
+// "[" toggles the sidebar (ignored while typing or when the drawer is a
+// mobile overlay) — mirrors the toggle pill in the header.
+function onSidebarHotkey(event: KeyboardEvent) {
+  if (event.key !== '[' || event.metaKey || event.ctrlKey || event.altKey) return
+  const target = event.target as HTMLElement | null
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+  if (props.temporary) return
+  event.preventDefault()
+  toggleSidebarRail()
+}
+
+onMounted(() => window.addEventListener('keydown', onSidebarHotkey))
+onUnmounted(() => window.removeEventListener('keydown', onSidebarHotkey))
 
 function updateFlyoutTop(event: Event) {
   const target = event.currentTarget as HTMLElement | null
@@ -546,6 +563,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           aria-label="Go to dashboard"
           @click="goTo(`/accounts/${resolvedAccountId}/dashboard`)"
         >
+          <div class="rail-brand-box" aria-hidden="true">M</div>
           <span class="sidebar-brand__logo" v-html="maropostLogo" />
         </button>
       </template>
@@ -561,7 +579,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
         </button>
       </template>
 
-      <v-tooltip v-if="!props.temporary" location="end" :text="localRail ? 'Expand sidebar' : 'Collapse sidebar'">
+      <v-tooltip v-if="!props.temporary" location="end" :text="localRail ? 'Expand sidebar  ·  [' : 'Collapse sidebar  ·  ['">
         <template #activator="{ props: tipProps }">
           <button
             v-bind="tipProps"
@@ -813,7 +831,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           </div>
         </v-menu>
 
-        <v-divider v-if="group.dividerAfter" class="sidebar-divider my-1 mx-2" />
+        <v-divider v-if="group.dividerAfter" class="sidebar-divider my-1 mx-3" />
       </template>
     </v-list>
     </div>

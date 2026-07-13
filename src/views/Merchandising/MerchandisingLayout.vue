@@ -92,7 +92,7 @@ function connectChannel() {
 <style scoped lang="scss">
 .merch-shell {
   margin: -32px -36px;
-  min-height: calc(100vh - 52px);
+  min-height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
   overflow: hidden;
   align-items: stretch;
 }
@@ -110,7 +110,7 @@ function connectChannel() {
 }
 
 .merch-shell--recovery {
-  min-height: calc(100vh - 52px);
+  min-height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
 }
 
 @media (max-width: 1024px) {

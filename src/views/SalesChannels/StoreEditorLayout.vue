@@ -52,7 +52,7 @@ const showRail = computed(() => channel.value?.type === 'web_store')
 <style scoped lang="scss">
 .store-shell {
   margin: -32px -36px;
-  height: calc(100vh - 52px);
+  height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
   overflow: hidden;
   align-items: stretch;
 }
@@ -78,7 +78,7 @@ const showRail = computed(() => channel.value?.type === 'web_store')
   .store-shell {
     flex-direction: column;
     height: auto;
-    min-height: calc(100vh - 52px);
+    min-height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
     overflow: visible;
   }
 

@@ -14,7 +14,7 @@ import SettingsSidebar from '@/components/settings/SettingsSidebar.vue'
 <style scoped lang="scss">
 .settings-shell {
   margin: -32px -36px;
-  height: calc(100vh - 52px);
+  height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
   overflow: hidden;
   align-items: stretch;
 }
@@ -40,7 +40,7 @@ import SettingsSidebar from '@/components/settings/SettingsSidebar.vue'
   .settings-shell {
     flex-direction: column;
     height: auto;
-    min-height: calc(100vh - 52px);
+    min-height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
     overflow: visible;
   }
 

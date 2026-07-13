@@ -9,7 +9,8 @@
 [data-sidebar="light"] .rail-flyout-card {
   --sidebar-bg: #ffffff;
   --sidebar-border: #e2e8f0;
-  --sidebar-line: #e2e8f0;
+  /* Group dividers: a whisper, not a rule — grouping should read as rhythm. */
+  --sidebar-line: rgba(26, 24, 20, 0.06);
   --sidebar-text: #1a1814;
   --sidebar-muted: #5a6573;
   --sidebar-hover-bg: rgba(26, 24, 20, 0.06);
@@ -32,15 +33,22 @@
   background: var(--sidebar-bg) !important;
   border-right-color: var(--sidebar-border) !important;
   color: var(--sidebar-text);
-  /* Give the white panel a solid, defined edge + subtle depth so it reads as a
-     grounded navigation surface rather than blending into the content. */
-  box-shadow: 1px 0 0 var(--sidebar-border), 6px 0 20px -12px rgba(26, 24, 20, 0.14) !important;
+  /* The panel separates from content by its 1px edge; no shadow. */
+  box-shadow: none !important;
 }
 
-[data-sidebar="light"] .mp-sidebar .sidebar-header,
-[data-sidebar="light"] .mp-sidebar .sidebar-controls,
-[data-sidebar="light"] .mp-sidebar .sidebar-divider {
+[data-sidebar="light"] .mp-sidebar .sidebar-controls {
   border-color: var(--sidebar-border) !important;
+}
+
+[data-sidebar="light"] .mp-sidebar .sidebar-divider {
+  border-color: var(--sidebar-line) !important;
+  opacity: 1;
+}
+
+/* Brand sits directly on the panel — no hairline under the header. */
+[data-sidebar="light"] .mp-sidebar .sidebar-header {
+  border-bottom-color: transparent !important;
 }
 
 [data-sidebar="light"] .mp-sidebar .v-list {

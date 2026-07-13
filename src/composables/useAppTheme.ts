@@ -1,13 +1,17 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useTheme } from 'vuetify'
 
 export type AccentKey = 'cyan' | 'blue' | 'gray' | 'purple'
 export type ThemeMode = 'light' | 'dark'
 export type SidebarTheme = 'light' | 'gray' | 'dark'
+export type ShellVariant = 'classic' | 'studio' | 'rail'
+export type FramePref = 'auto' | 'on' | 'off'
 
 const LS_ACCENT = 'app-accent'
 const LS_MODE = 'app-theme-mode'
 const LS_LEGACY_MODE = 'mp-theme-mode'
+const LS_SHELL = 'app-shell'
+const LS_FRAME = 'app-frame'
 
 // ─── Accent color definitions ─────────────────────────────────────────────────
 interface AccentDef {
@@ -106,6 +110,67 @@ export function applySidebarTheme(theme: SidebarTheme) {
   document.documentElement.dataset.sidebar = theme
 }
 
+// ─── Shell variant + content frame ────────────────────────────────────────────
+// Three shells (classic / studio / rail) plus an independent "framed content"
+// preference. `auto` follows the shell's default (frame on only for studio).
+// ?shell= / ?frame= query params (App.vue) set tab-session overrides that win
+// over the stored preference without persisting — for stakeholder share links.
+
+function readStoredShell(): ShellVariant {
+  const stored = localStorage.getItem(LS_SHELL)
+  return stored === 'classic' || stored === 'rail' ? stored : 'studio'
+}
+
+function readStoredFrame(): FramePref {
+  const stored = localStorage.getItem(LS_FRAME)
+  return stored === 'on' || stored === 'off' ? stored : 'auto'
+}
+
+const shell = ref<ShellVariant>(readStoredShell())
+const frame = ref<FramePref>(readStoredFrame())
+const shellOverride = ref<ShellVariant | null>(null)
+const frameOverride = ref<FramePref | null>(null)
+
+/** The shell actually in effect (override ?? stored). */
+export const resolvedShell = computed<ShellVariant>(() => shellOverride.value ?? shell.value)
+
+/** Whether the rounded content frame is in effect (override ?? stored; auto → studio only). */
+export const resolvedFrame = computed<boolean>(() => {
+  const pref = frameOverride.value ?? frame.value
+  return pref === 'auto' ? resolvedShell.value === 'studio' : pref === 'on'
+})
+
+function applyShellAttrs() {
+  document.documentElement.dataset.shell = resolvedShell.value
+  document.documentElement.dataset.frame = resolvedFrame.value ? 'on' : 'off'
+}
+
+export function setShell(v: ShellVariant) {
+  shell.value = v
+  // A deliberate choice beats a share-link override for the rest of the tab.
+  shellOverride.value = null
+  localStorage.setItem(LS_SHELL, v)
+  applyShellAttrs()
+}
+
+export function setFrame(v: FramePref) {
+  frame.value = v
+  frameOverride.value = null
+  localStorage.setItem(LS_FRAME, v)
+  applyShellAttrs()
+}
+
+/** Tab-session demo overrides (?shell= / ?frame=) — never persisted. */
+export function setShellOverride(v: ShellVariant) {
+  shellOverride.value = v
+  applyShellAttrs()
+}
+
+export function setFrameOverride(v: FramePref) {
+  frameOverride.value = v
+  applyShellAttrs()
+}
+
 export function useAppTheme() {
   const vuetifyTheme = useTheme()
 
@@ -141,7 +206,10 @@ export function useAppTheme() {
     }
   }
 
-  return { accent, accentHex, mode, setAccent, setMode, ACCENT_DEFS }
+  return {
+    accent, accentHex, mode, setAccent, setMode, ACCENT_DEFS,
+    shell, frame, resolvedShell, resolvedFrame, setShell, setFrame,
+  }
 }
 
 /**
@@ -154,6 +222,7 @@ export function initAppTheme() {
   const storedMode = normalizeMode(localStorage.getItem(LS_MODE))
   applyAccent(storedAccent)
   applyMode(storedMode)
+  applyShellAttrs()
   // Pre-mount default; App.vue applies the active account's sidebar theme before first paint.
   applySidebarTheme('light')
   localStorage.removeItem('app-dark-sidebar')

@@ -1,0 +1,25 @@
+/**
+ * Shell variants — deltas from the Classic baseline, keyed off
+ * <html data-shell="classic|studio|rail"> (set by useAppTheme).
+ *
+ * classic: baseline (white bordered sidebar, bordered app bar) — no rules here.
+ * studio:  sidebar + app bar share the canvas; the rounded content frame
+ *          (App.vue .mp-content-frame, data-frame="on") carries the structure.
+ * rail:    no panel CSS of its own — it rides the data-sidebar="dark" axis
+ *          and the rail-collapsed default (both applied by App.vue).
+ *
+ * Loaded after sidebar-*.css so equal-specificity !important rules here win.
+ */
+
+/* ── Studio: nav blends into the canvas ─────────────────────────────── */
+html[data-shell="studio"][data-sidebar="light"] .mp-sidebar {
+  --sidebar-bg: #f4f6fa; /* light background token — matches the canvas */
+  background: var(--sidebar-bg) !important;
+  border-right-color: transparent !important;
+}
+
+/* ── Studio: app bar blends into the canvas ─────────────────────────── */
+html[data-shell="studio"] .mp-appbar {
+  background: rgb(var(--v-theme-background)) !important;
+  border-bottom: 0 !important;
+}

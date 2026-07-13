@@ -14,6 +14,7 @@ import './styles/accent-presets.css'
 import './styles/sidebar-dark.css'
 import './styles/sidebar-light.css'
 import './styles/sidebar-gray.css'
+import './styles/shell-variants.css'
 import './styles/retail-widgets.scss'
 import { initAppTheme } from './composables/useAppTheme'
 

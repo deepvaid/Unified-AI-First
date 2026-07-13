@@ -5,7 +5,17 @@ import { useDisplay } from 'vuetify'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppBar from '@/components/layout/AppBar.vue'
 import MpDaVinciBot from '@/components/MpDaVinciBot.vue'
-import { useAppTheme, applySidebarTheme, type SidebarTheme } from '@/composables/useAppTheme'
+import {
+  useAppTheme,
+  applySidebarTheme,
+  resolvedShell,
+  resolvedFrame,
+  setShellOverride,
+  setFrameOverride,
+  type SidebarTheme,
+  type ShellVariant,
+  type FramePref,
+} from '@/composables/useAppTheme'
 import { applyChartPalette, type ChartPalette } from '@/plugins/chartPalette'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
@@ -30,11 +40,24 @@ const navOverride = ref<SidebarTheme | null>(isNavTheme(route.query.nav) ? route
 watch(() => route.query.nav, (nav) => {
   if (isNavTheme(nav)) navOverride.value = nav
 })
+// Rail shell rides the dark sidebar palette; an explicit ?nav= still wins.
 watch(
-  () => navOverride.value ?? accountsStore.activeAccount.sidebarTheme ?? 'light',
+  () => navOverride.value ?? (resolvedShell.value === 'rail' ? 'dark' : (accountsStore.activeAccount.sidebarTheme ?? 'light')),
   applySidebarTheme,
   { immediate: true },
 )
+
+// Shell variant + content frame: ?shell=classic|studio|rail and ?frame=on|off
+// query params (stakeholder share links) — same in-memory-per-tab idiom as ?nav=.
+const isShellVariant = (v: unknown): v is ShellVariant =>
+  v === 'classic' || v === 'studio' || v === 'rail'
+const isFramePref = (v: unknown): v is FramePref => v === 'on' || v === 'off'
+watch(() => route.query.shell, (s) => {
+  if (isShellVariant(s)) setShellOverride(s)
+}, { immediate: true })
+watch(() => route.query.frame, (f) => {
+  if (isFramePref(f)) setFrameOverride(f)
+}, { immediate: true })
 
 // Dashboard chart palette: a ?chart=blue|cool|multicolor query param (stakeholder demo),
 // same in-memory-per-tab handling as ?nav=. Independent of, and composes with, ?nav=.
@@ -48,7 +71,18 @@ watch(() => route.query.chart, (chart) => {
 watch(() => chartOverride.value ?? 'blue', applyChartPalette, { immediate: true })
 
 const drawer = ref(true)
-const rail = ref(false)
+// Expanded by default; starts in rail when the user chose it via the sidebar
+// toggle (persisted there), or when the rail shell variant is active and the
+// user has no manual preference. Auto-collapse rules below apply on top.
+const manualRailPref = () => localStorage.getItem('app-sidebar-rail')
+const rail = ref(manualRailPref() === 'rail' || (manualRailPref() === null && resolvedShell.value === 'rail'))
+
+// Entering/leaving the rail shell flips the default; a stored manual choice wins.
+watch(resolvedShell, (now, was) => {
+  if (manualRailPref() !== null) return
+  if (now === 'rail') rail.value = true
+  else if (was === 'rail') rail.value = false
+})
 const copilot = useCopilotStore()
 const { width, smAndDown } = useDisplay()
 
@@ -101,6 +135,8 @@ watch(inRailShell, (now, was) => {
 
 const isFullPage = computed(() => !!route.meta?.fullPage)
 const isFlush = computed(() => !!route.meta?.flush)
+// Rounded content frame — resolvedFrame already folds in the shell's default.
+const showFrame = computed(() => resolvedFrame.value && !isFullPage.value && !isFlush.value)
 // On mobile, sidebar is a temporary overlay (not permanent)
 const sidebarTemporary = computed(() => smAndDown.value)
 const sidebarRail = computed(() => rail.value)
@@ -132,7 +168,12 @@ const copilotDrawerWidth = computed(() => {
       tabindex="-1"
       class="bg-background"
     >
-      <v-container v-if="!isFullPage && !isFlush" fluid class="mp-main-shell">
+      <div v-if="showFrame" class="mp-content-frame">
+        <v-container fluid class="mp-main-shell">
+          <router-view />
+        </v-container>
+      </div>
+      <v-container v-else-if="!isFullPage && !isFlush" fluid class="mp-main-shell">
         <router-view />
       </v-container>
       <router-view v-else />
@@ -170,6 +211,22 @@ const copilotDrawerWidth = computed(() => {
 
 .skip-link:focus {
   top: 16px;
+}
+
+/* Studio frame — the working area floats as one rounded surface on the
+   canvas. Sub-shells that size themselves against the viewport subtract
+   --mp-frame-offset (top gap + bottom inset); it resolves to 0 outside
+   the frame (flush/fullPage routes), so those keep exact old behavior. */
+.mp-content-frame {
+  /* margins (4 + 12) + borders (2) + the 4px slack the old 52px constant
+     absorbed — keeps viewport-sized sub-shells exactly flush inside. */
+  --mp-frame-offset: 22px;
+  margin: 4px 12px 12px 4px;
+  min-height: calc(100vh - 56px - 16px);
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: var(--mp-component-card-radius-lg);
+  overflow: hidden;
 }
 
 .mp-main-shell {
