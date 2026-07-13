@@ -121,6 +121,18 @@ function addNote() {
   notify('Note added')
 }
 const timelineNewestFirst = computed(() => order.value ? [...order.value.timeline].reverse() : [])
+
+// Typed glyph for each timeline entry, inferred from its text (store only stores note|event)
+function timelineIcon(entry: { kind: string; text: string }): string {
+  if (entry.kind === 'note') return 'message-square'
+  const t = entry.text.toLowerCase()
+  if (t.includes('placed') || t.includes('draft order')) return 'shopping-bag'
+  if (t.includes('payment') || t.includes('captured')) return 'credit-card'
+  if (t.includes('shipped') || t.includes('tracking')) return 'truck'
+  if (t.includes('refund')) return 'undo-2'
+  if (t.includes('cancel')) return 'ban'
+  return 'circle-dot'
+}
 </script>
 
 <template>
@@ -129,7 +141,7 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
     <MpPageHeader :title="`Order ${order.orderNumber}`" eyebrow="Commerce · Orders" :back-to="ordersListRoute">
       <template #actions>
         <v-btn variant="flat" color="surface" prepend-icon="printer" class="text-none" @click="printInvoice">Print Invoice</v-btn>
-        <v-btn variant="flat" color="surface" prepend-icon="banknote" class="text-none" :disabled="!canRefund" @click="openRefund">Refund</v-btn>
+        <v-btn variant="flat" color="surface" prepend-icon="undo-2" class="text-none" :disabled="!canRefund" @click="openRefund">Refund</v-btn>
         <v-btn variant="tonal" color="error" prepend-icon="ban" class="text-none" :disabled="!canCancel" @click="cancelDialog = true">Cancel Order</v-btn>
       </template>
       <template #tabs>
@@ -167,7 +179,7 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
         <!-- Addresses -->
         <div class="od-address-row">
           <v-card v-for="kind in (['shipping', 'billing'] as const)" :key="kind" flat border rounded="lg" class="pa-5 flex-grow-1">
-            <MpSectionHeader :title="kind === 'shipping' ? 'Shipping Address' : 'Billing Address'">
+            <MpSectionHeader :icon="kind === 'shipping' ? 'truck' : 'receipt'" :title="kind === 'shipping' ? 'Shipping Address' : 'Billing Address'">
               <template #actions>
                 <v-btn icon="pencil" variant="text" size="small" density="comfortable" :aria-label="`Edit ${kind} address`" @click="openAddressDrawer(kind)" />
               </template>
@@ -194,7 +206,7 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
 
         <!-- Line items -->
         <v-card flat border rounded="lg" class="overflow-hidden">
-          <div class="pa-5 pb-2"><MpSectionHeader :title="`Line items (${order.lineItems.length})`" /></div>
+          <div class="pa-5 pb-2"><MpSectionHeader icon="package" :title="`Line items (${order.lineItems.length})`" /></div>
           <v-table density="comfortable" class="od-items-table">
             <thead>
               <tr>
@@ -234,7 +246,7 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
 
         <!-- Payment -->
         <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader title="Payment">
+          <MpSectionHeader icon="credit-card" title="Payment">
             <template #actions>
               <MpStatusChip :status="order.paymentStatus" type="payment" size="x-small" />
             </template>
@@ -261,7 +273,7 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
 
         <!-- Fulfillment -->
         <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader title="Fulfillment">
+          <MpSectionHeader icon="package-check" title="Fulfillment">
             <template #actions>
               <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="x-small" show-icon />
             </template>
@@ -310,7 +322,7 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
 
         <!-- Tags -->
         <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader title="Tags" />
+          <MpSectionHeader icon="tags" title="Tags" />
           <v-combobox
             :model-value="order.tags"
             :items="tagSuggestions"
@@ -328,7 +340,7 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
 
         <!-- Timeline -->
         <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader :title="`Timeline (${order.timeline.length})`" />
+          <MpSectionHeader icon="history" :title="`Timeline (${order.timeline.length})`" />
           <v-textarea
             v-model="noteText"
             placeholder="Write internal notes…"
@@ -344,11 +356,16 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
           </div>
           <div class="od-timeline">
             <div v-for="entry in timelineNewestFirst" :key="entry.id" class="od-event">
-              <div class="od-event__head">
-                <span class="od-event__title">{{ entry.text }}</span>
-                <span class="od-event__time mp-money">{{ formatDate(entry.date) }}</span>
+              <span class="od-event__icon" :class="{ 'od-event__icon--note': entry.kind === 'note' }">
+                <v-icon size="13">{{ timelineIcon(entry) }}</v-icon>
+              </span>
+              <div class="min-width-0">
+                <div class="od-event__head">
+                  <span class="od-event__title">{{ entry.text }}</span>
+                  <span class="od-event__time mp-money">{{ formatDate(entry.date) }}</span>
+                </div>
+                <div v-if="entry.kind === 'note'" class="od-event__meta">Internal note</div>
               </div>
-              <div v-if="entry.kind === 'note'" class="od-event__meta">Internal note</div>
             </div>
           </div>
         </v-card>
@@ -504,11 +521,46 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
   text-decoration: underline;
 }
 
-/* Timeline — typographic states, no card chrome */
+/* Timeline — typed-glyph rail with a connecting hairline */
 .od-timeline {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  position: relative;
+}
+.od-event {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+}
+/* connecting line between glyph nodes */
+.od-event:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 26px;
+  bottom: -18px;
+  width: 1px;
+  background: rgba(var(--v-theme-on-surface), 0.1);
+}
+.od-event__icon {
+  flex-shrink: 0;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  color: rgb(var(--v-theme-on-surface-variant));
+  z-index: 1;
+}
+.od-event__icon--note {
+  border-color: rgba(var(--v-theme-primary), 0.35);
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.06);
 }
 .od-event__head {
   display: flex;

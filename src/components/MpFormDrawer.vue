@@ -55,19 +55,24 @@ function onKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <v-navigation-drawer
-    v-model="model"
-    :width="drawerWidth"
-    location="right"
-    temporary
-    scrim
-    class="mp-form-drawer"
-    role="dialog"
-    aria-modal="true"
-    :aria-labelledby="titleId"
-    @keydown="onKeydown"
-  >
-    <div ref="panel" tabindex="-1" class="mp-form-drawer__panel d-flex flex-column h-100">
+  <!-- Teleport to body so the fixed-position drawer + scrim escape any ancestor
+       that establishes a containing block (e.g. cards animating .mp-enter leave a
+       transform, and overflow:hidden clips). Provide/inject (theme, layout) follows
+       the component tree, not the DOM, so this stays theme- and layout-correct. -->
+  <Teleport to="body">
+    <v-navigation-drawer
+      v-model="model"
+      :width="drawerWidth"
+      location="right"
+      temporary
+      scrim
+      class="mp-form-drawer"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="titleId"
+      @keydown="onKeydown"
+    >
+      <div ref="panel" tabindex="-1" class="mp-form-drawer__panel d-flex flex-column h-100">
       <div class="mp-form-drawer__header d-flex align-start ga-3 pa-5">
         <div class="min-width-0 flex-grow-1">
           <div :id="titleId" class="mp-form-drawer__title">{{ title }}</div>
@@ -95,7 +100,8 @@ function onKeydown(e: KeyboardEvent) {
         </div>
       </template>
     </div>
-  </v-navigation-drawer>
+    </v-navigation-drawer>
+  </Teleport>
 </template>
 
 <style scoped>
