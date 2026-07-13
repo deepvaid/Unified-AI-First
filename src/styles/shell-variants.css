@@ -16,9 +16,10 @@
    sidebar theme derives --sidebar-bg from it (sidebar-light.css) and the
    app bar reads it directly below — the two can never drift per shell. */
 :root {
-  /* Light-gray canvas tone (light background token) — the nav cluster shares
-     it in every light shell; Classic keeps its borders, Studio drops them. */
-  --mp-nav-surface: #f4f6fa;
+  /* Clearly-perceptible light gray for the nav cluster (side + head nav) in
+     every light shell. Distinctly grayer than the near-white canvas so it
+     never reads as white. Classic keeps its borders, Studio drops them. */
+  --mp-nav-surface: #eaedf2;
 }
 
 /* Head nav shares the side nav surface (light app theme; the dark app
@@ -40,6 +41,14 @@ html[data-shell="studio"][data-sidebar="light"] .mp-sidebar {
 html[data-shell="studio"] .mp-appbar {
   background: rgb(var(--v-theme-background)) !important; /* dark-mode blend; light is handled by the bind above */
   border-bottom: 0 !important;
+}
+
+/* Studio blends nav into canvas: make the light canvas match the nav gray so
+   the borderless app bar meets it seamlessly (no faint two-gray band). The
+   white content frame provides the contrast. Light theme only — dark studio
+   keeps its own background. */
+html[data-theme="light"][data-shell="studio"] .v-main {
+  background: var(--mp-nav-surface) !important;
 }
 
 /* ── Dark side nav (rail shell / dark-sidebar accounts): head nav matches ──
