@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
    Maropost Global Styles
    ═══════════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap');
 
 /* ─── Display type utility classes (Inter, tightened for size) ─ */
 .mp-display-sm,
@@ -46,6 +46,130 @@
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
+/* ─── Semantic type utilities (confident editorial) ────────────
+   Consume --mp-typography-semantic-* tokens. Title-size classes
+   get the same font-feature-settings as .mp-display-* above. ── */
+.mp-page-title,
+.mp-kpi-value,
+.mp-kpi-value--hero,
+.mp-section-title {
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+.mp-page-title {
+  margin: 0;
+  font-size: var(--mp-typography-semantic-pageTitle-fontSize);
+  font-weight: var(--mp-typography-semantic-pageTitle-fontWeight);
+  letter-spacing: var(--mp-typography-semantic-pageTitle-letterSpacing);
+  line-height: var(--mp-typography-semantic-pageTitle-lineHeight);
+}
+
+.mp-page-subtitle {
+  margin: 0;
+  font-size: var(--mp-typography-semantic-pageSubtitle-fontSize);
+  font-weight: var(--mp-typography-semantic-pageSubtitle-fontWeight);
+  letter-spacing: var(--mp-typography-semantic-pageSubtitle-letterSpacing);
+  line-height: var(--mp-typography-semantic-pageSubtitle-lineHeight);
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.mp-kpi-value {
+  margin: 0;
+  font-size: var(--mp-typography-semantic-kpiValue-fontSize);
+  font-weight: var(--mp-typography-semantic-kpiValue-fontWeight);
+  letter-spacing: var(--mp-typography-semantic-kpiValue-letterSpacing);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-kpi-value--hero {
+  margin: 0;
+  font-size: var(--mp-typography-semantic-kpiValueHero-fontSize);
+  font-weight: var(--mp-typography-semantic-kpiValueHero-fontWeight);
+  letter-spacing: var(--mp-typography-semantic-kpiValueHero-letterSpacing);
+  line-height: var(--mp-typography-semantic-kpiValueHero-lineHeight);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-section-title {
+  margin: 0;
+  font-size: var(--mp-typography-semantic-sectionTitle-fontSize);
+  font-weight: var(--mp-typography-semantic-sectionTitle-fontWeight);
+  letter-spacing: var(--mp-typography-semantic-sectionTitle-letterSpacing);
+}
+
+.mp-meta-label,
+.mp-label-value dt {
+  font-size: var(--mp-typography-semantic-metaLabel-fontSize);
+  font-weight: var(--mp-typography-semantic-metaLabel-fontWeight);
+  letter-spacing: var(--mp-typography-semantic-metaLabel-letterSpacing);
+  text-transform: var(--mp-typography-semantic-metaLabel-textTransform);
+}
+
+.mp-meta-value,
+.mp-label-value dd {
+  margin: 0;
+  font-size: var(--mp-typography-semantic-metaValue-fontSize);
+  font-weight: var(--mp-typography-semantic-metaValue-fontWeight);
+  line-height: var(--mp-typography-semantic-metaValue-lineHeight);
+}
+
+/* Two-tone stacked headline — direct children stack; .is-muted keeps the
+   same size/weight as .is-ink but drops to ~45% on-surface opacity. */
+.mp-headline-duo {
+  display: flex;
+  flex-direction: column;
+}
+.mp-headline-duo > .is-ink {
+  color: rgb(var(--v-theme-on-surface));
+}
+.mp-headline-duo > .is-muted {
+  color: rgba(var(--v-theme-on-surface), 0.45);
+}
+
+/* dl-friendly label/value grid — pair with .mp-meta-label (dt) / .mp-meta-value (dd) */
+.mp-label-value {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 32px;
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .mp-label-value {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mp-strike {
+  text-decoration: line-through;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-money {
+  font-variant-numeric: tabular-nums;
+}
+.mp-money__cents {
+  font-size: 0.72em;
+  font-weight: inherit;
+  opacity: 0.55;
+}
+
+/* Branded inverted surface — consumers add their own padding. */
+.mp-ink-panel {
+  background: var(--ink-panel-bg);
+  color: var(--ink-panel-fg);
+  border: 1px solid var(--ink-panel-border);
+  border-radius: var(--mp-component-card-radius-lg);
+}
+.mp-ink-panel .mp-meta-label,
+.mp-ink-panel .mp-ink-panel__muted {
+  color: var(--ink-panel-muted-fg);
+}
+.mp-ink-panel a,
+.mp-ink-panel .mp-ink-panel__accent {
+  color: var(--ink-panel-accent);
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -55,6 +179,7 @@ html, body, #app {
   padding: 0;
   height: 100%;
   font-family: var(--mp-typography-fontFamily-base);
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -128,11 +253,11 @@ a {
 
 .v-btn {
   transition:
-    transform $mp-transition-fast,
-    box-shadow $mp-transition-fast,
-    border-color $mp-transition-fast,
-    background-color $mp-transition-fast,
-    color $mp-transition-fast;
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .v-btn:not(.v-btn--disabled):hover {
@@ -149,9 +274,9 @@ a {
 
 .v-field {
   transition:
-    box-shadow $mp-transition-fast,
-    border-color $mp-transition-fast,
-    background-color $mp-transition-fast;
+    box-shadow var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
 }
 
 /* VCard variant="flat" is transparent in Vuetify 3. Force solid surface
@@ -282,7 +407,7 @@ a {
 /* ─── Table Action Buttons (reveal on hover / focus / touch) ── */
 .action-btns {
   opacity: 0;
-  transition: opacity $mp-transition-fast;
+  transition: opacity var(--dur-fast) var(--ease);
 }
 tr:hover .action-btns,
 tr:focus-within .action-btns {
@@ -296,10 +421,10 @@ tr:focus-within .action-btns {
 /* ─── Card Hover Lift (humane, subtle) ───────────────────────── */
 .card-hover {
   transition:
-    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 0.2s ease,
-    background-color 0.2s ease;
+    transform var(--dur-slow) var(--ease),
+    box-shadow var(--dur-slow) var(--ease),
+    border-color var(--dur-base) var(--ease),
+    background-color var(--dur-base) var(--ease);
   cursor: pointer;
   will-change: transform;
 }
@@ -311,7 +436,7 @@ tr:focus-within .action-btns {
 
 /* ─── Settings Card Hover ───────────────────────────────────── */
 .settings-tile {
-  transition: all $mp-transition-fast;
+  transition: all var(--dur-fast) var(--ease);
   cursor: pointer;
 }
 .settings-tile:hover {
@@ -366,6 +491,17 @@ tr:focus-within .action-btns {
   border-bottom-color: var(--mp-border-table-row);
   /* Tabular figures so numeric columns align (affects digits only — no-op on text). */
   font-variant-numeric: tabular-nums;
+  padding-block: 14px;
+}
+
+/* First data column reads slightly stronger — the row's "identity" cell. */
+.v-table .v-table__wrapper > table > tbody > tr > td:first-child {
+  font-weight: 550;
+}
+
+/* Silent tables — whisper-quiet row hover wash. */
+.v-table .v-table__wrapper > table > tbody > tr:hover > td {
+  background: rgba(var(--v-theme-on-surface), 0.02);
 }
 
 /* Pagination range ("1–15 of 100") also reads as aligned figures. */
@@ -375,6 +511,7 @@ tr:focus-within .action-btns {
 
 .v-table .v-table__wrapper > table > thead > tr > th,
 .v-data-table .v-table__wrapper > table > thead > tr > th.v-data-table__th {
+  background: transparent;
   border-bottom-color: var(--mp-border-table-header);
   color: rgb(var(--v-theme-on-surface-variant)) !important;
   font-size: 11px !important;
@@ -498,11 +635,20 @@ tr:focus-within .action-btns {
   font-size: 13px !important;
 }
 
+/* ─── Card radius unification ─────────────────────────────────────── */
+/* Every default card resolves to our token (16px) instead of Vuetify's 8px
+   `rounded="lg"`, so cards match dialogs, dashboard widgets, and ink panels
+   product-wide. Scoped to the default `.rounded-lg` so any card that opts into
+   a different radius (rounded="sm"/"md"/"0") is left alone. */
+.v-card.rounded-lg {
+  border-radius: var(--mp-component-card-radius-lg) !important;
+}
+
 /* ─── Dialog shell normalization ─────────────────────────────────── */
 /* Ensures v-dialog cards always have consistent radius and surface. */
 .v-dialog > .v-overlay__content > .v-card,
 .v-dialog > .v-overlay__content > .v-sheet {
-  border-radius: 12px !important;
+  border-radius: var(--mp-component-dialog-radius-default) !important;
   background: rgb(var(--v-theme-surface)) !important;
 }
 
@@ -525,6 +671,37 @@ tr:focus-within .action-btns {
   font-weight: 600;
   letter-spacing: 0;
 }
+
+/* ─── Snackbar ────────────────────────────────────────────────── */
+.v-snackbar__wrapper {
+  border-radius: 10px;
+  min-height: 44px;
+}
+.v-snackbar__content {
+  font-size: 13px;
+  font-weight: 550;
+  padding-block: 10px;
+}
+
+/* ─── Signature entrance motion (opt-in) ─────────────────────── */
+@keyframes mp-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.mp-enter {
+  animation: mp-enter var(--dur-entrance) var(--ease) both;
+}
+.mp-enter-stagger > * {
+  animation: mp-enter var(--dur-entrance) var(--ease) both;
+}
+.mp-enter-stagger > *:nth-child(1) { animation-delay: calc(var(--stagger-step) * 0); }
+.mp-enter-stagger > *:nth-child(2) { animation-delay: calc(var(--stagger-step) * 1); }
+.mp-enter-stagger > *:nth-child(3) { animation-delay: calc(var(--stagger-step) * 2); }
+.mp-enter-stagger > *:nth-child(4) { animation-delay: calc(var(--stagger-step) * 3); }
+.mp-enter-stagger > *:nth-child(5) { animation-delay: calc(var(--stagger-step) * 4); }
+.mp-enter-stagger > *:nth-child(6) { animation-delay: calc(var(--stagger-step) * 5); }
+.mp-enter-stagger > *:nth-child(7) { animation-delay: calc(var(--stagger-step) * 6); }
+.mp-enter-stagger > *:nth-child(8) { animation-delay: calc(var(--stagger-step) * 7); }
 
 @media (prefers-reduced-motion: reduce) {
   html:focus-within {

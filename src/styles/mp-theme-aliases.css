@@ -42,9 +42,28 @@
 
   /* Radius */
   --r-pill: 9999px;
-  --r-card: 12px;
-  --r-section: 14px;
+  /* One card radius across the product (16px) — cards, sections, dialogs, and
+     ink panels all share it, so nothing reads mismatched surface-to-surface. */
+  --r-card: var(--mp-component-card-radius-lg);
+  --r-section: var(--mp-component-card-radius-lg);
   --r-chip: 8px;
+
+  /* Motion */
+  --ease: var(--mp-motion-easing-standard);
+  --ease-exit: var(--mp-motion-easing-exit);
+  --dur-instant: var(--mp-motion-duration-instant);
+  --dur-fast: var(--mp-motion-duration-fast);
+  --dur-base: var(--mp-motion-duration-base);
+  --dur-slow: var(--mp-motion-duration-slow);
+  --dur-entrance: var(--mp-motion-duration-entrance);
+  --stagger-step: var(--mp-motion-stagger-step);
+
+  /* Ink panel (branded inverted surface) */
+  --ink-panel-bg: var(--mp-color-light-inkPanel-bg);
+  --ink-panel-fg: var(--mp-color-light-inkPanel-fg);
+  --ink-panel-muted-fg: var(--mp-color-light-inkPanel-mutedFg);
+  --ink-panel-accent: var(--mp-color-light-inkPanel-accent);
+  --ink-panel-border: var(--mp-color-light-inkPanel-border);
 }
 
 .v-application.v-theme--maropostDark {
@@ -77,4 +96,11 @@
 
   --primary-container: var(--mp-color-dark-primaryContainer);
   --on-primary-container: var(--mp-color-dark-onPrimaryContainer);
+
+  /* Ink panel (branded inverted surface) */
+  --ink-panel-bg: var(--mp-color-dark-inkPanel-bg);
+  --ink-panel-fg: var(--mp-color-dark-inkPanel-fg);
+  --ink-panel-muted-fg: var(--mp-color-dark-inkPanel-mutedFg);
+  --ink-panel-accent: var(--mp-color-dark-inkPanel-accent);
+  --ink-panel-border: var(--mp-color-dark-inkPanel-border);
 }

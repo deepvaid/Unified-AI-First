@@ -294,8 +294,8 @@ function chooseSize(size: WidgetSize) {
   min-width: 0;
   overflow: hidden;
   color: var(--ink);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 650;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -469,8 +469,9 @@ function chooseSize(size: WidgetSize) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--muted);
   white-space: nowrap;
 }

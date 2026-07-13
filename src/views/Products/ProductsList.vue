@@ -5,6 +5,7 @@ import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeade
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useCommerceStore, type Product } from '@/stores/useCommerce'
 import { downloadCsv } from '@/utils/exportCsv'
+import { formatMoneyParts } from '@/utils/formatMoneyParts'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -29,6 +30,11 @@ const accountId = computed(() => {
   const value = route.params.accountId
   return (Array.isArray(value) ? value[0] : value) ?? '2000290'
 })
+
+/** Split a stored price string into typographic money parts for `.mp-money` markup. */
+function money(value: string) {
+  return formatMoneyParts(parseFloat(value) || 0)
+}
 
 // Multi-select filters
 const filters = ref({
@@ -70,6 +76,12 @@ function selectAll() {
   selected.value = filteredProducts.value.map(p => p.id)
 }
 
+function toggleSelect(id: number) {
+  const i = selected.value.indexOf(id)
+  if (i === -1) selected.value.push(id)
+  else selected.value.splice(i, 1)
+}
+
 const filteredProducts = computed(() => {
   let items = store.products
   if (filters.value.category.length) items = items.filter(p => p.category != null && filters.value.category.includes(p.category))
@@ -89,6 +101,36 @@ const headers = [
 ]
 
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
+
+// ── Empty / no-results state (shared by list + grid) ─────────────────
+const isSearching = computed(() => !!search.value.trim() || activeFilterEntries.value.length > 0)
+
+const emptyState = computed(() =>
+  isSearching.value
+    ? {
+        illustration: 'no-results' as const,
+        title: 'No products match your search',
+        description: 'Try a different term or clear your filters.',
+        actionLabel: 'Clear filters',
+        actionIcon: 'x',
+      }
+    : {
+        illustration: 'empty-products' as const,
+        title: 'No products yet',
+        description: 'Add your first product or import a catalog to get started.',
+        actionLabel: 'New Product',
+        actionIcon: 'plus',
+      }
+)
+
+function onEmptyAction() {
+  if (isSearching.value) {
+    clearAllFilters()
+    search.value = ''
+  } else {
+    openNewProduct()
+  }
+}
 
 // ── Create / Edit navigation (full-page wizards) ─────────────────────
 function openNewProduct() {
@@ -232,6 +274,7 @@ onMounted(() => {
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
+      eyebrow="Commerce · Products"
       title="Products"
       :subtitle="`${filteredProducts.length} products`"
     >
@@ -265,7 +308,7 @@ onMounted(() => {
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="mp-enter flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         title="All Products"
         v-model:search="search"
@@ -320,8 +363,9 @@ onMounted(() => {
 
       <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
 
+      <!-- List view -->
       <v-data-table
-        v-else
+        v-else-if="viewMode === 'list'"
         :headers="visibleHeaders"
         :items="filteredProducts"
         v-model="selected"
@@ -336,12 +380,12 @@ onMounted(() => {
         hover
       >
         <template v-slot:item.name="{ item }">
-          <div class="d-flex align-center gap-3 py-2">
+          <div class="d-flex align-center gap-3 py-1">
             <v-img
-              :src="`https://picsum.photos/seed/${item.id}/32/32`"
+              :src="`https://picsum.photos/seed/${item.id}/80/80`"
               alt=""
-              :width="32"
-              :height="32"
+              :width="40"
+              :height="40"
               cover
               rounded="md"
               class="flex-shrink-0 border product-thumb"
@@ -352,26 +396,27 @@ onMounted(() => {
                 </div>
               </template>
             </v-img>
-            <div>
-              <div class="text-body-2 font-weight-medium d-flex align-center gap-2">
-                {{ item.name }}
+            <div class="min-width-0">
+              <div class="product-name d-flex align-center gap-2">
+                <span class="text-truncate">{{ item.name }}</span>
                 <v-chip v-if="item.type === 'kit'" size="x-small" variant="tonal" color="secondary" label>Kit</v-chip>
                 <v-chip v-if="item.publishStatus === 'Draft'" size="x-small" variant="tonal" color="warning" label>Draft</v-chip>
               </div>
-              <div class="text-caption text-medium-emphasis">{{ item.sku }} · {{ item.variants }} variant{{ item.variants > 1 ? 's' : '' }}</div>
+              <div class="product-sku">{{ item.sku }} · {{ item.variants }} variant{{ item.variants > 1 ? 's' : '' }}</div>
             </div>
           </div>
         </template>
 
         <template v-slot:item.price="{ item }">
-          <div>
-            <span class="font-weight-medium">${{ item.price }}</span>
-            <span v-if="item.compareAtPrice !== item.price" class="text-caption text-medium-emphasis ml-1 text-decoration-line-through">${{ item.compareAtPrice }}</span>
+          <div class="d-flex flex-column align-end">
+            <span class="mp-money product-price">{{ money(item.price).symbol }}{{ money(item.price).integer }}<span class="mp-money__cents">.{{ money(item.price).cents }}</span></span>
+            <span v-if="item.compareAtPrice !== item.price" class="mp-strike product-compare">{{ money(item.compareAtPrice).symbol }}{{ money(item.compareAtPrice).integer }}.{{ money(item.compareAtPrice).cents }}</span>
           </div>
         </template>
 
         <template v-slot:item.inventory="{ item }">
-          <span :class="item.inventory < 20 ? 'text-error font-weight-bold' : item.inventory < 50 ? 'text-warning font-weight-bold' : ''">{{ item.inventory }}</span>
+          <span v-if="item.status === 'Out of Stock'" class="mp-strike stock-count">{{ item.inventory }}</span>
+          <span v-else class="stock-count" :class="{ 'stock-low': item.status === 'Low Stock' }">{{ item.inventory }}</span>
         </template>
 
         <template v-slot:item.status="{ item }">
@@ -388,16 +433,85 @@ onMounted(() => {
         </template>
         <template #no-data>
           <MpEmptyState
-            icon="package"
-            :title="search ? 'No products match your search' : 'No products found'"
-            :description="search ? 'Try a different search term.' : 'Add products to your catalogue to get started.'"
-            action-label="New Product"
-            action-icon="plus"
+            variant="expressive"
+            :illustration="emptyState.illustration"
+            :title="emptyState.title"
+            :description="emptyState.description"
+            :action-label="emptyState.actionLabel"
+            :action-icon="emptyState.actionIcon"
             class="py-10"
-            @action="openNewProduct"
+            @action="onEmptyAction"
           />
         </template>
       </v-data-table>
+
+      <!-- Grid view -->
+      <div v-else class="flex-grow-1 overflow-auto pa-4">
+        <div v-if="searchedProducts.length" class="product-grid">
+          <v-card
+            v-for="item in searchedProducts"
+            :key="item.id"
+            variant="flat"
+            border
+            rounded="lg"
+            class="product-card"
+            @click="openEdit(item)"
+          >
+            <div class="product-card__media">
+              <v-img
+                :src="`https://picsum.photos/seed/${item.id}/320/320`"
+                alt=""
+                :aspect-ratio="1"
+                cover
+              >
+                <template #error>
+                  <div class="w-100 h-100 d-flex align-center justify-center bg-surface-variant">
+                    <v-icon size="22" color="medium-emphasis">image</v-icon>
+                  </div>
+                </template>
+              </v-img>
+              <v-checkbox-btn
+                class="product-card__check"
+                density="compact"
+                :model-value="selected.includes(item.id)"
+                @click.stop
+                @update:model-value="toggleSelect(item.id)"
+              />
+            </div>
+            <div class="pa-3">
+              <div class="d-flex align-start justify-space-between gap-1">
+                <div class="min-width-0">
+                  <div class="product-name text-truncate">{{ item.name }}</div>
+                  <div class="product-sku text-truncate">{{ item.sku }}</div>
+                </div>
+                <div @click.stop>
+                  <MpRowActionsMenu ariaLabel="Product actions">
+                    <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+                    <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+                    <v-divider class="my-1" style="opacity: 0.4" />
+                    <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+                  </MpRowActionsMenu>
+                </div>
+              </div>
+              <div class="d-flex align-center justify-space-between gap-2 mt-3">
+                <span class="mp-money product-price">{{ money(item.price).symbol }}{{ money(item.price).integer }}<span class="mp-money__cents">.{{ money(item.price).cents }}</span></span>
+                <MpStatusChip :status="item.status" type="stock" size="x-small" />
+              </div>
+            </div>
+          </v-card>
+        </div>
+        <MpEmptyState
+          v-else
+          variant="expressive"
+          :illustration="emptyState.illustration"
+          :title="emptyState.title"
+          :description="emptyState.description"
+          :action-label="emptyState.actionLabel"
+          :action-icon="emptyState.actionIcon"
+          class="py-10"
+          @action="onEmptyAction"
+        />
+      </div>
     </v-card>
 
     <MpFloatingBulkBar
@@ -454,11 +568,80 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.product-thumb {
-  width: 32px;
-  height: 32px;
+.min-width-0 {
+  min-width: 0;
 }
+
+/* Square product thumbnail — v-img's width prop collapses in the flex cell,
+   so pin it to a fixed 40×40 square. */
+.product-thumb {
+  flex: 0 0 40px;
+  width: 40px !important;
+  height: 40px !important;
+  aspect-ratio: 1 / 1;
+}
+
+/* Row identity: product name reads as ink, SKU/variant line demoted to a quiet second line. */
+.product-name {
+  font-size: 13.5px;
+  font-weight: 550;
+  line-height: 1.3;
+  color: rgb(var(--v-theme-on-surface));
+}
+.product-sku {
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+/* Price: tabular figures, cents demoted via .mp-money__cents. */
+.product-price {
+  font-size: 14px;
+  font-weight: 550;
+  color: rgb(var(--v-theme-on-surface));
+}
+.product-compare {
+  margin-top: 1px;
+  font-size: 12px;
+}
+
+/* Stock expressed in the count itself — no extra badge. */
+.stock-count {
+  font-variant-numeric: tabular-nums;
+}
+.stock-low {
+  color: rgb(var(--v-theme-warning));
+  font-weight: 600;
+}
+
 .mp-view-toggle {
   height: 40px;
+}
+
+/* Grid view — same editorial grammar as the rows. */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.product-card {
+  cursor: pointer;
+  transition: border-color var(--dur-fast, 120ms) var(--ease, ease), transform var(--dur-fast, 120ms) var(--ease, ease);
+}
+.product-card:hover {
+  border-color: rgba(var(--v-theme-on-surface), 0.24);
+  transform: translateY(-2px);
+}
+.product-card__media {
+  position: relative;
+}
+.product-card__check {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  border-radius: 6px;
+  background: rgba(var(--v-theme-surface), 0.9);
+  backdrop-filter: blur(2px);
 }
 </style>

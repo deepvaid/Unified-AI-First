@@ -595,7 +595,7 @@ onBeforeUnmount(() => {
             class="dvx__chip"
             @click="onQuickReply(chip.value)"
           >
-            <v-icon v-if="chip.icon" size="13" color="primary">{{ chip.icon }}</v-icon>
+            <v-icon v-if="chip.icon" size="13">{{ chip.icon }}</v-icon>
             {{ chip.label }}
           </button>
         </div>
@@ -686,7 +686,9 @@ onBeforeUnmount(() => {
   font-size: 0.8125rem;
   font-weight: 500;
   letter-spacing: 0;
-  transition: border-color 0.2s ease, transform 0.12s ease;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
 
 .dvx__top-actions .dvx__ghost-btn:hover {
@@ -761,7 +763,7 @@ onBeforeUnmount(() => {
 }
 
 .dvx__msg {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   line-height: 1.55;
   max-width: 90%;
   margin: 0;
@@ -910,12 +912,15 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   padding: 8px 16px;
   cursor: pointer;
-  transition: border-color 0.18s, color 0.18s, transform 0.1s;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
 
 .dvx__live-btn:hover {
-  border-color: var(--dv-accent);
-  color: var(--dv-accent);
+  border-color: var(--dv-text-primary);
+  color: var(--dv-text-primary);
 }
 
 .dvx__live-btn:active {
@@ -949,7 +954,9 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   padding: 7px 7px 7px 20px;
   box-shadow: 0 1px 2px rgba(24, 27, 33, 0.03), 0 18px 44px -28px rgba(24, 27, 33, 0.45);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color var(--dur-base) var(--ease),
+    box-shadow var(--dur-base) var(--ease);
 }
 
 .dvx__inputrow:focus-within {
@@ -984,7 +991,10 @@ onBeforeUnmount(() => {
   cursor: pointer;
   display: grid;
   place-items: center;
-  transition: background 0.18s, transform 0.1s, color 0.18s;
+  transition:
+    background var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .dvx__iconbtn:active {
@@ -1023,22 +1033,26 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--dvx-mono);
-  font-size: 0.75rem;
-  font-weight: 400;
-  background: rgb(var(--v-theme-surface));
+  font-size: 0.8125rem;
+  font-weight: 550;
+  background: transparent;
   border: 1px solid var(--dv-border);
   color: var(--dv-text-secondary);
   border-radius: 999px;
   padding: 8px 14px;
   cursor: pointer;
-  transition: border-color 0.18s, color 0.18s, background 0.18s, transform 0.1s;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
 
+/* Quiet ghost hover — border firms to ink over a faint wash; no accent fill */
 .dvx__chip:hover {
-  border-color: var(--dv-accent);
-  color: var(--dv-accent);
-  background: var(--dv-accent-soft);
+  border-color: var(--dv-text-primary);
+  color: var(--dv-text-primary);
+  background: color-mix(in srgb, rgb(var(--v-theme-on-surface)) 4%, transparent);
 }
 
 .dvx__chip:active {

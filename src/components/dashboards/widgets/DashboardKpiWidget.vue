@@ -47,6 +47,16 @@ const displayDeltaLabel = computed(() => {
   return props.data.deltaLabel
 })
 
+// Demote cents on currency values so the whole-dollar figure reads as the hero.
+// Parse the already-formatted string (respects the source's whole-dollar rounding
+// for large values); only splits when cents are actually present.
+const moneyParts = computed(() => {
+  if (props.data.unit !== 'currency') return null
+  const match = props.data.formattedValue.match(/^(\$[\d,]+)(\.\d+)$/)
+  if (!match) return null
+  return { main: match[1], cents: match[2] }
+})
+
 const sparklineValues = computed(() => {
   const delta = props.data.delta ?? 12
   const slope = Math.max(-0.2, Math.min(0.24, delta / 900))
@@ -60,7 +70,7 @@ const sparklinePoints = computed(() => {
   return values
     .map((value, index) => {
       const x = (index / maxIndex) * 100
-      const y = 48 - value * 38
+      const y = 38 - value * 30
       return `${x.toFixed(1)},${y.toFixed(1)}`
     })
     .join(' ')
@@ -70,71 +80,70 @@ const sparklinePoints = computed(() => {
 
 <template>
   <div class="dashboard-kpi-widget d-flex flex-column h-100" :class="{ 'dashboard-kpi-widget--compact': compact }">
-    <div class="dashboard-kpi-widget__top-row">
-      <div class="dashboard-kpi-widget__text-stack">
-        <!-- Icon chip + label + period caption -->
-        <div class="dashboard-kpi-widget__header-row">
-          <div
-            v-if="icon"
-            class="dashboard-kpi-widget__icon-chip"
-            :class="dataSource && `dashboard-kpi-widget__icon-chip--${dataSource}`"
-          >
-            <v-icon :size="compact ? 13 : 14">{{ icon }}</v-icon>
-          </div>
-          <div class="dashboard-kpi-widget__header-text">
-            <div v-if="title" class="dashboard-kpi-widget__title-row">
-              <div class="dashboard-kpi-widget__title" :title="title">{{ title }}</div>
-              <v-tooltip v-if="aiGenerated" location="top" text="Made by Da Vinci">
-                <template #activator="{ props: tipProps }">
-                  <span v-bind="tipProps" class="dashboard-kpi-widget__davinci-chip">
-                    <v-icon size="10">sparkles</v-icon>
-                    Da Vinci
-                  </span>
-                </template>
-              </v-tooltip>
-            </div>
-            <div class="dashboard-kpi-widget__period" v-if="subtitle">{{ subtitle }}</div>
-          </div>
-        </div>
-
-        <!-- Big value -->
-        <div class="dashboard-kpi-widget__value num">{{ data.formattedValue }}</div>
-
-        <!-- Trend inline with comparison label -->
-        <div class="dashboard-kpi-widget__trend">
-          <span
-            class="dashboard-kpi-widget__trend-pill"
-            :class="trendPositive ? 'dashboard-kpi-widget__trend-pill--positive' : 'dashboard-kpi-widget__trend-pill--negative'"
-          >
-            <v-icon size="12">{{ trendIcon }}</v-icon>
-            {{ displayDeltaLabel }}
-          </span>
-          <span v-if="comparisonLabel" class="dashboard-kpi-widget__comparison">{{ comparisonLabel }}</span>
-        </div>
-
-        <div v-if="data.location" class="dashboard-kpi-widget__location-chip">
-          <v-icon size="11">map-pin</v-icon>
-          {{ data.location }}
-        </div>
+    <!-- Icon chip + label + period caption -->
+    <div class="dashboard-kpi-widget__header-row">
+      <div
+        v-if="icon"
+        class="dashboard-kpi-widget__icon-chip"
+        :class="dataSource && `dashboard-kpi-widget__icon-chip--${dataSource}`"
+      >
+        <v-icon :size="compact ? 13 : 14">{{ icon }}</v-icon>
       </div>
-
-      <!-- Side sparkline -->
-      <div class="dashboard-kpi-widget__sparkline-col" aria-hidden="true">
-        <svg class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 52" preserveAspectRatio="none">
-          <defs>
-            <linearGradient :id="sparkFillId" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="currentColor" stop-opacity="0.18" />
-              <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
-            </linearGradient>
-          </defs>
-          <polygon
-            :points="`0,52 ${sparklinePoints} 100,52`"
-            class="dashboard-kpi-widget__sparkline-fill"
-            :fill="`url(#${sparkFillId})`"
-          />
-          <polyline :points="sparklinePoints" class="dashboard-kpi-widget__sparkline-line" />
-        </svg>
+      <div class="dashboard-kpi-widget__header-text">
+        <div v-if="title" class="dashboard-kpi-widget__title-row">
+          <div class="dashboard-kpi-widget__title mp-meta-label" :title="title">{{ title }}</div>
+          <v-tooltip v-if="aiGenerated" location="top" text="Made by Da Vinci">
+            <template #activator="{ props: tipProps }">
+              <span v-bind="tipProps" class="dashboard-kpi-widget__davinci-chip">
+                <v-icon size="10">sparkles</v-icon>
+                Da Vinci
+              </span>
+            </template>
+          </v-tooltip>
+        </div>
+        <div class="dashboard-kpi-widget__period" v-if="subtitle">{{ subtitle }}</div>
       </div>
+    </div>
+
+    <!-- Big value -->
+    <div class="dashboard-kpi-widget__value mp-kpi-value mp-money num">
+      <template v-if="moneyParts"><span>{{ moneyParts.main }}</span><span class="mp-money__cents">{{ moneyParts.cents }}</span></template>
+      <template v-else>{{ data.formattedValue }}</template>
+    </div>
+
+    <!-- Trend inline with comparison label (full width — no truncation) -->
+    <div class="dashboard-kpi-widget__trend">
+      <span
+        class="dashboard-kpi-widget__trend-pill"
+        :class="trendPositive ? 'dashboard-kpi-widget__trend-pill--positive' : 'dashboard-kpi-widget__trend-pill--negative'"
+      >
+        <v-icon size="12">{{ trendIcon }}</v-icon>
+        {{ displayDeltaLabel }}
+      </span>
+      <span v-if="comparisonLabel" class="dashboard-kpi-widget__comparison">{{ comparisonLabel }}</span>
+    </div>
+
+    <div v-if="data.location" class="dashboard-kpi-widget__location-chip">
+      <v-icon size="11">map-pin</v-icon>
+      {{ data.location }}
+    </div>
+
+    <!-- Full-width sparkline baseline, pinned to the bottom of the body -->
+    <div class="dashboard-kpi-widget__spark" aria-hidden="true">
+      <svg class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 40" preserveAspectRatio="none">
+        <defs>
+          <linearGradient :id="sparkFillId" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="currentColor" stop-opacity="0.16" />
+            <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon
+          :points="`0,40 ${sparklinePoints} 100,40`"
+          class="dashboard-kpi-widget__sparkline-fill"
+          :fill="`url(#${sparkFillId})`"
+        />
+        <polyline :points="sparklinePoints" class="dashboard-kpi-widget__sparkline-line" />
+      </svg>
     </div>
 
     <footer v-if="dataSource" class="dashboard-kpi-widget__foot">
@@ -159,55 +168,18 @@ const sparklinePoints = computed(() => {
 <style scoped lang="scss">
 .dashboard-kpi-widget {
   justify-content: flex-start;
-  padding: 16px 18px;
+  padding: 18px 20px;
   container-type: inline-size;
 }
 
-@container (max-width: 300px) {
+@container (max-width: 260px) {
   .dashboard-kpi-widget__icon-chip {
     display: none;
   }
 
-  .dashboard-kpi-widget__sparkline-col {
-    flex: 0 1 30%;
-    max-width: 32%;
-  }
-
   .dashboard-kpi-widget__value {
-    font-size: 24px;
+    font-size: 26px;
   }
-}
-
-@container (max-width: 240px) {
-  .dashboard-kpi-widget__sparkline-col {
-    display: none;
-  }
-
-  .dashboard-kpi-widget__value {
-    font-size: 22px;
-  }
-
-  .dashboard-kpi-widget__title {
-    -webkit-line-clamp: 2;
-  }
-}
-
-.dashboard-kpi-widget__top-row {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 12px;
-  width: 100%;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.dashboard-kpi-widget__text-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1 1 0;
-  min-width: 0;
 }
 
 .dashboard-kpi-widget__header-row {
@@ -297,17 +269,13 @@ const sparklinePoints = computed(() => {
 }
 
 .dashboard-kpi-widget__title {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.25;
-  overflow-wrap: break-word;
+  color: var(--muted);
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .dashboard-kpi-widget__period {
@@ -322,11 +290,11 @@ const sparklinePoints = computed(() => {
 
 .dashboard-kpi-widget__value {
   overflow: visible;
-  margin-top: 6px;
-  font-size: 28px;
-  line-height: 1.1;
-  letter-spacing: -0.5px;
-  font-weight: 600;
+  margin-top: 10px;
+  font-size: 32px;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  font-weight: 700;
   color: var(--ink);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -341,16 +309,18 @@ const sparklinePoints = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 8px;
   min-width: 0;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .dashboard-kpi-widget__trend-pill {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: 12px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  font-size: 11.5px;
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
@@ -358,10 +328,12 @@ const sparklinePoints = computed(() => {
 
 .dashboard-kpi-widget__trend-pill--positive {
   color: var(--pos);
+  background: color-mix(in oklch, var(--pos) 12%, transparent);
 }
 
 .dashboard-kpi-widget__trend-pill--negative {
   color: var(--neg);
+  background: color-mix(in oklch, var(--neg) 12%, transparent);
 }
 
 .dashboard-kpi-widget__comparison {
@@ -369,8 +341,6 @@ const sparklinePoints = computed(() => {
   font-weight: 500;
   color: var(--muted);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .dashboard-kpi-widget__location-chip {
@@ -398,21 +368,28 @@ const sparklinePoints = computed(() => {
   opacity: 0.85;
 }
 
-.dashboard-kpi-widget__sparkline-col {
-  display: flex;
-  align-items: flex-end;
-  flex: 0 1 38%;
-  max-width: 40%;
-  min-width: 70px;
-  align-self: stretch;
-  padding-top: 8px;
+/* Full-width baseline sparkline, pinned to the bottom of the card body */
+.dashboard-kpi-widget__spark {
+  margin-top: auto;
+  padding-top: 14px;
   color: var(--accent);
+  min-height: 0;
 }
 
 .dashboard-kpi-widget__sparkline {
+  display: block;
   width: 100%;
-  height: 88px;
+  height: 40px;
   overflow: visible;
+}
+
+@container (max-height: 150px) {
+  .dashboard-kpi-widget__sparkline {
+    height: 28px;
+  }
+  .dashboard-kpi-widget__spark {
+    padding-top: 8px;
+  }
 }
 
 .dashboard-kpi-widget__sparkline-line {
@@ -433,15 +410,12 @@ const sparklinePoints = computed(() => {
   padding: 14px 16px;
 }
 
-.dashboard-kpi-widget--compact .dashboard-kpi-widget__sparkline-col {
-  flex: 0 0 32%;
-  max-width: 36%;
-  min-width: 80px;
-  padding-top: 6px;
+.dashboard-kpi-widget--compact .dashboard-kpi-widget__spark {
+  padding-top: 8px;
 }
 
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__sparkline {
-  height: 64px;
+  height: 30px;
 }
 
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__icon-chip {
@@ -488,6 +462,7 @@ const sparklinePoints = computed(() => {
   gap: 4px;
   font-size: 11px;
   font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--muted);
   white-space: nowrap;
 }

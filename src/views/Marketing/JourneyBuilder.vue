@@ -478,16 +478,16 @@ onBeforeUnmount(() => {
 
   <div v-else class="jb-root d-flex flex-column">
     <!-- Toolbar -->
-    <div class="jb-toolbar d-flex align-center justify-space-between px-5 border-b bg-surface">
+    <div class="jb-toolbar d-flex align-center justify-space-between px-5 bg-surface">
       <div class="d-flex align-center gap-3" style="min-width:0;">
         <v-tooltip :text="isData ? 'Back to Data Journeys' : 'Back to Journeys'" location="bottom">
           <template #activator="{ props }">
-            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small"
+            <v-btn v-bind="props" icon="chevron-left" variant="text" size="small"
               :aria-label="isData ? 'Back to Data Journeys' : 'Back to Journeys'"
               @click="router.push(listRoute)"></v-btn>
           </template>
         </v-tooltip>
-        <div v-if="!editingName" class="font-weight-bold text-body-1 text-truncate jb-name" role="button" tabindex="0"
+        <div v-if="!editingName" class="text-truncate jb-name" role="button" tabindex="0"
           aria-label="Rename journey" @click="editingName = true; nameInput = journeyName"
           @keydown.enter.prevent="editingName = true; nameInput = journeyName">
           {{ journeyName }}
@@ -507,7 +507,7 @@ onBeforeUnmount(() => {
       <div class="d-flex align-center gap-2">
         <v-tooltip text="Ask Da Vinci to review this journey" location="bottom">
           <template #activator="{ props }">
-            <v-btn v-bind="props" icon="sparkles" variant="text" size="small" color="primary"
+            <v-btn v-bind="props" icon="sparkles" variant="text" size="small" class="jb-davinci"
               aria-label="Ask Da Vinci to review this journey" @click="askDaVinci"></v-btn>
           </template>
         </v-tooltip>
@@ -568,10 +568,10 @@ onBeforeUnmount(() => {
       <!-- Palette -->
       <aside class="jb-palette border-r bg-surface d-flex flex-column">
         <div class="pa-3 border-b">
-          <div class="text-overline text-medium-emphasis" style="line-height:1.2;">Journey steps</div>
+          <div class="mp-meta-label text-medium-emphasis" style="line-height:1.2;">Journey steps</div>
           <div class="text-caption text-medium-emphasis mb-2">Click a step to add it to your flow</div>
           <v-text-field v-model="paletteQuery" placeholder="Search steps..." variant="outlined" density="compact"
-            hide-details clearable prepend-inner-icon="search" aria-label="Search steps" />
+            hide-details clearable prepend-inner-icon="search" aria-label="Search steps" class="jb-search" />
         </div>
         <div class="flex-grow-1 overflow-y-auto pa-2 jb-palette__scroll">
           <div v-if="visibleSections.length === 0" class="text-caption text-medium-emphasis text-center pa-4">
@@ -581,7 +581,7 @@ onBeforeUnmount(() => {
             <button class="palette-section__header" :aria-expanded="openSections[s.key]" :aria-controls="`palette-${s.key}`"
               @click="toggleSection(s.key)">
               <span class="palette-dot" :style="{ backgroundColor: `rgb(var(--v-theme-${s.color}))` }"></span>
-              <span class="palette-section__label">{{ s.label }}</span>
+              <span class="palette-section__label mp-meta-label">{{ s.label }}</span>
               <span class="palette-count">{{ s.items.length }}</span>
               <v-icon size="18" class="palette-chevron" :class="{ 'palette-chevron--open': openSections[s.key] }">chevron-down</v-icon>
             </button>
@@ -648,7 +648,7 @@ onBeforeUnmount(() => {
                 <div class="jb-panel__eyebrow" :style="{ color: tileStyle(selectedNode.category).color }">
                   {{ categoryLabel[selectedNode.category] }}
                 </div>
-                <div class="text-body-2 font-weight-bold text-truncate">{{ selectedNode.title }}</div>
+                <div class="mp-section-title text-truncate">{{ selectedNode.title }}</div>
               </div>
             </div>
             <v-btn icon="x" variant="text" size="small" aria-label="Close settings panel" @click="cancelPanel"></v-btn>
@@ -673,12 +673,12 @@ onBeforeUnmount(() => {
                 @click="refreshStats(selectedNode.id)"></v-btn>
             </div>
 
-            <div class="jb-section-label">Step details</div>
+            <div class="jb-section-label mp-meta-label">Step details</div>
             <v-text-field v-model="draft.title" label="Step name" variant="outlined" density="compact" class="mb-3"></v-text-field>
             <v-text-field v-model="draft.subtitle" label="Description" variant="outlined" density="compact" class="mb-4"></v-text-field>
 
             <template v-if="selectedFields.length">
-              <div class="jb-section-label">Configuration</div>
+              <div class="jb-section-label mp-meta-label">Configuration</div>
               <!-- Schema-driven fields from the node catalog -->
               <template v-for="f in selectedFields" :key="f.key">
                 <v-select v-if="f.type === 'select'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="f.options"
@@ -735,11 +735,29 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .jb-root { height: 100vh; overflow: hidden; }
-.jb-toolbar { height: 56px; flex-shrink: 0; }
-.jb-name { cursor: pointer; border-radius: 6px; padding: 2px 6px; margin: -2px -6px; transition: background 0.15s; }
+.jb-toolbar {
+  height: 56px; flex-shrink: 0;
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+.jb-name {
+  cursor: pointer; border-radius: 6px; padding: 2px 6px; margin: -2px -6px;
+  font-size: 15px; font-weight: 650; color: rgb(var(--v-theme-on-surface));
+  transition: background var(--dur-fast) var(--ease);
+}
 .jb-name:hover { background: rgba(var(--v-theme-on-surface), 0.06); }
 .jb-name:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
-.jb-name__pencil { opacity: 0; color: rgba(var(--v-theme-on-surface), 0.5); transition: opacity 0.15s; }
+.jb-name__pencil { opacity: 0; color: rgba(var(--v-theme-on-surface), 0.5); transition: opacity var(--dur-fast) var(--ease); }
+
+/* Ask Da Vinci — AI as a quiet utility: muted neutral sparkle, no fill/accent. */
+.jb-davinci :deep(.v-icon) { opacity: 0.55; }
+.jb-davinci:hover :deep(.v-icon) { opacity: 0.9; }
+
+/* Ghost search — soft on-surface fill, hairline border that recedes. */
+.jb-search :deep(.v-field) { background: rgba(var(--v-theme-on-surface), 0.04); }
+.jb-search :deep(.v-field__outline__start),
+.jb-search :deep(.v-field__outline__notch)::before,
+.jb-search :deep(.v-field__outline__notch)::after,
+.jb-search :deep(.v-field__outline__end) { opacity: 0.5; }
 .jb-name:hover .jb-name__pencil, .jb-name:focus-visible .jb-name__pencil { opacity: 1; }
 
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
@@ -754,35 +772,35 @@ onBeforeUnmount(() => {
 .palette-section__header {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 8px 8px; border: 0; background: transparent; cursor: pointer;
-  border-radius: 8px; text-align: left; color: rgb(var(--v-theme-on-surface));
+  border-radius: var(--mp-component-card-radius-sm); text-align: left; color: rgb(var(--v-theme-on-surface));
 }
 .palette-section__header:hover { background: rgba(var(--v-theme-on-surface), 0.05); }
 .palette-section__header:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
 .palette-dot { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
-.palette-section__label { flex: 1; font-size: 0.8125rem; font-weight: 700; }
+.palette-section__label { flex: 1; color: rgba(var(--v-theme-on-surface), 0.6); }
 .palette-count {
   font-size: 0.625rem; font-weight: 700; line-height: 1;
   padding: 3px 7px; border-radius: 999px; margin-right: 2px;
   color: rgba(var(--v-theme-on-surface), 0.55);
   background: rgba(var(--v-theme-on-surface), 0.06);
 }
-.palette-chevron { transition: transform 0.2s ease; color: rgba(var(--v-theme-on-surface), 0.5); }
+.palette-chevron { transition: transform var(--dur-base) var(--ease); color: rgba(var(--v-theme-on-surface), 0.5); }
 .palette-chevron--open { transform: rotate(180deg); }
 .palette-section__items { padding: 2px 0 6px; }
 
 .palette-tile {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: var(--mp-component-card-radius-sm); flex-shrink: 0;
 }
 .palette-item {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 7px 8px; border: 0; background: transparent; cursor: pointer;
-  border-radius: 8px; text-align: left; transition: background 0.15s;
+  border-radius: var(--mp-component-card-radius-sm); text-align: left; transition: background var(--dur-fast) var(--ease);
 }
-.palette-item:hover { background: rgba(var(--v-theme-primary), 0.08); }
+.palette-item:hover { background: rgba(var(--v-theme-on-surface), 0.04); }
 .palette-item:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
 .palette-item__text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.palette-item__title { font-size: 0.75rem; font-weight: 700; line-height: 1.3; color: rgb(var(--v-theme-on-surface)); }
+.palette-item__title { font-size: 0.8125rem; font-weight: 550; line-height: 1.3; color: rgb(var(--v-theme-on-surface)); }
 .palette-item__sub { font-size: 0.6875rem; line-height: 1.3; color: rgba(var(--v-theme-on-surface), 0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .palette-item__add { color: rgba(var(--v-theme-on-surface), 0.35); flex-shrink: 0; }
 .palette-item:hover .palette-item__add { color: rgb(var(--v-theme-primary)); }
@@ -822,7 +840,6 @@ onBeforeUnmount(() => {
   font-size: 0.625rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; line-height: 1.4;
 }
 .jb-section-label {
-  font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
   color: rgba(var(--v-theme-on-surface), 0.45); margin-bottom: 10px;
 }
 

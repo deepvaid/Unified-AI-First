@@ -1,0 +1,9 @@
+<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M56 56 H104 V94 H56 Z" />
+  <path d="M56 56 L46 45 L80 49" />
+  <path d="M104 56 L114 45 L80 49" />
+  <line x1="80" y1="49" x2="80" y2="56" />
+  <line x1="88" y1="56" x2="88" y2="64" />
+  <path d="M88 64 L100 64 L100 82 L88 82 L80 73 Z" stroke="var(--accent, #0073AB)" />
+  <circle cx="90" cy="70" r="2" />
+</svg>

@@ -340,7 +340,9 @@ function notify(text: string) { snackText.value = text; snack.value = true }
 
 <style scoped>
 .inventory-thumb {
-  width: 32px;
-  height: 32px;
+  flex: 0 0 32px;
+  width: 32px !important;
+  height: 32px !important;
+  aspect-ratio: 1 / 1;
 }
 </style>

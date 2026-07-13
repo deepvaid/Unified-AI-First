@@ -250,6 +250,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
 
     <!-- Header -->
     <MpPageHeader
+      eyebrow="Audiences · Contacts"
       title="Contacts"
       :subtitle="`${store.contacts.length.toLocaleString()} total contacts · ${store.contacts.filter(c => c.status === 'Subscribed').length.toLocaleString()} subscribed`"
     >
@@ -261,7 +262,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
     </MpPageHeader>
 
     <!-- Single Card: Table with integrated toolbar, filters, bulk bar -->
-    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden mp-enter">
 
       <!-- Toolbar: title, search, filter, filter chips, bulk bar -->
       <MpDataTableToolbar
@@ -318,7 +319,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
                 </template>
               </v-img>
             </v-avatar>
-            <div>
+            <div class="contact-identity">
               <button
                 type="button"
                 class="contact-link"
@@ -326,13 +327,13 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
               >
                 {{ (item as any).firstName + ' ' + ((item as any).lastName ?? '') }}
               </button>
-              <div class="text-caption text-medium-emphasis">{{ (item as any).email }}</div>
+              <div class="contact-email">{{ (item as any).email }}</div>
             </div>
           </div>
         </template>
 
         <template v-slot:item.company="{ item }">
-          <span class="text-body-2">{{ (item as any).company }}</span>
+          <span class="text-body-2 text-medium-emphasis">{{ (item as any).company }}</span>
         </template>
 
         <template v-slot:item.tags="{ item }">
@@ -353,7 +354,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         </template>
 
         <template v-slot:item.lastActive="{ item }">
-          <span class="text-body-2 text-no-wrap">{{ formatDate((item as any).lastActive) }}</span>
+          <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ formatDate((item as any).lastActive) }}</span>
         </template>
 
         <template v-slot:item.actions="{ item }">
@@ -367,9 +368,19 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         </template>
         <template #no-data>
           <MpEmptyState
-            icon="users"
-            :title="search ? 'No contacts match your search' : 'No contacts found'"
-            :description="search ? 'Try a different search term or clear filters.' : 'Import or add contacts to get started.'"
+            v-if="search || activeFilterEntries.length"
+            variant="expressive"
+            illustration="no-results"
+            title="No matches for that search"
+            description="Try adjusting your filters or spelling."
+            class="py-10"
+          />
+          <MpEmptyState
+            v-else
+            variant="expressive"
+            illustration="empty-contacts"
+            title="No contacts yet"
+            description="Import a list or connect a store to start building your audience."
             action-label="Add Contact"
             action-icon="plus"
             class="py-10"
@@ -520,20 +531,12 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
 </template>
 
 <style scoped>
-:deep(.v-data-table thead tr) {
-  border-bottom: 1px solid rgba(var(--v-border-color), 0.15);
-}
-
 .contacts-table :deep(thead th) {
   white-space: nowrap;
 }
 
 .contacts-table :deep(tbody tr) {
   cursor: pointer;
-}
-
-.contacts-table :deep(tbody tr:hover) {
-  background: color-mix(in oklch, var(--accent) 4%, transparent);
 }
 
 .import-dropzone {
@@ -548,16 +551,30 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
   cursor: pointer;
 }
 
+.contact-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
 .contact-link {
   appearance: none;
   border: 0;
   background: transparent;
   color: rgb(var(--v-theme-on-surface));
   cursor: pointer;
-  font: inherit;
-  font-weight: 600;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 550;
+  line-height: 1.3;
   padding: 0;
   text-align: left;
+}
+
+.contact-email {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: rgba(var(--v-theme-on-surface), 0.6);
 }
 
 .contact-link:hover,

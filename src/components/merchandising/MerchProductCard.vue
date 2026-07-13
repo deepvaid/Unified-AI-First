@@ -29,7 +29,7 @@ const emit = defineEmits<{
     :class="{ 'merch-card--pinned': pinned, 'merch-card--selected': selected }"
   >
     <div class="merch-card__media">
-      <v-img :src="product.image" :alt="product.title" aspect-ratio="0.8" cover>
+      <v-img :src="product.image" :alt="product.title" :aspect-ratio="1" cover>
         <template #placeholder>
           <div class="merch-card__media-fallback">
             <v-icon size="28" class="text-medium-emphasis">image</v-icon>

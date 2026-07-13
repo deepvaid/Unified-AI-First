@@ -44,7 +44,7 @@ withDefaults(defineProps<{
   display: flex;
   align-items: center;
   gap: 24px;
-  padding: 16px 20px;
+  padding: 14px 20px;
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 
@@ -56,13 +56,13 @@ withDefaults(defineProps<{
 .mp-table-skeleton__bar {
   flex: 1;
   height: 12px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: rgba(var(--v-theme-on-surface), 0.08);
-  animation: mp-skeleton-pulse 1.4s ease-in-out infinite;
+  animation: mp-skeleton-pulse 1.6s ease-in-out infinite;
 }
 
 .mp-table-skeleton__bar--head {
-  height: 10px;
+  height: 11px;
   background: rgba(var(--v-theme-on-surface), 0.12);
 }
 

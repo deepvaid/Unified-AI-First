@@ -248,9 +248,6 @@ export const maropostDefaults = {
   VAppBar: {
     elevation: 0,
   },
-  VDialog: {
-    rounded: 'xl',
-  },
   VDivider: {
     opacity: 0.72,
   },

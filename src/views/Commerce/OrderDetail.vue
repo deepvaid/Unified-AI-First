@@ -9,6 +9,7 @@ import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
+import { formatMoneyParts } from '@/utils/formatMoneyParts'
 
 const route = useRoute()
 const router = useRouter()
@@ -94,6 +95,12 @@ function lineTotal(qty: number, price: string, discountPct: number): string {
   return (qty * parseFloat(price) * (1 - discountPct / 100)).toFixed(2)
 }
 
+// ── Money formatting (symbol / integer / demoted cents) ───────────
+function money(value: string) {
+  return formatMoneyParts(parseFloat(value || '0'), order.value?.currency ?? 'USD')
+}
+const heroMoney = computed(() => money(order.value?.total ?? '0'))
+
 // ── Fulfillment stepper ───────────────────────────────────────────
 const stageIndex = computed(() => order.value ? FULFILLMENT_STAGES.indexOf(order.value.fulfillmentStage) + 1 : 1)
 const linkedFulfillment = computed(() => order.value ? store.fulfillments.find(f => f.orderId === order.value!.id) : undefined)
@@ -114,15 +121,27 @@ function addNote() {
   notify('Note added')
 }
 const timelineNewestFirst = computed(() => order.value ? [...order.value.timeline].reverse() : [])
+
+// Typed glyph for each timeline entry, inferred from its text (store only stores note|event)
+function timelineIcon(entry: { kind: string; text: string }): string {
+  if (entry.kind === 'note') return 'message-square'
+  const t = entry.text.toLowerCase()
+  if (t.includes('placed') || t.includes('draft order')) return 'shopping-bag'
+  if (t.includes('payment') || t.includes('captured')) return 'credit-card'
+  if (t.includes('shipped') || t.includes('tracking')) return 'truck'
+  if (t.includes('refund')) return 'undo-2'
+  if (t.includes('cancel')) return 'ban'
+  return 'circle-dot'
+}
 </script>
 
 <template>
   <div v-if="order" class="d-flex flex-column gap-4">
     <!-- Header: back + order # + inline status chips -->
-    <MpPageHeader :title="`Order ${order.orderNumber}`" :back-to="ordersListRoute">
+    <MpPageHeader :title="`Order ${order.orderNumber}`" eyebrow="Commerce · Orders" :back-to="ordersListRoute">
       <template #actions>
         <v-btn variant="flat" color="surface" prepend-icon="printer" class="text-none" @click="printInvoice">Print Invoice</v-btn>
-        <v-btn variant="flat" color="surface" prepend-icon="banknote" class="text-none" :disabled="!canRefund" @click="openRefund">Refund</v-btn>
+        <v-btn variant="flat" color="surface" prepend-icon="undo-2" class="text-none" :disabled="!canRefund" @click="openRefund">Refund</v-btn>
         <v-btn variant="tonal" color="error" prepend-icon="ban" class="text-none" :disabled="!canCancel" @click="cancelDialog = true">Cancel Order</v-btn>
       </template>
       <template #tabs>
@@ -135,7 +154,7 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
       </template>
     </MpPageHeader>
 
-    <div class="order-detail-layout">
+    <div class="order-detail-layout mp-enter">
       <!-- ═══ LEFT COLUMN ═══════════════════════════════════════════ -->
       <div class="d-flex flex-column gap-4 min-width-0">
 
@@ -148,35 +167,46 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
               <a :href="`mailto:${order.customer.email}`" class="text-body-2 text-medium-emphasis od-link">{{ order.customer.email }}</a>
             </div>
           </div>
-          <v-divider class="mb-4" style="opacity: 0.5" />
-          <div class="od-info-grid">
+          <v-divider class="mb-5" style="opacity: 0.5" />
+          <dl class="mp-label-value">
             <div v-for="cell in infoGrid" :key="cell.label">
-              <div class="text-caption text-medium-emphasis">{{ cell.label }}</div>
-              <div class="text-body-2 font-weight-medium">{{ cell.value }}</div>
+              <dt>{{ cell.label }}</dt>
+              <dd>{{ cell.value }}</dd>
             </div>
-          </div>
+          </dl>
         </v-card>
 
         <!-- Addresses -->
         <div class="od-address-row">
           <v-card v-for="kind in (['shipping', 'billing'] as const)" :key="kind" flat border rounded="lg" class="pa-5 flex-grow-1">
-            <MpSectionHeader :title="kind === 'shipping' ? 'Shipping Address' : 'Billing Address'">
+            <MpSectionHeader :icon="kind === 'shipping' ? 'truck' : 'receipt'" :title="kind === 'shipping' ? 'Shipping Address' : 'Billing Address'">
               <template #actions>
                 <v-btn icon="pencil" variant="text" size="small" density="comfortable" :aria-label="`Edit ${kind} address`" @click="openAddressDrawer(kind)" />
               </template>
             </MpSectionHeader>
-            <div class="text-body-2 mt-1" style="line-height: 1.7">
-              <div class="font-weight-medium">{{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).name }}</div>
-              <div>{{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).line1 }}</div>
-              <div>{{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).city }}, {{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).region }} {{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).postalCode }}</div>
-              <div class="text-medium-emphasis">{{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).country }}</div>
-            </div>
+            <dl class="mp-label-value od-address-grid mt-1">
+              <div>
+                <dt>Recipient</dt>
+                <dd>{{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).name }}</dd>
+              </div>
+              <div>
+                <dt>Address</dt>
+                <dd>
+                  {{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).line1 }}<br>
+                  {{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).city }}, {{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).region }} {{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).postalCode }}
+                </dd>
+              </div>
+              <div>
+                <dt>Country</dt>
+                <dd>{{ (kind === 'shipping' ? order.shippingAddress : order.billingAddress).country }}</dd>
+              </div>
+            </dl>
           </v-card>
         </div>
 
         <!-- Line items -->
         <v-card flat border rounded="lg" class="overflow-hidden">
-          <div class="pa-5 pb-3"><MpSectionHeader :title="`Summary (${order.lineItems.length} items)`" /></div>
+          <div class="pa-5 pb-2"><MpSectionHeader icon="package" :title="`Line items (${order.lineItems.length})`" /></div>
           <v-table density="comfortable" class="od-items-table">
             <thead>
               <tr>
@@ -196,103 +226,103 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
                   <div class="text-caption text-medium-emphasis">{{ li.sku }}</div>
                 </td>
                 <td><MpStatusChip :status="li.status" type="fulfillment" size="x-small" /></td>
-                <td class="text-right text-body-2 text-no-wrap">${{ li.price }}</td>
-                <td class="text-center text-body-2">{{ li.qty }}</td>
-                <td class="text-body-2">{{ li.coupon ?? '—' }}</td>
-                <td class="text-right text-body-2">{{ li.discountPct ? `${li.discountPct}%` : '—' }}</td>
-                <td class="text-right text-body-2 font-weight-semibold text-no-wrap">${{ lineTotal(li.qty, li.price, li.discountPct) }}</td>
+                <td class="text-right text-medium-emphasis text-no-wrap"><span class="mp-money">{{ money(li.price).symbol }}{{ money(li.price).integer }}<span class="mp-money__cents">.{{ money(li.price).cents }}</span></span></td>
+                <td class="text-center text-medium-emphasis">{{ li.qty }}</td>
+                <td class="text-body-2 text-medium-emphasis">{{ li.coupon ?? '—' }}</td>
+                <td class="text-right text-medium-emphasis">{{ li.discountPct ? `${li.discountPct}%` : '—' }}</td>
+                <td class="text-right font-weight-semibold text-no-wrap"><span class="mp-money">{{ money(lineTotal(li.qty, li.price, li.discountPct)).symbol }}{{ money(lineTotal(li.qty, li.price, li.discountPct)).integer }}<span class="mp-money__cents">.{{ money(lineTotal(li.qty, li.price, li.discountPct)).cents }}</span></span></td>
               </tr>
             </tbody>
           </v-table>
-          <v-divider style="opacity: 0.5" />
-          <div class="pa-5 pt-4 d-flex flex-column gap-1 od-totals">
-            <div class="d-flex justify-space-between text-body-2"><span class="text-medium-emphasis">Subtotal</span><span>${{ order.subtotal }}</span></div>
-            <div class="d-flex justify-space-between text-body-2"><span class="text-medium-emphasis">Shipping</span><span>${{ order.shipping }}</span></div>
-            <div class="d-flex justify-space-between text-body-1 font-weight-bold pt-2 mt-1 od-total-row"><span>Net Payable</span><span class="text-primary">${{ order.total }}</span></div>
+          <div class="pa-5 pt-4 d-flex flex-column gap-2 od-totals">
+            <div class="d-flex justify-space-between text-body-2"><span class="text-medium-emphasis">Subtotal</span><span class="mp-money">${{ order.subtotal }}</span></div>
+            <div class="d-flex justify-space-between text-body-2"><span class="text-medium-emphasis">Shipping</span><span class="mp-money">${{ order.shipping }}</span></div>
+            <div class="d-flex justify-space-between align-baseline pt-3 mt-1 od-total-row">
+              <span class="text-body-2 text-medium-emphasis">Net payable</span>
+              <span class="od-total-amount mp-money">{{ money(order.total).symbol }}{{ money(order.total).integer }}<span class="mp-money__cents">.{{ money(order.total).cents }}</span></span>
+            </div>
           </div>
         </v-card>
 
         <!-- Payment -->
         <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader title="Payment">
+          <MpSectionHeader icon="credit-card" title="Payment">
             <template #actions>
               <MpStatusChip :status="order.paymentStatus" type="payment" size="x-small" />
             </template>
           </MpSectionHeader>
-          <div class="od-info-grid mt-2">
+          <dl class="mp-label-value mt-2">
             <div>
-              <div class="text-caption text-medium-emphasis">Reference</div>
-              <div class="text-body-2 font-weight-medium">{{ order.paymentReference }}</div>
+              <dt>Reference</dt>
+              <dd>{{ order.paymentReference }}</dd>
             </div>
             <div>
-              <div class="text-caption text-medium-emphasis">Method</div>
-              <div class="text-body-2 font-weight-medium">{{ order.paymentMethod }}</div>
+              <dt>Method</dt>
+              <dd>{{ order.paymentMethod }}</dd>
             </div>
             <div>
-              <div class="text-caption text-medium-emphasis">Captured At</div>
-              <div class="text-body-2 font-weight-medium">{{ formatDate(order.paymentCapturedAt) }}</div>
+              <dt>Captured</dt>
+              <dd>{{ formatDate(order.paymentCapturedAt) }}</dd>
             </div>
             <div>
-              <div class="text-caption text-medium-emphasis">Amount</div>
-              <div class="text-body-2 font-weight-medium">${{ order.total }}</div>
+              <dt>Amount</dt>
+              <dd class="mp-money">${{ order.total }}</dd>
             </div>
-          </div>
+          </dl>
         </v-card>
 
         <!-- Fulfillment -->
         <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader title="Fulfillment">
+          <MpSectionHeader icon="package-check" title="Fulfillment">
             <template #actions>
               <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="x-small" show-icon />
             </template>
           </MpSectionHeader>
-          <div class="my-4">
+          <div class="my-5">
             <MpWizardSteps :steps="[...FULFILLMENT_STAGES]" :current="stageIndex" />
           </div>
-          <div class="od-info-grid">
+          <dl class="mp-label-value">
             <div>
-              <div class="text-caption text-medium-emphasis">Fulfilled From</div>
-              <div class="text-body-2 font-weight-medium">{{ order.fulfilledFromLocation }}</div>
+              <dt>Fulfilled from</dt>
+              <dd>{{ order.fulfilledFromLocation }}</dd>
             </div>
             <div v-if="linkedFulfillment">
-              <div class="text-caption text-medium-emphasis">Fulfillment</div>
-              <div class="text-body-2 font-weight-medium">FF-{{ String(linkedFulfillment.id).padStart(4, '0') }}</div>
+              <dt>Fulfillment</dt>
+              <dd>FF-{{ String(linkedFulfillment.id).padStart(4, '0') }}</dd>
             </div>
             <div v-if="order.trackingNumber">
-              <div class="text-caption text-medium-emphasis">Tracking</div>
-              <div class="text-body-2 font-weight-medium">{{ order.courier }} · {{ order.trackingNumber }}</div>
+              <dt>Tracking</dt>
+              <dd>{{ order.courier }} · {{ order.trackingNumber }}</dd>
             </div>
-          </div>
+          </dl>
         </v-card>
       </div>
 
       <!-- ═══ RIGHT SIDEBAR (sticky) ════════════════════════════════ -->
       <div class="od-sidebar d-flex flex-column gap-4">
         <v-card flat border rounded="lg" class="pa-5">
+          <div class="mp-meta-label od-hero-label">Net payable</div>
+          <div class="od-hero-amount mp-money">{{ heroMoney.symbol }}{{ heroMoney.integer }}<span class="mp-money__cents">.{{ heroMoney.cents }}</span></div>
+          <v-divider class="my-4" style="opacity: 0.5" />
           <div class="d-flex flex-column gap-3">
             <div class="d-flex align-center justify-space-between">
-              <span class="text-body-2 text-medium-emphasis">Order Status</span>
+              <span class="text-body-2 text-medium-emphasis">Order</span>
               <MpStatusChip :status="order.status" type="order" size="x-small" variant="flat" />
             </div>
             <div class="d-flex align-center justify-space-between">
-              <span class="text-body-2 text-medium-emphasis">Payment Status</span>
+              <span class="text-body-2 text-medium-emphasis">Payment</span>
               <MpStatusChip :status="order.paymentStatus" type="payment" size="x-small" />
             </div>
             <div class="d-flex align-center justify-space-between">
-              <span class="text-body-2 text-medium-emphasis">Fulfillment Status</span>
+              <span class="text-body-2 text-medium-emphasis">Fulfillment</span>
               <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="x-small" />
-            </div>
-            <v-divider style="opacity: 0.5" />
-            <div class="d-flex align-center justify-space-between">
-              <span class="text-body-2 font-weight-medium">Net Payable</span>
-              <span class="text-h6 font-weight-bold text-primary">${{ order.total }}</span>
             </div>
           </div>
         </v-card>
 
         <!-- Tags -->
         <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader title="Tags" />
+          <MpSectionHeader icon="tags" title="Tags" />
           <v-combobox
             :model-value="order.tags"
             :items="tagSuggestions"
@@ -310,7 +340,7 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
 
         <!-- Timeline -->
         <v-card flat border rounded="lg" class="pa-5">
-          <MpSectionHeader :title="`Timeline (${order.timeline.length})`" />
+          <MpSectionHeader icon="history" :title="`Timeline (${order.timeline.length})`" />
           <v-textarea
             v-model="noteText"
             placeholder="Write internal notes…"
@@ -325,16 +355,16 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
             <v-btn size="small" color="primary" variant="flat" class="text-none" :disabled="!noteText.trim()" @click="addNote">Add Note</v-btn>
           </div>
           <div class="od-timeline">
-            <div v-for="(entry, idx) in timelineNewestFirst" :key="entry.id" class="od-timeline__entry">
-              <div class="od-timeline__rail">
-                <v-avatar :color="entry.kind === 'note' ? 'secondary' : 'primary'" size="26" variant="tonal" class="od-timeline__dot">
-                  <v-icon size="13">{{ entry.kind === 'note' ? 'sticky-note' : 'circle-dot' }}</v-icon>
-                </v-avatar>
-                <div v-if="idx < timelineNewestFirst.length - 1" class="od-timeline__line" />
-              </div>
-              <div class="od-timeline__content">
-                <div class="text-body-2">{{ entry.text }}</div>
-                <div class="text-caption text-medium-emphasis mt-1">{{ entry.kind === 'note' ? 'Internal note · ' : '' }}{{ formatDate(entry.date) }}</div>
+            <div v-for="entry in timelineNewestFirst" :key="entry.id" class="od-event">
+              <span class="od-event__icon" :class="{ 'od-event__icon--note': entry.kind === 'note' }">
+                <v-icon size="13">{{ timelineIcon(entry) }}</v-icon>
+              </span>
+              <div class="min-width-0">
+                <div class="od-event__head">
+                  <span class="od-event__title">{{ entry.text }}</span>
+                  <span class="od-event__time mp-money">{{ formatDate(entry.date) }}</span>
+                </div>
+                <div v-if="entry.kind === 'note'" class="od-event__meta">Internal note</div>
               </div>
             </div>
           </div>
@@ -424,10 +454,17 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
   }
 }
 
-.od-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 14px 20px;
+/* Label-over-value grids — muted uppercase label above value */
+.mp-label-value dt {
+  color: rgb(var(--v-theme-on-surface-variant));
+  margin-bottom: 2px;
+}
+.od-address-grid {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+.od-address-grid dd {
+  line-height: 1.5;
 }
 
 .od-address-row {
@@ -441,15 +478,39 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
   }
 }
 
+/* Silent line-items table: transparent header, hairline rows */
 .od-items-table :deep(th) {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   white-space: nowrap;
-  color: rgba(var(--v-theme-on-surface), 0.6);
+  color: rgb(var(--v-theme-on-surface-variant));
+  background: transparent;
+}
+.od-items-table :deep(tbody td) {
+  font-size: 14px;
 }
 
+/* Totals block */
 .od-total-row {
   border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+.od-total-amount {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Hero amount */
+.od-hero-label {
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+.od-hero-amount {
+  margin-top: 4px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
 .od-link {
@@ -460,37 +521,71 @@ const timelineNewestFirst = computed(() => order.value ? [...order.value.timelin
   text-decoration: underline;
 }
 
-/* Timeline */
+/* Timeline — typed-glyph rail with a connecting hairline */
 .od-timeline {
   display: flex;
   flex-direction: column;
+  gap: 18px;
+  position: relative;
 }
-.od-timeline__entry {
+.od-event {
   display: flex;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
 }
-.od-timeline__rail {
-  display: flex;
-  flex-direction: column;
+/* connecting line between glyph nodes */
+.od-event:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 26px;
+  bottom: -18px;
+  width: 1px;
+  background: rgba(var(--v-theme-on-surface), 0.1);
+}
+.od-event__icon {
+  flex-shrink: 0;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: inline-flex;
   align-items: center;
-  flex-shrink: 0;
-  width: 26px;
-}
-.od-timeline__dot {
-  flex-shrink: 0;
+  justify-content: center;
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  color: rgb(var(--v-theme-on-surface-variant));
   z-index: 1;
 }
-.od-timeline__line {
-  width: 2px;
-  flex-grow: 1;
-  background: rgba(var(--v-border-color), 0.15);
-  border-radius: 1px;
-  margin: 3px 0;
-  min-height: 10px;
+.od-event__icon--note {
+  border-color: rgba(var(--v-theme-primary), 0.35);
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.06);
 }
-.od-timeline__content {
-  flex-grow: 1;
-  padding-bottom: 14px;
+.od-event__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.od-event__title {
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.4;
+  color: rgb(var(--v-theme-on-surface));
   min-width: 0;
+}
+.od-event__time {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+.od-event__meta {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 </style>

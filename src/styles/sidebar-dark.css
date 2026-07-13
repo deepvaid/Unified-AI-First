@@ -12,7 +12,7 @@
   --sidebar-text: rgba(255, 255, 255, 0.92);
   --sidebar-muted: rgba(255, 255, 255, 0.64);
   --sidebar-hover-bg: rgba(255, 255, 255, 0.07);
-  --sidebar-active-bg: color-mix(in oklch, rgb(var(--v-theme-primary)) 34%, transparent);
+  --sidebar-active-bg: color-mix(in oklch, rgb(var(--v-theme-primary)) 28%, transparent);
   --sidebar-active-text: #ffffff;
   --sidebar-focus-ring: color-mix(in oklch, rgb(var(--v-theme-primary)) 55%, transparent);
 }
@@ -138,7 +138,7 @@
   --sidebar-text: rgba(255, 255, 255, 0.92) !important;
   --sidebar-muted: rgba(255, 255, 255, 0.64) !important;
   --sidebar-hover-bg: rgba(255, 255, 255, 0.07) !important;
-  --sidebar-active-bg: color-mix(in oklch, rgb(var(--v-theme-primary)) 34%, transparent) !important;
+  --sidebar-active-bg: color-mix(in oklch, rgb(var(--v-theme-primary)) 28%, transparent) !important;
   --sidebar-active-text: #ffffff !important;
   background: var(--sidebar-bg) !important;
   border-color: var(--sidebar-border) !important;

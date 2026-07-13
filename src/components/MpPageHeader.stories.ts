@@ -58,8 +58,10 @@ The \`MpPageHeader\` sits at the very top of main application views. It provides
     title: { control: 'text', description: 'Page title, rendered as an `h1` (level 1) or `h2` (level 2).' },
     subtitle: { control: 'text', description: 'Optional supporting line under the title.' },
     backTo: { control: 'text', description: 'Route location for the back arrow (path string or route object). Omit to hide the back button.' },
-    level: { control: 'select', options: [1, 2], description: 'Heading level: 1 = page header (h1, text-h5), 2 = section-level header (h2, text-h6).' },
+    level: { control: 'select', options: [1, 2], description: 'Heading level: 1 = page header (h1, display-scale title), 2 = section-level header (h2, modest title).' },
     density: { control: 'select', options: ['default', 'compact'], description: 'Bottom-margin density of the header block.' },
+    eyebrow: { control: 'text', description: 'Optional muted, uppercase, tracked label rendered above the title (e.g. "COMMERCE · ORDERS").' },
+    variant: { control: 'select', options: ['default', 'display'], description: "'display' renders the title as a two-tone display-scale masthead; the subtitle becomes the muted second line at the same size. Used on module landing pages." },
     actions: { control: false, description: 'Slot — page-level action buttons, right-aligned next to the title.', table: { category: 'slots' } },
     tabs: { control: false, description: 'Slot — rendered below the header block, e.g. `MpFilterTabs`.', table: { category: 'slots' } },
   },
@@ -106,6 +108,24 @@ export const SectionLevel: Story = {
     subtitle: 'Invite teammates and manage their access levels.',
     level: 2,
     density: 'compact',
+  },
+}
+
+/** Eyebrow label above the title anchors the page in its module hierarchy. */
+export const WithEyebrow: Story = {
+  args: {
+    title: 'Sales Orders',
+    subtitle: 'Manage and fulfill customer orders',
+    eyebrow: 'Commerce · Orders',
+  },
+}
+
+/** Display variant: title and subtitle stack as a two-tone display-scale masthead. Used on module landing pages. */
+export const DisplayVariant: Story = {
+  args: {
+    title: 'Marketing',
+    subtitle: 'Campaigns, journeys, and content in one place',
+    variant: 'display',
   },
 }
 

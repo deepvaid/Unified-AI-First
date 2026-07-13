@@ -1,0 +1,6 @@
+<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M58 42 L112 30 L86 78 Z" />
+  <path d="M112 30 L80 56 L86 78" />
+  <line x1="80" y1="56" x2="58" y2="42" />
+  <path d="M34 92 C50 84 58 72 78 54" stroke="var(--accent, #0073AB)" stroke-dasharray="0.5 6" />
+</svg>

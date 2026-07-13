@@ -38,8 +38,9 @@ function onFile(e: Event) {
 </script>
 
 <template>
-  <div class="settings-page">
+  <div class="settings-page mp-enter">
     <MpPageHeader :level="2" density="compact"
+      eyebrow="Settings · Your preferences"
       title="General"
       subtitle="Personal information and global preferences. These apply only to you."
     />
@@ -185,7 +186,7 @@ function onFile(e: Event) {
 }
 
 .profile-image-help {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--muted);
 }
 

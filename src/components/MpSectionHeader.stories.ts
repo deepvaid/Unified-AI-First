@@ -47,6 +47,8 @@ The \`MpSectionHeader\` is used to divide content within a single page into logi
   },
   argTypes: {
     title: { control: 'text', description: 'Section label. Keep it brief — it sits on one line beside the actions.' },
+    eyebrow: { control: 'text', description: 'Optional muted, uppercase, tracked label rendered above the title.' },
+    description: { control: 'text', description: 'Optional supporting line rendered under the title.' },
     actions: { control: false, description: 'Slot — right-aligned section-level controls ("View All", sort menus).', table: { category: 'slots' } },
   },
 } satisfies Meta<typeof MpSectionHeader>
@@ -72,6 +74,26 @@ export const WithActions: Story = {
     `,
   }),
   args: { title: 'Top Campaigns' },
+}
+
+/** Eyebrow above and a supporting description below the title — the fullest section-header form. */
+export const WithEyebrowAndDescription: Story = {
+  render: (args) => ({
+    components: { MpSectionHeader },
+    setup: () => ({ args }),
+    template: `
+      <MpSectionHeader v-bind="args">
+        <template #actions>
+          <v-btn size="small" variant="text" color="primary">View All</v-btn>
+        </template>
+      </MpSectionHeader>
+    `,
+  }),
+  args: {
+    title: 'Top Campaigns',
+    eyebrow: 'Last 30 days',
+    description: 'Ranked by revenue attributed within the attribution window.',
+  },
 }
 
 /** A long title next to actions — title and actions share one row, so keep titles short. */

@@ -56,7 +56,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
     <div class="d-flex align-start justify-space-between ga-6 px-6 pt-6 pb-4 mp-toolbar-row">
       <div class="mp-toolbar-heading">
         <div v-if="title" class="text-subtitle-1 font-weight-bold">{{ title }}</div>
-        <div v-if="totalCount != null" class="text-caption text-medium-emphasis mt-1">
+        <div v-if="totalCount != null" class="mp-meta-label text-medium-emphasis mt-1">
           {{ totalCount }} records
         </div>
         <slot name="title" />
@@ -238,11 +238,21 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
 }
 
 .mp-divider-toolbar {
-  opacity: 0.12;
+  opacity: 0.08;
 }
 
 .mp-toolbar-panel {
   border-color: rgb(var(--v-theme-outline-variant));
+}
+
+/* Ghost search: transparent until focus, resting outline held to a hairline.
+   Focus restores the primary ring consistent with the global outlined-field style. */
+.mp-toolbar-search :deep(.v-field) {
+  background: transparent;
+}
+
+.mp-toolbar-search :deep(.v-field:not(.v-field--focused) .v-field__outline) {
+  --v-field-border-opacity: 0.16;
 }
 
 .mp-toolbar-heading {

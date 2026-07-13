@@ -13,7 +13,7 @@
   --sidebar-text: #1a1d21;
   --sidebar-muted: #667085;
   --sidebar-hover-bg: rgba(26, 29, 33, 0.05);
-  --sidebar-active-bg: rgba(26, 29, 33, 0.09);
+  --sidebar-active-bg: rgba(26, 29, 33, 0.07);
   --sidebar-active-text: #101317;
   --sidebar-focus-ring: rgba(26, 29, 33, 0.45);
 }
@@ -139,7 +139,7 @@
   --sidebar-text: #1a1d21 !important;
   --sidebar-muted: #667085 !important;
   --sidebar-hover-bg: rgba(26, 29, 33, 0.05) !important;
-  --sidebar-active-bg: rgba(26, 29, 33, 0.09) !important;
+  --sidebar-active-bg: rgba(26, 29, 33, 0.07) !important;
   --sidebar-active-text: #101317 !important;
   background: var(--sidebar-bg) !important;
   border-color: var(--sidebar-border) !important;

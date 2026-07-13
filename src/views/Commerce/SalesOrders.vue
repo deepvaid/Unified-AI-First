@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCommerceStore, type Order } from '@/stores/useCommerce'
 import { downloadCsv } from '@/utils/exportCsv'
+import { formatMoneyParts } from '@/utils/formatMoneyParts'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -48,18 +49,20 @@ const headers = [
   { title: 'Order', key: 'orderNumber', sortable: true, width: 110 },
   { title: 'Date', key: 'date', sortable: true, hideBelow: 'md' as const },
   { title: 'Customer', key: 'customer.name' },
-  { title: 'Items', key: 'itemCount', align: 'center' as const, width: 70, hideBelow: 'lg' as const },
+  { title: 'Items', key: 'itemCount', align: 'end' as const, width: 70, hideBelow: 'lg' as const },
   { title: 'Total', key: 'total', align: 'end' as const, sortable: true },
   { title: 'Fulfillment', key: 'fulfillmentStatus', hideBelow: 'md' as const },
-  { title: 'Payment', key: 'paymentStatus', hideBelow: 'lg' as const },
+  { title: 'Payment', key: 'paymentStatus', hideBelow: 'md' as const },
   { title: 'Status', key: 'status' },
   { title: 'Sales Channel', key: 'salesChannel', hideBelow: 'lg' as const },
-  { title: 'Tags', key: 'tags', sortable: false, hideBelow: 'lg' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
   { title: '', key: 'data-table-expand', width: 40 },
 ]
 
-const hiddenColumns = ref<string[]>([])
+// Payment + Sales Channel are demoted from the default scan (both surface in the
+// expanded row / order detail); users can re-enable them via the column menu.
+// Keeps the table free of horizontal scroll at common widths.
+const hiddenColumns = ref<string[]>(['paymentStatus', 'salesChannel'])
 const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
 
 const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -79,6 +82,15 @@ const paymentDots: Record<string, string> = {
   'Refunded': 'rgb(var(--v-theme-error))',
   'Voided': 'rgba(var(--v-theme-on-surface), 0.38)',
 }
+
+// Orders whose total should read as struck-through (money no longer collected)
+const isVoidedTotal = (o: Order) => o.status === 'Cancelled' || o.status === 'Refunded'
+
+// Split a stored string amount ("1,234.50") into money parts for the .mp-money treatment
+const money = (value: string) => formatMoneyParts(parseFloat(value.replace(/,/g, '')) || 0)
+
+// Line-item total for the expanded row
+const lineTotal = (qty: number, price: string) => money((qty * parseFloat(price)).toFixed(2))
 
 // ─── Tab + Filter Filtering ───────────────────────────────────────────────────
 const filteredOrders = computed(() => {
@@ -218,6 +230,7 @@ function exportOrders() {
   <div class="h-100 d-flex flex-column gap-5">
     <!-- Page Header -->
     <MpPageHeader
+      eyebrow="Commerce · Orders"
       title="Sales Orders"
       :subtitle="`${store.orders.length} orders total · $${store.orders.reduce((a,o) => a + parseFloat(o.total), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lifetime revenue`"
     >
@@ -231,7 +244,7 @@ function exportOrders() {
     </MpPageHeader>
 
     <!-- Main Table Card -->
-    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden mp-enter">
       <!-- Toolbar -->
       <MpDataTableToolbar
         v-model:search="search"
@@ -261,6 +274,7 @@ function exportOrders() {
 
       <v-data-table
         v-else
+        :key="activeTab"
         v-model="selected"
         v-model:expanded="expanded"
         :headers="visibleHeaders"
@@ -286,19 +300,21 @@ function exportOrders() {
           <span class="text-medium-emphasis text-body-2 text-no-wrap">{{ formatDate(item.date) }}</span>
         </template>
 
-        <!-- Customer — name only; email lives in the expanded row -->
+        <!-- Customer — ink-strong name; email lives in the expanded row -->
         <template v-slot:item.customer.name="{ item }">
-          <span class="font-weight-medium text-body-2 text-no-wrap">{{ item.customer.name }}</span>
+          <span class="ord-customer text-no-wrap">{{ item.customer.name }}</span>
         </template>
 
-        <!-- Items count — plain number -->
+        <!-- Items count — right-aligned tabular figure -->
         <template v-slot:item.itemCount="{ item }">
-          <span class="text-body-2 text-medium-emphasis">{{ item.itemCount }}</span>
+          <span class="text-body-2 text-medium-emphasis ord-tnum">{{ item.itemCount }}</span>
         </template>
 
-        <!-- Total -->
+        <!-- Total — .mp-money with demoted cents; struck through when no longer collected -->
         <template v-slot:item.total="{ item }">
-          <span class="font-weight-semibold text-no-wrap">${{ item.total }}</span>
+          <span class="mp-money font-weight-semibold text-no-wrap" :class="{ 'mp-strike': isVoidedTotal(item) }">
+            {{ money(item.total).symbol }}{{ money(item.total).integer }}<span class="mp-money__cents">.{{ money(item.total).cents }}</span>
+          </span>
         </template>
 
         <!-- Fulfillment — quiet dot + label (order status keeps the chip) -->
@@ -319,21 +335,12 @@ function exportOrders() {
 
         <!-- Order Status -->
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status ?? ''" type="order" variant="flat" size="x-small" />
+          <MpStatusChip :status="item.status ?? ''" type="order" size="x-small" />
         </template>
 
         <!-- Sales Channel -->
         <template v-slot:item.salesChannel="{ item }">
           <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.salesChannel }}</span>
-        </template>
-
-        <!-- Tags -->
-        <template v-slot:item.tags="{ item }">
-          <div v-if="item.tags.length" class="d-flex gap-1 flex-nowrap">
-            <v-chip v-for="tag in item.tags.slice(0, 2)" :key="tag" size="x-small" variant="tonal" color="secondary">{{ tag }}</v-chip>
-            <v-chip v-if="item.tags.length > 2" size="x-small" variant="tonal">+{{ item.tags.length - 2 }}</v-chip>
-          </div>
-          <span v-else class="text-caption text-medium-emphasis">—</span>
         </template>
 
         <!-- Row actions -->
@@ -364,74 +371,81 @@ function exportOrders() {
 
         <!-- Expanded detail row -->
         <template v-slot:expanded-row="{ columns, item }">
-          <tr @click.stop>
+          <tr class="ord-exp-row" @click.stop>
             <td :colspan="columns.length" class="pa-0" style="border-bottom: none !important;">
-              <div class="expanded-row-content">
-                <!-- Top bar: Customer + Payment + Fulfillment status + Actions -->
-                <div class="d-flex align-center gap-4 px-5 py-3 expanded-top-bar">
-                  <v-avatar color="primary" size="32" class="font-weight-bold text-white" style="font-size: 12px; flex-shrink: 0;">{{ item.customer.avatar }}</v-avatar>
-                  <div style="min-width: 0;">
-                    <div class="text-body-2 font-weight-medium">{{ item.customer.name }}</div>
-                    <div class="text-caption text-medium-emphasis">{{ item.customer.email }}</div>
+              <div class="ord-exp">
+                <!-- Header: customer + payment/fulfillment meta + actions -->
+                <div class="ord-exp__bar">
+                  <v-avatar color="primary" size="34" class="font-weight-bold text-white ord-exp__avatar">{{ item.customer.avatar }}</v-avatar>
+                  <div class="min-width-0">
+                    <div class="ord-exp__name">{{ item.customer.name }}</div>
+                    <div class="ord-exp__email">{{ item.customer.email }}</div>
                   </div>
-                  <v-divider vertical class="mx-1" style="height: 28px; opacity: 0.15;" />
-                  <div class="d-flex align-center gap-2">
-                    <v-icon size="14" color="medium-emphasis">credit-card</v-icon>
-                    <span class="text-caption">{{ item.paymentMethod }}</span>
-                    <MpStatusChip :status="item.paymentStatus ?? ''" type="payment" size="x-small" />
-                  </div>
-                  <v-divider vertical class="mx-1" style="height: 28px; opacity: 0.15;" />
-                  <div class="d-flex align-center gap-2">
-                    <span class="text-caption text-medium-emphasis">Fulfillment:</span>
-                    <MpStatusChip :status="item.fulfillmentStatus ?? ''" type="fulfillment" show-icon size="x-small" />
+                  <div class="ord-exp__meta">
+                    <div class="ord-exp__meta-block">
+                      <span class="mp-meta-label">Payment</span>
+                      <span class="ord-exp__meta-val">
+                        <span class="ord-dot" :style="{ background: paymentDots[item.paymentStatus ?? ''] ?? 'rgba(var(--v-theme-on-surface), 0.38)' }" />
+                        {{ item.paymentStatus }} · {{ item.paymentMethod }}
+                      </span>
+                    </div>
+                    <div class="ord-exp__meta-block">
+                      <span class="mp-meta-label">Fulfillment</span>
+                      <span class="ord-exp__meta-val">
+                        <span class="ord-dot" :style="{ background: fulfillmentDots[item.fulfillmentStatus ?? ''] ?? 'rgba(var(--v-theme-on-surface), 0.38)' }" />
+                        {{ item.fulfillmentStatus }}
+                      </span>
+                    </div>
                   </div>
                   <v-spacer />
-                  <div class="d-flex gap-1">
-                    <v-btn variant="flat" color="primary" size="x-small" class="text-none" prepend-icon="package-check" :disabled="item.fulfillmentStatus === 'Shipped' || item.status === 'Cancelled'" @click="markFulfilled(item)">Mark Fulfilled</v-btn>
-                    <v-btn variant="tonal" size="x-small" class="text-none" prepend-icon="printer" @click="printInvoice(item)">Print Invoice</v-btn>
+                  <div class="d-flex gap-2 flex-shrink-0">
+                    <v-btn variant="flat" color="primary" size="small" class="text-none" prepend-icon="package-check" :disabled="item.fulfillmentStatus === 'Shipped' || item.status === 'Cancelled'" @click="markFulfilled(item)">Mark Fulfilled</v-btn>
+                    <v-btn variant="flat" color="surface" size="small" class="text-none" prepend-icon="printer" @click="printInvoice(item)">Print Invoice</v-btn>
+                    <v-btn variant="text" color="primary" size="small" class="text-none" append-icon="arrow-right" @click="goToOrder(item.id)">Open</v-btn>
                   </div>
                 </div>
 
-                <!-- Line items table -->
-                <div class="px-5 pb-4 pt-2">
-                  <v-table density="compact" class="rounded-lg expanded-items-table">
+                <!-- Line items — silent table -->
+                <div class="ord-exp__items">
+                  <table class="ord-exp__table">
                     <thead>
                       <tr>
-                        <th class="text-caption font-weight-bold expanded-th">Product</th>
-                        <th class="text-caption font-weight-bold text-center expanded-th" style="width: 50px;">Qty</th>
-                        <th class="text-caption font-weight-bold text-right expanded-th" style="width: 90px;">Price</th>
-                        <th class="text-caption font-weight-bold text-right expanded-th" style="width: 100px;">Total</th>
+                        <th class="mp-meta-label">Product</th>
+                        <th class="mp-meta-label ord-num" style="width: 60px;">Qty</th>
+                        <th class="mp-meta-label ord-num" style="width: 110px;">Price</th>
+                        <th class="mp-meta-label ord-num" style="width: 120px;">Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr v-for="li in item.lineItems" :key="li.sku">
                         <td>
-                          <span class="text-body-2 font-weight-medium">{{ (li.product ?? '').substring(0, 50) }}{{ (li.product ?? '').length > 50 ? '…' : '' }}</span>
-                          <span class="text-caption text-medium-emphasis ml-2">{{ li.sku }}</span>
+                          <span class="ord-exp__product">{{ li.product }}</span>
+                          <span class="ord-exp__sku">{{ li.sku }}</span>
                         </td>
-                        <td class="text-center text-body-2">{{ li.qty }}</td>
-                        <td class="text-right text-body-2">${{ li.price }}</td>
-                        <td class="text-right font-weight-semibold text-body-2">${{ (li.qty * parseFloat(li.price)).toFixed(2) }}</td>
+                        <td class="ord-num text-medium-emphasis">{{ li.qty }}</td>
+                        <td class="ord-num text-medium-emphasis">
+                          <span class="mp-money">{{ money(li.price).symbol }}{{ money(li.price).integer }}<span class="mp-money__cents">.{{ money(li.price).cents }}</span></span>
+                        </td>
+                        <td class="ord-num ord-exp__linetotal">
+                          <span class="mp-money">{{ lineTotal(li.qty, li.price).symbol }}{{ lineTotal(li.qty, li.price).integer }}<span class="mp-money__cents">.{{ lineTotal(li.qty, li.price).cents }}</span></span>
+                        </td>
                       </tr>
                     </tbody>
-                    <tfoot>
-                      <tr>
-                        <td colspan="3" class="text-right text-caption text-medium-emphasis py-1">Subtotal</td>
-                        <td class="text-right text-body-2 font-weight-medium">${{ item.subtotal }}</td>
-                      </tr>
-                      <tr>
-                        <td colspan="3" class="text-right text-caption text-medium-emphasis py-0">Shipping</td>
-                        <td class="text-right text-caption">${{ item.shipping }}</td>
-                      </tr>
-                      <tr>
-                        <td colspan="3" class="text-right text-body-2 font-weight-bold py-1">Order Total</td>
-                        <td class="text-right text-body-2 font-weight-bold text-primary">${{ item.total }}</td>
-                      </tr>
-                    </tfoot>
-                  </v-table>
-                  <div v-if="item.notes" class="mt-2 pa-2 rounded-lg d-flex align-center gap-2 text-caption text-medium-emphasis" style="background: rgba(var(--v-theme-warning), 0.06);">
-                    <v-icon size="14" color="warning">file-text</v-icon>
-                    {{ item.notes }}
+                  </table>
+
+                  <!-- Totals -->
+                  <div class="ord-exp__totals">
+                    <div class="ord-exp__total-line"><span>Subtotal</span><span class="mp-money">${{ item.subtotal }}</span></div>
+                    <div class="ord-exp__total-line"><span>Shipping</span><span class="mp-money">${{ item.shipping }}</span></div>
+                    <div class="ord-exp__total-line ord-exp__total-line--grand">
+                      <span>Order total</span>
+                      <span class="mp-money" :class="{ 'mp-strike': isVoidedTotal(item) }">{{ money(item.total).symbol }}{{ money(item.total).integer }}<span class="mp-money__cents">.{{ money(item.total).cents }}</span></span>
+                    </div>
+                  </div>
+
+                  <div v-if="item.notes" class="ord-exp__note">
+                    <v-icon size="14">sticky-note</v-icon>
+                    <span>{{ item.notes }}</span>
                   </div>
                 </div>
               </div>
@@ -440,10 +454,18 @@ function exportOrders() {
         </template>
         <template #no-data>
           <MpEmptyState
-            icon="shopping-cart"
-            :title="search ? 'No orders match your search' : 'No orders found'"
-            :description="search ? 'Try a different search term.' : 'Orders will appear here once received.'"
+            v-if="search || activeFilterEntries.length"
+            icon="search"
+            title="No orders match your search"
+            description="Adjust your search or filters to see more."
             class="py-10"
+          />
+          <MpEmptyState
+            v-else
+            variant="expressive"
+            illustration="empty-orders"
+            title="No orders yet"
+            description="Orders appear here as your channels start selling."
           />
         </template>
       </v-data-table>
@@ -489,9 +511,25 @@ function exportOrders() {
   white-space: nowrap;
 }
 
+/* Masthead numerals read as aligned figures */
+:deep(.mp-page-subtitle) {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Row click navigates to the order detail */
 .orders-table :deep(tbody tr:not(.v-data-table__expanded__content)) {
   cursor: pointer;
+}
+
+/* Row grammar — customer name reads ink-strong */
+.ord-customer {
+  font-size: 13.5px;
+  font-weight: 550;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.ord-tnum {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Quiet secondary statuses: colored dot + muted label */
@@ -503,37 +541,131 @@ function exportOrders() {
   font-size: 13px;
 }
 .ord-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-/* ─── Expanded Row ───────────────────────────────────────────── */
-.expanded-row-content {
-  background: rgba(var(--v-theme-surface-variant), 0.25);
-  border-top: 1px solid rgba(var(--v-border-color), 0.06);
+/* ─── Expanded Row — editorial inset panel ───────────────────────── */
+.ord-exp-row :deep(td) {
+  background: rgba(var(--v-theme-on-surface), 0.015);
+}
+.ord-exp {
+  border-top: 1px solid var(--mp-border-table-row, rgba(var(--v-theme-on-surface), 0.06));
 }
 
-.expanded-top-bar {
-  border-bottom: 1px solid rgba(var(--v-border-color), 0.06);
+/* Header bar: customer + payment/fulfillment meta + actions */
+.ord-exp__bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+}
+.ord-exp__avatar {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.ord-exp__name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  line-height: 1.3;
+}
+.ord-exp__email {
+  font-size: 12.5px;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+.ord-exp__meta {
+  display: flex;
+  gap: 32px;
+  padding-left: 20px;
+  border-left: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+.ord-exp__meta-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ord-exp__meta-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: rgb(var(--v-theme-on-surface));
 }
 
-.expanded-items-table {
-  background: transparent !important;
+/* Line-items silent table */
+.ord-exp__items {
+  padding: 0 20px 18px;
 }
-
-.expanded-th {
-  background: rgba(var(--v-theme-surface-variant), 0.4);
+.ord-exp__table {
+  width: 100%;
+  border-collapse: collapse;
 }
-
-.expanded-items-table :deep(th),
-.expanded-items-table :deep(td) {
-  padding: 5px 10px !important;
+.ord-exp__table th {
+  text-align: left;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+.ord-exp__table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--mp-border-table-row, rgba(var(--v-theme-on-surface), 0.05));
   font-size: 13px;
 }
+.ord-exp__table tbody tr:last-child td {
+  border-bottom: none;
+}
+.ord-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ord-exp__product {
+  font-weight: 550;
+  color: rgb(var(--v-theme-on-surface));
+}
+.ord-exp__sku {
+  margin-left: 8px;
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+.ord-exp__linetotal {
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+}
 
-.expanded-items-table :deep(tfoot td) {
-  border-bottom: none !important;
+/* Totals — right-aligned ledger with hairline above the grand total */
+.ord-exp__totals {
+  margin-left: auto;
+  width: 260px;
+  padding: 12px 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ord-exp__total-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+.ord-exp__total-line--grand {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  font-size: 14px;
+  font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+}
+.ord-exp__note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.03);
+  font-size: 12.5px;
+  color: rgba(var(--v-theme-on-surface), 0.7);
 }
 </style>

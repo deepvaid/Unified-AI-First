@@ -10,7 +10,7 @@ defineProps<{
   <section class="settings-section" :class="{ 'settings-section--compact': compact }">
     <div v-if="title || description || $slots.actions" class="settings-section__head">
       <div class="settings-section__head-left">
-        <h3 v-if="title" class="settings-section__title">{{ title }}</h3>
+        <h3 v-if="title" class="settings-section__title mp-section-title">{{ title }}</h3>
         <p v-if="description" class="settings-section__description">{{ description }}</p>
       </div>
       <div v-if="$slots.actions" class="settings-section__head-actions">
@@ -27,7 +27,7 @@ defineProps<{
 .settings-section {
   background: var(--surface-1);
   border: 1px solid var(--hairline);
-  border-radius: 14px;
+  border-radius: var(--r-section);
   padding: 20px 24px;
 }
 
@@ -56,17 +56,15 @@ defineProps<{
 }
 
 .settings-section__title {
-  margin: 0 0 2px;
-  font-size: 14px;
-  font-weight: 700;
+  margin: 0 0 3px;
   color: var(--ink);
 }
 
 .settings-section__description {
   margin: 0;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .settings-section__body {
@@ -76,7 +74,7 @@ defineProps<{
 @media (max-width: 640px) {
   .settings-section {
     padding: 16px;
-    border-radius: 12px;
+    border-radius: var(--r-section);
   }
 }
 </style>

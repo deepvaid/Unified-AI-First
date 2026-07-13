@@ -18,6 +18,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { formatCurrency } from '@/utils/formatCurrency'
+import { formatMoneyParts } from '@/utils/formatMoneyParts'
 
 const store = useCampaignsStore()
 const foldersStore = useFoldersStore()
@@ -129,6 +130,7 @@ const rawAvgOpenRate = sentCampaigns.length ? sentCampaigns.reduce((a, c) => a +
 // Normalize into the realistic 24–32% inbox-engagement band while still tracking the
 // underlying data — a stronger relative performance across campaigns nudges it higher.
 const avgOpenRate = Math.round(24 + (Math.min(rawAvgOpenRate, 100) / 100) * 8)
+const revenueParts = formatMoneyParts(totalRevenue)
 
 const openCreator = () => {
   router.push({ name: 'CreateCampaign', params: { accountId: route.params.accountId } })
@@ -139,6 +141,7 @@ const openCreator = () => {
   <div class="h-100 d-flex flex-column gap-5">
     <!-- Page Header -->
     <MpPageHeader
+      eyebrow="Marketing · Campaigns"
       title="Email Campaigns"
       :subtitle="`${store.campaigns.length} campaigns · ${formatCurrency(totalRevenue)} total attributed revenue`"
     >
@@ -149,18 +152,22 @@ const openCreator = () => {
     </MpPageHeader>
 
     <!-- Summary Stats -->
-    <v-row class="mb-6" dense>
-      <v-col cols="6" sm="3">
+    <v-row class="mb-6 mp-enter-stagger" dense>
+      <v-col cols="12" md="6">
+        <MpKpiCard label="Total Revenue" :value="formatCurrency(totalRevenue)" emphasis="hero">
+          <template #value>
+            <span class="mp-kpi-value--hero mp-money">{{ revenueParts.symbol }}{{ revenueParts.integer }}<span class="mp-money__cents">.{{ revenueParts.cents }}</span></span>
+          </template>
+        </MpKpiCard>
+      </v-col>
+      <v-col cols="4" md="2">
         <MpKpiCard label="Sent" :value="store.campaigns.filter(c => c.status === 'Sent').length" />
       </v-col>
-      <v-col cols="6" sm="3">
+      <v-col cols="4" md="2">
         <MpKpiCard label="Avg. Open Rate" :value="`${avgOpenRate}%`" />
       </v-col>
-      <v-col cols="6" sm="3">
+      <v-col cols="4" md="2">
         <MpKpiCard label="Total Sends" :value="totalSent.toLocaleString()" />
-      </v-col>
-      <v-col cols="6" sm="3">
-        <MpKpiCard label="Total Revenue" :value="formatCurrency(totalRevenue)" />
       </v-col>
     </v-row>
 
@@ -222,28 +229,28 @@ const openCreator = () => {
         </template>
 
         <template v-slot:item.sentDate="{ item }">
-          <span class="text-caption text-medium-emphasis">{{ item.sentDate || '--' }}</span>
+          <span class="text-caption text-medium-emphasis mp-money">{{ item.sentDate || '--' }}</span>
         </template>
 
         <template v-slot:item.openRate="{ item }">
           <div v-if="item.status === 'Sent'" class="text-right">
-            <div class="font-weight-bold text-success text-body-2">{{ Math.floor((item.metrics.opens / item.metrics.sent) * 100) }}%</div>
-            <div class="text-caption text-medium-emphasis">{{ item.metrics.opens.toLocaleString() }} opens</div>
+            <div class="mp-cell-figure text-body-2">{{ Math.floor((item.metrics.opens / item.metrics.sent) * 100) }}%</div>
+            <div class="text-caption text-medium-emphasis mp-money">{{ item.metrics.opens.toLocaleString() }} opens</div>
           </div>
           <span v-else class="text-medium-emphasis text-caption">--</span>
         </template>
 
         <template v-slot:item.clickRate="{ item }">
           <div v-if="item.status === 'Sent'" class="text-right">
-            <div class="font-weight-bold text-primary text-body-2">{{ Math.floor((item.metrics.clicks / item.metrics.opens) * 100) }}%</div>
-            <div class="text-caption text-medium-emphasis">{{ item.metrics.clicks.toLocaleString() }} clicks</div>
+            <div class="mp-cell-figure text-body-2">{{ Math.floor((item.metrics.clicks / item.metrics.opens) * 100) }}%</div>
+            <div class="text-caption text-medium-emphasis mp-money">{{ item.metrics.clicks.toLocaleString() }} clicks</div>
           </div>
           <span v-else class="text-medium-emphasis text-caption">--</span>
         </template>
 
         <template v-slot:item.revenue="{ item }">
           <div class="text-right">
-            <span v-if="item.metrics.revenue > 0" class="font-weight-bold text-success text-body-2">{{ formatCurrency(item.metrics.revenue) }}</span>
+            <span v-if="item.metrics.revenue > 0" class="mp-cell-figure mp-money text-body-2">{{ formatCurrency(item.metrics.revenue) }}</span>
             <span v-else class="text-medium-emphasis text-caption">--</span>
           </div>
         </template>
@@ -274,14 +281,33 @@ const openCreator = () => {
         </template>
         <template #no-data>
           <MpEmptyState
-            icon="mail"
-            :title="search ? 'No campaigns match your search' : 'No campaigns yet'"
-            :description="search ? 'Try a different search term.' : 'Create your first email campaign to get started.'"
+            v-if="search"
+            icon="search"
+            title="No campaigns match your search"
+            description="Try a different term or clear the search."
+            class="py-10"
+          />
+          <MpEmptyState
+            v-else-if="selectedFolderId"
+            icon="folder"
+            title="This folder is empty"
+            :description="`No campaigns filed under ${folderName(selectedFolderId)} yet.`"
             action-label="New Campaign"
             action-icon="plus"
             class="py-10"
             @action="openCreator"
           />
+          <MpEmptyState
+            v-else
+            variant="launcher"
+            title="Create your first campaign"
+            description="Start from scratch, adapt a template, or let Da Vinci draft it."
+            class="py-10"
+          >
+            <v-btn variant="outlined" class="text-none" prepend-icon="pencil" @click="openCreator">Start from scratch</v-btn>
+            <v-btn variant="tonal" class="text-none" prepend-icon="layout-template" @click="openCreator">Use a template</v-btn>
+            <v-btn variant="tonal" color="primary" class="text-none" prepend-icon="sparkles" @click="openCreator">Draft with Da Vinci</v-btn>
+          </MpEmptyState>
         </template>
       </v-data-table>
     </v-card>
@@ -341,6 +367,14 @@ const openCreator = () => {
 </template>
 
 <style scoped>
+/* One-accent table: open/click rate + revenue read through weight, not color.
+   Ink figures with tabular alignment; sub-counts stay muted below. */
+.mp-cell-figure {
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  font-variant-numeric: tabular-nums;
+}
+
 /* MpPageHeader's title + actions row doesn't wrap by default, so on narrow
    phones this page's two header buttons (Manage Folders, New Campaign) push
    past the viewport. Let the actions drop to their own line instead of

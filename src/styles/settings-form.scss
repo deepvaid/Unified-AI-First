@@ -110,7 +110,7 @@
   padding: 20px 32px 96px 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 28px;
 }
 
 .settings-grid {
@@ -129,10 +129,11 @@
 
 .settings-field__label {
   display: block;
-  margin-bottom: 5px;
-  font-size: 12.5px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  margin-bottom: 6px;
+  font-size: var(--mp-typography-semantic-metaLabel-fontSize);
+  font-weight: var(--mp-typography-semantic-metaLabel-fontWeight);
+  letter-spacing: var(--mp-typography-semantic-metaLabel-letterSpacing);
+  text-transform: var(--mp-typography-semantic-metaLabel-textTransform);
   color: var(--muted);
 }
 
@@ -184,10 +185,12 @@
   bottom: 0;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 14px 0 2px;
-  margin-top: 8px;
+  padding: 16px 0 2px;
+  margin-top: 4px;
+  border-top: 1px solid var(--hairline);
   background: linear-gradient(180deg, transparent 0, rgb(var(--v-theme-background)) 24px);
   z-index: 2;
 }
