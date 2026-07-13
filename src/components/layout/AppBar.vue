@@ -688,7 +688,9 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   min-width: 0;
   padding: 0 22px;
   height: 100%;
-  background: var(--surface-1);
+  /* Transparent so the header (.mp-appbar) is the single painted surface —
+     lets the shell-variant nav color show through instead of a white wrapper. */
+  background: transparent;
 }
 
 .min-width-0 {
