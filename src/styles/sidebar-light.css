@@ -7,7 +7,9 @@
 
 [data-sidebar="light"] .mp-sidebar,
 [data-sidebar="light"] .rail-flyout-card {
-  --sidebar-bg: #ffffff;
+  /* Bound to the shared nav surface (shell-variants.css) so the side nav and
+     head nav always match; falls back to white outside the shell system. */
+  --sidebar-bg: var(--mp-nav-surface, #ffffff);
   --sidebar-border: #e2e8f0;
   /* Group dividers: a whisper, not a rule — grouping should read as rhythm. */
   --sidebar-line: rgba(26, 24, 20, 0.06);

@@ -11,15 +11,59 @@
  * Loaded after sidebar-*.css so equal-specificity !important rules here win.
  */
 
-/* ── Studio: nav blends into the canvas ─────────────────────────────── */
+/* ── One nav surface, two consumers ─────────────────────────────────────
+   The head nav and side nav are bound to the same variable: the light
+   sidebar theme derives --sidebar-bg from it (sidebar-light.css) and the
+   app bar reads it directly below — the two can never drift per shell. */
+:root {
+  /* Light-gray canvas tone (light background token) — the nav cluster shares
+     it in every light shell; Classic keeps its borders, Studio drops them. */
+  --mp-nav-surface: #f4f6fa;
+}
+
+/* Head nav shares the side nav surface (light theme + light sidebar; the
+   dark app theme and the gray/dark sidebar axes keep their own chrome). */
+html[data-theme="light"][data-sidebar="light"] .mp-appbar {
+  background: var(--mp-nav-surface) !important;
+}
+
+/* ── Studio: edges dissolve; the framed content card is the structure ── */
 html[data-shell="studio"][data-sidebar="light"] .mp-sidebar {
-  --sidebar-bg: #f4f6fa; /* light background token — matches the canvas */
-  background: var(--sidebar-bg) !important;
   border-right-color: transparent !important;
 }
 
-/* ── Studio: app bar blends into the canvas ─────────────────────────── */
 html[data-shell="studio"] .mp-appbar {
-  background: rgb(var(--v-theme-background)) !important;
+  background: rgb(var(--v-theme-background)) !important; /* dark-mode blend; light is handled by the bind above */
   border-bottom: 0 !important;
+}
+
+/* ── Dark side nav (rail shell / dark-sidebar accounts): head nav matches ──
+   Same bind, dark value (sidebar-dark.css --sidebar-bg), plus on-dark
+   foregrounds for the quiet controls. The white search + Da Vinci pills
+   keep their own surfaces — strong contrast, HubSpot-style. */
+html[data-sidebar="dark"] {
+  --mp-nav-surface: #141b2e;
+}
+
+html[data-sidebar="dark"] .mp-appbar {
+  background: var(--mp-nav-surface) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .appbar-action-btn,
+html[data-sidebar="dark"] .mp-appbar .appbar-create-btn,
+html[data-sidebar="dark"] .mp-appbar .appbar-hamburger-btn {
+  color: rgba(233, 238, 247, 0.78) !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .appbar-action-btn:hover,
+html[data-sidebar="dark"] .mp-appbar .appbar-action-btn:focus-visible,
+html[data-sidebar="dark"] .mp-appbar .appbar-create-btn:hover,
+html[data-sidebar="dark"] .mp-appbar .appbar-create-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.10) !important;
+  color: #ffffff !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .user-pill:hover {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14);
 }
