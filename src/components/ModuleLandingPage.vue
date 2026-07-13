@@ -326,7 +326,7 @@ withDefaults(defineProps<{
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--hairline);
-  border-radius: 10px;
+  border-radius: var(--r-card);
   background: var(--surface-1);
   color: var(--ink);
   cursor: pointer;
@@ -476,7 +476,7 @@ withDefaults(defineProps<{
 /* ===== Activity feed ===== */
 .activity-card {
   border: 1px solid var(--hairline);
-  border-radius: 12px;
+  border-radius: var(--r-card);
   background: var(--surface-1);
   padding: 4px 14px;
 }

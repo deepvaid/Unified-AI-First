@@ -42,7 +42,9 @@
 
   /* Radius */
   --r-pill: 9999px;
-  --r-card: var(--mp-component-card-radius-md);
+  /* One card radius across the product (16px) — cards, sections, dialogs, and
+     ink panels all share it, so nothing reads mismatched surface-to-surface. */
+  --r-card: var(--mp-component-card-radius-lg);
   --r-section: var(--mp-component-card-radius-lg);
   --r-chip: 8px;
 

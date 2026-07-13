@@ -27,7 +27,7 @@ defineProps<{
 .settings-section {
   background: var(--surface-1);
   border: 1px solid var(--hairline);
-  border-radius: 14px;
+  border-radius: var(--r-section);
   padding: 20px 24px;
 }
 
@@ -74,7 +74,7 @@ defineProps<{
 @media (max-width: 640px) {
   .settings-section {
     padding: 16px;
-    border-radius: 12px;
+    border-radius: var(--r-section);
   }
 }
 </style>

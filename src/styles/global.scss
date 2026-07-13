@@ -635,6 +635,15 @@ tr:focus-within .action-btns {
   font-size: 13px !important;
 }
 
+/* ─── Card radius unification ─────────────────────────────────────── */
+/* Every default card resolves to our token (16px) instead of Vuetify's 8px
+   `rounded="lg"`, so cards match dialogs, dashboard widgets, and ink panels
+   product-wide. Scoped to the default `.rounded-lg` so any card that opts into
+   a different radius (rounded="sm"/"md"/"0") is left alone. */
+.v-card.rounded-lg {
+  border-radius: var(--mp-component-card-radius-lg) !important;
+}
+
 /* ─── Dialog shell normalization ─────────────────────────────────── */
 /* Ensures v-dialog cards always have consistent radius and surface. */
 .v-dialog > .v-overlay__content > .v-card,
