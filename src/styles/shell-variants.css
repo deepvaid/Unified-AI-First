@@ -67,7 +67,40 @@ html[data-sidebar="dark"] .mp-appbar {
 html[data-sidebar="dark"] .mp-appbar .appbar-action-btn,
 html[data-sidebar="dark"] .mp-appbar .appbar-create-btn,
 html[data-sidebar="dark"] .mp-appbar .appbar-hamburger-btn {
-  color: rgba(233, 238, 247, 0.78) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+
+/* Brighter inactive side-nav icons on the dark rail (default was 0.64 — dim). */
+html[data-sidebar="dark"] .mp-sidebar .v-list-item:not(.v-list-item--active):not(.active-nav-item) .v-icon {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ── Studio: stronger icons on the light-gray nav ───────────────────────
+   Side-nav icons darken from the muted #5a6573 default for clear contrast
+   on #eaedf2; the quiet "+" is raised to match the other head-nav icons. */
+html[data-shell="studio"] .mp-sidebar .v-list-item:not(.v-list-item--active):not(.active-nav-item) .v-icon {
+  color: #3d4757 !important;
+}
+
+html[data-shell="studio"] .mp-appbar .appbar-create-btn {
+  color: var(--ink) !important;
+}
+
+/* ── Studio: the expand/collapse pill is quiet — revealed on sidebar hover
+   or keyboard focus, hidden otherwise, to keep the blended nav clean. ── */
+html[data-shell="studio"] .sidebar-toggle-pill--anchored {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease),
+              background var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease),
+              box-shadow var(--dur-fast) var(--ease);
+}
+
+html[data-shell="studio"] .mp-sidebar:hover .sidebar-toggle-pill--anchored,
+html[data-shell="studio"] .sidebar-toggle-pill--anchored:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 html[data-sidebar="dark"] .mp-appbar .appbar-action-btn:hover,
