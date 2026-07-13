@@ -572,6 +572,15 @@ onMounted(() => {
   min-width: 0;
 }
 
+/* Square product thumbnail — v-img's width prop collapses in the flex cell,
+   so pin it to a fixed 40×40 square. */
+.product-thumb {
+  flex: 0 0 40px;
+  width: 40px !important;
+  height: 40px !important;
+  aspect-ratio: 1 / 1;
+}
+
 /* Row identity: product name reads as ink, SKU/variant line demoted to a quiet second line. */
 .product-name {
   font-size: 13.5px;
