@@ -610,11 +610,11 @@ function runAction(target: ProductTarget) {
     return
   }
   if (target === 'chatbot') {
-    router.push({ name: 'Chatbot', params: { accountId: accountId.value } })
+    router.push({ name: 'ChatbotList', params: { accountId: accountId.value } })
     return
   }
   if (target === 'shopping_assistant') {
-    router.push({ name: 'MerchandisingRecommendations', params: { accountId: accountId.value } })
+    router.push({ name: 'MerchandisingChannelRecommendations', params: { accountId: accountId.value, channelId: channelId.value } })
     return
   }
   if (target === 'navigation') {
@@ -753,7 +753,7 @@ function locationRoleText(locationId: string) {
             </div>
 
             <div class="retail-widget-body">
-              <StorefrontPreview v-if="isWebStore" />
+              <StorefrontPreview v-if="isWebStore" :sections="previewSections" :styles="previewStyles" />
 
               <div v-else class="sc-retail-preview sc-retail-preview--hero" aria-label="Retail location summary">
                 <button

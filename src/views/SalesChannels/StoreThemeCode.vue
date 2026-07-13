@@ -183,13 +183,6 @@ watch(channelId, () => {
             </button>
           </template>
         </v-tooltip>
-        <v-tooltip text="Search" location="right">
-          <template #activator="{ props }">
-            <button v-bind="props" class="tc-rail__btn" aria-label="Search">
-              <v-icon size="22">search</v-icon>
-            </button>
-          </template>
-        </v-tooltip>
       </nav>
 
       <!-- (b) Explorer panel -->
