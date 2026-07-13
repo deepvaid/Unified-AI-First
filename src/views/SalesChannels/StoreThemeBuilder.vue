@@ -55,6 +55,7 @@ const backRoute = computed(() =>
 
 // ── Active template + sections ────────────────────────────────────────────────
 const activeTemplate = ref<TemplateType>('home')
+const templateTypeItems = TEMPLATE_TYPES.map((t) => ({ title: TEMPLATE_TYPE_LABELS[t], value: t }))
 const activeSections = computed<ThemeSection[]>(() => theme.value?.templates[activeTemplate.value] ?? [])
 
 // Discriminated selection: a section, or a block within a section. `null` = nothing.
@@ -346,6 +347,25 @@ watch(leftTab, (t) => {
   if (t === 'styles') selected.value = null
 })
 
+// Vertical icon rail (Layers / Theme styles) roving-focus keyboard support.
+function onModeRailKeydown(e: KeyboardEvent) {
+  if (!['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return
+  e.preventDefault()
+  const rail = (e.currentTarget as HTMLElement).closest('.tb-mode-rail')
+  if (!rail) return
+  const btns = Array.from(rail.querySelectorAll<HTMLButtonElement>('.tb-mode-rail__btn'))
+  const modes: LeftTab[] = ['sections', 'styles']
+  const cur = btns.indexOf(e.currentTarget as HTMLButtonElement)
+  let next = cur
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = (cur + 1) % btns.length
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = (cur - 1 + btns.length) % btns.length
+  else if (e.key === 'Home') next = 0
+  else if (e.key === 'End') next = btns.length - 1
+  const mode = modes[next]
+  if (mode) leftTab.value = mode
+  btns[next]?.focus()
+}
+
 /** Preset swatches from the token palette (shared by style rows + color fields). */
 const swatchPalette = [
   { label: 'Maropost blue', value: mp_color_light_primary },
@@ -621,19 +641,16 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         </v-menu>
       </div>
 
-      <v-btn-toggle
+      <v-select
         v-model="activeTemplate"
-        mandatory
+        :items="templateTypeItems"
         density="compact"
+        variant="outlined"
+        hide-details
         rounded="lg"
-        border
-        class="flex-shrink-0"
+        class="tb-template-select flex-shrink-0"
         aria-label="Template type"
-      >
-        <v-btn v-for="t in TEMPLATE_TYPES" :key="t" :value="t" size="small" class="text-none px-3">
-          {{ TEMPLATE_TYPE_LABELS[t] }}
-        </v-btn>
-      </v-btn-toggle>
+      ></v-select>
 
       <div class="tb-toolbar__side d-flex align-center gap-2 justify-end">
         <v-btn-toggle v-model="device" mandatory density="compact" rounded="lg" border aria-label="Preview device">
@@ -700,10 +717,47 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         />
 
         <template v-else>
-        <v-tabs v-model="leftTab" density="compact" color="primary" grow class="border-b flex-grow-0 flex-shrink-0">
-          <v-tab value="sections" class="text-none">Sections</v-tab>
-          <v-tab value="styles" class="text-none">Theme styles</v-tab>
-        </v-tabs>
+        <div class="tb-panel-mode d-flex flex-grow-1" style="overflow:hidden;">
+          <nav class="tb-mode-rail" role="tablist" aria-label="Editor panel">
+            <v-tooltip text="Sections" location="end">
+              <template #activator="{ props }">
+                <button
+                  v-bind="props"
+                  type="button"
+                  class="tb-mode-rail__btn"
+                  :class="{ 'tb-mode-rail__btn--active': leftTab === 'sections' }"
+                  role="tab"
+                  :aria-selected="leftTab === 'sections'"
+                  :tabindex="leftTab === 'sections' ? 0 : -1"
+                  aria-label="Sections"
+                  @click="leftTab = 'sections'"
+                  @keydown="onModeRailKeydown"
+                >
+                  <v-icon size="20">layers</v-icon>
+                </button>
+              </template>
+            </v-tooltip>
+            <v-tooltip text="Theme styles" location="end">
+              <template #activator="{ props }">
+                <button
+                  v-bind="props"
+                  type="button"
+                  class="tb-mode-rail__btn"
+                  :class="{ 'tb-mode-rail__btn--active': leftTab === 'styles' }"
+                  role="tab"
+                  :aria-selected="leftTab === 'styles'"
+                  :tabindex="leftTab === 'styles' ? 0 : -1"
+                  aria-label="Theme styles"
+                  @click="leftTab = 'styles'"
+                  @keydown="onModeRailKeydown"
+                >
+                  <v-icon size="20">palette</v-icon>
+                </button>
+              </template>
+            </v-tooltip>
+          </nav>
+
+          <div class="tb-panel-content d-flex flex-column flex-grow-1">
 
         <div v-if="leftTab === 'sections'" class="flex-grow-1 overflow-y-auto pa-2" role="list" aria-label="Template sections">
           <div v-for="(section, index) in activeSections" :key="section.id" role="listitem">
@@ -934,6 +988,8 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
             Add section
           </v-btn>
         </div>
+          </div>
+        </div>
         </template>
       </aside>
 
@@ -1161,9 +1217,52 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 .tb-panel-left {
   display: flex;
   flex-direction: column;
-  width: 280px;
+  width: 324px;
   flex-shrink: 0;
   overflow: hidden;
+}
+
+/* Left icon rail — Layers / Theme styles mode switch (replaces the old tabs) */
+.tb-mode-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 44px;
+  flex-shrink: 0;
+  padding: 8px 0;
+  border-right: 1px solid var(--hairline);
+  background: var(--surface-1);
+}
+.tb-mode-rail__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-chip);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.tb-mode-rail__btn:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.tb-mode-rail__btn--active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.tb-mode-rail__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.5);
+}
+.tb-panel-content {
+  min-width: 0;
+  overflow: hidden;
+}
+.tb-template-select {
+  max-width: 190px;
 }
 
 /* <900px: panel overlays the canvas, toggled from the toolbar */
