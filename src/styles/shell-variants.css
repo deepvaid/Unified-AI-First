@@ -86,23 +86,6 @@ html[data-shell="studio"] .mp-appbar .appbar-create-btn {
   color: var(--ink) !important;
 }
 
-/* ── Studio: the expand/collapse pill is quiet — revealed on sidebar hover
-   or keyboard focus, hidden otherwise, to keep the blended nav clean. ── */
-html[data-shell="studio"] .sidebar-toggle-pill--anchored {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--dur-fast) var(--ease),
-              background var(--dur-fast) var(--ease),
-              border-color var(--dur-fast) var(--ease),
-              box-shadow var(--dur-fast) var(--ease);
-}
-
-html[data-shell="studio"] .mp-sidebar:hover .sidebar-toggle-pill--anchored,
-html[data-shell="studio"] .sidebar-toggle-pill--anchored:focus-visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
 html[data-sidebar="dark"] .mp-appbar .appbar-action-btn:hover,
 html[data-sidebar="dark"] .mp-appbar .appbar-action-btn:focus-visible,
 html[data-sidebar="dark"] .mp-appbar .appbar-create-btn:hover,
