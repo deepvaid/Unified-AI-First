@@ -120,6 +120,14 @@ const smsCampaigns = computed(() => detail.value?.campaigns.filter(c => c.type =
 const emailLists = computed(() => detail.value?.lists.filter(l => l.type === 'email') ?? [])
 const smsLists = computed(() => detail.value?.lists.filter(l => l.type === 'sms') ?? [])
 
+// Timeline — show the most recent handful; expand for the rest (keeps the page short)
+const TIMELINE_PREVIEW = 6
+const showAllTimeline = ref(false)
+const visibleTimeline = computed(() => {
+  const all = detail.value?.timeline ?? []
+  return showAllTimeline.value ? all : all.slice(0, TIMELINE_PREVIEW)
+})
+
 
 // Order table headers — column-priority responsive (core: Order / Total / Status)
 const orderHeaders = [
@@ -347,7 +355,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
           <div class="text-subtitle-2 font-weight-medium mb-2">Most Engaging Keywords ({{ detail.keywords.length }})</div>
           <div v-if="detail.keywords.length" class="d-flex flex-wrap gap-2">
-            <v-chip v-for="kw in detail.keywords" :key="kw" size="small" variant="tonal" color="info">{{ kw }}</v-chip>
+            <v-chip v-for="kw in detail.keywords" :key="kw" size="small" variant="tonal">{{ kw }}</v-chip>
           </div>
           <div v-else class="text-body-2 text-medium-emphasis">No keywords data available.</div>
         </v-card>
@@ -402,83 +410,43 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                   <v-tab value="tickets">Tickets</v-tab>
                 </v-tabs>
 
-                <!-- Email engagement metrics -->
-                <div v-if="engagementSubTab === 'emails'" class="engagement-grid mb-5">
-                  <div class="engagement-metric-card">
-                    <div class="engagement-metric-card__icon" style="background: var(--accent-soft); color: var(--accent-ink);">
-                      <v-icon size="18">send</v-icon>
-                    </div>
-                    <div class="engagement-metric-card__body">
-                      <div class="engagement-metric-card__value num">{{ detail.engagement.email.sends }}</div>
-                      <div class="engagement-metric-card__label">Sends</div>
-                    </div>
+                <!-- Email engagement — quiet stat strip -->
+                <div v-if="engagementSubTab === 'emails'" class="ce-stats mb-5">
+                  <div class="ce-stat">
+                    <div class="ce-stat__value num">{{ detail.engagement.email.sends }}</div>
+                    <div class="ce-stat__label mp-meta-label">Sends</div>
                   </div>
-                  <div class="engagement-metric-card">
-                    <div class="engagement-metric-card__icon" style="background: var(--pos-soft); color: var(--pos);">
-                      <v-icon size="18">mail-open</v-icon>
-                    </div>
-                    <div class="engagement-metric-card__body">
-                      <div class="engagement-metric-card__value num">{{ detail.engagement.email.opens }}</div>
-                      <div class="engagement-metric-card__label">Opens · {{ detail.engagement.email.openRate }}</div>
-                    </div>
+                  <div class="ce-stat">
+                    <div class="ce-stat__value num">{{ detail.engagement.email.opens }}</div>
+                    <div class="ce-stat__label mp-meta-label">Opens · {{ detail.engagement.email.openRate }}</div>
                   </div>
-                  <div class="engagement-metric-card">
-                    <div class="engagement-metric-card__icon" style="background: color-mix(in oklch, rgb(var(--v-theme-info)) 14%, transparent); color: rgb(var(--v-theme-info));">
-                      <v-icon size="18">mouse-pointer-click</v-icon>
-                    </div>
-                    <div class="engagement-metric-card__body">
-                      <div class="engagement-metric-card__value num">{{ detail.engagement.email.clicks }}</div>
-                      <div class="engagement-metric-card__label">Clicks · {{ detail.engagement.email.clickRate }}</div>
-                    </div>
+                  <div class="ce-stat">
+                    <div class="ce-stat__value num">{{ detail.engagement.email.clicks }}</div>
+                    <div class="ce-stat__label mp-meta-label">Clicks · {{ detail.engagement.email.clickRate }}</div>
                   </div>
-                  <div class="engagement-metric-card">
-                    <div class="engagement-metric-card__icon" style="background: var(--neg-soft); color: var(--neg);">
-                      <v-icon size="18">mail-x</v-icon>
-                    </div>
-                    <div class="engagement-metric-card__body">
-                      <div class="engagement-metric-card__value num">{{ detail.engagement.email.bounceRate }}</div>
-                      <div class="engagement-metric-card__label">Bounces</div>
-                    </div>
+                  <div class="ce-stat">
+                    <div class="ce-stat__value num">{{ detail.engagement.email.bounceRate }}</div>
+                    <div class="ce-stat__label mp-meta-label">Bounces</div>
                   </div>
                 </div>
 
-                <!-- Tickets engagement -->
-                <div v-else-if="engagementSubTab === 'tickets'" class="engagement-grid mb-5">
-                  <div class="engagement-metric-card">
-                    <div class="engagement-metric-card__icon" style="background: var(--accent-soft); color: var(--accent-ink);">
-                      <v-icon size="18">ticket</v-icon>
-                    </div>
-                    <div class="engagement-metric-card__body">
-                      <div class="engagement-metric-card__value num">{{ detail.engagement.tickets.total }}</div>
-                      <div class="engagement-metric-card__label">Total</div>
-                    </div>
+                <!-- Tickets engagement — quiet stat strip -->
+                <div v-else-if="engagementSubTab === 'tickets'" class="ce-stats mb-5">
+                  <div class="ce-stat">
+                    <div class="ce-stat__value num">{{ detail.engagement.tickets.total }}</div>
+                    <div class="ce-stat__label mp-meta-label">Total</div>
                   </div>
-                  <div class="engagement-metric-card">
-                    <div class="engagement-metric-card__icon" style="background: color-mix(in oklch, rgb(var(--v-theme-info)) 14%, transparent); color: rgb(var(--v-theme-info));">
-                      <v-icon size="18">ticket-check</v-icon>
-                    </div>
-                    <div class="engagement-metric-card__body">
-                      <div class="engagement-metric-card__value num">{{ detail.engagement.tickets.open }}</div>
-                      <div class="engagement-metric-card__label">Open</div>
-                    </div>
+                  <div class="ce-stat">
+                    <div class="ce-stat__value num">{{ detail.engagement.tickets.open }}</div>
+                    <div class="ce-stat__label mp-meta-label">Open</div>
                   </div>
-                  <div class="engagement-metric-card">
-                    <div class="engagement-metric-card__icon" style="background: var(--pos-soft); color: var(--pos);">
-                      <v-icon size="18">circle-check</v-icon>
-                    </div>
-                    <div class="engagement-metric-card__body">
-                      <div class="engagement-metric-card__value num">{{ detail.engagement.tickets.solved }}</div>
-                      <div class="engagement-metric-card__label">Solved</div>
-                    </div>
+                  <div class="ce-stat">
+                    <div class="ce-stat__value num">{{ detail.engagement.tickets.solved }}</div>
+                    <div class="ce-stat__label mp-meta-label">Solved</div>
                   </div>
-                  <div class="engagement-metric-card">
-                    <div class="engagement-metric-card__icon" style="background: var(--neg-soft); color: var(--neg);">
-                      <v-icon size="18">circle-pause</v-icon>
-                    </div>
-                    <div class="engagement-metric-card__body">
-                      <div class="engagement-metric-card__value num">{{ detail.engagement.tickets.onHold }}</div>
-                      <div class="engagement-metric-card__label">On-hold</div>
-                    </div>
+                  <div class="ce-stat">
+                    <div class="ce-stat__value num">{{ detail.engagement.tickets.onHold }}</div>
+                    <div class="ce-stat__label mp-meta-label">On-hold</div>
                   </div>
                 </div>
 
@@ -491,25 +459,34 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
                 <!-- History Timeline -->
                 <div class="d-flex align-center justify-space-between mb-3">
-                  <div class="text-subtitle-1 font-weight-medium">History Timeline</div>
-                  <v-chip size="x-small" variant="tonal" color="primary">{{ detail.timeline.length }} events</v-chip>
+                  <div class="mp-section-title">History Timeline</div>
+                  <span class="mp-meta-label text-medium-emphasis">{{ detail.timeline.length }} events</span>
                 </div>
-                <div class="timeline-v2">
-                  <div v-for="(entry, idx) in detail.timeline" :key="entry.id" class="timeline-v2__entry">
-                    <div class="timeline-v2__rail">
-                      <v-avatar :color="entry.color" size="32" variant="tonal" class="timeline-v2__dot">
-                        <v-icon size="15">{{ entry.icon }}</v-icon>
-                      </v-avatar>
-                      <div v-if="idx < detail.timeline.length - 1" class="timeline-v2__line" />
-                    </div>
-                    <div class="timeline-v2__content">
-                      <div class="text-body-2 font-weight-medium">{{ entry.title }}</div>
+                <div class="ce-timeline">
+                  <div v-for="(entry, idx) in visibleTimeline" :key="entry.id" class="ce-event">
+                    <span class="ce-event__node">
+                      <v-icon size="13">{{ entry.icon }}</v-icon>
+                    </span>
+                    <div class="ce-event__body" :class="{ 'ce-event__body--last': idx === visibleTimeline.length - 1 }">
+                      <div class="ce-event__title">{{ entry.title }}</div>
                       <div class="d-flex align-center gap-2 mt-1 flex-wrap">
                         <MpStatusChip v-for="s in entry.statuses" :key="s" :status="s" type="campaign" size="x-small" variant="outlined" />
-                        <span class="text-caption text-medium-emphasis">{{ entry.date }}</span>
+                        <span class="ce-event__time">{{ entry.date }}</span>
                       </div>
                     </div>
                   </div>
+                </div>
+                <div v-if="detail.timeline.length > TIMELINE_PREVIEW" class="mt-2">
+                  <v-btn
+                    variant="text"
+                    size="small"
+                    class="text-none"
+                    color="primary"
+                    :append-icon="showAllTimeline ? 'chevron-up' : 'chevron-down'"
+                    @click="showAllTimeline = !showAllTimeline"
+                  >
+                    {{ showAllTimeline ? 'Show less' : `Show all ${detail.timeline.length} events` }}
+                  </v-btn>
                 </div>
               </v-card>
 
@@ -854,98 +831,104 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
   border-radius: var(--mp-borderRadius-sm);
 }
 
-/* ── Engagement metric grid ─────────────────────────── */
-.engagement-grid {
+/* ── Engagement — quiet stat strip (no colored tiles) ─── */
+.ce-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.engagement-metric-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
   border: 1px solid var(--hairline);
   border-radius: var(--r-card);
-  background: var(--surface-1);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
 }
 
-.engagement-metric-card:hover {
-  border-color: rgba(var(--v-theme-primary), 0.2);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+.ce-stat {
+  padding: 16px 18px;
+  border-left: 1px solid var(--hairline);
 }
 
-.engagement-metric-card__icon {
+.ce-stat:first-child {
+  border-left: none;
+}
+
+.ce-stat__value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ce-stat__label {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+@media (max-width: 700px) {
+  .ce-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ce-stat:nth-child(3) {
+    border-left: none;
+  }
+}
+
+/* ── Timeline — neutral glyph nodes + connecting hairline ─── */
+.ce-timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.ce-event {
+  display: flex;
+  gap: 12px;
+  position: relative;
+}
+
+.ce-event:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 26px;
+  bottom: -2px;
+  width: 1px;
+  background: rgba(var(--v-theme-on-surface), 0.1);
+}
+
+.ce-event__node {
+  flex-shrink: 0;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--r-chip);
-  flex-shrink: 0;
-}
-
-.engagement-metric-card__body {
-  min-width: 0;
-}
-
-.engagement-metric-card__value {
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.3px;
-}
-
-.engagement-metric-card__label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--muted);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ── Timeline v2 (vertical connector) ───────────────── */
-.timeline-v2 {
-  display: flex;
-  flex-direction: column;
-}
-
-.timeline-v2__entry {
-  display: flex;
-  gap: 12px;
-  min-height: 56px;
-}
-
-.timeline-v2__rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  width: 32px;
-}
-
-.timeline-v2__dot {
-  flex-shrink: 0;
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  color: rgb(var(--v-theme-on-surface-variant));
   z-index: 1;
 }
 
-.timeline-v2__line {
-  width: 2px;
+.ce-event__body {
   flex-grow: 1;
-  background: rgba(var(--v-border-color), 0.15);
-  border-radius: 1px;
-  margin: 4px 0;
-  min-height: 12px;
+  min-width: 0;
+  padding-bottom: 18px;
 }
 
-.timeline-v2__content {
-  flex-grow: 1;
-  padding-bottom: 14px;
-  min-width: 0;
+.ce-event__body--last {
+  padding-bottom: 0;
+}
+
+.ce-event__title {
+  font-size: 13.5px;
+  font-weight: 550;
+  line-height: 1.4;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.ce-event__time {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Legacy (keep for older sections) */
