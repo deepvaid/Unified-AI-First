@@ -461,7 +461,7 @@ onMounted(() => {
               <v-img
                 :src="`https://picsum.photos/seed/${item.id}/320/320`"
                 alt=""
-                height="150"
+                :aspect-ratio="1"
                 cover
               >
                 <template #error>
