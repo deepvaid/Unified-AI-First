@@ -61,7 +61,7 @@ function toggle() {
       </p>
 
       <div class="setup-guide-widget__progress">
-        <span class="setup-guide-widget__pill">
+        <span class="setup-guide-widget__pill mp-meta-label">
           <strong>{{ completedCount }}</strong> of {{ tasks.length }} tasks complete
         </span>
         <div
@@ -147,8 +147,8 @@ function toggle() {
 
 .setup-guide-widget__title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 650;
   color: var(--ink);
   line-height: 1.2;
 }
@@ -202,12 +202,7 @@ function toggle() {
 
 .setup-guide-widget__pill {
   display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: color-mix(in oklch, var(--ink) 6%, var(--surface-1));
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 500;
   margin-bottom: 8px;
 }
 
@@ -289,7 +284,7 @@ function toggle() {
 
 .setup-guide-task--done .setup-guide-task__check {
   border: 0;
-  background: var(--ink);
+  background: var(--pos);
 }
 
 .setup-guide-task__check-icon {

@@ -440,7 +440,9 @@ function toggleFavoriteActive() {
     <section class="dashboard-page-header">
       <!-- Row 1: Title + primary actions -->
       <div class="dashboard-page-header__top">
-        <div class="dashboard-page-header__title-area">
+        <div class="dashboard-page-header__heading">
+          <span class="mp-meta-label dashboard-page-header__eyebrow">Dashboards</span>
+          <div class="dashboard-page-header__title-area">
           <button
             type="button"
             class="dashboard-page-header__fav"
@@ -527,6 +529,7 @@ function toggleFavoriteActive() {
             </v-card>
           </v-menu>
 
+          </div>
         </div>
 
         <div class="dashboard-page-header__actions">
@@ -843,6 +846,19 @@ function toggleFavoriteActive() {
   }
 }
 
+.dashboard-page-header__heading {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dashboard-page-header__eyebrow {
+  margin-left: 38px;
+  margin-bottom: 1px;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
 .dashboard-page-header__title-area {
   display: flex;
   align-items: center;
@@ -910,11 +926,12 @@ function toggleFavoriteActive() {
 
 .dashboard-page-header__h1 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  line-height: 1.2;
+  font-size: 28px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
   white-space: nowrap;
+  font-feature-settings: 'ss01', 'cv11';
 }
 
 .dashboard-title-switcher__chevron {
@@ -1121,8 +1138,8 @@ function toggleFavoriteActive() {
   padding: 10px 8px 4px;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 1px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 

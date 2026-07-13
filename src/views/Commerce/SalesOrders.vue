@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCommerceStore, type Order } from '@/stores/useCommerce'
 import { downloadCsv } from '@/utils/exportCsv'
+import { formatMoneyParts } from '@/utils/formatMoneyParts'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -48,7 +49,7 @@ const headers = [
   { title: 'Order', key: 'orderNumber', sortable: true, width: 110 },
   { title: 'Date', key: 'date', sortable: true, hideBelow: 'md' as const },
   { title: 'Customer', key: 'customer.name' },
-  { title: 'Items', key: 'itemCount', align: 'center' as const, width: 70, hideBelow: 'lg' as const },
+  { title: 'Items', key: 'itemCount', align: 'end' as const, width: 70, hideBelow: 'lg' as const },
   { title: 'Total', key: 'total', align: 'end' as const, sortable: true },
   { title: 'Fulfillment', key: 'fulfillmentStatus', hideBelow: 'md' as const },
   { title: 'Payment', key: 'paymentStatus', hideBelow: 'lg' as const },
@@ -78,6 +79,38 @@ const paymentDots: Record<string, string> = {
   'Paid': 'rgb(var(--v-theme-success))',
   'Refunded': 'rgb(var(--v-theme-error))',
   'Voided': 'rgba(var(--v-theme-on-surface), 0.38)',
+}
+
+// Status tone for the Linear-style group headers (dot glyph, not a colored band)
+const statusDots: Record<string, string> = {
+  'Processing': 'rgb(var(--v-theme-primary))',
+  'Completed': 'rgb(var(--v-theme-success))',
+  'On Hold': 'rgb(var(--v-theme-warning))',
+  'Cancelled': 'rgb(var(--v-theme-error))',
+  'Refunded': 'rgb(var(--v-theme-error))',
+}
+
+// Orders whose total should read as struck-through (money no longer collected)
+const isVoidedTotal = (o: Order) => o.status === 'Cancelled' || o.status === 'Refunded'
+
+// Split a stored string amount ("1,234.50") into money parts for the .mp-money treatment
+const money = (value: string) => formatMoneyParts(parseFloat(value.replace(/,/g, '')) || 0)
+
+// Group by status only on the unfiltered "All Orders" tab; filtered tabs stay flat
+const groupBy = computed(() =>
+  activeTab.value === 'all' ? [{ key: 'status', order: 'asc' as const }] : [],
+)
+
+// Vuetify has no prop to open groups by default; open each group as its header mounts
+// so the silent table shows its rows (users can still collapse afterwards). The slot's
+// group/toggle types are internal to Vuetify, so this stays deliberately loosely typed.
+function autoOpenGroup(
+  group: unknown,
+  isGroupOpen: (g: never) => boolean,
+  toggleGroup: (g: never) => void,
+) {
+  const g = group as never
+  if (!isGroupOpen(g)) toggleGroup(g)
 }
 
 // ─── Tab + Filter Filtering ───────────────────────────────────────────────────
@@ -218,6 +251,7 @@ function exportOrders() {
   <div class="h-100 d-flex flex-column gap-5">
     <!-- Page Header -->
     <MpPageHeader
+      eyebrow="Commerce · Orders"
       title="Sales Orders"
       :subtitle="`${store.orders.length} orders total · $${store.orders.reduce((a,o) => a + parseFloat(o.total), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lifetime revenue`"
     >
@@ -231,7 +265,7 @@ function exportOrders() {
     </MpPageHeader>
 
     <!-- Main Table Card -->
-    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden mp-enter">
       <!-- Toolbar -->
       <MpDataTableToolbar
         v-model:search="search"
@@ -261,21 +295,44 @@ function exportOrders() {
 
       <v-data-table
         v-else
+        :key="activeTab"
         v-model="selected"
         v-model:expanded="expanded"
         :headers="visibleHeaders"
         :items="filteredOrders"
         :search="search"
+        :group-by="groupBy"
         item-value="id"
         show-select
         show-expand
         hover
         density="comfortable"
-        :items-per-page="15"
+        :items-per-page="groupBy.length ? -1 : 15"
+        :hide-default-footer="groupBy.length > 0"
         fixed-header
         class="flex-grow-1 orders-table"
+        :class="{ 'orders-table--grouped': groupBy.length }"
         @click:row="(_e: unknown, { item }: { item: Order }) => goToOrder(item.id)"
       >
+        <!-- Status group header — Linear-style run-in, transparent, not a colored band -->
+        <template v-slot:group-header="{ item, columns, toggleGroup, isGroupOpen }">
+          <tr class="ord-group-header" @vue:mounted="autoOpenGroup(item, isGroupOpen, toggleGroup)">
+            <td :colspan="columns.length">
+              <button
+                type="button"
+                class="ord-group-toggle"
+                :aria-expanded="isGroupOpen(item)"
+                @click.stop="toggleGroup(item)"
+              >
+                <v-icon size="16" class="ord-group-chevron">{{ isGroupOpen(item) ? 'chevron-down' : 'chevron-right' }}</v-icon>
+                <span class="ord-group-dot" :style="{ background: statusDots[String(item.value)] ?? 'rgba(var(--v-theme-on-surface), 0.38)' }" />
+                <span class="ord-group-label mp-meta-label">{{ item.value }}</span>
+                <span class="ord-group-count">{{ item.items.length }}</span>
+              </button>
+            </td>
+          </tr>
+        </template>
+
         <!-- Order number — clickable link style -->
         <template v-slot:item.orderNumber="{ item }">
           <span class="text-primary font-weight-bold cursor-pointer">{{ item.orderNumber }}</span>
@@ -286,19 +343,21 @@ function exportOrders() {
           <span class="text-medium-emphasis text-body-2 text-no-wrap">{{ formatDate(item.date) }}</span>
         </template>
 
-        <!-- Customer — name only; email lives in the expanded row -->
+        <!-- Customer — ink-strong name; email lives in the expanded row -->
         <template v-slot:item.customer.name="{ item }">
-          <span class="font-weight-medium text-body-2 text-no-wrap">{{ item.customer.name }}</span>
+          <span class="ord-customer text-no-wrap">{{ item.customer.name }}</span>
         </template>
 
-        <!-- Items count — plain number -->
+        <!-- Items count — right-aligned tabular figure -->
         <template v-slot:item.itemCount="{ item }">
-          <span class="text-body-2 text-medium-emphasis">{{ item.itemCount }}</span>
+          <span class="text-body-2 text-medium-emphasis ord-tnum">{{ item.itemCount }}</span>
         </template>
 
-        <!-- Total -->
+        <!-- Total — .mp-money with demoted cents; struck through when no longer collected -->
         <template v-slot:item.total="{ item }">
-          <span class="font-weight-semibold text-no-wrap">${{ item.total }}</span>
+          <span class="mp-money font-weight-semibold text-no-wrap" :class="{ 'mp-strike': isVoidedTotal(item) }">
+            {{ money(item.total).symbol }}{{ money(item.total).integer }}<span class="mp-money__cents">.{{ money(item.total).cents }}</span>
+          </span>
         </template>
 
         <!-- Fulfillment — quiet dot + label (order status keeps the chip) -->
@@ -319,7 +378,7 @@ function exportOrders() {
 
         <!-- Order Status -->
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status ?? ''" type="order" variant="flat" size="x-small" />
+          <MpStatusChip :status="item.status ?? ''" type="order" size="x-small" />
         </template>
 
         <!-- Sales Channel -->
@@ -440,10 +499,18 @@ function exportOrders() {
         </template>
         <template #no-data>
           <MpEmptyState
-            icon="shopping-cart"
-            :title="search ? 'No orders match your search' : 'No orders found'"
-            :description="search ? 'Try a different search term.' : 'Orders will appear here once received.'"
+            v-if="search || activeFilterEntries.length"
+            icon="search"
+            title="No orders match your search"
+            description="Adjust your search or filters to see more."
             class="py-10"
+          />
+          <MpEmptyState
+            v-else
+            variant="expressive"
+            illustration="empty-orders"
+            title="No orders yet"
+            description="Orders appear here as your channels start selling."
           />
         </template>
       </v-data-table>
@@ -489,9 +556,25 @@ function exportOrders() {
   white-space: nowrap;
 }
 
+/* Masthead numerals read as aligned figures */
+:deep(.mp-page-subtitle) {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Row click navigates to the order detail */
 .orders-table :deep(tbody tr:not(.v-data-table__expanded__content)) {
   cursor: pointer;
+}
+
+/* Row grammar — customer name reads ink-strong */
+.ord-customer {
+  font-size: 13.5px;
+  font-weight: 550;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.ord-tnum {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Quiet secondary statuses: colored dot + muted label */
@@ -503,10 +586,55 @@ function exportOrders() {
   font-size: 13px;
 }
 .ord-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* Suppress Vuetify's auto-inserted (empty) group toggle column — our custom
+   group-header carries the chevron. Only the 2nd column when grouping is active;
+   filtered tabs have no group column, so this is gated by --grouped. */
+.orders-table--grouped :deep(thead > tr > th:nth-child(2)),
+.orders-table--grouped :deep(tbody > tr:not(.ord-group-header):not(.v-data-table__expanded__content) > td:nth-child(2)) {
+  display: none;
+}
+
+/* ─── Status group header — Linear-style run-in, no colored band ─── */
+.ord-group-header td {
+  background: transparent !important;
+  border-bottom: 1px solid var(--mp-border-table-row) !important;
+  padding: 0 !important;
+}
+.ord-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 18px 16px 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.ord-group-chevron {
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  margin-left: -2px;
+}
+.ord-group-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ord-group-label {
+  color: rgb(var(--v-theme-on-surface));
+}
+.ord-group-count {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
 /* ─── Expanded Row ───────────────────────────────────────────── */

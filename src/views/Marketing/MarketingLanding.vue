@@ -178,7 +178,10 @@ const setupCard = computed<SetupCardConfig>(() => ({
 
 const daVinciCard = computed<DaVinciCardConfig>(() => ({
   title: 'Da Vinci AI · Marketing',
-  description: 'Smart suggestions tuned to your audience and recent campaigns.',
+  headline: 'Let Da Vinci draft your next move',
+  description: 'Smart suggestions tuned to your audience and recent campaigns — send times, subject lines, and engagement risk.',
+  ctaLabel: 'Open Da Vinci',
+  ctaTo: `${base.value}/da-vinci/dashboard`,
   suggestions: [
     { label: 'Find best send time for VIP segment', to: `${base.value}/da-vinci/dashboard` },
     { label: 'Generate subject line variants', to: `${base.value}/da-vinci/dashboard` },
@@ -189,13 +192,15 @@ const daVinciCard = computed<DaVinciCardConfig>(() => ({
 
 <template>
   <ModuleLandingPage
+    eyebrow="Marketing"
     title="Marketing"
-    description="Plan, send, and automate every customer touch — campaigns, journeys, content, and forms in one place."
+    description="Campaigns, journeys, and the people they reach."
     :primary-actions="primaryActions"
     :quick-actions="quickActions"
     :child-pages="childPages"
     :recent-activity="recentActivity"
     :setup-card="setupCard"
     :da-vinci-card="daVinciCard"
+    ink-da-vinci-card
   />
 </template>

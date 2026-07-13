@@ -221,8 +221,9 @@ const daVinciCard = computed<DaVinciCardConfig>(() => ({
 
 <template>
   <ModuleLandingPage
+    eyebrow="Content"
     title="Content"
-    description="Reusable email templates, dynamic blocks, images, footers, and feeds — manage every piece of marketing content in one place."
+    description="Templates, blocks, images, and the feeds that fill them."
     :primary-actions="primaryActions"
     :quick-actions="quickActions"
     :child-pages="childPages"

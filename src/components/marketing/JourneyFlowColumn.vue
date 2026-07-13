@@ -171,13 +171,13 @@ const endsRun = computed(() => {
 .flow-node {
   position: relative; width: 320px; background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px; overflow: hidden;
+  border-radius: var(--mp-component-card-radius-md); overflow: hidden;
   box-shadow: var(--mp-shadow-sm);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 .flow-node::before {
   content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
-  background: var(--node-accent); opacity: 0.9; transition: opacity 0.15s;
+  background: var(--node-accent); opacity: 0.9; transition: opacity var(--dur-fast) var(--ease);
 }
 .flow-node:hover { box-shadow: var(--mp-shadow-lg); border-color: rgba(var(--v-theme-on-surface), 0.18); }
 .flow-node:hover::before { opacity: 1; }
@@ -200,11 +200,11 @@ const endsRun = computed(() => {
   display: block; width: 100%; padding: 0; margin: 0; border: 0;
   background: transparent; text-align: left; cursor: pointer; color: inherit;
 }
-.flow-node__open:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; border-radius: 12px; }
+.flow-node__open:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; border-radius: var(--mp-component-card-radius-md); }
 .flow-node__main { display: flex; align-items: flex-start; gap: 10px; padding: 12px 64px 12px 16px; }
 .flow-node__icon {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: var(--mp-component-card-radius-sm); flex-shrink: 0;
   background: var(--node-accent-soft); color: var(--node-accent);
 }
 .flow-node__heading { display: flex; flex-direction: column; min-width: 0; }
@@ -214,7 +214,7 @@ const endsRun = computed(() => {
 }
 .flow-node--warn .flow-node__type { color: rgb(var(--v-theme-warning)); }
 .flow-node__title {
-  font-size: 0.875rem; font-weight: 700; color: rgb(var(--v-theme-on-surface));
+  font-size: 0.8125rem; font-weight: 600; color: rgb(var(--v-theme-on-surface));
   line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .flow-node__body {
@@ -236,7 +236,7 @@ const endsRun = computed(() => {
   border-top: 1px solid rgba(var(--v-theme-warning), 0.25);
 }
 .flow-node__tools { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; }
-.flow-node__hover-badge { opacity: 0; transition: opacity 0.15s; }
+.flow-node__hover-badge { opacity: 0; transition: opacity var(--dur-fast) var(--ease); }
 .flow-node-wrap:hover .flow-node__hover-badge,
 .flow-node--selected .flow-node__hover-badge,
 .flow-node__hover-badge:focus-visible { opacity: 1; }
@@ -254,7 +254,7 @@ const endsRun = computed(() => {
   background: rgb(var(--v-theme-surface));
   border: 1.5px solid rgba(var(--v-theme-on-surface), 0.28);
   color: rgba(var(--v-theme-on-surface), 0.6);
-  opacity: 0.55; transition: opacity 0.15s, transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+  opacity: 0.55; transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
 .flow-node-wrap:hover .add-btn, .add-btn:hover, .add-btn:focus-visible { opacity: 1; }
 .add-btn:hover, .add-btn:focus-visible {
@@ -326,8 +326,8 @@ const endsRun = computed(() => {
   display: flex; align-items: center; justify-content: center;
   width: 320px; padding: 12px;
   border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.25);
-  border-radius: 12px; background: transparent; cursor: pointer;
-  color: rgba(var(--v-theme-on-surface), 0.6); transition: border-color 0.15s, color 0.15s, background 0.15s;
+  border-radius: var(--mp-component-card-radius-md); background: transparent; cursor: pointer;
+  color: rgba(var(--v-theme-on-surface), 0.6); transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 .branch-empty:hover {
   border-color: rgba(var(--v-theme-primary), 0.6); color: rgb(var(--v-theme-primary));

@@ -47,6 +47,16 @@ const displayDeltaLabel = computed(() => {
   return props.data.deltaLabel
 })
 
+// Demote cents on currency values so the whole-dollar figure reads as the hero.
+// Parse the already-formatted string (respects the source's whole-dollar rounding
+// for large values); only splits when cents are actually present.
+const moneyParts = computed(() => {
+  if (props.data.unit !== 'currency') return null
+  const match = props.data.formattedValue.match(/^(\$[\d,]+)(\.\d+)$/)
+  if (!match) return null
+  return { main: match[1], cents: match[2] }
+})
+
 const sparklineValues = computed(() => {
   const delta = props.data.delta ?? 12
   const slope = Math.max(-0.2, Math.min(0.24, delta / 900))
@@ -83,7 +93,7 @@ const sparklinePoints = computed(() => {
           </div>
           <div class="dashboard-kpi-widget__header-text">
             <div v-if="title" class="dashboard-kpi-widget__title-row">
-              <div class="dashboard-kpi-widget__title" :title="title">{{ title }}</div>
+              <div class="dashboard-kpi-widget__title mp-meta-label" :title="title">{{ title }}</div>
               <v-tooltip v-if="aiGenerated" location="top" text="Made by Da Vinci">
                 <template #activator="{ props: tipProps }">
                   <span v-bind="tipProps" class="dashboard-kpi-widget__davinci-chip">
@@ -98,7 +108,10 @@ const sparklinePoints = computed(() => {
         </div>
 
         <!-- Big value -->
-        <div class="dashboard-kpi-widget__value num">{{ data.formattedValue }}</div>
+        <div class="dashboard-kpi-widget__value mp-kpi-value mp-money num">
+          <template v-if="moneyParts"><span>{{ moneyParts.main }}</span><span class="mp-money__cents">{{ moneyParts.cents }}</span></template>
+          <template v-else>{{ data.formattedValue }}</template>
+        </div>
 
         <!-- Trend inline with comparison label -->
         <div class="dashboard-kpi-widget__trend">
@@ -303,10 +316,8 @@ const sparklinePoints = computed(() => {
   overflow: hidden;
   flex: 1 1 auto;
   min-width: 0;
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.25;
+  color: var(--muted);
+  line-height: 1.3;
   overflow-wrap: break-word;
 }
 
@@ -323,10 +334,10 @@ const sparklinePoints = computed(() => {
 .dashboard-kpi-widget__value {
   overflow: visible;
   margin-top: 6px;
-  font-size: 28px;
+  font-size: 32px;
   line-height: 1.1;
-  letter-spacing: -0.5px;
-  font-weight: 600;
+  letter-spacing: -0.025em;
+  font-weight: 700;
   color: var(--ink);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -350,7 +361,9 @@ const sparklinePoints = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: 12px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  font-size: 11.5px;
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
@@ -358,10 +371,12 @@ const sparklinePoints = computed(() => {
 
 .dashboard-kpi-widget__trend-pill--positive {
   color: var(--pos);
+  background: color-mix(in oklch, var(--pos) 12%, transparent);
 }
 
 .dashboard-kpi-widget__trend-pill--negative {
   color: var(--neg);
+  background: color-mix(in oklch, var(--neg) 12%, transparent);
 }
 
 .dashboard-kpi-widget__comparison {
@@ -488,6 +503,7 @@ const sparklinePoints = computed(() => {
   gap: 4px;
   font-size: 11px;
   font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--muted);
   white-space: nowrap;
 }

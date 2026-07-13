@@ -65,23 +65,34 @@ export interface DaVinciCardConfig {
   title: string
   description: string
   suggestions: DaVinciSuggestion[]
+  /** Ink-panel headline (used only when the card is rendered as the ink moment). */
+  headline?: string
+  /** Ink-panel single action label + target. */
+  ctaLabel?: string
+  ctaTo?: string
 }
 
-defineProps<{
+withDefaults(defineProps<{
   title: string
   description?: string
+  /** Muted, tracked kicker above the display headline. */
+  eyebrow?: string
   primaryActions?: PrimaryAction[]
   quickActions?: QuickAction[]
   childPages: ChildPage[]
   recentActivity?: ActivityItem[]
   setupCard?: SetupCardConfig | null
   daVinciCard?: DaVinciCardConfig | null
-}>()
+  /** Render the Da Vinci card as the page's single ink-panel branded moment. */
+  inkDaVinciCard?: boolean
+}>(), {
+  inkDaVinciCard: false,
+})
 </script>
 
 <template>
   <div class="module-landing">
-    <MpPageHeader :title="title" :subtitle="description">
+    <MpPageHeader :title="title" :subtitle="description" :eyebrow="eyebrow" variant="display">
       <template v-if="primaryActions?.length" #actions>
         <v-btn
           v-for="(action, idx) in primaryActions"
@@ -100,7 +111,7 @@ defineProps<{
     </MpPageHeader>
 
     <!-- Quick actions row -->
-    <section v-if="quickActions?.length" class="quick-actions" aria-label="Quick actions">
+    <section v-if="quickActions?.length" class="quick-actions mp-enter-stagger" aria-label="Quick actions">
       <button
         v-for="qa in quickActions"
         :key="qa.label"
@@ -124,7 +135,7 @@ defineProps<{
       <v-col cols="12" md="8">
         <!-- Child page cards -->
         <div class="section-eyebrow" role="heading" aria-level="2">Sections</div>
-        <div class="child-grid">
+        <div class="child-grid mp-enter-stagger">
           <router-link
             v-for="cp in childPages"
             :key="cp.title"
@@ -148,7 +159,7 @@ defineProps<{
         </div>
 
         <!-- Recent activity -->
-        <div v-if="recentActivity?.length" class="activity-section mt-6">
+        <div v-if="recentActivity?.length" class="activity-section mt-6 mp-enter">
           <div class="section-eyebrow" role="heading" aria-level="2">Recent activity</div>
           <div class="activity-card">
             <component
@@ -174,7 +185,7 @@ defineProps<{
 
       <v-col cols="12" md="4">
         <!-- Setup / help card -->
-        <div v-if="setupCard" class="side-card setup-card">
+        <div v-if="setupCard" class="side-card setup-card mp-enter">
           <div class="side-card__header">
             <span class="side-card__chip side-card__chip--setup">
               <v-icon size="14">list-checks</v-icon>
@@ -219,8 +230,27 @@ defineProps<{
           >{{ setupCard.ctaLabel }}</v-btn>
         </div>
 
+        <!-- Da Vinci AI — ink-panel branded moment (single message + one action) -->
+        <div
+          v-if="daVinciCard && inkDaVinciCard"
+          class="davinci-ink mp-ink-panel mt-4 mp-enter"
+        >
+          <span class="davinci-ink__eyebrow mp-meta-label">{{ daVinciCard.title }}</span>
+          <h2 class="davinci-ink__headline">{{ daVinciCard.headline ?? daVinciCard.title }}</h2>
+          <p class="davinci-ink__desc mp-ink-panel__muted">{{ daVinciCard.description }}</p>
+          <router-link
+            v-if="daVinciCard.ctaTo"
+            :to="daVinciCard.ctaTo"
+            class="ink-cta ink-cta--ghost"
+          >
+            <v-icon size="15" class="ink-cta__lead">sparkles</v-icon>
+            <span>{{ daVinciCard.ctaLabel ?? 'Open Da Vinci' }}</span>
+            <v-icon size="15" class="ink-cta__arrow">arrow-right</v-icon>
+          </router-link>
+        </div>
+
         <!-- Da Vinci AI card -->
-        <div v-if="daVinciCard" class="side-card davinci-card mt-4">
+        <div v-else-if="daVinciCard" class="side-card davinci-card mt-4">
           <div class="side-card__header">
             <span class="side-card__chip side-card__chip--davinci">
               <v-icon size="14">sparkles</v-icon>
@@ -302,12 +332,12 @@ defineProps<{
   cursor: pointer;
   font: inherit;
   text-align: left;
-  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
 }
 
 .quick-action:hover {
-  background: var(--surface-2);
-  border-color: color-mix(in oklch, var(--tile-accent, var(--accent)) 30%, var(--hairline));
+  border-color: color-mix(in oklch, var(--ink) 32%, var(--hairline));
+  transform: translateY(-1px);
 }
 
 .quick-action:focus-visible {
@@ -321,8 +351,8 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in oklch, var(--tile-accent, var(--accent)) 12%, transparent);
-  color: var(--tile-accent-ink, var(--accent-ink));
+  background: var(--surface-2);
+  color: var(--muted);
   border-radius: 8px;
   flex-shrink: 0;
 }
@@ -361,17 +391,17 @@ defineProps<{
   flex-direction: column;
   padding: 14px 16px 16px;
   border: 1px solid var(--hairline);
-  border-radius: 12px;
+  border-radius: var(--r-card);
   background: var(--surface-1);
   color: var(--ink);
   text-decoration: none;
-  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
   min-height: 110px;
 }
 
 .child-card:hover {
-  background: var(--surface-2);
-  border-color: color-mix(in oklch, var(--tile-accent, var(--accent)) 30%, var(--hairline));
+  border-color: color-mix(in oklch, var(--ink) 32%, var(--hairline));
+  transform: translateY(-1px);
 }
 
 .child-card:hover .child-card__arrow {
@@ -397,20 +427,18 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in oklch, var(--tile-accent, var(--accent)) 12%, transparent);
-  color: var(--tile-accent-ink, var(--accent-ink));
+  background: var(--surface-2);
+  color: var(--muted);
   border-radius: 8px;
   flex-shrink: 0;
 }
 
 .child-card__count {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--tile-accent-ink, var(--accent-ink));
-  background: color-mix(in oklch, var(--tile-accent, var(--accent)) 10%, transparent);
-  padding: 2px 8px;
-  border-radius: 999px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .child-card__status {
@@ -546,7 +574,7 @@ defineProps<{
 /* ===== Side cards ===== */
 .side-card {
   border: 1px solid var(--hairline);
-  border-radius: 12px;
+  border-radius: var(--r-card);
   background: var(--surface-1);
   padding: 16px 18px;
 }
@@ -685,6 +713,82 @@ a.setup-list__label:hover {
 .davinci-list__item:hover .davinci-list__arrow {
   opacity: 1;
   color: var(--accent-ink);
+}
+
+/* ===== Da Vinci ink panel (single branded moment) ===== */
+.davinci-ink {
+  display: flex;
+  flex-direction: column;
+  padding: 28px; /* generous — calibration calls for 28–32px inside ink panels */
+  border-radius: var(--r-card); /* match the neighbouring setup card (not the ink default lg) */
+}
+
+.davinci-ink__eyebrow {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.davinci-ink__headline {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--ink-panel-fg);
+}
+
+.davinci-ink__desc {
+  margin: 0 0 22px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ink-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 9px 16px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.ink-cta--ghost {
+  border: 1px solid var(--ink-panel-fg);
+  background: transparent;
+  color: var(--ink-panel-fg);
+}
+
+.ink-cta--ghost:hover {
+  background: color-mix(in oklch, var(--ink-panel-fg) 12%, transparent);
+  transform: translateY(-1px);
+}
+
+.ink-cta:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ink-panel-accent) 45%, transparent);
+}
+
+.ink-cta__lead {
+  color: var(--ink-panel-accent);
+}
+
+.ink-cta__arrow {
+  opacity: 0.7;
+  transition: transform var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+
+.ink-cta:hover .ink-cta__arrow {
+  transform: translateX(2px);
+  opacity: 1;
+}
+
+/* Cap entrance stagger to the first row so long grids don't cascade for too long. */
+.child-grid.mp-enter-stagger > *:nth-child(n + 4) {
+  animation-delay: calc(var(--stagger-step) * 3);
 }
 
 /* ===== Responsive ===== */

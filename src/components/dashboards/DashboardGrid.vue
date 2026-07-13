@@ -103,6 +103,18 @@ const sortedWidgets = computed(() =>
   [...props.widgets].sort((left, right) => left.layout.y - right.layout.y || left.layout.x - right.layout.x),
 )
 
+// Signature entrance: every card fades up once (.mp-enter); only the first row
+// is staggered left-to-right so the rhythm reads without animating the whole grid.
+const firstRowY = computed(() => (layout.value.length ? Math.min(...layout.value.map((item) => item.y)) : 0))
+function enterDelay(item: LayoutItem): string | undefined {
+  if (item.y !== firstRowY.value) return undefined
+  const rowItems = layout.value
+    .filter((entry) => entry.y === firstRowY.value)
+    .sort((left, right) => left.x - right.x)
+  const index = rowItems.findIndex((entry) => entry.i === item.i)
+  return index > 0 ? `calc(var(--stagger-step) * ${index})` : undefined
+}
+
 watch(
   layoutFromWidgets,
   (nextLayout) => {
@@ -159,6 +171,8 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
         <template v-if="widgetsById.get(item.i)">
           <DashboardSetupGuide
             v-if="widgetsById.get(item.i)!.type === 'setup'"
+            class="mp-enter"
+            :style="{ animationDelay: enterDelay(item) }"
             :tasks="setupTasks ?? []"
             :completed-count="setupCompleted ?? 0"
             :progress="setupProgress ?? 0"
@@ -167,6 +181,8 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
           />
           <DashboardWidgetCard
             v-else
+            class="mp-enter"
+            :style="{ animationDelay: enterDelay(item) }"
             :account-id="accountId"
             :widget="widgetsById.get(item.i)!"
             :filters="filters"
@@ -185,7 +201,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
       <div
         v-for="widget in sortedWidgets"
         :key="widget.id"
-        class="dashboard-grid__mobile-item"
+        class="dashboard-grid__mobile-item mp-enter"
         :class="{
           'dashboard-grid__mobile-item--kpi': widget.type === 'kpi',
           'dashboard-grid__mobile-item--table': widget.type === 'table',
