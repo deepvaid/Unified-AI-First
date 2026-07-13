@@ -793,6 +793,31 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     allSynonyms.value = allSynonyms.value.filter((row) => !ids.includes(row.id))
   }
 
+  function saveSynonym(id: string, payload: { type: SynonymType; queries: string[]; leadsTo: string[] }) {
+    const row = allSynonyms.value.find((s) => s.id === id)
+    if (!row) return
+    row.type = payload.type
+    row.queries = [...payload.queries]
+    row.leadsTo = [...payload.leadsTo]
+    row.updatedAt = todayLabel()
+  }
+
+  function duplicateSynonym(id: string): Synonym | undefined {
+    const source = allSynonyms.value.find((s) => s.id === id)
+    if (!source) return undefined
+    const copy: Synonym = {
+      id: `s${Date.now()}`,
+      channelId: source.channelId,
+      status: source.status,
+      type: source.type,
+      queries: [...source.queries],
+      leadsTo: [...source.leadsTo],
+      updatedAt: todayLabel(),
+    }
+    allSynonyms.value.unshift(copy)
+    return copy
+  }
+
   function toggleCollectionStatus(id: string) {
     const row = allCollections.value.find((c) => c.id === id)
     if (row) row.status = row.status === 'active' ? 'inactive' : 'active'
@@ -823,6 +848,24 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     row.filters = payload.filters.map((f) => ({ ...f }))
     row.sortBy = payload.sortBy
     row.updatedAt = todayLabel()
+  }
+
+  function duplicateCollection(id: string): SmartCollection | undefined {
+    const source = allCollections.value.find((c) => c.id === id)
+    if (!source) return undefined
+    const copy: SmartCollection = {
+      ...source,
+      id: `c${Date.now()}`,
+      name: `Copy of ${source.name}`,
+      updatedAt: todayLabel(),
+      filters: source.filters ? source.filters.map((f) => ({ ...f })) : undefined,
+    }
+    allCollections.value.unshift(copy)
+    return copy
+  }
+
+  function deleteCollection(id: string) {
+    allCollections.value = allCollections.value.filter((c) => c.id !== id)
   }
 
   function toggleEngineStatus(id: string) {
@@ -900,8 +943,89 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     if (row) row.status = row.status === 'active' ? 'inactive' : 'active'
   }
 
+  /* — Field transformations — */
+
+  function createField(payload: {
+    name: string
+    inputField: string
+    outputField: string | null
+    ruleType: FieldTransformation['ruleType']
+    translations: string[]
+  }): FieldTransformation {
+    const field: FieldTransformation = {
+      id: `ft${Date.now()}`,
+      channelId: seedChannelId(),
+      name: payload.name,
+      inputField: payload.inputField,
+      outputField: payload.outputField,
+      ruleType: payload.ruleType,
+      translations: [...payload.translations],
+      status: 'active',
+      updatedAt: todayLabel(),
+    }
+    allFields.value.unshift(field)
+    return field
+  }
+
+  function saveField(id: string, payload: {
+    name: string
+    inputField: string
+    outputField: string | null
+    ruleType: FieldTransformation['ruleType']
+    translations: string[]
+  }) {
+    const field = allFields.value.find((f) => f.id === id)
+    if (!field) return
+    field.name = payload.name
+    field.inputField = payload.inputField
+    field.outputField = payload.outputField
+    field.ruleType = payload.ruleType
+    field.translations = [...payload.translations]
+    field.updatedAt = todayLabel()
+  }
+
+  function duplicateField(id: string): FieldTransformation | undefined {
+    const source = allFields.value.find((f) => f.id === id)
+    if (!source) return undefined
+    const copy = createField({
+      name: `${source.name} copy`,
+      inputField: source.inputField,
+      outputField: source.outputField,
+      ruleType: source.ruleType,
+      translations: [...source.translations],
+    })
+    copy.channelId = source.channelId
+    return copy
+  }
+
+  function deleteField(id: string) {
+    allFields.value = allFields.value.filter((f) => f.id !== id)
+  }
+
   function deleteRedirect(id: string) {
     allRedirects.value = allRedirects.value.filter((r) => r.id !== id)
+  }
+
+  function saveRedirect(id: string, payload: { queries: string[]; leadsTo: string }) {
+    const row = allRedirects.value.find((r) => r.id === id)
+    if (!row) return
+    row.queries = [...payload.queries]
+    row.leadsTo = payload.leadsTo
+    row.updatedAt = todayLabel()
+  }
+
+  function duplicateRedirect(id: string): PageRedirect | undefined {
+    const source = allRedirects.value.find((r) => r.id === id)
+    if (!source) return undefined
+    const copy: PageRedirect = {
+      id: `r${Date.now()}`,
+      channelId: source.channelId,
+      queries: [...source.queries],
+      leadsTo: source.leadsTo,
+      updatedAt: todayLabel(),
+    }
+    allRedirects.value.unshift(copy)
+    return copy
   }
 
   /* — Default Merchandising: pinning rules — */
@@ -1158,9 +1282,13 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     toggleSynonymStatus,
     bulkSetSynonymStatus,
     deleteSynonyms,
+    saveSynonym,
+    duplicateSynonym,
     toggleCollectionStatus,
     saveCollectionConfig,
     createCollection,
+    duplicateCollection,
+    deleteCollection,
     toggleEngineStatus,
     getEngine,
     createEngine,
@@ -1168,8 +1296,14 @@ export const useMerchandisingStore = defineStore('merchandising', () => {
     duplicateEngine,
     deleteEngine,
     toggleFieldStatus,
+    createField,
+    saveField,
+    duplicateField,
+    deleteField,
     deleteRedirect,
     createRedirect,
+    saveRedirect,
+    duplicateRedirect,
     getPinningRule,
     createPinningRule,
     savePinningRule,

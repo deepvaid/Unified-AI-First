@@ -81,6 +81,21 @@ function savePair() {
   pairDrawer.value = false
 }
 
+/* ── Bulk actions ──────────────────────────────────────────────── */
+function bulkForceResync() {
+  const count = selectedRows.value.length
+  store.forceResync(selectedRows.value)
+  selectedRows.value = []
+  showToast(`Resync sent to ${count} register${count === 1 ? '' : 's'}`)
+}
+
+function bulkDeactivate() {
+  const count = selectedRows.value.length
+  store.deactivateRegisters(selectedRows.value)
+  selectedRows.value = []
+  showToast(`${count} register${count === 1 ? '' : 's'} deactivated`)
+}
+
 const DEVICE_TYPES = ['iPad', 'iPhone', 'Android Tablet', 'Android Phone']
 const TERMINALS = ['Stripe S700', 'Stripe M2', 'Tap to Pay', 'None']
 const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
@@ -218,9 +233,9 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
               <v-btn icon="more-horizontal" variant="text" size="x-small" v-bind="props" @click.stop />
             </template>
             <v-list density="compact">
-              <v-list-item title="Force resync" prepend-icon="refresh-cw" @click="showToast(`Resync sent to ${item.name}`)" />
-              <v-list-item title="Reprint last receipt" prepend-icon="printer" @click="showToast('Reprint sent — mock only')" />
-              <v-list-item title="Deactivate" prepend-icon="power" @click="showToast(`${item.name} deactivated — mock only`)" />
+              <v-list-item title="Force resync" prepend-icon="refresh-cw" @click="store.forceResync([item.id]); showToast(`Resync sent to ${item.name}`)" />
+              <v-list-item title="Reprint last receipt" prepend-icon="printer" @click="showToast(`Receipt sent to ${item.name}`)" />
+              <v-list-item title="Deactivate" prepend-icon="power" @click="store.deactivateRegisters([item.id]); showToast(`${item.name} deactivated`)" />
             </v-list>
           </v-menu>
         </template>
@@ -233,10 +248,10 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
 
     <!-- Bulk bar -->
     <MpFloatingBulkBar :count="selectedRows.length" @clear="selectedRows = []">
-      <v-btn variant="tonal" class="text-none" prepend-icon="refresh-cw" @click="showToast('Force resync sent — mock only')">
+      <v-btn variant="tonal" class="text-none" prepend-icon="refresh-cw" @click="bulkForceResync">
         Force resync
       </v-btn>
-      <v-btn variant="tonal" class="text-none" prepend-icon="power" color="warning" @click="showToast('Deactivated — mock only')">
+      <v-btn variant="tonal" class="text-none" prepend-icon="power" color="warning" @click="bulkDeactivate">
         Deactivate
       </v-btn>
     </MpFloatingBulkBar>

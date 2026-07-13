@@ -3,10 +3,13 @@ import { computed, ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import {
   useMerchandisingStore,
   SYNONYM_TYPE_LABELS,
   type Synonym,
+  type SynonymType,
 } from '@/stores/useMerchandising'
 
 const store = useMerchandisingStore()
@@ -57,6 +60,90 @@ function bulkDelete() {
   store.deleteSynonyms(selected.value)
   showToast(`${count} synonym(s) deleted`)
   selected.value = []
+}
+
+function duplicate(item: Synonym) {
+  const copy = store.duplicateSynonym(item.id)
+  if (copy) showToast('Synonym duplicated')
+}
+
+/* ── Edit drawer ───────────────────────────────────────────────── */
+const editDrawer = ref(false)
+const editTarget = ref<Synonym | null>(null)
+const editType = ref<SynonymType>('one_way')
+const editQueries = ref<string[]>([])
+const editQueryInput = ref('')
+const editLeadsTo = ref<string[]>([])
+const editLeadsToInput = ref('')
+
+function openEdit(item: Synonym) {
+  editTarget.value = item
+  editType.value = item.type
+  editQueries.value = [...item.queries]
+  editLeadsTo.value = [...item.leadsTo]
+  editQueryInput.value = ''
+  editLeadsToInput.value = ''
+  editDrawer.value = true
+}
+
+function addEditQuery() {
+  const trimmed = editQueryInput.value.trim()
+  if (!trimmed || editQueries.value.includes(trimmed)) {
+    editQueryInput.value = ''
+    return
+  }
+  editQueries.value.push(trimmed)
+  editQueryInput.value = ''
+}
+
+function removeEditQuery(q: string) {
+  editQueries.value = editQueries.value.filter((x) => x !== q)
+}
+
+function addEditLeadsTo() {
+  const trimmed = editLeadsToInput.value.trim()
+  if (!trimmed || editLeadsTo.value.includes(trimmed)) {
+    editLeadsToInput.value = ''
+    return
+  }
+  editLeadsTo.value.push(trimmed)
+  editLeadsToInput.value = ''
+}
+
+function removeEditLeadsTo(t: string) {
+  editLeadsTo.value = editLeadsTo.value.filter((x) => x !== t)
+}
+
+function submitEdit() {
+  if (!editTarget.value) return
+  if (editQueries.value.length === 0) {
+    showToast('Add at least one query.')
+    return
+  }
+  store.saveSynonym(editTarget.value.id, {
+    type: editType.value,
+    queries: [...editQueries.value],
+    leadsTo: editType.value === 'two_way' ? [] : [...editLeadsTo.value],
+  })
+  editDrawer.value = false
+  showToast('Synonym updated')
+}
+
+/* ── Delete confirm ────────────────────────────────────────────── */
+const confirmDeleteOpen = ref(false)
+const pendingDelete = ref<Synonym | null>(null)
+
+function askDelete(item: Synonym) {
+  pendingDelete.value = item
+  confirmDeleteOpen.value = true
+}
+
+function doDelete() {
+  if (pendingDelete.value) {
+    store.deleteSynonyms([pendingDelete.value.id])
+    showToast('Synonym deleted')
+  }
+  pendingDelete.value = null
 }
 </script>
 
@@ -228,8 +315,8 @@ function bulkDelete() {
               />
             </template>
             <v-list density="compact" min-width="180">
-              <v-list-item prepend-icon="pencil" title="Edit" @click="showToast('Edit — coming soon')" />
-              <v-list-item prepend-icon="copy" title="Duplicate" @click="showToast('Duplicated')" />
+              <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+              <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
               <v-list-item
                 :prepend-icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
                 :title="item.status === 'active' ? 'Disable' : 'Enable'"
@@ -240,7 +327,7 @@ function bulkDelete() {
                 prepend-icon="trash-2"
                 title="Delete"
                 class="text-error"
-                @click="store.deleteSynonyms([item.id])"
+                @click="askDelete(item)"
               />
             </v-list>
           </v-menu>
@@ -258,6 +345,96 @@ function bulkDelete() {
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Edit synonym drawer -->
+    <MpFormDrawer v-model="editDrawer" title="Edit synonym" subtitle="Update this synonym mapping">
+      <v-select
+        v-model="editType"
+        label="Type"
+        :items="[
+          { title: 'One way', value: 'one_way' },
+          { title: 'Two way', value: 'two_way' },
+        ]"
+        variant="outlined"
+        density="comfortable"
+        class="mb-3"
+      />
+
+      <label class="text-caption font-weight-medium text-medium-emphasis">Queries</label>
+      <v-text-field
+        v-model="editQueryInput"
+        placeholder="Type a query, then press Enter"
+        density="comfortable"
+        variant="outlined"
+        hide-details
+        class="mt-2"
+        @keydown.enter.prevent="addEditQuery"
+      />
+      <div v-if="editQueries.length > 0" class="d-flex flex-wrap gap-1 mt-2 mb-3">
+        <v-chip
+          v-for="q in editQueries"
+          :key="q"
+          size="small"
+          variant="tonal"
+          color="default"
+          closable
+          @click:close="removeEditQuery(q)"
+        >
+          {{ q }}
+        </v-chip>
+      </div>
+
+      <template v-if="editType === 'one_way'">
+        <label class="text-caption font-weight-medium text-medium-emphasis">Leads to</label>
+        <v-text-field
+          v-model="editLeadsToInput"
+          placeholder="Type a term, then press Enter"
+          density="comfortable"
+          variant="outlined"
+          hide-details
+          class="mt-2"
+          @keydown.enter.prevent="addEditLeadsTo"
+        />
+        <div v-if="editLeadsTo.length > 0" class="d-flex flex-wrap gap-1 mt-2">
+          <v-chip
+            v-for="t in editLeadsTo"
+            :key="t"
+            size="small"
+            variant="tonal"
+            color="default"
+            closable
+            @click:close="removeEditLeadsTo(t)"
+          >
+            {{ t }}
+          </v-chip>
+        </div>
+      </template>
+      <div v-else class="text-caption text-medium-emphasis">
+        Two-way synonyms treat all queries above as equivalent to each other.
+      </div>
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="editDrawer = false">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          class="text-none"
+          :disabled="editQueries.length === 0"
+          @click="submitEdit"
+        >
+          Save changes
+        </v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="confirmDeleteOpen"
+      title="Delete synonym?"
+      message="This synonym mapping will be permanently deleted. This cannot be undone."
+      confirm-label="Delete"
+      danger
+      @confirm="doDelete"
+    />
 
     <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
       {{ snackbar.message }}

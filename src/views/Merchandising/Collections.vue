@@ -6,6 +6,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import {
   useMerchandisingStore,
   COLLECTION_FILTER_LABELS,
@@ -55,6 +56,28 @@ function showToast(message: string) {
 
 function onToggle(collection: SmartCollection) {
   store.toggleCollectionStatus(collection.id)
+}
+
+function duplicate(collection: SmartCollection) {
+  const copy = store.duplicateCollection(collection.id)
+  if (copy) showToast(`Collection duplicated as “${copy.name}”`)
+}
+
+/* ── Delete confirm ────────────────────────────────────────────── */
+const confirmDeleteOpen = ref(false)
+const pendingDelete = ref<SmartCollection | null>(null)
+
+function askDelete(collection: SmartCollection) {
+  pendingDelete.value = collection
+  confirmDeleteOpen.value = true
+}
+
+function doDelete() {
+  if (pendingDelete.value) {
+    store.deleteCollection(pendingDelete.value.id)
+    showToast(`Collection “${pendingDelete.value.name}” deleted`)
+  }
+  pendingDelete.value = null
 }
 
 /* ── Create collection drawer ─────────────────────────────────── */
@@ -158,14 +181,14 @@ function submitCreate() {
             <v-list density="compact" min-width="180">
               <v-list-item prepend-icon="pencil" title="Edit collection" @click="editCollection(item)" />
               <v-list-item prepend-icon="pin" title="Edit pins" @click="editPins(item)" />
-              <v-list-item prepend-icon="copy" title="Duplicate" @click="showToast('Duplicated')" />
+              <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
               <v-list-item
                 :prepend-icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
                 :title="item.status === 'active' ? 'Disable' : 'Enable'"
                 @click="onToggle(item)"
               />
               <v-divider />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="showToast('Deleted')" />
+              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
             </v-list>
           </v-menu>
         </template>
@@ -220,6 +243,15 @@ function submitCreate() {
         </v-btn>
       </template>
     </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="confirmDeleteOpen"
+      title="Delete collection?"
+      :message="`“${pendingDelete?.name}” will be permanently deleted. This cannot be undone.`"
+      confirm-label="Delete"
+      danger
+      @confirm="doDelete"
+    />
 
     <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
       {{ snackbar.message }}

@@ -2,7 +2,8 @@
 import { computed, ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
-import { useMerchandisingStore } from '@/stores/useMerchandising'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import { useMerchandisingStore, type PageRedirect } from '@/stores/useMerchandising'
 
 const store = useMerchandisingStore()
 const createOpen = ref(true)
@@ -67,6 +68,51 @@ function createRedirect() {
 function deleteRow(id: string) {
   store.deleteRedirect(id)
   showToast('Page redirect deleted')
+}
+
+function duplicate(item: PageRedirect) {
+  const copy = store.duplicateRedirect(item.id)
+  if (copy) showToast('Page redirect duplicated')
+}
+
+/* ── Edit drawer ───────────────────────────────────────────────── */
+const editDrawer = ref(false)
+const editTarget = ref<PageRedirect | null>(null)
+const editQueries = ref<string[]>([])
+const editQueryInput = ref('')
+const editUrl = ref('')
+
+function openEdit(item: PageRedirect) {
+  editTarget.value = item
+  editQueries.value = [...item.queries]
+  editUrl.value = item.leadsTo
+  editQueryInput.value = ''
+  editDrawer.value = true
+}
+
+function addEditQuery() {
+  const trimmed = editQueryInput.value.trim()
+  if (!trimmed || editQueries.value.includes(trimmed)) {
+    editQueryInput.value = ''
+    return
+  }
+  editQueries.value.push(trimmed)
+  editQueryInput.value = ''
+}
+
+function removeEditQuery(q: string) {
+  editQueries.value = editQueries.value.filter((x) => x !== q)
+}
+
+function submitEdit() {
+  if (!editTarget.value) return
+  if (editQueries.value.length === 0 || !editUrl.value.trim()) {
+    showToast('Add at least one query and a destination URL.')
+    return
+  }
+  store.saveRedirect(editTarget.value.id, { queries: [...editQueries.value], leadsTo: editUrl.value.trim() })
+  editDrawer.value = false
+  showToast('Page redirect updated')
 }
 </script>
 
@@ -216,8 +262,8 @@ function deleteRow(id: string) {
               />
             </template>
             <v-list density="compact" min-width="180">
-              <v-list-item prepend-icon="pencil" title="Edit" @click="showToast('Edit — coming soon')" />
-              <v-list-item prepend-icon="copy" title="Duplicate" @click="showToast('Duplicated')" />
+              <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+              <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
               <v-divider />
               <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="deleteRow(item.id)" />
             </v-list>
@@ -233,6 +279,55 @@ function deleteRow(id: string) {
         </template>
       </v-data-table>
     </v-card>
+
+    <!-- Edit redirect drawer -->
+    <MpFormDrawer v-model="editDrawer" title="Edit page redirect" subtitle="Update the queries and destination URL">
+      <label class="merch-create__label">Queries</label>
+      <v-text-field
+        v-model="editQueryInput"
+        placeholder="Type a query, then press Enter"
+        density="comfortable"
+        variant="outlined"
+        hide-details
+        prepend-inner-icon="search"
+        @keydown.enter.prevent="addEditQuery"
+      />
+      <div v-if="editQueries.length > 0" class="d-flex flex-wrap gap-1 mt-2 mb-3">
+        <v-chip
+          v-for="q in editQueries"
+          :key="q"
+          size="small"
+          variant="tonal"
+          color="default"
+          closable
+          @click:close="removeEditQuery(q)"
+        >
+          {{ q }}
+        </v-chip>
+      </div>
+      <label class="merch-create__label">Lead to URL</label>
+      <v-text-field
+        v-model="editUrl"
+        placeholder="https://your-store.com/page"
+        density="comfortable"
+        variant="outlined"
+        hide-details
+        prepend-inner-icon="link"
+        class="mt-2"
+      />
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="editDrawer = false">Cancel</v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          class="text-none"
+          :disabled="editQueries.length === 0 || !editUrl.trim()"
+          @click="submitEdit"
+        >
+          Save changes
+        </v-btn>
+      </template>
+    </MpFormDrawer>
 
     <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
       {{ snackbar.message }}

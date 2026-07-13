@@ -430,6 +430,15 @@ export const useRetailStore = defineStore('retail', () => {
     })
   }
 
+  function deactivateRegisters(registerIds: string[]) {
+    registerList.value.forEach((r) => {
+      if (registerIds.includes(r.id)) {
+        r.status = 'offline'
+        r.lastSeenAt = new Date().toISOString()
+      }
+    })
+  }
+
   function toggleAssociateActive(id: string) {
     const a = associateList.value.find((x) => x.id === id)
     if (a) a.active = !a.active
@@ -583,6 +592,7 @@ export const useRetailStore = defineStore('retail', () => {
     setActiveContext,
     setOfflineMode,
     forceResync,
+    deactivateRegisters,
     toggleAssociateActive,
     resetPin,
     deleteTransactions,
