@@ -1299,9 +1299,10 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   --sidebar-active-text: var(--sidebar-text);
   --sidebar-radius: 8px;
   background: var(--surface-1);
-  border: 1px solid var(--sidebar-border);
-  border-radius: var(--sidebar-radius);
-  box-shadow: 0 4px 16px color-mix(in oklch, var(--ink) 10%, transparent), 0 1px 3px color-mix(in oklch, var(--ink) 6%, transparent);
+  /* Shared popover chrome (matches .v-menu overlay surfaces in global.scss) */
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: var(--mp-borderRadius-md);
+  box-shadow: var(--mp-shadow-lg), var(--mp-shadow-md);
   padding: 6px;
   min-width: 200px;
   max-width: 260px;

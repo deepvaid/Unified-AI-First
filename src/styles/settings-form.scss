@@ -11,89 +11,106 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Field shape + subtle fill ─────────────────────────────── */
-.v-application .v-field--variant-outlined {
-  border-radius: 10px;
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined {
+  border-radius: var(--mp-component-input-radius-default);
   font-size: 14px;
   background: color-mix(in oklch, var(--surface-2) 55%, transparent);
-  transition: background 120ms ease, box-shadow 120ms ease;
+  transition: background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
-.v-application .v-field--variant-outlined:hover {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover {
   background: color-mix(in oklch, var(--surface-2) 72%, transparent);
 }
 
+/* Baseline alpha: outline elements render at full opacity — the softness
+   comes from the hairline token color, not an alpha multiplier.
+   Deliberately NO !important: component-scoped ghost/hidden-outline effects
+   (AppBar pill search, MpDataTableToolbar search, JourneyBuilder search)
+   override this custom property by selector specificity. */
+.v-field--variant-outlined .v-field__outline {
+  --v-field-border-opacity: 1;
+}
+
 /* ── Input area — consistent height across all densities ────── */
-.v-application .v-field--variant-outlined .v-field__field {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__field {
   padding-top: 2px;
   padding-bottom: 2px;
 }
 
-.v-application .v-field--variant-outlined .v-field__input {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__input {
   min-height: 40px;
   padding-top: 8px;
   padding-bottom: 8px;
 }
 
 /* ── Placeholder ────────────────────────────────────────────── */
-.v-application .v-field--variant-outlined .v-field__input::placeholder {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__input::placeholder {
   color: var(--muted);
   opacity: 0.65;
 }
 
 /* ── Resting border — dark-mode-aware via --hairline alias ──── */
-.v-application .v-field--variant-outlined .v-field__outline__start,
-.v-application .v-field--variant-outlined .v-field__outline__end,
-.v-application .v-field--variant-outlined .v-field__outline__notch::before,
-.v-application .v-field--variant-outlined .v-field__outline__notch::after {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__start,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__end,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__notch::before,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__notch::after {
   border-color: var(--hairline) !important;
 }
 
-.v-application .v-field--variant-outlined .v-field__outline {
-  opacity: 1;
+/* ── Hover border — one step darker than the resting hairline ── */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover:not(.v-field--focused):not(.v-field--error) .v-field__outline__start,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover:not(.v-field--focused):not(.v-field--error) .v-field__outline__end,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover:not(.v-field--focused):not(.v-field--error) .v-field__outline__notch::before,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover:not(.v-field--focused):not(.v-field--error) .v-field__outline__notch::after {
+  border-color: var(--mp-border-subtle-hover, var(--hairline)) !important;
 }
 
-/* ── Focused border — primary color, no thickness bump, no glow */
-.v-application .v-field--variant-outlined.v-field--focused {
-  box-shadow: none;
+/* ── Focused border — primary color, no thickness bump, soft ring */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused {
+  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.12);
 }
 
-.v-application .v-field--variant-outlined.v-field--focused .v-field__outline__start,
-.v-application .v-field--variant-outlined.v-field--focused .v-field__outline__end,
-.v-application .v-field--variant-outlined.v-field--focused .v-field__outline__notch::before,
-.v-application .v-field--variant-outlined.v-field--focused .v-field__outline__notch::after {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline__start,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline__end,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline__notch::before,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline__notch::after {
   border-color: rgb(var(--v-theme-primary)) !important;
 }
 
-.v-application .v-field--variant-outlined.v-field--focused .v-field__outline {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline {
   --v-field-border-width: 1px;
 }
 
-/* ── Error border ───────────────────────────────────────────── */
-.v-application .v-field--variant-outlined.v-field--error .v-field__outline__start,
-.v-application .v-field--variant-outlined.v-field--error .v-field__outline__end,
-.v-application .v-field--variant-outlined.v-field--error .v-field__outline__notch::before,
-.v-application .v-field--variant-outlined.v-field--error .v-field__outline__notch::after {
+/* ── Error border + soft ring ───────────────────────────────── */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error:not(.v-field--focused) {
+  box-shadow: 0 0 0 3px rgba(var(--v-theme-error), 0.12);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline__start,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline__end,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline__notch::before,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline__notch::after {
   border-color: rgb(var(--v-theme-error)) !important;
 }
 
 /* ── Disabled — full opacity, muted text ────────────────────── */
-.v-application .v-field--disabled {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--disabled {
   opacity: 1;
 }
 
-.v-application .v-field--disabled .v-field__input {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--disabled .v-field__input {
   color: var(--muted);
 }
 
 /* ── Details / helper / error text ─────────────────────────── */
-.v-application .v-messages__message {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-messages__message {
   font-size: 12px;
   letter-spacing: 0.01em;
 }
 
 /* ── Prepend / append inner icon ────────────────────────────── */
-.v-application .v-field--variant-outlined .v-field__prepend-inner,
-.v-application .v-field--variant-outlined .v-field__append-inner {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__prepend-inner,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__append-inner {
   padding-top: 0;
   align-items: center;
 }

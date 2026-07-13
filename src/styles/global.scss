@@ -293,10 +293,6 @@ a {
   background: rgb(var(--v-theme-surface)) !important;
 }
 
-.v-field--variant-outlined .v-field__outline {
-  --v-field-border-opacity: 1;
-}
-
 .v-field--variant-solo-filled {
   border: 1px solid rgba(var(--v-theme-primary), 0.08);
   box-shadow: none;
@@ -574,6 +570,16 @@ tr:focus-within .action-btns {
   border-radius: var(--mp-borderRadius-md) !important;
   box-shadow: var(--mp-shadow-lg), var(--mp-shadow-md) !important;
   overflow: hidden;
+}
+
+/* Menu items float inside the surface (inset + rounded) rather than
+   running edge-to-edge. */
+.v-menu > .v-overlay__content > .v-list {
+  padding: 4px;
+}
+/* !important: VListItem stamps a `rounded-0 !important` utility class by default */
+.v-menu > .v-overlay__content .v-list-item {
+  border-radius: 8px !important;
 }
 
 /* ─── Chip tonal variants (design kit) ──────────────────────── */

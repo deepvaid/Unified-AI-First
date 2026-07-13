@@ -24,7 +24,7 @@ defineSlots<{
     </template>
     <v-card rounded="lg" border flat width="220" class="py-2">
       <div class="px-3 py-1 text-caption text-medium-emphasis font-weight-bold text-uppercase border-b mb-1">Add step</div>
-      <v-list density="compact" nav>
+      <v-list density="compact" nav :border="false">
         <v-list-item v-for="tmpl in items" :key="tmpl.kind" rounded="lg" @click="emit('pick', tmpl)">
           <template #prepend>
             <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">

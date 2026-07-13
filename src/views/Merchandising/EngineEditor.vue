@@ -391,7 +391,7 @@ function performDelete() {
               Add fallback
             </v-btn>
           </template>
-          <v-list density="compact" rounded="lg" min-width="200" elevation="3" class="py-1">
+          <v-list density="compact" rounded="lg" min-width="200" class="py-1">
             <v-list-item
               v-for="fallback in remainingFallbacks"
               :key="fallback"
@@ -512,7 +512,7 @@ function performDelete() {
                       :aria-label="`Filter actions for ${condition.field}`"
                     />
                   </template>
-                  <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
+                  <v-list density="compact" rounded="lg" min-width="160" class="py-1">
                     <v-list-item prepend-icon="pencil" title="Edit" @click="startEditCondition(condition)" />
                     <v-divider class="my-1" style="opacity: 0.4" />
                     <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="removeCondition(condition.id)" />

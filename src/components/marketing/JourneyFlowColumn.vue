@@ -96,7 +96,7 @@ const endsRun = computed(() => {
                 :aria-label="`Actions for ${seg.node.title}`" @click.stop></v-btn>
             </template>
             <v-card rounded="lg" border flat width="180" class="py-1">
-              <v-list density="compact" nav>
+              <v-list density="compact" nav :border="false">
                 <v-list-item prepend-icon="pencil" title="Configure" @click="emit('select', seg.node.id)"></v-list-item>
                 <v-list-item prepend-icon="copy" title="Duplicate"
                   :disabled="seg.node.category === 'trigger' || seg.node.category === 'filter'"

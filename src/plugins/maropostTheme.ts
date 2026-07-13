@@ -77,7 +77,6 @@ import {
   mp_component_button_typography_fontWeight,
   mp_component_button_typography_letterSpacing,
   mp_component_button_radius_default,
-  mp_component_input_radius_default,
 } from '@/design-tokens/generated/tokens'
 
 export const maropostLight = {
@@ -188,45 +187,37 @@ export const maropostDefaults = {
     variant: 'flat',
     rounded: 'lg',
   },
+  // Field chrome (borders, radius, states) is owned by settings-form.scss —
+  // keep these defaults behavioral only.
   VTextField: {
     variant: 'outlined',
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
-    baseColor: 'on-surface',
-    style: `border-radius: ${mp_component_input_radius_default};`,
   },
   VSelect: {
     variant: 'outlined',
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
-    baseColor: 'on-surface',
-    style: `border-radius: ${mp_component_input_radius_default};`,
   },
   VAutocomplete: {
     variant: 'outlined',
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
-    baseColor: 'on-surface',
-    style: `border-radius: ${mp_component_input_radius_default};`,
   },
   VCombobox: {
     variant: 'outlined',
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
-    baseColor: 'on-surface',
-    style: `border-radius: ${mp_component_input_radius_default};`,
   },
   VTextarea: {
     variant: 'outlined',
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
-    baseColor: 'on-surface',
-    style: `border-radius: ${mp_component_input_radius_default};`,
   },
   VAlert: {
     variant: 'tonal',

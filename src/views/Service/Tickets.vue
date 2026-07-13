@@ -393,7 +393,7 @@ function deleteActiveTicket() {
                       :aria-expanded="cannedMenu"
                     />
                   </template>
-                  <v-list density="compact" rounded="lg" nav elevation="3" min-width="240">
+                  <v-list density="compact" rounded="lg" nav min-width="240">
                     <v-list-subheader>Canned Responses</v-list-subheader>
                     <v-list-item
                       v-for="cr in cannedResponses"

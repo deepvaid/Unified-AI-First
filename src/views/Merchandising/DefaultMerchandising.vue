@@ -122,7 +122,7 @@ function performConfirm() {
               Add new rule
             </v-btn>
           </template>
-          <v-list density="compact" rounded="lg" min-width="230" elevation="3" class="py-1">
+          <v-list density="compact" rounded="lg" min-width="230" class="py-1">
             <v-list-item prepend-icon="pin" title="Pinning rule" @click="router.push(pinningRoute('new'))" />
             <v-list-item prepend-icon="sliders-horizontal" title="Merchandising rule" @click="router.push(ruleRoute('new'))" />
             <v-divider class="my-1" style="opacity: 0.4" />
@@ -166,7 +166,7 @@ function performConfirm() {
                 :aria-label="`Actions for ${item.collection}`"
               />
             </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
+            <v-list density="compact" rounded="lg" min-width="160" class="py-1">
               <v-list-item prepend-icon="pin" title="Edit pins" @click="openPinning(item.id)" />
               <v-divider class="my-1" style="opacity: 0.4" />
               <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="deletePinning(item)" />
@@ -224,7 +224,7 @@ function performConfirm() {
                 :aria-label="`Actions for ${item.name}`"
               />
             </template>
-            <v-list density="compact" rounded="lg" min-width="170" elevation="3" class="py-1">
+            <v-list density="compact" rounded="lg" min-width="170" class="py-1">
               <v-list-item prepend-icon="pencil" title="Edit" @click="openRule(item.id)" />
               <v-list-item
                 :prepend-icon="item.active ? 'circle-pause' : 'circle-play'"

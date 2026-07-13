@@ -23,6 +23,8 @@
 
   /* Lines */
   --hairline: var(--mp-color-light-borderSubtle);
+  /* Field/control border on hover — one step darker than the resting hairline */
+  --mp-border-subtle-hover: #cbd5e1;
 
   /* Accent (signal blue) */
   --accent: var(--mp-color-light-primary);
@@ -66,7 +68,10 @@
   --ink-panel-border: var(--mp-color-light-inkPanel-border);
 }
 
-.v-application.v-theme--maropostDark {
+/* Bare theme class too: teleported roots (drawers/dialogs/menus) live outside
+   .v-application (some directly under <body>) but carry the theme class. */
+.v-application.v-theme--maropostDark,
+.v-theme--maropostDark {
   --mp-border-subtle: var(--mp-color-dark-borderSubtle);
   --mp-border-hairline: var(--mp-color-dark-borderSubtle);
   --mp-border-table-row: var(--mp-color-dark-borderTableRow);
@@ -89,6 +94,7 @@
   --ink: var(--mp-color-dark-textPrimary);
   --muted: var(--mp-color-dark-textMuted);
   --hairline: var(--mp-color-dark-borderSubtle);
+  --mp-border-subtle-hover: rgba(236, 236, 236, 0.22);
   --accent: var(--mp-color-dark-primary);
   --accent-fg: var(--mp-color-dark-onPrimary);
   --accent-ink: var(--mp-color-dark-primaryDarken);

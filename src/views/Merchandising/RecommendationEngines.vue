@@ -218,7 +218,7 @@ function onToggle(engine: RecommendationEngine) {
                 aria-label="Row actions"
               />
             </template>
-            <v-list density="compact" rounded="lg" min-width="200" elevation="3" class="py-1">
+            <v-list density="compact" rounded="lg" min-width="200" class="py-1">
               <v-list-item prepend-icon="pencil" title="Edit engine" @click="openEngine(item.id)" />
               <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
               <v-list-item

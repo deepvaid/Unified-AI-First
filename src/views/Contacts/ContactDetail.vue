@@ -178,7 +178,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
           <template v-slot:activator="{ props }">
             <v-btn v-bind="props" icon="more-vertical" variant="text" aria-label="Contact actions" />
           </template>
-          <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
+          <v-list density="compact" rounded="lg" min-width="160" class="py-1">
             <v-list-item prepend-icon="share" title="Export" @click="exportContact" />
             <v-divider class="my-1" />
             <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="deleteDialog = true" />
