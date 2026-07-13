@@ -21,9 +21,14 @@
   --mp-nav-surface: #f4f6fa;
 }
 
-/* Head nav shares the side nav surface (light theme + light sidebar; the
-   dark app theme and the gray/dark sidebar axes keep their own chrome). */
-html[data-theme="light"][data-sidebar="light"] .mp-appbar {
+/* Head nav shares the side nav surface (light app theme; the dark app
+   theme keeps its own chrome). Gray sidebar axis matches its own tone. */
+html[data-sidebar="gray"] {
+  --mp-nav-surface: #f6f7f9; /* sidebar-gray.css --sidebar-bg */
+}
+
+html[data-theme="light"][data-sidebar="light"] .mp-appbar,
+html[data-theme="light"][data-sidebar="gray"] .mp-appbar {
   background: var(--mp-nav-surface) !important;
 }
 
