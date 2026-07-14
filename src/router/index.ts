@@ -269,6 +269,11 @@ const routes: RouteRecordRaw[] = [
   // Account & Billing — standalone area, separate from app Settings
   { path: '/accounts/:accountId/billing', name: 'Billing', component: () => import('@/views/Billing/BillingView.vue') },
 
+  // PLG — trial signup, plan selection, mock hosted checkout
+  { path: '/signup', name: 'Signup', component: () => import('@/views/Plg/SignupView.vue'), meta: { fullPage: true } },
+  { path: '/accounts/:accountId/plans', name: 'Plans', component: () => import('@/views/Plg/PlansView.vue') },
+  { path: '/accounts/:accountId/checkout', name: 'Checkout', component: () => import('@/views/Plg/CheckoutView.vue'), meta: { fullPage: true } },
+
   { path: '/accounts/:accountId/design-system', name: 'DesignSystemDemo', component: () => import('@/views/Settings/DesignSystemDemo.vue') },
 
   // Redirect root to dashboard
@@ -283,9 +288,18 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
+  const accounts = useAccountsStore()
+
+  // Keep the active account in sync with the account in the URL, so every
+  // subscription gate (sidebar locks, chatbot capabilities, billing, settings)
+  // reflects the account you are actually looking at — not a stale switcher choice.
+  const routeAccountId = Array.isArray(to.params.accountId) ? to.params.accountId[0] : to.params.accountId
+  if (routeAccountId && routeAccountId !== accounts.activeId && accounts.accounts.some(a => a.id === routeAccountId)) {
+    accounts.switchTo(routeAccountId)
+  }
+
   const required = to.meta.requires
   if (!required) return true
-  const accounts = useAccountsStore()
   if (accounts.hasSubscription(required)) return true
   return {
     name: 'CommerceCloudLanding',

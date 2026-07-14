@@ -1,13 +1,90 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import type { RouteLocationRaw } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpSectionHeader from '@/components/MpSectionHeader.vue'
+import MpUsageMeter from '@/components/MpUsageMeter.vue'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
+import { useAccountsStore } from '@/stores/useAccounts'
+import { useChatbotStore } from '@/stores/useChatbot'
+import { usePlgStore } from '@/stores/usePlg'
 
 const route = useRoute()
 const activeTab = ref<'get-started' | 'dashboard'>(
   route.path.endsWith('/dashboard') ? 'dashboard' : 'get-started',
 )
+
+const accountsStore = useAccountsStore()
+const chatbotStore = useChatbotStore()
+const plg = usePlgStore()
+
+const hasDavinciAi = computed(() => plg.entitlements.davinciAi)
+const aiTokenUsage = computed(() => plg.active.usage.aiTokens)
+const aiTokenHint = computed(() =>
+  aiTokenUsage.value.limit === -1
+    ? 'Unlimited on your plan'
+    : 'Resets monthly · Upgrade for a larger allocation',
+)
+
+const accountId = computed(() => {
+  const id = Array.isArray(route.params.accountId) ? route.params.accountId[0] : route.params.accountId
+  return id ?? ''
+})
+
+// The chatbot list is a flat mock store (not partitioned per account), so we
+// deep-link to the first non-archived chatbot's builder, same as ChatbotList's
+// default "active" ordering.
+const firstChatbotId = computed(() => {
+  const firstActive = chatbotStore.chatbots.find(c => c.status !== 'Archived')
+  return firstActive?.id ?? chatbotStore.chatbots[0]?.id
+})
+
+interface IncludedSurface {
+  key: string
+  title: string
+  description: string
+  icon: string
+  included: boolean
+  to: RouteLocationRaw
+}
+
+const includedSurfaces = computed<IncludedSurface[]>(() => [
+  {
+    key: 'chatbot',
+    title: 'Chatbot',
+    description: 'Build chat assistants for your stores.',
+    icon: 'bot',
+    included: accountsStore.hasAnySubscription(['service', 'commerce']),
+    to: { name: 'ChatbotList', params: { accountId: accountId.value } },
+  },
+  {
+    key: 'shopping-assistant',
+    title: 'Shopping assistant',
+    description: 'Guide shoppers to products in chat.',
+    icon: 'shopping-cart',
+    included: accountsStore.hasSubscription('commerce'),
+    to: firstChatbotId.value != null
+      ? { name: 'ChatbotBuilder', params: { accountId: accountId.value, id: firstChatbotId.value }, query: { section: 'shopping' } }
+      : { name: 'ChatbotList', params: { accountId: accountId.value } },
+  },
+  {
+    key: 'ask-davinci',
+    title: 'Ask Da Vinci',
+    description: 'Chat with your AI copilot for quick answers and actions.',
+    icon: 'sparkles',
+    included: accountsStore.hasSubscription('davinci'),
+    to: { name: 'DaVinciCopilot', params: { accountId: accountId.value } },
+  },
+  {
+    key: 'ai-experience',
+    title: 'AI experience',
+    description: 'Voice-first AI workspace for hands-free workflows.',
+    icon: 'wand-2',
+    included: accountsStore.hasSubscription('davinci'),
+    to: { name: 'DaVinciExperience', params: { accountId: accountId.value } },
+  },
+])
 
 const features = [
   {
@@ -77,6 +154,32 @@ const metrics = [
         </p>
       </v-card>
 
+      <v-card v-if="hasDavinciAi" flat border rounded="lg" class="pa-5 mb-6">
+        <MpUsageMeter
+          label="Da Vinci AI tokens"
+          icon="sparkles"
+          :used="aiTokenUsage.used"
+          :limit="aiTokenUsage.limit"
+          :hint="aiTokenHint"
+        />
+      </v-card>
+      <v-card v-else flat border rounded="lg" class="pa-5 mb-6 d-flex align-center justify-space-between flex-wrap ga-3">
+        <div class="d-flex align-center ga-3">
+          <v-icon size="20" class="text-medium-emphasis">sparkles</v-icon>
+          <div>
+            <div class="text-subtitle-2 font-weight-bold mb-1">Da Vinci AI tokens</div>
+            <v-chip size="small" variant="flat">
+              <v-icon start size="12">crown</v-icon>
+              Not included
+            </v-chip>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-2">
+          <v-btn variant="text" size="small" color="primary" class="text-none px-0" :to="{ name: 'Billing', params: { accountId } }">View plans</v-btn>
+          <v-btn variant="text" size="small" class="text-none px-0" href="mailto:sales@maropost.com?subject=Da%20Vinci%20AI%20upgrade">Talk to sales</v-btn>
+        </div>
+      </v-card>
+
       <v-row>
         <v-col v-for="f in features" :key="f.title" cols="12" md="4">
           <v-card flat border rounded="lg" class="h-100 d-flex flex-column">
@@ -91,6 +194,53 @@ const metrics = [
                 <div class="text-subtitle-1 font-weight-bold">{{ f.title }}</div>
               </div>
               <p class="text-body-2 text-medium-emphasis mb-0">{{ f.description }}</p>
+            </div>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <MpSectionHeader title="What's included in your account" class="mt-8 mb-4" />
+      <v-row>
+        <v-col v-for="s in includedSurfaces" :key="s.key" cols="12" sm="6" md="3">
+          <v-card
+            flat
+            border
+            rounded="lg"
+            class="dv-included-card h-100 pa-5 d-flex flex-column"
+            :class="{ 'dv-included-card--locked': !s.included }"
+            :to="s.included ? s.to : undefined"
+          >
+            <div class="d-flex align-center justify-space-between mb-3">
+              <v-icon size="20" :color="s.included ? 'primary' : undefined" class="text-medium-emphasis">{{ s.icon }}</v-icon>
+              <v-chip
+                size="small"
+                :color="s.included ? 'success' : undefined"
+                :variant="s.included ? 'tonal' : 'flat'"
+              >
+                <v-icon v-if="!s.included" start size="12">crown</v-icon>
+                {{ s.included ? 'Included' : 'Not included' }}
+              </v-chip>
+            </div>
+            <div class="text-subtitle-2 font-weight-bold mb-1">{{ s.title }}</div>
+            <p class="text-body-2 text-medium-emphasis mb-0 flex-grow-1">{{ s.description }}</p>
+            <div v-if="!s.included" class="d-flex align-center gap-2 mt-3">
+              <v-btn
+                variant="text"
+                size="small"
+                color="primary"
+                class="text-none px-0"
+                :to="{ name: 'Billing', params: { accountId } }"
+              >
+                View plans
+              </v-btn>
+              <v-btn
+                variant="text"
+                size="small"
+                class="text-none px-0"
+                href="mailto:sales@maropost.com?subject=Da%20Vinci%20AI%20upgrade"
+              >
+                Talk to sales
+              </v-btn>
             </div>
           </v-card>
         </v-col>
@@ -146,5 +296,9 @@ const metrics = [
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dv-included-card--locked {
+  opacity: 0.85;
 }
 </style>

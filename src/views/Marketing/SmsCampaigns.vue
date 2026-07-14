@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSmsStore } from '@/stores/useSms'
+import { usePlgStore } from '@/stores/usePlg'
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -13,6 +14,10 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useSmsStore()
+const plg = usePlgStore()
+const accountId = computed(() => route.params.accountId as string)
+const hasSmsAccess = computed(() => plg.entitlements.sms)
+function viewPlans() { router.push({ name: 'Billing', params: { accountId: accountId.value } }) }
 const { smsCampaigns } = storeToRefs(store)
 const search = ref('')
 
@@ -56,16 +61,31 @@ function confirmDelete() {
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="SMS Campaigns"
-      :subtitle="`${smsCampaigns.length} SMS marketing campaigns`"
+      :subtitle="hasSmsAccess ? `${smsCampaigns.length} SMS marketing campaigns` : undefined"
     >
-      <template #actions>
+      <template v-if="hasSmsAccess" #actions>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCompose">
           New SMS Campaign
         </v-btn>
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card v-if="!hasSmsAccess" variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column justify-center">
+      <MpEmptyState
+        icon="message-square"
+        title="Not included in your plan"
+        description="SMS campaigns aren't part of your current plan. Upgrade to reach customers by text."
+        action-label="View plans"
+        action-icon="arrow-right"
+        class="py-10"
+        @action="viewPlans"
+      />
+      <div class="d-flex justify-center pb-8">
+        <v-btn variant="text" class="text-none" href="mailto:sales@maropost.com?subject=SMS%20Campaigns%20%E2%80%94%20plan%20upgrade">Talk to sales</v-btn>
+      </div>
+    </v-card>
+
+    <v-card v-else variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Campaigns"

@@ -20,6 +20,8 @@ import { applyChartPalette, type ChartPalette } from '@/plugins/chartPalette'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
+import { usePlgStore, isPlgDemoPreset } from '@/stores/usePlg'
+import PlgTrialBanner from '@/components/plg/PlgTrialBanner.vue'
 
 // Apply stored accent and theme to Vuetify on initial mount
 const { accent, mode, setAccent, setMode } = useAppTheme()
@@ -69,6 +71,14 @@ watch(() => route.query.chart, (chart) => {
   if (isChartPalette(chart)) chartOverride.value = chart
 })
 watch(() => chartOverride.value ?? 'blue', applyChartPalette, { immediate: true })
+
+// PLG demo state: a ?plg=trial-d3|trial-d12|trial-expired|paid-build|...|grace
+// query param (stakeholder share links) applies a subscription preset to the
+// active account — same idiom as ?nav=, but persisted via the plg store.
+const plgStore = usePlgStore()
+watch(() => route.query.plg, (p) => {
+  if (isPlgDemoPreset(p)) plgStore.applyDemoPreset(p)
+}, { immediate: true })
 
 const drawer = ref(true)
 // Expanded by default; starts in rail when the user chose it via the sidebar
@@ -168,6 +178,7 @@ const copilotDrawerWidth = computed(() => {
       tabindex="-1"
       class="bg-background"
     >
+      <PlgTrialBanner v-if="!isFullPage" />
       <div v-if="showFrame" class="mp-content-frame">
         <v-container fluid class="mp-main-shell">
           <router-view />

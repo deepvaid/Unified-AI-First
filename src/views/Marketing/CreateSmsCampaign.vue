@@ -3,14 +3,19 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 import { useSmsStore, type SmsCampaign } from '@/stores/useSms'
+import { usePlgStore } from '@/stores/usePlg'
 
 const router = useRouter()
 const route = useRoute()
 const store = useSmsStore()
+const plg = usePlgStore()
 
 const accountId = computed(() => route.params.accountId as string)
 const backTo = computed(() => ({ name: 'SmsCampaigns', params: { accountId: accountId.value } }))
+const hasSmsAccess = computed(() => plg.entitlements.sms)
+function viewPlans() { router.push({ name: 'Billing', params: { accountId: accountId.value } }) }
 
 const stepTitles = ['Message', 'Compliance']
 const step = ref(1)
@@ -150,6 +155,29 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
 
 <template>
   <div class="h-100 d-flex flex-column">
+    <template v-if="!hasSmsAccess">
+      <div class="cs-head px-8 pt-6 pb-4 bg-surface border-b">
+        <MpPageHeader title="New SMS Campaign" :back-to="backTo" />
+      </div>
+      <div class="flex-grow-1 d-flex flex-column pa-8 bg-background">
+        <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column justify-center">
+          <MpEmptyState
+            icon="message-square"
+            title="Not included in your plan"
+            description="SMS campaigns aren't part of your current plan. Upgrade to reach customers by text."
+            action-label="View plans"
+            action-icon="arrow-right"
+            class="py-10"
+            @action="viewPlans"
+          />
+          <div class="d-flex justify-center pb-8">
+            <v-btn variant="text" class="text-none" href="mailto:sales@maropost.com?subject=SMS%20Campaigns%20%E2%80%94%20plan%20upgrade">Talk to sales</v-btn>
+          </div>
+        </v-card>
+      </div>
+    </template>
+
+    <template v-else>
     <div class="cs-head px-8 pt-6 pb-4 bg-surface border-b">
       <MpPageHeader :title="pageTitle" :subtitle="`Step ${step} of 2 — ${stepTitles[step - 1]}`" :back-to="backTo">
         <template #actions>
@@ -267,6 +295,7 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
     </div>
 
     <v-snackbar v-model="testSent" color="success" timeout="1600" location="bottom right">Test message sent to {{ testPhone }}</v-snackbar>
+    </template>
   </div>
 </template>
 

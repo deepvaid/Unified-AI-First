@@ -23,8 +23,8 @@ const STORAGE_KEY = 'mp.activeAccountId'
 const DEFAULT_ACCOUNTS: Account[] = [
   {
     id: '2000290',
-    name: 'MMC-MSC-MCC Scooter Village',
-    initials: 'MP',
+    name: 'Scooter Village (All access)',
+    initials: 'SV',
     color: 'primary',
     subscriptions: ['commerce', 'marketing', 'analytics', 'service', 'davinci'],
   },
@@ -38,7 +38,7 @@ const DEFAULT_ACCOUNTS: Account[] = [
   },
   {
     id: '2000292',
-    name: 'Growth Starter',
+    name: 'Growth Starter (No Service Cloud)',
     initials: 'GS',
     color: 'success',
     subscriptions: ['marketing', 'analytics'],
@@ -52,17 +52,17 @@ const DEFAULT_ACCOUNTS: Account[] = [
   },
   {
     id: '2000294',
-    name: 'Bella Cosmetics',
+    name: 'Bella Cosmetics (Commerce + Marketing + Service)',
     initials: 'BC',
     color: 'secondary',
-    subscriptions: ['commerce', 'marketing', 'analytics', 'service'],
+    subscriptions: ['commerce', 'marketing', 'service'],
   },
   {
     id: '2000295',
-    name: 'Cedar & Pine Home',
+    name: 'Cedar & Pine Home (Shopping Assistant only)',
     initials: 'CP',
     color: 'success',
-    subscriptions: ['commerce', 'marketing'],
+    subscriptions: ['commerce'],
   },
   {
     id: '2000296',
@@ -80,10 +80,10 @@ const DEFAULT_ACCOUNTS: Account[] = [
   },
   {
     id: '2000298',
-    name: 'Freshly Baked Co.',
+    name: 'Freshly Baked Co. (Service only)',
     initials: 'FB',
     color: 'success',
-    subscriptions: ['marketing', 'analytics'],
+    subscriptions: ['service'],
   },
   {
     id: '2000299',
@@ -115,20 +115,40 @@ const DEFAULT_ACCOUNTS: Account[] = [
   },
 ]
 
-function readStoredId(fallback: string): string {
+const CUSTOM_ACCOUNTS_KEY = 'mp.accounts.v1'
+
+/** Demo-created accounts (e.g. PLG trial signups) persisted across reloads. */
+function readStoredCustomAccounts(): Account[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(CUSTOM_ACCOUNTS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (a): a is Account =>
+        !!a && typeof a.id === 'string' && typeof a.name === 'string'
+        && Array.isArray(a.subscriptions) && !DEFAULT_ACCOUNTS.some(d => d.id === a.id),
+    )
+  } catch {
+    return []
+  }
+}
+
+function readStoredId(all: Account[], fallback: string): string {
   if (typeof window === 'undefined') return fallback
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
     if (!stored) return fallback
-    return DEFAULT_ACCOUNTS.some(a => a.id === stored) ? stored : fallback
+    return all.some(a => a.id === stored) ? stored : fallback
   } catch {
     return fallback
   }
 }
 
 export const useAccountsStore = defineStore('accounts', () => {
-  const accounts = ref<Account[]>(DEFAULT_ACCOUNTS)
-  const activeId = ref<string>(readStoredId(DEFAULT_ACCOUNTS[0]!.id))
+  const accounts = ref<Account[]>([...DEFAULT_ACCOUNTS, ...readStoredCustomAccounts()])
+  const activeId = ref<string>(readStoredId(accounts.value, DEFAULT_ACCOUNTS[0]!.id))
 
   const activeAccount = computed(
     () => accounts.value.find(a => a.id === activeId.value) ?? accounts.value[0] ?? DEFAULT_ACCOUNTS[0]!,
@@ -138,9 +158,25 @@ export const useAccountsStore = defineStore('accounts', () => {
     return activeAccount.value?.subscriptions.includes(key) ?? false
   }
 
+  function hasAnySubscription(keys: SubscriptionKey[]): boolean {
+    return keys.some(key => hasSubscription(key))
+  }
+
   function switchTo(id: string) {
     if (!accounts.value.some(a => a.id === id)) return
     activeId.value = id
+  }
+
+  function addAccount(account: Account) {
+    if (accounts.value.some(a => a.id === account.id)) return
+    accounts.value = [...accounts.value, account]
+    if (typeof window === 'undefined') return
+    try {
+      const custom = accounts.value.filter(a => !DEFAULT_ACCOUNTS.some(d => d.id === a.id))
+      window.localStorage.setItem(CUSTOM_ACCOUNTS_KEY, JSON.stringify(custom))
+    } catch {
+      // ignore storage quota / disabled errors
+    }
   }
 
   watch(activeId, (next) => {
@@ -152,5 +188,5 @@ export const useAccountsStore = defineStore('accounts', () => {
     }
   })
 
-  return { accounts, activeId, activeAccount, hasSubscription, switchTo }
+  return { accounts, activeId, activeAccount, hasSubscription, hasAnySubscription, switchTo, addAccount }
 })

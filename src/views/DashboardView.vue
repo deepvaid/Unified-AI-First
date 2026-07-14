@@ -18,10 +18,12 @@ import type {
 } from '@/stores/dashboards/types'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
+import { usePlgStore, PLG_ONBOARDING_TASKS } from '@/stores/usePlg'
 
 const route = useRoute()
 const router = useRouter()
 const accountsStore = useAccountsStore()
+const plgStore = usePlgStore()
 const dashboardsStore = useDashboardsStore()
 
 const widgetWizardOpen = ref(false)
@@ -134,7 +136,19 @@ const activeWidgetDraft = computed<DashboardWidgetDraft | null>(() => {
   if (!draft || draft.dashboardId !== activeDashboardId.value) return null
   return draft
 })
-const setupTasks = computed<SetupTask[]>(() => [
+const setupTasks = computed<SetupTask[]>(() => {
+  // PLG trial accounts get the micro-onboarding checklist instead.
+  if (plgStore.isTrial) {
+    return PLG_ONBOARDING_TASKS.map(task => ({
+      title: task.title,
+      description: task.description,
+      icon: task.icon,
+      status: task.status,
+      complete: task.complete,
+      route: { name: task.routeName, params: { accountId: accountId.value } },
+    }))
+  }
+  return [
   {
     title: 'Verify sending DNS',
     description: 'DKIM, SPF, and DMARC are ready.',
@@ -167,7 +181,8 @@ const setupTasks = computed<SetupTask[]>(() => [
     complete: true,
     route: { name: 'AppStore', params: { accountId: accountId.value } },
   },
-])
+  ]
+})
 const completedSetupTasks = computed(() => setupTasks.value.filter((task) => task.complete).length)
 const setupProgress = computed(() => Math.round((completedSetupTasks.value / setupTasks.value.length) * 100))
 

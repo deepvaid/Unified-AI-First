@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
+import { useAccountsStore } from '@/stores/useAccounts'
+import { usePlgStore } from '@/stores/usePlg'
 import { storeToRefs } from 'pinia'
 import type { Chatbot, ChatbotStatus } from '@/stores/useChatbot'
 import MpPageHeader from '@/components/MpPageHeader.vue'
@@ -16,8 +18,19 @@ const router = useRouter()
 const accountId = computed(() => route.params.accountId as string)
 
 const cb = useChatbotStore()
+const accounts = useAccountsStore()
+const plg = usePlgStore()
 const { chatbots } = storeToRefs(cb)
 const maxChatbots = cb.MAX_CHATBOTS
+
+const hasChatbotAccess = computed(() => accounts.hasAnySubscription(['service', 'commerce']))
+function viewPlans() { router.push({ name: 'Billing', params: { accountId: accountId.value } }) }
+
+// Usage-limit layer (applies only to entitled accounts — no-op unless the plan actually caps chatbots)
+const chatbotUsage = computed(() => plg.active.usage.chatbots)
+const chatbotLimit = computed(() => plg.entitlements.chatbotLimit)
+const hasFiniteLimit = computed(() => chatbotLimit.value !== -1)
+const limitReached = computed(() => hasFiniteLimit.value && chatbotUsage.value.used >= chatbotLimit.value)
 
 const active = computed(() => chatbots.value.filter(c => c.status !== 'Archived'))
 const archivedCount = computed(() => chatbots.value.filter(c => c.status === 'Archived').length)
@@ -81,9 +94,9 @@ function doCreate() {
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Chatbots"
-      :subtitle="`${active.length} of ${maxChatbots} chatbots created`"
+      :subtitle="hasChatbotAccess ? `${active.length} of ${maxChatbots} chatbots created` : undefined"
     >
-      <template #actions>
+      <template v-if="hasChatbotAccess" #actions>
         <v-btn
           variant="text"
           class="text-none"
@@ -92,13 +105,43 @@ function doCreate() {
         >
           Archived<span v-if="archivedCount"> ({{ archivedCount }})</span>
         </v-btn>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">Create New Chatbot</v-btn>
+        <v-tooltip v-if="limitReached" text="Chatbot limit reached on your plan" location="top">
+          <template #activator="{ props: tooltipProps }">
+            <span v-bind="tooltipProps">
+              <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" disabled>Create New Chatbot</v-btn>
+            </span>
+          </template>
+        </v-tooltip>
+        <v-btn v-else color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">Create New Chatbot</v-btn>
       </template>
     </MpPageHeader>
 
-    <MpFilterTabs v-model="tab" :tabs="filterTabs" aria-label="Filter chatbots by status" />
+    <MpFilterTabs v-if="hasChatbotAccess" v-model="tab" :tabs="filterTabs" aria-label="Filter chatbots by status" />
 
-    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+    <div v-if="hasChatbotAccess && limitReached" class="cbl-limit-strip d-flex align-center justify-space-between px-4 py-2">
+      <span class="text-body-2">{{ chatbotUsage.used }} of {{ chatbotLimit }} chatbots used on your plan.</span>
+      <v-btn variant="text" size="small" class="text-none" @click="viewPlans">Upgrade</v-btn>
+    </div>
+    <div v-else-if="hasChatbotAccess && hasFiniteLimit" class="text-caption text-medium-emphasis px-1">
+      {{ chatbotUsage.used }} of {{ chatbotLimit }} chatbots used
+    </div>
+
+    <v-card v-if="!hasChatbotAccess" variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column justify-center">
+      <MpEmptyState
+        icon="sparkles"
+        title="Not included in your plan"
+        description="Chatbot is part of Service Cloud and Commerce Cloud. Upgrade your plan to build assistants for your stores."
+        action-label="View plans"
+        action-icon="arrow-right"
+        class="py-10"
+        @action="viewPlans"
+      />
+      <div class="d-flex justify-center pb-8">
+        <v-btn variant="text" class="text-none" href="mailto:sales@maropost.com?subject=Chatbot%20%E2%80%94%20plan%20upgrade">Talk to sales</v-btn>
+      </div>
+    </v-card>
+
+    <v-card v-else variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
         title="Chatbots"
@@ -174,10 +217,10 @@ function doCreate() {
         v-else
         icon="bot-message-square"
         title="No chatbots yet"
-        description="Create a chatbot for a store to start assisting and converting shoppers."
-        action-label="Create New Chatbot"
-        action-icon="plus"
-        @action="openCreate"
+        :description="limitReached ? 'You’ve reached the chatbot limit on your plan. Upgrade to create another.' : 'Create a chatbot for a store to start assisting and converting shoppers.'"
+        :action-label="limitReached ? 'View plans' : 'Create New Chatbot'"
+        :action-icon="limitReached ? 'arrow-right' : 'plus'"
+        @action="limitReached ? viewPlans() : openCreate()"
       />
     </v-card>
 
@@ -208,4 +251,9 @@ function doCreate() {
 <style scoped>
 .num { font-variant-numeric: tabular-nums; }
 .cbl-table :deep(tbody tr) { cursor: pointer; }
+.cbl-limit-strip {
+  background: rgba(var(--v-theme-warning), 0.1);
+  border: 1px solid rgba(var(--v-theme-warning), 0.3);
+  border-radius: 8px;
+}
 </style>

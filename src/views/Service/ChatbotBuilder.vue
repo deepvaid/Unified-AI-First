@@ -2,9 +2,12 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
+import { useAccountsStore } from '@/stores/useAccounts'
 import type { PreChatFieldType, QuickPromptIntent } from '@/stores/useChatbot'
+import type { SubscriptionKey } from '@/stores/useAccounts'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,12 +15,9 @@ const accountId = computed(() => route.params.accountId as string)
 const id = computed(() => Number(route.params.id))
 
 const cb = useChatbotStore()
+const accounts = useAccountsStore()
 const chatbot = computed(() => cb.getById(id.value))
 const cfg = computed(() => chatbot.value!.config)
-
-onMounted(() => {
-  if (!chatbot.value) router.replace({ name: 'ChatbotList', params: { accountId: accountId.value } })
-})
 
 // Static UI config (not reactive state)
 const storeTypes = ['Fashion & Apparel', 'Electronics', 'Home & Living', 'Health & Beauty', 'Food & Beverage', 'Other']
@@ -45,6 +45,45 @@ const catalogSources = [
   { title: 'Full product catalog', value: 'catalog' },
   { title: 'Featured products only', value: 'featured' },
 ]
+
+// Subscription gating: each capability section maps to the cloud that powers it.
+const SECTION_REQUIRES: Partial<Record<Section, SubscriptionKey>> = {
+  shopping: 'commerce',
+  tracking: 'commerce',
+  knowledge: 'service',
+  prechat: 'service',
+}
+function isSectionLocked(key: Section): boolean {
+  const req = SECTION_REQUIRES[key]
+  return !!req && !accounts.hasSubscription(req)
+}
+const LOCK_DESCRIPTIONS: Partial<Record<Section, string>> = {
+  shopping: 'The Shopping assistant uses your product catalog and is part of Commerce Cloud. Upgrade your plan to guide shoppers to products in chat.',
+  tracking: 'Order tracking connects to your Commerce Cloud orders. Upgrade your plan to let shoppers track orders in chat.',
+  knowledge: 'The Knowledge base powers support answers and is part of Service Cloud. Upgrade your plan to answer questions from your content.',
+  prechat: 'Pre-chat forms capture support context and are part of Service Cloud. Upgrade your plan to collect details before a conversation starts.',
+}
+const lockedDescription = computed(() => LOCK_DESCRIPTIONS[section.value] ?? '')
+const salesMailto = 'mailto:sales@maropost.com?subject=Chatbot%20%E2%80%94%20plan%20upgrade'
+function viewPlans() { router.push({ name: 'Billing', params: { accountId: accountId.value } }) }
+
+onMounted(() => {
+  if (!chatbot.value) {
+    router.replace({ name: 'ChatbotList', params: { accountId: accountId.value } })
+    return
+  }
+  // Deep link: honor ?section=<key> when it is a valid, unlocked section.
+  const q = route.query.section
+  const key = typeof q === 'string' ? q : undefined
+  if (key && NAV.some(n => n.key === key) && !isSectionLocked(key as Section)) {
+    section.value = key as Section
+  }
+  // Never land on a locked section — fall back to the first unlocked one.
+  if (isSectionLocked(section.value)) {
+    const firstUnlocked = NAV.find(n => !isSectionLocked(n.key))
+    if (firstUnlocked) section.value = firstUnlocked.key
+  }
+})
 
 const enabledPrompts = computed(() => cfg.value?.quickPrompts.filter(p => p.enabled) ?? [])
 
@@ -167,10 +206,11 @@ type Scenario = 'welcome' | 'shopping' | 'tracking' | 'openchat' | 'prechat'
 const previewScenario = ref<Scenario>('welcome')
 const scenarioTabs = computed(() => {
   const t: { key: Scenario; label: string }[] = [{ key: 'welcome', label: 'Welcome' }]
-  if (cfg.value?.shopping.enabled) t.push({ key: 'shopping', label: 'Shopping' })
-  if (cfg.value?.orderTracking.enabled) t.push({ key: 'tracking', label: 'Order tracking' })
+  // Only preview capabilities the account's plan actually includes.
+  if (cfg.value?.shopping.enabled && !isSectionLocked('shopping')) t.push({ key: 'shopping', label: 'Shopping' })
+  if (cfg.value?.orderTracking.enabled && !isSectionLocked('tracking')) t.push({ key: 'tracking', label: 'Order tracking' })
   t.push({ key: 'openchat', label: 'Open chat' })
-  if (cfg.value?.preChatEnabled) t.push({ key: 'prechat', label: 'Pre-chat' })
+  if (cfg.value?.preChatEnabled && !isSectionLocked('prechat')) t.push({ key: 'prechat', label: 'Pre-chat' })
   return t
 })
 // Editing a section jumps the preview to its matching scenario.
@@ -253,14 +293,37 @@ function sendChat() {
           >
             <v-icon size="18">{{ n.icon }}</v-icon>
             <span>{{ n.label }}</span>
+            <v-tooltip v-if="isSectionLocked(n.key)" text="Upgrade to unlock" location="top">
+              <template #activator="{ props }">
+                <v-icon v-bind="props" size="14" class="cb__nav-crown">crown</v-icon>
+              </template>
+            </v-tooltip>
           </button>
         </nav>
 
         <!-- Settings panel -->
         <div class="cb__panel flex-grow-1 overflow-y-auto pa-6">
           <div class="cb__panel-inner">
+            <!-- PLAN-LOCKED CAPABILITY -->
+            <template v-if="isSectionLocked(section)">
+              <v-card flat border rounded="lg" class="d-flex flex-column justify-center">
+                <MpEmptyState
+                  icon="sparkles"
+                  title="Not included in your plan"
+                  :description="lockedDescription"
+                  action-label="View plans"
+                  action-icon="arrow-right"
+                  class="py-10"
+                  @action="viewPlans"
+                />
+                <div class="d-flex justify-center pb-8">
+                  <v-btn variant="text" class="text-none" :href="salesMailto">Talk to sales</v-btn>
+                </div>
+              </v-card>
+            </template>
+
             <!-- GENERAL -->
-            <template v-if="section === 'general'">
+            <template v-else-if="section === 'general'">
               <v-card flat border rounded="lg" class="pa-6 mb-5">
                 <div class="text-subtitle-1 font-weight-bold mb-1">General</div>
                 <div class="text-body-2 text-medium-emphasis mb-5">Configure your store details shown in the chat widget.</div>
@@ -794,6 +857,7 @@ function sendChat() {
 }
 .cb__nav-item:hover { background: rgba(var(--v-theme-on-surface), 0.04); color: rgb(var(--v-theme-on-surface)); }
 .cb__nav-item--on { background: rgba(var(--v-theme-primary), 0.1); color: rgb(var(--v-theme-primary)); }
+.cb__nav-crown { margin-left: auto; color: rgb(var(--v-theme-warning)); flex-shrink: 0; }
 
 .cb__panel { min-width: 0; }
 .cb__panel-inner { max-width: 640px; }

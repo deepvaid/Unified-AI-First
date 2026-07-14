@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
@@ -7,6 +7,8 @@ import { useUserProfile } from '@/stores/useUserProfile'
 import { useAppTheme, type ShellVariant, type ThemeMode } from '@/composables/useAppTheme'
 import { useMobileNav } from '@/composables/useMobileNav'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
+import PlgTrialChip from '@/components/plg/PlgTrialChip.vue'
+import { usePlgStore, PLG_DEMO_PRESETS, type PlgDemoPreset } from '@/stores/usePlg'
 
 const copilot = useCopilotStore()
 const mobileNav = useMobileNav()
@@ -89,6 +91,14 @@ watch(userMenuOpen, (open) => {
 function switchAccount(id: string) {
   accountsStore.switchTo(id)
   closeUserMenu()
+  // Reflect the chosen account in the URL so it stays the source of truth for
+  // gating; keep the current page, swapping only the accountId.
+  const current = router.currentRoute.value
+  if (current.name && current.params.accountId && current.params.accountId !== id) {
+    router
+      .push({ name: current.name, params: { ...current.params, accountId: id }, query: current.query })
+      .catch(() => router.push({ name: 'DaVinciAI', params: { accountId: id } }))
+  }
 }
 
 const searchSources = computed(() => [
@@ -151,6 +161,26 @@ function openAiExperience() {
 
 function openStub(label: string) {
   showAppbarNotice(`${label} is represented as a prototype action.`)
+}
+
+// PLG demo state switcher — stakeholder-facing demo control, not product UI.
+const plgStore = usePlgStore()
+const plgPresetItems = PLG_DEMO_PRESETS
+const plgPresetValue = ref<PlgDemoPreset | null>(null)
+watch(plgPresetValue, (preset) => {
+  if (!preset) return
+  plgStore.applyDemoPreset(preset)
+  const label = PLG_DEMO_PRESETS.find(p => p.key === preset)?.label ?? preset
+  showAppbarNotice(`PLG demo state applied: ${label}`)
+})
+// The preset selection is per-account; clear the control on account switch.
+watch(() => accountsStore.activeId, () => {
+  plgPresetValue.value = null
+})
+function resetPlgState() {
+  plgStore.resetAccount()
+  plgPresetValue.value = null
+  showAppbarNotice('PLG demo state reset for this account.')
 }
 
 const createOpen = ref(false)
@@ -223,6 +253,92 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   runCreateItem(match)
 }
 
+// ── Command palette (universal search) ──────────────────────────────
+// A keyboard-driven command menu: an AI "Ask" action always leads, then
+// quick create actions + jump-to nav at rest, or filtered results while
+// typing. Rendered as one flat, arrow-navigable list with section labels.
+type PaletteItem = {
+  id: string
+  kind: 'ask' | 'action' | 'nav'
+  sectionLabel: string
+  icon: string
+  title: string
+  subtitle?: string
+  run: () => void
+}
+
+const paletteItems = computed<PaletteItem[]>(() => {
+  const raw = searchQuery.value.trim()
+  const q = raw.toLowerCase()
+  const navItem = (s: (typeof searchSources.value)[number], label: string): PaletteItem => ({
+    id: `nav-${s.title}`, kind: 'nav', sectionLabel: label, icon: s.icon,
+    title: s.title, subtitle: s.subtitle, run: () => navigateToRoute(s.route),
+  })
+  const actionItem = (c: CreateItem, label: string): PaletteItem => ({
+    id: `action-${c.key}`, kind: 'action', sectionLabel: label, icon: c.icon,
+    title: `Create ${c.title.toLowerCase()}`, subtitle: c.sub,
+    run: () => { searchOpen.value = false; c.action() },
+  })
+
+  const items: PaletteItem[] = [{
+    id: 'ask',
+    kind: 'ask',
+    sectionLabel: '',
+    icon: 'sparkles',
+    title: raw ? `Ask Da Vinci about “${raw}”` : 'Ask Da Vinci anything',
+    subtitle: raw
+      ? 'Get an instant answer, automation, or insight'
+      : 'Insights, automations, and answers across this workspace',
+    run: askDaVinciFromSearch,
+  }]
+
+  if (!q) {
+    createItems.value.forEach(c => items.push(actionItem(c, 'Quick actions')))
+    searchSources.value.forEach(s => items.push(navItem(s, 'Jump to')))
+  } else {
+    searchSources.value
+      .filter(s => s.title.toLowerCase().includes(q) || s.subtitle.toLowerCase().includes(q) || s.group.toLowerCase().includes(q))
+      .forEach(s => items.push(navItem(s, 'Results')))
+    createItems.value
+      .filter(c => c.title.toLowerCase().includes(q) || c.sub.toLowerCase().includes(q))
+      .forEach(c => items.push(actionItem(c, 'Actions')))
+  }
+  return items
+})
+
+const activeIndex = ref(0)
+
+// Land on the first real result when a query is present (type → Enter goes
+// there); otherwise highlight the Ask row so Enter asks Da Vinci.
+function resetActiveIndex() {
+  const firstResult = paletteItems.value.findIndex(i => i.kind !== 'ask')
+  activeIndex.value = searchQuery.value.trim() && firstResult !== -1 ? firstResult : 0
+}
+watch(searchQuery, resetActiveIndex)
+watch(searchOpen, (open) => { if (open) resetActiveIndex() })
+
+function moveActive(delta: number) {
+  const n = paletteItems.value.length
+  if (!n) return
+  activeIndex.value = (activeIndex.value + delta + n) % n
+  nextTick(() => {
+    document.getElementById(`palette-opt-${activeIndex.value}`)?.scrollIntoView({ block: 'nearest' })
+  })
+}
+
+function onSearchKeydown(event: KeyboardEvent) {
+  switch (event.key) {
+    case 'ArrowDown': event.preventDefault(); searchOpen.value = true; moveActive(1); break
+    case 'ArrowUp': event.preventDefault(); moveActive(-1); break
+    case 'Enter': {
+      event.preventDefault()
+      paletteItems.value[activeIndex.value]?.run()
+      break
+    }
+    case 'Escape': searchOpen.value = false; break
+  }
+}
+
 </script>
 
 <template>
@@ -252,51 +368,57 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
               class="appbar-search appbar-search--inline"
               bg-color="surface"
               clearable
+              role="combobox"
+              aria-controls="cmd-palette-list"
+              :aria-expanded="searchOpen"
+              :aria-activedescendant="searchOpen ? `palette-opt-${activeIndex}` : undefined"
               @focus="searchOpen = true"
-              @keydown.enter.prevent="askDaVinciFromSearch"
+              @keydown="onSearchKeydown"
             >
               <template #append-inner>
                 <kbd class="appbar-search-cmd">⌘K</kbd>
               </template>
             </v-text-field>
           </template>
-          <v-card width="620" max-width="calc(100vw - 32px)" rounded="lg" flat border class="appbar-search-menu">
-            <div class="appbar-search-menu__hero">
-              <v-icon size="20" color="secondary">sparkles</v-icon>
-              <div class="min-width-0">
-                <div class="text-subtitle-2 font-weight-bold">Ask Da Vinci</div>
-                <div class="text-body-2 text-medium-emphasis text-truncate">
-                  {{ searchQuery.trim() ? `Search and answer "${searchQuery.trim()}" across this workspace` : 'Search dashboards, apps, orders, contacts, campaigns, and settings.' }}
-                </div>
-              </div>
-              <v-btn size="small" color="secondary" variant="flat" class="text-none" @click="askDaVinciFromSearch">
-                Ask
-              </v-btn>
-            </div>
-            <v-divider />
-            <div v-if="filteredSearchGroups.length" class="appbar-search-menu__results">
-              <div v-for="[group, items] in filteredSearchGroups" :key="group" class="appbar-search-group-results">
-                <div class="appbar-search-group__label">{{ group }}</div>
-                <button
-                  v-for="item in items"
-                  :key="`${group}-${item.title}`"
-                  type="button"
-                  class="appbar-search-result"
-                  @click="navigateToRoute(item.route)"
+          <v-card width="640" max-width="calc(100vw - 32px)" rounded="lg" flat border class="cmd-palette">
+            <ul id="cmd-palette-list" class="cmd-palette__list" role="listbox" aria-label="Search results and actions">
+              <template v-for="(item, i) in paletteItems" :key="item.id">
+                <li
+                  v-if="item.sectionLabel && item.sectionLabel !== paletteItems[i - 1]?.sectionLabel"
+                  class="cmd-palette__section-label"
+                  role="presentation"
                 >
-                  <v-avatar size="30" variant="tonal" color="primary">
-                    <v-icon size="17">{{ item.icon }}</v-icon>
-                  </v-avatar>
-                  <span class="min-width-0">
-                    <strong>{{ item.title }}</strong>
-                    <small>{{ item.subtitle }}</small>
-                  </span>
-                  <v-icon size="16">arrow-right</v-icon>
-                </button>
-              </div>
-            </div>
-            <div v-else class="pa-5 text-center text-body-2 text-medium-emphasis">
-              No local prototype results. Ask Da Vinci to explore this request.
+                  {{ item.sectionLabel }}
+                </li>
+                <li role="presentation">
+                  <button
+                    :id="`palette-opt-${i}`"
+                    type="button"
+                    role="option"
+                    :aria-selected="i === activeIndex"
+                    class="cmd-row"
+                    :class="{ 'cmd-row--active': i === activeIndex, 'cmd-row--ask': item.kind === 'ask' }"
+                    @click="item.run()"
+                    @mouseenter="activeIndex = i"
+                  >
+                    <span class="cmd-row__icon" :class="{ 'cmd-row__icon--ask': item.kind === 'ask' }">
+                      <v-icon size="17">{{ item.icon }}</v-icon>
+                    </span>
+                    <span class="cmd-row__body">
+                      <span class="cmd-row__title">{{ item.title }}</span>
+                      <span v-if="item.subtitle" class="cmd-row__sub">{{ item.subtitle }}</span>
+                    </span>
+                    <kbd v-if="i === activeIndex" class="cmd-row__enter">↵</kbd>
+                    <v-icon v-else-if="item.kind === 'nav'" size="15" class="cmd-row__chev">arrow-right</v-icon>
+                  </button>
+                </li>
+              </template>
+            </ul>
+            <div class="cmd-palette__footer">
+              <span class="cmd-hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+              <span class="cmd-hint"><kbd>↵</kbd> Open</span>
+              <span class="cmd-hint"><kbd>esc</kbd> Close</span>
+              <span class="cmd-palette__brand"><v-icon size="13" color="secondary">sparkles</v-icon> Da Vinci</span>
             </div>
           </v-card>
         </v-menu>
@@ -314,6 +436,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
       <v-spacer />
 
       <div class="appbar-utilities">
+        <PlgTrialChip />
         <v-menu v-model="createOpen" location="bottom end" offset="8" :close-on-content-click="false">
           <template #activator="{ props }">
             <button
@@ -475,6 +598,20 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                   No accounts match "{{ accountSearch.trim() }}"
                 </div>
               </div>
+              <div class="um-divider" />
+              <button
+                type="button"
+                class="um-item um-start-trial"
+                @click="$router.push({ name: 'Signup' }); closeUserMenu()"
+              >
+                <v-avatar size="28" variant="tonal" color="primary" class="flex-shrink-0 um-item__avatar">
+                  <v-icon size="15">plus</v-icon>
+                </v-avatar>
+                <div class="um-item__body">
+                  <div class="um-item__title">Start free trial</div>
+                  <div class="um-item__sub">Create a new workspace — 14 days free</div>
+                </div>
+              </button>
             </div>
 
             <div class="user-menu-card">
@@ -603,6 +740,36 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
                     @update:model-value="setFrame($event ? 'on' : 'off')"
                   />
                 </div>
+                <div class="um-item" role="group" aria-label="PLG demo state">
+                  <v-icon class="um-item__icon" size="20">flask-conical</v-icon>
+                  <div class="um-item__body">
+                    <div class="um-item__title">PLG demo state</div>
+                    <div class="um-item__sub">Demo controls — not part of the product</div>
+                  </div>
+                </div>
+                <div class="um-plg-demo">
+                  <v-select
+                    v-model="plgPresetValue"
+                    :items="plgPresetItems"
+                    item-title="label"
+                    item-value="key"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    placeholder="Apply a subscription state…"
+                    aria-label="PLG demo preset"
+                    class="um-plg-demo__select"
+                  />
+                  <v-btn
+                    size="small"
+                    variant="text"
+                    class="text-none"
+                    :disabled="!plgStore.hasExplicitState"
+                    @click="resetPlgState"
+                  >
+                    Reset
+                  </v-btn>
+                </div>
                 <button type="button" class="um-item um-item--danger" @click="openStub('Sign out'); closeUserMenu()">
                   <v-icon class="um-item__icon" size="20">log-out</v-icon>
                   <div class="um-item__body"><div class="um-item__title">Sign Out</div></div>
@@ -717,13 +884,16 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   height: 36px;
   border-radius: var(--r-pill);
   color: var(--ink);
+  /* Faint resting surface so the icons read as tappable controls, not glyphs
+     floating on the light bar. Theme-adaptive via on-surface alpha. */
+  background: rgba(var(--v-theme-on-surface), 0.05);
   opacity: 1;
   transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 
 .appbar-utilities :deep(.appbar-action-btn:hover),
 .appbar-utilities :deep(.appbar-action-btn:focus-visible) {
-  background: rgba(var(--v-theme-on-surface), 0.07);
+  background: rgba(var(--v-theme-on-surface), 0.12);
   color: var(--ink);
   outline: none;
 }
@@ -741,7 +911,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   width: 1px;
   height: 22px;
   margin-inline: 8px;
-  background: var(--hairline);
+  background: rgba(var(--v-theme-on-surface), 0.14);
   flex-shrink: 0;
 }
 
@@ -752,10 +922,13 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   gap: 6px;
   height: 32px;
   padding: 5px 12px;
-  border: 1px solid var(--hairline);
+  /* --hairline is tuned for white cards; on the light bar it vanishes (≈1.05:1).
+     A stronger on-surface edge + faint lift make the pill read as a control. */
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
   border-radius: var(--r-pill);
   background: var(--surface-1);
   color: var(--ink);
+  box-shadow: 0 1px 2px rgba(var(--v-theme-on-surface), 0.05);
   font: inherit;
   appearance: none;
   cursor: pointer;
@@ -826,6 +999,8 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   border: 0;
   border-radius: 50%;
   background: transparent;
+  /* Resting ring separates the avatar from the bar and signals it's a control. */
+  box-shadow: 0 0 0 1px rgba(var(--v-theme-on-surface), 0.12);
   cursor: pointer;
   font: inherit;
   appearance: none;
@@ -833,7 +1008,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 .user-pill:hover {
-  box-shadow: 0 0 0 3px var(--surface-2);
+  box-shadow: 0 0 0 3px rgba(var(--v-theme-on-surface), 0.14);
 }
 
 .user-pill:focus-visible {
@@ -952,6 +1127,22 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 
 .um-section--last {
   padding-bottom: 10px;
+}
+
+.um-plg-demo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 10px 44px;
+}
+
+.um-plg-demo__select {
+  flex: 1;
+  min-width: 0;
+}
+
+.um-plg-demo__select :deep(.v-field) {
+  font-size: 13px;
 }
 
 .um-subheader {
@@ -1170,7 +1361,7 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 :deep(.appbar-search .v-field) {
   border-radius: var(--r-pill);
   background: var(--surface-2);
-  border: 1px solid var(--hairline);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.14);
 }
 
 :deep(.appbar-search .v-field__outline) {
@@ -1221,24 +1412,160 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   white-space: nowrap;
 }
 
-.appbar-search-menu {
-  border-color: var(--hairline);
+/* ── Command palette (desktop universal search) ─────────────────────── */
+.cmd-palette {
+  border-color: rgba(var(--v-theme-on-surface), 0.10);
   overflow: hidden;
+  box-shadow:
+    0 12px 40px rgba(var(--v-theme-on-surface), 0.14),
+    0 2px 8px rgba(var(--v-theme-on-surface), 0.06);
 }
 
-.appbar-search-menu__hero {
+.cmd-palette__list {
+  max-height: min(60vh, 480px);
+  overflow-y: auto;
+  padding: 6px;
+  margin: 0;
+  list-style: none;
+}
+
+.cmd-palette__section-label {
+  padding: 10px 10px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.cmd-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 14px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  scroll-margin: 6px;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.cmd-row--active {
+  background: rgba(var(--v-theme-on-surface), 0.06);
+}
+
+.cmd-row:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent) 45%, transparent);
+}
+
+.cmd-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  color: var(--ink);
+}
+
+.cmd-row--active .cmd-row__icon {
+  background: rgba(var(--v-theme-on-surface), 0.11);
+}
+
+.cmd-row__icon--ask,
+.cmd-row--active .cmd-row__icon--ask {
+  background: linear-gradient(135deg, rgb(var(--v-theme-primary)), rgb(var(--v-theme-secondary)));
+  color: #fff;
+}
+
+.cmd-row__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cmd-row__title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmd-row--ask .cmd-row__title {
+  font-weight: 700;
+}
+
+.cmd-row__sub {
+  margin-top: 1px;
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmd-row__chev {
+  color: var(--muted);
+  opacity: 0;
+}
+
+.cmd-row:hover .cmd-row__chev {
+  opacity: 0.55;
+}
+
+.cmd-row__enter,
+.cmd-palette__footer kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  border-radius: 5px;
+  background: var(--surface-1);
+  color: var(--muted);
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.cmd-palette__footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   background: var(--surface-2);
 }
 
-.appbar-search-menu__results {
-  max-height: 420px;
-  overflow: auto;
-  padding: 8px;
+.cmd-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.cmd-palette__brand {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
 }
 
 .appbar-search-group-results + .appbar-search-group-results {
@@ -1412,12 +1739,14 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--muted);
+  border-radius: var(--r-pill);
+  /* Match the sibling action buttons: faint resting surface + dark glyph so the
+     whole utility cluster reads as one row of tappable controls. */
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  color: var(--ink);
   font: inherit;
   appearance: none;
   cursor: pointer;
@@ -1426,12 +1755,12 @@ function handleCreateMenuKeydown(event: KeyboardEvent) {
 }
 
 .appbar-create-btn :deep(svg) {
-  stroke-width: 2;
+  stroke-width: 2.25;
 }
 
 .appbar-create-btn:hover,
 .appbar-create-btn--open {
-  background: var(--surface-2);
+  background: rgba(var(--v-theme-on-surface), 0.12);
   color: var(--ink);
 }
 

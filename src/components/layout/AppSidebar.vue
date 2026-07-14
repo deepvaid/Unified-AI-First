@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
+import { usePlgStore, PLG_ONBOARDING_TASKS } from '@/stores/usePlg'
 import { Crown } from 'lucide-vue-next'
 import maropostLogo from '@/assets/maropost-logo.svg?raw'
 import { useMobileNav } from '@/composables/useMobileNav'
@@ -17,9 +18,15 @@ const emit = defineEmits<{
 }>()
 
 const accountsStore = useAccountsStore()
+const plgStore = usePlgStore()
+
+// PLG trial onboarding — pinned "Get started" entry above the nav.
+const onboardingDone = PLG_ONBOARDING_TASKS.filter(t => t.complete).length
+const onboardingTotal = PLG_ONBOARDING_TASKS.length
+const onboardingProgress = Math.round((onboardingDone / onboardingTotal) * 100)
 
 // ─── Navigation Structure ────────────────────────────────────
-interface NavItem { title: string; route: string; external?: boolean }
+interface NavItem { title: string; route: string; external?: boolean; requires?: SubscriptionKey | SubscriptionKey[]; plgLock?: 'sms' }
 interface NavSubGroup { title: string; isSubGroup: true; items: NavItem[] }
 interface NavGroup {
   title: string
@@ -115,9 +122,9 @@ function buildNavGroups(accountId: string): NavGroup[] {
           isSubGroup: true,
           items: [
             { title: 'Email Campaigns', route: `/accounts/${accountId}/campaigns` },
-            { title: 'SMS Campaigns', route: `/accounts/${accountId}/sms_campaigns` },
+            { title: 'SMS Campaigns', route: `/accounts/${accountId}/sms_campaigns`, plgLock: 'sms' },
             { title: 'Transactional Email', route: `/accounts/${accountId}/transactional_campaigns` },
-            { title: 'Transactional SMS', route: `/accounts/${accountId}/transactional_sms` },
+            { title: 'Transactional SMS', route: `/accounts/${accountId}/transactional_sms`, plgLock: 'sms' },
             { title: 'Campaign Tags', route: `/accounts/${accountId}/campaign_tags` },
           ],
         },
@@ -225,20 +232,19 @@ function buildNavGroups(accountId: string): NavGroup[] {
       singleRoute: `/accounts/${accountId}/service`,
       items: [
         { title: 'Tickets', route: `/accounts/${accountId}/service` },
-        { title: 'Chatbots', route: `/accounts/${accountId}/chatbot` },
       ],
     },
     {
       title: 'Da Vinci AI',
       icon: 'sparkles',
       badge: 'NEW',
-      requires: 'davinci',
       singleRoute: `/accounts/${accountId}/da-vinci`,
       dividerAfter: true,
       items: [
         { title: 'Overview', route: `/accounts/${accountId}/da-vinci` },
-        { title: 'Ask Da Vinci', route: `/accounts/${accountId}/da-vinci/copilot` },
-        { title: 'AI experience', route: `/accounts/${accountId}/da-vinci/experience` },
+        { title: 'Chatbots', route: `/accounts/${accountId}/chatbot`, requires: ['service', 'commerce'] },
+        { title: 'Ask Da Vinci', route: `/accounts/${accountId}/da-vinci/copilot`, requires: 'davinci' },
+        { title: 'AI experience', route: `/accounts/${accountId}/da-vinci/experience`, requires: 'davinci' },
       ],
     },
     {
@@ -362,6 +368,15 @@ function activateNavItem(item: NavItem) {
 
 function isLocked(group: NavGroup) {
   return !!group.requires && !accountsStore.hasSubscription(group.requires)
+}
+
+function isItemLocked(item: NavItem): boolean {
+  // PLG entitlement locks (e.g. SMS excluded from trials / Build tier).
+  if (item.plgLock === 'sms' && !plgStore.entitlements.sms) return true
+  if (!item.requires) return false
+  return Array.isArray(item.requires)
+    ? !accountsStore.hasAnySubscription(item.requires)
+    : !accountsStore.hasSubscription(item.requires)
 }
 
 function hasSubGroups(group: NavGroup) {
@@ -594,6 +609,43 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
       </v-tooltip>
     </div>
 
+    <!-- PLG trial onboarding — pinned Get Started entry -->
+    <template v-if="plgStore.isTrial && !plgStore.isExpired">
+      <button
+        v-if="!effectiveRail"
+        type="button"
+        class="sidebar-get-started"
+        aria-label="Get started checklist"
+        @click="goTo(`/accounts/${resolvedAccountId}/dashboard`)"
+      >
+        <div class="sidebar-get-started__row">
+          <v-icon size="16" color="primary">rocket</v-icon>
+          <span class="sidebar-get-started__title">Get started</span>
+          <span class="sidebar-get-started__count">{{ onboardingDone }}/{{ onboardingTotal }}</span>
+        </div>
+        <v-progress-linear
+          :model-value="onboardingProgress"
+          color="primary"
+          height="4"
+          rounded
+          class="sidebar-get-started__bar"
+        />
+      </button>
+      <v-tooltip v-else location="end" :text="`Get started · ${onboardingDone} of ${onboardingTotal} tasks`">
+        <template #activator="{ props: tipProps }">
+          <button
+            v-bind="tipProps"
+            type="button"
+            class="sidebar-get-started sidebar-get-started--rail"
+            aria-label="Get started checklist"
+            @click="goTo(`/accounts/${resolvedAccountId}/dashboard`)"
+          >
+            <v-icon size="16" color="primary">rocket</v-icon>
+          </button>
+        </template>
+      </v-tooltip>
+    </template>
+
     <!-- Navigation List -->
     <div class="sidebar-scroll">
     <v-list density="compact" class="py-1">
@@ -762,6 +814,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               @click="('route' in item) && activateNavItem(item as NavItem)"
             ><span>{{ ('route' in item) ? item.title : '' }}</span>
               <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
+              <v-tooltip v-if="'route' in item && isItemLocked(item as NavItem)" location="end" text="Upgrade to unlock">
+                <template #activator="{ props: lockTipProps }">
+                  <Crown v-bind="lockTipProps" :size="12" :stroke-width="1.75" />
+                </template>
+              </v-tooltip>
             </button>
           </div>
 
@@ -794,6 +851,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                     @mouseenter="railHoveredSubGroup = null"
                   ><span>{{ child.title }}</span>
                     <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
+                    <v-tooltip v-if="isItemLocked(child)" location="end" text="Upgrade to unlock">
+                      <template #activator="{ props: lockTipProps }">
+                        <Crown v-bind="lockTipProps" :size="12" :stroke-width="1.75" />
+                      </template>
+                    </v-tooltip>
                   </button>
                 </template>
               </template>
@@ -809,6 +871,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                   @mouseenter="railHoveredSubGroup = null"
                 ><span>{{ flat.title }}</span>
                   <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
+                  <v-tooltip v-if="isItemLocked(flat)" location="end" text="Upgrade to unlock">
+                    <template #activator="{ props: lockTipProps }">
+                      <Crown v-bind="lockTipProps" :size="12" :stroke-width="1.75" />
+                    </template>
+                  </v-tooltip>
                 </button>
               </template>
             </div>
@@ -826,6 +893,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                 @click="goTo(child.route)"
               ><span>{{ child.title }}</span>
                 <Crown v-if="isLocked(group)" :size="12" :stroke-width="1.75" />
+                <v-tooltip v-if="isItemLocked(child)" location="end" text="Upgrade to unlock">
+                  <template #activator="{ props: lockTipProps }">
+                    <Crown v-bind="lockTipProps" :size="12" :stroke-width="1.75" />
+                  </template>
+                </v-tooltip>
               </button>
             </div>
           </div>
@@ -858,6 +930,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
           @click.stop="'route' in item && onFlyoutChildClick(item as NavItem)"
         ><span>{{ 'route' in item ? (item as NavItem).title : '' }}</span>
           <Crown v-if="isLocked(flyoutGroup!)" :size="12" :stroke-width="1.75" />
+          <v-tooltip v-if="'route' in item && isItemLocked(item as NavItem)" location="end" text="Upgrade to unlock">
+            <template #activator="{ props: lockTipProps }">
+              <Crown v-bind="lockTipProps" :size="12" :stroke-width="1.75" />
+            </template>
+          </v-tooltip>
         </button>
       </div>
 
@@ -889,6 +966,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                 @click.stop="onFlyoutChildClick(child); expandedHoveredCascade = null"
               ><span>{{ child.title }}</span>
                 <Crown v-if="isLocked(flyoutGroup!)" :size="12" :stroke-width="1.75" />
+                <v-tooltip v-if="isItemLocked(child)" location="end" text="Upgrade to unlock">
+                  <template #activator="{ props: lockTipProps }">
+                    <Crown v-bind="lockTipProps" :size="12" :stroke-width="1.75" />
+                  </template>
+                </v-tooltip>
               </button>
             </template>
           </template>
@@ -905,6 +987,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
               @click.stop="onFlyoutChildClick(flat); expandedHoveredCascade = null"
             ><span>{{ flat.title }}</span>
               <Crown v-if="isLocked(flyoutGroup!)" :size="12" :stroke-width="1.75" />
+              <v-tooltip v-if="isItemLocked(flat)" location="end" text="Upgrade to unlock">
+                <template #activator="{ props: lockTipProps }">
+                  <Crown v-bind="lockTipProps" :size="12" :stroke-width="1.75" />
+                </template>
+              </v-tooltip>
             </button>
           </template>
         </div>
@@ -923,6 +1010,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
             @click.stop="onFlyoutChildClick(child)"
           ><span>{{ child.title }}</span>
             <Crown v-if="isLocked(flyoutGroup!)" :size="12" :stroke-width="1.75" />
+            <v-tooltip v-if="isItemLocked(child)" location="end" text="Upgrade to unlock">
+              <template #activator="{ props: lockTipProps }">
+                <Crown v-bind="lockTipProps" :size="12" :stroke-width="1.75" />
+              </template>
+            </v-tooltip>
           </button>
         </div>
       </div>
@@ -974,6 +1066,64 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .sidebar-header--rail {
   justify-content: center;
   padding: 0 8px;
+}
+
+/* PLG trial onboarding — pinned Get Started entry */
+.sidebar-get-started {
+  flex-shrink: 0;
+  display: block;
+  width: calc(100% - 16px);
+  margin: 2px 8px 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--sidebar-border);
+  border-radius: 10px;
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar-get-started:hover,
+.sidebar-get-started:focus-visible {
+  background: var(--sidebar-active-bg);
+}
+
+.sidebar-get-started:focus-visible {
+  outline: 2px solid var(--sidebar-focus-ring);
+  outline-offset: 1px;
+}
+
+.sidebar-get-started__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-get-started__title {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sidebar-get-started__count {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.sidebar-get-started__bar {
+  margin-top: 7px;
+}
+
+.sidebar-get-started--rail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 2px auto 6px;
+  padding: 0;
 }
 
 .sidebar-toggle-pill {

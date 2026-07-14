@@ -1,9 +1,24 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useAccountsStore } from '@/stores/useAccounts'
+import {
+  usePlgStore,
+  PLAN_CATALOG,
+  ADD_ON_CATALOG,
+  tierRank,
+  type PlgCloud,
+  type PlanTier,
+  type AddOnDef,
+} from '@/stores/usePlg'
 
 const route = useRoute()
+const router = useRouter()
+const accountsStore = useAccountsStore()
+const plg = usePlgStore()
 const accountId = computed(() => {
   const id = Array.isArray(route.params.accountId) ? route.params.accountId[0] : route.params.accountId
   return id ?? '2000290'
@@ -22,19 +37,13 @@ const tabs: { value: BillingTab; label: string }[] = [
 
 const activeTab = ref<BillingTab>('overview')
 
-const products = [
-  { name: 'Marketing Cloud',  tier: 'Enterprise', icon: 'megaphone',     active: true },
-  { name: 'Commerce Cloud',   tier: 'Pro',        icon: 'shopping-cart', active: true },
-  { name: 'Service Cloud',    tier: 'Starter',    icon: 'headset',       active: true },
-  { name: 'Data Platform',    tier: 'Add-on',     icon: 'database',      active: false },
-]
-
-const usage = [
-  { label: 'Emails Sent',     used: '12.4M',   limit: '50M',        pct: 25 },
-  { label: 'Contacts',        used: '128,430', limit: 'Unlimited',  pct: 0 },
-  { label: 'SMS Sent',        used: '3,240',   limit: '10,000',     pct: 32 },
-  { label: 'Support Tickets', used: '847',     limit: 'Unlimited',  pct: 0 },
-]
+const products = computed(() => [
+  { name: 'Marketing Cloud',  tier: 'Enterprise', icon: 'megaphone',     active: accountsStore.hasSubscription('marketing') },
+  { name: 'Commerce Cloud',   tier: 'Pro',        icon: 'shopping-cart', active: accountsStore.hasSubscription('commerce') },
+  { name: 'Service Cloud',    tier: 'Starter',    icon: 'headset',       active: accountsStore.hasSubscription('service') },
+  { name: 'Da Vinci AI',      tier: 'Add-on',     icon: 'sparkles',      active: accountsStore.hasSubscription('davinci') },
+  { name: 'Data Platform',    tier: 'Add-on',     icon: 'database',      active: accountsStore.hasSubscription('analytics') },
+])
 
 const company = [
   { label: 'Billing company', value: 'Texo Commerce Pty Ltd' },
@@ -55,6 +64,266 @@ const documents = [
   { name: 'W-9 / Tax Form',           meta: 'PDF · Updated Feb 12, 2026' },
   { name: 'Data Processing Addendum', meta: 'PDF · Jan 1, 2026' },
 ]
+
+// ─── Shared helpers ──────────────────────────────────────────────────────────
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function formatUsageNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+  return n.toLocaleString('en-US')
+}
+
+const snackbar = ref(false)
+const snackbarText = ref('')
+function notify(text: string) {
+  snackbarText.value = text
+  snackbar.value = true
+}
+
+function goToPlans() {
+  router.push({ name: 'Plans', params: { accountId: accountId.value } })
+}
+
+// ─── Overview: status strip ──────────────────────────────────────────────────
+
+const GRACE_PERIOD_DAYS = 7
+function daysSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+}
+
+function updatePayment() {
+  notify('Payment method update — coming soon.')
+}
+
+function resumeSubscription() {
+  notify('Resuming your subscription — coming soon.')
+}
+
+const statusStrip = computed(() => {
+  const s = plg.active
+  if (s.status === 'grace') {
+    const daysLeft = Math.max(0, GRACE_PERIOD_DAYS - (s.gracePaymentFailedAt ? daysSince(s.gracePaymentFailedAt) : 0))
+    return {
+      tone: 'error' as const,
+      icon: 'alert-circle',
+      text: `Your last payment failed. Update your payment method within ${daysLeft} days to keep access.`,
+      actionLabel: 'Update payment',
+      action: updatePayment,
+    }
+  }
+  if (s.status === 'cancelled_pending') {
+    return {
+      tone: 'warning' as const,
+      icon: 'alert-triangle',
+      text: `Your subscription is cancelled. You keep full access until ${formatDate(s.cancelAt ?? s.renewsAt ?? s.trialEndsAt)}.`,
+      actionLabel: 'Resume subscription',
+      action: resumeSubscription,
+    }
+  }
+  if (s.status === 'trialing') {
+    return {
+      tone: 'primary' as const,
+      icon: 'sparkles',
+      text: `You're on a free trial — ${plg.daysLeft} days left.`,
+      actionLabel: 'Upgrade',
+      action: goToPlans,
+    }
+  }
+  return null
+})
+
+// ─── Overview: plan banner (slim summary strip) ──────────────────────────────
+
+const cycleLabelText = computed(() => (plg.active.cycle === 'annual' ? 'Annual' : 'Monthly'))
+
+const bannerChipText = computed(() => (plg.isTrial ? 'FREE TRIAL' : `${cycleLabelText.value.toUpperCase()} BILLING`))
+
+const bannerHeadline = computed(() => {
+  const s = plg.active
+  if (plg.isTrial) return plg.isExpired ? 'Trial expired' : `${plg.daysLeft} days left in trial`
+  if (s.status === 'grace') return 'Payment failed'
+  if (s.status === 'cancelled_pending') return 'Subscription cancelled'
+  return 'Active subscription'
+})
+
+const bannerMeta = computed(() => {
+  const s = plg.active
+  const cloudCount = Object.keys(s.tiers).length
+  const cloudsText = plg.isTrial
+    ? 'Marketing · Commerce · Service'
+    : `${cloudCount} cloud${cloudCount === 1 ? '' : 's'} subscribed`
+  if (!plg.isTrial && s.status === 'active' && s.renewsAt) {
+    return `${cloudsText} · Renews ${formatDate(s.renewsAt)}`
+  }
+  return cloudsText
+})
+
+// ─── Overview: current subscriptions ─────────────────────────────────────────
+
+const CLOUD_ORDER: PlgCloud[] = ['marketing', 'commerce', 'service']
+
+const subscriptionCards = computed(() => {
+  const s = plg.active
+  const clouds = plg.isTrial ? CLOUD_ORDER : CLOUD_ORDER.filter(c => s.tiers[c])
+  return clouds.map((cloud) => {
+    const catalog = PLAN_CATALOG.find(c => c.cloud === cloud)!
+    const tier = s.tiers[cloud]
+    const planDef = tier ? catalog.plans.find(p => p.tier === tier) : undefined
+
+    let chipText = 'Active'
+    let chipColor = 'success'
+    if (s.status === 'grace') {
+      chipText = 'Payment failed'
+      chipColor = 'error'
+    } else if (s.status === 'cancelled_pending') {
+      chipText = `Ends ${formatDate(s.cancelAt ?? s.renewsAt ?? s.trialEndsAt)}`
+      chipColor = 'warning'
+    } else if (plg.isTrial) {
+      chipText = `${plg.daysLeft} days left`
+      chipColor = 'primary'
+    }
+
+    return {
+      cloud,
+      name: catalog.name,
+      icon: catalog.icon,
+      planLabel: plg.isTrial ? 'Free Trial' : (planDef?.name ?? 'Free Trial'),
+      startDate: formatDate(s.startedAt),
+      cycleLabel: cycleLabelText.value,
+      chipText,
+      chipColor,
+      canDowngrade: !plg.isTrial && !!tier && tierRank(tier) > 0,
+    }
+  })
+})
+
+// ─── Overview: downgrade flow ─────────────────────────────────────────────────
+
+interface DowngradeTarget {
+  cloud: PlgCloud
+  cloudName: string
+  targetTier: PlanTier
+  targetTierName: string
+  lostFeatures: string[]
+}
+
+const downgradeDialogOpen = ref(false)
+const downgradeTarget = ref<DowngradeTarget | null>(null)
+
+function openDowngrade(cloud: PlgCloud) {
+  const tier = plg.active.tiers[cloud]
+  if (!tier) return
+  const catalog = PLAN_CATALOG.find(c => c.cloud === cloud)!
+  const idx = catalog.plans.findIndex(p => p.tier === tier)
+  const targetPlan = catalog.plans[idx - 1]
+  if (!targetPlan) return
+  const currentPlan = catalog.plans[idx]!
+  const lostFeatures = currentPlan.features
+    .filter(f => f.included && !targetPlan.features.find(tf => tf.label === f.label)?.included)
+    .map(f => f.label)
+    .slice(0, 4)
+
+  downgradeTarget.value = {
+    cloud,
+    cloudName: catalog.name,
+    targetTier: targetPlan.tier,
+    targetTierName: targetPlan.name,
+    lostFeatures,
+  }
+  downgradeDialogOpen.value = true
+}
+
+const downgradeTitle = computed(() => (downgradeTarget.value ? `Downgrade ${downgradeTarget.value.cloudName}?` : ''))
+
+const downgradeMessage = computed(() => {
+  const t = downgradeTarget.value
+  if (!t) return ''
+  if (!t.lostFeatures.length) return `Switch to ${t.targetTierName}?`
+  return `Downgrading to ${t.targetTierName} removes: ${t.lostFeatures.join(', ')}.`
+})
+
+function confirmDowngrade() {
+  if (!downgradeTarget.value) return
+  plg.changeTier(downgradeTarget.value.cloud, downgradeTarget.value.targetTier)
+  notify('Plan updated')
+}
+
+// ─── Overview: add-ons ────────────────────────────────────────────────────────
+
+const addOnRows = computed(() =>
+  ADD_ON_CATALOG.map(a => ({
+    ...a,
+    owned: plg.active.addOns.includes(a.key),
+    priceLabel: a.monthly === null ? 'Custom pricing' : `$${a.monthly}/mo`,
+  })),
+)
+
+const addonDrawerOpen = ref(false)
+const selectedAddon = ref<AddOnDef | null>(null)
+
+function openAddonDrawer(addon: AddOnDef) {
+  selectedAddon.value = addon
+  addonDrawerOpen.value = true
+}
+
+function confirmPurchase() {
+  if (!selectedAddon.value) return
+  plg.purchaseAddOn(selectedAddon.value.key)
+  notify(`${selectedAddon.value.name} added`)
+  addonDrawerOpen.value = false
+}
+
+function talkToSales() {
+  notify('Our team will reach out.')
+}
+
+// ─── Overview: cancel flow ────────────────────────────────────────────────────
+
+const cancelDrawerOpen = ref(false)
+const cancelReason = ref('')
+const cancelComment = ref('')
+const cancelReasons = ['Too expensive', 'Missing features', 'Switching provider', 'Just exploring', 'Other']
+
+function openCancelDrawer() {
+  cancelReason.value = ''
+  cancelComment.value = ''
+  cancelDrawerOpen.value = true
+}
+
+function confirmCancel() {
+  plg.cancelSubscription({ reason: cancelReason.value || 'Other', comment: cancelComment.value || undefined })
+  notify('Subscription cancelled')
+  cancelDrawerOpen.value = false
+}
+
+// ─── Usage & Limits ───────────────────────────────────────────────────────────
+
+function usageRow(label: string, meter: { used: number; limit: number }) {
+  const unlimited = meter.limit === -1
+  const pct = unlimited || meter.limit <= 0 ? 0 : Math.min(100, Math.round((meter.used / meter.limit) * 100))
+  return {
+    label,
+    used: formatUsageNumber(meter.used),
+    limit: unlimited ? 'Unlimited' : formatUsageNumber(meter.limit),
+    pct,
+    unlimited,
+  }
+}
+
+const usageRows = computed(() => {
+  const u = plg.active.usage
+  return [
+    usageRow('Emails Sent', u.emailSends),
+    usageRow('SMS Sent', u.sms),
+    usageRow('AI Tokens', u.aiTokens),
+    usageRow('Chatbots', u.chatbots),
+    { label: 'Contacts', used: '128,430', limit: 'Unlimited', pct: 0, unlimited: true },
+    { label: 'Support Tickets', used: '847', limit: 'Unlimited', pct: 0, unlimited: true },
+  ]
+})
 </script>
 
 <template>
@@ -75,17 +344,57 @@ const documents = [
 
     <!-- Overview -->
     <section v-if="activeTab === 'overview'" class="billing-panel">
+      <div v-if="statusStrip" class="status-strip" :class="`status-strip--${statusStrip.tone}`">
+        <v-icon size="18">{{ statusStrip.icon }}</v-icon>
+        <span class="status-strip__text">{{ statusStrip.text }}</span>
+        <v-btn
+          variant="flat"
+          size="small"
+          class="text-none"
+          :color="statusStrip.tone"
+          @click="statusStrip.action"
+        >
+          {{ statusStrip.actionLabel }}
+        </v-btn>
+      </div>
+
       <div class="plan-banner">
         <div>
-          <v-chip size="small" variant="flat" class="plan-banner__chip">MARKETING CLOUD ENTERPRISE</v-chip>
-          <div class="plan-banner__price">$1,499<span class="plan-banner__cycle"> / month</span></div>
-          <div class="plan-banner__meta">50M emails · Unlimited contacts · Priority support</div>
+          <v-chip size="small" variant="flat" class="plan-banner__chip">{{ bannerChipText }}</v-chip>
+          <div class="plan-banner__price">{{ bannerHeadline }}</div>
+          <div class="plan-banner__meta">{{ bannerMeta }}</div>
         </div>
         <div class="plan-banner__actions">
-          <v-btn variant="flat" color="white" class="text-none plan-banner__cta" prepend-icon="circle-arrow-up">Upgrade Plan</v-btn>
-          <v-btn variant="text" class="text-none plan-banner__link" size="small">Change or cancel plan</v-btn>
+          <v-btn variant="flat" color="white" class="text-none plan-banner__cta" prepend-icon="circle-arrow-up" @click="goToPlans">Upgrade Plan</v-btn>
+          <v-btn variant="text" class="text-none plan-banner__link" size="small" @click="openCancelDrawer">Change or cancel plan</v-btn>
         </div>
       </div>
+
+      <v-card flat border rounded="lg" class="billing-card">
+        <div class="billing-card__head">
+          <h2 class="billing-card__title">Current Subscriptions</h2>
+        </div>
+        <div class="subscription-grid">
+          <div v-for="card in subscriptionCards" :key="card.cloud" class="subscription-card">
+            <div class="subscription-card__icon">
+              <v-icon size="20" color="primary">{{ card.icon }}</v-icon>
+            </div>
+            <div class="subscription-card__body">
+              <div class="subscription-card__top">
+                <span class="subscription-card__name">{{ card.name }}</span>
+                <v-chip :color="card.chipColor" size="small" variant="tonal">{{ card.chipText }}</v-chip>
+              </div>
+              <div class="subscription-card__meta">Plan: {{ card.planLabel }}</div>
+              <div class="subscription-card__meta">Start date: {{ card.startDate }}</div>
+              <div class="subscription-card__meta">Billing cycle: {{ card.cycleLabel }}</div>
+              <div class="subscription-card__actions">
+                <v-btn variant="text" size="small" color="primary" class="text-none" @click="goToPlans">Change plan</v-btn>
+                <v-btn v-if="card.canDowngrade" variant="text" size="small" class="text-none" @click="openDowngrade(card.cloud)">Downgrade</v-btn>
+              </div>
+            </div>
+          </div>
+        </div>
+      </v-card>
 
       <v-card flat border rounded="lg" class="billing-card">
         <div class="billing-card__head">
@@ -112,6 +421,24 @@ const documents = [
       </v-card>
 
       <v-card flat border rounded="lg" class="billing-card">
+        <div class="billing-card__head">
+          <h2 class="billing-card__title">Add-ons</h2>
+        </div>
+        <div class="product-list">
+          <div v-for="a in addOnRows" :key="a.key" class="product-row">
+            <v-icon class="product-row__icon" size="22">{{ a.icon }}</v-icon>
+            <div class="product-row__copy">
+              <div class="product-row__name">{{ a.name }}</div>
+              <div class="product-row__tier">{{ a.description }} · {{ a.priceLabel }}</div>
+            </div>
+            <v-chip v-if="a.owned" color="success" size="x-small" variant="flat" class="product-row__chip">Active</v-chip>
+            <v-btn v-else-if="a.monthly !== null" variant="text" size="small" color="primary" class="text-none" @click="openAddonDrawer(a)">+ Add</v-btn>
+            <v-btn v-else variant="outlined" size="small" color="primary" class="text-none" @click="talkToSales">Talk to sales</v-btn>
+          </div>
+        </div>
+      </v-card>
+
+      <v-card flat border rounded="lg" class="billing-card">
         <h2 class="billing-card__title mb-3">Payment Method</h2>
         <div class="payment-row">
           <v-icon color="primary" size="30">credit-card</v-icon>
@@ -129,12 +456,12 @@ const documents = [
       <v-card flat border rounded="lg" class="billing-card">
         <h2 class="billing-card__title mb-3">Usage This Month</h2>
         <div class="usage-grid">
-          <div v-for="u in usage" :key="u.label" class="usage-card">
+          <div v-for="u in usageRows" :key="u.label" class="usage-card">
             <div class="usage-card__head">
               <span class="usage-card__label">{{ u.label }}</span>
               <span class="usage-card__values">{{ u.used }} / {{ u.limit }}</span>
             </div>
-            <v-progress-linear v-if="u.pct > 0" :model-value="u.pct" color="primary" rounded height="6" />
+            <v-progress-linear v-if="!u.unlimited" :model-value="u.pct" color="primary" rounded height="6" />
             <div v-else class="usage-card__unlimited">Unlimited</div>
           </div>
         </div>
@@ -210,11 +537,54 @@ const documents = [
           access. Deleting permanently removes your account, data, and integrations — this cannot be undone.
         </p>
         <div class="danger-card__actions">
-          <v-btn variant="outlined" color="error" class="text-none">Cancel subscription</v-btn>
+          <v-btn variant="outlined" color="error" class="text-none" @click="openCancelDrawer">Cancel subscription</v-btn>
           <v-btn variant="flat" color="error" class="text-none">Delete account</v-btn>
         </div>
       </v-card>
     </section>
+
+    <!-- Add-on purchase drawer -->
+    <MpFormDrawer v-model="addonDrawerOpen" title="Add add-on">
+      <div v-if="selectedAddon" class="addon-drawer">
+        <v-icon size="28" color="primary" class="mb-2">{{ selectedAddon.icon }}</v-icon>
+        <h3 class="addon-drawer__name">{{ selectedAddon.name }}</h3>
+        <p class="addon-drawer__desc">{{ selectedAddon.description }}</p>
+        <div class="addon-drawer__price">
+          {{ selectedAddon.monthly !== null ? `$${selectedAddon.monthly}` : 'Custom' }}<span v-if="selectedAddon.monthly !== null"> / month</span>
+        </div>
+      </div>
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="addonDrawerOpen = false">Cancel</v-btn>
+        <v-btn variant="flat" color="primary" class="text-none" @click="confirmPurchase">Confirm purchase</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <!-- Cancel subscription drawer (exit survey) -->
+    <MpFormDrawer v-model="cancelDrawerOpen" title="Cancel subscription" subtitle="We're sorry to see you go.">
+      <v-radio-group v-model="cancelReason" class="cancel-drawer__reasons" label="Why are you cancelling?">
+        <v-radio v-for="r in cancelReasons" :key="r" :label="r" :value="r" />
+      </v-radio-group>
+      <v-textarea v-model="cancelComment" label="Anything else? (optional)" variant="outlined" rows="3" density="comfortable" />
+      <p class="cancel-drawer__notice">
+        <v-icon size="14">info</v-icon>
+        You'll keep access until the end of your billing period. Your data is retained for 30 days after.
+      </p>
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="cancelDrawerOpen = false">Keep my plan</v-btn>
+        <v-btn variant="flat" color="error" class="text-none" @click="confirmCancel">Cancel subscription</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="downgradeDialogOpen"
+      :title="downgradeTitle"
+      :message="downgradeMessage"
+      confirm-label="Downgrade"
+      danger
+      @confirm="confirmDowngrade"
+    />
+
+    <v-snackbar v-model="snackbar" timeout="2600">{{ snackbarText }}</v-snackbar>
   </div>
 </template>
 
@@ -257,6 +627,40 @@ const documents = [
 
 .billing-card__title--danger {
   color: rgb(var(--v-theme-error));
+}
+
+/* ─── Status strip ────────────────────────────────────────── */
+.status-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+.status-strip__text {
+  flex: 1 1 auto;
+  font-size: 13px;
+  min-width: 0;
+}
+
+.status-strip--error {
+  background: rgba(var(--v-theme-error), 0.12);
+  border-color: rgba(var(--v-theme-error), 0.28);
+  color: rgb(var(--v-theme-error));
+}
+
+.status-strip--warning {
+  background: rgba(var(--v-theme-warning), 0.12);
+  border-color: rgba(var(--v-theme-warning), 0.28);
+  color: rgb(var(--v-theme-warning));
+}
+
+.status-strip--primary {
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-color: rgba(var(--v-theme-primary), 0.24);
+  color: rgb(var(--v-theme-primary));
 }
 
 /* ─── Plan banner ─────────────────────────────────────────── */
@@ -314,6 +718,65 @@ const documents = [
   color: color-mix(in oklch, rgb(var(--v-theme-on-primary)) 85%, transparent) !important;
 }
 
+/* ─── Subscriptions ───────────────────────────────────────── */
+.subscription-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.subscription-card {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
+}
+
+.subscription-card__icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: color-mix(in oklch, rgb(var(--v-theme-primary)) 12%, transparent);
+}
+
+.subscription-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.subscription-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.subscription-card__name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.subscription-card__meta {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.subscription-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
 /* ─── Products ────────────────────────────────────────────── */
 .product-list,
 .doc-list {
@@ -355,6 +818,46 @@ const documents = [
 
 .product-row__tier,
 .doc-row__meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ─── Add-on drawer ───────────────────────────────────────── */
+.addon-drawer__name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+
+.addon-drawer__desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.addon-drawer__price {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.addon-drawer__price span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ─── Cancel drawer ───────────────────────────────────────── */
+.cancel-drawer__reasons {
+  margin-bottom: 4px;
+}
+
+.cancel-drawer__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 12px 0 0;
   font-size: 12px;
   color: var(--muted);
 }
