@@ -5,9 +5,9 @@
 
 [data-sidebar="dark"] .mp-sidebar,
 [data-sidebar="dark"] .rail-flyout-card {
-  /* Desaturated charcoal with a whisper of cool (was brand-navy #141b2e) —
-     active items still glow with the brand primary, just quieter. */
-  --sidebar-bg: #1a1d26;
+  /* Slate navy (Zoho-style) — active items still glow with the brand primary.
+     Muted enough to stay calm, blue enough to read clearly as navy. */
+  --sidebar-bg: #22304b;
   --sidebar-border: rgba(255, 255, 255, 0.10);
   --sidebar-line: rgba(255, 255, 255, 0.12);
   --sidebar-text: rgba(255, 255, 255, 0.92);

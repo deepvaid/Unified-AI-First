@@ -87,18 +87,12 @@ watch(() => route.query.plg, (p) => {
 }, { immediate: true })
 
 const drawer = ref(true)
-// Expanded by default; starts in rail when the user chose it via the sidebar
-// toggle (persisted there), or when the rail shell variant is active and the
-// user has no manual preference. Auto-collapse rules below apply on top.
+// Rail (collapsed) by default in every shell + nav variation. The sidebar
+// toggle still works and persists the choice, so an explicit 'expanded'
+// preference wins; only that opens the sidebar on load. Auto-collapse rules
+// below (narrow viewport, section shells) apply on top.
 const manualRailPref = () => localStorage.getItem('app-sidebar-rail')
-const rail = ref(manualRailPref() === 'rail' || (manualRailPref() === null && resolvedShell.value === 'rail'))
-
-// Entering/leaving the rail shell flips the default; a stored manual choice wins.
-watch(resolvedShell, (now, was) => {
-  if (manualRailPref() !== null) return
-  if (now === 'rail') rail.value = true
-  else if (was === 'rail') rail.value = false
-})
+const rail = ref(manualRailPref() !== 'expanded')
 const copilot = useCopilotStore()
 const { width, smAndDown } = useDisplay()
 

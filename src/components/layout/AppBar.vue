@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useUserProfile } from '@/stores/useUserProfile'
-import { useAppTheme, type ShellVariant, type ThemeMode } from '@/composables/useAppTheme'
+import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
 import { useMobileNav } from '@/composables/useMobileNav'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import PlgTrialChip from '@/components/plg/PlgTrialChip.vue'
@@ -16,14 +16,7 @@ const mobileSearchOpen = ref(false)
 
 const router = useRouter()
 const accountsStore = useAccountsStore()
-const { mode, setMode, resolvedShell, resolvedFrame, setShell, setFrame } = useAppTheme()
-
-// Reflect the shell actually in effect (share-link override included) so a
-// click on any other value always registers, and commits + clears the override.
-const shellToggleValue = computed({
-  get: () => resolvedShell.value,
-  set: (value: ShellVariant) => setShell(value),
-})
+const { mode, setMode } = useAppTheme()
 
 const themeToggleValue = computed({
   get: () => mode.value,
@@ -706,39 +699,6 @@ function onSearchKeydown(event: KeyboardEvent) {
                     <v-btn value="light" icon="sun" variant="text" aria-label="Light theme" />
                     <v-btn value="dark" icon="moon" variant="text" aria-label="Dark theme" />
                   </v-btn-toggle>
-                </div>
-                <div class="um-item" role="group" aria-label="Shell layout">
-                  <v-icon class="um-item__icon" size="20">panel-left</v-icon>
-                  <div class="um-item__body">
-                    <div class="um-item__title">Shell</div>
-                    <div class="um-item__sub">Navigation &amp; layout style</div>
-                  </div>
-                  <v-btn-toggle
-                    v-model="shellToggleValue"
-                    density="comfortable"
-                    mandatory
-                    class="theme-segment ml-auto"
-                  >
-                    <v-btn value="classic" variant="text" size="small" class="text-none px-2" aria-label="Classic shell">Classic</v-btn>
-                    <v-btn value="studio" variant="text" size="small" class="text-none px-2" aria-label="Studio shell">Studio</v-btn>
-                    <v-btn value="rail" variant="text" size="small" class="text-none px-2" aria-label="Rail shell">Rail</v-btn>
-                  </v-btn-toggle>
-                </div>
-                <div class="um-item" role="group" aria-label="Framed content">
-                  <v-icon class="um-item__icon" size="20">square</v-icon>
-                  <div class="um-item__body">
-                    <div class="um-item__title">Framed content</div>
-                    <div class="um-item__sub">Rounded container around pages</div>
-                  </div>
-                  <v-switch
-                    :model-value="resolvedFrame"
-                    density="compact"
-                    hide-details
-                    color="primary"
-                    class="ml-auto flex-grow-0"
-                    aria-label="Framed content"
-                    @update:model-value="setFrame($event ? 'on' : 'off')"
-                  />
                 </div>
                 <div class="um-item" role="group" aria-label="PLG demo state">
                   <v-icon class="um-item__icon" size="20">flask-conical</v-icon>

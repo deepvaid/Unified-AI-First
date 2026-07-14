@@ -62,6 +62,13 @@ html[data-theme="light"][data-sidebar="white"] .v-main {
   background: #eaedf2 !important;
 }
 
+/* In Studio/Rail the rounded content frame is white and covers .v-main, so the
+   gray canvas wouldn't show. For the White variant, carry the gray onto the
+   frame too — the content sits on light gray and the white cards read clearly. */
+html[data-theme="light"][data-sidebar="white"] .mp-content-frame {
+  background: #eaedf2 !important;
+}
+
 html[data-shell="studio"][data-sidebar="white"] .mp-appbar {
   background: #ffffff !important;
 }
@@ -77,7 +84,7 @@ html[data-theme="light"][data-sidebar="white"] .mp-appbar {
    foregrounds for the quiet controls. The white search + Da Vinci pills
    keep their own surfaces — strong contrast, HubSpot-style. */
 html[data-sidebar="dark"] {
-  --mp-nav-surface: #1a1d26; /* desaturated charcoal — lockstep with sidebar-dark.css */
+  --mp-nav-surface: #22304b; /* slate navy (Zoho-style) — lockstep with sidebar-dark.css */
 }
 
 html[data-sidebar="dark"] .mp-appbar {
@@ -98,6 +105,62 @@ html[data-sidebar="dark"] .mp-appbar .appbar-divider {
   background: rgba(255, 255, 255, 0.16) !important;
 }
 
+/* Search field + Da Vinci pill: on the navy head nav, stark white slabs are
+   too loud. Give them a translucent light-on-navy surface (matching the
+   utility buttons) with light text/icons so they read as raised controls. */
+html[data-sidebar="dark"] .mp-appbar .appbar-search .v-field {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .appbar-search .v-field--focused {
+  background: rgba(255, 255, 255, 0.13) !important;
+  border-color: rgba(255, 255, 255, 0.30) !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.10) !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .appbar-search .v-field__input,
+html[data-sidebar="dark"] .mp-appbar .appbar-search input {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .appbar-search input::placeholder {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .appbar-search .v-field__prepend-inner .v-icon {
+  color: rgba(255, 255, 255, 0.60) !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .appbar-search-cmd {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: rgba(255, 255, 255, 0.60) !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .assistant-pill {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: none !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .assistant-pill:hover {
+  background: rgba(255, 255, 255, 0.13) !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .assistant-pill__label {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+html[data-sidebar="dark"] .mp-appbar .assistant-pill .assistant-pill__chevron {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* The Da Vinci orb reads its ink from the inherited `color`; on the navy nav
+   render it light (its built-in inverse tone) so the mark doesn't go dim. */
+html[data-sidebar="dark"] .mp-appbar .assistant-pill .dv-orbit-orb {
+  color: #ffffff !important;
+}
+
 /* Brighter inactive side-nav icons on the dark rail (default was 0.64 — dim). */
 html[data-sidebar="dark"] .mp-sidebar .v-list-item:not(.v-list-item--active):not(.active-nav-item) .v-icon {
   color: rgba(255, 255, 255, 0.85) !important;
@@ -105,12 +168,14 @@ html[data-sidebar="dark"] .mp-sidebar .v-list-item:not(.v-list-item--active):not
 
 /* ── Studio: stronger icons on the light-gray nav ───────────────────────
    Side-nav icons darken from the muted #5a6573 default for clear contrast
-   on #eaedf2; the quiet "+" is raised to match the other head-nav icons. */
-html[data-shell="studio"] .mp-sidebar .v-list-item:not(.v-list-item--active):not(.active-nav-item) .v-icon {
+   on #eaedf2; the quiet "+" is raised to match the other head-nav icons.
+   Excludes the dark sidebar — there the dark theme's own white icons win
+   (a dark icon on the navy nav would be invisible). */
+html[data-shell="studio"]:not([data-sidebar="dark"]) .mp-sidebar .v-list-item:not(.v-list-item--active):not(.active-nav-item) .v-icon {
   color: #3d4757 !important;
 }
 
-html[data-shell="studio"] .mp-appbar .appbar-create-btn {
+html[data-shell="studio"]:not([data-sidebar="dark"]) .mp-appbar .appbar-create-btn {
   color: var(--ink) !important;
 }
 
