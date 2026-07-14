@@ -5,14 +5,15 @@
 
 [data-sidebar="dark"] .mp-sidebar,
 [data-sidebar="dark"] .rail-flyout-card {
-  /* Brand-tinted deep navy (not neutral charcoal) — active items glow with the brand primary. */
-  --sidebar-bg: #141b2e;
+  /* Desaturated charcoal with a whisper of cool (was brand-navy #141b2e) —
+     active items still glow with the brand primary, just quieter. */
+  --sidebar-bg: #1a1d26;
   --sidebar-border: rgba(255, 255, 255, 0.10);
   --sidebar-line: rgba(255, 255, 255, 0.12);
   --sidebar-text: rgba(255, 255, 255, 0.92);
   --sidebar-muted: rgba(255, 255, 255, 0.64);
   --sidebar-hover-bg: rgba(255, 255, 255, 0.07);
-  --sidebar-active-bg: color-mix(in oklch, rgb(var(--v-theme-primary)) 28%, transparent);
+  --sidebar-active-bg: color-mix(in oklch, rgb(var(--v-theme-primary)) 20%, transparent);
   --sidebar-active-text: #ffffff;
   --sidebar-focus-ring: color-mix(in oklch, rgb(var(--v-theme-primary)) 55%, transparent);
 }
@@ -138,7 +139,7 @@
   --sidebar-text: rgba(255, 255, 255, 0.92) !important;
   --sidebar-muted: rgba(255, 255, 255, 0.64) !important;
   --sidebar-hover-bg: rgba(255, 255, 255, 0.07) !important;
-  --sidebar-active-bg: color-mix(in oklch, rgb(var(--v-theme-primary)) 28%, transparent) !important;
+  --sidebar-active-bg: color-mix(in oklch, rgb(var(--v-theme-primary)) 20%, transparent) !important;
   --sidebar-active-text: #ffffff !important;
   background: var(--sidebar-bg) !important;
   border-color: var(--sidebar-border) !important;

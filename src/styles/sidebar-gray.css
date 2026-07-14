@@ -1,21 +1,26 @@
 /**
- * Gray Sidebar — applied when [data-sidebar="gray"] is on <html>.
- * Rule-for-rule mirror of sidebar-light.css with a soft neutral-gray palette
- * (Square / ClickUp / Notion feel). Values are pinned so the sidebar stays
- * gray regardless of the app theme.
+ * Gray Sidebar (default) — applied when [data-sidebar="gray"] is on <html>.
+ * Rule-for-rule mirror of sidebar-dark.css with the metal-gray nav palette.
+ * This is the app's default chrome: the shared --mp-nav-surface (#eaedf2,
+ * shell-variants.css) paints both the side nav and head nav.
+ * Values are pinned (not theme-alias driven) so the sidebar stays gray
+ * even when the app theme is dark — the account's setting wins by design.
  */
 
 [data-sidebar="gray"] .mp-sidebar,
 [data-sidebar="gray"] .rail-flyout-card {
-  --sidebar-bg: #f6f7f9;
-  --sidebar-border: #e6e8ec;
-  --sidebar-line: #e6e8ec;
-  --sidebar-text: #1a1d21;
-  --sidebar-muted: #667085;
-  --sidebar-hover-bg: rgba(26, 29, 33, 0.05);
-  --sidebar-active-bg: rgba(26, 29, 33, 0.07);
-  --sidebar-active-text: #101317;
-  --sidebar-focus-ring: rgba(26, 29, 33, 0.45);
+  /* Bound to the shared nav surface (shell-variants.css) so the side nav and
+     head nav always match; metal gray #eaedf2 on this (default) axis. */
+  --sidebar-bg: var(--mp-nav-surface, #eaedf2);
+  --sidebar-border: #e2e8f0;
+  /* Group dividers: a whisper, not a rule — grouping should read as rhythm. */
+  --sidebar-line: rgba(26, 24, 20, 0.06);
+  --sidebar-text: #1a1814;
+  --sidebar-muted: #5a6573;
+  --sidebar-hover-bg: rgba(26, 24, 20, 0.06);
+  --sidebar-active-bg: rgba(26, 24, 20, 0.10);
+  --sidebar-active-text: #1a1814;
+  --sidebar-focus-ring: rgba(26, 24, 20, 0.55);
 }
 
 [data-sidebar="gray"] .mp-sidebar,
@@ -32,12 +37,22 @@
   background: var(--sidebar-bg) !important;
   border-right-color: var(--sidebar-border) !important;
   color: var(--sidebar-text);
+  /* The panel separates from content by its 1px edge; no shadow. */
+  box-shadow: none !important;
 }
 
-[data-sidebar="gray"] .mp-sidebar .sidebar-header,
-[data-sidebar="gray"] .mp-sidebar .sidebar-controls,
-[data-sidebar="gray"] .mp-sidebar .sidebar-divider {
+[data-sidebar="gray"] .mp-sidebar .sidebar-controls {
   border-color: var(--sidebar-border) !important;
+}
+
+[data-sidebar="gray"] .mp-sidebar .sidebar-divider {
+  border-color: var(--sidebar-line) !important;
+  opacity: 1;
+}
+
+/* Brand sits directly on the panel — no hairline under the header. */
+[data-sidebar="gray"] .mp-sidebar .sidebar-header {
+  border-bottom-color: transparent !important;
 }
 
 [data-sidebar="gray"] .mp-sidebar .v-list {
@@ -61,7 +76,7 @@
 }
 
 [data-sidebar="gray"] .mp-sidebar .sidebar-crown {
-  color: rgba(26, 29, 33, 0.34) !important;
+  color: rgba(26, 24, 20, 0.4) !important;
 }
 
 [data-sidebar="gray"] .mp-sidebar .rail-brand-box {
@@ -123,27 +138,27 @@
 }
 
 [data-sidebar="gray"] .mp-sidebar .v-switch .v-switch__track {
-  background: rgba(26, 29, 33, 0.2) !important;
+  background: rgba(26, 24, 20, 0.2) !important;
 }
 
 [data-sidebar="gray"] .mp-sidebar ::-webkit-scrollbar-thumb {
-  background: rgba(26, 29, 33, 0.16);
+  background: rgba(26, 24, 20, 0.18);
 }
 
 [data-sidebar="gray"] .mp-sidebar ::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 29, 33, 0.28);
+  background: rgba(26, 24, 20, 0.3);
 }
 
 [data-sidebar="gray"] .rail-flyout-card {
-  --sidebar-border: #e6e8ec !important;
-  --sidebar-text: #1a1d21 !important;
-  --sidebar-muted: #667085 !important;
-  --sidebar-hover-bg: rgba(26, 29, 33, 0.05) !important;
-  --sidebar-active-bg: rgba(26, 29, 33, 0.07) !important;
-  --sidebar-active-text: #101317 !important;
+  --sidebar-border: #e2e8f0 !important;
+  --sidebar-text: #1a1814 !important;
+  --sidebar-muted: #5a6573 !important;
+  --sidebar-hover-bg: rgba(26, 24, 20, 0.06) !important;
+  --sidebar-active-bg: rgba(26, 24, 20, 0.10) !important;
+  --sidebar-active-text: #1a1814 !important;
   background: var(--sidebar-bg) !important;
   border-color: var(--sidebar-border) !important;
-  box-shadow: 0 18px 40px rgba(26, 29, 33, 0.14), 0 2px 8px rgba(26, 29, 33, 0.08) !important;
+  box-shadow: 0 18px 40px rgba(26, 24, 20, 0.14), 0 2px 8px rgba(26, 24, 20, 0.08) !important;
 }
 
 [data-sidebar="gray"] .rail-flyout-card__header {
@@ -170,10 +185,10 @@
 }
 
 [data-sidebar="gray"] .rail-flyout-card::-webkit-scrollbar-thumb {
-  background: rgba(26, 29, 33, 0.16);
+  background: rgba(26, 24, 20, 0.18);
   border-radius: 999px;
 }
 
 [data-sidebar="gray"] .rail-flyout-card::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 29, 33, 0.28);
+  background: rgba(26, 24, 20, 0.28);
 }

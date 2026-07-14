@@ -31,20 +31,26 @@ setMode(mode.value)
 const accountsStore = useAccountsStore()
 const route = useRoute()
 
-// Sidebar theme: a ?nav=light|gray|dark query param wins over the account's
+// Sidebar theme: a ?nav=white|gray|dark query param wins over the account's
 // preference (for stakeholder demos). Captured in-memory so it sticks across
 // in-SPA navigation for this tab, without touching localStorage (which three
 // side-by-side tabs would otherwise clobber). Otherwise follow the account.
-const VALID_NAV_THEMES: readonly SidebarTheme[] = ['light', 'gray', 'dark']
-const isNavTheme = (v: unknown): v is SidebarTheme =>
-  typeof v === 'string' && (VALID_NAV_THEMES as readonly string[]).includes(v)
-const navOverride = ref<SidebarTheme | null>(isNavTheme(route.query.nav) ? route.query.nav : null)
+const VALID_NAV_THEMES: readonly SidebarTheme[] = ['white', 'gray', 'dark']
+// Legacy share links used ?nav=light for what is now the White chrome.
+const normalizeNavTheme = (v: unknown): SidebarTheme | null => {
+  if (v === 'light') return 'white'
+  return typeof v === 'string' && (VALID_NAV_THEMES as readonly string[]).includes(v)
+    ? (v as SidebarTheme)
+    : null
+}
+const navOverride = ref<SidebarTheme | null>(normalizeNavTheme(route.query.nav))
 watch(() => route.query.nav, (nav) => {
-  if (isNavTheme(nav)) navOverride.value = nav
+  const theme = normalizeNavTheme(nav)
+  if (theme) navOverride.value = theme
 })
 // Rail shell rides the dark sidebar palette; an explicit ?nav= still wins.
 watch(
-  () => navOverride.value ?? (resolvedShell.value === 'rail' ? 'dark' : (accountsStore.activeAccount.sidebarTheme ?? 'light')),
+  () => navOverride.value ?? (resolvedShell.value === 'rail' ? 'dark' : (accountsStore.activeAccount.sidebarTheme ?? 'gray')),
   applySidebarTheme,
   { immediate: true },
 )
@@ -61,9 +67,9 @@ watch(() => route.query.frame, (f) => {
   if (isFramePref(f)) setFrameOverride(f)
 }, { immediate: true })
 
-// Dashboard chart palette: a ?chart=blue|cool|multicolor query param (stakeholder demo),
+// Dashboard chart palette: a ?chart=blue|cool|multicolor|multihue query param (stakeholder demo),
 // same in-memory-per-tab handling as ?nav=. Independent of, and composes with, ?nav=.
-const VALID_CHART_PALETTES: readonly ChartPalette[] = ['blue', 'cool', 'multicolor']
+const VALID_CHART_PALETTES: readonly ChartPalette[] = ['blue', 'cool', 'multicolor', 'multihue']
 const isChartPalette = (v: unknown): v is ChartPalette =>
   typeof v === 'string' && (VALID_CHART_PALETTES as readonly string[]).includes(v)
 const chartOverride = ref<ChartPalette | null>(isChartPalette(route.query.chart) ? route.query.chart : null)

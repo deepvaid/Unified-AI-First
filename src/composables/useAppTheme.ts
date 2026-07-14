@@ -3,7 +3,7 @@ import { useTheme } from 'vuetify'
 
 export type AccentKey = 'cyan' | 'blue' | 'gray' | 'purple'
 export type ThemeMode = 'light' | 'dark'
-export type SidebarTheme = 'light' | 'gray' | 'dark'
+export type SidebarTheme = 'white' | 'gray' | 'dark'
 export type ShellVariant = 'classic' | 'studio' | 'rail'
 export type FramePref = 'auto' | 'on' | 'off'
 
@@ -224,6 +224,6 @@ export function initAppTheme() {
   applyMode(storedMode)
   applyShellAttrs()
   // Pre-mount default; App.vue applies the active account's sidebar theme before first paint.
-  applySidebarTheme('light')
+  applySidebarTheme('gray')
   localStorage.removeItem('app-dark-sidebar')
 }

@@ -17,24 +17,27 @@
    app bar reads it directly below — the two can never drift per shell. */
 :root {
   /* Clearly-perceptible light gray for the nav cluster (side + head nav) in
-     every light shell. Distinctly grayer than the near-white canvas so it
-     never reads as white. Classic keeps its borders, Studio drops them. */
+     every light shell — this is the Gray (default) axis. Distinctly grayer
+     than the near-white canvas so it never reads as white. Classic keeps its
+     borders, Studio drops them. */
   --mp-nav-surface: #eaedf2;
 }
 
 /* Head nav shares the side nav surface (light app theme; the dark app
-   theme keeps its own chrome). Gray sidebar axis matches its own tone. */
-html[data-sidebar="gray"] {
-  --mp-nav-surface: #f6f7f9; /* sidebar-gray.css --sidebar-bg */
+   theme keeps its own chrome). White sidebar axis: white chrome, and the
+   content canvas flips to the metal gray (rule further down). */
+html[data-sidebar="white"] {
+  --mp-nav-surface: #ffffff;
 }
 
-html[data-theme="light"][data-sidebar="light"] .mp-appbar,
+html[data-theme="light"][data-sidebar="white"] .mp-appbar,
 html[data-theme="light"][data-sidebar="gray"] .mp-appbar {
   background: var(--mp-nav-surface) !important;
 }
 
 /* ── Studio: edges dissolve; the framed content card is the structure ── */
-html[data-shell="studio"][data-sidebar="light"] .mp-sidebar {
+html[data-shell="studio"][data-sidebar="white"] .mp-sidebar,
+html[data-shell="studio"][data-sidebar="gray"] .mp-sidebar {
   border-right-color: transparent !important;
 }
 
@@ -51,12 +54,30 @@ html[data-theme="light"][data-shell="studio"] .v-main {
   background: var(--mp-nav-surface) !important;
 }
 
+/* ── White nav axis: white chrome over a metal-gray canvas ──────────────
+   Inverse of the default: the side + head nav go white and the content
+   container carries the gray. Wins over the studio canvas bind above
+   (declared later at equal specificity). Light theme only. */
+html[data-theme="light"][data-sidebar="white"] .v-main {
+  background: #eaedf2 !important;
+}
+
+html[data-shell="studio"][data-sidebar="white"] .mp-appbar {
+  background: #ffffff !important;
+}
+
+/* Classic keeps its appbar hairline; on the all-white chrome give the seam a
+   touch more presence so bar and canvas don't fuse. */
+html[data-theme="light"][data-sidebar="white"] .mp-appbar {
+  border-bottom-color: rgba(26, 24, 20, 0.08) !important;
+}
+
 /* ── Dark side nav (rail shell / dark-sidebar accounts): head nav matches ──
    Same bind, dark value (sidebar-dark.css --sidebar-bg), plus on-dark
    foregrounds for the quiet controls. The white search + Da Vinci pills
    keep their own surfaces — strong contrast, HubSpot-style. */
 html[data-sidebar="dark"] {
-  --mp-nav-surface: #141b2e;
+  --mp-nav-surface: #1a1d26; /* desaturated charcoal — lockstep with sidebar-dark.css */
 }
 
 html[data-sidebar="dark"] .mp-appbar {

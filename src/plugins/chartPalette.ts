@@ -11,11 +11,13 @@ import {
 } from '@/design-tokens/generated/tokens'
 
 /** Selectable chart-series palettes (switchable via the `?chart=` URL param, see App.vue). */
-export type ChartPalette = 'blue' | 'cool' | 'multicolor'
+export type ChartPalette = 'blue' | 'cool' | 'multicolor' | 'multihue'
 
 /**
  * Blue (default): Maropost-aligned single-hue Picton Blue, steps [600,300,500,900,400,700].
- * Cool: blue→teal. Multicolor: mixed accent hues. Each has 6 well-spaced series colors.
+ * Cool: blue→teal. Multicolor: mixed soft accent hues. Multihue: the same hue
+ * order as Multicolor one bold step deeper (validated: lightness band, chroma,
+ * CVD adjacent-pair separation all pass on light surfaces). Each has 6 series colors.
  */
 export const CHART_PALETTES: Record<ChartPalette, string[]> = {
   blue: [
@@ -28,6 +30,7 @@ export const CHART_PALETTES: Record<ChartPalette, string[]> = {
   ],
   cool: ['#0073AB', '#0092D4', '#00ADF1', '#00B6DE', '#00C0B7', '#14B8A6'],
   multicolor: ['#8B7CF5', '#34D399', '#F87171', '#FBBF24', '#60A5FA', '#2DD4BF'],
+  multihue: ['#7C3AED', '#10B981', '#EF4444', '#F59E0B', '#3B82F6', '#14B8A6'],
 }
 
 const chartPaletteId = ref<ChartPalette>('blue')

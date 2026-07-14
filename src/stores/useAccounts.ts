@@ -14,8 +14,8 @@ export interface Account {
   initials: string
   color: 'primary' | 'secondary' | 'success'
   subscriptions: SubscriptionKey[]
-  /** Sidebar appearance for this account; omitted = light (the default). */
-  sidebarTheme?: 'light' | 'gray' | 'dark'
+  /** Sidebar appearance for this account; omitted = gray (the default). */
+  sidebarTheme?: 'white' | 'gray' | 'dark'
 }
 
 const STORAGE_KEY = 'mp.activeAccountId'
@@ -34,7 +34,7 @@ const DEFAULT_ACCOUNTS: Account[] = [
     initials: 'MD',
     color: 'secondary',
     subscriptions: ['commerce', 'marketing', 'analytics', 'service', 'davinci'],
-    sidebarTheme: 'light',
+    sidebarTheme: 'white',
   },
   {
     id: '2000292',
