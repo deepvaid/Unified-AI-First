@@ -1,37 +1,105 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import { computed, ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpFilterTabs from '@/components/MpFilterTabs.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
-import SettingsSection from '@/components/settings/SettingsSection.vue'
+import InviteUsersDrawer from '@/components/rbac/InviteUsersDrawer.vue'
+import UserAccessDrawer from '@/components/rbac/UserAccessDrawer.vue'
+import { useRbacStore } from '@/stores/useRbac'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { formatAgo } from '@/composables/useRelativeTime'
+import { PRODUCT_META, type ProductKey, type UserAccount } from '@/stores/rbacData'
 
-interface TeamUser {
-  id: number
-  name: string
-  email: string
-  role: string
-  marketing: boolean
-  service: boolean
-  commerce: boolean
-  status: string
-  avatar: string
+const rbac = useRbacStore()
+const { loading } = useInitialLoad()
+
+const search = ref('')
+const selected = ref<string[]>([])
+const statusTab = ref('all')
+
+const PRODUCT_ICONS: Record<ProductKey, string> = {
+  platform: 'globe',
+  marketing: 'megaphone',
+  service: 'headphones',
+  commerce: 'shopping-cart',
 }
 
-const teamUsers = ref<TeamUser[]>([
-  { id: 1, name: 'Ross Andrew Paquette', email: 'Ross@maropost.com',  role: 'Owner',         marketing: true,  service: true,  commerce: true,  status: 'Active',  avatar: 'RP' },
-  { id: 2, name: 'Sarah Connor',         email: 'sarah@maropost.com', role: 'Admin',         marketing: true,  service: true,  commerce: false, status: 'Active',  avatar: 'SC' },
-  { id: 3, name: 'Mike Zhang',           email: 'mike@maropost.com',  role: 'Support Agent', marketing: false, service: true,  commerce: false, status: 'Active',  avatar: 'MZ' },
-  { id: 4, name: 'Priya Sharma',         email: 'priya@maropost.com', role: 'Marketer',      marketing: true,  service: false, commerce: false, status: 'Active',  avatar: 'PS' },
-  { id: 5, name: 'Tom Brady',            email: 'tom@maropost.com',   role: 'Analyst',       marketing: true,  service: false, commerce: true,  status: 'Invited', avatar: 'TB' },
+const tabs = computed(() => [
+  { label: 'All', key: 'all', count: rbac.usersByStatus.all },
+  { label: 'Active', key: 'active', count: rbac.usersByStatus.active },
+  { label: 'Invited', key: 'invited', count: rbac.usersByStatus.invited },
+  { label: 'Deactivated', key: 'deactivated', count: rbac.usersByStatus.deactivated },
 ])
 
-const ROLES = ['Admin', 'Marketer', 'Support Agent', 'Analyst', 'Viewer']
+// Filters
+const filters = ref({ role: null as string | null, product: null as ProductKey | null })
+const roleFilterItems = computed(() => rbac.roles.map(r => ({ title: r.name, value: r.id })))
+const productFilterItems = (Object.keys(PRODUCT_META) as ProductKey[]).map(p => ({ title: PRODUCT_META[p].label, value: p }))
 
-const addUserDialog = ref(false)
-const newUserEmail = ref('')
-const newUserRole = ref('Marketer')
+const activeFilterEntries = computed(() => {
+  const entries: { key: string; label: string }[] = []
+  if (filters.value.role) entries.push({ key: 'role', label: `Role: ${rbac.roleById(filters.value.role)?.name ?? ''}` })
+  if (filters.value.product) entries.push({ key: 'product', label: `Product: ${PRODUCT_META[filters.value.product].short}` })
+  return entries
+})
 
+function removeFilter(key: string) {
+  filters.value[key as keyof typeof filters.value] = null
+}
+
+function clearAllFilters() {
+  filters.value = { role: null, product: null }
+}
+
+interface UserRow extends UserAccount {
+  roleNames: string
+  selectable: boolean
+}
+
+const filteredUsers = computed<UserRow[]>(() =>
+  rbac.users
+    .filter((u) => {
+      if (statusTab.value !== 'all' && u.status !== statusTab.value) return false
+      if (filters.value.role && !u.roleIds.includes(filters.value.role)) return false
+      if (filters.value.product && !rbac.productAccessSummary(u.id).some(a => a.product === filters.value.product)) return false
+      return true
+    })
+    .map(u => ({
+      ...u,
+      roleNames: u.roleIds.map(id => rbac.roleById(id)?.name ?? '').join(', '),
+      selectable: !u.isOwner,
+    })),
+)
+
+// Table
+const headers = [
+  { title: 'User', key: 'name', sortable: true },
+  { title: 'Roles', key: 'roleNames', sortable: false },
+  { title: 'Products', key: 'products', sortable: false, hideBelow: 'md' as const },
+  { title: 'Status', key: 'status' },
+  { title: 'Last active', key: 'lastActiveAt', align: 'end' as const, hideBelow: 'lg' as const },
+  { title: '', key: 'actions', align: 'end' as const, sortable: false, width: '48px' },
+]
+const hiddenColumns = ref<string[]>([])
+const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
+
+function roleChips(user: UserAccount) {
+  const names = user.roleIds.map(id => rbac.roleById(id)?.name ?? '').filter(Boolean)
+  return { visible: names.slice(0, 2), overflow: names.slice(2) }
+}
+
+function statusLabel(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+// Snackbar
 const snackbar = ref(false)
 const snackbarText = ref('')
 function notify(text: string) {
@@ -39,198 +107,405 @@ function notify(text: string) {
   snackbar.value = true
 }
 
-function sendInvite() {
-  const email = newUserEmail.value.trim()
-  if (!email) return
-  teamUsers.value.push({
-    id: Math.max(...teamUsers.value.map((u) => u.id)) + 1,
-    name: email.split('@')[0] ?? email,
-    email,
-    role: newUserRole.value,
-    marketing: false,
-    service: false,
-    commerce: false,
-    status: 'Invited',
-    avatar: email.slice(0, 2).toUpperCase(),
-  })
-  addUserDialog.value = false
-  notify(`Invitation sent to ${email}`)
-  newUserEmail.value = ''
-  newUserRole.value = 'Marketer'
+// Invite + access drawers
+const inviteDrawer = ref(false)
+const accessDrawer = ref(false)
+const accessUserId = ref<string | null>(null)
+
+function openAccess(userId: string) {
+  accessUserId.value = userId
+  accessDrawer.value = true
 }
 
-const editDrawer = ref(false)
-const editTarget = ref<TeamUser | null>(null)
-const editForm = reactive({ role: '', marketing: false, service: false, commerce: false })
-
-function openEdit(user: TeamUser) {
-  editTarget.value = user
-  editForm.role = user.role
-  editForm.marketing = user.marketing
-  editForm.service = user.service
-  editForm.commerce = user.commerce
-  editDrawer.value = true
+function onInvited(emails: string[]) {
+  notify(`Invitation${emails.length === 1 ? '' : 's'} sent to ${emails.length === 1 ? emails[0] : `${emails.length} people`}`)
 }
 
-function saveEdit() {
-  if (!editTarget.value) return
-  Object.assign(editTarget.value, { ...editForm })
-  editDrawer.value = false
-  notify(`Access updated for ${editTarget.value.name}`)
+function handleRowClick(event: MouseEvent, payload: { item: unknown }) {
+  const target = event.target as HTMLElement | null
+  if (target?.closest('button, a, input, [role="button"], .v-selection-control, .v-overlay')) return
+  const item = payload.item as UserRow
+  if (item.id) openAccess(item.id)
+}
+
+// Invitation actions
+function resend(userId: string) {
+  const user = rbac.userById(userId)
+  rbac.resendInvite(userId)
+  notify(`Invitation resent to ${user?.email}`)
+}
+
+const revokeDialog = ref(false)
+const revokeTarget = ref<UserAccount | null>(null)
+
+function askRevoke(user: UserAccount) {
+  revokeTarget.value = user
+  revokeDialog.value = true
+}
+
+function confirmRevoke() {
+  if (!revokeTarget.value) return
+  rbac.revokeInvite(revokeTarget.value.id)
+  notify(`Invitation for ${revokeTarget.value.email} revoked`)
+  revokeTarget.value = null
+}
+
+// Status + remove
+function setStatus(user: UserAccount, status: 'active' | 'deactivated') {
+  rbac.setUserStatus(user.id, status)
+  notify(status === 'active' ? `${user.name} reactivated` : `${user.name} deactivated`)
 }
 
 const removeDialog = ref(false)
-const removeTarget = ref<TeamUser | null>(null)
+const removeTarget = ref<UserAccount | null>(null)
+const bulkRemove = ref(false)
 
-function askRemove(user: TeamUser) {
+function askRemoveRow(user: UserAccount) {
   removeTarget.value = user
+  bulkRemove.value = false
   removeDialog.value = true
 }
 
-function confirmRemove() {
-  if (!removeTarget.value) return
-  teamUsers.value = teamUsers.value.filter((u) => u.id !== removeTarget.value!.id)
-  notify(`${removeTarget.value.name} removed`)
+function askRemoveBulk() {
   removeTarget.value = null
+  bulkRemove.value = true
+  removeDialog.value = true
+}
+
+const removeMessage = computed(() =>
+  bulkRemove.value
+    ? `Remove ${selected.value.length} selected user${selected.value.length === 1 ? '' : 's'} from this account? They lose access immediately. This cannot be undone.`
+    : `Remove ${removeTarget.value?.name} from this account? They lose access immediately. This cannot be undone.`,
+)
+
+function confirmRemove() {
+  if (bulkRemove.value) {
+    const count = selected.value.length
+    for (const id of [...selected.value]) rbac.removeUser(id)
+    selected.value = []
+    notify(`${count} user${count === 1 ? '' : 's'} removed`)
+  } else if (removeTarget.value) {
+    rbac.removeUser(removeTarget.value.id)
+    notify(`${removeTarget.value.name} removed`)
+  }
+  removeTarget.value = null
+  bulkRemove.value = false
+  accessDrawer.value = false
+}
+
+function onRequestRemove(userId: string) {
+  const user = rbac.userById(userId)
+  if (user) askRemoveRow(user)
+}
+
+// Bulk actions
+const selectedUsers = computed(() => selected.value.map(id => rbac.userById(id)).filter((u): u is UserAccount => Boolean(u)))
+const selectedInvited = computed(() => selectedUsers.value.filter(u => u.status === 'invited'))
+const selectedActive = computed(() => selectedUsers.value.filter(u => u.status === 'active'))
+
+const bulkAssignGroups = computed(() => rbac.assignableRoles.filter(g => !g.locked))
+
+function selectAll() {
+  selected.value = filteredUsers.value.filter(u => u.selectable).map(u => u.id)
+}
+
+function bulkAssignRole(roleId: string) {
+  const changed = rbac.addRoleToUsers([...selected.value], roleId)
+  const role = rbac.roleById(roleId)
+  notify(changed > 0
+    ? `${role?.name} added to ${changed} user${changed === 1 ? '' : 's'}`
+    : 'No users updated — role already assigned or conflicts')
+}
+
+function bulkResend() {
+  for (const user of selectedInvited.value) rbac.resendInvite(user.id)
+  notify(`Invitation${selectedInvited.value.length === 1 ? '' : 's'} resent to ${selectedInvited.value.length} user${selectedInvited.value.length === 1 ? '' : 's'}`)
+}
+
+function bulkDeactivate() {
+  const count = selectedActive.value.length
+  for (const user of selectedActive.value) rbac.setUserStatus(user.id, 'deactivated')
+  selected.value = []
+  notify(`${count} user${count === 1 ? '' : 's'} deactivated`)
 }
 </script>
 
 <template>
-  <div class="settings-page">
-    <MpPageHeader :level="2" density="compact"
-      title="Users & Permissions"
-      :subtitle="`${teamUsers.length} members · Manage role and module access per user.`"
+  <div class="settings-page d-flex flex-column gap-4">
+    <MpPageHeader
+      :level="2"
+      density="compact"
+      title="Users"
+      :subtitle="`${rbac.usersByStatus.all} members · Invite people and manage their roles across products.`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="user-plus" class="text-none" @click="addUserDialog = true">
-          Invite User
+        <v-btn color="primary" variant="flat" prepend-icon="user-plus" class="text-none" @click="inviteDrawer = true">
+          Invite users
         </v-btn>
       </template>
     </MpPageHeader>
 
-    <SettingsSection title="Team Members" description="Review access, ownership, and module permissions.">
-      <div class="users-table">
-        <v-table density="comfortable">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Role</th>
-              <th class="text-center">Marketing</th>
-              <th class="text-center">Service</th>
-              <th class="text-center">Commerce</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="u in teamUsers" :key="u.id">
-              <td>
-                <div class="user-cell">
-                  <v-avatar color="primary" variant="tonal" size="34" class="font-weight-bold text-caption">{{ u.avatar }}</v-avatar>
-                  <div>
-                    <div class="user-cell__name">{{ u.name }}</div>
-                    <div class="user-cell__email">{{ u.email }}</div>
-                  </div>
-                </div>
-              </td>
-              <td><v-chip size="x-small" variant="tonal" color="secondary">{{ u.role }}</v-chip></td>
-              <td class="text-center"><v-icon :color="u.marketing ? 'success' : 'grey-lighten-2'" size="18">{{ u.marketing ? 'circle-check' : 'circle-minus' }}</v-icon></td>
-              <td class="text-center"><v-icon :color="u.service ? 'success' : 'grey-lighten-2'" size="18">{{ u.service ? 'circle-check' : 'circle-minus' }}</v-icon></td>
-              <td class="text-center"><v-icon :color="u.commerce ? 'success' : 'grey-lighten-2'" size="18">{{ u.commerce ? 'circle-check' : 'circle-minus' }}</v-icon></td>
-              <td><MpStatusChip :status="u.status" type="general" size="x-small" /></td>
-              <td class="text-right">
-                <v-btn icon="pencil" variant="text" size="small" :aria-label="`Edit ${u.name}`" @click="openEdit(u)" />
-                <v-btn v-if="u.role !== 'Owner'" icon="trash-2" variant="text" size="small" color="error" :aria-label="`Remove ${u.name}`" @click="askRemove(u)" />
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
-      </div>
-    </SettingsSection>
+    <MpFilterTabs v-model="statusTab" :tabs="tabs" aria-label="Filter users by status" controls-id="users-table" />
 
-    <MpFormDrawer
-      v-model="addUserDialog"
-      title="Invite Team Member"
-      subtitle="Grant role-based module access"
-      :width="460"
+    <v-card id="users-table" variant="flat" border rounded="lg" class="d-flex flex-column overflow-hidden">
+      <MpDataTableToolbar
+        v-model:search="search"
+        v-model:hidden-columns="hiddenColumns"
+        search-placeholder="Search name, email, or role"
+        :headers="headers"
+        :active-filters="activeFilterEntries"
+        :total-count="filteredUsers.length"
+        @remove-filter="removeFilter"
+        @clear-filters="clearAllFilters"
+      >
+        <template #filter-content>
+          <v-select
+            v-model="filters.role"
+            label="Role"
+            :items="roleFilterItems"
+            variant="outlined"
+            density="compact"
+            hide-details
+            clearable
+            class="mb-4"
+          />
+          <v-select
+            v-model="filters.product"
+            label="Product access"
+            :items="productFilterItems"
+            variant="outlined"
+            density="compact"
+            hide-details
+            clearable
+            class="mb-4"
+          />
+        </template>
+      </MpDataTableToolbar>
+
+      <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
+
+      <v-data-table
+        v-else
+        v-model="selected"
+        :headers="visibleHeaders"
+        :items="filteredUsers"
+        :search="search"
+        item-value="id"
+        item-selectable="selectable"
+        show-select
+        hover
+        density="comfortable"
+        :items-per-page="15"
+        fixed-header
+        class="users-table"
+        @click:row="handleRowClick"
+      >
+        <template v-slot:item.name="{ item }">
+          <div class="d-flex align-center py-2">
+            <v-avatar color="primary" variant="tonal" size="34" class="mr-3 font-weight-bold text-caption">
+              {{ (item as UserRow).avatar }}
+            </v-avatar>
+            <div class="user-identity">
+              <div class="user-identity__name">
+                {{ (item as UserRow).name }}
+                <v-tooltip v-if="(item as UserRow).isOwner" location="top" text="Account owner — full access, protected from changes">
+                  <template #activator="{ props: tipProps }">
+                    <v-icon v-bind="tipProps" size="14" color="primary">shield-check</v-icon>
+                  </template>
+                </v-tooltip>
+              </div>
+              <div class="user-identity__email">{{ (item as UserRow).email }}</div>
+            </div>
+          </div>
+        </template>
+
+        <template v-slot:item.roleNames="{ item }">
+          <div class="d-flex align-center gap-1 text-no-wrap">
+            <v-chip
+              v-for="name in roleChips(item as UserRow).visible"
+              :key="name"
+              size="x-small"
+              variant="tonal"
+              color="secondary"
+            >
+              {{ name }}
+            </v-chip>
+            <v-tooltip
+              v-if="roleChips(item as UserRow).overflow.length"
+              location="top"
+              :text="roleChips(item as UserRow).overflow.join(', ')"
+            >
+              <template #activator="{ props: tipProps }">
+                <v-chip v-bind="tipProps" size="x-small" variant="outlined">+{{ roleChips(item as UserRow).overflow.length }}</v-chip>
+              </template>
+            </v-tooltip>
+          </div>
+        </template>
+
+        <template v-slot:item.products="{ item }">
+          <div class="d-flex align-center gap-1">
+            <v-tooltip
+              v-for="entry in rbac.productAccessSummary((item as UserRow).id)"
+              :key="entry.product"
+              location="top"
+              :text="entry.entitled ? entry.label : `${entry.label} — not in this account's subscription`"
+            >
+              <template #activator="{ props: tipProps }">
+                <span
+                  v-bind="tipProps"
+                  class="product-dot"
+                  :class="[`product-dot--${entry.product}`, { 'product-dot--locked': !entry.entitled }]"
+                  role="img"
+                  :aria-label="entry.label"
+                >
+                  <v-icon size="12">{{ entry.entitled ? PRODUCT_ICONS[entry.product] : 'lock' }}</v-icon>
+                </span>
+              </template>
+            </v-tooltip>
+          </div>
+        </template>
+
+        <template v-slot:item.status="{ item }">
+          <MpStatusChip :status="statusLabel((item as UserRow).status)" type="general" size="x-small" />
+        </template>
+
+        <template v-slot:item.lastActiveAt="{ item }">
+          <span class="text-body-2 text-medium-emphasis text-no-wrap">
+            {{ (item as UserRow).status === 'invited'
+              ? `Invite sent ${formatAgo((item as UserRow).invitedAt)}`
+              : formatAgo((item as UserRow).lastActiveAt) }}
+          </span>
+        </template>
+
+        <template v-slot:item.actions="{ item }">
+          <span @click.stop>
+            <MpRowActionsMenu :aria-label="`Actions for ${(item as UserRow).name}`">
+              <v-list-item prepend-icon="user-cog" title="Manage access" @click="openAccess((item as UserRow).id)" />
+              <template v-if="!(item as UserRow).isOwner">
+                <template v-if="(item as UserRow).status === 'invited'">
+                  <v-list-item prepend-icon="send" title="Resend invite" @click="resend((item as UserRow).id)" />
+                  <v-list-item prepend-icon="mail-x" title="Revoke invite" @click="askRevoke(item as UserRow)" />
+                </template>
+                <v-list-item
+                  v-else-if="(item as UserRow).status === 'active'"
+                  prepend-icon="pause"
+                  title="Deactivate"
+                  @click="setStatus(item as UserRow, 'deactivated')"
+                />
+                <v-list-item
+                  v-else
+                  prepend-icon="play"
+                  title="Reactivate"
+                  @click="setStatus(item as UserRow, 'active')"
+                />
+                <v-divider class="my-1" style="opacity: 0.4" />
+                <v-list-item prepend-icon="trash-2" title="Remove" class="text-error" @click="askRemoveRow(item as UserRow)" />
+              </template>
+            </MpRowActionsMenu>
+          </span>
+        </template>
+
+        <template #no-data>
+          <MpEmptyState
+            v-if="search || activeFilterEntries.length || statusTab !== 'all'"
+            variant="expressive"
+            illustration="no-results"
+            title="No users match"
+            description="Try a different search, status tab, or filter."
+            class="py-10"
+          />
+          <MpEmptyState
+            v-else
+            icon="users"
+            title="No users yet"
+            description="Invite your team and assign roles to control what each person can see and do."
+            action-label="Invite users"
+            action-icon="user-plus"
+            class="py-10"
+            @action="inviteDrawer = true"
+          />
+        </template>
+      </v-data-table>
+    </v-card>
+
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="filteredUsers.filter(u => u.selectable).length"
+      @clear="selected = []"
+      @select-all="selectAll"
     >
-      <v-text-field
-        v-model="newUserEmail"
-        label="Email Address"
-        type="email"
-        variant="outlined"
-        density="compact"
-        hide-details
-        class="mb-3"
-        placeholder="colleague@company.com"
-      />
-      <v-select
-        v-model="newUserRole"
-        label="Role"
-        :items="['Admin','Marketer','Support Agent','Analyst','Viewer']"
-        variant="outlined"
-        density="compact"
-        hide-details
-        class="mb-3"
-      />
-      <div class="text-subtitle-2 font-weight-bold mb-2">Module Access</div>
-      <div class="d-flex gap-4 mb-3">
-        <v-checkbox label="Marketing" color="primary" density="compact" hide-details />
-        <v-checkbox label="Service" color="primary" density="compact" hide-details />
-        <v-checkbox label="Commerce" color="primary" density="compact" hide-details />
-      </div>
-      <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
-        The invitee will receive a sign-up link. Access is granted after they accept.
-      </v-alert>
-      <template #footer>
-        <div class="w-100 d-flex justify-end gap-3">
-          <v-btn variant="text" class="text-none" @click="addUserDialog = false">Cancel</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" prepend-icon="send" :disabled="!newUserEmail" @click="sendInvite">
-            Send Invitation
+      <v-menu>
+        <template #activator="{ props: menuProps }">
+          <v-btn v-bind="menuProps" variant="flat" size="small" class="text-none" prepend-icon="user-cog" rounded="lg" color="surface">
+            Assign role
           </v-btn>
-        </div>
-      </template>
-    </MpFormDrawer>
+        </template>
+        <v-list density="compact">
+          <template v-for="group in bulkAssignGroups" :key="group.product">
+            <v-list-subheader>{{ group.label }}</v-list-subheader>
+            <v-list-item v-for="role in group.roles" :key="role.id" :title="role.name" @click="bulkAssignRole(role.id)" />
+          </template>
+        </v-list>
+      </v-menu>
+      <v-btn
+        variant="flat"
+        size="small"
+        class="text-none"
+        prepend-icon="send"
+        rounded="lg"
+        color="surface"
+        :disabled="selectedInvited.length === 0"
+        @click="bulkResend"
+      >
+        Resend invites
+      </v-btn>
+      <v-btn
+        variant="flat"
+        size="small"
+        class="text-none"
+        prepend-icon="pause"
+        rounded="lg"
+        color="surface"
+        :disabled="selectedActive.length === 0"
+        @click="bulkDeactivate"
+      >
+        Deactivate
+      </v-btn>
+      <v-btn variant="flat" size="small" class="text-none" prepend-icon="trash-2" rounded="lg" color="error" @click="askRemoveBulk">
+        Remove
+      </v-btn>
+    </MpFloatingBulkBar>
 
-    <MpFormDrawer
-      v-model="editDrawer"
-      title="Edit access"
-      :subtitle="editTarget?.name"
-      :width="460"
-    >
-      <v-select
-        v-model="editForm.role"
-        label="Role"
-        :items="ROLES"
-        variant="outlined"
-        density="compact"
-        hide-details
-        class="mb-3"
-      />
-      <div class="text-subtitle-2 font-weight-bold mb-2">Module Access</div>
-      <div class="d-flex gap-4 mb-3">
-        <v-checkbox v-model="editForm.marketing" label="Marketing" color="primary" density="compact" hide-details />
-        <v-checkbox v-model="editForm.service" label="Service" color="primary" density="compact" hide-details />
-        <v-checkbox v-model="editForm.commerce" label="Commerce" color="primary" density="compact" hide-details />
-      </div>
-      <template #footer>
-        <div class="w-100 d-flex justify-end gap-3">
-          <v-btn variant="text" class="text-none" @click="editDrawer = false">Cancel</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" @click="saveEdit">Save</v-btn>
-        </div>
-      </template>
-    </MpFormDrawer>
+    <InviteUsersDrawer v-model="inviteDrawer" @invited="onInvited" />
+
+    <UserAccessDrawer
+      v-model="accessDrawer"
+      :user-id="accessUserId"
+      @notify="notify"
+      @request-remove="onRequestRemove"
+    />
 
     <MpConfirmDialog
       v-model="removeDialog"
-      title="Remove user"
-      :message="`Remove ${removeTarget?.name} from this workspace? They lose access immediately.`"
+      title="Remove user?"
+      :message="removeMessage"
       confirm-label="Remove"
       danger
       @confirm="confirmRemove"
     />
 
-    <v-snackbar v-model="snackbar" :timeout="2500">{{ snackbarText }}</v-snackbar>
+    <MpConfirmDialog
+      v-model="revokeDialog"
+      title="Revoke invitation?"
+      :message="`Revoke the pending invitation for ${revokeTarget?.email}? The sign-up link stops working immediately.`"
+      confirm-label="Revoke"
+      danger
+      @confirm="confirmRevoke"
+    />
+
+    <v-snackbar v-model="snackbar" :timeout="2500" rounded="pill" location="bottom center">
+      {{ snackbarText }}
+    </v-snackbar>
   </div>
 </template>
 
@@ -239,38 +514,51 @@ function confirmRemove() {
   max-width: 980px;
 }
 
-.users-table {
-  border: 1px solid var(--hairline);
-  border-radius: 12px;
-  background: var(--surface-1);
-  overflow: hidden;
+.users-table :deep(thead th) {
+  white-space: nowrap;
 }
 
-.users-table :deep(.v-table) {
-  background: transparent;
+.users-table :deep(tbody tr) {
+  cursor: pointer;
 }
 
-.user-cell {
+.user-identity__name {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 0;
-}
-
-.user-cell__name {
+  gap: 5px;
   font-size: 13.5px;
   font-weight: 600;
   color: var(--ink);
+  white-space: nowrap;
 }
 
-.user-cell__email {
+.user-identity__email {
   font-size: 12px;
   color: var(--muted);
 }
 
-@media (max-width: 760px) {
-  .users-table {
-    overflow-x: auto;
-  }
+.product-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  background: var(--surface-1);
+  color: var(--ink);
+}
+
+.product-dot--marketing { color: var(--cloud-marketing-text); }
+.product-dot--service { color: var(--cloud-service-text); }
+.product-dot--commerce { color: var(--cloud-commerce-text); }
+
+.product-dot--locked {
+  color: var(--muted);
+  opacity: 0.65;
+}
+
+.product-dot :deep(.v-icon) {
+  color: currentColor;
 }
 </style>

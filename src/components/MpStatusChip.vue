@@ -73,7 +73,7 @@ const toneMap: Record<string, Record<string, Tone>> = {
     'needs setup': 'warning', 'sync issue': 'danger', 'auth expired': 'danger',
     healthy: 'success', 'needs attention': 'warning', incomplete: 'warning',
     open: 'success', closed: 'neutral', online: 'success', offline: 'danger',
-    syncing: 'warning',
+    syncing: 'warning', invited: 'warning', deactivated: 'neutral',
   },
 }
 

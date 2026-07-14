@@ -23,7 +23,7 @@ const filteredGroups = computed<SettingsGroup[]>(() => {
 })
 
 function isActive(item: SettingsItem): boolean {
-  return route.name === item.routeName
+  return route.name === item.routeName || (item.match?.includes(route.name as string) ?? false)
 }
 
 function routeTo(item: SettingsItem) {

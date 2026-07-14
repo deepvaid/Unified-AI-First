@@ -2,6 +2,8 @@ export interface SettingsItem {
   slug: string
   label: string
   routeName: string
+  /** Extra route names that keep this item highlighted (e.g. detail pages). */
+  match?: string[]
   /** Renders a launch (↗) icon and points to an area outside the Settings shell. */
   external?: boolean
 }
@@ -24,7 +26,8 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
     items: [
       { slug: 'account-defaults', label: 'Account Defaults', routeName: 'SettingsAccountDefaults' },
       { slug: 'account-billing', label: 'Account & Billing', routeName: 'Billing', external: true },
-      { slug: 'users-permissions', label: 'Users & Permissions', routeName: 'SettingsUsersPermissions' },
+      { slug: 'users-permissions', label: 'Users', routeName: 'SettingsUsersPermissions' },
+      { slug: 'roles', label: 'Roles & Permissions', routeName: 'SettingsRoles', match: ['SettingsRoleDetail'] },
       { slug: 'audit-log', label: 'Audit Log', routeName: 'SettingsAuditLog' },
     ],
   },
