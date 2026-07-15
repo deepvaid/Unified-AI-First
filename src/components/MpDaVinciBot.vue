@@ -1243,9 +1243,10 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 /* ─── Composer ─────────────────────────────────────────────────────── */
 .dv-panel__composer {
+  /* Matches body/header surface — the border-top hairline carries separation */
   flex-shrink: 0;
   padding: 16px 16px 16px;
-  background: rgb(var(--v-theme-background));
+  background: rgb(var(--v-theme-surface));
   border-top: 1px solid rgb(var(--v-theme-outline-variant));
 }
 
@@ -1286,7 +1287,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   padding: 10px 10px 8px 14px;
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 22px;
+  border-radius: var(--mp-component-card-radius-xl);
   box-shadow: inset 0 0 0 1px rgb(var(--v-theme-outline-variant));
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }

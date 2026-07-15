@@ -21,7 +21,7 @@ const typeConfig: Record<string, { icon: string; color: string; label: string }>
 </script>
 
 <template>
-  <v-card variant="outlined" rounded="lg">
+  <v-card variant="outlined" class="content-card">
     <v-card-text class="pa-4">
       <div class="d-flex align-center ga-2 mb-3">
         <v-avatar size="28" :color="typeConfig[type]?.color" variant="tonal">
@@ -32,7 +32,7 @@ const typeConfig: Record<string, { icon: string; color: string; label: string }>
 
       <div class="text-subtitle-2 font-weight-bold mb-2">{{ title }}</div>
 
-      <div class="content-preview pa-3 rounded-lg text-body-2 bg-surface-variant" style="border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); white-space: pre-line; line-height: var(--mp-typography-lineHeight-loose); max-height: 160px; overflow-y: auto;">
+      <div class="content-preview pa-3 text-body-2 bg-surface-variant" style="border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); white-space: pre-line; line-height: var(--mp-typography-lineHeight-loose); max-height: 160px; overflow-y: auto;">
         {{ content }}
       </div>
 
@@ -44,3 +44,8 @@ const typeConfig: Record<string, { icon: string; color: string; label: string }>
     </v-card-text>
   </v-card>
 </template>
+
+<style scoped>
+.content-card { border-radius: var(--mp-component-card-radius-md); }
+.content-preview { border-radius: var(--mp-component-card-radius-sm); }
+</style>

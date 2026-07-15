@@ -17,7 +17,7 @@ function getMax(bars: number[][]) {
 </script>
 
 <template>
-  <v-card variant="outlined" rounded="lg" class="dv-chart-card">
+  <v-card variant="outlined" class="dv-chart-card">
     <v-card-text>
       <div class="d-flex align-center justify-space-between mb-1">
         <div>
@@ -47,12 +47,12 @@ function getMax(bars: number[][]) {
       </div>
 
       <div v-if="labels" class="d-flex justify-space-between px-4 mb-3">
-        <span v-for="l in labels" :key="l" class="text-caption text-medium-emphasis" style="font-size: 10px;">{{ l }}</span>
+        <span v-for="l in labels" :key="l" class="chart-x-label text-medium-emphasis">{{ l }}</span>
       </div>
 
       <div v-if="seriesNames" class="d-flex align-center ga-4 flex-wrap">
         <div v-for="(name, i) in seriesNames" :key="i" class="d-flex align-center ga-1">
-          <span :style="{ width: '8px', height: '8px', borderRadius: '50%', background: colors[i % colors.length] }" />
+          <span class="chart-legend-dot" :style="{ background: colors[i % colors.length] }" />
           <span class="text-caption">{{ name }}</span>
         </div>
       </div>
@@ -61,6 +61,9 @@ function getMax(bars: number[][]) {
 </template>
 
 <style scoped>
+.dv-chart-card { border-radius: var(--mp-component-card-radius-md); }
+.chart-x-label { font-size: var(--mp-typography-fontSize-xs); }
+.chart-legend-dot { width: 8px; height: 8px; border-radius: var(--mp-borderRadius-full); }
 .chart-area { display: flex; gap: var(--mp-spacing-1); height: 140px; }
 .chart-y-labels { display: flex; flex-direction: column; justify-content: space-between; font-size: var(--mp-typography-fontSize-xs); color: rgba(var(--v-theme-on-surface), 0.45); min-width: 36px; text-align: right; padding-right: 6px; }
 .chart-bars-wrap { display: flex; align-items: flex-end; gap: 3px; flex: 1; border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); padding: 0 2px; }

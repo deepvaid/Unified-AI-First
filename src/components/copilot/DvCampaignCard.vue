@@ -16,7 +16,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <v-card variant="outlined" rounded="lg" class="campaign-card">
+  <v-card variant="outlined" class="campaign-card">
     <v-card-text class="pa-4">
       <div class="d-flex align-center ga-2 mb-3">
         <v-avatar size="32" color="primary" variant="tonal">
@@ -69,6 +69,6 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.campaign-card { transition: box-shadow var(--mp-transition-base); }
+.campaign-card { border-radius: var(--mp-component-card-radius-md); transition: box-shadow var(--mp-transition-base); }
 .campaign-card:hover { box-shadow: var(--mp-shadow-md); }
 </style>

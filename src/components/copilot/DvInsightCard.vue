@@ -24,7 +24,7 @@ const severityColor: Record<string, string> = {
   <v-card
     variant="tonal"
     :color="severityColor[severity || 'info']"
-    rounded="lg"
+    class="insight-card"
   >
     <v-card-text class="pa-4">
       <div class="d-flex align-start ga-3">
@@ -47,3 +47,7 @@ const severityColor: Record<string, string> = {
     </v-card-text>
   </v-card>
 </template>
+
+<style scoped>
+.insight-card { border-radius: var(--mp-component-card-radius-md); }
+</style>
