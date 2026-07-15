@@ -961,6 +961,8 @@ function onComposerKeydown(event: KeyboardEvent) {
   background: rgb(var(--v-theme-surface));
   min-height: 0;
   overflow: hidden;
+  /* Clip header/composer corners when hosted in the rounded copilot drawer */
+  border-radius: inherit;
 }
 
 /* ─── Header ───────────────────────────────────────────────────────── */

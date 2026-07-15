@@ -197,6 +197,7 @@ const copilotDrawerWidth = computed(() => {
       location="right"
       :width="copilotDrawerWidth"
       class="copilot-drawer"
+      :style="{ '--copilot-top': isFullPage ? '4px' : '60px' }"
     >
       <MpDaVinciBot
         @close="copilot.close()"
@@ -256,8 +257,20 @@ const copilotDrawerWidth = computed(() => {
   }
 }
 
+/* Copilot floats as a rounded surface like .mp-content-frame — same 4px top /
+   12px right+bottom gutters, radius, border, and soft shadow. Vuetify's layout
+   engine sets top/height inline, so override with calc + !important;
+   --copilot-top is bound in the template (60px under the app bar, 4px on
+   fullPage routes without one). */
 .copilot-drawer {
-  border-left: 1px solid var(--mp-border-subtle);
+  top: var(--copilot-top, 60px) !important;
+  height: calc(100% - var(--copilot-top, 60px) - 12px) !important;
+  margin-right: 12px;
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: var(--mp-component-card-radius-lg);
+  box-shadow: var(--mp-shadow-md);
+  overflow: hidden;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -265,5 +278,6 @@ const copilotDrawerWidth = computed(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden !important;
+  border-radius: inherit;
 }
 </style>

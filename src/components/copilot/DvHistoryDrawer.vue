@@ -167,7 +167,7 @@ function buildSub(item: DaVinciHistoryItem): string {
 
 .dv-history {
   position: absolute;
-  inset: 60px 0 0 0;
+  inset: 56px 0 0 0;
   background: rgb(var(--v-theme-surface));
   border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
   transform: translateX(100%);
@@ -175,7 +175,7 @@ function buildSub(item: DaVinciHistoryItem): string {
   display: flex;
   flex-direction: column;
   z-index: 40;
-  height: calc(100% - 60px);
+  height: calc(100% - 56px);
 }
 
 .dv-history.is-open {
