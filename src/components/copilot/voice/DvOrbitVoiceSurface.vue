@@ -377,7 +377,12 @@ function onGhost() {
 
 .dv-orbit__shimmer {
   border-radius: 6px;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e6edf4 37%, #f1f5f9 63%);
+  background: linear-gradient(
+    90deg,
+    var(--dv-orbit-muted-bg) 25%,
+    var(--dv-orbit-hairline) 37%,
+    var(--dv-orbit-muted-bg) 63%
+  );
   background-size: 200% 100%;
   animation: dv-orbit-shimmer 1.4s linear infinite;
 }
@@ -455,7 +460,7 @@ function onGhost() {
 }
 
 .dv-orbit__undo:hover {
-  color: #0e7a36;
+  color: var(--dv-orbit-success-text);
 }
 
 /* ── Widget card host (Orbit chrome over DvWidgetDraftCard) ── */

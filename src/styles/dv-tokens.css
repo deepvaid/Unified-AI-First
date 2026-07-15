@@ -69,6 +69,37 @@
   --dv-orbit-input-shadow: 0 6px 18px rgba(15, 42, 67, 0.06);
 }
 
+/* ── Orbit voice mode — dark-theme overrides. Hand-tuned hex mirroring the
+   light handoff spec (same no-derive rule); gradients that already read on
+   dark (grad, wave-grad) are inherited unchanged. ── */
+.v-theme--maropostDark,
+[data-theme='dark'] {
+  --dv-orbit-strip-grad: linear-gradient(120deg, #2A2548, #123640);
+  --dv-orbit-ink: #E4EEF7;
+  --dv-orbit-slate: #94A8BC;
+  --dv-orbit-body: #C3D2E0;
+  --dv-orbit-mist: #7A8FA5;
+  --dv-orbit-chip: #A8BACB;
+  --dv-orbit-line: #2C3A48;
+  --dv-orbit-hairline: #26323F;
+  --dv-orbit-surface: #1B2531;
+  --dv-orbit-echo-bg: #1E2936;
+  --dv-orbit-card-line: #2C3A48;
+  --dv-orbit-blue: #3FB4EF;
+  --dv-orbit-blue-hover: #55BEF2;
+  --dv-orbit-bar-light: #2E5E7C;
+  --dv-orbit-sep: #33424F;
+  --dv-orbit-success: #34D27B;
+  --dv-orbit-success-text: #A7E8C6;
+  --dv-orbit-success-bg: #12291C;
+  --dv-orbit-warn: #F0A24B;
+  --dv-orbit-warn-bg: #2E2313;
+  --dv-orbit-muted: #64748B;
+  --dv-orbit-muted-bg: #222E3A;
+  --dv-orbit-mic-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+  --dv-orbit-input-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
 .v-theme--maropostDark,
 [data-theme='dark'] {
   /* Da Vinci accent — uses app accent (adapts to user's color choice) */

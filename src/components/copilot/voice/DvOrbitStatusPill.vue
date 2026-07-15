@@ -57,7 +57,7 @@ const label = computed(() => LABELS[props.state])
 
 .dv-orbit-pill--paused {
   background: var(--dv-orbit-muted-bg);
-  color: #64748b;
+  color: var(--dv-orbit-muted);
 }
 
 .dv-orbit-pill__dot {
@@ -79,7 +79,7 @@ const label = computed(() => LABELS[props.state])
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8b7cf8, #22d3ee);
+  background: var(--dv-orbit-grad);
   animation: dv-orbit-pulse-dot 1.2s ease-in-out infinite;
 }
 

@@ -95,7 +95,7 @@ const emit = defineEmits<{
 }
 
 .dv-orbit-micbar__mic--muted {
-  background: linear-gradient(135deg, #94a3b8, #c2cdd9);
+  background: linear-gradient(135deg, var(--dv-orbit-muted), var(--dv-orbit-sep));
   box-shadow: 0 8px 20px rgba(100, 116, 139, 0.25);
 }
 
@@ -132,7 +132,7 @@ const emit = defineEmits<{
 }
 
 .dv-orbit-micbar__ghost:hover {
-  background: #f2f6fa;
+  background: var(--dv-orbit-surface);
 }
 
 @media (prefers-reduced-motion: reduce) {
