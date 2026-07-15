@@ -55,7 +55,7 @@ const { toasts, triggerAction } = useDaVinciToasts()
   padding: 12px 14px;
   background: rgb(var(--v-theme-on-surface));
   color: rgb(var(--v-theme-surface));
-  border-radius: 10px;
+  border-radius: var(--mp-component-card-radius-sm);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
@@ -126,6 +126,6 @@ const { toasts, triggerAction } = useDaVinciToasts()
 }
 
 .dv-toast__action:hover {
-  background: color-mix(in oklch, var(--dv-on-accent) 12%, transparent);
+  background: color-mix(in oklch, rgb(var(--v-theme-surface)) 14%, transparent);
 }
 </style>

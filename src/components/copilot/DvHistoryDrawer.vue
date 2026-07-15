@@ -238,7 +238,7 @@ function buildSub(item: DaVinciHistoryItem): string {
   align-items: flex-start;
   gap: 10px;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: var(--mp-component-card-radius-sm);
   border: none;
   background: transparent;
   cursor: pointer;

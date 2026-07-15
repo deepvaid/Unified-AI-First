@@ -466,7 +466,6 @@ function onGhost() {
 
 .dv-orbit__card :deep(.dv-draft) {
   border: 1px solid var(--dv-orbit-card-line);
-  border-radius: 16px;
 }
 
 /* ── State transition: cross-fade + 8px upward drift ── */

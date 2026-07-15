@@ -205,7 +205,7 @@ function handleExpandAdd() {
 <style scoped lang="scss">
 .dv-draft {
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 12px;
+  border-radius: var(--mp-component-card-radius-md);
   background: rgb(var(--v-theme-surface));
   overflow: hidden;
   position: relative;

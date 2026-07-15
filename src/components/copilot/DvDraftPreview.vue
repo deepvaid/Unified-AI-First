@@ -346,7 +346,7 @@ const activityItems = [
   gap: 1px;
   background: rgb(var(--v-theme-outline-variant));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 8px;
+  border-radius: var(--mp-component-card-radius-sm);
   overflow: hidden;
 }
 
@@ -396,7 +396,7 @@ const activityItems = [
 .dv-line-chart {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 8px;
+  border-radius: var(--mp-component-card-radius-sm);
   padding: 14px 14px 8px;
 }
 
@@ -443,7 +443,7 @@ const activityItems = [
 .dv-pie-chart {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 8px;
+  border-radius: var(--mp-component-card-radius-sm);
   padding: 14px;
   display: flex;
   align-items: center;
@@ -491,7 +491,7 @@ const activityItems = [
 .dv-mini-tbl {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 8px;
+  border-radius: var(--mp-component-card-radius-sm);
   overflow: hidden;
 }
 
@@ -533,7 +533,7 @@ const activityItems = [
 .dv-activity {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 8px;
+  border-radius: var(--mp-component-card-radius-sm);
   padding: 6px 10px;
 }
 

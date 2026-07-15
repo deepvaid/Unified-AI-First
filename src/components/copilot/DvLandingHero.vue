@@ -77,7 +77,7 @@ const emit = defineEmits<{ suggestion: [text: string] }>()
 .dv-hero__rule {
   width: 170px;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--mp-borderRadius-full);
   background: var(--dv-hero-grad);
   margin-top: 18px;
 }
@@ -92,7 +92,7 @@ const emit = defineEmits<{ suggestion: [text: string] }>()
 
 .dv-hero__chip {
   border: 1px solid var(--dv-border);
-  border-radius: 999px;
+  border-radius: var(--mp-borderRadius-full);
   background: rgb(var(--v-theme-surface));
   padding: 9px 14px;
   font-size: var(--mp-typography-fontSize-sm);

@@ -1019,7 +1019,7 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 .dv-panel__menu {
   min-width: 220px;
-  border-radius: 12px !important;
+  border-radius: var(--mp-component-card-radius-md) !important;
   background: rgb(var(--v-theme-surface)) !important;
   border: 1px solid rgb(var(--v-theme-outline-variant));
 }
@@ -1060,7 +1060,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   gap: 8px;
   min-height: 36px;
   padding: 10px 14px;
-  border-radius: var(--mp-borderRadius-lg);
+  border-radius: var(--mp-borderRadius-full);
   border: 1px solid var(--dv-border);
   background: rgb(var(--v-theme-surface));
   font-size: var(--mp-typography-fontSize-sm);
@@ -1087,7 +1087,8 @@ function onComposerKeydown(event: KeyboardEvent) {
   padding: 10px 14px;
   background: var(--dv-accent);
   color: var(--dv-on-accent);
-  border-radius: 16px 16px 4px 16px;
+  border-radius: var(--mp-component-card-radius-lg) var(--mp-component-card-radius-lg)
+    var(--mp-borderRadius-sm) var(--mp-component-card-radius-lg);
   font-size: var(--mp-typography-fontSize-body);
   font-weight: 500;
   line-height: 1.45;
@@ -1130,7 +1131,7 @@ function onComposerKeydown(event: KeyboardEvent) {
   color: var(--dv-text-secondary);
   padding: 10px 12px;
   background: var(--dv-accent-soft);
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-component-card-radius-md);
   border-left: 2px solid var(--dv-accent);
 }
 
@@ -1185,7 +1186,7 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 .dv-skeleton {
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 12px;
+  border-radius: var(--mp-component-card-radius-md);
   background: rgb(var(--v-theme-surface));
   padding: 14px;
 }

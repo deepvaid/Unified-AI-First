@@ -227,7 +227,7 @@ function close() {
 
 .dv-refine {
   background: rgb(var(--v-theme-surface));
-  border-radius: 14px !important;
+  border-radius: var(--mp-component-dialog-radius-default) !important;
   overflow: hidden;
 }
 
@@ -297,7 +297,7 @@ function close() {
   padding: 8px 6px;
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 8px;
+  border-radius: var(--mp-component-card-radius-sm);
   cursor: pointer;
   color: rgb(var(--v-theme-on-surface));
   transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
@@ -334,7 +334,7 @@ function close() {
   gap: 10px;
   padding: 10px 12px;
   background: rgb(var(--v-theme-surface-variant));
-  border-radius: 8px;
+  border-radius: var(--mp-component-card-radius-sm);
   font-size: 12.5px;
   font-weight: 500;
   line-height: 1.3;
@@ -352,7 +352,7 @@ function close() {
   flex: 1;
   min-height: 260px;
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 10px;
+  border-radius: var(--mp-component-card-radius-sm);
   padding: 12px;
   background: rgb(var(--v-theme-surface));
   overflow: hidden;

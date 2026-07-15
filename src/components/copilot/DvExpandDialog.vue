@@ -76,7 +76,7 @@ function handleAdd() {
 <style scoped lang="scss">
 .dv-expand {
   background: rgb(var(--v-theme-surface));
-  border-radius: 14px !important;
+  border-radius: var(--mp-component-dialog-radius-default) !important;
   overflow: hidden;
 }
 
@@ -119,7 +119,7 @@ function handleAdd() {
 .dv-expand__preview {
   background: rgb(var(--v-theme-background));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 12px;
+  border-radius: var(--mp-component-card-radius-md);
   padding: 24px;
 }
 
