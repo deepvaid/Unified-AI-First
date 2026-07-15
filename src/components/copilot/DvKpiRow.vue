@@ -42,7 +42,7 @@ defineProps<{
   min-width: 120px;
   padding: 10px 12px;
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 12px;
+  border-radius: var(--mp-component-card-radius-md);
   background: rgb(var(--v-theme-surface));
 }
 

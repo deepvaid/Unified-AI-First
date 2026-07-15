@@ -8,6 +8,9 @@
   --dv-accent-hover: color-mix(in oklch, var(--accent) 85%, black);
   --dv-accent-active: color-mix(in oklch, var(--accent) 70%, black);
   --dv-on-accent: #FFFFFF;
+  /* Orb particle ink (read via inherited `color` by the canvas engine) — dark
+     ink for light surfaces; the dark theme flips it to a light ink below. */
+  --dv-ink: #16181d;
   --dv-accent-soft: var(--mp-color-light-aiAccent-soft);
   --dv-border: var(--mp-color-light-aiAccent-border);
   --dv-text-primary: var(--mp-color-light-aiAccent-textPrimary);
@@ -107,6 +110,8 @@
   --dv-accent-hover: color-mix(in oklch, var(--accent) 85%, white);
   --dv-accent-active: color-mix(in oklch, var(--accent) 70%, white);
   --dv-on-accent: #0B1530;
+  /* Light ink so the orb's particle mark reads on dark surfaces */
+  --dv-ink: #E4EEF7;
   --dv-accent-soft: var(--mp-color-dark-aiAccent-soft);
   --dv-border: var(--mp-color-dark-aiAccent-border);
   --dv-text-primary: var(--mp-color-dark-aiAccent-textPrimary);

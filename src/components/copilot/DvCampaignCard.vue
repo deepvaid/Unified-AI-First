@@ -69,6 +69,9 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.campaign-card { border-radius: var(--mp-component-card-radius-md); transition: box-shadow var(--mp-transition-base); }
+/* Wins over the global `.v-card.rounded-lg` (16px !important) so Da Vinci's
+   in-thread cards nest concentrically inside the 16px panel at 12px. */
+.v-card.campaign-card { border-radius: var(--mp-component-card-radius-md) !important; }
+.campaign-card { transition: box-shadow var(--mp-transition-base); }
 .campaign-card:hover { box-shadow: var(--mp-shadow-md); }
 </style>

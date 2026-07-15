@@ -46,6 +46,6 @@ const typeConfig: Record<string, { icon: string; color: string; label: string }>
 </template>
 
 <style scoped>
-.content-card { border-radius: var(--mp-component-card-radius-md); }
+.v-card.content-card { border-radius: var(--mp-component-card-radius-md) !important; }
 .content-preview { border-radius: var(--mp-component-card-radius-sm); }
 </style>

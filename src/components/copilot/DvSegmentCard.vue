@@ -51,5 +51,5 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.segment-card { border-radius: var(--mp-component-card-radius-md); }
+.v-card.segment-card { border-radius: var(--mp-component-card-radius-md) !important; }
 </style>

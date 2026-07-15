@@ -49,5 +49,5 @@ const severityColor: Record<string, string> = {
 </template>
 
 <style scoped>
-.insight-card { border-radius: var(--mp-component-card-radius-md); }
+.v-card.insight-card { border-radius: var(--mp-component-card-radius-md) !important; }
 </style>

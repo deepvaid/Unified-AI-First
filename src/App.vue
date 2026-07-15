@@ -195,9 +195,12 @@ const copilotDrawerWidth = computed(() => {
     <v-navigation-drawer
       v-model="copilot.isOpen"
       location="right"
-      :width="copilotDrawerWidth"
+      :width="copilotDrawerWidth + 12"
       class="copilot-drawer"
-      :style="{ '--copilot-top': isFullPage ? '4px' : '60px' }"
+      :style="{
+        '--copilot-top': isFullPage ? '4px' : '60px',
+        '--copilot-w': copilotDrawerWidth + 'px',
+      }"
     >
       <MpDaVinciBot
         @close="copilot.close()"
@@ -261,10 +264,13 @@ const copilotDrawerWidth = computed(() => {
    12px right+bottom gutters, radius, border, and soft shadow. Vuetify's layout
    engine sets top/height inline, so override with calc + !important;
    --copilot-top is bound in the template (60px under the app bar, 4px on
-   fullPage routes without one). */
+   fullPage routes without one). The drawer RESERVES width+12 of layout space
+   but RENDERS at --copilot-w with a 12px margin, so the panel keeps a true
+   right gutter without overlapping the reserved content band. */
 .copilot-drawer {
   top: var(--copilot-top, 60px) !important;
   height: calc(100% - var(--copilot-top, 60px) - 12px) !important;
+  width: var(--copilot-w) !important;
   margin-right: 12px;
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);

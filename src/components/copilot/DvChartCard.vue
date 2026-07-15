@@ -61,7 +61,7 @@ function getMax(bars: number[][]) {
 </template>
 
 <style scoped>
-.dv-chart-card { border-radius: var(--mp-component-card-radius-md); }
+.v-card.dv-chart-card { border-radius: var(--mp-component-card-radius-md) !important; }
 .chart-x-label { font-size: var(--mp-typography-fontSize-xs); }
 .chart-legend-dot { width: 8px; height: 8px; border-radius: var(--mp-borderRadius-full); }
 .chart-area { display: flex; gap: var(--mp-spacing-1); height: 140px; }
