@@ -29,6 +29,24 @@ export interface SynthesisResult {
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
+/**
+ * Da Vinci's voice direction — the audition-winning recipe (2026-07, "Option 1").
+ * Prepended to every synthesis request (and by the bake scripts) so live replies and
+ * pre-baked lines carry the same persona. Client cache keys are the display text only,
+ * so this stays server-side. Pair with temperature DV_VOICE_TEMPERATURE.
+ */
+export const DV_VOICE_STYLE =
+  // NOTE: intentionally civilian phrasing — the original audition scene ("tactical helmet /
+  // encrypted comms / combat helmet / operator") trips Gemini's PROHIBITED_CONTENT filter on
+  // some reply texts (silent empty stream). The acoustic descriptors are unchanged.
+  'Scene: A private voice link. An AI assistant speaking over a clear communications channel. ' +
+  'Calm, precise, crystal clear despite light radio transmission.\n\n' +
+  'Context: A highly intelligent AI butler assisting his principal through an earpiece. ' +
+  'Slight radio compression, confident, emotionally restrained, reassuring under pressure. ' +
+  'Think advanced aerospace communication rather than a movie narrator.'
+
+export const DV_VOICE_TEMPERATURE = 1.05
+
 /** Decode base64 → bytes without Node's Buffer (this module compiles under the app's
  *  browser tsconfig; atob is a standard global available in Node 16+ and browsers). */
 function base64ToBytes(b64: string): Uint8Array {
@@ -75,34 +93,44 @@ export async function synthesize(text: string, opts: SynthesisOptions): Promise<
   const voice = opts.voice || 'Charon' // male; one of Gemini's 30 prebuilt voices
   const model = opts.model || 'gemini-3.1-flash-tts-preview'
 
-  const body = {
-    contents: [{ parts: [{ text: clean }] }],
-    generationConfig: {
-      responseModalities: ['AUDIO'],
-      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
-    },
+  const request = async (promptText: string) => {
+    const body = {
+      contents: [{ parts: [{ text: promptText }] }],
+      generationConfig: {
+        temperature: DV_VOICE_TEMPERATURE,
+        responseModalities: ['AUDIO'],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
+      },
+    }
+    let resp: Response
+    try {
+      resp = await fetch(`${GEMINI_BASE}/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'x-goog-api-key': opts.apiKey!, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch (err) {
+      throw new TtsError(502, `TTS upstream unreachable: ${err instanceof Error ? err.message : 'fetch failed'}`)
+    }
+    if (!resp.ok) {
+      const detail = await resp.text().catch(() => '')
+      throw new TtsError(502, `TTS provider error ${resp.status}: ${detail.slice(0, 300)}`)
+    }
+    return (await resp.json().catch(() => null)) as {
+      candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string } }> } }>
+      promptFeedback?: { blockReason?: string }
+    } | null
   }
 
-  let resp: Response
-  try {
-    resp = await fetch(`${GEMINI_BASE}/${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'x-goog-api-key': opts.apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-  } catch (err) {
-    throw new TtsError(502, `TTS upstream unreachable: ${err instanceof Error ? err.message : 'fetch failed'}`)
+  // Styled first; Gemini's safety filter occasionally flags the style prompt + certain
+  // texts (blockReason, no audio) — retry once with the bare text so a flagged combo
+  // degrades to a plain read instead of silence (the client mix chain keeps the sound).
+  let data = await request(`${DV_VOICE_STYLE}\n\n${clean}`)
+  let part = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data)
+  if (!part?.inlineData?.data && data?.promptFeedback?.blockReason) {
+    data = await request(clean)
+    part = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data)
   }
-
-  if (!resp.ok) {
-    const detail = await resp.text().catch(() => '')
-    throw new TtsError(502, `TTS provider error ${resp.status}: ${detail.slice(0, 300)}`)
-  }
-
-  const data = (await resp.json().catch(() => null)) as {
-    candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string } }> } }>
-  } | null
-  const part = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data)
   const b64 = part?.inlineData?.data
   if (!b64) throw new TtsError(502, 'TTS returned no audio')
 
@@ -127,28 +155,6 @@ export async function* synthesizeStream(text: string, opts: SynthesisOptions): A
 
   const voice = opts.voice || 'Charon'
   const model = opts.model || 'gemini-3.1-flash-tts-preview'
-  const body = {
-    contents: [{ parts: [{ text: clean }] }],
-    generationConfig: {
-      responseModalities: ['AUDIO'],
-      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
-    },
-  }
-
-  let resp: Response
-  try {
-    resp = await fetch(`${GEMINI_BASE}/${model}:streamGenerateContent?alt=sse`, {
-      method: 'POST',
-      headers: { 'x-goog-api-key': opts.apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-  } catch (err) {
-    throw new TtsError(502, `TTS upstream unreachable: ${err instanceof Error ? err.message : 'fetch failed'}`)
-  }
-  if (!resp.ok || !resp.body) {
-    const detail = resp.body ? await resp.text().catch(() => '') : ''
-    throw new TtsError(502, `TTS provider error ${resp.status}: ${detail.slice(0, 200)}`)
-  }
 
   // Parse SSE `data: {json}` lines; each carries a base64 PCM chunk in inlineData.data.
   const parseLine = (line: string): Uint8Array | null => {
@@ -166,22 +172,55 @@ export async function* synthesizeStream(text: string, opts: SynthesisOptions): A
     }
   }
 
-  const reader = resp.body.getReader()
-  const decoder = new TextDecoder()
-  let buf = ''
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buf += decoder.decode(value, { stream: true })
-    let nl: number
-    while ((nl = buf.indexOf('\n')) >= 0) {
-      const pcm = parseLine(buf.slice(0, nl))
-      buf = buf.slice(nl + 1)
+  async function* attempt(promptText: string): AsyncGenerator<Uint8Array> {
+    const body = {
+      contents: [{ parts: [{ text: promptText }] }],
+      generationConfig: {
+        temperature: DV_VOICE_TEMPERATURE,
+        responseModalities: ['AUDIO'],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
+      },
+    }
+    let resp: Response
+    try {
+      resp = await fetch(`${GEMINI_BASE}/${model}:streamGenerateContent?alt=sse`, {
+        method: 'POST',
+        headers: { 'x-goog-api-key': opts.apiKey!, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch (err) {
+      throw new TtsError(502, `TTS upstream unreachable: ${err instanceof Error ? err.message : 'fetch failed'}`)
+    }
+    if (!resp.ok || !resp.body) {
+      const detail = resp.body ? await resp.text().catch(() => '') : ''
+      throw new TtsError(502, `TTS provider error ${resp.status}: ${detail.slice(0, 200)}`)
+    }
+    const reader = resp.body.getReader()
+    const decoder = new TextDecoder()
+    let buf = ''
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buf += decoder.decode(value, { stream: true })
+      let nl: number
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const pcm = parseLine(buf.slice(0, nl))
+        buf = buf.slice(nl + 1)
+        if (pcm && pcm.length) yield pcm
+      }
+    }
+    if (buf.trim()) {
+      const pcm = parseLine(buf)
       if (pcm && pcm.length) yield pcm
     }
   }
-  if (buf.trim()) {
-    const pcm = parseLine(buf)
-    if (pcm && pcm.length) yield pcm
+
+  // Styled first; a safety-flagged combo returns 200 with zero audio events — retry once
+  // with the bare text so the reply degrades to a plain read instead of silence.
+  let yielded = false
+  for await (const pcm of attempt(`${DV_VOICE_STYLE}\n\n${clean}`)) {
+    yielded = true
+    yield pcm
   }
+  if (!yielded) yield* attempt(clean)
 }

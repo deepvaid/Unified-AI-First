@@ -5,14 +5,19 @@
 // Usage:
 //   GEMINI_API_KEY=... node scripts/bake-greeting.mjs ["greeting text"] [outPath]
 //   (voice via TTS_VOICE env, default Charon — male; model via TTS_MODEL)
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdirSync, readFileSync, unlinkSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { execFileSync } from 'node:child_process'
+
+const { DV_VOICE_STYLE, DV_VOICE_TEMPERATURE } = await import('../src/server/tts.ts')
 
 const KEY = process.env.GEMINI_API_KEY
 const VOICE = process.env.TTS_VOICE || 'Charon'
 const MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview'
-const TEXT = process.argv[2] || 'Hey Ross, how can I help you today?'
+const TEXT = process.argv[2] || 'Good day, Ross. How may I be of service?'
 const OUT = process.argv[3] || 'public/davinci/greeting.wav'
+// The audition-locked pace (pitch-preserving, applied via ffmpeg post-step).
+const ATEMPO = process.env.BAKE_ATEMPO || '1.12'
 
 if (!KEY) {
   console.error('Missing GEMINI_API_KEY')
@@ -51,8 +56,9 @@ const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/model
   method: 'POST',
   headers: { 'x-goog-api-key': KEY, 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    contents: [{ parts: [{ text: TEXT }] }],
+    contents: [{ parts: [{ text: `${DV_VOICE_STYLE}\n\n${TEXT}` }] }],
     generationConfig: {
+      temperature: DV_VOICE_TEMPERATURE,
       responseModalities: ['AUDIO'],
       speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } } },
     },
@@ -73,5 +79,10 @@ const rate = Number(/rate=(\d+)/.exec(part.inlineData.mimeType || '')?.[1]) || 2
 const pcm = new Uint8Array(Buffer.from(b64, 'base64'))
 const wav = pcmToWav(pcm, rate)
 mkdirSync(dirname(OUT), { recursive: true })
-writeFileSync(OUT, Buffer.from(wav))
-console.log(`Baked ${OUT} — voice=${VOICE} rate=${rate} bytes=${wav.length} text="${TEXT}"`)
+// Pitch-preserving pace correction to the audition-locked rate (requires ffmpeg).
+const tmp = `${OUT}.raw.wav`
+writeFileSync(tmp, Buffer.from(wav))
+execFileSync('ffmpeg', ['-y', '-v', 'error', '-i', tmp, '-af', `atempo=${ATEMPO}`, OUT])
+unlinkSync(tmp)
+const bytes = readFileSync(OUT).length
+console.log(`Baked ${OUT} — voice=${VOICE} rate=${rate} atempo=${ATEMPO} bytes=${bytes} text="${TEXT}"`)

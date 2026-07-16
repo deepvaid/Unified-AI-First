@@ -469,6 +469,101 @@ function onAudioUnlocked(cb: () => void): () => void {
   return () => ctx.removeEventListener('statechange', handler)
 }
 
+/**
+ * Da Vinci's "open mix" — the audition-winning comm-channel production, as a Web Audio
+ * graph applied live to ALL cloud speech (baked lines are raw of it, so it runs exactly
+ * once): band-limit → gentle presence/warmth EQ → compression + makeup → two short
+ * parallel echo taps. Returns the entry node; the tail is wired into `analyser` so the
+ * orb reacts to the processed sound. Nodes are per-playback and GC'd with their sources.
+ */
+function buildVoiceChain(ctx: AudioContext, analyser: AnalyserNode): AudioNode {
+  const hp = ctx.createBiquadFilter()
+  hp.type = 'highpass'
+  hp.frequency.value = 120
+  const lp = ctx.createBiquadFilter()
+  lp.type = 'lowpass'
+  lp.frequency.value = 9000
+  const warm = ctx.createBiquadFilter()
+  warm.type = 'peaking'
+  warm.frequency.value = 300
+  warm.Q.value = 1
+  warm.gain.value = 2
+  const presence = ctx.createBiquadFilter()
+  presence.type = 'peaking'
+  presence.frequency.value = 3500
+  presence.Q.value = 1
+  presence.gain.value = 2
+  const comp = ctx.createDynamicsCompressor()
+  comp.threshold.value = -18
+  comp.ratio.value = 2.5
+  comp.attack.value = 0.01
+  comp.release.value = 0.16
+  comp.knee.value = 6
+  const makeup = ctx.createGain()
+  makeup.gain.value = 1.35
+  hp.connect(lp)
+  lp.connect(warm)
+  warm.connect(presence)
+  presence.connect(comp)
+  comp.connect(makeup)
+  // Dry straight through; two quiet short delay taps in parallel for the hint of room.
+  makeup.connect(analyser)
+  for (const [delay, level] of [
+    [0.045, 0.1],
+    [0.07, 0.06],
+  ] as const) {
+    const d = ctx.createDelay(0.2)
+    d.delayTime.value = delay
+    const g = ctx.createGain()
+    g.gain.value = level
+    makeup.connect(d)
+    d.connect(g)
+    g.connect(analyser)
+  }
+  return hp
+}
+
+// ── Comm-link chime (session open/close earcons; pre-produced WAVs, played plain —
+// the voice chain would double-process them). Decoded AudioBuffers are reusable.
+const chimeBuffers = new Map<string, AudioBuffer>()
+async function playChime(kind: 'open' | 'close'): Promise<void> {
+  if (!hasWindow || !(await tryUnlockAudio()) || !playCtx) return
+  const ctx = playCtx
+  try {
+    let buf = chimeBuffers.get(kind)
+    if (!buf) {
+      const resp = await fetch(`/davinci/chime-${kind}.wav`)
+      if (!resp.ok) return
+      buf = await ctx.decodeAudioData(await resp.arrayBuffer())
+      chimeBuffers.set(kind, buf)
+    }
+    const src = ctx.createBufferSource()
+    src.buffer = buf
+    const an = ctx.createAnalyser()
+    an.fftSize = 512
+    an.smoothingTimeConstant = 0.7
+    src.connect(an)
+    an.connect(ctx.destination)
+    if (!playAnalyser) playAnalyser = an // orb pulses with the chime unless speech owns it
+    await new Promise<void>((resolve) => {
+      src.onended = () => resolve()
+      try {
+        src.start()
+      } catch {
+        resolve()
+      }
+    })
+    if (playAnalyser === an) playAnalyser = null
+    try {
+      an.disconnect()
+    } catch {
+      /* noop */
+    }
+  } catch {
+    /* best-effort earcon */
+  }
+}
+
 /** Decode WAV bytes and play through an analyser (so the orb reacts to the real audio). */
 async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number, onAudible?: () => void): Promise<void> {
   if (!playCtx) playCtx = new AudioContext()
@@ -486,7 +581,7 @@ async function playCloudBuffer(arrayBuf: ArrayBuffer, token: number, onAudible?:
   const an = playCtx.createAnalyser()
   an.fftSize = 512
   an.smoothingTimeConstant = 0.7
-  src.connect(an)
+  src.connect(buildVoiceChain(playCtx, an))
   an.connect(playCtx.destination)
   playSource = src
   playAnalyser = an
@@ -574,6 +669,7 @@ async function playCloudStream(text: string, token: number, opts: SpeakOptions):
   an.smoothingTimeConstant = 0.7
   an.connect(ctx.destination)
   playAnalyser = an // orb reacts to the real audio
+  const chainIn = buildVoiceChain(ctx, an)
   const sources: AudioBufferSourceNode[] = []
   streamSources = sources
   let nextTime = 0
@@ -611,7 +707,7 @@ async function playCloudStream(text: string, token: number, opts: SpeakOptions):
     for (let i = 0; i < samples; i++) ch[i] = dv.getInt16(i * 2, true) / 32768
     const src = ctx.createBufferSource()
     src.buffer = audioBuf
-    src.connect(an)
+    src.connect(chainIn)
     const at = Math.max(nextTime, ctx.currentTime + 0.08)
     src.start(at)
     nextTime = at + audioBuf.duration
@@ -934,6 +1030,7 @@ export function useDaVinciVoice() {
     abortListening,
     setThinking,
     speak,
+    playChime,
     prefetchSpeech,
     unlockSpeech,
     tryUnlockAudio,

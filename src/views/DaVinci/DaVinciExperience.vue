@@ -66,7 +66,7 @@ const greetingReady = () =>
 // While blocked, poll for that grant and greet the moment audio is allowed — zero tap.
 let grantProbeCleanup: (() => void) | null = null
 // Personalized greeting — spoken aloud on open (the on-screen heading was removed).
-const greetingText = computed(() => `Hey ${profile.firstName}, how can I help you today?`)
+const greetingText = computed(() => `Good day, ${profile.firstName}. How may I be of service?`)
 // Diagnostic overlay: append ?debug=1 to the URL to see voices / chosen voice
 // (local vs REMOTE) / last TTS lifecycle event / speaking state on the page itself.
 const showDebug = computed(() => route.query.debug === '1')
@@ -209,11 +209,13 @@ function startLive() {
 }
 
 function endLive() {
+  const wasLive = liveActive.value
   liveActive.value = false
   loopToken++ // any in-flight listen continuation bails
   voice.abortListening()
   voice.cancelSpeech()
   voice.setThinking(false)
+  if (wasLive) void voice.playChime('close') // comm channel signs off
 }
 
 /** Primary live control: interrupt while speaking, otherwise end the conversation. */
@@ -244,6 +246,7 @@ async function autoGreet() {
   if (voice.muted.value) return // respect "Voice off"
   voice.unlockSpeech()
   await greetingReady() // let the pre-baked WAV land so the speak is a cache hit
+  await voice.playChime('open') // comm channel connects (no-op while autoplay is blocked)
   let becameAudible = false
   voice.speak(greetingText.value, {
     onAudible: () => {
@@ -358,6 +361,7 @@ async function startGreeting() {
   audioBlocked.value = false
   voice.unlockSpeech() // synchronously within the gesture, before any await
   await greetingReady() // cache-hit the pre-baked WAV instead of streaming
+  await voice.playChime('open') // comm channel connects
   void voice.speak(greetingText.value, { onend: listenAfterGreeting })
 }
 
@@ -414,6 +418,9 @@ onMounted(() => {
   // the natural Gemini voice on the first gesture (no ~5s synth wait). Falls back to
   // browser TTS if the asset is missing. The speak paths await this handle (capped).
   greetingPrefetch = voice.prefetchSpeech(greetingText.value, '/davinci/greeting.wav')
+  // Warm the HTTP cache for the session earcons (decode happens on first playChime).
+  void fetch('/davinci/chime-open.wav').catch(() => {})
+  void fetch('/davinci/chime-close.wav').catch(() => {})
   // Seed every pre-baked canned reply line (scripts/bake-lines.mjs) the same way, so
   // deterministic replies speak instantly too. Missing manifest ⇒ lines just stream.
   void (async () => {

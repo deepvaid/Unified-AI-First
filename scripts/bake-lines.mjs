@@ -7,15 +7,19 @@
 // Usage:
 //   GEMINI_API_KEY=... node scripts/bake-lines.mjs [--force]
 //   (voice via TTS_VOICE env, default Charon — matches replies; model via TTS_MODEL)
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { writeFileSync, mkdirSync, existsSync, readFileSync, unlinkSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 
 const { listCannedSpeech } = await import('../src/composables/dvIntentData.ts')
+const { DV_VOICE_STYLE, DV_VOICE_TEMPERATURE } = await import('../src/server/tts.ts')
 
 const KEY = process.env.GEMINI_API_KEY
 const VOICE = process.env.TTS_VOICE || 'Charon'
 const MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview'
 const FORCE = process.argv.includes('--force')
 const OUT_DIR = 'public/davinci/lines'
+// The audition-locked pace: baked lines carry exactly 1.12× (live replies can't).
+const ATEMPO = process.env.BAKE_ATEMPO || '1.12'
 
 if (!KEY) {
   console.error('Missing GEMINI_API_KEY')
@@ -55,8 +59,9 @@ async function synth(text) {
     method: 'POST',
     headers: { 'x-goog-api-key': KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ parts: [{ text }] }],
+      contents: [{ parts: [{ text: `${DV_VOICE_STYLE}\n\n${text}` }] }],
       generationConfig: {
+        temperature: DV_VOICE_TEMPERATURE,
         responseModalities: ['AUDIO'],
         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } } },
       },
@@ -67,7 +72,26 @@ async function synth(text) {
   const part = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data)
   if (!part) throw new Error('No audio returned')
   const rate = Number(/rate=(\d+)/.exec(part.inlineData.mimeType || '')?.[1]) || 24000
-  return pcmToWav(new Uint8Array(Buffer.from(part.inlineData.data, 'base64')), rate)
+  return retime(pcmToWav(new Uint8Array(Buffer.from(part.inlineData.data, 'base64')), rate))
+}
+
+/** Pitch-preserving pace correction to the audition-locked rate (requires ffmpeg). */
+function retime(wav) {
+  const tmpIn = `${OUT_DIR}/.retime-in.wav`
+  const tmpOut = `${OUT_DIR}/.retime-out.wav`
+  writeFileSync(tmpIn, Buffer.from(wav))
+  try {
+    execFileSync('ffmpeg', ['-y', '-v', 'error', '-i', tmpIn, '-af', `atempo=${ATEMPO}`, tmpOut])
+    return new Uint8Array(readFileSync(tmpOut))
+  } finally {
+    for (const f of [tmpIn, tmpOut]) {
+      try {
+        unlinkSync(f)
+      } catch {
+        /* noop */
+      }
+    }
+  }
 }
 
 const lines = listCannedSpeech()
