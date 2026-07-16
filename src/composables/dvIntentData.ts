@@ -49,14 +49,18 @@ export const segmentVariants = {
 }
 
 // ── Speech templates (fixed 'en-US' formatting so runtime text === baked text) ──
+// Persona: composed butler-valet — courteous, precise, a hint of dry warmth. Keep the
+// flavor light (these lines repeat often) and the meaning identical to the bubble copy.
 export const campaignSpeech = (name: string, audienceLabel: string) =>
-  `Done. I've drafted the ${name} email to ${audienceLabel.toLowerCase()}, scheduled for tomorrow at 9 AM.`
-export const productSpeech = (title: string) => `Here's a product description draft for ${title}.`
-export const revenueSpeech = 'Revenue is up 12 percent this week, at 128 thousand dollars across 1,284 orders.'
+  `Very good. The ${name} email is drafted for ${audienceLabel.toLowerCase()} — I've taken the liberty of scheduling it for tomorrow at 9 AM.`
+export const productSpeech = (title: string) => `As requested — a product description draft for ${title}, ready for your eye.`
+export const revenueSpeech =
+  'A pleasure to report: revenue is up 12 percent this week — 128 thousand dollars, across 1,284 orders.'
 export const segmentSpeech = (name: string, estimatedSize: number) =>
-  `I've built the ${name} segment with about ${estimatedSize.toLocaleString('en-US')} contacts.`
-export const fallbackSpeech = 'I can run campaigns, draft product copy, report on revenue, or build segments.'
-export const clarifyAudienceSpeech = 'Happy to. Which audience should this campaign go to?'
+  `Your ${name} segment stands ready — some ${estimatedSize.toLocaleString('en-US')} contacts, assembled and waiting.`
+export const fallbackSpeech =
+  'At your service. I can run campaigns, draft product copy, report on revenue, or build segments — simply say the word.'
+export const clarifyAudienceSpeech = 'Certainly. And which audience shall receive it?'
 
 /** Every realized canned speech line — the bake list (~23 lines). */
 export function listCannedSpeech(): string[] {
