@@ -7,6 +7,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 
 const store = useTicketsStore()
 const replyBody = ref('')
@@ -157,6 +158,57 @@ function deleteActiveTicket() {
   if (activeTicket.value) store.deleteTicket(activeTicket.value.id)
   confirmDelete.value = false
 }
+
+// ── Multi-select + bulk actions ────────────────────────────────────────────
+const selectedIds = ref<number[]>([])
+const selectedSet = computed(() => new Set(selectedIds.value))
+const bulkSnack = ref(false)
+const bulkSnackText = ref('')
+const confirmBulkDelete = ref(false)
+
+function toggleSelected(id: number) {
+  selectedIds.value = selectedSet.value.has(id)
+    ? selectedIds.value.filter(x => x !== id)
+    : [...selectedIds.value, id]
+}
+function selectAllVisible() {
+  selectedIds.value = filteredTickets.value.map(t => t.id)
+}
+function clearSelection() {
+  selectedIds.value = []
+}
+// Selection only ever refers to visible rows — prune when the inbox/status/search
+// filters (or a deletion) drop a selected ticket out of the list.
+watch(filteredTickets, tickets => {
+  const visible = new Set(tickets.map(t => t.id))
+  if (selectedIds.value.some(id => !visible.has(id))) {
+    selectedIds.value = selectedIds.value.filter(id => visible.has(id))
+  }
+})
+
+function announceBulk(n: number, verb: string) {
+  bulkSnackText.value = `${n} ticket${n === 1 ? '' : 's'} ${verb}`
+  bulkSnack.value = true
+}
+function bulkResolve() {
+  const ids = [...selectedIds.value]
+  ids.forEach(id => store.resolveTicket(id))
+  clearSelection()
+  announceBulk(ids.length, 'resolved')
+}
+function bulkClose() {
+  const ids = [...selectedIds.value]
+  ids.forEach(id => store.closeTicket(id))
+  clearSelection()
+  announceBulk(ids.length, 'closed')
+}
+function bulkDelete() {
+  const ids = [...selectedIds.value]
+  ids.forEach(id => store.deleteTicket(id))
+  clearSelection()
+  confirmBulkDelete.value = false
+  announceBulk(ids.length, 'deleted')
+}
 </script>
 
 <template>
@@ -216,34 +268,48 @@ function deleteActiveTicket() {
             class="ma-4"
             @action="openNewTicket"
           />
-          <button
+          <div
             v-for="ticket in filteredTickets"
             :key="ticket.id"
-            class="tkt-row w-100 d-flex flex-column pa-3 text-left"
-            :class="{ 'tkt-row--active': store.activeTicketId === ticket.id }"
-            :aria-pressed="store.activeTicketId === ticket.id"
-            :aria-label="`Ticket ${ticket.number}: ${ticket.subject}`"
-            @click="store.setActive(ticket.id)"
+            class="tkt-row d-flex align-start gap-1 pa-3"
+            :class="{
+              'tkt-row--active': store.activeTicketId === ticket.id,
+              'tkt-row--selected': selectedSet.has(ticket.id),
+            }"
           >
-            <div class="d-flex align-center gap-2 w-100 mb-1">
-              <span
-                v-if="ticket.priority === 'Urgent' || ticket.priority === 'High'"
-                class="tkt-row__dot flex-shrink-0"
-                :class="ticket.priority === 'Urgent' ? 'tkt-row__dot--urgent' : 'tkt-row__dot--high'"
-                :title="`${ticket.priority} priority`"
-              />
-              <span class="text-body-2 font-weight-semibold tkt-row__customer flex-grow-1">{{ ticket.customer }}</span>
-              <span class="text-caption text-medium-emphasis flex-shrink-0">{{ timeAgo(ticket.updatedAt) }}</span>
-            </div>
-            <div class="text-body-2 tkt-row__subject w-100 mb-2">{{ ticket.subject }}</div>
-            <div class="d-flex align-center justify-space-between w-100">
-              <MpStatusChip :status="ticket.status" type="ticket" size="x-small" />
-              <span v-if="inboxFilter === 'all'" class="tkt-row__origin text-caption text-medium-emphasis">
-                <v-icon size="12">store</v-icon>
-                {{ ticket.inbox }}
-              </span>
-            </div>
-          </button>
+            <v-checkbox-btn
+              :model-value="selectedSet.has(ticket.id)"
+              density="compact"
+              class="tkt-row__check flex-shrink-0"
+              :aria-label="`Select ticket ${ticket.number}`"
+              @update:model-value="toggleSelected(ticket.id)"
+            />
+            <button
+              class="tkt-row__main flex-grow-1 d-flex flex-column text-left min-w-0"
+              :aria-pressed="store.activeTicketId === ticket.id"
+              :aria-label="`Ticket ${ticket.number}: ${ticket.subject}`"
+              @click="store.setActive(ticket.id)"
+            >
+              <div class="d-flex align-center gap-2 w-100 mb-1">
+                <span
+                  v-if="ticket.priority === 'Urgent' || ticket.priority === 'High'"
+                  class="tkt-row__dot flex-shrink-0"
+                  :class="ticket.priority === 'Urgent' ? 'tkt-row__dot--urgent' : 'tkt-row__dot--high'"
+                  :title="`${ticket.priority} priority`"
+                />
+                <span class="text-body-2 font-weight-semibold tkt-row__customer flex-grow-1">{{ ticket.customer }}</span>
+                <span class="text-caption text-medium-emphasis flex-shrink-0">{{ timeAgo(ticket.updatedAt) }}</span>
+              </div>
+              <div class="text-body-2 tkt-row__subject w-100 mb-2">{{ ticket.subject }}</div>
+              <div class="d-flex align-center justify-space-between w-100">
+                <MpStatusChip :status="ticket.status" type="ticket" size="x-small" />
+                <span v-if="inboxFilter === 'all'" class="tkt-row__origin text-caption text-medium-emphasis">
+                  <v-icon size="12">store</v-icon>
+                  {{ ticket.inbox }}
+                </span>
+              </div>
+            </button>
+          </div>
         </div>
       </v-card>
 
@@ -442,6 +508,18 @@ function deleteActiveTicket() {
         />
       </v-card>
     </div>
+
+    <!-- ── Bulk actions (appears on selection) ──────────────────── -->
+    <MpFloatingBulkBar
+      :count="selectedIds.length"
+      :total="filteredTickets.length"
+      @clear="clearSelection"
+      @select-all="selectAllVisible"
+    >
+      <v-btn variant="text" size="small" prepend-icon="circle-check" class="text-none" @click="bulkResolve">Resolve</v-btn>
+      <v-btn variant="text" size="small" prepend-icon="x-circle" class="text-none" @click="bulkClose">Close</v-btn>
+      <v-btn variant="text" size="small" prepend-icon="trash-2" color="error" class="text-none" @click="confirmBulkDelete = true">Delete</v-btn>
+    </MpFloatingBulkBar>
   </div>
 
   <!-- ── New Ticket Drawer ─────────────────────────────────────── -->
@@ -568,10 +646,27 @@ function deleteActiveTicket() {
     @confirm="deleteActiveTicket"
   />
 
-  <!-- Snackbar -->
+  <!-- Bulk delete confirmation -->
+  <MpConfirmDialog
+    v-model="confirmBulkDelete"
+    title="Delete selected tickets?"
+    :message="selectedIds.length === 1
+      ? 'This permanently removes the selected ticket and its entire conversation thread. This cannot be undone.'
+      : `This permanently removes ${selectedIds.length} tickets and their entire conversation threads. This cannot be undone.`"
+    confirm-label="Delete Tickets"
+    danger
+    @confirm="bulkDelete"
+  />
+
+  <!-- Snackbars -->
   <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
     <div class="d-flex align-center gap-2">
       <v-icon>circle-check</v-icon> Ticket created and assigned
+    </div>
+  </v-snackbar>
+  <v-snackbar v-model="bulkSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
+    <div class="d-flex align-center gap-2">
+      <v-icon>circle-check</v-icon> {{ bulkSnackText }}
     </div>
   </v-snackbar>
 </template>
@@ -622,11 +717,7 @@ function deleteActiveTicket() {
 
 /* ── Ticket rows ───────────────────────────────────────────────── */
 .tkt-row {
-  background: transparent;
-  border: none;
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  cursor: pointer;
-  font-family: inherit;
   transition: background 0.12s ease;
 }
 .tkt-row:last-child { border-bottom: none; }
@@ -635,9 +726,22 @@ function deleteActiveTicket() {
   background: rgba(var(--v-theme-primary), 0.07) !important;
   box-shadow: inset 3px 0 0 rgb(var(--v-theme-primary));
 }
-.tkt-row:focus-visible {
+.tkt-row--selected {
+  background: rgba(var(--v-theme-primary), 0.05);
+}
+.tkt-row__main {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tkt-row__main:focus-visible {
   outline: 2px solid rgb(var(--v-theme-primary));
   outline-offset: -2px;
+}
+.tkt-row__check {
+  margin: -6px 0 0 -8px;
 }
 .tkt-row__dot {
   width: 8px;
