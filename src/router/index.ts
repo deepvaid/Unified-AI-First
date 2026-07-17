@@ -18,6 +18,7 @@ const commerceGate = { requires: 'commerce' as const }
 
 const routes: RouteRecordRaw[] = [
   // 1. Dashboard
+  { path: '/accounts/:accountId/get-started', name: 'GetStarted', component: () => import('@/views/GetStarted.vue') },
   { path: '/accounts/:accountId/dashboards', name: 'DashboardsList', component: () => import('@/views/Dashboards/DashboardsList.vue') },
   { path: '/accounts/:accountId/dashboard', name: 'Dashboard', component: () => import('@/views/DashboardView.vue') },
   { path: '/accounts/:accountId/dashboard/:dashboardId', name: 'DashboardDetail', component: () => import('@/views/DashboardView.vue') },

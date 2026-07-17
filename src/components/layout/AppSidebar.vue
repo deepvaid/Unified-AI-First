@@ -2,7 +2,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
-import { usePlgStore, PLG_ONBOARDING_TASKS } from '@/stores/usePlg'
+import { usePlgStore } from '@/stores/usePlg'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 import { Crown } from 'lucide-vue-next'
 import maropostLogo from '@/assets/maropost-logo.svg?raw'
 import { useMobileNav } from '@/composables/useMobileNav'
@@ -20,10 +21,12 @@ const emit = defineEmits<{
 const accountsStore = useAccountsStore()
 const plgStore = usePlgStore()
 
-// PLG trial onboarding — pinned "Get started" entry above the nav.
-const onboardingDone = PLG_ONBOARDING_TASKS.filter(t => t.complete).length
-const onboardingTotal = PLG_ONBOARDING_TASKS.length
-const onboardingProgress = Math.round((onboardingDone / onboardingTotal) * 100)
+// PLG trial onboarding — pinned "Get started" entry above the nav (reactive; the
+// guide store updates as tasks complete anywhere in the app).
+const onboardingStore = useOnboardingStore()
+const onboardingDone = computed(() => onboardingStore.doneCount)
+const onboardingTotal = onboardingStore.totalCount
+const onboardingProgress = computed(() => onboardingStore.progress)
 
 // ─── Navigation Structure ────────────────────────────────────
 interface NavItem { title: string; route: string; external?: boolean; requires?: SubscriptionKey | SubscriptionKey[]; plgLock?: 'sms' }
@@ -616,7 +619,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
         type="button"
         class="sidebar-get-started"
         aria-label="Get started checklist"
-        @click="goTo(`/accounts/${resolvedAccountId}/dashboard`)"
+        @click="goTo(`/accounts/${resolvedAccountId}/get-started`)"
       >
         <div class="sidebar-get-started__row">
           <v-icon size="16" color="primary">rocket</v-icon>
@@ -638,7 +641,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
             type="button"
             class="sidebar-get-started sidebar-get-started--rail"
             aria-label="Get started checklist"
-            @click="goTo(`/accounts/${resolvedAccountId}/dashboard`)"
+            @click="goTo(`/accounts/${resolvedAccountId}/get-started`)"
           >
             <v-icon size="16" color="primary">rocket</v-icon>
           </button>

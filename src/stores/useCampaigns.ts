@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { FlowNode, JourneySettings } from '@/stores/journeyFlowData'
 import { cloneFlowNodes, instantiateTemplate, seedJourneyFlows, templateById } from '@/stores/journeyFlowData'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 export interface CampaignMetrics {
   sent: number
@@ -139,6 +140,9 @@ export const useCampaignsStore = defineStore('campaigns', () => {
     }
     if (finalize) applyFinalizeStatus(campaign, input)
     campaigns.value.unshift(campaign)
+    const onboarding = useOnboardingStore()
+    onboarding.complete('first-email')
+    if (finalize) onboarding.complete('first-campaign')
     return id
   }
 

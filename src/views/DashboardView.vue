@@ -18,7 +18,8 @@ import type {
 } from '@/stores/dashboards/types'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
-import { usePlgStore, PLG_ONBOARDING_TASKS } from '@/stores/usePlg'
+import { usePlgStore } from '@/stores/usePlg'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 const route = useRoute()
 const router = useRouter()
@@ -136,15 +137,16 @@ const activeWidgetDraft = computed<DashboardWidgetDraft | null>(() => {
   if (!draft || draft.dashboardId !== activeDashboardId.value) return null
   return draft
 })
+const onboardingStore = useOnboardingStore()
 const setupTasks = computed<SetupTask[]>(() => {
-  // PLG trial accounts get the micro-onboarding checklist instead.
+  // PLG trial accounts see the next steps from the Get Started guide instead.
   if (plgStore.isTrial) {
-    return PLG_ONBOARDING_TASKS.map(task => ({
+    return onboardingStore.nextTasks(5).map(task => ({
       title: task.title,
       description: task.description,
       icon: task.icon,
-      status: task.status,
-      complete: task.complete,
+      status: `≈ ${task.minutes} min`,
+      complete: false,
       route: { name: task.routeName, params: { accountId: accountId.value } },
     }))
   }
@@ -183,8 +185,18 @@ const setupTasks = computed<SetupTask[]>(() => {
   },
   ]
 })
-const completedSetupTasks = computed(() => setupTasks.value.filter((task) => task.complete).length)
-const setupProgress = computed(() => Math.round((completedSetupTasks.value / setupTasks.value.length) * 100))
+const completedSetupTasks = computed(() =>
+  plgStore.isTrial ? onboardingStore.doneCount : setupTasks.value.filter((task) => task.complete).length
+)
+const setupTotal = computed(() => (plgStore.isTrial ? onboardingStore.totalCount : undefined))
+const setupGuideRoute = computed(() =>
+  plgStore.isTrial ? { name: 'GetStarted', params: { accountId: accountId.value } } : undefined
+)
+const setupProgress = computed(() =>
+  plgStore.isTrial
+    ? onboardingStore.progress
+    : Math.round((completedSetupTasks.value / setupTasks.value.length) * 100)
+)
 
 const pageTitle = computed(() => activeDashboard.value?.name ?? 'Dashboard')
 
@@ -682,6 +694,8 @@ function toggleFavoriteActive() {
       :setup-tasks="setupTasks"
       :setup-completed="completedSetupTasks"
       :setup-progress="setupProgress"
+      :setup-total="setupTotal"
+      :setup-guide-route="setupGuideRoute"
       @expand-widget="handleExpandWidget"
       @edit-widget="handleEditWidget"
       @refresh-widget="handleRefreshWidget"

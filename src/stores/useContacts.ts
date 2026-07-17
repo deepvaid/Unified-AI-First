@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 // ── Seeded random for deterministic mock data ──────────────────────────────────
 function seededRandom(seed: number) {
@@ -398,6 +399,7 @@ export const useContactsStore = defineStore('contacts', () => {
       avatarUrl: `https://i.pravatar.cc/96?u=contact-${id}`,
     }
     contacts.value.unshift(contact)
+    useOnboardingStore().complete('add-contacts')
     return contact
   }
 

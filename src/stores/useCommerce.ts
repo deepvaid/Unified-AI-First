@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 const productNames = [
   'Nike Air Max 270 - Black/White', 'Patagonia Better Sweater Fleece Vest', 'Apple iPhone 15 Pro Case - Clear',
@@ -444,6 +445,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       components: input.components,
     }
     products.value.unshift(product)
+    useOnboardingStore().complete('first-product')
     return product
   }
 

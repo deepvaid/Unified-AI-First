@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 export interface Ticket {
   id: number
@@ -252,6 +253,7 @@ export const useTicketsStore = defineStore('tickets', () => {
     }
     tickets.value.unshift(ticket)
     activeTicketId.value = id
+    useOnboardingStore().complete('first-ticket')
     return ticket
   }
 

@@ -15,6 +15,10 @@ defineProps<{
   tasks: SetupGuideTask[]
   completedCount: number
   progress: number
+  /** Overall task total when `tasks` is a subset (e.g. next 5 of 16). Defaults to tasks.length. */
+  totalCount?: number
+  /** When set, a "View full guide" link renders under the list. */
+  guideRoute?: RouteLocationRaw
   /** Grid context: reveals the drag grip on hover (layout is always directly editable). */
   draggable?: boolean
 }>()
@@ -62,7 +66,7 @@ function toggle() {
 
       <div class="setup-guide-widget__progress">
         <span class="setup-guide-widget__pill mp-meta-label">
-          <strong>{{ completedCount }}</strong> of {{ tasks.length }} tasks complete
+          <strong>{{ completedCount }}</strong> of {{ totalCount ?? tasks.length }} tasks complete
         </span>
         <div
           class="setup-guide-widget__bar"
@@ -95,6 +99,11 @@ function toggle() {
           </button>
         </li>
       </ul>
+
+      <router-link v-if="guideRoute" :to="guideRoute" class="setup-guide-widget__more">
+        View full guide
+        <v-icon size="14">arrow-right</v-icon>
+      </router-link>
     </div>
   </v-card>
 </template>
@@ -311,5 +320,21 @@ function toggle() {
 .setup-guide-task__chevron {
   color: var(--muted);
   flex-shrink: 0;
+}
+
+.setup-guide-widget__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-ink);
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+
+.setup-guide-widget__more:hover {
+  text-decoration: underline;
 }
 </style>

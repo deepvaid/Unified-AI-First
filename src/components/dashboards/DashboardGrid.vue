@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 import { GridItem, GridLayout } from 'grid-layout-plus'
 import { useDisplay } from 'vuetify'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -16,6 +17,8 @@ const props = defineProps<{
   setupTasks?: SetupGuideTask[]
   setupCompleted?: number
   setupProgress?: number
+  setupTotal?: number
+  setupGuideRoute?: RouteLocationRaw
 }>()
 
 const emit = defineEmits<{
@@ -176,6 +179,8 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
             :tasks="setupTasks ?? []"
             :completed-count="setupCompleted ?? 0"
             :progress="setupProgress ?? 0"
+            :total-count="setupTotal"
+            :guide-route="setupGuideRoute"
             :draggable="true"
             @select-task="emit('selectSetupTask', $event)"
           />
@@ -212,6 +217,8 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
           :tasks="setupTasks ?? []"
           :completed-count="setupCompleted ?? 0"
           :progress="setupProgress ?? 0"
+          :total-count="setupTotal"
+          :guide-route="setupGuideRoute"
           @select-task="emit('selectSetupTask', $event)"
         />
         <DashboardWidgetCard
