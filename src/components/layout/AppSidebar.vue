@@ -613,7 +613,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
     </div>
 
     <!-- PLG trial onboarding — pinned Get Started entry -->
-    <template v-if="plgStore.isTrial && !plgStore.isExpired">
+    <template v-if="plgStore.isTrial && !plgStore.isExpired && !onboardingStore.allResolved">
       <button
         v-if="!effectiveRail"
         type="button"

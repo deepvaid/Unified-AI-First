@@ -350,62 +350,8 @@ export function isPlgDemoPreset(v: unknown): v is PlgDemoPreset {
   return typeof v === 'string' && PLG_DEMO_PRESETS.some(p => p.key === v)
 }
 
-// ---------------------------------------------------------------------------
-// Trial onboarding checklist (micro-onboarding tasks, shared by the dashboard
-// setup guide and the sidebar "Get started" entry)
-// ---------------------------------------------------------------------------
-
-export interface PlgOnboardingTask {
-  title: string
-  description: string
-  icon: string
-  routeName: string
-  status: string
-  complete: boolean
-}
-
-export const PLG_ONBOARDING_TASKS: PlgOnboardingTask[] = [
-  {
-    title: 'Create your workspace',
-    description: 'Your 14-day trial of all three clouds is active.',
-    icon: 'circle-check',
-    routeName: 'Dashboard',
-    status: 'Done',
-    complete: true,
-  },
-  {
-    title: 'Import your contacts',
-    description: 'Bring your audience into Marketing Cloud.',
-    icon: 'users',
-    routeName: 'AllContacts',
-    status: 'To do',
-    complete: false,
-  },
-  {
-    title: 'Send your first campaign',
-    description: 'Build and send an email in minutes.',
-    icon: 'send',
-    routeName: 'EmailCampaigns',
-    status: 'To do',
-    complete: false,
-  },
-  {
-    title: 'Launch a chatbot',
-    description: 'Answer customers automatically with Service Cloud.',
-    icon: 'bot',
-    routeName: 'ChatbotList',
-    status: 'To do',
-    complete: false,
-  },
-  {
-    title: 'Connect your store',
-    description: 'Set up channels, checkout, and fulfillment.',
-    icon: 'store',
-    routeName: 'StoreSetup',
-    status: 'To do',
-    complete: false,
-  },
-]
+// Trial onboarding moved to its own store — see src/stores/useOnboarding.ts
+// (the Get Started guide, sidebar pill, and dashboard setup widget all read it).
 
 // ---------------------------------------------------------------------------
 // Internals

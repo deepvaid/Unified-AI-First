@@ -225,7 +225,6 @@ const STORAGE_KEY = 'mp.onboarding.v1'
 interface PersistedState {
   completed: Record<string, boolean>
   skipped: Record<string, boolean>
-  dismissed: boolean
 }
 
 function readPersisted(): PersistedState | null {
@@ -245,17 +244,15 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     persisted?.completed ?? { 'sending-domain': true, 'first-product': true }
   )
   const skipped = ref<Record<string, boolean>>(persisted?.skipped ?? {})
-  const dismissed = ref(persisted?.dismissed ?? false)
 
   watch(
-    [completed, skipped, dismissed],
+    [completed, skipped],
     () => {
       if (typeof window === 'undefined') return
       try {
         const state: PersistedState = {
           completed: completed.value,
           skipped: skipped.value,
-          dismissed: dismissed.value,
         }
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
       } catch {
@@ -269,6 +266,10 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   const doneCount = computed(() => ALL_TASKS.filter((t) => completed.value[t.id]).length)
   const progress = computed(() => Math.round((doneCount.value / totalCount) * 100))
   const allDone = computed(() => doneCount.value === totalCount)
+  /** Every task addressed (completed OR skipped) — nothing left to act on. Drives the
+   *  terminal celebration and the auto-retiring of the sidebar pill. Mirrors nextTaskId. */
+  const allResolved = computed(() => ALL_TASKS.every((t) => completed.value[t.id] || skipped.value[t.id]))
+  const skippedCount = computed(() => ALL_TASKS.filter((t) => !completed.value[t.id] && skipped.value[t.id]).length)
 
   /** First task that is neither complete nor skipped (guide auto-expands this one). */
   const nextTaskId = computed(
@@ -280,9 +281,10 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     return phase ? phase.tasks.filter((t) => completed.value[t.id]).length : 0
   }
 
-  /** Next incomplete tasks across phases — feeds the Dashboard widget. */
+  /** Next unresolved tasks across phases — feeds the Dashboard widget. Excludes both
+   *  completed and skipped, matching nextTaskId so a skipped task doesn't reappear. */
   function nextTasks(limit: number): OnboardingTask[] {
-    return ALL_TASKS.filter((t) => !completed.value[t.id]).slice(0, limit)
+    return ALL_TASKS.filter((t) => !completed.value[t.id] && !skipped.value[t.id]).slice(0, limit)
   }
 
   function complete(id: string) {
@@ -300,23 +302,20 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   function unskip(id: string) {
     skipped.value = { ...skipped.value, [id]: false }
   }
-  function dismiss() {
-    dismissed.value = true
-  }
   function reset() {
     completed.value = {}
     skipped.value = {}
-    dismissed.value = false
   }
 
   return {
     completed,
     skipped,
-    dismissed,
     totalCount,
     doneCount,
     progress,
     allDone,
+    allResolved,
+    skippedCount,
     nextTaskId,
     phaseDone,
     nextTasks,
@@ -324,7 +323,6 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     uncomplete,
     skip,
     unskip,
-    dismiss,
     reset,
   }
 })

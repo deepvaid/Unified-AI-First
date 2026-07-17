@@ -71,6 +71,7 @@ function toggle() {
         <div
           class="setup-guide-widget__bar"
           role="progressbar"
+          aria-label="Setup progress"
           :aria-valuenow="progress"
           aria-valuemin="0"
           aria-valuemax="100"
@@ -79,7 +80,7 @@ function toggle() {
         </div>
       </div>
 
-      <ul class="setup-guide-widget__list">
+      <ul v-if="tasks.length" class="setup-guide-widget__list">
         <li
           v-for="task in tasks"
           :key="task.title"
@@ -89,6 +90,7 @@ function toggle() {
           <button
             type="button"
             class="setup-guide-task__btn"
+            :aria-label="`${task.title} — ${task.complete ? 'completed' : 'not completed'}`"
             @click="emit('selectTask', task)"
           >
             <span class="setup-guide-task__check" aria-hidden="true">
@@ -99,6 +101,10 @@ function toggle() {
           </button>
         </li>
       </ul>
+      <p v-else class="setup-guide-widget__all-done">
+        <v-icon size="16" color="success" class="mr-1">circle-check</v-icon>
+        You're all set — every setup step is done.
+      </p>
 
       <router-link v-if="guideRoute" :to="guideRoute" class="setup-guide-widget__more">
         View full guide
@@ -320,6 +326,16 @@ function toggle() {
 .setup-guide-task__chevron {
   color: var(--muted);
   flex-shrink: 0;
+}
+
+.setup-guide-widget__all-done {
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  flex: 1 1 auto;
 }
 
 .setup-guide-widget__more {

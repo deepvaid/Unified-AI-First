@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { ONBOARDING_PHASES, useOnboardingStore } from '@/stores/useOnboarding'
 
 const route = useRoute()
@@ -17,6 +18,33 @@ watch(
     expandedId.value = id
   }
 )
+
+// Row-button refs keyed by task id, so acting on a task (which collapses its body)
+// can return focus to that task's still-present row instead of dropping it to <body>.
+const rowRefs = ref<Record<string, HTMLButtonElement | null>>({})
+function setRowRef(id: string, el: unknown) {
+  rowRefs.value[id] = (el as { $el?: HTMLButtonElement } | null)?.$el ?? (el as HTMLButtonElement | null)
+}
+function refocusRow(id: string) {
+  nextTick(() => rowRefs.value[id]?.focus())
+}
+
+function markDone(id: string) {
+  store.complete(id)
+  refocusRow(id)
+}
+function markNotDone(id: string) {
+  store.uncomplete(id)
+  refocusRow(id)
+}
+function skipTask(id: string) {
+  store.skip(id)
+  refocusRow(id)
+}
+function unskipTask(id: string) {
+  store.unskip(id)
+  refocusRow(id)
+}
 
 function toggleExpand(id: string) {
   expandedId.value = expandedId.value === id ? null : id
@@ -34,6 +62,13 @@ function taskRoute(routeName: string) {
 
 const phaseComplete = (phaseId: string) =>
   store.phaseDone(phaseId) === ONBOARDING_PHASES.find((p) => p.id === phaseId)!.tasks.length
+
+// Reset wipes all progress — gate behind a confirm dialog per the destructive-action convention.
+const confirmReset = ref(false)
+function doReset() {
+  store.reset()
+  confirmReset.value = false
+}
 </script>
 
 <template>
@@ -48,8 +83,7 @@ const phaseComplete = (phaseId: string) =>
             <v-btn v-bind="props" icon="more-vertical" variant="text" size="small" aria-label="Guide options" />
           </template>
           <v-list density="compact" rounded="lg" nav min-width="200">
-            <v-list-item prepend-icon="rotate-ccw" title="Reset progress" @click="store.reset()" />
-            <v-list-item prepend-icon="eye-off" title="Dismiss guide" @click="store.dismiss()" />
+            <v-list-item prepend-icon="rotate-ccw" title="Reset progress" @click="confirmReset = true" />
           </v-list>
         </v-menu>
       </template>
@@ -63,15 +97,16 @@ const phaseComplete = (phaseId: string) =>
         :width="6"
         color="primary"
         class="flex-shrink-0"
+        aria-hidden="true"
       >
         <span class="text-caption font-weight-bold">{{ store.progress }}%</span>
       </v-progress-circular>
       <div class="flex-grow-1 min-w-0">
         <div class="text-subtitle-1 font-weight-semibold">
-          {{ store.allDone ? 'Setup complete — nicely done.' : `${store.doneCount} of ${store.totalCount} tasks complete` }}
+          {{ store.allResolved ? 'Setup complete — nicely done.' : `${store.doneCount} of ${store.totalCount} tasks complete` }}
         </div>
         <div class="text-body-2 text-medium-emphasis">
-          {{ store.allDone
+          {{ store.allResolved
             ? 'Your store, email, audience, and support desk are ready for customers.'
             : 'Most merchants finish setup in under an hour.' }}
         </div>
@@ -86,15 +121,17 @@ const phaseComplete = (phaseId: string) =>
       </div>
     </v-card>
 
-    <!-- ── All done celebration ─────────────────────────────────── -->
-    <v-card v-if="store.allDone" variant="flat" border rounded="lg" class="pa-8 text-center">
-      <div class="text-h5 mb-2">🎉 You're ready for customers</div>
+    <!-- ── All resolved celebration (every task completed or skipped) ─── -->
+    <v-card v-if="store.allResolved" variant="flat" border rounded="lg" class="pa-8 text-center">
+      <div class="text-h5 mb-2"><span aria-hidden="true">🎉</span> You're ready for customers</div>
       <p class="text-body-2 text-medium-emphasis mb-5">
-        Every setup task is done. From here it's all growth — campaigns, journeys, and orders.
+        {{ store.skippedCount === 0
+          ? "Every setup task is done. From here it's all growth — campaigns, journeys, and orders."
+          : `You've been through every step (${store.doneCount} done, ${store.skippedCount} skipped). Revisit a skipped step anytime.` }}
       </p>
       <div class="d-flex justify-center gap-2">
         <v-btn color="primary" variant="flat" class="text-none" :to="taskRoute('Dashboard')">Go to dashboard</v-btn>
-        <v-btn variant="text" class="text-none" @click="store.reset()">Start over</v-btn>
+        <v-btn variant="text" class="text-none" @click="confirmReset = true">Start over</v-btn>
       </div>
     </v-card>
 
@@ -105,7 +142,7 @@ const phaseComplete = (phaseId: string) =>
           <div>
             <h2 class="text-subtitle-1 font-weight-semibold gs-phase-title">
               {{ phase.title }}
-              <span v-if="phaseComplete(phase.id)" class="gs-phase-done" aria-label="Phase complete">🎉</span>
+              <span v-if="phaseComplete(phase.id)" class="gs-phase-done" role="img" aria-label="Phase complete">🎉</span>
             </h2>
             <p class="text-body-2 text-medium-emphasis mb-0">{{ phase.blurb }}</p>
           </div>
@@ -118,6 +155,7 @@ const phaseComplete = (phaseId: string) =>
           <div v-for="task in phase.tasks" :key="task.id" class="gs-step" :class="`gs-step--${taskState(task.id)}`">
             <!-- Row (always visible) -->
             <button
+              :ref="(el) => setRowRef(task.id, el)"
               type="button"
               class="gs-step__row d-flex align-center gap-3 pa-4 w-100 text-left"
               :aria-expanded="expandedId === task.id"
@@ -164,28 +202,28 @@ const phaseComplete = (phaseId: string) =>
                         variant="text"
                         size="small"
                         class="text-none text-medium-emphasis"
-                        @click="store.complete(task.id)"
+                        @click="markDone(task.id)"
                       >Mark as done</v-btn>
                       <v-btn
                         v-else
                         variant="text"
                         size="small"
                         class="text-none text-medium-emphasis"
-                        @click="store.uncomplete(task.id)"
+                        @click="markNotDone(task.id)"
                       >Mark as not done</v-btn>
                       <v-btn
                         v-if="taskState(task.id) === 'todo'"
                         variant="text"
                         size="small"
                         class="text-none text-medium-emphasis"
-                        @click="store.skip(task.id)"
+                        @click="skipTask(task.id)"
                       >Skip for now</v-btn>
                       <v-btn
                         v-else-if="taskState(task.id) === 'skipped'"
                         variant="text"
                         size="small"
                         class="text-none text-medium-emphasis"
-                        @click="store.unskip(task.id)"
+                        @click="unskipTask(task.id)"
                       >Unskip</v-btn>
                     </div>
                   </div>
@@ -196,6 +234,15 @@ const phaseComplete = (phaseId: string) =>
         </v-card>
       </section>
     </template>
+
+    <MpConfirmDialog
+      v-model="confirmReset"
+      title="Reset setup progress?"
+      message="This clears every completed and skipped step and starts the guide over. This cannot be undone."
+      confirm-label="Reset progress"
+      danger
+      @confirm="doReset"
+    />
   </div>
 </template>
 
