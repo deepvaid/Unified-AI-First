@@ -83,13 +83,6 @@ const endsRun = computed(() => {
         </button>
 
         <div class="flow-node__tools">
-          <!-- Hover badges (legacy parity): quick duplicate/delete without opening the kebab -->
-          <v-btn icon="copy" variant="text" size="x-small" class="flow-node__hover-badge"
-            :disabled="seg.node.category === 'trigger' || seg.node.category === 'filter'"
-            :aria-label="`Duplicate ${seg.node.title}`" @click.stop="emit('duplicate', seg.node.id)"></v-btn>
-          <v-btn icon="trash-2" variant="text" size="x-small" color="error" class="flow-node__hover-badge"
-            :disabled="seg.node.category === 'trigger'"
-            :aria-label="`Delete ${seg.node.title}`" @click.stop="emit('remove', seg.node.id)"></v-btn>
           <v-menu location="bottom end">
             <template #activator="{ props: menu }">
               <v-btn v-bind="menu" icon="more-vertical" variant="text" size="x-small"
@@ -235,11 +228,13 @@ const endsRun = computed(() => {
   background: rgba(var(--v-theme-warning), 0.08);
   border-top: 1px solid rgba(var(--v-theme-warning), 0.25);
 }
-.flow-node__tools { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; }
-.flow-node__hover-badge { opacity: 0; transition: opacity var(--dur-fast) var(--ease); }
-.flow-node-wrap:hover .flow-node__hover-badge,
-.flow-node--selected .flow-node__hover-badge,
-.flow-node__hover-badge:focus-visible { opacity: 1; }
+.flow-node__tools {
+  position: absolute; top: 8px; right: 8px; display: flex; align-items: center;
+  opacity: 0; transition: opacity var(--dur-fast) var(--ease);
+}
+.flow-node-wrap:hover .flow-node__tools,
+.flow-node--selected .flow-node__tools,
+.flow-node-wrap:focus-within .flow-node__tools { opacity: 1; }
 
 /* ── Connectors ─────────────────────────────────────────────────────────── */
 .flow-connector { width: 2.5px; height: 22px; background: rgba(var(--v-theme-on-surface), 0.22); flex-shrink: 0; }

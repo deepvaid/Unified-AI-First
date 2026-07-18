@@ -5,6 +5,8 @@ import MpOptionCard from '@/components/MpOptionCard.vue'
 import type { ComponentPublicInstance } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useCampaignsStore, type Campaign, type CampaignDraftInput } from '@/stores/useCampaigns'
 import { useContactsStore } from '@/stores/useContacts'
 import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
@@ -27,6 +29,7 @@ const kind = ref<'email' | 'ab_email'>('email')
 function chooseType(next: 'email' | 'ab_email') {
   kind.value = next
   typeChosen.value = true
+  captureFormSnapshot()
 }
 
 // Keyboard support: arrow-key navigation between the two type cards, Enter/Space
@@ -221,6 +224,27 @@ function buildInput(): CampaignDraftInput {
   }
 }
 
+const savedSnapshot = ref('')
+const draftSavedChip = ref(false)
+function captureFormSnapshot() {
+  savedSnapshot.value = JSON.stringify(buildInput())
+}
+const isDirty = computed(() => {
+  if (!typeChosen.value || !savedSnapshot.value) return false
+  return JSON.stringify(buildInput()) !== savedSnapshot.value
+})
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave campaign wizard?',
+  message: 'You have unsaved changes. Leaving now will discard them.',
+})
+
 /** Auto-saves the wizard as a Draft (or, on the final action, finalizes it). Silently no-ops until Step 1 is valid. */
 function saveProgress(finalize = false) {
   if (!step1Valid.value) return
@@ -230,6 +254,8 @@ function saveProgress(finalize = false) {
   } else {
     store.updateCampaignDraft(draftId.value, input, finalize)
   }
+  captureFormSnapshot()
+  draftSavedChip.value = true
 }
 
 function goToStep(target: number) {
@@ -249,17 +275,20 @@ function prevStep() {
 
 function saveDraft() {
   saveProgress(false)
+  allowNextLeave()
   router.push(campaignsRoute.value)
 }
 
 function scheduleCampaign() {
   if (!step4Valid.value) return
   saveProgress(true)
+  allowNextLeave()
   router.push(campaignsRoute.value)
 }
 
 function exitWizard() {
   saveProgress(false)
+  allowNextLeave()
   router.push(campaignsRoute.value)
 }
 
@@ -314,6 +343,7 @@ onMounted(() => {
     typeChosen.value = true
     step.value = 1
     maxStepReached.value = totalSteps
+    captureFormSnapshot()
   } else {
     focusCard(emailCardRef)
   }
@@ -354,11 +384,7 @@ const enabledOptimizations = computed(() => {
     <!-- Type gate -->
     <template v-if="!typeChosen">
       <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">
-        <MpPageHeader title="New Email Campaign" subtitle="Choose a campaign type to get started" :back-to="campaignsRoute">
-          <template #tabs>
-            <MpWizardSteps :steps="stepTitles" :current="0" class="mt-3" />
-          </template>
-        </MpPageHeader>
+        <MpPageHeader title="New Email Campaign" subtitle="Choose a campaign type to get started" :back-to="campaignsRoute" />
       </div>
       <div class="flex-grow-1 overflow-y-auto pa-8 bg-background" @keydown="onTypeGateKeydown">
         <div style="max-width: 640px; width: 100%; margin: 0 auto;">
@@ -402,6 +428,7 @@ const enabledOptimizations = computed(() => {
           :back-to="campaignsRoute"
         >
           <template #actions>
+            <v-chip v-if="draftSavedChip" size="small" variant="tonal" color="success" class="font-weight-medium">Draft saved</v-chip>
             <v-btn variant="text" class="text-none text-medium-emphasis" @click="exitWizard">Save &amp; exit</v-btn>
           </template>
           <template #tabs>
@@ -494,17 +521,22 @@ const enabledOptimizations = computed(() => {
               {{ audienceCount }} audience source{{ audienceCount > 1 ? 's' : '' }} selected.
             </v-alert>
 
-            <div class="text-subtitle-2 font-weight-bold mb-3">Sender</div>
-            <v-row dense class="mb-2">
-              <v-col cols="12" sm="6"><v-text-field v-model="senderName" label="From Name *" variant="outlined" density="comfortable"></v-text-field></v-col>
-              <v-col cols="12" sm="6"><v-text-field v-model="senderEmail" label="From Email *" variant="outlined" density="comfortable"></v-text-field></v-col>
-              <v-col cols="12" sm="6"><v-text-field v-model="replyTo" label="Reply To *" variant="outlined" density="comfortable"></v-text-field></v-col>
-              <v-col cols="12" sm="3"><v-select v-model="language" label="Language *" :items="LANGUAGES" variant="outlined" density="comfortable"></v-select></v-col>
-              <v-col cols="12" sm="3"><v-text-field v-model="address" label="Address *" variant="outlined" density="comfortable"></v-text-field></v-col>
-            </v-row>
-            <div class="text-caption text-medium-emphasis mb-6">Selecting a list autofills sender details from that list's saved profile.</div>
-
             <v-expansion-panels variant="accordion" class="mp-suppress-panel">
+              <v-expansion-panel rounded="lg" elevation="0">
+                <v-expansion-panel-title>
+                  <span class="text-body-2 font-weight-bold">Sender</span>
+                </v-expansion-panel-title>
+                <v-expansion-panel-text>
+                  <v-row dense class="mb-2">
+                    <v-col cols="12" sm="6"><v-text-field v-model="senderName" label="From Name *" variant="outlined" density="comfortable"></v-text-field></v-col>
+                    <v-col cols="12" sm="6"><v-text-field v-model="senderEmail" label="From Email *" variant="outlined" density="comfortable"></v-text-field></v-col>
+                    <v-col cols="12" sm="6"><v-text-field v-model="replyTo" label="Reply To *" variant="outlined" density="comfortable"></v-text-field></v-col>
+                    <v-col cols="12" sm="3"><v-select v-model="language" label="Language *" :items="LANGUAGES" variant="outlined" density="comfortable"></v-select></v-col>
+                    <v-col cols="12" sm="3"><v-text-field v-model="address" label="Address *" variant="outlined" density="comfortable"></v-text-field></v-col>
+                  </v-row>
+                  <div class="text-caption text-medium-emphasis">Selecting a list autofills sender details from that list's saved profile.</div>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
               <v-expansion-panel rounded="lg" elevation="0">
                 <v-expansion-panel-title>
                   <span class="text-body-2 font-weight-bold">Suppress contacts (optional)</span>
@@ -553,7 +585,13 @@ const enabledOptimizations = computed(() => {
                   <v-icon size="18">file-text</v-icon>
                   <span class="font-weight-bold">{{ selectedContent.name }}</span>
                 </div>
-                <v-btn icon="pencil" size="small" variant="text" aria-label="Edit content"></v-btn>
+                <v-btn
+                  icon="pencil"
+                  size="small"
+                  variant="text"
+                  aria-label="Edit content"
+                  :to="{ name: 'EmailContentEditor', params: { accountId, id: String(selectedContent.id) } }"
+                />
               </div>
               <div class="mp-content-preview rounded-lg pa-4 text-body-2">
                 <div>Hi {{ mergeTagFirstName }},</div>
@@ -660,6 +698,15 @@ const enabledOptimizations = computed(() => {
           </template>
         </div>
       </div>
+
+      <MpConfirmDialog
+        v-model="confirmLeave"
+        danger
+        :title="leaveTitle"
+        :message="leaveMessage"
+        :confirm-label="leaveConfirmLabel"
+        @confirm="discardAndLeave"
+      />
     </template>
   </div>
 </template>

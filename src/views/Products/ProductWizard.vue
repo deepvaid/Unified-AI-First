@@ -13,6 +13,7 @@ import { useProductExtrasStore } from '@/stores/useProductExtras'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
 const router = useRouter()
@@ -189,6 +190,27 @@ function representativePrice(): string {
   return Number(first?.price || 0).toFixed(2)
 }
 
+function formSnapshot() {
+  return JSON.stringify({
+    title: title.value,
+    sku: sku.value,
+    detail: buildDetail(),
+  })
+}
+const savedSnapshot = ref('')
+const isDirty = computed(() => !!savedSnapshot.value && formSnapshot() !== savedSnapshot.value)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave product wizard?',
+  message: 'You have unsaved changes. Leaving now will discard them.',
+})
+
 function save(publishStatus: PublishStatus) {
   submitted.value = true
   if (!titleValid.value) {
@@ -208,6 +230,7 @@ function save(publishStatus: PublishStatus) {
     publishStatus,
     detail,
   }
+  allowNextLeave()
   if (isEdit.value && editingId.value !== null) {
     store.updateProductDraft(editingId.value, input)
     router.push({ ...productsRoute.value, query: { flash: 'product-updated' } })
@@ -217,51 +240,59 @@ function save(publishStatus: PublishStatus) {
   }
 }
 
+function discardProduct() {
+  allowNextLeave()
+  router.push(productsRoute.value)
+}
+
 // ── Load for edit ───────────────────────────────────────────────────────
 onMounted(() => {
-  if (!isEdit.value) return
-  const product = store.products.find(p => p.id === editingId.value)
-  if (!product) return
-  title.value = product.name
-  sku.value = product.sku
-  const d = product.detail
-  if (d) {
-    subtitle.value = d.subtitle
-    url.value = d.url
-    description.value = d.description
-    hasVariants.value = d.hasVariants
-    options.value = d.options.length ? d.options.map(o => ({ name: o.name, values: [...o.values] })) : [{ name: '', values: [] }]
-    taxCategory.value = d.taxCategory
-    material.value = d.material
-    brand.value = d.brand
-    tag.value = d.tag
-    collection.value = d.collection
-    categories.value = [...d.categories]
-    width.value = d.width
-    length.value = d.length
-    height.value = d.height
-    weight.value = d.weight
-    midCode.value = d.midCode
-    hsCode.value = d.hsCode
-    countryOfOrigin.value = d.countryOfOrigin
-    discountable.value = d.discountable
-    salesChannels.value = [...d.salesChannels]
-    if (d.hasVariants) {
-      generatedVariants.value = d.variantsList.map(v => makeVariant(v.title, v))
-    } else {
-      defaultVariant.value = d.variantsList[0] ? makeVariant(d.variantsList[0].title, d.variantsList[0]) : makeVariant('Default variant')
+  if (isEdit.value) {
+    const product = store.products.find(p => p.id === editingId.value)
+    if (product) {
+      title.value = product.name
+      sku.value = product.sku
+      const d = product.detail
+      if (d) {
+        subtitle.value = d.subtitle
+        url.value = d.url
+        description.value = d.description
+        hasVariants.value = d.hasVariants
+        options.value = d.options.length ? d.options.map(o => ({ name: o.name, values: [...o.values] })) : [{ name: '', values: [] }]
+        taxCategory.value = d.taxCategory
+        material.value = d.material
+        brand.value = d.brand
+        tag.value = d.tag
+        collection.value = d.collection
+        categories.value = [...d.categories]
+        width.value = d.width
+        length.value = d.length
+        height.value = d.height
+        weight.value = d.weight
+        midCode.value = d.midCode
+        hsCode.value = d.hsCode
+        countryOfOrigin.value = d.countryOfOrigin
+        discountable.value = d.discountable
+        salesChannels.value = [...d.salesChannels]
+        if (d.hasVariants) {
+          generatedVariants.value = d.variantsList.map(v => makeVariant(v.title, v))
+        } else {
+          defaultVariant.value = d.variantsList[0] ? makeVariant(d.variantsList[0].title, d.variantsList[0]) : makeVariant('Default variant')
+        }
+      } else {
+        // Legacy seed product without a stored wizard detail — derive sensible defaults.
+        brand.value = BRANDS.includes(product.vendor) ? product.vendor : ''
+        categories.value = CATEGORIES.includes(product.category) ? [product.category] : []
+        defaultVariant.value = makeVariant('Default variant', {
+          sku: product.sku,
+          price: product.price,
+          stock: { [LOCATIONS[0]!]: product.inventory },
+        })
+      }
+      maxStep.value = 3
     }
-  } else {
-    // Legacy seed product without a stored wizard detail — derive sensible defaults.
-    brand.value = BRANDS.includes(product.vendor) ? product.vendor : ''
-    categories.value = CATEGORIES.includes(product.category) ? [product.category] : []
-    defaultVariant.value = makeVariant('Default variant', {
-      sku: product.sku,
-      price: product.price,
-      stock: { [LOCATIONS[0]!]: product.inventory },
-    })
   }
-  maxStep.value = 3
+  savedSnapshot.value = formSnapshot()
 })
 </script>
 
@@ -275,7 +306,7 @@ onMounted(() => {
         :back-to="productsRoute"
       >
         <template #actions>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="confirmCancel = true">Cancel</v-btn>
+          <v-btn variant="text" class="text-none text-medium-emphasis" @click="isDirty ? (confirmCancel = true) : discardProduct()">Cancel</v-btn>
         </template>
         <template #tabs>
           <MpWizardSteps :steps="steps" :current="step" clickable :max-step="maxStep" class="mt-3" @select="goStep" />
@@ -451,7 +482,7 @@ onMounted(() => {
     <!-- Bottom navigation bar -->
     <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
       <div class="d-flex align-center gap-2">
-        <v-btn variant="text" class="text-none" @click="confirmCancel = true">Cancel</v-btn>
+        <v-btn variant="text" class="text-none" @click="isDirty ? (confirmCancel = true) : discardProduct()">Cancel</v-btn>
         <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
       </div>
       <div class="d-flex align-center gap-2">
@@ -467,7 +498,15 @@ onMounted(() => {
       message="Your changes won't be saved. This can't be undone."
       confirm-label="Discard"
       danger
-      @confirm="router.push(productsRoute)"
+      @confirm="discardProduct"
+    />
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
     />
   </div>
 </template>

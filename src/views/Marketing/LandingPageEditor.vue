@@ -8,6 +8,7 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpBuilderPreviewDialog from '@/components/MpBuilderPreviewDialog.vue'
 import LandingBlockPalette, { type PaletteItem } from '@/components/marketing/landing/LandingBlockPalette.vue'
 import LandingLayersPanel from '@/components/marketing/landing/LandingLayersPanel.vue'
 import LandingPageStylePanel from '@/components/marketing/landing/LandingPageStylePanel.vue'
@@ -248,12 +249,24 @@ function duplicatePageAction() {
   notify('Page duplicated')
 }
 
+const urlPattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(\/[\w-]*)*\/?$/i
+const urlValid = computed(() => urlPattern.test(pageUrl.value.trim()))
+const canPublish = computed(() => urlValid.value && pageUrl.value.trim().length > 0)
+
 const confirmPublishOpen = ref(false)
 const confirmUnpublishOpen = ref(false)
 function requestPublishToggle() {
   if (!page.value) return
-  if (page.value.publishStatus === 'published') confirmUnpublishOpen.value = true
-  else confirmPublishOpen.value = true
+  if (page.value.publishStatus === 'published') {
+    confirmUnpublishOpen.value = true
+    return
+  }
+  if (!canPublish.value) {
+    settingsOpen.value = true
+    notify('Set a valid page URL before publishing')
+    return
+  }
+  confirmPublishOpen.value = true
 }
 function confirmPublish() {
   if (!page.value) return
@@ -292,7 +305,13 @@ function saveAndClose() {
           class="lpe-name"
           aria-label="Page name"
         />
-        <v-chip size="x-small" variant="outlined" class="lpe-url-chip text-truncate" @click="settingsOpen = true">{{ pageUrl || 'Set a URL' }}</v-chip>
+        <v-chip
+          size="x-small"
+          variant="outlined"
+          class="lpe-url-chip text-truncate"
+          :class="{ 'lpe-url-chip--error': !canPublish }"
+          @click="settingsOpen = true"
+        >{{ pageUrl || 'Set a URL' }}</v-chip>
         <MpStatusChip :status="page.publishStatus === 'published' ? 'Published' : 'Draft'" type="general" size="x-small" />
 
         <v-spacer />
@@ -318,6 +337,19 @@ function saveAndClose() {
           <span class="lpe-savechip__dot" />
           {{ dirty ? 'Unsaved' : 'Autosaved' }}
         </div>
+        <v-tooltip text="Undo (⌘Z)" location="bottom">
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              variant="text"
+              icon="undo-2"
+              size="small"
+              aria-label="Undo"
+              :disabled="!undoStack.length"
+              @click="undo"
+            />
+          </template>
+        </v-tooltip>
         <v-btn variant="text" icon="eye" size="small" aria-label="Preview page" @click="openPreview" />
         <v-btn variant="text" icon="settings" size="small" aria-label="Page settings" @click="settingsOpen = true" />
         <MpRowActionsMenu ariaLabel="More page actions">
@@ -326,23 +358,47 @@ function saveAndClose() {
           <v-list-item prepend-icon="copy" rounded="lg" @click="duplicatePageAction">Duplicate Page</v-list-item>
         </MpRowActionsMenu>
         <v-btn variant="outlined" class="text-none" prepend-icon="check" @click="saveAndClose">Save and Close</v-btn>
-        <v-btn
-          :variant="page.publishStatus === 'published' ? 'tonal' : 'flat'"
-          :color="page.publishStatus === 'published' ? 'warning' : 'primary'"
-          class="text-none"
-          :prepend-icon="page.publishStatus === 'published' ? 'circle-slash' : 'rocket'"
-          @click="requestPublishToggle"
+        <v-tooltip
+          :text="canPublish || page.publishStatus === 'published' ? '' : 'Set a valid page URL before publishing'"
+          :disabled="canPublish || page.publishStatus === 'published'"
+          location="bottom"
         >
-          {{ page.publishStatus === 'published' ? 'Unpublish' : 'Publish' }}
-        </v-btn>
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              :variant="page.publishStatus === 'published' ? 'tonal' : 'flat'"
+              :color="page.publishStatus === 'published' ? 'warning' : 'primary'"
+              class="text-none"
+              :prepend-icon="page.publishStatus === 'published' ? 'circle-slash' : 'rocket'"
+              :disabled="page.publishStatus !== 'published' && !canPublish"
+              @click="requestPublishToggle"
+            >
+              {{ page.publishStatus === 'published' ? 'Unpublish' : 'Publish' }}
+            </v-btn>
+          </template>
+        </v-tooltip>
       </header>
 
       <div class="lpe-body d-flex flex-grow-1 overflow-hidden">
         <!-- left: Blocks / Layers -->
         <aside class="lpe-left d-flex flex-column">
-          <div class="lpe-left__tabs">
-            <button type="button" class="lpe-tab" :class="{ 'lpe-tab--active': leftTab === 'blocks' }" @click="leftTab = 'blocks'">Blocks</button>
-            <button type="button" class="lpe-tab" :class="{ 'lpe-tab--active': leftTab === 'layers' }" @click="leftTab = 'layers'">Layers</button>
+          <div class="lpe-left__tabs" role="tablist" aria-label="Editor panels">
+            <button
+              type="button"
+              role="tab"
+              class="lpe-tab"
+              :class="{ 'lpe-tab--active': leftTab === 'blocks' }"
+              :aria-selected="leftTab === 'blocks'"
+              @click="leftTab = 'blocks'"
+            >Blocks</button>
+            <button
+              type="button"
+              role="tab"
+              class="lpe-tab"
+              :class="{ 'lpe-tab--active': leftTab === 'layers' }"
+              :aria-selected="leftTab === 'layers'"
+              @click="leftTab = 'layers'"
+            >Layers</button>
           </div>
           <div class="lpe-left__body pa-3">
             <LandingBlockPalette v-if="leftTab === 'blocks'" :palette="PALETTE" @add="addBlock" />
@@ -420,27 +476,19 @@ function saveAndClose() {
         </template>
       </MpFormDrawer>
 
-      <!-- Preview dialog: clean render, no editor chrome -->
-      <v-dialog v-model="previewOpen" fullscreen :scrim="false" transition="dialog-bottom-transition">
-        <v-card rounded="0" flat class="lpe-preview-card d-flex flex-column">
-          <div class="d-flex align-center ga-3 px-4 lpe-preview-bar">
-            <div class="text-subtitle-2 font-weight-bold text-truncate">{{ pageName }}</div>
-            <v-spacer />
-            <v-btn-toggle v-model="previewDevice" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
-              <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop view" />
-              <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile view" />
-            </v-btn-toggle>
-            <v-btn icon="x" variant="text" size="small" aria-label="Close preview" @click="previewOpen = false" />
+      <MpBuilderPreviewDialog v-model="previewOpen" :title="pageName || 'Preview'">
+        <template #toolbar>
+          <v-btn-toggle v-model="previewDevice" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
+            <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop view" />
+            <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile view" />
+          </v-btn-toggle>
+        </template>
+        <div class="lpe-sheet" :class="`lpe-sheet--${previewDevice}`" :style="{ background: pageStyle.backgroundColor, ...styleVars }">
+          <div class="lpe-content">
+            <LandingBlockView v-for="block in blocks" :key="block.id" :block="block" :palette="PALETTE" />
           </div>
-          <div class="lpe-preview-stage flex-grow-1">
-            <div class="lpe-sheet" :class="`lpe-sheet--${previewDevice}`" :style="{ background: pageStyle.backgroundColor, ...styleVars }">
-              <div class="lpe-content">
-                <LandingBlockView v-for="block in blocks" :key="block.id" :block="block" :palette="PALETTE" />
-              </div>
-            </div>
-          </div>
-        </v-card>
-      </v-dialog>
+        </div>
+      </MpBuilderPreviewDialog>
 
       <MpConfirmDialog
         v-model="confirmPublishOpen"
@@ -494,6 +542,10 @@ function saveAndClose() {
   max-width: 220px;
   cursor: pointer;
   flex-shrink: 1;
+}
+.lpe-url-chip--error {
+  color: rgb(var(--v-theme-error));
+  border-color: rgba(var(--v-theme-error), 0.5);
 }
 
 /* autosave dot-chip */
@@ -625,5 +677,14 @@ function saveAndClose() {
   padding: 40px 24px;
   display: flex;
   justify-content: center;
+}
+
+@media (max-width: 1024px) {
+  .lpe-left { width: 220px; }
+  .lpe-right { width: 280px; }
+}
+@media (max-width: 768px) {
+  .lpe-left,
+  .lpe-right { display: none; }
 }
 </style>

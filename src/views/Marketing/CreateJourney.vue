@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 import type { JourneyTemplate } from '@/stores/journeyFlowData'
 import { journeyTemplates } from '@/stores/journeyFlowData'
@@ -44,21 +46,6 @@ function continueToSettings() {
 
 const canCreate = computed(() => !!selectedTemplateId.value && name.value.trim().length > 0)
 
-function createJourney() {
-  if (!canCreate.value || !selectedTemplateId.value) return
-  const id = store.createJourney({
-    name: name.value.trim(),
-    templateId: selectedTemplateId.value,
-    settings: {
-      endDate: endDate.value || undefined,
-      endTime: endTime.value || undefined,
-      enabled: enableOnSave.value,
-      retrigger: retrigger.value,
-    },
-  })
-  router.replace({ name: 'JourneyBuilder', params: { accountId: accountId.value, id } })
-}
-
 function cancel() {
   router.push({ name: 'Journeys', params: { accountId: accountId.value } })
 }
@@ -94,6 +81,50 @@ function refineDraft(kind: RefinementKind) {
 
 const canCreateFromDraft = computed(() => !!draft.value && aiName.value.trim().length > 0)
 
+const isDirty = computed(() =>
+  name.value.trim().length > 0
+  || !!selectedTemplateId.value
+  || !!draft.value
+  || aiName.value.trim().length > 0
+  || (brief.brand ?? '').trim().length > 0
+  || (brief.offer ?? '').trim().length > 0,
+)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave journey setup?',
+  message: 'You have started creating a journey. Leaving now will discard this draft.',
+})
+
+const wizardSteps = computed(() =>
+  mode.value === 'ai' ? ['Brief', 'Review'] : ['Choose template', 'Settings'],
+)
+const wizardCurrent = computed(() => {
+  if (mode.value === 'ai') return draft.value ? 2 : 1
+  return step.value
+})
+
+function createJourney() {
+  if (!canCreate.value || !selectedTemplateId.value) return
+  const id = store.createJourney({
+    name: name.value.trim(),
+    templateId: selectedTemplateId.value,
+    settings: {
+      endDate: endDate.value || undefined,
+      endTime: endTime.value || undefined,
+      enabled: enableOnSave.value,
+      retrigger: retrigger.value,
+    },
+  })
+  allowNextLeave()
+  router.replace({ name: 'JourneyBuilder', params: { accountId: accountId.value, id } })
+}
+
 function createFromDraft() {
   if (!draft.value || !canCreateFromDraft.value) return
   const id = store.createJourney({
@@ -101,6 +132,7 @@ function createFromDraft() {
     nodes: draft.value.nodes,
     settings: { enabled: aiEnable.value, retrigger: false },
   })
+  allowNextLeave()
   router.replace({ name: 'JourneyBuilder', params: { accountId: accountId.value, id } })
 }
 
@@ -129,10 +161,12 @@ onMounted(() => {
         <div class="font-weight-bold text-body-1">New Journey</div>
       </div>
 
-      <MpWizardSteps v-if="mode === 'template'" :steps="['Choose template', 'Settings']" :current="step" />
-      <v-chip v-else color="primary" variant="tonal" size="small" class="font-weight-bold">
-        <v-icon size="14" class="mr-1">sparkles</v-icon> Build with Da Vinci
-      </v-chip>
+      <div class="d-flex align-center gap-3">
+        <MpWizardSteps :steps="wizardSteps" :current="wizardCurrent" />
+        <v-chip v-if="mode === 'ai'" color="primary" variant="tonal" size="small" class="font-weight-bold">
+          <v-icon size="14" class="mr-1">sparkles</v-icon> Build with Da Vinci
+        </v-chip>
+      </div>
 
       <v-btn variant="text" size="small" class="text-none" @click="cancel">Cancel</v-btn>
     </div>
@@ -351,6 +385,15 @@ onMounted(() => {
           :disabled="!canCreateFromDraft" @click="createFromDraft">Create journey</v-btn>
       </div>
     </div>
+
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
+    />
   </div>
 </template>
 

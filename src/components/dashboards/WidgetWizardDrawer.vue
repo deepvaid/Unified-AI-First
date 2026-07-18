@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
 import type {
   DashboardFilterState,
@@ -88,11 +89,20 @@ watch(
   { immediate: true, deep: true },
 )
 
+const confirmClose = ref(false)
+
 watch(model, (isOpen) => {
   if (!isOpen) {
     dashboardsStore.closeWidgetEditor()
   }
 })
+
+function discardDraftAndClose() {
+  confirmClose.value = false
+  draft.value = null
+  stage.value = 'pick'
+  model.value = false
+}
 
 function handleLibrarySelect(entry: DashboardWidgetLibraryEntry) {
   draft.value = libraryEntryToDraft(entry)
@@ -132,6 +142,10 @@ function persist(): boolean {
 }
 
 function close() {
+  if (draft.value && stage.value === 'edit' && !isEditing.value) {
+    confirmClose.value = true
+    return
+  }
   model.value = false
 }
 
@@ -144,7 +158,10 @@ function goBack() {
 }
 
 function handleSave() {
-  if (persist()) close()
+  if (persist()) {
+    draft.value = null
+    model.value = false
+  }
 }
 
 const editPrimaryLabel = computed(() => (isEditing.value ? 'Save changes' : 'Add to dashboard'))
@@ -200,6 +217,15 @@ const showFooterPrimary = computed(() => stage.value === 'edit')
       </div>
     </template>
   </MpFormDrawer>
+
+  <MpConfirmDialog
+    v-model="confirmClose"
+    danger
+    title="Discard widget draft?"
+    message="You have a widget configuration that hasn’t been added yet. Leaving now will discard it."
+    confirm-label="Discard draft"
+    @confirm="discardDraftAndClose"
+  />
 </template>
 
 <style scoped lang="scss">

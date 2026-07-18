@@ -253,7 +253,7 @@ function confirmDelete() {
 
         <template v-slot:item.actions="{ item }">
           <span @click.stop>
-            <MpRowActionsMenu :aria-label="`Actions for ${(item as RoleRow).name}`">
+            <MpRowActionsMenu :ariaLabel="`Actions for ${(item as RoleRow).name}`">
               <v-list-item prepend-icon="eye" :title="(item as RoleRow).system ? 'View' : 'Edit'" @click="openRole((item as RoleRow).id)" />
               <v-list-item
                 prepend-icon="copy"

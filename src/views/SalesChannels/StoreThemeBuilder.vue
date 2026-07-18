@@ -9,6 +9,7 @@ import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
 import AddSectionDialog from '@/components/saleschannels/AddSectionDialog.vue'
 import ThemeDaVinciPanel, { type ThemeChatMessage } from '@/components/saleschannels/ThemeDaVinciPanel.vue'
 import { generateSections } from '@/composables/useThemeGenerator'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
@@ -112,6 +113,19 @@ const isDirty = computed(() => {
   const t = theme.value
   if (!t) return false
   return !t.publishedAt || t.updatedAt !== t.publishedAt
+})
+
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave theme builder?',
+  message: 'You have unpublished draft changes. Leaving now will keep them as a draft, but you may want to publish or discard first.',
+  confirmLabel: 'Leave anyway',
 })
 
 function sectionIcon(kind: string) {
@@ -547,6 +561,7 @@ const publishMessage = computed(
 function confirmPublish() {
   if (!theme.value) return
   themesStore.publishTheme(theme.value.id)
+  allowNextLeave()
   snackMessage.value = 'Theme published'
   snack.value = true
 }
@@ -559,6 +574,7 @@ function confirmDiscard() {
   selected.value = null
   newSectionIds.value.clear()
   newBlockIds.value.clear()
+  allowNextLeave()
   snackMessage.value = 'Draft changes discarded'
   snack.value = true
 }
@@ -681,6 +697,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
           </template>
         </v-tooltip>
         <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
+        <span v-if="isDirty" class="text-caption text-medium-emphasis d-none d-md-inline">Draft on canvas — Publish to go live</span>
         <v-btn variant="outlined" size="small" class="text-none" :disabled="!isDirty" @click="discardDialog = true">
           Discard draft
         </v-btn>
@@ -1177,6 +1194,15 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         : 'All edits will be reverted to the theme\'s starting point. This can\'t be undone.'"
       confirm-label="Discard changes"
       @confirm="confirmDiscard"
+    />
+
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
     />
 
     <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">

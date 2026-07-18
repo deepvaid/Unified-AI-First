@@ -167,7 +167,8 @@ function onGripDragStart(e: DragEvent) {
   z-index: 1;
 }
 .lbv--editable:hover .lbv__chip,
-.lbv--selected .lbv__chip {
+.lbv--selected .lbv__chip,
+.lbv--editable:focus-within .lbv__chip {
   display: flex;
 }
 .lbv__controls {
@@ -183,7 +184,8 @@ function onGripDragStart(e: DragEvent) {
   z-index: 1;
 }
 .lbv--editable:hover .lbv__controls,
-.lbv--selected .lbv__controls {
+.lbv--selected .lbv__controls,
+.lbv--editable:focus-within .lbv__controls {
   display: flex;
 }
 .lbv__ctrl {

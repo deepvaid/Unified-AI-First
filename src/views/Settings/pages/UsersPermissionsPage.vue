@@ -379,7 +379,7 @@ function bulkDeactivate() {
 
         <template v-slot:item.actions="{ item }">
           <span @click.stop>
-            <MpRowActionsMenu :aria-label="`Actions for ${(item as UserRow).name}`">
+            <MpRowActionsMenu :ariaLabel="`Actions for ${(item as UserRow).name}`">
               <v-list-item prepend-icon="user-cog" title="Manage access" @click="openAccess((item as UserRow).id)" />
               <template v-if="!(item as UserRow).isOwner">
                 <template v-if="(item as UserRow).status === 'invited'">

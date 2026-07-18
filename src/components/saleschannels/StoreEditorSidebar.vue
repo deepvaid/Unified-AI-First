@@ -21,17 +21,27 @@ const accountId = computed(() => {
   return id ?? '2000290'
 })
 
-const groups = computed<MpSectionRailGroup[]>(() => [
-  {
-    items: STORE_EDITOR_ITEMS.map((item) => ({
-      slug: item.slug,
-      label: item.label,
-      icon: item.icon,
-      to: { name: item.routeName, params: { accountId: accountId.value, channelId: props.channel.id } },
-      match: item.match,
-    })),
-  },
-])
+function toItem(item: (typeof STORE_EDITOR_ITEMS)[number]) {
+  return {
+    slug: item.slug,
+    label: item.label,
+    icon: item.icon,
+    to: { name: item.routeName, params: { accountId: accountId.value, channelId: props.channel.id } },
+    match: item.match,
+  }
+}
+
+// Theme is the primary storefront job — surface it under Customize first.
+const groups = computed<MpSectionRailGroup[]>(() => {
+  const overview = STORE_EDITOR_ITEMS.find((i) => i.slug === 'overview')
+  const theme = STORE_EDITOR_ITEMS.find((i) => i.slug === 'theme')
+  const rest = STORE_EDITOR_ITEMS.filter((i) => i.slug !== 'overview' && i.slug !== 'theme')
+  return [
+    ...(overview ? [{ items: [toItem(overview)] }] : []),
+    ...(theme ? [{ title: 'Customize', items: [toItem(theme)] }] : []),
+    { title: 'Store content', items: rest.map(toItem) },
+  ]
+})
 
 const switcherOptions = computed<MpSectionRailSwitchOption[]>(() =>
   salesChannelsStore
