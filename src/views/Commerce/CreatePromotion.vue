@@ -12,6 +12,7 @@ import {
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
 const router = useRouter()
@@ -46,7 +47,6 @@ const endDate = ref('')
 const status = ref<PromotionStatus>('Active')
 const salesChannels = ref<string[]>([])
 
-const confirmCancel = ref(false)
 const submitted = ref(false)
 
 function generateCode() {
@@ -71,6 +71,28 @@ const valueValid = computed(() => value.value > 0 || (mechanism.value === 'Autom
 const channelsValid = computed(() => salesChannels.value.length > 0)
 const formValid = computed(() => titleValid.value && codeValid.value && valueValid.value && channelsValid.value)
 
+// ── Unsaved-changes guard (replaces the old always-on Cancel confirm) ────
+function serializeForm() {
+  return JSON.stringify([
+    title.value, description.value, method.value, mechanism.value, code.value,
+    discountType.value, value.value, startDate.value, endDate.value, status.value, salesChannels.value,
+  ])
+}
+const savedSnapshot = ref(serializeForm())
+const isDirty = computed(() => serializeForm() !== savedSnapshot.value)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Discard this promotion?',
+  message: "Your changes won't be saved. This can't be undone.",
+  confirmLabel: 'Discard',
+})
+
 // ── Persistence ─────────────────────────────────────────────────────────
 function save() {
   submitted.value = true
@@ -89,6 +111,7 @@ function save() {
     status: status.value,
     limit: isEdit.value ? store.promotions.find(p => p.id === editingId.value)?.limit ?? null : null,
   }
+  allowNextLeave()
   if (isEdit.value && editingId.value !== null) {
     store.updatePromotion(editingId.value, input)
     router.push({ ...promotionsRoute.value, query: { flash: 'promotion-updated' } })
@@ -114,11 +137,12 @@ onMounted(() => {
   endDate.value = promotion.endDate ?? ''
   status.value = promotion.status
   salesChannels.value = [...promotion.salesChannels]
+  savedSnapshot.value = serializeForm()
 })
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="mp-frame-fill d-flex flex-column">
     <!-- Header -->
     <div class="cp-head px-8 pt-6 pb-4 bg-surface border-b">
       <MpPageHeader
@@ -127,7 +151,7 @@ onMounted(() => {
         :back-to="promotionsRoute"
       >
         <template #actions>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="confirmCancel = true">Cancel</v-btn>
+          <v-btn variant="text" class="text-none text-medium-emphasis" @click="router.push(promotionsRoute)">Cancel</v-btn>
         </template>
       </MpPageHeader>
     </div>
@@ -281,17 +305,17 @@ onMounted(() => {
 
     <!-- Sticky footer -->
     <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
-      <v-btn variant="text" class="text-none" @click="confirmCancel = true">Cancel</v-btn>
+      <v-btn variant="text" class="text-none" @click="router.push(promotionsRoute)">Cancel</v-btn>
       <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="save">Save promotion</v-btn>
     </div>
 
     <MpConfirmDialog
-      v-model="confirmCancel"
-      title="Discard this promotion?"
-      message="Your changes won't be saved. This can't be undone."
-      confirm-label="Discard"
+      v-model="confirmLeave"
       danger
-      @confirm="router.push(promotionsRoute)"
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
     />
   </div>
 </template>

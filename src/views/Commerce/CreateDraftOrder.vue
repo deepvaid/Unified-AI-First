@@ -15,6 +15,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
 const router = useRouter()
@@ -189,6 +190,7 @@ const canSave = computed(() => hasCustomer.value || validLineItems.value.length 
 function saveDraft() {
   if (!canSave.value) return
   persistDraft()
+  allowNextLeave()
   router.push(draftsRoute.value)
 }
 
@@ -196,6 +198,7 @@ function markAsPaid() {
   if (!canConvert.value) return
   const id = persistDraft()
   const order = store.convertDraftToOrder(id)
+  allowNextLeave()
   if (order) router.push({ name: 'OrderDetail', params: { accountId: accountId.value, orderId: String(order.id) } })
 }
 
@@ -217,11 +220,31 @@ function copyPaymentLink() {
 }
 function closePaymentLink() {
   paymentLinkDialog.value = false
+  allowNextLeave()
   router.push(draftsRoute.value)
 }
 
-// Leave guard
-const confirmLeave = ref(false)
+// ── Unsaved-changes guard (replaces the old manual confirmLeave ref) ────
+function serializeDraft() {
+  return JSON.stringify([
+    customer.value, email.value, phone.value, salesChannel.value, lineItems.value,
+    shippingAddress.value, billingAddress.value, shippingMethod.value, discount.value, notes.value,
+  ])
+}
+const savedSnapshot = ref(serializeDraft())
+const isDirty = computed(() => serializeDraft() !== savedSnapshot.value)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Discard this draft order?',
+  message: 'Any unsaved changes will be lost.',
+  confirmLabel: 'Discard',
+})
 
 // ── Hydrate for edit ──────────────────────────────────────────────
 onMounted(() => {
@@ -239,11 +262,12 @@ onMounted(() => {
   shippingMethod.value = draft.shippingMethod
   discount.value = { ...draft.discount }
   notes.value = draft.notes
+  savedSnapshot.value = serializeDraft()
 })
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="mp-frame-fill d-flex flex-column">
     <!-- Header -->
     <div class="px-8 pt-6 pb-4 bg-surface cdo-border-b">
       <MpPageHeader
@@ -252,7 +276,7 @@ onMounted(() => {
         :back-to="draftsRoute"
       >
         <template #actions>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="confirmLeave = true">Cancel</v-btn>
+          <v-btn variant="text" class="text-none text-medium-emphasis" @click="router.push(draftsRoute)">Cancel</v-btn>
         </template>
       </MpPageHeader>
     </div>
@@ -519,11 +543,11 @@ onMounted(() => {
     <!-- ── Leave confirmation ──────────────────────────────────────── -->
     <MpConfirmDialog
       v-model="confirmLeave"
-      title="Discard this draft order?"
-      message="Any unsaved changes will be lost."
-      confirm-label="Discard"
       danger
-      @confirm="router.push(draftsRoute)"
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
     />
 
     <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
