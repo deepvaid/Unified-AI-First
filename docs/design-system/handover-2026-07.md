@@ -19,6 +19,20 @@ Two pattern galleries deleted with the archive were rebuilt sandbox-faithful:
 - **`Foundations/Buttons`** (`src/stories/Foundation/Buttons.stories.ts`) — VBtn exactly as the app styles it (flat default, no text-transform, Lucide icons), with the CTA/secondary/tertiary/destructive hierarchy.
 - **`Patterns/Data Table`** (`src/stories/DataTablePattern.stories.ts`) — the full canonical list-view composition (MpFilterTabs → card → MpDataTableToolbar → v-data-table with MpStatusChip + MpRowActionsMenu → MpEmptyState → MpFloatingBulkBar), cribbed from `SalesOrders.vue`, with Default/Empty/Loading/WithSelection states. This is the reference to copy when building a new list view.
 
+## Drawer shell + drawer audit (2026-07-18, follow-up pass)
+
+`MpFormDrawer` now opens as a **floating rounded surface** matching the copilot drawer and content frame: 16px radius (`--mp-component-dialog-radius-default`), 1px `--mp-border-subtle` border, `--mp-shadow-md`, 12px gutters top/right/bottom. Implementation note: it keeps Vuetify's inline `top`/`bottom` and overrides only `height: auto`, so the geometry self-corrects between app-bar and full-page routes with no hardcoded offsets. On ≤640px viewports the drawer becomes a full-bleed sheet clamped to `100vw` — this also fixes the long-standing bug where the 480px default overflowed a 375px screen. Every drawer inherits automatically (all overlay drawers compose MpFormDrawer).
+
+Drawer audit fixes shipped with it:
+- **Filters drawer** (MpDataTableToolbar): default subtitle "Changes apply immediately" (filters apply live — "Done" only dismisses), full-size footer buttons in a `Clear all · spacer · Done(primary)` layout.
+- **Filter-select convention**: outlined filter selects take `placeholder="All"` + `persistent-placeholder` so a null filter reads "All" instead of an empty-looking box. Reference implementations: `SalesOrders.vue`, `AllContacts.vue`, `Inventory.vue` (which also lost a redundant inner "Filter by" heading). **Follow-up:** apply to the remaining ~27 views with filter selects.
+- **MpManageFoldersDrawer**: "Done" is now flat primary; the raw delete-confirm `v-dialog` was replaced with `MpConfirmDialog` (wording preserved).
+- **rbac drawers**: footer gaps normalized to `ga-2`.
+- **DvHistoryDrawer** (copilot): gained full dialog semantics in overlay mode — `role="dialog"`, `aria-modal`, `aria-labelledby`, ESC-to-close, focus in/restore, Tab trap (inert in rail mode).
+- **Storybook**: new `FilterDrawer` story mirrors the real Filters drawer; MpFormDrawer width defaults corrected to 480; shell + mobile + filter-select conventions documented in the component docs.
+
+Known follow-ups from this pass: sweep the remaining filter-select views; MpFormDrawer title is bespoke 17px (works, but not on the type scale — token-alignment candidate).
+
 ## Removed
 
 | Item | Scale | Why safe |
