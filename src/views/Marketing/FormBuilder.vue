@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
@@ -273,36 +274,25 @@ function publishForm() {
 </script>
 
 <template>
-  <div class="fb d-flex flex-column">
-    <!-- Top bar -->
-    <div class="fb__bar d-flex align-center justify-space-between px-5 border-b bg-surface">
-      <div class="d-flex align-center gap-3 min-width-0">
-        <v-tooltip text="Back to Forms" location="bottom">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" aria-label="Back to Forms" @click="goBack" />
-          </template>
-        </v-tooltip>
-        <div class="min-width-0">
-          <div class="font-weight-bold text-body-1 text-truncate">{{ formName || 'New Acquisition Form' }}</div>
-          <div class="text-caption text-medium-emphasis">
-            Step {{ step }} of {{ totalSteps }} · {{ stepTitles[step - 1] }}
-            <span v-if="dirty" class="fb__dirty">• Unsaved</span>
-          </div>
-        </div>
-      </div>
-      <div class="d-flex align-center gap-2">
-        <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="save" @click="saveDraft">Save Draft</v-btn>
-        <v-btn variant="outlined" class="text-none" size="small" @click="saveAndExit">Save &amp; exit</v-btn>
-      </div>
-    </div>
+  <MpBuilderShell
+    :title="formName || 'New Acquisition Form'"
+    :subtitle="`Step ${step} of ${totalSteps} · ${stepTitles[step - 1]}`"
+    back-label="Back to Forms"
+    :dirty="dirty"
+    persistence-mode="explicit"
+    @back="goBack"
+  >
+    <template #actions>
+      <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="save" @click="saveDraft">Save Draft</v-btn>
+      <v-btn variant="outlined" class="text-none" size="small" @click="saveAndExit">Save &amp; exit</v-btn>
+    </template>
 
-    <!-- Step indicator -->
-    <div class="fb__steps border-b bg-surface px-5 d-flex align-center">
+    <template #steps>
       <MpWizardSteps :steps="stepTitles" :current="step" clickable :max-step="maxStep" @select="goToStep" />
-    </div>
+    </template>
 
     <!-- Content -->
-    <div class="flex-grow-1 overflow-hidden">
+    <div class="h-100 overflow-hidden">
       <!-- STEP 1: Setup -->
       <div v-if="step === 1" class="fb__scroll d-flex justify-center pt-8 pa-4">
         <v-card variant="flat" border rounded="lg" style="max-width:620px;width:100%;" class="pa-8">
@@ -560,6 +550,7 @@ function publishForm() {
 
           <div class="fb-device" :style="{ width: previewDevice === 'mobile' ? '375px' : previewDevice === 'fullscreen' ? '960px' : '780px' }">
             <div class="fb-device__chrome d-flex align-center gap-1 mb-2 px-2">
+              <!-- macOS traffic lights: real-world fixed colors, allowlisted -->
               <span class="fb-dot" style="background:#ff5f56;" />
               <span class="fb-dot" style="background:#ffbd2e;" />
               <span class="fb-dot" style="background:#27c93f;" />
@@ -806,13 +797,10 @@ function publishForm() {
       danger
       @confirm="discardAndLeave"
     />
-  </div>
+  </MpBuilderShell>
 </template>
 
 <style scoped>
-.fb { height: 100vh; overflow: hidden; }
-.fb__bar { height: 56px; flex-shrink: 0; }
-.fb__steps { height: 52px; flex-shrink: 0; }
 .fb__scroll { height: 100%; overflow-y: auto; }
 .fb__panel { width: 300px; flex-shrink: 0; }
 
@@ -820,7 +808,6 @@ function publishForm() {
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 
-.fb__dirty { color: rgb(var(--v-theme-warning)); font-weight: 600; margin-left: 4px; }
 .fb-select-all :deep(.v-label) { font-size: 0.75rem; }
 .num { font-variant-numeric: tabular-nums; }
 
@@ -833,18 +820,20 @@ function publishForm() {
   box-shadow: inset 0 0 0 2px rgb(var(--v-theme-surface));
 }
 
-/* Device preview (Style & Review) */
+/* Device preview (Style & Review) — device chrome uses theme-adaptive
+   surfaces so the mock survives dark mode. */
 .fb-device {
-  background: #e5e5e5;
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  border: 1px solid var(--mp-border-subtle);
   border-radius: 12px;
   padding: 8px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--mp-shadow-lg);
   transition: width 0.3s ease;
 }
 .fb-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.fb-device__url { flex: 1; background: #fff; border-radius: 8px; height: 20px; margin-left: 8px; }
+.fb-device__url { flex: 1; background: rgb(var(--v-theme-surface)); border-radius: 8px; height: 20px; margin-left: 8px; }
 .fb-page {
-  background: #f0f0f0;
+  background: rgba(var(--v-theme-on-surface), 0.05);
   border-radius: 8px;
   min-height: 380px;
   position: relative;
@@ -852,6 +841,9 @@ function publishForm() {
   padding: 24px;
 }
 .fb-overlay { position: absolute; inset: 0; border-radius: 8px; z-index: 1; }
+/* Inside .fb-form the colors are the MERCHANT's popup design (user-picked
+   backgroundColor etc.), not app surfaces — the white ink and white-alpha
+   accents are preview artifacts and stay hardcoded on purpose. */
 .fb-form {
   z-index: 2;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
@@ -882,7 +874,7 @@ function publishForm() {
   justify-content: center;
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: rgb(var(--v-theme-on-primary));
   background: rgb(var(--v-theme-primary));
   cursor: pointer;
 }
