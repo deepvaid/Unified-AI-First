@@ -138,7 +138,7 @@ const preview: Preview = {
       storySort: {
         order: [
           'Introduction',
-          'Foundations', ['Colors', 'Typography', 'Spacing', 'Radius & Shadows', 'Icons'],
+          'Foundations', ['Colors', 'Typography', 'Spacing', 'Radius & Shadows', 'Icons', 'Buttons'],
           'Layout', 'Navigation', 'Forms', 'Data Display', 'Feedback', 'Overlays',
           'Patterns', 'AI', 'Copilot', 'Dashboards', 'Marketing', 'Merchandising',
           'RBAC', 'Sales Channels', 'Settings', '*',
