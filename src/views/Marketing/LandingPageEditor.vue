@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch, type ComponentP
 import { useRoute, useRouter } from 'vue-router'
 import { useLandingPagesStore, defaultLandingBlock, defaultLandingStyle } from '@/stores/useLandingPages'
 import type { LandingPageBlock, LandingPageBlockType, LandingPageStyle, BaseFont } from '@/stores/useLandingPages'
+import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -292,94 +293,95 @@ function saveAndClose() {
 </script>
 
 <template>
-  <div class="lpe d-flex flex-column">
-    <template v-if="page">
-      <!-- top bar -->
-      <header class="lpe-top d-flex align-center ga-2 px-3">
-        <v-btn variant="text" icon="chevron-left" :to="backTo" aria-label="Back to Landing Pages" />
-        <v-text-field
-          v-model="pageName"
-          variant="plain"
-          density="compact"
-          hide-details
-          class="lpe-name"
-          aria-label="Page name"
-        />
-        <v-chip
-          size="x-small"
-          variant="outlined"
-          class="lpe-url-chip text-truncate"
-          :class="{ 'lpe-url-chip--error': !canPublish }"
-          @click="settingsOpen = true"
-        >{{ pageUrl || 'Set a URL' }}</v-chip>
-        <MpStatusChip :status="page.publishStatus === 'published' ? 'Published' : 'Draft'" type="general" size="x-small" />
+  <MpBuilderShell
+    v-if="page"
+    :back-to="backTo"
+    back-label="Back to Landing Pages"
+    :title="pageName"
+    :dirty="dirty"
+    persistence-mode="autosave"
+    :left-width="264"
+  >
+    <template #title>
+      <v-text-field
+        v-model="pageName"
+        variant="plain"
+        density="compact"
+        hide-details
+        class="lpe-name"
+        aria-label="Page name"
+      />
+      <v-chip
+        size="x-small"
+        variant="outlined"
+        class="lpe-url-chip text-truncate"
+        :class="{ 'lpe-url-chip--error': !canPublish }"
+        @click="settingsOpen = true"
+      >{{ pageUrl || 'Set a URL' }}</v-chip>
+      <MpStatusChip :status="page.publishStatus === 'published' ? 'Published' : 'Draft'" type="general" size="x-small" />
+    </template>
 
-        <v-spacer />
+    <template #toolbar-center>
+      <v-btn-toggle v-model="device" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
+        <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop view" />
+        <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile view" />
+      </v-btn-toggle>
+      <v-btn
+        :variant="showStructure ? 'tonal' : 'text'"
+        :color="showStructure ? 'primary' : undefined"
+        size="small"
+        class="text-none"
+        prepend-icon="layout-grid"
+        @click="showStructure = !showStructure"
+      >
+        Structure
+      </v-btn>
+    </template>
 
-        <v-btn-toggle v-model="device" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
-          <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop view" />
-          <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile view" />
-        </v-btn-toggle>
-        <v-btn
-          :variant="showStructure ? 'tonal' : 'text'"
-          :color="showStructure ? 'primary' : undefined"
-          size="small"
-          class="text-none"
-          prepend-icon="layout-grid"
-          @click="showStructure = !showStructure"
-        >
-          Structure
-        </v-btn>
+    <template #actions>
+      <v-tooltip text="Undo (⌘Z)" location="bottom">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            variant="text"
+            icon="undo-2"
+            size="small"
+            aria-label="Undo"
+            :disabled="!undoStack.length"
+            @click="undo"
+          />
+        </template>
+      </v-tooltip>
+      <v-btn variant="text" icon="eye" size="small" aria-label="Preview page" @click="openPreview" />
+      <v-btn variant="text" icon="settings" size="small" aria-label="Page settings" @click="settingsOpen = true" />
+      <MpRowActionsMenu ariaLabel="More page actions">
+        <v-list-item prepend-icon="shield-check" rounded="lg" :disabled="page.status === 'Verified'" @click="verifyDomainAction">Verify Domain</v-list-item>
+        <v-list-item prepend-icon="copy-plus" rounded="lg" @click="saveAsTemplateAction">Save as Template</v-list-item>
+        <v-list-item prepend-icon="copy" rounded="lg" @click="duplicatePageAction">Duplicate Page</v-list-item>
+      </MpRowActionsMenu>
+      <v-btn variant="outlined" class="text-none" prepend-icon="check" @click="saveAndClose">Save and Close</v-btn>
+      <v-tooltip
+        :text="canPublish || page.publishStatus === 'published' ? '' : 'Set a valid page URL before publishing'"
+        :disabled="canPublish || page.publishStatus === 'published'"
+        location="bottom"
+      >
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            :variant="page.publishStatus === 'published' ? 'tonal' : 'flat'"
+            :color="page.publishStatus === 'published' ? 'warning' : 'primary'"
+            class="text-none"
+            :prepend-icon="page.publishStatus === 'published' ? 'circle-slash' : 'rocket'"
+            :disabled="page.publishStatus !== 'published' && !canPublish"
+            @click="requestPublishToggle"
+          >
+            {{ page.publishStatus === 'published' ? 'Unpublish' : 'Publish' }}
+          </v-btn>
+        </template>
+      </v-tooltip>
+    </template>
 
-        <v-spacer />
-
-        <div class="lpe-savechip" :class="{ 'lpe-savechip--dirty': dirty }">
-          <span class="lpe-savechip__dot" />
-          {{ dirty ? 'Unsaved' : 'Autosaved' }}
-        </div>
-        <v-tooltip text="Undo (⌘Z)" location="bottom">
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              variant="text"
-              icon="undo-2"
-              size="small"
-              aria-label="Undo"
-              :disabled="!undoStack.length"
-              @click="undo"
-            />
-          </template>
-        </v-tooltip>
-        <v-btn variant="text" icon="eye" size="small" aria-label="Preview page" @click="openPreview" />
-        <v-btn variant="text" icon="settings" size="small" aria-label="Page settings" @click="settingsOpen = true" />
-        <MpRowActionsMenu ariaLabel="More page actions">
-          <v-list-item prepend-icon="shield-check" rounded="lg" :disabled="page.status === 'Verified'" @click="verifyDomainAction">Verify Domain</v-list-item>
-          <v-list-item prepend-icon="copy-plus" rounded="lg" @click="saveAsTemplateAction">Save as Template</v-list-item>
-          <v-list-item prepend-icon="copy" rounded="lg" @click="duplicatePageAction">Duplicate Page</v-list-item>
-        </MpRowActionsMenu>
-        <v-btn variant="outlined" class="text-none" prepend-icon="check" @click="saveAndClose">Save and Close</v-btn>
-        <v-tooltip
-          :text="canPublish || page.publishStatus === 'published' ? '' : 'Set a valid page URL before publishing'"
-          :disabled="canPublish || page.publishStatus === 'published'"
-          location="bottom"
-        >
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              :variant="page.publishStatus === 'published' ? 'tonal' : 'flat'"
-              :color="page.publishStatus === 'published' ? 'warning' : 'primary'"
-              class="text-none"
-              :prepend-icon="page.publishStatus === 'published' ? 'circle-slash' : 'rocket'"
-              :disabled="page.publishStatus !== 'published' && !canPublish"
-              @click="requestPublishToggle"
-            >
-              {{ page.publishStatus === 'published' ? 'Unpublish' : 'Publish' }}
-            </v-btn>
-          </template>
-        </v-tooltip>
-      </header>
-
-      <div class="lpe-body d-flex flex-grow-1 overflow-hidden">
+      <div class="lpe-body d-flex h-100 overflow-hidden">
         <!-- left: Blocks / Layers -->
         <aside class="lpe-left d-flex flex-column">
           <div class="lpe-left__tabs" role="tablist" aria-label="Editor panels">
@@ -507,31 +509,23 @@ function saveAndClose() {
       />
 
       <v-snackbar v-model="toast.show" color="success" timeout="1600" location="bottom right">{{ toast.text }}</v-snackbar>
-    </template>
+  </MpBuilderShell>
 
+  <div v-else class="lpe-missing d-flex align-center justify-center">
     <MpEmptyState
-      v-else
       icon="file-x"
       title="Landing page not found"
       description="This landing page doesn’t exist."
       action-label="Back to Landing Pages"
       action-icon="arrow-left"
-      class="my-auto"
       @action="$router.push(backTo)"
     />
   </div>
 </template>
 
 <style scoped>
-.lpe {
-  height: 100%;
-  background: rgb(var(--v-theme-background));
-}
-.lpe-top {
-  height: 56px;
-  flex-shrink: 0;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
-  background: rgb(var(--v-theme-surface));
+.lpe-missing {
+  min-height: 60vh;
 }
 .lpe-name {
   max-width: 220px;
@@ -546,30 +540,6 @@ function saveAndClose() {
 .lpe-url-chip--error {
   color: rgb(var(--v-theme-error));
   border-color: rgba(var(--v-theme-error), 0.5);
-}
-
-/* autosave dot-chip */
-.lpe-savechip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: rgb(var(--v-theme-on-surface-variant));
-  background: rgba(var(--v-theme-on-surface), 0.05);
-  flex-shrink: 0;
-}
-.lpe-savechip__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgb(var(--v-theme-success));
-  transition: background 150ms ease;
-}
-.lpe-savechip--dirty .lpe-savechip__dot {
-  background: rgb(var(--v-theme-warning));
 }
 
 /* body layout */
