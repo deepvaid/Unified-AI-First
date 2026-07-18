@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -593,7 +594,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 </script>
 
 <template>
-  <div v-if="!channel || !theme" class="tb-root d-flex align-center justify-center">
+  <div v-if="!channel || !theme" class="tb-missing d-flex align-center justify-center">
     <MpEmptyState
       icon="paintbrush"
       :title="channel ? 'No theme for this channel' : 'Sales channel not found'"
@@ -606,57 +607,46 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
     />
   </div>
 
-  <div v-else class="tb-root d-flex flex-column">
-    <!-- Toolbar -->
-    <div class="tb-toolbar d-flex align-center justify-space-between px-5 gap-3 border-b bg-surface">
-      <div class="tb-toolbar__side d-flex align-center gap-3" style="min-width:0;">
-        <v-tooltip :text="`Back to ${channel.name}`" location="bottom">
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              icon="arrow-left"
-              variant="text"
-              size="small"
-              :aria-label="`Back to ${channel.name}`"
-              @click="router.push(backRoute)"
-            ></v-btn>
-          </template>
-        </v-tooltip>
-        <v-btn
-          v-if="isNarrow"
-          :icon="leftPanelOpen ? 'panel-left-close' : 'panel-left'"
-          variant="text"
-          size="small"
-          :aria-label="leftPanelOpen ? 'Hide sections panel' : 'Show sections panel'"
-          @click="leftPanelOpen = !leftPanelOpen"
-        ></v-btn>
-        <div class="font-weight-bold text-body-1 text-truncate">{{ theme.name }}</div>
-        <MpStatusChip :status="theme.status" type="general" size="x-small" />
-        <v-tooltip v-if="isDirty" text="Unpublished changes" location="bottom">
-          <template #activator="{ props }">
-            <span v-bind="props" class="tb-dirty-dot" role="status" aria-label="Unpublished changes"></span>
-          </template>
-        </v-tooltip>
-        <v-menu location="bottom start">
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              icon="more-vertical"
-              variant="text"
-              size="small"
-              aria-label="Theme actions"
-            ></v-btn>
-          </template>
-          <v-list density="compact" class="py-1">
-            <v-list-item
-              prepend-icon="code"
-              title="Edit Code"
-              @click="router.push({ name: 'StoreThemeCode', params: { accountId, channelId } })"
-            ></v-list-item>
-          </v-list>
-        </v-menu>
-      </div>
+  <MpBuilderShell
+    v-else
+    :back-label="`Back to ${channel.name}`"
+    :title="theme.name"
+    :dirty="isDirty"
+    persistence-mode="live"
+    @back="router.push(backRoute)"
+  >
+    <template #title>
+      <v-btn
+        v-if="isNarrow"
+        :icon="leftPanelOpen ? 'panel-left-close' : 'panel-left'"
+        variant="text"
+        size="small"
+        :aria-label="leftPanelOpen ? 'Hide sections panel' : 'Show sections panel'"
+        @click="leftPanelOpen = !leftPanelOpen"
+      ></v-btn>
+      <div class="font-weight-bold text-body-1 text-truncate">{{ theme.name }}</div>
+      <MpStatusChip :status="theme.status" type="general" size="x-small" />
+      <v-menu location="bottom start">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            icon="more-vertical"
+            variant="text"
+            size="small"
+            aria-label="Theme actions"
+          ></v-btn>
+        </template>
+        <v-list density="compact" class="py-1">
+          <v-list-item
+            prepend-icon="code"
+            title="Edit Code"
+            @click="router.push({ name: 'StoreThemeCode', params: { accountId, channelId } })"
+          ></v-list-item>
+        </v-list>
+      </v-menu>
+    </template>
 
+    <template #toolbar-center>
       <v-select
         v-model="activeTemplate"
         :items="templateTypeItems"
@@ -667,56 +657,55 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         class="tb-template-select flex-shrink-0"
         aria-label="Template type"
       ></v-select>
+    </template>
 
-      <div class="tb-toolbar__side d-flex align-center gap-2 justify-end">
-        <v-btn-toggle v-model="device" mandatory density="compact" rounded="lg" border aria-label="Preview device">
-          <v-tooltip v-for="option in deviceOptions" :key="option.value" :text="option.label" location="bottom">
-            <template #activator="{ props }">
-              <v-btn
-                v-bind="props"
-                :value="option.value"
-                :icon="option.icon"
-                size="small"
-                :aria-label="option.label"
-              ></v-btn>
-            </template>
-          </v-tooltip>
-        </v-btn-toggle>
-        <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
-        <v-tooltip text="Ask Da Vinci to review this theme" location="bottom">
+    <template #actions>
+      <v-btn-toggle v-model="device" mandatory density="compact" rounded="lg" border aria-label="Preview device">
+        <v-tooltip v-for="option in deviceOptions" :key="option.value" :text="option.label" location="bottom">
           <template #activator="{ props }">
             <v-btn
               v-bind="props"
-              icon="sparkles"
-              variant="text"
+              :value="option.value"
+              :icon="option.icon"
               size="small"
-              color="primary"
-              aria-label="Ask Da Vinci to review this theme"
-              @click="askDaVinci"
+              :aria-label="option.label"
             ></v-btn>
           </template>
         </v-tooltip>
-        <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
-        <span v-if="isDirty" class="text-caption text-medium-emphasis d-none d-md-inline">Draft on canvas — Publish to go live</span>
-        <v-btn variant="outlined" size="small" class="text-none" :disabled="!isDirty" @click="discardDialog = true">
-          Discard draft
-        </v-btn>
-        <v-btn
-          color="primary"
-          variant="flat"
-          size="small"
-          class="text-none"
-          :prepend-icon="isDirty ? 'rocket' : 'circle-check'"
-          :disabled="!isDirty"
-          @click="publishDialog = true"
-        >
-          {{ isDirty ? 'Publish' : 'Published' }}
-        </v-btn>
-      </div>
-    </div>
+      </v-btn-toggle>
+      <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
+      <v-tooltip text="Ask Da Vinci to review this theme" location="bottom">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            icon="sparkles"
+            variant="text"
+            size="small"
+            color="primary"
+            aria-label="Ask Da Vinci to review this theme"
+            @click="askDaVinci"
+          ></v-btn>
+        </template>
+      </v-tooltip>
+      <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
+      <v-btn variant="outlined" size="small" class="text-none" :disabled="!isDirty" @click="discardDialog = true">
+        Discard draft
+      </v-btn>
+      <v-btn
+        color="primary"
+        variant="flat"
+        size="small"
+        class="text-none"
+        :prepend-icon="isDirty ? 'rocket' : 'circle-check'"
+        :disabled="!isDirty"
+        @click="publishDialog = true"
+      >
+        {{ isDirty ? 'Publish' : 'Published' }}
+      </v-btn>
+    </template>
 
     <!-- Body -->
-    <div class="tb-body d-flex flex-grow-1" style="overflow:hidden;">
+    <div class="tb-body d-flex h-100" style="overflow:hidden;">
       <!-- Left panel: Sections / Theme styles -->
       <!-- Scoped flex styles (not d-flex): the utility's !important would defeat v-show -->
       <aside
@@ -1208,26 +1197,16 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
     <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
       <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackMessage }}</div>
     </v-snackbar>
-  </div>
+  </MpBuilderShell>
 </template>
 
 <style scoped>
-.tb-root { height: 100vh; overflow: hidden; }
-.tb-toolbar { height: 56px; flex-shrink: 0; }
-.tb-toolbar__side { flex: 1 1 0; }
+.tb-missing { min-height: 60vh; }
 
-.border-b { border-bottom: 1px solid var(--hairline); }
-.border-t { border-top: 1px solid var(--hairline); }
-.border-r { border-right: 1px solid var(--hairline); }
-.border-l { border-left: 1px solid var(--hairline); }
-
-.tb-dirty-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: rgb(var(--v-theme-warning));
-}
+.border-b { border-bottom: 1px solid var(--mp-border-subtle); }
+.border-t { border-top: 1px solid var(--mp-border-subtle); }
+.border-r { border-right: 1px solid var(--mp-border-subtle); }
+.border-l { border-left: 1px solid var(--mp-border-subtle); }
 
 /* Settings-panel note — token-based so it reads in light + dark (the old
    tonal info alert fell below AA on the dark surface). */
@@ -1257,7 +1236,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   width: 44px;
   flex-shrink: 0;
   padding: 8px 0;
-  border-right: 1px solid var(--hairline);
+  border-right: 1px solid var(--mp-border-subtle);
   background: var(--surface-1);
 }
 .tb-mode-rail__btn {
@@ -1371,7 +1350,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   flex-direction: column;
   margin: 0 0 4px 26px;
   padding-left: 8px;
-  border-left: 1px solid var(--hairline);
+  border-left: 1px solid var(--mp-border-subtle);
 }
 
 .tb-block-row {
@@ -1442,14 +1421,14 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   border: 0;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: inset 0 0 0 1px var(--hairline);
+  box-shadow: inset 0 0 0 1px var(--mp-border-subtle);
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .tb-swatch:hover { transform: scale(1.12); }
 .tb-swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tb-swatch--selected {
   box-shadow:
-    inset 0 0 0 1px var(--hairline),
+    inset 0 0 0 1px var(--mp-border-subtle),
     0 0 0 2px var(--surface-1),
     0 0 0 4px var(--accent);
 }
