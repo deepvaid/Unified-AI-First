@@ -13,6 +13,7 @@ import { useContentStore } from '@/stores/useContent'
 import type { CatalogItem, FlowNode } from '@/stores/journeyFlowData'
 import { catalogByKind, dataNodeCatalog, nodeCatalog } from '@/stores/journeyFlowData'
 import { addNodeAfter as insertNodeAfter, buildSegments, detachNode, flowValidation, removeNode, type FlowSegment } from '@/composables/useFlowTree'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const router = useRouter()
 const route = useRoute()
@@ -52,6 +53,16 @@ const savedSnapshot = ref('')
 function snapshotNodes() { savedSnapshot.value = JSON.stringify(nodes.value) }
 watch(journeyId, () => snapshotNodes(), { immediate: true })
 const isDirty = computed(() => JSON.stringify(nodes.value) !== savedSnapshot.value)
+const {
+  confirmLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave journey builder?',
+  message: 'You have unsaved changes. Leaving now will discard them.',
+})
 
 function persistFlow() {
   if (!isData.value) store.saveJourneyFlow(journeyId.value, nodes.value)
@@ -95,8 +106,22 @@ const paletteSections = computed<PaletteSection[]>(() => {
   return sections
 })
 
-const openSections = reactive<Record<string, boolean>>({ triggers: true, actions: true, logic: true, delay: true })
+// Common steps expanded; advanced (logic/delay) collapsed until needed.
+const openSections = reactive<Record<string, boolean>>({ triggers: true, actions: true, logic: false, delay: false })
 function toggleSection(key: string) { openSections[key] = !openSections[key] }
+const showStepMore = ref(false)
+const paletteOpen = ref(true)
+const isNarrow = ref(false)
+
+function syncNarrow() {
+  isNarrow.value = window.matchMedia('(max-width: 1024px)').matches
+  if (!isNarrow.value) paletteOpen.value = true
+}
+if (typeof window !== 'undefined') {
+  syncNarrow()
+  window.addEventListener('resize', syncNarrow)
+  onBeforeUnmount(() => window.removeEventListener('resize', syncNarrow))
+}
 
 // Palette search — filters items across sections; matching sections auto-expand.
 const paletteQuery = ref('')
@@ -246,11 +271,14 @@ function saveNode() {
     }
     n.configured = true
   }
-  saveMessage.value = 'Step updated'
+  // Apply closes the panel; canvas Save persists the whole flow.
+  saveMessage.value = 'Step applied'
   saveSnack.value = true
   selectedNodeId.value = null
 }
-function cancelPanel() { selectedNodeId.value = null }
+function cancelPanel() { selectedNodeId.value = null; showStepMore.value = false }
+
+watch(selectedNodeId, () => { showStepMore.value = false })
 
 function removeSelected() {
   if (!selectedNode.value) return
@@ -480,6 +508,14 @@ onBeforeUnmount(() => {
     <!-- Toolbar -->
     <div class="jb-toolbar d-flex align-center justify-space-between px-5 bg-surface">
       <div class="d-flex align-center gap-3" style="min-width:0;">
+        <v-btn
+          class="jb-palette-toggle"
+          variant="text"
+          icon="panel-left"
+          size="small"
+          :aria-label="paletteOpen ? 'Hide steps panel' : 'Show steps panel'"
+          @click="paletteOpen = !paletteOpen"
+        />
         <v-tooltip :text="isData ? 'Back to Data Journeys' : 'Back to Journeys'" location="bottom">
           <template #activator="{ props }">
             <v-btn v-bind="props" icon="chevron-left" variant="text" size="small"
@@ -487,12 +523,11 @@ onBeforeUnmount(() => {
               @click="router.push(listRoute)"></v-btn>
           </template>
         </v-tooltip>
-        <div v-if="!editingName" class="text-truncate jb-name" role="button" tabindex="0"
-          aria-label="Rename journey" @click="editingName = true; nameInput = journeyName"
-          @keydown.enter.prevent="editingName = true; nameInput = journeyName">
+        <button v-if="!editingName" type="button" class="text-truncate jb-name"
+          aria-label="Rename journey" @click="editingName = true; nameInput = journeyName">
           {{ journeyName }}
           <v-icon size="13" class="jb-name__pencil ml-1">pencil</v-icon>
-        </div>
+        </button>
         <v-text-field v-else v-model="nameInput" variant="outlined" density="compact" hide-details autofocus
           style="width:320px;" aria-label="Journey name"
           @blur="journeyName = nameInput; editingName = false" @keyup.enter="journeyName = nameInput; editingName = false"></v-text-field>
@@ -516,7 +551,7 @@ onBeforeUnmount(() => {
           {{ issues.length }} {{ issues.length === 1 ? 'issue' : 'issues' }}
         </v-btn>
         <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
-        <v-btn variant="outlined" size="small" class="text-none" prepend-icon="save" @click="saveDraftJourney">Save draft</v-btn>
+        <v-btn variant="outlined" size="small" class="text-none" prepend-icon="save" @click="saveDraftJourney">Save</v-btn>
         <v-menu v-model="issuesOpen" :close-on-content-click="false" :open-on-click="false" location="bottom end">
           <template #activator="{ props: menu }">
             <v-btn v-bind="menu" color="primary" variant="flat" size="small" class="text-none"
@@ -566,7 +601,13 @@ onBeforeUnmount(() => {
     <!-- Body -->
     <div class="d-flex flex-grow-1" style="overflow:hidden;">
       <!-- Palette -->
-      <aside class="jb-palette border-r bg-surface d-flex flex-column">
+      <div
+        v-if="paletteOpen && isNarrow"
+        class="jb-scrim"
+        aria-hidden="true"
+        @click="paletteOpen = false"
+      />
+      <aside class="jb-palette border-r bg-surface d-flex flex-column" :class="{ 'jb-palette--open': paletteOpen, 'jb-palette--hidden': !paletteOpen && isNarrow }">
         <div class="pa-3 border-b">
           <div class="mp-meta-label text-medium-emphasis" style="line-height:1.2;">Journey steps</div>
           <div class="text-caption text-medium-emphasis mb-2">Click a step to add it to your flow</div>
@@ -656,26 +697,11 @@ onBeforeUnmount(() => {
 
           <div class="pa-4 flex-grow-1 overflow-y-auto">
             <v-alert v-if="!selectedNode.configured" type="warning" variant="tonal" density="compact" rounded="lg" class="text-caption mb-4">
-              This step isn't configured yet — review the settings below and save.
+              This step isn't configured yet — review the settings below and apply.
             </v-alert>
-
-            <!-- Live-stats strip -->
-            <div v-if="statsDescription" class="jb-stats d-flex align-center gap-3 pa-3 mb-4 border rounded-lg">
-              <v-icon size="16" class="text-medium-emphasis flex-shrink-0">users</v-icon>
-              <div class="flex-grow-1" style="min-width:0;">
-                <div class="text-body-2 font-weight-bold" style="line-height:1.2;">{{ nodeStatValue.toLocaleString() }}</div>
-                <div class="text-caption text-medium-emphasis">{{ statsDescription }}</div>
-              </div>
-              <router-link :to="{ name: 'AllContacts', params: { accountId } }" class="text-caption font-weight-bold text-primary jb-stats__link">
-                View contacts
-              </router-link>
-              <v-btn icon="refresh-cw" variant="text" size="x-small" aria-label="Refresh contact stats"
-                @click="refreshStats(selectedNode.id)"></v-btn>
-            </div>
 
             <div class="jb-section-label mp-meta-label">Step details</div>
             <v-text-field v-model="draft.title" label="Step name" variant="outlined" density="compact" class="mb-3"></v-text-field>
-            <v-text-field v-model="draft.subtitle" label="Description" variant="outlined" density="compact" class="mb-4"></v-text-field>
 
             <template v-if="selectedFields.length">
               <div class="jb-section-label mp-meta-label">Configuration</div>
@@ -707,10 +733,34 @@ onBeforeUnmount(() => {
             <v-alert v-else-if="selectedNode.category === 'filter'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
               Contacts are routed into one of the branches: {{ (selectedNode.branchLabels ?? []).join(' · ') }}.
             </v-alert>
+
+            <v-btn
+              variant="text"
+              size="small"
+              class="text-none px-0 mt-2"
+              :append-icon="showStepMore ? 'chevron-up' : 'chevron-down'"
+              @click="showStepMore = !showStepMore"
+            >{{ showStepMore ? 'Less' : 'More' }}</v-btn>
+
+            <template v-if="showStepMore">
+              <v-text-field v-model="draft.subtitle" label="Description" variant="outlined" density="compact" class="mb-4 mt-2"></v-text-field>
+              <div v-if="statsDescription" class="jb-stats d-flex align-center gap-3 pa-3 mb-2 border rounded-lg">
+                <v-icon size="16" class="text-medium-emphasis flex-shrink-0">users</v-icon>
+                <div class="flex-grow-1" style="min-width:0;">
+                  <div class="text-body-2 font-weight-bold" style="line-height:1.2;">{{ nodeStatValue.toLocaleString() }}</div>
+                  <div class="text-caption text-medium-emphasis">{{ statsDescription }}</div>
+                </div>
+                <router-link :to="{ name: 'AllContacts', params: { accountId } }" class="text-caption font-weight-bold text-primary jb-stats__link">
+                  View contacts
+                </router-link>
+                <v-btn icon="refresh-cw" variant="text" size="x-small" aria-label="Refresh contact stats"
+                  @click="refreshStats(selectedNode.id)"></v-btn>
+              </div>
+            </template>
           </div>
 
           <div class="pa-4 border-t d-flex align-center gap-2 flex-shrink-0">
-            <v-btn color="primary" variant="flat" class="text-none flex-grow-1" @click="saveNode">Save</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none flex-grow-1" @click="saveNode">Apply</v-btn>
             <v-btn variant="tonal" class="text-none" :disabled="!canDetach" @click="detachSelected">Detach</v-btn>
             <v-btn variant="text" color="error" class="text-none px-2" :disabled="selectedNode.category === 'trigger'"
               @click="removeSelected">Remove</v-btn>
@@ -730,6 +780,14 @@ onBeforeUnmount(() => {
       confirm-label="Delete split"
       @confirm="confirmDelete"
     />
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
+    />
   </div>
 </template>
 
@@ -743,6 +801,9 @@ onBeforeUnmount(() => {
   cursor: pointer; border-radius: 6px; padding: 2px 6px; margin: -2px -6px;
   font-size: 15px; font-weight: 650; color: rgb(var(--v-theme-on-surface));
   transition: background var(--dur-fast) var(--ease);
+  /* Native <button> resets so the rename control keeps its text styling. */
+  border: 0; background: transparent; font-family: inherit; text-align: left;
+  display: block; max-width: 100%;
 }
 .jb-name:hover { background: rgba(var(--v-theme-on-surface), 0.06); }
 .jb-name:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
@@ -766,7 +827,25 @@ onBeforeUnmount(() => {
 .border-l { border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 
 /* ── Palette ─────────────────────────────────────────────────────────────── */
+.jb-palette-toggle { display: none; }
+.jb-scrim {
+  position: absolute; inset: 56px 0 0 0; z-index: 4;
+  background: rgba(var(--v-theme-on-surface), 0.32);
+}
 .jb-palette { width: 248px; flex-shrink: 0; overflow: hidden; }
+@media (max-width: 1024px) {
+  .jb-palette-toggle { display: inline-flex; }
+  .jb-root > .d-flex.flex-grow-1 { position: relative; }
+  .jb-palette {
+    position: absolute; top: 0; left: 0; bottom: 0; z-index: 5;
+    transform: translateX(-100%);
+    transition: transform 160ms ease;
+    box-shadow: 0 8px 24px rgba(var(--v-theme-on-surface), 0.16);
+  }
+  .jb-palette--open { transform: translateX(0); }
+  .jb-palette--hidden { transform: translateX(-100%); }
+  .jb-panel { width: min(380px, 100vw) !important; max-width: 100%; }
+}
 .jb-palette__scroll { scrollbar-width: thin; scrollbar-color: rgba(var(--v-theme-on-surface), 0.2) transparent; }
 .palette-section { margin-bottom: 4px; }
 .palette-section__header {

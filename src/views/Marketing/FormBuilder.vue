@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import {
   useFormsStore, newFormDefaults, SUBSCRIPTION_LISTS, POPUP_POSITIONS, defaultFormBlock,
 } from '@/stores/useForms'
@@ -21,7 +22,7 @@ const editId = computed(() => (route.query.formId ? Number(route.query.formId) :
 const persistedId = ref<number | null>(null)
 
 // ─── Wizard shell ───────────────────────────────────────────────────────
-const stepTitles = ['Setup', 'Settings & Display', 'Design', 'Content', 'Review & Publish']
+const stepTitles = ['Setup', 'Content', 'Display', 'Style', 'Review & Publish']
 const step = ref(1)
 const totalSteps = stepTitles.length
 const maxStep = ref(1)
@@ -52,40 +53,7 @@ const selectAllLists = computed({
   set: (v: boolean) => { selectedListIds.value = v ? SUBSCRIPTION_LISTS.map(l => l.id) : [] },
 })
 
-// ─── Step 2: Settings & Display ─────────────────────────────────────────
-const formType = ref<FormType>(seed.type)
-const display = ref<FormDisplayRules>({ ...seed.display, urlTargets: [...seed.display.urlTargets] })
-const newUrlTarget = ref('')
-function addUrlTarget() {
-  const v = newUrlTarget.value.trim()
-  if (v && !display.value.urlTargets.includes(v)) display.value.urlTargets.push(v)
-  newUrlTarget.value = ''
-}
-function removeUrlTarget(u: string) {
-  display.value.urlTargets = display.value.urlTargets.filter(x => x !== u)
-}
-
-// ─── Step 3: Design ──────────────────────────────────────────────────────
-const design = ref<FormDesign>({ ...seed.design })
-const optional = ref<FormOptionalFunctions>({ ...seed.optional })
-const previewDevice = ref<'desktop' | 'mobile' | 'fullscreen'>('desktop')
-const POSITION_ALIGN: Record<string, { align: string; justify: string }> = {
-  'classic-center': { align: 'center', justify: 'center' },
-  'top-right': { align: 'flex-start', justify: 'flex-end' },
-  'top-left': { align: 'flex-start', justify: 'flex-start' },
-  'bottom-right': { align: 'flex-end', justify: 'flex-end' },
-  'bottom-left': { align: 'flex-end', justify: 'flex-start' },
-  'drawer-left': { align: 'stretch', justify: 'flex-start' },
-  'drawer-right': { align: 'stretch', justify: 'flex-end' },
-  'bar-bottom': { align: 'flex-end', justify: 'stretch' },
-  'bar-top': { align: 'flex-start', justify: 'stretch' },
-}
-const positionStyle = computed(() => {
-  const p = POSITION_ALIGN[design.value.position] ?? POSITION_ALIGN['classic-center']!
-  return { alignItems: p.align, justifyContent: p.justify }
-})
-
-// ─── Step 4: Content (Main Form / Thank You) ────────────────────────────
+// ─── Step 2: Content (Main Form / Thank You) ────────────────────────────
 const mainFormBlocks = ref<FormBlock[]>(seed.mainFormBlocks)
 const thankYouBlocks = ref<FormBlock[]>(seed.thankYouBlocks)
 const contentTab = ref<'main' | 'thankyou'>('main')
@@ -143,6 +111,51 @@ function setListText(block: FormBlock, value: string) {
   block.items = value.split('\n')
 }
 
+// ─── Step 3: Display ────────────────────────────────────────────────────
+const formType = ref<FormType>(seed.type)
+const display = ref<FormDisplayRules>({ ...seed.display, urlTargets: [...seed.display.urlTargets] })
+const newUrlTarget = ref('')
+function addUrlTarget() {
+  const v = newUrlTarget.value.trim()
+  if (v && !display.value.urlTargets.includes(v)) display.value.urlTargets.push(v)
+  newUrlTarget.value = ''
+}
+function removeUrlTarget(u: string) {
+  display.value.urlTargets = display.value.urlTargets.filter(x => x !== u)
+}
+
+// ─── Step 4: Style ──────────────────────────────────────────────────────
+const design = ref<FormDesign>({ ...seed.design })
+const optional = ref<FormOptionalFunctions>({ ...seed.optional })
+const previewDevice = ref<'desktop' | 'mobile' | 'fullscreen'>('desktop')
+const STYLE_THEMES: { id: string; label: string; backgroundColor: string; overlayOpacity: number }[] = [
+  { id: 'dark', label: 'Dark', backgroundColor: '#1A1A2E', overlayOpacity: 60 },
+  { id: 'light', label: 'Light', backgroundColor: '#FFFFFF', overlayOpacity: 40 },
+  { id: 'brand', label: 'Brand', backgroundColor: '#1A56DB', overlayOpacity: 55 },
+]
+function applyTheme(id: string) {
+  const t = STYLE_THEMES.find(x => x.id === id)
+  if (!t) return
+  design.value.backgroundType = 'color'
+  design.value.backgroundColor = t.backgroundColor
+  design.value.overlayOpacity = t.overlayOpacity
+}
+const POSITION_ALIGN: Record<string, { align: string; justify: string }> = {
+  'classic-center': { align: 'center', justify: 'center' },
+  'top-right': { align: 'flex-start', justify: 'flex-end' },
+  'top-left': { align: 'flex-start', justify: 'flex-start' },
+  'bottom-right': { align: 'flex-end', justify: 'flex-end' },
+  'bottom-left': { align: 'flex-end', justify: 'flex-start' },
+  'drawer-left': { align: 'stretch', justify: 'flex-start' },
+  'drawer-right': { align: 'stretch', justify: 'flex-end' },
+  'bar-bottom': { align: 'flex-end', justify: 'stretch' },
+  'bar-top': { align: 'flex-start', justify: 'stretch' },
+}
+const positionStyle = computed(() => {
+  const p = POSITION_ALIGN[design.value.position] ?? POSITION_ALIGN['classic-center']!
+  return { alignItems: p.align, justifyContent: p.justify }
+})
+
 // ─── Step 5: Review & Publish ────────────────────────────────────────────
 const reviewTab = ref<'details' | 'preview'>('details')
 const embedId = computed(() => persistedId.value ?? 'draft')
@@ -163,7 +176,7 @@ const persistedForm = computed(() => (persistedId.value ? formsStore.forms.find(
 
 // ─── Validation ───────────────────────────────────────────────────────
 const step1Valid = computed(() => formName.value.trim().length > 0 && selectedListIds.value.length > 0)
-const step3Valid = computed(() => design.value.width > 0)
+const step4Valid = computed(() => design.value.width > 0)
 
 // ─── Persistence ─────────────────────────────────────────────────────
 function buildInput(): FormBuilderInput {
@@ -225,32 +238,37 @@ function markClean() { baseline = snapshot.value }
 const dirty = computed(() => snapshot.value !== baseline)
 
 const saveSnack = ref(false)
-const confirmLeave = ref(false)
-let allowLeave = false
-let pendingTo: string | null = null
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(dirty, {
+  title: 'Leave the form builder?',
+  message: 'You have unsaved changes. Leaving now will discard them.',
+})
 
 function saveDraft() { persist(); markClean(); saveSnack.value = true }
+function saveAndExit() {
+  persist()
+  markClean()
+  allowNextLeave()
+  router.push(backRoute())
+}
 function backRoute() { return { name: 'AcquisitionForms', params: { accountId: accountId.value } } }
 function goBack() { router.push(backRoute()) }
-function exitBuilder() { allowLeave = true; router.push(backRoute()) }
+function exitBuilder() {
+  allowNextLeave()
+  router.push(backRoute())
+}
 function publishForm() {
   const id = persist()
   formsStore.publish(id)
   markClean()
-  allowLeave = true
+  allowNextLeave()
   router.push(backRoute())
-}
-
-onBeforeRouteLeave((to) => {
-  if (allowLeave || !dirty.value) return true
-  pendingTo = to.fullPath
-  confirmLeave.value = true
-  return false
-})
-function discardAndLeave() {
-  allowLeave = true
-  confirmLeave.value = false
-  if (pendingTo) router.push(pendingTo)
 }
 </script>
 
@@ -274,17 +292,7 @@ function discardAndLeave() {
       </div>
       <div class="d-flex align-center gap-2">
         <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="save" @click="saveDraft">Save Draft</v-btn>
-        <v-btn
-          v-if="step < totalSteps"
-          color="primary"
-          variant="flat"
-          size="small"
-          class="text-none"
-          append-icon="arrow-right"
-          :disabled="(step === 1 && !step1Valid) || (step === 3 && !step3Valid)"
-          @click="advance(step + 1)"
-        >Continue</v-btn>
-        <v-btn v-else color="primary" variant="flat" size="small" class="text-none" prepend-icon="check" @click="publishForm">Publish</v-btn>
+        <v-btn variant="outlined" class="text-none" size="small" @click="saveAndExit">Save &amp; exit</v-btn>
       </div>
     </div>
 
@@ -336,15 +344,15 @@ function discardAndLeave() {
           </div>
 
           <div class="d-flex justify-end mt-6">
-            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!step1Valid" @click="advance(2)">Continue to Settings</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!step1Valid" @click="advance(2)">Continue to Content</v-btn>
           </div>
         </v-card>
       </div>
 
-      <!-- STEP 2: Settings & Display -->
-      <div v-else-if="step === 2" class="fb__scroll d-flex justify-center pt-8 pa-4">
+      <!-- STEP 3: Display (formerly Settings & Display) -->
+      <div v-else-if="step === 3" class="fb__scroll d-flex justify-center pt-8 pa-4">
         <v-card variant="flat" border rounded="lg" style="max-width:620px;width:100%;" class="pa-8">
-          <div class="text-h5 font-weight-bold mb-1">Settings &amp; Display</div>
+          <div class="text-h5 font-weight-bold mb-1">Display</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Choose the form type and control when and where it appears.</div>
 
           <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3">Form Type</div>
@@ -396,14 +404,14 @@ function discardAndLeave() {
           />
 
           <div class="d-flex justify-space-between mt-6">
-            <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="step = 1">Back</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(3)">Continue to Design</v-btn>
+            <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="step = 2">Back</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(4)">Continue to Style</v-btn>
           </div>
         </v-card>
       </div>
 
-      <!-- STEP 3: Design -->
-      <div v-else-if="step === 3" class="d-flex h-100 overflow-hidden">
+      <!-- STEP 4: Style (formerly Design) -->
+      <div v-else-if="step === 4" class="d-flex h-100 overflow-hidden">
         <div class="fb__panel border-r bg-surface d-flex flex-column overflow-hidden">
           <div class="pa-3 flex-grow-1 overflow-y-auto">
             <v-expansion-panels variant="accordion" multiple>
@@ -414,112 +422,129 @@ function discardAndLeave() {
                   </v-radio-group>
                 </v-expansion-panel-text>
               </v-expansion-panel>
-
-              <v-expansion-panel title="Dimensions">
-                <v-expansion-panel-text>
-                  <v-text-field v-model.number="design.width" type="number" label="Width (px) *" variant="outlined" density="compact" class="mb-2" />
-                  <v-text-field v-model.number="design.height" type="number" label="Height (px)" variant="outlined" density="compact" :disabled="design.fitHeight" class="mb-2" />
-                  <v-checkbox v-model="design.fitHeight" label="Fit to content height" density="compact" hide-details />
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-
-              <v-expansion-panel title="Padding">
-                <v-expansion-panel-text>
-                  <v-row dense>
-                    <v-col cols="6"><v-text-field v-model.number="design.paddingTop" type="number" label="Top *" variant="outlined" density="compact" /></v-col>
-                    <v-col cols="6"><v-text-field v-model.number="design.paddingBottom" type="number" label="Bottom *" variant="outlined" density="compact" /></v-col>
-                    <v-col cols="6"><v-text-field v-model.number="design.paddingLeft" type="number" label="Left *" variant="outlined" density="compact" /></v-col>
-                    <v-col cols="6"><v-text-field v-model.number="design.paddingRight" type="number" label="Right *" variant="outlined" density="compact" /></v-col>
-                  </v-row>
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-
-              <v-expansion-panel title="Border">
-                <v-expansion-panel-text>
-                  <div class="d-flex align-center ga-2 mb-3">
-                    <v-menu :close-on-content-click="false" location="start">
-                      <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.borderColor }" aria-label="Border color" /></template>
-                      <v-color-picker v-model="design.borderColor" mode="hexa" :modes="['hexa']" />
-                    </v-menu>
-                    <span class="text-caption text-medium-emphasis">Color</span>
-                  </div>
-                  <v-text-field v-model.number="design.borderThickness" type="number" label="Thickness (px) *" variant="outlined" density="compact" class="mb-2" />
-                  <v-text-field v-model.number="design.borderRadius" type="number" label="Radius (px) *" variant="outlined" density="compact" />
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-
-              <v-expansion-panel title="Drop Shadow">
-                <v-expansion-panel-text>
-                  <div class="d-flex align-center ga-2 mb-3">
-                    <v-menu :close-on-content-click="false" location="start">
-                      <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.shadowColor }" aria-label="Shadow color" /></template>
-                      <v-color-picker v-model="design.shadowColor" mode="hexa" :modes="['hexa']" />
-                    </v-menu>
-                    <span class="text-caption text-medium-emphasis">Color</span>
-                  </div>
-                  <v-text-field v-model.number="design.shadowBlur" type="number" label="Blur (px)" variant="outlined" density="compact" class="mb-2" />
-                  <v-row dense>
-                    <v-col cols="6"><v-text-field v-model.number="design.shadowOffsetH" type="number" label="H offset" variant="outlined" density="compact" /></v-col>
-                    <v-col cols="6"><v-text-field v-model.number="design.shadowOffsetV" type="number" label="V offset" variant="outlined" density="compact" /></v-col>
-                  </v-row>
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-
-              <v-expansion-panel title="Overlay">
-                <v-expansion-panel-text>
-                  <div class="d-flex align-center ga-2 mb-3">
-                    <v-menu :close-on-content-click="false" location="start">
-                      <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.overlayColor }" aria-label="Overlay color" /></template>
-                      <v-color-picker v-model="design.overlayColor" mode="hex" :modes="['hex']" />
-                    </v-menu>
-                    <span class="text-caption text-medium-emphasis">Color</span>
-                  </div>
-                  <div class="text-caption mb-1">Opacity: {{ design.overlayOpacity }}%</div>
-                  <v-slider v-model="design.overlayOpacity" :min="0" :max="90" :step="5" color="primary" hide-details />
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-
-              <v-expansion-panel title="Background">
-                <v-expansion-panel-text>
-                  <v-radio-group v-model="design.backgroundType" inline class="mb-2">
-                    <v-radio value="color" label="Colour" />
-                    <v-radio value="image" label="Image" />
-                  </v-radio-group>
-                  <div v-if="design.backgroundType === 'color'" class="d-flex align-center ga-2">
-                    <v-menu :close-on-content-click="false" location="start">
-                      <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.backgroundColor }" aria-label="Background color" /></template>
-                      <v-color-picker v-model="design.backgroundColor" mode="hex" :modes="['hex']" />
-                    </v-menu>
-                    <span class="text-caption text-medium-emphasis">{{ design.backgroundColor }}</span>
-                  </div>
-                  <template v-else>
-                    <v-text-field v-model="design.backgroundImage" label="Image URL" placeholder="https://" variant="outlined" density="compact" class="mb-2" />
-                    <v-btn variant="tonal" block prepend-icon="upload" class="text-none">Upload image</v-btn>
-                  </template>
-                </v-expansion-panel-text>
-              </v-expansion-panel>
             </v-expansion-panels>
 
-            <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mt-4 mb-2 px-1">Optional Functions</div>
-            <v-expansion-panels variant="accordion">
-              <v-expansion-panel title="Optional functions">
+            <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mt-4 mb-2 px-1">Theme</div>
+            <div class="d-flex flex-wrap ga-2 mb-3 px-1">
+              <v-btn
+                v-for="t in STYLE_THEMES"
+                :key="t.id"
+                size="small"
+                variant="tonal"
+                class="text-none"
+                @click="applyTheme(t.id)"
+              >{{ t.label }}</v-btn>
+            </div>
+
+            <v-expansion-panels variant="accordion" class="mt-2">
+              <v-expansion-panel title="Advanced">
                 <v-expansion-panel-text>
-                  <v-checkbox v-model="optional.redirectEnabled" label="Redirect after submission" density="compact" hide-details class="mb-1" />
-                  <v-text-field v-if="optional.redirectEnabled" v-model="optional.redirectUrl" label="Redirect URL" placeholder="https://mystore.com/thank-you" variant="outlined" density="compact" class="mb-3" />
+                  <v-expansion-panels variant="accordion" multiple>
+                    <v-expansion-panel title="Dimensions">
+                      <v-expansion-panel-text>
+                        <v-text-field v-model.number="design.width" type="number" label="Width (px) *" variant="outlined" density="compact" class="mb-2" />
+                        <v-text-field v-model.number="design.height" type="number" label="Height (px)" variant="outlined" density="compact" :disabled="design.fitHeight" class="mb-2" />
+                        <v-checkbox v-model="design.fitHeight" label="Fit to content height" density="compact" hide-details />
+                      </v-expansion-panel-text>
+                    </v-expansion-panel>
 
-                  <v-checkbox v-model="optional.notifyEmailEnabled" label="Notify email on subscriber" density="compact" hide-details class="mb-1" />
-                  <v-text-field v-if="optional.notifyEmailEnabled" v-model="optional.notifyEmail" label="Notify email address" placeholder="team@mystore.com" variant="outlined" density="compact" class="mb-3" />
+                    <v-expansion-panel title="Padding">
+                      <v-expansion-panel-text>
+                        <v-row dense>
+                          <v-col cols="6"><v-text-field v-model.number="design.paddingTop" type="number" label="Top *" variant="outlined" density="compact" /></v-col>
+                          <v-col cols="6"><v-text-field v-model.number="design.paddingBottom" type="number" label="Bottom *" variant="outlined" density="compact" /></v-col>
+                          <v-col cols="6"><v-text-field v-model.number="design.paddingLeft" type="number" label="Left *" variant="outlined" density="compact" /></v-col>
+                          <v-col cols="6"><v-text-field v-model.number="design.paddingRight" type="number" label="Right *" variant="outlined" density="compact" /></v-col>
+                        </v-row>
+                      </v-expansion-panel-text>
+                    </v-expansion-panel>
 
-                  <v-switch v-model="optional.recaptchaEnabled" label="ReCaptcha" color="primary" density="compact" hide-details class="mb-1" />
-                  <v-switch v-model="optional.doubleOptInEnabled" label="Double opt-in" color="primary" density="compact" hide-details />
+                    <v-expansion-panel title="Border">
+                      <v-expansion-panel-text>
+                        <div class="d-flex align-center ga-2 mb-3">
+                          <v-menu :close-on-content-click="false" location="start">
+                            <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.borderColor }" aria-label="Border color" /></template>
+                            <v-color-picker v-model="design.borderColor" mode="hexa" :modes="['hexa']" />
+                          </v-menu>
+                          <span class="text-caption text-medium-emphasis">Color</span>
+                        </div>
+                        <v-text-field v-model.number="design.borderThickness" type="number" label="Thickness (px) *" variant="outlined" density="compact" class="mb-2" />
+                        <v-text-field v-model.number="design.borderRadius" type="number" label="Radius (px) *" variant="outlined" density="compact" />
+                      </v-expansion-panel-text>
+                    </v-expansion-panel>
+
+                    <v-expansion-panel title="Drop Shadow">
+                      <v-expansion-panel-text>
+                        <div class="d-flex align-center ga-2 mb-3">
+                          <v-menu :close-on-content-click="false" location="start">
+                            <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.shadowColor }" aria-label="Shadow color" /></template>
+                            <v-color-picker v-model="design.shadowColor" mode="hexa" :modes="['hexa']" />
+                          </v-menu>
+                          <span class="text-caption text-medium-emphasis">Color</span>
+                        </div>
+                        <v-text-field v-model.number="design.shadowBlur" type="number" label="Blur (px)" variant="outlined" density="compact" class="mb-2" />
+                        <v-row dense>
+                          <v-col cols="6"><v-text-field v-model.number="design.shadowOffsetH" type="number" label="H offset" variant="outlined" density="compact" /></v-col>
+                          <v-col cols="6"><v-text-field v-model.number="design.shadowOffsetV" type="number" label="V offset" variant="outlined" density="compact" /></v-col>
+                        </v-row>
+                      </v-expansion-panel-text>
+                    </v-expansion-panel>
+
+                    <v-expansion-panel title="Overlay">
+                      <v-expansion-panel-text>
+                        <div class="d-flex align-center ga-2 mb-3">
+                          <v-menu :close-on-content-click="false" location="start">
+                            <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.overlayColor }" aria-label="Overlay color" /></template>
+                            <v-color-picker v-model="design.overlayColor" mode="hex" :modes="['hex']" />
+                          </v-menu>
+                          <span class="text-caption text-medium-emphasis">Color</span>
+                        </div>
+                        <div class="text-caption mb-1">Opacity: {{ design.overlayOpacity }}%</div>
+                        <v-slider v-model="design.overlayOpacity" :min="0" :max="90" :step="5" color="primary" hide-details />
+                      </v-expansion-panel-text>
+                    </v-expansion-panel>
+
+                    <v-expansion-panel title="Background">
+                      <v-expansion-panel-text>
+                        <v-radio-group v-model="design.backgroundType" inline class="mb-2">
+                          <v-radio value="color" label="Colour" />
+                          <v-radio value="image" label="Image" />
+                        </v-radio-group>
+                        <div v-if="design.backgroundType === 'color'" class="d-flex align-center ga-2">
+                          <v-menu :close-on-content-click="false" location="start">
+                            <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.backgroundColor }" aria-label="Background color" /></template>
+                            <v-color-picker v-model="design.backgroundColor" mode="hex" :modes="['hex']" />
+                          </v-menu>
+                          <span class="text-caption text-medium-emphasis">{{ design.backgroundColor }}</span>
+                        </div>
+                        <template v-else>
+                          <v-text-field v-model="design.backgroundImage" label="Image URL" placeholder="https://" variant="outlined" density="compact" class="mb-2" />
+                          <v-btn variant="tonal" block prepend-icon="upload" class="text-none">Upload image</v-btn>
+                        </template>
+                      </v-expansion-panel-text>
+                    </v-expansion-panel>
+
+                    <v-expansion-panel title="Optional functions">
+                      <v-expansion-panel-text>
+                        <v-checkbox v-model="optional.redirectEnabled" label="Redirect after submission" density="compact" hide-details class="mb-1" />
+                        <v-text-field v-if="optional.redirectEnabled" v-model="optional.redirectUrl" label="Redirect URL" placeholder="https://mystore.com/thank-you" variant="outlined" density="compact" class="mb-3" />
+
+                        <v-checkbox v-model="optional.notifyEmailEnabled" label="Notify email on subscriber" density="compact" hide-details class="mb-1" />
+                        <v-text-field v-if="optional.notifyEmailEnabled" v-model="optional.notifyEmail" label="Notify email address" placeholder="team@mystore.com" variant="outlined" density="compact" class="mb-3" />
+
+                        <v-switch v-model="optional.recaptchaEnabled" label="ReCaptcha" color="primary" density="compact" hide-details class="mb-1" />
+                        <v-switch v-model="optional.doubleOptInEnabled" label="Double opt-in" color="primary" density="compact" hide-details />
+                      </v-expansion-panel-text>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
                 </v-expansion-panel-text>
               </v-expansion-panel>
             </v-expansion-panels>
           </div>
 
           <div class="pa-3 border-t d-flex gap-2">
-            <v-btn variant="text" class="text-none flex-grow-1" size="small" prepend-icon="arrow-left" @click="step = 2">Back</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none flex-grow-1" size="small" append-icon="arrow-right" :disabled="!step3Valid" @click="advance(4)">Next</v-btn>
+            <v-btn variant="text" class="text-none flex-grow-1" size="small" prepend-icon="arrow-left" @click="step = 3">Back</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none flex-grow-1" size="small" append-icon="arrow-right" :disabled="!step4Valid" @click="advance(5)">Continue to Review</v-btn>
           </div>
         </div>
 
@@ -569,100 +594,116 @@ function discardAndLeave() {
         </div>
       </div>
 
-      <!-- STEP 4: Content -->
-      <div v-else-if="step === 4" class="d-flex h-100 overflow-hidden">
-        <!-- palette -->
-        <aside class="fb-palette pa-3">
-          <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2 px-1">Blocks</div>
-          <button v-for="p in FORM_PALETTE" :key="p.type" type="button" class="fb-palette__item d-flex align-center ga-2" @click="addContentBlock(p.type)">
-            <v-icon size="18">{{ p.icon }}</v-icon>
-            <span class="text-body-2">{{ p.label }}</span>
-            <v-icon size="16" class="fb-palette__add ml-auto">plus</v-icon>
-          </button>
-        </aside>
+      <!-- STEP 2: Content -->
+      <div v-else-if="step === 2" class="d-flex flex-column h-100 overflow-hidden">
+        <div class="d-flex flex-grow-1 overflow-hidden fb__split">
+          <!-- palette -->
+          <aside class="fb-palette pa-3">
+            <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2 px-1">Blocks</div>
+            <button v-for="p in FORM_PALETTE" :key="p.type" type="button" class="fb-palette__item d-flex align-center ga-2" @click="addContentBlock(p.type)">
+              <v-icon size="18">{{ p.icon }}</v-icon>
+              <span class="text-body-2">{{ p.label }}</span>
+              <v-icon size="16" class="fb-palette__add ml-auto">plus</v-icon>
+            </button>
+          </aside>
 
-        <!-- canvas -->
-        <main class="fb-canvas flex-grow-1 pa-6 d-flex flex-column align-center overflow-y-auto">
-          <v-btn-toggle v-model="contentTab" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
-            <v-btn value="main" class="text-none" size="small">Main Form</v-btn>
-            <v-btn value="thankyou" class="text-none" size="small">Thank You</v-btn>
-          </v-btn-toggle>
+          <!-- canvas -->
+          <main class="fb-canvas flex-grow-1 pa-6 d-flex flex-column align-center overflow-y-auto">
+            <v-btn-toggle v-model="contentTab" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
+              <v-btn value="main" class="text-none" size="small">Main Form</v-btn>
+              <v-btn value="thankyou" class="text-none" size="small">Thank You</v-btn>
+            </v-btn-toggle>
 
-          <div class="fb-doc">
-            <div
-              v-for="block in activeBlocks"
-              :key="block.id"
-              class="fb-doc-block"
-              :class="{ 'fb-doc-block--selected': block.id === selectedBlockId, 'fb-doc-block--fixed': block.type === 'email_submit' }"
-              @click="selectedBlockId = block.id"
-            >
-              <div v-if="block.type !== 'email_submit'" class="fb-doc-block__controls">
-                <v-btn size="x-small" variant="text" icon="chevron-up" aria-label="Move up" @click.stop="moveContentBlock(block.id, -1)" />
-                <v-btn size="x-small" variant="text" icon="chevron-down" aria-label="Move down" @click.stop="moveContentBlock(block.id, 1)" />
-                <v-btn size="x-small" variant="text" icon="trash-2" color="error" aria-label="Delete" @click.stop="removeContentBlock(block.id)" />
+            <div class="fb-doc">
+              <div v-if="activeBlocks.length === 0" class="fb-doc__empty text-center pa-8">
+                <v-icon size="28" class="text-medium-emphasis mb-2">layout-template</v-icon>
+                <div class="text-body-2 font-weight-medium">No blocks yet</div>
+                <div class="text-caption text-medium-emphasis">Add one from the Blocks palette on the left.</div>
               </div>
-              <v-icon v-else size="14" class="fb-doc-block__lock">lock</v-icon>
+              <div
+                v-for="block in activeBlocks"
+                :key="block.id"
+                class="fb-doc-block"
+                :class="{ 'fb-doc-block--selected': block.id === selectedBlockId, 'fb-doc-block--fixed': block.type === 'email_submit' }"
+                @click="selectedBlockId = block.id"
+              >
+                <div v-if="block.type !== 'email_submit'" class="fb-doc-block__controls">
+                  <v-btn size="x-small" variant="text" icon="chevron-up" aria-label="Move up" @click.stop="moveContentBlock(block.id, -1)" />
+                  <v-btn size="x-small" variant="text" icon="chevron-down" aria-label="Move down" @click.stop="moveContentBlock(block.id, 1)" />
+                  <v-btn size="x-small" variant="text" icon="trash-2" color="error" aria-label="Delete" @click.stop="removeContentBlock(block.id)" />
+                </div>
+                <v-tooltip v-else text="Required block" location="left">
+                  <template #activator="{ props }">
+                    <v-icon v-bind="props" size="14" class="fb-doc-block__lock">lock</v-icon>
+                  </template>
+                </v-tooltip>
 
-              <h2 v-if="block.type === 'title'" class="fb-doc__title" :style="{ textAlign: block.align }">{{ block.text }}</h2>
-              <p v-else-if="block.type === 'paragraph' || block.type === 'text'" class="fb-doc__paragraph" :style="{ textAlign: block.align }">{{ block.text }}</p>
-              <ul v-else-if="block.type === 'list'" class="fb-doc__list"><li v-for="(li, i) in block.items" :key="i">{{ li }}</li></ul>
-              <div v-else-if="block.type === 'image'" class="fb-doc__image"><v-icon size="32">image</v-icon><span class="text-caption text-medium-emphasis">{{ block.alt || 'Image' }}</span></div>
-              <div v-else-if="block.type === 'video'" class="fb-doc__image"><v-icon size="32">video</v-icon><span class="text-caption text-medium-emphasis">Video embed</span></div>
-              <hr v-else-if="block.type === 'divider'" class="fb-doc__divider" />
-              <div v-else-if="block.type === 'spacer'" class="fb-doc__spacer" :style="{ height: `${block.height}px` }" />
-              <div v-else-if="block.type === 'social'" class="fb-doc__social" :style="{ textAlign: block.align }"><v-icon>facebook</v-icon><v-icon>instagram</v-icon><v-icon>twitter</v-icon><v-icon>linkedin</v-icon></div>
-              <div v-else-if="block.type === 'icons'" class="fb-doc__social" :style="{ textAlign: block.align }"><v-icon>star</v-icon><v-icon>heart</v-icon><v-icon>shield-check</v-icon></div>
-              <pre v-else-if="block.type === 'html'" class="fb-doc__html">{{ block.text }}</pre>
-              <div v-else-if="block.type === 'email_submit'" class="fb-doc__emailsubmit">
-                <div class="fb-doc__field">Email address</div>
-                <div class="fb-doc__submit">{{ block.text || 'Subscribe Now' }}</div>
+                <h2 v-if="block.type === 'title'" class="fb-doc__title" :style="{ textAlign: block.align }">{{ block.text }}</h2>
+                <p v-else-if="block.type === 'paragraph' || block.type === 'text'" class="fb-doc__paragraph" :style="{ textAlign: block.align }">{{ block.text }}</p>
+                <ul v-else-if="block.type === 'list'" class="fb-doc__list"><li v-for="(li, i) in block.items" :key="i">{{ li }}</li></ul>
+                <div v-else-if="block.type === 'image'" class="fb-doc__image"><v-icon size="32">image</v-icon><span class="text-caption text-medium-emphasis">{{ block.alt || 'Image' }}</span></div>
+                <div v-else-if="block.type === 'video'" class="fb-doc__image"><v-icon size="32">video</v-icon><span class="text-caption text-medium-emphasis">Video embed</span></div>
+                <hr v-else-if="block.type === 'divider'" class="fb-doc__divider" />
+                <div v-else-if="block.type === 'spacer'" class="fb-doc__spacer" :style="{ height: `${block.height}px` }" />
+                <div v-else-if="block.type === 'social'" class="fb-doc__social" :style="{ textAlign: block.align }"><v-icon>facebook</v-icon><v-icon>instagram</v-icon><v-icon>twitter</v-icon><v-icon>linkedin</v-icon></div>
+                <div v-else-if="block.type === 'icons'" class="fb-doc__social" :style="{ textAlign: block.align }"><v-icon>star</v-icon><v-icon>heart</v-icon><v-icon>shield-check</v-icon></div>
+                <pre v-else-if="block.type === 'html'" class="fb-doc__html">{{ block.text }}</pre>
+                <div v-else-if="block.type === 'email_submit'" class="fb-doc__emailsubmit">
+                  <div class="fb-doc__field">Email address</div>
+                  <div class="fb-doc__submit">{{ block.text || 'Subscribe Now' }}</div>
+                </div>
               </div>
             </div>
-          </div>
-        </main>
+          </main>
 
-        <!-- settings -->
-        <aside class="fb-settings pa-4">
-          <template v-if="selectedBlock">
-            <div class="text-subtitle-2 font-weight-bold mb-4 text-capitalize">{{ selectedBlock.type.replace('_', ' ') }} settings</div>
+          <!-- settings -->
+          <aside class="fb-settings pa-4">
+            <template v-if="selectedBlock">
+              <div class="text-subtitle-2 font-weight-bold mb-4 text-capitalize">{{ selectedBlock.type.replace('_', ' ') }} settings</div>
 
-            <template v-if="selectedBlock.type === 'title' || selectedBlock.type === 'paragraph' || selectedBlock.type === 'text'">
-              <v-textarea v-model="selectedBlock.text" label="Text" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="3" class="mb-4" hide-details />
-            </template>
-            <template v-else-if="selectedBlock.type === 'list'">
-              <v-textarea :model-value="listText(selectedBlock)" label="Items (one per line)" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="3" class="mb-4" hide-details @update:model-value="v => setListText(selectedBlock!, v)" />
-            </template>
-            <template v-else-if="selectedBlock.type === 'image' || selectedBlock.type === 'video'">
-              <v-text-field v-model="selectedBlock.alt" label="Alt text / caption" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
-              <v-btn variant="tonal" block prepend-icon="upload" class="text-none mb-4">Upload media</v-btn>
-            </template>
-            <template v-else-if="selectedBlock.type === 'spacer'">
-              <v-slider v-model="selectedBlock.height" label="Height" :min="8" :max="96" :step="4" thumb-label class="mb-4" hide-details />
-            </template>
-            <template v-else-if="selectedBlock.type === 'html'">
-              <v-textarea v-model="selectedBlock.text" label="HTML" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="5" class="mb-4 fb-mono" hide-details />
-            </template>
-            <template v-else-if="selectedBlock.type === 'email_submit'">
-              <v-text-field v-model="selectedBlock.text" label="Submit button label" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
-              <div class="text-caption text-medium-emphasis mb-4">The email field and submit button are always collected — this managed block can't be removed.</div>
-            </template>
-            <template v-else>
-              <div class="text-body-2 text-medium-emphasis mb-4">No content options for this block.</div>
-            </template>
+              <template v-if="selectedBlock.type === 'title' || selectedBlock.type === 'paragraph' || selectedBlock.type === 'text'">
+                <v-textarea v-model="selectedBlock.text" label="Text" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="3" class="mb-4" hide-details />
+              </template>
+              <template v-else-if="selectedBlock.type === 'list'">
+                <v-textarea :model-value="listText(selectedBlock)" label="Items (one per line)" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="3" class="mb-4" hide-details @update:model-value="v => setListText(selectedBlock!, v)" />
+              </template>
+              <template v-else-if="selectedBlock.type === 'image' || selectedBlock.type === 'video'">
+                <v-text-field v-model="selectedBlock.alt" label="Alt text / caption" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
+                <v-btn variant="tonal" block prepend-icon="upload" class="text-none mb-4">Upload media</v-btn>
+              </template>
+              <template v-else-if="selectedBlock.type === 'spacer'">
+                <v-slider v-model="selectedBlock.height" label="Height" :min="8" :max="96" :step="4" thumb-label class="mb-4" hide-details />
+              </template>
+              <template v-else-if="selectedBlock.type === 'html'">
+                <v-textarea v-model="selectedBlock.text" label="HTML" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="5" class="mb-4 fb-mono" hide-details />
+              </template>
+              <template v-else-if="selectedBlock.type === 'email_submit'">
+                <v-text-field v-model="selectedBlock.text" label="Submit button label" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
+                <div class="text-caption text-medium-emphasis mb-4">The email field and submit button are always collected — this managed block can't be removed.</div>
+              </template>
+              <template v-else>
+                <div class="text-body-2 text-medium-emphasis mb-4">No content options for this block.</div>
+              </template>
 
-            <template v-if="['title', 'paragraph', 'text', 'social', 'icons'].includes(selectedBlock.type)">
-              <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2">Alignment</div>
-              <v-btn-toggle v-model="selectedBlock.align" mandatory density="comfortable" variant="outlined" divided class="mb-4">
-                <v-btn value="left" icon="align-left" size="small" />
-                <v-btn value="center" icon="align-center" size="small" />
-                <v-btn value="right" icon="align-right" size="small" />
-              </v-btn-toggle>
-            </template>
+              <template v-if="['title', 'paragraph', 'text', 'social', 'icons'].includes(selectedBlock.type)">
+                <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2">Alignment</div>
+                <v-btn-toggle v-model="selectedBlock.align" mandatory density="comfortable" variant="outlined" divided class="mb-4">
+                  <v-btn value="left" icon="align-left" size="small" aria-label="Align left" />
+                  <v-btn value="center" icon="align-center" size="small" aria-label="Align center" />
+                  <v-btn value="right" icon="align-right" size="small" aria-label="Align right" />
+                </v-btn-toggle>
+              </template>
 
-            <v-btn v-if="selectedBlock.type !== 'email_submit'" variant="text" color="error" prepend-icon="trash-2" class="text-none" @click="removeContentBlock(selectedBlock.id)">Delete block</v-btn>
-          </template>
-          <div v-else class="text-body-2 text-medium-emphasis pt-4">Select a block to edit it, or add one from the left.</div>
-        </aside>
+              <v-btn v-if="selectedBlock.type !== 'email_submit'" variant="text" color="error" prepend-icon="trash-2" class="text-none" @click="removeContentBlock(selectedBlock.id)">Delete block</v-btn>
+            </template>
+            <div v-else class="text-body-2 text-medium-emphasis pt-4">Select a block to edit it, or add one from the left.</div>
+          </aside>
+        </div>
+
+        <div class="pa-3 border-t bg-surface d-flex justify-space-between">
+          <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="step = 1">Back</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(3)">Continue to Display</v-btn>
+        </div>
       </div>
 
       <!-- STEP 5: Review & Publish -->
@@ -674,6 +715,13 @@ function discardAndLeave() {
           </v-btn-toggle>
 
           <template v-if="reviewTab === 'details'">
+            <v-alert v-if="!domains.length" type="warning" variant="tonal" density="comfortable" class="mb-3" rounded="lg">
+              No domains configured. Add at least one domain in Setup so the form can load on your site.
+            </v-alert>
+            <v-alert v-if="!selectedListIds.length" type="warning" variant="tonal" density="comfortable" class="mb-3" rounded="lg">
+              No subscription lists selected. Subscribers won’t be added to a list until you choose one in Setup.
+            </v-alert>
+
             <v-card variant="flat" border rounded="lg" class="pa-8 mb-4">
               <div class="text-h6 font-weight-bold mb-4">Form Details</div>
               <v-text-field v-model="formName" label="Name" variant="outlined" density="compact" class="mb-4" />
@@ -752,9 +800,9 @@ function discardAndLeave() {
 
     <MpConfirmDialog
       v-model="confirmLeave"
-      title="Leave the form builder?"
-      message="You have unsaved changes. Leaving now will discard them."
-      confirm-label="Discard changes"
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
       danger
       @confirm="discardAndLeave"
     />
@@ -785,7 +833,7 @@ function discardAndLeave() {
   box-shadow: inset 0 0 0 2px rgb(var(--v-theme-surface));
 }
 
-/* Device preview (steps 3 & 5) */
+/* Device preview (Style & Review) */
 .fb-device {
   background: #e5e5e5;
   border-radius: 12px;
@@ -840,7 +888,7 @@ function discardAndLeave() {
 }
 .fb-preview-stage { background: rgba(var(--v-theme-on-surface), 0.02); border-radius: 12px; }
 
-/* Content step (step 4) — block editor */
+/* Content step — block editor */
 .fb-palette {
   width: 200px;
   flex-shrink: 0;
@@ -870,6 +918,10 @@ function discardAndLeave() {
   padding: 16px;
   min-height: 300px;
 }
+.fb-doc__empty {
+  border: 1px dashed rgba(var(--v-theme-on-surface), 0.2);
+  border-radius: 8px;
+}
 .fb-doc-block { position: relative; padding: 10px 12px; border: 1.5px solid transparent; border-radius: 8px; transition: border-color 100ms ease; }
 .fb-doc-block:hover { border-color: rgba(var(--v-theme-primary), 0.25); }
 .fb-doc-block--selected { border-color: rgb(var(--v-theme-primary)); background: rgba(var(--v-theme-primary), 0.03); }
@@ -894,4 +946,16 @@ function discardAndLeave() {
 
 .fb-settings { width: 300px; flex-shrink: 0; border-left: 1px solid rgba(var(--v-theme-on-surface), 0.10); background: rgb(var(--v-theme-surface)); overflow-y: auto; }
 :deep(.fb-mono textarea) { font-family: monospace; font-size: 0.8rem; }
+
+@media (max-width: 1024px) {
+  .fb__panel { width: 260px; }
+  .fb-settings { width: 260px; }
+  .fb-palette { width: 160px; }
+}
+@media (max-width: 768px) {
+  .fb__panel,
+  .fb-settings,
+  .fb-palette { display: none; }
+  .fb__split { flex-direction: column; }
+}
 </style>

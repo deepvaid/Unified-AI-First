@@ -50,11 +50,29 @@ function newRule(): SegmentRule {
   return { id: nextId(), matchAll: true, criteria: [newCriterion()] }
 }
 
+// Snapshot the form on open (ids stripped) so close paths can tell edits from noise.
+const openSnapshot = ref('')
+function snapshotState() {
+  return JSON.stringify([
+    segName.value,
+    matchLogic.value,
+    rules.value.map(r => [r.matchAll, r.criteria.map(c => [c.category, c.field, c.operator, c.value])]),
+  ])
+}
+const drawerDirty = computed(() => drawer.value && snapshotState() !== openSnapshot.value)
+
+const confirmDiscard = ref(false)
+function requestCloseDrawer() {
+  if (drawerDirty.value) confirmDiscard.value = true
+  else drawer.value = false
+}
+
 function openCreate() {
   editingId.value = null
   segName.value = ''
   matchLogic.value = 'all'
   rules.value = [newRule()]
+  openSnapshot.value = snapshotState()
   drawer.value = true
 }
 
@@ -66,6 +84,7 @@ function openEdit(segment: Segment) {
   rules.value = (segment.rules && segment.rules.length)
     ? segment.rules.map(r => ({ id: nextId(), matchAll: r.matchAll, criteria: r.criteria.map(c => ({ ...c, id: nextId() })) }))
     : [newRule()]
+  openSnapshot.value = snapshotState()
   drawer.value = true
 }
 
@@ -86,6 +105,40 @@ const canSave = computed(() => {
   return true
 })
 
+function describeCriterion(c: { field: string; operator: string; value: string }): string {
+  const val = c.value.trim() || '…'
+  return `${c.field} ${c.operator} “${val}”`
+}
+
+/** Plain-language summary for merchants (shown above the rule builder). */
+const plainLanguageSummary = computed(() => {
+  if (matchLogic.value === 'active') return 'Contacts who are currently active.'
+  if (!rules.value.length || totalFilters.value === 0) return 'Contacts matching the rules below.'
+  const ruleJoiner = matchLogic.value === 'all' ? ' and ' : ' or '
+  const parts = rules.value.map((rule) => {
+    const critJoiner = rule.matchAll ? ' and ' : ' or '
+    const critText = rule.criteria.map(describeCriterion).join(critJoiner)
+    return rule.criteria.length > 1 ? `(${critText})` : critText
+  })
+  return `Contacts who ${parts.join(ruleJoiner)}.`
+})
+
+/** Mock audience universe for the live estimate (largest seeded segment is ~18k). */
+const AUDIENCE_SIZE = 24816
+
+/** Deterministic mock match estimate so merchants get sizing feedback as they build. */
+const matchEstimate = computed(() => {
+  if (matchLogic.value === 'active') return AUDIENCE_SIZE
+  const narrowing = matchLogic.value === 'all' ? 0.45 : 0.72
+  // Hash the rule contents (not the name) for a stable per-definition jitter (0.7–1.3).
+  const ruleKey = JSON.stringify(rules.value.map(r => [r.matchAll, r.criteria.map(c => [c.category, c.field, c.operator, c.value])]))
+  let hash = 0
+  for (const ch of ruleKey) hash = (hash * 31 + ch.charCodeAt(0)) | 0
+  const jitter = 0.7 + (Math.abs(hash) % 600) / 1000
+  const estimate = Math.round(AUDIENCE_SIZE * Math.pow(narrowing, totalFilters.value) * jitter)
+  return Math.max(25, Math.min(AUDIENCE_SIZE, estimate))
+})
+
 function describe(): string {
   if (matchLogic.value === 'active') return 'All active contacts'
   const logicLabel = matchLogic.value === 'all' ? 'match all rules' : 'match any rule'
@@ -103,10 +156,10 @@ function save() {
     rules: matchLogic.value === 'active' ? [] : rules.value,
   }
   if (editingId.value != null) {
-    store.updateSegment(editingId.value, payload)
+    store.updateSegment(editingId.value, { ...payload, count: matchEstimate.value })
     notify('Segment updated')
   } else {
-    store.addSegment({ ...payload, count: 0 })
+    store.addSegment({ ...payload, count: matchEstimate.value })
     notify('Segment created')
   }
   drawer.value = false
@@ -183,8 +236,19 @@ function confirmDelete() {
     </v-card>
 
     <!-- ── Condition builder drawer ─────────────────────────────────────────── -->
-    <MpFormDrawer v-model="drawer" :title="editingId != null ? 'Edit Segment' : 'Create Segment'" :width="680">
+    <MpFormDrawer
+      v-model="drawer"
+      :title="editingId != null ? 'Edit Segment' : 'Create Segment'"
+      :width="680"
+      :guarded="drawerDirty"
+      @close="requestCloseDrawer"
+    >
       <v-text-field v-model="segName" label="Segment Name *" variant="outlined" density="comfortable" class="mb-5" />
+
+      <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="mb-5 text-body-2">
+        <span class="font-weight-medium">Summary: </span>{{ plainLanguageSummary }}
+        <div class="text-caption mt-1">≈ {{ matchEstimate.toLocaleString() }} contacts match</div>
+      </v-alert>
 
       <div class="text-subtitle-2 font-weight-bold mb-2">Match logic</div>
       <v-radio-group v-model="matchLogic" hide-details class="mb-4">
@@ -255,10 +319,19 @@ function confirmDelete() {
         <span class="text-caption text-medium-emphasis mr-auto" :class="{ 'text-error': totalFilters > MAX_FILTERS }">
           Total filters {{ totalFilters }}/{{ MAX_FILTERS }}
         </span>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
+        <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave" @click="save">Save Segment</v-btn>
       </template>
     </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="confirmDiscard"
+      title="Discard segment changes?"
+      message="You have unsaved changes to this segment. Closing now will discard them."
+      confirm-label="Discard changes"
+      danger
+      @confirm="drawer = false"
+    />
 
     <MpConfirmDialog
       v-model="deleteDialog"

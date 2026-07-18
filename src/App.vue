@@ -160,7 +160,9 @@ const copilotDrawerWidth = computed(() => {
 
 <template>
   <v-app>
-    <a v-if="!isFullPage" href="#main-content" class="skip-link">Skip to main content</a>
+    <!-- Rendered on fullPage routes too: #main-content always exists, and builders
+         are exactly where keyboard users need a consistent first tab stop. -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <AppSidebar
       v-if="!isFullPage"

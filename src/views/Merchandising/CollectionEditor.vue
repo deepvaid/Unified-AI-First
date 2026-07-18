@@ -5,6 +5,8 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import {
   useMerchandisingStore,
   COLLECTION_FILTER_LABELS,
@@ -44,10 +46,16 @@ const draft = ref({
 const savedSnapshot = ref(JSON.stringify(draft.value))
 const dirty = computed(() => JSON.stringify(draft.value) !== savedSnapshot.value)
 
-const activeTab = ref('shopify')
+const { confirmLeave, discardAndLeave, leaveTitle, leaveMessage, leaveConfirmLabel } = useDirtyLeaveGuard(dirty, {
+  title: 'Leave collection editor?',
+  message: 'You have unsaved changes to this collection. Leaving now will discard them.',
+})
+
+// Activation first — SMB merchants activate before configuring advanced filters.
+const activeTab = ref('activation')
 const tabs = [
-  { label: 'Shopify Filters', key: 'shopify' },
   { label: 'Activation', key: 'activation' },
+  { label: 'Shopify Filters', key: 'shopify' },
   { label: 'Filters & Sorting', key: 'sorting' },
 ]
 
@@ -198,6 +206,15 @@ function save() {
         class="collection-sort"
       />
     </v-card>
+
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
+    />
 
     <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
       <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Collection saved</div>

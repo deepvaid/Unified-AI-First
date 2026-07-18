@@ -3,7 +3,10 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
+import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useCopilotStore } from '@/stores/useCopilot'
 import {
   useMerchandisingStore,
@@ -49,6 +52,18 @@ const draft = ref({
 })
 const savedSnapshot = ref(JSON.stringify(draft.value))
 const dirty = computed(() => JSON.stringify(draft.value) !== savedSnapshot.value)
+const isDirty = dirty
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave engine editor?',
+  message: 'You have unsaved changes. Leaving now will discard them.',
+})
 
 /* ── Wizard: Page type → Recommendation type → Settings → Filters ── */
 const step = ref(1)
@@ -80,14 +95,7 @@ const canSave = computed(() =>
   && (dirty.value || isNew.value),
 )
 
-const stepLabels = computed(() => [
-  draft.value.page ? `${ENGINE_PAGE_LABELS[draft.value.page]} page` : 'Page type',
-  draft.value.type ? ENGINE_TYPE_LABELS[draft.value.type] : 'Recommendation type',
-  'Settings',
-  'Filters',
-])
-
-const STEP_TITLES = ['Select page type', 'Select recommendation type', 'General settings', 'Filters']
+const STEP_TITLES = ['Page type', 'Recommendation type', 'Settings', 'Filters']
 
 /* ── Filters (include/exclude) ────────────────────────────────── */
 const editingId = ref<string | null>(null)
@@ -176,19 +184,31 @@ function save() {
   if (isNew.value) {
     const created = store.createEngine(payload)
     savedSnapshot.value = JSON.stringify(draft.value)
+    allowNextLeave()
     saveSnack.value = true
     router.replace({ name: 'MerchandisingChannelEngineEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, engineId: created.id } })
     return
   }
   store.saveEngine({ id: engineId.value, ...payload })
   savedSnapshot.value = JSON.stringify(draft.value)
+  allowNextLeave()
   saveSnack.value = true
 }
 
 function performDelete() {
   if (sourceEngine.value) store.deleteEngine(sourceEngine.value.id)
   confirmDelete.value = false
+  allowNextLeave()
   router.push(listRoute.value)
+}
+
+function goToStep(target: number) {
+  if (target === step.value) return
+  if (target < step.value) {
+    step.value = target
+    return
+  }
+  if (stepValid.value) step.value = target
 }
 </script>
 
@@ -256,27 +276,14 @@ function performDelete() {
         hide-details
         class="engine-name-field"
       />
-      <div class="engine-steps d-flex align-center gap-2 flex-wrap">
-        <template v-for="(label, index) in stepLabels" :key="index">
-          <v-divider v-if="index > 0" class="engine-steps__line" />
-          <button
-            type="button"
-            class="engine-step"
-            :class="{
-              'engine-step--active': step === index + 1,
-              'engine-step--done': step > index + 1,
-            }"
-            :disabled="index + 1 > step && !stepValid"
-            @click="index + 1 <= step ? (step = index + 1) : null"
-          >
-            <span class="engine-step__index">
-              <v-icon v-if="step > index + 1" size="12">check</v-icon>
-              <template v-else>{{ index + 1 }}</template>
-            </span>
-            {{ label }}
-          </button>
-        </template>
-      </div>
+      <MpWizardSteps
+        :steps="STEP_TITLES"
+        :current="step"
+        clickable
+        :max-step="step"
+        class="engine-steps"
+        @select="goToStep"
+      />
     </div>
 
     <!-- Step 1: page type -->
@@ -574,19 +581,23 @@ function performDelete() {
     </div>
 
     <!-- Delete confirm -->
-    <v-dialog :model-value="confirmDelete" max-width="440" @update:model-value="confirmDelete = false">
-      <v-card rounded="lg">
-        <v-card-title class="pa-5 text-h6 font-weight-bold">Delete “{{ draft.name }}”?</v-card-title>
-        <v-card-text class="pb-2 text-body-2 text-medium-emphasis">
-          The widget stops rendering on the storefront immediately.
-        </v-card-text>
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn variant="text" class="text-none" @click="confirmDelete = false">Cancel</v-btn>
-          <v-btn color="error" variant="flat" class="text-none" @click="performDelete">Delete engine</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <MpConfirmDialog
+      v-model="confirmDelete"
+      danger
+      :title="`Delete “${draft.name}”?`"
+      message="The widget stops rendering on the storefront immediately."
+      confirm-label="Delete engine"
+      @confirm="performDelete"
+    />
+
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
+    />
 
     <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
       <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Engine saved</div>
@@ -611,66 +622,9 @@ function performDelete() {
   flex: 0 0 auto;
 }
 
-/* ── Step indicator ────────────────────────────────────────────── */
 .engine-steps {
   min-width: 0;
   flex: 1 1 auto;
-}
-
-.engine-steps__line {
-  flex: 1 1 24px;
-  max-width: 48px;
-  opacity: 0.5;
-}
-
-.engine-step {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.6);
-  white-space: nowrap;
-}
-
-.engine-step:disabled {
-  cursor: default;
-}
-
-.engine-step__index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: rgba(var(--v-theme-on-surface), 0.08);
-  font-size: 11px;
-}
-
-.engine-step--active {
-  color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.08);
-}
-
-.engine-step--active .engine-step__index {
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-}
-
-.engine-step--done {
-  color: rgba(var(--v-theme-on-surface), 0.78);
-}
-
-.engine-step--done .engine-step__index {
-  background: rgba(var(--v-theme-success), 0.15);
-  color: rgb(var(--v-theme-success));
 }
 
 /* ── Type/page cards ───────────────────────────────────────────── */

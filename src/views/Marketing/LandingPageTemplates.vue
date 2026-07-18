@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useLandingPagesStore, defaultLandingBlock } from '@/stores/useLandingPages'
-import type { EditorType, LandingPageBlock, LandingPageStyle } from '@/stores/useLandingPages'
+import { useLandingPagesStore, defaultLandingBlock, cloneLandingBlock } from '@/stores/useLandingPages'
+import type { LandingPageBlock, LandingPageStyle, LandingTemplateRecord } from '@/stores/useLandingPages'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
-import MpOptionCard from '@/components/MpOptionCard.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -111,10 +110,10 @@ const SEASONAL_OPTIONS: SeasonalTag[] = ['christmas', 'new-year']
 
 // ─── Stage 1: gallery ────────────────────────────────────────────────────
 const galleryView = ref<'library' | 'mine'>('library')
-const viewTabs = [
+const viewTabs = computed(() => [
   { label: 'Library', key: 'library', count: TEMPLATES.length },
-  { label: 'My Templates', key: 'mine', count: 0 },
-]
+  { label: 'My Templates', key: 'mine', count: lpStore.savedTemplates.length },
+])
 
 const usageFilter = ref<UsageTag[]>([])
 const industryFilter = ref<IndustryTag[]>([])
@@ -131,23 +130,34 @@ const filtered = computed(() =>
   }),
 )
 
-// ─── Stage machine: gallery → builder-type → details ────────────────────
-type Stage = 'gallery' | 'builder-type' | 'details'
+// ─── Stage machine: gallery → details (single DnD editor — no false WYSIWYG choice)
+type Stage = 'gallery' | 'details'
 const stage = ref<Stage>('gallery')
-const stageTitles = ['Template', 'Builder', 'Details']
-const stageIndex = computed(() => ({ gallery: 1, 'builder-type': 2, details: 3 }[stage.value]))
+const stageTitles = ['Template', 'Details']
+const stageIndex = computed(() => ({ gallery: 1, details: 2 }[stage.value]))
 
 const selectedTemplate = ref<LandingTemplate | null>(null)
 const selectedTemplateName = computed(() => selectedTemplate.value?.name ?? null)
 function chooseTemplate(tpl: LandingTemplate | null) {
   selectedTemplate.value = tpl
-  stage.value = 'builder-type'
+  stage.value = 'details'
 }
 
-const builderType = ref<EditorType>('wysiwyg')
-function goToDetails() { stage.value = 'details' }
+/** Wrap a merchant-saved template into the library shape so the details stage works unchanged. */
+function chooseSaved(t: LandingTemplateRecord) {
+  chooseTemplate({
+    id: `saved-${t.id}`,
+    name: t.name,
+    group: 'Usage',
+    tag: 'product-promotion',
+    desc: 'Saved template',
+    accent: 'primary',
+    icon: 'layout-template',
+    blocks: () => t.blocks.map(cloneLandingBlock),
+    style: { ...t.style },
+  })
+}
 function backToGallery() { stage.value = 'gallery' }
-function backToBuilderType() { stage.value = 'builder-type' }
 
 // ─── Stage 3: details ────────────────────────────────────────────────────
 const pageName = ref('')
@@ -176,7 +186,7 @@ function createPage() {
   const id = lpStore.create({
     name: pageName.value.trim(),
     url: pageUrl.value.trim(),
-    editorType: builderType.value,
+    editorType: 'dnd',
     publishAt: formatDateTime(publishDate.value, publishTime.value),
     expireAt: formatDateTime(expireDate.value, expireTime.value),
     tracking: tracking.value,
@@ -247,49 +257,57 @@ function createPage() {
         </div>
       </template>
 
-      <MpEmptyState
-        v-else
-        icon="layout-template"
-        title="No saved templates yet"
-        description="Save any landing page as a template and it will show up here for reuse."
-        action-label="Browse the library"
-        action-icon="layout-template"
-        class="my-auto"
-        @action="galleryView = 'library'"
-      />
+      <template v-else>
+        <div v-if="lpStore.savedTemplates.length" class="flex-grow-1 overflow-y-auto">
+          <v-row dense>
+            <v-col v-for="t in lpStore.savedTemplates" :key="t.id" cols="12" sm="6" md="4" lg="3">
+              <v-card flat border rounded="lg" class="lpt-card h-100" role="button" tabindex="0" @click="chooseSaved(t)" @keydown.enter="chooseSaved(t)">
+                <div class="lpt-card__preview lpt-card__preview--primary">
+                  <v-icon size="30">layout-template</v-icon>
+                  <div class="lpt-card__skeleton">
+                    <span class="lpt-bar lpt-bar--wide" />
+                    <span class="lpt-bar" />
+                    <span class="lpt-bar lpt-bar--btn" />
+                  </div>
+                </div>
+                <div class="pa-4">
+                  <div class="d-flex align-center justify-space-between ga-2">
+                    <div class="text-subtitle-2 font-weight-bold text-truncate">{{ t.name }}</div>
+                    <v-chip size="x-small" variant="tonal" class="flex-shrink-0">Saved</v-chip>
+                  </div>
+                  <div class="text-caption text-medium-emphasis mt-1">Saved {{ t.savedAt }} · {{ t.blocks.length }} block{{ t.blocks.length === 1 ? '' : 's' }}</div>
+                  <v-btn variant="tonal" color="primary" size="small" block class="text-none mt-3">Use template</v-btn>
+                </div>
+              </v-card>
+            </v-col>
+          </v-row>
+        </div>
+        <MpEmptyState
+          v-else
+          icon="layout-template"
+          title="No saved templates yet"
+          description="Save any landing page as a template and it will show up here for reuse."
+          action-label="Browse the library"
+          action-icon="layout-template"
+          class="my-auto"
+          @action="galleryView = 'library'"
+        />
+      </template>
     </template>
 
-    <!-- STAGE 2 & 3: builder-type / details -->
+    <!-- STAGE 2: details -->
     <template v-else>
       <div class="d-flex justify-center px-5">
         <MpWizardSteps :steps="stageTitles" :current="stageIndex" />
       </div>
 
       <div class="d-flex justify-center pt-4 pa-4 flex-grow-1 overflow-y-auto">
-        <!-- STAGE 2: builder type -->
-        <v-card v-if="stage === 'builder-type'" variant="flat" border rounded="lg" style="max-width:640px;width:100%;" class="pa-8 align-self-start">
-          <div class="text-h5 font-weight-bold mb-1">Select a Builder</div>
-          <div class="text-body-2 text-medium-emphasis mb-6">
-            {{ selectedTemplateName ? `Starting from “${selectedTemplateName}”` : 'Starting from a blank page' }} — choose how you want to edit it.
-          </div>
-          <v-row dense>
-            <v-col cols="6">
-              <MpOptionCard :selected="builderType === 'wysiwyg'" title="WYSIWYG" description="Structured sections — fast to edit, less freeform" icon="layout-template" @click="builderType = 'wysiwyg'" />
-            </v-col>
-            <v-col cols="6">
-              <MpOptionCard :selected="builderType === 'dnd'" title="Drag & Drop" description="Freeform canvas — full control over layout" icon="move" @click="builderType = 'dnd'" />
-            </v-col>
-          </v-row>
-          <div class="d-flex justify-space-between mt-6">
-            <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="backToGallery">Back</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="goToDetails">Continue</v-btn>
-          </div>
-        </v-card>
-
-        <!-- STAGE 3: details -->
-        <v-card v-else variant="flat" border rounded="lg" style="max-width:640px;width:100%;" class="pa-8 align-self-start">
+        <v-card variant="flat" border rounded="lg" style="max-width:640px;width:100%;" class="pa-8 align-self-start">
           <div class="text-h5 font-weight-bold mb-1">Page Details</div>
-          <div class="text-body-2 text-medium-emphasis mb-6">Name your page and set its URL and schedule.</div>
+          <div class="text-body-2 text-medium-emphasis mb-6">
+            {{ selectedTemplateName ? `Starting from “${selectedTemplateName}”.` : 'Starting from a blank page.' }}
+            Name your page and set its URL and schedule.
+          </div>
 
           <v-text-field v-model="pageName" label="Name *" placeholder="e.g. Spring Promo Landing Page" variant="outlined" density="comfortable" class="mb-4" />
           <v-text-field
@@ -314,7 +332,7 @@ function createPage() {
           <v-textarea v-model="tracking" label="Page Tracking (optional)" placeholder="Paste analytics / pixel tracking code" variant="outlined" density="comfortable" rows="3" class="mt-2" />
 
           <div class="d-flex justify-space-between mt-6">
-            <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="backToBuilderType">Back</v-btn>
+            <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="backToGallery">Back</v-btn>
             <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!detailsValid" @click="createPage">Create Page</v-btn>
           </div>
         </v-card>

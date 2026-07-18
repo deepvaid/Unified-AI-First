@@ -7,9 +7,20 @@ const props = withDefaults(defineProps<{
   title: string
   subtitle?: string
   width?: number
+  /** When true, Esc/X/scrim route through the `close` emit instead of closing directly,
+   *  so hosts can confirm before discarding unsaved work. */
+  guarded?: boolean
 }>(), {
   width: 480,
+  guarded: false,
 })
+
+const emit = defineEmits<{ close: [] }>()
+
+function requestClose() {
+  if (props.guarded) emit('close')
+  else model.value = false
+}
 
 const drawerWidth = computed(() => props.width)
 
@@ -31,7 +42,7 @@ watch(model, async (open) => {
 
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
-    model.value = false
+    requestClose()
     return
   }
   if (e.key !== 'Tab' || !panel.value) return
@@ -66,6 +77,7 @@ function onKeydown(e: KeyboardEvent) {
       location="right"
       temporary
       scrim
+      :persistent="guarded"
       class="mp-form-drawer"
       role="dialog"
       aria-modal="true"
@@ -84,7 +96,7 @@ function onKeydown(e: KeyboardEvent) {
           size="small"
           density="comfortable"
           aria-label="Close"
-          @click="model = false"
+          @click="requestClose"
         />
       </div>
       <v-divider />

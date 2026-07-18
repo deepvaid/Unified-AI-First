@@ -8,6 +8,7 @@ import type { SubscriptionKey } from '@/stores/useAccounts'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
 const router = useRouter()
@@ -30,17 +31,38 @@ const INTENTS: { title: string; value: QuickPromptIntent }[] = [
 ]
 
 type Section = 'general' | 'appearance' | 'hours' | 'prompts' | 'shopping' | 'tracking' | 'knowledge' | 'prechat'
-const section = ref<Section>('general')
-const NAV: { key: Section; label: string; icon: string }[] = [
-  { key: 'general', label: 'General', icon: 'building-2' },
-  { key: 'appearance', label: 'Appearance', icon: 'palette' },
-  { key: 'hours', label: 'Business hours', icon: 'clock' },
-  { key: 'prompts', label: 'Quick prompts', icon: 'message-square-more' },
-  { key: 'shopping', label: 'Shopping assistant', icon: 'shopping-bag' },
-  { key: 'tracking', label: 'Order tracking', icon: 'package-search' },
-  { key: 'knowledge', label: 'Knowledge base', icon: 'book-open' },
-  { key: 'prechat', label: 'Pre-chat form', icon: 'clipboard-list' },
+const section = ref<Section>('appearance')
+
+interface NavGroup {
+  title: string
+  items: { key: Section; label: string; icon: string }[]
+}
+const NAV_GROUPS: NavGroup[] = [
+  {
+    title: 'Essentials',
+    items: [
+      { key: 'appearance', label: 'Appearance', icon: 'palette' },
+      { key: 'hours', label: 'Business hours', icon: 'clock' },
+    ],
+  },
+  {
+    title: 'Capabilities',
+    items: [
+      { key: 'prompts', label: 'Quick prompts', icon: 'message-square-more' },
+      { key: 'shopping', label: 'Shopping assistant', icon: 'shopping-bag' },
+      { key: 'tracking', label: 'Order tracking', icon: 'package-search' },
+      { key: 'knowledge', label: 'Knowledge base', icon: 'book-open' },
+      { key: 'prechat', label: 'Pre-chat form', icon: 'clipboard-list' },
+    ],
+  },
+  {
+    title: 'Advanced',
+    items: [
+      { key: 'general', label: 'General', icon: 'building-2' },
+    ],
+  },
 ]
+const NAV = NAV_GROUPS.flatMap(g => g.items)
 const catalogSources = [
   { title: 'Full product catalog', value: 'catalog' },
   { title: 'Featured products only', value: 'featured' },
@@ -67,6 +89,30 @@ const lockedDescription = computed(() => LOCK_DESCRIPTIONS[section.value] ?? '')
 const salesMailto = 'mailto:sales@maropost.com?subject=Chatbot%20%E2%80%94%20plan%20upgrade'
 function viewPlans() { router.push({ name: 'Billing', params: { accountId: accountId.value } }) }
 
+const savedSnapshot = ref('')
+function captureConfigSnapshot() {
+  savedSnapshot.value = cfg.value ? JSON.stringify(cfg.value) : ''
+}
+const isDirty = computed(() => {
+  if (!cfg.value || !savedSnapshot.value) return false
+  return JSON.stringify(cfg.value) !== savedSnapshot.value
+})
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave chatbot builder?',
+  message: 'You have unsaved changes. Leaving now will discard them.',
+})
+
+function focusPreview() {
+  document.getElementById('cb-preview')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}
+
 onMounted(() => {
   if (!chatbot.value) {
     router.replace({ name: 'ChatbotList', params: { accountId: accountId.value } })
@@ -77,12 +123,16 @@ onMounted(() => {
   const key = typeof q === 'string' ? q : undefined
   if (key && NAV.some(n => n.key === key) && !isSectionLocked(key as Section)) {
     section.value = key as Section
+  } else if (!key) {
+    // Default to Appearance (Essentials) when no section query is present.
+    section.value = 'appearance'
   }
   // Never land on a locked section — fall back to the first unlocked one.
   if (isSectionLocked(section.value)) {
     const firstUnlocked = NAV.find(n => !isSectionLocked(n.key))
     if (firstUnlocked) section.value = firstUnlocked.key
   }
+  captureConfigSnapshot()
 })
 
 const enabledPrompts = computed(() => cfg.value?.quickPrompts.filter(p => p.enabled) ?? [])
@@ -199,7 +249,12 @@ async function copyScript() {
     setTimeout(() => (copied.value = false), 1500)
   } catch { /* clipboard unavailable in preview */ }
 }
-function finishPublish() { publishOpen.value = false; saved.value = true }
+function finishPublish() {
+  publishOpen.value = false
+  saved.value = true
+  captureConfigSnapshot()
+  allowNextLeave()
+}
 
 // ─── Live preview scenarios ───────────────────────────────────────────
 type Scenario = 'welcome' | 'shopping' | 'tracking' | 'openchat' | 'prechat'
@@ -275,7 +330,8 @@ function sendChat() {
           </div>
         </div>
         <div class="d-flex align-center gap-2">
-          <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="eye">Preview Chatbot</v-btn>
+          <v-chip v-if="isDirty" size="small" variant="tonal" color="warning" class="font-weight-medium">Unsaved changes</v-chip>
+          <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="eye" @click="focusPreview">Preview Chatbot</v-btn>
           <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="rocket" @click="publishOpen = true">Publish Chatbot</v-btn>
         </div>
       </div>
@@ -283,22 +339,25 @@ function sendChat() {
       <div class="cb__body flex-grow-1 d-flex overflow-hidden">
         <!-- Section nav -->
         <nav class="cb__nav border-r bg-surface py-3 flex-shrink-0" aria-label="Chatbot settings">
-          <button
-            v-for="n in NAV"
-            :key="n.key"
-            type="button"
-            class="cb__nav-item text-none"
-            :class="{ 'cb__nav-item--on': section === n.key }"
-            @click="section = n.key"
-          >
-            <v-icon size="18">{{ n.icon }}</v-icon>
-            <span>{{ n.label }}</span>
-            <v-tooltip v-if="isSectionLocked(n.key)" text="Upgrade to unlock" location="top">
-              <template #activator="{ props }">
-                <v-icon v-bind="props" size="14" class="cb__nav-crown">crown</v-icon>
-              </template>
-            </v-tooltip>
-          </button>
+          <div v-for="group in NAV_GROUPS" :key="group.title" class="cb__nav-group">
+            <div class="cb__nav-heading text-caption text-medium-emphasis font-weight-bold text-uppercase px-3 mb-1">{{ group.title }}</div>
+            <button
+              v-for="n in group.items"
+              :key="n.key"
+              type="button"
+              class="cb__nav-item text-none"
+              :class="{ 'cb__nav-item--on': section === n.key }"
+              @click="section = n.key"
+            >
+              <v-icon size="18">{{ n.icon }}</v-icon>
+              <span>{{ n.label }}</span>
+              <v-tooltip v-if="isSectionLocked(n.key)" text="Upgrade to unlock" location="top">
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" size="14" class="cb__nav-crown">crown</v-icon>
+                </template>
+              </v-tooltip>
+            </button>
+          </div>
         </nav>
 
         <!-- Settings panel -->
@@ -428,7 +487,6 @@ function sendChat() {
                 <div class="text-body-2 text-medium-emphasis mb-5">Predefined options shown when a customer starts a chat. The <strong>intent</strong> routes the reply to shopping, order tracking, support, or FAQ.</div>
                 <div v-for="(p, i) in cfg.quickPrompts" :key="p.id" class="cb-prompt mb-2">
                   <div class="d-flex align-center ga-2">
-                    <v-icon size="16" class="text-medium-emphasis cb-grip">grip-vertical</v-icon>
                     <v-text-field v-model="p.text" variant="outlined" density="compact" hide-details class="flex-grow-1" />
                     <v-select v-model="p.intent" :items="INTENTS" variant="outlined" density="compact" hide-details class="cb-prompt__intent" />
                     <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0" aria-label="Move up" @click="movePrompt(i, -1)" />
@@ -653,7 +711,6 @@ function sendChat() {
                 </div>
                 <div v-for="(f, i) in cfg.preChatFields" :key="f.id" class="cb-field mb-3">
                   <div class="d-flex align-center ga-2 mb-2">
-                    <v-icon size="16" class="text-medium-emphasis cb-grip">grip-vertical</v-icon>
                     <span class="text-caption font-weight-bold text-medium-emphasis">#{{ i + 1 }}</span>
                     <v-spacer />
                     <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0 || !cfg.preChatEnabled" aria-label="Move up" @click="moveField(i, -1)" />
@@ -674,7 +731,7 @@ function sendChat() {
         </div>
 
         <!-- Live preview -->
-        <div class="cb__preview bg-background d-flex flex-column align-center pa-6 flex-shrink-0">
+        <div id="cb-preview" class="cb__preview bg-background d-flex flex-column align-center pa-6 flex-shrink-0" tabindex="-1">
           <div class="d-flex align-center justify-space-between w-100 mb-3">
             <span class="text-caption text-medium-emphasis font-weight-bold text-uppercase">Preview</span>
           </div>
@@ -829,6 +886,15 @@ function sendChat() {
           </div>
         </v-card>
       </v-dialog>
+
+      <MpConfirmDialog
+        v-model="confirmLeave"
+        danger
+        :title="leaveTitle"
+        :message="leaveMessage"
+        :confirm-label="leaveConfirmLabel"
+        @confirm="discardAndLeave"
+      />
     </template>
   </div>
 </template>
@@ -840,6 +906,9 @@ function sendChat() {
 .border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 
 .cb__nav { width: 220px; display: flex; flex-direction: column; gap: 2px; padding-inline: 10px; }
+.cb__nav-group { display: flex; flex-direction: column; gap: 2px; }
+.cb__nav-group + .cb__nav-group { margin-top: 12px; }
+.cb__nav-heading { letter-spacing: 0.04em; }
 .cb__nav-item {
   display: flex;
   align-items: center;
@@ -891,7 +960,6 @@ function sendChat() {
 .cb-hour__day { width: 108px; flex-shrink: 0; }
 .cb-hour__time { max-width: 130px; }
 
-.cb-prompt .cb-grip, .cb-field .cb-grip { cursor: grab; }
 .cb-prompt__intent { max-width: 130px; }
 
 .cb-source {
@@ -965,6 +1033,26 @@ function sendChat() {
 
 /* Live widget preview */
 .cb__preview { width: 380px; }
+
+@media (max-width: 1024px) {
+  .cb__body { flex-direction: column; overflow-y: auto; }
+  .cb__preview {
+    width: 100%;
+    border-top: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+    order: 3;
+  }
+  .cb__nav { width: 180px; }
+}
+@media (max-width: 768px) {
+  .cb__body { flex-direction: column; }
+  .cb__nav {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+  }
+}
 .cb-widget {
   width: 320px;
   background: rgb(var(--v-theme-surface));

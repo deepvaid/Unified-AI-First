@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useThemeCodeStore } from '@/stores/useThemeCode'
@@ -97,13 +99,38 @@ function onEditorKeydown(e: KeyboardEvent) {
   })
 }
 
-// ── Save ───────────────────────────────────────────────────────────────────
+// ── Save + leave guard ─────────────────────────────────────────────────────
+const isDirty = computed(() => codeStore.anyDirty)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave theme code editor?',
+  message: 'You have unsaved code changes. Leaving now will discard them.',
+  beforeUnload: true,
+})
+
 const snack = ref(false)
 function saveAll() {
   if (!codeStore.anyDirty) return
   codeStore.saveAll()
+  allowNextLeave()
   snack.value = true
 }
+
+// Cmd/Ctrl+S saves (and always suppresses the browser save dialog).
+function onGlobalKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault()
+    saveAll()
+  }
+}
+onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
 
 // Switching channel reuses this component — reset the open tabs so one theme's
 // session never leaks into another's.
@@ -317,6 +344,15 @@ watch(channelId, () => {
         </div>
       </div>
     </div>
+
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
+    />
 
     <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
       <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Theme code saved</div>
