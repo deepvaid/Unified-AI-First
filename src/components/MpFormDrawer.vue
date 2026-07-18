@@ -144,6 +144,14 @@ function onKeydown(e: KeyboardEvent) {
   transition-timing-function: var(--ease);
 }
 
+/* Closed state: Vuetify slides the drawer out by exactly its own width
+   (inline translateX), but margin-right keeps the box 12px inside the
+   viewport — leaving a 12px sliver of the rounded shell visible at the
+   right edge. Push it past the margin and the shadow bleed. */
+.mp-form-drawer.v-navigation-drawer:not(.v-navigation-drawer--active) {
+  transform: translateX(calc(100% + 32px)) !important;
+}
+
 /* Clip the panel (and its scrolling body) to the rounded shell. */
 .mp-form-drawer :deep(.v-navigation-drawer__content) {
   border-radius: inherit;

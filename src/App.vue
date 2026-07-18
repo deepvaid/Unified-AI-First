@@ -282,6 +282,13 @@ const copilotDrawerWidth = computed(() => {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Closed state: Vuetify's inline translateX misses the 12px margin-right
+   (and the shadow), leaving a sliver of the panel visible at the right
+   edge. Push it fully off-screen. */
+.copilot-drawer.v-navigation-drawer:not(.v-navigation-drawer--active) {
+  transform: translateX(calc(100% + 32px)) !important;
+}
+
 .copilot-drawer .v-navigation-drawer__content {
   display: flex;
   flex-direction: column;
