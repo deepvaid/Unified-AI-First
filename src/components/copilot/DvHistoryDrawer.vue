@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 import { useDaVinciHistory, type DaVinciHistoryItem, type GroupedHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -39,12 +39,54 @@ function handleDelete(id: string, event: MouseEvent) {
 
 const search = ref('')
 
+// Only the overlay mode is a modal panel — the rail is a persistent, always-visible
+// sidebar and never gets dialog semantics (see the aria-hidden binding below).
+const isDialog = computed(() => (props.mode ?? 'overlay') !== 'rail')
+
+const titleId = useId()
+const panel = ref<HTMLElement | null>(null)
+let lastFocused: HTMLElement | null = null
+
+// Move focus into the panel on open, restore it to the previously focused element on close.
 watch(
   () => props.open,
-  (isOpen) => {
+  async (isOpen) => {
     if (!isOpen) search.value = ''
+    if (!isDialog.value) return
+    if (isOpen) {
+      lastFocused = document.activeElement as HTMLElement | null
+      await nextTick()
+      panel.value?.focus()
+    } else if (lastFocused) {
+      lastFocused.focus?.()
+      lastFocused = null
+    }
   },
 )
+
+function onKeydown(e: KeyboardEvent) {
+  if (!isDialog.value) return
+  if (e.key === 'Escape') {
+    emit('close')
+    return
+  }
+  if (e.key !== 'Tab' || !panel.value) return
+  const focusable = Array.from(
+    panel.value.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter(el => el.offsetParent !== null)
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  if (!first || !last) return
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
 
 function filterGroup(items: DaVinciHistoryItem[]): DaVinciHistoryItem[] {
   const q = search.value.trim().toLowerCase()
@@ -74,12 +116,18 @@ function buildSub(item: DaVinciHistoryItem): string {
 
 <template>
   <div
+    ref="panel"
     class="dv-history"
     :class="[{ 'is-open': open }, `dv-history--${mode ?? 'overlay'}`]"
     :aria-hidden="mode !== 'rail' && !open"
+    :role="isDialog && open ? 'dialog' : undefined"
+    :aria-modal="isDialog && open ? 'true' : undefined"
+    :aria-labelledby="isDialog ? titleId : undefined"
+    :tabindex="isDialog ? -1 : undefined"
+    @keydown="onKeydown"
   >
     <header class="dv-history__head">
-      <span class="dv-eyebrow">Conversation history</span>
+      <span :id="titleId" class="dv-eyebrow">Conversation history</span>
       <v-btn v-if="mode !== 'rail'" icon size="32" variant="text" aria-label="Close history" @click="emit('close')">
         <v-icon size="16">x</v-icon>
       </v-btn>
