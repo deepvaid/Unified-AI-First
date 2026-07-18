@@ -8,8 +8,7 @@ import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
-import CreateDashboardDialog from '@/components/dashboards/CreateDashboardDialog.vue'
-import EditDashboardDialog from '@/components/dashboards/EditDashboardDialog.vue'
+import DashboardFormDialog from '@/components/dashboards/DashboardFormDialog.vue'
 import { accentToVuetifyColor, relativeTime } from '@/components/dashboards/dashboardOptions'
 import type { Dashboard } from '@/stores/dashboards/types'
 import { useAccountsStore } from '@/stores/useAccounts'
@@ -446,13 +445,13 @@ function handleDashboardCreated(dashboardId: string) {
       </v-btn>
     </MpFloatingBulkBar>
 
-    <CreateDashboardDialog
+    <DashboardFormDialog
       v-model="createDialogOpen"
       :account-id="accountId"
-      @created="handleDashboardCreated"
+      @saved="handleDashboardCreated"
     />
 
-    <EditDashboardDialog
+    <DashboardFormDialog
       v-model="editDialogOpen"
       :account-id="accountId"
       :dashboard="editingDashboard"

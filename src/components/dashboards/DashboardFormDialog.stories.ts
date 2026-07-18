@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { Dashboard } from '@/stores/dashboards/types'
-import EditDashboardDialog from './EditDashboardDialog.vue'
+import DashboardFormDialog from './DashboardFormDialog.vue'
 
 function makeDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
   return {
@@ -23,46 +23,54 @@ function makeDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
 }
 
 const meta = {
-  title: 'Dashboards/EditDashboardDialog',
-  component: EditDashboardDialog,
+  title: 'Dashboards/DashboardFormDialog',
+  component: DashboardFormDialog,
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component:
-          'Modal for editing dashboard details — name and description. The header avatar shows the dashboard identity (read-only); saving persists via the dashboards store and emits `saved`.',
+          'Create/edit modal for custom dashboards. With no `dashboard` prop it creates a new dashboard; with a `dashboard` it edits that one. Validates name (required, ≤60 chars) and description (≤240 chars), persists via the dashboards store, and emits `saved` with the dashboard id.',
       },
     },
   },
   args: {
     accountId: '2000290',
-    dashboard: makeDashboard(),
+    dashboard: null,
   },
   argTypes: {
-    accountId: { control: 'text' },
-    dashboard: { control: 'object' },
+    accountId: { control: 'text', description: 'Account the dashboard belongs to' },
+    dashboard: { control: 'object', description: 'Dashboard to edit; omit or null for create mode' },
   },
   render: (args) => ({
-    components: { EditDashboardDialog },
+    components: { DashboardFormDialog },
     setup() {
       const open = ref(true)
-      return { args, open }
+      const savedId = ref('')
+      return { args, open, savedId }
     },
     template: `
       <section style="min-height:640px;background:rgb(var(--v-theme-background));padding:24px;">
-        <v-btn variant="outlined" prepend-icon="pencil" @click="open = true">Edit dashboard</v-btn>
-        <EditDashboardDialog v-bind="args" v-model="open" />
+        <v-btn color="primary" prepend-icon="plus" @click="open = true">Open dialog</v-btn>
+        <div v-if="savedId" class="text-body-2 text-medium-emphasis mt-3">Saved dashboard: {{ savedId }}</div>
+        <DashboardFormDialog v-bind="args" v-model="open" @saved="savedId = $event" />
       </section>
     `,
   }),
-} satisfies Meta<typeof EditDashboardDialog>
+} satisfies Meta<typeof DashboardFormDialog>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+export const Create: Story = {}
 
-export const LongContent: Story = {
+export const Edit: Story = {
+  args: {
+    dashboard: makeDashboard(),
+  },
+}
+
+export const EditLongContent: Story = {
   args: {
     dashboard: makeDashboard({
       id: '2000290-holiday',

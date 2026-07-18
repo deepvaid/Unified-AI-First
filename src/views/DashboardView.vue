@@ -4,8 +4,7 @@ import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import DashboardGrid from '@/components/dashboards/DashboardGrid.vue'
 import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
 import WidgetWizardDrawer from '@/components/dashboards/WidgetWizardDrawer.vue'
-import CreateDashboardDialog from '@/components/dashboards/CreateDashboardDialog.vue'
-import EditDashboardDialog from '@/components/dashboards/EditDashboardDialog.vue'
+import DashboardFormDialog from '@/components/dashboards/DashboardFormDialog.vue'
 import { accentToVuetifyColor } from '@/components/dashboards/dashboardOptions'
 import type { WidgetSize } from '@/components/dashboards/widgetSizePresets'
 import type {
@@ -714,13 +713,13 @@ function toggleFavoriteActive() {
       :initial-draft="activeWidgetDraft"
     />
 
-    <CreateDashboardDialog
+    <DashboardFormDialog
       v-model="createDashboardOpen"
       :account-id="accountId"
-      @created="handleDashboardCreated"
+      @saved="handleDashboardCreated"
     />
 
-    <EditDashboardDialog
+    <DashboardFormDialog
       v-model="editDashboardOpen"
       :account-id="accountId"
       :dashboard="editDashboardTarget"
