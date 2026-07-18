@@ -12,19 +12,24 @@ one glob, `../src/**/*.stories.@(ts|tsx)` (`.storybook/main.ts`). There is no se
 contributing stories: `packages/marobase-ui` (the `@marobase/ui` library) was deleted; its
 foundation token CSS was relocated to `src/styles/mb-foundation.tokens.css`.
 
-### `src/` — 330 story exports across 82 files
+**Render parity:** Storybook loads the app's full stylesheet set via `src/styles/app-styles.ts`,
+the ordered manifest imported by both `src/main.ts` and `.storybook/preview.ts`. Components
+render identically in stories and in the app. Add new global stylesheets to the manifest —
+never directly to `main.ts` or `preview.ts`.
+
+### `src/` — 339 story exports across 84 files
 
 | Group | Files | Stories | Contents |
 |-------|-------|---------|----------|
 | Introduction | 1 | 1 | Overview page |
-| Foundations | 5 | 15 | Colors · Typography · Spacing · Radius & Shadows · Icons — all rendered from `design-tokens/generated/tokens.ts` |
+| Foundations | 6 | 20 | Colors · Typography · Spacing · Radius & Shadows · Icons — all rendered from `design-tokens/generated/tokens.ts` — plus Buttons (VBtn as styled by app defaults + global.scss) |
 | Layout | 5 | 23 | AppBar, AppSidebar, MpBuilderShell, MpPageHeader, MpSectionHeader |
 | Navigation | 3 | 13 | MpFilterTabs, MpSectionRail (argTypes/autodocs added), MpWizardSteps |
 | Forms | 5 | 24 | Form Fields gallery, MpManageFoldersDrawer, MpMoveToFolderDialog, MpOptionCard, MpStatusToggle (incl. DisabledInteraction state) |
 | Data Display | 7 | 56 | MpDataTableToolbar, MpDateRangeSelect (new), MpFolderSelect, MpKpiCard, MpSourceCloudChip, MpStatusChip, MpUsageMeter |
 | Feedback | 5 | 21 | MpEmptyState, MpErrorState, MpFloatingBulkBar, MpIllustration, MpTableSkeleton |
 | Overlays | 4 | 14 | MpBuilderPreviewDialog, MpConfirmDialog, MpFormDrawer (incl. ValidationErrors, Submitting states), MpRowActionsMenu |
-| Patterns | 1 | 3 | ModuleLandingPage (moved here from the old "Design System" group) |
+| Patterns | 2 | 7 | ModuleLandingPage (moved here from the old "Design System" group) · Data Table (canonical list-view composition: MpFilterTabs → MpDataTableToolbar → v-data-table → MpEmptyState → MpFloatingBulkBar) |
 | AI | 1 | 3 | MpDaVinciBot (app surface, tier P1) |
 | Copilot (+`/Voice`) | 20 | 70 | 13 Dv* cards/dialogs + 7 voice components |
 | Dashboards (+`/Widgets`, `/Wizard`) | 13 | 39 | DashboardFormDialog (merged from CreateDashboardDialog + EditDashboardDialog), DashboardGrid, DashboardSetupGuide, DashboardWidgetActionMenu, DashboardWidgetCard, WidgetWizardDrawer, 5 widget renderers, 2 wizard steps |
@@ -34,7 +39,7 @@ foundation token CSS was relocated to `src/styles/mb-foundation.tokens.css`.
 | Sales Channels | 4 | 16 | AddSectionDialog, MenuPreviewCard, StorefrontPreview, ThemeDaVinciPanel |
 | Settings | 3 | 8 | SettingsPlaceholder, SettingsSection, SettingsSidebar |
 
-**Build total: 330 story exports across 82 files.** No Archive/Legacy Base section and no
+**Build total: 339 story exports across 84 files.** No Archive/Legacy Base section and no
 generated Visual Parity stories remain — both were deleted in the Storybook cleanup, along
 with `scripts/visual/` (the orphaned parity tooling that generated them) and
 `@storybook/addon-themes` (declared but unused).

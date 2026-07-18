@@ -9,6 +9,16 @@ The Storybook previously merged two competing component systems into one sidebar
 
 The design system of record is **Mp\*** (`src/components/`), documented in `CLAUDE.md` and `docs/design-system/`. Tokens live in `src/design-tokens/tokens.json` (`npm run tokens:build`).
 
+## Render parity with the design sandbox
+
+A follow-up audit found Storybook was loading only 6 of the app's 15 stylesheets — form fields, the sidebar/app-bar shell skins, source-cloud chip colors, and voice-orb/retail-widget styling all rendered as raw Vuetify in stories while the docs described the app look. Fixed by **`src/styles/app-styles.ts`**: a single ordered stylesheet manifest imported by both `src/main.ts` and `.storybook/preview.ts`. Storybook now renders identically to the app, and any stylesheet added to the manifest reaches both automatically — never add global CSS imports directly to `main.ts` or `preview.ts` again.
+
+Verified in-browser after the fix: form fields show the app chrome (10px radius, surface tint, focus ring, working `settings-grid` layout), AppSidebar/AppBar stories render the real shell skins, and MpSourceCloudChip shows per-cloud colors.
+
+Two pattern galleries deleted with the archive were rebuilt sandbox-faithful:
+- **`Foundations/Buttons`** (`src/stories/Foundation/Buttons.stories.ts`) — VBtn exactly as the app styles it (flat default, no text-transform, Lucide icons), with the CTA/secondary/tertiary/destructive hierarchy.
+- **`Patterns/Data Table`** (`src/stories/DataTablePattern.stories.ts`) — the full canonical list-view composition (MpFilterTabs → card → MpDataTableToolbar → v-data-table with MpStatusChip + MpRowActionsMenu → MpEmptyState → MpFloatingBulkBar), cribbed from `SalesOrders.vue`, with Default/Empty/Loading/WithSelection states. This is the reference to copy when building a new list view.
+
 ## Removed
 
 | Item | Scale | Why safe |
