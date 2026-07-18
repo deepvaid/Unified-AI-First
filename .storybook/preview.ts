@@ -110,12 +110,10 @@ const preview: Preview = {
       setup() {
         const theme = normalizeTheme(String(context.globals.theme ?? 'light'))
         const vuetifyTheme = theme === 'dark' ? 'maropostDark' : 'maropostLight'
-        const isVisualParity = Boolean((context.parameters as { visualParity?: boolean }).visualParity)
 
         syncDocumentTheme(theme)
 
         return {
-          isVisualParity,
           theme,
           vuetifyTheme,
         }
@@ -129,14 +127,7 @@ const preview: Preview = {
         >
           <v-app>
             <v-theme-provider :theme="vuetifyTheme">
-              <div v-if="isVisualParity" class="mp-visual-shell">
-                <div class="mp-visual-stage">
-                  <div class="mp-visual-stage__content">
-                    <story />
-                  </div>
-                </div>
-              </div>
-              <div v-else class="pa-6 mp-story-canvas">
+              <div class="pa-6 mp-story-canvas">
                 <story />
               </div>
             </v-theme-provider>
@@ -161,7 +152,6 @@ const preview: Preview = {
           'Feedback',
           'Patterns',
           '*',
-          'Archive',
         ],
       },
     },
@@ -174,20 +164,6 @@ if (typeof document !== 'undefined' && !document.getElementById('mp-storybook-pr
   const style = document.createElement('style')
   style.id = 'mp-storybook-preview-style'
   style.textContent = `
-    :root {
-      --mp-visual-stage-bg: #f7f3ec;
-      --mp-visual-stage-border: #e6dfd1;
-      --mp-visual-stage-text: #1a1814;
-    }
-
-    html[data-theme='dark'],
-    html.theme-dark,
-    html.v-theme--dark {
-      --mp-visual-stage-bg: #111a27;
-      --mp-visual-stage-border: #273448;
-      --mp-visual-stage-text: #edf3fb;
-    }
-
     .mp-storybook-root,
     .mp-storybook-root .v-application,
     .mp-storybook-root .v-application__wrap {
@@ -197,48 +173,6 @@ if (typeof document !== 'undefined' && !document.getElementById('mp-storybook-pr
 
     .mp-storybook-root .v-application {
       background: transparent;
-    }
-
-    .mp-visual-shell {
-      display: grid;
-      min-height: 100vh;
-      place-items: center;
-      padding: 24px;
-      box-sizing: border-box;
-      color: var(--mp-visual-stage-text);
-    }
-
-    .mp-visual-stage {
-      width: 960px;
-      height: 540px;
-      box-sizing: border-box;
-      overflow: hidden;
-      display: grid;
-      place-items: center;
-      background: var(--mp-visual-stage-bg);
-      border: 1px solid var(--mp-visual-stage-border);
-      color: var(--mp-visual-stage-text);
-    }
-
-    .mp-visual-stage__content {
-      width: 100%;
-      height: 100%;
-      min-width: 0;
-      min-height: 0;
-      overflow: hidden;
-      display: grid;
-      place-items: center;
-      box-sizing: border-box;
-      contain: strict;
-    }
-
-    .mp-visual-stage,
-    .mp-visual-stage *,
-    .mp-visual-stage *::before,
-    .mp-visual-stage *::after {
-      animation: none !important;
-      transition: none !important;
-      caret-color: transparent !important;
     }
   `
   document.head.appendChild(style)
