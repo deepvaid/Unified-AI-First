@@ -6,6 +6,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,7 +24,6 @@ const steps = ['Add Product', 'Kit Setup', 'Settings']
 const step = ref(1)
 const maxStep = ref(1)
 const submitted = ref(false)
-const confirmCancel = ref(false)
 
 // ── Step 1 — Add Product ────────────────────────────────────────────────
 const title = ref('')
@@ -77,6 +77,24 @@ const buildableUnits = computed(() =>
     ? Math.min(...components.value.map(c => Math.floor(c.inStock / Math.max(1, c.qty))))
     : 0,
 )
+
+// ── Unsaved-changes guard (replaces the old always-on Cancel confirm) ────
+const isDirty = computed(() =>
+  title.value.trim() !== '' || sku.value.trim() !== '' || subtitle.value.trim() !== ''
+  || url.value.trim() !== '' || description.value.trim() !== '' || components.value.length > 0,
+)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Discard this kit?',
+  message: "Your changes won't be saved. This can't be undone.",
+  confirmLabel: 'Discard',
+})
 
 const kitHeaders = [
   { title: 'Name', key: 'name' },
@@ -139,12 +157,13 @@ function save(publishStatus: PublishStatus) {
     },
   }
   store.createProduct(input)
+  allowNextLeave()
   router.push({ ...productsRoute.value, query: { flash: publishStatus === 'Draft' ? 'kit-draft' : 'kit-published' } })
 }
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="mp-frame-fill d-flex flex-column">
     <div class="kw-head px-8 pt-6 pb-4 bg-surface border-b">
       <MpPageHeader
         title="New Kit"
@@ -152,7 +171,7 @@ function save(publishStatus: PublishStatus) {
         :back-to="productsRoute"
       >
         <template #actions>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="confirmCancel = true">Cancel</v-btn>
+          <v-btn variant="text" class="text-none text-medium-emphasis" @click="router.push(productsRoute)">Cancel</v-btn>
         </template>
         <template #tabs>
           <MpWizardSteps :steps="steps" :current="step" clickable :max-step="maxStep" class="mt-3" @select="goStep" />
@@ -307,7 +326,7 @@ function save(publishStatus: PublishStatus) {
 
     <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
       <div class="d-flex align-center gap-2">
-        <v-btn variant="text" class="text-none" @click="confirmCancel = true">Cancel</v-btn>
+        <v-btn variant="text" class="text-none" @click="router.push(productsRoute)">Cancel</v-btn>
         <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
       </div>
       <div class="d-flex align-center gap-2">
@@ -318,12 +337,12 @@ function save(publishStatus: PublishStatus) {
     </div>
 
     <MpConfirmDialog
-      v-model="confirmCancel"
-      title="Discard this kit?"
-      message="Your changes won't be saved. This can't be undone."
-      confirm-label="Discard"
+      v-model="confirmLeave"
       danger
-      @confirm="router.push(productsRoute)"
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
     />
   </div>
 </template>

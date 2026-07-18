@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const props = withDefaults(defineProps<{ source?: 'csv' | 'ftp' }>(), { source: 'csv' })
 
@@ -21,7 +22,6 @@ const steps = computed(() => [isFtp.value ? 'Source' : 'Upload', 'Mapping', 'Upd
 
 const step = ref(1)
 const maxStep = ref(1)
-const confirmCancel = ref(false)
 
 // ── Step 1 — Upload / Source ────────────────────────────────────────────
 const delimiter = ref('Comma (,)')
@@ -56,13 +56,31 @@ function nextStep() {
 function prevStep() {
   if (step.value > 1) step.value -= 1
 }
+// ── Unsaved-changes guard (replaces the old always-on Cancel confirm) ────
+const isDirty = computed(() =>
+  step.value > 1 || ftpServer.value.trim() !== '' || ftpPath.value.trim() !== '' || ftpFile.value.trim() !== '',
+)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Cancel this import?',
+  message: "Your import setup won't be saved.",
+  confirmLabel: 'Cancel Import',
+})
+
 function finishImport() {
+  allowNextLeave()
   router.push({ ...productsRoute.value, query: { flash: 'import-complete' } })
 }
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="mp-frame-fill d-flex flex-column">
     <div class="iw-head px-8 pt-6 pb-4 bg-surface border-b">
       <MpPageHeader
         :title="isFtp ? 'Import Products — FTP' : 'Import Products — CSV'"
@@ -70,7 +88,7 @@ function finishImport() {
         :back-to="productsRoute"
       >
         <template #actions>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="confirmCancel = true">Cancel</v-btn>
+          <v-btn variant="text" class="text-none text-medium-emphasis" @click="router.push(productsRoute)">Cancel</v-btn>
         </template>
         <template #tabs>
           <MpWizardSteps :steps="steps" :current="step" clickable :max-step="maxStep" class="mt-3" @select="goStep" />
@@ -181,7 +199,7 @@ function finishImport() {
 
     <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
       <div class="d-flex align-center gap-2">
-        <v-btn variant="text" class="text-none" @click="confirmCancel = true">Cancel</v-btn>
+        <v-btn variant="text" class="text-none" @click="router.push(productsRoute)">Cancel</v-btn>
         <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
       </div>
       <div class="d-flex align-center gap-2">
@@ -191,12 +209,12 @@ function finishImport() {
     </div>
 
     <MpConfirmDialog
-      v-model="confirmCancel"
-      title="Cancel this import?"
-      message="Your import setup won't be saved."
-      confirm-label="Cancel Import"
+      v-model="confirmLeave"
       danger
-      @confirm="router.push(productsRoute)"
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
     />
   </div>
 </template>

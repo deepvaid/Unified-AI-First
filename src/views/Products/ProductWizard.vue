@@ -297,7 +297,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="mp-frame-fill d-flex flex-column">
     <!-- Header + step indicator -->
     <div class="pw-head px-8 pt-6 pb-4 bg-surface border-b">
       <MpPageHeader
