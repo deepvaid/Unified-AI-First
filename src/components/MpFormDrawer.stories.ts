@@ -21,11 +21,14 @@ const meta = {
       description: {
         component: `
 ### Overview
-\`MpFormDrawer\` is the right-side drawer used for every create/edit form (default 480px). It owns
-the header (title, subtitle, close button), a scrollable body (default slot), and an optional
-pinned footer (\`#footer\` slot) for Cancel/Save actions. It implements dialog semantics itself:
-focus moves into the panel on open, Tab is trapped inside, Escape closes, and focus returns to
-the trigger on close.
+\`MpFormDrawer\` is the right-side drawer used for every create/edit form (default 480px). It's a
+floating rounded shell: \`--mp-component-dialog-radius-default\` (16px) on all corners, a 1px
+\`--mp-border-subtle\` border, and a soft \`--mp-shadow-md\`, inset 12px from the top/right/bottom
+viewport edges (\`height: auto\` overrides Vuetify's inline top/bottom positioning). Content is
+clipped to the radius, so scrolled body content never squares off the corners. It owns the header
+(title, subtitle, close button), a scrollable body (default slot), and an optional pinned footer
+(\`#footer\` slot) for Cancel/Save actions. It implements dialog semantics itself: focus moves into
+the panel on open, Tab is trapped inside, Escape closes, and focus returns to the trigger on close.
 
 **Use when:** creating or editing an entity from a list/detail page — the platform never uses
 \`v-dialog\` for forms.
@@ -60,8 +63,26 @@ the trigger on close.
 ### 💡 Best Practices
 - **Long forms:** group fields with subheadings in the body — the body is the only scroll
   container, so the header/footer always stay visible.
-- **Width:** \`width\` is a fixed pixel value. It is not responsive — on small viewports the
-  default 480 exceeds the screen (see the Mobile375 story).
+- **Width:** \`width\` is a fixed pixel value on larger viewports; widen only for two-column forms
+  (see \`CustomWidth640\`). On mobile it clamps automatically — see Mobile behavior below.
+
+### 📱 Mobile behavior
+- **≤640px:** a \`@media (max-width: 640px)\` breakpoint switches the panel to a full-bleed sheet —
+  \`width\` is clamped to \`100vw\` regardless of the prop value, and the 12px gutters/rounded corners
+  drop out so the panel fills the viewport edge-to-edge. This replaces the old fixed-width
+  behavior where a 480px panel would overflow a 375px screen (see \`Mobile375\`).
+
+### Filter drawers
+The Filters drawer pattern (\`MpDataTableToolbar\`'s filter panel, see \`FilterDrawer\`) is a
+short-body variant of this component with two conventions:
+- **Subtitle:** default to "Changes apply immediately" so users know filters aren't staged.
+- **Selects:** every filter \`v-select\` is \`outlined\`, with \`placeholder="All"\` and
+  \`persistent-placeholder\` — this keeps the placeholder visible even when a value is cleared, so
+  a null filter reads as "All" rather than looking like an empty/broken field. Pair with
+  \`clearable\` and \`hide-details\`.
+- **Footer:** \`<div class="d-flex align-center w-100">\` containing \`Clear all\` (\`variant="text"\`),
+  a \`v-spacer\`, and \`Done\` (\`variant="flat" color="primary"\`) — full width so the two actions sit
+  at opposite ends of the footer instead of both right-aligned.
 
 ### A11y
 - **Provides:** \`role="dialog"\` + \`aria-modal="true"\` with \`aria-labelledby\` wired to the
@@ -72,9 +93,8 @@ the trigger on close.
   element mounted while the drawer is open so focus can return to it.
 - **Provides (Phase 4):** the focus trap skips elements hidden inside collapsed sections
   (\`offsetParent\` check), so Tab cycles only through visible controls.
-- **Gaps:** \`width\` is not clamped to the viewport — at 375px the 480px panel overflows the
-  screen edge instead of going full-width (backlog: clamping interacts with the drawer's
-  translate-based open/close animation, so it needs its own verified change).
+- **Provides (mobile):** \`width\` is now clamped to the viewport at ≤640px — the panel goes
+  full-bleed instead of overflowing the screen edge (previously a gap at 375px; see \`Mobile375\`).
         `,
       },
     },
@@ -82,13 +102,13 @@ the trigger on close.
   args: {
     title: 'Edit widget',
     subtitle: 'Revenue Share (Top 10)',
-    width: 440,
+    width: 480,
   },
   argTypes: {
     modelValue: { control: 'boolean', description: 'v-model — drawer visibility.' },
     title: { control: 'text', description: 'Required header title; also the dialog\'s accessible name (aria-labelledby).' },
     subtitle: { control: 'text', description: 'Optional supporting line under the title.' },
-    width: { control: { type: 'number', min: 320, max: 800, step: 40 }, description: 'Panel width in px (default 480). Fixed — not viewport-clamped.' },
+    width: { control: { type: 'number', min: 320, max: 800, step: 40 }, description: 'Panel width in px (default 480). Clamped to 100vw full-bleed at ≤640px viewports.' },
     default: { control: false, description: 'Slot — form content. This region is the only scroll container.', table: { category: 'slots' } },
     footer: { control: false, description: 'Slot — pinned action row (Cancel + primary action, right-aligned).', table: { category: 'slots' } },
   },
@@ -139,7 +159,7 @@ export const DataSourceForm: Story = {
   args: {
     title: 'New data source',
     subtitle: 'Connect a workspace data source',
-    width: 460,
+    width: 480,
   },
   render: (args) => ({
     components: { MpFormDrawer },
@@ -308,7 +328,7 @@ export const Submitting: Story = {
   args: {
     title: 'New data source',
     subtitle: 'Connect a workspace data source',
-    width: 460,
+    width: 480,
   },
   render: (args) => ({
     components: { MpFormDrawer },
@@ -337,9 +357,77 @@ export const Submitting: Story = {
 }
 
 /**
- * The drawer at a 375px viewport (canvas only — the docs page doesn't resize). The default
- * 480px width exceeds the screen, so the panel covers the full viewport and clips at the left
- * edge — the width-clamping gap flagged in the A11y notes.
+ * The Filters drawer pattern used above data tables (\`MpDataTableToolbar\`): a short body of
+ * outlined selects with \`placeholder="All"\` + \`persistent-placeholder\` so a cleared filter still
+ * reads as "All" rather than an empty field, and a full-width footer with \`Clear all\` on the
+ * left and \`Done\` on the right.
+ */
+export const FilterDrawer: Story = {
+  args: {
+    title: 'Filters',
+    subtitle: 'Changes apply immediately',
+    width: 480,
+  },
+  render: (args) => ({
+    components: { MpFormDrawer },
+    setup() {
+      const open = ref(true)
+      return { args, open }
+    },
+    template: `
+      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
+        <v-btn variant="outlined" prepend-icon="filter" @click="open = true">Filters</v-btn>
+        <MpFormDrawer v-bind="args" v-model="open">
+          <div style="display:grid;gap:14px;">
+            <v-select
+              label="Order status"
+              :items="['Open', 'Pending', 'Completed', 'Cancelled']"
+              placeholder="All"
+              persistent-placeholder
+              clearable
+              hide-details
+              variant="outlined"
+              :model-value="null"
+            />
+            <v-select
+              label="Fulfillment"
+              :items="['Unfulfilled', 'Partial', 'Fulfilled']"
+              placeholder="All"
+              persistent-placeholder
+              clearable
+              hide-details
+              variant="outlined"
+              :model-value="null"
+            />
+            <v-select
+              label="Payment status"
+              :items="['Paid', 'Pending', 'Refunded']"
+              placeholder="All"
+              persistent-placeholder
+              clearable
+              hide-details
+              variant="outlined"
+              :model-value="null"
+            />
+          </div>
+          <template #footer>
+            <div class="d-flex align-center w-100">
+              <v-btn variant="text" @click="open = false">Clear all</v-btn>
+              <v-spacer />
+              <v-btn variant="flat" color="primary" @click="open = false">Done</v-btn>
+            </div>
+          </template>
+        </MpFormDrawer>
+      </section>
+    `,
+  }),
+}
+
+/**
+ * The drawer at a 375px viewport (canvas only — the docs page doesn't resize). The
+ * \`@media (max-width: 640px)\` breakpoint clamps the panel to a full-bleed \`100vw\` sheet — the
+ * 12px gutters and rounded corners drop out so the panel fills the viewport edge-to-edge instead
+ * of the 480px panel overflowing the screen, as it used to before the clamp was added.
  */
 export const Mobile375: Story = {
   args: {
