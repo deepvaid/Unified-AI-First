@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -498,94 +499,87 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="!journey" class="jb-root d-flex align-center justify-center">
+  <div v-if="!journey" class="jb-missing d-flex align-center justify-center">
     <MpEmptyState icon="search-x" :title="`${isData ? 'Data journey' : 'Journey'} not found`"
       :description="`This ${entityLabel} doesn't exist or was deleted.`" actionLabel="Back to the list" actionIcon="arrow-left"
       @action="router.push(listRoute)" />
   </div>
 
-  <div v-else class="jb-root d-flex flex-column">
-    <!-- Toolbar -->
-    <div class="jb-toolbar d-flex align-center justify-space-between px-5 bg-surface">
-      <div class="d-flex align-center gap-3" style="min-width:0;">
-        <v-btn
-          class="jb-palette-toggle"
-          variant="text"
-          icon="panel-left"
-          size="small"
-          :aria-label="paletteOpen ? 'Hide steps panel' : 'Show steps panel'"
-          @click="paletteOpen = !paletteOpen"
-        />
-        <v-tooltip :text="isData ? 'Back to Data Journeys' : 'Back to Journeys'" location="bottom">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" icon="chevron-left" variant="text" size="small"
-              :aria-label="isData ? 'Back to Data Journeys' : 'Back to Journeys'"
-              @click="router.push(listRoute)"></v-btn>
-          </template>
-        </v-tooltip>
-        <button v-if="!editingName" type="button" class="text-truncate jb-name"
-          aria-label="Rename journey" @click="editingName = true; nameInput = journeyName">
-          {{ journeyName }}
-          <v-icon size="13" class="jb-name__pencil ml-1">pencil</v-icon>
-        </button>
-        <v-text-field v-else v-model="nameInput" variant="outlined" density="compact" hide-details autofocus
-          style="width:320px;" aria-label="Journey name"
-          @blur="journeyName = nameInput; editingName = false" @keyup.enter="journeyName = nameInput; editingName = false"></v-text-field>
-        <MpStatusChip :status="journeyStatus" type="general" size="x-small" />
-        <v-chip v-if="isDirty" size="x-small" color="warning" variant="tonal" class="font-weight-bold flex-shrink-0">
-          <v-icon start size="11">circle-dashed</v-icon>Unsaved changes
-        </v-chip>
-        <v-chip v-else size="x-small" variant="text" class="font-weight-medium text-medium-emphasis flex-shrink-0">
-          <v-icon start size="11" color="success">circle-check</v-icon>Saved
-        </v-chip>
-      </div>
-      <div class="d-flex align-center gap-2">
-        <v-tooltip text="Ask Da Vinci to review this journey" location="bottom">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" icon="sparkles" variant="text" size="small" class="jb-davinci"
-              aria-label="Ask Da Vinci to review this journey" @click="askDaVinci"></v-btn>
-          </template>
-        </v-tooltip>
-        <v-btn v-if="issues.length" variant="tonal" size="small" rounded="pill" class="text-none" prepend-icon="triangle-alert"
-          :color="issueErrors.length ? 'error' : 'warning'" @click="issuesOpen = true">
-          {{ issues.length }} {{ issues.length === 1 ? 'issue' : 'issues' }}
-        </v-btn>
-        <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
-        <v-btn variant="outlined" size="small" class="text-none" prepend-icon="save" @click="saveDraftJourney">Save</v-btn>
-        <v-menu v-model="issuesOpen" :close-on-content-click="false" :open-on-click="false" location="bottom end">
-          <template #activator="{ props: menu }">
-            <v-btn v-bind="menu" color="primary" variant="flat" size="small" class="text-none"
-              :prepend-icon="journeyStatus === 'Active' ? 'pause' : 'play'" @click.stop="tryActivate">
-              {{ journeyStatus === 'Active' ? 'Pause' : 'Activate' }}
-            </v-btn>
-          </template>
-          <v-card rounded="lg" border flat width="360" class="py-1">
-            <div class="px-4 py-2 border-b d-flex align-center gap-2">
-              <v-icon size="16" :color="issueErrors.length ? 'error' : 'warning'">triangle-alert</v-icon>
-              <span class="text-body-2 font-weight-bold">
-                {{ issueErrors.length ? 'Fix these before activating' : 'Heads up' }}
-              </span>
-              <v-btn icon="x" variant="text" size="x-small" class="ml-auto" aria-label="Close issues" @click="issuesOpen = false"></v-btn>
-            </div>
-            <v-list density="compact" nav max-height="300" class="overflow-y-auto">
-              <v-list-item v-for="(issue, i) in issues" :key="i" rounded="lg"
-                :disabled="!issue.nodeId" @click="jumpToIssue(issue.nodeId)">
-                <template #prepend>
-                  <v-icon size="15" :color="issue.level === 'error' ? 'error' : 'warning'">
-                    {{ issue.level === 'error' ? 'circle-alert' : 'triangle-alert' }}
-                  </v-icon>
-                </template>
-                <v-list-item-title class="text-caption ml-2" style="white-space: normal;">{{ issue.message }}</v-list-item-title>
-                <template v-if="issue.nodeId" #append>
-                  <v-icon size="13" class="text-disabled">locate</v-icon>
-                </template>
-              </v-list-item>
-            </v-list>
-          </v-card>
-        </v-menu>
-      </div>
-    </div>
+  <MpBuilderShell
+    v-else
+    :back-label="isData ? 'Back to Data Journeys' : 'Back to Journeys'"
+    :title="journeyName"
+    :dirty="isDirty"
+    persistence-mode="explicit"
+    @back="router.push(listRoute)"
+  >
+    <template #title>
+      <v-btn
+        class="jb-palette-toggle"
+        variant="text"
+        icon="panel-left"
+        size="small"
+        :aria-label="paletteOpen ? 'Hide steps panel' : 'Show steps panel'"
+        @click="paletteOpen = !paletteOpen"
+      />
+      <button v-if="!editingName" type="button" class="text-truncate jb-name"
+        aria-label="Rename journey" @click="editingName = true; nameInput = journeyName">
+        {{ journeyName }}
+        <v-icon size="13" class="jb-name__pencil ml-1">pencil</v-icon>
+      </button>
+      <v-text-field v-else v-model="nameInput" variant="outlined" density="compact" hide-details autofocus
+        style="width:320px;" aria-label="Journey name"
+        @blur="journeyName = nameInput; editingName = false" @keyup.enter="journeyName = nameInput; editingName = false"></v-text-field>
+      <MpStatusChip :status="journeyStatus" type="general" size="x-small" />
+    </template>
 
+    <template #actions>
+      <v-tooltip text="Ask Da Vinci to review this journey" location="bottom">
+        <template #activator="{ props }">
+          <v-btn v-bind="props" icon="sparkles" variant="text" size="small" class="jb-davinci"
+            aria-label="Ask Da Vinci to review this journey" @click="askDaVinci"></v-btn>
+        </template>
+      </v-tooltip>
+      <v-btn v-if="issues.length" variant="tonal" size="small" rounded="pill" class="text-none" prepend-icon="triangle-alert"
+        :color="issueErrors.length ? 'error' : 'warning'" @click="issuesOpen = true">
+        {{ issues.length }} {{ issues.length === 1 ? 'issue' : 'issues' }}
+      </v-btn>
+      <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
+      <v-btn variant="outlined" size="small" class="text-none" prepend-icon="save" @click="saveDraftJourney">Save</v-btn>
+      <v-menu v-model="issuesOpen" :close-on-content-click="false" :open-on-click="false" location="bottom end">
+        <template #activator="{ props: menu }">
+          <v-btn v-bind="menu" color="primary" variant="flat" size="small" class="text-none"
+            :prepend-icon="journeyStatus === 'Active' ? 'pause' : 'play'" @click.stop="tryActivate">
+            {{ journeyStatus === 'Active' ? 'Pause' : 'Activate' }}
+          </v-btn>
+        </template>
+        <v-card rounded="lg" border flat width="360" class="py-1">
+          <div class="px-4 py-2 border-b d-flex align-center gap-2">
+            <v-icon size="16" :color="issueErrors.length ? 'error' : 'warning'">triangle-alert</v-icon>
+            <span class="text-body-2 font-weight-bold">
+              {{ issueErrors.length ? 'Fix these before activating' : 'Heads up' }}
+            </span>
+            <v-btn icon="x" variant="text" size="x-small" class="ml-auto" aria-label="Close issues" @click="issuesOpen = false"></v-btn>
+          </div>
+          <v-list density="compact" nav max-height="300" class="overflow-y-auto">
+            <v-list-item v-for="(issue, i) in issues" :key="i" rounded="lg"
+              :disabled="!issue.nodeId" @click="jumpToIssue(issue.nodeId)">
+              <template #prepend>
+                <v-icon size="15" :color="issue.level === 'error' ? 'error' : 'warning'">
+                  {{ issue.level === 'error' ? 'circle-alert' : 'triangle-alert' }}
+                </v-icon>
+              </template>
+              <v-list-item-title class="text-caption ml-2" style="white-space: normal;">{{ issue.message }}</v-list-item-title>
+              <template v-if="issue.nodeId" #append>
+                <v-icon size="13" class="text-disabled">locate</v-icon>
+              </template>
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </v-menu>
+    </template>
+
+    <div class="d-flex flex-column h-100">
     <!-- Detached steps tray -->
     <div v-if="detachedNodes.length" class="jb-detached d-flex align-center flex-wrap gap-2 px-5 py-2 border-b bg-surface flex-shrink-0">
       <v-icon size="16" class="text-medium-emphasis">unlink</v-icon>
@@ -599,7 +593,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Body -->
-    <div class="d-flex flex-grow-1" style="overflow:hidden;">
+    <div class="jb-body d-flex flex-grow-1" style="overflow:hidden; min-height:0;">
       <!-- Palette -->
       <div
         v-if="paletteOpen && isNarrow"
@@ -767,6 +761,7 @@ onBeforeUnmount(() => {
           </div>
       </aside>
     </div>
+    </div>
 
     <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
       <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ saveMessage }}</div>
@@ -788,15 +783,12 @@ onBeforeUnmount(() => {
       :confirm-label="leaveConfirmLabel"
       @confirm="discardAndLeave"
     />
-  </div>
+  </MpBuilderShell>
 </template>
 
 <style scoped>
-.jb-root { height: 100vh; overflow: hidden; }
-.jb-toolbar {
-  height: 56px; flex-shrink: 0;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-}
+.jb-missing { min-height: 60vh; }
+.jb-body { position: relative; }
 .jb-name {
   cursor: pointer; border-radius: 6px; padding: 2px 6px; margin: -2px -6px;
   font-size: 15px; font-weight: 650; color: rgb(var(--v-theme-on-surface));
@@ -828,14 +820,15 @@ onBeforeUnmount(() => {
 
 /* ── Palette ─────────────────────────────────────────────────────────────── */
 .jb-palette-toggle { display: none; }
+/* Covers the builder body (palette overlay backdrop); .jb-body is the
+   positioned ancestor, so inset 0 stops cleanly under the toolbar/tray. */
 .jb-scrim {
-  position: absolute; inset: 56px 0 0 0; z-index: 4;
+  position: absolute; inset: 0; z-index: 4;
   background: rgba(var(--v-theme-on-surface), 0.32);
 }
 .jb-palette { width: 248px; flex-shrink: 0; overflow: hidden; }
 @media (max-width: 1024px) {
   .jb-palette-toggle { display: inline-flex; }
-  .jb-root > .d-flex.flex-grow-1 { position: relative; }
   .jb-palette {
     position: absolute; top: 0; left: 0; bottom: 0; z-index: 5;
     transform: translateX(-100%);
