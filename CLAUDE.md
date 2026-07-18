@@ -149,6 +149,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **Cards**: Always `flat border rounded="lg"` (no elevation shadows)
 - **Buttons**: `text-transform: none` (already set in Vuetify defaults)
 - **Font**: Inter (already configured globally)
+- **Global stylesheets**: add to `src/styles/app-styles.ts` (the shared manifest), never directly to `src/main.ts` or `.storybook/preview.ts` — this keeps Storybook rendering identical to the app. See `.claude/rules/global-styles.md`
 
 ### Icon Usage
 Icons are rendered via `lucide-vue-next` through a custom Vuetify icon set (`src/plugins/lucideIcons.ts`).
