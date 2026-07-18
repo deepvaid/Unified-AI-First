@@ -9,6 +9,7 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import DashboardFormDialog from '@/components/dashboards/DashboardFormDialog.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { accentToVuetifyColor, relativeTime } from '@/components/dashboards/dashboardOptions'
 import type { Dashboard } from '@/stores/dashboards/types'
 import { useAccountsStore } from '@/stores/useAccounts'
@@ -457,24 +458,15 @@ function handleDashboardCreated(dashboardId: string) {
       :dashboard="editingDashboard"
     />
 
-    <v-dialog :model-value="!!confirmAction" max-width="440" persistent @update:model-value="confirmAction = null">
-      <v-card v-if="confirmAction" rounded="lg">
-        <v-card-title class="pa-5 text-h6 font-weight-bold">{{ confirmAction.title }}</v-card-title>
-        <v-card-text class="pb-2 text-body-2 text-medium-emphasis">{{ confirmAction.body }}</v-card-text>
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn variant="text" class="text-none" @click="confirmAction = null">Cancel</v-btn>
-          <v-btn
-            :color="confirmAction.destructive ? 'error' : 'primary'"
-            variant="flat"
-            class="text-none"
-            @click="performConfirm"
-          >
-            {{ confirmAction.confirmLabel }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <MpConfirmDialog
+      :model-value="!!confirmAction"
+      :title="confirmAction?.title ?? ''"
+      :message="confirmAction?.body ?? ''"
+      :confirm-label="confirmAction?.confirmLabel"
+      :danger="confirmAction?.destructive"
+      @update:model-value="confirmAction = null"
+      @confirm="performConfirm"
+    />
   </div>
 </template>
 

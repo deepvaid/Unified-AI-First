@@ -6,6 +6,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import {
   useMerchandisingStore,
   MERCH_SORT_OPTIONS,
@@ -317,19 +318,15 @@ function performDelete() {
     </MpFloatingBulkBar>
 
     <!-- Delete confirm -->
-    <v-dialog :model-value="confirmDelete" max-width="440" @update:model-value="confirmDelete = false">
-      <v-card rounded="lg">
-        <v-card-title class="pa-5 text-h6 font-weight-bold">Delete this pinning rule?</v-card-title>
-        <v-card-text class="pb-2 text-body-2 text-medium-emphasis">
-          Pinned positions for “{{ collectionName }}” will be removed. Products stay in the collection.
-        </v-card-text>
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn variant="text" class="text-none" @click="confirmDelete = false">Cancel</v-btn>
-          <v-btn color="error" variant="flat" class="text-none" @click="performDelete">Delete rule</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <MpConfirmDialog
+      :model-value="confirmDelete"
+      title="Delete this pinning rule?"
+      :message="`Pinned positions for “${collectionName}” will be removed. Products stay in the collection.`"
+      confirm-label="Delete rule"
+      danger
+      @update:model-value="confirmDelete = false"
+      @confirm="performDelete"
+    />
 
     <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
       <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Pinning rule saved</div>

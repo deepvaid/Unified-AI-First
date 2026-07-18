@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useMerchandisingStore, type MerchRule } from '@/stores/useMerchandising'
 
 const route = useRoute()
@@ -261,17 +262,15 @@ function performConfirm() {
     </v-card>
 
     <!-- Confirm dialog -->
-    <v-dialog :model-value="!!confirmAction" max-width="440" @update:model-value="confirmAction = null">
-      <v-card v-if="confirmAction" rounded="lg">
-        <v-card-title class="pa-5 text-h6 font-weight-bold">{{ confirmAction.title }}</v-card-title>
-        <v-card-text class="pb-2 text-body-2 text-medium-emphasis">{{ confirmAction.body }}</v-card-text>
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn variant="text" class="text-none" @click="confirmAction = null">Cancel</v-btn>
-          <v-btn color="error" variant="flat" class="text-none" @click="performConfirm">Delete</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <MpConfirmDialog
+      :model-value="!!confirmAction"
+      :title="confirmAction?.title ?? ''"
+      :message="confirmAction?.body ?? ''"
+      confirm-label="Delete"
+      danger
+      @update:model-value="confirmAction = null"
+      @confirm="performConfirm"
+    />
   </div>
 </template>
 

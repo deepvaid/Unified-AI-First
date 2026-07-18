@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import {
   useMerchandisingStore,
   ENGINE_TYPE_LABELS,
@@ -246,19 +247,15 @@ function onToggle(engine: RecommendationEngine) {
     </v-card>
 
     <!-- Delete confirm -->
-    <v-dialog :model-value="!!confirmDelete" max-width="440" @update:model-value="confirmDelete = null">
-      <v-card v-if="confirmDelete" rounded="lg">
-        <v-card-title class="pa-5 text-h6 font-weight-bold">Delete “{{ confirmDelete.name }}”?</v-card-title>
-        <v-card-text class="pb-2 text-body-2 text-medium-emphasis">
-          The widget stops rendering on the storefront immediately.
-        </v-card-text>
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn variant="text" class="text-none" @click="confirmDelete = null">Cancel</v-btn>
-          <v-btn color="error" variant="flat" class="text-none" @click="performDelete">Delete engine</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <MpConfirmDialog
+      :model-value="!!confirmDelete"
+      :title="`Delete “${confirmDelete?.name}”?`"
+      message="The widget stops rendering on the storefront immediately."
+      confirm-label="Delete engine"
+      danger
+      @update:model-value="confirmDelete = null"
+      @confirm="performDelete"
+    />
 
     <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
       {{ snackbar.message }}

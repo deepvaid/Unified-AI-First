@@ -5,6 +5,7 @@ import DashboardGrid from '@/components/dashboards/DashboardGrid.vue'
 import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
 import WidgetWizardDrawer from '@/components/dashboards/WidgetWizardDrawer.vue'
 import DashboardFormDialog from '@/components/dashboards/DashboardFormDialog.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { accentToVuetifyColor } from '@/components/dashboards/dashboardOptions'
 import type { WidgetSize } from '@/components/dashboards/widgetSizePresets'
 import type {
@@ -751,24 +752,15 @@ function toggleFavoriteActive() {
       </v-card>
     </v-dialog>
 
-    <v-dialog :model-value="!!confirmAction" max-width="440" persistent @update:model-value="confirmAction = null">
-      <v-card v-if="confirmAction" rounded="lg" color="surface">
-        <v-card-title class="pa-5 text-h6 font-weight-bold">{{ confirmAction.title }}</v-card-title>
-        <v-card-text class="pb-2 text-body-2 text-medium-emphasis">{{ confirmAction.body }}</v-card-text>
-        <v-card-actions class="pa-4">
-          <v-spacer />
-          <v-btn variant="text" class="text-none" @click="confirmAction = null">Cancel</v-btn>
-          <v-btn
-            :color="confirmAction.destructive ? 'error' : 'primary'"
-            variant="flat"
-            class="text-none"
-            @click="performConfirm"
-          >
-            {{ confirmAction.confirmLabel }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <MpConfirmDialog
+      :model-value="!!confirmAction"
+      :title="confirmAction?.title ?? ''"
+      :message="confirmAction?.body ?? ''"
+      :confirm-label="confirmAction?.confirmLabel"
+      :danger="confirmAction?.destructive"
+      @update:model-value="confirmAction = null"
+      @confirm="performConfirm"
+    />
 
     <v-snackbar v-model="dashboardNoticeVisible" timeout="2600" color="surface" location="bottom right">
       {{ dashboardNotice }}
