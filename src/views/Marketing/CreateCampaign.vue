@@ -380,7 +380,7 @@ const enabledOptimizations = computed(() => {
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="mp-frame-fill d-flex flex-column">
     <!-- Type gate -->
     <template v-if="!typeChosen">
       <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">

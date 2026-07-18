@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useContentStore } from '@/stores/useContent'
 import { useSmsStore } from '@/stores/useSms'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,6 +37,28 @@ const contentOptions = computed(() => content.items.map(i => ({ title: i.name, v
 
 const canCreate = computed(() => name.value.trim() !== '' && subject.value.trim() !== '')
 
+// ── Unsaved-changes guard ─────────────────────────────────────────────────────
+function serializeForm() {
+  return JSON.stringify([
+    name.value, subject.value, previewText.value, fromName.value, fromEmail.value,
+    replyTo.value, language.value, contentId.value, showPreviewLink.value,
+    brand.value, tag.value, address.value,
+  ])
+}
+const savedSnapshot = ref(serializeForm())
+const isDirty = computed(() => serializeForm() !== savedSnapshot.value)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave transactional email?',
+  message: 'You have unsaved changes. Leaving now will discard them.',
+})
+
 function create() {
   if (!canCreate.value) return
   const input = {
@@ -56,7 +80,9 @@ function create() {
   } else {
     store.createTransactionalEmail(input)
   }
+  savedSnapshot.value = serializeForm()
   saved.value = true
+  allowNextLeave()
   setTimeout(() => router.push(backTo.value), 700)
 }
 
@@ -78,13 +104,14 @@ onMounted(() => {
   brand.value = existing.brand
   tag.value = existing.tag || null
   address.value = existing.address
+  savedSnapshot.value = serializeForm()
 })
 
 const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Email' : 'New Transactional Email'))
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="mp-frame-fill d-flex flex-column">
     <div class="px-8 pt-6 pb-4 bg-surface page-head">
       <MpPageHeader :title="pageTitle" subtitle="Triggered emails like receipts, confirmations, and password resets" :back-to="backTo" />
     </div>
@@ -232,6 +259,14 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
     <v-snackbar v-model="saved" color="success" timeout="700" location="bottom right">
       {{ editId != null ? 'Transactional email updated' : 'Transactional email created' }}
     </v-snackbar>
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
+    />
   </div>
 </template>
 

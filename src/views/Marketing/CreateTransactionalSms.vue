@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useSmsStore } from '@/stores/useSms'
 
 const route = useRoute()
@@ -56,6 +58,24 @@ function applyTemplate(val: string | null) {
 const messageValid = computed(() => name.value.trim() !== '' && message.value.trim() !== '')
 const canSave = computed(() => messageValid.value && optOutConfirmed.value)
 
+// ── Unsaved-changes guard ─────────────────────────────────────────────────────
+function serializeForm() {
+  return JSON.stringify([name.value, message.value, senderId.value, optOutConfirmed.value])
+}
+const savedSnapshot = ref(serializeForm())
+const isDirty = computed(() => serializeForm() !== savedSnapshot.value)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave transactional SMS?',
+  message: 'You have unsaved changes. Leaving now will discard them.',
+})
+
 function goToCompliance() {
   if (messageValid.value) tab.value = 'compliance'
 }
@@ -75,7 +95,9 @@ function save() {
   } else {
     store.createTransactionalSms(input)
   }
+  savedSnapshot.value = serializeForm()
   saved.value = true
+  allowNextLeave()
   setTimeout(() => router.push(backTo.value), 700)
 }
 
@@ -89,13 +111,14 @@ onMounted(() => {
   message.value = existing.message ?? existing.messagePreview
   senderId.value = existing.senderId
   optOutConfirmed.value = existing.optOutConfirmed ?? false
+  savedSnapshot.value = serializeForm()
 })
 
 const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS' : 'New Transactional SMS'))
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="mp-frame-fill d-flex flex-column">
     <div class="px-8 pt-6 pb-4 bg-surface page-head">
       <MpPageHeader
         :title="pageTitle"
@@ -235,6 +258,14 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS
     <v-snackbar v-model="saved" color="success" timeout="700" location="bottom right">
       {{ editId != null ? 'Transactional SMS updated' : 'Transactional SMS saved' }}
     </v-snackbar>
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
+    />
   </div>
 </template>
 

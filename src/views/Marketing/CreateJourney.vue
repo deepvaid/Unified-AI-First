@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -149,26 +150,20 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="cj-root d-flex flex-column">
-    <!-- Toolbar -->
-    <div class="cj-toolbar d-flex align-center justify-space-between px-5 border-b bg-surface">
-      <div class="d-flex align-center gap-3">
-        <v-tooltip text="Back to Journeys" location="bottom">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" aria-label="Back to Journeys" @click="cancel"></v-btn>
-          </template>
-        </v-tooltip>
-        <div class="font-weight-bold text-body-1">New Journey</div>
-      </div>
-
-      <div class="d-flex align-center gap-3">
-        <MpWizardSteps :steps="wizardSteps" :current="wizardCurrent" />
-        <v-chip v-if="mode === 'ai'" color="primary" variant="tonal" size="small" class="font-weight-bold">
-          <v-icon size="14" class="mr-1">sparkles</v-icon> Build with Da Vinci
-        </v-chip>
-      </div>
-
-      <v-btn variant="text" size="small" class="text-none" @click="cancel">Cancel</v-btn>
+  <div class="mp-frame-fill d-flex flex-column">
+    <!-- Header band — the standard create-flow recipe (see CreateSmsCampaign) -->
+    <div class="cj-head px-8 pt-6 pb-4 bg-surface border-b">
+      <MpPageHeader title="New Journey" :back-to="{ name: 'Journeys', params: { accountId } }">
+        <template #actions>
+          <v-chip v-if="mode === 'ai'" color="primary" variant="tonal" size="small" class="font-weight-bold">
+            <v-icon size="14" class="mr-1">sparkles</v-icon> Build with Da Vinci
+          </v-chip>
+          <v-btn variant="text" class="text-none text-medium-emphasis" @click="cancel">Cancel</v-btn>
+        </template>
+        <template #tabs>
+          <MpWizardSteps :steps="wizardSteps" :current="wizardCurrent" class="mt-3" />
+        </template>
+      </MpPageHeader>
     </div>
 
     <!-- Step 1 — template gallery -->
@@ -398,8 +393,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.cj-root { height: 100vh; overflow: hidden; }
-.cj-toolbar { height: 56px; flex-shrink: 0; }
 .cj-footer { height: 64px; flex-shrink: 0; }
 .cj-content { max-width: 1160px; }
 

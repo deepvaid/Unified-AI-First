@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useSmsStore, type SmsCampaign } from '@/stores/useSms'
 import { usePlgStore } from '@/stores/usePlg'
 
@@ -101,6 +103,21 @@ function buildInput(): Omit<SmsCampaign, 'id' | 'status' | 'sent' | 'delivered' 
   }
 }
 
+// ── Unsaved-changes guard ─────────────────────────────────────────────────────
+const savedSnapshot = ref(JSON.stringify(buildInput()))
+const isDirty = computed(() => JSON.stringify(buildInput()) !== savedSnapshot.value)
+const {
+  confirmLeave,
+  allowNextLeave,
+  discardAndLeave,
+  leaveTitle,
+  leaveMessage,
+  leaveConfirmLabel,
+} = useDirtyLeaveGuard(isDirty, {
+  title: 'Leave SMS campaign?',
+  message: 'You have unsaved changes. Leaving now will discard them.',
+})
+
 function saveProgress(finalize = false) {
   if (!messageValid.value) return
   const input = buildInput()
@@ -109,6 +126,7 @@ function saveProgress(finalize = false) {
   } else {
     store.updateSmsCampaign(draftId.value, input, finalize)
   }
+  savedSnapshot.value = JSON.stringify(buildInput())
 }
 
 function goToStep(target: number) {
@@ -123,12 +141,14 @@ function prevStep() { goToStep(Math.max(step.value - 1, 1)) }
 
 function exitWizard() {
   saveProgress(false)
+  allowNextLeave()
   router.push(backTo.value)
 }
 
 function finalizeCampaign() {
   if (!complianceValid.value) return
   saveProgress(true)
+  allowNextLeave()
   router.push(backTo.value)
 }
 
@@ -148,13 +168,14 @@ onMounted(() => {
   scheduleDate.value = existing.scheduleDate ?? ''
   scheduleTime.value = existing.scheduleTime ?? '09:00'
   maxStepReached.value = 2
+  savedSnapshot.value = JSON.stringify(buildInput())
 })
 
 const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 'New SMS Campaign'))
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="mp-frame-fill d-flex flex-column">
     <template v-if="!hasSmsAccess">
       <div class="cs-head px-8 pt-6 pb-4 bg-surface border-b">
         <MpPageHeader title="New SMS Campaign" :back-to="backTo" />
@@ -296,6 +317,14 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
 
     <v-snackbar v-model="testSent" color="success" timeout="1600" location="bottom right">Test message sent to {{ testPhone }}</v-snackbar>
     </template>
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
+    />
   </div>
 </template>
 
