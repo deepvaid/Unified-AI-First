@@ -5,6 +5,7 @@ import { useChatbotStore } from '@/stores/useChatbot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import type { PreChatFieldType, QuickPromptIntent } from '@/stores/useChatbot'
 import type { SubscriptionKey } from '@/stores/useAccounts'
+import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -314,29 +315,21 @@ function sendChat() {
 </script>
 
 <template>
-  <div class="cb d-flex flex-column">
-    <template v-if="chatbot && cfg">
-      <!-- Top bar -->
-      <div class="cb__bar d-flex align-center justify-space-between px-5 border-b bg-surface">
-        <div class="d-flex align-center gap-3 min-width-0">
-          <v-tooltip text="Back to Chatbots" location="bottom">
-            <template #activator="{ props }">
-              <v-btn v-bind="props" icon="arrow-left" variant="text" size="small" aria-label="Back to Chatbots" @click="goBack" />
-            </template>
-          </v-tooltip>
-          <div class="min-width-0">
-            <div class="font-weight-bold text-body-1 text-truncate">Customize your widget</div>
-            <div class="text-caption text-medium-emphasis text-truncate">{{ chatbot.store }} · appearance &amp; branding</div>
-          </div>
-        </div>
-        <div class="d-flex align-center gap-2">
-          <v-chip v-if="isDirty" size="small" variant="tonal" color="warning" class="font-weight-medium">Unsaved changes</v-chip>
-          <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="eye" @click="focusPreview">Preview Chatbot</v-btn>
-          <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="rocket" @click="publishOpen = true">Publish Chatbot</v-btn>
-        </div>
-      </div>
+  <MpBuilderShell
+    v-if="chatbot && cfg"
+    title="Customize your widget"
+    :subtitle="`${chatbot.store} · appearance & branding`"
+    back-label="Back to Chatbots"
+    :dirty="isDirty"
+    persistence-mode="live"
+    @back="goBack"
+  >
+    <template #actions>
+      <v-btn variant="text" class="text-none text-medium-emphasis" size="small" prepend-icon="eye" @click="focusPreview">Preview Chatbot</v-btn>
+      <v-btn color="primary" variant="flat" size="small" class="text-none" prepend-icon="rocket" @click="publishOpen = true">Publish Chatbot</v-btn>
+    </template>
 
-      <div class="cb__body flex-grow-1 d-flex overflow-hidden">
+      <div class="cb__body d-flex h-100 overflow-hidden">
         <!-- Section nav -->
         <nav class="cb__nav border-r bg-surface py-3 flex-shrink-0" aria-label="Chatbot settings">
           <div v-for="group in NAV_GROUPS" :key="group.title" class="cb__nav-group">
@@ -895,14 +888,10 @@ function sendChat() {
         :confirm-label="leaveConfirmLabel"
         @confirm="discardAndLeave"
       />
-    </template>
-  </div>
+  </MpBuilderShell>
 </template>
 
 <style scoped>
-.cb { height: 100vh; overflow: hidden; }
-.cb__bar { height: 56px; flex-shrink: 0; }
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 
 .cb__nav { width: 220px; display: flex; flex-direction: column; gap: 2px; padding-inline: 10px; }
@@ -1063,6 +1052,9 @@ function sendChat() {
   display: flex;
   flex-direction: column;
 }
+/* #fff on var(--brand) surfaces is deliberate throughout the widget preview:
+   --brand is the merchant-picked widget color (swatch palette), not an app
+   theme surface, so theme tokens don't apply. */
 .cb-widget__head {
   display: flex;
   align-items: center;
@@ -1150,7 +1142,7 @@ function sendChat() {
   top: 5px;
   left: 5px;
   background: rgb(var(--v-theme-error));
-  color: #fff;
+  color: rgb(var(--v-theme-on-error));
   font-size: 0.5rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1240,7 +1232,7 @@ function sendChat() {
 .cb-scenario--on {
   background: rgb(var(--v-theme-primary));
   border-color: rgb(var(--v-theme-primary));
-  color: #fff;
+  color: rgb(var(--v-theme-on-primary));
 }
 
 /* Open-chat input */
