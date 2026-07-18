@@ -67,6 +67,9 @@
 | 4 | Products/Collections.vue | /commerce/2000290/products/collections | standard | pending | | |
 | 5 | Products/Inventory.vue | /commerce/2000290/inventory | standard | pending | | |
 | 6 | Products/Reservations.vue | /commerce/2000290/products/reservations | standard | pending | | |
+| 7 | Products/ProductWizard.vue | /commerce/2000290/products/new · /products/1/edit | builder | pending | | builderShell (2026-07-19): frame-fill; dirty-aware Cancel kept |
+| 8 | Products/KitWizard.vue | /commerce/2000290/products/kits/new | builder | pending | | builderShell (2026-07-19): leave guard replaces always-on Cancel confirm |
+| 9 | Products/ProductImportWizard.vue | /commerce/2000290/products/import/new/csv · /import/new/ftp | builder | pending | | builderShell (2026-07-19): leave guard replaces always-on Cancel confirm |
 
 ## Module 05 — Commerce   [module-status: pending]
 
@@ -77,6 +80,8 @@
 | 3 | Commerce/DraftOrders.vue | /commerce/2000290/orders/drafts | standard | pending | | roadmap #7/#17 touched |
 | 4 | Commerce/Fulfillments.vue | /commerce/2000290/fulfillments | standard | pending | | roadmap #7/#17 touched |
 | 5 | Commerce/Coupons.vue | /commerce/2000290/coupons · /promotions · /custom_gift_cards · /purchasable_gift_cards | standard | pending | | serves 4 routes — spot-check each alias (may branch on route name) |
+| 6 | Commerce/CreateDraftOrder.vue | /commerce/2000290/orders/drafts/new · /drafts/1 | builder | pending | | builderShell (2026-07-19): snapshot dirty guard replaces manual confirmLeave |
+| 7 | Commerce/CreatePromotion.vue | /commerce/2000290/promotions/new · /promotions/1/edit | builder | pending | | builderShell (2026-07-19): snapshot dirty guard replaces always-on Cancel confirm |
 
 ## Module 06 — Merchandising (MerchCloud)   [module-status: pending]
 
@@ -115,6 +120,8 @@
 | 3 | SalesChannels/SalesChannelLocations.vue | /accounts/2000290/sales_channels/pos-store/locations | standard | done | 6c807d1 | ad-hoc redesign: role chips → joined text, row avatars removed, toolbar title dropped |
 | 4 | SalesChannels/SalesChannelLocationDetail.vue | /accounts/2000290/sales_channels/pos-store/locations/loc-bondi | standard | pending | | |
 | 5 | SalesChannels/SalesChannelDetail.vue | /accounts/2000290/sales_channels/pos-store | standard | pending | | bespoke identity header is CORRECT (roadmap #9/#14) — don't "fix" it |
+| 6 | SalesChannels/StoreThemeBuilder.vue | /accounts/2000290/sales_channels/retest-sales-notification/theme | builder | pending | | builderShell (2026-07-19): MpBuilderShell v2, live chip replaces dirty dot, --mp-border-subtle |
+| 7 | SalesChannels/StoreThemeCode.vue | /accounts/2000290/sales_channels/retest-sales-notification/theme/code | builder | pending | | builderShell (2026-07-19): MpBuilderShell v2, duplicate back control removed |
 
 ## Module 09 — Marketing   [module-status: pending]
 
@@ -122,10 +129,10 @@
 |---|-----------|--------|---------|--------|--------|-------|
 | 1 | Marketing/MarketingLanding.vue | /accounts/2000290/marketing | standard | pending | | |
 | 2 | Marketing/ContentLanding.vue | /accounts/2000290/content | standard | pending | | |
-| 3 | Marketing/CreateCampaign.vue | /accounts/2000290/campaigns/new | builder | pending | | fullPage wizard; roadmap #10 reference flow — likely compliant |
+| 3 | Marketing/CreateCampaign.vue | /accounts/2000290/campaigns/new | builder | pending | | builderShell (2026-07-19): system chrome + rounded frame; roadmap #10 reference flow — likely compliant |
 | 4 | Marketing/EmailCampaigns.vue | /accounts/2000290/campaigns | standard | pending | | roadmap #7/#12/#17 touched |
-| 5 | Marketing/JourneyBuilder.vue | /accounts/2000290/journeys/1/builder | builder | pending | | fullPage; empty-canvas exemption (roadmap P1 #5) |
-| 6 | Marketing/FormBuilder.vue | /accounts/2000290/acquisition/forms/create | builder | pending | | fullPage |
+| 5 | Marketing/JourneyBuilder.vue | /accounts/2000290/journeys/1/builder · /data_journeys/1/builder | builder | pending | | builderShell (2026-07-19): MpBuilderShell v2, unified dirty chip; empty-canvas exemption (roadmap P1 #5) |
+| 6 | Marketing/FormBuilder.vue | /accounts/2000290/acquisition/forms/create | builder | pending | | builderShell (2026-07-19): MpBuilderShell v2 + steps slot, dark-safe device mock |
 | 7 | Marketing/TransactionalEmail.vue | /accounts/2000290/sms_campaigns · /transactional_campaigns · /transactional_sms | standard | pending | | serves 3 routes — spot-check aliases |
 | 8 | Marketing/CampaignTags.vue | /accounts/2000290/campaign_tags | standard | pending | | |
 | 9 | Marketing/AcquisitionForms.vue | /accounts/2000290/acquisition · /lead_ads | standard | pending | | serves 2 routes |
@@ -143,12 +150,19 @@
 | 21 | Marketing/CouponBanks.vue | /accounts/2000290/coupon_banks | standard | pending | | |
 | 22 | Marketing/PreferencePages.vue | /accounts/2000290/preference_pages | standard | pending | | |
 | 23 | Marketing/CountdownTimer.vue | /accounts/2000290/live_content_images | standard | pending | | |
+| 24 | Marketing/CreateJourney.vue | /accounts/2000290/journeys/new | builder | pending | | builderShell (2026-07-19): normalized to MpPageHeader band (was bespoke toolbar) |
+| 25 | Marketing/CreateSmsCampaign.vue | /accounts/2000290/sms_campaigns/new | builder | pending | | builderShell (2026-07-19): frame-fill + new leave guard |
+| 26 | Marketing/CreateTransactional.vue | /accounts/2000290/transactional_campaigns/new | builder | pending | | builderShell (2026-07-19): frame-fill + new leave guard |
+| 27 | Marketing/CreateTransactionalSms.vue | /accounts/2000290/transactional_sms/new | builder | pending | | builderShell (2026-07-19): frame-fill + new leave guard |
+| 28 | Marketing/LandingPageEditor.vue | /accounts/2000290/landing_pages/editor/1/edit | builder | pending | | builderShell (2026-07-19): MpBuilderShell v2, toolbar decluttered; autosave — deliberately no leave guard |
+| 29 | Marketing/EmailContentEditor.vue | /accounts/2000290/contents/editor/1 | builder | pending | | builderShell (2026-07-19): shell v2 reference consumer |
 
 ## Module 10 — Service   [module-status: pending]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
 | 1 | Service/Tickets.vue | /accounts/2000290/service · /chatbot | standard | done | 2432296 | serves 2 routes; ad-hoc: multi-inbox (per sales channel), kanban removed per stakeholder, then full agent-inbox redesign (in-pane controls, 3-line rows, props strip, unified composer) |
+| 2 | Service/ChatbotBuilder.vue | /accounts/2000290/chatbot/1 | builder | pending | | builderShell (2026-07-19): MpBuilderShell v2 live chip; widget-preview #fff on merchant brand color is allowlisted |
 
 ## Module 11 — Da Vinci   [module-status: pending]
 

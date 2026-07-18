@@ -28,7 +28,7 @@ From the roadmap DoD + established constraints:
 - [ ] Cards `flat border rounded="lg"`; Lucide icons kebab-case (no `mdi-*`); tabular-nums already global on tables/KPIs — don't undo.
 - [ ] Status columns use `MpStatusChip` with the correct `type`; bulk selection uses `MpFloatingBulkBar`; toolbars use `MpDataTableToolbar`; forms ≤2 steps use `MpFormDrawer`, multi-step uses full-page stepper ending in a success confirmation.
 
-## 3. Builder profile (fullPage/flush routes)
+## 3. Builder profile (builderShell/flush routes)
 
 Applies to: CreateCampaign, JourneyBuilder, FormBuilder, DaVinciCopilot, DaVinciExperience, RetailPosPreview.
 
