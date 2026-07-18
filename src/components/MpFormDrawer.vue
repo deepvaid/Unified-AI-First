@@ -106,8 +106,8 @@ function onKeydown(e: KeyboardEvent) {
       </div>
 
       <template v-if="$slots.footer">
-        <v-divider class="mp-form-drawer__footer-divider" />
-        <div class="mp-form-drawer__footer d-flex align-center justify-end ga-2 pa-4">
+        <v-divider />
+        <div class="mp-form-drawer__footer d-flex align-center justify-end ga-2 px-5 py-4">
           <slot name="footer" />
         </div>
       </template>
@@ -121,10 +121,33 @@ function onKeydown(e: KeyboardEvent) {
   z-index: 2005;
 }
 
-/* Retime the drawer slide to the shared editorial motion tokens. */
+/* Float the drawer as a rounded surface, like .copilot-drawer — a 12px gutter on
+   the right, top and bottom, plus radius, border and a soft shadow. Vuetify sets
+   top/height/bottom inline from the layout (top: 56px + bottom: 0 under the app
+   bar; top: 0 + bottom: 0 on fullPage routes with no app bar). We keep its top
+   and bottom and only force height:auto, so the box stretches between them; the
+   margins then carve the 12px gutters — no hardcoded app-bar height needed, and
+   it lands correctly whether or not the app bar is present.
+   Retime the slide to the shared editorial motion tokens while we're here. */
 .mp-form-drawer.v-navigation-drawer {
+  height: auto !important;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  margin-right: 12px;
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: var(--mp-component-dialog-radius-default);
+  /* Temporary drawers carry Vuetify's `elevation-0` utility, which sets
+     box-shadow with !important — so the soft shell shadow needs it too. */
+  box-shadow: var(--mp-shadow-md) !important;
+  overflow: hidden;
   transition-duration: var(--dur-base);
   transition-timing-function: var(--ease);
+}
+
+/* Clip the panel (and its scrolling body) to the rounded shell. */
+.mp-form-drawer :deep(.v-navigation-drawer__content) {
+  border-radius: inherit;
+  overflow: hidden;
 }
 
 .mp-form-drawer__panel {
@@ -138,7 +161,16 @@ function onKeydown(e: KeyboardEvent) {
   line-height: 1.3;
 }
 
-.mp-form-drawer__footer-divider {
-  opacity: 0.08;
+/* Full-bleed sheet on small viewports: drop the gutters + radius and clamp the
+   width so the 480 default can't overflow a 375px screen. */
+@media (max-width: 640px) {
+  .mp-form-drawer.v-navigation-drawer {
+    margin: 0;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    border: none;
+    border-left: 1px solid var(--mp-border-subtle);
+    border-radius: 0;
+  }
 }
 </style>
