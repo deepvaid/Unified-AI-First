@@ -277,6 +277,12 @@ const routes: RouteRecordRaw[] = [
 
   { path: '/accounts/:accountId/design-system', name: 'DesignSystemDemo', component: () => import('@/views/Settings/DesignSystemDemo.vue') },
 
+  // Presentation surfaces — stakeholder showcase landing, talk deck, reel title cards
+  { path: '/showcase', name: 'Showcase', component: () => import('@/views/Showcase/ShowcaseView.vue'), meta: { fullPage: true } },
+  { path: '/wow', redirect: '/showcase' },
+  { path: '/deck', name: 'Deck', component: () => import('@/views/Deck/DeckView.vue'), meta: { fullPage: true } },
+  { path: '/reel', name: 'Reel', component: () => import('@/views/Reel/ReelView.vue'), meta: { fullPage: true } },
+
   // Redirect root to dashboard
   { path: '/', redirect: '/accounts/2000290/dashboard' },
   // Catchall
