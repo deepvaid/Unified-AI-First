@@ -254,7 +254,7 @@ function askRemove() {
     </template>
 
     <template #footer>
-      <div class="w-100 d-flex justify-end gap-3">
+      <div class="w-100 d-flex justify-end ga-2">
         <v-btn variant="text" class="text-none" @click="open = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave" @click="save">Save changes</v-btn>
       </div>

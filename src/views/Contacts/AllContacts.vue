@@ -285,6 +285,8 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
               density="compact"
               hide-details
               clearable
+              placeholder="All"
+              persistent-placeholder
             />
           </div>
         </template>

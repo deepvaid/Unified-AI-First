@@ -265,6 +265,8 @@ function exportOrders() {
               density="compact"
               hide-details
               clearable
+              placeholder="All"
+              persistent-placeholder
             />
           </div>
         </template>

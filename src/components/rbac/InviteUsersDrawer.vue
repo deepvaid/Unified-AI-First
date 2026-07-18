@@ -182,7 +182,7 @@ function sendInvites() {
     </div>
 
     <template #footer>
-      <div class="w-100 d-flex justify-end gap-3">
+      <div class="w-100 d-flex justify-end ga-2">
         <v-btn v-if="step === 2" variant="text" class="text-none" @click="step = 1">Back</v-btn>
         <v-btn v-else variant="text" class="text-none" @click="open = false">Cancel</v-btn>
         <v-btn v-if="step === 1" color="primary" variant="flat" class="text-none" :disabled="!canContinue" @click="step = 2">

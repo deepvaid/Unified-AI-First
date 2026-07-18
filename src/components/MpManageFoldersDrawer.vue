@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref } from 'vue'
 import { useFoldersStore, type FolderScope } from '@/stores/useFolders'
 import MpFormDrawer from './MpFormDrawer.vue'
+import MpConfirmDialog from './MpConfirmDialog.vue'
 
 const model = defineModel<boolean>({ default: false })
 
@@ -56,8 +57,14 @@ function commitRename() {
 // Delete confirm
 const deletingId = ref<string | null>(null)
 const deletingFolder = computed(() => store.getFolder(deletingId.value))
-const deleteTitleId = useId()
-const deleteMessageId = useId()
+const deleteTitle = computed(() => `Delete "${deletingFolder.value?.name ?? ''}"?`)
+const deleteMessage = computed(() => {
+  const base = 'Items in this folder will be moved to All folders.'
+  const hasChildren = !!deletingId.value && store.childrenOf(deletingId.value).length > 0
+  return hasChildren
+    ? `${base} Its subfolders will be kept and moved to the top level.`
+    : base
+})
 
 function confirmDelete() {
   if (!deletingId.value) return
@@ -159,34 +166,20 @@ function confirmDelete() {
     </v-list>
 
     <template #footer>
-      <v-btn variant="text" class="text-none" @click="model = false">Done</v-btn>
+      <v-btn variant="flat" color="primary" class="text-none" @click="model = false">Done</v-btn>
     </template>
   </MpFormDrawer>
 
   <!-- Delete confirmation -->
-  <v-dialog
+  <MpConfirmDialog
     :model-value="!!deletingId"
-    max-width="420"
-    :aria-labelledby="deleteTitleId"
-    :aria-describedby="deleteMessageId"
+    :title="deleteTitle"
+    :message="deleteMessage"
+    confirm-label="Delete Folder"
+    danger
     @update:model-value="deletingId = null"
-  >
-    <v-card flat border rounded="lg" class="pa-2">
-      <v-card-title :id="deleteTitleId" class="text-subtitle-1 font-weight-bold">
-        Delete "{{ deletingFolder?.name }}"?
-      </v-card-title>
-      <v-card-text :id="deleteMessageId" class="text-body-2 text-medium-emphasis">
-        Items in this folder will be moved to All folders.
-        <template v-if="deletingId && store.childrenOf(deletingId).length">
-          Its subfolders will be kept and moved to the top level.
-        </template>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn variant="text" class="text-none" @click="deletingId = null">Cancel</v-btn>
-        <v-btn color="error" variant="flat" class="text-none" @click="confirmDelete">Delete Folder</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    @confirm="confirmDelete"
+  />
 </template>
 
 <style scoped>

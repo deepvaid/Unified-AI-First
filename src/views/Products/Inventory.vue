@@ -174,35 +174,36 @@ function notify(text: string) { snackText.value = text; snack.value = true }
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select
-              v-model="filters.location"
-              :items="filterOptions.location"
-              label="Location"
-              multiple
-              chips
-              closable-chips
-              density="compact"
-              variant="outlined"
-              rounded="lg"
-              hide-details
-              class="mb-3"
-            />
-            <v-select
-              v-model="filters.status"
-              :items="filterOptions.status"
-              label="Status"
-              multiple
-              chips
-              closable-chips
-              density="compact"
-              variant="outlined"
-              rounded="lg"
-              hide-details
-              class="mb-2"
-            />
-          </div>
+          <v-select
+            v-model="filters.location"
+            :items="filterOptions.location"
+            label="Location"
+            multiple
+            chips
+            closable-chips
+            density="compact"
+            variant="outlined"
+            rounded="lg"
+            hide-details
+            placeholder="All"
+            persistent-placeholder
+            class="mb-3"
+          />
+          <v-select
+            v-model="filters.status"
+            :items="filterOptions.status"
+            label="Status"
+            multiple
+            chips
+            closable-chips
+            density="compact"
+            variant="outlined"
+            rounded="lg"
+            hide-details
+            placeholder="All"
+            persistent-placeholder
+            class="mb-2"
+          />
         </template>
       </MpDataTableToolbar>
 

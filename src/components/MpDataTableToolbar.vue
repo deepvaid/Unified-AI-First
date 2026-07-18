@@ -193,16 +193,19 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
     v-if="$slots['filter-content']"
     v-model="filterDrawer"
     :title="filterTitle ?? 'Filters'"
-    :subtitle="filterSubtitle"
+    :subtitle="filterSubtitle ?? 'Changes apply immediately'"
   >
     <slot name="filter-content" />
     <template #footer>
-      <v-btn variant="text" size="small" class="text-none" @click="$emit('clearFilters')">
-        Clear all
-      </v-btn>
-      <v-btn variant="flat" size="small" color="primary" class="text-none" @click="filterDrawer = false">
-        Done
-      </v-btn>
+      <div class="d-flex align-center w-100">
+        <v-btn variant="text" class="text-none" @click="$emit('clearFilters')">
+          Clear all
+        </v-btn>
+        <v-spacer />
+        <v-btn variant="flat" color="primary" class="text-none" @click="filterDrawer = false">
+          Done
+        </v-btn>
+      </div>
     </template>
   </MpFormDrawer>
 </template>
