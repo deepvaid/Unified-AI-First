@@ -17,7 +17,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 
 const meta: Meta = {
-  title: 'Design System/Form Fields',
+  title: 'Forms/Form Fields',
   tags: ['autodocs'],
   parameters: {
     docs: {

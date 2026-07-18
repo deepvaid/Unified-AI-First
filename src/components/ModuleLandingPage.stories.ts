@@ -64,7 +64,7 @@ const DA_VINCI_CARD: DaVinciCardConfig = {
 }
 
 const meta = {
-  title: 'Design System/ModuleLandingPage',
+  title: 'Patterns/ModuleLandingPage',
   component: ModuleLandingPage,
   tags: ['autodocs'],
   parameters: {
