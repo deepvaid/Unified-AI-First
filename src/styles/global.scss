@@ -648,6 +648,33 @@ tr:focus-within .action-btns {
   border-radius: var(--mp-component-card-radius-lg) !important;
 }
 
+/* ─── Frame-fill shell utility ────────────────────────────────────── */
+/* Fills the studio content frame edge-to-edge from inside .mp-main-shell —
+   the canonical copy of the idiom used by SettingsLayout / StoreEditorLayout /
+   MerchandisingLayout, now shared by builderShell routes. 52px is the shell
+   constant: inside the frame the math is exact (app bar 56 + margins 4+12 +
+   borders 2 = 74 = 52 + the frame's 22px --mp-frame-offset). Outside the frame
+   (?frame=off / classic shell) the offset resolves to 0px and the same 4px
+   slack the existing shells accept applies. Do not use --mp-layout-appbarHeight
+   (60px — does not match the rendered 56px bar). */
+.mp-frame-fill {
+  margin: -32px -36px;
+  height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .mp-frame-fill {
+    margin: -28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .mp-frame-fill {
+    margin: -22px;
+  }
+}
+
 /* ─── Dialog shell normalization ─────────────────────────────────── */
 /* Ensures v-dialog cards always have consistent radius and surface. */
 .v-dialog > .v-overlay__content > .v-card,

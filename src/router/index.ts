@@ -4,6 +4,8 @@ import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
 declare module 'vue-router' {
   interface RouteMeta {
     fullPage?: boolean
+    /** Builder/wizard chrome: real AppBar + rail-collapsed sidebar + rounded content frame. */
+    builderShell?: boolean
     flush?: boolean
     railShell?: boolean
     storeEditor?: boolean
