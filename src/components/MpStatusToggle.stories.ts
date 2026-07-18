@@ -103,6 +103,36 @@ export const AllStates: Story = {
 }
 
 /**
+ * Draft's disabled mechanism, made explicit: the switch is rendered `disabled` (per the
+ * component's `:disabled="status === 'Draft'"` binding), so clicking it fires no \`toggle\`
+ * event at all. This play function clicks the switch input and the counter below stays at 0.
+ */
+export const DisabledInteraction: Story = {
+  render: () => ({
+    components: { MpStatusToggle },
+    setup() {
+      const toggleCount = ref(0)
+      function onToggle() {
+        toggleCount.value++
+      }
+      return { toggleCount, onToggle }
+    },
+    template: `
+      <div>
+        <MpStatusToggle status="Draft" @toggle="onToggle" />
+        <div class="text-caption text-medium-emphasis mt-3">Toggle events fired: {{ toggleCount }} (switch is disabled on Draft, so this stays 0)</div>
+      </div>
+    `,
+  }),
+  play: async ({ canvasElement }) => {
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    const input = canvasElement.querySelector<HTMLInputElement>('input[type="checkbox"]')
+    input?.click()
+  },
+  args: {} as any,
+}
+
+/**
  * Live wiring of the \`toggle\` event: the story owns the status and flips it between
  * Active and Paused, exactly like a journeys list view does. The last event is logged below.
  */

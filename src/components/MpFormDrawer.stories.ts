@@ -250,6 +250,93 @@ export const CustomWidth640: Story = {
 }
 
 /**
+ * Field-level validation errors visible on submit attempt: invalid fields get `error` + an
+ * `error-messages` string, plus a summary alert at the top of the body. The footer stays
+ * enabled so the user can retry immediately.
+ */
+export const ValidationErrors: Story = {
+  args: {
+    title: 'New segment',
+    subtitle: 'Define who belongs',
+    width: 480,
+  },
+  render: (args) => ({
+    components: { MpFormDrawer },
+    setup() {
+      const open = ref(true)
+      return { args, open }
+    },
+    template: `
+      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
+        <v-btn variant="outlined" prepend-icon="panel-right" @click="open = true">New segment</v-btn>
+        <MpFormDrawer v-bind="args" v-model="open">
+          <v-alert type="error" variant="tonal" density="compact" class="mb-4">
+            2 fields need attention before this segment can be saved.
+          </v-alert>
+          <div style="display:grid;gap:14px;">
+            <v-text-field
+              label="Name"
+              model-value=""
+              error
+              error-messages="Name is required"
+            />
+            <v-select label="Source list" :items="['Newsletter', 'VIP Circle', 'Win-Back']" model-value="Newsletter" />
+            <v-text-field
+              label="Min. lifetime spend"
+              prefix="$"
+              model-value="-50"
+              error
+              error-messages="Must be zero or greater"
+            />
+          </div>
+          <template #footer>
+            <v-spacer />
+            <v-btn variant="text" @click="open = false">Cancel</v-btn>
+            <v-btn color="primary" @click="open = false">Save</v-btn>
+          </template>
+        </MpFormDrawer>
+      </section>
+    `,
+  }),
+}
+
+/**
+ * Submitting state: the primary action shows a spinner via \`loading\`, both footer buttons are
+ * disabled, and the body fields are disabled so no further edits land mid-submit.
+ */
+export const Submitting: Story = {
+  args: {
+    title: 'New data source',
+    subtitle: 'Connect a workspace data source',
+    width: 460,
+  },
+  render: (args) => ({
+    components: { MpFormDrawer },
+    setup() {
+      const open = ref(true)
+      return { args, open }
+    },
+    template: `
+      <section style="min-height:720px;background:rgb(var(--v-theme-background));padding:24px;">
+        <v-btn color="primary" prepend-icon="database" @click="open = true">Add data source</v-btn>
+        <MpFormDrawer v-bind="args" v-model="open">
+          <div style="display:grid;gap:14px;">
+            <v-text-field label="Name" model-value="Marketing Cloud - production" disabled />
+            <v-select label="Type" :items="['Marketing Cloud', 'Commerce Cloud', 'Service Cloud']" model-value="Marketing Cloud" disabled />
+            <v-text-field label="Endpoint" model-value="https://mc-prod.maropost.io" disabled />
+          </div>
+          <template #footer>
+            <v-spacer />
+            <v-btn variant="text" disabled @click="open = false">Cancel</v-btn>
+            <v-btn color="primary" loading disabled>Connecting…</v-btn>
+          </template>
+        </MpFormDrawer>
+      </section>
+    `,
+  }),
+}
+
+/**
  * The drawer at a 375px viewport (canvas only — the docs page doesn't resize). The default
  * 480px width exceeds the screen, so the panel covers the full viewport and clips at the left
  * edge — the width-clamping gap flagged in the A11y notes.

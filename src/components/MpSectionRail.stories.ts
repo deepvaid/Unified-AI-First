@@ -52,14 +52,80 @@ const settingsGroups: MpSectionRailGroup[] = [
 const meta: Meta<typeof MpSectionRail> = {
   title: 'Navigation/MpSectionRail',
   component: MpSectionRail,
+  tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',
     docs: {
       description: {
-        component:
-          'In-content section rail for shell layouts — the workspace pattern used by the store editor and Settings. Two flavors: **entity** (identity card + switcher, e.g. a store) and **module** (title + search, e.g. Settings). Composes a back link, identity + switcher menu, search filter, grouped links with icons/counts/external glyphs and an active accent bar, plus a #footer slot for actions. The global AppSidebar auto-minimizes while a rail shell is on screen.',
+        component: `
+### Overview
+\`MpSectionRail\` is the in-content 260px section rail for shell layouts (store editor,
+Settings-style workspaces) — sits beside the global \`AppSidebar\`, never replaces it. Two
+flavors: **entity** (identity card + switcher menu, e.g. a store) and **module** (plain title,
+e.g. "Settings"). Composes an optional back link, identity/switcher or title, optional search
+filter, grouped links with icons/counts/external glyphs and an active accent bar, plus a
+\`#footer\` slot for a pinned action.
+
+**Use when:** building a workspace shell with its own persistent section navigation (store
+editor sections, Settings sub-pages) alongside the global sidebar.
+
+**Don't use when:** the navigation is the page's primary/global navigation (use \`AppSidebar\`),
+or there's only 2-3 destinations (inline tabs or \`MpFilterTabs\` are lighter).
+
+### Usage
+\`\`\`html
+<MpSectionRail
+  aria-label="Store editor navigation"
+  back-to="/sales-channels"
+  back-label="All sales channels"
+  :identity="{ name: 'Atlas Outfitters', caption: 'atlas-outfitters.uat.maropost.store', icon: 'globe' }"
+  :switcher-options="otherStores"
+  switcher-label="Switch store"
+  :groups="storeEditorGroups"
+  @switch="switchStore"
+>
+  <template #footer>
+    <v-btn color="primary" variant="flat" block prepend-icon="external-link">View live store</v-btn>
+  </template>
+</MpSectionRail>
+\`\`\`
+
+### 🟢 Do's
+- **Do** set route meta (\`railShell\`/\`storeEditor\`) on pages that mount this rail — the global
+  \`AppSidebar\` auto-minimizes while it's on screen.
+- **Do** pass a domain-specific \`ariaLabel\` ("Store editor navigation", "Settings navigation").
+- **Do** use \`match\` arrays on each item so the rail stays highlighted across an item's own child routes/editors.
+
+### 🔴 Don'ts
+- **Don't** exceed ~7-8 items per group before grouping under a \`title\` — the nav scrolls internally but scanning suffers.
+- **Don't** mix the entity and module flavors on the same rail — pick \`identity\`+\`switcherOptions\` or \`title\`, not both.
+
+### A11y
+- **Provides:** the root is an \`<aside>\` landmark named by \`ariaLabel\`; the section list is a
+  \`<nav>\`; the active item gets \`aria-current="page"\`; the switcher trigger has an
+  \`aria-label\` from \`switcherLabel\`; the search input has an \`aria-label\` matching its
+  placeholder.
+- **Consumer must:** keep \`ariaLabel\` specific to the workspace, and give every item a distinct \`label\`.
+- **Gaps:** the active state's left accent bar is decorative only — \`aria-current="page"\` is the
+  real signal for assistive tech, so this is not a color-only gap; the search input filters items
+  live but doesn't announce the result count to screen readers.
+        `,
       },
     },
+  },
+  argTypes: {
+    ariaLabel: { control: 'text', description: 'Required accessible name for the rail\'s `<aside>` landmark, e.g. "Store editor navigation".' },
+    groups: { control: 'object', description: 'Section groups: `{ title?, items: [{ slug, label, icon?, to, match?, count?, external? }] }[]`. `match` lists route names that keep the item highlighted.' },
+    title: { control: 'text', description: 'Plain heading for the module flavor (e.g. "Settings"). Mutually exclusive with `identity`.' },
+    backTo: { control: 'text', description: 'Route target for the optional back link above the rail content.' },
+    backLabel: { control: 'text', description: 'Back link text. Default: "Back".' },
+    identity: { control: 'object', description: 'Entity identity card `{ name, caption?, icon? }` for the entity flavor (e.g. a store). Mutually exclusive with `title`.' },
+    switcherOptions: { control: 'object', description: 'Other entities the user can jump to; renders the switcher menu on the identity card. Only relevant with `identity` set.' },
+    switcherLabel: { control: 'text', description: 'Accessible name and menu subheader for the switcher trigger. Default: "Switch".' },
+    searchable: { control: 'boolean', description: 'Show the inline search field that filters items (and hides empty groups) client-side.' },
+    searchPlaceholder: { control: 'text', description: 'Search input placeholder and accessible label. Default: "Search".' },
+    switch: { control: false, description: 'Event — emitted with the picked `switcherOptions` id when a switcher menu item is clicked.', table: { category: 'events' } },
+    footer: { control: false, description: 'Slot — pinned below the section list, typically a primary action button.', table: { category: 'slots' } },
   },
   decorators: [
     () => ({
