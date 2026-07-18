@@ -154,7 +154,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/sales_channels/:channelId/locations', name: 'SalesChannelLocations', component: () => import('@/views/SalesChannels/SalesChannelLocations.vue'), meta: commerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/locations/:locationId', name: 'SalesChannelLocationDetail', component: () => import('@/views/SalesChannels/SalesChannelLocationDetail.vue'), meta: commerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/theme', name: 'StoreThemeBuilder', component: () => import('@/views/SalesChannels/StoreThemeBuilder.vue'), meta: { ...commerceGate, fullPage: true } },
-  { path: '/accounts/:accountId/sales_channels/:channelId/theme/code', name: 'StoreThemeCode', component: () => import('@/views/SalesChannels/StoreThemeCode.vue'), meta: { ...commerceGate, fullPage: true } },
+  { path: '/accounts/:accountId/sales_channels/:channelId/theme/code', name: 'StoreThemeCode', component: () => import('@/views/SalesChannels/StoreThemeCode.vue'), meta: { ...commerceGate, builderShell: true } },
   // Store editor shell (UAT parity A06b): StoreEditorLayout adds a per-store section
   // rail around the hub + section pages. URLs/route names unchanged; fullPage theme
   // routes and POS-oriented locations routes stay standalone above.

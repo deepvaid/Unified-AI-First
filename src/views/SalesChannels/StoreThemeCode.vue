@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -141,7 +142,7 @@ watch(channelId, () => {
 </script>
 
 <template>
-  <div v-if="!channel || !theme" class="tc-root d-flex align-center justify-center">
+  <div v-if="!channel || !theme" class="tc-missing d-flex align-center justify-center">
     <MpEmptyState
       icon="code"
       :title="channel ? 'No theme for this channel' : 'Sales channel not found'"
@@ -154,53 +155,35 @@ watch(channelId, () => {
     />
   </div>
 
-  <div v-else class="tc-root d-flex flex-column">
-    <!-- Toolbar -->
-    <div class="tc-toolbar d-flex align-center justify-space-between px-5 gap-3 border-b bg-surface">
-      <div class="d-flex align-center gap-3" style="min-width:0;">
-        <v-tooltip text="Back to visual editor" location="bottom">
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              icon="arrow-left"
-              variant="text"
-              size="small"
-              aria-label="Back to visual editor"
-              @click="router.push(builderRoute)"
-            ></v-btn>
-          </template>
-        </v-tooltip>
-        <div class="font-weight-bold text-body-1 text-truncate">{{ theme.name }}</div>
-        <MpStatusChip status="Theme code" type="general" size="x-small" />
-      </div>
+  <MpBuilderShell
+    v-else
+    :back-to="builderRoute"
+    back-label="Back to visual editor"
+    :title="theme.name"
+    :dirty="codeStore.anyDirty"
+    persistence-mode="explicit"
+  >
+    <template #title>
+      <div class="font-weight-bold text-body-1 text-truncate">{{ theme.name }}</div>
+      <MpStatusChip status="Theme code" type="general" size="x-small" />
+    </template>
 
-      <div class="d-flex align-center gap-2 justify-end">
-        <v-btn
-          variant="text"
-          size="small"
-          class="text-none"
-          prepend-icon="layout-panel-left"
-          @click="router.push(builderRoute)"
-        >
-          Back to visual editor
-        </v-btn>
-        <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
-        <v-btn
-          color="primary"
-          variant="flat"
-          size="small"
-          class="text-none"
-          prepend-icon="save"
-          :disabled="!codeStore.anyDirty"
-          @click="saveAll"
-        >
-          Save
-        </v-btn>
-      </div>
-    </div>
+    <template #actions>
+      <v-btn
+        color="primary"
+        variant="flat"
+        size="small"
+        class="text-none"
+        prepend-icon="save"
+        :disabled="!codeStore.anyDirty"
+        @click="saveAll"
+      >
+        Save
+      </v-btn>
+    </template>
 
     <!-- Body: icon rail · explorer · editor -->
-    <div class="tc-body d-flex flex-grow-1" style="overflow:hidden;">
+    <div class="tc-body d-flex h-100" style="overflow:hidden;">
       <!-- (a) Icon rail (visual only) -->
       <nav class="tc-rail border-r bg-surface d-flex flex-column align-center py-2" aria-label="Editor views">
         <v-tooltip text="Explorer" location="right">
@@ -357,12 +340,11 @@ watch(channelId, () => {
     <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
       <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Theme code saved</div>
     </v-snackbar>
-  </div>
+  </MpBuilderShell>
 </template>
 
 <style scoped>
-.tc-root { height: 100vh; overflow: hidden; }
-.tc-toolbar { height: 56px; flex-shrink: 0; }
+.tc-missing { min-height: 60vh; }
 .tc-body { position: relative; }
 
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
