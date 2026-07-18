@@ -301,9 +301,6 @@ watch(contentId, () => {
 </template>
 
 <style scoped>
-.ece-root {
-  height: 100%;
-}
 .ece-palette__item {
   width: 100%;
   padding: 8px 10px;

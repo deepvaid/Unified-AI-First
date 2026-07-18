@@ -3,6 +3,18 @@ import type { RouteLocationRaw } from 'vue-router'
 
 export type BuilderPersistenceMode = 'explicit' | 'autosave' | 'live'
 
+/**
+ * Shared chrome for builder/editor routes (meta `builderShell`): a 56px toolbar
+ * (back · title · optional center cluster · status chip · actions), an optional
+ * 52px steps row, and left/canvas/right panels. By default the shell fills the
+ * app's rounded content frame edge-to-edge (`.mp-frame-fill`); pass `standalone`
+ * to contain it in the parent instead (Storybook, embedded previews).
+ *
+ * Leave-guard rule of thumb: views with `explicit`/`live` persistence should
+ * wire `useDirtyLeaveGuard` (back navigation flows through vue-router, so the
+ * guard intercepts the shell's back button too); `autosave` views should NOT
+ * add a blocking guard — leaving is loss-free by design.
+ */
 const props = withDefaults(
   defineProps<{
     /** Back navigation target. */
@@ -17,16 +29,28 @@ const props = withDefaults(
      * Persistence model for the status chip copy.
      * - explicit: Unsaved / Saved
      * - autosave: Unsaved / Autosaved
-     * - live: Unpublished changes / Live draft
+     * - live: Unpublished changes / Published
      */
     persistenceMode?: BuilderPersistenceMode
     /** Optional override for the chip label. */
     statusLabel?: string
+    /** Hide the status chip entirely (screens where it is redundant). */
+    hideStatus?: boolean
+    /** Fill the parent (height 100%) instead of the app content frame. */
+    standalone?: boolean
+    /** Left panel width in px (≤1024px viewports render it 20px narrower). */
+    leftWidth?: number
+    /** Right panel width in px (≤1024px viewports render it 40px narrower). */
+    rightWidth?: number
   }>(),
   {
     backLabel: 'Back',
     dirty: false,
     persistenceMode: 'explicit',
+    hideStatus: false,
+    standalone: false,
+    leftWidth: 220,
+    rightWidth: 300,
   },
 )
 
@@ -37,8 +61,12 @@ defineEmits<{
 defineSlots<{
   /** Extra controls after the title (rename field, chips, etc.). */
   title?(): unknown
+  /** Mid-toolbar cluster (device toggles, template selects). */
+  'toolbar-center'?(): unknown
   /** Right-side toolbar actions (preview, save, publish). */
   actions?(): unknown
+  /** Optional second 52px row under the toolbar (wizard steps). */
+  steps?(): unknown
   /** Left panel (palette / layers). */
   left?(): unknown
   /** Center canvas / main editor surface. */
@@ -56,7 +84,11 @@ const chipLabel = () => {
 </script>
 
 <template>
-  <div class="mp-builder d-flex flex-column">
+  <div
+    class="mp-builder d-flex flex-column"
+    :class="standalone ? 'mp-builder--contain' : 'mp-frame-fill'"
+    :style="{ '--mp-builder-left-w': `${leftWidth}px`, '--mp-builder-right-w': `${rightWidth}px` }"
+  >
     <header class="mp-builder__top d-flex align-center ga-3 px-4">
       <v-btn
         v-if="backTo"
@@ -73,14 +105,21 @@ const chipLabel = () => {
         @click="$emit('back')"
       />
 
-      <div class="min-width-0 flex-grow-1">
+      <div class="min-width-0 flex-grow-1 d-flex align-center ga-3">
         <slot name="title">
-          <div class="text-subtitle-2 font-weight-bold text-truncate">{{ title }}</div>
-          <div v-if="subtitle" class="text-caption text-medium-emphasis text-truncate">{{ subtitle }}</div>
+          <div class="min-width-0">
+            <div class="text-subtitle-2 font-weight-bold text-truncate">{{ title }}</div>
+            <div v-if="subtitle" class="text-caption text-medium-emphasis text-truncate">{{ subtitle }}</div>
+          </div>
         </slot>
       </div>
 
+      <div v-if="$slots['toolbar-center']" class="d-flex align-center ga-2 flex-shrink-0">
+        <slot name="toolbar-center" />
+      </div>
+
       <div
+        v-if="!hideStatus"
         class="mp-builder__chip"
         :class="{ 'mp-builder__chip--dirty': dirty }"
         role="status"
@@ -93,6 +132,10 @@ const chipLabel = () => {
         <slot name="actions" />
       </div>
     </header>
+
+    <div v-if="$slots.steps" class="mp-builder__steps">
+      <slot name="steps" />
+    </div>
 
     <div class="mp-builder__body d-flex flex-grow-1 overflow-hidden">
       <aside v-if="$slots.left" class="mp-builder__left">
@@ -110,12 +153,23 @@ const chipLabel = () => {
 
 <style scoped>
 .mp-builder {
-  height: 100%;
   background: rgb(var(--v-theme-background));
+}
+.mp-builder--contain {
+  height: 100%;
 }
 .mp-builder__top {
   height: 56px;
   flex-shrink: 0;
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+  background: rgb(var(--v-theme-surface));
+}
+.mp-builder__steps {
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
   background: rgb(var(--v-theme-surface));
 }
@@ -141,15 +195,18 @@ const chipLabel = () => {
   border-radius: 50%;
   background: currentColor;
 }
+.mp-builder__body {
+  min-height: 0;
+}
 .mp-builder__left {
-  width: 220px;
+  width: var(--mp-builder-left-w, 220px);
   flex-shrink: 0;
   border-right: 1px solid rgba(var(--v-theme-on-surface), 0.10);
   background: rgb(var(--v-theme-surface));
   overflow-y: auto;
 }
 .mp-builder__right {
-  width: 300px;
+  width: var(--mp-builder-right-w, 300px);
   flex-shrink: 0;
   border-left: 1px solid rgba(var(--v-theme-on-surface), 0.10);
   background: rgb(var(--v-theme-surface));
@@ -160,8 +217,8 @@ const chipLabel = () => {
 }
 
 @media (max-width: 1024px) {
-  .mp-builder__left { width: 200px; }
-  .mp-builder__right { width: 260px; }
+  .mp-builder__left { width: calc(var(--mp-builder-left-w, 220px) - 20px); }
+  .mp-builder__right { width: calc(var(--mp-builder-right-w, 300px) - 40px); }
 }
 @media (max-width: 768px) {
   .mp-builder__left,
