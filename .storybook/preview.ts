@@ -12,7 +12,7 @@ import * as directives from 'vuetify/directives'
 import { lucideIconSet } from '../src/plugins/lucideIcons'
 
 // Global styles
-import '@marobase/ui/tokens/index.css'
+import '../src/styles/mb-foundation.tokens.css'
 import '../src/design-tokens/generated/variables.css'
 import '../src/styles/mp-theme-aliases.css'
 import '../src/styles/marobase-tokens.css'

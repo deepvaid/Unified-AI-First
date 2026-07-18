@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import { registerPlugins } from './plugins'
-import '../packages/marobase-ui/src/tokens/index.css'
+import './styles/mb-foundation.tokens.css'
 import './design-tokens/generated/variables.css'
 import './styles/dv-tokens.css'
 import './styles/dv-orbit.css'

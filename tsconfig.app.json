@@ -13,17 +13,13 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@marobase/ui": ["./packages/marobase-ui/src/index.ts"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
   "exclude": [
     "src/stories/**/*",
     "src/**/*.stories.ts",
-    "src/**/*.stories.tsx",
-    "packages/marobase-ui/src/**/*.stories.ts",
-    "packages/marobase-ui/src/**/*.stories.tsx",
-    "packages/marobase-ui/src/stories/**/*"
+    "src/**/*.stories.tsx"
   ]
 }

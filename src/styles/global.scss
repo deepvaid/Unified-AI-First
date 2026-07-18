@@ -280,16 +280,14 @@ a {
 }
 
 /* VCard variant="flat" is transparent in Vuetify 3. Force solid surface
-   background on all cards/sheets/steppers/MbCard inside overlays/dialogs.
+   background on all cards/sheets/steppers inside overlays/dialogs.
    Both direct-child (>) and descendant selectors for maximum coverage. */
 .v-overlay__content > .v-card,
 .v-overlay__content > .v-sheet,
 .v-overlay__content > .v-stepper,
-.v-overlay__content > .mb-card,
 .v-overlay__content .v-card,
 .v-overlay__content .v-sheet,
-.v-overlay__content .v-stepper,
-.v-overlay__content .mb-card {
+.v-overlay__content .v-stepper {
   background: rgb(var(--v-theme-surface)) !important;
 }
 
@@ -299,8 +297,8 @@ a {
 }
 
 /* ─── Bridge Marobase-UI tokens → Vuetify theme ──────────────────── */
-/* Ensures MbTabs, MbChip etc. use the app's primary, not the        */
-/* standalone Marobase teal, when rendered inside the Vuetify shell. */
+/* Consumed by CommerceCloudLanding.vue — remove after migrating it   */
+/* to --mp-* tokens.                                                  */
 .v-application {
   --mb-color-primary: rgb(var(--v-theme-primary));
   --mb-color-primary-soft: rgba(var(--v-theme-primary), 0.10);
