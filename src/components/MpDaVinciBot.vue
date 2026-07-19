@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 
 import DvWidgetDraftCard from './copilot/DvWidgetDraftCard.vue'
 import DvHistoryDrawer from './copilot/DvHistoryDrawer.vue'
@@ -10,39 +11,28 @@ import DvIntentCardList from './copilot/voice/DvIntentCardList.vue'
 import DvLandingHero from './copilot/DvLandingHero.vue'
 import DvOrbitOrb from './copilot/voice/DvOrbitOrb.vue'
 import DvOrbitVoiceSurface from './copilot/voice/DvOrbitVoiceSurface.vue'
+import DvToolSteps, { type DvToolStep } from './copilot/DvToolSteps.vue'
 import type { OrbitState } from './copilot/voice/orbit'
-import { useCopilotStore } from '@/stores/useCopilot'
+import {
+  useCopilotStore,
+  type ChatMessage,
+  type DraftSetProps,
+  type IntentCardsProps,
+} from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
-import { useDaVinciIntents, type DvCardDescriptor, type DvQuickReply } from '@/composables/useDaVinciIntents'
+import { useDaVinciContext } from '@/composables/useDaVinciContext'
+import {
+  useDaVinciIntents,
+  INTENT_STEPS,
+  type DvCardDescriptor,
+  type DvIntentResult,
+} from '@/composables/useDaVinciIntents'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
-
-interface DraftSetProps {
-  drafts: DashboardWidgetDraft[]
-  rationale: string
-  conversationId: string
-}
-
-interface IntentCardsProps {
-  cards: DvCardDescriptor[]
-  quickReplies?: DvQuickReply[]
-}
-
-interface ChatComponent {
-  type: 'widgetDraftSet' | 'insight' | 'intentCards'
-  props: DraftSetProps | { headline: string; description: string; severity?: string } | IntentCardsProps
-}
-
-interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  text: string
-  componentData?: ChatComponent[]
-}
 
 interface MpDaVinciBotProps {
   initialChatMode?: boolean
@@ -71,15 +61,33 @@ const { addItem, incrementAdded, clearAll } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
 const intents = useDaVinciIntents()
 const voice = useDaVinciVoice()
+const copilot = useCopilotStore()
+const { contextBlock } = useDaVinciContext()
+
+// The conversation lives in the copilot store so it survives navigation, drawer
+// close/reopen, and is shared by the drawer / full-width / full-page surfaces.
+const { messages, chatMode, conversationId: currentConversationId } = storeToRefs(copilot)
+
+// Legacy hydration path (DaVinciCopilot cold deep links): seed the store only
+// when it holds no live conversation.
+if (props.initialMessages.length && messages.value.length === 0) {
+  messages.value = [...props.initialMessages]
+  chatMode.value = true
+}
+if (props.initialChatMode) chatMode.value = true
 
 const inputText = ref('')
-const chatMode = ref(props.initialChatMode || props.initialMessages.length > 0)
 const isTyping = ref(false)
 const generatingStatus = ref('')
-const messages = ref<ChatMessage[]>([...props.initialMessages])
 const bodyEl = ref<HTMLElement | null>(null)
 const historyOpen = ref(false)
-const currentConversationId = ref<string | null>(null)
+
+// ── Generation lifecycle: live tool steps, stop, queued follow-ups ─────────
+/** Bumped on every new generation and on stop — stale callbacks check it and bail. */
+let generationSeq = 0
+let geminiAbort: AbortController | null = null
+const liveSteps = ref<DvToolStep[]>([])
+const queuedPrompts = ref<string[]>([])
 
 const routeAccountId = computed(() => {
   const accountId = Array.isArray(route.params.accountId) ? route.params.accountId[0] : route.params.accountId
@@ -180,8 +188,6 @@ function capitalize(s: string) {
 }
 
 // ─── Voice dictation + TTS + text↔voice mode (drawer surface) ──────────
-const copilot = useCopilotStore()
-
 const ttsEnabled = ref(typeof window !== 'undefined' && window.localStorage.getItem('davinci-drawer-tts') === '1')
 
 // Text is always the default experience — voice mode is an explicit per-session opt-in
@@ -376,10 +382,11 @@ function maybeSpeak(text: string) {
 }
 
 // Drawer hidden mid-session → cancel pending replies, release the mic, stop
-// speech (so a queued reply can't start talking after you've closed it).
+// speech (so a queued reply can't start talking after you've closed it). The
+// conversation itself lives in the copilot store and survives.
 watch(surfaceVisible, (visible) => {
   if (visible) return
-  clearPendingTimers()
+  stopGeneration()
   if (isVoiceMode.value) stopVoiceActivity()
   else voice.cancelSpeech()
 })
@@ -388,7 +395,7 @@ watch(surfaceVisible, (visible) => {
 // deferred replies and stop any speech; owner-guard only the listen-abort so it
 // never kills the AI experience's own mic session.
 onBeforeUnmount(() => {
-  clearPendingTimers()
+  stopGeneration()
   if (isVoiceMode.value) stopVoiceActivity()
   else {
     if (voice.owner.value === voiceOwner.value) voice.abortListening()
@@ -396,35 +403,76 @@ onBeforeUnmount(() => {
   }
 })
 
-/** Push a user turn and answer through the unified intent layer (Dv* cards). */
-function respondWithIntents(text: string) {
+/** Renders the classified intent's steps live (pending → running) inside the thinking window. */
+function startStepTicker(labels: string[], gen: number, totalMs: number) {
+  if (!labels.length) {
+    liveSteps.value = []
+    return
+  }
+  liveSteps.value = labels.map((label, i) => ({ label, status: i === 0 ? 'running' : 'pending' }))
+  const stepMs = Math.max(250, Math.floor(totalMs / labels.length))
+  labels.forEach((_, i) => {
+    if (i === 0) return
+    pendingTimers.push(
+      setTimeout(() => {
+        if (gen !== generationSeq) return
+        liveSteps.value = labels.map((label, j) => ({
+          label,
+          status: j < i ? 'done' : j === i ? 'running' : 'pending',
+        }))
+      }, stepMs * i),
+    )
+  })
+}
+
+/** Reply landed (or was discarded) — clear the working state and run the next queued follow-up. */
+function finishGeneration(gen: number) {
+  if (gen !== generationSeq) return
+  isTyping.value = false
+  voice.setThinking(false)
+  liveSteps.value = []
+  generatingStatus.value = ''
+  scrollToBottom()
+  const next = queuedPrompts.value.shift()
+  if (next) runGeneration(next)
+}
+
+/** Composer Stop button — cancels the in-flight reply AND any queued follow-ups. */
+function stopGeneration() {
+  generationSeq++
+  geminiAbort?.abort()
+  geminiAbort = null
+  clearPendingTimers()
+  queuedPrompts.value = []
+  isTyping.value = false
+  voice.setThinking(false)
+  liveSteps.value = []
+  generatingStatus.value = ''
+}
+
+/** Shared completion for intent-layer results (canned intents + Gemini). */
+function completeIntentResult(res: DvIntentResult, gen: number) {
+  if (gen !== generationSeq) return
+  messages.value.push({
+    id: makeId('a'),
+    role: 'assistant',
+    text: res.reply,
+    toolSteps: res.steps,
+    componentData:
+      res.cards.length || res.quickReplies?.length
+        ? [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }]
+        : undefined,
+  })
+  if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(res.reply) }
+  maybeSpeak(res.speech ?? res.reply)
+  finishGeneration(gen)
+}
+
+function pushUserTurn(text: string) {
   messages.value.push({ id: makeId('u'), role: 'user', text })
   chatMode.value = true
   inputText.value = ''
-  isTyping.value = true
-  generatingStatus.value = 'Working on it…'
-  if (isVoiceMode.value) {
-    voice.setThinking(true)
-    orbitLastRequest.value = text
-  }
   scrollToBottom()
-  pendingTimers.push(setTimeout(() => {
-    isTyping.value = false
-    voice.setThinking(false)
-    const res = intents.handle(text)
-    messages.value.push({
-      id: makeId('a'),
-      role: 'assistant',
-      text: res.reply,
-      componentData:
-        res.cards.length || res.quickReplies?.length
-          ? [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }]
-          : undefined,
-    })
-    if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(res.reply) }
-    maybeSpeak(res.speech ?? res.reply)
-    scrollToBottom()
-  }, 900))
 }
 
 function onIntentCardAction(payload: { card: DvCardDescriptor; action: string }) {
@@ -442,18 +490,20 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
 
 function processQuery(text: string) {
   if (!text) return
-  // Multi-turn intent clarification takes priority (e.g. campaign audience slot)
-  if (intents.pending.value) {
-    respondWithIntents(text)
+  // Text mode mid-generation: show the turn immediately, answer it after the
+  // current reply lands (queued follow-up).
+  if (isTyping.value && !isVoiceMode.value) {
+    pushUserTurn(text)
+    queuedPrompts.value.push(text)
     return
   }
-  const conversationId = currentConversationId.value ?? makeId('c')
-  const isFirstPrompt = !currentConversationId.value
-  currentConversationId.value = conversationId
+  pushUserTurn(text)
+  runGeneration(text)
+}
 
-  messages.value.push({ id: makeId('u'), role: 'user', text })
-  chatMode.value = true
-  inputText.value = ''
+/** Answer `text` (the user turn is already in the transcript). */
+function runGeneration(text: string) {
+  const gen = ++generationSeq
   isTyping.value = true
   generatingStatus.value = 'Working on it…'
   if (isVoiceMode.value) {
@@ -462,105 +512,120 @@ function processQuery(text: string) {
   }
   scrollToBottom()
 
-  let drafts: DashboardWidgetDraft[] | null = null
-  let rationale = ''
+  // Multi-turn intent clarification (e.g. campaign audience slot) — a
+  // conversational turn, not tool work; no steps.
+  if (intents.pending.value) {
+    startStepTicker([], gen, 900)
+    pendingTimers.push(setTimeout(() => completeIntentResult(intents.handle(text), gen), 900))
+    return
+  }
 
+  const conversationId = currentConversationId.value ?? makeId('c')
+  const isFirstPrompt = !currentConversationId.value
+  currentConversationId.value = conversationId
+
+  // Widget-draft path (dashboard context)
   if (targetAccountId.value && targetDashboard.value) {
     const base = dashboardsStore.buildAiWidgetDraft(targetAccountId.value, targetDashboard.value.id, text)
     if (base) {
-      drafts = [base]
-      rationale = buildRationale(text, base)
+      const drafts = [base]
+      const rationale = buildRationale(text, base)
       const metricLabel = getMetricDescriptor(base.metricId)?.label ?? base.title ?? 'data'
       generatingStatus.value = `Pulling ${metricLabel.toLowerCase()} from the last 30 days`
-    }
-  }
-
-  pendingTimers.push(setTimeout(async () => {
-    isTyping.value = false
-    voice.setThinking(false)
-    if (drafts && drafts.length > 0) {
-      messages.value.push({
-        id: makeId('a'),
-        role: 'assistant',
-        text: buildIntro(drafts.length),
-        componentData: [
-          {
-            type: 'widgetDraftSet',
-            props: {
-              drafts,
-              rationale,
-              conversationId,
-            },
-          },
-        ],
-      })
-
-      if (isFirstPrompt) {
-        addItem({
-          title: text,
-          draftedCount: drafts.length,
-        })
-      }
-      if (isVoiceMode.value) {
-        orbitResponse.value = { draft: drafts[0] ?? null, caption: stripHtml(buildIntro(drafts.length)) }
-      }
-      maybeSpeak(buildIntro(drafts.length))
-    } else {
-      // No widget mapping — try the unified intent layer (campaigns, products,
-      // revenue, segments) before falling back to the widget-prompt hint.
-      const res = intents.handle(text)
-      if (res.intent !== 'fallback') {
+      const steps = [
+        `Check ${targetDashboard.value.name} widgets`,
+        `Pull ${metricLabel.toLowerCase()} · last 30 days`,
+        'Draft widget',
+      ]
+      startStepTicker(steps, gen, 1200)
+      pendingTimers.push(setTimeout(() => {
+        if (gen !== generationSeq) return
         messages.value.push({
           id: makeId('a'),
           role: 'assistant',
-          text: res.reply,
-          componentData: [{ type: 'intentCards', props: { cards: res.cards, quickReplies: res.quickReplies } }],
-        })
-        if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(res.reply) }
-        maybeSpeak(res.speech ?? res.reply)
-      } else if (!targetDashboard.value) {
-        // Open-ended question outside a dashboard widget-building context — answer
-        // with Gemini Flash (falls back to the canned hint if Gemini is unavailable).
-        const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
-        const smart = await intents.answer(text, { history })
-        messages.value.push({
-          id: makeId('a'),
-          role: 'assistant',
-          text: smart.reply,
-          componentData:
-            smart.cards.length || smart.quickReplies?.length
-              ? [{ type: 'intentCards', props: { cards: smart.cards, quickReplies: smart.quickReplies } }]
-              : undefined,
-        })
-        if (isVoiceMode.value) orbitResponse.value = { draft: null, caption: stripHtml(smart.reply) }
-        maybeSpeak(smart.speech ?? smart.reply)
-      } else {
-        if (isVoiceMode.value) {
-          orbitResponse.value = {
-            draft: null,
-            caption:
-              "I couldn't map that to a widget yet. Try revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
-          }
-        }
-        messages.value.push({
-          id: makeId('a'),
-          role: 'assistant',
-          text: "I couldn't map that to a supported widget yet. Try asking for revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
+          text: buildIntro(drafts.length),
+          toolSteps: steps,
           componentData: [
             {
-              type: 'insight',
-              props: {
-                headline: 'Try a widget-ready prompt',
-                description:
-                  'Use prompts like “Create a revenue by channel widget”, “Show open rate trend for last 30 days”, or “Add a recent orders table”.',
-                severity: 'info',
-              },
+              type: 'widgetDraftSet',
+              props: { drafts, rationale, conversationId },
             },
           ],
         })
+        if (isFirstPrompt) {
+          addItem({ title: text, draftedCount: drafts.length })
+        }
+        if (isVoiceMode.value) {
+          orbitResponse.value = { draft: drafts[0] ?? null, caption: stripHtml(buildIntro(drafts.length)) }
+        }
+        maybeSpeak(buildIntro(drafts.length))
+        finishGeneration(gen)
+      }, 1200))
+      return
+    }
+  }
+
+  // Intent / Gemini path — preview the classified intent's steps while working;
+  // the finished message carries the result's actual steps.
+  startStepTicker(INTENT_STEPS[intents.classify(text)], gen, 1200)
+  pendingTimers.push(setTimeout(async () => {
+    if (gen !== generationSeq) return
+    // No widget mapping — try the unified intent layer (campaigns, products,
+    // revenue, segments) before falling back to the widget-prompt hint.
+    const res = intents.handle(text)
+    if (res.intent !== 'fallback') {
+      completeIntentResult(res, gen)
+      return
+    }
+    if (!isDashboardRoute.value) {
+      // Open-ended question outside a dashboard widget-building context — answer
+      // with Gemini Flash (falls back to the canned hint if Gemini is unavailable),
+      // grounded in the live workspace context block. (Guarded on the dashboard
+      // ROUTE, not the default dashboard's existence — every account has a default
+      // dashboard, so the old guard sent nearly all open-ended asks to the widget
+      // hint and Gemini almost never fired from the drawer.)
+      const history = messages.value.slice(0, -1).slice(-6).map((m) => ({ role: m.role, text: m.text }))
+      geminiAbort = new AbortController()
+      let smart: DvIntentResult
+      try {
+        smart = await intents.answer(text, {
+          history,
+          context: contextBlock.value,
+          signal: geminiAbort.signal,
+        })
+      } catch {
+        return // aborted via Stop — generationSeq is already stale
+      } finally {
+        geminiAbort = null
+      }
+      completeIntentResult(smart, gen)
+      return
+    }
+    // Fallback on a dashboard route → widget-prompt hint
+    if (isVoiceMode.value) {
+      orbitResponse.value = {
+        draft: null,
+        caption:
+          "I couldn't map that to a widget yet. Try revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
       }
     }
-    scrollToBottom()
+    messages.value.push({
+      id: makeId('a'),
+      role: 'assistant',
+      text: "I couldn't map that to a supported widget yet. Try asking for revenue, orders, open rate, campaigns, contact growth, or ticket volume.",
+      componentData: [
+        {
+          type: 'insight',
+          props: {
+            headline: 'Try a widget-ready prompt',
+            description:
+              'Use prompts like “Create a revenue by channel widget”, “Show open rate trend for last 30 days”, or “Add a recent orders table”.',
+            severity: 'info',
+          },
+        },
+      ],
+    })
+    finishGeneration(gen)
   }, 1200))
 }
 
@@ -577,12 +642,10 @@ function sendSuggestion(text: string) {
 }
 
 function newChat() {
+  stopGeneration()
   stopVoiceActivity()
-  chatMode.value = false
-  messages.value = []
+  copilot.resetConversation()
   inputText.value = ''
-  generatingStatus.value = ''
-  currentConversationId.value = null
   historyOpen.value = false
   pushToast({ title: 'New chat started' })
 }
@@ -636,32 +699,6 @@ function getIntentCardsProps(msg: ChatMessage): IntentCardsProps | null {
   const comp = msg.componentData?.[0]
   if (!comp || comp.type !== 'intentCards') return null
   return comp.props as IntentCardsProps
-}
-
-function handleOpenInTab() {
-  const snapshot = {
-    conversationId: currentConversationId.value ?? makeId('c'),
-    messages: messages.value,
-    accountId: targetAccountId.value ?? accountsStore.activeId ?? '',
-    dashboardId: targetDashboard.value?.id ?? null,
-    snapshotAt: Date.now(),
-  }
-  try {
-    window.localStorage.setItem(
-      'davinci-active-conversation-v1',
-      JSON.stringify(snapshot),
-    )
-  } catch {
-    // localStorage quota / private mode — navigate anyway, full-screen view starts fresh
-  }
-  emit('close')
-  router.push({
-    name: 'DaVinciCopilot',
-    params: {
-      accountId: snapshot.accountId,
-      conversationId: snapshot.conversationId,
-    },
-  })
 }
 
 function handleClearAll() {
@@ -721,9 +758,13 @@ function onComposerKeydown(event: KeyboardEvent) {
           </v-btn>
         </template>
         <v-list density="compact" class="dv-panel__menu">
-          <v-list-item @click="handleOpenInTab">
+          <v-list-item v-if="copilot.widthMode !== 'full'" @click="copilot.setWidthMode('full')">
             <template #prepend><v-icon size="18">maximize-2</v-icon></template>
-            <v-list-item-title>Open full screen</v-list-item-title>
+            <v-list-item-title>Full width</v-list-item-title>
+          </v-list-item>
+          <v-list-item v-else @click="copilot.setWidthMode('panel')">
+            <template #prepend><v-icon size="18">minimize-2</v-icon></template>
+            <v-list-item-title>Exit full width</v-list-item-title>
           </v-list-item>
           <v-list-item v-if="isVoiceMode" @click="setUiMode('text')">
             <template #prepend><v-icon size="18">keyboard</v-icon></template>
@@ -754,6 +795,19 @@ function onComposerKeydown(event: KeyboardEvent) {
       @new-chat="newChat"
     />
 
+    <div class="dv-panel__split">
+      <!-- Full-width takeover shows the conversation history as a persistent rail
+           (same composition as the DaVinciCopilot page). -->
+      <aside v-if="!headerless && copilot.widthMode === 'full' && !isVoiceMode" class="dv-panel__rail">
+        <DvHistoryDrawer
+          :open="true"
+          mode="rail"
+          :active-id="currentConversationId ?? undefined"
+          @new-chat="newChat"
+        />
+      </aside>
+
+      <div class="dv-panel__main">
     <!-- ═══ ORBIT VOICE SURFACE (voice mode) — owns the whole body + footer ═══ -->
     <DvOrbitVoiceSurface
       v-if="isVoiceMode"
@@ -799,6 +853,10 @@ function onComposerKeydown(event: KeyboardEvent) {
         <div v-else class="dv-msg-bot">
           <DvOrbitOrb class="dv-msg-bot__avatar" :size="28" />
           <div class="dv-msg-bot__body">
+            <DvToolSteps
+              v-if="msg.toolSteps?.length"
+              :steps="msg.toolSteps.map((label) => ({ label, status: 'done' as const }))"
+            />
             <!-- HTML is allowed ONLY for the developer-authored widget-draft intro (buildIntro).
                  All other assistant text (canned intents, Gemini replies) is interpolated, never
                  fed to v-html — prevents XSS from model output. -->
@@ -862,11 +920,12 @@ function onComposerKeydown(event: KeyboardEvent) {
         </div>
       </template>
 
-      <!-- Generating skeleton -->
+      <!-- Generating: live tool steps (Amboras-style) with skeleton -->
       <div v-if="isTyping" class="dv-msg-bot">
         <DvOrbitOrb class="dv-msg-bot__avatar" :size="28" :speed="1.6" arc />
         <div class="dv-msg-bot__body">
-          <div class="dv-status">
+          <DvToolSteps v-if="liveSteps.length" :steps="liveSteps" :default-open="true" />
+          <div v-else class="dv-status">
             <span class="dv-status__dot" aria-hidden="true"></span>
             {{ generatingStatus }}
           </div>
@@ -902,7 +961,7 @@ function onComposerKeydown(event: KeyboardEvent) {
         <input
           v-model="inputText"
           type="text"
-          placeholder="Ask Da Vinci…"
+          :placeholder="isTyping ? 'Queue a follow-up…' : 'Ask Da Vinci…'"
           class="dv-composer__input"
           @keydown="onComposerKeydown"
         />
@@ -934,10 +993,19 @@ function onComposerKeydown(event: KeyboardEvent) {
             <v-tooltip activator="parent" location="top">Voice mode</v-tooltip>
           </v-btn>
           <button
+            v-if="isTyping"
+            type="button"
+            class="dv-composer__send dv-composer__stop"
+            aria-label="Stop generating"
+            @click="stopGeneration"
+          >
+            <v-icon size="13" class="dv-composer__stop-icon">square</v-icon>
+          </button>
+          <button
             type="button"
             class="dv-composer__send"
             aria-label="Send"
-            :disabled="!inputText.trim() || isTyping"
+            :disabled="!inputText.trim()"
             @click="sendQuery"
           >
             <v-icon size="16" class="dv-on-accent-icon">arrow-up</v-icon>
@@ -946,6 +1014,8 @@ function onComposerKeydown(event: KeyboardEvent) {
       </div>
       <p class="dv-composer__note">Da Vinci can make mistakes. Check important info.</p>
     </footer>
+      </div>
+    </div>
 
     <DvToastStack />
   </div>
@@ -1026,6 +1096,29 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 .dv-panel__menu-danger :deep(.v-list-item-title) {
   color: rgb(var(--v-theme-error));
+}
+
+/* ─── Split: optional history rail (full-width mode) + main column ──── */
+.dv-panel__split {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dv-panel__rail {
+  width: 260px;
+  flex: 0 0 260px;
+  background: rgb(var(--v-theme-surface-variant));
+  border-right: 1px solid rgb(var(--v-theme-outline-variant));
+  overflow-y: auto;
+}
+
+.dv-panel__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* ─── Body ─────────────────────────────────────────────────────────── */
@@ -1355,5 +1448,19 @@ function onComposerKeydown(event: KeyboardEvent) {
 .dv-composer__send:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* Stop button — same round footprint as Send, neutral fill */
+.dv-composer__stop {
+  background: rgb(var(--v-theme-on-surface));
+}
+
+.dv-composer__stop:hover {
+  filter: brightness(1.2);
+}
+
+.dv-composer__stop .dv-composer__stop-icon,
+.dv-composer__stop .dv-composer__stop-icon :deep(svg) {
+  color: rgb(var(--v-theme-surface)) !important;
 }
 </style>

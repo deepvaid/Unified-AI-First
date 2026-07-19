@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import MpDaVinciBot from '@/components/MpDaVinciBot.vue'
 import DvHistoryDrawer from '@/components/copilot/DvHistoryDrawer.vue'
+import { useCopilotStore, type ChatMessage } from '@/stores/useCopilot'
 
+// The live conversation is shared via the copilot store, so opening this page
+// simply continues the drawer's thread. The localStorage snapshot remains only
+// as a fallback for cold deep links from older sessions.
 const STORAGE_KEY = 'davinci-active-conversation-v1'
 const STALE_MS = 60_000
 
@@ -30,14 +34,22 @@ function readSnapshot(): { messages: unknown[]; conversationId: string | null } 
   }
 }
 
-const hydrated = readSnapshot()
-const initialMessages = ref<unknown[]>(hydrated.messages)
-const hydratedConversationId = ref<string | null>(hydrated.conversationId)
+const copilot = useCopilotStore()
+
+if (copilot.messages.length === 0) {
+  const hydrated = readSnapshot()
+  if (hydrated.messages.length) {
+    copilot.messages = hydrated.messages as ChatMessage[]
+    copilot.chatMode = true
+    copilot.conversationId = hydrated.conversationId
+  }
+}
+
+const activeConversationId = computed(() => copilot.conversationId)
 const botKey = ref(0)
 
 function startNewChat() {
-  initialMessages.value = []
-  hydratedConversationId.value = null
+  copilot.resetConversation()
   botKey.value += 1
   window.localStorage.removeItem(STORAGE_KEY)
 }
@@ -61,7 +73,7 @@ function startNewChat() {
         <DvHistoryDrawer
           :open="true"
           mode="rail"
-          :active-id="hydratedConversationId ?? undefined"
+          :active-id="activeConversationId ?? undefined"
           @new-chat="startNewChat"
         />
       </aside>
@@ -70,7 +82,6 @@ function startNewChat() {
         <MpDaVinciBot
           :key="botKey"
           :headerless="true"
-          :initial-messages="(initialMessages as any)"
         />
       </main>
     </div>

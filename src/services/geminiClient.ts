@@ -1,4 +1,4 @@
-// Client wrapper for the secure /api/gemini proxy. Sends only { text, history } —
+// Client wrapper for the secure /api/gemini proxy. Sends only { text, history, context } —
 // the API key lives server-side and never reaches the browser. Returns null on any
 // failure (no key, network, provider error) so callers can degrade gracefully to
 // the canned fallback, mirroring how TTS falls back to the browser voice.
@@ -14,12 +14,24 @@ export interface GeminiReply {
   card?: { headline: string; description: string; severity?: 'info' | 'success' | 'warning' | 'error' }
 }
 
-export async function askGemini(text: string, history: GeminiTurn[] = []): Promise<GeminiReply | null> {
+export interface AskGeminiOptions {
+  /** Compact live-workspace context block (current page, account, plan, dashboard). */
+  context?: string
+  /** Abort the in-flight request (copilot Stop button). */
+  signal?: AbortSignal
+}
+
+export async function askGemini(
+  text: string,
+  history: GeminiTurn[] = [],
+  opts: AskGeminiOptions = {},
+): Promise<GeminiReply | null> {
   try {
     const resp = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, history }),
+      body: JSON.stringify({ text, history, context: opts.context }),
+      signal: opts.signal,
     })
     if (!resp.ok) return null
     const data = (await resp.json()) as Partial<GeminiReply>
@@ -29,7 +41,10 @@ export async function askGemini(text: string, history: GeminiTurn[] = []): Promi
       speech: typeof data.speech === 'string' && data.speech.trim() ? data.speech : data.reply,
       card: data.card,
     }
-  } catch {
+  } catch (err) {
+    // A user-initiated Stop must not surface the canned fallback — rethrow so the
+    // caller's generation-guard can swallow it.
+    if (err instanceof DOMException && err.name === 'AbortError') throw err
     return null
   }
 }

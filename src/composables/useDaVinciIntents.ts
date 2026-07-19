@@ -89,12 +89,29 @@ export interface DvIntentResult {
   cards: DvCardDescriptor[]
   quickReplies?: DvQuickReply[]
   pending: DvPending | null
+  /** Named tool steps behind this reply (DvToolSteps disclosure); omit for plain conversation. */
+  steps?: string[]
 }
 
 // ── Mock data (Maropost-flavored) ────────────────────────────────────────────
 // Data + speech templates live in dvIntentData.ts (imported above) — shared with
 // scripts/bake-lines.mjs so every canned speech line is pre-baked to audio whose
 // text matches the runtime string byte-for-byte (the text is the audio-cache key).
+
+/**
+ * Named tool steps per intent — shown live (DvToolSteps) while the reply is
+ * "generating" and stamped onto the finished message. Single source of truth so
+ * the live preview and the stamped result always match.
+ */
+export const INTENT_STEPS: Record<DvIntentKind, string[]> = {
+  campaign: ['Pick audience', 'Draft email'],
+  product: ['Scan catalog tone', 'Draft description'],
+  revenue: ['Query revenue · last 7 days', 'Compare vs prior week'],
+  segment: ['Scan contacts', 'Assemble rules'],
+  engine: ['Match engine to page'],
+  journey: ['Assemble sequence'],
+  fallback: ['Consult Da Vinci brain'],
+}
 
 export const SUGGESTION_CHIPS: DvQuickReply[] = [
   { label: 'Run a campaign', value: 'Run a campaign', icon: 'megaphone' },
@@ -181,6 +198,7 @@ export function useDaVinciIntents() {
         },
       ],
       pending: null,
+      steps: INTENT_STEPS.campaign,
     }
   }
 
@@ -192,6 +210,7 @@ export function useDaVinciIntents() {
       speech: productSpeech(draft.title),
       cards: [{ type: 'content', props: { type: 'product', title: draft.title, content: draft.content } }],
       pending: null,
+      steps: INTENT_STEPS.product,
     }
   }
 
@@ -223,6 +242,7 @@ export function useDaVinciIntents() {
         },
       ],
       pending: null,
+      steps: INTENT_STEPS.revenue,
     }
   }
 
@@ -235,6 +255,7 @@ export function useDaVinciIntents() {
       speech: segmentSpeech(props.name, props.estimatedSize),
       cards: [{ type: 'segment', props }],
       pending: null,
+      steps: INTENT_STEPS.segment,
     }
   }
 
@@ -332,6 +353,7 @@ export function useDaVinciIntents() {
         icon: alt.icon,
       })),
       pending: pending.value,
+      steps: INTENT_STEPS.engine,
     }
   }
 
@@ -380,6 +402,7 @@ export function useDaVinciIntents() {
         { label: 'Different goal', value: 'Draft a different journey', icon: 'refresh-ccw' },
       ],
       pending: pending.value,
+      steps: INTENT_STEPS.journey,
     }
   }
 
@@ -454,7 +477,10 @@ export function useDaVinciIntents() {
    * Flash for a smart reply, degrading to the canned `buildFallback()` when Gemini
    * is unavailable (no key / network / provider error).
    */
-  async function answer(text: string, opts: { history?: GeminiTurn[] } = {}): Promise<DvIntentResult> {
+  async function answer(
+    text: string,
+    opts: { history?: GeminiTurn[]; context?: string; signal?: AbortSignal } = {},
+  ): Promise<DvIntentResult> {
     const trimmed = text.trim()
 
     // Deterministic flows stay byte-for-byte: a pending clarification or any known
@@ -463,13 +489,14 @@ export function useDaVinciIntents() {
       return handle(text)
     }
 
-    const smart = await askGemini(trimmed, opts.history ?? [])
+    const smart = await askGemini(trimmed, opts.history ?? [], { context: opts.context, signal: opts.signal })
     if (!smart) return buildFallback()
 
     return {
       intent: 'fallback',
       reply: smart.reply,
       speech: smart.speech,
+      steps: INTENT_STEPS.fallback,
       cards: smart.card
         ? [
             {

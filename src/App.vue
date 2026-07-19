@@ -151,9 +151,14 @@ const showFrame = computed(() => resolvedFrame.value && !isFullPage.value && !is
 const sidebarTemporary = computed(() => smAndDown.value)
 const sidebarRail = computed(() => rail.value)
 const copilotDrawerWidth = computed(() => {
-  // Default ~400px to mirror Google Gemini's Gmail side panel; expand to 720px
-  // for reviewing widget drafts.
-  const target = copilot.isExpanded ? 720 : 400
+  // panel ~400px to mirror Google Gemini's Gmail side panel; wide 720px for
+  // reviewing widget drafts; full takes over the whole content area in place
+  // (the app sidebar keeps its reserved band).
+  if (copilot.widthMode === 'full') {
+    const sidebarReserved = isFullPage.value || !drawer.value ? 0 : rail.value ? 72 : 260
+    return Math.max(360, width.value - sidebarReserved - 24)
+  }
+  const target = copilot.widthMode === 'wide' ? 720 : 400
   return Math.min(target, Math.max(360, width.value - 32))
 })
 </script>

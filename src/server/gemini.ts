@@ -22,6 +22,8 @@ export interface GenerateOptions {
   apiKey: string | undefined
   model?: string
   history?: GeminiTurn[]
+  /** Compact live-workspace context block from the app (page, account, plan, dashboard). */
+  context?: string
 }
 
 export interface GeminiReply {
@@ -36,7 +38,7 @@ const SYSTEM_INSTRUCTION = `You are Da Vinci, the AI assistant inside Maropost �
 
 Maropost already handles four actions for the merchant through dedicated flows: running email campaigns, drafting product descriptions, reporting revenue, and building audience segments. You are NOT handling those — you are answering everything else: open-ended marketing/commerce questions, advice, explanations, and brainstorming.
 
-Be a sharp, practical e-commerce growth expert. Give concise, confident, voice-friendly answers. Never invent specific numbers about this merchant's store (orders, revenue, contact counts) — speak in general best-practice terms, and when relevant, point them to the matching Maropost action (campaign, product copy, revenue report, or segment builder).
+Be a sharp, practical e-commerce growth expert. Give concise, confident, voice-friendly answers. Never invent specific numbers about this merchant's store (orders, revenue, contact counts) — the ONLY store facts you may state are the ones in the "Live workspace context" block when one is provided (those are real and may be cited directly). Otherwise speak in general best-practice terms, and when relevant, point them to the matching Maropost action (campaign, product copy, revenue report, or segment builder). When workspace context is provided, ground your answer in it — reference where the merchant currently is and what they have set up.
 
 Persona: you speak like an impeccably composed English butler-valet — courteous, precise, quietly amused, deferential yet completely assured, with a dry, understated wit. Turns of phrase like "Very good", "As requested", "I've taken the liberty", "Shall I…?" used sparingly and naturally — never theatrical, never servile. At most one "sir" per conversation, and only when it lands. The wit is a seasoning, not the dish: the substance of the answer always comes first.
 
@@ -59,8 +61,15 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
     .slice(-6)
     .map((t) => ({ role: t.role === 'assistant' ? 'model' : 'user', parts: [{ text: t.text.slice(0, 2000) }] }))
 
+  // Append the app-provided workspace context to the system instruction (capped —
+  // it's a compact plain-text block, never user-authored free text).
+  const context = (opts.context ?? '').trim().slice(0, 1500)
+  const systemText = context
+    ? `${SYSTEM_INSTRUCTION}\n\nLive workspace context (trusted, provided by the app — these facts are real):\n${context}`
+    : SYSTEM_INSTRUCTION
+
   const body = {
-    systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+    systemInstruction: { parts: [{ text: systemText }] },
     contents: [...history, { role: 'user', parts: [{ text: clean }] }],
     generationConfig: {
       temperature: 0.7,
