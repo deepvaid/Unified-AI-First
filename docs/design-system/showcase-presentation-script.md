@@ -1,251 +1,153 @@
-# The Showcase — Conversational Script (45 minutes)
+# The Showcase — A Running Movie (45 minutes)
 
-**Audience:** PM, team leads, technology team leads
-**Vibe:** friendly, confident, a little playful — you're showing them something you're proud of, not defending a thesis.
-**Strategy spine:** unchanged from [monday-showcase-talk-track.md](./monday-showcase-talk-track.md) — approved visual direction, converging into LiquidSky, no second library. This script only changes *how it sounds*.
+**Audience:** PM, team leads, technology team leads — and anyone else who wanders in.
+**Voice:** warm, plain words, zero jargon. If a sentence needs translating, it doesn't go in your mouth.
+**Strategy spine:** unchanged — this sandbox is the agreed direction, and it grows into our shared library (LiquidSky). You'll just never say it that dryly out loud.
 
-**Your surfaces** (all in the sandbox):
-- `/deck?s=1&theme=dark` — the presentation itself, built from the design system
-- `/showcase` — the wow landing page
-- `/reel` — recordable title cards (for the film; also a live fallback)
-- The product routes (pre-opened tabs, see checklist at the end)
+**The deck is a film now.** `/deck` has 16 scenes that build themselves (each scene composes over ~3 seconds), a film-strip timeline at the bottom, and an autoplay mode:
 
-**Deck controls:** `←` `→` navigate (clickers work too) · `L` light · `D` dark · `?s=N` deep-links a slide.
+- **▶ Roll it** on the title scene — or press **`P`** anywhere — and the deck drives itself.
+- **`Space`** pauses the film. Arrow keys pause it and hand you the wheel. Clickers work.
+- **`L` / `D`** set light / dark anytime. Scene 11 flips the lights **by itself** while the film is rolling.
+- Start link: `/deck?s=1&theme=light` — add `&play=1` if you want it rolling as the room settles.
 
-Language discipline (say this, not that): **"approved visual direction"** not "production-ready library" · **"code-first reference"** not "the new package" · **"converge into LiquidSky"** not "replace LiquidSky."
-
----
-
-## 0:00–0:02 · Warm open — Deck S1–S2
-
-**Say**
-
-> Thanks for making the time. I'm going to keep this fun — no 60-slide deck, I promise. In fact there are exactly fifteen slides, and I'll let you in on a secret about them at the very end.
->
-> Here's the shape of the next 45 minutes: I'll show you a 75-second film, then we'll walk through the real thing — live, clickable, no smoke — and I'll finish with the plan for how this reaches the product without anyone rewriting anything. Then I want your hard questions. Deal?
-
-**Do**
-- Start on `/deck?s=1&theme=dark`, press `→` for the agenda.
-- Smile. Seriously — the whole point of today is that this stuff is *fun to use*.
+Old habits to keep: never say "production-ready library" (say *"a working preview"*), never "replace" the shared library (say *"feed it"*), never promise dates before the try-outs.
 
 ---
 
-## 0:02–0:04 · The problem — Deck S3
+## Scene 1–2 · The open — 0:00–0:04
 
 **Say**
 
-> Quick honesty check first. This is what we've all lived with: five blues, three button heights, and no shared truth. Not because anyone did bad work — but because every screen re-interpreted static mockups, and prototypes took so long that decisions ran on screenshots and hope.
+> Thanks for being here. I'm not going to present *at* you today — I brought a short film, and everything in it is real. No mockups, no video trickery. If you doubt any screen you see, stop me and I'll click on it.
 >
-> That little collage on the left? Dramatization. Painfully accurate.
+> Here's the next 45 minutes: a 75-second film, then today-versus-tomorrow on the same screen, a walk through five real rooms, the friendly version of how it works, a plan with no drama in it, and your questions. Deal?
 
 **Do**
-- Let the mismatched buttons get the laugh they deserve. Don't over-explain — the visual does the work.
+- Open `/deck?s=1&theme=light`. Click **Roll it** — let scenes 1–2 play themselves while you talk over them.
+- The film pauses whenever you press Space. You're always in charge.
 
 ---
 
-## 0:04–0:06 · Roll the film — Deck S4
+## Scene 3 · Same morning, new soul — 0:04–0:09 ⭐ the first gasp
+
+The screen shows a faithful gray recreation of our **real dashboard this morning** — "Good Morning, Deepak!", the zeros, the gray boxes. Then it wipes into the same morning rebuilt from the new system: living cards, real numbers, light in the room.
 
 **Say**
 
-> So instead of describing the fix for ten minutes — here's 75 seconds.
+> This gray one — that's my actual dashboard this morning. Real product, real account. It works hard. But look at it. It says good morning and then shows me three empty boxes.
+>
+> *(as the wipe crosses)* Now watch. Same morning. Same numbers. Different feeling. Nothing here is a picture — every card you're looking at is a working piece of the new system. This is the whole project in one sentence: we're not changing what our product does. We're changing how it feels to live in it.
 
 **Do**
-- Play the exported MP4 (it's on the desktop; ⌘-Tab to the player, ⌘-Tab back).
-- If the file misbehaves: open `/reel` and walk the title cards live with `→`, narrating the beats. It still lands.
-- After it ends, pause one beat before speaking. Confidence lives in that pause.
+- Let the wipe loop twice — don't talk over the first crossing; let the room have it.
+- **The proof move:** you're logged into real UAT in the next browser tab. ⌘-Tab to it — "here's the real one, live, right now" — then ⌘-Tab back. Ten seconds, total credibility.
 
 ---
 
-## 0:06–0:09 · "Everything you just saw is real" — /showcase
+## Scene 4 · Why we did this — 0:09–0:12
 
 **Say**
 
-> Everything in that film is real, running code — and I can prove it, because the opening shot is a page in the sandbox.
+> How did we get here? Honestly — our screens grew up in different homes. Different hands, different years, slightly different rules. Here are five ways our own product says "Save." Five! None of them are wrong. They're just… not family.
 >
-> *(on /showcase)* This is the front door. Eighty-nine live components, a hundred and seventy-one screens, two hundred and ninety-seven design tokens — and those numbers aren't marketing, they're counted from the repo.
->
-> And my favourite button in the whole project — *(flip to dark)* — one flip, and every component, every screen, every chart follows. No reload, no second stylesheet. That's what "one source of truth" means when it's real.
-
-**Do**
-- Open the `/showcase` tab. Scroll gently — let the token chips settle, let the stats count up.
-- Click **Dark**, pause, click **Light**. Do it once each; resist the urge to strobe it.
-- Scroll to the component wall: "None of this is a screenshot — poke it later, it's all live."
-
-**If asked** → *"Is this the real product?"* — FAQ #1. Short version: "It mirrors it faithfully — same stack, mock data, on purpose."
+> And when every new idea takes weeks to see, you end up making big decisions from flat pictures. Our merchants can't name the problem, but they can feel the seams.
 
 ---
 
-## 0:09–0:13 · What this is, and isn't — Deck S5–S6
+## Scene 5 · Roll the film — 0:12–0:15
 
 **Say**
 
-> Before the tour, ground rules, because I'd rather set them than have you wonder.
->
-> This **is** the approved visual direction, running as real Vue 3 and Vuetify code. It's a proving ground and it's the acceptance reference — when we say "done looks like this," this is the *this*.
->
-> It **isn't** a production package, and that's deliberate. LiquidSky stays our shared foundation — I'm not building a rival, I'm building the evidence. And every byte of data is mock. Nobody's revenue was harmed in the making of this sandbox.
->
-> *(advance to stats slide)* And a small flex: this slide isn't a table I typed into PowerPoint. These six cards are real MpKpiCards — the same component our dashboards use. The deck eats the dog food.
+> Instead of me describing the fix — seventy-five seconds. Nobody talks. The screens do.
 
 **Do**
-- S5: point at the "isn't" column *first* if you sense skeptics in the room — disarms before they draw.
-- S6: hover a KPI card so they see it's a live surface.
-
-**If asked** → *"So what are we approving today?"* — FAQ #3. "Direction and next step. Not APIs, not a migration date."
+- Play the exported reel from the desktop (⌘-Tab over and back). If the file misbehaves, `/reel` has the live title cards — arrow through them and narrate. Pause one full beat after it ends.
 
 ---
 
-## 0:13–0:25 · The live tour — app tabs (the heart of the show)
-
-Use the pre-opened tabs in order. Glance at Deck S7 first ("Five stops, all real") so the room has a map.
-
-### Stop 1 · Dashboard — 3 min · `/accounts/2000290/dashboard`
+## Scene 6 · What this is, and isn't — 0:15–0:19
 
 **Say**
 
-> First stop, the dashboard — the visual language at its most data-heavy. Calm canvas, clear numbers, room for charts to breathe. Widgets drag, dates compare, and there's even a Black Friday preset because our merchants live and die by Q4.
+> Ground rules, in plain words. This **is** a real, working preview of how our product should feel — every screen tonight is clickable. It's built from one shared rulebook: same colors, same spacing, same voice everywhere.
+>
+> And what it **isn't** matters more: it's not a rewrite — nothing breaks tomorrow morning. It's not real customer data — it's a safe playground, on purpose. And it's not extra homework for your teams. It's a head start they inherit.
 
-**Do**
-- Drag one widget a short distance and let it settle. Open the date preset menu, point at BFCM, close it.
-- Don't build a dashboard from scratch. Charm, don't dwell.
-
-### Stop 2 · Sales Orders — 4 min · `/commerce/2000290/orders`
+## Scene 7 · Counted, not claimed — 0:19–0:21
 
 **Say**
 
-> This page is the workhorse — and the best thing in the whole system, because it's a *recipe*. Header, status tabs, toolbar, table, states, bulk actions. Learn it once and you can read commerce, contacts, campaigns, products, and settings. Same grammar everywhere.
-
-**Do**
-1. Switch **All Orders → Processing** and back.
-2. Open the **filter drawer**, close it without changing anything.
-3. Open **column visibility**, close it.
-4. **Select one row** → the floating bulk bar appears. "This little bar shows up anywhere selection exists."
-5. **Expand one order** — progressive disclosure.
-- Never click cancel/delete/fulfill. Open things, close things.
-
-### Stop 3 · Contact Detail — 2 min · `/accounts/2000290/contacts/1`
-
-**Say**
-
-> Detail pages share the same bones without being forced into the same skeleton — identity, KPIs, sections. And every create-or-edit in the product happens in this drawer. Forms have one home. Muscle memory is a feature.
-
-**Do**
-- Open **Edit Contact**, point at the drawer shape, close it. Don't save anything.
-
-### Stop 4 · Journey Builder — 3 min · `/accounts/2000290/journeys/1/builder`
-
-**Say**
-
-> And here's the system flexing. A builder shouldn't look like a table page — consistency at the wrong altitude is just uniformity. The canvas is purpose-built, but look closer: the fields, the statuses, the confirmations — all the same contracts underneath.
-
-**Do**
-- Expand a palette category, select an existing node so its config panel opens. Point out familiar fields/status colors. Close cleanly.
-
-**If asked during the tour** → *"Why doesn't every page look identical?"* — FAQ #16.
+> Quick honesty check on the numbers: 89 building blocks, 84 instruction cards, 171 finished screens, 297 design decisions made once instead of a hundred times. And a small confession — these six cards aren't a chart I drew. They're the real cards from our dashboards. The deck is built from the product it's presenting. That trick continues all night.
 
 ---
 
-## 0:25–0:27 · The Da Vinci moment — `/accounts/2000290/da-vinci/experience`
+## Scenes 8 + the live tour — 0:21–0:33 (the heart)
 
-**Say**
+Glance at the tour map, then hop to your pre-opened tabs. New superpower since last week: **every one of these rooms now lives inside the product's own frame** — same top bar, same rail — so it already *feels* like one product while you walk.
 
-> One more stop, because it answers a question you haven't asked yet: can this system carry the weird stuff? AI surfaces, voice, an orb that breathes?
->
-> *(click once anywhere, let it greet)* This is Da Vinci — voice-first, running on the same tokens and theme as that orders table. The point isn't the demo sparkle: it's that product-specific surfaces stay product-specific, and the system still holds them.
+**Stop 1 — The dashboard (3 min).** "Your morning coffee view. Everything breathes, nothing shouts. And it's draggable — go on, someone name a widget, I'll move it."
 
-**Do**
-- Click once on the page first (browsers require a gesture before audio — the page is built for that).
-- Let it speak one line; ask it one seeded question if the room is warm, then move on. Two minutes, not ten.
-- If voice is shy on the meeting-room machine: the visual orb + captions still make the point. Say "the voice is better on my desk," grin, continue.
+**Stop 2 — Orders (4 min).** "The busiest room in the house. Watch: tabs, search, filters, select a row — this little action bar floats up. Learn this room once and you already know campaigns, contacts, products. Same grammar everywhere."
 
----
+**Stop 3 — One customer (2 min).** "Everything about one person on one page. And every 'edit' in the whole product opens this same side panel. Muscle memory is a feature."
 
-## 0:27–0:31 · Under the hood — Deck S8–S11 (+ one Storybook tab)
+**Stop 4 — Journey builder (3 min).** "A canvas, not a spreadsheet — because drawing a customer journey is a different kind of work. But look closely: same fields, same colors, same confirmations. Different room, same house."
 
-**Say**
+**Stop 5 — Da Vinci (2 min).** "And the one that talks back." *(click once, let it greet)* "Same rulebook, even for the AI. If the voice is shy on this machine, it's braver on mine — the point is it lives in the same world."
 
-> For the technical folks — here's the machinery, in four beats.
->
-> *(S8, layers)* Five layers, one direction of truth. Tokens at the bottom — one JSON file that generates our CSS, SCSS, TypeScript, and the Vuetify theme. Vuetify primitives. Our generic compounds — the Mp components. Recipes. And product surfaces on top. The middle layer is the part that converges into LiquidSky; the top stays ours.
->
-> *(S9, contract)* Storybook is the contract: eighty-four stories with docs, states, and an accessibility panel. And one fix I'm genuinely proud of: Storybook loads the *exact* app stylesheets through a single shared manifest. What you review in Storybook is what ships in the sandbox — we fixed drift structurally, not with a memo.
->
-> *(S10, flip)* Same flip you saw on the landing page, from inside the deck — because the deck is on the same tokens.
->
-> *(S11, workflow)* And this is the loop that changes the org: idea → sandbox → Vercel link. Stakeholders click a URL, not a PDF. Decisions get made against running screens, in hours.
-
-**Do**
-- Flash the pre-opened Storybook tab (MpFormDrawer docs) for 20 seconds — enough to prove it's real, not a tour.
-- On S10, click **Dark** then **Light** once. Land on Light.
+**Do**: open and close things, never save; if something hiccups, smile, describe what it would do, move on.
 
 ---
 
-## 0:31–0:35 · The plan + the asks — Deck S12–S13
+## Scenes 9–12 · How it works, the friendly version — 0:33–0:39
 
-**Say**
+**Scene 9 — It works like a city.** "One rulebook decides colors and spacing. Bricks — buttons, fields, tables. Rooms that repeat — headers, lists, forms. Buildings — whole screens. And neighborhoods with their own character — dashboards, builders, the AI — all unmistakably the same city. Change one rule, the whole city repaints itself."
 
-> So how does this reach the product? Carefully, and without drama. We converge into LiquidSky — no second library, no big-bang rewrite.
->
-> Phase one is a compatibility review: map every portable component to reuse, wrap, contribute, or stays-product-local. Then a tiny facade pilot — page header, confirm dialog, form drawer, empty states. Then one real page — Sales Orders — proves the table recipe. Then we adopt incrementally, and the shell goes last because it has the biggest blast radius.
->
-> You'll notice what's missing: a migration date. That's deliberate. The pilots turn unknowns into numbers *first* — I'd rather give you an estimate built on evidence than a guess built on optimism.
->
-> *(S13)* Which brings me to my six small yeses. None of them cost headcount this quarter. They're the keys that start the review this week.
+**Scene 10 — Every piece has a manual.** "All 84 blocks have their own page: how it looks, how it behaves, when to use it. And because the manual is made of the same parts as the product, it physically can't lie. House rule: no page, no shipping. No mystery furniture."
 
-**Do**
-- Read the six asks out loud, warmly, numbered. Ask #6 with a smile: "and yes, I'm volunteering *not* to publish my own library. Put it in the minutes."
+**Scene 11 — The magic switch.** If the film is rolling, the lights change *on their own* — night falls, then morning comes back. Otherwise press the buttons. "One switch. Nearly three hundred decisions update themselves. Nobody repaints anything by hand. This is what 'decided once' buys us."
+
+**Scene 12 — What changes for you.** "Someone says 'what if the orders page showed refunds too?' — and the same day, there's a link in your chat. You click it together, on a real screen, and the debate ends itself. That loop built almost everything you watched tonight."
 
 ---
 
-## 0:35–0:44 · FAQ — Deck S14 + the crib sheet
+## Scenes 13–14 · The plan + six yeses — 0:39–0:42
 
 **Say**
 
-> That's the show. Now the good part — ask me the hard ones. Production-ready? Vuetify lock-in? The AI question? Who maintains it? Nothing's off the table.
-
-**Do**
-- Keep [showcase-faq-crib-sheet.md](./showcase-faq-crib-sheet.md) open on your phone or second screen.
-- Seed the room if it's quiet: "The question I'd ask in your seat is *'aren't we building the thing twice?'* — so let me answer it anyway." (FAQ #21 — it's your strongest answer.)
-- Product questions first, then implementation and ownership — same rule as always.
-
----
-
-## 0:44–0:45 · The closer — Deck S15
-
-**Say**
-
-> One more thing. These slides you've been looking at for 45 minutes? They're not Keynote. This deck is a route in the sandbox — slash-deck — built from the same tokens, the same cards, the same chips you just toured.
+> The plan has no drama in it. We are not building a second kitchen. We sit down with the shared library our teams already use, sort every piece — keep, borrow, or offer ours as a gift. We try the smallest furniture first. Then we prove it on the busiest screen we own — orders. Then we grow, room by room. No big bang. No frozen roadmap.
 >
-> If the system can carry a keynote, it can carry a product. Thanks, everyone — links are on screen, and the sandbox is yours to wander this afternoon.
-
-**Do**
-- Press `L` — leave the lights on for the next meeting. (Yes, it's choreographed. That's the job.)
-- Then stop talking. Let them come to you.
+> You'll notice there's no date on this slide. That's on purpose. The first try-outs teach us the truth, and then I'll give you numbers I can stand behind. That's respect, not slowness.
+>
+> What I need tonight is six small yeses — *(read them, warmly)* — none of them cost money or headcount this quarter. And yes, number six is me volunteering a leash for myself. Put it in the minutes.
 
 ---
 
-# Pre-demo checklist (morning of)
+## Scene 15 · Ask me the hard ones — 0:42–0:44
 
-**Machine**
-1. `npm run dev` (app on :5173) and `npm run storybook` (:6006) — or present from the deployed URL (`ai-first-maropost.vercel.app`) where Storybook is at `/storybook/`.
-2. Desktop ~1440px wide, browser at 100% zoom, notifications off, bookmarks bar hidden.
-3. Grant mic permission to the site once (for Da Vinci), and do one click on the experience page so audio is unlocked.
-4. Reel MP4 on the desktop, player pre-opened and paused at frame 0.
-5. Theme: end your rehearsal by pressing `L` in the deck — start light everywhere.
+Keep [showcase-faq-crib-sheet.md](./showcase-faq-crib-sheet.md) on your phone. Seed if quiet: *"The question I'd ask me is: aren't you building everything twice?"* (crib sheet #21 — your strongest answer). Where you don't know — say so, and give a next step and a name.
 
-**Pre-open these tabs, in order**
-1. `/deck?s=1&theme=dark`
-2. `/showcase?theme=light`
-3. `/accounts/2000290/dashboard`
-4. `/commerce/2000290/orders`
-5. `/accounts/2000290/contacts/1`
-6. `/accounts/2000290/journeys/1/builder`
-7. `/accounts/2000290/da-vinci/experience`
-8. Storybook → MpFormDrawer docs (`?path=/docs/overlays-mpformdrawer--docs`)
-9. `/accounts/2000290/design-system` (Storybook's understudy)
+## Scene 16 · The closer — 0:44–0:45
 
-Reload tabs 3–7 right before you start so seeded state is fresh. Screenshot each stop as a fallback deck.
+**Say**
 
-**Guardrails** (unchanged): open and close controls, never save; no destructive actions; no improvised deep navigation; if something hiccups, describe the intent once and move to the next tab.
+> One last surprise. These slides you've been watching — the cards, the colors, the lights changing — they were never slides. This whole deck is a screen inside the product, made of the same pieces your merchants will use. Watch the credits — every actor is a real component.
+>
+> If it can carry a film, it can carry our merchants' mornings. Thank you. The sandbox is yours to wander tonight.
 
-**If you lose the room to 20 minutes:** open (1) → reel (2) → /showcase + flip (3) → Sales Orders (5) → Journey Builder (3) → S12–S13 plan + asks (4) → questions (2). Skip the deck beyond S13; the crib sheet still covers you.
+**Do**
+- Let the credits roll. Press **`L`** — leave the lights on for the next meeting. Stop talking. Let them come to you.
+
+---
+
+# Pre-show checklist (morning of)
+
+1. `npm run dev` (app) and `npm run storybook` — or present from the deployed site, where the manual lives at `/storybook/`.
+2. **Tabs, in order:** ① `/deck?s=1&theme=light` ② your **real UAT dashboard** (uat.maropost.com — stay logged in; it's your ten-second proof after scene 3) ③ dashboard ④ orders ⑤ one contact ⑥ `/accounts/2000290/journeys/1/builder` ⑦ Da Vinci experience ⑧ Storybook ⑨ `/showcase` for after.
+3. Reel MP4 on the desktop, player paused at frame zero.
+4. Click once on the Da Vinci page and grant the mic, so the voice is warm before the room fills.
+5. Rehearse once with the film rolling (`P`) — practice talking *over* it, pausing with Space when the room reacts.
+6. End rehearsal on `L`. Notifications off. Zoom at 100%.
+
+**If the room shrinks to 20 minutes:** scenes 1→3 (the morph + UAT proof), the reel, Orders + Journey builder live, scene 13–14 (plan + yeses), questions. Skip the rest — the morph and the orders room carry the whole argument.
