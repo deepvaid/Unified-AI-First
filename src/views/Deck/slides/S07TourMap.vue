@@ -4,36 +4,36 @@ import DeckSlide from '../DeckSlide.vue'
 const STOPS = [
   {
     icon: 'layout-dashboard',
-    title: 'Dashboard',
-    note: 'Calm, data-heavy, draggable',
+    title: 'The dashboard',
+    note: 'Your morning coffee view',
     minutes: 3,
     to: '/accounts/2000290/dashboard',
   },
   {
     icon: 'shopping-cart',
-    title: 'Sales Orders',
-    note: 'The flagship list recipe',
+    title: 'Orders',
+    note: 'The busiest room in the house',
     minutes: 4,
     to: '/commerce/2000290/orders',
   },
   {
     icon: 'user-round',
-    title: 'Contact Detail',
-    note: 'Detail pages + form drawer',
+    title: 'One customer',
+    note: 'Their whole story, one page',
     minutes: 2,
     to: '/accounts/2000290/contacts/1',
   },
   {
     icon: 'workflow',
-    title: 'Journey Builder',
-    note: 'A purpose-built workspace',
+    title: 'Journey builder',
+    note: 'Where marketing gets drawn',
     minutes: 3,
     to: '/accounts/2000290/journeys/1/builder',
   },
   {
     icon: 'sparkles',
-    title: 'Da Vinci AI',
-    note: 'Voice-first, product-specific',
+    title: 'Da Vinci',
+    note: 'The one that talks back',
     minutes: 2,
     to: '/accounts/2000290/da-vinci/experience',
   },
@@ -41,7 +41,7 @@ const STOPS = [
 </script>
 
 <template>
-  <DeckSlide eyebrow="The live tour" title="Five stops. All real, all clickable.">
+  <DeckSlide eyebrow="The live tour" title="Five rooms. All real. All clickable.">
     <div class="s07__grid">
       <v-card
         v-for="(stop, i) in STOPS"
@@ -49,9 +49,9 @@ const STOPS = [
         flat
         border
         rounded="lg"
-        class="s07__card pa-5"
+        class="s07__card pa-5 cine"
         :to="stop.to"
-        :style="{ '--i': i }"
+        :style="{ '--ci': 1.2 + i * 0.45 }"
       >
         <div class="d-flex align-center justify-space-between mb-4">
           <div class="s07__icon">
@@ -63,8 +63,9 @@ const STOPS = [
         <div class="s07__note mt-1">{{ stop.note }}</div>
       </v-card>
     </div>
-    <p class="s07__footnote mt-6">
-      I'll hop to pre-opened tabs — these cards are here so the map survives the meeting notes.
+    <p class="s07__footnote mt-6 cine--soft" :style="{ '--ci': 3.8 }">
+      No screenshots on this tour — every stop is the live thing. If you don't believe a screen is
+      real, ask me to click something unexpected on it.
     </p>
   </DeckSlide>
 </template>

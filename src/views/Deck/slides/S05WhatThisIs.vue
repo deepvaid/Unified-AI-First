@@ -2,43 +2,43 @@
 import DeckSlide from '../DeckSlide.vue'
 
 const IS = [
-  'The approved visual direction, running as real Vue 3 + Vuetify code',
-  'A proving ground — recipes, tokens, interactions, dark mode, a11y baseline',
-  "The acceptance reference for what 'done' looks like",
+  'A real, working preview of how our product should feel — everything you saw tonight is clickable.',
+  'Built from one shared rulebook: the same colors, spacing and voice on every single screen.',
+  'Our reference for "this is what good looks like" — so we stop debating taste and start pointing.',
 ]
 
 const IS_NOT = [
-  'A production npm package — LiquidSky stays the shared foundation',
-  'A backend — every byte of data is mock, on purpose',
-  'A big-bang rewrite proposal',
+  'Not a rewrite of the product — nothing breaks tomorrow morning.',
+  'Not real customer data — it is a safe playground, on purpose.',
+  'Not extra homework for your teams — it is a head start they inherit.',
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="Ground rules" title="A working reference, not another library.">
+  <DeckSlide eyebrow="A promise, in plain words" title="What this is — and what it isn't.">
     <v-row>
       <v-col cols="12" md="6">
-        <v-card flat border rounded="lg" class="pa-6 h-100">
-          <div class="mp-eyebrow mb-4 text-success">What it is</div>
-          <div v-for="item in IS" :key="item" class="s05__row">
+        <v-card flat border rounded="lg" class="pa-6 h-100 cine" :style="{ '--ci': 1.2 }">
+          <div class="mp-eyebrow mb-4 text-success">It is</div>
+          <div v-for="(item, i) in IS" :key="item" class="s05__row cine" :style="{ '--ci': 1.6 + i * 0.5 }">
             <v-icon size="20" color="success" class="mt-1">check-circle</v-icon>
             <span>{{ item }}</span>
           </div>
         </v-card>
       </v-col>
       <v-col cols="12" md="6">
-        <v-card flat border rounded="lg" class="pa-6 h-100">
-          <div class="mp-eyebrow mb-4">What it isn't</div>
-          <div v-for="item in IS_NOT" :key="item" class="s05__row s05__row--muted">
+        <v-card flat border rounded="lg" class="pa-6 h-100 cine" :style="{ '--ci': 1.4 }">
+          <div class="mp-eyebrow mb-4">It isn't</div>
+          <div v-for="(item, i) in IS_NOT" :key="item" class="s05__row s05__row--muted cine" :style="{ '--ci': 1.8 + i * 0.5 }">
             <v-icon size="20" class="mt-1 text-medium-emphasis">circle-x</v-icon>
             <span>{{ item }}</span>
           </div>
         </v-card>
       </v-col>
     </v-row>
-    <p class="s05__footnote mt-6">
-      That separation is deliberate — it's what lets us move fast here without creating a second
-      source of truth out there.
+    <p class="s05__footnote mt-6 cine--soft" :style="{ '--ci': 3.4 }">
+      That split is deliberate: it lets us move fast and dream here, without putting a single
+      customer at risk out there.
     </p>
   </DeckSlide>
 </template>

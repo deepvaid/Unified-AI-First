@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import { useAppTheme } from '@/composables/useAppTheme'
 import DeckSlide from '../DeckSlide.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
@@ -10,11 +10,39 @@ const isDark = computed(() => mode.value === 'dark')
 
 const autoRestock = ref(true)
 const segmentName = ref('Holiday repeat buyers')
+
+// While the film is rolling, this scene flips the lights by itself:
+// darkness falls a few seconds in, then morning comes back before we move on.
+const deckPlaying = inject<Readonly<Ref<boolean>>>('deckPlaying', ref(false))
+let nightTimer: number | undefined
+let morningTimer: number | undefined
+
+function clearTimers() {
+  window.clearTimeout(nightTimer)
+  window.clearTimeout(morningTimer)
+}
+
+function choreograph() {
+  clearTimers()
+  nightTimer = window.setTimeout(() => setMode('dark'), 4200)
+  morningTimer = window.setTimeout(() => setMode('light'), 8600)
+}
+
+onMounted(() => {
+  if (deckPlaying.value) choreograph()
+})
+
+watch(deckPlaying, playing => {
+  if (playing) choreograph()
+  else clearTimers()
+})
+
+onBeforeUnmount(clearTimers)
 </script>
 
 <template>
-  <DeckSlide eyebrow="One token source" title="Watch the whole system change its mind.">
-    <div class="d-flex flex-wrap ga-3 mb-8">
+  <DeckSlide eyebrow="The magic switch" title="Watch the whole product change its mind.">
+    <div class="d-flex flex-wrap ga-3 mb-8 cine" :style="{ '--ci': 1.2 }">
       <v-btn
         size="x-large"
         class="text-none"
@@ -23,7 +51,7 @@ const segmentName = ref('Holiday repeat buyers')
         prepend-icon="sun"
         @click="setMode('light')"
       >
-        Light
+        Morning
       </v-btn>
       <v-btn
         size="x-large"
@@ -33,7 +61,7 @@ const segmentName = ref('Holiday repeat buyers')
         prepend-icon="moon"
         @click="setMode('dark')"
       >
-        Dark
+        Night
       </v-btn>
     </div>
 
@@ -45,11 +73,13 @@ const segmentName = ref('Holiday repeat buyers')
           value="$48,210"
           icon="circle-dollar-sign"
           trend="+12.4% vs prior"
-          class="h-100"
+          :trend-positive="true"
+          class="h-100 cine"
+          :style="{ '--ci': 1.7 }"
         />
       </v-col>
       <v-col cols="12" md="7">
-        <v-card flat border rounded="lg" class="pa-5 h-100">
+        <v-card flat border rounded="lg" class="pa-5 h-100 cine" :style="{ '--ci': 2 }">
           <div class="d-flex flex-wrap ga-1 mb-4">
             <MpStatusChip status="Processing" type="order" size="small" />
             <MpStatusChip status="Paid" type="payment" size="small" />
@@ -65,7 +95,7 @@ const segmentName = ref('Holiday repeat buyers')
           />
           <v-switch
             v-model="autoRestock"
-            label="Notify me when stock runs low"
+            label="Tell me when stock runs low"
             color="primary"
             density="compact"
             hide-details
@@ -75,17 +105,18 @@ const segmentName = ref('Holiday repeat buyers')
       </v-col>
     </v-row>
 
-    <p class="s10__footnote mt-6">
-      No reload, no second stylesheet — one flip and 297 tokens re-resolve everywhere, including
-      this deck. Keys <kbd class="s10__kbd">L</kbd> and <kbd class="s10__kbd">D</kbd> work from any
-      slide.
+    <p class="s10__footnote mt-6 cine--soft" :style="{ '--ci': 2.8 }">
+      One switch. Nearly three hundred small decisions — every color, every shadow — update
+      themselves, everywhere, instantly. Nobody repaints anything by hand.
+      <span class="text-medium-emphasis">(While the film runs, this scene flips the lights on its own.
+      Keys <kbd class="s10__kbd">L</kbd> and <kbd class="s10__kbd">D</kbd> work anytime.)</span>
     </p>
   </DeckSlide>
 </template>
 
 <style scoped>
 .s10__footnote {
-  max-width: 720px;
+  max-width: 760px;
   color: rgb(var(--v-theme-on-surface-variant));
   font-size: var(--mp-typography-fontSize-body);
 }

@@ -6,30 +6,30 @@ const storybookUrl = import.meta.env.DEV ? 'http://localhost:6006' : '/storybook
 const POINTS = [
   {
     icon: 'book-open',
-    text: '84 stories with autodocs — API, states, usage rules, and the axe accessibility panel on every one.',
+    text: 'All 84 building blocks have their own page: how it looks, how it behaves, when to use it, and when not to.',
   },
   {
     icon: 'git-merge',
-    text: 'Stories load the exact app stylesheets through one shared manifest — Storybook renders what the product renders. We fixed the drift once, structurally.',
+    text: "The manual and the product share the same parts — so the manual physically can't drift out of date or lie to you.",
   },
   {
     icon: 'scale',
-    text: 'House rule: components ship with stories; views compose components. If it has no story, it has no contract.',
+    text: 'And the house rule is simple: if a piece has no page in the manual, it doesn\'t ship. No mystery furniture.',
   },
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="The contract" title="If it isn't in Storybook, it doesn't exist.">
+  <DeckSlide eyebrow="No mystery furniture" title="Every piece comes with its own manual.">
     <div class="s09__points">
-      <div v-for="point in POINTS" :key="point.icon" class="s09__point">
+      <div v-for="(point, i) in POINTS" :key="point.icon" class="s09__point cine" :style="{ '--ci': 1.2 + i * 0.6 }">
         <div class="s09__icon">
           <v-icon size="20" color="primary">{{ point.icon }}</v-icon>
         </div>
         <p class="s09__text">{{ point.text }}</p>
       </div>
     </div>
-    <div class="d-flex flex-wrap ga-3 mt-8">
+    <div class="d-flex flex-wrap ga-3 mt-8 cine" :style="{ '--ci': 3.2 }">
       <v-btn
         color="primary"
         variant="flat"
@@ -40,7 +40,7 @@ const POINTS = [
         target="_blank"
         rel="noopener"
       >
-        Open Storybook
+        Open the manual
       </v-btn>
       <v-btn
         variant="outlined"
@@ -49,7 +49,7 @@ const POINTS = [
         prepend-icon="swatch-book"
         to="/accounts/2000290/design-system"
       >
-        In-app foundations
+        See the foundations
       </v-btn>
     </div>
   </DeckSlide>

@@ -3,47 +3,56 @@ import DeckSlide from '../DeckSlide.vue'
 
 const LAYERS = [
   {
-    name: 'Design tokens',
-    desc: 'tokens.json → generated CSS, SCSS, TypeScript and the Vuetify theme. One source.',
-    owner: 'shared',
+    name: 'The rulebook',
+    desc: 'Colors, spacing, type — every visual decision made once, written down, reused everywhere.',
+    tag: 'shared',
   },
   {
-    name: 'Vuetify primitives',
-    desc: 'Buttons, fields, tables, overlays — the Material-based implementation foundation.',
-    owner: 'shared',
+    name: 'The bricks',
+    desc: 'Buttons, fields, tables, menus — the small parts every screen is made of.',
+    tag: 'shared',
   },
   {
-    name: 'Generic compounds (Mp*)',
-    desc: 'Page headers, table toolbars, form drawers, confirm dialogs, empty/error states.',
-    owner: 'converges into LiquidSky',
+    name: 'The rooms',
+    desc: 'Page headers, list toolbars, forms, empty states — patterns that repeat across the product.',
+    tag: 'shared',
   },
   {
-    name: 'Page recipes',
-    desc: 'List pages, detail pages, settings, wizards — repeatable compositions, documented.',
-    owner: 'copyable patterns',
+    name: 'The buildings',
+    desc: 'Whole screens assembled from those rooms — orders, contacts, campaigns, settings.',
+    tag: 'patterns',
   },
   {
-    name: 'Product surfaces',
-    desc: 'Dashboards, builders, Da Vinci — purpose-built workspaces on the same foundations.',
-    owner: 'stays in the product',
+    name: 'The neighborhoods',
+    desc: 'Dashboards, builders, Da Vinci — each one unique, all unmistakably the same city.',
+    tag: 'stays unique',
   },
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="How it's put together" title="Five layers, one direction of truth.">
+  <DeckSlide eyebrow="How it holds together" title="It works like a city.">
     <div class="s08__stack">
-      <div v-for="(layer, i) in LAYERS" :key="layer.name" class="s08__layer" :style="{ '--i': i }">
+      <div
+        v-for="(layer, i) in LAYERS"
+        :key="layer.name"
+        class="s08__layer cine"
+        :style="{ '--i': i, '--ci': 1.2 + i * 0.5 }"
+      >
         <span class="s08__num">{{ i + 1 }}</span>
         <div class="flex-grow-1">
           <div class="s08__name">{{ layer.name }}</div>
           <div class="s08__desc">{{ layer.desc }}</div>
         </div>
-        <v-chip size="small" label variant="tonal" :color="i === 2 ? 'primary' : undefined" class="s08__owner">
-          {{ layer.owner }}
+        <v-chip size="small" label variant="tonal" :color="layer.tag === 'shared' ? 'primary' : undefined" class="s08__owner">
+          {{ layer.tag }}
         </v-chip>
       </div>
     </div>
+    <p class="s08__footnote mt-6 cine--soft" :style="{ '--ci': 4.2 }">
+      Change a rule once — say, a shade of blue — and the whole city repaints itself. That's the
+      trick behind everything you'll see tonight.
+    </p>
   </DeckSlide>
 </template>
 
@@ -64,8 +73,6 @@ const LAYERS = [
   border-radius: var(--mp-borderRadius-md);
   background: rgb(var(--v-theme-surface));
   margin-inline-start: calc(var(--i) * var(--mp-spacing-6));
-  animation: s08-rise var(--mp-motion-duration-entrance) var(--mp-motion-easing-standard) both;
-  animation-delay: calc(var(--i) * var(--mp-motion-stagger-step) * 2);
 }
 
 .s08__num {
@@ -89,15 +96,10 @@ const LAYERS = [
   flex-shrink: 0;
 }
 
-@keyframes s08-rise {
-  from {
-    opacity: 0;
-    transform: translateX(-14px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.s08__footnote {
+  max-width: 780px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: var(--mp-typography-fontSize-body);
 }
 
 @media (max-width: 900px) {
@@ -107,12 +109,6 @@ const LAYERS = [
 
   .s08__owner {
     display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .s08__layer {
-    animation: none;
   }
 }
 </style>

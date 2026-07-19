@@ -1,33 +1,73 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useAppTheme } from '@/composables/useAppTheme'
-import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
+import { defineAsyncComponent, inject } from 'vue'
 import DeckSlide from '../DeckSlide.vue'
 
-const { mode } = useAppTheme()
-const isDark = computed(() => mode.value === 'dark')
+// The big three.js orb — loaded only when this slide appears, so the deck
+// itself stays light. It has its own graceful CSS fallback while loading.
+const DvOrbCanvas = defineAsyncComponent(() => import('@/components/copilot/voice/DvOrbCanvas.vue'))
+
+const play = inject<() => void>('deckPlay', () => {})
 </script>
 
 <template>
   <DeckSlide centered>
-    <div class="d-flex justify-center mb-6">
-      <DvOrbitOrb :size="64" :inverse="isDark" />
+    <div class="s01__orb" aria-hidden="true">
+      <DvOrbCanvas state="idle" />
     </div>
-    <div class="mp-eyebrow mb-4">Maropost · Product design</div>
-    <h1 class="mp-display-xl s01__title">
-      One system.<br />
-      <span class="s01__accent">Every screen.</span>
-    </h1>
-    <p class="s01__sub mt-6">
-      A live tour of the design sandbox — and the plan to bring it home.
-    </p>
-    <div class="text-caption text-medium-emphasis mt-10">
-      45 minutes · press <kbd class="s01__kbd">→</kbd> to begin
+
+    <div class="s01__content">
+      <div class="mp-eyebrow mb-4 cine" :style="{ '--ci': 0 }">
+        Maropost · a short film about our product's future
+      </div>
+      <h1 class="mp-display-xl s01__title cine" :style="{ '--ci': 0.6 }">
+        One product.<br />
+        <span class="s01__accent">One feeling.</span>
+      </h1>
+      <p class="s01__sub cine" :style="{ '--ci': 1.4 }">
+        Forty-five minutes, a live walk-through, and a few surprises.
+        No jargon tonight — promise.
+      </p>
+
+      <div class="cine" :style="{ '--ci': 2.2 }">
+        <v-btn
+          color="primary"
+          variant="flat"
+          size="x-large"
+          class="text-none mt-8"
+          prepend-icon="play"
+          @click="play()"
+        >
+          Roll it
+        </v-btn>
+        <div class="text-caption text-medium-emphasis mt-4">
+          The deck drives itself — press <kbd class="s01__kbd">P</kbd> to play or pause,
+          arrows to take the wheel.
+        </div>
+      </div>
     </div>
   </DeckSlide>
 </template>
 
 <style scoped>
+.s01__orb {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.s01__orb > * {
+  width: min(58vh, 58vw);
+  height: min(58vh, 58vw);
+}
+
+.s01__content {
+  position: relative;
+}
+
 .s01__title {
   font-size: clamp(
     var(--mp-typography-display-md-fontSize),
@@ -42,9 +82,10 @@ const isDark = computed(() => mode.value === 'dark')
 
 .s01__sub {
   margin: 0 auto;
-  max-width: 520px;
+  max-width: 540px;
   font-size: var(--mp-typography-fontSize-lg);
   color: rgb(var(--v-theme-on-surface-variant));
+  margin-top: var(--mp-spacing-6);
 }
 
 .s01__kbd {

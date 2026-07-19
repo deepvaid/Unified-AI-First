@@ -10,21 +10,23 @@ const isDark = computed(() => mode.value === 'dark')
 
 <template>
   <DeckSlide centered>
-    <div class="d-flex justify-center mb-6">
+    <div class="d-flex justify-center mb-6 cine" :style="{ '--ci': 0 }">
       <DvOrbitOrb :size="48" :speed="1.4" :inverse="isDark" />
     </div>
-    <h2 class="mp-display-lg">Roll the film.</h2>
-    <p class="s04__sub mt-4">75 seconds. No slides, no talking — just the system.</p>
-    <div class="d-flex justify-center flex-wrap ga-3 mt-8">
+    <h2 class="mp-display-lg cine" :style="{ '--ci': 0.5 }">Roll the film.</h2>
+    <p class="s04__sub mt-4 cine" :style="{ '--ci': 1.2 }">
+      Seventy-five seconds. Nobody talks — the screens do.
+    </p>
+    <div class="d-flex justify-center flex-wrap ga-3 mt-8 cine" :style="{ '--ci': 1.9 }">
       <v-btn color="primary" variant="flat" size="large" class="text-none" prepend-icon="play">
-        Play the exported reel
+        Play the film
       </v-btn>
       <v-btn variant="outlined" size="large" class="text-none" prepend-icon="clapperboard" to="/reel">
         Or open the live title cards
       </v-btn>
     </div>
-    <div class="text-caption text-medium-emphasis mt-6">
-      The MP4 lives on the desktop — ⌘-Tab to the player, ⌘-Tab back. This slide will wait.
+    <div class="text-caption text-medium-emphasis mt-6 cine" :style="{ '--ci': 2.5 }">
+      The video lives on the desktop — ⌘-Tab over, ⌘-Tab back. This slide will wait for you.
     </div>
   </DeckSlide>
 </template>

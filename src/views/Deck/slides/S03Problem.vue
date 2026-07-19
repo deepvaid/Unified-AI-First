@@ -4,37 +4,42 @@ import DeckSlide from '../DeckSlide.vue'
 const PAINS = [
   {
     icon: 'copy-x',
-    text: 'Screens drifted apart because every build re-interpreted static mockups.',
+    text: 'Every screen was built by different hands, at different times, with slightly different rules.',
   },
   {
     icon: 'hourglass',
-    text: 'Prototypes took weeks, so decisions ran on screenshots and hope.',
+    text: 'New ideas took weeks to become something you could touch — so big decisions ran on flat pictures.',
   },
   {
-    icon: 'file-question',
-    text: "Docs described a system that no running code ever exercised.",
+    icon: 'heart-crack',
+    text: 'And our merchants could feel the seams, even if they never had a word for it.',
   },
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="Why we built it" title="Five blues. Three button heights. Zero shared truth.">
+  <DeckSlide eyebrow="Why we did this" title="Our screens grew up in different homes.">
     <v-row>
       <v-col cols="12" md="5">
         <!-- Deliberately hardcoded chaos — the "before" this whole effort removes -->
-        <div class="s03__chaos" aria-label="A dramatization of inconsistent UI">
+        <div class="s03__chaos cine" :style="{ '--ci': 1.2 }" aria-label="A dramatization of inconsistent UI">
           <button class="s03__btn" style="background: #2d63e8; border-radius: 0; font-family: Georgia, serif">Save</button>
           <button class="s03__btn" style="background: #1e88e5; border-radius: 18px; font-family: 'Courier New', monospace">SAVE</button>
           <button class="s03__btn" style="background: #4059ad; border-radius: 3px; padding: 14px 30px">Save changes</button>
           <button class="s03__btn" style="background: #00a0c6; border-radius: 999px; font-size: 11px">save</button>
           <button class="s03__btn" style="background: #3366cc; border-radius: 8px; font-family: Arial; letter-spacing: 2px">S A V E</button>
         </div>
-        <div class="text-caption text-medium-emphasis mt-3">
-          Dramatization. Painfully accurate.
+        <div class="text-caption text-medium-emphasis mt-3 cine" :style="{ '--ci': 1.8 }">
+          Five ways to say "Save." All of them ours. Dramatization — painfully accurate.
         </div>
       </v-col>
       <v-col cols="12" md="7" class="d-flex flex-column justify-center">
-        <div v-for="(pain, i) in PAINS" :key="pain.icon" class="s03__pain" :style="{ '--i': i }">
+        <div
+          v-for="(pain, i) in PAINS"
+          :key="pain.icon"
+          class="s03__pain cine"
+          :style="{ '--ci': 1.6 + i * 0.7 }"
+        >
           <v-icon size="22" color="error" class="mt-1">{{ pain.icon }}</v-icon>
           <span>{{ pain.text }}</span>
         </div>
@@ -71,24 +76,5 @@ const PAINS = [
   padding: var(--mp-spacing-4) 0;
   font-size: var(--mp-typography-fontSize-lg);
   line-height: var(--mp-typography-lineHeight-normal);
-  animation: s03-rise var(--mp-motion-duration-entrance) var(--mp-motion-easing-standard) both;
-  animation-delay: calc(var(--i) * var(--mp-motion-stagger-step) * 3 + 200ms);
-}
-
-@keyframes s03-rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .s03__pain {
-    animation: none;
-  }
 }
 </style>

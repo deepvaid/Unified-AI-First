@@ -10,8 +10,13 @@ defineProps<{
 <template>
   <section class="deck-slide">
     <div class="deck-slide__body" :class="{ 'deck-slide__body--centered': centered }">
-      <div v-if="eyebrow" class="mp-eyebrow mb-3">{{ eyebrow }}</div>
-      <h2 v-if="title" class="mp-display-lg deck-slide__title" :class="centered ? 'mb-6' : 'mb-10'">
+      <div v-if="eyebrow" class="mp-eyebrow mb-3 cine" :style="{ '--ci': 0 }">{{ eyebrow }}</div>
+      <h2
+        v-if="title"
+        class="mp-display-lg deck-slide__title cine"
+        :class="centered ? 'mb-6' : 'mb-10'"
+        :style="{ '--ci': 0.5 }"
+      >
         {{ title }}
       </h2>
       <slot />

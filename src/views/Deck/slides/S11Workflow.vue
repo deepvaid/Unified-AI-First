@@ -3,39 +3,40 @@ import DeckSlide from '../DeckSlide.vue'
 
 const STEPS = [
   {
+    icon: 'lightbulb',
+    title: 'Say the idea',
+    text: '"What if the orders page showed refunds too?" That sentence is the whole ticket.',
+  },
+  {
     icon: 'zap',
-    title: 'Prototype in the sandbox',
-    text: 'AI-assisted builds on system rails — tokens, components, conventions. Hours, not weeks.',
+    title: 'See it real — same day',
+    text: 'Because the building blocks already exist, a working version appears in hours, not weeks.',
   },
   {
-    icon: 'globe',
-    title: 'Review on a real URL',
-    text: 'Every push deploys to Vercel. Stakeholders click the actual flow on their own laptop.',
-  },
-  {
-    icon: 'check-circle',
-    title: 'Decide with evidence',
-    text: 'Responsive truth, real states, real interactions — no screenshot archaeology.',
+    icon: 'link',
+    title: 'Click it together, decide together',
+    text: 'You get a link in chat. Everyone opens the same living screen and the debate ends itself.',
   },
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="How we use it" title="Idea → running screen → shared link.">
+  <DeckSlide eyebrow="What changes for you" title="From “what if…” to a link in your chat. In a day.">
     <div class="s11__flow">
       <template v-for="(step, i) in STEPS" :key="step.title">
-        <v-card flat border rounded="lg" class="s11__step pa-6">
+        <v-card flat border rounded="lg" class="s11__step pa-6 cine" :style="{ '--ci': 1.2 + i * 0.6 }">
           <div class="s11__icon mb-4">
             <v-icon size="22" color="primary">{{ step.icon }}</v-icon>
           </div>
           <div class="text-subtitle-1 font-weight-bold">{{ step.title }}</div>
           <p class="s11__text mt-2">{{ step.text }}</p>
         </v-card>
-        <v-icon v-if="i < STEPS.length - 1" class="s11__arrow" size="24">arrow-right</v-icon>
+        <v-icon v-if="i < STEPS.length - 1" class="s11__arrow cine" size="24" :style="{ '--ci': 1.5 + i * 0.6 }">arrow-right</v-icon>
       </template>
     </div>
-    <p class="s11__footnote mt-8">
-      This is the loop that built most of what you'll see today — and the loop your teams inherit.
+    <p class="s11__footnote mt-8 cine--soft" :style="{ '--ci': 3.4 }">
+      This is the loop that built almost everything you're watching tonight. It's not a promise —
+      it's how this deck itself came to exist.
     </p>
   </DeckSlide>
 </template>

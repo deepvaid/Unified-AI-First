@@ -2,12 +2,12 @@
 import DeckSlide from '../DeckSlide.vue'
 
 const ASKS = [
-  'Confirm LiquidSky as the destination for shared capabilities.',
-  'Adopt this sandbox + Storybook as the visual acceptance reference.',
-  'Name one LiquidSky maintainer and one product frontend owner for the review.',
-  'Share the LiquidSky source and contribution requirements.',
-  'Green-light the facade pilot, then the Sales Orders pilot.',
-  'Agree no parallel package ships from this sandbox. (Yes, I am volunteering that.)',
+  'Agree this look and feel is the direction we want.',
+  'Treat this sandbox as our shared reference for "done looks like this."',
+  'Give me two names — one from the shared-library team, one from product engineering.',
+  'Open the doors: access to the shared library and how changes get accepted.',
+  'Say yes to the two small try-outs — the furniture first, then the orders page.',
+  "And hold me to my own promise: we build no second, competing library. Ever.",
 ]
 </script>
 
@@ -15,15 +15,15 @@ const ASKS = [
   <DeckSlide eyebrow="What I need from this room" title="Six small yeses.">
     <v-row>
       <v-col v-for="(ask, i) in ASKS" :key="ask" cols="12" md="6">
-        <div class="s13__ask" :style="{ '--i': i }">
+        <div class="s13__ask cine" :style="{ '--ci': 1.2 + i * 0.45 }">
           <span class="s13__num">{{ i + 1 }}</span>
           <span class="s13__text">{{ ask }}</span>
         </div>
       </v-col>
     </v-row>
-    <p class="s13__footnote mt-8">
-      None of these are estimates or rewrites — they're the keys that start the compatibility
-      review this week.
+    <p class="s13__footnote mt-8 cine--soft" :style="{ '--ci': 4.2 }">
+      None of these cost money or headcount this quarter. They're just the keys that let the first
+      try-out start this week.
     </p>
   </DeckSlide>
 </template>
@@ -37,8 +37,6 @@ const ASKS = [
   border-radius: var(--mp-borderRadius-md);
   background: rgb(var(--v-theme-surface));
   height: 100%;
-  animation: s13-rise var(--mp-motion-duration-entrance) var(--mp-motion-easing-standard) both;
-  animation-delay: calc(var(--i) * var(--mp-motion-stagger-step) * 2);
 }
 
 .s13__num {
@@ -63,22 +61,5 @@ const ASKS = [
 .s13__footnote {
   color: rgb(var(--v-theme-on-surface-variant));
   font-size: var(--mp-typography-fontSize-body);
-}
-
-@keyframes s13-rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .s13__ask {
-    animation: none;
-  }
 }
 </style>
