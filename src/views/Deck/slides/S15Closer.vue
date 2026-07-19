@@ -7,23 +7,19 @@ const DvOrbCanvas = defineAsyncComponent(() => import('@/components/copilot/voic
 const storybookUrl = import.meta.env.DEV ? 'http://localhost:6006' : '/storybook/'
 
 const CREDITS = [
-  '— CAST —',
-  'The Numbers … MpKpiCard',
-  'Every Status … MpStatusChip',
-  'The Long Lists … MpDataTableToolbar',
-  'Forms With Manners … MpFormDrawer',
-  'Second Chances … MpConfirmDialog',
-  'The Quiet Moments … MpEmptyState',
-  'The Voice … Da Vinci',
+  '— BUILT WITH —',
+  'MpKpiCard — the stat cards',
+  'MpStatusChip — the status labels',
+  'MpWizardSteps — the plan steps',
+  'MpFormDrawer — every edit panel',
+  'MpConfirmDialog — every confirmation',
+  'MpEmptyState — the quiet screens',
+  'DvOrbCanvas — the orb',
   '',
-  '— CREW —',
-  'Directed by … the design system',
-  'Lighting … one theme switch',
-  'Locations … 171 real screens',
-  'Wardrobe … 297 shared decisions',
+  '297 design tokens · 2 themes',
+  'Vue 3 + Vuetify — the same stack as the app',
   '',
-  'Filmed entirely on location at /deck',
-  'No mockups were harmed in the making of this presentation.',
+  'This deck is a page in the sandbox: /deck',
 ]
 </script>
 
@@ -33,13 +29,14 @@ const CREDITS = [
       <DvOrbCanvas state="idle" />
     </div>
 
-    <div class="mp-eyebrow mb-4 cine" :style="{ '--ci': 0.4 }">One last surprise</div>
+    <div class="mp-eyebrow mb-4 cine" :style="{ '--ci': 0.4 }">One more thing</div>
     <h2 class="mp-display-xl s15__title cine" :style="{ '--ci': 0.9 }">
-      These slides<br />were never slides.
+      This deck is built<br />with the system.
     </h2>
     <p class="s15__sub mt-6 cine" :style="{ '--ci': 1.7 }">
-      Everything you watched tonight — every card, every color, every flip of the lights — is the
-      product itself, running live. If it can carry a film, it can carry our merchants' mornings.
+      Every slide you've seen — the cards, the chips, the theme switch — is running on the same
+      components and tokens I've been presenting. That's the level of reuse this system makes
+      possible.
     </p>
 
     <div class="s15__credits cine--soft" :style="{ '--ci': 2.6 }" aria-label="Closing credits">
@@ -52,7 +49,7 @@ const CREDITS = [
 
     <div class="d-flex justify-center flex-wrap ga-3 mt-6 cine" :style="{ '--ci': 3 }">
       <v-btn color="primary" variant="flat" size="large" class="text-none" append-icon="arrow-right" to="/showcase">
-        Visit the front door
+        Open the showcase page
       </v-btn>
       <v-btn
         variant="outlined"
@@ -63,14 +60,14 @@ const CREDITS = [
         target="_blank"
         rel="noopener"
       >
-        Open the manual
+        Open Storybook
       </v-btn>
       <v-btn variant="text" size="large" class="text-none" to="/accounts/2000290/dashboard">
-        Wander around
+        Explore the sandbox
       </v-btn>
     </div>
     <div class="text-caption text-medium-emphasis mt-6 cine--soft" :style="{ '--ci': 3.6 }">
-      Press <kbd class="s15__kbd">L</kbd> to leave the lights on for the next meeting.
+      Thanks, everyone. (<kbd class="s15__kbd">L</kbd> resets to light mode.)
     </div>
   </DeckSlide>
 </template>

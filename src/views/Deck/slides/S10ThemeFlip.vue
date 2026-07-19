@@ -41,7 +41,7 @@ onBeforeUnmount(clearTimers)
 </script>
 
 <template>
-  <DeckSlide eyebrow="The magic switch" title="Watch the whole product change its mind.">
+  <DeckSlide eyebrow="Design tokens in action" title="One change updates everything.">
     <div class="d-flex flex-wrap ga-3 mb-8 cine" :style="{ '--ci': 1.2 }">
       <v-btn
         size="x-large"
@@ -51,7 +51,7 @@ onBeforeUnmount(clearTimers)
         prepend-icon="sun"
         @click="setMode('light')"
       >
-        Morning
+        Light
       </v-btn>
       <v-btn
         size="x-large"
@@ -61,7 +61,7 @@ onBeforeUnmount(clearTimers)
         prepend-icon="moon"
         @click="setMode('dark')"
       >
-        Night
+        Dark
       </v-btn>
     </div>
 
@@ -106,10 +106,10 @@ onBeforeUnmount(clearTimers)
     </v-row>
 
     <p class="s10__footnote mt-6 cine--soft" :style="{ '--ci': 2.8 }">
-      One switch. Nearly three hundred small decisions — every color, every shadow — update
-      themselves, everywhere, instantly. Nobody repaints anything by hand.
-      <span class="text-medium-emphasis">(While the film runs, this scene flips the lights on its own.
-      Keys <kbd class="s10__kbd">L</kbd> and <kbd class="s10__kbd">D</kbd> work anytime.)</span>
+      297 token values switch at once — every color and surface, on every screen, with no
+      per-screen rework. That's the payoff of defining things once.
+      <span class="text-medium-emphasis">(During autoplay this slide switches themes by itself.
+      <kbd class="s10__kbd">L</kbd> and <kbd class="s10__kbd">D</kbd> work anytime.)</span>
     </p>
   </DeckSlide>
 </template>

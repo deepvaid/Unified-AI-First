@@ -6,21 +6,21 @@ const storybookUrl = import.meta.env.DEV ? 'http://localhost:6006' : '/storybook
 const POINTS = [
   {
     icon: 'book-open',
-    text: 'All 84 building blocks have their own page: how it looks, how it behaves, when to use it, and when not to.',
+    text: '84 components have a Storybook page: what it looks like, how it behaves, and when to use it.',
   },
   {
     icon: 'git-merge',
-    text: "The manual and the product share the same parts — so the manual physically can't drift out of date or lie to you.",
+    text: 'The documentation renders the same code as the app, so it stays accurate automatically.',
   },
   {
     icon: 'scale',
-    text: 'And the house rule is simple: if a piece has no page in the manual, it doesn\'t ship. No mystery furniture.',
+    text: 'Team rule: a component without documentation doesn\'t ship.',
   },
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="No mystery furniture" title="Every piece comes with its own manual.">
+  <DeckSlide eyebrow="Documentation" title="Every component is documented.">
     <div class="s09__points">
       <div v-for="(point, i) in POINTS" :key="point.icon" class="s09__point cine" :style="{ '--ci': 1.2 + i * 0.6 }">
         <div class="s09__icon">
@@ -40,7 +40,7 @@ const POINTS = [
         target="_blank"
         rel="noopener"
       >
-        Open the manual
+        Open Storybook
       </v-btn>
       <v-btn
         variant="outlined"
@@ -49,7 +49,7 @@ const POINTS = [
         prepend-icon="swatch-book"
         to="/accounts/2000290/design-system"
       >
-        See the foundations
+        View foundations
       </v-btn>
     </div>
   </DeckSlide>

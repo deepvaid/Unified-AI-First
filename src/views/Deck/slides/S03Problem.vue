@@ -4,21 +4,21 @@ import DeckSlide from '../DeckSlide.vue'
 const PAINS = [
   {
     icon: 'copy-x',
-    text: 'Every screen was built by different hands, at different times, with slightly different rules.',
+    text: 'Screens were built at different times, by different teams, without shared UI standards.',
   },
   {
     icon: 'hourglass',
-    text: 'New ideas took weeks to become something you could touch — so big decisions ran on flat pictures.',
+    text: 'Prototyping took weeks, so most design decisions were made from static mockups.',
   },
   {
-    icon: 'heart-crack',
-    text: 'And our merchants could feel the seams, even if they never had a word for it.',
+    icon: 'users',
+    text: 'The result is an inconsistent experience — and our customers notice it.',
   },
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="Why we did this" title="Our screens grew up in different homes.">
+  <DeckSlide eyebrow="The problem" title="Every screen does its own thing.">
     <v-row>
       <v-col cols="12" md="5">
         <!-- Deliberately hardcoded chaos — the "before" this whole effort removes -->
@@ -30,7 +30,7 @@ const PAINS = [
           <button class="s03__btn" style="background: #3366cc; border-radius: 8px; font-family: Arial; letter-spacing: 2px">S A V E</button>
         </div>
         <div class="text-caption text-medium-emphasis mt-3 cine" :style="{ '--ci': 1.8 }">
-          Five ways to say "Save." All of them ours. Dramatization — painfully accurate.
+          Five different Save buttons, recreated from patterns in our current product.
         </div>
       </v-col>
       <v-col cols="12" md="7" class="d-flex flex-column justify-center">

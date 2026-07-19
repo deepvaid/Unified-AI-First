@@ -3,35 +3,35 @@ import DeckSlide from '../DeckSlide.vue'
 
 const LAYERS = [
   {
-    name: 'The rulebook',
-    desc: 'Colors, spacing, type — every visual decision made once, written down, reused everywhere.',
+    name: 'Design tokens',
+    desc: 'Colors, spacing, typography — defined once, used by everything below.',
     tag: 'shared',
   },
   {
-    name: 'The bricks',
-    desc: 'Buttons, fields, tables, menus — the small parts every screen is made of.',
+    name: 'Base components',
+    desc: 'Buttons, fields, tables, menus — the parts every screen is made of.',
     tag: 'shared',
   },
   {
-    name: 'The rooms',
-    desc: 'Page headers, list toolbars, forms, empty states — patterns that repeat across the product.',
+    name: 'Shared patterns',
+    desc: 'Page headers, list toolbars, forms, empty states — repeated across the product.',
     tag: 'shared',
   },
   {
-    name: 'The buildings',
-    desc: 'Whole screens assembled from those rooms — orders, contacts, campaigns, settings.',
+    name: 'Page templates',
+    desc: 'List pages, detail pages, settings — assembled from the patterns above.',
     tag: 'patterns',
   },
   {
-    name: 'The neighborhoods',
-    desc: 'Dashboards, builders, Da Vinci — each one unique, all unmistakably the same city.',
-    tag: 'stays unique',
+    name: 'Product areas',
+    desc: 'Dashboards, builders, Da Vinci — each has its own layout, all stay consistent.',
+    tag: 'product-specific',
   },
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="How it holds together" title="It works like a city.">
+  <DeckSlide eyebrow="How it's structured" title="Five layers, from tokens to screens.">
     <div class="s08__stack">
       <div
         v-for="(layer, i) in LAYERS"
@@ -50,8 +50,8 @@ const LAYERS = [
       </div>
     </div>
     <p class="s08__footnote mt-6 cine--soft" :style="{ '--ci': 4.2 }">
-      Change a rule once — say, a shade of blue — and the whole city repaints itself. That's the
-      trick behind everything you'll see tonight.
+      The practical benefit: change a token once — a color, a spacing value — and all 171 screens
+      update. That's what keeps everything consistent.
     </p>
   </DeckSlide>
 </template>

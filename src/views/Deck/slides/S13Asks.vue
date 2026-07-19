@@ -2,17 +2,17 @@
 import DeckSlide from '../DeckSlide.vue'
 
 const ASKS = [
-  'Agree this look and feel is the direction we want.',
-  'Treat this sandbox as our shared reference for "done looks like this."',
-  'Give me two names — one from the shared-library team, one from product engineering.',
-  'Open the doors: access to the shared library and how changes get accepted.',
-  'Say yes to the two small try-outs — the furniture first, then the orders page.',
-  "And hold me to my own promise: we build no second, competing library. Ever.",
+  'Sign-off on the visual direction.',
+  'Agree the sandbox and Storybook are our shared design reference.',
+  'Two names for the compatibility review — one LiquidSky maintainer, one product engineer.',
+  'Access to the LiquidSky repo and its contribution process.',
+  'Approval to run the two pilots — components first, then the orders page.',
+  'Agreement that no separate library gets published from this sandbox.',
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="What I need from this room" title="Six small yeses.">
+  <DeckSlide eyebrow="Decisions I need today" title="Six asks.">
     <v-row>
       <v-col v-for="(ask, i) in ASKS" :key="ask" cols="12" md="6">
         <div class="s13__ask cine" :style="{ '--ci': 1.2 + i * 0.45 }">
@@ -22,8 +22,8 @@ const ASKS = [
       </v-col>
     </v-row>
     <p class="s13__footnote mt-8 cine--soft" :style="{ '--ci': 4.2 }">
-      None of these cost money or headcount this quarter. They're just the keys that let the first
-      try-out start this week.
+      None of these need budget or headcount this quarter — they let the compatibility review
+      start this week.
     </p>
   </DeckSlide>
 </template>

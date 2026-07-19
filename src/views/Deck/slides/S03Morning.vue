@@ -15,7 +15,7 @@ const KPIS = [
 </script>
 
 <template>
-  <DeckSlide eyebrow="Today → tomorrow" title="Same morning. Same numbers. A different feeling.">
+  <DeckSlide eyebrow="Before / after" title="Our dashboard today vs. the sandbox.">
     <div class="mo__stage cine" :style="{ '--ci': 1.2 }">
       <!-- TODAY — faithful, gray, hardcoded on purpose: it recreates the current product -->
       <div class="mo__layer mo__today" aria-label="Our product today (recreation)">
@@ -64,7 +64,7 @@ const KPIS = [
             <span v-for="n in 6" :key="n" class="mo__n-dot" />
           </aside>
           <div class="mo__n-main">
-            <div class="mo__n-greet">Good morning, Deepak — here's your store, alive.</div>
+            <div class="mo__n-greet">Good morning, Deepak</div>
             <div class="mo__n-kpis">
               <MpKpiCard
                 v-for="kpi in KPIS"
@@ -78,13 +78,13 @@ const KPIS = [
             </div>
           </div>
         </div>
-        <span class="mo__chip mo__chip--tomorrow">The sandbox</span>
+        <span class="mo__chip mo__chip--tomorrow">Sandbox</span>
       </div>
     </div>
 
     <p class="mo__caption cine" :style="{ '--ci': 2.2 }">
-      The gray one is a faithful recreation of our real dashboard this morning. The living one is
-      the sandbox — every card on it is a real, clickable piece of the new system.
+      Left state: a recreation of our current dashboard, taken from UAT this morning. Right state:
+      the same screen rebuilt in the sandbox — the cards are the actual components, not images.
     </p>
   </DeckSlide>
 </template>

@@ -2,20 +2,20 @@
 import DeckSlide from '../DeckSlide.vue'
 
 const IS = [
-  'A real, working preview of how our product should feel — everything you saw tonight is clickable.',
-  'Built from one shared rulebook: the same colors, spacing and voice on every single screen.',
-  'Our reference for "this is what good looks like" — so we stop debating taste and start pointing.',
+  'A working prototype environment — 171 real screens on our actual front-end stack (Vue 3 + Vuetify).',
+  'One set of shared components and design tokens used consistently across every screen.',
+  'Our visual reference for what approved design looks like going forward.',
 ]
 
 const IS_NOT = [
-  'Not a rewrite of the product — nothing breaks tomorrow morning.',
-  'Not real customer data — it is a safe playground, on purpose.',
-  'Not extra homework for your teams — it is a head start they inherit.',
+  'Not a production rewrite — nothing changes for customers.',
+  'Not connected to real data — it runs on sample data by design.',
+  'Not a second library for teams to maintain — the plan is to converge into LiquidSky.',
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="A promise, in plain words" title="What this is — and what it isn't.">
+  <DeckSlide eyebrow="Scope" title="What this is — and what it isn't.">
     <v-row>
       <v-col cols="12" md="6">
         <v-card flat border rounded="lg" class="pa-6 h-100 cine" :style="{ '--ci': 1.2 }">
@@ -37,8 +37,7 @@ const IS_NOT = [
       </v-col>
     </v-row>
     <p class="s05__footnote mt-6 cine--soft" :style="{ '--ci': 3.4 }">
-      That split is deliberate: it lets us move fast and dream here, without putting a single
-      customer at risk out there.
+      This separation is deliberate — it lets us iterate quickly with zero production risk.
     </p>
   </DeckSlide>
 </template>

@@ -4,24 +4,24 @@ import DeckSlide from '../DeckSlide.vue'
 const STEPS = [
   {
     icon: 'lightbulb',
-    title: 'Say the idea',
-    text: '"What if the orders page showed refunds too?" That sentence is the whole ticket.',
+    title: 'Describe the change',
+    text: '"Show refunds on the orders page" — a sentence is enough to start.',
   },
   {
     icon: 'zap',
-    title: 'See it real — same day',
-    text: 'Because the building blocks already exist, a working version appears in hours, not weeks.',
+    title: 'Prototype the same day',
+    text: 'The components already exist, so a working version takes hours, not weeks.',
   },
   {
     icon: 'link',
-    title: 'Click it together, decide together',
-    text: 'You get a link in chat. Everyone opens the same living screen and the debate ends itself.',
+    title: 'Review a live link',
+    text: 'Everyone clicks the same working screen instead of debating a static mockup.',
   },
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="What changes for you" title="From “what if…” to a link in your chat. In a day.">
+  <DeckSlide eyebrow="Why this matters" title="Idea to clickable prototype in a day.">
     <div class="s11__flow">
       <template v-for="(step, i) in STEPS" :key="step.title">
         <v-card flat border rounded="lg" class="s11__step pa-6 cine" :style="{ '--ci': 1.2 + i * 0.6 }">
@@ -35,8 +35,7 @@ const STEPS = [
       </template>
     </div>
     <p class="s11__footnote mt-8 cine--soft" :style="{ '--ci': 3.4 }">
-      This is the loop that built almost everything you're watching tonight. It's not a promise —
-      it's how this deck itself came to exist.
+      This is the process we used to build the sandbox itself — including this deck.
     </p>
   </DeckSlide>
 </template>

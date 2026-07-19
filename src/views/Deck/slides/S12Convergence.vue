@@ -2,30 +2,30 @@
 import DeckSlide from '../DeckSlide.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 
-const PHASE_LABELS = ['Look at what we own', 'Try the smallest pieces', 'Prove it on one busy screen', 'Grow room by room']
+const PHASE_LABELS = ['Compatibility review', 'Component pilot', 'One-page pilot', 'Incremental adoption']
 
 const PHASES = [
   {
-    title: 'Look at what we already own',
-    text: "We sit down with LiquidSky — the shared library our teams already use — and sort every piece: keep, borrow, or offer ours as a gift.",
+    title: 'Compatibility review',
+    text: 'Compare the sandbox components with LiquidSky, our shared library. Sort each one: reuse, wrap, contribute, or keep product-local.',
   },
   {
-    title: 'Try the smallest pieces first',
-    text: 'Headers, confirmation boxes, side panels — the low-risk furniture. If something feels off, we find out cheaply.',
+    title: 'Pilot the low-risk components',
+    text: 'Page headers, confirmation dialogs, side drawers, empty states — small pieces where problems surface cheaply.',
   },
   {
-    title: 'Prove it on one busy screen',
-    text: 'The orders page — our busiest room — becomes the honest test. If the approach works there, it works.',
+    title: 'Pilot one full page',
+    text: 'Sales Orders — our most-used list screen — becomes the real test of the approach.',
   },
   {
-    title: 'Then grow, room by room',
-    text: 'No big-bang launch, no frozen roadmaps. Each area moves when it\'s ready, and nothing breaks along the way.',
+    title: 'Adopt incrementally',
+    text: 'Area by area as each is ready, app shell last. No big-bang release, nothing breaks in between.',
   },
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="The plan, without drama" title="We're not building a second kitchen.">
+  <DeckSlide eyebrow="Implementation plan" title="Converge into LiquidSky — no parallel library.">
     <div class="mb-8 cine" :style="{ '--ci': 1.2 }">
       <MpWizardSteps :steps="PHASE_LABELS" :current="1" />
     </div>
@@ -41,8 +41,8 @@ const PHASES = [
       </v-col>
     </v-row>
     <p class="s12__footnote mt-6 cine--soft" :style="{ '--ci': 4 }">
-      One kitchen, better stocked — not two kitchens arguing about recipes. And no dates promised
-      until the first try-outs teach us the truth. That's respect for your teams, not slowness.
+      I'm deliberately not committing to dates yet — the two pilots will give us real numbers,
+      and then the estimates will be based on evidence rather than guesses.
     </p>
   </DeckSlide>
 </template>

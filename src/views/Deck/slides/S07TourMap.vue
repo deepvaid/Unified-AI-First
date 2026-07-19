@@ -4,36 +4,36 @@ import DeckSlide from '../DeckSlide.vue'
 const STOPS = [
   {
     icon: 'layout-dashboard',
-    title: 'The dashboard',
-    note: 'Your morning coffee view',
+    title: 'Dashboard',
+    note: 'KPI widgets, drag & drop',
     minutes: 3,
     to: '/accounts/2000290/dashboard',
   },
   {
     icon: 'shopping-cart',
     title: 'Orders',
-    note: 'The busiest room in the house',
+    note: 'Our standard list pattern',
     minutes: 4,
     to: '/commerce/2000290/orders',
   },
   {
     icon: 'user-round',
-    title: 'One customer',
-    note: 'Their whole story, one page',
+    title: 'Contact detail',
+    note: 'Detail page + edit drawer',
     minutes: 2,
     to: '/accounts/2000290/contacts/1',
   },
   {
     icon: 'workflow',
     title: 'Journey builder',
-    note: 'Where marketing gets drawn',
+    note: 'A custom canvas workspace',
     minutes: 3,
     to: '/accounts/2000290/journeys/1/builder',
   },
   {
     icon: 'sparkles',
     title: 'Da Vinci',
-    note: 'The one that talks back',
+    note: 'The AI surface, voice included',
     minutes: 2,
     to: '/accounts/2000290/da-vinci/experience',
   },
@@ -41,7 +41,7 @@ const STOPS = [
 </script>
 
 <template>
-  <DeckSlide eyebrow="The live tour" title="Five rooms. All real. All clickable.">
+  <DeckSlide eyebrow="Live demo" title="Five screens I'll walk through.">
     <div class="s07__grid">
       <v-card
         v-for="(stop, i) in STOPS"
@@ -64,8 +64,7 @@ const STOPS = [
       </v-card>
     </div>
     <p class="s07__footnote mt-6 cine--soft" :style="{ '--ci': 3.8 }">
-      No screenshots on this tour — every stop is the live thing. If you don't believe a screen is
-      real, ask me to click something unexpected on it.
+      Everything is live — happy to click into anything else you want to see along the way.
     </p>
   </DeckSlide>
 </template>

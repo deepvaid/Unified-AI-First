@@ -2,18 +2,18 @@
 import DeckSlide from '../DeckSlide.vue'
 
 const ITEMS = [
-  { label: 'A 75-second film', minutes: 2 },
-  { label: 'Today vs. tomorrow — the same screen, a new soul', minutes: 5 },
-  { label: 'A walk through five real rooms', minutes: 14 },
-  { label: 'How it works — the friendly version', minutes: 8 },
-  { label: 'The plan: no rewrites, no drama', minutes: 5 },
-  { label: 'Your questions — bring the hard ones', minutes: 9 },
-  { label: 'One last surprise', minutes: 2 },
+  { label: 'A 75-second intro video', minutes: 2 },
+  { label: 'Our dashboard today vs. the sandbox', minutes: 5 },
+  { label: 'Live walkthrough — five key screens', minutes: 14 },
+  { label: 'How the system works', minutes: 8 },
+  { label: 'Implementation plan', minutes: 5 },
+  { label: 'Q&A', minutes: 9 },
+  { label: 'Wrap-up', minutes: 2 },
 ]
 </script>
 
 <template>
-  <DeckSlide eyebrow="Tonight's programme" title="How we'll spend our 45 minutes.">
+  <DeckSlide eyebrow="Agenda" title="What we'll cover in 45 minutes.">
     <div class="s02__list">
       <div
         v-for="(item, i) in ITEMS"

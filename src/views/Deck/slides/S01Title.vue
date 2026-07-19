@@ -17,15 +17,15 @@ const play = inject<() => void>('deckPlay', () => {})
 
     <div class="s01__content">
       <div class="mp-eyebrow mb-4 cine" :style="{ '--ci': 0 }">
-        Maropost · a short film about our product's future
+        Maropost · Design system sandbox · UX
       </div>
       <h1 class="mp-display-xl s01__title cine" :style="{ '--ci': 0.6 }">
-        One product.<br />
-        <span class="s01__accent">One feeling.</span>
+        One design system.<br />
+        <span class="s01__accent">Every screen.</span>
       </h1>
       <p class="s01__sub cine" :style="{ '--ci': 1.4 }">
-        Forty-five minutes, a live walk-through, and a few surprises.
-        No jargon tonight — promise.
+        A walkthrough of the design sandbox we've built — live screens, not mockups.
+        45 minutes, questions welcome anytime.
       </p>
 
       <div class="cine" :style="{ '--ci': 2.2 }">
@@ -37,11 +37,11 @@ const play = inject<() => void>('deckPlay', () => {})
           prepend-icon="play"
           @click="play()"
         >
-          Roll it
+          Start
         </v-btn>
         <div class="text-caption text-medium-emphasis mt-4">
-          The deck drives itself — press <kbd class="s01__kbd">P</kbd> to play or pause,
-          arrows to take the wheel.
+          The deck advances on its own — <kbd class="s01__kbd">P</kbd> plays or pauses,
+          arrow keys move manually.
         </div>
       </div>
     </div>
