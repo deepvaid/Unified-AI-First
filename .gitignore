@@ -48,3 +48,6 @@ maropost-screenshots/uat/
 *.sln
 *.sw?
 .env*.local
+
+# Trailer build artifacts (video/audio renders — scripts/trailer/ is the source)
+trailer-build/
