@@ -278,6 +278,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/checkout', name: 'Checkout', component: () => import('@/views/Plg/CheckoutView.vue'), meta: { fullPage: true } },
 
   { path: '/accounts/:accountId/design-system', name: 'DesignSystemDemo', component: () => import('@/views/Settings/DesignSystemDemo.vue') },
+  { path: '/accounts/:accountId/design-system/docs', name: 'DesignSystemDocs', component: () => import('@/views/DesignSystem/DesignSystemDocs.vue') },
 
   // Presentation surfaces — stakeholder showcase landing, talk deck, reel title cards
   { path: '/showcase', name: 'Showcase', component: () => import('@/views/Showcase/ShowcaseView.vue'), meta: { fullPage: true } },

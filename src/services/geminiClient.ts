@@ -19,6 +19,8 @@ export interface AskGeminiOptions {
   context?: string
   /** Abort the in-flight request (copilot Stop button). */
   signal?: AbortSignal
+  /** Server persona/grounding preset — 'design-system' for the docs assistant. */
+  mode?: 'default' | 'design-system'
 }
 
 export async function askGemini(
@@ -30,7 +32,7 @@ export async function askGemini(
     const resp = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, history, context: opts.context }),
+      body: JSON.stringify({ text, history, context: opts.context, mode: opts.mode }),
       signal: opts.signal,
     })
     if (!resp.ok) return null

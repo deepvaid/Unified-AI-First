@@ -88,6 +88,7 @@ function toggleSelect(id: string) {
       subtitle="Live Figma token sync demo for stakeholders"
     >
       <template #actions>
+        <v-btn variant="outlined" prepend-icon="book-open" :to="`/accounts/2000290/design-system/docs`">Docs &amp; FAQ</v-btn>
         <v-btn color="primary" prepend-icon="file-text" @click="drawerOpen = true">Token Brief</v-btn>
       </template>
     </MpPageHeader>

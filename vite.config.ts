@@ -112,12 +112,13 @@ export default defineConfig(({ mode }) => {
             try {
               const chunks: Buffer[] = []
               for await (const c of req) chunks.push(c as Buffer)
-              const { text, history, context } = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
+              const { text, history, context, mode } = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
               const result = await generateReply(text ?? '', {
                 apiKey: env.GEMINI_API_KEY || process.env.GEMINI_API_KEY,
                 model: env.GEMINI_MODEL || process.env.GEMINI_MODEL,
                 history,
                 context: typeof context === 'string' ? context : undefined,
+                mode: mode === 'design-system' ? 'design-system' : 'default',
               })
               res.statusCode = 200
               res.setHeader('Content-Type', 'application/json')

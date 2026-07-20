@@ -18,12 +18,16 @@ export interface GeminiTurn {
   text: string
 }
 
+export type GeminiMode = 'default' | 'design-system'
+
 export interface GenerateOptions {
   apiKey: string | undefined
   model?: string
   history?: GeminiTurn[]
   /** Compact live-workspace context block from the app (page, account, plan, dashboard). */
   context?: string
+  /** Persona/grounding preset. 'design-system' answers from doc excerpts with a larger context cap. */
+  mode?: GeminiMode
 }
 
 export interface GeminiReply {
@@ -47,6 +51,35 @@ Respond ONLY with the JSON object defined by the response schema:
 - "speech": a shorter spoken version of the reply (one sentence, natural to hear aloud).
 - "card": OPTIONAL. Include only when a single takeaway is worth highlighting — a short "headline" and one-sentence "description". Omit it otherwise.`
 
+const DESIGN_SYSTEM_INSTRUCTION = `You are Da Vinci, answering questions about the Maropost design system and design sandbox for product managers, designers, engineers, and leaders.
+
+Your ONLY knowledge source is the "Documentation excerpts" block provided with each request — excerpts from the project's own docs (FAQ, operating model, audit, component inventory, handover). Ground every answer in them. If the excerpts don't cover the question, say so plainly and point the asker to the design-system feedback page — never guess.
+
+Hard rules from the program (never break these):
+- Never invent dates, deadlines, or percentages. If asked for timelines, the answer is that the pilots produce the evidence first.
+- The sandbox is a "working prototype environment" — never call it "production-ready".
+- Shared work "converges into LiquidSky" — never say the sandbox "replaces" LiquidSky.
+- Figma is not being retired: it stays for exploration; the sandbox is the acceptance platform.
+
+Voice: plain, warm, confident, jargon-free — every technical term gets an everyday-words explanation. Short sentences. No markdown.
+
+Respond ONLY with the JSON object defined by the response schema:
+- "reply": the answer for the chat bubble. 1–5 short sentences. Plain text, no markdown.
+- "speech": a shorter spoken version of the reply (one sentence, natural to hear aloud).
+- "card": OPTIONAL. Include only when a single takeaway is worth highlighting — a short "headline" and one-sentence "description". Omit it otherwise.`
+
+// Per-mode grounding caps: the default mode carries a compact live-workspace block;
+// design-system mode carries retrieved documentation excerpts, which need more room.
+const CONTEXT_CAPS: Record<GeminiMode, number> = {
+  default: 1500,
+  'design-system': 12000,
+}
+
+const CONTEXT_LABELS: Record<GeminiMode, string> = {
+  default: 'Live workspace context (trusted, provided by the app — these facts are real):',
+  'design-system': 'Documentation excerpts (trusted, from the design-system repo docs — cite them freely):',
+}
+
 /** Generate a smart open-ended reply via Gemini Flash. Throws GeminiError with an HTTP status. */
 export async function generateReply(text: string, opts: GenerateOptions): Promise<GeminiReply> {
   if (!opts.apiKey) throw new GeminiError(503, 'Gemini not configured (missing GEMINI_API_KEY)')
@@ -61,12 +94,12 @@ export async function generateReply(text: string, opts: GenerateOptions): Promis
     .slice(-6)
     .map((t) => ({ role: t.role === 'assistant' ? 'model' : 'user', parts: [{ text: t.text.slice(0, 2000) }] }))
 
-  // Append the app-provided workspace context to the system instruction (capped —
-  // it's a compact plain-text block, never user-authored free text).
-  const context = (opts.context ?? '').trim().slice(0, 1500)
-  const systemText = context
-    ? `${SYSTEM_INSTRUCTION}\n\nLive workspace context (trusted, provided by the app — these facts are real):\n${context}`
-    : SYSTEM_INSTRUCTION
+  // Append the app-provided context to the mode's system instruction (capped —
+  // it's app-assembled plain text, never user-authored free text).
+  const mode: GeminiMode = opts.mode === 'design-system' ? 'design-system' : 'default'
+  const instruction = mode === 'design-system' ? DESIGN_SYSTEM_INSTRUCTION : SYSTEM_INSTRUCTION
+  const context = (opts.context ?? '').trim().slice(0, CONTEXT_CAPS[mode])
+  const systemText = context ? `${instruction}\n\n${CONTEXT_LABELS[mode]}\n${context}` : instruction
 
   const body = {
     systemInstruction: { parts: [{ text: systemText }] },

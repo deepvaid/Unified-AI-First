@@ -22,16 +22,18 @@ export default async function handler(req: any, res: any) {
     return
   }
   try {
-    const { text, history, context } = (await readJson(req)) as {
+    const { text, history, context, mode } = (await readJson(req)) as {
       text?: string
       history?: GeminiTurn[]
       context?: string
+      mode?: string
     }
     const result = await generateReply(text ?? '', {
       apiKey: process.env.GEMINI_API_KEY,
       model: process.env.GEMINI_MODEL,
       history,
       context: typeof context === 'string' ? context : undefined,
+      mode: mode === 'design-system' ? 'design-system' : 'default',
     })
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
