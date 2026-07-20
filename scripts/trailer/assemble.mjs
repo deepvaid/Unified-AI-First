@@ -33,6 +33,7 @@ const TAIL = {
   'reel-type-after': 8,
   'reel-stats': 9,
   'reel-wordmark': 9,
+  'reel-wordmark-marobase': 9,
   'davinci-orb': 8,
   flyover: FLY_TOTAL + 1.7, // same formula as capture.mjs
 }
@@ -68,21 +69,33 @@ for (const line of manifest) {
 }
 
 // ── Scene plan ────────────────────────────────────────────────────────────────
-const PAD = 0.55 // breathing room after each VO line
+const PAD = 0.35 // tight breathing room after each VO line (fast cut)
 const ai = (name) => (existsSync(`${AI}/${name}.mp4`) ? `${AI}/${name}.mp4` : null)
 
+// Old-flow stills for the "before" montage — drop more UAT screenshots into
+// maropost-screenshots/uat-old/ and re-run to enrich it.
+import { readdirSync } from 'node:fs'
+const UAT_DIR = 'maropost-screenshots/uat-old'
+const uatStills = existsSync(UAT_DIR)
+  ? readdirSync(UAT_DIR).filter((f) => /\.png$/i.test(f)).sort().map((f) => `${UAT_DIR}/${f}`)
+  : []
+
 const SCENES = [
-  { id: 's01', vo: 's01', min: 8, ai: ai('opener'), fallback: { src: 'reel-chaos-snap', from: 0, slowmo: 3.4 } },
-  { id: 's02', dur: 4.6, visual: { src: 'reel-type-before', from: 0 } },
-  { id: 's03', vo: 's03', min: 4.2, ai: ai('snap'), fallback: { src: 'reel-chaos-snap', from: 3.4 } },
+  // Cold open: first beats of the Seedance fragment shot, no VO
+  ...(ai('opener') ? [{ id: 's00', dur: 2.5, aiCut: { path: ai('opener'), from: 0 } }] : []),
+  { id: 's01', vo: 's01', min: 5, montage: 'uat', },
+  { id: 's02', dur: 3.2, visual: { src: 'reel-type-before', from: 0 } },
+  { id: 's03', vo: 's03', min: 2.8, ai: ai('snap'), fallback: { src: 'reel-chaos-snap', from: 3.4 } },
   { id: 'flyover', flyover: true },
   { id: 's08', vo: 's08', visual: { src: 'davinci-orb', from: 0.5 } },
   { id: 's09', vo: 's09', visual: { src: 'reel-stats', from: 0 } },
   { id: 's10', vo: 's10', visual: { src: 'reel-type-after', from: 0 } },
-  { id: 's11', vo: 's11', min: 7.5, ai: ai('closer'), fallback: { src: 'reel-wordmark', from: 0 } },
+  { id: 's11', vo: 's11', min: 6, fallback: { src: 'reel-wordmark-marobase', from: 0 } },
 ]
 
-const durOf = (s) => (s.flyover ? FLY_TOTAL : s.vo ? Math.max(vo[s.vo].dur + PAD, s.min || 0) : s.dur)
+// Quantize to a 0.25s grid so cuts sit on the half-beat at 120 BPM.
+const quant = (x) => Math.ceil(x * 4) / 4
+const durOf = (s) => (s.flyover ? FLY_TOTAL : s.vo ? quant(Math.max(vo[s.vo].dur + PAD, s.min || 0)) : s.dur)
 
 const COMMON = ['-r', String(FPS), '-c:v', 'libx264', '-crf', '18', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-an']
 const BASE_VF = `fps=${FPS},scale=${W}:${H}:force_original_aspect_ratio=decrease,` +
@@ -125,6 +138,30 @@ function cutSlowmo(name, srcLen, dur, out) {
     ...COMMON, '-t', dur.toFixed(3), out])
 }
 
+/** Quick-cut Ken Burns montage over the old-UAT stills, "archive" graded. */
+function cutMontage(stills, dur, out, workPrefix) {
+  // At least 4 cuts — cycle stills with alternating push directions.
+  const cuts = Math.max(4, stills.length)
+  const per = dur / cuts
+  const frames = Math.ceil(per * FPS)
+  const parts = []
+  for (let i = 0; i < cuts; i++) {
+    const img = stills[i % stills.length]
+    const zoomIn = i % 2 === 0
+    const z = zoomIn ? `min(1+0.005*on,1.16)` : `max(1.16-0.005*on,1)`
+    const p = `${workPrefix}-${i}.mp4`
+    ff(['-loop', '1', '-t', per.toFixed(3), '-i', img, '-vf',
+      `scale=${W * 2}:${H * 2}:force_original_aspect_ratio=increase,crop=${W * 2}:${H * 2},` +
+      `zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=${FPS},` +
+      `hue=s=0.55,eq=contrast=1.06:brightness=-0.03,vignette=angle=PI/4.6,setsar=1,format=yuv420p`,
+      ...COMMON, '-t', per.toFixed(3), p])
+    parts.push(p)
+  }
+  const list = `${workPrefix}-list.txt`
+  writeFileSync(list, parts.map((p) => `file '${p.split('/').pop()}'`).join('\n'))
+  ff(['-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', out])
+}
+
 mkdirSync(WORK, { recursive: true })
 const clips = []
 const sceneStarts = {}
@@ -138,6 +175,11 @@ for (const scene of SCENES) {
 
   if (scene.flyover) {
     cutCapture('flyover', 0, dur, out, { grade: true })
+  } else if (scene.montage === 'uat') {
+    if (!uatStills.length) throw new Error('no stills in maropost-screenshots/uat-old/')
+    cutMontage(uatStills, dur, out, `${WORK}/${scene.id}-mont`)
+  } else if (scene.aiCut) {
+    ff(['-ss', String(scene.aiCut.from), '-i', scene.aiCut.path, '-t', dur.toFixed(3), '-vf', BASE_VF, ...COMMON, '-t', dur.toFixed(3), out])
   } else if (scene.ai) {
     cutAi(scene.ai, dur, out)
   } else if (scene.fallback?.slowmo) {
@@ -190,15 +232,45 @@ writeFileSync(`${BUILD}/timeline.json`, JSON.stringify({
   vo: placements,
 }, null, 2))
 
-console.log(`\ntotal ${TOTAL.toFixed(1)}s — concatenating…`)
+console.log(`\ntotal ${TOTAL.toFixed(1)}s — captions + concat…`)
 
-// ── Video concat + global fades ───────────────────────────────────────────────
+// ── Styled captions — HTML/CSS rendered to transparent PNGs (make-captions.mjs),
+//    composited with overlay (this ffmpeg has no libass/drawtext) ──────────────
+const EMPHASIS = ['MaroBase', 'one design system', 'live code', 'working sandbox', 'One flip', 'Da Vinci', 'It runs', 'One system', 'one source of truth']
+function emphasize(s) {
+  let out = s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  for (const key of EMPHASIS) {
+    const idx = out.toLowerCase().indexOf(key.toLowerCase())
+    if (idx >= 0) {
+      out = `${out.slice(0, idx)}<em>${out.slice(idx, idx + key.length)}</em>${out.slice(idx + key.length)}`
+    }
+  }
+  return out
+}
+const captions = placements.map((p) => ({
+  id: p.id,
+  at: p.at - 0.05,
+  end: p.at + vo[p.id].dur + 0.45,
+  text: manifest.find((l) => l.id === p.id).text,
+  html: emphasize(manifest.find((l) => l.id === p.id).text),
+}))
+writeFileSync(`${BUILD}/captions.json`, JSON.stringify(captions, null, 2))
+execFileSync('node', ['scripts/trailer/make-captions.mjs'], { stdio: 'inherit' })
+
+// ── Video concat + global fades + caption overlays ────────────────────────────
 const listFile = `${WORK}/all.txt`
 writeFileSync(listFile, clips.map((p) => `file '${p.split('/').pop()}'`).join('\n'))
 const silentVideo = `${WORK}/video.mp4`
-ff(['-f', 'concat', '-safe', '0', '-i', listFile, '-vf',
-  `fade=t=in:st=0:d=0.6,fade=t=out:st=${(TOTAL - 1.4).toFixed(2)}:d=1.4`,
-  ...COMMON, silentVideo])
+{
+  const capInputs = captions.flatMap((c) => ['-i', `${BUILD}/captions/cap-${c.id}.png`])
+  let chain = `[0:v]fade=t=in:st=0:d=0.5,fade=t=out:st=${(TOTAL - 1.2).toFixed(2)}:d=1.2[b0]`
+  captions.forEach((c, i) => {
+    chain += `;[b${i}][${i + 1}:v]overlay=0:0:enable='between(t,${c.at.toFixed(2)},${c.end.toFixed(2)})'[b${i + 1}]`
+  })
+  ff(['-f', 'concat', '-safe', '0', '-i', listFile, ...capInputs,
+    '-filter_complex', chain, '-map', `[b${captions.length}]`,
+    ...COMMON, silentVideo])
+}
 
 // ── Audio: polished VO + music bed (user track or generated score) ───────────
 // Cinematic VO chain: clean lows, body at 120Hz, presence at 3k, glue compression,

@@ -126,11 +126,36 @@ riser(tPunch, 2.2, 0.1)
 hit(tSnap, 140, 38, 0.09, 0.5, 0.42)
 hit(tPunch, 120, 42, 0.08, 0.42, 0.34)
 
-// Soft sub pulse through the flyover (unhurried half-note heartbeat)
+// ── The beat: four-on-the-floor kick + offbeat hats, 120 BPM ─────────────────
+// (Replaced entirely by the user's track when trailer-build/music.mp3 exists.)
 {
-  const flyEnd = tOrb
-  for (let t = tFly + 0.6; t < flyEnd - 0.8; t += 1.45) {
-    hit(t, 74, 52, 0.03, 0.11, 0.1)
+  const BPM = Number(process.env.SCORE_BPM || 120)
+  const beat = 60 / BPM
+  const beatStart = 0.5
+  const beatEnd = tEnd - 2.5
+  // Kick — drops out for one bar at the snap so the impact owns the moment
+  for (let t = beatStart; t < beatEnd; t += beat) {
+    if (t > tSnap - beat * 0.5 && t < tSnap + beat * 1.5) continue
+    const g = t < at('s02') ? 0.2 : 0.3
+    hit(t, 92, 46, 0.02, 0.085, g)
+  }
+  // Offbeat hats — short bright noise ticks
+  for (let t = beatStart + beat / 2; t < beatEnd; t += beat) {
+    const i0 = Math.floor(t * SR)
+    const i1 = Math.min(N, i0 + Math.floor(0.035 * SR))
+    let prev = 0
+    for (let i = i0; i < i1; i++) {
+      const p = (i - i0) / (i1 - i0)
+      const n = Math.random() * 2 - 1
+      const s = (n - prev) * 0.5 * (1 - p) * 0.11 // crude highpass
+      prev = n
+      L[i] += s * 0.8
+      R[i] += s * 1.1
+    }
+  }
+  // Eighth-note sub bass through the flyover for drive
+  for (let t = tFly; t < tOrb - 0.5; t += beat / 2) {
+    hit(t, 56, 55, 0.01, 0.07, 0.09)
   }
 }
 

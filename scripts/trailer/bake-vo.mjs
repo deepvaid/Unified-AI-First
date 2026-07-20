@@ -14,27 +14,26 @@ const VOICE = process.env.TTS_VOICE || 'Charon'
 const MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview'
 const FORCE = process.argv.includes('--force')
 const OUT_DIR = 'trailer-build/vo'
-// Trailer narration runs at natural pace (chat bakes at 1.12).
-const ATEMPO = process.env.VO_ATEMPO || '1.0'
+// Brisk trailer pace (slightly above the chat voice's 1.12).
+const ATEMPO = process.env.VO_ATEMPO || '1.12'
 
 const STYLE =
-  'You are the narrator of a cinematic film trailer for a design system. Deep, resonant, unhurried — ' +
-  'movie-trailer gravitas, but restrained and confident, never shouty or salesy. Speak slowly. ' +
-  'Let every sentence land, with weighty pauses at the ellipses and full stops. ' +
+  'You are the narrator of a fast, modern product trailer. Energetic, confident, brisk — ' +
+  'forward momentum in every line, punchy delivery, never shouty or salesy. Keep pauses tight. ' +
   'Say exactly the line below, nothing else.'
 
 // Scene VO lines. s02 is intentionally silent (kinetic type carries it).
 const LINES = [
-  ['s01', 'For years, the product grew screen by screen… and every screen told a slightly different story.'],
-  ['s03', 'So we built one.'],
-  ['s04', 'One design system. Tokens, components, and patterns — drawn from the real product, rebuilt as a working prototype environment.'],
-  ['s05', 'Every component documented. Every screen accounted for.'],
-  ['s06', 'Orders. Dashboards. Journeys. The same language on every surface — so teams stop redesigning the basics, and start shipping.'],
-  ['s07', 'Light or dark. One flip. Everywhere.'],
-  ['s08', 'Even our AI speaks it.'],
-  ['s09', "This isn't a mock-up. It runs."],
+  ['s01', 'This is how the product looked for years. Every screen its own era… every flow its own rules.'],
+  ['s03', 'So we rebuilt the language.'],
+  ['s04', 'MaroBase. One design system — running as a real product. Not mock-ups… live code.'],
+  ['s05', 'Eighty-nine components. A hundred and seventy-one screens. One source of truth.'],
+  ['s06', 'Orders. Journeys. Contacts. Settings. Every flow rebuilt on the same foundations — in a working sandbox you can click today.'],
+  ['s07', 'Light or dark. One flip.'],
+  ['s08', 'Even Da Vinci speaks it.'],
+  ['s09', "This isn't a deck. It runs."],
   ['s10', 'One system. Every screen.'],
-  ['s11', 'The Maropost design system — built to converge into LiquidSky.'],
+  ['s11', 'MaroBase — the Maropost design system.'],
 ]
 
 if (!KEY) {

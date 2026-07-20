@@ -1,5 +1,15 @@
 <script setup lang="ts">
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
+
+withDefaults(defineProps<{
+  name?: string
+  byline?: string
+  tag?: string
+}>(), {
+  name: 'MAROPOST',
+  byline: '',
+  tag: 'One system. Every screen.',
+})
 </script>
 
 <template>
@@ -7,8 +17,9 @@ import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
     <div class="wordmark__orb">
       <DvOrbitOrb :size="96" inverse />
     </div>
-    <div class="wordmark__name">MAROPOST</div>
-    <div class="wordmark__tag">One system. Every screen.</div>
+    <div class="wordmark__name">{{ name }}</div>
+    <div v-if="byline" class="wordmark__byline">{{ byline }}</div>
+    <div class="wordmark__tag">{{ tag }}</div>
     <div class="wordmark__url">ai-first-maropost.vercel.app/showcase</div>
   </div>
 </template>
@@ -36,6 +47,15 @@ import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
   letter-spacing: 0.18em;
   color: rgb(var(--v-theme-on-surface));
   animation: wm-rise 500ms var(--mp-motion-easing-standard) 300ms both;
+}
+
+.wordmark__byline {
+  margin-top: calc(-1 * var(--mp-spacing-2));
+  font-size: var(--mp-typography-fontSize-sm);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgb(var(--v-theme-on-surface-variant));
+  animation: wm-rise 500ms var(--mp-motion-easing-standard) 500ms both;
 }
 
 .wordmark__tag {

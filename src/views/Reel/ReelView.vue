@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, markRaw, ref, type Component } from 'vue'
+import { useRoute } from 'vue-router'
 // Shared slide-surface keyboard nav — deliberate cross-view import (see Deck/useSlideKeyboard).
 import { useSlideKeyboard } from '@/views/Deck/useSlideKeyboard'
 import ReelChaosCard from './cards/ReelChaosCard.vue'
@@ -12,6 +13,13 @@ interface ReelCardEntry {
   component: Component
   props?: Record<string, unknown>
 }
+
+// ?brand=marobase re-labels the wordmark close for the design-system trailer.
+const route = useRoute()
+const wordmarkProps =
+  route.query.brand === 'marobase'
+    ? { name: 'MAROBASE', byline: 'by Maropost' }
+    : undefined
 
 const CARDS: ReelCardEntry[] = [
   { key: 'chaos', component: markRaw(ReelChaosCard) },
@@ -34,7 +42,7 @@ const CARDS: ReelCardEntry[] = [
     },
   },
   { key: 'stats', component: markRaw(ReelStatsCard) },
-  { key: 'wordmark', component: markRaw(ReelWordmarkCard) },
+  { key: 'wordmark', component: markRaw(ReelWordmarkCard), props: wordmarkProps },
 ]
 
 const index = ref(0)

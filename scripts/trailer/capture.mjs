@@ -95,6 +95,19 @@ const SHOTS = [
     },
   },
   {
+    // S11: MAROBASE wordmark close (trailer branding via ?brand=marobase)
+    name: 'reel-wordmark-marobase',
+    theme: 'dark',
+    async run(page) {
+      await page.goto(`${BASE}/reel?brand=marobase`)
+      await settle(page, 2500)
+      await page.keyboard.press('End')
+      await sleep(300)
+      await page.keyboard.press('r')
+      await sleep(9000)
+    },
+  },
+  {
     // S11 fallback: wordmark close
     name: 'reel-wordmark',
     theme: 'dark',

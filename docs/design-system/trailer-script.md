@@ -1,45 +1,49 @@
 # Design System Trailer — script, storyboard, and build pipeline
 
-A ~1:42 cinematic trailer for the design system + prototype sandbox, in the style
+A ~1:00 fast-cut trailer (v3) for the design system + prototype sandbox, in the style
 of Atlassian's "Reimagining Atlassian Design System: A vision": real UI screens
 flying in 3D space, Gemini TTS (Charon — the Da Vinci voice) narration with a
 cinematic mix, a code-composed score synced to the edit, and Seedance AI accent
-shots. Follows the "Chaos → Order" arc from [demo-reel-plan.md](demo-reel-plan.md).
+shots, burned-in styled captions, and a beat-driven edit. Follows the "Chaos → Order" arc from [demo-reel-plan.md](demo-reel-plan.md).
 
-Output: `trailer-build/maropost-design-system-trailer.mp4` (1080p24 H.264, AAC 48 kHz, ~102s).
+Output: `trailer-build/maropost-design-system-trailer.mp4` (1080p24 H.264, AAC 48 kHz, ~58s). The design system is named **MaroBase**; no LiquidSky references.
 
 Language rules honored in the VO (see leadership-showcase-script.md): "working
-prototype environment" (never "production-ready"), "converge into LiquidSky"
-(never "replace"), no dates or percentages.
+sandbox" (never "production-ready"), no dates or percentages, and — per current
+direction — **no LiquidSky references**.
 
-## Voiceover script — "One System"
+## Voiceover script — "MaroBase" (v3, brisk)
+
+Every spoken line is also burned in as a styled caption (Inter, brand-blue emphasis).
 
 | Scene | Line |
 |-------|------|
-| S1 | "For years, the product grew screen by screen… and every screen told a slightly different story." |
+| S0 | *(silent cold open — Seedance fragments; beat starts)* |
+| S1 | "This is how the product looked for years. Every screen its own era… every flow its own rules." |
 | S2 | *(silent — kinetic type: "Three buttons. Five blues. Zero consistency.")* |
-| S3 | "So we built one." |
-| S4 | "One design system. Tokens, components, and patterns — drawn from the real product, rebuilt as a working prototype environment." |
-| S5 | "Every component documented. Every screen accounted for." |
-| S6 | "Orders. Dashboards. Journeys. The same language on every surface — so teams stop redesigning the basics, and start shipping." |
-| S7 | "Light or dark. One flip. Everywhere." |
-| S8 | "Even our AI speaks it." |
-| S9 | "This isn't a mock-up. It runs." |
+| S3 | "So we rebuilt the language." |
+| S4 | "MaroBase. One design system — running as a real product. Not mock-ups… live code." |
+| S5 | "Eighty-nine components. A hundred and seventy-one screens. One source of truth." |
+| S6 | "Orders. Journeys. Contacts. Settings. Every flow rebuilt on the same foundations — in a working sandbox you can click today." |
+| S7 | "Light or dark. One flip." |
+| S8 | "Even Da Vinci speaks it." |
+| S9 | "This isn't a deck. It runs." |
 | S10 | "One system. Every screen." |
-| S11 | "The Maropost design system — built to converge into LiquidSky." |
+| S11 | "MaroBase — the Maropost design system." |
 
 ## Storyboard
 
 | # | Visual | Source |
 |---|--------|--------|
-| S1 | **Seedance AI**: glassy UI fragments (mismatched save buttons, chips) drift in dark space | `trailer-build/ai/opener.mp4` (fallback: `/reel` card 1 wobble, slow-mo) |
+| S0 | **Seedance AI** cold open: glassy UI fragments drift in dark space | `trailer-build/ai/opener.mp4` first 2.5s |
+| S1 | **Old-UAT quick-cut montage** — real old product screens, archive grade (desaturated, vignette), alternating Ken Burns pushes | `maropost-screenshots/uat-old/*.png` (drop more in and re-run) |
 | S2 | Kinetic type "Three buttons. Five blues. Zero consistency." | `/reel` card 2 |
 | S3 | The SNAP → "AFTER — one system, one truth" | AI `snap` when generated (fallback: `/reel` card 1 back half) |
-| S4–S7 | **3D fly-through** (`/reel/fly`, one continuous camera journey): descent over a floating landscape of real screens → giant stats wall (89·84·171·297) → dive down a street of screens → head-on dashboard, whole world crossfades to dark | `flyover` capture |
+| S4–S7 | **Fast 3D fly-through** (`/reel/fly`, ~28s): descent over floating screens → stats wall → street dive → head-on dashboard, world flips dark | `flyover` capture |
 | S8 | Da Vinci orb breathing | `/accounts/2000290/da-vinci/experience` |
 | S9 | Stat punch, oversized numbers | `/reel` card 4 |
 | S10 | "One system. / Every screen." | `/reel` card 3 |
-| S11 | Wordmark close, fade to black | AI `closer` when generated (fallback: `/reel` card 5) |
+| S11 | **MAROBASE** wordmark ("by Maropost"), fade to black | `/reel?brand=marobase` card 5 |
 
 ## The fly-through (`/reel/fly`)
 
@@ -83,12 +87,17 @@ Notes:
   or paused model → graceful skip + real-capture fallbacks; re-run steps 4→5 later.
   If generation fails with `SetLimitExceeded`, raise/disable "Safe Experience Mode"
   on the ModelArk Model Activation page.
-- **Music** — `assemble.mjs` composes `trailer-build/score.wav` in code
-  ([make-score.mjs](../../scripts/trailer/make-score.mjs)): sub drone, Am/F pads,
-  a riser ending exactly on the S3 snap, impacts on the snap and stat punch, a
-  pulse through the flyover — all read from the edit's own `timeline.json`.
-  Drop a licensed track at `trailer-build/music.mp3` to use it instead (mixed at
-  −18 dB). Both are ducked under the VO via sidechain compression.
+- **Music** — a user track at `trailer-build/music.mp3` is used when present
+  (current cut uses one). Otherwise `assemble.mjs` composes `trailer-build/score.wav`
+  in code ([make-score.mjs](../../scripts/trailer/make-score.mjs)): 120 BPM
+  four-on-the-floor kick + offbeat hats, sub drone, Am/F pads, riser into the S3
+  snap, impacts on snap and stat punch — read from the edit's own `timeline.json`.
+  Standalone cut lengths quantize to a 0.25s grid so cuts sit near the half-beat.
+  Both beds are ducked under the VO via sidechain compression.
+- **Captions** — [make-captions.mjs](../../scripts/trailer/make-captions.mjs)
+  renders each VO line as HTML/CSS (Inter, brand-blue `<em>` emphasis) to
+  transparent PNGs via headless Chromium, composited with `overlay` (this ffmpeg
+  build has no libass/drawtext).
 - **VO mix** — highpass, body +3dB @120Hz, presence +2dB @3kHz, compression,
   a hint of echo — then everything loudnorm'd to −16 LUFS.
 - **Timing contract** — `capture.mjs` ends every shot with a known "action tail";
