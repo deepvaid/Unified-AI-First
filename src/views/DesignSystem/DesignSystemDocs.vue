@@ -1,9 +1,10 @@
 <script setup lang="ts">
-// In-app design-system documentation: renders the leadership-facing docs
-// (FAQ crib sheet + operating model) from docs/design-system/*.md, with the
-// docs-grounded Da Vinci assistant (DvDocsAssistant) alongside. The markdown
-// is repo-authored (trusted), so rendering via marked + v-html is safe here.
-import { computed, ref } from 'vue'
+// In-app design-system hub: the token foundations (ported from the standalone
+// design-kit app) and the leadership-facing docs (FAQ crib sheet + operating
+// model, rendered from docs/design-system/*.md), with the docs-grounded
+// Da Vinci assistant (DvDocsAssistant) alongside. The markdown is
+// repo-authored (trusted), so rendering via marked + v-html is safe here.
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { marked } from 'marked'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
@@ -14,20 +15,37 @@ import operatingModelRaw from '../../../docs/design-system/operating-model.md?ra
 const tabs = [
   { label: 'FAQ', key: 'faq' },
   { label: 'Operating model', key: 'operating-model' },
+  { label: 'Colors', key: 'colors' },
+  { label: 'Typography', key: 'typography' },
+  { label: 'Spacing', key: 'spacing' },
 ]
 
 const activeTab = ref('faq')
 
+const DOC_TABS: Record<string, string> = {
+  faq: faqRaw,
+  'operating-model': operatingModelRaw,
+}
+
+const sectionComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
+  colors: defineAsyncComponent(() => import('./sections/Colors.vue')),
+  typography: defineAsyncComponent(() => import('./sections/Typography.vue')),
+  spacing: defineAsyncComponent(() => import('./sections/Spacing.vue')),
+}
+
+const activeDocRaw = computed(() => DOC_TABS[activeTab.value] ?? null)
+const activeSection = computed(() => sectionComponents[activeTab.value] ?? null)
+
 const docHtml = computed(() =>
-  marked.parse(activeTab.value === 'faq' ? faqRaw : operatingModelRaw, { async: false }),
+  activeDocRaw.value === null ? '' : marked.parse(activeDocRaw.value, { async: false }),
 )
 </script>
 
 <template>
   <div class="d-flex flex-column gap-5">
     <MpPageHeader
-      title="Design system — docs & FAQ"
-      subtitle="The written answers behind the showcase — and a Da Vinci that knows them"
+      title="Design system"
+      subtitle="Docs, token foundations, and a Da Vinci that knows them all"
       back-to="/accounts/2000290/design-system"
     >
       <template #tabs>
@@ -38,8 +56,9 @@ const docHtml = computed(() =>
     <v-row>
       <v-col cols="12" md="8">
         <v-card flat border rounded="lg" class="pa-6 pa-md-8">
+          <component :is="activeSection" v-if="activeSection" id="ds-doc" />
           <!-- eslint-disable-next-line vue/no-v-html — repo-authored markdown, not user content -->
-          <article id="ds-doc" class="ds-prose" v-html="docHtml" />
+          <article v-else id="ds-doc" class="ds-prose" v-html="docHtml" />
         </v-card>
       </v-col>
       <v-col cols="12" md="4">
