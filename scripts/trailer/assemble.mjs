@@ -262,10 +262,14 @@ const listFile = `${WORK}/all.txt`
 writeFileSync(listFile, clips.map((p) => `file '${p.split('/').pop()}'`).join('\n'))
 const silentVideo = `${WORK}/video.mp4`
 {
-  const capInputs = captions.flatMap((c) => ['-i', `${BUILD}/captions/cap-${c.id}.png`])
+  // -loop each still for the full film so every overlay window has frames —
+  // a bare single-frame PNG input starves framesync for later enable windows.
+  const capInputs = captions.flatMap((c) => [
+    '-loop', '1', '-t', (c.end + 0.5).toFixed(2), '-i', `${BUILD}/captions/cap-${c.id}.png`,
+  ])
   let chain = `[0:v]fade=t=in:st=0:d=0.5,fade=t=out:st=${(TOTAL - 1.2).toFixed(2)}:d=1.2[b0]`
   captions.forEach((c, i) => {
-    chain += `;[b${i}][${i + 1}:v]overlay=0:0:enable='between(t,${c.at.toFixed(2)},${c.end.toFixed(2)})'[b${i + 1}]`
+    chain += `;[b${i}][${i + 1}:v]overlay=0:0:eof_action=pass:enable='between(t,${c.at.toFixed(2)},${c.end.toFixed(2)})'[b${i + 1}]`
   })
   ff(['-f', 'concat', '-safe', '0', '-i', listFile, ...capInputs,
     '-filter_complex', chain, '-map', `[b${captions.length}]`,
@@ -278,7 +282,7 @@ const silentVideo = `${WORK}/video.mp4`
 const VO_POLISH =
   'highpass=f=70,equalizer=f=120:t=q:w=1:g=3,equalizer=f=3000:t=q:w=1.2:g=2,' +
   'acompressor=threshold=-20dB:ratio=3:attack=8:release=140:makeup=2,' +
-  'aecho=0.7:0.25:110:0.14'
+  'aecho=0.7:0.25:110:0.14,volume=1.4'
 
 const MUSIC = existsSync(`${BUILD}/music.mp3`) ? `${BUILD}/music.mp3` : null
 if (!MUSIC) {
@@ -301,10 +305,10 @@ inputs.push(...(MUSIC ? ['-stream_loop', '-1'] : []), '-i', BED)
 
 let filter = chains.join(';')
 filter += `;${mixIn.join('')}amix=inputs=${mixIn.length}:normalize=0,asplit=2[vo][voKey]`
-const bedGain = MUSIC ? 'volume=0.13,' : 'volume=0.9,'
+const bedGain = MUSIC ? 'volume=0.07,' : 'volume=0.55,'
 filter += `;[${bedIdx}:a]aresample=48000,${bedGain}afade=t=in:st=0:d=1.2,afade=t=out:st=${(TOTAL - 3).toFixed(2)}:d=3[bed]`
 // Duck the bed under the narration
-filter += `;[bed][voKey]sidechaincompress=threshold=0.05:ratio=5:attack=20:release=400:makeup=1[duck]`
+filter += `;[bed][voKey]sidechaincompress=threshold=0.04:ratio=8:attack=15:release=350:makeup=1[duck]`
 filter += `;[vo][duck]amix=inputs=2:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11[out]`
 
 ff(['-i', silentVideo, ...inputs, '-filter_complex', filter, '-map', '0:v', '-map', '[out]',
