@@ -8,6 +8,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import DvDocsAssistant from '@/components/copilot/DvDocsAssistant.vue'
 
 interface DemoOrder {
   id: string
@@ -19,6 +20,7 @@ interface DemoOrder {
 const activeTab = ref('all')
 const search = ref('')
 const drawerOpen = ref(false)
+const assistantOpen = ref(false)
 const selected = ref<string[]>([])
 
 const rows = ref<DemoOrder[]>([
@@ -88,10 +90,26 @@ function toggleSelect(id: string) {
       subtitle="Live Figma token sync demo for stakeholders"
     >
       <template #actions>
-        <v-btn variant="outlined" prepend-icon="book-open" :to="`/accounts/2000290/design-system/docs`">Docs &amp; FAQ</v-btn>
+        <v-btn variant="outlined" prepend-icon="sparkles" @click="assistantOpen = true">Ask Da Vinci</v-btn>
         <v-btn color="primary" prepend-icon="file-text" @click="drawerOpen = true">Token Brief</v-btn>
       </template>
     </MpPageHeader>
+
+    <!-- Design-system Da Vinci: slide-in panel, launched from the header. -->
+    <v-navigation-drawer
+      v-model="assistantOpen"
+      location="right"
+      temporary
+      :width="420"
+      class="ds-assistant-drawer"
+    >
+      <div class="d-flex flex-column h-100 pa-3 ga-2">
+        <div class="d-flex justify-end">
+          <v-btn icon="x" size="x-small" variant="text" aria-label="Close assistant" @click="assistantOpen = false" />
+        </div>
+        <DvDocsAssistant class="flex-grow-1" style="min-height: 0" />
+      </div>
+    </v-navigation-drawer>
 
     <v-row>
       <v-col cols="12" md="4">

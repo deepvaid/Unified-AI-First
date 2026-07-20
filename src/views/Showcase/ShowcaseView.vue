@@ -40,7 +40,6 @@ onMounted(() => {
         <RouterLink class="showcase-footer__link" to="/deck">Presentation deck</RouterLink>
         <RouterLink class="showcase-footer__link" to="/reel">Reel title cards</RouterLink>
         <RouterLink class="showcase-footer__link" to="/accounts/2000290/design-system">Foundations</RouterLink>
-        <RouterLink class="showcase-footer__link" to="/accounts/2000290/design-system/docs">Docs &amp; FAQ</RouterLink>
         <a class="showcase-footer__link" :href="storybookUrl" target="_blank" rel="noopener">Storybook</a>
       </div>
 
