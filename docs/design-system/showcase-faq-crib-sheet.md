@@ -1,6 +1,6 @@
 # FAQ Crib Sheet — Say-It-Out-Loud Answers
 
-Companion to [leadership-showcase-script.md](./leadership-showcase-script.md). Every answer is written to be **spoken**, in plain language a non-technical listener follows on first hearing. Each has an *If pushed:* line for the follow-up.
+Companion to [leadership-showcase-script.md](./leadership-showcase-script.md). Every answer is written to be **spoken**, in plain language a non-technical listener follows on first hearing. Each has an *If pushed:* line for the follow-up. Questions 24–36 cover teams, handover, QA/UAT, and governance — the full written plans behind those answers live in [operating-model.md](./operating-model.md).
 
 Golden rules: never promise a date or a percentage before the pilots · never say "production-ready" · "converge into LiquidSky," never "replace."
 
@@ -163,6 +163,94 @@ Golden rules: never promise a date or a percentage before the pilots · never sa
 > Clean lines. Product design owns how things should look and behave, and what counts as done. The central design-system team owns LiquidSky — the shared parts, their releases. Product engineering owns putting the parts to work in the product. Leadership owns priorities. Nobody's job moves to my laptop — the sandbox just gives everyone the same picture to point at.
 
 *If pushed:* "That's why ask three is two named people — ownership starts with names, not org charts."
+
+---
+
+## How we'll work together
+
+**24. "Can our team keep working in its own silo?" (commerce / marketing / service)**
+
+> On your product area — yes, that's the design. Commerce keeps owning the store builder, marketing keeps its campaign screens and builders, service keeps ticketing and chat. Nobody's roadmap moves. What ends is each team re-inventing the *shared* parts — the buttons, the panels, the builder skeleton. Silo work on shared parts is exactly how we got five Save buttons.
+
+*If pushed:* "Own your area, share the commons. When commerce improves the inspector panel, marketing's builders get better for free — and the reverse."
+
+**25. "Can the commerce team contribute store-builder components?"**
+
+> Yes — that's the model, not an exception to it. And here's the part that makes it cheap: a store builder, a landing-page builder, and an email builder are the same skeleton wearing different clothes. In the sandbox, seventeen builder screens already run inside one shared builder shell. So commerce contributes to the shared builder kit through the same path as everything else — and every other builder inherits the improvement.
+
+*If pushed:* "The contribution path and the cross-team council that triages it are one page of the operating model — I'll share it right after this call."
+
+**26. "What does the new design-to-dev handover look like? Are we getting rid of Figma?"**
+
+> We're not getting rid of Figma — it stays where it's brilliant: exploring, concepts, early options. What changes is the *handover*. Instead of signing off on pictures, we sign off on the working screen: design explores in Figma, assembles the chosen direction in the sandbox in days, everyone clicks the real flow and accepts *that*, and engineering builds from a working reference instead of interpreting a picture.
+
+*If pushed:* "Figma starts the idea; the sandbox becomes the acceptance platform. The five-step workflow with owners is in the operating model."
+
+**27. "Why not Figma-to-Figma like we did before?"**
+
+> Because a picture can't show the places design actually breaks: loading, empty tables, keyboard access, small screens, long text. Handing over pictures forced engineers to translate — and translation is where quality leaked. The working screen removes the translation step entirely.
+
+*If pushed:* "Nothing against Figma — it's the right tool before the direction is chosen, and the wrong contract after."
+
+**28. "How does QA work in all this?"**
+
+> It gets narrower and deeper. The shared parts are tested once, centrally — every state, keyboard access, both themes, approved screenshots. So page-level QA stops re-proving the same visual details on every screen and focuses on what's actually new: the flow, the data, the integrations. And the accepted sandbox screen gives QA something they've never had — a living answer to "what is this page *supposed* to look like?"
+
+*If pushed:* "QA co-authors the final checklist during the pilots, so the bar is theirs — not imposed on them afterwards."
+
+**29. "How does this actually improve our speed from PRD to production?"**
+
+> It compresses the three slowest loops in the middle. A PRD becomes a clickable prototype in days, because the parts exist. Review happens on a live link instead of a chain of mockup meetings. And engineering starts from a working reference instead of reverse-engineering a picture. I'm deliberately not quoting a percentage — the pilots will give us the real before-and-after numbers.
+
+*If pushed:* "This sandbox is itself the proof: one small team, 171 screens, built on those rails."
+
+**30. "When can we start? Marketing is still moving legacy code from Vue 2 to Vue 3."**
+
+> We start now — the first steps don't touch marketing at all. The compatibility review is analysis, and the pilots run in areas already on the new stack. Then the migration stops being a blocker and becomes the vehicle: every legacy screen has to be rebuilt anyway, so rebuilding it onto system parts means we pay for each screen once — not twice.
+
+*If pushed:* "Migrate-then-redesign would touch every marketing screen a second time. Converge-as-you-migrate touches it once."
+
+**31. "How do we share feedback on the design system or the sandbox?"**
+
+> One place: a Confluence page I'll share right after this call. Feedback gets triaged into three lanes — flow, technical, visual — and each lane has a named owner. The promise is that everything gets an answer; not everything gets an action. The most useful feedback from this room is flows and feasibility — the technical and process side.
+
+*If pushed:* "Silence is the only prohibited outcome — every item gets a reply and a decision."
+
+---
+
+## Design authority — and the sharp moments
+
+**32. "Is the design final? Can we change patterns, colors, fonts?"**
+
+> The direction is signed off at leadership level — so it's final as a *direction*, not frozen as a museum piece. If something genuinely doesn't work, we fix it, and the feedback door is open. But visual identity decisions — colors, type, patterns — stay with product design, one accountable owner instead of a committee. What I need from this room is feedback on flows, feasibility, and gaps.
+
+*If pushed:* "Preference gets a reply and a decision. A real usability issue gets a fix. Both go through the same Confluence page."
+
+**33. When someone keeps hammering "this doesn't look right, that doesn't look right":**
+
+> That's exactly the kind of eye we want on this — and visual calls have a home: product design owns them, and this direction has already been through user testing and leadership review. Where I really need *your* eye today is the flows and the plan. If the visual point still stands tomorrow, put it on the Confluence page and product design will answer it directly.
+
+*Second use, shorter:* "Noted — that one goes to the design lane on Confluence, and it'll get an answer. Back to the flow: does this step work for your team?"
+
+*Never say:* "that's already been decided" with a closed door — always give the feedback a path, then move the room forward.
+
+**34. "Has anyone actually tested this with users, or do we just like it?"**
+
+> Both, honestly — and testing wins when they disagree. We ran pilot user testing during the build, and what you saw today was shaped by it. UAT-style testing is ongoing right now, and the results get published on the Confluence page — including the misses. A finding that kills a pattern is the program working, not failing.
+
+*If pushed:* "The UAT plan is persona-based and task-based — real tasks like 'find yesterday's unfulfilled orders,' not demo-friendly ones."
+
+**35. "What's the UAT plan for the design sandbox?"**
+
+> Short version: monthly rounds, recruited against our four merchant personas, five people per persona. Each round runs task-based sessions on the core flows — find an order, build a journey, edit a contact — on the live sandbox link, where possible running the same task in the current product for a before-and-after comparison. Every round ends with a one-page readout on Confluence: what we tested, what we found, what we changed.
+
+*If pushed:* "Mock data makes it zero-risk to test aggressively — participants can't break anything, so we let them try."
+
+**36. "Everyone gets sandbox access and PMs can add AI-coded screens? What's the governance?"**
+
+> Yes to access, with lanes. The sandbox is open like a workshop, not like a wall. Anyone — including PMs — can *explore*: build on a branch, share a clickable preview link, argue with a real thing instead of a document. But nothing merges itself. *Proposing* something into the sandbox takes a design review and an engineering review. *Promoting* it into the shared reference takes the full quality gate plus product-design sign-off. And AI-written work passes exactly the same gates as human-written work — we judge the artifact, not the author.
+
+*If pushed:* "The reference everyone sees is protected — exploration is visible but clearly not canon. Three lanes, one page of the operating model."
 
 ---
 
