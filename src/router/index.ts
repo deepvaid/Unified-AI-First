@@ -284,6 +284,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/wow', redirect: '/showcase' },
   { path: '/deck', name: 'Deck', component: () => import('@/views/Deck/DeckView.vue'), meta: { fullPage: true } },
   { path: '/reel', name: 'Reel', component: () => import('@/views/Reel/ReelView.vue'), meta: { fullPage: true } },
+  { path: '/reel/fly', name: 'ReelFly', component: () => import('@/views/Reel/ReelFlyView.vue'), meta: { fullPage: true } },
 
   // Redirect root to dashboard
   { path: '/', redirect: '/accounts/2000290/dashboard' },

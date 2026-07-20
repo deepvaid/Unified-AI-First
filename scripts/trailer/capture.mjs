@@ -3,9 +3,13 @@
 //
 // Usage:
 //   node scripts/trailer/capture.mjs [--base http://localhost:5173] [--only shot1,shot2]
-import { mkdirSync, renameSync, existsSync, rmSync } from 'node:fs'
+import { mkdirSync, renameSync, existsSync, rmSync, readFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { chromium } from 'playwright'
+
+const flyoverPlan = JSON.parse(readFileSync('src/views/Reel/flyover-plan.json', 'utf8'))
+// Assemble's TAIL map derives the same value — one source of truth.
+export const FLYOVER_TAIL = flyoverPlan.segments.reduce((s, x) => s + x.dur, 0) + 1.7
 
 const BASE = process.argv.includes('--base')
   ? process.argv[process.argv.indexOf('--base') + 1]
@@ -172,6 +176,19 @@ const SHOTS = [
     },
   },
   {
+    // S4–S7: continuous 3D fly-through (see src/views/Reel/ReelFlyView.vue +
+    // flyover-plan.json; run scripts/trailer/prep-screens.mjs first)
+    name: 'flyover',
+    theme: 'dark',
+    async run(page) {
+      await page.goto(`${BASE}/reel/fly`)
+      await settle(page, 2500)
+      await page.waitForSelector('.fly-world', { timeout: 30000 }) // images decoded
+      await page.keyboard.press('r')
+      await sleep(FLYOVER_TAIL * 1000)
+    },
+  },
+  {
     // S8: Da Vinci orb breathing
     name: 'davinci-orb',
     theme: 'dark',
@@ -184,7 +201,9 @@ const SHOTS = [
 ]
 
 mkdirSync(RAW_DIR, { recursive: true })
-const browser = await chromium.launch()
+// --headed: real GPU compositing — required for the heavy 3D flyover, which the
+// software-rendered headless rasterizer can't keep at real time.
+const browser = await chromium.launch({ headless: !process.argv.includes('--headed') })
 let failed = 0
 
 for (const shot of SHOTS) {

@@ -5,6 +5,7 @@
 // Usage:
 //   GEMINI_API_KEY=... node scripts/trailer/bake-vo.mjs [--force]
 //   (voice via TTS_VOICE env, default Charon; model via TTS_MODEL; pace via VO_ATEMPO)
+import './env.mjs'
 import { writeFileSync, mkdirSync, existsSync, readFileSync, unlinkSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 
@@ -13,13 +14,14 @@ const VOICE = process.env.TTS_VOICE || 'Charon'
 const MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview'
 const FORCE = process.argv.includes('--force')
 const OUT_DIR = 'trailer-build/vo'
-// Trailer narration runs slower than chat replies (chat bakes at 1.12).
-const ATEMPO = process.env.VO_ATEMPO || '1.05'
+// Trailer narration runs at natural pace (chat bakes at 1.12).
+const ATEMPO = process.env.VO_ATEMPO || '1.0'
 
 const STYLE =
-  'You are narrating a short cinematic product trailer. Calm, confident, understated gravitas — ' +
-  'a measured documentary voice, never salesy. Deliberate pace with natural pauses at the ellipses ' +
-  'and full stops. Say exactly the line below, nothing else.'
+  'You are the narrator of a cinematic film trailer for a design system. Deep, resonant, unhurried — ' +
+  'movie-trailer gravitas, but restrained and confident, never shouty or salesy. Speak slowly. ' +
+  'Let every sentence land, with weighty pauses at the ellipses and full stops. ' +
+  'Say exactly the line below, nothing else.'
 
 // Scene VO lines. s02 is intentionally silent (kinetic type carries it).
 const LINES = [

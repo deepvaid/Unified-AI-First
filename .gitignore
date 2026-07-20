@@ -51,3 +51,6 @@ maropost-screenshots/uat/
 
 # Trailer build artifacts (video/audio renders — scripts/trailer/ is the source)
 trailer-build/
+
+# Fly-through source screens (copied by scripts/trailer/prep-screens.mjs)
+public/trailer-screens/
