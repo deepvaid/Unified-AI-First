@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref, unref } from 'vue'
 import { useTheme } from 'vuetify'
 import type { ApexOptions } from 'apexcharts'
 import type { DashboardChartVariant, DashboardSeriesData, DashboardWidgetType } from '@/stores/dashboards/types'
-import { applyChartTheme, activeChartPalette } from '@/plugins/chartPalette'
+import { applyChartTheme, activeChartPalette, CHART_PALETTE_OVERRIDE } from '@/plugins/chartPalette'
 import { useAppTheme } from '@/composables/useAppTheme'
 
 const props = withDefaults(defineProps<{
@@ -69,6 +69,10 @@ const chartHeight = computed(() => {
 })
 
 const { accentHex } = useAppTheme()
+// A palette pinned by an ancestor (the /chart-themes compare page) wins over both the
+// global palette and the accent-first override, so each panel shows its true colours.
+const paletteOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const palette = computed<string[]>(() => unref(paletteOverride) ?? activeChartPalette.value)
 const vuetifyTheme = useTheme()
 const markerStrokeColor = computed(() => (
   vuetifyTheme.global.current.value.dark
@@ -118,9 +122,11 @@ const chartOptions = computed<ApexOptions>(() => {
 
   return {
     ...base,
-    colors: isPrev
-      ? [accentHex.value, '#75D6FF']
-      : [accentHex.value, ...activeChartPalette.value.slice(1)],
+    colors: paletteOverride
+      ? palette.value
+      : isPrev
+        ? [accentHex.value, '#75D6FF']
+        : [accentHex.value, ...palette.value.slice(1)],
     chart: {
       ...base.chart,
       sparkline: { enabled: false },

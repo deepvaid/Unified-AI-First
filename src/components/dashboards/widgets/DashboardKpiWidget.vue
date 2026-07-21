@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, toRef, useId } from 'vue'
+import { computed, inject, toRef, unref, useId } from 'vue'
 import { useLiveAgo } from '@/composables/useRelativeTime'
 import MpSourceCloudChip from '@/components/MpSourceCloudChip.vue'
+import { activeChartPalette, CHART_PALETTES, CHART_PALETTE_OVERRIDE } from '@/plugins/chartPalette'
 import type { DashboardDataSource, DashboardKpiData } from '@/stores/dashboards/types'
 
 const sparkFillId = useId()
@@ -35,6 +36,17 @@ const emit = defineEmits<{
 
 const lastRefreshedAt = toRef(() => props.lastRefreshedAt)
 const updatedLabel = useLiveAgo(lastRefreshedAt)
+
+// Tint the sparkline to the active chart palette so KPI cards differentiate per theme.
+// Only when a palette is pinned (compare page) or a non-default palette is active —
+// the default keeps its existing accent color, so normal dashboards are unchanged.
+const paletteOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const sparkColor = computed<string | undefined>(() => {
+  const override = unref(paletteOverride)
+  if (override) return override[0]
+  if (activeChartPalette.value !== CHART_PALETTES.blue) return activeChartPalette.value[0]
+  return undefined
+})
 
 const trendPositive = computed(() => props.data.delta == null || props.data.delta >= 0)
 const trendIcon = computed(() => (trendPositive.value ? 'chevron-up' : 'chevron-down'))
@@ -129,7 +141,7 @@ const sparklinePoints = computed(() => {
     </div>
 
     <!-- Full-width sparkline baseline, pinned to the bottom of the body -->
-    <div class="dashboard-kpi-widget__spark" aria-hidden="true">
+    <div class="dashboard-kpi-widget__spark" aria-hidden="true" :style="sparkColor ? { color: sparkColor } : undefined">
       <svg class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 40" preserveAspectRatio="none">
         <defs>
           <linearGradient :id="sparkFillId" x1="0" y1="0" x2="0" y2="1">

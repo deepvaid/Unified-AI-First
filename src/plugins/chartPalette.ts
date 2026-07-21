@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, type InjectionKey, type Ref } from 'vue'
 import type { ApexOptions } from 'apexcharts'
 
 import {
@@ -42,6 +42,14 @@ const chartPaletteId = ref<ChartPalette>('blue')
 
 /** Reactive active palette — chart widgets read `activeChartPalette.value` inside their computeds. */
 export const activeChartPalette = computed<string[]>(() => CHART_PALETTES[chartPaletteId.value])
+
+/**
+ * Provide/inject key that lets a widget subtree pin an explicit palette instead of
+ * the global `activeChartPalette`. Used by the /chart-themes compare page so four
+ * real widget panels can each render a different palette on one screen. When absent,
+ * widgets follow the global palette as before.
+ */
+export const CHART_PALETTE_OVERRIDE: InjectionKey<Ref<string[]> | string[]> = Symbol('chartPaletteOverride')
 
 /** Set the active chart palette (and mirror it onto <html data-chart> for parity/debuggability). */
 export function applyChartPalette(id: ChartPalette) {

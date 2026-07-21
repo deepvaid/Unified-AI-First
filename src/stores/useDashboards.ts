@@ -43,7 +43,7 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v14'
+const STORAGE_KEY = 'mp.dashboard-hub.v15'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -199,6 +199,16 @@ function makeSetupWidget(layout: DashboardLayout): DashboardWidget {
   }
 }
 
+// Palette-comparison charts (multi-series line + donut, both with legends) that exercise
+// all six chart-palette colors. Seeded directly under the KPI row so the active chart
+// palette is visible without scrolling (SCOP-312 — stakeholders compare `?chart=` links).
+function comparisonWidgets(y: number): DashboardWidget[] {
+  return [
+    { ...makeWidget('Revenue by channel', 'demo_channel_trend', 'timeseries', createLayout(0, y, 7, 7)), chartVariant: 'line' },
+    makeWidget('Traffic mix', 'demo_channel_mix', 'pie', createLayout(7, y, 5, 7)),
+  ]
+}
+
 function buildHomeWidgets(account: Account): DashboardWidget[] {
   const widgets: DashboardWidget[] = []
 
@@ -208,14 +218,15 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
       makeWidget('Orders', 'commerce_orders', 'kpi', createLayout(3, 0, 3, 4)),
       makeWidget('Open Rate', 'marketing_open_rate', 'kpi', createLayout(6, 0, 3, 4)),
       makeWidget('Total Contacts', 'contacts_total', 'kpi', createLayout(9, 0, 3, 4)),
-      makeSetupWidget(createLayout(0, 4, 4, 8)),
-      makeWidget('Revenue Over Time', 'commerce_revenue_over_time', 'timeseries', createLayout(4, 4, 8, 8)),
-      makeWidget('Live activity', 'marketing_live_activity', 'activity', createLayout(0, 12, 6, 8)),
-      makeWidget('Top Campaigns', 'marketing_top_campaigns', 'table', createLayout(6, 12, 6, 7)),
-      makeWidget('Recent Orders', 'commerce_recent_orders', 'table', createLayout(0, 20, 7, 7)),
-      makeWidget('Revenue by Channel', 'commerce_revenue_by_channel', 'bar', createLayout(7, 20, 5, 7)),
-      makeWidget('Email Volume', 'marketing_email_volume', 'timeseries', createLayout(0, 27, 6, 7)),
-      makeWidget('Email Address by Domain', 'contacts_by_domain', 'bar', createLayout(6, 27, 6, 7)),
+      ...comparisonWidgets(4),
+      makeSetupWidget(createLayout(0, 11, 4, 8)),
+      makeWidget('Revenue Over Time', 'commerce_revenue_over_time', 'timeseries', createLayout(4, 11, 8, 8)),
+      makeWidget('Live activity', 'marketing_live_activity', 'activity', createLayout(0, 19, 6, 8)),
+      makeWidget('Top Campaigns', 'marketing_top_campaigns', 'table', createLayout(6, 19, 6, 7)),
+      makeWidget('Recent Orders', 'commerce_recent_orders', 'table', createLayout(0, 27, 7, 7)),
+      makeWidget('Revenue by Channel', 'commerce_revenue_by_channel', 'bar', createLayout(7, 27, 5, 7)),
+      makeWidget('Email Volume', 'marketing_email_volume', 'timeseries', createLayout(0, 34, 6, 7)),
+      makeWidget('Email Address by Domain', 'contacts_by_domain', 'bar', createLayout(6, 34, 6, 7)),
     )
   } else {
     widgets.push(
@@ -223,33 +234,26 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
       makeWidget('Open Rate', 'marketing_open_rate', 'kpi', createLayout(3, 0, 3, 4)),
       makeWidget('Active Subscribers', 'analytics_active_subscribers', 'kpi', createLayout(6, 0, 3, 4)),
       makeWidget('Total Contacts', 'contacts_total', 'kpi', createLayout(9, 0, 3, 4)),
-      makeSetupWidget(createLayout(0, 4, 4, 8)),
-      makeWidget('Sends Over Time', 'analytics_sends_over_time', 'timeseries', createLayout(4, 4, 8, 8)),
-      makeWidget('Top Campaigns', 'marketing_top_campaigns', 'table', createLayout(4, 12, 5, 7)),
-      makeWidget('Contact Growth', 'contacts_growth', 'timeseries', createLayout(0, 19, 7, 7)),
-      makeWidget('Campaign Revenue', 'marketing_campaign_revenue', 'bar', createLayout(7, 19, 5, 7)),
-      makeWidget('Email Volume', 'marketing_email_volume', 'timeseries', createLayout(0, 26, 6, 7)),
-      makeWidget('Subscriber Summary', 'contacts_subscriber_summary', 'table', createLayout(6, 26, 6, 7)),
+      ...comparisonWidgets(4),
+      makeSetupWidget(createLayout(0, 11, 4, 8)),
+      makeWidget('Sends Over Time', 'analytics_sends_over_time', 'timeseries', createLayout(4, 11, 8, 8)),
+      makeWidget('Top Campaigns', 'marketing_top_campaigns', 'table', createLayout(4, 19, 5, 7)),
+      makeWidget('Contact Growth', 'contacts_growth', 'timeseries', createLayout(0, 26, 7, 7)),
+      makeWidget('Campaign Revenue', 'marketing_campaign_revenue', 'bar', createLayout(7, 26, 5, 7)),
+      makeWidget('Email Volume', 'marketing_email_volume', 'timeseries', createLayout(0, 33, 6, 7)),
+      makeWidget('Subscriber Summary', 'contacts_subscriber_summary', 'table', createLayout(6, 33, 6, 7)),
     )
   }
 
   if (account.subscriptions.includes('service')) {
-    // Start after commerce email row (y=27, h=7 → row ends at y=34)
+    // Start after the commerce email row (y=34, h=7 → row ends at y=41)
     widgets.push(
-      makeWidget('Open Tickets', 'service_open_tickets', 'kpi', createLayout(0, 34, 3, 4)),
-      makeWidget('Unresolved Tickets', 'service_unresolved_tickets', 'kpi', createLayout(3, 34, 3, 4)),
-      makeWidget('Ticket Volume', 'service_ticket_volume', 'timeseries', createLayout(6, 34, 6, 7)),
-      makeWidget('Tickets by Channel', 'service_tickets_by_channel', 'bar', createLayout(0, 38, 6, 7)),
+      makeWidget('Open Tickets', 'service_open_tickets', 'kpi', createLayout(0, 41, 3, 4)),
+      makeWidget('Unresolved Tickets', 'service_unresolved_tickets', 'kpi', createLayout(3, 41, 3, 4)),
+      makeWidget('Ticket Volume', 'service_ticket_volume', 'timeseries', createLayout(6, 41, 6, 7)),
+      makeWidget('Tickets by Channel', 'service_tickets_by_channel', 'bar', createLayout(0, 45, 6, 7)),
     )
   }
-
-  // Palette-comparison charts (multi-series + legend) — placed below everything so they never
-  // collide regardless of subscription mix. Exercise all six chart-palette colors.
-  const nextY = widgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0)
-  widgets.push(
-    { ...makeWidget('Revenue by channel', 'demo_channel_trend', 'timeseries', createLayout(0, nextY, 7, 8)), chartVariant: 'line' },
-    makeWidget('Traffic mix', 'demo_channel_mix', 'pie', createLayout(7, nextY, 5, 8)),
-  )
 
   return widgets
 }

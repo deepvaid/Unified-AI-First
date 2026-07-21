@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent, inject, unref } from 'vue'
 import type { ApexOptions } from 'apexcharts'
-import { activeChartPalette } from '@/plugins/chartPalette'
+import { activeChartPalette, CHART_PALETTE_OVERRIDE } from '@/plugins/chartPalette'
 import type { DashboardSeriesData } from '@/stores/dashboards/types'
 
 const props = withDefaults(defineProps<{
@@ -21,6 +21,9 @@ const chartHeight = computed(() => {
   return Math.max(140, props.height - 4)
 })
 
+const paletteOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const palette = computed<string[]>(() => unref(paletteOverride) ?? activeChartPalette.value)
+
 const series = computed(() => {
   const first = props.data.series[0]
   if (!first) return []
@@ -34,7 +37,7 @@ const options = computed<ApexOptions>(() => ({
     toolbar: { show: false },
   },
   labels: props.data.labels,
-  colors: activeChartPalette.value,
+  colors: palette.value,
   legend: {
     position: 'bottom',
     fontSize: '12px',

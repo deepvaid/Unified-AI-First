@@ -1,114 +1,71 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, watch } from 'vue'
-import type { ApexOptions } from 'apexcharts'
-import { CHART_PALETTES, applyChartTheme, chartLabelColor, type ChartPalette } from '@/plugins/chartPalette'
+import { onMounted, watch } from 'vue'
+import { CHART_PALETTES, type ChartPalette } from '@/plugins/chartPalette'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { useCopilotStore } from '@/stores/useCopilot'
+import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
+import type {
+  DashboardFilterState,
+  DashboardMetricId,
+  DashboardWidget,
+  DashboardWidgetType,
+} from '@/stores/dashboards/types'
+import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
+import PaletteScope from './PaletteScope.vue'
 
-// Force light mode — Ross's agreed direction is the light theme; the review
-// happens on a light surface, which is what the palettes are tuned for. Close
-// the Da Vinci drawer so it never overlaps the side-by-side comparison.
+// Force light mode — Ross's agreed direction is the light theme; the review happens on a
+// light surface, which the palettes are tuned for. Keep the Da Vinci drawer closed so it
+// never overlaps the side-by-side comparison (it opens during app init).
 const { setMode } = useAppTheme()
 const copilot = useCopilotStore()
-// The Da Vinci drawer opens during app init and would cover the right column of
-// the comparison. Keep it closed for the duration of this review page — the
-// watcher is tied to this component and stops automatically on unmount, so other
-// routes are unaffected.
 watch(() => copilot.isOpen, (open) => { if (open) copilot.close() }, { immediate: true })
 onMounted(() => setMode('light'))
 
-const ApexChart = defineAsyncComponent({
-  loader: async () => (await import('vue3-apexcharts')).default,
-  suspensible: false,
-})
-
 const ACCOUNT_ID = '2000290'
 
-// ── Shared demo data (identical across every palette so only colour varies) ──
-const CHANNELS = [
-  { name: 'Direct', base: 8200, amp: 900, phase: 0 },
-  { name: 'Email', base: 6400, amp: 1200, phase: 1 },
-  { name: 'Paid Search', base: 5200, amp: 800, phase: 2 },
-  { name: 'Social', base: 3800, amp: 1400, phase: 3 },
-  { name: 'Organic', base: 4600, amp: 700, phase: 4 },
-  { name: 'Referral', base: 2400, amp: 600, phase: 5 },
-]
-const POINTS = 8
-const trendLabels = Array.from({ length: POINTS }, (_, i) => `W${i + 1}`)
-const trendSeries = CHANNELS.map((c) => ({
-  name: c.name,
-  data: trendLabels.map((_, i) => Math.round(c.base + c.amp * Math.sin((i + c.phase) * 0.6) + i * 60)),
-}))
-const barSeries = [{ name: 'Revenue', data: CHANNELS.map((c) => c.base) }]
-const mix = [31, 24, 17, 12, 10, 6]
-const mixLabels = CHANNELS.map((c) => c.name)
-
-function fmtCurrency(v: number): string {
-  return v >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`
+// Real dashboard filters (mirrors createDefaultFilters() in useDashboards.ts).
+const FILTERS: DashboardFilterState = {
+  rangePreset: 'last_30_days',
+  grain: 'daily',
+  comparison: 'previous_period',
 }
 
-// ── Option builders (depend only on the palette's colours) ──
-const base = applyChartTheme()
-const yLabelStyle = { colors: chartLabelColor, fontSize: '12px', fontWeight: 500 }
-
-function lineOptions(colors: string[]): ApexOptions {
+// Build a genuine DashboardWidget so the comparison renders the exact production widgets
+// (DashboardWidgetCard → useWidgetData), not look-alikes.
+let widgetSeq = 0
+function widget(
+  title: string,
+  metricId: DashboardMetricId,
+  type: DashboardWidgetType,
+  w: number,
+  h: number,
+  chartVariant?: DashboardWidget['chartVariant'],
+): DashboardWidget {
+  const metric = getMetricDescriptor(metricId)
   return {
-    ...base,
-    colors,
-    chart: { ...base.chart, type: 'line', height: 240, toolbar: { show: false } },
-    stroke: { curve: 'smooth', width: 3 },
-    legend: { show: true, position: 'top', horizontalAlign: 'right', fontSize: '12px', fontWeight: 500 },
-    xaxis: { ...base.xaxis, categories: trendLabels },
-    yaxis: { labels: { formatter: (v: number) => fmtCurrency(v), style: yLabelStyle } },
-    tooltip: { ...base.tooltip, y: { formatter: (v: number) => fmtCurrency(v) } },
+    id: `ct-${metricId}-${widgetSeq++}`,
+    type,
+    title,
+    dataSource: metric?.dataSource ?? 'commerce',
+    metricId,
+    chartVariant,
+    layout: { x: 0, y: 0, w, h, minW: 2, minH: 2 },
+    drilldown: metric?.drilldown ?? { routeName: 'Dashboard', label: title },
   }
 }
 
-function columnOptions(colors: string[]): ApexOptions {
+// One shared widget set — the same layout every panel renders, so only colour differs.
+function panelWidgets() {
   return {
-    ...base,
-    colors,
-    chart: { ...base.chart, type: 'bar', height: 220, toolbar: { show: false } },
-    plotOptions: { bar: { borderRadius: 8, columnWidth: '52%', distributed: true } },
-    legend: { show: false },
-    xaxis: { ...base.xaxis, categories: mixLabels },
-    yaxis: { labels: { formatter: (v: number) => fmtCurrency(v), style: yLabelStyle } },
-    tooltip: { ...base.tooltip, y: { formatter: (v: number) => fmtCurrency(v) } },
+    kpis: [
+      widget('Revenue', 'commerce_revenue', 'kpi', 3, 4),
+      widget('Orders', 'commerce_orders', 'kpi', 3, 4),
+      widget('Open Rate', 'marketing_open_rate', 'kpi', 3, 4),
+    ],
+    line: widget('Revenue by channel', 'demo_channel_trend', 'timeseries', 7, 8, 'line'),
+    donut: widget('Traffic mix', 'demo_channel_mix', 'pie', 5, 8),
+    bar: widget('Revenue by Channel', 'commerce_revenue_by_channel', 'bar', 5, 7),
   }
-}
-
-function hbarOptions(colors: string[]): ApexOptions {
-  return {
-    ...base,
-    colors,
-    chart: { ...base.chart, type: 'bar', height: 220, toolbar: { show: false } },
-    plotOptions: { bar: { borderRadius: 6, barHeight: '58%', distributed: true, horizontal: true } },
-    legend: { show: false },
-    xaxis: { ...base.xaxis, categories: mixLabels, labels: { ...base.xaxis?.labels, formatter: (v: string) => fmtCurrency(Number(v)) } },
-    tooltip: { ...base.tooltip, x: { show: true }, y: { formatter: (v: number) => fmtCurrency(v) } },
-  }
-}
-
-function donutOptions(colors: string[]): ApexOptions {
-  return {
-    colors,
-    chart: { type: 'donut', height: 240, fontFamily: 'Inter, system-ui, sans-serif', toolbar: { show: false } },
-    labels: mixLabels,
-    legend: { position: 'bottom', fontSize: '12px', fontWeight: 500, markers: { size: 8 } },
-    dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(0)}%`, style: { fontSize: '11px', fontWeight: 600 }, dropShadow: { enabled: false } },
-    stroke: { width: 2, colors: ['#ffffff'] },
-    plotOptions: { pie: { donut: { size: '62%', labels: { show: false } }, expandOnClick: false } },
-    tooltip: { y: { formatter: (v: number) => `${v.toFixed(0)}%` } },
-  }
-}
-
-// KPI sparkline as an inline SVG polyline (matches DashboardKpiWidget's approach).
-function sparkPoints(data: number[]): string {
-  const max = Math.max(...data)
-  const min = Math.min(...data)
-  const range = max - min || 1
-  const step = 100 / (data.length - 1)
-  return data.map((v, i) => `${(i * step).toFixed(1)},${(36 - ((v - min) / range) * 32).toFixed(1)}`).join(' ')
 }
 
 interface PaletteMeta {
@@ -125,30 +82,15 @@ const PALETTE_META: PaletteMeta[] = [
   { id: 'spectrum', name: 'Soft Spectrum', tag: 'Muted full-spectrum · maximum series distinction' },
 ]
 
-const KPI_TILES = [
-  { label: 'Revenue', value: '$128.4k', delta: '+12.4%', up: true, spark: [42, 48, 45, 53, 58, 55, 64, 71] },
-  { label: 'Orders', value: '3,412', delta: '+8.1%', up: true, spark: [30, 32, 31, 36, 34, 40, 43, 46] },
-  { label: 'Avg. order value', value: '$37.60', delta: '−2.2%', up: false, spark: [50, 49, 51, 48, 47, 46, 45, 44] },
-]
-
-const panels = computed(() =>
-  PALETTE_META.map((meta) => {
-    const colors = CHART_PALETTES[meta.id]
-    return {
-      ...meta,
-      colors,
-      liveLink: `/accounts/${ACCOUNT_ID}/dashboard?chart=${meta.id}`,
-      lineOpts: lineOptions(colors),
-      colOpts: columnOptions(colors),
-      hbarOpts: hbarOptions(colors),
-      donutOpts: donutOptions(colors),
-    }
-  }),
-)
+const panels = PALETTE_META.map((meta) => ({
+  ...meta,
+  colors: CHART_PALETTES[meta.id],
+  liveLink: `/accounts/${ACCOUNT_ID}/dashboard?chart=${meta.id}`,
+  widgets: panelWidgets(),
+}))
 
 const blueColors = CHART_PALETTES.blue
-const blueLineOpts = lineOptions(blueColors)
-const blueDonutOpts = donutOptions(blueColors)
+const blueWidgets = panelWidgets()
 </script>
 
 <template>
@@ -157,9 +99,9 @@ const blueDonutOpts = donutOptions(blueColors)
       <p class="ct-eyebrow">SCOP-312 · Dashboard chart colours</p>
       <h1 class="ct-title">Four chart-colour directions</h1>
       <p class="ct-lede">
-        Same data, same widgets — only the colour palette changes. Each direction answers a
-        specific piece of the feedback and is validated for contrast and colour-blind
-        readability. Open any one live in the dashboard from its panel.
+        The exact dashboard widgets, same data — only the colour palette changes. Each
+        direction answers a specific piece of the feedback and is validated for contrast and
+        colour-blind readability. Open any one live in the dashboard from its panel.
       </p>
     </header>
 
@@ -170,19 +112,17 @@ const blueDonutOpts = donutOptions(blueColors)
         <h2 class="ct-reference__name">Blue</h2>
         <p class="ct-reference__note">Today's single-hue blue — shown for reference.</p>
         <div class="ct-swatches">
-          <span
-            v-for="c in blueColors"
-            :key="c"
-            class="ct-swatch"
-            :style="{ background: c }"
-            :title="c"
-          />
+          <span v-for="c in blueColors" :key="c" class="ct-swatch" :style="{ background: c }" :title="c" />
         </div>
       </div>
-      <div class="ct-reference__charts">
-        <ApexChart type="line" height="200" width="100%" :options="blueLineOpts" :series="trendSeries" />
-        <ApexChart type="donut" height="200" width="100%" :options="blueDonutOpts" :series="mix" />
-      </div>
+      <PaletteScope :colors="blueColors" class="ct-reference__charts">
+        <div class="ct-cell ct-cell--chart">
+          <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="blueWidgets.line" :filters="FILTERS" :show-actions="false" />
+        </div>
+        <div class="ct-cell ct-cell--chart">
+          <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="blueWidgets.donut" :filters="FILTERS" :show-actions="false" />
+        </div>
+      </PaletteScope>
     </section>
 
     <!-- The four options -->
@@ -195,56 +135,33 @@ const blueDonutOpts = donutOptions(blueColors)
           </div>
           <p class="ct-panel__tag">{{ p.tag }}</p>
           <div class="ct-swatches">
-            <span
-              v-for="c in p.colors"
-              :key="c"
-              class="ct-swatch"
-              :style="{ background: c }"
-              :title="c"
-            >
+            <span v-for="c in p.colors" :key="c" class="ct-swatch" :style="{ background: c }" :title="c">
               <span class="ct-swatch__hex">{{ c }}</span>
             </span>
           </div>
         </div>
 
-        <!-- KPI + sparkline row -->
-        <div class="ct-kpis">
-          <div v-for="(k, i) in KPI_TILES" :key="k.label" class="ct-kpi">
-            <span class="ct-kpi__label">{{ k.label }}</span>
-            <span class="ct-kpi__value">{{ k.value }}</span>
-            <span class="ct-kpi__delta" :class="k.up ? 'is-up' : 'is-down'">{{ k.delta }}</span>
-            <svg class="ct-kpi__spark" viewBox="0 0 100 40" preserveAspectRatio="none">
-              <polyline
-                :points="sparkPoints(k.spark)"
-                fill="none"
-                :stroke="p.colors[i % p.colors.length]"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+        <PaletteScope :colors="p.colors" class="ct-panel__widgets">
+          <!-- KPI row -->
+          <div class="ct-kpis">
+            <div v-for="k in p.widgets.kpis" :key="k.id" class="ct-cell ct-cell--kpi">
+              <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="k" :filters="FILTERS" :show-actions="false" />
+            </div>
           </div>
-        </div>
 
-        <!-- Charts -->
-        <div class="ct-charts">
-          <div class="ct-chart ct-chart--wide">
-            <p class="ct-chart__title">Revenue by channel</p>
-            <ApexChart type="line" height="240" width="100%" :options="p.lineOpts" :series="trendSeries" />
+          <!-- Charts -->
+          <div class="ct-cell ct-cell--chart ct-cell--wide">
+            <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="p.widgets.line" :filters="FILTERS" :show-actions="false" />
           </div>
-          <div class="ct-chart">
-            <p class="ct-chart__title">Traffic mix</p>
-            <ApexChart type="donut" height="240" width="100%" :options="p.donutOpts" :series="mix" />
+          <div class="ct-charts-row">
+            <div class="ct-cell ct-cell--chart">
+              <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="p.widgets.donut" :filters="FILTERS" :show-actions="false" />
+            </div>
+            <div class="ct-cell ct-cell--chart">
+              <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="p.widgets.bar" :filters="FILTERS" :show-actions="false" />
+            </div>
           </div>
-          <div class="ct-chart">
-            <p class="ct-chart__title">Revenue by channel (bar)</p>
-            <ApexChart type="bar" height="220" width="100%" :options="p.colOpts" :series="barSeries" />
-          </div>
-          <div class="ct-chart">
-            <p class="ct-chart__title">Top channels</p>
-            <ApexChart type="bar" height="220" width="100%" :options="p.hbarOpts" :series="barSeries" />
-          </div>
-        </div>
+        </PaletteScope>
 
         <div class="ct-panel__foot">
           <RouterLink class="ct-cta" :to="p.liveLink">
@@ -410,71 +327,30 @@ const blueDonutOpts = donutOptions(blueColors)
   letter-spacing: 0.02em;
 }
 
-/* KPI tiles */
+/* Widget cells — give the real widget cards a fixed height (the app grid usually sizes them) */
+.ct-panel__widgets {
+  display: block;
+}
 .ct-kpis {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 16px;
 }
-.ct-kpi {
-  border: 1px solid #eef0f2;
-  border-radius: 10px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.ct-kpi__label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ct-kpi__value {
-  font-size: 18px;
-  font-weight: 700;
-}
-.ct-kpi__delta {
-  font-size: 11px;
-  font-weight: 600;
-}
-.ct-kpi__delta.is-up {
-  color: #15803d;
-}
-.ct-kpi__delta.is-down {
-  color: #b91c1c;
-}
-.ct-kpi__spark {
-  width: 100%;
-  height: 26px;
-  margin-top: 4px;
-}
-
-/* Charts */
-.ct-charts {
+.ct-charts-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  margin-top: 16px;
 }
-.ct-chart {
-  border: 1px solid #eef0f2;
-  border-radius: 10px;
-  padding: 12px 12px 4px;
+.ct-cell {
   min-width: 0;
-  overflow: hidden;
 }
-.ct-chart--wide {
-  grid-column: 1 / -1;
+.ct-cell--kpi {
+  height: 168px;
 }
-.ct-chart__title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  margin: 0 0 4px;
+.ct-cell--chart {
+  height: 300px;
 }
 
 .ct-panel__foot {
