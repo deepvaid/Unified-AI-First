@@ -11,13 +11,17 @@ import {
 } from '@/design-tokens/generated/tokens'
 
 /** Selectable chart-series palettes (switchable via the `?chart=` URL param, see App.vue). */
-export type ChartPalette = 'blue' | 'cool' | 'multicolor' | 'multihue'
+export type ChartPalette = 'blue' | 'seaglass' | 'harbor' | 'electric' | 'spectrum'
 
 /**
  * Blue (default): Maropost-aligned single-hue Picton Blue, steps [600,300,500,900,400,700].
- * Cool: blue→teal. Multicolor: mixed soft accent hues. Multihue: the same hue
- * order as Multicolor one bold step deeper (validated: lightness band, chroma,
- * CVD adjacent-pair separation all pass on light surfaces). Each has 6 series colors.
+ * SCOP-312 review set (each 6 colors, slot order is the CVD-safety mechanism —
+ * all validated on light surfaces: lightness band, chroma floor, colorblind
+ * adjacent-pair separation, normal-vision separation):
+ * Seaglass: soft turquoise/sea-blue family (brand heritage).
+ * Harbor: blue/teal base with soft warm accents for series contrast.
+ * Electric: bold electric-blue-led vibrant set (#162ADE anchor).
+ * Spectrum: muted full-spectrum for maximum series distinction.
  */
 export const CHART_PALETTES: Record<ChartPalette, string[]> = {
   blue: [
@@ -28,9 +32,10 @@ export const CHART_PALETTES: Record<ChartPalette, string[]> = {
     mp_color_chart_light_series7,
     mp_color_chart_light_series6,
   ],
-  cool: ['#0073AB', '#0092D4', '#00ADF1', '#00B6DE', '#00C0B7', '#14B8A6'],
-  multicolor: ['#8B7CF5', '#34D399', '#F87171', '#FBBF24', '#60A5FA', '#2DD4BF'],
-  multihue: ['#7C3AED', '#10B981', '#EF4444', '#F59E0B', '#3B82F6', '#14B8A6'],
+  seaglass: ['#0A6E9E', '#34C2CB', '#0E8F6E', '#3AA6D4', '#2F5DA8', '#3FB98C'],
+  harbor: ['#1E6FD0', '#E07B39', '#12A594', '#6A5AD0', '#CF5A84', '#3AA0D4'],
+  electric: ['#162ADE', '#1AA35F', '#7A3FF2', '#E24A78', '#0098A8', '#D98523'],
+  spectrum: ['#3E6FD6', '#C6952F', '#1BA38F', '#E07B39', '#7E6BD6', '#D96E92'],
 }
 
 const chartPaletteId = ref<ChartPalette>('blue')

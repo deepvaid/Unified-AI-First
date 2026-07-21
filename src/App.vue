@@ -67,9 +67,10 @@ watch(() => route.query.frame, (f) => {
   if (isFramePref(f)) setFrameOverride(f)
 }, { immediate: true })
 
-// Dashboard chart palette: a ?chart=blue|cool|multicolor|multihue query param (stakeholder demo),
-// same in-memory-per-tab handling as ?nav=. Independent of, and composes with, ?nav=.
-const VALID_CHART_PALETTES: readonly ChartPalette[] = ['blue', 'cool', 'multicolor', 'multihue']
+// Dashboard chart palette: a ?chart=blue|seaglass|harbor|electric|spectrum query param
+// (stakeholder demo), same in-memory-per-tab handling as ?nav=. Independent of, and
+// composes with, ?nav=. Unknown values fall back to blue (the default).
+const VALID_CHART_PALETTES: readonly ChartPalette[] = ['blue', 'seaglass', 'harbor', 'electric', 'spectrum']
 const isChartPalette = (v: unknown): v is ChartPalette =>
   typeof v === 'string' && (VALID_CHART_PALETTES as readonly string[]).includes(v)
 const chartOverride = ref<ChartPalette | null>(isChartPalette(route.query.chart) ? route.query.chart : null)
