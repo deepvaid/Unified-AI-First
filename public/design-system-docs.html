@@ -889,6 +889,9 @@ table.mp-table input[type="checkbox"] { accent-color: var(--primary); width: 15p
   display: flex; flex-direction: column;
 }
 .mp-drawer.open { transform: none; }
+/* A closed overlay is inert (JS toggles the attribute) so its controls leave
+   the tab order and the a11y tree; belt-and-braces hide any stray pointer hit. */
+.mp-drawer[inert], .mp-dialog[inert] { pointer-events: none; }
 .mp-drawer .dr-head { display: flex; align-items: flex-start; gap: 10px; padding: 20px 20px 16px; border-bottom: 1px solid var(--hairline); }
 .mp-drawer .dr-head h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.015em; }
 .mp-drawer .dr-head .dr-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
@@ -1263,6 +1266,7 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
     <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></symbol>
     <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
     <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></symbol>
+    <symbol id="i-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
     <symbol id="i-more-vertical" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></symbol>
     <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
@@ -2521,6 +2525,8 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
                 <tr><td>useDesignSystemKnowledge()</td><td class="ty">composables/</td><td>Doc chunking + keyword retrieval + FAQ fallback matcher</td></tr>
                 <tr><td>showcase-faq-crib-sheet.md</td><td class="ty">docs/design-system/</td><td>The 36 written Q&amp;A answers (see <a href="#faq">FAQ</a>)</td></tr>
                 <tr><td>bestFaqMatch()</td><td class="ty">threshold ≥ 4</td><td>Question tokens ×2, heading +3 / body +1 keyword scoring</td></tr>
+                <tr><td>Token reference</td><td class="ty">tokens.json</td><td>17 token answers (colors, spacing, radius, motion, layout) — tagged "From tokens.json"</td></tr>
+                <tr><td>Guardrails</td><td class="ty">client-side</td><td>Injection-shaped input refused; off-topic queries scoped out; input capped at 500 chars; New chat resets the thread</td></tr>
               </tbody>
             </table></div>
           </article>
@@ -2626,8 +2632,9 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
         <h2>FAQ — every showcase question, answered</h2>
         <p class="section-lede">
           All 36 questions from the leadership-showcase crib sheet, written to be <em>spoken</em> — plain language a
-          non-technical listener follows on first hearing, each with an <em>If pushed</em> follow-up. This same list
-          powers the embedded <b>Da Vinci</b> assistant: ask it anything from the top bar or the floating orb.
+          non-technical listener follows on first hearing, each with an <em>If pushed</em> follow-up. This same list —
+          plus the design-token reference — powers the embedded <b>Da Vinci</b> assistant: ask it anything from the
+          top bar or the floating orb, including token questions like "what's the primary color?".
         </p>
         <div class="faq-rules">
           <b>Golden rules:</b> never promise a date or a percentage before the pilots · never say
@@ -2721,7 +2728,7 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
 </div>
 <!-- ============ live overlays ============ -->
 <div class="overlay-scrim" id="scrim"></div>
-<aside class="mp-drawer" id="demoDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+<aside class="mp-drawer" id="demoDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true" inert>
   <div class="dr-head">
     <div>
       <h3 id="drawerTitle">New coupon</h3>
@@ -2763,7 +2770,7 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
     <button class="mp-btn" type="button" data-close-drawer>Save coupon</button>
   </div>
 </aside>
-<div class="mp-dialog" id="demoDialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle" aria-hidden="true">
+<div class="mp-dialog" id="demoDialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle" aria-hidden="true" inert>
   <div class="dlg">
     <h3 id="dlgTitle">Delete this segment?</h3>
     <p>"VIP · lapsed 90d" will be removed from 3 active journeys. Contacts stay; the segment and its history don't. This can't be undone.</p>
@@ -2778,18 +2785,19 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
 <button class="dv-fab" id="dvFab" type="button" aria-label="Ask Da Vinci about the design system">
   <svg class="ic"><use href="#i-sparkles"/></svg>
 </button>
-<aside class="mp-drawer dv-drawer" id="dvDrawer" role="dialog" aria-modal="true" aria-labelledby="dvName" aria-hidden="true">
+<aside class="mp-drawer dv-drawer" id="dvDrawer" role="dialog" aria-modal="true" aria-labelledby="dvName" aria-hidden="true" inert>
   <div class="dv-docs-head">
     <span class="dv-docs-orb"><svg class="ic"><use href="#i-sparkles"/></svg></span>
     <div>
       <div class="dv-docs-name" id="dvName">Da Vinci · Design System</div>
       <div class="dv-docs-cap">Answers grounded in the design-system docs</div>
     </div>
-    <button class="mp-icon-btn" type="button" id="dvClose" aria-label="Close Da Vinci" style="margin-left:auto"><svg class="ic"><use href="#i-x"/></svg></button>
+    <button class="mp-icon-btn" type="button" id="dvNewChat" aria-label="New chat" title="New chat" style="margin-left:auto"><svg class="ic"><use href="#i-rotate-ccw"/></svg></button>
+    <button class="mp-icon-btn" type="button" id="dvClose" aria-label="Close Da Vinci"><svg class="ic"><use href="#i-x"/></svg></button>
   </div>
-  <div class="dv-docs-transcript" id="dvTranscript">
+  <div class="dv-docs-transcript" id="dvTranscript" role="log" aria-live="polite" aria-atomic="false">
     <div class="dv-docs-empty" id="dvEmpty">
-      <p>Ask me anything about the design system, the sandbox, or the plan — I answer from the written showcase FAQ: 36 questions, answered in plain language.</p>
+      <p>Ask me anything about the design system, the sandbox, or the plan — I answer from the written showcase FAQ (36 questions, plain language) and the design-token reference: colors, spacing, radius, motion, layout.</p>
       <div class="dv-docs-chips" id="dvChips"><!-- starter chips --></div>
     </div>
   </div>
@@ -2962,11 +2970,20 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
   var drawer = document.getElementById('demoDrawer');
   var dialog = document.getElementById('demoDialog');
   var openOverlay = null;
+  var overlayOpener = null;
   function setOverlay(el, open) {
+    // Remember what had focus when opening, so closing can return focus to it
+    // (dialog pattern — focus must not stay parked inside a hidden overlay).
+    if (open) overlayOpener = document.activeElement;
     el.classList.toggle('open', open);
     el.setAttribute('aria-hidden', String(!open));
+    if (open) el.removeAttribute('inert'); else el.setAttribute('inert', '');
     scrim.classList.toggle('open', open);
     openOverlay = open ? el : null;
+    if (!open && overlayOpener && typeof overlayOpener.focus === 'function') {
+      overlayOpener.focus();
+      overlayOpener = null;
+    }
   }
   window.__dsSetOverlay = setOverlay;
   document.getElementById('openDrawer').addEventListener('click', function () { setOverlay(drawer, true); });
@@ -3141,14 +3158,108 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
 
   var STARTER_CHIPS = [
     'Are we replacing LiquidSky?',
-    'When can the design team start using it?',
+    'What’s the primary color?',
     'Can my team keep working in its own silo?',
     'How does QA work in all this?',
+    'What are the motion durations?',
     'Is the design final?',
     'What’s the governance for AI-coded screens?'
   ];
 
   var NO_MATCH_REPLY = 'That one isn’t covered in my docs yet — the FAQ section on this page is the full source, and the feedback page is the right place to raise it so it gets a written answer.';
+
+  /* ============================================================
+     Design-token reference — values verbatim from tokens.json.
+     Headings double as match keywords (plurals included on purpose).
+     ============================================================ */
+  var TOKEN_FACTS = [
+    { heading: 'primary color colors brand picton blue buttons links accent',
+      a: 'Primary is Picton blue, darkened to #0073AB in the light theme so filled buttons and links hold 5.2:1 contrast on white (WCAG AA); primaryDarken is #005E8A. In the dark theme primary flips to the bright Picton #2CC4FF. The container pair is primaryContainer #DEF3FF with onPrimaryContainer #04324D (inverted in dark).' },
+    { heading: 'background canvas surface surfaces page card cards color',
+      a: 'The page canvas is a cool blue-tinted off-white, #f4f6fa; cards sit on pure white #ffffff surfaces with 1px borders. Dark theme: background #1a1714, surface #222019, surfaceVariant #2e2b25.' },
+    { heading: 'text ink color colors muted typography textprimary textmuted',
+      a: 'Text is warm ink #1a1814 (textPrimary) with cool slate #5a6573 for secondary text (textMuted). Dark theme: #ececec and #b3aa97. The warm-ink-on-cool-canvas pairing is deliberate — it is the system\'s signature neutral world.' },
+    { heading: 'status colors success warning error green amber red semantic chips',
+      a: 'Status colors: success #1a7f54, warning #a8630f, error #c0392b (dark: #4cc28a, #e1a04a, #e57266). Each ships as a container pair — e.g. successContainer #d6f0e2 with onSuccessContainer #0c5238 — and that pair is exactly what MpStatusChip resolves to.' },
+    { heading: 'ai aiaccent accent da vinci davinci copilot blue gradient avatar',
+      a: 'Da Vinci surfaces use the aiAccent palette: primary #2563EB (5.0:1 on white), soft #EBF2FE, border #C7DCFF, text #15326A, and the avatar gradient #3B82F6 → #0E8FA8. Dark theme: primary #60A5FA, soft #1B2440, gradient #60A5FA → #22D3EE. AI moments read distinct from primary actions on purpose.' },
+    { heading: 'ink panel inkpanel editorial dark callout bulk bar hero',
+      a: 'The ink panel is #1a1814 with foreground #f7f5f2, muted rgba(247,245,242,0.64), hairline border rgba(247,245,242,0.14), and the bright accent #2CC4FF. It is identical in both themes — the one surface that never flips.' },
+    { heading: 'logic violet purple flowlogic journey builder flow filter node',
+      a: 'Journey-builder logic and filter nodes use the flowLogic violet: #6D28D9 (6.3:1 on white) with the soft container #EDE9FE; dark theme #A78BFA on #2E2352.' },
+    { heading: 'chart charts palette series graph graphs data visualization sparkline',
+      a: 'Charts use a single-hue Picton ramp so series separate without competing with status colors: series1 #0092D4, series2 #75D6FF, series3 #00ADF1, series4 #064F74, series5 #B6E8FF — nine steps defined in tokens.json. The dark theme leads with #2CC4FF.' },
+    { heading: 'spacing space scale grid gap gaps padding margin 4px',
+      a: 'Spacing is a 4px base grid: 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 64, 80, 96, 128. Components reach it through Vuetify utilities like pa-4 and gap-3 — if a gap is not on the scale, it is a bug, not a decision.' },
+    { heading: 'radius radii corner corners rounded shape card cards input inputs button dialog pill',
+      a: 'Core radius scale: sm 4, chip 8, md 12, lg 14, xl 28, 2xl 36, full 9999 (pill). Component radii: buttons are full pills, inputs 10px, cards 10/12/16/20, dialogs and drawers 16px. Nested surfaces step the radius down concentrically — 16 → 12 → 10.' },
+    { heading: 'shadow shadows elevation depth drop border hairline',
+      a: 'Depth is border-first: resting cards are flat with a 1px hairline, never elevated. The shadows that do exist are blue-tinted washes — sm (0 1 2, rgba(11,53,88,.04)), md (0 2 16 −8, .08) for menus and popovers, lg (0 8 32 −12, .10) for drawers, dialogs, and the floating bulk bar.' },
+    { heading: 'motion animation animations duration durations easing curve curves transition speed fast slow entrance stagger',
+      a: 'Motion durations: instant 80ms, fast 140ms, base 200ms, slow 320ms, entrance 400ms, with a 40ms stagger step for lists. The standard curve is cubic-bezier(0.2, 0.8, 0.2, 1) — fast arrival, gentle settle; exits use cubic-bezier(0.4, 0, 1, 1). Everything respects prefers-reduced-motion.' },
+    { heading: 'font fonts typeface inter typography type scale sizes weights display heading',
+      a: 'One family: Inter, system-ui. Font sizes: xs 11, sm 12, body 14, md 16, lg 18, xl 24, 2xl 32, 3xl 40. Weights run 400–800 (800 is reserved for hero numbers). The display scale runs 32 → 80px with tracking down to −0.035em; named roles include pageTitle 28px/750, kpiValue 32px/700, and the 11px/600 uppercase eyebrow at +0.06em.' },
+    { heading: 'layout sidebar rail appbar app bar drawer width widths wide dimensions content',
+      a: 'Fixed layout tokens: sidebar 248px (collapsing to a 72px rail), app bar 60px, form drawer 480px, search max-width 560px, content max-width 1280px.' },
+    { heading: 'tokens pipeline build generate generated scss css ts figma source truth npm',
+      a: 'Every value lives in src/design-tokens/tokens.json (v1.0.0). npm run tokens:build regenerates _variables.scss, variables.css, and tokens.ts into design-tokens/generated — never hand-edited. app-styles.ts feeds the same stylesheets to the app and Storybook, and Figma syncs from the same file via Tokens Studio.' },
+    { heading: 'theme themes dark light mode switch flip toggle',
+      a: 'Two themes resolve from one token set: color.light and color.dark. 297 written-down values flip on one switch — nothing is hard-coded, which is why dark mode is bookkeeping, not a redesign. Try the Flip theme button in the top bar.' },
+    { heading: 'neutral grey gray ramp hairline border borders divider dividers subtle',
+      a: 'The neutral ramp runs #FFFFFF → #171717. Hairline is #e5e5e5; borderSubtle is #e2e8f0 — a cool slate that recedes behind content. Table rows divide at rgba(26,24,20,0.06).' }
+  ];
+
+  /* ---------- guardrails ----------
+     Two tiers so the guard is both hard to bypass AND doesn't fire on real
+     design questions:
+     • HARD_INJECTION — override/leak/jailbreak phrasings that never occur in a
+       genuine design-system question. Always → Guardrail, whatever the score.
+     • SOFT_INJECTION — words that ALSO appear innocently ("disregard Figma",
+       "sandbox act as the reference"). Guardrail only when the corpus match is
+       weak (best score < 8); a strong on-topic match wins.
+     Keep the verb-object families wide: the canonical jailbreaks a showcase
+     audience types (ignore/forget/disregard … instructions, "new rules:",
+     "do anything now", "from now on you are…", "repeat the text above") must
+     all land in the Guardrail lane. */
+  var GUARDRAIL_REPLY = 'Chat input can\'t change my instructions — I treat everything typed here as a question, never as a command. I answer only from the written design-system docs and the token reference, all of which is already published on this page.';
+  var OFFTOPIC_REPLY = 'That\'s outside my scope — I only cover the Maropost design system: tokens, components, patterns, and the rollout plan. Try the FAQ section below, or ask me about any design token.';
+  var STRONG_MATCH = 8; // corpus score at which an on-topic answer overrides a soft/off-topic marker
+  var HARD_INJECTION = [
+    // override commands: ignore/forget/disregard/override/bypass/skip … + previous/instruction-family
+    /\b(ignore|forget|disregard|override|bypass|skip|drop)\b[\s\S]{0,30}?\b(previous|prior|earlier|above|preceding|all\s+of\s+the|everything)\b/i,
+    /\b(ignore|forget|disregard|override|bypass|skip|drop)\b[\s\S]{0,30}?\b(instructions?|rules?|prompts?|guidelines?|directives?|directions?)\b/i,
+    /\bnew\s+(rules?|instructions?|directives?|system\s+prompt|prompt)\b/i,
+    // prompt / instruction leak
+    /\b(your|the|its|initial|original)\s+(system\s+)?(prompt|instructions?|guidelines?|rules?)\b/i,
+    /\b(reveal|repeat|print|show|display|output|echo|leak|expose)\b[\s\S]{0,25}?\b(prompt|instructions?|system|guidelines?|the\s+(text|words|content|message)\s+above|everything\s+above)\b/i,
+    // persona / role override (unambiguous forms)
+    /\byou\s+are\s+now\b/i,
+    /\bpretend\b/i,
+    /\brole-?play\b/i,
+    /\bimpersonate\b/i,
+    /\bsimulate\s+(a|an|being)\b/i,
+    // jailbreak names
+    /\bjail\s*break/i,
+    /\bdeveloper\s+mode\b/i,
+    /\bdo\s+anything\s+now\b/i,
+    /\bDAN\b/,
+    /\b(unrestricted|no\s+restrictions|without\s+(any\s+)?restrictions|no\s+rules)\b/i
+  ];
+  var SOFT_INJECTION = [
+    // NB: bare "act as"/"behave as" are deliberately NOT here — real design
+    // questions use them ("act as the reference", "act as the acceptance
+    // platform") and the corpus can't always rescue them. A true persona
+    // attack like "act as a pirate" still gets refused as off-topic, and the
+    // unambiguous persona forms below stay covered.
+    /\bdisregard\b/i,                    // "disregard everything" (soft) vs "disregard Figma" (strong corpus wins)
+    /\boverride\b/i,
+    /\bfrom\s+now\s+on\b/i,              // "from now on you are…"
+    /\byou\s+are\s+(a|an|my|the)\b/i     // "you are a pirate"
+  ];
+  /* Unambiguous off-topic markers only — words like "stock" (commerce) or
+     "translate" (FAQ 27's handover answer) live in the domain and must not
+     trigger a refusal. */
+  var OFFTOPIC_MARKERS = /\b(weather|jokes?|poems?|recipes?|politics|political|elections?|sports|football|cricket|crypto|bitcoin|movies?|songs?|lyrics|horoscope|dating|lottery)\b/i;
 
   /* ---------- matcher: port of useDesignSystemKnowledge.ts ---------- */
   var STOPWORDS = new Set([
@@ -3180,7 +3291,22 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
     return score;
   }
 
-  function bestFaqMatch(question) {
+  function bestTokenMatch(question) {
+    var queryTokens = tokenize(question);
+    if (!queryTokens.length) return null;
+    var best = null;
+    var bestScore = 0;
+    TOKEN_FACTS.forEach(function (fact) {
+      var score = scoreText(queryTokens, fact.a, fact.heading) + scoreText(queryTokens, fact.heading) * 2;
+      if (score > bestScore) {
+        best = fact;
+        bestScore = score;
+      }
+    });
+    return bestScore >= 4 ? { fact: best, score: bestScore } : null;
+  }
+
+  function bestFaqMatchScored(question) {
     var queryTokens = tokenize(question);
     if (!queryTokens.length) return null;
     var best = null;
@@ -3193,8 +3319,18 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
       }
     });
     // Require at least two meaningful signals so gibberish doesn't match Q1.
-    return bestScore >= 4 ? best : null;
+    return bestScore >= 4 ? { entry: best, score: bestScore } : null;
   }
+
+  /* Domain vocabulary — union of all corpus tokens, built once. A query that
+     shares no vocabulary with the domain is off-topic by definition. */
+  var DOMAIN_VOCAB = new Set();
+  FAQ_DATA.forEach(function (e) {
+    tokenize(e.q + ' ' + e.a + ' ' + (e.pushed || '')).forEach(function (t) { DOMAIN_VOCAB.add(t); });
+  });
+  TOKEN_FACTS.forEach(function (f) {
+    tokenize(f.heading + ' ' + f.a).forEach(function (t) { DOMAIN_VOCAB.add(t); });
+  });
 
   /* ---------- shared helpers ---------- */
   function escapeHtml(s) {
@@ -3291,16 +3427,24 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
     transcript.scrollTo({ top: transcript.scrollHeight, behavior: reducedMotion ? 'auto' : 'smooth' });
   }
 
-  function pushBubble(role, html, fromFaq) {
+  function pushBubble(role, html, tag) {
     emptyState.style.display = 'none';
     var row = document.createElement('div');
     row.className = 'dv-docs-row' + (role === 'user' ? ' user' : '');
     var bub = document.createElement('div');
     bub.className = 'dv-docs-bubble ' + (role === 'user' ? 'from-user' : 'from-bot');
     if (role === 'user') {
-      bub.textContent = html; // user text is untrusted — textContent only
+      bub.textContent = html; // user text is untrusted — textContent only, never markup
     } else {
-      bub.innerHTML = (fromFaq ? '<span class="dv-faq-tag">From the FAQ</span>' : '') + html;
+      if (tag) {
+        var t = document.createElement('span');
+        t.className = 'dv-faq-tag';
+        t.textContent = tag;
+        bub.appendChild(t);
+      }
+      var body = document.createElement('span');
+      body.innerHTML = html; // corpus-authored content only — never user input
+      bub.appendChild(body);
     }
     row.appendChild(bub);
     transcript.appendChild(row);
@@ -3317,48 +3461,104 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
     return row;
   }
 
+  /* Guardrails first, then retrieval. A hard-injection phrasing is always
+     refused. A soft/ambiguous injection marker or an explicit off-topic word
+     is refused only when the best corpus match is weak (< STRONG_MATCH) — a
+     strong on-topic hit ("disregard Figma", "who wins? → FAQ 20") wins. Then
+     best of FAQ vs token corpus (FAQ wins ties). Below threshold: off-topic
+     refusal when the query shares no domain vocabulary, else the honest
+     no-match reply. */
   function answerFor(text) {
-    var faq = bestFaqMatch(text);
-    if (faq) return { html: richText(faq.a), fromFaq: true };
-    return { html: escapeHtml(NO_MATCH_REPLY), fromFaq: false };
+    var faq = bestFaqMatchScored(text);
+    var tok = bestTokenMatch(text);
+    var bestScore = Math.max(faq ? faq.score : 0, tok ? tok.score : 0);
+
+    if (HARD_INJECTION.some(function (re) { return re.test(text); })) {
+      return { html: escapeHtml(GUARDRAIL_REPLY), tag: 'Guardrail' };
+    }
+    if (bestScore < STRONG_MATCH && SOFT_INJECTION.some(function (re) { return re.test(text); })) {
+      return { html: escapeHtml(GUARDRAIL_REPLY), tag: 'Guardrail' };
+    }
+    if (bestScore < STRONG_MATCH && OFFTOPIC_MARKERS.test(text)) {
+      return { html: escapeHtml(OFFTOPIC_REPLY), tag: 'Out of scope' };
+    }
+
+    if (faq && (!tok || faq.score >= tok.score)) return { html: richText(faq.entry.a), tag: 'From the FAQ' };
+    if (tok) return { html: richText(tok.fact.a), tag: 'From tokens.json' };
+
+    var inDomain = tokenize(text).some(function (t) { return DOMAIN_VOCAB.has(t); });
+    if (!inDomain) return { html: escapeHtml(OFFTOPIC_REPLY), tag: 'Out of scope' };
+    return { html: escapeHtml(NO_MATCH_REPLY), tag: null };
+  }
+
+  var thinkTimer = null;
+
+  // Keep the send button in sync with input + thinking state — the single
+  // source of truth, called on input and after every reply lands (a reply
+  // finishing must re-enable the button if the user typed while it thought).
+  function syncSendBtn() {
+    sendBtn.disabled = !input.value.trim() || thinking;
+  }
+
+  // Show the thinking row, then land bubble() after the delay. Always clears
+  // `thinking` and re-syncs the button, so no reply can leave it stuck disabled.
+  function think(delay, bubble) {
+    thinking = true;
+    syncSendBtn();
+    var thinkRow = pushThinking();
+    thinkTimer = window.setTimeout(function () {
+      thinkTimer = null;
+      thinkRow.remove();
+      bubble();
+      thinking = false;
+      syncSendBtn();
+    }, reducedMotion ? 30 : delay);
   }
 
   function send(text) {
-    var clean = (text || '').trim();
+    // Input hygiene: strip control characters, collapse whitespace, cap length.
+    var clean = (text || '').replace(/[\u0000-\u001F\u007F]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500);
     if (!clean || thinking) return;
     input.value = '';
     sendBtn.disabled = true;
     pushBubble('user', clean);
-    thinking = true;
-    var thinkRow = pushThinking();
-    window.setTimeout(function () {
-      thinkRow.remove();
+    think(520, function () {
       var ans = answerFor(clean);
-      pushBubble('assistant', ans.html, ans.fromFaq);
-      thinking = false;
-    }, reducedMotion ? 30 : 520);
+      pushBubble('assistant', ans.html, ans.tag);
+    });
   }
 
   /* open the drawer pre-answered with a specific FAQ entry */
   function presentFaq(entry) {
-    openDv();
+    openDv();                 // always open — even mid-reply, so the click is never a silent no-op
+    if (thinking) return;     // a reply is already pending; it lands in the now-open drawer
     pushBubble('user', entry.q);
-    thinking = true;
-    var thinkRow = pushThinking();
-    window.setTimeout(function () {
-      thinkRow.remove();
-      pushBubble('assistant', richText(entry.a), true);
-      thinking = false;
-    }, reducedMotion ? 30 : 380);
+    think(380, function () {
+      pushBubble('assistant', richText(entry.a), 'From the FAQ');
+    });
   }
 
-  input.addEventListener('input', function () {
-    sendBtn.disabled = !input.value.trim() || thinking;
-  });
+  /* New chat: cancel any pending reply, clear the thread, restore the empty state. */
+  function resetChat() {
+    if (thinkTimer) { window.clearTimeout(thinkTimer); thinkTimer = null; }
+    thinking = false;
+    transcript.querySelectorAll('.dv-docs-row').forEach(function (r) { r.remove(); });
+    emptyState.style.display = '';
+    input.value = '';
+    sendBtn.disabled = true;
+    input.focus();
+  }
+  document.getElementById('dvNewChat').addEventListener('click', resetChat);
+
+  input.addEventListener('input', syncSendBtn);
   document.getElementById('dvForm').addEventListener('submit', function (e) {
     e.preventDefault();
     send(input.value);
   });
+
+  // Read-only test hook: lets automated checks exercise the matcher directly.
+  // Everything it exposes is already public on this page.
+  window.__dvBrain = { answerFor: answerFor, faq: bestFaqMatchScored, tokens: bestTokenMatch };
 })();
 </script>
 
