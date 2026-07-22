@@ -1200,13 +1200,6 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
 .dv-docs-send .ic { width: 16px; height: 16px; }
 
 /* FAQ section */
-.faq-rules {
-  margin-top: 18px; padding: 14px 16px;
-  border: 1px solid var(--border); border-left: 3px solid var(--primary);
-  border-radius: 12px; background: var(--surface);
-  font-size: 13px; color: var(--muted);
-}
-.faq-rules b { color: var(--ink); font-weight: 650; }
 .faq-toolbar { display: flex; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
 .faq-toolbar .mp-search { max-width: 360px; }
 .faq-count { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
@@ -1230,8 +1223,6 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
 .faq-body { padding: 14px 18px 16px 48px; }
 .faq-body .fa { font-size: 13.5px; line-height: 1.65; color: var(--ink); }
 .faq-body .fa em { color: inherit; }
-.faq-push { margin-top: 10px; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
-.faq-push b { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--faint); margin-right: 6px; }
 .faq-note { margin-top: 8px; font-size: 12px; color: var(--faint); }
 .faq-ask {
   margin-top: 12px;
@@ -1243,13 +1234,6 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
 }
 .faq-ask:hover { background: var(--ai-soft); }
 .faq-ask .ic { width: 12px; height: 12px; }
-.faq-parking {
-  margin-top: 28px; padding: 16px 18px;
-  background: var(--ink-panel-bg); color: var(--ink-panel-muted);
-  border: 1px solid var(--ink-panel-border); border-radius: 12px;
-  font-size: 13px; line-height: 1.6;
-}
-.faq-parking b { color: var(--ink-panel-accent); font-weight: 650; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; display: block; margin-bottom: 6px; }
 .faq-empty-msg { display: none; margin-top: 20px; font-size: 13px; color: var(--faint); }
 @media (max-width: 640px) { .faq-body { padding-left: 18px; } }
 </style>
@@ -2523,7 +2507,7 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
               <tbody>
                 <tr><td>DvDocsAssistant.vue</td><td class="ty">components/copilot/</td><td>Card UI: orb header, transcript, starter chips, input</td></tr>
                 <tr><td>useDesignSystemKnowledge()</td><td class="ty">composables/</td><td>Doc chunking + keyword retrieval + FAQ fallback matcher</td></tr>
-                <tr><td>showcase-faq-crib-sheet.md</td><td class="ty">docs/design-system/</td><td>The 36 written Q&amp;A answers (see <a href="#faq">FAQ</a>)</td></tr>
+                <tr><td>showcase-faq-crib-sheet.md</td><td class="ty">docs/design-system/</td><td>Source for the 36 Q&amp;A answers, adapted here for docs readers (see <a href="#faq">FAQ</a>)</td></tr>
                 <tr><td>bestFaqMatch()</td><td class="ty">threshold ≥ 4</td><td>Question tokens ×2, heading +3 / body +1 keyword scoring</td></tr>
                 <tr><td>Token reference</td><td class="ty">tokens.json</td><td>17 token answers (colors, spacing, radius, motion, layout) — tagged "From tokens.json"</td></tr>
                 <tr><td>Guardrails</td><td class="ty">client-side</td><td>Injection-shaped input refused; off-topic queries scoped out; input capped at 500 chars; New chat resets the thread</td></tr>
@@ -2629,17 +2613,13 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
       <!-- ============ FAQ ============ -->
       <section class="section" id="faq">
         <p class="section-eyebrow">Resources</p>
-        <h2>FAQ — every showcase question, answered</h2>
+        <h2>FAQ — common questions, answered</h2>
         <p class="section-lede">
-          All 36 questions from the leadership-showcase crib sheet, written to be <em>spoken</em> — plain language a
-          non-technical listener follows on first hearing, each with an <em>If pushed</em> follow-up. This same list —
-          plus the design-token reference — powers the embedded <b>Da Vinci</b> assistant: ask it anything from the
-          top bar or the floating orb, including token questions like "what's the primary color?".
+          The 36 questions people most often ask about this system and the sandbox, answered in plain language for
+          anyone using it — designers, engineers, and PMs. This same list, plus the design-token reference, powers the
+          embedded <b>Da Vinci</b> assistant: ask it anything from the top bar or the floating orb, including token
+          questions like "what's the primary color?".
         </p>
-        <div class="faq-rules">
-          <b>Golden rules:</b> never promise a date or a percentage before the pilots · never say
-          "production-ready" · "converge into LiquidSky," never "replace."
-        </div>
         <div class="faq-toolbar">
           <div class="mp-search">
             <svg class="ic"><use href="#i-search"/></svg>
@@ -2649,11 +2629,6 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
         </div>
         <div id="faqList"><!-- rendered from FAQ_DATA --></div>
         <p class="faq-empty-msg" id="faqEmpty">No questions match — clear the filter, or ask Da Vinci directly.</p>
-        <div class="faq-parking">
-          <b>Parking-lot phrase — for anything unanswerable</b>
-          "Great question — I don't want to hand-wave it. Let me take it into the compatibility review and come back
-          with evidence instead of adjectives."
-        </div>
       </section>
 
       <!-- ============ TOKEN PIPELINE ============ -->
@@ -2797,7 +2772,7 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
   </div>
   <div class="dv-docs-transcript" id="dvTranscript" role="log" aria-live="polite" aria-atomic="false">
     <div class="dv-docs-empty" id="dvEmpty">
-      <p>Ask me anything about the design system, the sandbox, or the plan — I answer from the written showcase FAQ (36 questions, plain language) and the design-token reference: colors, spacing, radius, motion, layout.</p>
+      <p>Ask me anything about the design system or the sandbox — I answer from the FAQ (36 questions, plain language) and the design-token reference: colors, spacing, radius, motion, layout.</p>
       <div class="dv-docs-chips" id="dvChips"><!-- starter chips --></div>
     </div>
   </div>
@@ -3035,7 +3010,7 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
 <script>
 /* ============================================================
    Da Vinci · Design System — offline FAQ brain.
-   Content: docs/design-system/showcase-faq-crib-sheet.md (verbatim).
+   Content: adapted for docs readers from docs/design-system/showcase-faq-crib-sheet.md.
    Matching: port of useDesignSystemKnowledge.ts (tokenize → keyword
    scoring, bestFaqMatch threshold ≥ 4). No network — this is the
    documented no-GEMINI_API_KEY degradation path.
@@ -3043,118 +3018,80 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
 (function () {
   var FAQ_DATA = [
     { n: 1, group: 'Big picture', q: 'Is this the real product? What am I actually looking at?',
-      a: "It's a working copy of it. The screens are real, the buttons really work, the flows behave like the real thing. The only fake part is the data — the customers and orders are made up, on purpose. Think of it as the product's stunt double: does everything the real one does, and nobody gets hurt.",
-      pushed: 'Real screens, pretend data. That split is exactly what makes it safe to move fast here.' },
+      a: "It's a working copy of it. The screens are real, the buttons really work, the flows behave like the real thing. The only fake part is the data — the customers and orders are made up, on purpose. Real screens, pretend data: that split is exactly what makes it safe to move fast here." },
     { n: 2, group: 'Big picture', q: 'Is it production-ready?',
-      a: 'No — and honestly, that\'s by design. "Production-ready" means real customer data, security, permissions, support — a long list this deliberately doesn\'t have. This is the *reference*: it shows what right looks like, so the real product can be built to match it.',
-      pushed: "The pilots are exactly the step where 'looks right here' becomes 'works right there.'" },
-    { n: 3, group: 'Big picture', q: 'What exactly are we approving today?',
-      a: 'Two small things. First, the look and behavior you saw — agreeing that\'s the direction. Second, the next step: a two-week review with two named people to check what fits into LiquidSky. Not a rewrite, not a budget, not a migration date.',
-      pushed: 'If you leave agreeing on the direction and the review, today was a success.' },
+      a: 'No — and that\'s by design. "Production-ready" means real customer data, security, permissions, support — a long list this deliberately doesn\'t have. This is the *reference*: it shows what right looks like, so the real product can be built to match it. The pilots are the step where "looks right here" becomes "works right there."' },
+    { n: 3, group: 'Big picture', q: 'What has actually been approved so far?',
+      a: 'Two things. First, the direction — the look and behavior of the system is signed off at leadership level. Second, the next step: a two-week compatibility review with two named people to check what fits into LiquidSky. Not a rewrite, not a budget, not a migration date.' },
     { n: 4, group: 'Big picture', q: 'Why a working sandbox instead of design mockups?',
-      a: 'Because mockups are always on their best behavior. They never show a slow connection, an empty table, a long German word, or a small laptop screen. Running software shows all of that — the stuff that actually trips customers up. And engineers get something they can copy, instead of a picture they have to interpret.',
-      pushed: 'Reviews here happen against a link you can click, not a PDF — that alone changed our decision speed.' },
-    { n: 5, group: 'For the PM', q: 'What does this actually speed up?',
-      a: 'Three things. Trying ideas: a new screen can be clickable in a day, because the parts already exist. Reviewing: every change gets a private web link, so you click the real flow on your own laptop instead of squinting at a picture in a meeting. And building: engineers start from a working example instead of guessing from a mockup.',
-      pushed: 'Most of what you saw today was assembled from the kit in days, not quarters — that speed is the product here.' },
-    { n: 6, group: 'For the PM', q: 'Can we user-test or stakeholder-review with it?',
-      a: 'Yes — that\'s its day job. It\'s live on the web, it\'s clickable, and flows behave like the real thing. Perfect for "does this make sense?" tests and "which of these two?" questions. One caveat: the data is made up, so we test whether people *understand* the screens, not whether the numbers are right.',
-      pushed: 'We can put two versions of a flow behind two links and watch which one people get through faster — without touching the real product.' },
-    { n: 7, group: 'For the PM', q: 'Can sales use it for demos?',
-      a: "Nearly. Today it would technically work; to do it responsibly we'd want a small pass first — a tidy demo account, and a short list of what to click and what to skip. Worth doing on purpose rather than letting it happen by accident.",
-      pushed: "Let's park it as a fast follow — it's a cheap win once we agree on the main plan." },
-    { n: 8, group: 'For the PM', q: 'How will we know the new design is succeeding?',
-      a: "We measure things we can actually count, starting from the pilots: how long it takes to build a typical page, how many screens use the shared parts with no local tweaks, how many duplicate patterns we retire, and accessibility checks passing. I'm deliberately not inventing target percentages today — first we measure where we are, then we set targets.",
-      pushed: 'The Sales Orders pilot is where the first real numbers come from.' },
-    { n: 9, group: 'For the PM', q: 'What does maintaining this cost us?',
-      a: "Modest, and mostly time we already spend. There's no server and no real data to look after. The honest cost is keeping it in sync with our decisions — which is design work we do anyway; now it lands somewhere clickable instead of in a slide nobody reopens. And the convergence plan exists precisely so this never becomes a second product to maintain.",
-      pushed: 'The expensive option is the status quo: every team re-deciding what a Save button looks like, forever.' },
+      a: 'Because mockups are always on their best behavior. They never show a slow connection, an empty table, a long German word, or a small laptop screen. Running software shows all of that — the stuff that actually trips customers up. Reviews happen against a link you can click, not a PDF, and engineers get something they can copy instead of a picture they have to interpret.' },
+    { n: 5, group: 'For product managers', q: 'What does this actually speed up?',
+      a: 'Three things. Trying ideas: a new screen can be clickable in a day, because the parts already exist. Reviewing: every change gets a private web link, so you click the real flow on your own laptop instead of squinting at a picture in a meeting. And building: engineers start from a working example instead of guessing from a mockup. Most screens here were assembled from the kit in days, not quarters.' },
+    { n: 6, group: 'For product managers', q: 'Can we user-test or stakeholder-review with it?',
+      a: 'Yes — that\'s its day job. It\'s live on the web, it\'s clickable, and flows behave like the real thing. Perfect for "does this make sense?" tests and "which of these two?" questions. One caveat: the data is made up, so you test whether people *understand* the screens, not whether the numbers are right. You can put two versions of a flow behind two links and watch which one people get through faster, without touching the real product.' },
+    { n: 7, group: 'For product managers', q: 'Can sales use it for demos?',
+      a: "Not quite yet. It would technically work today, but doing it responsibly needs a small pass first — a tidy demo account and a short list of what to click and what to skip. Worth doing on purpose rather than letting it happen by accident; a cheap fast-follow once the main plan is agreed." },
+    { n: 8, group: 'For product managers', q: 'How will we know the new design is succeeding?',
+      a: "Measure things you can actually count, starting from the pilots: how long it takes to build a typical page, how many screens use the shared parts with no local tweaks, how many duplicate patterns get retired, and accessibility checks passing. No target percentages are set before the pilots — first measure where things are, then set targets. The Sales Orders pilot is where the first real numbers come from." },
+    { n: 9, group: 'For product managers', q: 'What does maintaining this cost us?',
+      a: "Modest, and mostly time already spent. There's no server and no real data to look after. The honest cost is keeping it in sync with product decisions — which is design work done anyway; now it lands somewhere clickable instead of in a slide nobody reopens. The convergence plan exists precisely so this never becomes a second product to maintain. The expensive option is the status quo: every team re-deciding what a Save button looks like, forever." },
     { n: 10, group: 'For engineering', q: 'Are we replacing LiquidSky?',
-      a: 'No — the opposite. LiquidSky stays the shared foundation and the destination. The sandbox is the evidence: worked examples, tested patterns, written-down requirements. Where LiquidSky already covers a need, we use it. Where there\'s a genuine gap, we contribute through its normal process.',
-      pushed: "My sixth ask is literally 'no separate library ever ships from this sandbox.' I'm volunteering the constraint." },
+      a: 'No — the opposite. LiquidSky stays the shared foundation and the destination. The sandbox is the evidence: worked examples, tested patterns, written-down requirements. Where LiquidSky already covers a need, use it; where there\'s a genuine gap, contribute through its normal process. The commitment is explicit: no separate library ever ships from this sandbox.' },
     { n: 11, group: 'For engineering', q: 'Why not just publish this sandbox as the library?',
-      a: "Because then we'd have two of everything — two button sets, two documentation sites, two release schedules — and every team stuck choosing between them while they slowly drift apart. One supported path beats two half-supported ones. This project earns its keep as the reference, not as a second library.",
-      pushed: "The graveyard of internal platforms is full of 'temporary second libraries.' Not adding a headstone." },
+      a: "Because then there'd be two of everything — two button sets, two documentation sites, two release schedules — and every team stuck choosing between them while they slowly drift apart. One supported path beats two half-supported ones. This project earns its keep as the reference, not as a second library." },
     { n: 12, group: 'For engineering', q: 'Can we lift components straight into the product?',
-      a: "Some, nearly as-is — the simple, self-contained ones like page headers, dialogs, and empty states. That's exactly why they're the first pilot. Others are tangled up with the sandbox's fake data and need their edges cleaned first. The compatibility review sorts every part into one of four buckets: use as-is, wrap, contribute, or keep local.",
-      pushed: "That sorting is a two-week review, not a leap of faith — that's ask number three." },
+      a: "Some, nearly as-is — the simple, self-contained ones like page headers, dialogs, and empty states. That's exactly why they're the first pilot. Others are tangled up with the sandbox's fake data and need their edges cleaned first. The compatibility review sorts every part into one of four buckets: use as-is, wrap, contribute, or keep local — a two-week review, not a leap of faith." },
     { n: 13, group: 'For engineering', q: 'Are we locked into Vuetify?', note: 'Vuetify = the off-the-shelf component toolkit underneath',
-      a: "The look and behavior live in *our* rules and *our* parts; Vuetify just supplies raw material underneath. Teams build against our parts, so if the raw material ever had to change, the repair happens inside the kit — not across every page of the product. Also worth saying: the product already uses Vuetify today. This adds discipline; it doesn't add lock-in.",
-      pushed: 'The riskier lock-in is what we have now — the same toolkit configured differently on every page.' },
+      a: "The look and behavior live in the system's *own* rules and parts; Vuetify just supplies raw material underneath. Teams build against those parts, so if the raw material ever had to change, the repair happens inside the kit — not across every page of the product. The product already uses Vuetify today, so this adds discipline, not lock-in. The riskier lock-in is the status quo: the same toolkit configured differently on every page." },
     { n: 14, group: 'For engineering', q: 'AI wrote chunks of this — why should we trust the code?',
-      a: 'The same way we trust human code: rules and review, not vibes. The AI works inside tight guardrails — the written-down design rules, strict type checking, and a documentation page required for every part — and everything passes automated checks plus a human read. And remember what this repo is: the reference. Anything promoted into LiquidSky goes through LiquidSky\'s full review like any other contribution. The honest headline is the opposite of scary: those guardrails are *why* one team could cover 171 screens. That capability is the thing I want the org to inherit.',
-      pushed: "Judge the artifact, not the author — it's all in the repo, and I'd genuinely welcome a skeptical code review." },
+      a: 'The same way you trust human code: rules and review, not vibes. The AI works inside tight guardrails — the written-down design rules, strict type checking, and a documentation page required for every part — and everything passes automated checks plus a human read. Remember what this repo is: the reference. Anything promoted into LiquidSky goes through LiquidSky\'s full review like any other contribution. Judge the artifact, not the author — it\'s all in the repo and open to a skeptical code review. Those same guardrails are *why* one small team could cover 171 screens.' },
     { n: 15, group: 'For engineering', q: "What's the accessibility story — really?",
-      a: "Baseline done, honestly incomplete. The core parts work with a keyboard, have proper labels, and every documentation page carries an automated accessibility check. What's *not* true yet: those checks don't block releases automatically, and the long tail of screens hasn't all been audited. Anything shared through LiquidSky ships with automated plus manual accessibility checks — that's in its quality gates.",
-      pushed: 'For shared parts the gate list is real: automated checks, keyboard review, both themes, three screen sizes, visual snapshots.' },
+      a: "Baseline done, honestly incomplete. The core parts work with a keyboard, have proper labels, and every documentation page carries an automated accessibility check. What's *not* true yet: those checks don't block releases automatically, and the long tail of screens hasn't all been audited. Anything shared through LiquidSky ships with automated plus manual accessibility checks — its quality gate is real: automated checks, keyboard review, both themes, three screen sizes, and visual snapshots." },
     { n: 16, group: 'For design', q: "Why doesn't every page look identical?",
-      a: "Because consistency belongs at the right level. List pages, detail pages, settings — those follow strict recipes. But a flow-builder isn't a table, and forcing it to look like one is how you get consistent-but-unusable. Specialist screens share the deeper layers — colors, fields, statuses, keyboard behavior — so they're clearly the same family without wearing the same uniform.",
-      pushed: "You saw it live: the journey builder's side panel uses the same fields and status colors as the orders table." },
+      a: "Because consistency belongs at the right level. List pages, detail pages, settings — those follow strict recipes. But a flow-builder isn't a table, and forcing it to look like one is how you get consistent-but-unusable. Specialist screens share the deeper layers — colors, fields, statuses, keyboard behavior — so they're clearly the same family without wearing the same uniform. For example, the journey builder's side panel uses the same fields and status colors as the orders table." },
     { n: 17, group: 'For design', q: 'Where does Figma fit?',
-      a: "For this initiative, the running screens and their documentation are the source of truth — because running software can't lie about how it behaves. Figma stays wonderful for early sketching and exploring; it's just not the contract we build against. That way we avoid maintaining a parallel picture-library that slowly drifts away from reality.",
-      pushed: 'We can sync design values out to Figma when needed — truth just flows from the working screens outward.' },
+      a: "For this initiative, the running screens and their documentation are the source of truth — because running software can't lie about how it behaves. Figma stays wonderful for early sketching and exploring; it's just not the contract to build against, which avoids maintaining a parallel picture-library that slowly drifts away from reality. Design values can still sync out to Figma when needed — truth flows from the working screens outward." },
     { n: 18, group: 'For design', q: "What's the dark-mode story for the real product?",
-      a: 'You watched it: one keypress, 297 written-down values flip to their dark versions, every screen updates. What the sandbox proves is the *method* — every color is looked up from the shared list, nothing hard-wired. Getting dark mode into the real product then becomes careful bookkeeping and testing, not a redesign.',
-      pushed: "The flip you saw had no special-cased screens — that's the point." },
-    { n: 19, group: 'The spicy ones', q: 'How long will the migration take?',
-      a: 'The only honest answer today: the pilots tell us. Anyone who gives you a total migration date before running one real page through the process is guessing with confidence. Phase one is measured in weeks, and it converts my unknowns into an estimate you can actually hold me to.',
-      pushed: "I'll trade you: names for the review this week, an evidence-based estimate at the end of it." },
-    { n: 20, group: 'The spicy ones', q: "Two sets of design values exist right now — the sandbox's and LiquidSky's. Which wins?",
-      a: "Long-term there's exactly one list, and it lives with LiquidSky. The sandbox's values are the approved design *input* to that list — not a competitor. Every difference gets triaged one by one: fix it, theme it, or record it as a deliberate exception. The central design-system team approves anything shared.",
-      pushed: 'That value-by-value mapping is deliverable number one of the compatibility review.' },
-    { n: 21, group: 'The spicy ones', q: "Isn't this throwaway work? Aren't we building things twice?",
-      a: "Fair question — and mostly no. The expensive part of this work was never typing the code; it's the hundreds of decisions — spacing, hierarchy, behavior, what happens when a table is empty. Those decisions are made, tested, and written down here, and they transfer whole. Some glue code is disposable by design — cheap insurance against rebuilding the *product* wrong. And part of it is never thrown away at all: the reference and prototyping environment is this project's permanent job.",
-      pushed: "A film set isn't the building — but nobody calls the set 'throwaway' while it's saving the movie." },
-    { n: 22, group: 'The spicy ones', q: "What if the LiquidSky review says most of it can't merge?",
-      a: 'Then we learned that for the price of a two-week review instead of a two-quarter rewrite — which is exactly why the review comes first. Even in the worst case, the design decisions, the page recipes, and the working reference stay valid; only the delivery route changes — more wrapping, slower merging. The decisions survive any of those outcomes.',
-      pushed: "The review has four outcomes per part, and 'keep it local' is a legitimate one, not a failure." },
-    { n: 23, group: 'The spicy ones', q: 'Who owns what, going forward?',
-      a: "Clean lines. Product design owns how things should look and behave, and what counts as done. The central design-system team owns LiquidSky — the shared parts, their releases. Product engineering owns putting the parts to work in the product. Leadership owns priorities. Nobody's job moves to my laptop — the sandbox just gives everyone the same picture to point at.",
-      pushed: "That's why ask three is two named people — ownership starts with names, not org charts." },
+      a: 'One keypress flips 297 written-down values to their dark versions and every screen updates — with no screen special-cased. What the sandbox proves is the *method*: every color is looked up from the shared list, nothing hard-wired. Getting dark mode into the real product then becomes careful bookkeeping and testing, not a redesign.' },
+    { n: 19, group: 'The hard questions', q: 'How long will the migration take?',
+      a: 'The honest answer: the pilots tell us. Any total migration date offered before one real page has been through the process is a guess. Phase one is measured in weeks, and it converts unknowns into an evidence-based estimate — no date before then.' },
+    { n: 20, group: 'The hard questions', q: "Two sets of design values exist right now — the sandbox's and LiquidSky's. Which wins?",
+      a: "Long-term there's exactly one list, and it lives with LiquidSky. The sandbox's values are the approved design *input* to that list — not a competitor. Every difference gets triaged one by one: fix it, theme it, or record it as a deliberate exception, and the central design-system team approves anything shared. That value-by-value mapping is the first deliverable of the compatibility review." },
+    { n: 21, group: 'The hard questions', q: "Isn't this throwaway work? Aren't we building things twice?",
+      a: "Mostly no. The expensive part of this work was never typing the code; it's the hundreds of decisions — spacing, hierarchy, behavior, what happens when a table is empty. Those decisions are made, tested, and written down here, and they transfer whole. Some glue code is disposable by design — cheap insurance against rebuilding the *product* wrong. And part of it is never thrown away at all: the reference and prototyping environment is this project's permanent job." },
+    { n: 22, group: 'The hard questions', q: "What if the LiquidSky review says most of it can't merge?",
+      a: 'Then that\'s learned for the price of a two-week review instead of a two-quarter rewrite — which is exactly why the review comes first. Even in the worst case, the design decisions, the page recipes, and the working reference stay valid; only the delivery route changes — more wrapping, slower merging. The review has four outcomes per part, and "keep it local" is a legitimate one, not a failure.' },
+    { n: 23, group: 'The hard questions', q: 'Who owns what, going forward?',
+      a: "Clean lines. Product design owns how things should look and behave, and what counts as done. The central design-system team owns LiquidSky — the shared parts and their releases. Product engineering owns putting the parts to work in the product. Leadership owns priorities. No one's role moves — the sandbox just gives everyone the same reference to point at." },
     { n: 24, group: "How we'll work together", q: 'Can our team keep working in its own silo? (commerce / marketing / service)',
-      a: "On your product area — yes, that's the design. Commerce keeps owning the store builder, marketing keeps its campaign screens and builders, service keeps ticketing and chat. Nobody's roadmap moves. What ends is each team re-inventing the *shared* parts — the buttons, the panels, the builder skeleton. Silo work on shared parts is exactly how we got five Save buttons.",
-      pushed: "Own your area, share the commons. When commerce improves the inspector panel, marketing's builders get better for free — and the reverse." },
+      a: "On your own product area — yes. Commerce keeps owning the store builder, marketing keeps its campaign screens and builders, service keeps ticketing and chat. No one's roadmap moves. What ends is each team re-inventing the *shared* parts — the buttons, the panels, the builder skeleton. Silo work on shared parts is exactly how you get five Save buttons. Own your area, share the commons: when commerce improves the inspector panel, marketing's builders get better for free, and the reverse." },
     { n: 25, group: "How we'll work together", q: 'Can the commerce team contribute store-builder components?',
-      a: "Yes — that's the model, not an exception to it. And here's the part that makes it cheap: a store builder, a landing-page builder, and an email builder are the same skeleton wearing different clothes. In the sandbox, seventeen builder screens already run inside one shared builder shell. So commerce contributes to the shared builder kit through the same path as everything else — and every other builder inherits the improvement.",
-      pushed: "The contribution path and the cross-team council that triages it are one page of the operating model — I'll share it right after this call." },
+      a: "Yes — that's the model, not an exception to it. And here's the part that makes it cheap: a store builder, a landing-page builder, and an email builder are the same skeleton wearing different clothes. In the sandbox, seventeen builder screens already run inside one shared builder shell. So commerce contributes to the shared builder kit through the same path as everything else, and every other builder inherits the improvement. The contribution path and the cross-team council that triages it are documented in the operating model." },
     { n: 26, group: "How we'll work together", q: 'What does the new design-to-dev handover look like? Are we getting rid of Figma?',
-      a: "We're not getting rid of Figma — it stays where it's brilliant: exploring, concepts, early options. What changes is the *handover*. Instead of signing off on pictures, we sign off on the working screen: design explores in Figma, assembles the chosen direction in the sandbox in days, everyone clicks the real flow and accepts *that*, and engineering builds from a working reference instead of interpreting a picture.",
-      pushed: 'Figma starts the idea; the sandbox becomes the acceptance platform. The five-step workflow with owners is in the operating model.' },
+      a: "Figma isn't going away — it stays where it's brilliant: exploring, concepts, early options. What changes is the *handover*. Instead of signing off on pictures, the sign-off is on the working screen: design explores in Figma, assembles the chosen direction in the sandbox in days, everyone clicks the real flow and accepts *that*, and engineering builds from a working reference instead of interpreting a picture. Figma starts the idea; the sandbox becomes the acceptance platform. The five-step workflow with owners is in the operating model." },
     { n: 27, group: "How we'll work together", q: 'Why not Figma-to-Figma like we did before?',
-      a: "Because a picture can't show the places design actually breaks: loading, empty tables, keyboard access, small screens, long text. Handing over pictures forced engineers to translate — and translation is where quality leaked. The working screen removes the translation step entirely.",
-      pushed: "Nothing against Figma — it's the right tool before the direction is chosen, and the wrong contract after." },
+      a: "Because a picture can't show the places design actually breaks: loading, empty tables, keyboard access, small screens, long text. Handing over pictures forces engineers to translate — and translation is where quality leaks. The working screen removes the translation step entirely. Figma is the right tool before the direction is chosen, and the wrong contract after." },
     { n: 28, group: "How we'll work together", q: 'How does QA work in all this?',
-      a: 'It gets narrower and deeper. The shared parts are tested once, centrally — every state, keyboard access, both themes, approved screenshots. So page-level QA stops re-proving the same visual details on every screen and focuses on what\'s actually new: the flow, the data, the integrations. And the accepted sandbox screen gives QA something they\'ve never had — a living answer to "what is this page *supposed* to look like?"',
-      pushed: "QA co-authors the final checklist during the pilots, so the bar is theirs — not imposed on them afterwards." },
+      a: 'QA gets narrower and deeper. The shared parts are tested once, centrally — every state, keyboard access, both themes, approved screenshots. So page-level QA stops re-proving the same visual details on every screen and focuses on what\'s actually new: the flow, the data, the integrations. The accepted sandbox screen gives QA something it\'s never had — a living answer to "what is this page *supposed* to look like?" QA co-authors the final checklist during the pilots, so the bar is theirs, not imposed afterwards.' },
     { n: 29, group: "How we'll work together", q: 'How does this actually improve our speed from PRD to production?',
-      a: "It compresses the three slowest loops in the middle. A PRD becomes a clickable prototype in days, because the parts exist. Review happens on a live link instead of a chain of mockup meetings. And engineering starts from a working reference instead of reverse-engineering a picture. I'm deliberately not quoting a percentage — the pilots will give us the real before-and-after numbers.",
-      pushed: 'This sandbox is itself the proof: one small team, 171 screens, built on those rails.' },
+      a: "It compresses the three slowest loops in the middle. A PRD becomes a clickable prototype in days, because the parts exist. Review happens on a live link instead of a chain of mockup meetings. And engineering starts from a working reference instead of reverse-engineering a picture. No percentage is quoted before the pilots — they give the real before-and-after numbers. The sandbox is itself the proof: one small team, 171 screens, built on those rails." },
     { n: 30, group: "How we'll work together", q: 'When can we start? Marketing is still moving legacy code from Vue 2 to Vue 3.',
-      a: 'We start now — the first steps don\'t touch marketing at all. The compatibility review is analysis, and the pilots run in areas already on the new stack. Then the migration stops being a blocker and becomes the vehicle: every legacy screen has to be rebuilt anyway, so rebuilding it onto system parts means we pay for each screen once — not twice.',
-      pushed: 'Migrate-then-redesign would touch every marketing screen a second time. Converge-as-you-migrate touches it once.' },
-    { n: 31, group: "How we'll work together", q: 'How do we share feedback on the design system or the sandbox?',
-      a: "One place: a Confluence page I'll share right after this call. Feedback gets triaged into three lanes — flow, technical, visual — and each lane has a named owner. The promise is that everything gets an answer; not everything gets an action. The most useful feedback from this room is flows and feasibility — the technical and process side.",
-      pushed: 'Silence is the only prohibited outcome — every item gets a reply and a decision.' },
-    { n: 32, group: 'Design authority — and the sharp moments', q: 'Is the design final? Can we change patterns, colors, fonts?',
-      a: "The direction is signed off at leadership level — so it's final as a *direction*, not frozen as a museum piece. If something genuinely doesn't work, we fix it, and the feedback door is open. But visual identity decisions — colors, type, patterns — stay with product design, one accountable owner instead of a committee. What I need from this room is feedback on flows, feasibility, and gaps.",
-      pushed: 'Preference gets a reply and a decision. A real usability issue gets a fix. Both go through the same Confluence page.' },
-    { n: 33, group: 'Design authority — and the sharp moments', q: 'When someone keeps hammering "this doesn\'t look right, that doesn\'t look right":',
-      a: "That's exactly the kind of eye we want on this — and visual calls have a home: product design owns them, and this direction has already been through user testing and leadership review. Where I really need *your* eye today is the flows and the plan. If the visual point still stands tomorrow, put it on the Confluence page and product design will answer it directly.",
-      pushed: "Noted — that one goes to the design lane on Confluence, and it'll get an answer. Back to the flow: does this step work for your team?",
-      pushedLabel: 'Second use, shorter',
-      never: 'Never say: "that\'s already been decided" with a closed door — always give the feedback a path, then move the room forward.' },
-    { n: 34, group: 'Design authority — and the sharp moments', q: 'Has anyone actually tested this with users, or do we just like it?',
-      a: 'Both, honestly — and testing wins when they disagree. We ran pilot user testing during the build, and what you saw today was shaped by it. UAT-style testing is ongoing right now, and the results get published on the Confluence page — including the misses. A finding that kills a pattern is the program working, not failing.',
-      pushed: "The UAT plan is persona-based and task-based — real tasks like 'find yesterday's unfulfilled orders,' not demo-friendly ones." },
-    { n: 35, group: 'Design authority — and the sharp moments', q: "What's the UAT plan for the design sandbox?",
-      a: 'Short version: monthly rounds, recruited against our four merchant personas, five people per persona. Each round runs task-based sessions on the core flows — find an order, build a journey, edit a contact — on the live sandbox link, where possible running the same task in the current product for a before-and-after comparison. Every round ends with a one-page readout on Confluence: what we tested, what we found, what we changed.',
-      pushed: "Mock data makes it zero-risk to test aggressively — participants can't break anything, so we let them try." },
-    { n: 36, group: 'Design authority — and the sharp moments', q: 'Everyone gets sandbox access and PMs can add AI-coded screens? What\'s the governance?',
-      a: 'Yes to access, with lanes. The sandbox is open like a workshop, not like a wall. Anyone — including PMs — can *explore*: build on a branch, share a clickable preview link, argue with a real thing instead of a document. But nothing merges itself. *Proposing* something into the sandbox takes a design review and an engineering review. *Promoting* it into the shared reference takes the full quality gate plus product-design sign-off. And AI-written work passes exactly the same gates as human-written work — we judge the artifact, not the author.',
-      pushed: 'The reference everyone sees is protected — exploration is visible but clearly not canon. Three lanes, one page of the operating model.' }
+      a: 'You can start now — the first steps don\'t touch marketing at all. The compatibility review is analysis, and the pilots run in areas already on the new stack. Then the migration stops being a blocker and becomes the vehicle: every legacy screen has to be rebuilt anyway, so rebuilding it onto system parts means paying for each screen once, not twice. Migrate-then-redesign would touch every marketing screen a second time; converge-as-you-migrate touches it once.' },
+    { n: 31, group: "How we'll work together", q: 'How do I share feedback on the design system or the sandbox?',
+      a: "One place: a shared Confluence page. Feedback is triaged into three lanes — flow, technical, visual — and each lane has a named owner. Everything gets an answer; not everything gets an action, but every item gets a reply and a decision. The most useful feedback is on flows and feasibility — the technical and process side." },
+    { n: 32, group: 'Design authority & feedback', q: 'Is the design final? Can we change patterns, colors, fonts?',
+      a: "The direction is signed off at leadership level — so it's final as a *direction*, not frozen as a museum piece. If something genuinely doesn't work, it gets fixed, and the feedback door is open. But visual identity decisions — colors, type, patterns — stay with product design, one accountable owner instead of a committee. The most useful feedback is on flows, feasibility, and gaps. A preference gets a reply and a decision; a real usability issue gets a fix — both through the same Confluence page." },
+    { n: 33, group: 'Design authority & feedback', q: 'I think something looks off — where do I raise visual feedback?',
+      a: "Visual feedback has a home: product design owns those calls, and the current direction has already been through user testing and leadership review. Raise the specific point on the Confluence page's visual lane and product design will answer it directly — every visual note gets a reply and a decision, never a closed door." },
+    { n: 34, group: 'Design authority & feedback', q: 'Has anyone actually tested this with users, or do we just like it?',
+      a: 'Both — and testing wins when they disagree. Pilot user testing ran during the build and shaped what you see here. UAT-style testing is ongoing, and the results get published on the Confluence page, including the misses. A finding that kills a pattern is the program working, not failing. The UAT plan is persona-based and task-based — real tasks like "find yesterday\'s unfulfilled orders," not demo-friendly ones.' },
+    { n: 35, group: 'Design authority & feedback', q: "What's the UAT plan for the design sandbox?",
+      a: 'Monthly rounds, recruited against the four merchant personas, five people per persona. Each round runs task-based sessions on the core flows — find an order, build a journey, edit a contact — on the live sandbox link, where possible running the same task in the current product for a before-and-after comparison. Every round ends with a one-page readout on Confluence: what was tested, what was found, what changed. Mock data makes it zero-risk to test aggressively — participants can\'t break anything.' },
+    { n: 36, group: 'Design authority & feedback', q: 'Everyone gets sandbox access and PMs can add AI-coded screens? What\'s the governance?',
+      a: 'Yes to access, with lanes. The sandbox is open like a workshop, not like a wall. Anyone — including PMs — can *explore*: build on a branch, share a clickable preview link, argue with a real thing instead of a document. But nothing merges itself. *Proposing* something into the sandbox takes a design review and an engineering review. *Promoting* it into the shared reference takes the full quality gate plus product-design sign-off. AI-written work passes exactly the same gates as human-written work — judge the artifact, not the author. The reference everyone sees is protected: exploration is visible but clearly not canon. These three lanes are documented in the operating model.' }
   ];
 
-  var GROUP_ORDER = ['Big picture', 'For the PM', 'For engineering', 'For design', 'The spicy ones', "How we'll work together", 'Design authority — and the sharp moments'];
+  var GROUP_ORDER = ['Big picture', 'For product managers', 'For engineering', 'For design', 'The hard questions', "How we'll work together", 'Design authority & feedback'];
 
   var STARTER_CHIPS = [
     'Are we replacing LiquidSky?',
@@ -3326,7 +3263,7 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
      shares no vocabulary with the domain is off-topic by definition. */
   var DOMAIN_VOCAB = new Set();
   FAQ_DATA.forEach(function (e) {
-    tokenize(e.q + ' ' + e.a + ' ' + (e.pushed || '')).forEach(function (t) { DOMAIN_VOCAB.add(t); });
+    tokenize(e.q + ' ' + e.a).forEach(function (t) { DOMAIN_VOCAB.add(t); });
   });
   TOKEN_FACTS.forEach(function (f) {
     tokenize(f.heading + ' ' + f.a).forEach(function (t) { DOMAIN_VOCAB.add(t); });
@@ -3356,15 +3293,12 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
     entries.forEach(function (entry) {
       var d = document.createElement('details');
       d.className = 'faq-item';
-      var pushedLabel = entry.pushedLabel || 'If pushed';
       d.innerHTML =
         '<summary><span class="faq-n">' + entry.n + '</span><span>' + richText(entry.q) + '</span>' +
         '<svg class="ic faq-chev"><use href="#i-chevron-down"/></svg></summary>' +
         '<div class="faq-body">' +
         (entry.note ? '<p class="faq-note">' + richText(entry.note) + '</p>' : '') +
         '<p class="fa">' + richText(entry.a) + '</p>' +
-        (entry.pushed ? '<p class="faq-push"><b>' + escapeHtml(pushedLabel) + '</b>' + richText(entry.pushed) + '</p>' : '') +
-        (entry.never ? '<p class="faq-note">' + richText(entry.never) + '</p>' : '') +
         '<button class="faq-ask" type="button"><svg class="ic"><use href="#i-sparkles"/></svg>Hear it from Da Vinci</button>' +
         '</div>';
       d.querySelector('.faq-ask').addEventListener('click', function () { presentFaq(entry); });
@@ -3381,7 +3315,7 @@ kbd.k { background: var(--kbd-bg); border: 1px solid var(--border); border-botto
     var q = faqFilter.value.trim().toLowerCase();
     var visible = 0;
     itemsByEntry.forEach(function (it) {
-      var hay = (it.entry.q + ' ' + it.entry.a + ' ' + (it.entry.pushed || '')).toLowerCase();
+      var hay = (it.entry.q + ' ' + it.entry.a).toLowerCase();
       var show = !q || hay.indexOf(q) !== -1;
       it.el.style.display = show ? '' : 'none';
       if (show) visible++;
