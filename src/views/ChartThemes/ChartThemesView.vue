@@ -11,7 +11,20 @@ import type {
   DashboardWidgetType,
 } from '@/stores/dashboards/types'
 import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
+import DashboardDotMatrixChart from '@/components/dashboards/widgets/DashboardDotMatrixChart.vue'
+import DashboardRingGauge from '@/components/dashboards/widgets/DashboardRingGauge.vue'
+import DashboardProgressRows from '@/components/dashboards/widgets/DashboardProgressRows.vue'
+import DashboardInsightCard from '@/components/dashboards/widgets/DashboardInsightCard.vue'
 import PaletteScope from './PaletteScope.vue'
+
+// Static demo data for the Stripe-class showcase widgets (same values every panel;
+// only the injected theme changes, so the tint differs per panel).
+const TX_DOTS = [3, 4, 6, 9, 7, 4, 3, 2]
+const GROSS_VOLUME_ROWS = [
+  { label: 'Online payments', formatted: '$26,800', percent: 78 },
+  { label: 'Subscriptions', formatted: '$10,400', percent: 42 },
+  { label: 'In-store sales', formatted: '$4,340', percent: 18 },
+]
 
 // Force light mode — Ross's agreed direction is the light theme; the review happens on a
 // light surface, which the palettes are tuned for. Keep the Da Vinci drawer closed so it
@@ -123,6 +136,37 @@ const blueWidgets = panelWidgets()
         <div class="ct-cell ct-cell--chart">
           <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="blueWidgets.donut" :filters="FILTERS" :show-actions="false" />
         </div>
+
+        <!-- Modern showcase widgets — tint Picton blue under the baseline theme -->
+        <div class="ct-modern">
+          <div class="ct-showcase-card">
+            <div class="ct-showcase-card__title">Transactions</div>
+            <div class="ct-showcase-card__value">106k</div>
+            <div class="ct-showcase-card__caption">Peak: Wed</div>
+            <div class="ct-showcase-card__viz">
+              <DashboardDotMatrixChart :values="TX_DOTS" :highlight-index="3" />
+            </div>
+          </div>
+          <div class="ct-showcase-card">
+            <div class="ct-showcase-card__title">Week activity</div>
+            <div class="ct-showcase-card__viz ct-showcase-card__viz--center">
+              <DashboardRingGauge :value="68" caption="of goal" />
+            </div>
+          </div>
+          <div class="ct-showcase-card">
+            <div class="ct-showcase-card__title">Gross volume</div>
+            <div class="ct-showcase-card__viz">
+              <DashboardProgressRows :rows="GROSS_VOLUME_ROWS" />
+            </div>
+          </div>
+        </div>
+
+        <DashboardInsightCard
+          class="ct-insight"
+          stat="75%"
+          headline="Authorization rate increased by 4% compared to last week."
+          body="This improvement reduced failed transactions by 950 and is projected to recover $12,400."
+        />
       </PaletteScope>
     </section>
 
@@ -160,6 +204,37 @@ const blueWidgets = panelWidgets()
               <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="k" :filters="FILTERS" :show-actions="false" />
             </div>
           </div>
+
+          <!-- Modern showcase widgets — tint to this panel's theme -->
+          <div class="ct-modern">
+            <div class="ct-showcase-card">
+              <div class="ct-showcase-card__title">Transactions</div>
+              <div class="ct-showcase-card__value">106k</div>
+              <div class="ct-showcase-card__caption">Peak: Wed</div>
+              <div class="ct-showcase-card__viz">
+                <DashboardDotMatrixChart :values="TX_DOTS" :highlight-index="3" />
+              </div>
+            </div>
+            <div class="ct-showcase-card">
+              <div class="ct-showcase-card__title">Week activity</div>
+              <div class="ct-showcase-card__viz ct-showcase-card__viz--center">
+                <DashboardRingGauge :value="68" caption="of goal" />
+              </div>
+            </div>
+            <div class="ct-showcase-card">
+              <div class="ct-showcase-card__title">Gross volume</div>
+              <div class="ct-showcase-card__viz">
+                <DashboardProgressRows :rows="GROSS_VOLUME_ROWS" />
+              </div>
+            </div>
+          </div>
+
+          <DashboardInsightCard
+            class="ct-insight"
+            stat="75%"
+            headline="Authorization rate increased by 4% compared to last week."
+            body="This improvement reduced failed transactions by 950 and is projected to recover $12,400."
+          />
         </PaletteScope>
 
         <div class="ct-panel__foot">
@@ -182,7 +257,7 @@ const blueWidgets = panelWidgets()
 .ct-root {
   min-height: 100dvh;
   width: 100%;
-  background: #f9fafb;
+  background: var(--mp-color-light-canvas);
   color: #111827;
   font-family: Inter, system-ui, sans-serif;
   padding: 40px clamp(16px, 4vw, 56px) 64px;
@@ -222,7 +297,7 @@ const blueWidgets = panelWidgets()
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 24px;
-  align-items: center;
+  align-items: start;
   padding: 20px 24px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -364,6 +439,60 @@ const blueWidgets = panelWidgets()
   text-align: center;
   font-size: 12px;
   color: #9ca3af;
+}
+
+/* Stripe-class showcase row — three white cards, then a full-width insight card.
+   grid-column spans apply in the blue reference's grid parent and are inert in the
+   flex panel parents. Card chrome matches DashboardWidgetCard's v2 layered shadow. */
+.ct-modern {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  grid-column: 1 / -1;
+}
+.ct-insight {
+  grid-column: 1 / -1;
+}
+.ct-showcase-card {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 20px -6px rgba(16, 24, 40, 0.08);
+}
+.ct-showcase-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+.ct-showcase-card__value {
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+.ct-showcase-card__caption {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+.ct-showcase-card__viz {
+  margin-top: 16px;
+}
+.ct-showcase-card__viz--center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .ct-modern {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 960px) {

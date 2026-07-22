@@ -1,0 +1,17 @@
+/**
+ * ApexCharts tooltip polish — Stripe-class floating card.
+ * Global (not scoped) because ApexCharts renders its tooltip outside the
+ * component's DOM subtree. Registered via src/styles/app-styles.ts.
+ */
+.apexcharts-tooltip.apexcharts-theme-light {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px -2px rgba(16, 24, 40, 0.14);
+  background: #fff;
+}
+
+.apexcharts-tooltip.apexcharts-theme-light .apexcharts-tooltip-title {
+  background: transparent;
+  border-bottom: 1px solid rgba(16, 24, 40, 0.06);
+  font-weight: 600;
+}

@@ -256,18 +256,18 @@ function chooseSize(size: WidgetSize) {
 <style scoped lang="scss">
 .dashboard-widget-card {
   position: relative;
-  border-color: color-mix(in oklch, var(--ink) 7%, transparent) !important;
+  border-color: transparent !important;
   border-radius: var(--r-section) !important;
   background: var(--surface-1) !important;
   overflow: hidden;
   min-height: 0;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 20px -6px rgba(16, 24, 40, 0.08);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .dashboard-widget-card:hover {
-  border-color: color-mix(in oklch, var(--ink) 14%, transparent) !important;
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 10px 24px -8px rgba(15, 23, 42, 0.12);
+  border-color: transparent !important;
+  box-shadow: 0 2px 4px rgba(16, 24, 40, 0.05), 0 16px 32px -8px rgba(16, 24, 40, 0.14);
 }
 
 .dashboard-widget-card__header {
@@ -349,6 +349,18 @@ function chooseSize(size: WidgetSize) {
   padding: 0;
   color: var(--muted);
   border-radius: var(--r-pill);
+  opacity: 0.55;
+  transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+/* Ghost the kebab until the card is hovered or the button is keyboard-focused/hovered. */
+.dashboard-widget-card:hover .dashboard-widget-card__actions :deep(.v-btn),
+.dashboard-widget-card:hover .dashboard-widget-card__kpi-actions :deep(.v-btn),
+.dashboard-widget-card__actions :deep(.v-btn:hover),
+.dashboard-widget-card__actions :deep(.v-btn:focus-visible),
+.dashboard-widget-card__kpi-actions :deep(.v-btn:hover),
+.dashboard-widget-card__kpi-actions :deep(.v-btn:focus-visible) {
+  opacity: 1;
 }
 
 .dashboard-widget-card__actions :deep(.v-btn:hover),
@@ -459,7 +471,7 @@ function chooseSize(size: WidgetSize) {
   justify-content: space-between;
   gap: 8px;
   padding: 10px 16px;
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid color-mix(in oklch, var(--ink) 5%, transparent);
   background: var(--surface-1);
   min-height: 40px;
   flex-shrink: 0;

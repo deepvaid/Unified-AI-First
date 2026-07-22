@@ -267,8 +267,8 @@ const chartOptions = computed<ApexOptions>(() => {
         }
       : { enabled: false },
     legend: (isPrev || props.data.series.length > 1)
-      ? { show: true, position: 'top', horizontalAlign: 'right', fontSize: '12px', fontWeight: 500 }
-      : { show: false },
+      ? { ...base.legend, show: true, position: 'top', horizontalAlign: 'right' }
+      : { ...base.legend, show: false },
     xaxis: {
       ...base.xaxis,
       categories: props.data.labels,
@@ -278,6 +278,7 @@ const chartOptions = computed<ApexOptions>(() => {
       },
     },
     yaxis: {
+      tickAmount: 4,
       labels: {
         formatter: (value: number) => formatAxisValue(value, props.data.unit),
         style: {
