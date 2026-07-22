@@ -135,23 +135,16 @@ const chartOptions = computed<ApexOptions>(() => {
   const gm = gradientMarks.value
   const isBar = props.widgetType === 'bar'
   const isVerticalBar = isBar && !isHorizontalBar.value
-  const singleOrDistributedBar = isDistributedBar.value || props.data.series.length === 1
   // Floating value labels: only for vertical bar charts with a small number of columns.
   const floatingBarLabels = gm && isVerticalBar && props.data.labels.length <= 8
 
   // Hyper-style gradient fill; when gradientMarks is off this falls through to today's fill.
   const gradientFill = (): ApexOptions['fill'] => {
     if (isBar) {
-      if (isVerticalBar && singleOrDistributedBar) {
-        // One through-mark vertical gradient shared by all bars: bright end at the top
-        // (offset 0), deep end at the bottom (offset 100).
-        const stops = theme.value.axis
-          .slice()
-          .reverse()
-          .map((color, i, arr) => ({ offset: i * (100 / (arr.length - 1)), color, opacity: 1 }))
-        return { type: 'gradient', gradient: { type: 'vertical', colorStops: stops } }
-      }
-      // Multi-series bars (vertical or horizontal): per-series gradient toward a tint.
+      // All gradientMarks bars (distributed and multi-series, vertical and horizontal)
+      // get the per-series/per-category treatment: each bar's colour comes from `colors`
+      // (the full theme series) and fades toward a tint of itself. gradientToColors lines
+      // up with `colors` in slot order, so distributed bars stay colour-accurate per category.
       return {
         type: 'gradient',
         gradient: {

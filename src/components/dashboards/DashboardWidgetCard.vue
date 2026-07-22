@@ -45,7 +45,9 @@ const { size: bodySize } = useElementSize(bodyEl)
 const currentSize = computed<WidgetSize | null>(() => detectSize(props.widget.type, props.widget.layout.w, props.widget.layout.h))
 const isCompactHeight = computed(() => bodySize.value.height > 0 && bodySize.value.height < 128)
 const isKpiWidget = computed(() => data.value.kind === 'kpi')
-const metricIcon = computed(() => getMetricDescriptor(props.widget.metricId)?.icon ?? '')
+const metricDescriptor = computed(() => getMetricDescriptor(props.widget.metricId))
+const metricIcon = computed(() => metricDescriptor.value?.icon ?? '')
+const sparkVariant = computed(() => metricDescriptor.value?.sparkVariant ?? 'area')
 const rangeLabels: Record<DashboardFilterState['rangePreset'], string> = {
   today: 'Today',
   yesterday: 'Yesterday',
@@ -215,6 +217,7 @@ function chooseSize(size: WidgetSize) {
         :subtitle="widgetSubtitle"
         :comparison-label="kpiComparisonLabel"
         :icon="metricIcon"
+        :spark-variant="sparkVariant"
         :ai-generated="!!widget.aiProvenance"
         :data-source="widget.dataSource"
         :last-refreshed-at="widget.lastRefreshedAt"

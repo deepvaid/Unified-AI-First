@@ -257,7 +257,7 @@ const blueWidgets = panelWidgets()
 .ct-root {
   min-height: 100dvh;
   width: 100%;
-  background: var(--mp-color-light-canvas);
+  background: #f9fafb;
   color: #111827;
   font-family: Inter, system-ui, sans-serif;
   padding: 40px clamp(16px, 4vw, 56px) 64px;

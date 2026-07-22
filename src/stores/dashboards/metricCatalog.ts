@@ -24,6 +24,8 @@ export interface DashboardMetricDescriptor {
   supportedWidgetTypes: DashboardWidgetType[]
   unit: DashboardMetricUnit
   icon?: string
+  /** Micro-viz style for the KPI spark slot (DashboardKpiWidget). Defaults to 'area'. */
+  sparkVariant?: 'area' | 'bars' | 'dots'
   drilldown: {
     routeName: string
     label: string
@@ -101,6 +103,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
       unit: 'currency',
       icon: 'dollar-sign',
       drilldown: { routeName: 'SalesOrders', label: 'Open sales orders' },
+      sparkVariant: 'area',
       aiKeywords: ['revenue', 'sales', 'gmv'],
     },
     {
@@ -114,6 +117,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
       unit: 'count',
       icon: 'shopping-cart',
       drilldown: { routeName: 'SalesOrders', label: 'Open sales orders' },
+      sparkVariant: 'bars',
       aiKeywords: ['orders', 'order count', 'purchases'],
     },
     {
@@ -178,6 +182,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
       unit: 'percent',
       icon: 'mail-open',
       drilldown: { routeName: 'CampaignReports', label: 'Open campaign reports' },
+      sparkVariant: 'area',
       aiKeywords: ['open rate', 'email opens'],
     },
     {
@@ -341,6 +346,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
       unit: 'currency',
       icon: 'trending-up',
       drilldown: { routeName: 'MonthlyTotals', label: 'Open monthly totals' },
+      sparkVariant: 'area',
       aiKeywords: ['total revenue', 'overall revenue'],
     },
     {
@@ -367,6 +373,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
       unit: 'count',
       icon: 'users',
       drilldown: { routeName: 'MonthlyTotals', label: 'Open monthly totals' },
+      sparkVariant: 'dots',
       aiKeywords: ['subscribers', 'active subscribers', 'audience size'],
     },
     {
@@ -394,6 +401,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
       unit: 'count',
       icon: 'contact-round',
       drilldown: { routeName: 'AllContacts', label: 'Open all contacts' },
+      sparkVariant: 'dots',
       aiKeywords: ['contacts', 'total contacts', 'audience'],
     },
     {
@@ -470,6 +478,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
       unit: 'count',
       icon: 'inbox',
       drilldown: { routeName: 'Tickets', label: 'Open ticket queue' },
+      sparkVariant: 'bars',
       aiKeywords: ['open tickets', 'support backlog'],
     },
     {
@@ -546,6 +555,7 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
       unit: 'count',
       icon: 'alert-circle',
       drilldown: { routeName: 'Tickets', label: 'Open ticket queue' },
+      sparkVariant: 'area',
       aiKeywords: ['unresolved tickets', 'backlog'],
     },
     {
