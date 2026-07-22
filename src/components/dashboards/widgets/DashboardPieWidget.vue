@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, inject, unref } from 'vue'
 import type { ApexOptions } from 'apexcharts'
-import { activeChartPalette, CHART_PALETTE_OVERRIDE } from '@/plugins/chartPalette'
+import { activeChartTheme, CHART_PALETTE_OVERRIDE, type ChartTheme } from '@/plugins/chartPalette'
 import type { DashboardSeriesData } from '@/stores/dashboards/types'
 
 const props = withDefaults(defineProps<{
@@ -21,8 +21,10 @@ const chartHeight = computed(() => {
   return Math.max(140, props.height - 4)
 })
 
-const paletteOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
-const palette = computed<string[]>(() => unref(paletteOverride) ?? activeChartPalette.value)
+const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const theme = computed<ChartTheme>(() => unref(themeOverride) ?? activeChartTheme.value)
+const palette = computed<string[]>(() => theme.value.series)
+const gradientMarks = computed(() => theme.value.gradientMarks)
 
 const series = computed(() => {
   const first = props.data.series[0]
@@ -35,9 +37,13 @@ const options = computed<ApexOptions>(() => ({
     type: 'donut',
     fontFamily: 'inherit',
     toolbar: { show: false },
+    ...(gradientMarks.value
+      ? { dropShadow: { enabled: true, top: 2, left: 0, blur: 8, opacity: 0.12 } }
+      : {}),
   },
   labels: props.data.labels,
   colors: palette.value,
+  ...(gradientMarks.value ? { fill: { type: 'gradient' } } : {}),
   legend: {
     position: 'bottom',
     fontSize: '12px',

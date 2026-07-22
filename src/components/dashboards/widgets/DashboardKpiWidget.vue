@@ -43,7 +43,7 @@ const updatedLabel = useLiveAgo(lastRefreshedAt)
 const paletteOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const sparkColor = computed<string | undefined>(() => {
   const override = unref(paletteOverride)
-  if (override) return override[0]
+  if (override) return override.series[0]
   if (activeChartPalette.value !== CHART_PALETTES.blue) return activeChartPalette.value[0]
   return undefined
 })

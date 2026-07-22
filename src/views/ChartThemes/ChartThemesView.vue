@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
-import { CHART_PALETTES, type ChartPalette } from '@/plugins/chartPalette'
+import { CHART_THEMES, type ChartPalette } from '@/plugins/chartPalette'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
@@ -68,40 +68,38 @@ function panelWidgets() {
   }
 }
 
-interface PaletteMeta {
+interface PanelMeta {
   id: Exclude<ChartPalette, 'blue'>
-  name: string
-  tag: string
-  recommended?: boolean
+  descriptor: string
 }
 
-const PALETTE_META: PaletteMeta[] = [
-  { id: 'seaglass', name: 'Sea Glass', tag: 'Turquoise / sea-blue heritage · soft & fresh' },
-  { id: 'harbor', name: 'Harbor', tag: 'Blue + teal base with warm accents · on-brand contrast', recommended: true },
-  { id: 'electric', name: 'Electric', tag: 'Bold electric blue (#162ADE) · modern & confident' },
-  { id: 'spectrum', name: 'Soft Spectrum', tag: 'Muted full-spectrum · maximum series distinction' },
+const PANEL_META: PanelMeta[] = [
+  { id: 'indigo', descriptor: 'One indigo axis, deep to sky — the closest read of the Hyper Charts reference.' },
+  { id: 'ocean', descriptor: "Maropost blue flowing into turquoise — the brand's sea-blue heritage as one gradient." },
+  { id: 'aurora', descriptor: 'Blue drifting into violet — bolder, still one unified axis.' },
 ]
 
-const panels = PALETTE_META.map((meta) => ({
+const panels = PANEL_META.map((meta) => ({
   ...meta,
-  colors: CHART_PALETTES[meta.id],
+  theme: CHART_THEMES[meta.id],
   liveLink: `/accounts/${ACCOUNT_ID}/dashboard?chart=${meta.id}`,
   widgets: panelWidgets(),
 }))
 
-const blueColors = CHART_PALETTES.blue
+const blueTheme = CHART_THEMES.blue
 const blueWidgets = panelWidgets()
 </script>
 
 <template>
   <div class="ct-root">
     <header class="ct-header">
-      <p class="ct-eyebrow">SCOP-312 · Dashboard chart colours</p>
-      <h1 class="ct-title">Four chart-colour directions</h1>
+      <p class="ct-eyebrow">SCOP-312 · Gradient chart themes</p>
+      <h1 class="ct-title">Three gradient chart themes</h1>
       <p class="ct-lede">
-        The exact dashboard widgets, same data — only the colour palette changes. Each
-        direction answers a specific piece of the feedback and is validated for contrast and
-        colour-blind readability. Open any one live in the dashboard from its panel.
+        The "soft gradient" round. Each theme unifies every chart on a single colour axis —
+        marks carry soft gradients, bars get rounded caps and floating values, lines and donuts
+        a soft glow — styled after the Hyper Charts UI kit. Same dashboard widgets, same data,
+        only the theme changes. Open any one live from its panel.
       </p>
     </header>
 
@@ -110,12 +108,15 @@ const blueWidgets = panelWidgets()
       <div class="ct-reference__label">
         <span class="ct-chip ct-chip--muted">Current baseline</span>
         <h2 class="ct-reference__name">Blue</h2>
-        <p class="ct-reference__note">Today's single-hue blue — shown for reference.</p>
+        <p class="ct-reference__note">Today's flat single-hue blue — shown for reference.</p>
         <div class="ct-swatches">
-          <span v-for="c in blueColors" :key="c" class="ct-swatch" :style="{ background: c }" :title="c" />
+          <span class="ct-axis" :style="{ background: `linear-gradient(90deg, ${blueTheme.axis.join(', ')})` }" />
+          <div class="ct-dots">
+            <span v-for="c in blueTheme.series" :key="c" class="ct-dot" :style="{ background: c }" :title="c" />
+          </div>
         </div>
       </div>
-      <PaletteScope :colors="blueColors" class="ct-reference__charts">
+      <PaletteScope :theme="blueTheme" class="ct-reference__charts">
         <div class="ct-cell ct-cell--chart">
           <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="blueWidgets.line" :filters="FILTERS" :show-actions="false" />
         </div>
@@ -125,40 +126,38 @@ const blueWidgets = panelWidgets()
       </PaletteScope>
     </section>
 
-    <!-- The four options -->
+    <!-- The three gradient themes -->
     <div class="ct-grid">
       <section v-for="p in panels" :key="p.id" class="ct-panel">
         <div class="ct-panel__head">
           <div class="ct-panel__title">
-            <h2 class="ct-panel__name">{{ p.name }}</h2>
-            <span v-if="p.recommended" class="ct-chip ct-chip--rec">Recommended</span>
+            <h2 class="ct-panel__name">{{ p.theme.label }}</h2>
           </div>
-          <p class="ct-panel__tag">{{ p.tag }}</p>
+          <p class="ct-panel__tag">{{ p.descriptor }}</p>
           <div class="ct-swatches">
-            <span v-for="c in p.colors" :key="c" class="ct-swatch" :style="{ background: c }" :title="c">
-              <span class="ct-swatch__hex">{{ c }}</span>
-            </span>
+            <span class="ct-axis" :style="{ background: `linear-gradient(90deg, ${p.theme.axis.join(', ')})` }" />
+            <div class="ct-dots">
+              <span v-for="c in p.theme.series" :key="c" class="ct-dot" :style="{ background: c }" :title="c" />
+            </div>
           </div>
         </div>
 
-        <PaletteScope :colors="p.colors" class="ct-panel__widgets">
+        <PaletteScope :theme="p.theme" class="ct-panel__widgets">
+          <!-- Bar leads (the Hyper signature), then multi-series line, then donut -->
+          <div class="ct-cell ct-cell--chart">
+            <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="p.widgets.bar" :filters="FILTERS" :show-actions="false" />
+          </div>
+          <div class="ct-cell ct-cell--chart">
+            <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="p.widgets.line" :filters="FILTERS" :show-actions="false" />
+          </div>
+          <div class="ct-cell ct-cell--chart">
+            <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="p.widgets.donut" :filters="FILTERS" :show-actions="false" />
+          </div>
+
           <!-- KPI row -->
           <div class="ct-kpis">
             <div v-for="k in p.widgets.kpis" :key="k.id" class="ct-cell ct-cell--kpi">
               <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="k" :filters="FILTERS" :show-actions="false" />
-            </div>
-          </div>
-
-          <!-- Charts -->
-          <div class="ct-cell ct-cell--chart ct-cell--wide">
-            <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="p.widgets.line" :filters="FILTERS" :show-actions="false" />
-          </div>
-          <div class="ct-charts-row">
-            <div class="ct-cell ct-cell--chart">
-              <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="p.widgets.donut" :filters="FILTERS" :show-actions="false" />
-            </div>
-            <div class="ct-cell ct-cell--chart">
-              <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="p.widgets.bar" :filters="FILTERS" :show-actions="false" />
             </div>
           </div>
         </PaletteScope>
@@ -173,8 +172,8 @@ const blueWidgets = panelWidgets()
     </div>
 
     <footer class="ct-footer">
-      Maropost design sandbox — mock data, real system. Palettes validated for lightness,
-      chroma, colour-blind separation and contrast on a light surface.
+      Maropost design sandbox — mock data, real system. Gradient effects use native ApexCharts
+      options; each theme runs on one unified colour axis, validated on a light surface.
     </footer>
   </div>
 </template>
@@ -292,56 +291,45 @@ const blueWidgets = panelWidgets()
   border-radius: 999px;
   letter-spacing: 0.02em;
 }
-.ct-chip--rec {
-  background: #dcfce7;
-  color: #166534;
-}
 .ct-chip--muted {
   background: #f3f4f6;
   color: #6b7280;
 }
 
+/* Swatches — one continuous gradient chip (the theme axis) + the 6 series dots below */
 .ct-swatches {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 8px;
 }
-.ct-swatch {
-  position: relative;
+.ct-axis {
+  display: block;
   width: 100%;
-  flex: 1 1 0;
-  min-width: 44px;
-  height: 40px;
+  height: 28px;
   border-radius: 8px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 3px;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
-.ct-swatch__hex {
-  font-size: 9px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-  letter-spacing: 0.02em;
+.ct-dots {
+  display: flex;
+  gap: 6px;
+}
+.ct-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 /* Widget cells — give the real widget cards a fixed height (the app grid usually sizes them) */
 .ct-panel__widgets {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 .ct-kpis {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  margin-bottom: 16px;
-}
-.ct-charts-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 16px;
 }
 .ct-cell {
   min-width: 0;
