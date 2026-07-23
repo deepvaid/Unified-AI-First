@@ -18,8 +18,6 @@ const props = withDefaults(defineProps<{
   dataSource?: DashboardDataSource
   lastRefreshedAt?: string
   showViewReport?: boolean
-  /** Micro-viz style shown in the spark slot (per-metric, see metricCatalog). */
-  sparkVariant?: 'area' | 'bars' | 'dots'
 }>(), {
   compact: false,
   title: '',
@@ -30,7 +28,6 @@ const props = withDefaults(defineProps<{
   dataSource: undefined,
   lastRefreshedAt: undefined,
   showViewReport: false,
-  sparkVariant: 'area',
 })
 
 const emit = defineEmits<{
@@ -40,29 +37,14 @@ const emit = defineEmits<{
 const lastRefreshedAt = toRef(() => props.lastRefreshedAt)
 const updatedLabel = useLiveAgo(lastRefreshedAt)
 
-// Per-source spark tint used on the default blue theme. Values reuse the per-cloud
-// accent hues defined in src/styles/source-cloud-colors.css (single source of truth) —
-// referenced as CSS vars so light/dark overrides and future edits stay in one place.
-const SOURCE_SPARK_COLOR: Partial<Record<DashboardDataSource, string>> = {
-  commerce: 'var(--cloud-commerce-accent)',
-  marketing: 'var(--cloud-marketing-accent)',
-  analytics: 'var(--cloud-analytics-accent)',
-  contacts: 'var(--cloud-contacts-accent)',
-  service: 'var(--cloud-service-accent)',
-  retail: 'var(--cloud-retail-accent)',
-}
-
-// Tint the sparkline so KPI cards differentiate. Precedence:
-//   1. pinned palette (compare page) → its series[0]
-//   2. non-default global theme (?chart=ocean) → active palette series[0]
-//   3. default blue theme → tint by the widget's data-source cloud colour
-//      (falls back to the CSS --accent when the source has no cloud colour).
+// Tint the sparkline to the active chart palette so KPI cards differentiate per theme.
+// Only when a palette is pinned (compare page) or a non-default palette is active —
+// the default keeps its existing accent color, so normal dashboards are unchanged.
 const paletteOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const sparkColor = computed<string | undefined>(() => {
   const override = unref(paletteOverride)
   if (override) return override.series[0]
   if (activeChartPalette.value !== CHART_PALETTES.blue) return activeChartPalette.value[0]
-  if (props.dataSource) return SOURCE_SPARK_COLOR[props.dataSource]
   return undefined
 })
 
@@ -104,28 +86,6 @@ const sparklinePoints = computed(() => {
       return `${x.toFixed(1)},${y.toFixed(1)}`
     })
     .join(' ')
-})
-
-// 'bars' variant: rounded-top rects filling the 100x40 viewBox, baseline-aligned.
-const sparkBars = computed(() => {
-  const values = sparklineValues.value
-  const slot = 100 / values.length
-  const barW = slot * 0.66
-  return values.map((value, index) => {
-    const h = Math.max(2, value * 36)
-    return { x: index * slot + (slot - barW) / 2, y: 40 - h, w: barW, h }
-  })
-})
-
-// 'dots' variant: ~10 columns of up to 4 dots, peak column at full opacity.
-const sparkDots = computed(() => {
-  const values = sparklineValues.value.slice(0, 10)
-  const max = Math.max(...values, 0.0001)
-  const peak = values.indexOf(Math.max(...values))
-  return values.map((value, index) => ({
-    count: Math.max(1, Math.round((value / max) * 4)),
-    peak: index === peak,
-  }))
 })
 
 </script>
@@ -180,37 +140,9 @@ const sparkDots = computed(() => {
       {{ data.location }}
     </div>
 
-    <!-- Full-width micro-viz, pinned to the bottom of the body. All variants sit in the
-         same container so the source/theme tint (container `color`) applies to each. -->
+    <!-- Full-width sparkline baseline, pinned to the bottom of the body -->
     <div class="dashboard-kpi-widget__spark" aria-hidden="true" :style="sparkColor ? { color: sparkColor } : undefined">
-      <svg
-        v-if="sparkVariant === 'bars'"
-        class="dashboard-kpi-widget__sparkline"
-        viewBox="0 0 100 40"
-        preserveAspectRatio="none"
-      >
-        <rect
-          v-for="(bar, i) in sparkBars"
-          :key="i"
-          :x="bar.x"
-          :y="bar.y"
-          :width="bar.w"
-          :height="bar.h"
-          rx="1.5"
-          class="dashboard-kpi-widget__bar"
-        />
-      </svg>
-      <div v-else-if="sparkVariant === 'dots'" class="dashboard-kpi-widget__dots">
-        <span
-          v-for="(col, i) in sparkDots"
-          :key="i"
-          class="dashboard-kpi-widget__dots-col"
-          :class="{ 'dashboard-kpi-widget__dots-col--dim': !col.peak }"
-        >
-          <span v-for="d in col.count" :key="d" class="dashboard-kpi-widget__dot" />
-        </span>
-      </div>
-      <svg v-else class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 40" preserveAspectRatio="none">
+      <svg class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 40" preserveAspectRatio="none">
         <defs>
           <linearGradient :id="sparkFillId" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="currentColor" stop-opacity="0.16" />
@@ -483,50 +415,6 @@ const sparkDots = computed(() => {
 
 .dashboard-kpi-widget__sparkline-fill {
   stroke: none;
-}
-
-/* 'bars' variant — rounded-top mini bar row, tinted via container color */
-.dashboard-kpi-widget__bar {
-  fill: currentColor;
-}
-
-/* 'dots' variant — compact dot matrix, tinted via container color */
-.dashboard-kpi-widget__dots {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  width: 100%;
-  height: 40px;
-}
-
-.dashboard-kpi-widget__dots-col {
-  display: flex;
-  flex: 1 1 0;
-  flex-direction: column-reverse;
-  align-items: center;
-  gap: 3px;
-}
-
-.dashboard-kpi-widget__dots-col--dim {
-  opacity: 0.4;
-}
-
-.dashboard-kpi-widget__dot {
-  display: block;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-@container (max-height: 150px) {
-  .dashboard-kpi-widget__dots {
-    height: 28px;
-  }
-}
-
-.dashboard-kpi-widget--compact .dashboard-kpi-widget__dots {
-  height: 30px;
 }
 
 /* Compact variant */
