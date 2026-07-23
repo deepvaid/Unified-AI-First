@@ -303,7 +303,7 @@ const sparklinePoints = computed(() => {
 .dashboard-kpi-widget__value {
   overflow: visible;
   margin-top: 10px;
-  font-size: 34px;
+  font-size: 32px;
   line-height: 1.05;
   letter-spacing: -0.025em;
   font-weight: 700;

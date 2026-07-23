@@ -773,11 +773,6 @@ function toggleFavoriteActive() {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  background: var(--mp-color-light-canvas);
-}
-
-.v-theme--maropostDark .dashboard-hub {
-  background: var(--mp-color-dark-canvas);
 }
 
 .dashboard-widget-expand {

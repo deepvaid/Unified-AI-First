@@ -137,7 +137,7 @@ export const chartTooltipTheme = 'light' as const
  */
 export function applyChartTheme(): Pick<
   ApexOptions,
-  'colors' | 'chart' | 'grid' | 'xaxis' | 'yaxis' | 'tooltip' | 'stroke' | 'dataLabels' | 'legend'
+  'colors' | 'chart' | 'grid' | 'xaxis' | 'yaxis' | 'tooltip' | 'stroke' | 'dataLabels'
 > {
   return {
     colors: activeChartPalette.value,
@@ -161,7 +161,6 @@ export function applyChartTheme(): Pick<
       },
     },
     yaxis: {
-      tickAmount: 4,
       labels: {
         style: {
           colors: chartLabelColor,
@@ -169,12 +168,6 @@ export function applyChartTheme(): Pick<
           fontWeight: 500,
         },
       },
-    },
-    legend: {
-      fontSize: '12px',
-      fontWeight: 500,
-      markers: { size: 5, shape: 'circle', offsetX: -2 },
-      itemMargin: { horizontal: 10 },
     },
     tooltip: {
       theme: chartTooltipTheme,
