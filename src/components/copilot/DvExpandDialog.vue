@@ -128,6 +128,6 @@ function handleAdd() {
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 16px;
-  background: rgb(var(--v-theme-surface-light, var(--v-theme-surface)));
+  background: rgb(var(--v-theme-surface-light));
 }
 </style>

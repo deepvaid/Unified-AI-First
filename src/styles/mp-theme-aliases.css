@@ -12,35 +12,74 @@
   --mp-surface-tint: var(--mp-color-light-surfaceTint);
   --mp-surface-warm: var(--mp-color-neutral-100);
 
-  /* Compact dashboard semantic surface tokens */
-  --surface-0: var(--mp-color-light-background);
-  --surface-1: var(--mp-color-light-surface);
-  --surface-2: var(--mp-color-light-surfaceVariant);
+  /* Surface hierarchy */
+  --surface-canvas: var(--mp-color-light-background);
+  --surface-primary: var(--mp-color-light-surface);
+  --surface-secondary: var(--mp-color-light-surfaceVariant);
+  --surface-raised: var(--mp-color-light-surfaceBright);
+  --surface-overlay: var(--mp-color-light-surfaceBright);
+  --surface-sunken: var(--mp-color-light-background);
+  --surface-interactive: var(--mp-color-light-surface);
+  --surface-interactive-hover: var(--mp-color-light-surfaceVariant);
+  --surface-interactive-active: var(--mp-color-light-surfaceBright);
+  --surface-interactive-selected: var(--mp-color-light-accent-cyan-selectedBackground);
+  --surface-interactive-disabled: var(--mp-color-light-surfaceVariant);
+  --scrim-overlay: rgba(var(--mp-rgb-color-light-textPrimary), 0.32);
 
-  /* Text */
-  --ink: var(--mp-color-light-textPrimary);
-  --muted: var(--mp-color-light-textMuted);
+  /* Text and icons */
+  --text-primary: var(--mp-color-light-textPrimary);
+  --text-secondary: var(--mp-color-light-onSurfaceVariant);
+  --text-muted: var(--mp-color-light-textMuted);
+  --text-disabled: var(--mp-color-light-textMuted);
+  --icon-primary: var(--mp-color-light-textPrimary);
+  --icon-secondary: var(--mp-color-light-textMuted);
+  --icon-disabled: var(--mp-color-light-textMuted);
 
-  /* Lines */
-  --hairline: var(--mp-color-light-borderSubtle);
-  /* Field/control border on hover — one step darker than the resting hairline */
-  --mp-border-subtle-hover: #cbd5e1;
+  /* Boundaries and focus */
+  --border-subtle: var(--mp-color-light-borderSubtle);
+  --border-default: var(--mp-color-light-border);
+  --border-strong: var(--mp-color-light-outline);
+  --border-hover: var(--mp-color-light-border);
+  --focus-ring: var(--mp-color-light-accent-cyan-focusRing);
+  --mp-border-subtle-hover: var(--border-hover);
 
-  /* Accent (signal blue) */
-  --accent: var(--mp-color-light-primary);
-  --accent-fg: var(--mp-color-light-onPrimary);
-  --accent-ink: var(--mp-color-light-primaryDarken);
-  --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+  /* Accent (default cyan) */
+  --accent-default: var(--mp-color-light-accent-cyan-default);
+  --accent-hover: var(--mp-color-light-accent-cyan-hover);
+  --accent-active: var(--mp-color-light-accent-cyan-active);
+  --accent-selected-bg: var(--mp-color-light-accent-cyan-selectedBackground);
+  --accent-subtle-bg: var(--mp-color-light-accent-cyan-subtleBackground);
+  --accent-focus-ring: var(--mp-color-light-accent-cyan-focusRing);
+  --accent-on: var(--mp-color-light-accent-cyan-onAccent);
+  --accent-container: var(--mp-color-light-accent-cyan-container);
+  --accent-on-container: var(--mp-color-light-accent-cyan-onContainer);
+
+  /* Compatibility aliases — remove after the migration window. */
+  --surface-0: var(--surface-canvas);
+  --surface-1: var(--surface-primary);
+  --surface-2: var(--surface-secondary);
+  --ink: var(--text-primary);
+  --muted: var(--text-muted);
+  --hairline: var(--border-subtle);
+  --accent: var(--accent-default);
+  --accent-fg: var(--accent-on);
+  --accent-ink: var(--accent-active);
+  --accent-soft: var(--accent-subtle-bg);
 
   /* Containers */
-  --primary-container: var(--mp-color-light-primaryContainer);
-  --on-primary-container: var(--mp-color-light-onPrimaryContainer);
+  --primary-container: var(--accent-container);
+  --on-primary-container: var(--accent-on-container);
 
   /* Semantic colors */
-  --pos: oklch(0.5 0.15 155);
-  --pos-soft: color-mix(in oklch, oklch(0.7 0.15 155) 14%, transparent);
-  --neg: oklch(0.55 0.2 25);
-  --neg-soft: color-mix(in oklch, oklch(0.65 0.2 25) 14%, transparent);
+  --pos: rgb(var(--v-theme-success));
+  --pos-soft: rgb(var(--v-theme-success-container));
+  --neg: rgb(var(--v-theme-error));
+  --neg-soft: rgb(var(--v-theme-error-container));
+
+  /* Elevation */
+  --elevation-raised: var(--mp-shadow-sm);
+  --elevation-overlay: var(--mp-shadow-md);
+  --elevation-modal: var(--mp-shadow-lg);
 
   /* Radius */
   --r-pill: 9999px;
@@ -77,31 +116,83 @@
   --mp-border-table-row: var(--mp-color-dark-borderTableRow);
   --mp-border-table-header: var(--mp-color-dark-borderTableHeader);
   --mp-border-table-footer-divider: var(--mp-color-dark-borderTableFooterDivider);
-  --mp-surface-tint: rgba(89, 194, 255, 0.08);
+  --mp-surface-tint: var(--mp-color-dark-surfaceTint);
   --mp-surface-warm: var(--mp-color-dark-surfaceVariant);
   --mp-color-sidebar-bg: var(--mp-color-dark-background);
   --mp-color-sidebar-surface: var(--mp-color-dark-surface);
   --mp-color-sidebar-border: var(--mp-color-dark-borderSubtle);
   --mp-color-sidebar-text: var(--mp-color-dark-textPrimary);
   --mp-color-sidebar-textMuted: var(--mp-color-dark-textMuted);
-  --mp-color-sidebar-textFaint: rgba(151, 174, 202, 0.62);
-  --mp-color-sidebar-hover: rgba(89, 194, 255, 0.14);
+  --mp-color-sidebar-textFaint: var(--mp-color-dark-textMuted);
+  --mp-color-sidebar-hover: var(--mp-color-dark-accent-cyan-selectedBackground);
 
-  /* Dark mode semantic overrides */
-  --surface-0: var(--mp-color-dark-background);
-  --surface-1: var(--mp-color-dark-surface);
-  --surface-2: var(--mp-color-dark-surfaceVariant);
-  --ink: var(--mp-color-dark-textPrimary);
-  --muted: var(--mp-color-dark-textMuted);
-  --hairline: var(--mp-color-dark-borderSubtle);
-  --mp-border-subtle-hover: rgba(236, 236, 236, 0.22);
-  --accent: var(--mp-color-dark-primary);
-  --accent-fg: var(--mp-color-dark-onPrimary);
-  --accent-ink: var(--mp-color-dark-primaryDarken);
-  --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+  /* Surface hierarchy */
+  --surface-canvas: var(--mp-color-dark-background);
+  --surface-primary: var(--mp-color-dark-surface);
+  --surface-secondary: var(--mp-color-dark-surfaceVariant);
+  --surface-raised: var(--mp-color-dark-surfaceRaised);
+  --surface-overlay: var(--mp-color-dark-surfaceOverlay);
+  --surface-sunken: var(--mp-color-dark-surfaceSunken);
+  --surface-interactive: var(--mp-color-dark-interactiveDefault);
+  --surface-interactive-hover: var(--mp-color-dark-interactiveHover);
+  --surface-interactive-active: var(--mp-color-dark-interactiveActive);
+  --surface-interactive-selected: var(--mp-color-dark-accent-cyan-selectedBackground);
+  --surface-interactive-disabled: var(--mp-color-dark-interactiveDisabled);
+  --scrim-overlay: var(--mp-color-dark-scrim);
 
-  --primary-container: var(--mp-color-dark-primaryContainer);
-  --on-primary-container: var(--mp-color-dark-onPrimaryContainer);
+  /* Text and icons */
+  --text-primary: var(--mp-color-dark-textPrimary);
+  --text-secondary: var(--mp-color-dark-textSecondary);
+  --text-muted: var(--mp-color-dark-textMuted);
+  --text-disabled: var(--mp-color-dark-textDisabled);
+  --icon-primary: var(--mp-color-dark-iconPrimary);
+  --icon-secondary: var(--mp-color-dark-iconSecondary);
+  --icon-disabled: var(--mp-color-dark-iconDisabled);
+
+  /* Boundaries and focus */
+  --border-subtle: var(--mp-color-dark-borderSubtle);
+  --border-default: var(--mp-color-dark-border);
+  --border-strong: var(--mp-color-dark-borderStrong);
+  --border-hover: var(--mp-color-dark-borderHover);
+  --focus-ring: var(--mp-color-dark-focusRing);
+  --mp-border-subtle-hover: var(--border-hover);
+
+  /* Accent (default cyan) */
+  --accent-default: var(--mp-color-dark-accent-cyan-default);
+  --accent-hover: var(--mp-color-dark-accent-cyan-hover);
+  --accent-active: var(--mp-color-dark-accent-cyan-active);
+  --accent-selected-bg: var(--mp-color-dark-accent-cyan-selectedBackground);
+  --accent-subtle-bg: var(--mp-color-dark-accent-cyan-subtleBackground);
+  --accent-focus-ring: var(--mp-color-dark-accent-cyan-focusRing);
+  --accent-on: var(--mp-color-dark-accent-cyan-onAccent);
+  --accent-container: var(--mp-color-dark-accent-cyan-container);
+  --accent-on-container: var(--mp-color-dark-accent-cyan-onContainer);
+
+  /* Compatibility aliases — remove after the migration window. */
+  --surface-0: var(--surface-canvas);
+  --surface-1: var(--surface-primary);
+  --surface-2: var(--surface-secondary);
+  --ink: var(--text-primary);
+  --muted: var(--text-muted);
+  --hairline: var(--border-subtle);
+  --accent: var(--accent-default);
+  --accent-fg: var(--accent-on);
+  --accent-ink: var(--accent-active);
+  --accent-soft: var(--accent-subtle-bg);
+
+  --primary-container: var(--accent-container);
+  --on-primary-container: var(--accent-on-container);
+
+  /* Semantic colors */
+  --pos: rgb(var(--v-theme-success));
+  --pos-soft: rgb(var(--v-theme-success-container));
+  --neg: rgb(var(--v-theme-error));
+  --neg-soft: rgb(var(--v-theme-error-container));
+
+  /* Elevation */
+  --elevation-raised: var(--mp-shadow-dark-sm);
+  --elevation-overlay: var(--mp-shadow-dark-md);
+  --elevation-modal: var(--mp-shadow-dark-lg);
 
   /* Ink panel (branded inverted surface) */
   --ink-panel-bg: var(--mp-color-dark-inkPanel-bg);

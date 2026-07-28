@@ -43,3 +43,27 @@ Independently confirmed against `master` (`git checkout master -- .`, ran `vue-t
   - `npm run audit:ui` — completed with exit code 1 and 1,287 pre-existing repository findings (3 high, 383 medium, 901 low); no WP-02-specific finding category.
 - **Deviations from the plan:** none.
 - **Known issues:** repository type-check/build remain blocked by the pre-existing `ReelFlyView.vue` strict-null errors; the existing UI audit reports unrelated repository-wide findings.
+
+## WP-03 — Global surfaces, aliases, and duplicate-layer retirement
+
+- **Work package completed:** WP-03 — installed the semantic surface, text, border, accent, elevation, and feedback aliases; mapped `surface-light` through Vuetify; and retired the duplicate palette stylesheets.
+- **Files changed:**
+  - `src/styles/mp-theme-aliases.css`
+  - `src/styles/app-styles.ts`
+  - `src/styles/mb-foundation.tokens.css` (deleted)
+  - `src/styles/marobase-tokens.css` (deleted)
+  - `src/plugins/maropostTheme.ts`
+  - `src/components/copilot/DvRefineDialog.vue`
+  - `src/components/copilot/DvExpandDialog.vue`
+  - `src/views/Commerce/CommerceCloudLanding.vue`
+  - `src/styles/global.scss`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none — this package consumes the WP-01 generated token vocabulary. `surface-light` maps to the existing light bright surface and the authored dark `surfaceLight` token.
+- **Hard-coded colors removed:** both duplicate authored CSS palettes; the now-orphaned `--mb-*` bridge; hard-coded dashboard trend colors in the alias layer; and all `--mb-*` references from Commerce Cloud.
+- **Tests run + results:**
+  - `npm run type-check` — only the 13 known pre-existing `src/views/Reel/ReelFlyView.vue` strict-null errors; no WP-03 errors.
+  - `npm run build` — stopped at the same 13 known pre-existing `ReelFlyView.vue` type errors before Vite ran; no WP-03 errors.
+  - `npm run build-storybook` — failed before preview completion on the pre-existing generated Sass ordering error: `_variables.scss:191` references `$mp-color-dark-borderStrong` before it is defined.
+  - `npm run audit:ui` — completed with exit code 1 and 1,150 repository-wide findings (3 high, 383 medium, 764 low).
+- **Deviations from the plan:** removed the 11-line orphaned `--mb-*` bridge from `src/styles/global.scss` as well as the listed files so the required source-wide zero-reference check passes.
+- **Known issues:** repository type-check/build remain blocked by the pre-existing `ReelFlyView.vue` strict-null errors; Storybook remains blocked by the existing WP-01 generated Sass declaration-order defect; the existing UI audit reports repository-wide findings.
