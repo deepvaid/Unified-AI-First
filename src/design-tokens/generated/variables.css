@@ -430,14 +430,14 @@
   --mp-color-dark-scrim: rgba(6, 8, 10, 0.64);
   --mp-color-dark-textSecondary: #C9C4BA;
   --mp-rgb-color-dark-textSecondary: 201, 196, 186;
-  --mp-color-dark-textDisabled: #8B8A87;
-  --mp-rgb-color-dark-textDisabled: 139, 138, 135;
+  --mp-color-dark-textDisabled: #9A9997;
+  --mp-rgb-color-dark-textDisabled: 154, 153, 151;
   --mp-color-dark-iconPrimary: var(--mp-color-dark-textPrimary);
   --mp-rgb-color-dark-iconPrimary: 236, 236, 236;
   --mp-color-dark-iconSecondary: var(--mp-color-dark-textMuted);
   --mp-rgb-color-dark-iconSecondary: 179, 170, 151;
   --mp-color-dark-iconDisabled: var(--mp-color-dark-textDisabled);
-  --mp-rgb-color-dark-iconDisabled: 139, 138, 135;
+  --mp-rgb-color-dark-iconDisabled: 154, 153, 151;
   --mp-color-dark-borderStrong: #9B9A98;
   --mp-rgb-color-dark-borderStrong: 155, 154, 152;
   --mp-color-dark-borderHover: var(--mp-color-dark-border);
