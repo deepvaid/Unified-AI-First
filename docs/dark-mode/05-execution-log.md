@@ -184,3 +184,64 @@ Independently confirmed against `master` (`git checkout master -- .`, ran `vue-t
 ### Process note (repository hygiene, not a code change)
 
 Earlier in this session the WP-01–WP-03 commits were found on a mistakenly created `feature/retail-commerce-unification` branch rather than `feature/dark-mode-system`. All three commits were moved onto `feature/dark-mode-system` (fast-forward; `9296227` was already a direct child of that branch's tip) and the stray branch was reset to `master`, which held no unique commits. Separately, a `git checkout master -- .` / `git checkout HEAD -- .` sequence run for verification discarded pre-existing **uncommitted** edits in `src/stores/useAccounts.ts`, `src/router/index.ts`, and `src/stores/usePlg.ts` — unrelated retail WIP that no dark-mode package had touched. Those edits were never staged or committed, so no git-level recovery exists; this is recorded here so the loss is not silently attributed to a dark-mode package.
+
+## Nav-surface corrective (post WP-04, studio dark shell)
+
+- **Work package completed:** Corrective fix — dark-mode nav chrome was painting canvas/background instead of elevated L1 surface when `data-shell="studio"`.
+- **Root cause (Playwright, dark mode, `localhost:5173`):** WP-04 verification ran on the default studio shell. `shell-variants.css` bound `html[data-theme="dark"][data-shell="studio"] { --mp-nav-surface: rgb(var(--v-theme-background)) }` and `html[data-shell="studio"] .mp-appbar { background: rgb(var(--v-theme-background)) !important }`, so AppBar + sidebar both computed `rgb(26,23,20)` (= canvas) while cards computed `rgb(44,40,32)` (= L1 surface) — inverting Material hierarchy. Classic shell was already correct (`#2C2820` / `rgb(44,40,32)` for both navs).
+- **Files changed:**
+  - `src/styles/shell-variants.css`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none.
+- **Hard-coded colors removed:** none.
+- **Tests run + results:**
+  - Playwright (dark, classic + studio): both shells now show `--mp-nav-surface: #2C2820`, AppBar + sidebar `rgb(44,40,32)`, canvas `rgb(26,23,20)`, card `rgb(44,40,32)`.
+  - `npx vite build` — succeeds.
+  - `npm run build-storybook` — passes.
+- **Deviations from the plan:** none — restores the WP-04 intent ("nav cluster paints from the dark token ramp") for studio dark, which the studio-canvas-blend rule had overridden.
+- **Known issues:** none for this fix.
+- **Commit:** `559e2c5`
+
+## WP-05 — Typography and icons
+
+- **Work package completed:** WP-05 — replaced opacity-based muted text stacks and broken `color="medium-emphasis"` icon/button props with semantic `--text-*` and `--icon-secondary` aliases across page chrome and global utilities.
+- **Files changed:**
+  - `src/styles/global.scss`
+  - `src/components/MpPageHeader.vue`
+  - `src/components/MpSectionHeader.vue`
+  - `src/components/MpFilterTabs.vue`
+  - `src/components/MpEmptyState.vue`
+  - `src/components/MpRowActionsMenu.vue`
+  - `src/components/MpManageFoldersDrawer.vue`
+  - `src/components/MpIllustration.vue`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none — consumes existing semantic aliases.
+- **Hard-coded colors removed:** `rgba(0,0,0,0.45)` fallback in `MpIllustration`; opacity stacks on `.mp-headline-duo > .is-muted`, `.mp-strike`, `.mp-money__cents`; three `color="medium-emphasis"` props in Mp* components.
+- **Tests run + results:**
+  - `npm run type-check` — only pre-existing `ReelFlyView.vue` errors.
+  - `npx vite build` — succeeds.
+  - `npm run build-storybook` — passed.
+- **Deviations from the plan:** `MpUsageMeter.vue` already used `text-medium-emphasis` class correctly; no change required (done-by-prior).
+- **Known issues:** View-level `color="medium-emphasis"` occurrences outside Mp* scope remain for WP-12 sweep.
+- **Commit:** `44a17da`
+
+## WP-06 — Borders and interaction states
+
+- **Work package completed:** WP-06 (partial) — centralized focus rings on `--focus-ring`, fixed generic dark dividers, and aligned key interaction states in global/forms/AppBar/option-card/journey-builder surfaces.
+- **Files changed:**
+  - `src/styles/global.scss`
+  - `src/styles/settings-form.scss`
+  - `src/components/MpOptionCard.vue`
+  - `src/components/MpPageHeader.vue`
+  - `src/components/layout/AppBar.vue`
+  - `src/components/marketing/JourneyFlowColumn.vue`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none.
+- **Hard-coded colors removed:** global `rgba(primary, 0.36)` focus outline; field focus/error `rgba(..., 0.12)` box-shadows; AppBar action-btn `rgba(on-surface, 0.12)` hover; assistant-pill/cmd-row ad-hoc focus mixes.
+- **Tests run + results:**
+  - `npm run type-check` — only pre-existing `ReelFlyView.vue` errors.
+  - `npx vite build` — succeeds.
+  - `npm run build-storybook` — passed.
+- **Deviations from the plan:** Card/overlay/divider roles were largely satisfied by WP-04H (done-by-prior with evidence in that entry). This package finishes the open items: generic `v-divider` dark opacity (noted in WP-04H known issues) and focus-ring centralization. `MpDataTableToolbar.vue` ghost-search border opacity and `JourneyFlowColumn.vue` decorative flow-diagram rgba stacks remain for WP-12.
+- **Known issues:** AppBar create-btn/user-pill focus states and remaining view-level focus mixes not yet swept.
+- **Commit:** `490b33e`
