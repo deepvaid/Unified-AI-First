@@ -8,6 +8,7 @@ import DvHistoryDrawer from './copilot/DvHistoryDrawer.vue'
 import DvToastStack from './copilot/DvToastStack.vue'
 import DvInsightCard from './copilot/DvInsightCard.vue'
 import DvIntentCardList from './copilot/voice/DvIntentCardList.vue'
+import DvCampaignOnboardingCard from './copilot/DvCampaignOnboardingCard.vue'
 import DvLandingHero from './copilot/DvLandingHero.vue'
 import DvOrbitOrb from './copilot/voice/DvOrbitOrb.vue'
 import DvOrbitVoiceSurface from './copilot/voice/DvOrbitVoiceSurface.vue'
@@ -16,6 +17,7 @@ import type { OrbitState } from './copilot/voice/orbit'
 import {
   useCopilotStore,
   type ChatMessage,
+  type CampaignOnboardingProps,
   type DraftSetProps,
   type IntentCardsProps,
 } from '@/stores/useCopilot'
@@ -27,12 +29,18 @@ import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
 import { useDaVinciContext } from '@/composables/useDaVinciContext'
 import {
+  useDaVinciCampaignOnboarding,
+  type CampaignOnboardingResponse,
+} from '@/composables/useDaVinciCampaignOnboarding'
+import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
+import {
   useDaVinciIntents,
   INTENT_STEPS,
   type DvCardDescriptor,
   type DvIntentResult,
 } from '@/composables/useDaVinciIntents'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
+import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
 
 interface MpDaVinciBotProps {
   initialChatMode?: boolean
@@ -60,8 +68,10 @@ const dashboardsStore = useDashboardsStore()
 const { addItem, incrementAdded, clearAll } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
 const intents = useDaVinciIntents()
+const campaignOnboarding = useDaVinciCampaignOnboarding()
 const voice = useDaVinciVoice()
 const copilot = useCopilotStore()
+const onboarding = useDaVinciOnboardingStore()
 const { contextBlock } = useDaVinciContext()
 
 // The conversation lives in the copilot store so it survives navigation, drawer
@@ -113,10 +123,24 @@ const activeDashboard = computed(() => {
 
 const targetAccountId = computed(() => routeAccountId.value ?? activeAccount.value?.id ?? null)
 
+if (route.query.source === 'davinci' && targetAccountId.value) {
+  onboarding.begin(targetAccountId.value)
+  copilot.beginOnboarding(targetAccountId.value)
+  copilot.open()
+  if (!copilot.resumeMessage && messages.value.length === 0) {
+    copilot.queueResume(
+      'Welcome back. Your Da Vinci campaign checkpoint is restored. This draft is still editable, and nothing has been sent.',
+    )
+  }
+}
+
 const targetDashboard = computed(() => {
   if (activeDashboard.value) return activeDashboard.value
   if (!targetAccountId.value) return null
-  return dashboardsStore.getDefaultDashboard(targetAccountId.value) ?? null
+  // Off a dashboard route (full-page copilot, drawer over list/other pages),
+  // target the dashboard the user was most recently on — e.g. the one they just
+  // created — rather than blindly the account default.
+  return dashboardsStore.getLastViewedDashboard(targetAccountId.value) ?? null
 })
 
 const headerStatus = computed(() => {
@@ -214,11 +238,32 @@ watch(
   { immediate: true },
 )
 
+watch(
+  [surfaceVisible, () => copilot.resumeMessage],
+  ([visible, resumeMessage]) => {
+    if (!visible || !resumeMessage) return
+    const text = copilot.consumeResume()
+    if (!text) return
+    messages.value.push({ id: makeId('a'), role: 'assistant', text })
+    chatMode.value = true
+    if (targetAccountId.value) {
+      trackDaVinciOnboardingEvent('onboarding_resumed', targetAccountId.value, {
+        stage: onboarding.activeSession?.stage ?? 'unknown',
+      })
+    }
+    scrollToBottom()
+    maybeSpeak(text)
+  },
+  { immediate: true },
+)
+
 // Voice in → voice out (assistant convention): a mic-dictated query gets a
 // spoken reply even in text mode. Typed queries stay silent unless the
 // persisted "Read replies aloud" toggle is on. Voice mode always speaks.
 const lastInputWasVoice = ref(false)
-const speakReplies = computed(() => isVoiceMode.value || ttsEnabled.value || lastInputWasVoice.value)
+const speakReplies = computed(
+  () => isVoiceMode.value || ttsEnabled.value || copilot.readAloud || lastInputWasVoice.value,
+)
 
 const isDictating = computed(
   () => voice.state.value === 'listening' && voice.owner.value === voiceOwner.value,
@@ -233,6 +278,7 @@ function stopVoiceActivity() {
 
 // ─── Orbit voice surface — drawer-local UI state machine ───────────────
 const orbitError = ref(false) // dictation resolved silent (didn't catch that)
+const orbitErrorMessage = ref('It was a bit noisy. Try again, or type your request instead.')
 const orbitPaused = ref(false) // user stopped the mic without speaking
 const orbitLastRequest = ref('') // echo pill while thinking
 const orbitResponse = ref<{ draft: DashboardWidgetDraft | null; caption: string } | null>(null)
@@ -261,6 +307,7 @@ const orbitState = computed<OrbitState>(() => {
 
 function resetOrbit() {
   orbitError.value = false
+  orbitErrorMessage.value = 'It was a bit noisy. Try again, or type your request instead.'
   orbitPaused.value = false
   orbitLastRequest.value = ''
   orbitResponse.value = null
@@ -347,16 +394,21 @@ async function toggleMic() {
       processQuery(finalText)
     } else if (isVoiceMode.value && !orbitCancelRequested && !orbitPaused.value) {
       // Silent resolve the user didn't ask for → "didn't catch that"
+      orbitErrorMessage.value = 'It was a bit noisy. Try again, or type your request instead.'
       orbitError.value = true
     }
     orbitCancelRequested = false
   } catch (err) {
     if (err instanceof VoiceError && err.code === 'permission') {
       pushToast({ title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
+      orbitErrorMessage.value = 'Microphone access is blocked. Allow it in browser settings, or continue by typing.'
+      orbitError.value = true
     } else if (err instanceof VoiceError && err.code === 'audio') {
       pushToast({ title: 'No microphone found' })
+      orbitErrorMessage.value = 'No microphone was found. Connect one, or continue by typing.'
     } else if (err instanceof VoiceError && err.code === 'network') {
       pushToast({ title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
+      orbitErrorMessage.value = 'Voice is unavailable right now. Check your connection, or continue by typing.'
     }
     if (isVoiceMode.value && err instanceof VoiceError && (err.code === 'network' || err.code === 'audio')) {
       orbitError.value = true
@@ -468,6 +520,35 @@ function completeIntentResult(res: DvIntentResult, gen: number) {
   finishGeneration(gen)
 }
 
+function appendCampaignOnboardingResponse(res: CampaignOnboardingResponse) {
+  const componentData: ChatMessage['componentData'] = []
+  if (res.cards?.length || res.quickReplies?.length) {
+    componentData.push({
+      type: 'intentCards',
+      props: { cards: res.cards ?? [], quickReplies: res.quickReplies },
+    })
+  }
+  if (res.onboardingCard) {
+    componentData.push({
+      type: 'campaignOnboarding',
+      props: res.onboardingCard,
+    })
+  }
+  messages.value.push({
+    id: makeId('a'),
+    role: 'assistant',
+    text: res.reply,
+    componentData: componentData.length ? componentData : undefined,
+  })
+  chatMode.value = true
+  if (res.onboardingCard && targetAccountId.value) {
+    const blockers = res.onboardingCard.items?.filter((item) => item.status !== 'ready').length ?? 0
+    trackDaVinciOnboardingEvent('readiness_shown', targetAccountId.value, { blockers })
+  }
+  scrollToBottom()
+  maybeSpeak(res.speech ?? res.reply)
+}
+
 function pushUserTurn(text: string) {
   messages.value.push({ id: makeId('u'), role: 'user', text })
   chatMode.value = true
@@ -475,9 +556,65 @@ function pushUserTurn(text: string) {
   scrollToBottom()
 }
 
+function openCampaignDraft(draftId: number) {
+  const accountId = targetAccountId.value
+  if (!accountId) return
+  onboarding.markHandoff()
+  trackDaVinciOnboardingEvent('draft_opened', accountId, { draftId })
+  copilot.queueResume(
+    'Your draft is open. I filled the details we agreed on. You still control content, timing, and send. Nothing has been sent.',
+  )
+  copilot.setWidthMode('panel')
+  copilot.open()
+  void router.push({
+    name: 'CreateCampaign',
+    params: { accountId },
+    query: { id: String(draftId), source: 'davinci' },
+  })
+}
+
+function openCampaignPrerequisite(action: string) {
+  const accountId = targetAccountId.value
+  const routeName = campaignOnboarding.routeForAction(action)
+  if (!accountId || !routeName) return
+  onboarding.setLastRoute(routeName)
+  trackDaVinciOnboardingEvent('prerequisite_opened', accountId, { routeName })
+  copilot.queueResume('I’m still with you. Complete this step, then I’ll check campaign readiness again.')
+  copilot.open()
+  void router.push({ name: routeName, params: { accountId }, query: { source: 'davinci' } })
+}
+
+function onCampaignOnboardingAction(action: string) {
+  if (action === 'continue-draft') {
+    const response = campaignOnboarding.createDraft()
+    appendCampaignOnboardingResponse(response)
+    const card = response.cards?.find((item) => item.type === 'campaign')
+    if (card?.type === 'campaign' && card.props.draftId && targetAccountId.value) {
+      trackDaVinciOnboardingEvent('draft_created', targetAccountId.value, { draftId: card.props.draftId })
+    }
+    return
+  }
+  if (action === 'change-brief') {
+    if (targetAccountId.value) trackDaVinciOnboardingEvent('brief_corrected', targetAccountId.value)
+    appendCampaignOnboardingResponse(campaignOnboarding.changeBrief())
+    return
+  }
+  if (action.startsWith('open-')) openCampaignPrerequisite(action)
+}
+
 function onIntentCardAction(payload: { card: DvCardDescriptor; action: string }) {
+  if (payload.card.type === 'campaign') {
+    if (payload.action === 'review-draft' && payload.card.props.draftId) {
+      openCampaignDraft(payload.card.props.draftId)
+      return
+    }
+    if (payload.action === 'change-brief') {
+      if (targetAccountId.value) trackDaVinciOnboardingEvent('brief_corrected', targetAccountId.value)
+      appendCampaignOnboardingResponse(campaignOnboarding.changeBrief())
+      return
+    }
+  }
   const titles: Record<string, string> = {
-    launch: 'Campaign scheduled',
     save: 'Segment saved',
     use: 'Copy ready to use',
     copy: 'Copied to clipboard',
@@ -490,6 +627,12 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
 
 function processQuery(text: string) {
   if (!text) return
+  const onboardingResponse = onboarding.isActive ? campaignOnboarding.handleText(text) : null
+  if (onboardingResponse) {
+    pushUserTurn(text)
+    appendCampaignOnboardingResponse(onboardingResponse)
+    return
+  }
   // Text mode mid-generation: show the turn immediately, answer it after the
   // current reply lands (queued follow-up).
   if (isTyping.value && !isVoiceMode.value) {
@@ -650,20 +793,24 @@ function newChat() {
   pushToast({ title: 'New chat started' })
 }
 
-function onWidgetSaved(payload: { title: string; dashboardName: string }, msg: ChatMessage) {
+function onWidgetSaved(
+  payload: { title: string; dashboardName: string; widgetId: string; dashboardId: string; accountId: string },
+  msg: ChatMessage,
+) {
   const comp = msg.componentData?.[0]
   if (comp && comp.type === 'widgetDraftSet') {
     incrementAdded((comp.props as DraftSetProps).conversationId)
   }
-  const dashId = targetDashboard.value?.id
-  const accountId = targetAccountId.value
+  // Use the dashboard the widget was actually added to (from the card's payload),
+  // not the live route target — they can differ when the draft was pinned.
+  const { dashboardId, accountId } = payload
   pushToast({
     title: `Widget added to ${payload.dashboardName}`,
     sub: payload.title,
-    action: dashId && accountId ? 'View' : undefined,
+    action: dashboardId && accountId ? 'View' : undefined,
     onAction: () => {
-      if (dashId && accountId) {
-        router.push({ name: 'DashboardDetail', params: { accountId, dashboardId: dashId } })
+      if (dashboardId && accountId) {
+        router.push({ name: 'DashboardDetail', params: { accountId, dashboardId } })
       }
     },
   })
@@ -696,9 +843,15 @@ function getInsightProps(msg: ChatMessage): { headline: string; description: str
 }
 
 function getIntentCardsProps(msg: ChatMessage): IntentCardsProps | null {
-  const comp = msg.componentData?.[0]
+  const comp = msg.componentData?.find((item) => item.type === 'intentCards')
   if (!comp || comp.type !== 'intentCards') return null
   return comp.props as IntentCardsProps
+}
+
+function getCampaignOnboardingProps(msg: ChatMessage): CampaignOnboardingProps | null {
+  const comp = msg.componentData?.find((item) => item.type === 'campaignOnboarding')
+  if (!comp || comp.type !== 'campaignOnboarding') return null
+  return comp.props as CampaignOnboardingProps
 }
 
 function handleClearAll() {
@@ -823,6 +976,7 @@ function onComposerKeydown(event: KeyboardEvent) {
       :filters="targetDashboard?.filters"
       :draft-key="orbitDraftKey"
       :added-to="orbitAdded?.dashboardName ?? ''"
+      :error-message="orbitErrorMessage"
       @mic="toggleMic"
       @cancel="orbitCancelListening"
       @suggestion="sendSuggestion"
@@ -916,6 +1070,12 @@ function onComposerKeydown(event: KeyboardEvent) {
                 </button>
               </div>
             </template>
+
+            <DvCampaignOnboardingCard
+              v-if="getCampaignOnboardingProps(msg)"
+              v-bind="getCampaignOnboardingProps(msg)!"
+              @action="onCampaignOnboardingAction"
+            />
           </div>
         </div>
       </template>

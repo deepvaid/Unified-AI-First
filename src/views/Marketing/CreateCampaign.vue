@@ -11,6 +11,9 @@ import { useCampaignsStore, type Campaign, type CampaignDraftInput } from '@/sto
 import { useContactsStore } from '@/stores/useContacts'
 import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
 import { useContentStore } from '@/stores/useContent'
+import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
+import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
+import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
 
 const router = useRouter()
 const route = useRoute()
@@ -18,6 +21,8 @@ const store = useCampaignsStore()
 const contactsStore = useContactsStore()
 const cdpStore = useCdpEntitiesStore()
 const contentStore = useContentStore()
+const daVinciOnboarding = useDaVinciOnboardingStore()
+const daVinciCampaign = useDaVinciCampaignOnboarding()
 
 const accountId = computed(() => route.params.accountId as string)
 const campaignsRoute = computed(() => ({ name: 'EmailCampaigns', params: { accountId: accountId.value } }))
@@ -336,7 +341,16 @@ function hydrateFrom(campaign: Campaign) {
 }
 
 onMounted(() => {
-  const idParam = route.query.id ?? route.params.id
+  let idParam = route.query.id ?? route.params.id
+  if (route.query.source === 'davinci' && (!idParam || !store.getCampaign(Number(idParam)))) {
+    daVinciOnboarding.begin(accountId.value)
+    daVinciCampaign.createDraft()
+    const restoredId = daVinciOnboarding.activeSession?.draftId
+    if (restoredId) {
+      idParam = String(restoredId)
+      void router.replace({ query: { ...route.query, id: String(restoredId) } })
+    }
+  }
   const existing = idParam ? store.getCampaign(Number(idParam)) : undefined
   if (existing) {
     hydrateFrom(existing)
@@ -344,6 +358,12 @@ onMounted(() => {
     step.value = 1
     maxStepReached.value = totalSteps
     captureFormSnapshot()
+    if (route.query.source === 'davinci' && daVinciOnboarding.activeSession) {
+      if (daVinciOnboarding.activeSession.stage !== 'complete') {
+        daVinciOnboarding.complete()
+        trackDaVinciOnboardingEvent('onboarding_completed', accountId.value, { draftId: existing.id })
+      }
+    }
   } else {
     focusCard(emailCardRef)
   }

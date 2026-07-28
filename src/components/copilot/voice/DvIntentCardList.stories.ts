@@ -32,9 +32,11 @@ const campaignCards: DvCardDescriptor[] = [
       subject: 'Weekend Flash Sale — picked for you',
       audience: 'VIP customers',
       audienceSize: 3120,
-      sendTime: 'Tomorrow · 9:00 AM',
+      sendTime: 'Not scheduled',
       channel: 'Email',
       status: 'Draft',
+      draftId: 26,
+      remaining: ['Email content', 'Send time'],
     },
   },
 ]

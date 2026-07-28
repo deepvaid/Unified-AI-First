@@ -32,7 +32,7 @@ const meta = {
     },
     status: {
       control: 'select',
-      options: ['draft', 'scheduled', 'sent', 'paused'],
+      options: ['Draft', 'Scheduled', 'Sent', 'Paused'],
       description: 'Current campaign status'
     }
   },
@@ -41,11 +41,12 @@ const meta = {
       description: {
         component: `
 ## Overview
-DvCampaignCard displays a summary of a marketing campaign with key details like subject, audience, and send time. It provides quick actions to launch or edit the campaign.
+DvCampaignCard displays an editable campaign draft with the details Da Vinci prepared,
+the work still remaining, and a safe handoff into the campaign builder.
 
 ## Do's
 - Show complete campaign overview at a glance
-- Use for listing suggested or recent campaigns
+- Use for AI-prepared drafts that still require merchant review
 - Always include audience size for context
 - Display channel prominently
 - Use status badges to indicate campaign state
@@ -54,13 +55,11 @@ DvCampaignCard displays a summary of a marketing campaign with key details like 
 - Don't truncate subject lines unnecessarily
 - Don't hide audience size information
 - Don't use without a clear action button
-- Don't show incomplete campaign data
+- Never imply that a draft was sent or scheduled
 
 ## Best Practices
-- Sort campaigns by send time or status
-- Show estimated reach or engagement projections
-- Include preview of subject line or message content
-- Pair with DvInsightCard for performance metrics
+- Keep Review editable draft as the primary action
+- Show every remaining prerequisite before handoff
         `
       }
     }
@@ -78,18 +77,22 @@ export const Default: Story = {
     audienceSize: 5234,
     sendTime: 'Tomorrow at 10:00 AM EST',
     channel: 'Email',
-    status: 'draft'
+    status: 'Draft',
+    draftId: 26,
+    remaining: ['Email content', 'Send time'],
   }
 }
 
-export const SMSCampaign: Story = {
+export const NeedsDomainSetup: Story = {
   args: {
-    name: 'Cart Recovery - SMS',
-    subject: 'Your items are waiting! Complete your purchase today.',
-    audience: 'Cart Abandoners (Last 7 Days)',
-    audienceSize: 1847,
-    sendTime: 'Today at 2:30 PM EST',
-    channel: 'SMS',
-    status: 'scheduled'
+    name: 'Win-back offer',
+    subject: 'It’s been a while — here’s what’s new',
+    audience: 'Win-Back Segment',
+    audienceSize: 8912,
+    sendTime: 'Not scheduled',
+    channel: 'Email',
+    status: 'Draft',
+    draftId: 27,
+    remaining: ['Sending domain', 'Email content', 'Send time'],
   }
 }

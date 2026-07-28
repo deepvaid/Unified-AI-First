@@ -26,8 +26,8 @@ function onAction(card: DvCardDescriptor, action: string) {
       <DvCampaignCard
         v-if="card.type === 'campaign'"
         v-bind="card.props"
-        @launch="onAction(card, 'launch')"
-        @edit="onAction(card, 'edit')"
+        @review="onAction(card, 'review-draft')"
+        @change="onAction(card, 'change-brief')"
       />
       <DvContentCard
         v-else-if="card.type === 'content'"
@@ -57,7 +57,7 @@ function onAction(card: DvCardDescriptor, action: string) {
 .dv-intent-cards {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--mp-spacing-3);
   min-width: 0;
 }
 </style>

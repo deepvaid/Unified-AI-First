@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import type { DvCardDescriptor, DvQuickReply } from '@/composables/useDaVinciIntents'
+import type { CampaignReadinessItem } from '@/stores/useDaVinciOnboarding'
 
 // ── Shared conversation types ────────────────────────────────────────────────
 // The conversation lives here (not in MpDaVinciBot) so it survives route
@@ -19,9 +20,29 @@ export interface IntentCardsProps {
   quickReplies?: DvQuickReply[]
 }
 
+export interface CampaignOnboardingAction {
+  label: string
+  action: string
+  icon?: string
+}
+
+export interface CampaignOnboardingProps {
+  title: string
+  description?: string
+  step: number
+  totalSteps: number
+  items?: CampaignReadinessItem[]
+  primaryAction?: CampaignOnboardingAction
+  secondaryAction?: CampaignOnboardingAction
+}
+
 export interface ChatComponent {
-  type: 'widgetDraftSet' | 'insight' | 'intentCards'
-  props: DraftSetProps | { headline: string; description: string; severity?: string } | IntentCardsProps
+  type: 'widgetDraftSet' | 'insight' | 'intentCards' | 'campaignOnboarding'
+  props:
+    | DraftSetProps
+    | { headline: string; description: string; severity?: string }
+    | IntentCardsProps
+    | CampaignOnboardingProps
 }
 
 export interface ChatMessage {
@@ -47,6 +68,9 @@ export const useCopilotStore = defineStore('copilot', () => {
   const messages = ref<ChatMessage[]>([])
   const chatMode = ref(false)
   const conversationId = ref<string | null>(null)
+  const activeOnboardingAccountId = ref<string | null>(null)
+  const readAloud = ref(false)
+  const resumeMessage = ref<string | null>(null)
 
   function open() {
     isOpen.value = true
@@ -61,6 +85,24 @@ export const useCopilotStore = defineStore('copilot', () => {
     const prompt = pendingPrompt.value
     pendingPrompt.value = null
     return prompt
+  }
+
+  function beginOnboarding(accountId: string) {
+    activeOnboardingAccountId.value = accountId
+  }
+
+  function setReadAloud(enabled: boolean) {
+    readAloud.value = enabled
+  }
+
+  function queueResume(message: string) {
+    resumeMessage.value = message
+  }
+
+  function consumeResume(): string | null {
+    const message = resumeMessage.value
+    resumeMessage.value = null
+    return message
   }
 
   function close() {
@@ -94,9 +136,16 @@ export const useCopilotStore = defineStore('copilot', () => {
     messages,
     chatMode,
     conversationId,
+    activeOnboardingAccountId,
+    readAloud,
+    resumeMessage,
     open,
     openWithPrompt,
     consumePendingPrompt,
+    beginOnboarding,
+    setReadAloud,
+    queueResume,
+    consumeResume,
     close,
     toggle,
     setWidthMode,

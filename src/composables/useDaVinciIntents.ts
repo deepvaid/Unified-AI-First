@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import router from '@/router'
 import { askGemini, type GeminiTurn } from '@/services/geminiClient'
 import { generateJourneyDraft, goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
+import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import {
   audiences,
   campaignNames,
@@ -39,6 +40,8 @@ export type DvCardDescriptor =
         sendTime: string
         channel: string
         status?: string
+        draftId?: number
+        remaining?: string[]
       }
     }
   | {
@@ -174,14 +177,43 @@ export function classifyIntent(text: string): DvIntentKind {
 
 export function useDaVinciIntents() {
   const pending = ref<DvPending | null>(null)
+  const campaignOnboarding = useDaVinciCampaignOnboarding()
   let seq = 0
 
   function buildCampaign(key: AudienceKey): DvIntentResult {
+    const accountId = String(router.currentRoute.value.params.accountId ?? '2000290')
+    const audienceText: Record<AudienceKey, string> = {
+      all: 'Use Master Subscriber List',
+      vip: 'Use VIP Customer Circle',
+      lapsed: 'Use Win-Back Segment',
+      cart: 'Use Master Subscriber List',
+    }
+    if (!campaignOnboarding.session.value || campaignOnboarding.session.value.accountId !== accountId) {
+      campaignOnboarding.start(accountId, 'text')
+      campaignOnboarding.handleText('Promote an offer')
+    } else if (campaignOnboarding.session.value.stage === 'objective') {
+      campaignOnboarding.handleText('Promote an offer')
+    }
+    if (campaignOnboarding.session.value?.stage === 'audience') {
+      campaignOnboarding.handleText(audienceText[key])
+    }
+    const draft = campaignOnboarding.createDraft()
+    if (draft.cards?.length) {
+      return {
+        intent: 'campaign',
+        reply: draft.reply,
+        speech: draft.speech,
+        cards: draft.cards,
+        pending: null,
+        steps: INTENT_STEPS.campaign,
+      }
+    }
+
     const audience = audiences[key]
     const name = campaignNames[seq++ % campaignNames.length] ?? campaignNames[0]!
     return {
       intent: 'campaign',
-      reply: `Very good. I've drafted the "${name}" email to ${audience.label.toLowerCase()} — review it below, then confirm to schedule.`,
+      reply: `I prepared the "${name}" email for ${audience.label.toLowerCase()}. Review the editable draft below; nothing has been sent or scheduled.`,
       speech: campaignSpeech(name, audience.label),
       cards: [
         {

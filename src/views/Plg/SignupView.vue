@@ -4,10 +4,14 @@ import { useRouter } from 'vue-router'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import { usePlgStore, type TrialSignupPayload } from '@/stores/usePlg'
 import { useAccountsStore } from '@/stores/useAccounts'
+import { useUserProfile } from '@/stores/useUserProfile'
+import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
 
 const router = useRouter()
 const plg = usePlgStore()
 const accounts = useAccountsStore()
+const profile = useUserProfile()
+const daVinciOnboarding = useDaVinciOnboardingStore()
 
 type Stage = 'details' | 'verify' | 'provisioning' | 'success'
 
@@ -111,7 +115,14 @@ onUnmounted(clearTimers)
 // ── Step 4 — Success ────────────────────────────────────────────────────
 function enterMaropost() {
   accounts.switchTo(newAccountId.value)
-  router.push({ name: 'Dashboard', params: { accountId: newAccountId.value } })
+  profile.setName(`${firstName.value} ${lastName.value}`)
+  daVinciOnboarding.reset(newAccountId.value)
+  daVinciOnboarding.begin(newAccountId.value, { restart: true, freshAccount: true })
+  router.push({
+    name: 'DaVinciExperience',
+    params: { accountId: newAccountId.value },
+    query: { onboarding: 'campaign' },
+  })
 }
 
 function goBackToDemo() {

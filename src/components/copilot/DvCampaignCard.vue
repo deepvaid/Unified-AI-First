@@ -1,5 +1,7 @@
 <script setup lang="ts">
-defineProps<{
+import MpStatusChip from '@/components/MpStatusChip.vue'
+
+withDefaults(defineProps<{
   name: string
   subject: string
   audience: string
@@ -7,61 +9,74 @@ defineProps<{
   sendTime: string
   channel: string
   status?: string
-}>()
+  draftId?: number
+  remaining?: string[]
+}>(), {
+  status: 'Draft',
+  draftId: undefined,
+  remaining: () => [],
+})
 
 const emit = defineEmits<{
-  launch: []
-  edit: []
+  review: []
+  change: []
 }>()
 </script>
 
 <template>
-  <v-card variant="outlined" class="campaign-card">
+  <v-card flat border rounded="lg" class="campaign-card">
     <v-card-text class="pa-4">
       <div class="d-flex align-center ga-2 mb-3">
         <v-avatar size="32" color="primary" variant="tonal">
-          <v-icon size="18">send</v-icon>
+          <v-icon size="18">file-pen-line</v-icon>
         </v-avatar>
         <div>
           <div class="text-subtitle-2 font-weight-bold">{{ name }}</div>
-          <div class="text-caption text-medium-emphasis">Campaign Draft</div>
+          <div class="text-caption text-medium-emphasis">Editable campaign draft</div>
         </div>
         <v-spacer />
-        <v-chip size="x-small" color="warning" variant="tonal">Draft</v-chip>
+        <MpStatusChip :status="status" type="campaign" size="x-small" />
       </div>
 
-      <v-divider class="mb-3" style="opacity: 0.4;" />
+      <v-divider class="campaign-card__divider mb-3" />
 
       <div class="d-flex flex-column ga-2 text-body-2">
         <div class="d-flex align-center ga-2">
           <v-icon size="14" color="medium-emphasis">text</v-icon>
-          <span class="text-medium-emphasis" style="min-width: 70px;">Subject</span>
+          <span class="campaign-card__label text-medium-emphasis">Subject</span>
           <span class="font-weight-medium">{{ subject }}</span>
         </div>
         <div class="d-flex align-center ga-2">
           <v-icon size="14" color="medium-emphasis">users</v-icon>
-          <span class="text-medium-emphasis" style="min-width: 70px;">Audience</span>
+          <span class="campaign-card__label text-medium-emphasis">Audience</span>
           <span class="font-weight-medium">{{ audience }}</span>
           <v-chip size="x-small" variant="tonal" color="primary">{{ audienceSize.toLocaleString() }}</v-chip>
         </div>
         <div class="d-flex align-center ga-2">
           <v-icon size="14" color="medium-emphasis">clock</v-icon>
-          <span class="text-medium-emphasis" style="min-width: 70px;">Send</span>
+          <span class="campaign-card__label text-medium-emphasis">Send</span>
           <span class="font-weight-medium">{{ sendTime }}</span>
         </div>
         <div class="d-flex align-center ga-2">
           <v-icon size="14" color="medium-emphasis">send</v-icon>
-          <span class="text-medium-emphasis" style="min-width: 70px;">Channel</span>
+          <span class="campaign-card__label text-medium-emphasis">Channel</span>
           <span class="font-weight-medium">{{ channel }}</span>
         </div>
       </div>
 
-      <div class="d-flex ga-2 mt-4">
-        <v-btn color="primary" variant="flat" size="small" class="text-none flex-grow-1" prepend-icon="rocket" @click="emit('launch')">
-          Launch Campaign
+      <div v-if="remaining.length" class="campaign-card__remaining d-flex align-start ga-2 pa-3 mt-3">
+        <v-icon size="16" color="info">info</v-icon>
+        <div class="text-caption">
+          <strong>Still to review:</strong> {{ remaining.join(', ') }}
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap ga-2 mt-4">
+        <v-btn color="primary" variant="flat" size="small" prepend-icon="arrow-up-right" @click="emit('review')">
+          Review editable draft
         </v-btn>
-        <v-btn variant="flat" size="small" class="text-none" @click="emit('edit')" color="surface">
-          Edit
+        <v-btn variant="outlined" size="small" prepend-icon="refresh-cw" @click="emit('change')">
+          Change brief
         </v-btn>
       </div>
     </v-card-text>
@@ -69,9 +84,16 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-/* Wins over the global `.v-card.rounded-lg` (16px !important) so Da Vinci's
-   in-thread cards nest concentrically inside the 16px panel at 12px. */
-.v-card.campaign-card { border-radius: var(--mp-component-card-radius-md) !important; }
-.campaign-card { transition: box-shadow var(--mp-transition-base); }
-.campaign-card:hover { box-shadow: var(--mp-shadow-md); }
+.campaign-card__divider {
+  opacity: 0.4;
+}
+
+.campaign-card__label {
+  min-width: var(--mp-spacing-20);
+}
+
+.campaign-card__remaining {
+  border-radius: var(--mp-borderRadius-md);
+  background: rgb(var(--v-theme-surface-variant));
+}
 </style>

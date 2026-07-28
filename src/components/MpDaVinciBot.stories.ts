@@ -2,6 +2,7 @@ import { provide } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { routeLocationKey } from 'vue-router'
 import MpDaVinciBot from './MpDaVinciBot.vue'
+import type { ChatMessage } from '@/stores/useCopilot'
 
 type StoryMessage = {
   id: string
@@ -49,6 +50,66 @@ const conversationMessages: StoryMessage[] = [
           subtitle: 'Last 30 Days',
           bars: [[400], [350], [300], [250], [200], [150], [100], [80], [60], [40]],
           labels: ['Prod A', 'Prod B', 'Prod C', 'Prod D', 'Prod E', 'Prod F', 'Prod G', 'Prod H', 'Prod I', 'Prod J'],
+        },
+      },
+    ],
+  },
+]
+
+const onboardingMessages: ChatMessage[] = [
+  {
+    id: 'onboarding-user',
+    role: 'user',
+    text: 'Promote an offer to VIP customers',
+  },
+  {
+    id: 'onboarding-assistant',
+    role: 'assistant',
+    text: 'I found one setup item to review. We can still save an editable draft without sending anything.',
+    componentData: [
+      {
+        type: 'campaignOnboarding',
+        props: {
+          title: 'Review your campaign setup',
+          description: 'Da Vinci checks readiness, but you keep control of content, timing, and send.',
+          step: 3,
+          totalSteps: 4,
+          items: [
+            {
+              id: 'domain',
+              label: 'Sending domain',
+              description: 'This prototype cannot verify the domain yet.',
+              status: 'unknown',
+              routeName: 'SettingsDnsSetup',
+              actionLabel: 'Check DNS setup',
+            },
+            {
+              id: 'audience',
+              label: 'Audience',
+              description: 'VIP Customer Circle has 312 contacts.',
+              status: 'ready',
+              routeName: 'ContactLists',
+              actionLabel: 'Review audience',
+            },
+            {
+              id: 'content',
+              label: 'Email content',
+              description: 'Templates are available in the campaign builder.',
+              status: 'ready',
+              routeName: 'EmailContent',
+              actionLabel: 'Browse templates',
+            },
+          ],
+          primaryAction: {
+            label: 'Continue with a draft',
+            action: 'continue-draft',
+            icon: 'file-pen-line',
+          },
+          secondaryAction: {
+            label: 'Change brief',
+            action: 'change-brief',
+            icon: 'refresh-cw',
+          },
         },
       },
     ],
@@ -128,4 +189,12 @@ export const CompactDrawer: Story = {
       </div>
     `,
   }),
+}
+
+export const CampaignOnboarding: Story = {
+  args: {
+    initialChatMode: true,
+    initialMessages: onboardingMessages,
+    subtitle: 'Guiding your first campaign',
+  },
 }

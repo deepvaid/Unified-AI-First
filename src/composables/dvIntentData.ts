@@ -52,7 +52,7 @@ export const segmentVariants = {
 // Persona: composed butler-valet — courteous, precise, a hint of dry warmth. Keep the
 // flavor light (these lines repeat often) and the meaning identical to the bubble copy.
 export const campaignSpeech = (name: string, audienceLabel: string) =>
-  `Very good. The ${name} email is drafted for ${audienceLabel.toLowerCase()} — I've taken the liberty of scheduling it for tomorrow at 9 AM.`
+  `Very good. The ${name} email is drafted for ${audienceLabel.toLowerCase()} and ready for your review. Nothing has been sent or scheduled.`
 export const productSpeech = (title: string) => `As requested — a product description draft for ${title}, ready for your eye.`
 export const revenueSpeech =
   'A pleasure to report: revenue is up 12 percent this week — 128 thousand dollars, across 1,284 orders.'

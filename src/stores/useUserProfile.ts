@@ -18,11 +18,16 @@ export const useUserProfile = defineStore('userProfile', () => {
     avatarUrl.value = url
   }
 
+  function setName(nextName: string) {
+    const normalized = nextName.trim()
+    if (normalized) name.value = normalized
+  }
+
   function clearAvatar() {
     if (objectUrl.value) URL.revokeObjectURL(objectUrl.value)
     objectUrl.value = null
     avatarUrl.value = ''
   }
 
-  return { avatarUrl, hasAvatar, name, firstName, setAvatar, clearAvatar }
+  return { avatarUrl, hasAvatar, name, firstName, setName, setAvatar, clearAvatar }
 })

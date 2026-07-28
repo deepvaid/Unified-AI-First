@@ -204,6 +204,8 @@ const copilotDrawerWidth = computed(() => {
       v-model="copilot.isOpen"
       location="right"
       :width="copilotDrawerWidth + 12"
+      :aria-hidden="copilot.isOpen ? undefined : 'true'"
+      :inert="!copilot.isOpen"
       class="copilot-drawer"
       :style="{
         '--copilot-top': isFullPage ? '4px' : '60px',

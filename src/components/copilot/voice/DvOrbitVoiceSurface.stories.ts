@@ -131,6 +131,14 @@ export const ErrorState: Story = {
   args: { state: 'error' },
 }
 
+/** Permission denied — specific recovery copy with the persistent Type instead path. */
+export const PermissionDenied: Story = {
+  args: {
+    state: 'error',
+    errorMessage: 'Microphone access is blocked. Allow it in browser settings, or continue by typing.',
+  },
+}
+
 /** Paused — dim slow orb, muted mic with slash. */
 export const Paused: Story = {
   args: { state: 'paused' },

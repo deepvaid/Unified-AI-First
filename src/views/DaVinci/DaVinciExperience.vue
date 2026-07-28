@@ -5,44 +5,66 @@
 // owns the mic exclusively and provides its own exits (Esc / Classic UI / close).
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import DvOrbCanvas from '@/components/copilot/voice/DvOrbCanvas.vue'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import DvIntentCardList from '@/components/copilot/voice/DvIntentCardList.vue'
+import DvCampaignOnboardingCard from '@/components/copilot/DvCampaignOnboardingCard.vue'
 import DvToastStack from '@/components/copilot/DvToastStack.vue'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
-import { useDaVinciIntents, type DvCardDescriptor, type DvQuickReply } from '@/composables/useDaVinciIntents'
+import {
+  useDaVinciIntents,
+  type DvCardDescriptor,
+  type DvIntentResult,
+} from '@/composables/useDaVinciIntents'
+import {
+  useDaVinciCampaignOnboarding,
+  type CampaignOnboardingResponse,
+} from '@/composables/useDaVinciCampaignOnboarding'
+import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
+import {
+  useCopilotStore,
+  type CampaignOnboardingProps,
+  type ChatMessage,
+  type IntentCardsProps,
+} from '@/stores/useCopilot'
+import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
 import { useUserProfile } from '@/stores/useUserProfile'
-
-interface ExperienceTurn {
-  id: string
-  role: 'user' | 'assistant'
-  text: string
-  cards?: DvCardDescriptor[]
-  quickReplies?: DvQuickReply[]
-}
 
 const route = useRoute()
 const router = useRouter()
 const voice = useDaVinciVoice()
 const intents = useDaVinciIntents()
+const campaignOnboarding = useDaVinciCampaignOnboarding()
 const { pushToast } = useDaVinciToasts()
 const profile = useUserProfile()
+const copilot = useCopilotStore()
+const onboarding = useDaVinciOnboardingStore()
+const { messages, chatMode } = storeToRefs(copilot)
 
 const accountId = computed(() => {
   const id = Array.isArray(route.params.accountId) ? route.params.accountId[0] : route.params.accountId
   return id ?? ''
 })
 
-const messages = ref<ExperienceTurn[]>([])
 const inputText = ref('')
 // Starter chips reveal only while the text field is focused (see template).
 const inputFocused = ref(false)
 const captionText = ref('')
+const voiceRecoveryMessage = ref('')
 const threadEl = ref<HTMLElement | null>(null)
 const hasThread = computed(() => messages.value.length > 0)
 const busy = computed(() => voice.state.value !== 'idle')
 const avatarSpeed = computed(() => ({ idle: 1, listening: 2.4, thinking: 1.6, speaking: 1.4 })[voice.state.value])
+const campaignEntry = computed(() => route.query.onboarding === 'campaign' || onboarding.activeAccountId === accountId.value)
+const welcomeVisible = computed(() => {
+  if (!campaignEntry.value) return false
+  const stage = onboarding.activeSession?.stage
+  return !stage || stage === 'welcome' || stage === 'consent'
+})
+const micEducationVisible = computed(() => onboarding.activeSession?.stage === 'consent')
+let micPermissionTracked = false
 
 // ── Live (hands-free) conversation ───────────────────────────────────────────
 const liveActive = ref(false)
@@ -100,9 +122,54 @@ function scrollThread() {
   })
 }
 
+function componentDataFor(response: CampaignOnboardingResponse | DvIntentResult) {
+  const components: ChatMessage['componentData'] = []
+  const cards = response.cards ?? []
+  if (cards.length || response.quickReplies?.length) {
+    components.push({
+      type: 'intentCards',
+      props: { cards, quickReplies: response.quickReplies },
+    })
+  }
+  if ('onboardingCard' in response && response.onboardingCard) {
+    components.push({
+      type: 'campaignOnboarding',
+      props: response.onboardingCard,
+    })
+  }
+  return components.length ? components : undefined
+}
+
+function appendAssistantResponse(response: CampaignOnboardingResponse | DvIntentResult) {
+  messages.value.push({
+    id: makeId('a'),
+    role: 'assistant',
+    text: response.reply,
+    componentData: componentDataFor(response),
+    toolSteps: 'steps' in response ? response.steps : undefined,
+  })
+  chatMode.value = true
+  if ('onboardingCard' in response && response.onboardingCard) {
+    const blockers = response.onboardingCard.items?.filter((item) => item.status !== 'ready').length ?? 0
+    trackDaVinciOnboardingEvent('readiness_shown', accountId.value, { blockers })
+  }
+  scrollThread()
+}
+
+function intentCardsFor(message: ChatMessage): IntentCardsProps | null {
+  const component = message.componentData?.find((item) => item.type === 'intentCards')
+  return component ? component.props as IntentCardsProps : null
+}
+
+function onboardingCardFor(message: ChatMessage): CampaignOnboardingProps | null {
+  const component = message.componentData?.find((item) => item.type === 'campaignOnboarding')
+  return component ? component.props as CampaignOnboardingProps : null
+}
+
 /** Generate + render a reply; speak it (awaiting in live mode so the loop waits for TTS). */
 async function respond(text: string, { awaitSpeech = false } = {}) {
   messages.value.push({ id: makeId('u'), role: 'user', text })
+  chatMode.value = true
   inputText.value = ''
   scrollThread()
 
@@ -114,19 +181,13 @@ async function respond(text: string, { awaitSpeech = false } = {}) {
   // ~620-1040ms → ~200-400ms: real TTS latency now supplies the "processing" beat, and
   // for LLM turns this runs concurrently with the (slower) brain call anyway.
   const minDelay = new Promise<void>((r) => setTimeout(r, 200 + Math.random() * 200))
-  const res = await intents.answer(text, { history })
+  const onboardingResponse = campaignEntry.value ? campaignOnboarding.handleText(text) : null
+  const res = onboardingResponse ?? await intents.answer(text, { history })
   await minDelay
   voice.setThinking(false)
-  messages.value.push({
-    id: makeId('a'),
-    role: 'assistant',
-    text: res.reply,
-    cards: res.cards.length ? res.cards : undefined,
-    quickReplies: res.quickReplies,
-  })
+  appendAssistantResponse(res)
   const speech = res.speech ?? res.reply
   captionText.value = speech
-  scrollThread()
   if (awaitSpeech) await voice.speak(speech)
   else void voice.speak(speech)
 }
@@ -157,6 +218,53 @@ function onQuickReply(value: string) {
   sendText(value)
 }
 
+function prepareCampaignSession() {
+  onboarding.begin(accountId.value)
+  copilot.beginOnboarding(accountId.value)
+}
+
+function continueByTyping() {
+  prepareCampaignSession()
+  endLive()
+  copilot.setReadAloud(false)
+  trackDaVinciOnboardingEvent('onboarding_started', accountId.value, { inputMode: 'text' })
+  trackDaVinciOnboardingEvent('input_mode_selected', accountId.value, { inputMode: 'text' })
+  const response = campaignOnboarding.start(accountId.value, 'text')
+  appendAssistantResponse(response)
+  nextTick(() => {
+    document.querySelector<HTMLInputElement>('.dvx__input')?.focus()
+  })
+}
+
+function explainVoiceAccess() {
+  prepareCampaignSession()
+  onboarding.setStage('consent')
+}
+
+async function enableVoiceOnboarding() {
+  prepareCampaignSession()
+  voiceRecoveryMessage.value = ''
+  copilot.setReadAloud(true)
+  trackDaVinciOnboardingEvent('onboarding_started', accountId.value, { inputMode: 'voice' })
+  trackDaVinciOnboardingEvent('input_mode_selected', accountId.value, { inputMode: 'voice' })
+  trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'requested' })
+  voice.setMuted(false)
+  voice.unlockSpeech()
+  const response = campaignOnboarding.start(accountId.value, 'voice')
+  appendAssistantResponse(response)
+  captionText.value = response.speech ?? response.reply
+  await voice.playChime('open')
+  await voice.speak(response.speech ?? response.reply)
+  if (!voice.sttSupported) return
+  liveActive.value = true
+  void armListening()
+}
+
+function skipOnboarding() {
+  trackDaVinciOnboardingEvent('onboarding_skipped', accountId.value)
+  router.push({ name: 'Dashboard', params: { accountId: accountId.value } })
+}
+
 // Hide the starter chips on blur, but after a beat so a chip tap still registers.
 function onInputBlur() {
   setTimeout(() => {
@@ -167,10 +275,17 @@ function onInputBlur() {
 function reportVoiceError(err: unknown) {
   if (!(err instanceof VoiceError)) return
   if (err.code === 'permission') {
+    trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'denied' })
+    trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'permission' })
+    voiceRecoveryMessage.value = 'Microphone access is blocked. Allow it in browser settings, or continue by typing.'
     pushToast({ title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
   } else if (err.code === 'network') {
+    trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'network' })
+    voiceRecoveryMessage.value = 'Voice is unavailable right now. Check your connection, or continue by typing.'
     pushToast({ title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
   } else if (err.code === 'audio') {
+    trackDaVinciOnboardingEvent('voice_recovery', accountId.value, { reason: 'no-microphone' })
+    voiceRecoveryMessage.value = 'No microphone was found. Connect one, or continue by typing.'
     pushToast({ title: 'No microphone found' })
   }
 }
@@ -184,6 +299,10 @@ async function armListening(silent = false) {
   let text = ''
   try {
     text = await voice.startListening({ owner: 'experience', withAnalyser: true })
+    if (!micPermissionTracked) {
+      micPermissionTracked = true
+      trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'allowed' })
+    }
   } catch (err) {
     if (!silent) reportVoiceError(err)
     endLive()
@@ -204,6 +323,7 @@ async function armListening(silent = false) {
 function startLive() {
   voice.unlockSpeech() // mic permission + iOS audio unlock happen inside the tap
   if (liveActive.value) return
+  voiceRecoveryMessage.value = ''
   liveActive.value = true
   void armListening()
 }
@@ -377,9 +497,74 @@ function onCenterMic() {
   }
 }
 
+function appendAndSpeak(response: CampaignOnboardingResponse) {
+  appendAssistantResponse(response)
+  if (copilot.readAloud) {
+    captionText.value = response.speech ?? response.reply
+    void voice.speak(response.speech ?? response.reply)
+  }
+}
+
+function openProductRoute(routeName: string) {
+  endLive()
+  onboarding.setLastRoute(routeName)
+  trackDaVinciOnboardingEvent('prerequisite_opened', accountId.value, { routeName })
+  copilot.queueResume('I’m still with you. Complete this step, then return here and I’ll check your campaign readiness again.')
+  copilot.setWidthMode('panel')
+  copilot.open()
+  void router.push({ name: routeName, params: { accountId: accountId.value }, query: { source: 'davinci' } })
+}
+
+function reviewDraft(draftId: number) {
+  endLive()
+  onboarding.markHandoff()
+  trackDaVinciOnboardingEvent('draft_opened', accountId.value, { draftId })
+  copilot.queueResume(
+    'Your draft is open. I filled the details we agreed on. You still control content, timing, and send. Nothing has been sent.',
+  )
+  copilot.setWidthMode('panel')
+  copilot.open()
+  void router.push({
+    name: 'CreateCampaign',
+    params: { accountId: accountId.value },
+    query: { id: String(draftId), source: 'davinci' },
+  })
+}
+
+function onOnboardingAction(action: string) {
+  if (action === 'continue-draft') {
+    const response = campaignOnboarding.createDraft()
+    appendAndSpeak(response)
+    const card = response.cards?.find((item) => item.type === 'campaign')
+    if (card?.type === 'campaign' && card.props.draftId) {
+      trackDaVinciOnboardingEvent('draft_created', accountId.value, { draftId: card.props.draftId })
+    }
+    return
+  }
+  if (action === 'change-brief') {
+    trackDaVinciOnboardingEvent('brief_corrected', accountId.value)
+    appendAndSpeak(campaignOnboarding.changeBrief())
+    return
+  }
+  if (action.startsWith('open-')) {
+    const routeName = campaignOnboarding.routeForAction(action)
+    if (routeName) openProductRoute(routeName)
+  }
+}
+
 function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
+  if (payload.card.type === 'campaign') {
+    if (payload.action === 'review-draft' && payload.card.props.draftId) {
+      reviewDraft(payload.card.props.draftId)
+      return
+    }
+    if (payload.action === 'change-brief') {
+      trackDaVinciOnboardingEvent('brief_corrected', accountId.value)
+      appendAndSpeak(campaignOnboarding.changeBrief())
+      return
+    }
+  }
   const titles: Record<string, string> = {
-    launch: 'Campaign scheduled',
     save: 'Segment saved',
     use: 'Copy ready to use',
     copy: 'Copied to clipboard',
@@ -393,7 +578,12 @@ function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
 function newChat() {
   endLive()
   intents.reset()
-  messages.value = []
+  copilot.resetConversation()
+  if (campaignEntry.value) {
+    onboarding.reset(accountId.value)
+    onboarding.begin(accountId.value, { restart: true })
+    copilot.beginOnboarding(accountId.value)
+  }
   inputText.value = ''
   captionText.value = ''
   audioBlocked.value = false // user has interacted by now — audio is unlocked
@@ -433,7 +623,18 @@ onMounted(() => {
       /* optional asset — canned lines fall back to streaming synth */
     }
   })()
-  void autoGreet() // speak the greeting + auto-connect the mic (best-effort; see autoGreet)
+  if (route.query.onboarding === 'campaign') {
+    trackDaVinciOnboardingEvent('onboarding_viewed', accountId.value)
+    const session = onboarding.begin(accountId.value)
+    copilot.beginOnboarding(accountId.value)
+    if (session.stage !== 'welcome' && session.stage !== 'consent' && messages.value.length === 0) {
+      trackDaVinciOnboardingEvent('onboarding_resumed', accountId.value, { stage: session.stage })
+      const response = campaignOnboarding.resume()
+      if (response) appendAssistantResponse(response)
+    }
+  } else {
+    void autoGreet() // Returning/general experience keeps the existing hands-free entry.
+  }
 })
 
 onBeforeUnmount(() => {
@@ -477,6 +678,7 @@ onBeforeUnmount(() => {
           size="small"
           rounded="pill"
           prepend-icon="plus"
+          aria-label="Start a new chat"
           class="dvx__ghost-btn"
           @click="newChat"
         >
@@ -487,12 +689,21 @@ onBeforeUnmount(() => {
           size="small"
           rounded="pill"
           :prepend-icon="voice.muted.value ? 'volume-x' : 'volume-2'"
+          :aria-label="voice.muted.value ? 'Turn voice on' : 'Turn voice off'"
           class="dvx__ghost-btn"
           @click="voice.setMuted(!voice.muted.value)"
         >
           <span class="dvx__btn-label">{{ voice.muted.value ? 'Voice off' : 'Voice on' }}</span>
         </v-btn>
-        <v-btn variant="outlined" size="small" rounded="pill" prepend-icon="panel-left" class="dvx__ghost-btn" @click="openClassicUI">
+        <v-btn
+          variant="outlined"
+          size="small"
+          rounded="pill"
+          prepend-icon="panel-left"
+          aria-label="Open classic Da Vinci interface"
+          class="dvx__ghost-btn"
+          @click="openClassicUI"
+        >
           <span class="dvx__btn-label">Classic UI</span>
         </v-btn>
         <v-btn icon size="small" variant="text" aria-label="Exit AI experience" @click="exitExperience">
@@ -503,8 +714,71 @@ onBeforeUnmount(() => {
 
     <!-- Centered content over the orb -->
     <main class="dvx__center" :class="{ 'dvx__center--thread': hasThread }">
+      <section v-if="welcomeVisible" class="dvx__welcome" aria-labelledby="dvx-welcome-title">
+        <div class="dvx__welcome-eyebrow">
+          <v-icon size="16">sparkles</v-icon>
+          Your first campaign, guided by Da Vinci
+        </div>
+        <h1 id="dvx-welcome-title" class="dvx__welcome-title text-h3">
+          Turn your first idea into an editable email campaign.
+        </h1>
+        <p class="dvx__welcome-copy">
+          I’ll check your setup, explain what’s missing, and prepare a draft. You control the content,
+          timing, and send — I won’t send anything.
+        </p>
+
+        <div v-if="micEducationVisible" class="dvx__permission pa-4">
+          <div class="d-flex align-start ga-3">
+            <v-avatar color="primary" variant="tonal" size="36">
+              <v-icon size="20">mic</v-icon>
+            </v-avatar>
+            <div>
+              <div class="text-subtitle-2 font-weight-bold">Use your microphone for this session</div>
+              <div class="text-body-2 text-medium-emphasis mt-1">
+                Da Vinci listens only while the conversation is active. A live transcript, Stop,
+                Mute, and Type instead stay available.
+              </div>
+            </div>
+          </div>
+          <div class="d-flex flex-wrap ga-2 mt-4">
+            <v-btn
+              color="primary"
+              prepend-icon="mic"
+              :disabled="!voice.sttSupported"
+              @click="enableVoiceOnboarding"
+            >
+              Allow microphone and start
+            </v-btn>
+            <v-btn variant="outlined" prepend-icon="keyboard" @click="continueByTyping">
+              Continue by typing
+            </v-btn>
+          </div>
+          <p v-if="!voice.sttSupported" class="text-caption text-medium-emphasis mt-3 mb-0">
+            Voice input is unavailable in this browser. You can complete the same onboarding by typing.
+          </p>
+        </div>
+
+        <div v-else class="d-flex flex-wrap ga-3">
+          <v-btn color="primary" size="large" prepend-icon="mic" @click="explainVoiceAccess">
+            Start with voice
+          </v-btn>
+          <v-btn variant="outlined" size="large" prepend-icon="keyboard" @click="continueByTyping">
+            Continue by typing
+          </v-btn>
+          <v-btn variant="text" size="large" append-icon="arrow-right" @click="skipOnboarding">
+            Go to dashboard
+          </v-btn>
+        </div>
+
+        <div class="dvx__welcome-promise d-flex flex-wrap ga-4 mt-5">
+          <span><v-icon size="16">shield-check</v-icon> Permission before listening</span>
+          <span><v-icon size="16">file-pen-line</v-icon> Draft only</span>
+          <span><v-icon size="16">keyboard</v-icon> Type at any time</span>
+        </div>
+      </section>
+
       <!-- Conversation thread -->
-      <section v-if="hasThread" ref="threadEl" class="dvx__thread" aria-live="polite">
+      <section v-if="!welcomeVisible && hasThread" ref="threadEl" class="dvx__thread" aria-live="polite">
         <div
           v-for="msg in messages"
           :key="msg.id"
@@ -513,10 +787,21 @@ onBeforeUnmount(() => {
         >
           <span class="dvx__role">{{ msg.role === 'user' ? 'You' : 'Da Vinci' }}</span>
           <p class="dvx__msg">{{ msg.text }}</p>
-          <DvIntentCardList v-if="msg.cards?.length" :cards="msg.cards" class="dvx__cards" @action="onCardAction" />
-          <div v-if="msg.quickReplies?.length" class="dvx__quick">
+          <DvIntentCardList
+            v-if="intentCardsFor(msg)?.cards.length"
+            :cards="intentCardsFor(msg)!.cards"
+            class="dvx__cards"
+            @action="onCardAction"
+          />
+          <DvCampaignOnboardingCard
+            v-if="onboardingCardFor(msg)"
+            v-bind="onboardingCardFor(msg)!"
+            class="dvx__cards"
+            @action="onOnboardingAction"
+          />
+          <div v-if="intentCardsFor(msg)?.quickReplies?.length" class="dvx__quick">
             <button
-              v-for="reply in msg.quickReplies"
+              v-for="reply in intentCardsFor(msg)!.quickReplies"
               :key="reply.value"
               type="button"
               class="dvx__chip"
@@ -530,7 +815,7 @@ onBeforeUnmount(() => {
       </section>
 
       <!-- Focal voice control — small mic centered in the orb -->
-      <div class="dvx__stage">
+      <div v-if="!welcomeVisible" class="dvx__stage">
         <button
           type="button"
           class="dvx__centermic"
@@ -559,6 +844,9 @@ onBeforeUnmount(() => {
         <p class="dvx__hint" :class="{ 'dvx__hint--live': liveActive && voice.state.value === 'listening' }">
           {{ stageHint }}
         </p>
+        <p v-if="voiceRecoveryMessage" class="text-caption text-error mb-0" role="alert">
+          {{ voiceRecoveryMessage }}
+        </p>
         <div v-if="liveActive" class="dvx__live-controls">
           <button v-if="voice.state.value === 'speaking'" type="button" class="dvx__live-btn" @click="voice.cancelSpeech()">
             <v-icon size="15">square</v-icon>
@@ -572,7 +860,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Text composer (secondary) — type any time -->
-      <div class="dvx__composer">
+      <div v-if="!welcomeVisible" class="dvx__composer">
         <form class="dvx__inputrow" @submit.prevent="onSend">
           <input
             v-model="inputText"
@@ -786,6 +1074,56 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: 430px;
   margin-top: 4px;
+}
+
+/* ─── First-run campaign welcome ─────────────────────────────────────── */
+.dvx__welcome {
+  width: min(var(--mp-layout-searchMaxWidth), 92vw);
+  padding: var(--mp-spacing-8);
+  border: 1px solid var(--dv-border);
+  border-radius: var(--mp-borderRadius-xl);
+  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 92%, transparent);
+  box-shadow: var(--mp-shadow-lg);
+  backdrop-filter: blur(var(--mp-spacing-3));
+}
+
+.dvx__welcome-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-spacing-2);
+  margin-bottom: var(--mp-spacing-4);
+  color: var(--dv-accent);
+  font-weight: 600;
+}
+
+.dvx__welcome-title {
+  margin: 0;
+  color: var(--dv-text-primary);
+  line-height: 1.12;
+}
+
+.dvx__welcome-copy {
+  margin: var(--mp-spacing-4) 0 var(--mp-spacing-6);
+  color: var(--dv-text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.dvx__permission {
+  border: 1px solid var(--dv-border);
+  border-radius: var(--mp-borderRadius-lg);
+  background: rgb(var(--v-theme-surface));
+}
+
+.dvx__welcome-promise {
+  color: var(--dv-text-secondary);
+  font-size: 0.75rem;
+}
+
+.dvx__welcome-promise span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-spacing-1);
 }
 
 /* ─── Composer ────────────────────────────────────────────────────────── */
@@ -1078,6 +1416,19 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 560px) {
+  .dvx__welcome {
+    padding: var(--mp-spacing-5);
+    border-radius: var(--mp-borderRadius-lg);
+  }
+
+  .dvx__welcome-title {
+    font-size: 1.75rem !important;
+  }
+
+  .dvx__welcome .v-btn {
+    width: 100%;
+  }
+
   .dvx__msg {
     font-size: 0.875rem;
   }
