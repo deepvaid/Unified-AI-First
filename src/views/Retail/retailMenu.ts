@@ -67,28 +67,26 @@ export function retailMenu(accountId: string, locationsRoute: RouteLocationRaw):
       ],
     },
     {
+      // Shared with Commerce — the rail links out rather than duplicating them.
       title: 'Catalog & stock',
       items: [
         {
           slug: 'stock',
           label: 'Stock by location',
           icon: 'boxes',
-          to: { name: 'RetailStock', params: { accountId } },
-          match: ['RetailStock'],
+          to: { name: 'Inventory', params: { accountId }, query: { view: 'locations' } },
         },
         {
           slug: 'bulk-inventory',
-          label: 'Bulk inventory',
+          label: 'Stock imports',
           icon: 'upload',
-          to: { name: 'RetailBulkInventory', params: { accountId } },
-          match: ['RetailBulkInventory'],
+          to: { name: 'Inventory', params: { accountId }, query: { view: 'imports' } },
         },
         {
           slug: 'pricing',
-          label: 'Pricing',
+          label: 'Price lists',
           icon: 'tags',
-          to: { name: 'RetailPricing', params: { accountId } },
-          match: ['RetailPricing'],
+          to: { name: 'PriceLists', params: { accountId } },
         },
       ],
     },

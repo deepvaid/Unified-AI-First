@@ -82,6 +82,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/product_tax_category', name: 'ProductTaxCategory', component: () => import('@/views/Products/TaxCategories.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/products/collections', name: 'Collections', component: () => import('@/views/Products/Collections.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/inventory', name: 'Inventory', component: () => import('@/views/Products/Inventory.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/products/price-lists', name: 'PriceLists', component: () => import('@/views/Products/PriceLists.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/products/reservations', name: 'Reservations', component: () => import('@/views/Products/Reservations.vue'), meta: sharedCommerceGate },
 
   // 5. Commerce
@@ -161,9 +162,6 @@ const routes: RouteRecordRaw[] = [
       { path: 'transactions', name: 'RetailTransactions',  component: () => import('@/views/Commerce/SalesOrders.vue') },
       { path: 'registers',    name: 'RetailRegisters',     component: () => import('@/views/Retail/Registers.vue') },
       { path: 'staff',        name: 'RetailStaff',         component: () => import('@/views/Retail/Staff.vue') },
-      { path: 'stock',        name: 'RetailStock',         component: () => import('@/views/Retail/StockByLocation.vue') },
-      { path: 'inventory',    name: 'RetailBulkInventory', component: () => import('@/views/Retail/BulkInventory.vue') },
-      { path: 'pricing',      name: 'RetailPricing',       component: () => import('@/views/Retail/Pricing.vue') },
       { path: 'hardware',     name: 'RetailHardware',      component: () => import('@/views/Retail/Hardware.vue') },
       { path: 'settings',     name: 'RetailSettings',      component: () => import('@/views/Retail/RetailSettings.vue') },
     ],
@@ -185,6 +183,11 @@ const routes: RouteRecordRaw[] = [
     meta: retailGate,
   },
   { path: '/commerce/:accountId/retail/associates', redirect: (to) => ({ name: 'RetailStaff', params: { accountId: to.params.accountId } }) },
+  // Catalog, stock and pricing are shared with Commerce — send the old retail
+  // URLs to the surfaces that now own them.
+  { path: '/commerce/:accountId/retail/stock', redirect: (to) => ({ name: 'Inventory', params: { accountId: to.params.accountId }, query: { view: 'locations' } }) },
+  { path: '/commerce/:accountId/retail/inventory', redirect: (to) => ({ name: 'Inventory', params: { accountId: to.params.accountId }, query: { view: 'imports' } }) },
+  { path: '/commerce/:accountId/retail/pricing', redirect: (to) => ({ name: 'PriceLists', params: { accountId: to.params.accountId } }) },
 
   // 5.7 Sales Channels
   { path: '/accounts/:accountId/sales_channels', name: 'SalesChannels', component: () => import('@/views/SalesChannels/SalesChannelsList.vue'), meta: sharedCommerceGate },

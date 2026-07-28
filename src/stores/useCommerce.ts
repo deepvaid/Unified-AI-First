@@ -28,7 +28,12 @@ const fulfillmentStatuses = ['Not Ready', 'Ready For Fulfillment', 'Shipped', 'R
 const paymentMethods = ['Visa •••• 4242', 'Mastercard •••• 8888', 'Amex •••• 1234', 'PayPal', 'Shop Pay', 'Apple Pay']
 
 const VENDORS = ['Acme Corp', 'Brand House', 'Global Goods', 'Prime Supplier', 'Local Artisan']
-const LOCATIONS = ['Main Warehouse - FL', 'Secondary Node - CA', 'Retail Hub - TX']
+/**
+ * Canonical stocking locations. Ids match useRetail's location seed so stores
+ * and warehouses share one keyspace — the same place, however it is reached.
+ */
+const STOCK_LOCATION_IDS = ['loc-warehouse-fl', 'loc-node-ca', 'loc-hub-tx']
+const STORE_LOCATION_IDS = ['loc-bondi', 'loc-chadstone', 'loc-auckland', 'loc-soho']
 
 export type ProductType = 'product' | 'kit'
 export type PublishStatus = 'Draft' | 'Published'
@@ -122,10 +127,47 @@ export interface InventoryItem {
   id: number
   name: string
   sku: string
+  /** Total on hand across every location — the sum of stockByLocation. */
   inventory: number
   incoming: number
-  location: string
+  /** Primary stocking location id (canonical `loc-*` id). */
+  locationId: string
+  /** On-hand per location id; stores and warehouses share one keyspace. */
+  stockByLocation: Record<string, number>
   status: string
+}
+
+/**
+ * Channel-aware pricing. One row per SKU with a price per sales channel, so
+ * an online price and a counter price are the same record seen two ways.
+ */
+export interface PriceListEntry {
+  sku: string
+  productName: string
+  cost: number
+  /** Keyed by SalesChannel id. */
+  prices: Record<string, number>
+}
+
+/** A per-store exception to the channel price (flagship or regional pricing). */
+export interface LocationPriceOverride {
+  id: string
+  sku: string
+  productName: string
+  locationId: string
+  overridePrice: number
+  reason: string
+}
+
+/** A CSV/bulk stock update, shown in Inventory > Imports. */
+export interface InventoryImport {
+  id: string
+  fileName: string
+  rowsChanged: number
+  reason: string
+  user: string
+  at: string
+  status: 'completed' | 'partial' | 'failed'
 }
 
 // ── Promotions (coupons & automatic discounts) ─────────────────────────
@@ -678,26 +720,91 @@ export const useCommerceStore = defineStore('commerce', () => {
   }
 
   // ── Inventory slice (mock-persistent) ────────────────────────────
-  const inventory = ref<InventoryItem[]>(products.value.map((p, i) => ({
-    id: p.id,
-    name: p.name,
-    sku: p.sku,
-    inventory: p.inventory,
-    incoming: (i * 37) % 500,
-    location: LOCATIONS[i % LOCATIONS.length]!,
-    status: p.status,
-  })))
+  const inventory = ref<InventoryItem[]>(products.value.map((p, i) => {
+    const primary = STOCK_LOCATION_IDS[i % STOCK_LOCATION_IDS.length]!
+    // Split the product's on-hand across its warehouse and the stores, so the
+    // per-location pivot and the total always agree.
+    const stockByLocation: Record<string, number> = {}
+    let remaining = p.inventory
+    STORE_LOCATION_IDS.forEach((locId, j) => {
+      const share = Math.floor(p.inventory * (0.06 + ((i + j) % 4) * 0.03))
+      const qty = Math.min(remaining, share)
+      stockByLocation[locId] = qty
+      remaining -= qty
+    })
+    stockByLocation[primary] = remaining
+    return {
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      inventory: p.inventory,
+      incoming: (i * 37) % 500,
+      locationId: primary,
+      stockByLocation,
+      status: p.status,
+    }
+  }))
 
-  function adjustStock(id: number, newCount: number): void {
-    const item = inventory.value.find((i) => i.id === id)
-    if (!item) return
-    item.inventory = Math.max(0, newCount)
+  const priceLists = ref<PriceListEntry[]>([
+    { sku: 'TEE-001-BLK-M',   productName: 'Classic crew tee — Black',  cost: 12.00, prices: { 'retest-sales-notification': 39.00,  'pos-store': 39.00 } },
+    { sku: 'TEE-001-WHT-M',   productName: 'Classic crew tee — White',  cost: 12.00, prices: { 'retest-sales-notification': 39.00,  'pos-store': 39.00 } },
+    { sku: 'JEAN-512-DRK-32', productName: 'Slim denim — Dark, 32',     cost: 42.00, prices: { 'retest-sales-notification': 129.00, 'pos-store': 129.00 } },
+    { sku: 'SNEAK-A1-WHT-10', productName: 'Court sneaker — White, 10', cost: 58.00, prices: { 'retest-sales-notification': 159.00, 'pos-store': 159.00 } },
+    { sku: 'CAP-001-NVY',     productName: 'Cap — Navy',                cost: 9.00,  prices: { 'retest-sales-notification': 35.00,  'pos-store': 35.00 } },
+    { sku: 'BAG-LTH-BLK',     productName: 'Leather tote — Black',      cost: 92.00, prices: { 'retest-sales-notification': 249.00, 'pos-store': 249.00 } },
+    { sku: 'HOOD-101-GRY-L',  productName: 'Pullover hoodie — Grey, L', cost: 28.00, prices: { 'retest-sales-notification': 89.00,  'pos-store': 89.00 } },
+    { sku: 'JACK-220-OLI-M',  productName: 'Field jacket — Olive, M',   cost: 78.00, prices: { 'retest-sales-notification': 219.00, 'pos-store': 219.00 } },
+  ])
+
+  const priceOverrides = ref<LocationPriceOverride[]>([
+    { id: 'po-1', sku: 'TEE-001-BLK-M', productName: 'Classic crew tee — Black', locationId: 'loc-soho',     overridePrice: 45.00,  reason: 'Flagship pricing' },
+    { id: 'po-2', sku: 'CAP-001-NVY',   productName: 'Cap — Navy',               locationId: 'loc-auckland', overridePrice: 49.00,  reason: 'NZ regional pricing' },
+    { id: 'po-3', sku: 'BAG-LTH-BLK',   productName: 'Leather tote — Black',     locationId: 'loc-soho',     overridePrice: 269.00, reason: 'Flagship pricing' },
+  ])
+
+  /** Price for a SKU on a channel, falling back to the first channel price. */
+  function priceFor(sku: string, channelId: string): number | undefined {
+    const entry = priceLists.value.find((e) => e.sku === sku)
+    if (!entry) return undefined
+    return entry.prices[channelId] ?? Object.values(entry.prices)[0]
+  }
+
+  function deletePriceOverride(id: string): void {
+    priceOverrides.value = priceOverrides.value.filter((o) => o.id !== id)
+  }
+
+  const inventoryImports = ref<InventoryImport[]>([
+    { id: 'imp-1', fileName: 'restock-2026-05-22.csv',    rowsChanged: 312, reason: 'Weekly restock',   user: 'Ava Brennan',      at: '2026-05-22T08:14:00Z', status: 'completed' },
+    { id: 'imp-2', fileName: 'stocktake-bondi-may.csv',   rowsChanged: 128, reason: 'Cycle count',      user: 'Sienna Mitchell',  at: '2026-05-19T17:02:00Z', status: 'completed' },
+    { id: 'imp-3', fileName: 'chadstone-adjust.csv',      rowsChanged: 44,  reason: 'Damage write-off', user: 'Marcus Lee',       at: '2026-05-15T10:38:00Z', status: 'partial' },
+    { id: 'imp-4', fileName: 'supplier-feed-0512.csv',    rowsChanged: 0,   reason: 'Supplier feed',    user: 'System',           at: '2026-05-12T02:00:00Z', status: 'failed' },
+  ])
+
+  /** Recompute the roll-up after any per-location change. */
+  function resyncTotals(item: InventoryItem): void {
+    item.inventory = Object.values(item.stockByLocation).reduce((sum, n) => sum + n, 0)
     item.status = stockStatus(item.inventory)
   }
 
-  function transferStock(id: number, toLocation: string): void {
+  /** Set on-hand at one location; omit locationId to set the primary. */
+  function adjustStock(id: number, newCount: number, locationId?: string): void {
     const item = inventory.value.find((i) => i.id === id)
-    if (item) item.location = toLocation
+    if (!item) return
+    item.stockByLocation[locationId ?? item.locationId] = Math.max(0, newCount)
+    resyncTotals(item)
+  }
+
+  /** Move stock between locations, leaving the total unchanged. */
+  function transferStock(id: number, toLocationId: string, qty?: number, fromLocationId?: string): void {
+    const item = inventory.value.find((i) => i.id === id)
+    if (!item) return
+    const from = fromLocationId ?? item.locationId
+    const available = item.stockByLocation[from] ?? 0
+    const moved = Math.min(qty ?? available, available)
+    item.stockByLocation[from] = available - moved
+    item.stockByLocation[toLocationId] = (item.stockByLocation[toLocationId] ?? 0) + moved
+    item.locationId = toLocationId
+    resyncTotals(item)
   }
 
   const orders = ref<Order[]>(Array.from({ length: 30 }, (_, i) => {
@@ -1361,7 +1468,8 @@ export const useCommerceStore = defineStore('commerce', () => {
     products, orders, promotions, fulfillments, draftOrders, customGiftCards, purchasableGiftCards,
     inventory,
     createProduct, updateProductDraft, duplicateProduct, deleteProduct, deleteProducts,
-    adjustStock, transferStock,
+    adjustStock, transferStock, inventoryImports,
+    priceLists, priceOverrides, priceFor, deletePriceOverride,
     getOrderById, addOrderNote, setOrderTags, updateOrderAddress, cancelOrder, cancelOrders, refundOrder, markOrderFulfilled, markOrdersFulfilled,
     posOrders, addPosOrder, refundPosOrder, voidPosOrder,
     advanceFulfillment, markShipped,

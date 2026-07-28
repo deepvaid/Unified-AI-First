@@ -12,6 +12,8 @@ export interface RetailLocation {
   name: string
   address: string
   country: Country
+  /** Stores sell at a register; warehouses only hold stock. */
+  kind: 'store' | 'warehouse'
   registerCount: number
   associateCount: number
   todaysSales: number
@@ -53,40 +55,6 @@ export interface Associate {
   lastLoginAt: string
 }
 
-export interface StockRow {
-  sku: string
-  productName: string
-  category: string
-  stockByLocation: Record<string, number>
-}
-
-export interface InventoryAudit {
-  id: string
-  fileName: string
-  rowsChanged: number
-  reason: string
-  user: string
-  at: string
-  status: 'completed' | 'partial' | 'failed'
-}
-
-export interface ChannelPrice {
-  sku: string
-  productName: string
-  online: number
-  pos: number
-  cost: number
-}
-
-export interface LocationPriceOverride {
-  id: string
-  sku: string
-  productName: string
-  locationId: string
-  overridePrice: number
-  reason: string
-}
-
 export type LoyaltyTier = 'member' | 'silver' | 'gold' | 'vip'
 export const LOYALTY_TIER_LABELS: Record<LoyaltyTier, string> = {
   member: 'Member',
@@ -117,6 +85,7 @@ const locations: RetailLocation[] = [
     name: 'Bondi Junction',
     address: '500 Oxford St, Bondi Junction NSW 2022',
     country: 'AU',
+    kind: 'store',
     registerCount: 3,
     associateCount: 5,
     todaysSales: 8423.45,
@@ -127,6 +96,7 @@ const locations: RetailLocation[] = [
     name: 'Chadstone',
     address: '1341 Dandenong Rd, Chadstone VIC 3148',
     country: 'AU',
+    kind: 'store',
     registerCount: 2,
     associateCount: 4,
     todaysSales: 6210.20,
@@ -137,6 +107,7 @@ const locations: RetailLocation[] = [
     name: 'Newmarket',
     address: '277 Broadway, Newmarket, Auckland 1023',
     country: 'NZ',
+    kind: 'store',
     registerCount: 2,
     associateCount: 3,
     todaysSales: 3120.0,
@@ -147,9 +118,43 @@ const locations: RetailLocation[] = [
     name: 'SoHo Flagship',
     address: '460 Broadway, New York, NY 10013',
     country: 'US',
+    kind: 'store',
     registerCount: 4,
     associateCount: 6,
     todaysSales: 12830.55,
+    status: 'open',
+  },
+  {
+    id: 'loc-warehouse-fl',
+    name: 'Main Warehouse - FL',
+    address: '1200 Logistics Pkwy, Orlando FL 32805',
+    country: 'US',
+    kind: 'warehouse',
+    registerCount: 0,
+    associateCount: 0,
+    todaysSales: 0,
+    status: 'open',
+  },
+  {
+    id: 'loc-node-ca',
+    name: 'Secondary Node - CA',
+    address: '88 Bayfront Way, Oakland CA 94607',
+    country: 'US',
+    kind: 'warehouse',
+    registerCount: 0,
+    associateCount: 0,
+    todaysSales: 0,
+    status: 'open',
+  },
+  {
+    id: 'loc-hub-tx',
+    name: 'Retail Hub - TX',
+    address: '4400 Commerce St, Dallas TX 75226',
+    country: 'US',
+    kind: 'warehouse',
+    registerCount: 0,
+    associateCount: 0,
+    todaysSales: 0,
     status: 'open',
   },
 ]
@@ -179,43 +184,6 @@ const associates: Associate[] = [
   { id: 'assoc-8', name: 'Daniel Rivera',    role: 'associate',        locationIds: ['loc-soho'],                        pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:11:00Z' },
 ]
 
-const stockData: StockRow[] = [
-  { sku: 'TEE-001-BLK-M',   productName: 'Classic crew tee — Black',     category: 'Apparel',   stockByLocation: { 'loc-bondi': 12, 'loc-chadstone': 4,  'loc-auckland': 8,  'loc-soho': 24 } },
-  { sku: 'TEE-001-WHT-M',   productName: 'Classic crew tee — White',     category: 'Apparel',   stockByLocation: { 'loc-bondi': 6,  'loc-chadstone': 9,  'loc-auckland': 3,  'loc-soho': 17 } },
-  { sku: 'JEAN-512-DRK-32', productName: 'Slim denim — Dark, 32',         category: 'Apparel',   stockByLocation: { 'loc-bondi': 2,  'loc-chadstone': 0,  'loc-auckland': 5,  'loc-soho': 11 } },
-  { sku: 'SNEAK-A1-WHT-10', productName: 'Court sneaker — White, 10',    category: 'Footwear',  stockByLocation: { 'loc-bondi': 4,  'loc-chadstone': 6,  'loc-auckland': 0,  'loc-soho': 9 } },
-  { sku: 'CAP-001-NVY',     productName: 'Cap — Navy',                    category: 'Accessory', stockByLocation: { 'loc-bondi': 18, 'loc-chadstone': 14, 'loc-auckland': 12, 'loc-soho': 22 } },
-  { sku: 'BAG-LTH-BLK',     productName: 'Leather tote — Black',          category: 'Accessory', stockByLocation: { 'loc-bondi': 3,  'loc-chadstone': 1,  'loc-auckland': 2,  'loc-soho': 7 } },
-  { sku: 'HOOD-101-GRY-L',  productName: 'Pullover hoodie — Grey, L',     category: 'Apparel',   stockByLocation: { 'loc-bondi': 0,  'loc-chadstone': 3,  'loc-auckland': 4,  'loc-soho': 8 } },
-  { sku: 'JACK-220-OLI-M',  productName: 'Field jacket — Olive, M',       category: 'Apparel',   stockByLocation: { 'loc-bondi': 5,  'loc-chadstone': 7,  'loc-auckland': 2,  'loc-soho': 13 } },
-  { sku: 'SOCKS-3PK-BLK',   productName: 'Crew socks 3-pack — Black',    category: 'Apparel',   stockByLocation: { 'loc-bondi': 30, 'loc-chadstone': 22, 'loc-auckland': 18, 'loc-soho': 41 } },
-  { sku: 'BELT-LTH-BRN-34', productName: 'Leather belt — Brown, 34',     category: 'Accessory', stockByLocation: { 'loc-bondi': 4,  'loc-chadstone': 6,  'loc-auckland': 3,  'loc-soho': 10 } },
-]
-
-const inventoryAudits: InventoryAudit[] = [
-  { id: 'aud-1', fileName: 'restock-2026-05-22.csv',    rowsChanged: 312, reason: 'Weekly restock',   user: 'Ava Brennan',      at: '2026-05-22T08:14:00Z', status: 'completed' },
-  { id: 'aud-2', fileName: 'stocktake-bondi-may.csv',   rowsChanged: 482, reason: 'Stocktake',         user: 'Sienna Mitchell',  at: '2026-05-20T19:00:00Z', status: 'completed' },
-  { id: 'aud-3', fileName: 'damaged-goods-write-off.csv', rowsChanged: 14,  reason: 'Damaged goods',   user: 'Marcus Lee',       at: '2026-05-18T11:30:00Z', status: 'completed' },
-  { id: 'aud-4', fileName: 'audit-correction.csv',      rowsChanged: 23,  reason: 'Audit correction', user: 'Ava Brennan',      at: '2026-05-15T14:05:00Z', status: 'partial' },
-]
-
-const channelPrices: ChannelPrice[] = [
-  { sku: 'TEE-001-BLK-M',   productName: 'Classic crew tee — Black',  online: 39.00,  pos: 39.00,  cost: 12.00 },
-  { sku: 'TEE-001-WHT-M',   productName: 'Classic crew tee — White',  online: 39.00,  pos: 39.00,  cost: 12.00 },
-  { sku: 'JEAN-512-DRK-32', productName: 'Slim denim — Dark, 32',     online: 129.00, pos: 129.00, cost: 42.00 },
-  { sku: 'SNEAK-A1-WHT-10', productName: 'Court sneaker — White, 10', online: 159.00, pos: 159.00, cost: 58.00 },
-  { sku: 'CAP-001-NVY',     productName: 'Cap — Navy',                online: 35.00,  pos: 35.00,  cost: 9.00 },
-  { sku: 'BAG-LTH-BLK',     productName: 'Leather tote — Black',      online: 249.00, pos: 249.00, cost: 92.00 },
-  { sku: 'HOOD-101-GRY-L',  productName: 'Pullover hoodie — Grey, L', online: 89.00,  pos: 89.00,  cost: 28.00 },
-  { sku: 'JACK-220-OLI-M',  productName: 'Field jacket — Olive, M',   online: 219.00, pos: 219.00, cost: 78.00 },
-]
-
-const priceOverrides: LocationPriceOverride[] = [
-  { id: 'po-1', sku: 'TEE-001-BLK-M', productName: 'Classic crew tee — Black', locationId: 'loc-soho',     overridePrice: 45.00, reason: 'Flagship pricing' },
-  { id: 'po-2', sku: 'CAP-001-NVY',   productName: 'Cap — Navy',                locationId: 'loc-auckland', overridePrice: 49.00, reason: 'NZ regional pricing' },
-  { id: 'po-3', sku: 'BAG-LTH-BLK',   productName: 'Leather tote — Black',     locationId: 'loc-soho',     overridePrice: 269.00, reason: 'Flagship pricing' },
-]
-
 const posCustomers: PosCustomer[] = [
   { id: 'cust-1',  name: 'Hannah Cole',    email: 'hannah.cole@example.com',   phone: '+61 412 882 014', tier: 'gold',   points: 2840, lifetimeSpend: 2843.60, visits: 18, since: '2024-03-12', homeLocationId: 'loc-bondi',     notes: 'Prefers email receipts. Size M in outerwear.' },
   { id: 'cust-2',  name: "Liam O'Connor",  email: 'liam.oconnor@example.com',  phone: '+61 400 233 871', tier: 'vip',    points: 6120, lifetimeSpend: 6118.25, visits: 24, since: '2023-11-02', homeLocationId: 'loc-bondi' },
@@ -229,18 +197,12 @@ const posCustomers: PosCustomer[] = [
   { id: 'cust-10', name: 'Owen Castillo',  email: 'owen.castillo@example.com', phone: '+1 (646) 555-0117', tier: 'member', points: 450, lifetimeSpend: 446.00, visits: 2,  since: '2025-09-30', homeLocationId: 'loc-soho',      notes: 'Refund processed on sneakers — sizing issue.' },
 ]
 
-const POS_CATALOG_SKUS = stockData.slice(0, 8)
-
 /* ── Store ────────────────────────────────────────────────────── */
 
 export const useRetailStore = defineStore('retail', () => {
   const locationList = ref<RetailLocation[]>([...locations])
   const registerList = ref<Register[]>([...registers])
   const associateList = ref<Associate[]>([...associates])
-  const stockList = ref<StockRow[]>([...stockData])
-  const inventoryAuditList = ref<InventoryAudit[]>([...inventoryAudits])
-  const channelPriceList = ref<ChannelPrice[]>([...channelPrices])
-  const priceOverrideList = ref<LocationPriceOverride[]>([...priceOverrides])
   const posCustomerList = ref<PosCustomer[]>([...posCustomers])
 
   /** `ALL_LOCATIONS` is the default scope: retail surfaces show the whole estate
@@ -261,13 +223,16 @@ export const useRetailStore = defineStore('retail', () => {
 
   /** Location ids in the current scope — every location when scoped to "all". */
   const scopedLocationIds = computed(() =>
-    isAllLocations.value ? locationList.value.map((l) => l.id) : [activeLocationId.value],
+    isAllLocations.value ? locationList.value.filter((l) => l.kind === 'store').map((l) => l.id) : [activeLocationId.value],
   )
 
   const activeChannel = computed<SalesChannel | undefined>(() => {
     const salesStore = useSalesChannelsStore()
     return salesStore.channels.find((c) => c.id === activeChannelId.value)
   })
+
+  /** Selling locations only — warehouses never appear in POS context pickers. */
+  const storeLocations = computed(() => locationList.value.filter((l) => l.kind === 'store'))
 
   function availableContexts(accountId: string): Array<{ channel: SalesChannel; locations: RetailLocation[] }> {
     const salesStore = useSalesChannelsStore()
@@ -421,15 +386,12 @@ export const useRetailStore = defineStore('retail', () => {
       name: payload.name,
       address: payload.address,
       country: payload.country,
+      kind: 'store',
       registerCount: 0,
       associateCount: 0,
       todaysSales: 0,
       status: 'open',
     })
-  }
-
-  function deletePriceOverride(id: string) {
-    priceOverrideList.value = priceOverrideList.value.filter((p) => p.id !== id)
   }
 
   function setOfflineMode(value: boolean) {
@@ -441,18 +403,14 @@ export const useRetailStore = defineStore('retail', () => {
     locationList,
     registerList,
     associateList,
-    stockList,
-    inventoryAuditList,
-    channelPriceList,
-    priceOverrideList,
     posCustomerList,
     activeLocationId,
     activeChannelId,
     isAllLocations,
     scopedLocationIds,
+    storeLocations,
     ALL_LOCATIONS,
     offlineMode,
-    POS_CATALOG_SKUS,
     // computed
     activeLocation,
     activeChannel,
@@ -475,6 +433,5 @@ export const useRetailStore = defineStore('retail', () => {
     addAssociate,
     deleteAssociates,
     addLocation,
-    deletePriceOverride,
   }
 })

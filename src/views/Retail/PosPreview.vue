@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useRetailStore, LOYALTY_TIER_LABELS } from '@/stores/useRetail'
-import type { ChannelPrice, PosCustomer } from '@/stores/useRetail'
+import type { PosCustomer } from '@/stores/useRetail'
 import { useCommerceStore } from '@/stores/useCommerce'
 import type { Order, TenderType } from '@/stores/useCommerce'
 import { useElementSize } from '@/composables/useElementSize'
@@ -95,16 +95,32 @@ const COLLECTION_CHIPS: { value: Collection; label: string }[] = [
   { value: 'accessories', label: 'Accessories' },
 ]
 
+/** A sellable row on the register, priced for this POS channel. */
+interface PosCatalogItem {
+  sku: string
+  productName: string
+  pos: number
+}
+
+/** The shared price list, read at the counter's channel price. */
+const posCatalog = computed<PosCatalogItem[]>(() =>
+  commerce.priceLists.map((entry) => ({
+    sku: entry.sku,
+    productName: entry.productName,
+    pos: commerce.priceFor(entry.sku, store.activeChannelId) ?? 0,
+  })),
+)
+
 // Group products by base name — one tile per product, variant picker on tap
 interface VariantGroup {
   baseName: string
-  representative: ChannelPrice
-  variants: ChannelPrice[]
+  representative: PosCatalogItem
+  variants: PosCatalogItem[]
 }
 
 const catalogGroups = computed<VariantGroup[]>(() => {
-  const map = new Map<string, ChannelPrice[]>()
-  store.channelPriceList
+  const map = new Map<string, PosCatalogItem[]>()
+  posCatalog.value
     .filter((p) =>
       !catalogSearch.value ||
       p.productName.toLowerCase().includes(catalogSearch.value.toLowerCase()) ||
@@ -135,7 +151,7 @@ function handleTileClick(group: VariantGroup) {
   }
 }
 
-function selectVariant(item: ChannelPrice) {
+function selectVariant(item: PosCatalogItem) {
   addToCart(item)
   variantPickerOpen.value = false
 }
@@ -153,7 +169,7 @@ function onScanSubmit() {
   const query = catalogSearch.value.trim()
   if (!query) return
   // Hardware scanners type the barcode + Enter: exact SKU adds instantly
-  const exact = store.channelPriceList.find((p) => p.sku.toLowerCase() === query.toLowerCase())
+  const exact = posCatalog.value.find((p) => p.sku.toLowerCase() === query.toLowerCase())
   if (exact) {
     addToCart(exact)
     catalogSearch.value = ''

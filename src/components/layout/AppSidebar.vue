@@ -112,6 +112,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
         { title: 'Products', route: `/commerce/${accountId}/products` },
         { title: 'Collections', route: `/commerce/${accountId}/products/collections` },
         { title: 'Inventory', route: `/commerce/${accountId}/inventory` },
+        { title: 'Price Lists', route: `/commerce/${accountId}/products/price-lists` },
         { title: 'Reservations', route: `/commerce/${accountId}/products/reservations` },
       ],
     },
