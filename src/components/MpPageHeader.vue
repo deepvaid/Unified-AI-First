@@ -86,7 +86,7 @@ withDefaults(defineProps<{
 .mp-page-header__eyebrow {
   display: block;
   margin-bottom: 4px;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--text-muted);
 }
 
 .mp-page-header__subtitle {

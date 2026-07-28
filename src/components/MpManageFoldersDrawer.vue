@@ -158,8 +158,8 @@ function confirmDelete() {
             <v-btn icon="x" variant="text" size="x-small" aria-label="Cancel rename" @click="renamingId = null" />
           </template>
           <template v-else>
-            <v-btn icon="pencil" variant="text" size="x-small" color="medium-emphasis" aria-label="Rename folder" @click="startRename(folder.id, folder.name)" />
-            <v-btn icon="trash-2" variant="text" size="x-small" color="medium-emphasis" aria-label="Delete folder" @click="deletingId = folder.id" />
+            <v-btn icon="pencil" variant="text" size="x-small" class="text-medium-emphasis" aria-label="Rename folder" @click="startRename(folder.id, folder.name)" />
+            <v-btn icon="trash-2" variant="text" size="x-small" class="text-medium-emphasis" aria-label="Delete folder" @click="deletingId = folder.id" />
           </template>
         </template>
       </v-list-item>

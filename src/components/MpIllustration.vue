@@ -54,7 +54,7 @@ const markup = computed(() => registry[props.name] ?? '')
 <style scoped>
 .mp-illustration {
   display: inline-flex;
-  color: var(--muted, rgba(0, 0, 0, 0.45));
+  color: var(--icon-secondary);
 }
 
 .mp-illustration :deep(svg) {
