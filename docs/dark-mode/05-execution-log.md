@@ -380,3 +380,57 @@ Earlier in this session the WP-01–WP-03 commits were found on a mistakenly cre
 - **Known issues:** `npm run build` still blocked by pre-existing `ReelFlyView.vue` strict-null errors.
 - **Commit:** `566a7ad`
 
+## Remediation — Independent audit findings (Agent 8)
+
+- **Work package completed:** Post-audit remediation — resolved AUD-H01 (High) and AUD-M01..M06 (Medium) from `06-independent-audit.md`.
+- **Files changed:**
+  - `src/views/ChartThemes/ChartThemesView.vue` — scoped light preview via `v-theme-provider`; removed global `setMode('light')` (AUD-H01)
+  - `src/design-tokens/tokens.json` + generated outputs — dark `textDisabled` `#8B8A87` → `#9A9997` (AUD-M01)
+  - 40 view/component files — `color="medium-emphasis"` → `class="text-medium-emphasis"` (AUD-M02)
+  - `src/components/MpSectionRail.vue`, `src/components/settings/SettingsSidebar.vue` — semantic surface tokens (AUD-M03)
+  - `src/components/layout/AppBar.vue` — interaction states via semantic tokens (AUD-M04)
+  - `src/components/marketing/JourneyFlowColumn.vue` — border/text token migration (AUD-M06)
+  - `src/components/MpFilterTabs.stories.ts`, `MpSectionRail.stories.ts`, `MpOptionCard.stories.ts`, `MpStatusToggle.stories.ts`, `MpDataTableToolbar.stories.ts` — dark pinned stories (AUD-M05)
+  - `src/components/MpFloatingBulkBar.vue` — ink-panel hover token (AUD-L04, aligned)
+  - `docs/dark-mode/06-independent-audit.md`, `07-final-verification.md`, `05-execution-log.md`
+- **Tokens changed:** dark `textDisabled` only; light values unchanged.
+- **Hard-coded colors removed:** AppBar/JourneyFlowColumn `rgba(var(--v-theme-on-surface), …)` stacks; MpFloatingBulkBar white rgba hover.
+- **Tests run + results:**
+  - `npm run tokens:build` — pass (505 tokens).
+  - `npm run type-check` — fail on 13 pre-existing `ReelFlyView.vue` errors only.
+  - `npx vite build` — pass.
+  - `npm run build-storybook` — pass.
+  - `npm run audit:ui` — pass (exit 0).
+  - Playwright ChartThemes — pass: `localStorage app-theme-mode` stays `dark` through visit and after leaving route; scoped `.ct-light-scope.v-theme--maropostLight` renders on page.
+  - Grep validations — `color="medium-emphasis"` zero; AppBar/JourneyFlowColumn `rgba(on-surface)` zero; rail `--surface-[12]` zero.
+  - Lint: unavailable.
+- **Deviations from the plan:** none.
+- **Known issues:** Low findings AUD-L01, L02, L03, L05 remain (non-blocking). `npm run build` still blocked by pre-existing `ReelFlyView.vue` errors.
+
+## Remediation — Independent audit findings (Agent 8)
+
+- **Work package completed:** Post-audit remediation — resolved AUD-H01 (High) and AUD-M01..M06 (Medium) from `06-independent-audit.md`.
+- **Files changed:**
+  - `src/views/ChartThemes/ChartThemesView.vue` — scoped light preview via `v-theme-provider`; removed global `setMode('light')` (AUD-H01)
+  - `src/design-tokens/tokens.json` + generated outputs — dark `textDisabled` `#8B8A87` → `#9A9997` (AUD-M01)
+  - 40 view/component files — `color="medium-emphasis"` → `class="text-medium-emphasis"` (AUD-M02)
+  - `src/components/MpSectionRail.vue`, `src/components/settings/SettingsSidebar.vue` — semantic surface tokens (AUD-M03)
+  - `src/components/layout/AppBar.vue` — interaction states via semantic tokens (AUD-M04)
+  - `src/components/marketing/JourneyFlowColumn.vue` — border/text token migration (AUD-M06)
+  - `src/components/MpFilterTabs.stories.ts`, `MpSectionRail.stories.ts`, `MpOptionCard.stories.ts`, `MpStatusToggle.stories.ts`, `MpDataTableToolbar.stories.ts` — dark pinned stories (AUD-M05)
+  - `src/components/MpFloatingBulkBar.vue` — ink-panel hover token (AUD-L04, aligned)
+  - `docs/dark-mode/06-independent-audit.md`, `07-final-verification.md`, `05-execution-log.md`
+- **Tokens changed:** dark `textDisabled` only; light values unchanged.
+- **Hard-coded colors removed:** AppBar/JourneyFlowColumn `rgba(var(--v-theme-on-surface), …)` stacks; MpFloatingBulkBar white rgba hover.
+- **Tests run + results:**
+  - `npm run tokens:build` — pass (505 tokens).
+  - `npm run type-check` — fail on 13 pre-existing `ReelFlyView.vue` errors only.
+  - `npx vite build` — pass.
+  - `npm run build-storybook` — pass.
+  - `npm run audit:ui` — pass (exit 0).
+  - Playwright ChartThemes — pass: `localStorage app-theme-mode` stays `dark` through visit and after leaving route; scoped `.ct-light-scope.v-theme--maropostLight` renders on page.
+  - Grep validations — `color="medium-emphasis"` zero; AppBar/JourneyFlowColumn `rgba(on-surface)` zero; rail `--surface-[12]` zero.
+  - Lint: unavailable.
+- **Deviations from the plan:** none.
+- **Known issues:** Low findings AUD-L01, L02, L03, L05 remain (non-blocking). `npm run build` still blocked by pre-existing `ReelFlyView.vue` errors.
+

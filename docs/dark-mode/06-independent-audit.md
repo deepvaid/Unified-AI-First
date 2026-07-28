@@ -115,6 +115,8 @@ None.
 | **Required correction** | Scope light rendering to the page/widgets only (e.g. local wrapper class, chart override injection, or restore previous mode on unmount) — do not call `setMode('light')` on a routed page |
 | **Validation** | Playwright: dark preference survives navigation to/from `/chart-themes`; `localStorage app-theme-mode` unchanged |
 
+**Status (2026-07-28 remediation):** **Resolved.** Removed `setMode('light')`; page uses scoped `v-theme-provider theme="maropostLight"`. Playwright confirms `localStorage` stays `dark` and global `.v-theme--maropostDark` persists after leaving the route.
+
 ---
 
 ### Medium
@@ -130,6 +132,8 @@ None.
 | **Required correction** | Retune `textDisabled` for darker surfaces or restrict disabled controls to L1; re-derive against `#2C2820`/`#39352C` |
 | **Validation** | WCAG contrast script on all surface tiers |
 
+**Status (2026-07-28 remediation):** **Resolved.** Dark `textDisabled` retuned to `#9A9997` — L1 **5.15:1**, raised **4.82:1**, overlay **4.29:1**. Light value unchanged.
+
 #### AUD-M02 — Residual broken `color="medium-emphasis"` icon props
 
 | Field | Detail |
@@ -140,6 +144,8 @@ None.
 | **Actual** | Vuetify 3 treats unknown color strings literally — icons render with wrong/missing emphasis in dark mode |
 | **Required correction** | Replace with `class="text-medium-emphasis"` or `--icon-secondary` scoped styles |
 | **Validation** | `rg 'color="medium-emphasis"' src/` → zero; rendered icon color uses `--icon-secondary` in dark |
+
+**Status (2026-07-28 remediation):** **Resolved.** All view/component occurrences replaced with `class="text-medium-emphasis"`. Grep → zero.
 
 #### AUD-M03 — MpSectionRail / settings rails not on semantic surfaces (WP-04 gap)
 
@@ -152,6 +158,8 @@ None.
 | **Required correction** | Migrate to `--surface-primary` / `--surface-secondary`; add dark pinned Storybook story |
 | **Validation** | Grep `--surface-[12]` in rail components → zero; Storybook dark story renders correctly |
 
+**Status (2026-07-28 remediation):** **Resolved.** `MpSectionRail` and `SettingsSidebar` use `--surface-primary/secondary`. `MpSectionRail.stories.ts` adds `DarkMode` export.
+
 #### AUD-M04 — AppBar interaction states still use rgba compositing
 
 | Field | Detail |
@@ -162,6 +170,8 @@ None.
 | **Actual** | Partial centralization — global/forms fixed; AppBar retains ad-hoc alpha stacks |
 | **Required correction** | Route AppBar hover/active/focus through `--surface-interactive-*` and `--focus-ring` |
 | **Validation** | Computed focus outline ≥3:1 on nav surface; no `color-mix` focus on assistant pill |
+
+**Status (2026-07-28 remediation):** **Resolved.** AppBar hover/active/focus/dividers use semantic `--surface-interactive-*`, `--border-*`, `--focus-ring`, `--elevation-*`. Zero `rgba(var(--v-theme-on-surface)` remains.
 
 #### AUD-M05 — Storybook dark coverage gaps (WP-13)
 
@@ -174,6 +184,8 @@ None.
 | **Required correction** | Add `DarkMode`/`DarkModeAllStates` stories using `storybookTheme.ts` helper |
 | **Validation** | Storybook build; visual check at `globals.theme=dark` |
 
+**Status (2026-07-28 remediation):** **Resolved.** Dark pinned stories added to all five listed components. `build-storybook` passes.
+
 #### AUD-M06 — JourneyFlowColumn decorative rgba stacks deferred
 
 | Field | Detail |
@@ -184,6 +196,8 @@ None.
 | **Actual** | Functional but bypasses semantic border/text tokens; contrast varies with surface |
 | **Required correction** | Map connectors/borders to `--border-subtle` / `--text-muted`; node accents to semantic feedback colors |
 | **Validation** | `rg 'rgba\(var\(--v-theme-on-surface\)' JourneyFlowColumn.vue` → zero |
+
+**Status (2026-07-28 remediation):** **Resolved.** Connectors, borders, and muted text use `--border-*` and `--text-muted` tokens. Grep → zero.
 
 ---
 
@@ -367,11 +381,11 @@ No light-mode regressions observed in sampled routes.
 | Severity | Count | IDs |
 |---|---|---|
 | Blocker | 0 | — |
-| High | 1 | AUD-H01 |
-| Medium | 6 | AUD-M01..M06 |
+| High | 0 | — (AUD-H01 resolved) |
+| Medium | 0 | — (AUD-M01..M06 resolved) |
 | Low | 5 | AUD-L01..L05 |
 
-**Medium/High remain:** yes — 1 High + 6 Medium require remediation or explicit acceptance before dark-mode GA.
+**Medium/High remain:** no — all required findings remediated. See `07-final-verification.md`.
 
 ---
 
