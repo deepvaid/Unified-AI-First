@@ -319,7 +319,7 @@ function statusIcon(status: string): string {
                 <v-chip v-if="txn.pos?.origin === 'boris'" size="x-small" variant="tonal" color="primary">BORIS</v-chip>
               </v-list-item-title>
               <v-list-item-subtitle class="retail-list-sub">
-                {{ store.locationName(txn.pos?.locationId ?? '') }} · {{ store.registerName(txn.pos?.registerId ?? '') }} · {{ store.associateName(txn.pos?.staffId ?? '') }} · {{ formatAgo(txn.date) }}
+                {{ store.locationName(txn.pos?.locationId ?? '') }} · {{ store.registerName(txn.pos?.registerId ?? '') }} · {{ store.staffName(txn.pos?.staffId ?? '') }} · {{ formatAgo(txn.date) }}
               </v-list-item-subtitle>
               <template #append>
                 <div class="d-flex flex-column align-end" style="gap: 2px;">

@@ -163,6 +163,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'registers',    name: 'RetailRegisters',     component: () => import('@/views/Retail/Registers.vue') },
       { path: 'staff',        name: 'RetailStaff',         component: () => import('@/views/Retail/Staff.vue') },
       { path: 'hardware',     name: 'RetailHardware',      component: () => import('@/views/Retail/Hardware.vue') },
+      { path: 'payments',     name: 'RetailPayments',      component: () => import('@/views/Retail/Payments.vue') },
+      { path: 'receipts',     name: 'RetailReceipts',      component: () => import('@/views/Retail/Receipts.vue') },
       { path: 'settings',     name: 'RetailSettings',      component: () => import('@/views/Retail/RetailSettings.vue') },
     ],
   },

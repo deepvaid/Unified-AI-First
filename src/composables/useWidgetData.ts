@@ -5,7 +5,7 @@ import { useFoldersStore } from '@/stores/useFolders'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { useContactsStore } from '@/stores/useContacts'
 import { useMerchandisingStore } from '@/stores/useMerchandising'
-import { useRetailStore, ASSOCIATE_ROLE_LABELS } from '@/stores/useRetail'
+import { useRetailStore, STAFF_ROLE_LABELS } from '@/stores/useRetail'
 import { useTicketsStore } from '@/stores/useTickets'
 import type {
   DashboardFilterState,
@@ -653,12 +653,12 @@ export function useWidgetData(
         )
       }
       case 'retail_top_associates': {
-        const rows = retail.associateList
+        const rows = retail.staffList
           .map((a) => {
             const sales = commerce.posOrders.filter((o) => o.pos?.staffId === a.id && o.status === 'Completed')
             return {
-              associate: a.name,
-              role: ASSOCIATE_ROLE_LABELS[a.role],
+              staff: a.name,
+              role: STAFF_ROLE_LABELS[a.role],
               transactions: sales.length,
               revenue: sales.reduce((s, o) => s + parseFloat(o.total), 0),
             }
@@ -667,14 +667,14 @@ export function useWidgetData(
           .sort((a, b) => b.revenue - a.revenue)
           .slice(0, 5)
           .map((r) => ({
-            associate: r.associate,
+            staff: r.staff,
             role: r.role,
             transactions: r.transactions.toLocaleString(),
             revenue: `$${r.revenue.toLocaleString()}`,
           }))
         return buildTableData(
           [
-            { key: 'associate', label: 'Associate' },
+            { key: 'staff', label: 'Staff' },
             { key: 'role', label: 'Role' },
             { key: 'transactions', label: 'Txns', align: 'end' },
             { key: 'revenue', label: 'Revenue', align: 'end' },

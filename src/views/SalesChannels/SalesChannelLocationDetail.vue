@@ -5,9 +5,9 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import {
-  ASSOCIATE_ROLE_LABELS,
+  STAFF_ROLE_LABELS,
   useRetailStore,
-  type Associate,
+  type StaffMember,
   type Register,
 } from '@/stores/useRetail'
 import {
@@ -52,8 +52,8 @@ const registers = computed<Register[]>(() =>
   retailStore.registerList.filter((register) => register.locationId === locationId.value),
 )
 
-const associates = computed<Associate[]>(() =>
-  retailStore.associateList.filter((associate) => associate.locationIds.includes(locationId.value)),
+const staff = computed<StaffMember[]>(() =>
+  retailStore.staffList.filter((staff) => staff.locationIds.includes(locationId.value)),
 )
 
 const validLocation = computed(() => !!channel.value?.offlineStore && !!location.value)
@@ -67,8 +67,8 @@ const registerHeaders = [
   { title: 'Last seen', key: 'lastSeenAt', sortable: true, width: 170 },
 ]
 
-const associateHeaders = [
-  { title: 'Associate', key: 'name', sortable: true },
+const staffHeaders = [
+  { title: 'Name', key: 'name', sortable: true },
   { title: 'Role', key: 'role', sortable: true },
   { title: 'PIN', key: 'pinSet', sortable: true, width: 110 },
   { title: 'Status', key: 'active', sortable: true, width: 120 },
@@ -108,7 +108,7 @@ function registerStatusLabel(status: Register['status']) {
     <template v-if="validLocation && location && channel">
       <MpPageHeader
         :title="location.name"
-        :subtitle="`${channel.name} location detail, registers, associates, and fulfillment settings.`"
+        :subtitle="`${channel.name} location detail, registers, staff, and fulfillment settings.`"
         :back-to="{ name: 'SalesChannelLocations', params: { accountId, channelId: channel.id } }"
       >
         <template #actions>
@@ -154,8 +154,8 @@ function registerStatusLabel(status: Register['status']) {
         <v-col cols="12" md="3">
           <v-card flat border rounded="lg">
             <v-card-text>
-              <div class="text-caption text-medium-emphasis">Associates</div>
-              <div class="text-h5 font-weight-bold">{{ associates.filter((associate) => associate.active).length }}</div>
+              <div class="text-caption text-medium-emphasis">Staff</div>
+              <div class="text-h5 font-weight-bold">{{ staff.filter((staff) => staff.active).length }}</div>
             </v-card-text>
           </v-card>
         </v-col>
@@ -272,10 +272,10 @@ function registerStatusLabel(status: Register['status']) {
       </v-card>
 
       <v-card flat border rounded="lg">
-        <v-card-title class="px-6 pt-5 pb-2 text-subtitle-1 font-weight-bold">Associates</v-card-title>
+        <v-card-title class="px-6 pt-5 pb-2 text-subtitle-1 font-weight-bold">Staff</v-card-title>
         <v-data-table
-          :headers="associateHeaders"
-          :items="associates"
+          :headers="staffHeaders"
+          :items="staff"
           item-value="id"
           density="comfortable"
           :items-per-page="5"
@@ -284,7 +284,7 @@ function registerStatusLabel(status: Register['status']) {
             <div class="text-body-2 font-weight-bold">{{ item.name }}</div>
           </template>
           <template #item.role="{ item }">
-            <span class="text-body-2">{{ ASSOCIATE_ROLE_LABELS[item.role] }}</span>
+            <span class="text-body-2">{{ STAFF_ROLE_LABELS[item.role] }}</span>
           </template>
           <template #item.pinSet="{ item }">
             <MpStatusChip :status="item.pinSet ? 'Enabled' : 'Disabled'" type="general" size="x-small" />
@@ -298,8 +298,8 @@ function registerStatusLabel(status: Register['status']) {
           <template #no-data>
             <MpEmptyState
               icon="users"
-              title="No associates assigned"
-              description="Assign associates before this location can track staff activity."
+              title="No staff assigned"
+              description="Assign staff before this location can track staff activity."
             />
           </template>
         </v-data-table>

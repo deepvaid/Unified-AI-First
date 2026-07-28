@@ -357,7 +357,7 @@ function buildSeedDashboards(account: Account): Dashboard[] {
           // Merged from Retail Reports - breakdowns
           makeWidget('Sales by Location', 'retail_sales_by_location', 'bar', createLayout(0, 15, 6, 7)),
           makeWidget('Top SKUs', 'retail_top_skus', 'table', createLayout(6, 15, 6, 7)),
-          makeWidget('Top Associates', 'retail_top_associates', 'table', createLayout(0, 22, 12, 7)),
+          makeWidget('Top staff', 'retail_top_associates', 'table', createLayout(0, 22, 12, 7)),
         ],
         filters: createDefaultFilters(),
         createdAt,

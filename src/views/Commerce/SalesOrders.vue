@@ -398,7 +398,7 @@ function exportOrders() {
         </template>
 
         <template v-slot:item.pos.staffId="{ item }">
-          <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.pos ? retail.associateName(item.pos.staffId) : '—' }}</span>
+          <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.pos ? retail.staffName(item.pos.staffId) : '—' }}</span>
         </template>
 
         <template v-slot:item.paymentMethod="{ item }">

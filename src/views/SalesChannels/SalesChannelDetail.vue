@@ -163,9 +163,9 @@ const registers = computed(() => {
   return retailStore.registerList.filter((register) => ids.has(register.locationId))
 })
 
-const associates = computed(() => {
+const staff = computed(() => {
   const ids = new Set(locations.value.map((location) => location.id))
-  return retailStore.associateList.filter((associate) => associate.locationIds.some((id) => ids.has(id)))
+  return retailStore.staffList.filter((staff) => staff.locationIds.some((id) => ids.has(id)))
 })
 
 const retailTransactions = computed(() => {
@@ -177,7 +177,7 @@ const onlineRegisterCount = computed(() => registers.value.filter((register) => 
 const offlineRegisterCount = computed(() => registers.value.filter((register) => register.status === 'offline').length)
 const pendingOfflineTransactions = computed(() => registers.value.reduce((sum, register) => sum + register.pendingOfflineTxns, 0))
 const totalRetailSalesToday = computed(() => locations.value.reduce((sum, location) => sum + location.todaysSales, 0))
-const activeAssociateCount = computed(() => associates.value.filter((associate) => associate.active).length)
+const activeStaffMemberCount = computed(() => staff.value.filter((staff) => staff.active).length)
 const averageBasket = computed(() => {
   const completed = retailTransactions.value.filter((order) => parseFloat(order.total) > 0)
   if (!completed.length) return 0
@@ -345,7 +345,7 @@ const setupChecklist = computed<SetupItem[]>(() => {
   return [
     { id: 'locations', title: 'Locations linked', description: `${locations.value.length} locations assigned`, done: locations.value.length > 0, target: 'locations' },
     { id: 'registers', title: 'Registers paired', description: `${registers.value.length} devices in this channel`, done: registers.value.length > 0, target: 'registers' },
-    { id: 'associates', title: 'Associates added', description: `${activeAssociateCount.value} active associates`, done: activeAssociateCount.value > 0, target: 'locations' },
+    { id: 'staff', title: 'StaffMembers added', description: `${activeStaffMemberCount.value} active staff`, done: activeStaffMemberCount.value > 0, target: 'locations' },
     { id: 'receipt', title: 'Receipt template', description: 'Add logo and contact details', done: Boolean(channel.value?.offlineStore?.posSetupComplete), target: 'settings' },
     { id: 'payments', title: 'Payment terminals', description: 'Stripe Terminal or Tap to Pay', done: registers.value.some((register) => register.pairedTerminal), target: 'registers' },
   ]
@@ -375,7 +375,7 @@ const activityItems = computed<ActivityItem[]>(() => {
   return [
     { id: 'open', icon: 'store', title: 'Locations opened', meta: `${locations.value.length} stores trading`, time: formatRelative(current.lastActivityAt), color: 'retail' },
     { id: 'sync', icon: 'refresh-cw', title: 'Offline sync', meta: pendingOfflineTransactions.value ? `${pendingOfflineTransactions.value} txns pending` : 'All clear', time: '38 min ago', color: pendingOfflineTransactions.value ? 'warning' : 'success' },
-    { id: 'staff', icon: 'user-plus', title: 'Associates active', meta: `${activeAssociateCount.value} assigned`, time: 'Yesterday', color: 'primary' },
+    { id: 'staff', icon: 'user-plus', title: 'StaffMembers active', meta: `${activeStaffMemberCount.value} assigned`, time: 'Yesterday', color: 'primary' },
   ]
 })
 
@@ -656,7 +656,7 @@ function runAction(target: ProductTarget) {
     return
   }
   if (target === 'inventory') {
-    router.push({ name: 'RetailBulkInventory', params: { accountId: accountId.value } })
+    router.push({ name: 'Inventory', params: { accountId: accountId.value }, query: { view: 'locations' } })
     return
   }
   if (target === 'products') {

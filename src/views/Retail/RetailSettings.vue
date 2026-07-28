@@ -2,8 +2,6 @@
 import MpPageHeader from '@/components/MpPageHeader.vue'
 
 const groups = [
-  { icon: 'credit-card', title: 'Payments',       desc: 'Stripe Terminal connection, Tap to Pay, accepted tenders, and split-payment rules.' },
-  { icon: 'receipt',     title: 'Receipts',       desc: 'Receipt template, brand logo, default delivery (print / email / SMS).' },
   { icon: 'cloud-off',   title: 'Offline mode',   desc: 'Per-store offline limits, sync cadence, and post-sync reconciliation defaults.' },
   { icon: 'shield',      title: 'Security',       desc: 'Inactivity lock window, PIN policy, manager-override approvals.' },
   { icon: 'tag',         title: 'Tax & rounding', desc: 'Per-region tax tables, rounding rules, surcharging (Phase 2).' },

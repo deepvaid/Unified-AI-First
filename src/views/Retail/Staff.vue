@@ -8,8 +8,8 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import { useRetailStore } from '@/stores/useRetail'
 import { useCommerceStore } from '@/stores/useCommerce'
-import type { Associate, AssociateRole } from '@/stores/useRetail'
-import { ASSOCIATE_ROLE_LABELS } from '@/stores/useRetail'
+import type { StaffMember, StaffRole } from '@/stores/useRetail'
+import { STAFF_ROLE_LABELS } from '@/stores/useRetail'
 import { formatAgo } from '@/composables/useRelativeTime'
 
 const store = useRetailStore()
@@ -21,9 +21,9 @@ function showToast(message: string) { snackbar.value = { visible: true, message 
 const activeTab = ref('all')
 
 const tabCounts = computed(() => ({
-  all: store.associateList.length,
-  active: store.associateList.filter((a) => a.active).length,
-  inactive: store.associateList.filter((a) => !a.active).length,
+  all: store.staffList.length,
+  active: store.staffList.filter((a) => a.active).length,
+  inactive: store.staffList.filter((a) => !a.active).length,
 }))
 
 const tabs = computed(() => [
@@ -46,46 +46,46 @@ const tableHeaders = [
 ]
 
 const rows = computed(() => {
-  let list = store.associateList
+  let list = store.staffList
   if (activeTab.value === 'active') list = list.filter((a) => a.active)
   if (activeTab.value === 'inactive') list = list.filter((a) => !a.active)
   return list
 })
 
-const ROLE_COLOR: Record<AssociateRole, string> = {
-  associate: 'default',
-  senior_associate: 'primary',
+const ROLE_COLOR: Record<StaffRole, string> = {
+  staff: 'default',
+  senior_staff: 'primary',
   manager: 'info',
   admin: 'warning',
 }
 
 /* ── Detail / edit drawer ──────────────────────────────────────── */
 const editDrawer = ref(false)
-const selectedAssociate = ref<Associate | null>(null)
-const editForm = ref({ name: '', role: 'associate' as AssociateRole, locationIds: [] as string[], pinReset: false })
+const selectedStaff = ref<StaffMember | null>(null)
+const editForm = ref({ name: '', role: 'staff' as StaffRole, locationIds: [] as string[], pinReset: false })
 
-function openEdit(item: Associate) {
-  selectedAssociate.value = item
+function openEdit(item: StaffMember) {
+  selectedStaff.value = item
   editForm.value = { name: item.name, role: item.role, locationIds: [...item.locationIds], pinReset: false }
   editDrawer.value = true
 }
 
-function saveAssociate() {
-  showToast('Associate saved — mock only')
+function saveStaffMember() {
+  showToast('Staff member saved — mock only')
   editDrawer.value = false
 }
 
 /* ── Add drawer ────────────────────────────────────────────────── */
 const addDrawer = ref(false)
-const addForm = ref({ name: '', role: 'associate' as AssociateRole, locationIds: [] as string[] })
+const addForm = ref({ name: '', role: 'staff' as StaffRole, locationIds: [] as string[] })
 
-function saveNewAssociate() {
-  showToast('Associate added — mock only')
+function saveNewStaffMember() {
+  showToast('Staff member added — mock only')
   addDrawer.value = false
-  addForm.value = { name: '', role: 'associate', locationIds: [] }
+  addForm.value = { name: '', role: 'staff', locationIds: [] }
 }
 
-const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ value: v, title: t }))
+const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v, title: t }))
 </script>
 
 <template>
@@ -122,7 +122,7 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
         show-select
         density="comfortable"
         :items-per-page="25"
-        @click:row="(_e: Event, { item }: { item: Associate }) => openEdit(item)"
+        @click:row="(_e: Event, { item }: { item: StaffMember }) => openEdit(item)"
         style="cursor: pointer;"
       >
         <template #item.name="{ item }">
@@ -138,7 +138,7 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
 
         <template #item.role="{ item }">
           <v-chip size="x-small" variant="tonal" :color="ROLE_COLOR[item.role]" class="font-weight-medium text-capitalize">
-            {{ ASSOCIATE_ROLE_LABELS[item.role] }}
+            {{ STAFF_ROLE_LABELS[item.role] }}
           </v-chip>
         </template>
 
@@ -201,7 +201,7 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
     <!-- Edit staff drawer -->
     <MpFormDrawer
       v-model="editDrawer"
-      :title="selectedAssociate?.name ?? 'Associate'"
+      :title="selectedStaff?.name ?? 'Staff member'"
       subtitle="Edit role, locations, and access"
     >
       <v-row dense>
@@ -238,11 +238,11 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
             <div class="flex-grow-1">
               <div class="text-body-2 font-weight-medium">POS PIN</div>
               <div class="text-caption text-medium-emphasis">
-                {{ selectedAssociate?.pinSet ? 'PIN is set. Reset to generate a new one.' : 'No PIN set. Associate cannot sign in to POS.' }}
+                {{ selectedStaff?.pinSet ? 'PIN is set. Reset to generate a new one.' : 'No PIN set. This person cannot sign in to POS.' }}
               </div>
             </div>
             <v-btn size="small" variant="tonal" class="text-none" @click="showToast('PIN reset link sent — mock only')">
-              {{ selectedAssociate?.pinSet ? 'Reset PIN' : 'Set PIN' }}
+              {{ selectedStaff?.pinSet ? 'Reset PIN' : 'Set PIN' }}
             </v-btn>
           </v-card>
         </v-col>
@@ -251,17 +251,17 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
         <v-col cols="12" class="mt-2">
           <div class="text-subtitle-2 font-weight-bold mb-2">Recent activity</div>
           <div class="text-body-2 text-medium-emphasis">
-            Last login: {{ selectedAssociate ? formatAgo(selectedAssociate.lastLoginAt) : '—' }}
+            Last login: {{ selectedStaff ? formatAgo(selectedStaff.lastLoginAt) : '—' }}
           </div>
           <div class="text-body-2 text-medium-emphasis mt-1">
-            Transactions today: {{ commerce.posOrders.filter((o) => o.pos?.staffId === selectedAssociate?.id).length }}
+            Transactions today: {{ commerce.posOrders.filter((o) => o.pos?.staffId === selectedStaff?.id).length }}
           </div>
         </v-col>
       </v-row>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="editDrawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" @click="saveAssociate">Save</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" @click="saveStaffMember">Save</v-btn>
       </template>
     </MpFormDrawer>
 
@@ -303,7 +303,7 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
       </v-row>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="addDrawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" @click="saveNewAssociate">Add staff member</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" @click="saveNewStaffMember">Add staff member</v-btn>
       </template>
     </MpFormDrawer>
 

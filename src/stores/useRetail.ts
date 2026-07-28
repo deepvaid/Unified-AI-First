@@ -15,7 +15,7 @@ export interface RetailLocation {
   /** Stores sell at a register; warehouses only hold stock. */
   kind: 'store' | 'warehouse'
   registerCount: number
-  associateCount: number
+  staffCount: number
   todaysSales: number
   status: 'open' | 'closed'
 }
@@ -37,22 +37,45 @@ export interface Register {
   pairedPrinter?: string
 }
 
-export type AssociateRole = 'associate' | 'senior_associate' | 'manager' | 'admin'
-export const ASSOCIATE_ROLE_LABELS: Record<AssociateRole, string> = {
-  associate: 'Associate',
-  senior_associate: 'Senior associate',
+export type StaffRole = 'staff' | 'senior_staff' | 'manager' | 'admin'
+export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {
+  staff: 'Staff',
+  senior_staff: 'Senior staff',
   manager: 'Manager',
   admin: 'Admin',
 }
 
-export interface Associate {
+export interface StaffMember {
   id: string
   name: string
-  role: AssociateRole
+  role: StaffRole
   locationIds: string[]
   pinSet: boolean
   active: boolean
   lastLoginAt: string
+}
+
+/** How the register takes money. */
+export interface PaymentsSettings {
+  provider: 'maropost_payments' | 'stripe' | 'adyen'
+  tapToPayEnabled: boolean
+  surchargeEnabled: boolean
+  surchargePct: number
+  tippingEnabled: boolean
+  tipPresets: number[]
+  offlinePaymentsEnabled: boolean
+  cashRoundingEnabled: boolean
+}
+
+/** What the shopper walks away with. */
+export interface ReceiptSettings {
+  headerText: string
+  footerText: string
+  showLogo: boolean
+  showTaxNumber: boolean
+  defaultDelivery: 'print' | 'email' | 'both' | 'ask'
+  emailSubject: string
+  giftReceiptsEnabled: boolean
 }
 
 /* ── Mock data ────────────────────────────────────────────────── */
@@ -65,7 +88,7 @@ const locations: RetailLocation[] = [
     country: 'AU',
     kind: 'store',
     registerCount: 3,
-    associateCount: 5,
+    staffCount: 5,
     todaysSales: 8423.45,
     status: 'open',
   },
@@ -76,7 +99,7 @@ const locations: RetailLocation[] = [
     country: 'AU',
     kind: 'store',
     registerCount: 2,
-    associateCount: 4,
+    staffCount: 4,
     todaysSales: 6210.20,
     status: 'open',
   },
@@ -87,7 +110,7 @@ const locations: RetailLocation[] = [
     country: 'NZ',
     kind: 'store',
     registerCount: 2,
-    associateCount: 3,
+    staffCount: 3,
     todaysSales: 3120.0,
     status: 'open',
   },
@@ -98,7 +121,7 @@ const locations: RetailLocation[] = [
     country: 'US',
     kind: 'store',
     registerCount: 4,
-    associateCount: 6,
+    staffCount: 6,
     todaysSales: 12830.55,
     status: 'open',
   },
@@ -109,7 +132,7 @@ const locations: RetailLocation[] = [
     country: 'US',
     kind: 'warehouse',
     registerCount: 0,
-    associateCount: 0,
+    staffCount: 0,
     todaysSales: 0,
     status: 'open',
   },
@@ -120,7 +143,7 @@ const locations: RetailLocation[] = [
     country: 'US',
     kind: 'warehouse',
     registerCount: 0,
-    associateCount: 0,
+    staffCount: 0,
     todaysSales: 0,
     status: 'open',
   },
@@ -131,7 +154,7 @@ const locations: RetailLocation[] = [
     country: 'US',
     kind: 'warehouse',
     registerCount: 0,
-    associateCount: 0,
+    staffCount: 0,
     todaysSales: 0,
     status: 'open',
   },
@@ -151,15 +174,15 @@ const registers: Register[] = [
   { id: 'reg-soho-4',  name: 'Stockroom',      locationId: 'loc-soho',      deviceType: 'Android Tablet', deviceModel: 'Galaxy Tab A9+',   appVersion: '1.4.1', status: 'syncing', lastSeenAt: '2026-05-23T14:46:00Z', pendingOfflineTxns: 1, pairedTerminal: undefined,          pairedPrinter: undefined },
 ]
 
-const associates: Associate[] = [
+const staff: StaffMember[] = [
   { id: 'assoc-1', name: 'Sienna Mitchell',  role: 'manager',          locationIds: ['loc-bondi'],                       pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:30:00Z' },
-  { id: 'assoc-2', name: 'Jake Thompson',    role: 'senior_associate', locationIds: ['loc-bondi', 'loc-chadstone'],       pinSet: true, active: true,  lastLoginAt: '2026-05-23T13:42:00Z' },
-  { id: 'assoc-3', name: 'Priya Sharma',     role: 'associate',        locationIds: ['loc-bondi'],                       pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:05:00Z' },
+  { id: 'assoc-2', name: 'Jake Thompson',    role: 'senior_staff', locationIds: ['loc-bondi', 'loc-chadstone'],       pinSet: true, active: true,  lastLoginAt: '2026-05-23T13:42:00Z' },
+  { id: 'assoc-3', name: 'Priya Sharma',     role: 'staff',        locationIds: ['loc-bondi'],                       pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:05:00Z' },
   { id: 'assoc-4', name: 'Marcus Lee',       role: 'manager',          locationIds: ['loc-chadstone'],                   pinSet: true, active: true,  lastLoginAt: '2026-05-23T09:18:00Z' },
-  { id: 'assoc-5', name: 'Olivia Walsh',     role: 'associate',        locationIds: ['loc-chadstone'],                   pinSet: false, active: false, lastLoginAt: '2026-05-19T15:20:00Z' },
-  { id: 'assoc-6', name: 'Ethan Park',       role: 'senior_associate', locationIds: ['loc-auckland'],                    pinSet: true, active: true,  lastLoginAt: '2026-05-23T11:00:00Z' },
+  { id: 'assoc-5', name: 'Olivia Walsh',     role: 'staff',        locationIds: ['loc-chadstone'],                   pinSet: false, active: false, lastLoginAt: '2026-05-19T15:20:00Z' },
+  { id: 'assoc-6', name: 'Ethan Park',       role: 'senior_staff', locationIds: ['loc-auckland'],                    pinSet: true, active: true,  lastLoginAt: '2026-05-23T11:00:00Z' },
   { id: 'assoc-7', name: 'Ava Brennan',      role: 'manager',          locationIds: ['loc-soho'],                        pinSet: true, active: true,  lastLoginAt: '2026-05-23T13:55:00Z' },
-  { id: 'assoc-8', name: 'Daniel Rivera',    role: 'associate',        locationIds: ['loc-soho'],                        pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:11:00Z' },
+  { id: 'assoc-8', name: 'Daniel Rivera',    role: 'staff',        locationIds: ['loc-soho'],                        pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:11:00Z' },
 ]
 
 /* ── Store ────────────────────────────────────────────────────── */
@@ -167,7 +190,7 @@ const associates: Associate[] = [
 export const useRetailStore = defineStore('retail', () => {
   const locationList = ref<RetailLocation[]>([...locations])
   const registerList = ref<Register[]>([...registers])
-  const associateList = ref<Associate[]>([...associates])
+  const staffList = ref<StaffMember[]>([...staff])
 
   /** `ALL_LOCATIONS` is the default scope: retail surfaces show the whole estate
    *  until the rail's location switcher narrows them to one store. */
@@ -176,6 +199,35 @@ export const useRetailStore = defineStore('retail', () => {
   const activeLocationId = ref<string>(ALL_LOCATIONS)
   const activeChannelId = ref<string>('pos-store')
   const offlineMode = ref(false)
+
+  const paymentsSettings = ref<PaymentsSettings>({
+    provider: 'maropost_payments',
+    tapToPayEnabled: true,
+    surchargeEnabled: false,
+    surchargePct: 1.5,
+    tippingEnabled: false,
+    tipPresets: [5, 10, 15],
+    offlinePaymentsEnabled: true,
+    cashRoundingEnabled: true,
+  })
+
+  const receiptSettings = ref<ReceiptSettings>({
+    headerText: 'Thanks for shopping with us',
+    footerText: 'Returns accepted within 30 days with proof of purchase.',
+    showLogo: true,
+    showTaxNumber: true,
+    defaultDelivery: 'ask',
+    emailSubject: 'Your receipt from {{store}}',
+    giftReceiptsEnabled: true,
+  })
+
+  function updatePaymentsSettings(patch: Partial<PaymentsSettings>) {
+    paymentsSettings.value = { ...paymentsSettings.value, ...patch }
+  }
+
+  function updateReceiptSettings(patch: Partial<ReceiptSettings>) {
+    receiptSettings.value = { ...receiptSettings.value, ...patch }
+  }
 
   const isAllLocations = computed(() => activeLocationId.value === ALL_LOCATIONS)
 
@@ -238,8 +290,8 @@ export const useRetailStore = defineStore('retail', () => {
     return registerList.value.find((r) => r.id === id)?.name ?? id
   }
 
-  function associateName(id: string): string {
-    return associateList.value.find((a) => a.id === id)?.name ?? id
+  function staffName(id: string): string {
+    return staffList.value.find((a) => a.id === id)?.name ?? id
   }
 
   /* KPIs — scoped to the active location, or the whole estate when scoped to "all".
@@ -291,23 +343,23 @@ export const useRetailStore = defineStore('retail', () => {
     })
   }
 
-  function toggleAssociateActive(id: string) {
-    const a = associateList.value.find((x) => x.id === id)
+  function toggleStaffActive(id: string) {
+    const a = staffList.value.find((x) => x.id === id)
     if (a) a.active = !a.active
   }
 
   function resetPin(id: string) {
-    const a = associateList.value.find((x) => x.id === id)
+    const a = staffList.value.find((x) => x.id === id)
     if (a) a.pinSet = false
   }
 
-  function deleteAssociates(ids: string[]) {
-    associateList.value = associateList.value.filter((a) => !ids.includes(a.id))
+  function deleteStaff(ids: string[]) {
+    staffList.value = staffList.value.filter((a) => !ids.includes(a.id))
   }
 
-  function addAssociate(payload: { name: string; role: AssociateRole; locationIds: string[] }) {
+  function addStaff(payload: { name: string; role: StaffRole; locationIds: string[] }) {
     const id = `assoc-${Date.now()}`
-    associateList.value.unshift({
+    staffList.value.unshift({
       id,
       name: payload.name,
       role: payload.role,
@@ -327,7 +379,7 @@ export const useRetailStore = defineStore('retail', () => {
       country: payload.country,
       kind: 'store',
       registerCount: 0,
-      associateCount: 0,
+      staffCount: 0,
       todaysSales: 0,
       status: 'open',
     })
@@ -341,11 +393,15 @@ export const useRetailStore = defineStore('retail', () => {
     // state
     locationList,
     registerList,
-    associateList,
+    staffList,
     activeLocationId,
     activeChannelId,
     isAllLocations,
     scopedLocationIds,
+    paymentsSettings,
+    receiptSettings,
+    updatePaymentsSettings,
+    updateReceiptSettings,
     storeLocations,
     ALL_LOCATIONS,
     offlineMode,
@@ -356,7 +412,7 @@ export const useRetailStore = defineStore('retail', () => {
     // helpers
     locationName,
     registerName,
-    associateName,
+    staffName,
     availableContexts,
     // actions
     setActiveLocation,
@@ -364,10 +420,10 @@ export const useRetailStore = defineStore('retail', () => {
     setOfflineMode,
     forceResync,
     deactivateRegisters,
-    toggleAssociateActive,
+    toggleStaffActive,
     resetPin,
-    addAssociate,
-    deleteAssociates,
+    addStaff,
+    deleteStaff,
     addLocation,
   }
 })

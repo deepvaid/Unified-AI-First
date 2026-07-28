@@ -18,7 +18,7 @@ type LocationRow = RetailLocation & {
   roles: LocationRole[]
   registers: number
   onlineRegisters: number
-  associates: number
+  staff: number
 }
 
 const route = useRoute()
@@ -51,13 +51,13 @@ const locationRows = computed<LocationRow[]>(() =>
     .filter((location) => linkedLocationIds.value.has(location.id))
     .map((location) => {
       const registers = retailStore.registerList.filter((register) => register.locationId === location.id)
-      const associates = retailStore.associateList.filter((associate) => associate.locationIds.includes(location.id))
+      const staff = retailStore.staffList.filter((staff) => staff.locationIds.includes(location.id))
       return {
         ...location,
         roles: channel.value?.offlineStore?.locationRoles[location.id] ?? ['pos_selling'],
         registers: registers.length,
         onlineRegisters: registers.filter((register) => register.status === 'online').length,
-        associates: associates.length,
+        staff: staff.length,
       }
     }),
 )
@@ -97,7 +97,7 @@ const tableHeaders = [
   { title: 'Location', key: 'name', sortable: true },
   { title: 'Roles', key: 'roles', sortable: false, width: 240 },
   { title: 'Registers', key: 'registers', sortable: true, width: 150 },
-  { title: 'Associates', key: 'associates', sortable: true, width: 150 },
+  { title: 'Staff', key: 'staff', sortable: true, width: 150 },
   { title: 'Today', key: 'todaysSales', sortable: true, width: 140 },
   { title: 'Status', key: 'status', sortable: true, width: 120 },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end' as const, width: 96 },

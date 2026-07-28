@@ -101,6 +101,20 @@ export function retailMenu(accountId: string, locationsRoute: RouteLocationRaw):
           match: ['RetailHardware'],
         },
         {
+          slug: 'payments',
+          label: 'Payments',
+          icon: 'credit-card',
+          to: { name: 'RetailPayments', params: { accountId } },
+          match: ['RetailPayments'],
+        },
+        {
+          slug: 'receipts',
+          label: 'Receipts',
+          icon: 'file-text',
+          to: { name: 'RetailReceipts', params: { accountId } },
+          match: ['RetailReceipts'],
+        },
+        {
           slug: 'settings',
           label: 'Settings',
           icon: 'settings',

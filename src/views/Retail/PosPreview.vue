@@ -101,9 +101,9 @@ watch(posBreakpoint, (bp) => { if (bp !== 'phone') cartSheetOpen.value = false }
 const isOffline = computed(() => store.offlineMode)
 function toggleOffline() { store.setOfflineMode(!store.offlineMode) }
 
-/* ── Associate (mock logged-in associate) ──────────────────────── */
-const activeAssociateId = ref('assoc-1')
-const activeAssociate = computed(() => store.associateList.find((a) => a.id === activeAssociateId.value) ?? store.associateList[0]!)
+/* ── Staff (mock logged-in staff) ────────────────────────────── */
+const activeStaffId = ref('assoc-1')
+const activeStaffMember = computed(() => store.staffList.find((a) => a.id === activeStaffId.value) ?? store.staffList[0]!)
 
 /* ── POS navigation ────────────────────────────────────────────── */
 type PosView = 'sale' | 'customers' | 'transactions' | 'settings' | 'getapp'
@@ -434,7 +434,7 @@ function completeApproved() {
   const txn = commerce.addPosOrder({
     locationId: locId,
     registerId: activeRegister.value.id,
-    staffId: activeAssociateId.value,
+    staffId: activeStaffId.value,
     customerName: customerName.value || undefined,
     total: grandTotal.value,
     tender: selectedTender.value,
@@ -800,10 +800,10 @@ const apkQrUrl = computed(() =>
               </div>
 
               <div class="pos-rail__footer">
-                <div class="pos-rail__associate">
+                <div class="pos-rail__staff">
                   <v-avatar size="26" color="primary">
                     <span class="text-caption text-white" style="font-size: 9px; font-weight: 700;">
-                      {{ activeAssociate?.name.split(' ').map((n) => n[0]).join('') ?? '' }}
+                      {{ activeStaffMember?.name.split(' ').map((n) => n[0]).join('') ?? '' }}
                     </span>
                   </v-avatar>
                 </div>
@@ -1650,7 +1650,7 @@ const apkQrUrl = computed(() =>
 
                 <div class="pos-txn-sheet__meta">
                   <div class="pos-txn-sheet__meta-row"><span>Date</span><span>{{ dayLabel(detailTxn.date) }} · {{ timeLabel(detailTxn.date) }}</span></div>
-                  <div class="pos-txn-sheet__meta-row"><span>Staff</span><span>{{ store.associateName(detailTxn.pos?.staffId ?? '') }}</span></div>
+                  <div class="pos-txn-sheet__meta-row"><span>Staff</span><span>{{ store.staffName(detailTxn.pos?.staffId ?? '') }}</span></div>
                   <div class="pos-txn-sheet__meta-row"><span>Register</span><span>{{ store.registerName(detailTxn.pos?.registerId ?? '') }}</span></div>
                   <div class="pos-txn-sheet__meta-row"><span>Customer</span><span>{{ detailTxn.customer.name }}</span></div>
                   <div class="pos-txn-sheet__meta-row"><span>Tender</span><span><v-icon v-if="detailTxn.tenders?.[0]" size="13" style="margin-right: 4px;">{{ TENDER_ICONS[detailTxn.tenders[0].type] }}</v-icon>{{ detailTxn.paymentMethod }}</span></div>
@@ -2079,7 +2079,7 @@ $pos-bg: #f4f4f5;
     padding: 10px;
   }
 
-  &__associate {
+  &__staff {
     cursor: pointer;
   }
 }

@@ -242,14 +242,14 @@ export const WIDGET_LIBRARY: DashboardWidgetLibraryEntry[] = [
   },
   {
     id: 'lib-retail-top-associates',
-    title: 'Top associates',
-    description: 'Top performing sales associates by revenue',
+    title: 'Top staff',
+    description: 'Top performing sales staff by revenue',
     category: 'retail',
     type: 'table',
     icon: 'user-round',
     metricId: 'retail_top_associates',
     dataSource: 'retail',
-    drilldown: { routeName: 'RetailAssociates', label: 'Retail associates' },
+    drilldown: { routeName: 'RetailStaff', label: 'Retail staff' },
   },
   {
     id: 'lib-merch-total-revenue',
