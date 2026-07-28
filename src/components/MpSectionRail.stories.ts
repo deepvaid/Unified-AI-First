@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 import MpSectionRail from './MpSectionRail.vue'
 import type { MpSectionRailGroup, MpSectionRailSwitchOption } from './MpSectionRail.vue'
 
@@ -223,4 +224,9 @@ export const AllElements: Story = {
       </MpSectionRail>
     `,
   }),
+}
+
+export const DarkMode: Story = {
+  globals: darkModeGlobals,
+  ...StoreEditor,
 }

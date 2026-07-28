@@ -1,5 +1,6 @@
 import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 import MpFilterTabs from './MpFilterTabs.vue'
 
 const orderTabs = [
@@ -126,6 +127,11 @@ export const OrderTabs: Story = {
     tabs: orderTabs,
     ariaLabel: 'Filter orders',
   },
+}
+
+export const DarkMode: Story = {
+  globals: darkModeGlobals,
+  ...OrderTabs,
 }
 
 export const CampaignTabs: Story = {

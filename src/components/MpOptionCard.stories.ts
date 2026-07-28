@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 import MpOptionCard from './MpOptionCard.vue'
 
 const meta = {
@@ -83,6 +84,12 @@ export const Unselected: Story = {
       </div>
     `,
   }),
+}
+
+export const DarkMode: Story = {
+  globals: darkModeGlobals,
+  ...Unselected,
+  args: { selected: true },
 }
 
 export const Selected: Story = {
