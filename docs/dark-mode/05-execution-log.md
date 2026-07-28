@@ -338,3 +338,45 @@ Earlier in this session the WP-01–WP-03 commits were found on a mistakenly cre
 - **Known issues:** `npm run build` still blocked by pre-existing `ReelFlyView.vue` strict-null errors; ChartThemesView product decision to force light chart preview unchanged; ModuleLandingPage tile tint hexes are categorical accents, not theme surfaces.
 - **Commit:** `140465b`
 
+## WP-13 — Storybook parity and coverage
+
+- **Work package completed:** WP-13 — Storybook reproduces app theme/accent behaviour; foundation stories document semantic roles; pinned dark stories cover critical component categories.
+- **Files changed:**
+  - `.storybook/preview.ts` (accent toolbar, canvas background, maropost theme classes)
+  - `src/stories/storybookTheme.ts` (new — shared dark/accent globals helper)
+  - `src/stories/Foundation/Colors.stories.ts` (semantic surface/text/border/accent/feedback + light/dark comparison)
+  - `src/stories/Foundation/RadiusShadows.stories.ts` (dark shadow tokens, elevation aliases)
+  - `src/stories/Foundation/Buttons.stories.ts` (interaction states, dark pinned)
+  - `src/stories/FormFields.stories.ts` (dark all-states)
+  - Co-located dark pinned stories: AppBar/AppSidebar (pre-existing), MpStatusChip, MpKpiCard, MpEmptyState, MpErrorState, MpTableSkeleton, MpFormDrawer, MpConfirmDialog, MpRowActionsMenu, DashboardChartWidget, DashboardPieWidget, DashboardKpiWidget, StorefrontPreview, MpDaVinciBot, DvOrbitVoiceSurface
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none — all swatches and aliases resolve through production paths.
+- **Hard-coded colors removed:** none (stories consume aliases and generated tokens only).
+- **Tests run + results:**
+  - `npm run build-storybook` — passed.
+  - `npm run type-check` — only pre-existing `ReelFlyView.vue` errors.
+- **Deviations from the plan:** six sidebar-skin × mode stories collapsed per WP-04 user decision (three light skin stories + unified dark-mode story already in AppSidebar/AppBar).
+- **Known issues:** none for this package.
+- **Commit:** `5eedc40`
+
+## WP-14 — Documentation and cleanup
+
+- **Work package completed:** WP-14 — documented dark-mode architecture, deprecated aliases, and retired legacy SCSS injection.
+- **Files changed:**
+  - `docs/dark-mode/06-theme-architecture.md` (new)
+  - `docs/design-system.md`
+  - `docs/development.md`
+  - `CLAUDE.md`, `AGENTS.md`
+  - `vite.config.ts`, `.storybook/main.ts` (inject `generated/_variables.scss`)
+  - `src/styles/global.scss` (`$mp-borderRadius-xl` migration)
+  - `src/styles/tokens.scss` (deleted)
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none.
+- **Hard-coded colors removed:** legacy `tokens.scss` duplicate palette (sidebar/shadow values that conflicted with tokens.json).
+- **Tests run + results:**
+  - `npm run build-storybook` — passed.
+  - `npx vite build` — succeeds.
+- **Deviations from the plan:** none.
+- **Known issues:** `npm run build` still blocked by pre-existing `ReelFlyView.vue` strict-null errors.
+- **Commit:** `566a7ad`
+

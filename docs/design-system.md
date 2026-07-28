@@ -2,11 +2,28 @@
 
 > Living documentation of all design tokens, components, patterns, and guidelines.
 
+**Dark mode:** see [`docs/dark-mode/06-theme-architecture.md`](dark-mode/06-theme-architecture.md) for the semantic alias layer, accent bridge, surface hierarchy, deprecated aliases, and fixed-look exceptions. Storybook **Theme** + **Accent** toolbars mirror the app runtime.
+
 ---
 
 ## Design Tokens
 
-All tokens are defined in `src/design-tokens/tokens.json` and auto-generated into SCSS, CSS, and TypeScript via `npm run tokens:build`.
+All tokens are defined in `src/design-tokens/tokens.json` and auto-generated into SCSS, CSS, and TypeScript via `npm run tokens:build`. **Never hand-edit** `src/design-tokens/generated/*`.
+
+Generated outputs also include derived `--mp-rgb-*` custom properties for every hex color (used by scrims, alpha mixes, and Vuetify bridges).
+
+### Deprecated aliases (one release)
+
+New code must use semantic names from `mp-theme-aliases.css`:
+
+| Deprecated | Use instead |
+|---|---|
+| `--surface-0/1/2` | `--surface-canvas/primary/secondary` |
+| `--ink`, `--muted` | `--text-primary`, `--text-muted` |
+| `--hairline` | `--border-subtle` |
+| `--accent`, `--accent-fg`, `--accent-ink`, `--accent-soft` | `--accent-default`, `--accent-on`, `--accent-active`, `--accent-subtle-bg` |
+
+Legacy SCSS injection from `src/styles/tokens.scss` was removed in WP-14 — Vite and Storybook inject `src/design-tokens/generated/_variables.scss` instead.
 
 ### Color Palette (Light Theme)
 

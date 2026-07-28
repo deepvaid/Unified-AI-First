@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
   // is never exposed to the client — it's not VITE_-prefixed and is read here in
   // Node, mirroring the Vercel serverless function (api/tts.ts).
   const env = loadEnv(mode, process.cwd(), '')
+  const generatedVarsScss = fileURLToPath(
+    new URL('./src/design-tokens/generated/_variables.scss', import.meta.url),
+  )
 
   return {
     plugins: [
@@ -162,7 +165,7 @@ export default defineConfig(({ mode }) => {
     css: {
       preprocessorOptions: {
         scss: {
-          additionalData: `@use "@/styles/tokens" as *;\n`,
+          additionalData: `@use "${generatedVarsScss}" as *;\n`,
         },
       },
     },

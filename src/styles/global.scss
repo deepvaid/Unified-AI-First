@@ -439,7 +439,7 @@ tr:focus-within .action-btns {
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);
   box-shadow: none;
-  border-radius: $mp-radius-xl;
+  border-radius: $mp-borderRadius-xl;
   padding: 16px 24px;
 }
 

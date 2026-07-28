@@ -79,7 +79,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   ├── router/index.ts        ← All routes (90+)
 │   └── styles/
 │       ├── global.scss        ← Global overrides, utilities, hover effects
-│       └── tokens.scss        ← Legacy SCSS tokens (being replaced by design-tokens/)
+│       └── app-styles.ts      ← Shared stylesheet manifest (app + Storybook)
 ├── vercel.json                ← One-click deploy config
 └── package.json
 ```
