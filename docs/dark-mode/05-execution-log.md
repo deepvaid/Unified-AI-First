@@ -151,6 +151,36 @@ Independently confirmed against `master` (`git checkout master -- .`, ran `vue-t
   2. **Retired navy `#22304b`:** Root cause was `sidebar-dark.css` + legacy shell binds pinning an independent navy palette. Both navs now bind `--mp-nav-surface` → `--mp-color-dark-surface`, matching AppBar's existing `--surface-1` treatment.
 - **Known issues:** MpSectionRail, SettingsSidebar, and in-content rails are out of scope for this partial WP-04 slice.
 
+## WP-09 — Charts and data visualization
+
+- **Work package completed:** WP-09 — mode-aware chart palettes, tooltip chrome, legend markers, and duplicate-series removal.
+- **Files changed:**
+  - `src/design-tokens/tokens.json`
+  - `src/design-tokens/generated/_variables.scss`, `variables.css`, `tokens.ts` (regenerated)
+  - `src/plugins/chartPalette.ts`
+  - `src/styles/charts.css` (new)
+  - `src/styles/app-styles.ts`
+  - `src/components/dashboards/widgets/DashboardChartWidget.vue`
+  - `src/components/dashboards/widgets/DashboardChartWidget.stories.ts`
+  - `src/components/dashboards/widgets/DashboardPieWidget.vue`
+  - `src/components/dashboards/widgets/DashboardKpiWidget.vue`
+  - `src/components/copilot/DvChartCard.vue`
+  - `src/views/Analytics/LiveView.vue`
+  - `src/views/ChartThemes/ChartThemesView.vue`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** added 6 light chart chrome tokens (`axisLabel`, `legendLabel`, `grid`, `tooltipBackground`, `tooltipText`, `tooltipBorder`); re-authored `color.chart.dark.grid` from opaque `#7E7B75` to low-alpha `rgba(255,255,255,0.08)`.
+- **Hard-coded colors removed:** module-global `chartTooltipTheme = 'light'`, `chartGridColor`/`chartLabelColor` runtime strings, hardcoded legend label colours in LiveView, DvChartCard module-global palette import.
+- **Tests run + results:**
+  - `npm run tokens:build` — 505 tokens generated.
+  - `npm run type-check` — only pre-existing `ReelFlyView.vue` errors; no WP-09 errors.
+  - `npx vite build` — succeeds.
+  - `npm run build-storybook` — passed (`✓ built in 15.11s`).
+- **Deviations from the plan:**
+  1. Removed synthetic "Previous" overlay from single-series timeseries charts (user-approved; duplicated data in both modes).
+  2. Multi-series timeseries now use dashed secondary strokes (dashArray) instead of colour-only differentiation.
+  3. Card widget footers already used `--hairline`; no change required.
+- **Known issues:** ChartThemesView still forces light mode (product decision for palette review page). OSM map tiles remain light per plan exception.
+
 ### Process note (repository hygiene, not a code change)
 
 Earlier in this session the WP-01–WP-03 commits were found on a mistakenly created `feature/retail-commerce-unification` branch rather than `feature/dark-mode-system`. All three commits were moved onto `feature/dark-mode-system` (fast-forward; `9296227` was already a direct child of that branch's tip) and the stray branch was reset to `master`, which held no unique commits. Separately, a `git checkout master -- .` / `git checkout HEAD -- .` sequence run for verification discarded pre-existing **uncommitted** edits in `src/stores/useAccounts.ts`, `src/router/index.ts`, and `src/stores/usePlg.ts` — unrelated retail WIP that no dark-mode package had touched. Those edits were never staged or committed, so no git-level recovery exists; this is recorded here so the loss is not silently attributed to a dark-mode package.

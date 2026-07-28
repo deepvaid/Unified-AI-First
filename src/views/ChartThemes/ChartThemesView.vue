@@ -81,12 +81,12 @@ const PANEL_META: PanelMeta[] = [
 
 const panels = PANEL_META.map((meta) => ({
   ...meta,
-  theme: CHART_THEMES[meta.id],
+  theme: CHART_THEMES[meta.id].light,
   liveLink: `/accounts/${ACCOUNT_ID}/dashboard?chart=${meta.id}`,
   widgets: panelWidgets(),
 }))
 
-const blueTheme = CHART_THEMES.blue
+const blueTheme = CHART_THEMES.blue.light
 const blueWidgets = panelWidgets()
 </script>
 

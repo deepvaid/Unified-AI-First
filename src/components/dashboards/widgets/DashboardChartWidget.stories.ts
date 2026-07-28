@@ -28,7 +28,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'ApexCharts body for timeseries and bar widgets. Single-series timeseries charts get a synthetic dashed "Previous" overlay; single-series bar charts distribute palette colors across categories. Shows a skeleton until the chart lazily mounts.',
+          'ApexCharts body for timeseries and bar widgets. Multi-series charts use dashed secondary strokes and explicit legend marker colours. Single-series bar charts distribute palette colors across categories. Shows a skeleton until the chart lazily mounts.',
       },
     },
   },

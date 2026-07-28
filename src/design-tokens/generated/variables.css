@@ -592,6 +592,14 @@
   --mp-rgb-color-chart-light-axis4: 44, 196, 255;
   --mp-color-chart-light-axis5: #75D6FF;
   --mp-rgb-color-chart-light-axis5: 117, 214, 255;
+  --mp-color-chart-light-axisLabel: rgba(26, 24, 20, 0.55);
+  --mp-color-chart-light-legendLabel: rgba(26, 24, 20, 0.72);
+  --mp-color-chart-light-grid: rgba(26, 24, 20, 0.06);
+  --mp-color-chart-light-tooltipBackground: #FFFFFF;
+  --mp-rgb-color-chart-light-tooltipBackground: 255, 255, 255;
+  --mp-color-chart-light-tooltipText: #1A1814;
+  --mp-rgb-color-chart-light-tooltipText: 26, 24, 20;
+  --mp-color-chart-light-tooltipBorder: rgba(26, 24, 20, 0.10);
   --mp-color-chart-light-indigo-series1: #3D4EDC;
   --mp-rgb-color-chart-light-indigo-series1: 61, 78, 220;
   --mp-color-chart-light-indigo-series2: #7CC7F8;
@@ -754,8 +762,7 @@
   --mp-rgb-color-chart-dark-aurora-axis5: 206, 152, 245;
   --mp-color-chart-dark-axisLabel: rgba(236, 236, 236, 0.60);
   --mp-color-chart-dark-legendLabel: rgba(236, 236, 236, 0.72);
-  --mp-color-chart-dark-grid: #7E7B75;
-  --mp-rgb-color-chart-dark-grid: 126, 123, 117;
+  --mp-color-chart-dark-grid: rgba(255, 255, 255, 0.08);
   --mp-color-chart-dark-tooltipBackground: var(--mp-color-dark-surfaceBright);
   --mp-rgb-color-chart-dark-tooltipBackground: 57, 53, 44;
   --mp-color-chart-dark-tooltipText: #ECECEC;
