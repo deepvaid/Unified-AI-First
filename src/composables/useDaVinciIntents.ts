@@ -193,7 +193,7 @@ export function useDaVinciIntents() {
     const draft = productDrafts[seq++ % productDrafts.length] ?? productDrafts[0]!
     return {
       intent: 'product',
-      reply: `As requested — a product description draft for "${draft.title}". Use it as-is, or ask me to adjust the tone.`,
+      reply: `Here's a product description draft for "${draft.title}". Use it as-is, or ask me to adjust the tone.`,
       speech: productSpeech(draft.title),
       cards: [{ type: 'content', props: { type: 'product', title: draft.title, content: draft.content } }],
       pending: null,
@@ -204,7 +204,7 @@ export function useDaVinciIntents() {
   function buildRevenue(): DvIntentResult {
     return {
       intent: 'revenue',
-      reply: 'A pleasure to report: revenue is up this week. The last 7 days, at a glance.',
+      reply: 'Revenue is up this week. The last 7 days, at a glance.',
       speech: revenueSpeech,
       cards: [
         {
@@ -238,7 +238,7 @@ export function useDaVinciIntents() {
     const props = isVip ? segmentVariants.vip : segmentVariants.highIntent
     return {
       intent: 'segment',
-      reply: `Your "${props.name}" segment stands ready — about ${props.estimatedSize.toLocaleString()} contacts match right now. It refreshes daily.`,
+      reply: `Your "${props.name}" segment is ready — about ${props.estimatedSize.toLocaleString()} contacts match right now. It refreshes daily.`,
       speech: segmentSpeech(props.name, props.estimatedSize),
       cards: [{ type: 'segment', props }],
       pending: null,
@@ -249,7 +249,7 @@ export function useDaVinciIntents() {
   function buildFallback(): DvIntentResult {
     return {
       intent: 'fallback',
-      reply: 'At your service. I can run campaigns, draft product copy, report on revenue, or build audience segments. Try one of these:',
+      reply: 'I can help you run campaigns, draft product copy, report on revenue, or build audience segments. Try one of these:',
       speech: fallbackSpeech,
       cards: [
         {

@@ -1197,7 +1197,13 @@ function onComposerKeydown(event: KeyboardEvent) {
           </button>
         </div>
       </div>
-      <p class="dv-composer__note">Da Vinci can make mistakes. Check important info.</p>
+      <p class="dv-composer__note">
+        <template v-if="!chatMode">
+          You’re chatting with an AI assistant — it drafts and guides, and won’t change your account on
+          its own. If you use voice, audio is processed by your browser’s speech service.
+        </template>
+        <template v-else>Da Vinci can make mistakes. Check important info.</template>
+      </p>
     </footer>
       </div>
     </div>

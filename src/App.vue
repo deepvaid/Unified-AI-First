@@ -146,6 +146,16 @@ watch(inRailShell, (now, was) => {
 
 const isFullPage = computed(() => !!route.meta?.fullPage)
 const isFlush = computed(() => !!route.meta?.flush)
+// The AI experience owns the whole screen and hosts its own Da Vinci conversation.
+// Showing the drawer alongside it puts two Da Vinci surfaces on screen at once,
+// each with its own greeting, so it stays closed there.
+const copilotAvailable = computed(() => route.name !== 'DaVinciExperience')
+const copilotVisible = computed({
+  get: () => copilot.isOpen && copilotAvailable.value,
+  set: (value: boolean) => {
+    copilot.isOpen = value
+  },
+})
 // Rounded content frame — resolvedFrame already folds in the shell's default.
 const showFrame = computed(() => resolvedFrame.value && !isFullPage.value && !isFlush.value)
 // On mobile, sidebar is a temporary overlay (not permanent)
@@ -201,11 +211,11 @@ const copilotDrawerWidth = computed(() => {
     <!-- Da Vinci Copilot Drawer — also on fullPage routes (journey/campaign
          builders dock it beside the canvas instead of covering it) -->
     <v-navigation-drawer
-      v-model="copilot.isOpen"
+      v-model="copilotVisible"
       location="right"
       :width="copilotDrawerWidth + 12"
-      :aria-hidden="copilot.isOpen ? undefined : 'true'"
-      :inert="!copilot.isOpen"
+      :aria-hidden="copilotVisible ? undefined : 'true'"
+      :inert="!copilotVisible"
       class="copilot-drawer"
       :style="{
         '--copilot-top': isFullPage ? '4px' : '60px',

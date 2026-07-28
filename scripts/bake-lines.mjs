@@ -17,6 +17,14 @@ const KEY = process.env.GEMINI_API_KEY
 const VOICE = process.env.TTS_VOICE || 'Charon'
 const MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview'
 const FORCE = process.argv.includes('--force')
+// --only=3,17 re-bakes just those line indexes. Gemini TTS occasionally returns a
+// malformed take (many seconds of rambling for a short line); this re-rolls it
+// without re-synthesizing the whole set.
+const ONLY = (() => {
+  const arg = process.argv.find((a) => a.startsWith('--only='))
+  if (!arg) return null
+  return new Set(arg.slice('--only='.length).split(',').map((n) => Number(n.trim())))
+})()
 const OUT_DIR = 'public/davinci/lines'
 // The audition-locked pace: baked lines carry exactly 1.12× (live replies can't).
 const ATEMPO = process.env.BAKE_ATEMPO || '1.12'
@@ -104,6 +112,10 @@ for (let i = 0; i < lines.length; i++) {
   const file = `line-${String(i).padStart(2, '0')}.wav`
   const path = `${OUT_DIR}/${file}`
   manifest.push({ text, file })
+  if (ONLY && !ONLY.has(i)) {
+    skipped++
+    continue
+  }
   if (!FORCE && existsSync(path)) {
     skipped++
     continue

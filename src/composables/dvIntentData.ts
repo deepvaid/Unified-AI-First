@@ -49,18 +49,18 @@ export const segmentVariants = {
 }
 
 // ── Speech templates (fixed 'en-US' formatting so runtime text === baked text) ──
-// Persona: composed butler-valet — courteous, precise, a hint of dry warmth. Keep the
-// flavor light (these lines repeat often) and the meaning identical to the bubble copy.
+// Register: plain, calm, direct — the personality lives in the voice performance,
+// not the wording. Keep the meaning identical to the bubble copy, and claim only
+// what Da Vinci actually does (it drafts and guides; it does not send).
 export const campaignSpeech = (name: string, audienceLabel: string) =>
-  `Very good. The ${name} email is drafted for ${audienceLabel.toLowerCase()} and ready for your review. Nothing has been sent or scheduled.`
-export const productSpeech = (title: string) => `As requested — a product description draft for ${title}, ready for your eye.`
+  `The ${name} email is drafted for ${audienceLabel.toLowerCase()} and ready for your review. Nothing has been sent or scheduled.`
+export const productSpeech = (title: string) => `Here's a product description draft for ${title}.`
 export const revenueSpeech =
-  'A pleasure to report: revenue is up 12 percent this week — 128 thousand dollars, across 1,284 orders.'
+  'Revenue is up 12 percent this week — 128 thousand dollars, across 1,284 orders.'
 export const segmentSpeech = (name: string, estimatedSize: number) =>
-  `Your ${name} segment stands ready — some ${estimatedSize.toLocaleString('en-US')} contacts, assembled and waiting.`
+  `Your ${name} segment is ready — about ${estimatedSize.toLocaleString('en-US')} contacts.`
 export const fallbackSpeech =
-  'At your service. I can run campaigns, draft product copy, report on revenue, or build segments — simply say the word.'
-export const clarifyAudienceSpeech = 'Certainly. And which audience shall receive it?'
+  'I can help you run campaigns, draft product copy, report on revenue, or build segments. What do you need?'
 
 /** Every realized canned speech line — the bake list (~23 lines). */
 export function listCannedSpeech(): string[] {
@@ -72,6 +72,5 @@ export function listCannedSpeech(): string[] {
   lines.push(revenueSpeech)
   for (const v of Object.values(segmentVariants)) lines.push(segmentSpeech(v.name, v.estimatedSize))
   lines.push(fallbackSpeech)
-  lines.push(clarifyAudienceSpeech)
   return lines
 }

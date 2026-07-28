@@ -14,7 +14,8 @@ const { DV_VOICE_STYLE, DV_VOICE_TEMPERATURE } = await import('../src/server/tts
 const KEY = process.env.GEMINI_API_KEY
 const VOICE = process.env.TTS_VOICE || 'Charon'
 const MODEL = process.env.TTS_MODEL || 'gemini-3.1-flash-tts-preview'
-const TEXT = process.argv[2] || 'Good day, Ross. How may I be of service?'
+// Must match DaVinciExperience.vue's greetingText for the demo user (the text is the audio-cache key).
+const TEXT = process.argv[2] || "Hi Ross — welcome to Maropost. I'm Da Vinci, your guide."
 const OUT = process.argv[3] || 'public/davinci/greeting.wav'
 // The audition-locked pace (pitch-preserving, applied via ffmpeg post-step).
 const ATEMPO = process.env.BAKE_ATEMPO || '1.12'

@@ -30,6 +30,7 @@ import {
   type IntentCardsProps,
 } from '@/stores/useCopilot'
 import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
+import { ONBOARDING_PHASES, useOnboardingStore } from '@/stores/useOnboarding'
 import { useUserProfile } from '@/stores/useUserProfile'
 
 const route = useRoute()
@@ -41,6 +42,7 @@ const { pushToast } = useDaVinciToasts()
 const profile = useUserProfile()
 const copilot = useCopilotStore()
 const onboarding = useDaVinciOnboardingStore()
+const setupGuide = useOnboardingStore()
 const { messages, chatMode } = storeToRefs(copilot)
 
 const accountId = computed(() => {
@@ -89,8 +91,9 @@ const greetingReady = () =>
 // AutoplayAllowlist, --autoplay-policy flag, Safari per-site Auto-Play, Chrome MEI).
 // While blocked, poll for that grant and greet the moment audio is allowed — zero tap.
 let grantProbeCleanup: (() => void) | null = null
-// Personalized greeting — spoken aloud on open (the on-screen heading was removed).
-const greetingText = computed(() => `Good day, ${profile.firstName}. How may I be of service?`)
+// Personalized greeting — spoken aloud on open, and captioned on screen.
+// Keep in sync with scripts/bake-greeting.mjs (the baked WAV is keyed by this exact text).
+const greetingText = computed(() => `Hi ${profile.firstName} — welcome to Maropost. I'm Da Vinci, your guide.`)
 // Diagnostic overlay: append ?debug=1 to the URL to see voices / chosen voice
 // (local vs REMOTE) / last TTS lifecycle event / speaking state on the page itself.
 const showDebug = computed(() => route.query.debug === '1')
@@ -229,12 +232,20 @@ function prepareCampaignSession() {
   copilot.beginOnboarding(accountId.value)
 }
 
+/** Greets the user by name before the first question, on both the voice and text paths. */
+function appendGreeting() {
+  const greeting = greetingText.value
+  appendAssistantResponse({ intent: 'campaign', reply: greeting, speech: greeting })
+  return greeting
+}
+
 function continueByTyping() {
   prepareCampaignSession()
   endLive()
   copilot.setReadAloud(false)
   trackDaVinciOnboardingEvent('onboarding_started', accountId.value, { inputMode: 'text' })
   trackDaVinciOnboardingEvent('input_mode_selected', accountId.value, { inputMode: 'text' })
+  appendGreeting()
   const response = campaignOnboarding.start(accountId.value, 'text')
   appendAssistantResponse(response)
   nextTick(() => {
@@ -256,19 +267,57 @@ async function enableVoiceOnboarding() {
   trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'requested' })
   voice.setMuted(false)
   voice.unlockSpeech()
+  // Greet by name first, then ask the first question — each captioned as it is spoken.
+  const greeting = appendGreeting()
+  captionText.value = greeting
+  await voice.playChime('open')
+  await voice.speak(greeting)
   const response = campaignOnboarding.start(accountId.value, 'voice')
   appendAssistantResponse(response)
   captionText.value = response.speech ?? response.reply
-  await voice.playChime('open')
   await voice.speak(response.speech ?? response.reply)
   if (!voice.sttSupported) return
   liveActive.value = true
   void armListening()
 }
 
-function skipOnboarding() {
-  trackDaVinciOnboardingEvent('onboarding_skipped', accountId.value)
-  router.push({ name: 'Dashboard', params: { accountId: accountId.value } })
+// ── Other goals ──────────────────────────────────────────────────────────────
+// A first campaign isn't everyone's first job. These route to the matching Get
+// Started task instead, and hand the user to the drawer so guidance continues there.
+const WELCOME_GOALS = [
+  { key: 'store', label: 'Set up my store', icon: 'store' },
+  { key: 'contacts', label: 'Import contacts', icon: 'users' },
+  { key: 'explore', label: 'Just exploring', icon: 'compass' },
+] as const
+
+/** First task in a guide phase the user hasn't finished or skipped. */
+function firstOpenTask(phaseId: string, preferIds: string[] = []) {
+  const tasks = ONBOARDING_PHASES.find((phase) => phase.id === phaseId)?.tasks ?? []
+  const pool = preferIds.length ? tasks.filter((task) => preferIds.includes(task.id)) : tasks
+  const open = pool.find((task) => !setupGuide.completed[task.id] && !setupGuide.skipped[task.id])
+  return open ?? pool[0] ?? null
+}
+
+function chooseGoal(key: (typeof WELCOME_GOALS)[number]['key']) {
+  trackDaVinciOnboardingEvent('onboarding_skipped', accountId.value, { goal: key })
+  endLive()
+  // Pause rather than discard — the campaign path stays resumable from the drawer.
+  if (onboarding.activeSession) onboarding.setPaused(true)
+
+  const task = key === 'store'
+    ? firstOpenTask('store')
+    : key === 'contacts'
+      ? firstOpenTask('customers', ['first-list', 'add-contacts'])
+      : null
+
+  const routeName = task?.routeName ?? 'Dashboard'
+  const message = task
+    ? `Next up: ${task.title} — about ${task.minutes} minutes. ${task.why} Ask me anything as you go, or say “continue campaign” to pick that back up.`
+    : 'Have a look around. Your Get Started guide is in the sidebar, and I’m in the top right whenever you need me.'
+
+  copilot.queueResume(message)
+  copilot.open()
+  router.push({ name: routeName, params: { accountId: accountId.value } })
 }
 
 // Hide the starter chips on blur, but after a beat so a chip tap still registers.
@@ -781,9 +830,22 @@ onBeforeUnmount(() => {
           <v-btn variant="outlined" size="large" prepend-icon="keyboard" @click="continueByTyping">
             Continue by typing
           </v-btn>
-          <v-btn variant="text" size="large" append-icon="arrow-right" @click="skipOnboarding">
-            Go to dashboard
-          </v-btn>
+        </div>
+
+        <div v-if="!micEducationVisible" class="dvx__welcome-goals mt-5">
+          <span class="dvx__welcome-goals-label">Something else first?</span>
+          <div class="d-flex flex-wrap ga-2 mt-2">
+            <v-btn
+              v-for="goal in WELCOME_GOALS"
+              :key="goal.key"
+              variant="tonal"
+              size="small"
+              :prepend-icon="goal.icon"
+              @click="chooseGoal(goal.key)"
+            >
+              {{ goal.label }}
+            </v-btn>
+          </div>
         </div>
 
         <p v-if="voiceRecoveryMessage" class="text-caption text-error mt-4 mb-0" role="alert">
@@ -795,6 +857,11 @@ onBeforeUnmount(() => {
           <span><v-icon size="16">file-pen-line</v-icon> Draft only</span>
           <span><v-icon size="16">keyboard</v-icon> Type at any time</span>
         </div>
+
+        <p class="dvx__welcome-disclosure mt-3 mb-0">
+          You’re chatting with an AI assistant. If you use voice, audio is processed by your browser’s
+          speech service.
+        </p>
       </section>
 
       <!-- Conversation thread -->
@@ -1144,6 +1211,18 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: var(--mp-spacing-1);
+}
+
+.dvx__welcome-goals-label {
+  color: var(--dv-text-secondary);
+  font-size: 0.75rem;
+}
+
+.dvx__welcome-disclosure {
+  color: var(--dv-text-secondary);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  max-width: 46ch;
 }
 
 /* ─── Composer ────────────────────────────────────────────────────────── */

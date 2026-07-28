@@ -355,7 +355,7 @@ export function useDaVinciCampaignOnboarding() {
     onboarding.setStage('objective')
     return {
       intent: 'campaign',
-      reply: 'Of course. What should this campaign achieve instead?',
+      reply: 'What should this campaign achieve instead?',
       speech: 'What should this campaign achieve instead?',
       quickReplies: CAMPAIGN_OBJECTIVES,
     }
