@@ -803,8 +803,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 <style scoped lang="scss">
 /* Classic chrome; the studio shell overrides this in shell-variants.css. */
 .mp-appbar {
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
 }
 
 .mp-appbar :deep(.v-toolbar__content) {
@@ -846,7 +846,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   color: var(--ink);
   /* Faint resting surface so the icons read as tappable controls, not glyphs
      floating on the light bar. Theme-adaptive via on-surface alpha. */
-  background: rgba(var(--v-theme-on-surface), 0.05);
+  background: var(--surface-interactive);
   opacity: 1;
   transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
@@ -871,7 +871,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   width: 1px;
   height: 22px;
   margin-inline: 8px;
-  background: rgba(var(--v-theme-on-surface), 0.14);
+  background: var(--border-default);
   flex-shrink: 0;
 }
 
@@ -884,11 +884,11 @@ function onSearchKeydown(event: KeyboardEvent) {
   padding: 5px 12px;
   /* --hairline is tuned for white cards; on the light bar it vanishes (≈1.05:1).
      A stronger on-surface edge + faint lift make the pill read as a control. */
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  border: 1px solid var(--border-default);
   border-radius: var(--r-pill);
-  background: var(--surface-1);
+  background: var(--surface-primary);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgba(var(--v-theme-on-surface), 0.05);
+  box-shadow: var(--elevation-raised);
   font: inherit;
   appearance: none;
   cursor: pointer;
@@ -916,8 +916,9 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .assistant-pill:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 40%, transparent);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 .assistant-pill :deep(.v-icon) {
@@ -959,7 +960,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   border-radius: 50%;
   background: transparent;
   /* Resting ring separates the avatar from the bar and signals it's a control. */
-  box-shadow: 0 0 0 1px rgba(var(--v-theme-on-surface), 0.12);
+  box-shadow: 0 0 0 1px var(--border-default);
   cursor: pointer;
   font: inherit;
   appearance: none;
@@ -967,12 +968,13 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .user-pill:hover {
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-on-surface), 0.14);
+  box-shadow: 0 0 0 3px var(--border-hover);
 }
 
 .user-pill:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 .user-pill__avatar {
@@ -1132,7 +1134,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .um-item:hover,
 .um-item:focus-visible {
-  background: rgba(var(--v-theme-on-surface), 0.05);
+  background: var(--surface-interactive);
 }
 
 .um-item:focus-visible {
@@ -1319,8 +1321,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 :deep(.appbar-search .v-field) {
   border-radius: var(--r-pill);
-  background: var(--surface-2);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.14);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-default);
 }
 
 :deep(.appbar-search .v-field__outline) {
@@ -1332,8 +1334,9 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 :deep(.appbar-search .v-field--focused) {
-  background: var(--surface-1);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 12%, transparent);
+  background: var(--surface-primary);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
   border-color: var(--accent);
 }
 
@@ -1373,11 +1376,9 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 /* ── Command palette (desktop universal search) ─────────────────────── */
 .cmd-palette {
-  border-color: rgba(var(--v-theme-on-surface), 0.10);
+  border-color: var(--border-subtle);
   overflow: hidden;
-  box-shadow:
-    0 12px 40px rgba(var(--v-theme-on-surface), 0.14),
-    0 2px 8px rgba(var(--v-theme-on-surface), 0.06);
+  box-shadow: var(--elevation-modal);
 }
 
 .cmd-palette__list {
@@ -1416,7 +1417,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .cmd-row--active {
-  background: rgba(var(--v-theme-on-surface), 0.06);
+  background: var(--surface-interactive-hover);
 }
 
 .cmd-row:focus-visible {
@@ -1431,12 +1432,12 @@ function onSearchKeydown(event: KeyboardEvent) {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: rgba(var(--v-theme-on-surface), 0.06);
+  background: var(--surface-interactive);
   color: var(--ink);
 }
 
 .cmd-row--active .cmd-row__icon {
-  background: rgba(var(--v-theme-on-surface), 0.11);
+  background: var(--surface-interactive-active);
 }
 
 .cmd-row__icon--ask,
@@ -1491,9 +1492,9 @@ function onSearchKeydown(event: KeyboardEvent) {
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  border: 1px solid var(--border-default);
   border-radius: 5px;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   color: var(--muted);
   font-family: ui-monospace, "SF Mono", monospace;
   font-size: 11px;
@@ -1505,8 +1506,8 @@ function onSearchKeydown(event: KeyboardEvent) {
   align-items: center;
   gap: 14px;
   padding: 8px 12px;
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-  background: var(--surface-2);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-secondary);
 }
 
 .cmd-hint {
@@ -1563,8 +1564,9 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .appbar-search-result:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 .appbar-search-result strong,
@@ -1654,7 +1656,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   .appbar-hamburger-btn:focus-visible,
   .appbar-mobile-search-btn:hover,
   .appbar-mobile-search-btn:focus-visible {
-    background: rgba(var(--v-theme-on-surface), 0.07);
+    background: var(--surface-interactive-hover);
     outline: none;
   }
 
@@ -1704,7 +1706,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   border-radius: var(--r-pill);
   /* Match the sibling action buttons: faint resting surface + dark glyph so the
      whole utility cluster reads as one row of tappable controls. */
-  background: rgba(var(--v-theme-on-surface), 0.05);
+  background: var(--surface-interactive);
   color: var(--ink);
   font: inherit;
   appearance: none;
@@ -1719,13 +1721,14 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .appbar-create-btn:hover,
 .appbar-create-btn--open {
-  background: rgba(var(--v-theme-on-surface), 0.12);
+  background: var(--surface-interactive-hover);
   color: var(--ink);
 }
 
 .appbar-create-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 .appbar-create-menu {
@@ -1768,12 +1771,13 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .appbar-create-row:hover,
 .appbar-create-row:focus-visible {
-  background: rgba(var(--v-theme-on-surface), 0.05);
+  background: var(--surface-interactive);
 }
 
 .appbar-create-row:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 .appbar-create-row__icon {
