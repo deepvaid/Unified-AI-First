@@ -41,8 +41,15 @@ html[data-shell="studio"][data-sidebar="gray"] .mp-sidebar {
   border-right-color: transparent !important;
 }
 
-html[data-shell="studio"] .mp-appbar {
-  background: rgb(var(--v-theme-background)) !important; /* dark-mode blend; light is handled by the bind above */
+html[data-theme="light"][data-shell="studio"] .mp-appbar {
+  background: rgb(var(--v-theme-background)) !important;
+  border-bottom: 0 !important;
+}
+
+/* Dark studio keeps elevated nav chrome (L1 surface), not canvas — see
+   html[data-theme="dark"] --mp-nav-surface bind above. */
+html[data-theme="dark"][data-shell="studio"] .mp-appbar {
+  background: var(--mp-nav-surface) !important;
   border-bottom: 0 !important;
 }
 
@@ -89,10 +96,8 @@ html[data-theme="dark"] {
   --mp-nav-surface: var(--mp-color-dark-surface);
 }
 
-/* Studio dissolves the nav into the canvas — mirrors the light-studio bind. */
-html[data-theme="dark"][data-shell="studio"] {
-  --mp-nav-surface: rgb(var(--v-theme-background));
-}
+/* Light studio dissolves nav into canvas; dark studio keeps L1 nav chrome so
+   cards (also L1) do not sit visually above the navigation cluster. */
 
 /* ── Dark side nav on a light app theme (rail shell / dark-sidebar accounts) ──
    The head nav matches the panel, plus on-dark foregrounds for the quiet
