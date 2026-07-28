@@ -245,3 +245,20 @@ Earlier in this session the WP-01–WP-03 commits were found on a mistakenly cre
 - **Deviations from the plan:** Card/overlay/divider roles were largely satisfied by WP-04H (done-by-prior with evidence in that entry). This package finishes the open items: generic `v-divider` dark opacity (noted in WP-04H known issues) and focus-ring centralization. `MpDataTableToolbar.vue` ghost-search border opacity and `JourneyFlowColumn.vue` decorative flow-diagram rgba stacks remain for WP-12.
 - **Known issues:** AppBar create-btn/user-pill focus states and remaining view-level focus mixes not yet swept.
 - **Commit:** `490b33e`
+
+## WP-07 — Forms and controls
+
+- **Work package completed:** WP-07 — applied semantic token hierarchy to outlined fields, selection controls, and form-adjacent pickers (date range, folder select).
+- **Files changed:**
+  - `src/styles/settings-form.scss`
+  - `src/components/MpDateRangeSelect.vue`
+  - `src/components/MpFolderSelect.vue`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none — consumes `--text-disabled`, `--text-muted`, `--text-primary`, `--icon-secondary`, `--border-default`, `--hairline`, `--focus-ring`, and Vuetify error theme.
+- **Hard-coded colors removed:** disabled field `--muted` fallback; date-range trigger icon opacity stack; Vuetify border-color rgba activator borders on MpDateRangeSelect and MpFolderSelect.
+- **Tests run + results:**
+  - `npm run type-check` — only pre-existing `ReelFlyView.vue` errors.
+  - `npx vite build` — succeeds.
+- **Deviations from the plan:** MpFormDrawer, MpManageFoldersDrawer, MpMoveToFolderDialog, MpBuilderShell, RBAC/PLG drawers already resolve through global outlined-field baseline and WP-06 focus tokens — no component-level dark selectors or literals found (done-by-prior).
+- **Known issues:** Overlay-surface form drawers deferred to WP-10.
+- **Commit:** `<pending>`

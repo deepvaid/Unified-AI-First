@@ -98,13 +98,42 @@
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--disabled .v-field__input {
-  color: var(--muted);
+  color: var(--text-disabled);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--disabled .v-label {
+  color: var(--text-disabled);
 }
 
 /* ── Details / helper / error text ─────────────────────────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-messages__message {
   font-size: 12px;
   letter-spacing: 0.01em;
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input--error .v-messages__message {
+  color: rgb(var(--v-theme-error));
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input:not(.v-input--error) .v-messages__message {
+  color: var(--text-muted);
+}
+
+/* ── Selection controls — checkbox, radio, switch ───────────── */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-selection-control .v-label {
+  color: var(--text-primary);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-selection-control--disabled .v-label {
+  color: var(--text-disabled);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-selection-control__input::before {
+  border-color: var(--border-default);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-selection-control--focus-visible .v-selection-control__input::before {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
 /* ── Prepend / append inner icon ────────────────────────────── */
