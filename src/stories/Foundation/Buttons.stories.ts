@@ -173,3 +173,66 @@ export const States: Story = {
     `,
   }),
 }
+
+/** Hover, focus, active, and selected cues — tab to focus; selected uses accent keyline. */
+export const InteractionStates: Story = {
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <p class="text-caption text-medium-emphasis mb-2">Outlined hover / focus (keyboard tab)</p>
+          <v-btn variant="outlined" class="text-none">Hover or focus me</v-btn>
+        </div>
+        <div>
+          <p class="text-caption text-medium-emphasis mb-2">Flat primary — dark uses --btn-flat-shadow, not white inset</p>
+          <v-btn color="primary" variant="flat" class="text-none">Primary action</v-btn>
+        </div>
+        <div>
+          <p class="text-caption text-medium-emphasis mb-2">Selected list row pattern</p>
+          <div
+            class="pa-3 d-flex align-center ga-2"
+            style="max-width: 320px; background: var(--surface-interactive-selected); border: 2px solid var(--accent-default); border-radius: 8px;"
+            aria-selected="true"
+          >
+            <v-icon size="18">check</v-icon>
+            <span>Selected item</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-caption text-medium-emphasis mb-2">Error / destructive</p>
+          <v-btn color="error" variant="flat" class="text-none">Delete</v-btn>
+        </div>
+      </div>
+    `,
+  }),
+}
+
+/** Pinned dark — flat button shadow and borders use dark semantic aliases. */
+export const DarkMode: Story = {
+  globals: { theme: 'dark' },
+  render: () => ({
+    template: `
+      <div class="d-flex flex-wrap gap-6 align-end">
+        <v-btn color="primary" variant="flat" class="text-none">Create campaign</v-btn>
+        <v-btn variant="outlined" class="text-none">Export</v-btn>
+        <v-btn color="primary" variant="tonal" class="text-none">Duplicate</v-btn>
+        <v-btn variant="text" class="text-none">Cancel</v-btn>
+        <v-btn color="error" variant="flat" class="text-none">Delete</v-btn>
+      </div>
+    `,
+  }),
+}
+
+/** Default cyan dark primary — must render #2CC4FF (matches app). */
+export const DarkModeCyanAccent: Story = {
+  globals: { theme: 'dark', accent: 'cyan' },
+  render: () => ({
+    template: `
+      <div>
+        <p class="text-caption text-medium-emphasis mb-3">Default cyan — no data-accent attribute</p>
+        <v-btn color="primary" variant="flat" class="text-none">Primary #2CC4FF</v-btn>
+      </div>
+    `,
+  }),
+}

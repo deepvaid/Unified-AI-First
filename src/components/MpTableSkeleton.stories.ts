@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpTableSkeleton from './MpTableSkeleton.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Feedback/MpTableSkeleton',
@@ -91,4 +92,9 @@ export const InCard: Story = {
     columns: 5,
     showHeader: true,
   },
+}
+
+export const DarkModeInCard: Story = {
+  globals: darkModeGlobals,
+  ...InCard,
 }

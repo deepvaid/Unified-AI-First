@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import StorefrontPreview from './StorefrontPreview.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 import { createBlock, createSection, type ThemeSection, type ThemeStyles } from '@/stores/themeBuilderData'
 
 function homeSections(): ThemeSection[] {
@@ -180,6 +181,12 @@ export const MobileDevice: Story = {
       </div>
     `,
   }),
+}
+
+/** Editor chrome in dark mode — customer preview colours remain scoped to --sf-* vars. */
+export const DarkModeSectioned: Story = {
+  globals: darkModeGlobals,
+  ...Sectioned,
 }
 
 /** A rich-text section carrying heading, paragraph, and button blocks — renders the nested block mocks. */

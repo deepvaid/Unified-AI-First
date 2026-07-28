@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpConfirmDialog from './MpConfirmDialog.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Overlays/MpConfirmDialog',
@@ -121,4 +122,10 @@ export const LongMessage: Story = {
     confirmLabel: 'Stop send',
     danger: true,
   },
+}
+
+/** L4 modal surface + scrim in dark mode. */
+export const DarkModeDanger: Story = {
+  globals: darkModeGlobals,
+  ...Danger,
 }

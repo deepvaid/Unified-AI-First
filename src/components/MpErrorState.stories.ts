@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpErrorState from './MpErrorState.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Feedback/MpErrorState',
@@ -66,6 +67,11 @@ export const Default: Story = {
     title: 'Couldn’t load campaigns',
     description: 'There was a problem reaching the server. Check your connection and try again.',
   },
+}
+
+export const DarkMode: Story = {
+  globals: darkModeGlobals,
+  ...Default,
 }
 
 export const NoRetry: Story = {

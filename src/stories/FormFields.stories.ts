@@ -15,6 +15,7 @@
  */
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta: Meta = {
   title: 'Forms/Form Fields',
@@ -398,4 +399,11 @@ export const FormLayout: Story = {
       </div>
     `,
   }),
+}
+
+/** Outlined field baseline in dark mode — borders, focus ring, and disabled text from semantic tokens. */
+export const DarkModeAllStates: Story = {
+  name: 'Dark Mode — All States',
+  globals: darkModeGlobals,
+  ...AllStates,
 }

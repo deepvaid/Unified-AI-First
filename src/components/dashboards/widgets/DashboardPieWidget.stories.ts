@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { DashboardSeriesData } from '@/stores/dashboards/types'
 import DashboardPieWidget from './DashboardPieWidget.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const CHANNEL_SHARE: DashboardSeriesData = {
   kind: 'series',
@@ -55,6 +56,11 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const RevenueShare: Story = {}
+
+export const DarkModeRevenueShare: Story = {
+  globals: darkModeGlobals,
+  ...RevenueShare,
+}
 
 export const TicketsByChannel: Story = {
   args: { data: TICKETS_BY_CHANNEL },

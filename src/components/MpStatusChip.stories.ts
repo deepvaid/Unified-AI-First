@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpStatusChip from './MpStatusChip.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Data Display/MpStatusChip',
@@ -86,6 +87,12 @@ export const OrderStatuses: Story = {
     `,
   }),
   args: {} as any,
+}
+
+/** Pinned dark — tonal chips on L1 surfaces. */
+export const DarkModeOrderStatuses: Story = {
+  globals: darkModeGlobals,
+  ...OrderStatuses,
 }
 
 export const PriorityLevels: Story = {

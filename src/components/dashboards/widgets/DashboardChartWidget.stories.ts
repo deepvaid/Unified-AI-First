@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { DashboardSeriesData } from '@/stores/dashboards/types'
 import DashboardChartWidget from './DashboardChartWidget.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const REVENUE_SERIES: DashboardSeriesData = {
   kind: 'series',
@@ -59,6 +60,11 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const TimeseriesArea: Story = {}
+
+export const DarkModeTimeseries: Story = {
+  globals: darkModeGlobals,
+  ...TimeseriesArea,
+}
 
 export const TimeseriesLine: Story = {
   args: { chartVariant: 'line' },

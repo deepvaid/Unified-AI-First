@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpFormDrawer from './MpFormDrawer.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const mobile375 = {
   options: {
@@ -154,6 +155,12 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const WidgetEditFlyout: Story = {}
+
+/** L4 drawer + overlay form fields in dark mode. */
+export const DarkModeWidgetEdit: Story = {
+  globals: darkModeGlobals,
+  ...WidgetEditFlyout,
+}
 
 export const DataSourceForm: Story = {
   args: {
