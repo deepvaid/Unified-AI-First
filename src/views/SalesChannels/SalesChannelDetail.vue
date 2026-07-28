@@ -14,6 +14,7 @@ import {
   useSalesChannelsStore,
   type ConnectedCloud,
 } from '@/stores/useSalesChannels'
+import { useCommerceStore } from '@/stores/useCommerce'
 import { useRetailStore } from '@/stores/useRetail'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 
@@ -121,6 +122,7 @@ const route = useRoute()
 const router = useRouter()
 const salesChannelsStore = useSalesChannelsStore()
 const retailStore = useRetailStore()
+const commerceStore = useCommerceStore()
 const storeThemesStore = useStoreThemesStore()
 
 const notice = ref('')
@@ -168,7 +170,7 @@ const associates = computed(() => {
 
 const retailTransactions = computed(() => {
   const ids = new Set(locations.value.map((location) => location.id))
-  return retailStore.transactionList.filter((transaction) => ids.has(transaction.locationId))
+  return commerceStore.posOrders.filter((order) => ids.has(order.pos?.locationId ?? ''))
 })
 
 const onlineRegisterCount = computed(() => registers.value.filter((register) => register.status === 'online').length)
@@ -177,9 +179,9 @@ const pendingOfflineTransactions = computed(() => registers.value.reduce((sum, r
 const totalRetailSalesToday = computed(() => locations.value.reduce((sum, location) => sum + location.todaysSales, 0))
 const activeAssociateCount = computed(() => associates.value.filter((associate) => associate.active).length)
 const averageBasket = computed(() => {
-  const completed = retailTransactions.value.filter((transaction) => transaction.total > 0)
+  const completed = retailTransactions.value.filter((order) => parseFloat(order.total) > 0)
   if (!completed.length) return 0
-  return completed.reduce((sum, transaction) => sum + transaction.total, 0) / completed.length
+  return completed.reduce((sum, order) => sum + parseFloat(order.total), 0) / completed.length
 })
 
 const primaryActionLabel = computed(() => {

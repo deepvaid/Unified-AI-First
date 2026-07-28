@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 
 const productNames = [
@@ -235,6 +235,20 @@ export interface PurchasableGiftCardInput {
 
 // ── Orders / Draft Orders / Fulfillments (Commerce > Orders domain) ────
 export const SALES_CHANNELS = ['Online Store', 'POS', 'Amazon', 'eBay', 'Instagram Shop']
+
+/**
+ * Channels the generated web seed rotates through. POS is excluded on purpose:
+ * in-store orders come from the POS seed below, which carries real register,
+ * location and staff context.
+ */
+const WEB_SEED_CHANNELS = SALES_CHANNELS.filter((c) => c !== 'POS')
+
+/** Map the human channel label onto the structured channel identity. */
+function channelIdentity(label: string): { channelType: OrderChannelType; channelId: string | null } {
+  if (label === 'Online Store') return { channelType: 'web_store', channelId: 'retest-sales-notification' }
+  if (label === 'POS') return { channelType: 'offline_store', channelId: 'pos-store' }
+  return { channelType: 'marketplace', channelId: null }
+}
 export const SHIPPING_RATES: Record<string, number> = { Standard: 9.99, Express: 24.99, Overnight: 49.99, Free: 0 }
 const ORDER_TAG_POOL = ['VIP', 'Wholesale', 'Repeat Customer', 'Gift', 'Rush', 'Local Pickup']
 const STREET_NAMES = ['Market St', 'Main St', 'Broadway', 'Oak Ave', 'Elm St', '5th Ave', 'Sunset Blvd', 'Congress Ave']
@@ -272,6 +286,35 @@ export interface OrderTimelineEvent {
   date: string
 }
 
+/** How the sale reached us. POS sales carry `pos` metadata; web sales do not. */
+export type OrderChannelType = 'web_store' | 'offline_store' | 'marketplace'
+
+export type TenderType = 'card' | 'cash' | 'tap_to_pay' | 'gift_card' | 'split'
+export const TENDER_LABELS: Record<TenderType, string> = {
+  card: 'Card',
+  cash: 'Cash',
+  tap_to_pay: 'Tap to Pay',
+  gift_card: 'Gift card',
+  split: 'Split',
+}
+
+/** BORIS = bought online, returned in store. */
+export type OrderOrigin = 'in_store' | 'boris'
+
+export interface OrderTender {
+  type: TenderType
+  amount: number
+}
+
+/** Present only on orders taken at a register. */
+export interface OrderPosMeta {
+  locationId: string
+  registerId: string
+  staffId: string
+  origin: OrderOrigin
+  hasReceipt: boolean
+}
+
 export interface Order {
   id: number
   orderNumber: string
@@ -303,6 +346,12 @@ export interface Order {
   fulfillmentStage: FulfillmentStage
   fulfilledFromLocation: string
   timeline: OrderTimelineEvent[]
+  channelType: OrderChannelType
+  /** SalesChannel id, or null for marketplaces we do not model as channels. */
+  channelId: string | null
+  /** Set iff channelType === 'offline_store'. */
+  pos?: OrderPosMeta
+  tenders?: OrderTender[]
 }
 
 export interface DraftLineItem {
@@ -395,6 +444,147 @@ export function draftOrderTotal(input: Pick<DraftOrderInput, 'lineItems' | 'disc
 /** Derive the stock chip status from an available-inventory count. */
 function stockStatus(inv: number): string {
   return inv === 0 ? 'Out of Stock' : inv < 20 ? 'Low Stock' : 'In Stock'
+}
+
+/**
+ * In-store orders, ported from the retail store's transaction seed.
+ *
+ * POS sales are Orders like any other — they simply carry register, location
+ * and staff context. Ids start at 2000 so they never collide with the web seed
+ * or with `convertDraftToOrder`'s max+1 allocation.
+ */
+function buildPosOrders(): Order[] {
+  const L = (sku: string, name: string, qty: number, price: number) => ({ sku, name, qty, price })
+  const TEE_B = (q = 1) => L('TEE-001-BLK-M', 'Classic crew tee — Black', q, 39)
+  const TEE_W = (q = 1) => L('TEE-001-WHT-M', 'Classic crew tee — White', q, 39)
+  const JEAN = (q = 1) => L('JEAN-512-DRK-32', 'Slim denim — Dark, 32', q, 129)
+  const SNEAK = (q = 1) => L('SNEAK-A1-WHT-10', 'Court sneaker — White, 10', q, 159)
+  const CAP = (q = 1) => L('CAP-001-NVY', 'Cap — Navy', q, 35)
+  const BAG = (q = 1) => L('BAG-LTH-BLK', 'Leather tote — Black', q, 249)
+  const HOOD = (q = 1) => L('HOOD-101-GRY-L', 'Pullover hoodie — Grey, L', q, 89)
+  const JACK = (q = 1) => L('JACK-220-OLI-M', 'Field jacket — Olive, M', q, 219)
+
+  type PosSeedStatus = 'completed' | 'refunded' | 'partial_refund' | 'voided' | 'suspended'
+  interface PosSeed {
+    locationId: string
+    registerId: string
+    staffId: string
+    customerName?: string
+    tender: TenderType
+    status: PosSeedStatus
+    origin: OrderOrigin
+    hasReceipt: boolean
+    daysAgo: number
+    lines: Array<{ sku: string; name: string; qty: number; price: number }>
+  }
+
+  const seed: PosSeed[] = [
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', staffId: 'assoc-1', customerName: 'Hannah Cole',    tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_B(2), CAP()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', staffId: 'assoc-3', customerName: undefined,        tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [CAP()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', staffId: 'assoc-1', customerName: "Liam O'Connor",  tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JEAN(), TEE_W(2), CAP(), TEE_B()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-3', staffId: 'assoc-2', customerName: 'Mia Tan',        tender: 'split',      status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [HOOD(), CAP()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', staffId: 'assoc-1', customerName: 'Noah Williams',  tender: 'card',       status: 'refunded',       origin: 'boris',    hasReceipt: true,  daysAgo: 2, lines: [HOOD()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', staffId: 'assoc-3', customerName: 'Zoe Patel',      tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 3, lines: [TEE_B(), HOOD()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: 'Aria Singh',     tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_B(2), JEAN()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: undefined,        tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [CAP()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-2',  staffId: 'assoc-2', customerName: 'Lucas Chen',     tender: 'card',       status: 'partial_refund', origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JACK(), HOOD(), TEE_W(2)] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: 'Ivy Nguyen',     tender: 'gift_card',  status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 2, lines: [CAP(), TEE_B()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: undefined,        tender: 'cash',       status: 'voided',         origin: 'in_store', hasReceipt: false, daysAgo: 4, lines: [CAP()] },
+    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  staffId: 'assoc-6', customerName: 'Olivia Walker',  tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_W(), CAP()] },
+    { locationId: 'loc-auckland',  registerId: 'reg-auck-2',  staffId: 'assoc-6', customerName: 'Jack Pierce',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [SNEAK(), CAP(2), TEE_B()] },
+    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  staffId: 'assoc-6', customerName: 'Ruby Anand',     tender: 'cash',       status: 'suspended',      origin: 'in_store', hasReceipt: false, daysAgo: 3, lines: [TEE_B()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Henry Adler',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [BAG(), CAP(), TEE_B()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Maya Diaz',      tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [BAG(), JACK(), SNEAK(), JEAN(), TEE_B(2)] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  staffId: 'assoc-8', customerName: undefined,        tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [CAP()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  staffId: 'assoc-8', customerName: 'Sophia Renner',  tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JEAN(), HOOD(), TEE_W(2)] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Owen Castillo',  tender: 'card',       status: 'refunded',       origin: 'boris',    hasReceipt: true,  daysAgo: 2, lines: [SNEAK()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  staffId: 'assoc-8', customerName: 'Lily Brooks',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 3, lines: [TEE_B(), CAP()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Caleb Foster',   tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 4, lines: [HOOD(), TEE_W(), CAP()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  staffId: 'assoc-8', customerName: 'Ella Ross',      tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 5, lines: [CAP()] },
+  ]
+
+  // Counter sales are fulfilled on the spot, so they never enter the fulfillment queue.
+  const STATUS_MAP: Record<PosSeedStatus, { status: string; paymentStatus: string; fulfillmentStatus: string; stage: FulfillmentStage }> = {
+    completed:      { status: 'Completed', paymentStatus: 'Paid',                fulfillmentStatus: 'Shipped',   stage: 'Shipped' },
+    refunded:       { status: 'Refunded',  paymentStatus: 'Refunded',            fulfillmentStatus: 'Shipped',   stage: 'Shipped' },
+    partial_refund: { status: 'Completed', paymentStatus: 'Partially Refunded',  fulfillmentStatus: 'Shipped',   stage: 'Shipped' },
+    voided:         { status: 'Cancelled', paymentStatus: 'Voided',              fulfillmentStatus: 'Cancelled', stage: 'Pack' },
+    suspended:      { status: 'On Hold',   paymentStatus: 'Pending',             fulfillmentStatus: 'Not Ready', stage: 'Pack' },
+  }
+
+  const now = Date.now()
+  return seed.map((t, i) => {
+    const subtotalNum = t.lines.reduce((sum, l) => sum + l.price * l.qty, 0)
+    const gross = Math.round(subtotalNum * 1.1 * 100) / 100
+    const totalNum = t.status === 'voided' ? 0 : t.status === 'refunded' ? -gross : gross
+    const map = STATUS_MAP[t.status]
+    const at = new Date(now - t.daysAgo * 86_400_000 - (i * 7 + 25) * 60_000)
+    const date = at.toISOString().split('T')[0]!
+    const name = t.customerName ?? 'Walk-in customer'
+    const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+
+    const timeline: OrderTimelineEvent[] = [
+      { id: 1, kind: 'event', text: `Sold in store — register ${t.registerId}`, date },
+    ]
+    if (map.paymentStatus === 'Paid') {
+      timeline.push({ id: 2, kind: 'event', text: `Payment of $${gross.toFixed(2)} taken (${TENDER_LABELS[t.tender]})`, date })
+    }
+    if (t.status === 'refunded') timeline.push({ id: 3, kind: 'event', text: `Refund of $${gross.toFixed(2)} issued`, date })
+    if (t.status === 'partial_refund') timeline.push({ id: 3, kind: 'event', text: 'Partial refund issued', date })
+    if (t.status === 'voided') timeline.push({ id: 4, kind: 'event', text: 'Sale voided at the register', date })
+    if (t.status === 'suspended') timeline.push({ id: 5, kind: 'event', text: 'Sale suspended — parked at the register', date })
+
+    return {
+      id: 2000 + i,
+      orderNumber: `POS-${12048 - i}`,
+      customer: { name, email: t.customerName ? `${t.customerName.split(' ')[0]!.toLowerCase()}@email.com` : '—', avatar: initials },
+      city: '—',
+      itemCount: t.lines.reduce((sum, l) => sum + l.qty, 0),
+      subtotal: subtotalNum.toFixed(2),
+      shipping: '0.00',
+      total: totalNum.toFixed(2),
+      status: map.status,
+      fulfillmentStatus: map.fulfillmentStatus,
+      paymentStatus: map.paymentStatus,
+      paymentMethod: TENDER_LABELS[t.tender],
+      paymentReference: `pos_${String(910000 + i * 731)}`,
+      paymentCapturedAt: map.paymentStatus === 'Pending' ? null : date,
+      trackingNumber: null,
+      courier: null,
+      date,
+      lineItems: t.lines.map((l): OrderLineItem => ({
+        product: l.name,
+        sku: l.sku,
+        qty: l.qty,
+        price: l.price.toFixed(2),
+        status: t.status === 'voided' ? 'Cancelled' : 'Shipped',
+        coupon: null,
+        discountPct: 0,
+      })),
+      notes: null,
+      tags: [],
+      salesChannel: 'POS',
+      currency: 'USD',
+      region: '—',
+      country: '—',
+      phone: '—',
+      shippingAddress: buildAddress(name, '—', i),
+      billingAddress: buildAddress(name, '—', i),
+      fulfillmentStage: map.stage,
+      fulfilledFromLocation: t.locationId,
+      timeline,
+      channelType: 'offline_store' as const,
+      channelId: 'pos-store',
+      pos: {
+        locationId: t.locationId,
+        registerId: t.registerId,
+        staffId: t.staffId,
+        origin: t.origin,
+        hasReceipt: t.hasReceipt,
+      },
+      tenders: [{ type: t.tender, amount: totalNum }],
+    }
+  })
 }
 
 export const useCommerceStore = defineStore('commerce', () => {
@@ -531,7 +721,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       : fulfillmentStatus === 'Not Ready' ? 'Picked' : 'Pack'
 
     const timeline: OrderTimelineEvent[] = [
-      { id: 1, kind: 'event', text: `Order placed via ${SALES_CHANNELS[i % SALES_CHANNELS.length]}`, date },
+      { id: 1, kind: 'event', text: `Order placed via ${WEB_SEED_CHANNELS[i % WEB_SEED_CHANNELS.length]}`, date },
     ]
     if (paymentStatus === 'Paid') timeline.push({ id: 2, kind: 'event', text: `Payment of $${total} captured (${paymentMethods[i % paymentMethods.length]})`, date })
     if (shipped) timeline.push({ id: 3, kind: 'event', text: `Shipped via ${['UPS', 'FedEx', 'USPS', 'DHL'][i % 4]} — tracking ${trackingNum}`, date })
@@ -567,7 +757,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       })),
       notes: i % 7 === 0 ? 'Customer requested gift wrapping.' : null,
       tags: pickOrderTags(i),
-      salesChannel: SALES_CHANNELS[i % SALES_CHANNELS.length]!,
+      salesChannel: WEB_SEED_CHANNELS[i % WEB_SEED_CHANNELS.length]!,
       currency: 'USD',
       region: city.split(', ')[1] ?? '—',
       country: 'United States',
@@ -577,12 +767,109 @@ export const useCommerceStore = defineStore('commerce', () => {
       fulfillmentStage,
       fulfilledFromLocation: WAREHOUSE_LOCATIONS[i % WAREHOUSE_LOCATIONS.length]!,
       timeline,
+      ...channelIdentity(WEB_SEED_CHANNELS[i % WEB_SEED_CHANNELS.length]!),
     }
-  }))
+  }).concat(buildPosOrders()))
 
   // ── Order actions (mock-persistent) ──────────────────────────────
   function getOrderById(id: number): Order | undefined {
     return orders.value.find((o) => o.id === id)
+  }
+
+  /** Orders taken at a register — the retail transactions log. */
+  const posOrders = computed(() => orders.value.filter((o) => o.channelType === 'offline_store'))
+
+  /** Record a sale rung up at a register. */
+  function addPosOrder(payload: {
+    locationId: string
+    registerId: string
+    staffId: string
+    customerName?: string
+    total: number
+    tender: TenderType
+    itemCount: number
+    lines?: Array<{ sku: string; name: string; qty: number; price: number }>
+  }): Order {
+    const nextId = orders.value.reduce((max, o) => Math.max(max, o.id), 0) + 1
+    const name = payload.customerName ?? 'Walk-in customer'
+    const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+    const date = new Date().toISOString().split('T')[0]!
+    const subtotal = (payload.total / 1.1).toFixed(2)
+
+    const order: Order = {
+      id: nextId,
+      orderNumber: `POS-${12100 + posOrders.value.length}`,
+      customer: { name, email: '—', avatar: initials },
+      city: '—',
+      itemCount: payload.itemCount,
+      subtotal,
+      shipping: '0.00',
+      total: payload.total.toFixed(2),
+      status: 'Completed',
+      fulfillmentStatus: 'Shipped',
+      paymentStatus: 'Paid',
+      paymentMethod: TENDER_LABELS[payload.tender],
+      paymentReference: `pos_${Date.now()}`,
+      paymentCapturedAt: date,
+      trackingNumber: null,
+      courier: null,
+      date,
+      lineItems: (payload.lines ?? []).map((l): OrderLineItem => ({
+        product: l.name,
+        sku: l.sku,
+        qty: l.qty,
+        price: l.price.toFixed(2),
+        status: 'Shipped',
+        coupon: null,
+        discountPct: 0,
+      })),
+      notes: null,
+      tags: [],
+      salesChannel: 'POS',
+      currency: 'USD',
+      region: '—',
+      country: '—',
+      phone: '—',
+      shippingAddress: buildAddress(name, '—', nextId),
+      billingAddress: buildAddress(name, '—', nextId),
+      fulfillmentStage: 'Shipped',
+      fulfilledFromLocation: payload.locationId,
+      timeline: [
+        { id: 1, kind: 'event', text: `Sold in store — register ${payload.registerId}`, date },
+        { id: 2, kind: 'event', text: `Payment of $${payload.total.toFixed(2)} taken (${TENDER_LABELS[payload.tender]})`, date },
+      ],
+      channelType: 'offline_store',
+      channelId: 'pos-store',
+      pos: {
+        locationId: payload.locationId,
+        registerId: payload.registerId,
+        staffId: payload.staffId,
+        origin: 'in_store',
+        hasReceipt: true,
+      },
+      tenders: [{ type: payload.tender, amount: payload.total }],
+    }
+    orders.value.unshift(order)
+    return order
+  }
+
+  function refundPosOrder(id: number): void {
+    const order = getOrderById(id)
+    if (!order || order.status === 'Refunded') return
+    order.status = 'Refunded'
+    order.paymentStatus = 'Refunded'
+    order.total = (-Math.abs(parseFloat(order.total))).toFixed(2)
+    logOrderEvent(order, `Refund of $${Math.abs(parseFloat(order.total)).toFixed(2)} issued at the register`)
+  }
+
+  function voidPosOrder(id: number): void {
+    const order = getOrderById(id)
+    if (!order || order.status === 'Cancelled') return
+    order.status = 'Cancelled'
+    order.paymentStatus = 'Voided'
+    order.fulfillmentStatus = 'Cancelled'
+    order.total = '0.00'
+    logOrderEvent(order, 'Sale voided at the register')
   }
 
   function logOrderEvent(order: Order, text: string, kind: 'note' | 'event' = 'event'): void {
@@ -800,7 +1087,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       customer: customerName,
       email: `${fName.toLowerCase()}@example.com`,
       phone: `+1 (${300 + (i * 17) % 600}) 555-${String(2000 + i * 53).slice(-4)}`,
-      salesChannel: SALES_CHANNELS[i % SALES_CHANNELS.length]!,
+      salesChannel: WEB_SEED_CHANNELS[i % WEB_SEED_CHANNELS.length]!,
       items: lineItems.length,
       lineItems,
       total: draftOrderTotal({ lineItems, discount, shippingMethod }).toFixed(2),
@@ -923,6 +1210,7 @@ export const useCommerceStore = defineStore('commerce', () => {
         { id: 1, kind: 'event', text: `Order placed via Draft Order ${draft.draftNumber}`, date: today },
         { id: 2, kind: 'event', text: `Payment of $${draft.total} captured (marked as paid)`, date: today },
       ],
+      ...channelIdentity(draft.salesChannel),
     }
     orders.value.unshift(order)
     draftOrders.value = draftOrders.value.filter((d) => d.id !== id)
@@ -1075,6 +1363,7 @@ export const useCommerceStore = defineStore('commerce', () => {
     createProduct, updateProductDraft, duplicateProduct, deleteProduct, deleteProducts,
     adjustStock, transferStock,
     getOrderById, addOrderNote, setOrderTags, updateOrderAddress, cancelOrder, cancelOrders, refundOrder, markOrderFulfilled, markOrdersFulfilled,
+    posOrders, addPosOrder, refundPosOrder, voidPosOrder,
     advanceFulfillment, markShipped,
     createDraftOrder, updateDraftOrder, setDraftOrderStatus, deleteDraftOrders, convertDraftToOrder,
     createPromotion, updatePromotion, duplicatePromotion, setPromotionStatus, deletePromotion, deletePromotions,

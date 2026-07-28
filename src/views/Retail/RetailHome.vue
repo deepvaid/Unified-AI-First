@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useRetailStore, TENDER_LABELS } from '@/stores/useRetail'
+import { useRetailStore } from '@/stores/useRetail'
+import { useCommerceStore } from '@/stores/useCommerce'
 import { formatAgo } from '@/composables/useRelativeTime'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 
@@ -86,7 +87,7 @@ const quickActions = [
   { icon: 'tablet-smartphone', title: 'Launch POS Preview',  desc: 'Demo the tablet POS UX',         path: '/pos-preview',   color: 'retail' },
   { icon: 'receipt',           title: 'View transactions',   desc: 'Search and refund POS sales',    path: '/transactions',  color: 'primary' },
   { icon: 'plus-circle',       title: 'Add register',        desc: 'Pair a new device to a store',   path: '/registers',     color: 'success' },
-  { icon: 'user-plus',         title: 'Add associate',       desc: 'Set up a new POS user',          path: '/associates',    color: 'contacts' },
+  { icon: 'user-plus',         title: 'Add staff member',    desc: 'Set up a new POS user',          path: '/staff',         color: 'contacts' },
   { icon: 'upload',            title: 'Upload inventory',    desc: 'Bulk stock update by CSV',       path: '/inventory',     color: 'warning' },
   { icon: 'bar-chart-3',       title: 'View dashboard',      desc: 'Open the Retail dashboard',      path: 'dashboard',      color: 'analytics' },
 ]
@@ -103,7 +104,7 @@ interface TodoItem {
 
 const todos = ref<TodoItem[]>([
   { id: 't1', title: 'Pair your first register',     desc: 'Open the POS app on a tablet and follow the pairing flow', done: true,  path: '/registers' },
-  { id: 't2', title: 'Add at least 1 associate',      desc: 'Set up PIN-based sign-in for staff',                       done: true,  path: '/associates' },
+  { id: 't2', title: 'Add at least 1 staff member',   desc: 'Set up PIN-based sign-in for staff',                       done: true,  path: '/staff' },
   { id: 't3', title: 'Configure receipt template',    desc: 'Add your logo and contact details',                        done: false, path: '/settings' },
   { id: 't4', title: 'Pair a payment terminal',       desc: 'Connect Stripe Reader or enable Tap to Pay',               done: false, path: '/hardware' },
   { id: 't5', title: 'Run a test transaction',        desc: 'Process a $0.01 sale to verify end-to-end',                done: false, path: '/pos-preview' },
@@ -121,8 +122,9 @@ function onTodoClick(todo: TodoItem) {
 
 /* ── Recent activity ────────────────────────────────────────── */
 
+const commerce = useCommerceStore()
 const recentTransactions = computed(() =>
-  store.transactionList.filter((t) => store.scopedLocationIds.includes(t.locationId)).slice(0, 8),
+  commerce.posOrders.filter((o) => store.scopedLocationIds.includes(o.pos?.locationId ?? '')).slice(0, 8),
 )
 const recentRegisters = computed(() =>
   [...store.registerList]
@@ -131,10 +133,10 @@ const recentRegisters = computed(() =>
     .slice(0, 5),
 )
 
-function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 'suspended'): string {
-  if (s === 'completed') return 'check-circle-2'
-  if (s === 'refunded' || s === 'partial_refund') return 'undo-2'
-  if (s === 'voided') return 'circle-x'
+function statusIcon(status: string): string {
+  if (status === 'Completed') return 'check-circle-2'
+  if (status === 'Refunded') return 'undo-2'
+  if (status === 'Cancelled') return 'circle-x'
   return 'pause-circle'
 }
 </script>
@@ -308,23 +310,23 @@ function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 
               @click="go('/transactions')"
             >
               <template #prepend>
-                <div class="retail-row-icon" :class="{ 'retail-row-icon--success': txn.status === 'completed', 'retail-row-icon--warning': txn.status === 'refunded' || txn.status === 'partial_refund' }">
+                <div class="retail-row-icon" :class="{ 'retail-row-icon--success': txn.status === 'Completed', 'retail-row-icon--warning': txn.paymentStatus === 'Refunded' || txn.paymentStatus === 'Partially Refunded' }">
                   <v-icon size="14">{{ statusIcon(txn.status) }}</v-icon>
                 </div>
               </template>
               <v-list-item-title class="retail-list-title d-flex align-center ga-2">
-                <span>{{ txn.id }}</span>
-                <v-chip v-if="txn.origin === 'boris'" size="x-small" variant="tonal" color="primary">BORIS</v-chip>
+                <span>{{ txn.orderNumber }}</span>
+                <v-chip v-if="txn.pos?.origin === 'boris'" size="x-small" variant="tonal" color="primary">BORIS</v-chip>
               </v-list-item-title>
               <v-list-item-subtitle class="retail-list-sub">
-                {{ store.locationName(txn.locationId) }} · {{ store.registerName(txn.registerId) }} · {{ store.associateName(txn.associateId) }} · {{ formatAgo(txn.completedAt) }}
+                {{ store.locationName(txn.pos?.locationId ?? '') }} · {{ store.registerName(txn.pos?.registerId ?? '') }} · {{ store.associateName(txn.pos?.staffId ?? '') }} · {{ formatAgo(txn.date) }}
               </v-list-item-subtitle>
               <template #append>
                 <div class="d-flex flex-column align-end" style="gap: 2px;">
-                  <span class="font-weight-bold" :class="txn.total < 0 ? 'text-error' : ''" style="color: var(--ink); font-size: 13px;">
-                    {{ fmtMoney(txn.total) }}
+                  <span class="font-weight-bold" :class="parseFloat(txn.total) < 0 ? 'text-error' : ''" style="color: var(--ink); font-size: 13px;">
+                    {{ fmtMoney(parseFloat(txn.total)) }}
                   </span>
-                  <span class="text-caption text-medium-emphasis">{{ TENDER_LABELS[txn.tender] }}</span>
+                  <span class="text-caption text-medium-emphasis">{{ txn.paymentMethod }}</span>
                 </div>
               </template>
             </v-list-item>

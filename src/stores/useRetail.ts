@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useCommerceStore } from '@/stores/useCommerce'
 import { useSalesChannelsStore, type SalesChannel } from '@/stores/useSalesChannels'
 
 /* ── Types ─────────────────────────────────────────────────────── */
@@ -32,49 +33,6 @@ export interface Register {
   pendingOfflineTxns: number
   pairedTerminal?: string
   pairedPrinter?: string
-}
-
-export type TenderType = 'card' | 'cash' | 'tap_to_pay' | 'gift_card' | 'split'
-export const TENDER_LABELS: Record<TenderType, string> = {
-  card: 'Card',
-  cash: 'Cash',
-  tap_to_pay: 'Tap to Pay',
-  gift_card: 'Gift card',
-  split: 'Split',
-}
-
-export type TxnStatus = 'completed' | 'refunded' | 'partial_refund' | 'voided' | 'suspended'
-export const TXN_STATUS_LABELS: Record<TxnStatus, string> = {
-  completed: 'Completed',
-  refunded: 'Refunded',
-  partial_refund: 'Partial refund',
-  voided: 'Voided',
-  suspended: 'Suspended',
-}
-
-export type TxnOrigin = 'in_store' | 'boris'
-
-export interface RetailTransactionLine {
-  sku: string
-  name: string
-  qty: number
-  price: number
-}
-
-export interface RetailTransaction {
-  id: string
-  locationId: string
-  registerId: string
-  associateId: string
-  customerName?: string
-  total: number
-  tender: TenderType
-  status: TxnStatus
-  itemCount: number
-  origin: TxnOrigin
-  completedAt: string
-  hasReceipt: boolean
-  lines?: RetailTransactionLine[]
 }
 
 export type AssociateRole = 'associate' | 'senior_associate' | 'manager' | 'admin'
@@ -221,59 +179,6 @@ const associates: Associate[] = [
   { id: 'assoc-8', name: 'Daniel Rivera',    role: 'associate',        locationIds: ['loc-soho'],                        pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:11:00Z' },
 ]
 
-function buildTransactions(): RetailTransaction[] {
-  // Line shorthand — SKUs/prices must match channelPrices so POS receipts and tiles align.
-  const L = (sku: string, name: string, qty: number, price: number): RetailTransactionLine => ({ sku, name, qty, price })
-  const TEE_B = (q = 1) => L('TEE-001-BLK-M', 'Classic crew tee — Black', q, 39)
-  const TEE_W = (q = 1) => L('TEE-001-WHT-M', 'Classic crew tee — White', q, 39)
-  const JEAN  = (q = 1) => L('JEAN-512-DRK-32', 'Slim denim — Dark, 32', q, 129)
-  const SNEAK = (q = 1) => L('SNEAK-A1-WHT-10', 'Court sneaker — White, 10', q, 159)
-  const CAP   = (q = 1) => L('CAP-001-NVY', 'Cap — Navy', q, 35)
-  const BAG   = (q = 1) => L('BAG-LTH-BLK', 'Leather tote — Black', q, 249)
-  const HOOD  = (q = 1) => L('HOOD-101-GRY-L', 'Pullover hoodie — Grey, L', q, 89)
-  const JACK  = (q = 1) => L('JACK-220-OLI-M', 'Field jacket — Olive, M', q, 219)
-
-  // itemCount/total are derived from lines (total = subtotal × 1.1 tax, negated for refunds, 0 for voided).
-  // daysAgo gives each location Today / Yesterday / older groups for the POS history view.
-  const seed: Array<Omit<RetailTransaction, 'id' | 'completedAt' | 'total' | 'itemCount'> & { daysAgo: number; lines: RetailTransactionLine[] }> = [
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', associateId: 'assoc-1', customerName: 'Hannah Cole',     tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_B(2), CAP()] },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', associateId: 'assoc-3', customerName: undefined,         tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [CAP()] },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', associateId: 'assoc-1', customerName: 'Liam O\'Connor',  tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JEAN(), TEE_W(2), CAP(), TEE_B()] },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-3', associateId: 'assoc-2', customerName: 'Mia Tan',         tender: 'split',      status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [HOOD(), CAP()] },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', associateId: 'assoc-1', customerName: 'Noah Williams',   tender: 'card',       status: 'refunded',       origin: 'boris',    hasReceipt: true,  daysAgo: 2, lines: [HOOD()] },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', associateId: 'assoc-3', customerName: 'Zoe Patel',       tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 3, lines: [TEE_B(), HOOD()] },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: 'Aria Singh',      tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_B(2), JEAN()] },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: undefined,         tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [CAP()] },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-2',  associateId: 'assoc-2', customerName: 'Lucas Chen',      tender: 'card',       status: 'partial_refund', origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JACK(), HOOD(), TEE_W(2)] },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: 'Ivy Nguyen',      tender: 'gift_card',  status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 2, lines: [CAP(), TEE_B()] },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  associateId: 'assoc-4', customerName: undefined,         tender: 'cash',       status: 'voided',         origin: 'in_store', hasReceipt: false, daysAgo: 4, lines: [CAP()] },
-    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  associateId: 'assoc-6', customerName: 'Olivia Walker',   tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_W(), CAP()] },
-    { locationId: 'loc-auckland',  registerId: 'reg-auck-2',  associateId: 'assoc-6', customerName: 'Jack Pierce',     tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [SNEAK(), CAP(2), TEE_B()] },
-    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  associateId: 'assoc-6', customerName: 'Ruby Anand',      tender: 'cash',       status: 'suspended',      origin: 'in_store', hasReceipt: false, daysAgo: 3, lines: [TEE_B()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Henry Adler',     tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [BAG(), CAP(), TEE_B()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Maya Diaz',       tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [BAG(), JACK(), SNEAK(), JEAN(), TEE_B(2)] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  associateId: 'assoc-8', customerName: undefined,         tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [CAP()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  associateId: 'assoc-8', customerName: 'Sophia Renner',   tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JEAN(), HOOD(), TEE_W(2)] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Owen Castillo',   tender: 'card',       status: 'refunded',       origin: 'boris',    hasReceipt: true,  daysAgo: 2, lines: [SNEAK()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  associateId: 'assoc-8', customerName: 'Lily Brooks',     tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 3, lines: [TEE_B(), CAP()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  associateId: 'assoc-7', customerName: 'Caleb Foster',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 4, lines: [HOOD(), TEE_W(), CAP()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  associateId: 'assoc-8', customerName: 'Ella Ross',       tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 5, lines: [CAP()] },
-  ]
-  const now = Date.now()
-  return seed.map(({ daysAgo, ...t }, i) => {
-    const subtotal = t.lines.reduce((s, l) => s + l.price * l.qty, 0)
-    const gross = Math.round(subtotal * 1.1 * 100) / 100
-    const total = t.status === 'voided' ? 0 : t.status === 'refunded' ? -gross : gross
-    return {
-      ...t,
-      id: `POS-${12048 - i}`,
-      itemCount: t.lines.reduce((s, l) => s + l.qty, 0),
-      total,
-      completedAt: new Date(now - daysAgo * 86_400_000 - (i * 7 + 25) * 60_000).toISOString(),
-    }
-  })
-}
-
 const stockData: StockRow[] = [
   { sku: 'TEE-001-BLK-M',   productName: 'Classic crew tee — Black',     category: 'Apparel',   stockByLocation: { 'loc-bondi': 12, 'loc-chadstone': 4,  'loc-auckland': 8,  'loc-soho': 24 } },
   { sku: 'TEE-001-WHT-M',   productName: 'Classic crew tee — White',     category: 'Apparel',   stockByLocation: { 'loc-bondi': 6,  'loc-chadstone': 9,  'loc-auckland': 3,  'loc-soho': 17 } },
@@ -332,7 +237,6 @@ export const useRetailStore = defineStore('retail', () => {
   const locationList = ref<RetailLocation[]>([...locations])
   const registerList = ref<Register[]>([...registers])
   const associateList = ref<Associate[]>([...associates])
-  const transactionList = ref<RetailTransaction[]>(buildTransactions())
   const stockList = ref<StockRow[]>([...stockData])
   const inventoryAuditList = ref<InventoryAudit[]>([...inventoryAudits])
   const channelPriceList = ref<ChannelPrice[]>([...channelPrices])
@@ -409,13 +313,15 @@ export const useRetailStore = defineStore('retail', () => {
     return associateList.value.find((a) => a.id === id)?.name ?? id
   }
 
-  /* KPIs — scoped to the active location, or the whole estate when scoped to "all" */
+  /* KPIs — scoped to the active location, or the whole estate when scoped to "all".
+     Sales live in the shared order store; retail supplies only the scope. */
   const kpis = computed(() => {
+    const commerce = useCommerceStore()
     const scope = scopedLocationIds.value
-    const txns = transactionList.value.filter((t) => scope.includes(t.locationId))
-    const todayTxns = txns.filter((t) => t.status === 'completed')
-    const refunds = txns.filter((t) => t.status === 'refunded' || t.status === 'partial_refund')
-    const salesToday = todayTxns.reduce((s, t) => s + t.total, 0)
+    const txns = commerce.posOrders.filter((o) => scope.includes(o.pos?.locationId ?? ''))
+    const todayTxns = txns.filter((o) => o.status === 'Completed')
+    const refunds = txns.filter((o) => o.paymentStatus === 'Refunded' || o.paymentStatus === 'Partially Refunded')
+    const salesToday = todayTxns.reduce((sum, o) => sum + parseFloat(o.total), 0)
     const txnCountToday = todayTxns.length
     const avgBasket = txnCountToday > 0 ? salesToday / txnCountToday : 0
     const locRegs = registerList.value.filter((r) => scope.includes(r.locationId))
@@ -464,56 +370,6 @@ export const useRetailStore = defineStore('retail', () => {
   function resetPin(id: string) {
     const a = associateList.value.find((x) => x.id === id)
     if (a) a.pinSet = false
-  }
-
-  function deleteTransactions(ids: string[]) {
-    transactionList.value = transactionList.value.filter((t) => !ids.includes(t.id))
-  }
-
-  function refundTransaction(id: string) {
-    const t = transactionList.value.find((x) => x.id === id)
-    if (t && t.status === 'completed') {
-      t.status = 'refunded'
-      t.total = -Math.abs(t.total)
-    }
-  }
-
-  function voidTransaction(id: string) {
-    const t = transactionList.value.find((x) => x.id === id)
-    if (t) {
-      t.status = 'voided'
-      t.total = 0
-    }
-  }
-
-  function addTransaction(payload: {
-    locationId: string
-    registerId: string
-    associateId: string
-    customerName?: string
-    total: number
-    tender: TenderType
-    itemCount: number
-    lines?: RetailTransactionLine[]
-  }) {
-    const id = `POS-${12100 + transactionList.value.length}`
-    const txn: RetailTransaction = {
-      id,
-      locationId: payload.locationId,
-      registerId: payload.registerId,
-      associateId: payload.associateId,
-      customerName: payload.customerName,
-      total: payload.total,
-      tender: payload.tender,
-      status: 'completed',
-      itemCount: payload.itemCount,
-      origin: 'in_store',
-      completedAt: new Date().toISOString(),
-      hasReceipt: true,
-      lines: payload.lines,
-    }
-    transactionList.value.unshift(txn)
-    return txn
   }
 
   function deleteAssociates(ids: string[]) {
@@ -585,7 +441,6 @@ export const useRetailStore = defineStore('retail', () => {
     locationList,
     registerList,
     associateList,
-    transactionList,
     stockList,
     inventoryAuditList,
     channelPriceList,
@@ -615,10 +470,6 @@ export const useRetailStore = defineStore('retail', () => {
     deactivateRegisters,
     toggleAssociateActive,
     resetPin,
-    deleteTransactions,
-    refundTransaction,
-    voidTransaction,
-    addTransaction,
     addPosCustomer,
     recordCustomerPurchase,
     addAssociate,

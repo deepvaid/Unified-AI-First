@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useCommerceStore, type Order } from '@/stores/useCommerce'
+import { useCommerceStore, SALES_CHANNELS, type Order } from '@/stores/useCommerce'
+import { useRetailStore } from '@/stores/useRetail'
 import { downloadCsv } from '@/utils/exportCsv'
 import { formatMoneyParts } from '@/utils/formatMoneyParts'
 import MpPageHeader from '@/components/MpPageHeader.vue'
@@ -17,9 +18,23 @@ import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeade
 import { useInitialLoad } from '@/composables/useInitialLoad'
 
 const store = useCommerceStore()
+const retail = useRetailStore()
 const route = useRoute()
 const router = useRouter()
 const accountId = computed(() => route.params.accountId as string)
+
+/**
+ * POS mode renders the same orders list as the retail transactions log: scoped
+ * to in-store sales for the rail's active location, with register context in
+ * place of the fulfillment column.
+ */
+const posMode = computed(() => route.name === 'RetailTransactions')
+
+/** The order set this page works over. */
+const baseOrders = computed(() => {
+  if (!posMode.value) return store.orders
+  return store.posOrders.filter((o) => retail.scopedLocationIds.includes(o.pos?.locationId ?? ''))
+})
 function goCreateDraft() {
   router.push({ name: 'CreateDraftOrder', params: { accountId: accountId.value } })
 }
@@ -38,12 +53,36 @@ const snackbarText = ref('')
 function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 // Tabs matching real Maropost app
-const tabs = computed(() => [
-  { label: 'All Orders', key: 'all', count: tabCount('all') },
-  { label: 'Completed', key: 'completed', count: tabCount('completed') },
-  { label: 'Processing', key: 'processing', count: tabCount('processing') },
-  { label: 'Not Fulfilled', key: 'not_fulfilled', count: tabCount('not_fulfilled') },
-])
+const tabs = computed(() =>
+  posMode.value
+    ? [
+        { label: 'All', key: 'all', count: tabCount('all') },
+        { label: 'Sales', key: 'sales', count: tabCount('sales') },
+        { label: 'Returns', key: 'returns', count: tabCount('returns') },
+        { label: 'Voided', key: 'voided', count: tabCount('voided') },
+        { label: 'BORIS', key: 'boris', count: tabCount('boris') },
+      ]
+    : [
+        { label: 'All Orders', key: 'all', count: tabCount('all') },
+        { label: 'Completed', key: 'completed', count: tabCount('completed') },
+        { label: 'Processing', key: 'processing', count: tabCount('processing') },
+        { label: 'Not Fulfilled', key: 'not_fulfilled', count: tabCount('not_fulfilled') },
+      ],
+)
+
+const posHeaders = [
+  { title: 'Sale', key: 'orderNumber', sortable: true, width: 120 },
+  { title: 'Date', key: 'date', sortable: true, hideBelow: 'md' as const },
+  { title: 'Customer', key: 'customer.name' },
+  { title: 'Location', key: 'pos.locationId', hideBelow: 'md' as const },
+  { title: 'Staff', key: 'pos.staffId', hideBelow: 'lg' as const },
+  { title: 'Items', key: 'itemCount', align: 'end' as const, width: 70, hideBelow: 'lg' as const },
+  { title: 'Total', key: 'total', align: 'end' as const, sortable: true },
+  { title: 'Tender', key: 'paymentMethod', hideBelow: 'md' as const },
+  { title: 'Status', key: 'status' },
+  { title: '', key: 'actions', sortable: false, width: 48 },
+  { title: '', key: 'data-table-expand', width: 40 },
+]
 
 const headers = [
   { title: 'Order', key: 'orderNumber', sortable: true, width: 110 },
@@ -63,7 +102,9 @@ const headers = [
 // expanded row / order detail); users can re-enable them via the column menu.
 // Keeps the table free of horizontal scroll at common widths.
 const hiddenColumns = ref<string[]>(['paymentStatus', 'salesChannel'])
-const { visibleHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
+const { visibleHeaders: webHeaders } = useResponsiveTableHeaders(headers, hiddenColumns)
+const { visibleHeaders: posVisibleHeaders } = useResponsiveTableHeaders(posHeaders, ref<string[]>([]))
+const visibleHeaders = computed(() => (posMode.value ? posVisibleHeaders.value : webHeaders.value))
 
 const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 const formatDate = (d?: string) => d ? dateFmt.format(new Date(d)) : '—'
@@ -80,6 +121,8 @@ const fulfillmentDots: Record<string, string> = {
 const paymentDots: Record<string, string> = {
   'Paid': 'rgb(var(--v-theme-success))',
   'Refunded': 'rgb(var(--v-theme-error))',
+  'Partially Refunded': 'rgb(var(--v-theme-warning))',
+  'Pending': 'rgb(var(--v-theme-warning))',
   'Voided': 'rgba(var(--v-theme-on-surface), 0.38)',
 }
 
@@ -93,39 +136,39 @@ const money = (value: string) => formatMoneyParts(parseFloat(value.replace(/,/g,
 const lineTotal = (qty: number, price: string) => money((qty * parseFloat(price)).toFixed(2))
 
 // ─── Tab + Filter Filtering ───────────────────────────────────────────────────
-const filteredOrders = computed(() => {
-  let orders = store.orders
-
-  // Tab-level filter
-  switch (activeTab.value) {
-    case 'completed':     orders = orders.filter(o => o.status === 'Completed'); break
-    case 'processing':    orders = orders.filter(o => o.status === 'Processing'); break
-    case 'not_fulfilled': orders = orders.filter(o => !['Shipped', 'Cancelled'].includes(o.fulfillmentStatus ?? '')); break
+function matchesTab(o: Order, key: string): boolean {
+  switch (key) {
+    case 'completed':     return o.status === 'Completed'
+    case 'processing':    return o.status === 'Processing'
+    case 'not_fulfilled': return !['Shipped', 'Cancelled'].includes(o.fulfillmentStatus ?? '')
+    case 'sales':         return o.status === 'Completed' && o.paymentStatus === 'Paid'
+    case 'returns':       return o.paymentStatus === 'Refunded' || o.paymentStatus === 'Partially Refunded'
+    case 'voided':        return o.status === 'Cancelled'
+    case 'boris':         return o.pos?.origin === 'boris'
+    default:              return true
   }
+}
+
+const filteredOrders = computed(() => {
+  let orders = baseOrders.value.filter(o => matchesTab(o, activeTab.value))
 
   // Drawer-level filters (aligned to store enum values)
   if (filters.value.status) orders = orders.filter(o => o.status === filters.value.status)
   if (filters.value.fulfillment) orders = orders.filter(o => o.fulfillmentStatus === filters.value.fulfillment)
   if (filters.value.payment) orders = orders.filter(o => o.paymentStatus === filters.value.payment)
+  if (filters.value.channel) orders = orders.filter(o => o.salesChannel === filters.value.channel)
 
   return orders
 })
 
-const tabCount = (key: string) => {
-  switch (key) {
-    case 'all':           return store.orders.length
-    case 'completed':     return store.orders.filter(o => o.status === 'Completed').length
-    case 'processing':    return store.orders.filter(o => o.status === 'Processing').length
-    case 'not_fulfilled': return store.orders.filter(o => !['Shipped', 'Cancelled'].includes(o.fulfillmentStatus ?? '')).length
-    default: return 0
-  }
-}
+const tabCount = (key: string) => baseOrders.value.filter(o => matchesTab(o, key)).length
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 const filters = ref({
   status: null as string | null,
   fulfillment: null as string | null,
   payment: null as string | null,
+  channel: null as string | null,
 })
 
 const filterOptions = {
@@ -134,13 +177,15 @@ const filterOptions = {
   // Aligned to useCommerce.ts `fulfillmentStatuses`
   fulfillment: ['Not Ready', 'Ready For Fulfillment', 'Shipped', 'Return Requested', 'Cancelled', 'Unapproved'],
   // Aligned to useCommerce.ts paymentStatus logic
-  payment: ['Paid', 'Refunded', 'Voided'],
+  payment: ['Paid', 'Partially Refunded', 'Pending', 'Refunded', 'Voided'],
+  channel: SALES_CHANNELS,
 }
 
 const filterLabels: Record<string, string> = {
   status: 'Order Status',
   fulfillment: 'Fulfillment',
   payment: 'Payment',
+  channel: 'Sales Channel',
 }
 
 const activeFilterEntries = computed(() =>
@@ -154,7 +199,7 @@ function removeFilter(key: string) {
 }
 
 function clearAllFilters() {
-  filters.value = { status: null, fulfillment: null, payment: null }
+  filters.value = { status: null, fulfillment: null, payment: null, channel: null }
 }
 
 function selectAll() {
@@ -230,13 +275,15 @@ function exportOrders() {
   <div class="h-100 d-flex flex-column gap-5">
     <!-- Page Header -->
     <MpPageHeader
-      eyebrow="Commerce · Orders"
-      title="Sales Orders"
-      :subtitle="`${store.orders.length} orders total · $${store.orders.reduce((a,o) => a + parseFloat(o.total), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lifetime revenue`"
+      :eyebrow="posMode ? 'Retail · Sell' : 'Commerce · Orders'"
+      :title="posMode ? 'Transactions' : 'Sales Orders'"
+      :subtitle="posMode
+        ? `${baseOrders.length} in-store sales · ${retail.isAllLocations ? 'all locations' : retail.activeLocation.name}`
+        : `${store.orders.length} orders total · $${store.orders.reduce((a,o) => a + parseFloat(o.total), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lifetime revenue`"
     >
       <template #actions>
         <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportOrders">Export</v-btn>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="goCreateDraft">Create Draft Order</v-btn>
+        <v-btn v-if="!posMode" color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="goCreateDraft">Create Draft Order</v-btn>
       </template>
       <template #tabs>
         <MpFilterTabs v-model="activeTab" :tabs="tabs" />
@@ -343,6 +390,22 @@ function exportOrders() {
         <!-- Sales Channel -->
         <template v-slot:item.salesChannel="{ item }">
           <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.salesChannel }}</span>
+        </template>
+
+        <!-- POS register context -->
+        <template v-slot:item.pos.locationId="{ item }">
+          <span class="text-body-2 text-no-wrap">{{ item.pos ? retail.locationName(item.pos.locationId) : '—' }}</span>
+        </template>
+
+        <template v-slot:item.pos.staffId="{ item }">
+          <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.pos ? retail.associateName(item.pos.staffId) : '—' }}</span>
+        </template>
+
+        <template v-slot:item.paymentMethod="{ item }">
+          <div class="d-flex align-center ga-2 text-no-wrap">
+            <span class="text-body-2">{{ item.paymentMethod }}</span>
+            <v-chip v-if="item.pos?.origin === 'boris'" size="x-small" variant="tonal" color="info">BORIS</v-chip>
+          </div>
         </template>
 
         <!-- Row actions -->

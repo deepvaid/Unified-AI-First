@@ -622,22 +622,22 @@ export function useWidgetData(
       case 'retail_sales_by_location': {
         const rows = retail.locationList
           .map((loc) => {
-            const txns = retail.transactionList.filter((t) => t.locationId === loc.id && t.status === 'completed')
-            return { label: loc.name, value: txns.reduce((s, t) => s + t.total, 0) }
+            const sales = commerce.posOrders.filter((o) => o.pos?.locationId === loc.id && o.status === 'Completed')
+            return { label: loc.name, value: sales.reduce((s, o) => s + parseFloat(o.total), 0) }
           })
           .sort((a, b) => b.value - a.value)
         return buildSeriesData(rows.map((r) => r.label), rows.map((r) => r.value), 'currency', 'Revenue')
       }
       case 'retail_top_skus': {
         const tally = new Map<string, { count: number; revenue: number }>()
-        const skus = ['TEE-001-BLK-M', 'JEAN-512-DRK-32', 'SNEAK-A1-WHT-10', 'CAP-001-NVY', 'BAG-LTH-BLK'] as const
-        retail.transactionList.forEach((t) => {
-          if (t.status !== 'completed') return
-          const sku = skus[Number(t.id.slice(-1)) % skus.length]!
-          const row = tally.get(sku) ?? { count: 0, revenue: 0 }
-          row.count += t.itemCount
-          row.revenue += t.total
-          tally.set(sku, row)
+        commerce.posOrders.forEach((o) => {
+          if (o.status !== 'Completed') return
+          o.lineItems.forEach((li) => {
+            const row = tally.get(li.sku) ?? { count: 0, revenue: 0 }
+            row.count += li.qty
+            row.revenue += li.qty * parseFloat(li.price)
+            tally.set(li.sku, row)
+          })
         })
         const rows = Array.from(tally.entries())
           .map(([sku, v]) => ({ sku, units: v.count.toLocaleString(), revenue: `$${v.revenue.toLocaleString()}` }))
@@ -655,12 +655,12 @@ export function useWidgetData(
       case 'retail_top_associates': {
         const rows = retail.associateList
           .map((a) => {
-            const txns = retail.transactionList.filter((t) => t.associateId === a.id && t.status === 'completed')
+            const sales = commerce.posOrders.filter((o) => o.pos?.staffId === a.id && o.status === 'Completed')
             return {
               associate: a.name,
               role: ASSOCIATE_ROLE_LABELS[a.role],
-              transactions: txns.length,
-              revenue: txns.reduce((s, t) => s + t.total, 0),
+              transactions: sales.length,
+              revenue: sales.reduce((s, o) => s + parseFloat(o.total), 0),
             }
           })
           .filter((r) => r.transactions > 0)

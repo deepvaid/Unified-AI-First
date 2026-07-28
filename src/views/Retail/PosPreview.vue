@@ -2,12 +2,15 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useRetailStore, LOYALTY_TIER_LABELS } from '@/stores/useRetail'
-import type { TenderType, ChannelPrice, PosCustomer, RetailTransaction } from '@/stores/useRetail'
+import type { ChannelPrice, PosCustomer } from '@/stores/useRetail'
+import { useCommerceStore } from '@/stores/useCommerce'
+import type { Order, TenderType } from '@/stores/useCommerce'
 import { useElementSize } from '@/composables/useElementSize'
 
 const route = useRoute()
 const router = useRouter()
 const store = useRetailStore()
+const commerce = useCommerceStore()
 
 const accountId = computed(() => route.params.accountId as string)
 
@@ -169,6 +172,9 @@ function onScanSubmit() {
 
 // Cashiers scan the moment the sale screen is up — keep the field focused
 onMounted(focusScanField)
+onMounted(() => {
+  if (store.isAllLocations) store.setActiveLocation(store.locationList[0]!.id)
+})
 watch(posView, (view) => {
   if (view === 'sale') focusScanField()
 })
@@ -370,10 +376,10 @@ const activeRegister = computed(() => {
 function completeApproved() {
   // Append real transaction to store — the demo loop
   const locId = store.activeLocation?.id ?? store.locationList[0]!.id
-  const txn = store.addTransaction({
+  const txn = commerce.addPosOrder({
     locationId: locId,
     registerId: activeRegister.value.id,
-    associateId: activeAssociateId.value,
+    staffId: activeAssociateId.value,
     customerName: customerName.value || undefined,
     total: grandTotal.value,
     tender: selectedTender.value,
@@ -381,7 +387,7 @@ function completeApproved() {
     lines: cart.value.map((c) => ({ sku: c.sku, name: c.name, qty: c.qty, price: c.price })),
   })
   if (attachedCustomerId.value) store.recordCustomerPurchase(attachedCustomerId.value, grandTotal.value)
-  lastTxnId.value = txn.id
+  lastTxnId.value = txn.orderNumber
   paymentStep.value = 'idle'
   clearCart()
   saleCompleteVisible.value = true
@@ -457,10 +463,10 @@ const HISTORY_FILTERS: { value: HistoryFilter; label: string }[] = [
 const historyFilter = ref<HistoryFilter>('all')
 
 const historyTxns = computed(() =>
-  store.transactionList.filter((t) => {
-    if (t.locationId !== store.activeLocationId) return false
-    if (historyFilter.value === 'sales') return t.status === 'completed'
-    if (historyFilter.value === 'refunds') return t.status === 'refunded' || t.status === 'partial_refund'
+  commerce.posOrders.filter((o) => {
+    if (o.pos?.locationId !== store.activeLocationId) return false
+    if (historyFilter.value === 'sales') return o.status === 'Completed'
+    if (historyFilter.value === 'refunds') return o.paymentStatus === 'Refunded' || o.paymentStatus === 'Partially Refunded'
     return true
   }),
 )
@@ -479,10 +485,10 @@ function timeLabel(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-const historyGroups = computed<{ label: string; txns: RetailTransaction[] }[]>(() => {
-  const groups: { label: string; txns: RetailTransaction[] }[] = []
+const historyGroups = computed<{ label: string; txns: Order[] }[]>(() => {
+  const groups: { label: string; txns: Order[] }[] = []
   for (const t of historyTxns.value) {
-    const label = dayLabel(t.completedAt)
+    const label = dayLabel(t.date)
     const last = groups[groups.length - 1]
     if (last && last.label === label) last.txns.push(t)
     else groups.push({ label, txns: [t] })
@@ -490,28 +496,33 @@ const historyGroups = computed<{ label: string; txns: RetailTransaction[] }[]>((
   return groups
 })
 
-const STATUS_PILL_META: Record<RetailTransaction['status'], { label: string; cls: string }> = {
-  completed:      { label: 'Completed',      cls: 'pos-status-pill--completed' },
-  refunded:       { label: 'Refunded',       cls: 'pos-status-pill--refunded' },
-  partial_refund: { label: 'Partial refund', cls: 'pos-status-pill--partial' },
-  voided:         { label: 'Voided',         cls: 'pos-status-pill--voided' },
-  suspended:      { label: 'Suspended',      cls: 'pos-status-pill--suspended' },
+/** Keyed by the order's payment status, which carries the POS outcome. */
+const STATUS_PILL_META: Record<string, { label: string; cls: string }> = {
+  'Paid':                { label: 'Completed',      cls: 'pos-status-pill--completed' },
+  'Refunded':            { label: 'Refunded',       cls: 'pos-status-pill--refunded' },
+  'Partially Refunded':  { label: 'Partial refund', cls: 'pos-status-pill--partial' },
+  'Voided':              { label: 'Voided',         cls: 'pos-status-pill--voided' },
+  'Pending':             { label: 'Suspended',      cls: 'pos-status-pill--suspended' },
+}
+function statusPill(o: Order) {
+  return STATUS_PILL_META[o.paymentStatus] ?? STATUS_PILL_META['Paid']!
 }
 
 /* ── Transaction detail sheet ──────────────────────────────────── */
-const detailTxn = ref<RetailTransaction | null>(null)
-function openTxnDetail(t: RetailTransaction) { detailTxn.value = t }
+const detailTxn = ref<Order | null>(null)
+function openTxnDetail(t: Order) { detailTxn.value = t }
 function closeTxnDetail() { detailTxn.value = null }
 const detailSubtotal = computed(() =>
-  (detailTxn.value?.lines ?? []).reduce((s, l) => s + l.price * l.qty, 0),
+  (detailTxn.value?.lineItems ?? []).reduce((sum, l) => sum + parseFloat(l.price) * l.qty, 0),
 )
 function printDetailReceipt() { flashGridToast('Receipt sent to printer') }
 function emailDetailReceipt() {
-  flashGridToast(detailTxn.value?.customerName ? `Receipt emailed to ${detailTxn.value.customerName}` : 'Receipt emailed')
+  const name = detailTxn.value?.customer.name
+  flashGridToast(name && name !== 'Walk-in customer' ? `Receipt emailed to ${name}` : 'Receipt emailed')
 }
 function refundDetailTxn() {
   if (!detailTxn.value) return
-  store.refundTransaction(detailTxn.value.id)
+  commerce.refundPosOrder(detailTxn.value.id)
   flashGridToast('Refund processed')
 }
 
@@ -533,7 +544,7 @@ const selectedCustomer = computed<PosCustomer | null>(
 
 const selectedCustomerTxns = computed(() =>
   selectedCustomer.value
-    ? store.transactionList.filter((t) => t.customerName === selectedCustomer.value!.name).slice(0, 5)
+    ? commerce.posOrders.filter((o) => o.customer.name === selectedCustomer.value!.name).slice(0, 5)
     : [],
 )
 
@@ -1102,11 +1113,11 @@ const apkQrUrl = computed(() =>
                       @click="openTxnDetail(txn)"
                     >
                       <div>
-                        <div class="pos-history-row__id">{{ txn.id }}</div>
-                        <div class="pos-history-row__meta">{{ dayLabel(txn.completedAt) }} · {{ txn.itemCount }} item{{ txn.itemCount !== 1 ? 's' : '' }}</div>
+                        <div class="pos-history-row__id">{{ txn.orderNumber }}</div>
+                        <div class="pos-history-row__meta">{{ dayLabel(txn.date) }} · {{ txn.itemCount }} item{{ txn.itemCount !== 1 ? 's' : '' }}</div>
                       </div>
-                      <div class="pos-history-row__total" :class="txn.total < 0 ? 'pos-history-row__total--neg' : ''">
-                        {{ fmt(txn.total) }}
+                      <div class="pos-history-row__total" :class="parseFloat(txn.total) < 0 ? 'pos-history-row__total--neg' : ''">
+                        {{ fmt(parseFloat(txn.total)) }}
                       </div>
                     </button>
                     <div v-if="selectedCustomerTxns.length === 0" class="pos-profile__empty-note">No purchases yet</div>
@@ -1149,17 +1160,17 @@ const apkQrUrl = computed(() =>
                     @click="openTxnDetail(txn)"
                   >
                     <div>
-                      <div class="pos-history-row__id">{{ txn.id }}</div>
+                      <div class="pos-history-row__id">{{ txn.orderNumber }}</div>
                       <div class="pos-history-row__meta">
-                        {{ timeLabel(txn.completedAt) }}<template v-if="txn.customerName"> · {{ txn.customerName }}</template> · {{ txn.itemCount }} item{{ txn.itemCount !== 1 ? 's' : '' }} · {{ TENDER_DISPLAY[txn.tender] }}
+                        {{ timeLabel(txn.date) }}<template v-if="txn.customer.name !== 'Walk-in customer'"> · {{ txn.customer.name }}</template> · {{ txn.itemCount }} item{{ txn.itemCount !== 1 ? 's' : '' }} · {{ txn.paymentMethod }}
                       </div>
                     </div>
                     <div class="pos-history-row__right">
-                      <span v-if="txn.status !== 'completed'" class="pos-status-pill" :class="STATUS_PILL_META[txn.status].cls">
-                        {{ STATUS_PILL_META[txn.status].label }}
+                      <span v-if="txn.paymentStatus !== 'Paid'" class="pos-status-pill" :class="statusPill(txn).cls">
+                        {{ statusPill(txn).label }}
                       </span>
-                      <span class="pos-history-row__total" :class="txn.total < 0 ? 'pos-history-row__total--neg' : ''">
-                        {{ fmt(txn.total) }}
+                      <span class="pos-history-row__total" :class="parseFloat(txn.total) < 0 ? 'pos-history-row__total--neg' : ''">
+                        {{ fmt(parseFloat(txn.total)) }}
                       </span>
                       <v-icon size="14" color="#9ca3af">chevron-right</v-icon>
                     </div>
@@ -1572,9 +1583,9 @@ const apkQrUrl = computed(() =>
                 <div class="pos-variant-sheet__grabber" />
 
                 <div class="pos-txn-sheet__header">
-                  <span class="pos-txn-sheet__id">{{ detailTxn.id }}</span>
-                  <span class="pos-status-pill" :class="STATUS_PILL_META[detailTxn.status].cls">
-                    {{ STATUS_PILL_META[detailTxn.status].label }}
+                  <span class="pos-txn-sheet__id">{{ detailTxn.orderNumber }}</span>
+                  <span class="pos-status-pill" :class="statusPill(detailTxn).cls">
+                    {{ statusPill(detailTxn).label }}
                   </span>
                   <button class="pos-variant-sheet__close" @click="closeTxnDetail">
                     <v-icon size="14">x</v-icon>
@@ -1582,23 +1593,23 @@ const apkQrUrl = computed(() =>
                 </div>
 
                 <div class="pos-txn-sheet__meta">
-                  <div class="pos-txn-sheet__meta-row"><span>Date</span><span>{{ dayLabel(detailTxn.completedAt) }} · {{ timeLabel(detailTxn.completedAt) }}</span></div>
-                  <div class="pos-txn-sheet__meta-row"><span>Associate</span><span>{{ store.associateName(detailTxn.associateId) }}</span></div>
-                  <div class="pos-txn-sheet__meta-row"><span>Register</span><span>{{ store.registerName(detailTxn.registerId) }}</span></div>
-                  <div class="pos-txn-sheet__meta-row"><span>Customer</span><span>{{ detailTxn.customerName ?? 'Walk-in' }}</span></div>
-                  <div class="pos-txn-sheet__meta-row"><span>Tender</span><span><v-icon size="13" style="margin-right: 4px;">{{ TENDER_ICONS[detailTxn.tender] }}</v-icon>{{ TENDER_DISPLAY[detailTxn.tender] }}</span></div>
+                  <div class="pos-txn-sheet__meta-row"><span>Date</span><span>{{ dayLabel(detailTxn.date) }} · {{ timeLabel(detailTxn.date) }}</span></div>
+                  <div class="pos-txn-sheet__meta-row"><span>Staff</span><span>{{ store.associateName(detailTxn.pos?.staffId ?? '') }}</span></div>
+                  <div class="pos-txn-sheet__meta-row"><span>Register</span><span>{{ store.registerName(detailTxn.pos?.registerId ?? '') }}</span></div>
+                  <div class="pos-txn-sheet__meta-row"><span>Customer</span><span>{{ detailTxn.customer.name }}</span></div>
+                  <div class="pos-txn-sheet__meta-row"><span>Tender</span><span><v-icon v-if="detailTxn.tenders?.[0]" size="13" style="margin-right: 4px;">{{ TENDER_ICONS[detailTxn.tenders[0].type] }}</v-icon>{{ detailTxn.paymentMethod }}</span></div>
                 </div>
 
-                <div v-if="detailTxn.lines?.length" class="pos-txn-sheet__lines">
-                  <div v-for="l in detailTxn.lines" :key="l.sku" class="pos-txn-sheet__line">
+                <div v-if="detailTxn.lineItems.length" class="pos-txn-sheet__lines">
+                  <div v-for="l in detailTxn.lineItems" :key="l.sku" class="pos-txn-sheet__line">
                     <div class="pos-variant-row__swatch" :style="{ background: tileGradient(l.sku) }" />
-                    <span class="pos-txn-sheet__line-name">{{ l.name }} ×{{ l.qty }}</span>
-                    <span class="pos-txn-sheet__line-total">{{ fmt(l.price * l.qty) }}</span>
+                    <span class="pos-txn-sheet__line-name">{{ l.product }} ×{{ l.qty }}</span>
+                    <span class="pos-txn-sheet__line-total">{{ fmt(parseFloat(l.price) * l.qty) }}</span>
                   </div>
                   <div class="pos-cart__totals" style="padding: 8px 0 0;">
                     <div class="pos-total-row"><span>Subtotal</span><span>{{ fmt(detailSubtotal) }}</span></div>
-                    <div class="pos-total-row"><span>Tax (10%)</span><span>{{ fmt(Math.abs(detailTxn.total) - detailSubtotal) }}</span></div>
-                    <div class="pos-total-row pos-total-row--grand"><span>Total</span><span>{{ fmt(detailTxn.total) }}</span></div>
+                    <div class="pos-total-row"><span>Tax (10%)</span><span>{{ fmt(Math.abs(parseFloat(detailTxn.total)) - detailSubtotal) }}</span></div>
+                    <div class="pos-total-row pos-total-row--grand"><span>Total</span><span>{{ fmt(parseFloat(detailTxn.total)) }}</span></div>
                   </div>
                 </div>
                 <div v-else class="pos-txn-sheet__no-lines">

@@ -7,11 +7,13 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import { useRetailStore } from '@/stores/useRetail'
+import { useCommerceStore } from '@/stores/useCommerce'
 import type { Associate, AssociateRole } from '@/stores/useRetail'
 import { ASSOCIATE_ROLE_LABELS } from '@/stores/useRetail'
 import { formatAgo } from '@/composables/useRelativeTime'
 
 const store = useRetailStore()
+const commerce = useCommerceStore()
 const snackbar = ref({ visible: false, message: '' })
 function showToast(message: string) { snackbar.value = { visible: true, message } }
 
@@ -252,7 +254,7 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
             Last login: {{ selectedAssociate ? formatAgo(selectedAssociate.lastLoginAt) : '—' }}
           </div>
           <div class="text-body-2 text-medium-emphasis mt-1">
-            Transactions today: {{ store.transactionList.filter((t) => t.associateId === selectedAssociate?.id).length }}
+            Transactions today: {{ commerce.posOrders.filter((o) => o.pos?.staffId === selectedAssociate?.id).length }}
           </div>
         </v-col>
       </v-row>

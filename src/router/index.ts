@@ -157,7 +157,8 @@ const routes: RouteRecordRaw[] = [
     meta: { ...retailGate, railShell: true },
     children: [
       { path: '',             name: 'RetailHome',          component: () => import('@/views/Retail/RetailHome.vue') },
-      { path: 'transactions', name: 'RetailTransactions',  component: () => import('@/views/Retail/Transactions.vue') },
+      // The retail transactions log IS the orders list, scoped to in-store sales.
+      { path: 'transactions', name: 'RetailTransactions',  component: () => import('@/views/Commerce/SalesOrders.vue') },
       { path: 'registers',    name: 'RetailRegisters',     component: () => import('@/views/Retail/Registers.vue') },
       { path: 'staff',        name: 'RetailStaff',         component: () => import('@/views/Retail/Staff.vue') },
       { path: 'stock',        name: 'RetailStock',         component: () => import('@/views/Retail/StockByLocation.vue') },
