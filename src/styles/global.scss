@@ -595,8 +595,8 @@ tr:focus-within .action-btns {
 /* ─── Scrollbar Styling ─────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.28); }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-default); }
 
 /* ─── Hide Scrollbar Utility ────────────────────────────────── */
 .hide-scrollbar::-webkit-scrollbar { display: none; }

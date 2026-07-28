@@ -90,8 +90,8 @@ const barPath = computed(() => heroBars
             <svg viewBox="0 0 100 80" preserveAspectRatio="none" role="presentation">
               <defs>
                 <linearGradient id="commerce-landing-bar" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stop-color="#4cc5ff" />
-                  <stop offset="100%" stop-color="#12a8f5" />
+                  <stop offset="0%" stop-color="var(--accent-default)" />
+                  <stop offset="100%" stop-color="var(--accent-active)" />
                 </linearGradient>
               </defs>
               <path :d="barPath" fill="url(#commerce-landing-bar)" />

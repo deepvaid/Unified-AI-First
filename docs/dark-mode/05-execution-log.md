@@ -316,19 +316,25 @@ Earlier in this session the WP-01–WP-03 commits were found on a mistakenly cre
   - `npx vite build` — succeeds.
 - **Deviations from the plan:** remaining 20 copilot components already resolve through `dv-tokens.css` and global overlay rules — no additional literals found beyond the plan's named call sites (done-by-prior). WebGL orb/ring hex stops retained per §5.9 exception.
 - **Known issues:** none for this package.
-- **Commit:** `<pending>`
+- **Commit:** `33e91d4`
 
-## WP-10 — Menus, popovers, modals, and drawers
+## WP-12 — Remaining states, route sweep, and fixed-look boundaries
 
-- **Work package completed:** WP-10 — applied L3/L4 overlay surfaces, semantic scrim, borders, and elevation to global teleported overlays and MpFormDrawer.
+- **Work package completed:** WP-12 — finished product-wide sweep for scrollbars, StorefrontPreview on-brand text, Commerce Cloud hero chart, and ChartThemesView hex literals; verified fixed-look exceptions and prior package coverage.
 - **Files changed:**
   - `src/styles/global.scss`
-  - `src/components/MpFormDrawer.vue`
+  - `src/components/saleschannels/StorefrontPreview.vue`
+  - `src/views/Commerce/CommerceCloudLanding.vue`
+  - `src/views/ChartThemes/ChartThemesView.vue`
   - `docs/dark-mode/05-execution-log.md`
-- **Tokens changed:** none — consumes `--surface-overlay`, `--border-default`, `--scrim-overlay`, `--elevation-overlay`, `--elevation-modal`.
-- **Hard-coded colors removed:** Vuetify scrim opacity hack; menu/dialog `--mp-border-subtle` and dual-shadow stacks; MpFormDrawer `--mp-shadow-md` and primary-surface fill.
+- **Tokens changed:** none — consumes `--accent-on`, `--accent-default`, `--accent-active`, `--border-subtle`, `--border-default`, `--surface-*`, `--text-*`.
+- **Hard-coded colors removed:** global scrollbar `rgba(0,0,0,…)` thumbs; StorefrontPreview light-only `--mp-color-light-onPrimary`; Commerce Cloud SVG bar gradient hex stops; ChartThemesView 14 hex/rgba literals.
 - **Tests run + results:**
+  - `npm run type-check` — only pre-existing `ReelFlyView.vue` errors.
   - `npx vite build` — succeeds.
-- **Deviations from the plan:** MpConfirmDialog, RBAC/PLG drawers, Dv* dialogs inherit corrected global overlay rules without per-file edits (done-by-prior via teleported `.v-overlay__content` selectors). Representative raw call sites verified to use standard Vuetify overlays covered by global rules.
-- **Known issues:** none for this package.
-- **Commit:** `8273573`
+  - `npm run build-storybook` — passes (`✓ built in 13.40s`).
+  - `npm run audit:ui` — completed (repository-wide findings remain; fixed-look exceptions in §5.9 confirmed: Deck, Showcase, Reel, PosPreview terminal, OSM tiles, customer preview content, WebGL orb literals, sidebar skins).
+- **Deviations from the plan:** MpEmptyState/MpErrorState/MpTableSkeleton/MpStatusChip/MpUsageMeter/MpFloatingBulkBar/ModuleLandingPage addressed in WP-05/08 or already token-backed (done-by-prior). View-level `color="medium-emphasis"` icon props remain as residual low-severity findings for a future sweep.
+- **Known issues:** `npm run build` still blocked by pre-existing `ReelFlyView.vue` strict-null errors; ChartThemesView product decision to force light chart preview unchanged; ModuleLandingPage tile tint hexes are categorical accents, not theme surfaces.
+- **Commit:** `e5f7610`
+
