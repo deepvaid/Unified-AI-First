@@ -161,13 +161,21 @@ export function useDaVinciCampaignOnboarding() {
     ]
   }
 
-  function start(accountId: string, inputMode: DaVinciInputMode): CampaignOnboardingResponse {
+  function start(
+    accountId: string,
+    inputMode: DaVinciInputMode,
+    options: { audienceHint?: string } = {},
+  ): CampaignOnboardingResponse {
     onboarding.begin(accountId)
     onboarding.setInputMode(inputMode)
     onboarding.setStage('objective')
+    onboarding.setAudienceHint(options.audienceHint ?? null)
+    const named = options.audienceHint ? findAudience(options.audienceHint) : null
     return {
       intent: 'campaign',
-      reply: 'First, what should this campaign achieve?',
+      reply: named
+        ? `I'll send it to ${named.name}. First, what should this campaign achieve?`
+        : 'First, what should this campaign achieve?',
       speech: 'First, what should this campaign achieve?',
       quickReplies: CAMPAIGN_OBJECTIVES,
     }
@@ -175,10 +183,19 @@ export function useDaVinciCampaignOnboarding() {
 
   function audiencePrompt(objective: string): CampaignOnboardingResponse {
     onboarding.setObjective(objective)
+
+    // An audience named before we asked ("send a campaign to VIPs") skips this question.
+    const hint = session.value?.audienceHint
+    const named = hint ? findAudience(hint) : null
+    if (named) {
+      onboarding.setAudienceHint(null)
+      return readinessResponse(named)
+    }
+
     return {
       intent: 'campaign',
-      reply: `Understood — the goal is to ${objective.toLowerCase()}. Who should receive it? I’ll use a real audience from this account.`,
-      speech: `Understood. Who should receive it?`,
+      reply: `Got it — the goal is to ${objective.toLowerCase()}. Who should receive it? I’ll use a real audience from this account.`,
+      speech: 'Who should receive it?',
       quickReplies: audienceReplies(),
     }
   }

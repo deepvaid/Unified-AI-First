@@ -604,8 +604,18 @@ function onCampaignOnboardingAction(action: string) {
 
 function onIntentCardAction(payload: { card: DvCardDescriptor; action: string }) {
   if (payload.card.type === 'campaign') {
-    if (payload.action === 'review-draft' && payload.card.props.draftId) {
-      openCampaignDraft(payload.card.props.draftId)
+    if (payload.action === 'review-draft') {
+      if (payload.card.props.draftId) {
+        openCampaignDraft(payload.card.props.draftId)
+        return
+      }
+      // A campaign card with no draft id can only come from a restored snapshot
+      // predating the real-draft flow. Create the draft instead of reporting a
+      // success that never happened.
+      const draft = campaignOnboarding.createDraft()
+      const draftId = draft.cards?.find((card) => card.type === 'campaign')?.props.draftId
+      if (draftId) openCampaignDraft(draftId)
+      else appendCampaignOnboardingResponse(draft)
       return
     }
     if (payload.action === 'change-brief') {

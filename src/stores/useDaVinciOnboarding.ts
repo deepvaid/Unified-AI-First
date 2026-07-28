@@ -41,6 +41,8 @@ export interface DaVinciOnboardingSession {
   stage: DaVinciOnboardingStage
   inputMode: DaVinciInputMode | null
   brief: CampaignBrief
+  /** Audience named before we asked, e.g. "send a campaign to VIPs". Consumed once the objective is known. */
+  audienceHint: string | null
   readiness: CampaignReadinessItem[]
   draftId: number | null
   lastRouteName: string | null
@@ -72,6 +74,7 @@ function freshSession(accountId: string, freshAccount = false): DaVinciOnboardin
     stage: 'welcome',
     inputMode: null,
     brief: { objective: '', audience: null },
+    audienceHint: null,
     readiness: [],
     draftId: null,
     lastRouteName: null,
@@ -138,6 +141,12 @@ export const useDaVinciOnboardingStore = defineStore('daVinciOnboarding', () => 
     persist(session)
   }
 
+  function setAudienceHint(hint: string | null) {
+    const session = requireSession()
+    session.audienceHint = hint
+    persist(session)
+  }
+
   function setAudience(audience: CampaignAudienceSelection) {
     const session = requireSession()
     session.brief.audience = audience
@@ -200,6 +209,7 @@ export const useDaVinciOnboardingStore = defineStore('daVinciOnboarding', () => 
     setStage,
     setInputMode,
     setObjective,
+    setAudienceHint,
     setAudience,
     setReadiness,
     setDraft,

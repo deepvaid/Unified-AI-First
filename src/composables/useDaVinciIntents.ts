@@ -4,17 +4,12 @@ import { askGemini, type GeminiTurn } from '@/services/geminiClient'
 import { generateJourneyDraft, goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
 import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import {
-  audiences,
-  campaignNames,
-  campaignSpeech,
-  clarifyAudienceSpeech,
   fallbackSpeech,
   productDrafts,
   productSpeech,
   revenueSpeech,
   segmentSpeech,
   segmentVariants,
-  type AudienceKey,
 } from './dvIntentData'
 
 // Unified Da Vinci intent layer — port of the Marojarvis prototype's regex
@@ -123,15 +118,6 @@ export const SUGGESTION_CHIPS: DvQuickReply[] = [
   { label: 'Build a VIP segment', value: 'Build a VIP customer segment', icon: 'users' },
 ]
 
-function findAudience(text: string): AudienceKey | null {
-  const t = text.toLowerCase()
-  if (/\bvip\b|loyal|best customer/.test(t)) return 'vip'
-  if (/lapsed|inactive|win[- ]?back/.test(t)) return 'lapsed'
-  if (/cart|abandon/.test(t)) return 'cart'
-  if (/\ball\b|everyone|every subscriber|subscribers\b/.test(t)) return 'all'
-  return null
-}
-
 /** Maps free text onto a journey goal, if one is recognizable. */
 export function detectJourneyGoal(text: string): JourneyGoal | null {
   const t = text.toLowerCase()
@@ -180,55 +166,24 @@ export function useDaVinciIntents() {
   const campaignOnboarding = useDaVinciCampaignOnboarding()
   let seq = 0
 
-  function buildCampaign(key: AudienceKey): DvIntentResult {
+  /**
+   * Hands a campaign request to the onboarding wizard, which asks for the objective
+   * and audience before creating a real, editable draft. Never fabricates a draft:
+   * every card it returns carries a draftId that opens the real campaign builder.
+   */
+  function startCampaignDiscovery(audienceHint: string): DvIntentResult {
     const accountId = String(router.currentRoute.value.params.accountId ?? '2000290')
-    const audienceText: Record<AudienceKey, string> = {
-      all: 'Use Master Subscriber List',
-      vip: 'Use VIP Customer Circle',
-      lapsed: 'Use Win-Back Segment',
-      cart: 'Use Master Subscriber List',
-    }
-    if (!campaignOnboarding.session.value || campaignOnboarding.session.value.accountId !== accountId) {
-      campaignOnboarding.start(accountId, 'text')
-      campaignOnboarding.handleText('Promote an offer')
-    } else if (campaignOnboarding.session.value.stage === 'objective') {
-      campaignOnboarding.handleText('Promote an offer')
-    }
-    if (campaignOnboarding.session.value?.stage === 'audience') {
-      campaignOnboarding.handleText(audienceText[key])
-    }
-    const draft = campaignOnboarding.createDraft()
-    if (draft.cards?.length) {
-      return {
-        intent: 'campaign',
-        reply: draft.reply,
-        speech: draft.speech,
-        cards: draft.cards,
-        pending: null,
-        steps: INTENT_STEPS.campaign,
-      }
-    }
+    const active = campaignOnboarding.session.value
+    const response = active && active.accountId === accountId && active.stage !== 'complete'
+      ? (campaignOnboarding.resume() ?? campaignOnboarding.start(accountId, 'text', { audienceHint }))
+      : campaignOnboarding.start(accountId, 'text', { audienceHint })
 
-    const audience = audiences[key]
-    const name = campaignNames[seq++ % campaignNames.length] ?? campaignNames[0]!
     return {
       intent: 'campaign',
-      reply: `I prepared the "${name}" email for ${audience.label.toLowerCase()}. Review the editable draft below; nothing has been sent or scheduled.`,
-      speech: campaignSpeech(name, audience.label),
-      cards: [
-        {
-          type: 'campaign',
-          props: {
-            name,
-            subject: `${name} — picked for you`,
-            audience: audience.label,
-            audienceSize: audience.size,
-            sendTime: 'Tomorrow · 9:00 AM',
-            channel: 'Email',
-            status: 'Draft',
-          },
-        },
-      ],
+      reply: response.reply,
+      speech: response.speech,
+      cards: response.cards ?? [],
+      quickReplies: response.quickReplies,
       pending: null,
       steps: INTENT_STEPS.campaign,
     }
@@ -445,7 +400,7 @@ export function useDaVinciIntents() {
       const p = pending.value
       pending.value = null
       if (p.intent === 'campaign' && p.slot === 'audience') {
-        return buildCampaign(findAudience(trimmed) ?? 'all')
+        return startCampaignDiscovery(trimmed)
       }
       if (p.intent === 'engine') {
         return buildEngineAdvice(trimmed, p.context)
@@ -470,23 +425,8 @@ export function useDaVinciIntents() {
 
     const intent = classifyIntent(trimmed)
     switch (intent) {
-      case 'campaign': {
-        const known = findAudience(trimmed)
-        if (known) return buildCampaign(known)
-        pending.value = { intent: 'campaign', slot: 'audience', context: {} }
-        return {
-          intent: 'campaign',
-          reply: clarifyAudienceSpeech,
-          speech: clarifyAudienceSpeech,
-          cards: [],
-          quickReplies: [
-            { label: 'All subscribers', value: 'Send it to all subscribers', icon: 'users' },
-            { label: 'VIP customers', value: 'Send it to VIP customers', icon: 'crown' },
-            { label: 'Lapsed buyers', value: 'Send it to lapsed buyers', icon: 'user-minus' },
-          ],
-          pending: pending.value,
-        }
-      }
+      case 'campaign':
+        return startCampaignDiscovery(trimmed)
       case 'product':
         return buildProduct()
       case 'revenue':
