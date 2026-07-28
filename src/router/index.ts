@@ -13,10 +13,23 @@ declare module 'vue-router' {
     merchScope?: 'search' | 'collections'
     reportKind?: 'snapshot' | 'search' | 'collections' | 'recommendations'
     requires?: SubscriptionKey
+    /** Passes when the account holds ANY of these — for surfaces shared by more than one cloud. */
+    requiresAny?: SubscriptionKey[]
+    /** Sales Orders rendered as the retail transactions log (POS-only, retail columns). */
+    posMode?: boolean
   }
 }
 
+/** Web-store-only surfaces: storefronts, themes, merchandising, recommendations. */
 const commerceGate = { requires: 'commerce' as const }
+/** POS-only surfaces: registers, staff, hardware, payments, receipts. */
+const retailGate = { requires: 'retail' as const }
+/**
+ * The shared commerce backbone. Retail Cloud (MRC) and Commerce Cloud (MCC) sell
+ * the same orders / products / inventory / promotions / contacts features, so
+ * these surfaces open for either subscription.
+ */
+const sharedCommerceGate = { requiresAny: ['commerce', 'retail'] as SubscriptionKey[] }
 
 const routes: RouteRecordRaw[] = [
   // 1. Dashboard
@@ -59,31 +72,31 @@ const routes: RouteRecordRaw[] = [
 
   // 4. Products
   { path: '/commerce/:accountId/product_recommendations', name: 'ProductRecommendations', component: () => import('@/views/Products/ProductRecommendations.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/products', name: 'Products', component: () => import('@/views/Products/ProductsList.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/products/new', name: 'ProductNew', component: () => import('@/views/Products/ProductWizard.vue'), meta: { ...commerceGate, builderShell: true } },
-  { path: '/commerce/:accountId/products/kits/new', name: 'ProductKitNew', component: () => import('@/views/Products/KitWizard.vue'), meta: { ...commerceGate, builderShell: true } },
-  { path: '/commerce/:accountId/products/import/new/csv', name: 'ProductImportCsv', component: () => import('@/views/Products/ProductImportWizard.vue'), props: { source: 'csv' }, meta: { ...commerceGate, builderShell: true } },
-  { path: '/commerce/:accountId/products/import/new/ftp', name: 'ProductImportFtp', component: () => import('@/views/Products/ProductImportWizard.vue'), props: { source: 'ftp' }, meta: { ...commerceGate, builderShell: true } },
-  { path: '/commerce/:accountId/products/:productId/edit', name: 'ProductEdit', component: () => import('@/views/Products/ProductWizard.vue'), meta: { ...commerceGate, builderShell: true } },
-  { path: '/commerce/:accountId/product_tax_category', name: 'ProductTaxCategory', component: () => import('@/views/Products/TaxCategories.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/products/collections', name: 'Collections', component: () => import('@/views/Products/Collections.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/inventory', name: 'Inventory', component: () => import('@/views/Products/Inventory.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/products/reservations', name: 'Reservations', component: () => import('@/views/Products/Reservations.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/products', name: 'Products', component: () => import('@/views/Products/ProductsList.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/products/new', name: 'ProductNew', component: () => import('@/views/Products/ProductWizard.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
+  { path: '/commerce/:accountId/products/kits/new', name: 'ProductKitNew', component: () => import('@/views/Products/KitWizard.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
+  { path: '/commerce/:accountId/products/import/new/csv', name: 'ProductImportCsv', component: () => import('@/views/Products/ProductImportWizard.vue'), props: { source: 'csv' }, meta: { ...sharedCommerceGate, builderShell: true } },
+  { path: '/commerce/:accountId/products/import/new/ftp', name: 'ProductImportFtp', component: () => import('@/views/Products/ProductImportWizard.vue'), props: { source: 'ftp' }, meta: { ...sharedCommerceGate, builderShell: true } },
+  { path: '/commerce/:accountId/products/:productId/edit', name: 'ProductEdit', component: () => import('@/views/Products/ProductWizard.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
+  { path: '/commerce/:accountId/product_tax_category', name: 'ProductTaxCategory', component: () => import('@/views/Products/TaxCategories.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/products/collections', name: 'Collections', component: () => import('@/views/Products/Collections.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/inventory', name: 'Inventory', component: () => import('@/views/Products/Inventory.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/products/reservations', name: 'Reservations', component: () => import('@/views/Products/Reservations.vue'), meta: sharedCommerceGate },
 
   // 5. Commerce
-  { path: '/commerce/:accountId/orders', name: 'SalesOrders', component: () => import('@/views/Commerce/SalesOrders.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/orders/drafts', name: 'DraftOrders', component: () => import('@/views/Commerce/DraftOrders.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/orders/drafts/new', name: 'CreateDraftOrder', component: () => import('@/views/Commerce/CreateDraftOrder.vue'), meta: { ...commerceGate, builderShell: true } },
-  { path: '/commerce/:accountId/orders/drafts/:draftId(\\d+)', name: 'EditDraftOrder', component: () => import('@/views/Commerce/CreateDraftOrder.vue'), meta: { ...commerceGate, builderShell: true } },
-  { path: '/commerce/:accountId/orders/:orderId(\\d+)', name: 'OrderDetail', component: () => import('@/views/Commerce/OrderDetail.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/fulfillments', name: 'Fulfillments', component: () => import('@/views/Commerce/Fulfillments.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/coupons', name: 'Coupons', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/promotions', name: 'Promotions', component: () => import('@/views/Commerce/Coupons.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/promotions/new', name: 'CreatePromotion', component: () => import('@/views/Commerce/CreatePromotion.vue'), meta: { ...commerceGate, builderShell: true } },
-  { path: '/commerce/:accountId/promotions/:promoId/edit', name: 'EditPromotion', component: () => import('@/views/Commerce/CreatePromotion.vue'), meta: { ...commerceGate, builderShell: true } },
-  { path: '/commerce/:accountId/custom_gift_cards', name: 'CustomGiftCards', component: () => import('@/views/Commerce/CustomGiftCards.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/purchasable_gift_cards', name: 'PurchasableGiftCards', component: () => import('@/views/Commerce/PurchasableGiftCards.vue'), meta: commerceGate },
-  { path: '/commerce/:accountId/sales_channels', name: 'StoreSetup', redirect: to => ({ name: 'SalesChannels', params: { accountId: to.params.accountId } }), meta: commerceGate },
+  { path: '/commerce/:accountId/orders', name: 'SalesOrders', component: () => import('@/views/Commerce/SalesOrders.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/orders/drafts', name: 'DraftOrders', component: () => import('@/views/Commerce/DraftOrders.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/orders/drafts/new', name: 'CreateDraftOrder', component: () => import('@/views/Commerce/CreateDraftOrder.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
+  { path: '/commerce/:accountId/orders/drafts/:draftId(\\d+)', name: 'EditDraftOrder', component: () => import('@/views/Commerce/CreateDraftOrder.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
+  { path: '/commerce/:accountId/orders/:orderId(\\d+)', name: 'OrderDetail', component: () => import('@/views/Commerce/OrderDetail.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/fulfillments', name: 'Fulfillments', component: () => import('@/views/Commerce/Fulfillments.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/coupons', name: 'Coupons', component: () => import('@/views/Commerce/Coupons.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/promotions', name: 'Promotions', component: () => import('@/views/Commerce/Coupons.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/promotions/new', name: 'CreatePromotion', component: () => import('@/views/Commerce/CreatePromotion.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
+  { path: '/commerce/:accountId/promotions/:promoId/edit', name: 'EditPromotion', component: () => import('@/views/Commerce/CreatePromotion.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
+  { path: '/commerce/:accountId/custom_gift_cards', name: 'CustomGiftCards', component: () => import('@/views/Commerce/CustomGiftCards.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/purchasable_gift_cards', name: 'PurchasableGiftCards', component: () => import('@/views/Commerce/PurchasableGiftCards.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/sales_channels', name: 'StoreSetup', redirect: to => ({ name: 'SalesChannels', params: { accountId: to.params.accountId } }), meta: sharedCommerceGate },
 
   // 5.5 Merchandise (MerchCloud)
   // Global entry: select an online channel before entering the workspace.
@@ -136,23 +149,23 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/merchandising/:pathMatch(.*)*', redirect: to => ({ name: 'MerchandisingHome', params: { accountId: to.params.accountId } }), meta: commerceGate },
 
   // 5.6 Retail
-  { path: '/commerce/:accountId/retail',              name: 'RetailHome',         component: () => import('@/views/Retail/RetailHome.vue'),       meta: commerceGate },
-  { path: '/commerce/:accountId/retail/locations',    name: 'RetailLocations',    redirect: to => ({ name: 'SalesChannelLocations', params: { accountId: to.params.accountId, channelId: 'pos-store' } }), meta: commerceGate },
-  { path: '/commerce/:accountId/retail/registers',    name: 'RetailRegisters',    component: () => import('@/views/Retail/Registers.vue'),        meta: commerceGate },
-  { path: '/commerce/:accountId/retail/transactions', name: 'RetailTransactions', component: () => import('@/views/Retail/Transactions.vue'),     meta: commerceGate },
-  { path: '/commerce/:accountId/retail/associates',   name: 'RetailAssociates',   component: () => import('@/views/Retail/Associates.vue'),       meta: commerceGate },
-  { path: '/commerce/:accountId/retail/pos-preview',  name: 'RetailPosPreview',   component: () => import('@/views/Retail/PosPreview.vue'),       meta: { ...commerceGate, fullPage: true } },
-  { path: '/commerce/:accountId/retail/stock',        name: 'RetailStock',        component: () => import('@/views/Retail/StockByLocation.vue'),  meta: commerceGate },
-  { path: '/commerce/:accountId/retail/inventory',    name: 'RetailBulkInventory',component: () => import('@/views/Retail/BulkInventory.vue'),   meta: commerceGate },
-  { path: '/commerce/:accountId/retail/pricing',      name: 'RetailPricing',      component: () => import('@/views/Retail/Pricing.vue'),          meta: commerceGate },
-  { path: '/commerce/:accountId/retail/hardware',     name: 'RetailHardware',     component: () => import('@/views/Retail/Hardware.vue'),         meta: commerceGate },
-  { path: '/commerce/:accountId/retail/settings',     name: 'RetailSettings',     component: () => import('@/views/Retail/RetailSettings.vue'),   meta: commerceGate },
+  { path: '/commerce/:accountId/retail',              name: 'RetailHome',         component: () => import('@/views/Retail/RetailHome.vue'),       meta: retailGate },
+  { path: '/commerce/:accountId/retail/locations',    name: 'RetailLocations',    redirect: to => ({ name: 'SalesChannelLocations', params: { accountId: to.params.accountId, channelId: 'pos-store' } }), meta: retailGate },
+  { path: '/commerce/:accountId/retail/registers',    name: 'RetailRegisters',    component: () => import('@/views/Retail/Registers.vue'),        meta: retailGate },
+  { path: '/commerce/:accountId/retail/transactions', name: 'RetailTransactions', component: () => import('@/views/Retail/Transactions.vue'),     meta: retailGate },
+  { path: '/commerce/:accountId/retail/associates',   name: 'RetailAssociates',   component: () => import('@/views/Retail/Associates.vue'),       meta: retailGate },
+  { path: '/commerce/:accountId/retail/pos-preview',  name: 'RetailPosPreview',   component: () => import('@/views/Retail/PosPreview.vue'),       meta: { ...retailGate, fullPage: true } },
+  { path: '/commerce/:accountId/retail/stock',        name: 'RetailStock',        component: () => import('@/views/Retail/StockByLocation.vue'),  meta: retailGate },
+  { path: '/commerce/:accountId/retail/inventory',    name: 'RetailBulkInventory',component: () => import('@/views/Retail/BulkInventory.vue'),   meta: retailGate },
+  { path: '/commerce/:accountId/retail/pricing',      name: 'RetailPricing',      component: () => import('@/views/Retail/Pricing.vue'),          meta: retailGate },
+  { path: '/commerce/:accountId/retail/hardware',     name: 'RetailHardware',     component: () => import('@/views/Retail/Hardware.vue'),         meta: retailGate },
+  { path: '/commerce/:accountId/retail/settings',     name: 'RetailSettings',     component: () => import('@/views/Retail/RetailSettings.vue'),   meta: retailGate },
 
   // 5.7 Sales Channels
-  { path: '/accounts/:accountId/sales_channels', name: 'SalesChannels', component: () => import('@/views/SalesChannels/SalesChannelsList.vue'), meta: commerceGate },
-  { path: '/accounts/:accountId/sales_channels/new', name: 'CreateSalesChannel', component: () => import('@/views/SalesChannels/CreateSalesChannel.vue'), meta: commerceGate },
-  { path: '/accounts/:accountId/sales_channels/:channelId/locations', name: 'SalesChannelLocations', component: () => import('@/views/SalesChannels/SalesChannelLocations.vue'), meta: commerceGate },
-  { path: '/accounts/:accountId/sales_channels/:channelId/locations/:locationId', name: 'SalesChannelLocationDetail', component: () => import('@/views/SalesChannels/SalesChannelLocationDetail.vue'), meta: commerceGate },
+  { path: '/accounts/:accountId/sales_channels', name: 'SalesChannels', component: () => import('@/views/SalesChannels/SalesChannelsList.vue'), meta: sharedCommerceGate },
+  { path: '/accounts/:accountId/sales_channels/new', name: 'CreateSalesChannel', component: () => import('@/views/SalesChannels/CreateSalesChannel.vue'), meta: sharedCommerceGate },
+  { path: '/accounts/:accountId/sales_channels/:channelId/locations', name: 'SalesChannelLocations', component: () => import('@/views/SalesChannels/SalesChannelLocations.vue'), meta: sharedCommerceGate },
+  { path: '/accounts/:accountId/sales_channels/:channelId/locations/:locationId', name: 'SalesChannelLocationDetail', component: () => import('@/views/SalesChannels/SalesChannelLocationDetail.vue'), meta: sharedCommerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/theme', name: 'StoreThemeBuilder', component: () => import('@/views/SalesChannels/StoreThemeBuilder.vue'), meta: { ...commerceGate, builderShell: true } },
   { path: '/accounts/:accountId/sales_channels/:channelId/theme/code', name: 'StoreThemeCode', component: () => import('@/views/SalesChannels/StoreThemeCode.vue'), meta: { ...commerceGate, builderShell: true } },
   // Store editor shell (UAT parity A06b): StoreEditorLayout adds a per-store section
@@ -309,13 +322,18 @@ router.beforeEach((to) => {
     accounts.switchTo(routeAccountId)
   }
 
-  const required = to.meta.requires
-  if (!required) return true
-  if (accounts.hasSubscription(required)) return true
-  return {
+  const denied = {
     name: 'CommerceCloudLanding',
     params: { accountId: accounts.activeId },
   }
+
+  const anyOf = to.meta.requiresAny
+  if (anyOf && !accounts.hasAnySubscription(anyOf)) return denied
+
+  const required = to.meta.requires
+  if (!required) return true
+  if (accounts.hasSubscription(required)) return true
+  return denied
 })
 
 export default router

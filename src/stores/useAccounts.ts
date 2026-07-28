@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 
 export type SubscriptionKey =
   | 'commerce'
+  | 'retail'
   | 'marketing'
   | 'analytics'
   | 'service'
@@ -26,14 +27,14 @@ const DEFAULT_ACCOUNTS: Account[] = [
     name: 'Scooter Village (All access)',
     initials: 'SV',
     color: 'primary',
-    subscriptions: ['commerce', 'marketing', 'analytics', 'service', 'davinci'],
+    subscriptions: ['commerce', 'retail', 'marketing', 'analytics', 'service', 'davinci'],
   },
   {
     id: '2000291',
     name: 'Maropost Demo Store',
     initials: 'MD',
     color: 'secondary',
-    subscriptions: ['commerce', 'marketing', 'analytics', 'service', 'davinci'],
+    subscriptions: ['commerce', 'retail', 'marketing', 'analytics', 'service', 'davinci'],
     sidebarTheme: 'white',
   },
   {
@@ -76,7 +77,7 @@ const DEFAULT_ACCOUNTS: Account[] = [
     name: 'EliteWear Athletics',
     initials: 'EA',
     color: 'secondary',
-    subscriptions: ['commerce', 'marketing', 'analytics', 'service', 'davinci'],
+    subscriptions: ['commerce', 'retail', 'marketing', 'analytics', 'service', 'davinci'],
   },
   {
     id: '2000298',
@@ -112,6 +113,13 @@ const DEFAULT_ACCOUNTS: Account[] = [
     initials: 'JW',
     color: 'primary',
     subscriptions: ['commerce', 'marketing', 'service'],
+  },
+  {
+    id: '2000303',
+    name: 'Urban Counter (Retail only)',
+    initials: 'UC',
+    color: 'secondary',
+    subscriptions: ['retail', 'analytics'],
   },
 ]
 

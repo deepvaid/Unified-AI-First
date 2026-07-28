@@ -10,10 +10,10 @@ import { useAccountsStore, type Account } from './useAccounts'
  * so the seed demo accounts are visually unchanged by PLG surfaces.
  */
 
-export type PlgCloud = 'marketing' | 'commerce' | 'service'
+export type PlgCloud = 'marketing' | 'commerce' | 'retail' | 'service'
 export type PlanTier = 'build' | 'essential' | 'professional' | 'enterprise'
 export type BillingCycle = 'monthly' | 'annual'
-export type AddOnKey = 'sms_usage' | 'dedicated_ip' | 'davinci_tokens'
+export type AddOnKey = 'sms_usage' | 'dedicated_ip' | 'davinci_tokens' | 'register'
 export type PlgStatus = 'trialing' | 'trial_expired' | 'active' | 'grace' | 'cancelled_pending'
 
 /** limit === -1 means unlimited */
@@ -29,6 +29,8 @@ export interface PlgUsage {
   emailSends: UsageMeter
   stores: UsageMeter
   skus: UsageMeter
+  registers: UsageMeter
+  posChannels: UsageMeter
 }
 
 export interface PlgAccountState {
@@ -65,6 +67,9 @@ export interface PlgEntitlements {
   storeLimit: number
   skuLimit: number
   aiTokenLimit: number
+  /** Retail Cloud levers — MRC scales on registers and POS sales channels. */
+  registerLimit: number
+  posChannelLimit: number
 }
 
 // ---------------------------------------------------------------------------
@@ -231,6 +236,66 @@ export const PLAN_CATALOG: CloudCatalog[] = [
     ],
   },
   {
+    cloud: 'retail',
+    name: 'Retail Cloud',
+    tagline: 'Sell in store on the same catalog, orders, and customers as your online channels.',
+    icon: 'store',
+    plans: [
+      {
+        tier: 'build',
+        name: 'Build',
+        monthly: 29,
+        badge: 'Start here',
+        features: [
+          { label: '1 register', included: true },
+          { label: '1 POS sales channel', included: true },
+          { label: '10K products, unlimited inventory locations', included: true },
+          { label: 'Shared orders, products & customers', included: true },
+          { label: 'Product tax categories', included: false },
+        ],
+      },
+      {
+        tier: 'essential',
+        name: 'Essential',
+        monthly: 249,
+        badge: 'Grow faster',
+        features: [
+          { label: '2 registers', included: true },
+          { label: '2 POS sales channels', included: true },
+          { label: 'Unlimited products', included: true },
+          { label: 'Product tax categories', included: true },
+          { label: 'API access', included: false },
+        ],
+      },
+      {
+        tier: 'professional',
+        name: 'Professional',
+        monthly: 799,
+        badge: 'Most popular',
+        features: [
+          { label: '10 registers', included: true },
+          { label: 'Unlimited POS sales channels', included: true },
+          { label: 'Unlimited products', included: true },
+          { label: 'Product tax categories', included: true },
+          { label: 'API access', included: true },
+        ],
+      },
+      {
+        tier: 'enterprise',
+        name: 'Enterprise',
+        monthly: 1999,
+        badge: 'For scaling',
+        features: [
+          { label: 'Unlimited registers', included: true },
+          { label: 'Unlimited POS sales channels', included: true },
+          { label: 'Unlimited products', included: true },
+          { label: 'Product tax categories', included: true },
+          { label: 'API access + phone support', included: true },
+        ],
+      },
+    ],
+  },
+  {
     cloud: 'service',
     name: 'Service Cloud',
     tagline: 'Tickets, helpdesk, and customer support.',
@@ -319,6 +384,13 @@ export const ADD_ON_CATALOG: AddOnDef[] = [
     icon: 'sparkles',
     monthly: 49,
   },
+  {
+    key: 'register',
+    name: 'Additional register',
+    description: 'Add a POS register beyond your Retail Cloud plan allowance.',
+    icon: 'tablet-smartphone',
+    monthly: 39,
+  },
 ]
 
 // ---------------------------------------------------------------------------
@@ -365,7 +437,10 @@ function isoIn(days: number): string {
   return new Date(Date.now() + days * DAY_MS).toISOString()
 }
 
-/** Trial limits per the PLG PRD (MMC: no SMS + capped sends/AI, MSC: 1 chatbot, MCC: store/SKU caps). */
+/**
+ * Trial limits per the PLG PRD (MMC: no SMS + capped sends/AI, MSC: 1 chatbot, MCC: store/SKU caps).
+ * Retail Cloud has no free trial, so its meters stay at zero.
+ */
 function trialUsage(): PlgUsage {
   return {
     aiTokens: { used: 12_400, limit: 50_000 },
@@ -374,6 +449,8 @@ function trialUsage(): PlgUsage {
     emailSends: { used: 2_350, limit: 10_000 },
     stores: { used: 1, limit: 1 },
     skus: { used: 148, limit: 1_000 },
+    registers: { used: 0, limit: 0 },
+    posChannels: { used: 0, limit: 0 },
   }
 }
 
@@ -405,10 +482,36 @@ const TIER_STORES: Record<PlanTier, number> = {
   enterprise: 20,
 }
 
+/** MRC register allowance; extra registers are sold as the `register` add-on. */
+const TIER_REGISTERS: Record<PlanTier, number> = {
+  build: 1,
+  essential: 2,
+  professional: 10,
+  enterprise: -1,
+}
+
+/** How many sales channels of type POS the plan can create. */
+const TIER_POS_CHANNELS: Record<PlanTier, number> = {
+  build: 1,
+  essential: 2,
+  professional: -1,
+  enterprise: -1,
+}
+
+/**
+ * Shared features follow the highest tier held across clouds — the bundling rule
+ * in the packaging definition. Catalog size is shared by Commerce and Retail.
+ */
+function bestOf(...tiers: (PlanTier | undefined)[]): PlanTier | undefined {
+  return tiers.filter((t): t is PlanTier => !!t).sort((a, b) => tierRank(b) - tierRank(a))[0]
+}
+
 function paidUsage(tiers: Partial<Record<PlgCloud, PlanTier>>): PlgUsage {
   const m = tiers.marketing
   const s = tiers.service
   const c = tiers.commerce
+  const r = tiers.retail
+  const catalog = bestOf(c, r)
   const best = ([...Object.values(tiers)] as PlanTier[]).sort((a, b) => tierRank(b) - tierRank(a))[0]
   return {
     aiTokens: { used: 182_000, limit: best ? TIER_AI_TOKENS[best] : 0 },
@@ -416,7 +519,24 @@ function paidUsage(tiers: Partial<Record<PlgCloud, PlanTier>>): PlgUsage {
     chatbots: { used: 1, limit: s ? TIER_CHATBOTS[s] : 0 },
     emailSends: { used: 640_000, limit: m ? TIER_EMAIL_SENDS[m] : 0 },
     stores: { used: 1, limit: c ? TIER_STORES[c] : 0 },
-    skus: { used: 3_240, limit: c && c !== 'build' ? -1 : 10_000 },
+    skus: { used: 3_240, limit: catalog && catalog !== 'build' ? -1 : 10_000 },
+    registers: { used: 3, limit: r ? TIER_REGISTERS[r] : 0 },
+    posChannels: { used: 1, limit: r ? TIER_POS_CHANNELS[r] : 0 },
+  }
+}
+
+/** States persisted before Retail Cloud existed lack its meters — fill them in. */
+function normalizeUsage(usage: Partial<PlgUsage> | undefined): PlgUsage {
+  const zero = { used: 0, limit: 0 }
+  return {
+    aiTokens: usage?.aiTokens ?? zero,
+    sms: usage?.sms ?? zero,
+    chatbots: usage?.chatbots ?? zero,
+    emailSends: usage?.emailSends ?? zero,
+    stores: usage?.stores ?? zero,
+    skus: usage?.skus ?? zero,
+    registers: usage?.registers ?? zero,
+    posChannels: usage?.posChannels ?? zero,
   }
 }
 
@@ -426,7 +546,12 @@ function readStoredStates(): Record<string, PlgAccountState> {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return {}
     const parsed = JSON.parse(raw)
-    return parsed && typeof parsed === 'object' ? parsed : {}
+    if (!parsed || typeof parsed !== 'object') return {}
+    const stored = parsed as Record<string, PlgAccountState>
+    for (const state of Object.values(stored)) {
+      state.usage = normalizeUsage(state.usage)
+    }
+    return stored
   } catch {
     return {}
   }
@@ -437,6 +562,7 @@ function defaultPaidState(account: Account): PlgAccountState {
   const tiers: Partial<Record<PlgCloud, PlanTier>> = {}
   if (account.subscriptions.includes('marketing')) tiers.marketing = 'professional'
   if (account.subscriptions.includes('commerce')) tiers.commerce = 'professional'
+  if (account.subscriptions.includes('retail')) tiers.retail = 'professional'
   if (account.subscriptions.includes('service')) tiers.service = 'professional'
   return {
     mode: 'paid',
@@ -496,6 +622,8 @@ export const usePlgStore = defineStore('plg', () => {
           storeLimit: 0,
           skuLimit: 0,
           aiTokenLimit: 0,
+          registerLimit: 0,
+          posChannelLimit: 0,
         }
       }
       return {
@@ -506,6 +634,9 @@ export const usePlgStore = defineStore('plg', () => {
         storeLimit: 1,
         skuLimit: 1_000,
         aiTokenLimit: 50_000,
+        // Retail Cloud is not part of the free trial.
+        registerLimit: 0,
+        posChannelLimit: 0,
       }
     }
     const tiers = Object.values(s.tiers) as PlanTier[]
@@ -513,14 +644,20 @@ export const usePlgStore = defineStore('plg', () => {
     const m = s.tiers.marketing
     const svc = s.tiers.service
     const c = s.tiers.commerce
+    const r = s.tiers.retail
+    const catalog = bestOf(c, r)
+    const extraRegisters = s.addOns.filter(a => a === 'register').length
+    const baseRegisters = r ? TIER_REGISTERS[r] : 0
     return {
       sms: !!m && (m !== 'build' || s.addOns.includes('sms_usage')),
       davinciAi: !!best && best !== 'build',
       chatbotLimit: svc ? TIER_CHATBOTS[svc] : 0,
       emailSendLimit: m ? TIER_EMAIL_SENDS[m] : 0,
       storeLimit: c ? TIER_STORES[c] : 0,
-      skuLimit: c && c !== 'build' ? -1 : 10_000,
+      skuLimit: catalog && catalog !== 'build' ? -1 : 10_000,
       aiTokenLimit: best ? TIER_AI_TOKENS[best] : 0,
+      registerLimit: baseRegisters === -1 ? -1 : baseRegisters + extraRegisters,
+      posChannelLimit: r ? TIER_POS_CHANNELS[r] : 0,
     }
   })
 
@@ -546,6 +683,7 @@ export const usePlgStore = defineStore('plg', () => {
       name: payload.companyName,
       initials,
       color: ACCOUNT_COLORS[accounts.accounts.length % ACCOUNT_COLORS.length]!,
+      // Retail Cloud is excluded: MRC has no free trial, so it is an upgrade path only.
       subscriptions: ['commerce', 'marketing', 'analytics', 'service', 'davinci'],
     })
     states.value[id] = {
@@ -637,7 +775,7 @@ export const usePlgStore = defineStore('plg', () => {
         const tier = preset.replace('paid-', '') as PlanTier
         base.mode = 'paid'
         base.status = 'active'
-        base.tiers = { marketing: tier, commerce: tier, service: tier }
+        base.tiers = { marketing: tier, commerce: tier, retail: tier, service: tier }
         base.startedAt = isoIn(-45)
         base.renewsAt = isoIn(21)
         base.usage = paidUsage(base.tiers)
@@ -646,7 +784,7 @@ export const usePlgStore = defineStore('plg', () => {
       case 'grace':
         base.mode = 'paid'
         base.status = 'grace'
-        base.tiers = { marketing: 'professional', commerce: 'professional', service: 'professional' }
+        base.tiers = { marketing: 'professional', commerce: 'professional', retail: 'professional', service: 'professional' }
         base.startedAt = isoIn(-75)
         base.renewsAt = isoIn(-4)
         base.gracePaymentFailedAt = isoIn(-4)

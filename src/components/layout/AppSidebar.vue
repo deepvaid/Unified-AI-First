@@ -36,7 +36,7 @@ interface NavGroup {
   icon: string
   singleRoute?: string
   badge?: string
-  requires?: SubscriptionKey
+  requires?: SubscriptionKey | SubscriptionKey[]
   dividerAfter?: boolean
   items: (NavItem | NavSubGroup)[]
 }
@@ -104,11 +104,11 @@ function buildNavGroups(accountId: string): NavGroup[] {
     {
       title: 'Products',
       icon: 'package',
-      requires: 'commerce',
+      requires: ['commerce', 'retail'],
       dividerAfter: true,
       singleRoute: `/commerce/${accountId}/products`,
       items: [
-        { title: 'Product Recommendations', route: `/commerce/${accountId}/product_recommendations` },
+        { title: 'Product Recommendations', route: `/commerce/${accountId}/product_recommendations`, requires: 'commerce' },
         { title: 'Products', route: `/commerce/${accountId}/products` },
         { title: 'Collections', route: `/commerce/${accountId}/products/collections` },
         { title: 'Inventory', route: `/commerce/${accountId}/inventory` },
@@ -155,10 +155,11 @@ function buildNavGroups(accountId: string): NavGroup[] {
     {
       title: 'Commerce',
       icon: 'shopping-cart',
-      requires: 'commerce',
+      requires: ['commerce', 'retail'],
       singleRoute: `/commerce/${accountId}/orders`,
       items: [
-        { title: 'Sales Channels', route: onlineSalesRoute },
+        // Web storefronts are Commerce Cloud only; POS channels live under Retail.
+        { title: 'Sales Channels', route: onlineSalesRoute, requires: 'commerce' },
         {
           title: 'Orders',
           isSubGroup: true,
@@ -182,7 +183,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
     {
       title: 'Retail',
       icon: 'store',
-      requires: 'commerce',
+      requires: 'retail',
       singleRoute: `/commerce/${accountId}/retail/transactions`,
       items: [
         { title: 'Transactions',      route: `/commerce/${accountId}/retail/transactions` },
@@ -370,7 +371,10 @@ function activateNavItem(item: NavItem) {
 }
 
 function isLocked(group: NavGroup) {
-  return !!group.requires && !accountsStore.hasSubscription(group.requires)
+  if (!group.requires) return false
+  return Array.isArray(group.requires)
+    ? !accountsStore.hasAnySubscription(group.requires)
+    : !accountsStore.hasSubscription(group.requires)
 }
 
 function isItemLocked(item: NavItem): boolean {

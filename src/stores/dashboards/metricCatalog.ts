@@ -11,7 +11,8 @@ export interface DashboardSourceMeta {
   label: string
   description: string
   icon: string
-  requires?: SubscriptionKey
+  /** An array passes when the account holds ANY of the keys. */
+  requires?: SubscriptionKey | SubscriptionKey[]
 }
 
 export interface DashboardMetricDescriptor {
@@ -37,7 +38,7 @@ export const DASHBOARD_SOURCE_META: Record<DashboardDataSource, DashboardSourceM
     label: 'Commerce',
     description: 'Orders, revenue, conversion, and storefront performance.',
     icon: 'shopping-cart',
-    requires: 'commerce',
+    requires: ['commerce', 'retail'],
   },
   marketing: {
     id: 'marketing',
@@ -75,9 +76,9 @@ export const DASHBOARD_SOURCE_META: Record<DashboardDataSource, DashboardSourceM
   retail: {
     id: 'retail',
     label: 'Retail',
-    description: 'Lightspeed Retail (X-Series) point-of-sale insights.',
+    description: 'Point-of-sale insights: registers, locations, and in-store sales.',
     icon: 'shopping-bag',
-    requires: 'commerce',
+    requires: 'retail',
   },
   merchandising: {
     id: 'merchandising',
@@ -844,7 +845,10 @@ export function getMetricDescriptor(metricId: DashboardMetricId): DashboardMetri
 export function isDashboardSourceAvailable(source: DashboardDataSource, account: Account | undefined): boolean {
   if (!account) return false
   const requirement = DASHBOARD_SOURCE_META[source].requires
-  return !requirement || account.subscriptions.includes(requirement)
+  if (!requirement) return true
+  return Array.isArray(requirement)
+    ? requirement.some((key) => account.subscriptions.includes(key))
+    : account.subscriptions.includes(requirement)
 }
 
 export function getAvailableDashboardSources(account: Account | undefined): DashboardSourceMeta[] {

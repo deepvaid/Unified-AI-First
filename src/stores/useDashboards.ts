@@ -212,7 +212,8 @@ function comparisonWidgets(y: number): DashboardWidget[] {
 function buildHomeWidgets(account: Account): DashboardWidget[] {
   const widgets: DashboardWidget[] = []
 
-  if (account.subscriptions.includes('commerce')) {
+  // Orders and revenue are the shared backbone — either cloud sells them.
+  if (account.subscriptions.includes('commerce') || account.subscriptions.includes('retail')) {
     widgets.push(
       makeWidget('Revenue', 'commerce_revenue', 'kpi', createLayout(0, 0, 3, 4)),
       makeWidget('Orders', 'commerce_orders', 'kpi', createLayout(3, 0, 3, 4)),
@@ -278,7 +279,7 @@ function buildSeedDashboards(account: Account): Dashboard[] {
     },
   ]
 
-  if (account.subscriptions.includes('commerce')) {
+  if (account.subscriptions.includes('commerce') || account.subscriptions.includes('retail')) {
     baseDashboards.push(
       {
         id: createDashboardId(account.id, 'commerce-overview'),
@@ -325,12 +326,17 @@ function buildSeedDashboards(account: Account): Dashboard[] {
         createdAt,
         updatedAt: createdAt,
       },
+    )
+  }
+
+  if (account.subscriptions.includes('retail')) {
+    baseDashboards.push(
       {
         id: createDashboardId(account.id, 'retail'),
         accountId: account.id,
         kind: 'system',
         name: 'Retail',
-        description: 'Lightspeed Retail (X-Series) point-of-sale overview.',
+        description: 'Point-of-sale overview: registers, locations, and in-store sales.',
         icon: 'shopping-bag',
         accent: 'success',
         isDefault: false,
@@ -357,6 +363,11 @@ function buildSeedDashboards(account: Account): Dashboard[] {
         createdAt,
         updatedAt: createdAt,
       },
+    )
+  }
+
+  if (account.subscriptions.includes('commerce')) {
+    baseDashboards.push(
       {
         id: createDashboardId(account.id, 'merchandise'),
         accountId: account.id,
