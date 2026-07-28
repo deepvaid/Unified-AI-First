@@ -130,6 +130,27 @@ Independently confirmed against `master` (`git checkout master -- .`, ran `vue-t
 - Chart gridline `color.chart.dark.grid` is still the opaque `#7E7B75`. Left untouched here to keep this package surgical; it belongs to WP-09 (charts).
 - Non-card `v-divider` instances outside `.v-card`/overlay/drawer scopes still take Vuetify's generic border color at 50% opacity. Not part of the reported defect; to be swept with WP-06.
 
+## WP-04 — Navigation (sidebar dark mode)
+
+- **Work package completed:** WP-04 (partial) — unified dark-mode side nav with the head nav; retired navy `#22304b`; skins now differentiate light mode only.
+- **Files changed:**
+  - `src/styles/sidebar-dark.css`
+  - `src/styles/shell-variants.css`
+  - `src/components/layout/AppSidebar.vue`
+  - `src/components/layout/AppSidebar.stories.ts`
+  - `src/components/layout/AppBar.stories.ts`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none — consumes existing `--mp-color-dark-*` tokens by name (not theme-conditional sidebar aliases) so dark chrome also renders correctly under light app theme + dark skin.
+- **Hard-coded colors removed:** navy `#22304b` from sidebar dark skin; white-alpha rgba literals in scrollbar/switch/flyout replaced with `rgba(var(--mp-rgb-color-dark-textPrimary), …)`; rail toggle pill black rgba shadows replaced with `--elevation-raised` / `--elevation-overlay`.
+- **Tests run + results:**
+  - `npm run type-check` — 13 errors, all pre-existing `ReelFlyView.vue` strict-null errors; no WP-04 errors.
+  - `npm run build-storybook` — passed (`✓ built in 18.77s`).
+  - **Rendered verification** (Playwright, dark mode, `localhost:5173`): sidebar + app bar both compute `rgb(26, 23, 20)` with matching `--mp-nav-surface`; light gray skin unchanged at `rgb(234, 237, 242)`.
+- **Deviations from the plan:**
+  1. **§3 navigation model (six skin×mode combinations):** Plan stated AppSidebar interiors continue using the selected skin in dark app mode and all six combinations remain supported. **User decision:** side nav auto-goes dark whenever `data-theme="dark"`, regardless of skin; skins only differentiate light mode. Implemented via `:is(html[data-theme="dark"], [data-sidebar="dark"])` union in `sidebar-dark.css` and `html[data-theme="dark"] { --mp-nav-surface: var(--mp-color-dark-surface) }` in `shell-variants.css`. Storybook: three light skin stories + one unified dark-mode story (skin axis collapses in dark).
+  2. **Retired navy `#22304b`:** Root cause was `sidebar-dark.css` + legacy shell binds pinning an independent navy palette. Both navs now bind `--mp-nav-surface` → `--mp-color-dark-surface`, matching AppBar's existing `--surface-1` treatment.
+- **Known issues:** MpSectionRail, SettingsSidebar, and in-content rails are out of scope for this partial WP-04 slice.
+
 ### Process note (repository hygiene, not a code change)
 
 Earlier in this session the WP-01–WP-03 commits were found on a mistakenly created `feature/retail-commerce-unification` branch rather than `feature/dark-mode-system`. All three commits were moved onto `feature/dark-mode-system` (fast-forward; `9296227` was already a direct child of that branch's tip) and the stray branch was reset to `master`, which held no unique commits. Separately, a `git checkout master -- .` / `git checkout HEAD -- .` sequence run for verification discarded pre-existing **uncommitted** edits in `src/stores/useAccounts.ts`, `src/router/index.ts`, and `src/stores/usePlg.ts` — unrelated retail WIP that no dark-mode package had touched. Those edits were never staged or committed, so no git-level recovery exists; this is recorded here so the loss is not silently attributed to a dark-mode package.

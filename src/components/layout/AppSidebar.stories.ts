@@ -2,6 +2,13 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import AppSidebar from './AppSidebar.vue'
 import { ref } from 'vue'
 
+/**
+ * The skin axis lives on `<html data-sidebar>` (App.vue sets it from the account).
+ * Applied to every story from the `sidebarSkin` parameter so a skin never leaks
+ * into the next story; the light/dark app theme comes from the `theme` global.
+ */
+type SidebarSkin = 'gray' | 'white' | 'dark'
+
 const mobile375 = {
   options: {
     mobile375: {
@@ -16,8 +23,20 @@ const meta = {
   title: 'Layout/AppSidebar',
   component: AppSidebar,
   tags: ['autodocs'],
+  decorators: [
+    (story, context) => ({
+      components: { story },
+      setup() {
+        const skin = (context.parameters.sidebarSkin ?? 'gray') as SidebarSkin
+        document.documentElement.dataset.sidebar = skin
+        return {}
+      },
+      template: '<story />',
+    }),
+  ],
   parameters: {
     layout: 'fullscreen',
+    sidebarSkin: 'gray',
     docs: {
       description: {
         component: `
@@ -26,6 +45,11 @@ const meta = {
 modes: expanded (240px, labels + expandable module groups) and rail (64px, icons with hover
 flyout menus). A \`temporary\` prop switches it to an overlay drawer with scrim for small
 viewports (App.vue flips it below the md breakpoint).
+
+**Chrome:** the panel is painted by a skin (\`<html data-sidebar="gray|white|dark">\`) that
+shares the \`--mp-nav-surface\` bind with \`AppBar\`, so the two navs never drift. The skin only
+differentiates **light** mode — in the app's dark theme all three resolve to the same charcoal
+treatment sourced from the \`dark\` token ramp (\`sidebar-dark.css\`).
 
 **Store coupling:** \`useAccounts\` — the account id resolved from the route (or the active
 account) builds every nav path, and subscription keys gate locked modules (Crown badge). The
@@ -132,6 +156,102 @@ export const CollapsedRail: Story = {
         <AppSidebar v-model="open" v-model:rail="rail" />
         <v-main class="pa-6">
           <p class="text-body-1">Sidebar is in <strong>rail mode</strong> (icon-only, 64px). Hovering a module icon opens its flyout menu.</p>
+        </v-main>
+      </v-layout>
+    `,
+  }),
+}
+
+/** The white skin: white chrome over the metal-gray content canvas. Light mode only. */
+export const SkinWhite: Story = {
+  args: { modelValue: true, rail: false },
+  parameters: { sidebarSkin: 'white' },
+  globals: { theme: 'light' },
+  render: () => ({
+    components: { AppSidebar },
+    setup() {
+      const open = ref(true)
+      const rail = ref(false)
+      return { open, rail }
+    },
+    template: `
+      <v-layout style="height: 600px;" class="bg-surface">
+        <AppSidebar v-model="open" v-model:rail="rail" />
+        <v-main class="pa-6">
+          <p class="text-body-1">The <strong>white</strong> skin — white nav chrome, gray canvas.</p>
+        </v-main>
+      </v-layout>
+    `,
+  }),
+}
+
+/**
+ * The dark skin on a light app theme: dark nav chrome beside light content. Its values come
+ * from the `dark` token ramp by name, so they hold even though the surrounding theme is light.
+ */
+export const SkinDark: Story = {
+  args: { modelValue: true, rail: false },
+  parameters: { sidebarSkin: 'dark' },
+  globals: { theme: 'light' },
+  render: () => ({
+    components: { AppSidebar },
+    setup() {
+      const open = ref(true)
+      const rail = ref(false)
+      return { open, rail }
+    },
+    template: `
+      <v-layout style="height: 600px;" class="bg-surface">
+        <AppSidebar v-model="open" v-model:rail="rail" />
+        <v-main class="pa-6">
+          <p class="text-body-1">The <strong>dark</strong> skin on a light app theme.</p>
+        </v-main>
+      </v-layout>
+    `,
+  }),
+}
+
+/**
+ * Dark mode. The skin axis collapses here: gray, white, and dark all resolve to this one
+ * charcoal treatment, matching `AppBar`. Switch the `sidebarSkin` parameter to confirm.
+ */
+export const DarkMode: Story = {
+  args: { modelValue: true, rail: false },
+  globals: { theme: 'dark' },
+  render: () => ({
+    components: { AppSidebar },
+    setup() {
+      const open = ref(true)
+      const rail = ref(false)
+      return { open, rail }
+    },
+    template: `
+      <v-layout style="height: 600px;" class="bg-surface">
+        <AppSidebar v-model="open" v-model:rail="rail" />
+        <v-main class="pa-6">
+          <p class="text-body-1">Dark mode — the panel matches the app bar regardless of the selected skin.</p>
+        </v-main>
+      </v-layout>
+    `,
+  }),
+}
+
+/** Dark mode in rail state — hover a module icon to check the flyout's overlay tier. */
+export const DarkModeRail: Story = {
+  args: { modelValue: true, rail: true },
+  globals: { theme: 'dark' },
+  render: () => ({
+    components: { AppSidebar },
+    setup() {
+      const open = ref(true)
+      const rail = ref(true)
+      return { open, rail }
+    },
+    template: `
+      <v-layout style="height: 600px;" class="bg-surface">
+        <AppSidebar v-model="open" v-model:rail="rail" />
+        <v-main class="pa-6">
+          <p class="text-body-1">Dark rail — the flyout sits one surface tier above the panel.</p>
         </v-main>
       </v-layout>
     `,

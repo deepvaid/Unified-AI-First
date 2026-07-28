@@ -1,7 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { Router } from 'vue-router'
 import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 import AppBar from './AppBar.vue'
+import AppSidebar from './AppSidebar.vue'
+
+/**
+ * The nav skin lives on `<html data-sidebar>` and paints both navs through the shared
+ * `--mp-nav-surface` bind. Applied to every story from the `sidebarSkin` parameter so a skin
+ * never leaks into the next story; the light/dark app theme comes from the `theme` global.
+ */
+type SidebarSkin = 'gray' | 'white' | 'dark'
 
 const mobile375 = {
   options: {
@@ -54,12 +63,49 @@ function appBarStory() {
   })
 }
 
+/** Bar + sidebar together, so the seam between the two nav surfaces is visible. */
+function navSeamStory() {
+  return () => ({
+    components: { AppBar, AppSidebar },
+    setup() {
+      ensureAppBarRoutes(useRouter())
+      const open = ref(true)
+      const rail = ref(false)
+      return { open, rail }
+    },
+    template: `
+      <v-layout style="min-height: 520px;">
+        <AppSidebar v-model="open" v-model:rail="rail" />
+        <AppBar />
+        <v-main class="pa-6">
+          <p class="text-body-1">
+            The head nav and side nav share one surface — the seam between them should read as
+            a single continuous plane, broken only by a hairline.
+          </p>
+        </v-main>
+      </v-layout>
+    `,
+  })
+}
+
 const meta = {
   title: 'Layout/AppBar',
   component: AppBar,
   tags: ['autodocs'],
+  decorators: [
+    (story, context) => ({
+      components: { story },
+      setup() {
+        const skin = (context.parameters.sidebarSkin ?? 'gray') as SidebarSkin
+        document.documentElement.dataset.sidebar = skin
+        return {}
+      },
+      template: '<story />',
+    }),
+  ],
   parameters: {
     layout: 'fullscreen',
+    sidebarSkin: 'gray',
     docs: {
       description: {
         component: `
@@ -69,6 +115,11 @@ universal AI search menu, the quick-create menu (with single-key shortcuts while
 notification bell, Galaxy and Settings shortcuts, the Da Vinci assistant menu, and the user
 profile menu (account switcher, theme toggle, sign-out). It takes **no props** — everything is
 wired to global state.
+
+**Chrome:** the bar shares the \`--mp-nav-surface\` bind with \`AppSidebar\` (\`shell-variants.css\`)
+so head nav and side nav can never drift. The skin (\`<html data-sidebar>\`) only differentiates
+light mode — in dark mode both navs resolve to the same charcoal surface from the \`dark\` token
+ramp. The Seam stories below show the two together.
 
 **Store coupling:** \`useAccounts\` (active account + switcher list), \`useCopilot\` (opens the
 Da Vinci assistant), \`useUserProfile\` (avatar), and \`useAppTheme\` (light/dark mode). The
@@ -173,4 +224,31 @@ export const Mobile375: Story = {
   parameters: {
     viewport: mobile375,
   },
+}
+
+/** Gray skin — bar and sidebar share one continuous nav surface (light mode). */
+export const SeamGray: Story = {
+  render: navSeamStory(),
+  parameters: { sidebarSkin: 'gray' },
+  globals: { theme: 'light' },
+}
+
+/** White skin — white nav chrome beside a gray canvas (light mode). */
+export const SeamWhite: Story = {
+  render: navSeamStory(),
+  parameters: { sidebarSkin: 'white' },
+  globals: { theme: 'light' },
+}
+
+/** Dark skin on a light app theme — charcoal nav cluster (light mode). */
+export const SeamDarkSkin: Story = {
+  render: navSeamStory(),
+  parameters: { sidebarSkin: 'dark' },
+  globals: { theme: 'light' },
+}
+
+/** Dark mode — skin axis collapses; bar and sidebar share charcoal chrome. */
+export const SeamDarkMode: Story = {
+  render: navSeamStory(),
+  globals: { theme: 'dark' },
 }
