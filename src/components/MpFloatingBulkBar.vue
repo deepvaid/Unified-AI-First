@@ -83,7 +83,7 @@ defineEmits<{
 
 .mp-floating-bulk-bar :deep(.v-btn:hover) .v-btn__overlay {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.08);
 }
 
 /* Entrance — transform/opacity on the base motion tokens */
