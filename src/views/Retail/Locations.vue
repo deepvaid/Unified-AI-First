@@ -125,7 +125,7 @@ const locationAssociates = computed(() =>
       >
         <template #item.name="{ item }">
           <div class="d-flex align-center ga-2">
-            <v-icon size="16" color="medium-emphasis">store</v-icon>
+            <v-icon size="16" class="text-medium-emphasis">store</v-icon>
             <span class="font-weight-medium">{{ item.name }}</span>
           </div>
         </template>
@@ -140,14 +140,14 @@ const locationAssociates = computed(() =>
 
         <template #item.registerCount="{ item }">
           <div class="d-flex align-center justify-end ga-1">
-            <v-icon size="14" color="medium-emphasis">tablet-smartphone</v-icon>
+            <v-icon size="14" class="text-medium-emphasis">tablet-smartphone</v-icon>
             <span class="font-weight-medium">{{ item.registerCount }}</span>
           </div>
         </template>
 
         <template #item.associateCount="{ item }">
           <div class="d-flex align-center justify-end ga-1">
-            <v-icon size="14" color="medium-emphasis">users</v-icon>
+            <v-icon size="14" class="text-medium-emphasis">users</v-icon>
             <span class="font-weight-medium">{{ item.associateCount }}</span>
           </div>
         </template>

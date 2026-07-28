@@ -365,7 +365,7 @@ function exportOrders() {
             variant="text"
             size="small"
             density="comfortable"
-            color="medium-emphasis"
+            class="text-medium-emphasis"
             aria-label="Toggle order details"
             @click.stop="toggleExpand(internalItem)"
           ></v-btn>

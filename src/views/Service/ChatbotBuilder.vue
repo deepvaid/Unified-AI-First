@@ -580,7 +580,7 @@ function sendChat() {
                   <div class="cb-source__actions d-flex align-center flex-shrink-0">
                     <v-tooltip text="Re-sync" location="top">
                       <template #activator="{ props }">
-                        <v-btn v-bind="props" icon="refresh-cw" variant="text" size="x-small" color="medium-emphasis" aria-label="Re-sync source" />
+                        <v-btn v-bind="props" icon="refresh-cw" variant="text" size="x-small" class="text-medium-emphasis" aria-label="Re-sync source" />
                       </template>
                     </v-tooltip>
                     <v-tooltip text="Remove" location="top">

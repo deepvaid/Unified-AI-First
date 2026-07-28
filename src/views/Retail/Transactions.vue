@@ -205,7 +205,7 @@ function registerName(id: string) {
 
         <template #item.tender="{ item }">
           <div class="d-flex align-center ga-1">
-            <v-icon size="13" color="medium-emphasis">{{ TENDER_ICON[item.tender] ?? 'credit-card' }}</v-icon>
+            <v-icon size="13" class="text-medium-emphasis">{{ TENDER_ICON[item.tender] ?? 'credit-card' }}</v-icon>
             <span class="text-body-2">{{ TENDER_LABELS[item.tender] }}</span>
           </div>
         </template>

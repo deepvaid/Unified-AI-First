@@ -163,7 +163,7 @@ function performConfirm() {
                 variant="text"
                 size="small"
                 density="comfortable"
-                color="medium-emphasis"
+                class="text-medium-emphasis"
                 :aria-label="`Actions for ${item.collection}`"
               />
             </template>
@@ -221,7 +221,7 @@ function performConfirm() {
                 variant="text"
                 size="small"
                 density="comfortable"
-                color="medium-emphasis"
+                class="text-medium-emphasis"
                 :aria-label="`Actions for ${item.name}`"
               />
             </template>

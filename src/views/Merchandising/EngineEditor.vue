@@ -515,7 +515,7 @@ function goToStep(target: number) {
                       variant="text"
                       size="small"
                       density="comfortable"
-                      color="medium-emphasis"
+                      class="text-medium-emphasis"
                       :aria-label="`Filter actions for ${condition.field}`"
                     />
                   </template>

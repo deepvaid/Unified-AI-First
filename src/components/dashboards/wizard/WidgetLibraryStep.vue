@@ -96,7 +96,7 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
     </div>
 
     <div v-if="filteredEntries.length === 0" class="widget-library__empty">
-      <v-icon size="32" color="medium-emphasis">scan-search</v-icon>
+      <v-icon size="32" class="text-medium-emphasis">scan-search</v-icon>
       <div class="text-body-2 text-medium-emphasis mt-2">
         No widgets match your search.
       </div>

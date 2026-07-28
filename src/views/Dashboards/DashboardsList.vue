@@ -353,7 +353,7 @@ function handleDashboardCreated(dashboardId: string) {
                   variant="text"
                   size="small"
                   density="comfortable"
-                  color="medium-emphasis"
+                  class="text-medium-emphasis"
                   :aria-label="`More actions for ${item.name}`"
                 />
               </template>

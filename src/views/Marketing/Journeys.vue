@@ -224,7 +224,7 @@ function confirmDelete() {
                   icon="pencil"
                   variant="text"
                   size="x-small"
-                  color="medium-emphasis"
+                  class="text-medium-emphasis"
                   aria-label="Edit in builder"
                   @click="openBuilder(item.id)"
                 ></v-btn>

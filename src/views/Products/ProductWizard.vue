@@ -425,7 +425,7 @@ onMounted(() => {
                   <v-combobox v-model="opt.values" label="Values" placeholder="Type a value and press Enter" variant="outlined" density="comfortable" multiple chips closable-chips hide-details />
                 </v-col>
                 <v-col cols="12" md="1" class="text-center">
-                  <v-btn icon="trash-2" variant="text" size="small" color="medium-emphasis" aria-label="Remove option" :disabled="options.length === 1" @click="removeOption(i)" />
+                  <v-btn icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove option" :disabled="options.length === 1" @click="removeOption(i)" />
                 </v-col>
               </v-row>
             </v-card>

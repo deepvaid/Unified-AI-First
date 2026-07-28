@@ -126,7 +126,7 @@ function confirmDelete() {
           <div class="d-flex justify-end pr-2 gap-1">
             <v-tooltip v-if="item.status === 'Sent'" text="SMS reports are coming soon" location="top">
               <template #activator="{ props }">
-                <span v-bind="props"><v-btn icon="bar-chart-2" variant="text" size="small" color="medium-emphasis" aria-label="View report (unavailable)" disabled></v-btn></span>
+                <span v-bind="props"><v-btn icon="bar-chart-2" variant="text" size="small" class="text-medium-emphasis" aria-label="View report (unavailable)" disabled></v-btn></span>
               </template>
             </v-tooltip>
             <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">

@@ -323,7 +323,7 @@ function confirmDelete() {
                     icon="trash-2"
                     variant="text"
                     size="small"
-                    color="medium-emphasis"
+                    class="text-medium-emphasis"
                     :aria-label="`Remove condition ${index + 1}`"
                     @click="removeCondition(index)"
                   />

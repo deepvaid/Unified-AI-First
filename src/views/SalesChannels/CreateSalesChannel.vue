@@ -263,7 +263,7 @@ const reviewRows = computed(() => {
           <v-list class="bg-transparent review-list" density="comfortable">
             <v-list-item v-for="row in reviewRows" :key="row.label">
               <template #prepend>
-                <v-icon size="18" color="medium-emphasis">circle-check</v-icon>
+                <v-icon size="18" class="text-medium-emphasis">circle-check</v-icon>
               </template>
               <v-list-item-title>{{ row.label }}</v-list-item-title>
               <v-list-item-subtitle>{{ row.value }}</v-list-item-subtitle>

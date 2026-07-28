@@ -296,7 +296,7 @@ function save(publishStatus: PublishStatus) {
                 </div>
               </template>
               <template #item.actions="{ item }">
-                <v-btn icon="trash-2" variant="text" size="small" color="medium-emphasis" aria-label="Remove component" @click="removeComponent(item.productId)" />
+                <v-btn icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove component" @click="removeComponent(item.productId)" />
               </template>
             </v-data-table>
           </v-card>

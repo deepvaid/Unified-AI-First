@@ -401,7 +401,7 @@ function notify(text: string) { snackText.value = text; saveSnack.value = true }
           icon="trash-2"
           variant="text"
           size="small"
-          color="medium-emphasis"
+          class="text-medium-emphasis"
           :disabled="form.denominations.length === 1"
           :aria-label="`Remove denomination ${i + 1}`"
           @click="removeDenomination(i)"
@@ -415,7 +415,7 @@ function notify(text: string) { snackText.value = text; saveSnack.value = true }
 
       <div class="text-subtitle-2 font-weight-bold mb-2 text-uppercase text-medium-emphasis">Media</div>
       <v-card variant="flat" border rounded="lg" class="pa-6 mb-4 d-flex flex-column align-center justify-center text-center media-placeholder">
-        <v-icon size="28" color="medium-emphasis" class="mb-2">image-plus</v-icon>
+        <v-icon size="28" class="text-medium-emphasis mb-2">image-plus</v-icon>
         <div class="text-body-2 font-weight-medium">Add media</div>
         <div class="text-caption text-medium-emphasis">Drag & drop or click to upload (mock)</div>
       </v-card>

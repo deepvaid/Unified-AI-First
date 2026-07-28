@@ -191,7 +191,7 @@ function notify(text: string) { snackText.value = text; snack.value = true }
 
         <template v-slot:item.placement="{ item }">
           <div class="d-flex align-center gap-2">
-            <v-icon size="16" color="medium-emphasis">{{ placementIcon[item.placement] ?? 'map-pin' }}</v-icon>
+            <v-icon size="16" class="text-medium-emphasis">{{ placementIcon[item.placement] ?? 'map-pin' }}</v-icon>
             <span class="text-body-2">{{ item.placement }}</span>
           </div>
         </template>

@@ -196,7 +196,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
 
         <template #item.deviceModel="{ item }">
           <div class="d-flex align-center ga-1">
-            <v-icon size="14" color="medium-emphasis">
+            <v-icon size="14" class="text-medium-emphasis">
               {{ item.deviceType.includes('iPad') || item.deviceType.includes('Tablet') ? 'tablet' : 'smartphone' }}
             </v-icon>
             <span class="text-body-2">{{ item.deviceModel }}</span>

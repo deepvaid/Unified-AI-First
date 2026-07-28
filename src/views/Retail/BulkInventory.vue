@@ -132,7 +132,7 @@ function statusLabel(s: 'completed' | 'partial' | 'failed'): string {
       >
         <template #item.fileName="{ item }">
           <div class="d-flex align-center ga-2">
-            <v-icon size="16" color="medium-emphasis">file-spreadsheet</v-icon>
+            <v-icon size="16" class="text-medium-emphasis">file-spreadsheet</v-icon>
             <span class="font-weight-medium">{{ item.fileName }}</span>
           </div>
         </template>
