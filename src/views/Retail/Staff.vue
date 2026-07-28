@@ -89,12 +89,12 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
-      title="Associates"
-      subtitle="Manage store associates — their roles, location assignments, and POS access."
+      title="Staff"
+      subtitle="Manage store staff — their roles, location assignments, and POS access."
     >
       <template #actions>
         <v-btn color="primary" variant="flat" class="text-none" prepend-icon="user-plus" @click="addDrawer = true">
-          Add associate
+          Add staff member
         </v-btn>
       </template>
     </MpPageHeader>
@@ -102,7 +102,7 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
     <MpFilterTabs v-model="activeTab" :tabs="tabs" />
 
     <v-card flat border rounded="lg" class="retail-widget-card d-flex flex-column">
-      <MpDataTableToolbar v-model:search="search" search-placeholder="Search associates…">
+      <MpDataTableToolbar v-model:search="search" search-placeholder="Search staff…">
         <template #actions>
           <v-btn variant="outlined" size="small" class="text-none" prepend-icon="download" @click="showToast('Export — mock only')">
             Export
@@ -178,7 +178,7 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
         </template>
 
         <template #no-data>
-          <MpEmptyState icon="users" title="No associates" description="Add your first associate to enable POS access." />
+          <MpEmptyState icon="users" title="No staff" description="Add your first staff member to enable POS access." />
         </template>
       </v-data-table>
     </v-card>
@@ -196,7 +196,7 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
       </v-btn>
     </MpFloatingBulkBar>
 
-    <!-- Edit associate drawer -->
+    <!-- Edit staff drawer -->
     <MpFormDrawer
       v-model="editDrawer"
       :title="selectedAssociate?.name ?? 'Associate'"
@@ -263,8 +263,8 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
       </template>
     </MpFormDrawer>
 
-    <!-- Add associate drawer -->
-    <MpFormDrawer v-model="addDrawer" title="Add associate" subtitle="Grant POS access to a new team member">
+    <!-- Add staff member drawer -->
+    <MpFormDrawer v-model="addDrawer" title="Add staff member" subtitle="Grant POS access to a new team member">
       <v-row dense>
         <v-col cols="12">
           <v-text-field v-model="addForm.name" label="Full name" placeholder="e.g. Sam Reid" variant="outlined" density="compact" />
@@ -294,14 +294,14 @@ const ROLE_ITEMS = Object.entries(ASSOCIATE_ROLE_LABELS).map(([v, t]) => ({ valu
           <v-card flat border rounded="lg" class="pa-3">
             <div class="d-flex align-center ga-2">
               <v-icon size="16" color="info">info</v-icon>
-              <span class="text-body-2">A PIN setup link will be sent to the associate's email.</span>
+              <span class="text-body-2">A PIN setup link will be sent to the staff member's email.</span>
             </div>
           </v-card>
         </v-col>
       </v-row>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="addDrawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" @click="saveNewAssociate">Add associate</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" @click="saveNewAssociate">Add staff member</v-btn>
       </template>
     </MpFormDrawer>
 

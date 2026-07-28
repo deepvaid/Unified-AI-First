@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAccountsStore, type SubscriptionKey } from '@/stores/useAccounts'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -148,18 +149,41 @@ const routes: RouteRecordRaw[] = [
   // selection before opening a section.
   { path: '/commerce/:accountId/merchandising/:pathMatch(.*)*', redirect: to => ({ name: 'MerchandisingHome', params: { accountId: to.params.accountId } }), meta: commerceGate },
 
-  // 5.6 Retail
-  { path: '/commerce/:accountId/retail',              name: 'RetailHome',         component: () => import('@/views/Retail/RetailHome.vue'),       meta: retailGate },
-  { path: '/commerce/:accountId/retail/locations',    name: 'RetailLocations',    redirect: to => ({ name: 'SalesChannelLocations', params: { accountId: to.params.accountId, channelId: 'pos-store' } }), meta: retailGate },
-  { path: '/commerce/:accountId/retail/registers',    name: 'RetailRegisters',    component: () => import('@/views/Retail/Registers.vue'),        meta: retailGate },
-  { path: '/commerce/:accountId/retail/transactions', name: 'RetailTransactions', component: () => import('@/views/Retail/Transactions.vue'),     meta: retailGate },
-  { path: '/commerce/:accountId/retail/associates',   name: 'RetailAssociates',   component: () => import('@/views/Retail/Associates.vue'),       meta: retailGate },
-  { path: '/commerce/:accountId/retail/pos-preview',  name: 'RetailPosPreview',   component: () => import('@/views/Retail/PosPreview.vue'),       meta: { ...retailGate, fullPage: true } },
-  { path: '/commerce/:accountId/retail/stock',        name: 'RetailStock',        component: () => import('@/views/Retail/StockByLocation.vue'),  meta: retailGate },
-  { path: '/commerce/:accountId/retail/inventory',    name: 'RetailBulkInventory',component: () => import('@/views/Retail/BulkInventory.vue'),   meta: retailGate },
-  { path: '/commerce/:accountId/retail/pricing',      name: 'RetailPricing',      component: () => import('@/views/Retail/Pricing.vue'),          meta: retailGate },
-  { path: '/commerce/:accountId/retail/hardware',     name: 'RetailHardware',     component: () => import('@/views/Retail/Hardware.vue'),         meta: retailGate },
-  { path: '/commerce/:accountId/retail/settings',     name: 'RetailSettings',     component: () => import('@/views/Retail/RetailSettings.vue'),   meta: retailGate },
+  // 5.6 Retail — POS operations workspace (rail shell). Catalog, stock and
+  // pricing links inside the rail point at the shared Products surfaces.
+  {
+    path: '/commerce/:accountId/retail',
+    component: () => import('@/views/Retail/RetailLayout.vue'),
+    meta: { ...retailGate, railShell: true },
+    children: [
+      { path: '',             name: 'RetailHome',          component: () => import('@/views/Retail/RetailHome.vue') },
+      { path: 'transactions', name: 'RetailTransactions',  component: () => import('@/views/Retail/Transactions.vue') },
+      { path: 'registers',    name: 'RetailRegisters',     component: () => import('@/views/Retail/Registers.vue') },
+      { path: 'staff',        name: 'RetailStaff',         component: () => import('@/views/Retail/Staff.vue') },
+      { path: 'stock',        name: 'RetailStock',         component: () => import('@/views/Retail/StockByLocation.vue') },
+      { path: 'inventory',    name: 'RetailBulkInventory', component: () => import('@/views/Retail/BulkInventory.vue') },
+      { path: 'pricing',      name: 'RetailPricing',       component: () => import('@/views/Retail/Pricing.vue') },
+      { path: 'hardware',     name: 'RetailHardware',      component: () => import('@/views/Retail/Hardware.vue') },
+      { path: 'settings',     name: 'RetailSettings',      component: () => import('@/views/Retail/RetailSettings.vue') },
+    ],
+  },
+  // Full-screen POS device mock stays outside the rail shell.
+  { path: '/commerce/:accountId/retail/pos-preview', name: 'RetailPosPreview', component: () => import('@/views/Retail/PosPreview.vue'), meta: { ...retailGate, fullPage: true } },
+  // Locations live with the POS sales channel that owns them; resolve the
+  // channel at navigation time rather than assuming a fixed id.
+  {
+    path: '/commerce/:accountId/retail/locations',
+    name: 'RetailLocations',
+    redirect: (to) => {
+      const accountId = String(to.params.accountId)
+      const channel = useSalesChannelsStore().getDefaultOfflineStore(accountId)
+      return channel
+        ? { name: 'SalesChannelLocations', params: { accountId, channelId: channel.id } }
+        : { name: 'SalesChannels', params: { accountId } }
+    },
+    meta: retailGate,
+  },
+  { path: '/commerce/:accountId/retail/associates', redirect: (to) => ({ name: 'RetailStaff', params: { accountId: to.params.accountId } }) },
 
   // 5.7 Sales Channels
   { path: '/accounts/:accountId/sales_channels', name: 'SalesChannels', component: () => import('@/views/SalesChannels/SalesChannelsList.vue'), meta: sharedCommerceGate },

@@ -19,7 +19,7 @@ function showToast(message: string) { snackbar.value = { visible: true, message 
 const activeTab = ref('all')
 
 const tabCounts = computed(() => {
-  const list = store.registerList.filter((r) => r.locationId === store.activeLocationId)
+  const list = store.registerList.filter((r) => store.scopedLocationIds.includes(r.locationId))
   return {
     all: list.length,
     online: list.filter((r) => r.status === 'online').length,
@@ -52,7 +52,7 @@ const tableHeaders = [
 ]
 
 const rows = computed(() => {
-  let list = store.registerList.filter((r) => r.locationId === store.activeLocationId)
+  let list = store.registerList.filter((r) => store.scopedLocationIds.includes(r.locationId))
   if (activeTab.value !== 'all') list = list.filter((r) => r.status === activeTab.value)
   return list
 })
@@ -105,7 +105,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Registers"
-      :subtitle="`POS devices for ${store.activeLocation?.name ?? ''}. Monitor status, sync events, and offline queues.`"
+      :subtitle="`POS devices for ${store.isAllLocations ? 'all locations' : store.activeLocation?.name ?? ''}. Monitor status, sync events, and offline queues.`"
     >
       <template #actions>
         <v-btn variant="outlined" class="text-none" prepend-icon="refresh-cw" @click="showToast('Force sync sent to all online registers')">
@@ -150,7 +150,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         <div class="retail-fleet-tile">
           <v-icon size="16" color="warning" style="margin-right: 8px;">clock</v-icon>
           <div>
-            <div class="retail-fleet-tile__value">{{ store.registerList.filter((r) => r.locationId === store.activeLocationId).reduce((s, r) => s + r.pendingOfflineTxns, 0) }}</div>
+            <div class="retail-fleet-tile__value">{{ store.registerList.filter((r) => store.scopedLocationIds.includes(r.locationId)).reduce((s, r) => s + r.pendingOfflineTxns, 0) }}</div>
             <div class="retail-fleet-tile__label">Pending txns</div>
           </div>
         </div>

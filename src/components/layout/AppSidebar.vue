@@ -181,40 +181,17 @@ function buildNavGroups(accountId: string): NavGroup[] {
       ],
     },
     {
+      // Retail is a POS-operations workspace: the global entry opens it, the
+      // in-workspace rail carries operations, catalog links and setup.
       title: 'Retail',
       icon: 'store',
       requires: 'retail',
-      singleRoute: `/commerce/${accountId}/retail/transactions`,
+      singleRoute: `/commerce/${accountId}/retail`,
       items: [
-        { title: 'Transactions',      route: `/commerce/${accountId}/retail/transactions` },
-        { title: 'POS Preview',       route: `/commerce/${accountId}/retail/pos-preview` },
+        { title: 'Overview', route: `/commerce/${accountId}/retail` },
+        { title: 'Transactions', route: `/commerce/${accountId}/retail/transactions` },
+        { title: 'POS Preview', route: `/commerce/${accountId}/retail/pos-preview` },
         { title: 'Stores', route: offlinePhysicalRoute },
-        {
-          title: 'Operations',
-          isSubGroup: true,
-          items: [
-            { title: 'Locations',  route: `/accounts/${accountId}/sales_channels/pos-store/locations` },
-            { title: 'Registers',  route: `/commerce/${accountId}/retail/registers` },
-            { title: 'Associates', route: `/commerce/${accountId}/retail/associates` },
-          ],
-        },
-        {
-          title: 'Catalog & Stock',
-          isSubGroup: true,
-          items: [
-            { title: 'Stock by Location', route: `/commerce/${accountId}/retail/stock` },
-            { title: 'Bulk Inventory',    route: `/commerce/${accountId}/retail/inventory` },
-            { title: 'Pricing',           route: `/commerce/${accountId}/retail/pricing` },
-          ],
-        },
-        {
-          title: 'Setup',
-          isSubGroup: true,
-          items: [
-            { title: 'Hardware', route: `/commerce/${accountId}/retail/hardware` },
-            { title: 'Settings', route: `/commerce/${accountId}/retail/settings` },
-          ],
-        },
       ],
     },
     {

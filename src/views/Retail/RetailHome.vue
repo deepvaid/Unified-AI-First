@@ -22,12 +22,6 @@ function go(path: string) {
   router.push(`${retailBase.value}${path}`)
 }
 
-function switchContext(channelId: string, locationId: string, locationName: string, channelName: string) {
-  store.setActiveContext(channelId, locationId)
-  showToast(`Switched to ${channelName} · ${locationName}`)
-}
-
-const contextGroups = computed(() => store.availableContexts(accountId.value))
 
 function fmtMoney(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
@@ -45,7 +39,7 @@ const kpis = computed(() => {
       color: 'retail',
       trend: `${k.salesTrend}% vs yesterday`,
       trendPositive: k.salesTrend >= 0,
-      period: store.activeLocation?.name ?? '',
+      period: store.isAllLocations ? 'All locations' : store.activeLocation.name,
     },
     {
       label: 'Transactions',
@@ -128,11 +122,11 @@ function onTodoClick(todo: TodoItem) {
 /* ── Recent activity ────────────────────────────────────────── */
 
 const recentTransactions = computed(() =>
-  store.transactionList.filter((t) => t.locationId === store.activeLocationId).slice(0, 8),
+  store.transactionList.filter((t) => store.scopedLocationIds.includes(t.locationId)).slice(0, 8),
 )
 const recentRegisters = computed(() =>
   [...store.registerList]
-    .filter((r) => r.locationId === store.activeLocationId)
+    .filter((r) => store.scopedLocationIds.includes(r.locationId))
     .sort((a, b) => (a.lastSeenAt < b.lastSeenAt ? 1 : -1))
     .slice(0, 5),
 )
@@ -147,56 +141,17 @@ function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
-    <!-- Title-level context switcher header -->
+    <!-- The rail owns location scope; this header just names the workspace. -->
     <div class="retail-header">
       <div class="retail-header__row">
         <div class="retail-header__titles">
           <div class="retail-header__title-line">
             <h1 class="retail-header__title text-h5 font-weight-bold">Retail</h1>
             <v-icon size="18" class="retail-header__sep">chevron-right</v-icon>
-            <v-menu offset="6">
-              <template #activator="{ props: activator }">
-                <button
-                  v-bind="activator"
-                  type="button"
-                  class="retail-header__context"
-                  :aria-label="`Switch sales channel and location. Currently ${store.activeChannel?.name ?? ''} · ${store.activeLocation?.name ?? ''}`"
-                >
-                  <v-icon size="16" class="me-2">store</v-icon>
-                  <span class="retail-header__channel">{{ store.activeChannel?.name ?? 'POS Store' }}</span>
-                  <span class="retail-header__divider">/</span>
-                  <span class="retail-header__location">{{ store.activeLocation?.name ?? '' }}</span>
-                  <v-icon size="16" class="ms-2">chevron-down</v-icon>
-                </button>
-              </template>
-              <v-list density="comfortable" min-width="340" class="retail-header__menu">
-                <template v-for="(group, idx) in contextGroups" :key="group.channel.id">
-                  <v-divider v-if="idx > 0" class="my-1" />
-                  <div class="retail-header__group-label">{{ group.channel.name }}</div>
-                  <v-list-item
-                    v-for="loc in group.locations"
-                    :key="`${group.channel.id}-${loc.id}`"
-                    :active="loc.id === store.activeLocationId && group.channel.id === store.activeChannelId"
-                    @click="switchContext(group.channel.id, loc.id, loc.name, group.channel.name)"
-                  >
-                    <template #prepend>
-                      <v-icon
-                        size="18"
-                        :color="loc.id === store.activeLocationId && group.channel.id === store.activeChannelId ? 'primary' : undefined"
-                      >
-                        {{ loc.id === store.activeLocationId && group.channel.id === store.activeChannelId ? 'check-circle' : 'map-pin' }}
-                      </v-icon>
-                    </template>
-                    <v-list-item-title class="text-body-2 font-weight-medium">{{ loc.name }}</v-list-item-title>
-                    <v-list-item-subtitle class="text-caption">
-                      {{ loc.country }} · {{ loc.registerCount }} registers · {{ loc.associateCount }} associates
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                </template>
-                <v-divider class="my-1" />
-                <v-list-item prepend-icon="settings" title="Manage locations" @click="go('/locations')" />
-              </v-list>
-            </v-menu>
+            <span class="retail-header__scope">
+              <v-icon size="16" class="me-2">{{ store.isAllLocations ? 'store' : 'map-pin' }}</v-icon>
+              {{ store.isAllLocations ? 'All locations' : store.activeLocation.name }}
+            </span>
           </div>
           <div class="retail-header__subtitle text-body-2 text-medium-emphasis">
             In-store POS · {{ store.kpis.registersOnline }} of {{ store.kpis.registersTotal }} registers online
@@ -462,45 +417,12 @@ function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 
   color: rgba(var(--v-theme-on-surface), 0.3);
 }
 
-.retail-header__context {
+.retail-header__scope {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: rgb(var(--v-theme-on-surface));
   font-size: 1.05rem;
   font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease;
   line-height: 1.2;
-}
-
-.retail-header__context:hover {
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  border-color: rgba(var(--v-theme-on-surface), 0.08);
-}
-
-.retail-header__context:focus-visible {
-  outline: none;
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  border-color: rgb(var(--v-theme-primary));
-}
-
-.retail-header__channel {
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.retail-header__divider {
-  color: rgba(var(--v-theme-on-surface), 0.35);
-  margin: 0 4px;
-  font-weight: 400;
-}
-
-.retail-header__location {
   color: rgb(var(--v-theme-primary));
 }
 
@@ -516,17 +438,4 @@ function statusIcon(s: 'completed' | 'refunded' | 'partial_refund' | 'voided' | 
   flex-shrink: 0;
 }
 
-.retail-header__menu {
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
-.retail-header__group-label {
-  padding: 6px 16px 4px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-}
 </style>

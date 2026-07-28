@@ -339,12 +339,25 @@ export const useRetailStore = defineStore('retail', () => {
   const priceOverrideList = ref<LocationPriceOverride[]>([...priceOverrides])
   const posCustomerList = ref<PosCustomer[]>([...posCustomers])
 
-  const activeLocationId = ref<string>(locations[0]!.id)
+  /** `ALL_LOCATIONS` is the default scope: retail surfaces show the whole estate
+   *  until the rail's location switcher narrows them to one store. */
+  const ALL_LOCATIONS = 'all'
+
+  const activeLocationId = ref<string>(ALL_LOCATIONS)
   const activeChannelId = ref<string>('pos-store')
   const offlineMode = ref(false)
 
+  const isAllLocations = computed(() => activeLocationId.value === ALL_LOCATIONS)
+
+  /** Always a concrete location — surfaces that need one (POS, registers) fall
+   *  back to the first store while the scope is "all locations". */
   const activeLocation = computed(
     () => locationList.value.find((l) => l.id === activeLocationId.value) ?? locationList.value[0]!,
+  )
+
+  /** Location ids in the current scope — every location when scoped to "all". */
+  const scopedLocationIds = computed(() =>
+    isAllLocations.value ? locationList.value.map((l) => l.id) : [activeLocationId.value],
   )
 
   const activeChannel = computed<SalesChannel | undefined>(() => {
@@ -364,6 +377,10 @@ export const useRetailStore = defineStore('retail', () => {
   }
 
   function setActiveLocation(id: string) {
+    if (id === ALL_LOCATIONS) {
+      activeLocationId.value = ALL_LOCATIONS
+      return
+    }
     if (!locationList.value.some((l) => l.id === id)) return
     activeLocationId.value = id
     const salesStore = useSalesChannelsStore()
@@ -392,16 +409,16 @@ export const useRetailStore = defineStore('retail', () => {
     return associateList.value.find((a) => a.id === id)?.name ?? id
   }
 
-  /* KPIs — filtered by active location */
+  /* KPIs — scoped to the active location, or the whole estate when scoped to "all" */
   const kpis = computed(() => {
-    const locId = activeLocationId.value
-    const txns = transactionList.value.filter((t) => t.locationId === locId)
+    const scope = scopedLocationIds.value
+    const txns = transactionList.value.filter((t) => scope.includes(t.locationId))
     const todayTxns = txns.filter((t) => t.status === 'completed')
     const refunds = txns.filter((t) => t.status === 'refunded' || t.status === 'partial_refund')
     const salesToday = todayTxns.reduce((s, t) => s + t.total, 0)
     const txnCountToday = todayTxns.length
     const avgBasket = txnCountToday > 0 ? salesToday / txnCountToday : 0
-    const locRegs = registerList.value.filter((r) => r.locationId === locId)
+    const locRegs = registerList.value.filter((r) => scope.includes(r.locationId))
     const onlineRegs = locRegs.filter((r) => r.status === 'online').length
     const offlinePending = locRegs.reduce((s, r) => s + r.pendingOfflineTxns, 0)
     return {
@@ -576,6 +593,9 @@ export const useRetailStore = defineStore('retail', () => {
     posCustomerList,
     activeLocationId,
     activeChannelId,
+    isAllLocations,
+    scopedLocationIds,
+    ALL_LOCATIONS,
     offlineMode,
     POS_CATALOG_SKUS,
     // computed
