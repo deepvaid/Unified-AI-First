@@ -124,7 +124,7 @@ watch(
 
 /* Inverse — white mark for dark or gradient backgrounds */
 .dv-orbit-orb--inverse {
-  color: #ffffff;
+  color: var(--dv-orbit-on-fill);
 }
 
 @media (prefers-reduced-motion: reduce) {

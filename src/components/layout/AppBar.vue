@@ -897,14 +897,13 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .assistant-pill:hover {
-  /* same blue→purple gradient as the landing Da Vinci button */
-  background: linear-gradient(125deg, #4f8ef5 0%, #7c5cff 45%, #9a5cff 72%, #5b44d6 100%);
+  background: var(--dv-action-gradient);
   border-color: transparent;
-  color: #ffffff;
+  color: var(--dv-action-on-gradient);
 }
 
 .assistant-pill:hover :deep(.assistant-pill__chevron) {
-  color: #ffffff;
+  color: var(--dv-action-on-gradient);
 }
 
 /* Orb rings rest still in the pill and revolve on hover */
@@ -1442,8 +1441,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .cmd-row__icon--ask,
 .cmd-row--active .cmd-row__icon--ask {
-  background: linear-gradient(135deg, rgb(var(--v-theme-primary)), rgb(var(--v-theme-secondary)));
-  color: #fff;
+  background: var(--dv-action-gradient);
+  color: var(--dv-action-on-gradient);
 }
 
 .cmd-row__body {

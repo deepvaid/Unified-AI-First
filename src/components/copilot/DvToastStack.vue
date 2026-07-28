@@ -59,7 +59,7 @@ const { toasts, triggerAction } = useDaVinciToasts()
   font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
-  box-shadow: var(--mp-shadow-md);
+  box-shadow: var(--elevation-overlay);
   min-width: 280px;
   max-width: 440px;
   animation: dvToastIn 220ms cubic-bezier(0.2, 0.7, 0.3, 1.2);

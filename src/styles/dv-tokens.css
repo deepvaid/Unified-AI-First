@@ -39,6 +39,14 @@
   --dv-metric-positive: var(--mp-color-light-aiMetric-positive);
   --dv-metric-negative: var(--mp-color-light-aiMetric-negative);
   --dv-metric-neutral: var(--mp-color-light-aiMetric-neutral);
+  --dv-action-gradient: linear-gradient(
+    125deg,
+    var(--mp-color-light-aiAccent-actionGradientFrom) 0%,
+    var(--mp-color-light-aiAccent-actionGradientMid) 45%,
+    var(--mp-color-light-aiAccent-actionGradientTo) 100%
+  );
+  --dv-action-on-gradient: var(--mp-color-light-aiAccent-actionOnGradient);
+  --dv-orbit-on-fill: var(--mp-color-light-aiAccent-orbitOnFill);
 }
 
 /* ── Orbit voice mode (drawer) — high-fidelity handoff values, light-theme spec.
@@ -143,4 +151,12 @@
   --dv-metric-positive: var(--mp-color-dark-aiMetric-positive);
   --dv-metric-negative: var(--mp-color-dark-aiMetric-negative);
   --dv-metric-neutral: var(--mp-color-dark-aiMetric-neutral);
+  --dv-action-gradient: linear-gradient(
+    125deg,
+    var(--mp-color-dark-aiAccent-actionGradientFrom) 0%,
+    var(--mp-color-dark-aiAccent-actionGradientMid) 45%,
+    var(--mp-color-dark-aiAccent-actionGradientTo) 100%
+  );
+  --dv-action-on-gradient: var(--mp-color-dark-aiAccent-actionOnGradient);
+  --dv-orbit-on-fill: var(--mp-color-dark-aiAccent-orbitOnFill);
 }

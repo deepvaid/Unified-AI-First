@@ -283,3 +283,52 @@ Earlier in this session the WP-01–WP-03 commits were found on a mistakenly cre
 - **Deviations from the plan:** `DashboardKpiWidget`, `retail-widgets.scss`, `Transactions.vue`, `Locations.vue`, `SalesChannelDetail.vue`, and AppBar `--neg` already resolved through alias layer (done-by-prior). Chart widget internals skipped per WP-09 completion.
 - **Known issues:** none for this package.
 - **Commit:** `d87be7b`
+
+## WP-10 — Menus, popovers, modals, and drawers
+
+- **Work package completed:** WP-10 — applied L3/L4 overlay surfaces, semantic scrim, borders, and elevation to global teleported overlays and MpFormDrawer.
+- **Files changed:**
+  - `src/styles/global.scss`
+  - `src/components/MpFormDrawer.vue`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none — consumes `--surface-overlay`, `--border-default`, `--scrim-overlay`, `--elevation-overlay`, `--elevation-modal`.
+- **Hard-coded colors removed:** Vuetify scrim opacity hack; menu/dialog `--mp-border-subtle` and dual-shadow stacks; MpFormDrawer `--mp-shadow-md` and primary-surface fill.
+- **Tests run + results:**
+  - `npx vite build` — succeeds.
+- **Deviations from the plan:** MpConfirmDialog, RBAC/PLG drawers, Dv* dialogs inherit corrected global overlay rules without per-file edits (done-by-prior via teleported `.v-overlay__content` selectors). Representative raw call sites verified to use standard Vuetify overlays covered by global rules.
+- **Known issues:** none for this package.
+- **Commit:** `8273573`
+
+## WP-11 — AI assistant surfaces
+
+- **Work package completed:** WP-11 — routed AppBar assistant/action gradients and voice on-fill literals through generated AI accent tokens; preserved WebGL orb literals.
+- **Files changed:**
+  - `src/styles/dv-tokens.css`
+  - `src/components/layout/AppBar.vue`
+  - `src/components/copilot/DvToastStack.vue`
+  - `src/components/copilot/voice/DvOrbitMicBar.vue`
+  - `src/components/copilot/voice/DvOrbitOrb.vue`
+  - `src/components/copilot/voice/DvOrbitVoiceSurface.vue`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none — consumes `--dv-action-gradient`, `--dv-action-on-gradient`, `--dv-orbit-on-fill` from generated `aiAccent` tokens.
+- **Hard-coded colors removed:** AppBar assistant-pill hover gradient and `#ffffff` foreground; cmd-row Ask icon primary→secondary gradient; voice mic/slash/inverse/success `#ffffff` fills; DvToastStack light-only shadow.
+- **Tests run + results:**
+  - `npx vite build` — succeeds.
+- **Deviations from the plan:** remaining 20 copilot components already resolve through `dv-tokens.css` and global overlay rules — no additional literals found beyond the plan's named call sites (done-by-prior). WebGL orb/ring hex stops retained per §5.9 exception.
+- **Known issues:** none for this package.
+- **Commit:** `<pending>`
+
+## WP-10 — Menus, popovers, modals, and drawers
+
+- **Work package completed:** WP-10 — applied L3/L4 overlay surfaces, semantic scrim, borders, and elevation to global teleported overlays and MpFormDrawer.
+- **Files changed:**
+  - `src/styles/global.scss`
+  - `src/components/MpFormDrawer.vue`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none — consumes `--surface-overlay`, `--border-default`, `--scrim-overlay`, `--elevation-overlay`, `--elevation-modal`.
+- **Hard-coded colors removed:** Vuetify scrim opacity hack; menu/dialog `--mp-border-subtle` and dual-shadow stacks; MpFormDrawer `--mp-shadow-md` and primary-surface fill.
+- **Tests run + results:**
+  - `npx vite build` — succeeds.
+- **Deviations from the plan:** MpConfirmDialog, RBAC/PLG drawers, Dv* dialogs inherit corrected global overlay rules without per-file edits (done-by-prior via teleported `.v-overlay__content` selectors). Representative raw call sites verified to use standard Vuetify overlays covered by global rules.
+- **Known issues:** none for this package.
+- **Commit:** `8273573`
