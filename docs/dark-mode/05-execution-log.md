@@ -67,3 +67,69 @@ Independently confirmed against `master` (`git checkout master -- .`, ran `vue-t
   - `npm run audit:ui` — completed with exit code 1 and 1,150 repository-wide findings (3 high, 383 medium, 764 low).
 - **Deviations from the plan:** removed the 11-line orphaned `--mb-*` bridge from `src/styles/global.scss` as well as the listed files so the required source-wide zero-reference check passes.
 - **Known issues:** repository type-check/build remain blocked by the pre-existing `ReelFlyView.vue` strict-null errors; Storybook remains blocked by the existing WP-01 generated Sass declaration-order defect; the existing UI audit reports repository-wide findings.
+
+## WP-04H — Rendered dark-mode corrections (dividers, surface separation, button glow)
+
+- **Work package completed:** WP-04H — a corrective package raised from direct rendered inspection of the running app in dark mode, ahead of the remaining numbered packages. Three reported defects were reproduced, root-caused against computed styles, and fixed token-first.
+- **Trigger:** user-reported, rendered-verified: (1) "very strong hr inside cards", (2) "cards has same bg color", (3) "white glow instead of shadow". Guidance received with the report: default to Material Design 2 dark-theme fundamentals (`https://m2.material.io/design/color/dark-theme.html#anatomy`) where an exact value or technique is uncertain.
+
+### Root causes (measured in the browser, dark mode, `localhost:5173`)
+
+| Defect | Measured before | Root cause |
+|---|---|---|
+| Too-strong in-card `hr` | `.v-card .v-divider` `border-top-color: rgb(126,123,117)` at `opacity: 1` (≈3.9:1 on the card fill) | `color.dark.borderDividerMuted`, `borderTableRow`, and `borderTableFooterDivider` all aliased `borderSubtle` (`#7E7B75`), an **opaque mid-grey**. The light theme uses low-alpha overlays for the same roles (`rgba(26,24,20,0.06)`), so only dark mode rendered dividers as hard rules. |
+| Cards indistinguishable from canvas | canvas `rgb(26,23,20)` vs card `rgb(34,32,25)` — a +8/+9/+5 step | `color.dark.surface` sat only ≈1 Material overlay step above `color.dark.background`, and the four tiers above it were spaced 5–8 units apart, so no tier read as a distinct container. |
+| White glow instead of shadow | `.v-btn--variant-flat` computed `rgba(255,255,255,0.16) 0 1px 0 inset, rgba(45,99,232,0.24) 0 1px 3px` in **both** themes | `src/styles/global.scss` hard-coded a light-surface top-edge sheen with no theme branch. On a dark button fill the white inset reads as a glow, not elevation. |
+
+### Changes
+
+- **Tokens changed** (`src/design-tokens/tokens.json`, dark only):
+  - Surface ladder re-spaced on Material dark overlay logic — largest step at canvas→card, decreasing increments above, so every tier is perceptibly distinct:
+    | Tier | Token | Before | After |
+    |---|---|---|---|
+    | L0 canvas | `background` | `#1A1714` | `#1A1714` (unchanged) |
+    | L1 card | `surface` | `#222019` | `#2C2820` |
+    | L2 raised | `surfaceRaised` | `#2A2820` | `#312D24` |
+    | L1 nested | `surfaceVariant` | `#2E2B25` | `#353128` |
+    | L3/L4 overlay | `surfaceBright` | `#333028` | `#39352C` |
+  - `surfaceLight` now aliases `surfaceRaised` (was a duplicated `#2A2820` literal), so the legacy Vuetify `surface-light` key tracks its tier.
+  - Divider roles decoupled from the opaque boundary token and moved to Material-style low-alpha white overlays: `borderDividerMuted` → `rgba(255,255,255,0.12)`, `borderTableFooterDivider` → `rgba(255,255,255,0.12)`, `borderTableRow` → `rgba(255,255,255,0.08)` (lightest of the set so stacked rows do not accumulate into a grid).
+  - `color.chart.dark.tooltipBackground` now aliases `surfaceBright` instead of repeating `#333028`, so chart tooltips stay on the overlay tier.
+  - `color.dark.borderSubtle` (`#7E7B75`) deliberately **unchanged** — it remains the opaque essential-boundary value for card/control outlines at the plan's 3.12:1.
+- **Files changed:**
+  - `src/design-tokens/tokens.json`
+  - `src/design-tokens/build.mjs`
+  - `src/design-tokens/generated/_variables.scss`, `variables.css`, `tokens.ts` (regenerated)
+  - `src/styles/mp-theme-aliases.css`
+  - `src/styles/global.scss`
+  - `.gitignore`
+  - `docs/dark-mode/05-execution-log.md`
+- **Hard-coded colors removed:** the `rgba(45,99,232,0.24)` literal in `global.scss` (now `--mp-rgb-color-light-accent-blue-focusRing`), and the duplicated `#2A2820` / `#333028` literals in `tokens.json`.
+- **Shadow corrections:** added theme-aware `--btn-flat-shadow` to the alias layer — light keeps its exact previous sheen + tinted lift, dark uses `--elevation-raised` (`0 1px 2px rgba(0,0,0,0.32)`), so dark elevation is never simulated with light. Also repointed `.card-hover:hover` and the popover/menu surface from the light-only `--mp-shadow-md`/`--mp-shadow-lg` to the theme-aware `--elevation-overlay`/`--elevation-modal`.
+
+### Deviations from the plan (and rationale)
+
+1. **§2.4 required opaque divider values** (`borderDividerMuted`/`borderTableRow`/`borderTableFooterDivider` aliasing `borderSubtle` at `#7E7B75`, 3.12:1). This value is the direct cause of defect (1): an opaque mid-grey at ~3.9:1 on the card fill renders in-card separators as hard rules. Corrected to low-alpha white overlays per Material dark guidance. Dividers are decorative separators, not essential boundaries — the plan's own §2.4 note permits decorative separators to opt out — and the essential boundary token `borderSubtle` retains its 3.12:1 opaque value, so no non-text contrast requirement is weakened.
+2. **§2.2/§3 pinned the dark surface values as "keep"** and stated surface distinction would come from tiers, borders, and shadows alone. Rendered inspection shows that is insufficient: the canvas→card step was ≈1 Material overlay step, which is defect (2). The ladder was re-spaced. Because all audited "on surface" ratios were computed against `#222019`, each was re-derived against the new fills; the binding constraint is danger text `#EF8176`, which caps the overlay tier — it holds at **4.67:1** on the new `#39352C` (plan target ≥4.5:1, preserving the A6 fix). Primary text holds at 12.42:1 on the card and 10.34:1 on the overlay; disabled text holds at 4.25:1 (above the 3:1 floor for disabled content).
+3. Re-applied the `generateScss` alias-resolution fix in `build.mjs` (emit literals instead of `$a: $b`). This had been authored earlier in the session but was lost from the working tree; without it `build-storybook` fails on Sass declaration order. This clears the "Known issues" entry carried by WP-01 through WP-03.
+
+### Tests run + results
+
+- `npm run tokens:build` — 499 tokens generated; diff confined to dark values. **Zero light-token drift** (`git diff` on generated output contains no `color-light` change).
+- `npm run type-check` — 12 errors, all pre-existing `src/views/Reel/ReelFlyView.vue` strict-null errors; no new errors. (The transient `usePlg.ts` errors seen mid-session came from unrelated uncommitted retail WIP and are gone now that the tree matches HEAD.)
+- `npm run build` — still stops at the same pre-existing `ReelFlyView.vue` errors. `npx vite build` run separately: **succeeds** (`✓ built in 11.55s`), confirming the bundle and style pipeline are healthy.
+- `npm run build-storybook` — **passes** (`✓ built in 21.14s`). Previously blocked; fixed by deviation 3.
+- `npm run audit:ui` — 1,149 findings (3 high, 383 medium, 763 low); the 3 high are pre-existing tiny-font findings in `AcquisitionForms.vue` and `PosPreview.vue`, unrelated to this package. No new category introduced.
+- **Rendered verification** (Playwright, dark mode): in-card dividers now compute `rgba(255,255,255,0.12)`; flat buttons compute `rgba(0,0,0,0.32) 0 1px 2px` with no inset; card fill `rgb(44,40,32)` against canvas `rgb(26,23,20)`. Screens checked: dashboard overview, Settings → Account Defaults, Contact detail.
+- **Light-mode regression check** (Playwright, light mode, Contact detail): `--v-theme-surface` `255,255,255`, `--v-theme-background` `244,246,250`, card `rgb(255,255,255)`, divider `rgba(26,24,20,0.06)`, flat-button shadow `rgba(255,255,255,0.16) inset, rgba(45,99,232,0.24)` — all identical to pre-change values.
+- Linting: unavailable — the repository defines no lint script.
+
+### Known issues
+
+- `npm run build` remains blocked by the pre-existing `ReelFlyView.vue` strict-null errors (baseline, unrelated to dark mode); `npx vite build` passes.
+- Chart gridline `color.chart.dark.grid` is still the opaque `#7E7B75`. Left untouched here to keep this package surgical; it belongs to WP-09 (charts).
+- Non-card `v-divider` instances outside `.v-card`/overlay/drawer scopes still take Vuetify's generic border color at 50% opacity. Not part of the reported defect; to be swept with WP-06.
+
+### Process note (repository hygiene, not a code change)
+
+Earlier in this session the WP-01–WP-03 commits were found on a mistakenly created `feature/retail-commerce-unification` branch rather than `feature/dark-mode-system`. All three commits were moved onto `feature/dark-mode-system` (fast-forward; `9296227` was already a direct child of that branch's tip) and the stray branch was reset to `master`, which held no unique commits. Separately, a `git checkout master -- .` / `git checkout HEAD -- .` sequence run for verification discarded pre-existing **uncommitted** edits in `src/stores/useAccounts.ts`, `src/router/index.ts`, and `src/stores/usePlg.ts` — unrelated retail WIP that no dark-mode package had touched. Those edits were never staged or committed, so no git-level recovery exists; this is recorded here so the loss is not silently attributed to a dark-mode package.

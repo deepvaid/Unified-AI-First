@@ -98,12 +98,11 @@ function resolveAliasValue(token, tokenIndex, stack = new Set()) {
 }
 
 function generateScss(tokens) {
+  const tokenIndex = createTokenIndex(tokens)
   const header = '// Auto-generated from tokens.json — do not edit\n\n'
-  const lines = tokens.map(t => {
-    const aliasPath = parseAlias(t.value)
-    const value = aliasPath ? toScssName(aliasPath) : t.value
-    return `${toScssName(t.path)}: ${value};`
-  })
+  // Emit literals rather than $a: $b references. Sass resolves variables in
+  // source order, and an alias can point at a token that sorts after it.
+  const lines = tokens.map(t => `${toScssName(t.path)}: ${resolveAliasValue(t, tokenIndex)};`)
   return header + lines.join('\n') + '\n'
 }
 

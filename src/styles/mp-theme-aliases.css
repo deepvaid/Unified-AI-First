@@ -80,6 +80,10 @@
   --elevation-raised: var(--mp-shadow-sm);
   --elevation-overlay: var(--mp-shadow-md);
   --elevation-modal: var(--mp-shadow-lg);
+  /* Filled buttons carry a top-edge sheen plus a tinted lift on light surfaces. */
+  --btn-flat-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 1px 3px rgba(var(--mp-rgb-color-light-accent-blue-focusRing), 0.24);
 
   /* Radius */
   --r-pill: 9999px;
@@ -193,6 +197,8 @@
   --elevation-raised: var(--mp-shadow-dark-sm);
   --elevation-overlay: var(--mp-shadow-dark-md);
   --elevation-modal: var(--mp-shadow-dark-lg);
+  /* No white sheen on dark: a light inset reads as a glow, not elevation. */
+  --btn-flat-shadow: var(--elevation-raised);
 
   /* Ink panel (branded inverted surface) */
   --ink-panel-bg: var(--mp-color-dark-inkPanel-bg);
