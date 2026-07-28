@@ -671,6 +671,16 @@ export const useDashboardsStore = defineStore('dashboards', () => {
     return getDashboardById(accountId, undefined)
   }
 
+  function getLastViewedDashboard(accountId: string): Dashboard | undefined {
+    const dashboards = getDashboardsForAccount(accountId)
+    let latest: Dashboard | undefined
+    for (const dashboard of dashboards) {
+      if (!dashboard.lastViewedAt) continue
+      if (!latest || dashboard.lastViewedAt > (latest.lastViewedAt ?? '')) latest = dashboard
+    }
+    return latest ?? getDefaultDashboard(accountId)
+  }
+
   function createDashboard(accountId: string, name: string, options?: {
     description?: string
     icon?: string
@@ -1064,6 +1074,7 @@ export const useDashboardsStore = defineStore('dashboards', () => {
     getDashboardsForAccount,
     getDashboardById,
     getDefaultDashboard,
+    getLastViewedDashboard,
     createDashboard,
     renameDashboard,
     updateDashboard,

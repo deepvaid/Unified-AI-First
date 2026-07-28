@@ -50,12 +50,40 @@ const currentAccountId = computed(() => {
   return routeAccountId ?? props.accountId
 })
 
-const currentDashboard = computed(() => {
-  const routeDashboardId = Array.isArray(route.params.dashboardId)
+const routeDashboardId = computed(() => {
+  const id = Array.isArray(route.params.dashboardId)
     ? route.params.dashboardId[0]
     : route.params.dashboardId
-  return dashboardsStore.getDashboardById(currentAccountId.value, routeDashboardId)
-    ?? dashboardsStore.getDashboardById(props.accountId, props.dashboardId)
+  return id || undefined
+})
+
+// The draft bakes the dashboard it was generated for (buildAiWidgetDraft), but
+// the user may have navigated since. Used only as a last resort below.
+const pinnedDashboard = computed(() => {
+  const id = localDraft.value.dashboardId
+  if (!id) return undefined
+  return dashboardsStore.getDashboardById(props.accountId || currentAccountId.value, id)
+})
+
+// "Add widget" must land the widget on the dashboard the user is actually
+// looking at. Resolve the live target first, then the host-provided target,
+// and only fall back to the draft's origin. Every lookup uses a truthy id, so
+// we never hit getDashboardById's undefined → silent-default branch.
+const currentDashboard = computed(() => {
+  // 1. On a dashboard route → the dashboard currently being viewed.
+  if (routeDashboardId.value) {
+    const routed = dashboardsStore.getDashboardById(currentAccountId.value, routeDashboardId.value)
+    if (routed) return routed
+  }
+  // 2. Off a dashboard route (full-page copilot, drawer over other pages) → the
+  //    target the host (MpDaVinciBot) resolved: the current / last-viewed
+  //    dashboard, passed down via props.dashboardId.
+  if (props.dashboardId) {
+    const propTarget = dashboardsStore.getDashboardById(props.accountId || currentAccountId.value, props.dashboardId)
+    if (propTarget) return propTarget
+  }
+  // 3. Last resort → the dashboard the draft was generated for.
+  return pinnedDashboard.value
 })
 
 const effectiveAccountId = computed(() => currentDashboard.value?.accountId ?? currentAccountId.value)
