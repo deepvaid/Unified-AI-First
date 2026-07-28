@@ -45,7 +45,7 @@ withDefaults(defineProps<{
   align-items: center;
   gap: 24px;
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.06);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .mp-table-skeleton__row--header {
@@ -57,13 +57,13 @@ withDefaults(defineProps<{
   flex: 1;
   height: 12px;
   border-radius: 4px;
-  background: rgba(var(--v-theme-on-surface), 0.08);
+  background: color-mix(in oklch, var(--text-primary) 8%, transparent);
   animation: mp-skeleton-pulse 1.6s ease-in-out infinite;
 }
 
 .mp-table-skeleton__bar--head {
   height: 11px;
-  background: rgba(var(--v-theme-on-surface), 0.12);
+  background: color-mix(in oklch, var(--text-primary) 12%, transparent);
 }
 
 .mp-table-skeleton__sr {

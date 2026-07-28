@@ -160,7 +160,7 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 
 .widget-library__ai:hover {
   border-color: rgb(var(--v-theme-secondary));
-  box-shadow: 0 0 0 1px rgba(var(--v-theme-secondary), 0.25);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
 .widget-library__ai-icon {
@@ -263,7 +263,7 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 .widget-library__item--active {
   border-color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.05);
-  box-shadow: 0 0 0 1px rgba(var(--v-theme-primary), 0.25);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
 .widget-library__item-icon {

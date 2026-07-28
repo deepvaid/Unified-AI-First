@@ -53,10 +53,13 @@ const trendUp = computed(() => props.trendPositive !== false)
         </div>
 
         <div v-if="trend" class="d-flex align-center ga-1 mt-2">
-          <v-icon size="14" :color="trendUp ? 'success' : 'error'">
+          <v-icon size="14" :class="trendUp ? 'mp-kpi-card__trend-icon--positive' : 'mp-kpi-card__trend-icon--negative'">
             {{ trendUp ? 'trending-up' : 'trending-down' }}
           </v-icon>
-          <span class="text-caption font-weight-medium" :class="trendUp ? 'text-success' : 'text-error'">
+          <span
+            class="text-caption font-weight-medium"
+            :class="trendUp ? 'mp-kpi-card__trend--positive' : 'mp-kpi-card__trend--negative'"
+          >
             {{ trend }}
           </span>
         </div>
@@ -115,5 +118,15 @@ const trendUp = computed(() => props.trendPositive !== false)
 /* Wrapper owns the ink color; the .mp-kpi-value / --hero utility owns size + tabular figures. */
 .mp-kpi-card__value {
   color: rgb(var(--v-theme-on-surface));
+}
+
+.mp-kpi-card__trend--positive,
+.mp-kpi-card__trend-icon--positive {
+  color: var(--pos);
+}
+
+.mp-kpi-card__trend--negative,
+.mp-kpi-card__trend-icon--negative {
+  color: var(--neg);
 }
 </style>

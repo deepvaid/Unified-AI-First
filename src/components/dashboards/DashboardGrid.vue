@@ -318,7 +318,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
 
 .dashboard-grid :deep(.vgl-item.vgl-item--dragging) .dashboard-widget-card,
 .dashboard-grid :deep(.vgl-item.vgl-item--resizing) .dashboard-widget-card {
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  box-shadow: var(--elevation-modal);
   border-color: rgb(var(--v-theme-primary));
   border-style: solid;
 }

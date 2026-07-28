@@ -261,4 +261,25 @@ Earlier in this session the WP-01–WP-03 commits were found on a mistakenly cre
   - `npx vite build` — succeeds.
 - **Deviations from the plan:** MpFormDrawer, MpManageFoldersDrawer, MpMoveToFolderDialog, MpBuilderShell, RBAC/PLG drawers already resolve through global outlined-field baseline and WP-06 focus tokens — no component-level dark selectors or literals found (done-by-prior).
 - **Known issues:** Overlay-surface form drawers deferred to WP-10.
+- **Commit:** `b6dc7f3`
+
+## WP-08 — Cards, dashboard widgets, and feedback states
+
+- **Work package completed:** WP-08 — aligned KPI trend semantics, dashboard widget elevation/borders, and error/loading feedback surfaces with dark-mode tokens.
+- **Files changed:**
+  - `src/components/MpKpiCard.vue`
+  - `src/components/MpErrorState.vue`
+  - `src/components/MpTableSkeleton.vue`
+  - `src/components/dashboards/DashboardWidgetCard.vue`
+  - `src/components/dashboards/DashboardSetupGuide.vue`
+  - `src/components/dashboards/DashboardGrid.vue`
+  - `src/components/dashboards/wizard/WidgetLibraryStep.vue`
+  - `src/components/dashboards/widgets/DashboardTableWidget.vue`
+  - `docs/dark-mode/05-execution-log.md`
+- **Tokens changed:** none — consumes `--pos`, `--neg`, `--neg-soft`, `--border-subtle`, `--border-default`, `--elevation-raised`, `--elevation-overlay`, `--elevation-modal`, `--focus-ring`, `--hairline`.
+- **Hard-coded colors removed:** dashboard widget `rgba(15,23,42,…)` shadow stacks; KPI trend Vuetify utility classes replaced with `--pos`/`--neg`; error-state and skeleton alpha-on-surface backgrounds.
+- **Tests run + results:**
+  - `npx vite build` — succeeds.
+- **Deviations from the plan:** `DashboardKpiWidget`, `retail-widgets.scss`, `Transactions.vue`, `Locations.vue`, `SalesChannelDetail.vue`, and AppBar `--neg` already resolved through alias layer (done-by-prior). Chart widget internals skipped per WP-09 completion.
+- **Known issues:** none for this package.
 - **Commit:** `<pending>`

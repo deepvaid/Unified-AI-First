@@ -183,7 +183,7 @@ const campaignRows = computed(() => {
 
 .dashboard-campaign-list__link:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
 .dashboard-table-widget__table {
