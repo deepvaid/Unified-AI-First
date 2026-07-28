@@ -54,18 +54,18 @@ function onKeyActivate(e: KeyboardEvent) {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .mp-option-card:hover {
-  border-color: rgba(var(--v-theme-primary), 0.5);
+  border-color: var(--border-hover);
 }
 .mp-option-card:focus-visible {
-  outline: 2px solid rgb(var(--v-theme-primary));
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .mp-option-card--selected {
-  border-color: rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 1px rgb(var(--v-theme-primary));
+  border-color: var(--accent-default);
+  box-shadow: 0 0 0 1px var(--accent-default);
 }
 .mp-option-card__media {
-  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  background: rgb(var(--v-theme-background));
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-canvas);
 }
 </style>

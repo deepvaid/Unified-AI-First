@@ -853,7 +853,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .appbar-utilities :deep(.appbar-action-btn:hover),
 .appbar-utilities :deep(.appbar-action-btn:focus-visible) {
-  background: rgba(var(--v-theme-on-surface), 0.12);
+  background: var(--surface-interactive-hover);
   color: var(--ink);
   outline: none;
 }
@@ -918,7 +918,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .assistant-pill:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 40%, transparent);
 }
 
 .assistant-pill :deep(.v-icon) {
@@ -1422,7 +1422,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .cmd-row:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent) 45%, transparent);
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 .cmd-row__icon {

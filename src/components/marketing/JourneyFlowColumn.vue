@@ -193,7 +193,7 @@ const endsRun = computed(() => {
   display: block; width: 100%; padding: 0; margin: 0; border: 0;
   background: transparent; text-align: left; cursor: pointer; color: inherit;
 }
-.flow-node__open:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; border-radius: var(--mp-component-card-radius-md); }
+.flow-node__open:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: var(--mp-component-card-radius-md); }
 .flow-node__main { display: flex; align-items: flex-start; gap: 10px; padding: 12px 64px 12px 16px; }
 .flow-node__icon {
   display: inline-flex; align-items: center; justify-content: center;
@@ -328,5 +328,5 @@ const endsRun = computed(() => {
   border-color: rgba(var(--v-theme-primary), 0.6); color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.04);
 }
-.branch-empty:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
+.branch-empty:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 </style>

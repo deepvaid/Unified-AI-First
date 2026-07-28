@@ -241,7 +241,7 @@ a {
   .v-list-item,
   .v-chip
 ):focus-visible {
-  outline: 2px solid rgba(var(--v-theme-primary), 0.36);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -465,6 +465,16 @@ tr:focus-within .action-btns {
   border-top-color: var(--mp-border-table-footer-divider);
 }
 
+/* Generic dividers outside cards/overlays — Vuetify defaults to 50% border opacity. */
+.v-divider:not(.v-card .v-divider):not(.v-overlay__content .v-divider):not(.mp-form-drawer .v-divider) {
+  opacity: 1;
+  border-top-color: var(--mp-border-subtle);
+}
+
+.v-application.v-theme--maropostDark .v-divider:not(.v-card .v-divider):not(.v-overlay__content .v-divider):not(.mp-form-drawer .v-divider) {
+  border-top-color: var(--mp-color-dark-borderDividerMuted);
+}
+
 .v-data-table .v-data-table-footer {
   border-top-width: 0;
   border-top-style: none;
@@ -496,7 +506,7 @@ tr:focus-within .action-btns {
 .v-data-table .v-table__wrapper > table > thead > tr > th.v-data-table__th {
   background: transparent;
   border-bottom-color: var(--mp-border-table-header);
-  color: rgb(var(--v-theme-on-surface-variant)) !important;
+  color: var(--text-muted) !important;
   font-size: 11px !important;
   line-height: 1.05 !important;
   font-weight: var(--mp-typography-fontWeight-semibold) !important;

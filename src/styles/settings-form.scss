@@ -45,8 +45,7 @@
 
 /* ── Placeholder ────────────────────────────────────────────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__input::placeholder {
-  color: var(--muted);
-  opacity: 0.65;
+  color: var(--text-muted);
 }
 
 /* ── Resting border — dark-mode-aware via --hairline alias ──── */
@@ -67,7 +66,7 @@
 
 /* ── Focused border — primary color, no thickness bump, soft ring */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused {
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline__start,
@@ -83,7 +82,7 @@
 
 /* ── Error border + soft ring ───────────────────────────────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error:not(.v-field--focused) {
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-error), 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, rgb(var(--v-theme-error)) 35%, transparent);
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline__start,
