@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 
 // ── Seeded random for deterministic mock data ──────────────────────────────────
@@ -43,6 +43,30 @@ export interface ContactDetail {
   timeline: { id: number; type: string; icon: string; color: string; title: string; date: string; statuses: string[] }[]
 }
 
+// ── Loyalty (in-store) ──────────────────────────────────────────────────────────
+export type LoyaltyTier = 'member' | 'silver' | 'gold' | 'vip'
+
+export const LOYALTY_TIER_LABELS: Record<LoyaltyTier, string> = {
+  member: 'Member',
+  silver: 'Silver',
+  gold: 'Gold',
+  vip: 'VIP',
+}
+
+/**
+ * Present on contacts enrolled in the in-store loyalty programme. A shopper is
+ * one contact whether they buy online or at a register — loyalty is an
+ * attribute of that contact, not a separate customer record.
+ */
+export interface ContactLoyalty {
+  tier: LoyaltyTier
+  points: number
+  visits: number
+  homeLocationId: string
+  memberSince: string
+  notes?: string
+}
+
 // ── Contact record ──────────────────────────────────────────────────────────────
 export interface Contact {
   id: number
@@ -60,6 +84,7 @@ export interface Contact {
   lastActive: string
   createdAt: string
   avatarUrl: string
+  loyalty?: ContactLoyalty
 }
 
 // ── Segment condition builder ─────────────────────────────────────────────────
@@ -121,6 +146,104 @@ export const useContactsStore = defineStore('contacts', () => {
       avatarUrl: `https://i.pravatar.cc/96?u=contact-${i + 1}`,
     }
   }))
+
+  /** In-store loyalty members, previously a separate POS customer list. */
+  const LOYALTY_SEED: Array<{
+    name: string
+    email: string
+    phone: string
+    tier: LoyaltyTier
+    points: number
+    spend: number
+    visits: number
+    since: string
+    homeLocationId: string
+    notes?: string
+  }> = [
+    { name: 'Hannah Cole',   email: 'hannah.cole@example.com',   phone: '+61 412 882 014',   tier: 'gold',   points: 2840, spend: 2843.60, visits: 18, since: '2024-03-12', homeLocationId: 'loc-bondi',     notes: 'Prefers email receipts. Size M in outerwear.' },
+    { name: "Liam O'Connor", email: 'liam.oconnor@example.com',  phone: '+61 400 233 871',   tier: 'vip',    points: 6120, spend: 6118.25, visits: 24, since: '2023-11-02', homeLocationId: 'loc-bondi' },
+    { name: 'Mia Tan',       email: 'mia.tan@example.com',       phone: '+61 433 190 552',   tier: 'silver', points: 1290, spend: 1287.40, visits: 9,  since: '2024-08-21', homeLocationId: 'loc-bondi' },
+    { name: 'Zoe Patel',     email: 'zoe.patel@example.com',     phone: '+61 421 077 309',   tier: 'member', points: 310,  spend: 312.40,  visits: 3,  since: '2025-04-09', homeLocationId: 'loc-bondi' },
+    { name: 'Aria Singh',    email: 'aria.singh@example.com',    phone: '+61 402 615 488',   tier: 'gold',   points: 3470, spend: 3468.90, visits: 15, since: '2024-01-28', homeLocationId: 'loc-chadstone', notes: 'Loyalty birthday voucher pending (July).' },
+    { name: 'Lucas Chen',    email: 'lucas.chen@example.com',    phone: '+61 415 904 226',   tier: 'member', points: 680,  spend: 684.20,  visits: 5,  since: '2025-01-17', homeLocationId: 'loc-chadstone', notes: 'Exchanged field jacket size M→L on POS-12040.' },
+    { name: 'Ivy Nguyen',    email: 'ivy.nguyen@example.com',    phone: '+61 438 552 901',   tier: 'silver', points: 1540, spend: 1536.75, visits: 11, since: '2024-06-05', homeLocationId: 'loc-chadstone' },
+    { name: 'Henry Adler',   email: 'henry.adler@example.com',   phone: '+1 (212) 555-0184', tier: 'vip',    points: 8930, spend: 8927.10, visits: 22, since: '2023-09-14', homeLocationId: 'loc-soho' },
+    { name: 'Maya Diaz',     email: 'maya.diaz@example.com',     phone: '+1 (917) 555-0142', tier: 'gold',   points: 4210, spend: 4212.85, visits: 13, since: '2024-02-23', homeLocationId: 'loc-soho',      notes: 'Stylist appointments first Friday of the month.' },
+    { name: 'Owen Castillo', email: 'owen.castillo@example.com', phone: '+1 (646) 555-0117', tier: 'member', points: 450,  spend: 446.00,  visits: 2,  since: '2025-09-30', homeLocationId: 'loc-soho',      notes: 'Refund processed on sneakers — sizing issue.' },
+  ]
+
+  contacts.value.push(
+    ...LOYALTY_SEED.map((m, i): Contact => {
+      const [firstName = m.name, ...rest] = m.name.split(' ')
+      return {
+        id: 1000 + i,
+        firstName,
+        lastName: rest.join(' '),
+        email: m.email,
+        phone: m.phone,
+        company: null,
+        location: '—',
+        status: 'Subscribed',
+        score: Math.min(100, 40 + Math.round(m.visits * 2.2)),
+        tags: ['Loyalty'],
+        revenue: m.spend.toFixed(2),
+        orders: m.visits,
+        lastActive: new Date().toISOString().split('T')[0]!,
+        createdAt: m.since,
+        avatarUrl: `https://i.pravatar.cc/96?u=loyalty-${i + 1}`,
+        loyalty: {
+          tier: m.tier,
+          points: m.points,
+          visits: m.visits,
+          homeLocationId: m.homeLocationId,
+          memberSince: m.since,
+          notes: m.notes,
+        },
+      }
+    }),
+  )
+
+  /** Contacts enrolled in the in-store loyalty programme. */
+  const loyaltyContacts = computed(() => contacts.value.filter((c) => c.loyalty))
+
+  /** Enrol a shopper at the register. */
+  function addLoyaltyContact(payload: { name: string; email: string; phone: string; homeLocationId: string }): Contact {
+    const [firstName = payload.name, ...rest] = payload.name.split(' ')
+    const today = new Date().toISOString().split('T')[0]!
+    const contact: Contact = {
+      id: contacts.value.reduce((max, c) => Math.max(max, c.id), 0) + 1,
+      firstName,
+      lastName: rest.join(' '),
+      email: payload.email,
+      phone: payload.phone,
+      company: null,
+      location: '—',
+      status: 'Subscribed',
+      score: 40,
+      tags: ['Loyalty'],
+      revenue: '0.00',
+      orders: 0,
+      lastActive: today,
+      createdAt: today,
+      avatarUrl: `https://i.pravatar.cc/96?u=loyalty-new-${Date.now()}`,
+      loyalty: { tier: 'member', points: 0, visits: 0, homeLocationId: payload.homeLocationId, memberSince: today },
+    }
+    contacts.value.unshift(contact)
+    return contact
+  }
+
+  /** Credit a counter sale to a loyalty member: 1 point per dollar. */
+  function recordLoyaltyPurchase(contactId: number, amount: number): void {
+    const contact = contacts.value.find((c) => c.id === contactId)
+    if (!contact?.loyalty) return
+    contact.loyalty.points += Math.round(amount)
+    contact.loyalty.visits += 1
+    contact.orders += 1
+    contact.revenue = (parseFloat(contact.revenue) + amount).toFixed(2)
+    contact.lastActive = new Date().toISOString().split('T')[0]!
+    const spend = parseFloat(contact.revenue)
+    contact.loyalty.tier = spend >= 6000 ? 'vip' : spend >= 2500 ? 'gold' : spend >= 1000 ? 'silver' : 'member'
+  }
 
   const segments = ref<Segment[]>([
     { id: 1, name: 'High Value Customers', description: 'Contacts with LTV > $500', count: 1842, type: 'Dynamic', status: 'Active', lastCalc: '2026-03-07' },
@@ -449,6 +572,9 @@ export const useContactsStore = defineStore('contacts', () => {
 
   return {
     contacts,
+    loyaltyContacts,
+    addLoyaltyContact,
+    recordLoyaltyPurchase,
     segments,
     lists,
     getContactById,

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useRetailStore, LOYALTY_TIER_LABELS } from '@/stores/useRetail'
-import type { PosCustomer } from '@/stores/useRetail'
+import { useRetailStore } from '@/stores/useRetail'
+import { useContactsStore, LOYALTY_TIER_LABELS, type Contact, type LoyaltyTier } from '@/stores/useContacts'
 import { useCommerceStore } from '@/stores/useCommerce'
 import type { Order, TenderType } from '@/stores/useCommerce'
 import { useElementSize } from '@/composables/useElementSize'
@@ -11,6 +11,44 @@ const route = useRoute()
 const router = useRouter()
 const store = useRetailStore()
 const commerce = useCommerceStore()
+const contacts = useContactsStore()
+
+/**
+ * Loyalty members as the register sees them. The record is a Contact — this is
+ * just the counter's view of one, so shoppers are the same people online and
+ * in store.
+ */
+interface PosCustomerView {
+  id: number
+  name: string
+  email: string
+  phone: string
+  tier: LoyaltyTier
+  points: number
+  lifetimeSpend: number
+  visits: number
+  since: string
+  homeLocationId: string
+  notes?: string
+}
+
+function toPosCustomer(c: Contact): PosCustomerView {
+  return {
+    id: c.id,
+    name: `${c.firstName} ${c.lastName}`.trim(),
+    email: c.email,
+    phone: c.phone,
+    tier: c.loyalty!.tier,
+    points: c.loyalty!.points,
+    lifetimeSpend: parseFloat(c.revenue) || 0,
+    visits: c.loyalty!.visits,
+    since: c.loyalty!.memberSince,
+    homeLocationId: c.loyalty!.homeLocationId,
+    notes: c.loyalty!.notes,
+  }
+}
+
+const loyaltyCustomers = computed<PosCustomerView[]>(() => contacts.loyaltyContacts.map(toPosCustomer))
 
 const accountId = computed(() => route.params.accountId as string)
 
@@ -295,9 +333,9 @@ const customerPickerSearch = ref('')
 const customerPickerMode = ref<'search' | 'create'>('search')
 const customerPickerFieldRef = ref<{ focus: () => void } | null>(null)
 
-const customerPickerResults = computed<PosCustomer[]>(() => {
+const customerPickerResults = computed<PosCustomerView[]>(() => {
   const q = customerPickerSearch.value.trim().toLowerCase()
-  const list = store.posCustomerList.slice().sort((a, b) => b.lifetimeSpend - a.lifetimeSpend)
+  const list = loyaltyCustomers.value.slice().sort((a, b) => b.lifetimeSpend - a.lifetimeSpend)
   // Empty query → surface top customers by spend so the sheet is never blank
   if (!q) return list.slice(0, 6)
   return list.filter((c) =>
@@ -314,7 +352,7 @@ function openCustomerPicker() {
   nextTick(() => customerPickerFieldRef.value?.focus?.())
 }
 
-function attachExistingCustomer(c: PosCustomer) {
+function attachExistingCustomer(c: PosCustomerView) {
   customerName.value = c.name
   attachedCustomerId.value = c.id // real loyalty profile rides into checkout
   customerPickerOpen.value = false
@@ -338,11 +376,12 @@ function startCreateFromPicker() {
 
 function createAndAttachCustomer() {
   if (!newCustomerDraft.name.trim()) return
-  const c = store.addPosCustomer({
+  const c = toPosCustomer(contacts.addLoyaltyContact({
     name: newCustomerDraft.name.trim(),
     email: newCustomerDraft.email.trim(),
     phone: newCustomerDraft.phone.trim(),
-  })
+    homeLocationId: store.activeLocation.id,
+  }))
   newCustomerDraft.name = ''
   newCustomerDraft.email = ''
   newCustomerDraft.phone = ''
@@ -350,9 +389,9 @@ function createAndAttachCustomer() {
 }
 
 /* ── Attached loyalty customer (rides alongside customerName) ───── */
-const attachedCustomerId = ref<string | null>(null)
-const attachedCustomer = computed<PosCustomer | null>(
-  () => store.posCustomerList.find((c) => c.id === attachedCustomerId.value) ?? null,
+const attachedCustomerId = ref<number | null>(null)
+const attachedCustomer = computed<PosCustomerView | null>(
+  () => loyaltyCustomers.value.find((c) => c.id === attachedCustomerId.value) ?? null,
 )
 
 function detachCustomer() {
@@ -402,7 +441,7 @@ function completeApproved() {
     itemCount: cart.value.reduce((s, c) => s + c.qty, 0),
     lines: cart.value.map((c) => ({ sku: c.sku, name: c.name, qty: c.qty, price: c.price })),
   })
-  if (attachedCustomerId.value) store.recordCustomerPurchase(attachedCustomerId.value, grandTotal.value)
+  if (attachedCustomerId.value) contacts.recordLoyaltyPurchase(attachedCustomerId.value, grandTotal.value)
   lastTxnId.value = txn.orderNumber
   paymentStep.value = 'idle'
   clearCart()
@@ -544,18 +583,18 @@ function refundDetailTxn() {
 
 /* ── Customers tab ─────────────────────────────────────────────── */
 const customerSearch = ref('')
-const selectedCustomerId = ref<string | null>(null)
+const selectedCustomerId = ref<number | null>(null)
 
 const filteredCustomers = computed(() => {
   const q = customerSearch.value.trim().toLowerCase()
-  return store.posCustomerList
+  return loyaltyCustomers.value
     .filter((c) => !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q))
     .slice()
     .sort((a, b) => b.lifetimeSpend - a.lifetimeSpend)
 })
 
-const selectedCustomer = computed<PosCustomer | null>(
-  () => store.posCustomerList.find((c) => c.id === selectedCustomerId.value) ?? null,
+const selectedCustomer = computed<PosCustomerView | null>(
+  () => loyaltyCustomers.value.find((c) => c.id === selectedCustomerId.value) ?? null,
 )
 
 const selectedCustomerTxns = computed(() =>
@@ -572,7 +611,7 @@ function memberSince(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 }
 
-function attachCustomerToSale(c: PosCustomer) {
+function attachCustomerToSale(c: PosCustomerView) {
   customerName.value = c.name
   attachedCustomerId.value = c.id
   posView.value = 'sale'
@@ -584,11 +623,12 @@ const newCustomerOpen = ref(false)
 const newCustomerDraft = reactive({ name: '', email: '', phone: '' })
 function saveNewCustomer() {
   if (!newCustomerDraft.name.trim()) return
-  const c = store.addPosCustomer({
+  const c = toPosCustomer(contacts.addLoyaltyContact({
     name: newCustomerDraft.name.trim(),
     email: newCustomerDraft.email.trim(),
     phone: newCustomerDraft.phone.trim(),
-  })
+    homeLocationId: store.activeLocation.id,
+  }))
   selectedCustomerId.value = c.id
   newCustomerOpen.value = false
   newCustomerDraft.name = ''
@@ -1039,7 +1079,7 @@ const apkQrUrl = computed(() =>
                     :class="{ 'pos-customer-row--selected': selectedCustomerId === c.id }"
                     @click="selectedCustomerId = c.id"
                   >
-                    <div class="pos-customer-row__avatar" :style="{ background: tileGradient(c.id) }">{{ customerInitials(c.name) }}</div>
+                    <div class="pos-customer-row__avatar" :style="{ background: tileGradient(String(c.id)) }">{{ customerInitials(c.name) }}</div>
                     <div class="pos-customer-row__body">
                       <div class="pos-customer-row__name">{{ c.name }}</div>
                       <div class="pos-customer-row__email">{{ c.email }}</div>
@@ -1072,7 +1112,7 @@ const apkQrUrl = computed(() =>
                   </button>
 
                   <div class="pos-profile__header">
-                    <div class="pos-profile__avatar" :style="{ background: tileGradient(selectedCustomer.id) }">{{ customerInitials(selectedCustomer.name) }}</div>
+                    <div class="pos-profile__avatar" :style="{ background: tileGradient(String(selectedCustomer.id)) }">{{ customerInitials(selectedCustomer.name) }}</div>
                     <div class="pos-profile__id">
                       <div class="pos-profile__name">{{ selectedCustomer.name }}</div>
                       <div class="pos-profile__meta">
@@ -1467,7 +1507,7 @@ const apkQrUrl = computed(() =>
 
                   <!-- Currently attached -->
                   <div v-if="attachedCustomer" class="pos-customer-picker__attached">
-                    <div class="pos-customer-row__avatar" :style="{ background: tileGradient(attachedCustomer.id) }">{{ customerInitials(attachedCustomer.name) }}</div>
+                    <div class="pos-customer-row__avatar" :style="{ background: tileGradient(String(attachedCustomer.id)) }">{{ customerInitials(attachedCustomer.name) }}</div>
                     <div class="pos-customer-picker__attached-body">
                       <div class="pos-customer-picker__attached-name">
                         {{ attachedCustomer.name }}
@@ -1507,7 +1547,7 @@ const apkQrUrl = computed(() =>
                       :class="{ 'pos-customer-row--selected': attachedCustomerId === c.id }"
                       @click="attachExistingCustomer(c)"
                     >
-                      <div class="pos-customer-row__avatar" :style="{ background: tileGradient(c.id) }">{{ customerInitials(c.name) }}</div>
+                      <div class="pos-customer-row__avatar" :style="{ background: tileGradient(String(c.id)) }">{{ customerInitials(c.name) }}</div>
                       <div class="pos-customer-row__body">
                         <div class="pos-customer-row__name">{{ c.name }}</div>
                         <div class="pos-customer-row__email">{{ c.email }}</div>

@@ -55,28 +55,6 @@ export interface Associate {
   lastLoginAt: string
 }
 
-export type LoyaltyTier = 'member' | 'silver' | 'gold' | 'vip'
-export const LOYALTY_TIER_LABELS: Record<LoyaltyTier, string> = {
-  member: 'Member',
-  silver: 'Silver',
-  gold: 'Gold',
-  vip: 'VIP',
-}
-
-export interface PosCustomer {
-  id: string
-  name: string
-  email: string
-  phone: string
-  tier: LoyaltyTier
-  points: number
-  lifetimeSpend: number
-  visits: number
-  since: string
-  homeLocationId: string
-  notes?: string
-}
-
 /* ── Mock data ────────────────────────────────────────────────── */
 
 const locations: RetailLocation[] = [
@@ -184,26 +162,12 @@ const associates: Associate[] = [
   { id: 'assoc-8', name: 'Daniel Rivera',    role: 'associate',        locationIds: ['loc-soho'],                        pinSet: true, active: true,  lastLoginAt: '2026-05-23T14:11:00Z' },
 ]
 
-const posCustomers: PosCustomer[] = [
-  { id: 'cust-1',  name: 'Hannah Cole',    email: 'hannah.cole@example.com',   phone: '+61 412 882 014', tier: 'gold',   points: 2840, lifetimeSpend: 2843.60, visits: 18, since: '2024-03-12', homeLocationId: 'loc-bondi',     notes: 'Prefers email receipts. Size M in outerwear.' },
-  { id: 'cust-2',  name: "Liam O'Connor",  email: 'liam.oconnor@example.com',  phone: '+61 400 233 871', tier: 'vip',    points: 6120, lifetimeSpend: 6118.25, visits: 24, since: '2023-11-02', homeLocationId: 'loc-bondi' },
-  { id: 'cust-3',  name: 'Mia Tan',        email: 'mia.tan@example.com',       phone: '+61 433 190 552', tier: 'silver', points: 1290, lifetimeSpend: 1287.40, visits: 9,  since: '2024-08-21', homeLocationId: 'loc-bondi' },
-  { id: 'cust-4',  name: 'Zoe Patel',      email: 'zoe.patel@example.com',     phone: '+61 421 077 309', tier: 'member', points: 310,  lifetimeSpend: 312.40,  visits: 3,  since: '2025-04-09', homeLocationId: 'loc-bondi' },
-  { id: 'cust-5',  name: 'Aria Singh',     email: 'aria.singh@example.com',    phone: '+61 402 615 488', tier: 'gold',   points: 3470, lifetimeSpend: 3468.90, visits: 15, since: '2024-01-28', homeLocationId: 'loc-chadstone', notes: 'Loyalty birthday voucher pending (July).' },
-  { id: 'cust-6',  name: 'Lucas Chen',     email: 'lucas.chen@example.com',    phone: '+61 415 904 226', tier: 'member', points: 680,  lifetimeSpend: 684.20,  visits: 5,  since: '2025-01-17', homeLocationId: 'loc-chadstone', notes: 'Exchanged field jacket size M→L on POS-12040.' },
-  { id: 'cust-7',  name: 'Ivy Nguyen',     email: 'ivy.nguyen@example.com',    phone: '+61 438 552 901', tier: 'silver', points: 1540, lifetimeSpend: 1536.75, visits: 11, since: '2024-06-05', homeLocationId: 'loc-chadstone' },
-  { id: 'cust-8',  name: 'Henry Adler',    email: 'henry.adler@example.com',   phone: '+1 (212) 555-0184', tier: 'vip',  points: 8930, lifetimeSpend: 8927.10, visits: 22, since: '2023-09-14', homeLocationId: 'loc-soho' },
-  { id: 'cust-9',  name: 'Maya Diaz',      email: 'maya.diaz@example.com',     phone: '+1 (917) 555-0142', tier: 'gold', points: 4210, lifetimeSpend: 4212.85, visits: 13, since: '2024-02-23', homeLocationId: 'loc-soho',      notes: 'Stylist appointments first Friday of the month.' },
-  { id: 'cust-10', name: 'Owen Castillo',  email: 'owen.castillo@example.com', phone: '+1 (646) 555-0117', tier: 'member', points: 450, lifetimeSpend: 446.00, visits: 2,  since: '2025-09-30', homeLocationId: 'loc-soho',      notes: 'Refund processed on sneakers — sizing issue.' },
-]
-
 /* ── Store ────────────────────────────────────────────────────── */
 
 export const useRetailStore = defineStore('retail', () => {
   const locationList = ref<RetailLocation[]>([...locations])
   const registerList = ref<Register[]>([...registers])
   const associateList = ref<Associate[]>([...associates])
-  const posCustomerList = ref<PosCustomer[]>([...posCustomers])
 
   /** `ALL_LOCATIONS` is the default scope: retail surfaces show the whole estate
    *  until the rail's location switcher narrows them to one store. */
@@ -341,31 +305,6 @@ export const useRetailStore = defineStore('retail', () => {
     associateList.value = associateList.value.filter((a) => !ids.includes(a.id))
   }
 
-  function addPosCustomer(payload: { name: string; email: string; phone: string }): PosCustomer {
-    const customer: PosCustomer = {
-      id: `cust-${Date.now()}`,
-      name: payload.name,
-      email: payload.email,
-      phone: payload.phone,
-      tier: 'member',
-      points: 0,
-      lifetimeSpend: 0,
-      visits: 0,
-      since: new Date().toISOString().slice(0, 10),
-      homeLocationId: activeLocationId.value,
-    }
-    posCustomerList.value.unshift(customer)
-    return customer
-  }
-
-  function recordCustomerPurchase(customerId: string, amount: number) {
-    const c = posCustomerList.value.find((x) => x.id === customerId)
-    if (!c) return
-    c.lifetimeSpend = Math.round((c.lifetimeSpend + amount) * 100) / 100
-    c.points += Math.round(amount)
-    c.visits += 1
-  }
-
   function addAssociate(payload: { name: string; role: AssociateRole; locationIds: string[] }) {
     const id = `assoc-${Date.now()}`
     associateList.value.unshift({
@@ -403,7 +342,6 @@ export const useRetailStore = defineStore('retail', () => {
     locationList,
     registerList,
     associateList,
-    posCustomerList,
     activeLocationId,
     activeChannelId,
     isAllLocations,
@@ -428,8 +366,6 @@ export const useRetailStore = defineStore('retail', () => {
     deactivateRegisters,
     toggleAssociateActive,
     resetPin,
-    addPosCustomer,
-    recordCustomerPurchase,
     addAssociate,
     deleteAssociates,
     addLocation,

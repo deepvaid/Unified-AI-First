@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useContactsStore } from '@/stores/useContacts'
+import { LOYALTY_TIER_LABELS, useContactsStore } from '@/stores/useContacts'
+import { useRetailStore } from '@/stores/useRetail'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { downloadCsv, type CsvColumn } from '@/utils/exportCsv'
 import type { Contact } from '@/stores/useContacts'
@@ -17,6 +18,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useContactsStore()
+const retail = useRetailStore()
 
 const contactId = computed(() => Number(route.params.id))
 const contact = computed(() => store.getContactById(contactId.value))
@@ -261,6 +263,34 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
               </div>
             </template>
           </div>
+        </v-card>
+
+        <!-- In-store loyalty, when this shopper is enrolled at a register -->
+        <v-card v-if="contact.loyalty" flat border rounded="lg" class="pa-5">
+          <MpSectionHeader title="In-store loyalty" />
+          <div class="d-flex align-center ga-2 mb-4">
+            <v-chip size="small" variant="tonal" color="primary">{{ LOYALTY_TIER_LABELS[contact.loyalty.tier] }}</v-chip>
+            <span class="text-body-2 text-medium-emphasis">
+              Member since {{ contact.loyalty.memberSince }}
+            </span>
+          </div>
+          <v-row dense>
+            <v-col cols="4">
+              <div class="text-caption text-medium-emphasis">Points</div>
+              <div class="text-body-1 font-weight-bold">{{ contact.loyalty.points.toLocaleString() }}</div>
+            </v-col>
+            <v-col cols="4">
+              <div class="text-caption text-medium-emphasis">Visits</div>
+              <div class="text-body-1 font-weight-bold">{{ contact.loyalty.visits }}</div>
+            </v-col>
+            <v-col cols="4">
+              <div class="text-caption text-medium-emphasis">Home store</div>
+              <div class="text-body-2 font-weight-medium">{{ retail.locationName(contact.loyalty.homeLocationId) }}</div>
+            </v-col>
+          </v-row>
+          <p v-if="contact.loyalty.notes" class="text-body-2 text-medium-emphasis mt-4 mb-0">
+            {{ contact.loyalty.notes }}
+          </p>
         </v-card>
 
         <!-- Card 2: Tags -->
