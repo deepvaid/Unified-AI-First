@@ -79,7 +79,7 @@ function routeTo(item: SettingsItem) {
   border-right: 1px solid var(--hairline);
   align-self: stretch;
   min-height: 0;
-  background: var(--surface-1);
+  background: var(--surface-primary);
 }
 
 .settings-sidebar__title {
@@ -99,7 +99,7 @@ function routeTo(item: SettingsItem) {
   height: 34px;
   border: 1px solid var(--hairline);
   border-radius: 10px;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
@@ -173,7 +173,7 @@ function routeTo(item: SettingsItem) {
 }
 
 .settings-sidebar__item:hover {
-  background: var(--surface-2);
+  background: var(--surface-secondary);
 }
 
 .settings-sidebar__item:focus-visible {
@@ -182,7 +182,7 @@ function routeTo(item: SettingsItem) {
 }
 
 .settings-sidebar__item--active {
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   color: rgb(var(--v-theme-primary));
   font-weight: 600;
 }
