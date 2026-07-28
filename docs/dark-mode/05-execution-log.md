@@ -282,4 +282,4 @@ Earlier in this session the WP-01–WP-03 commits were found on a mistakenly cre
   - `npx vite build` — succeeds.
 - **Deviations from the plan:** `DashboardKpiWidget`, `retail-widgets.scss`, `Transactions.vue`, `Locations.vue`, `SalesChannelDetail.vue`, and AppBar `--neg` already resolved through alias layer (done-by-prior). Chart widget internals skipped per WP-09 completion.
 - **Known issues:** none for this package.
-- **Commit:** `<pending>`
+- **Commit:** `d87be7b`

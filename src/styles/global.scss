@@ -288,7 +288,7 @@ a {
 .v-overlay__content .v-card,
 .v-overlay__content .v-sheet,
 .v-overlay__content .v-stepper {
-  background: rgb(var(--v-theme-surface)) !important;
+  background: var(--surface-overlay) !important;
 }
 
 .v-field--variant-solo-filled {
@@ -525,9 +525,10 @@ tr:focus-within .action-btns {
   font-weight: inherit !important;
 }
 
-/* Dialog/modal scrim — Vuetify default 0.32 is too light; use 0.56 for legible contrast */
+/* Dialog/modal scrim — semantic backdrop token */
 .v-overlay__scrim {
-  opacity: 0.56 !important;
+  background: var(--scrim-overlay) !important;
+  opacity: 1 !important;
 }
 
 .v-overlay.v-tooltip {
@@ -562,10 +563,10 @@ tr:focus-within .action-btns {
 .v-menu > .v-overlay__content > .v-card,
 .v-menu > .v-overlay__content > .v-list,
 .v-menu > .v-overlay__content > .v-sheet {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid var(--mp-border-subtle) !important;
+  background: var(--surface-overlay);
+  border: 1px solid var(--border-default) !important;
   border-radius: var(--mp-borderRadius-md) !important;
-  box-shadow: var(--elevation-modal), var(--elevation-overlay) !important;
+  box-shadow: var(--elevation-overlay) !important;
   overflow: hidden;
 }
 
@@ -679,7 +680,9 @@ tr:focus-within .action-btns {
 .v-dialog > .v-overlay__content > .v-card,
 .v-dialog > .v-overlay__content > .v-sheet {
   border-radius: var(--mp-component-dialog-radius-default) !important;
-  background: rgb(var(--v-theme-surface)) !important;
+  background: var(--surface-overlay) !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: var(--elevation-modal) !important;
 }
 
 /* Normalize dialog card title typography */

@@ -134,11 +134,11 @@ function onKeydown(e: KeyboardEvent) {
   margin-top: 12px;
   margin-bottom: 12px;
   margin-right: 12px;
-  border: 1px solid var(--mp-border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--mp-component-dialog-radius-default);
   /* Temporary drawers carry Vuetify's `elevation-0` utility, which sets
      box-shadow with !important — so the soft shell shadow needs it too. */
-  box-shadow: var(--mp-shadow-md) !important;
+  box-shadow: var(--elevation-modal) !important;
   overflow: hidden;
   transition-duration: var(--dur-base);
   transition-timing-function: var(--ease);
@@ -159,7 +159,7 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 .mp-form-drawer__panel {
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-overlay);
 }
 
 .mp-form-drawer__title {
@@ -177,7 +177,7 @@ function onKeydown(e: KeyboardEvent) {
     width: 100vw !important;
     max-width: 100vw !important;
     border: none;
-    border-left: 1px solid var(--mp-border-subtle);
+    border-left: 1px solid var(--border-default);
     border-radius: 0;
   }
 }
