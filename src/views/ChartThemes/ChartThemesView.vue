@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { watch } from 'vue'
 import { CHART_THEMES, type ChartPalette } from '@/plugins/chartPalette'
-import { useAppTheme } from '@/composables/useAppTheme'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
 import type {
@@ -13,13 +12,9 @@ import type {
 import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
 import PaletteScope from './PaletteScope.vue'
 
-// Force light mode — Ross's agreed direction is the light theme; the review happens on a
-// light surface, which the palettes are tuned for. Keep the Da Vinci drawer closed so it
-// never overlaps the side-by-side comparison (it opens during app init).
-const { setMode } = useAppTheme()
+// Keep the Da Vinci drawer closed so it never overlaps the side-by-side comparison.
 const copilot = useCopilotStore()
 watch(() => copilot.isOpen, (open) => { if (open) copilot.close() }, { immediate: true })
-onMounted(() => setMode('light'))
 
 const ACCOUNT_ID = '2000290'
 
@@ -91,6 +86,8 @@ const blueWidgets = panelWidgets()
 </script>
 
 <template>
+  <!-- Scoped light preview — palettes are tuned for light surfaces; does not mutate stored app theme. -->
+  <v-theme-provider theme="maropostLight" with-background class="ct-light-scope">
   <div class="ct-root">
     <header class="ct-header">
       <p class="ct-eyebrow">SCOP-312 · Gradient chart themes</p>
@@ -176,6 +173,7 @@ const blueWidgets = panelWidgets()
       options; each theme runs on one unified colour axis, validated on a light surface.
     </footer>
   </div>
+  </v-theme-provider>
 </template>
 
 <style scoped>
