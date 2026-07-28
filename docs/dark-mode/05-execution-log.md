@@ -336,5 +336,5 @@ Earlier in this session the WP-01–WP-03 commits were found on a mistakenly cre
   - `npm run audit:ui` — completed (repository-wide findings remain; fixed-look exceptions in §5.9 confirmed: Deck, Showcase, Reel, PosPreview terminal, OSM tiles, customer preview content, WebGL orb literals, sidebar skins).
 - **Deviations from the plan:** MpEmptyState/MpErrorState/MpTableSkeleton/MpStatusChip/MpUsageMeter/MpFloatingBulkBar/ModuleLandingPage addressed in WP-05/08 or already token-backed (done-by-prior). View-level `color="medium-emphasis"` icon props remain as residual low-severity findings for a future sweep.
 - **Known issues:** `npm run build` still blocked by pre-existing `ReelFlyView.vue` strict-null errors; ChartThemesView product decision to force light chart preview unchanged; ModuleLandingPage tile tint hexes are categorical accents, not theme surfaces.
-- **Commit:** `e5f7610`
+- **Commit:** `140465b`
 
