@@ -107,12 +107,26 @@ function generateScss(tokens) {
   return header + lines.join('\n') + '\n'
 }
 
+function hexToRgb(value) {
+  if (typeof value !== 'string') return null
+  const match = value.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
+  if (!match) return null
+  const hex = match[1].length === 3
+    ? match[1].split('').map(char => char + char).join('')
+    : match[1]
+  return [0, 2, 4].map(index => parseInt(hex.slice(index, index + 2), 16)).join(', ')
+}
+
 function generateCss(tokens) {
+  const tokenIndex = createTokenIndex(tokens)
   const header = '/* Auto-generated from tokens.json — do not edit */\n\n:root {\n'
-  const lines = tokens.map(t => {
+  const lines = tokens.flatMap(t => {
     const aliasPath = parseAlias(t.value)
     const value = aliasPath ? `var(${toCssName(aliasPath)})` : t.value
-    return `  ${toCssName(t.path)}: ${value};`
+    const declarations = [`  ${toCssName(t.path)}: ${value};`]
+    const rgb = t.type === 'color' ? hexToRgb(resolveAliasValue(t, tokenIndex)) : null
+    if (rgb) declarations.push(`  --mp-rgb-${t.path.join('-')}: ${rgb};`)
+    return declarations
   })
   return header + lines.join('\n') + '\n}\n'
 }
@@ -170,10 +184,22 @@ function generateTokensStudio(raw) {
   // Shadows
   if (raw.shadow) {
     out.global.boxShadow = {}
-    for (const [key, val] of Object.entries(raw.shadow)) {
-      if (key.startsWith('$')) continue
-      out.global.boxShadow[key] = { value: val.$value, type: 'boxShadow', description: `shadow.${key}` }
+    function addShadowTokens(group, prefix = '') {
+      for (const [key, val] of Object.entries(group)) {
+        if (key.startsWith('$')) continue
+        const tokenKey = prefix ? `${prefix}.${key}` : key
+        if (val && typeof val === 'object' && '$value' in val) {
+          out.global.boxShadow[tokenKey] = {
+            value: val.$value,
+            type: 'boxShadow',
+            description: `shadow.${tokenKey}`,
+          }
+        } else if (val && typeof val === 'object') {
+          addShadowTokens(val, tokenKey)
+        }
+      }
     }
+    addShadowTokens(raw.shadow)
   }
 
   // Colors — separate token sets for Light, Dark, Sidebar (Supernova-compatible)
