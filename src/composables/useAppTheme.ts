@@ -1,5 +1,79 @@
 import { computed, ref } from 'vue'
 import { useTheme } from 'vuetify'
+import {
+  mp_color_dark_accent_blue_active,
+  mp_color_dark_accent_blue_container,
+  mp_color_dark_accent_blue_default,
+  mp_color_dark_accent_blue_focusRing,
+  mp_color_dark_accent_blue_hover,
+  mp_color_dark_accent_blue_onAccent,
+  mp_color_dark_accent_blue_onContainer,
+  mp_color_dark_accent_blue_selectedBackground,
+  mp_color_dark_accent_blue_subtleBackground,
+  mp_color_dark_accent_cyan_active,
+  mp_color_dark_accent_cyan_container,
+  mp_color_dark_accent_cyan_default,
+  mp_color_dark_accent_cyan_focusRing,
+  mp_color_dark_accent_cyan_hover,
+  mp_color_dark_accent_cyan_onAccent,
+  mp_color_dark_accent_cyan_onContainer,
+  mp_color_dark_accent_cyan_selectedBackground,
+  mp_color_dark_accent_cyan_subtleBackground,
+  mp_color_dark_accent_gray_active,
+  mp_color_dark_accent_gray_container,
+  mp_color_dark_accent_gray_default,
+  mp_color_dark_accent_gray_focusRing,
+  mp_color_dark_accent_gray_hover,
+  mp_color_dark_accent_gray_onAccent,
+  mp_color_dark_accent_gray_onContainer,
+  mp_color_dark_accent_gray_selectedBackground,
+  mp_color_dark_accent_gray_subtleBackground,
+  mp_color_dark_accent_purple_active,
+  mp_color_dark_accent_purple_container,
+  mp_color_dark_accent_purple_default,
+  mp_color_dark_accent_purple_focusRing,
+  mp_color_dark_accent_purple_hover,
+  mp_color_dark_accent_purple_onAccent,
+  mp_color_dark_accent_purple_onContainer,
+  mp_color_dark_accent_purple_selectedBackground,
+  mp_color_dark_accent_purple_subtleBackground,
+  mp_color_light_accent_blue_active,
+  mp_color_light_accent_blue_container,
+  mp_color_light_accent_blue_default,
+  mp_color_light_accent_blue_focusRing,
+  mp_color_light_accent_blue_hover,
+  mp_color_light_accent_blue_onAccent,
+  mp_color_light_accent_blue_onContainer,
+  mp_color_light_accent_blue_selectedBackground,
+  mp_color_light_accent_blue_subtleBackground,
+  mp_color_light_accent_cyan_active,
+  mp_color_light_accent_cyan_container,
+  mp_color_light_accent_cyan_default,
+  mp_color_light_accent_cyan_focusRing,
+  mp_color_light_accent_cyan_hover,
+  mp_color_light_accent_cyan_onAccent,
+  mp_color_light_accent_cyan_onContainer,
+  mp_color_light_accent_cyan_selectedBackground,
+  mp_color_light_accent_cyan_subtleBackground,
+  mp_color_light_accent_gray_active,
+  mp_color_light_accent_gray_container,
+  mp_color_light_accent_gray_default,
+  mp_color_light_accent_gray_focusRing,
+  mp_color_light_accent_gray_hover,
+  mp_color_light_accent_gray_onAccent,
+  mp_color_light_accent_gray_onContainer,
+  mp_color_light_accent_gray_selectedBackground,
+  mp_color_light_accent_gray_subtleBackground,
+  mp_color_light_accent_purple_active,
+  mp_color_light_accent_purple_container,
+  mp_color_light_accent_purple_default,
+  mp_color_light_accent_purple_focusRing,
+  mp_color_light_accent_purple_hover,
+  mp_color_light_accent_purple_onAccent,
+  mp_color_light_accent_purple_onContainer,
+  mp_color_light_accent_purple_selectedBackground,
+  mp_color_light_accent_purple_subtleBackground,
+} from '@/design-tokens/generated/tokens'
 
 export type AccentKey = 'cyan' | 'blue' | 'gray' | 'purple'
 export type ThemeMode = 'light' | 'dark'
@@ -14,42 +88,116 @@ const LS_SHELL = 'app-shell'
 const LS_FRAME = 'app-frame'
 
 // ─── Accent color definitions ─────────────────────────────────────────────────
-interface AccentDef {
-  hex: string
-  rgb: string          // "r, g, b" for Vuetify --v-theme-primary
-  onPrimary: string
+interface AccentModeDef {
+  default: string
+  hover: string
+  active: string
+  selectedBackground: string
+  subtleBackground: string
+  focusRing: string
+  onAccent: string
   container: string
   onContainer: string
 }
 
+type AccentDef = Record<ThemeMode, AccentModeDef>
+
 const ACCENT_DEFS: Record<AccentKey, AccentDef> = {
   cyan: {
-    hex: '#0073AB',               // Picton Blue, AA-darkened (5.2:1 on white) — matches theme primary token
-    rgb: '0, 115, 171',
-    onPrimary: '255, 255, 255',
-    container: '222, 243, 255',   // #DEF3FF
-    onContainer: '4, 50, 77',     // #04324D
+    light: {
+      default: mp_color_light_accent_cyan_default,
+      hover: mp_color_light_accent_cyan_hover,
+      active: mp_color_light_accent_cyan_active,
+      selectedBackground: mp_color_light_accent_cyan_selectedBackground,
+      subtleBackground: mp_color_light_accent_cyan_subtleBackground,
+      focusRing: mp_color_light_accent_cyan_focusRing,
+      onAccent: mp_color_light_accent_cyan_onAccent,
+      container: mp_color_light_accent_cyan_container,
+      onContainer: mp_color_light_accent_cyan_onContainer,
+    },
+    dark: {
+      default: mp_color_dark_accent_cyan_default,
+      hover: mp_color_dark_accent_cyan_hover,
+      active: mp_color_dark_accent_cyan_active,
+      selectedBackground: mp_color_dark_accent_cyan_selectedBackground,
+      subtleBackground: mp_color_dark_accent_cyan_subtleBackground,
+      focusRing: mp_color_dark_accent_cyan_focusRing,
+      onAccent: mp_color_dark_accent_cyan_onAccent,
+      container: mp_color_dark_accent_cyan_container,
+      onContainer: mp_color_dark_accent_cyan_onContainer,
+    },
   },
   blue: {
-    hex: '#2D63E8',
-    rgb: '45, 99, 232',
-    onPrimary: '255, 255, 255',
-    container: '235, 240, 255',
-    onContainer: '30, 68, 155',
+    light: {
+      default: mp_color_light_accent_blue_default,
+      hover: mp_color_light_accent_blue_hover,
+      active: mp_color_light_accent_blue_active,
+      selectedBackground: mp_color_light_accent_blue_selectedBackground,
+      subtleBackground: mp_color_light_accent_blue_subtleBackground,
+      focusRing: mp_color_light_accent_blue_focusRing,
+      onAccent: mp_color_light_accent_blue_onAccent,
+      container: mp_color_light_accent_blue_container,
+      onContainer: mp_color_light_accent_blue_onContainer,
+    },
+    dark: {
+      default: mp_color_dark_accent_blue_default,
+      hover: mp_color_dark_accent_blue_hover,
+      active: mp_color_dark_accent_blue_active,
+      selectedBackground: mp_color_dark_accent_blue_selectedBackground,
+      subtleBackground: mp_color_dark_accent_blue_subtleBackground,
+      focusRing: mp_color_dark_accent_blue_focusRing,
+      onAccent: mp_color_dark_accent_blue_onAccent,
+      container: mp_color_dark_accent_blue_container,
+      onContainer: mp_color_dark_accent_blue_onContainer,
+    },
   },
   gray: {
-    hex: '#4B5563',
-    rgb: '75, 85, 99',
-    onPrimary: '255, 255, 255',
-    container: '229, 231, 235',
-    onContainer: '31, 41, 55',
+    light: {
+      default: mp_color_light_accent_gray_default,
+      hover: mp_color_light_accent_gray_hover,
+      active: mp_color_light_accent_gray_active,
+      selectedBackground: mp_color_light_accent_gray_selectedBackground,
+      subtleBackground: mp_color_light_accent_gray_subtleBackground,
+      focusRing: mp_color_light_accent_gray_focusRing,
+      onAccent: mp_color_light_accent_gray_onAccent,
+      container: mp_color_light_accent_gray_container,
+      onContainer: mp_color_light_accent_gray_onContainer,
+    },
+    dark: {
+      default: mp_color_dark_accent_gray_default,
+      hover: mp_color_dark_accent_gray_hover,
+      active: mp_color_dark_accent_gray_active,
+      selectedBackground: mp_color_dark_accent_gray_selectedBackground,
+      subtleBackground: mp_color_dark_accent_gray_subtleBackground,
+      focusRing: mp_color_dark_accent_gray_focusRing,
+      onAccent: mp_color_dark_accent_gray_onAccent,
+      container: mp_color_dark_accent_gray_container,
+      onContainer: mp_color_dark_accent_gray_onContainer,
+    },
   },
   purple: {
-    hex: '#8B5CF6',
-    rgb: '139, 92, 246',
-    onPrimary: '255, 255, 255',
-    container: '237, 233, 254',
-    onContainer: '76, 29, 149',
+    light: {
+      default: mp_color_light_accent_purple_default,
+      hover: mp_color_light_accent_purple_hover,
+      active: mp_color_light_accent_purple_active,
+      selectedBackground: mp_color_light_accent_purple_selectedBackground,
+      subtleBackground: mp_color_light_accent_purple_subtleBackground,
+      focusRing: mp_color_light_accent_purple_focusRing,
+      onAccent: mp_color_light_accent_purple_onAccent,
+      container: mp_color_light_accent_purple_container,
+      onContainer: mp_color_light_accent_purple_onContainer,
+    },
+    dark: {
+      default: mp_color_dark_accent_purple_default,
+      hover: mp_color_dark_accent_purple_hover,
+      active: mp_color_dark_accent_purple_active,
+      selectedBackground: mp_color_dark_accent_purple_selectedBackground,
+      subtleBackground: mp_color_dark_accent_purple_subtleBackground,
+      focusRing: mp_color_dark_accent_purple_focusRing,
+      onAccent: mp_color_dark_accent_purple_onAccent,
+      container: mp_color_dark_accent_purple_container,
+      onContainer: mp_color_dark_accent_purple_onContainer,
+    },
   },
 }
 
@@ -88,7 +236,7 @@ const accent = ref<AccentKey>(readStoredAccent())
 const mode = ref<ThemeMode>(normalizeMode(localStorage.getItem(LS_MODE)))
 
 /** Current accent hex color — reactive, for use in charts and dynamic JS. */
-const accentHex = ref<string>(ACCENT_DEFS[accent.value].hex)
+const accentHex = computed(() => ACCENT_DEFS[accent.value][mode.value].default)
 
 function applyAccent(key: AccentKey) {
   if (key === 'cyan') {
@@ -96,7 +244,6 @@ function applyAccent(key: AccentKey) {
   } else {
     document.documentElement.dataset.accent = key
   }
-  accentHex.value = ACCENT_DEFS[key].hex
   localStorage.setItem(LS_ACCENT, key)
 }
 
@@ -177,33 +324,12 @@ export function useAppTheme() {
   function setAccent(key: AccentKey) {
     accent.value = key
     applyAccent(key)
-
-    // Programmatically update Vuetify theme colors so every component reacts
-    const def = ACCENT_DEFS[key]
-    const currentThemeName = vuetifyTheme.global.name.value
-    const theme = vuetifyTheme.global.current.value
-    const bucket = vuetifyTheme.themes.value[currentThemeName]
-    if (theme?.colors && bucket?.colors) {
-      bucket.colors.primary = def.hex
-      bucket.colors.info = def.hex
-      bucket.colors['primary-container'] = `rgb(${def.container})`
-      bucket.colors['on-primary-container'] = `rgb(${def.onContainer})`
-    }
   }
 
   function setMode(m: ThemeMode) {
     mode.value = m
     applyMode(m)
     vuetifyTheme.global.name.value = m === 'dark' ? 'maropostDark' : 'maropostLight'
-
-    // Re-apply accent to the new theme
-    const def = ACCENT_DEFS[accent.value]
-    const currentThemeName = vuetifyTheme.global.name.value
-    const bucket = vuetifyTheme.themes.value[currentThemeName]
-    if (bucket?.colors) {
-      bucket.colors.primary = def.hex
-      bucket.colors.info = def.hex
-    }
   }
 
   return {
