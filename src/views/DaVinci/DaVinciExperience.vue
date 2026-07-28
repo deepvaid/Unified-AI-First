@@ -57,7 +57,9 @@ const threadEl = ref<HTMLElement | null>(null)
 const hasThread = computed(() => messages.value.length > 0)
 const busy = computed(() => voice.state.value !== 'idle')
 const avatarSpeed = computed(() => ({ idle: 1, listening: 2.4, thinking: 1.6, speaking: 1.4 })[voice.state.value])
-const campaignEntry = computed(() => route.query.onboarding === 'campaign' || onboarding.activeAccountId === accountId.value)
+const campaignEntry = computed(
+  () => route.query.onboarding === 'campaign' || (onboarding.activeAccountId === accountId.value && onboarding.isActive),
+)
 const welcomeVisible = computed(() => {
   if (!campaignEntry.value) return false
   const stage = onboarding.activeSession?.stage
@@ -181,10 +183,14 @@ async function respond(text: string, { awaitSpeech = false } = {}) {
   // ~620-1040ms → ~200-400ms: real TTS latency now supplies the "processing" beat, and
   // for LLM turns this runs concurrently with the (slower) brain call anyway.
   const minDelay = new Promise<void>((r) => setTimeout(r, 200 + Math.random() * 200))
-  const onboardingResponse = campaignEntry.value ? campaignOnboarding.handleText(text) : null
+  const onboardingResponse = campaignEntry.value && onboarding.isActive ? campaignOnboarding.handleText(text) : null
+  // The wizard pauses itself for off-topic questions; acknowledge the switch once,
+  // then let the normal assistant answer the actual question.
+  const pauseNotice = onboardingResponse ? null : campaignOnboarding.consumePauseNotice()
   const res = onboardingResponse ?? await intents.answer(text, { history })
   await minDelay
   voice.setThinking(false)
+  if (pauseNotice) appendAssistantResponse(pauseNotice)
   appendAssistantResponse(res)
   const speech = res.speech ?? res.reply
   captionText.value = speech
@@ -779,6 +785,10 @@ onBeforeUnmount(() => {
             Go to dashboard
           </v-btn>
         </div>
+
+        <p v-if="voiceRecoveryMessage" class="text-caption text-error mt-4 mb-0" role="alert">
+          {{ voiceRecoveryMessage }}
+        </p>
 
         <div class="dvx__welcome-promise d-flex flex-wrap ga-4 mt-5">
           <span><v-icon size="16">shield-check</v-icon> Permission before listening</span>

@@ -279,6 +279,9 @@ function stopVoiceActivity() {
 // ─── Orbit voice surface — drawer-local UI state machine ───────────────
 const orbitError = ref(false) // dictation resolved silent (didn't catch that)
 const orbitErrorMessage = ref('It was a bit noisy. Try again, or type your request instead.')
+// Persistent voice-failure notice for TEXT mode (voice mode surfaces orbitErrorMessage).
+// Replaces the old transient toasts so denial recovery stays visible and instructional.
+const voiceNotice = ref('')
 const orbitPaused = ref(false) // user stopped the mic without speaking
 const orbitLastRequest = ref('') // echo pill while thinking
 const orbitResponse = ref<{ draft: DashboardWidgetDraft | null; caption: string } | null>(null)
@@ -399,19 +402,19 @@ async function toggleMic() {
     }
     orbitCancelRequested = false
   } catch (err) {
+    // Persistent, instructional recovery — no transient toasts. The voice surface
+    // shows orbitErrorMessage; text mode shows the same copy as a composer notice.
     if (err instanceof VoiceError && err.code === 'permission') {
-      pushToast({ title: 'Microphone blocked', sub: 'Allow microphone access in your browser settings' })
-      orbitErrorMessage.value = 'Microphone access is blocked. Allow it in browser settings, or continue by typing.'
+      orbitErrorMessage.value = 'Microphone access is blocked. Allow it in browser settings — click the lock icon in the address bar. Typing works fully in the meantime.'
       orbitError.value = true
     } else if (err instanceof VoiceError && err.code === 'audio') {
-      pushToast({ title: 'No microphone found' })
       orbitErrorMessage.value = 'No microphone was found. Connect one, or continue by typing.'
     } else if (err instanceof VoiceError && err.code === 'network') {
-      pushToast({ title: 'Voice service unavailable', sub: 'Check your connection — you can type instead' })
       orbitErrorMessage.value = 'Voice is unavailable right now. Check your connection, or continue by typing.'
     }
-    if (isVoiceMode.value && err instanceof VoiceError && (err.code === 'network' || err.code === 'audio')) {
-      orbitError.value = true
+    if (err instanceof VoiceError && (err.code === 'permission' || err.code === 'audio' || err.code === 'network')) {
+      if (isVoiceMode.value) orbitError.value = true
+      else voiceNotice.value = orbitErrorMessage.value
     }
   }
 }
@@ -643,14 +646,19 @@ function processQuery(text: string) {
     appendCampaignOnboardingResponse(onboardingResponse)
     return
   }
+  // The wizard pauses itself for off-topic questions; acknowledge the switch
+  // once, then answer the actual question through the normal path.
+  const pauseNotice = campaignOnboarding.consumePauseNotice()
   // Text mode mid-generation: show the turn immediately, answer it after the
   // current reply lands (queued follow-up).
   if (isTyping.value && !isVoiceMode.value) {
     pushUserTurn(text)
+    if (pauseNotice) appendCampaignOnboardingResponse(pauseNotice)
     queuedPrompts.value.push(text)
     return
   }
   pushUserTurn(text)
+  if (pauseNotice) appendCampaignOnboardingResponse(pauseNotice)
   runGeneration(text)
 }
 
@@ -1115,6 +1123,13 @@ function onComposerKeydown(event: KeyboardEvent) {
 
     <!-- ═══ COMPOSER (text mode) ═══ -->
     <footer v-if="!isVoiceMode" class="dv-panel__composer">
+      <div v-if="voiceNotice" class="dv-composer__notice" role="alert">
+        <v-icon size="14">mic-off</v-icon>
+        <span>{{ voiceNotice }}</span>
+        <v-btn icon size="20" variant="text" aria-label="Dismiss voice notice" @click="voiceNotice = ''">
+          <v-icon size="14">x</v-icon>
+        </v-btn>
+      </div>
       <div v-if="chatMode" class="dv-composer__pills">
         <button
           v-for="pill in suggestionPills"
@@ -1511,6 +1526,24 @@ function onComposerKeydown(event: KeyboardEvent) {
   padding: 16px 16px 16px;
   background: rgb(var(--v-theme-surface));
   border-top: 1px solid rgb(var(--v-theme-outline-variant));
+}
+
+.dv-composer__notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 6px 8px 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgb(var(--v-theme-error), 0.28);
+  background: rgb(var(--v-theme-error), 0.06);
+  color: rgb(var(--v-theme-error));
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.dv-composer__notice span {
+  flex: 1;
 }
 
 .dv-composer__pills {

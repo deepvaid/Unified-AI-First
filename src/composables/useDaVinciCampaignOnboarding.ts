@@ -11,6 +11,7 @@ import {
   type DaVinciInputMode,
 } from '@/stores/useDaVinciOnboarding'
 import type { CampaignOnboardingProps } from '@/stores/useCopilot'
+import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
 import type {
   DvCardDescriptor,
   DvIntentKind,
@@ -33,7 +34,15 @@ export const CAMPAIGN_OBJECTIVES: DvQuickReply[] = [
   { label: 'Share a newsletter', value: 'Share a newsletter', icon: 'newspaper' },
 ]
 
+const SKIP_REPLY: DvQuickReply = { label: 'Skip for now', value: 'Skip for now', icon: 'redo-2' }
+const CONTINUE_REPLY: DvQuickReply = { label: 'Continue campaign', value: 'Continue campaign', icon: 'play' }
+
 const OBJECTIVE_COPY = {
+  generic: {
+    name: 'First campaign',
+    subject: 'Your first campaign',
+    preheader: 'Draft created with Da Vinci — you control content, timing, and send.',
+  },
   promotion: {
     name: 'First campaign — Special offer',
     subject: 'A special offer, picked for you',
@@ -57,11 +66,25 @@ const OBJECTIVE_COPY = {
 }
 
 function objectiveKey(text: string): keyof typeof OBJECTIVE_COPY {
-  const normalized = text.toLowerCase()
+  const normalized = text.toLowerCase().trim()
+  if (!normalized) return 'generic'
   if (/announce|launch|new/.test(normalized)) return 'announcement'
   if (/reconnect|win.?back|lapsed|miss/.test(normalized)) return 'reconnect'
   if (/newsletter|update|digest/.test(normalized)) return 'newsletter'
   return 'promotion'
+}
+
+/**
+ * True when mid-setup text is a question or clearly about something other than
+ * this campaign — the wizard pauses and lets the normal assistant answer, rather
+ * than swallowing "what's my revenue this week?" as a campaign objective.
+ */
+function isOffTopic(text: string): boolean {
+  // The wizard's own verbs are always on-topic ("recheck", "change brief", chip values like "Use VIP Customer Circle").
+  if (/\b(recheck|check again|change|different|restart|brief|use)\b/i.test(text)) return false
+  if (/\?\s*$/.test(text)) return true
+  if (/^(what|how|why|when|where|who|which|can|could|do|does|is|are|show|tell)\b/i.test(text)) return true
+  return /\b(revenue|sales|ticket|widget|dashboard|order|product description|report)\b/i.test(text)
 }
 
 export function useDaVinciCampaignOnboarding() {
@@ -177,7 +200,7 @@ export function useDaVinciCampaignOnboarding() {
         ? `I'll send it to ${named.name}. First, what should this campaign achieve?`
         : 'First, what should this campaign achieve?',
       speech: 'First, what should this campaign achieve?',
-      quickReplies: CAMPAIGN_OBJECTIVES,
+      quickReplies: [...CAMPAIGN_OBJECTIVES, SKIP_REPLY],
     }
   }
 
@@ -196,7 +219,7 @@ export function useDaVinciCampaignOnboarding() {
       intent: 'campaign',
       reply: `Got it — the goal is to ${objective.toLowerCase()}. Who should receive it? I’ll use a real audience from this account.`,
       speech: 'Who should receive it?',
-      quickReplies: audienceReplies(),
+      quickReplies: [...audienceReplies(), SKIP_REPLY],
     }
   }
 
@@ -338,11 +361,92 @@ export function useDaVinciCampaignOnboarding() {
     }
   }
 
+  /** One-time notice for the host to show when the wizard paused itself for an off-topic question. */
+  let pauseNotice: CampaignOnboardingResponse | null = null
+
+  function consumePauseNotice(): CampaignOnboardingResponse | null {
+    const notice = pauseNotice
+    pauseNotice = null
+    return notice
+  }
+
+  function pausedResponse(): CampaignOnboardingResponse {
+    return {
+      intent: 'campaign',
+      reply: 'No problem — campaign setup is paused. Ask me anything; say “continue campaign” when you’re ready.',
+      speech: 'Campaign setup is paused. Say continue campaign when you are ready.',
+      quickReplies: [CONTINUE_REPLY],
+    }
+  }
+
+  /** Skip the current question with a sensible default instead of blocking on an answer. */
+  function skipStage(): CampaignOnboardingResponse | null {
+    const active = session.value
+    if (!active) return null
+    if (active.stage === 'welcome' || active.stage === 'consent' || active.stage === 'objective') {
+      onboarding.setObjective('')
+      return {
+        intent: 'campaign',
+        reply: 'No problem — you can decide the goal in the builder. Who should receive it?',
+        speech: 'Who should receive it?',
+        quickReplies: [...audienceReplies(), SKIP_REPLY],
+      }
+    }
+    if (active.stage === 'audience') {
+      const fallback = audienceChoices()[0]
+      if (!fallback) return null
+      const response = readinessResponse(fallback)
+      return {
+        ...response,
+        reply: `I’ll start with ${fallback.name} — you can change it in the builder. ${response.reply}`,
+        speech: `I’ll start with ${fallback.name}. ${response.speech ?? ''}`.trim(),
+      }
+    }
+    if (active.stage === 'readiness') return createDraft()
+    return null
+  }
+
   function handleText(text: string): CampaignOnboardingResponse | null {
     const active = session.value
     if (!active || active.stage === 'complete') return null
     const trimmed = text.trim()
     if (!trimmed) return null
+
+    // Paused: only an explicit "continue campaign" re-enters the wizard.
+    if (active.paused) {
+      if (/\b(continue|resume)\b.*\bcampaign|\bcampaign\b.*\b(continue|resume)\b/i.test(trimmed)) {
+        onboarding.setPaused(false)
+        trackDaVinciOnboardingEvent('onboarding_resumed', active.accountId, { from: 'paused' })
+        return resume()
+      }
+      return null
+    }
+
+    // Explicit exit — only when the message IS the exit phrase, so words like
+    // "later" inside a campaign brief don't eject the user.
+    if (/^(cancel|stop|exit|quit|pause|not now|no thanks|(maybe )?later)[.! ]*$/i.test(trimmed)) {
+      onboarding.setPaused(true)
+      trackDaVinciOnboardingEvent('onboarding_skipped', active.accountId, { stage: active.stage, kind: 'paused' })
+      return pausedResponse()
+    }
+
+    // Skip advances with defaults rather than blocking on an answer.
+    if (/\bskip\b/i.test(trimmed)) {
+      const skipped = skipStage()
+      if (skipped) return skipped
+    }
+
+    // Questions and other-topic asks pause the wizard; the host's normal
+    // assistant answers them (host shows the pause notice once).
+    if (isOffTopic(trimmed)) {
+      onboarding.setPaused(true)
+      pauseNotice = {
+        intent: 'campaign',
+        reply: 'Campaign setup is paused — say “continue campaign” whenever you’re ready.',
+        quickReplies: [CONTINUE_REPLY],
+      }
+      return null
+    }
 
     if (active.stage === 'objective' || active.stage === 'consent' || active.stage === 'welcome') {
       return audiencePrompt(trimmed)
@@ -354,7 +458,7 @@ export function useDaVinciCampaignOnboarding() {
           intent: 'campaign',
           reply: 'I couldn’t match that to an audience in this account. Choose one below, or name another list or segment.',
           speech: 'I couldn’t match that audience. Please choose one below.',
-          quickReplies: audienceReplies(),
+          quickReplies: [...audienceReplies(), SKIP_REPLY],
         }
       }
       return readinessResponse(audience)
@@ -381,20 +485,22 @@ export function useDaVinciCampaignOnboarding() {
   function resume(): CampaignOnboardingResponse | null {
     const active = session.value
     if (!active) return null
+    if (active.paused) return pausedResponse()
     if (active.stage === 'objective') {
       return {
         intent: 'campaign',
         reply: 'Welcome back. What should your first campaign achieve?',
         speech: 'Welcome back. What should your first campaign achieve?',
-        quickReplies: CAMPAIGN_OBJECTIVES,
+        quickReplies: [...CAMPAIGN_OBJECTIVES, SKIP_REPLY],
       }
     }
     if (active.stage === 'audience') {
+      const goalLine = active.brief.objective ? `The goal is to ${active.brief.objective.toLowerCase()}. ` : ''
       return {
         intent: 'campaign',
-        reply: `Welcome back. The goal is to ${active.brief.objective.toLowerCase()}. Who should receive it?`,
+        reply: `Welcome back. ${goalLine}Who should receive it?`,
         speech: 'Welcome back. Who should receive this campaign?',
-        quickReplies: audienceReplies(),
+        quickReplies: [...audienceReplies(), SKIP_REPLY],
       }
     }
     if (active.stage === 'readiness') {
@@ -419,6 +525,7 @@ export function useDaVinciCampaignOnboarding() {
     readinessItems,
     start,
     handleText,
+    consumePauseNotice,
     createDraft,
     changeBrief,
     routeForAction,
