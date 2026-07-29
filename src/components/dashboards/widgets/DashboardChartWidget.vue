@@ -91,7 +91,7 @@ const gradientMarks = computed(() => resolvedTheme.value.gradientMarks)
 const vuetifyTheme = useTheme()
 const markerStrokeColor = computed(() => (
   vuetifyTheme.global.current.value.dark
-    ? 'rgb(var(--v-theme-surface))'
+    ? vuetifyTheme.global.current.value.colors.surface
     : '#ffffff'
 ))
 
@@ -287,7 +287,7 @@ const chartOptions = computed<ApexOptions>(() => {
   width: 100%;
   height: 100%;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   padding-top: 4px;
 }
 

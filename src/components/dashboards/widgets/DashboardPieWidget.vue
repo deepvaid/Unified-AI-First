@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, inject, unref } from 'vue'
+import { useTheme } from 'vuetify'
 import type { ApexOptions } from 'apexcharts'
 import {
   CHART_PALETTE_OVERRIDE,
@@ -31,6 +32,8 @@ const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
 const palette = computed<string[]>(() => resolvedTheme.value.series)
 const gradientMarks = computed(() => resolvedTheme.value.gradientMarks)
+const vuetifyTheme = useTheme()
+const strokeColor = computed(() => vuetifyTheme.global.current.value.colors.surface)
 
 const series = computed(() => {
   const first = props.data.series[0]
@@ -62,7 +65,7 @@ const options = computed<ApexOptions>(() => {
       style: { fontSize: '11px', fontWeight: 600, colors: [chrome.axisLabel] },
       dropShadow: { enabled: false },
     },
-    stroke: { width: 2, colors: ['rgb(var(--v-theme-surface))'] },
+    stroke: { width: 2, colors: [strokeColor.value] },
     plotOptions: {
       pie: {
         donut: {

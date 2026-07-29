@@ -316,6 +316,13 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
   cursor: grabbing;
 }
 
+/* Lets a hovered widget's tooltip (which escapes its overflow:hidden
+   ancestors, see DashboardWidgetCard--chart) paint above later DOM siblings.
+   Kept below the dragging/resizing z-index so those states still win. */
+.dashboard-grid :deep(.vgl-item:hover) {
+  z-index: 2;
+}
+
 .dashboard-grid :deep(.vgl-item.vgl-item--dragging) .dashboard-widget-card,
 .dashboard-grid :deep(.vgl-item.vgl-item--resizing) .dashboard-widget-card {
   box-shadow: var(--elevation-modal);
