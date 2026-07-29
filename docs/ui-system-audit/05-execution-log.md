@@ -131,3 +131,30 @@ Append-only. One section per WP, in execution order.
 **Known issues:** None introduced.
 
 ---
+
+## WP-F4 — Chart foundation (UX-003 High + LiveView outlier + AUD-L03)
+
+**Status:** Done
+
+**Work completed:**
+1. **UX-003** — added `tickAmount: 6` and `labels: { hideOverlappingLabels: true, rotate: 0 }` to the shared `xaxis` base in `applyChartTheme()` (`src/plugins/chartPalette.ts`), keeping the existing `style: labelStyle`. Did not switch to `type: 'datetime'` (categories remain plain strings from mock data, per the plan).
+2. **LiveView.vue "outlier" — investigated, found already resolved, no code change made.** The plan's finding (from `docs/ui-system-audit/01-repository-discovery.md`: "Hard-coded `#ffffff` for text color") does not match the file's current state. Exhaustive grep of `src/views/Analytics/LiveView.vue` for hex codes (`#[0-9a-fA-F]{3,6}`), the literal string "white" (case-insensitive), and `rgb(255,255,255)`-style literals all returned zero matches. Every chart color reference in the file already routes through `chrome.axisLabel`, `chrome.legendLabel`, `activePalette[n]`, or `useChartTheme()`. Git history shows `d7bd9b3` ("mode-aware chart palettes, tooltip chrome, legend fixes (WP-09)") on the prior dark-mode branch already themed this file before the ui-system-audit's repository-discovery doc's snapshot; the plan inherited a stale finding. Verified rendered LiveView in both themes (light + dark) via the dev server — KPI sparklines, activity area chart, donut, and map all render correctly with no white-on-white or black-on-black text in dark mode.
+3. **AUD-L03** — grepped for production consumers before removing: `grep -rn "chartPalette\b" src` showed only the deprecated definition itself (`chartPalette.ts:349`) and unrelated identifiers that merely contain the substring (`applyChartPalette`, `useChartTheme`, `CHART_PALETTES`, `CHART_PALETTE_OVERRIDE`, `CHART_THEMES`, the `ChartPalette`/`ChartTheme` types, `chartLegendOptions`, and one code comment). Zero real imports of the bare `chartPalette` export. Deleted `export const chartPalette: string[] = CHART_THEMES.blue.light.series` and its `@deprecated` comment.
+
+**Files changed:**
+- `src/plugins/chartPalette.ts` (xaxis base additions; deprecated `chartPalette` export removed)
+- `src/views/Analytics/LiveView.vue` — **no changes** (item 2's premise did not hold; see above)
+
+**Tests run:**
+- `npm run type-check` / `npm run build` — same pre-existing baseline `ReelFlyView.vue` failures only; `npx vite build` — pass, `✓ built in ~11s`.
+- `grep -rn "chartPalette\b" src` (post-removal) — only the new/existing API surface remains, matching the acceptance criterion exactly.
+- Dev-server visual pass:
+  - Dashboard → Add widget → "Revenue over time" preview: `document.querySelectorAll('.apexcharts-xaxis-texts-g text')` scoped to the preview's own canvas (width ≈472px, i.e. the ~480px target) showed 8 distinct non-empty date labels (`07-21, 07-25, 07-26, 07-27, 07-28, 07-28, 07-29, 07-29`) out of 30 tick slots — legible, ≤8, no overlap, matching the acceptance criterion.
+  - Dashboard "Revenue by channel" chart: palette/series colors unchanged (only axis tick/label behavior was touched).
+  - Live View (`/accounts/:id/analytics/live_view`): renders correctly in both light and dark, console clean.
+
+**Deviations from plan:** Item 2 (LiveView hardcoded `#ffffff`) required no code change — investigation showed the underlying issue was already fixed prior to this branch (see above). Logged as a finding rather than silently skipped, per the "compute and verify" protocol; not a blocker since the acceptance criterion ("LiveView renders correctly in both themes") is still met.
+
+**Known issues:** None introduced.
+
+---

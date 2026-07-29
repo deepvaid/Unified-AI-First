@@ -345,9 +345,6 @@ export function applyChartPalette(id: ChartPalette) {
   document.documentElement.dataset.chart = id
 }
 
-/** Back-compat default blue series array. Prefer `useChartTheme()` for reactivity. */
-export const chartPalette: string[] = CHART_THEMES.blue.light.series
-
 /**
  * Mode-aware chart theme composable. Call once in setup; returns reactive palette,
  * theme, and Apex base options that track Vuetify light/dark.
@@ -398,7 +395,8 @@ export function useChartTheme() {
       xaxis: {
         axisBorder: { show: false },
         axisTicks: { show: false },
-        labels: { style: labelStyle },
+        tickAmount: 6,
+        labels: { style: labelStyle, hideOverlappingLabels: true, rotate: 0 },
       },
       yaxis: {
         labels: { style: labelStyle },
