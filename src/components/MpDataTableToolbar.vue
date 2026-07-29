@@ -248,14 +248,17 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   border-color: rgb(var(--v-theme-outline-variant));
 }
 
-/* Ghost search: transparent until focus, resting outline held to a hairline.
-   Focus restores the primary ring consistent with the global outlined-field style. */
+/* Ghost search: transparent until focus. A11Y-001 raised the global resting
+   outlined-field border to a compliant ≥3:1, which would make a hairline
+   override here sub-3:1 again — so the resting boundary cue is a fill
+   instead of a thin border. Focus restores the primary ring on a transparent
+   field, consistent with the global outlined-field style. */
 .mp-toolbar-search :deep(.v-field) {
   background: transparent;
 }
 
-.mp-toolbar-search :deep(.v-field:not(.v-field--focused) .v-field__outline) {
-  --v-field-border-opacity: 0.16;
+.mp-toolbar-search :deep(.v-field:not(.v-field--focused)) {
+  background: var(--surface-secondary);
 }
 
 .mp-toolbar-heading {

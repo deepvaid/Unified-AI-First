@@ -49,3 +49,43 @@ Append-only. One section per WP, in execution order.
 **Known issues:** None introduced. Baseline `ReelFlyView.vue` type errors remain open (pre-existing, out of this program's scope per the dark-mode audit's own recommendation to track it separately).
 
 ---
+
+## WP-F2 — Field boundary contrast (A11Y-001 High, A11Y-002)
+
+**Status:** Done
+
+**Investigation finding (deviation from the plan's literal file/mechanism, acceptance criteria still met):** The plan's implementation sketch ("set `--v-field-border-opacity` … or bind the outline color to `var(--border-strong)`") assumes Vuetify's stock currentColor+opacity mechanism is still live. It is not: `src/styles/settings-form.scss` ("Global Outlined Field Baseline", loaded app-wide via `app-styles.ts`) already hardcodes the resting outline to `border-color: var(--hairline) !important` at forced `--v-field-border-opacity: 1`. `--hairline` resolves to `--border-subtle` (`#e2e8f0` light / dark equivalent), which computes to **~1.2:1 even at full opacity** — so neither of the plan's two suggested mechanisms (raising a now-irrelevant opacity variable, or binding to `--border-strong` = light `#d4d4d4` = **1.48:1 on white**) can reach 3:1 without a token value change, which WP-F2 is not scoped to make (no `tokens.json` in its file list; D5 reserves light-leaf changes to WP-F1). Resolution: added a higher-specificity override still inside `global.scss` (the plan's named file) that recolors only the **resting** state (`:not(.v-field--focused):not(:hover):not(.v-field--error)`) to a translucent mix of the existing `--text-secondary` token, which clears 3:1 on both tiers without introducing any new token leaf. `settings-form.scss` itself documents that "components may add scoped specificity overrides" — this follows that sanctioned pattern rather than editing that file. Hover/focus/error selectors were left untouched, per the plan's explicit "Hover/focus states unchanged."
+
+**Work completed:**
+1. **A11Y-001** — added a higher-specificity `global.scss` rule (after the existing `.v-field` transition block) that sets the resting outlined-field border to `color-mix(in srgb, var(--text-secondary) 75%, transparent)` for `.v-field--variant-outlined:not(.v-field--focused):not(:hover):not(.v-field--error) .v-field__outline__{start,end}` and both `.v-field__outline__notch::{before,after}`. `--text-secondary` resolves per-theme via `mp-theme-aliases.css` (light → `onSurfaceVariant` `#5C6066` post-WP-F1; dark → `textSecondary` `#C2C7CD`), so the fix inherits correctly into dark without any dark-specific code.
+2. **MpDataTableToolbar ghost search** — removed the local `--v-field-border-opacity: 0.16` override (which would otherwise still render sub-3:1 once combined with the new global rule); the resting state now gets `background: var(--surface-secondary)` instead, so the field's extent reads via fill. The pre-existing unconditional `background: transparent` rule on `.v-field` continues to govern the focused state (higher-specificity `:not(.v-field--focused)` rule only matches at rest), so focus still shows the transparent field + primary ring, unchanged.
+3. **Dark mode verification** — computed both the outlined-field fix and the toolbar fill against dark surfaces; confirmed via `getComputedStyle` in the running app and numerically (below). No dark-specific code was needed — both changes route through theme-aware semantic vars (`--text-secondary`, `--surface-secondary`).
+
+**Files changed:**
+- `src/styles/global.scss` (new rule after the `.v-field` transition block, ~line 282)
+- `src/components/MpDataTableToolbar.vue` (ghost-search resting-state rule swapped from border-opacity to background-fill)
+
+**Computed contrast numbers:**
+| Pair | Ratio | Target | Result |
+|---|---|---|---|
+| (prior) resting border `--hairline #e2e8f0` @ opacity 1 on white | 1.233:1 | — | failing (A11Y-001) |
+| (prior) resting border `--hairline` on canvas `#f4f6fa` | 1.139:1 | — | failing |
+| (rejected alt.) `--border-strong` (light `#d4d4d4`) opaque on white | 1.482:1 | ≥3:1 | still fails — why the plan's 2nd suggested mechanism was not usable as literally stated |
+| new resting border: `color-mix(text-secondary 75%, transparent)` on white | 3.561:1 | ≥3:1 | Pass |
+| new resting border on canvas `#f4f6fa` | 3.386:1 | ≥3:1 | Pass |
+| dark equivalent (`text-secondary #C2C7CD` @ 75%) on dark `surface #1F2226` | 5.305:1 | ≥3:1, no regression | Pass (prior dark hairline-based border was ~1.33:1 — also improved, not just non-regressed) |
+| dark equivalent on dark `background #17191C` | 5.699:1 | ≥3:1 | Pass |
+| dark equivalent on dark `surfaceVariant #272B30` | 4.900:1 | ≥3:1 | Pass |
+
+**Tests run:**
+- `npm run type-check` / `npm run build` — same pre-existing baseline `ReelFlyView.vue` failures only (unrelated, see WP-F1 entry); `npx vite build` — pass, `✓ built in ~11s`.
+- Dev-server visual pass, both themes:
+  - Settings → Account Defaults (`/accounts/2000290/settings/account-defaults`): every outlined field (Account Name, Account ID, Industry, Language, Timezone, Currency, Date Format, Website URL) shows a clearly visible resting border in light and dark; `getComputedStyle` confirmed `border-color: color(srgb 0.36 0.376 0.4 / 0.75)` (= `--text-secondary` `#5C6066` at 0.75 alpha) on real rendered fields, opacity `1` (not double-faded).
+  - Contacts (`/accounts/2000290/contacts`) toolbar search: resting fill confirmed via `getComputedStyle` → `rgb(236, 236, 236)` (light `--surface-secondary` = `surfaceVariant`), visibly bounded via fill in both themes; no border artifact.
+  - Console: zero errors in either theme, either screen.
+
+**Deviations from plan:** Implementation mechanism changed from the plan's literal suggestion (Vuetify opacity var / `--border-strong` bind) to a higher-specificity `color-mix(--text-secondary)` override, for the reasons computed and logged above. The acceptance criteria (resting border ≥3:1 light, toolbar bounded via fill, no dark regression, every settings form field shows the stronger border) are met; the *file* target (`global.scss`) and the *scope* (resting state only, hover/focus/error untouched) match the plan exactly — only the specific property/selector mechanism differs from the plan's initial guess, which is what the "compute and verify" protocol is for.
+
+**Known issues:** None introduced.
+
+---
