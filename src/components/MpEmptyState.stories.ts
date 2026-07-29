@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpEmptyState from './MpEmptyState.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Feedback/MpEmptyState',
@@ -82,6 +83,11 @@ export const Default: Story = {
     actionLabel: 'Create Draft Order',
     actionIcon: 'plus',
   },
+}
+
+export const DarkMode: Story = {
+  globals: darkModeGlobals,
+  ...Default,
 }
 
 export const Campaigns: Story = {

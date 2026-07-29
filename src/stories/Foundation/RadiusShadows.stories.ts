@@ -2,6 +2,9 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import { VContainer } from 'vuetify/components'
 import {
   mp_borderRadius_lg,
+  mp_shadow_dark_lg,
+  mp_shadow_dark_md,
+  mp_shadow_dark_sm,
   mp_typography_fontFamily_mono,
   mp_typography_fontSize_xs,
 } from '@/design-tokens/generated/tokens'
@@ -114,13 +117,19 @@ export const Shadows: Story = {
   render: () => ({
     components: { TileLabel },
     setup() {
-      return { shadows, transitions, mp_borderRadius_lg }
+      const lightShadows = shadows.filter((s) => !s.name.startsWith('dark_'))
+      const darkShadowTokens = [
+        { name: 'dark_sm', value: mp_shadow_dark_sm, token: 'mp_shadow_dark_sm' },
+        { name: 'dark_md', value: mp_shadow_dark_md, token: 'mp_shadow_dark_md' },
+        { name: 'dark_lg', value: mp_shadow_dark_lg, token: 'mp_shadow_dark_lg' },
+      ]
+      return { lightShadows, darkShadowTokens, transitions, mp_borderRadius_lg }
     },
     template: `
       <div class="pa-6" style="background: rgb(var(--v-theme-background));">
-        <p class="text-overline text-medium-emphasis mb-4">Elevation — shadow.*</p>
-        <div class="d-flex flex-wrap ga-6">
-          <div v-for="s in shadows" :key="s.token" style="width: 220px;">
+        <p class="text-overline text-medium-emphasis mb-4">Light elevation — shadow.sm / md / lg</p>
+        <div class="d-flex flex-wrap ga-6 mb-8">
+          <div v-for="s in lightShadows" :key="s.token" style="width: 220px;">
             <div
               :style="{
                 boxShadow: s.value,
@@ -133,9 +142,85 @@ export const Shadows: Story = {
             <TileLabel :entry="s" />
           </div>
         </div>
-        <p class="text-overline text-medium-emphasis mb-2 mt-8">Motion — transition.*</p>
+        <p class="text-overline text-medium-emphasis mb-4">Dark elevation — shadow.dark.* (generated tokens)</p>
+        <div class="d-flex flex-wrap ga-6 mb-8">
+          <div v-for="s in darkShadowTokens" :key="s.token" style="width: 220px;">
+            <div
+              :style="{
+                boxShadow: s.value,
+                height: '96px',
+                borderRadius: mp_borderRadius_lg,
+                background: 'var(--surface-primary)',
+                border: '1px solid var(--border-subtle)',
+              }"
+            />
+            <TileLabel :entry="s" />
+          </div>
+        </div>
+        <p class="text-overline text-medium-emphasis mb-2">Motion — transition.*</p>
         <TileLabel v-for="t in transitions" :key="t.token" :entry="t" />
       </div>
     `,
   }),
+}
+
+/** Semantic elevation aliases paired with borders — never shadow without a boundary. */
+export const ElevationAliases: Story = {
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    setup() {
+      return { mp_borderRadius_lg }
+    },
+    template: `
+      <div class="pa-6">
+        <p class="text-overline text-medium-emphasis mb-4">Semantic elevation — --elevation-* aliases</p>
+        <div class="d-flex flex-wrap ga-6">
+          <div style="width: 220px;">
+            <div
+              :style="{
+                boxShadow: 'var(--elevation-raised)',
+                background: 'var(--surface-raised)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: mp_borderRadius_lg,
+                height: '96px',
+              }"
+            />
+            <p class="text-caption text-medium-emphasis mt-2 font-weight-medium">L2 raised</p>
+            <code class="text-caption">--elevation-raised</code>
+          </div>
+          <div style="width: 220px;">
+            <div
+              :style="{
+                boxShadow: 'var(--elevation-overlay)',
+                background: 'var(--surface-overlay)',
+                border: '1px solid var(--border-default)',
+                borderRadius: mp_borderRadius_lg,
+                height: '96px',
+              }"
+            />
+            <p class="text-caption text-medium-emphasis mt-2 font-weight-medium">L3 overlay</p>
+            <code class="text-caption">--elevation-overlay</code>
+          </div>
+          <div style="width: 220px;">
+            <div
+              :style="{
+                boxShadow: 'var(--elevation-modal)',
+                background: 'var(--surface-overlay)',
+                border: '1px solid var(--border-default)',
+                borderRadius: mp_borderRadius_lg,
+                height: '96px',
+              }"
+            />
+            <p class="text-caption text-medium-emphasis mt-2 font-weight-medium">L4 modal</p>
+            <code class="text-caption">--elevation-modal</code>
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+}
+
+export const ElevationAliasesDark: Story = {
+  globals: { theme: 'dark' },
+  ...ElevationAliases,
 }

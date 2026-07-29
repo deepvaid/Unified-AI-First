@@ -256,18 +256,18 @@ function chooseSize(size: WidgetSize) {
 <style scoped lang="scss">
 .dashboard-widget-card {
   position: relative;
-  border-color: color-mix(in oklch, var(--ink) 7%, transparent) !important;
+  border-color: var(--border-subtle) !important;
   border-radius: var(--r-section) !important;
   background: var(--surface-1) !important;
   overflow: hidden;
   min-height: 0;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--elevation-raised);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .dashboard-widget-card:hover {
-  border-color: color-mix(in oklch, var(--ink) 14%, transparent) !important;
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 10px 24px -8px rgba(15, 23, 42, 0.12);
+  border-color: var(--border-default) !important;
+  box-shadow: var(--elevation-overlay);
 }
 
 .dashboard-widget-card__header {
@@ -309,8 +309,9 @@ function chooseSize(size: WidgetSize) {
   height: 20px;
   padding: 0 8px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(99, 102, 241, 0.18));
-  color: rgb(99, 79, 218);
+  background: var(--dv-accent-soft);
+  color: var(--dv-text-primary);
+  border: 1px solid var(--dv-border);
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -319,7 +320,7 @@ function chooseSize(size: WidgetSize) {
 }
 
 .dashboard-widget-card__davinci-chip :deep(.v-icon) {
-  color: rgb(124, 58, 237);
+  color: var(--dv-accent);
 }
 
 .dashboard-widget-card__subtitle {

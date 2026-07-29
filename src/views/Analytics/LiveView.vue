@@ -5,7 +5,9 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
-import { applyChartTheme, activeChartPalette } from '@/plugins/chartPalette'
+import { chartLegendOptions, useChartTheme } from '@/plugins/chartPalette'
+
+const { palette, theme, applyChartTheme } = useChartTheme()
 
 const ApexChart = defineAsyncComponent({
   loader: async () => (await import('vue3-apexcharts')).default,
@@ -176,55 +178,53 @@ function sparklineOptions(color: string): ApexOptions {
 }
 
 // visitors=cyan, sales=emerald, sessions=indigo, orders=magenta
-const visitorsSparkOptions = computed(() => sparklineOptions(activeChartPalette.value[0]!))
-const salesSparkOptions = computed(() => sparklineOptions(activeChartPalette.value[3]!))
-const sessionsSparkOptions = computed(() => sparklineOptions(activeChartPalette.value[5]!))
-const ordersSparkOptions = computed(() => sparklineOptions(activeChartPalette.value[1]!))
+const visitorsSparkOptions = computed(() => sparklineOptions(palette.value[0]!))
+const salesSparkOptions = computed(() => sparklineOptions(palette.value[3]!))
+const sessionsSparkOptions = computed(() => sparklineOptions(palette.value[5]!))
+const ordersSparkOptions = computed(() => sparklineOptions(palette.value[1]!))
 
 // ─── Activity area chart ─────────────────────────────────────── cyan + magenta
-const activityBase = applyChartTheme()
-const activityOptions = computed<ApexOptions>(() => ({
-  ...activityBase,
-  colors: [activeChartPalette.value[0]!, activeChartPalette.value[1]!],
-  chart: {
-    ...activityBase.chart,
-    zoom: { enabled: false },
-    animations: { enabled: false },
-    redrawOnParentResize: true,
-  },
-  stroke: { curve: 'smooth', width: 3 },
-  fill: {
-    type: 'gradient',
-    gradient: { shadeIntensity: 0.18, opacityFrom: 0.36, opacityTo: 0.02, stops: [0, 96, 100] },
-  },
-  dataLabels: { enabled: false },
-  legend: {
-    show: true,
-    position: 'top',
-    horizontalAlign: 'right',
-    fontSize: '12px',
-    labels: { colors: 'rgba(var(--v-theme-on-surface), 0.72)' },
-    markers: { strokeWidth: 0 },
-  },
-  xaxis: {
-    ...activityBase.xaxis,
-    categories: activityLabels.value,
-    labels: {
-      ...activityBase.xaxis?.labels,
-      style: { colors: 'rgba(var(--v-theme-on-surface), 0.54)', fontSize: '11px' },
-      rotate: 0,
-      hideOverlappingLabels: true,
+const activityOptions = computed<ApexOptions>(() => {
+  const base = applyChartTheme.value()
+  const chrome = theme.value.chrome
+  const activePalette = palette.value
+
+  return {
+    ...base,
+    colors: [activePalette[0]!, activePalette[1]!],
+    chart: {
+      ...base.chart,
+      zoom: { enabled: false },
+      animations: { enabled: false },
+      redrawOnParentResize: true,
     },
-    tickAmount: 6,
-  },
-  yaxis: {
-    labels: {
-      style: { colors: 'rgba(var(--v-theme-on-surface), 0.54)', fontSize: '11px' },
-      formatter: (v: number) => `${Math.round(v)}`,
+    stroke: { curve: 'smooth', width: [3, 2], dashArray: [0, 6] },
+    fill: {
+      type: 'gradient',
+      gradient: { shadeIntensity: 0.18, opacityFrom: 0.36, opacityTo: 0.02, stops: [0, 96, 100] },
     },
-  },
-  tooltip: { ...activityBase.tooltip },
-}))
+    dataLabels: { enabled: false },
+    legend: chartLegendOptions([activePalette[0]!, activePalette[1]!], chrome, 'top'),
+    xaxis: {
+      ...base.xaxis,
+      categories: activityLabels.value,
+      labels: {
+        ...base.xaxis?.labels,
+        style: { colors: chrome.axisLabel, fontSize: '11px' },
+        rotate: 0,
+        hideOverlappingLabels: true,
+      },
+      tickAmount: 6,
+    },
+    yaxis: {
+      labels: {
+        style: { colors: chrome.axisLabel, fontSize: '11px' },
+        formatter: (v: number) => `${Math.round(v)}`,
+      },
+    },
+    tooltip: { ...base.tooltip },
+  }
+})
 
 const activitySeries = computed(() => [
   { name: 'Visitors', data: visitorsHistory.value },
@@ -240,42 +240,42 @@ const customerMixSeries = computed(() => {
 })
 
 // donut: cyan (new) + purple (returning)
-const donutOptions = computed<ApexOptions>(() => ({
-  chart: { fontFamily: 'Inter, system-ui, sans-serif', toolbar: { show: false } },
-  labels: ['New', 'Returning'],
-  colors: [activeChartPalette.value[0]!, activeChartPalette.value[2]!],
-  legend: {
-    position: 'bottom',
-    fontSize: '12px',
-    labels: { colors: 'rgba(var(--v-theme-on-surface), 0.72)' },
-    markers: { strokeWidth: 0 },
-  },
-  dataLabels: { enabled: false },
-  stroke: { width: 0 },
-  plotOptions: {
-    pie: {
-      donut: {
-        size: '70%',
-        labels: {
-          show: true,
-          total: {
+const donutOptions = computed<ApexOptions>(() => {
+  const chrome = theme.value.chrome
+  const activePalette = palette.value
+
+  return {
+    ...applyChartTheme.value(),
+    chart: { fontFamily: 'Inter, system-ui, sans-serif', toolbar: { show: false } },
+    labels: ['New', 'Returning'],
+    colors: [activePalette[0]!, activePalette[2]!],
+    legend: chartLegendOptions([activePalette[0]!, activePalette[2]!], chrome, 'bottom'),
+    dataLabels: { enabled: false },
+    stroke: { width: 0 },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '70%',
+          labels: {
             show: true,
-            label: 'Sessions',
-            fontSize: '12px',
-            color: 'rgba(var(--v-theme-on-surface), 0.6)',
-            formatter: () => `${(customerMixSeries.value[0] ?? 0) + (customerMixSeries.value[1] ?? 0)}`,
-          },
-          value: {
-            fontSize: '20px',
-            fontWeight: 700,
-            color: 'rgb(var(--v-theme-on-surface))',
+            total: {
+              show: true,
+              label: 'Sessions',
+              fontSize: '12px',
+              color: chrome.axisLabel,
+              formatter: () => `${(customerMixSeries.value[0] ?? 0) + (customerMixSeries.value[1] ?? 0)}`,
+            },
+            value: {
+              fontSize: '20px',
+              fontWeight: 700,
+              color: chrome.legendLabel,
+            },
           },
         },
       },
     },
-  },
-  tooltip: { theme: 'light' },
-}))
+  }
+})
 
 // ─── Map + locations (mock) ────────────────────────────────────
 const topLocations = computed(() => [

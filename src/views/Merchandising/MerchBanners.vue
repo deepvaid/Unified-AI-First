@@ -127,7 +127,7 @@ function doDelete() {
               icon="trash-2"
               variant="text"
               size="x-small"
-              color="medium-emphasis"
+              class="text-medium-emphasis"
               :aria-label="`Delete ${banner.title}`"
               @click="askDelete(banner)"
             />

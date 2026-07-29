@@ -113,10 +113,10 @@ function applyCustom() {
   height: 40px;
   max-width: 240px;
   padding: 0 12px;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   background: rgb(var(--v-theme-surface));
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -126,12 +126,12 @@ function applyCustom() {
 .mp-range-trigger:hover,
 .mp-range-trigger--active {
   border-color: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
 .mp-range-trigger__lead,
 .mp-range-trigger__chev {
-  color: rgb(var(--v-theme-on-surface));
-  opacity: 0.7;
+  color: var(--icon-secondary);
   flex-shrink: 0;
 }
 
@@ -141,6 +141,6 @@ function applyCustom() {
 }
 
 .mp-range-custom {
-  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-top: 1px solid var(--hairline);
 }
 </style>

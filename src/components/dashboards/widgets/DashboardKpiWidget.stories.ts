@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { DashboardKpiData } from '@/stores/dashboards/types'
 import DashboardKpiWidget from './DashboardKpiWidget.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const REVENUE_KPI: DashboardKpiData = {
   kind: 'kpi',
@@ -79,6 +80,11 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
+
+export const DarkMode: Story = {
+  globals: darkModeGlobals,
+  ...Default,
+}
 
 export const NegativeTrend: Story = {
   args: {

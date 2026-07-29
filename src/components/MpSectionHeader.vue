@@ -34,18 +34,18 @@ withDefaults(defineProps<{
 .mp-section-header__eyebrow {
   display: block;
   margin-bottom: 4px;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--text-muted);
 }
 
 .mp-section-header__icon {
   flex-shrink: 0;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--icon-secondary);
 }
 
 .mp-section-header__description {
   margin-top: 2px;
   font-size: 13px;
   line-height: 1.4;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--text-secondary);
 }
 </style>

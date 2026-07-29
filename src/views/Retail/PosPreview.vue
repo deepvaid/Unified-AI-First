@@ -918,7 +918,7 @@ const apkQrUrl = computed(() =>
                     </button>
 
                     <div v-if="catalogGroups.length === 0" class="pos-catalog__empty">
-                      <v-icon size="32" color="medium-emphasis">search</v-icon>
+                      <v-icon size="32" class="text-medium-emphasis">search</v-icon>
                       <div>No products found</div>
                     </div>
                   </div>
@@ -1090,7 +1090,7 @@ const apkQrUrl = computed(() =>
                     </div>
                   </button>
                   <div v-if="filteredCustomers.length === 0" class="pos-catalog__empty">
-                    <v-icon size="32" color="medium-emphasis">search</v-icon>
+                    <v-icon size="32" class="text-medium-emphasis">search</v-icon>
                     <div>No customers match</div>
                   </div>
                 </div>
@@ -1234,7 +1234,7 @@ const apkQrUrl = computed(() =>
                 </template>
 
                 <div v-if="historyGroups.length === 0" class="pos-catalog__empty">
-                  <v-icon size="32" color="medium-emphasis">receipt</v-icon>
+                  <v-icon size="32" class="text-medium-emphasis">receipt</v-icon>
                   <div>{{ historyFilter === 'refunds' ? 'No refunds yet' : 'No transactions yet' }}</div>
                 </div>
               </div>
@@ -1875,6 +1875,9 @@ const apkQrUrl = computed(() =>
 <style scoped lang="scss">
 /* ── Shell ─────────────────────────────────────────────────────── */
 .pos-preview-shell {
+  /* Sanctioned fixed-look POS mock: pin the retail accent to its light value so this
+     terminal never shifts color under the dark-mode cloud-accent override. */
+  --cloud-retail-accent: #0d9488;
   width: 100vw;
   height: 100vh;
   background: color-mix(in oklch, var(--ink) 6%, var(--surface-1));

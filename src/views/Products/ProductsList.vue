@@ -392,7 +392,7 @@ onMounted(() => {
             >
               <template #error>
                 <div class="w-100 h-100 d-flex align-center justify-center bg-surface-variant rounded-md">
-                  <v-icon size="16" color="medium-emphasis">image</v-icon>
+                  <v-icon size="16" class="text-medium-emphasis">image</v-icon>
                 </div>
               </template>
             </v-img>
@@ -466,7 +466,7 @@ onMounted(() => {
               >
                 <template #error>
                   <div class="w-100 h-100 d-flex align-center justify-center bg-surface-variant">
-                    <v-icon size="22" color="medium-emphasis">image</v-icon>
+                    <v-icon size="22" class="text-medium-emphasis">image</v-icon>
                   </div>
                 </template>
               </v-img>

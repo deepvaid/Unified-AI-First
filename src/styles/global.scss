@@ -43,7 +43,7 @@
   font-weight: var(--mp-typography-fontWeight-semibold);
   letter-spacing: var(--mp-typography-letterSpacing-eyebrow);
   text-transform: uppercase;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--text-muted);
 }
 
 /* ─── Semantic type utilities (confident editorial) ────────────
@@ -70,7 +70,7 @@
   font-weight: var(--mp-typography-semantic-pageSubtitle-fontWeight);
   letter-spacing: var(--mp-typography-semantic-pageSubtitle-letterSpacing);
   line-height: var(--mp-typography-semantic-pageSubtitle-lineHeight);
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--text-secondary);
 }
 
 .mp-kpi-value {
@@ -123,7 +123,7 @@
   color: rgb(var(--v-theme-on-surface));
 }
 .mp-headline-duo > .is-muted {
-  color: rgba(var(--v-theme-on-surface), 0.45);
+  color: var(--text-muted);
 }
 
 /* dl-friendly label/value grid — pair with .mp-meta-label (dt) / .mp-meta-value (dd) */
@@ -141,7 +141,7 @@
 
 .mp-strike {
   text-decoration: line-through;
-  color: rgba(var(--v-theme-on-surface), 0.45);
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -151,7 +151,7 @@
 .mp-money__cents {
   font-size: 0.72em;
   font-weight: inherit;
-  opacity: 0.55;
+  color: var(--text-muted);
 }
 
 /* Branded inverted surface — consumers add their own padding. */
@@ -241,7 +241,7 @@ a {
   .v-list-item,
   .v-chip
 ):focus-visible {
-  outline: 2px solid rgba(var(--v-theme-primary), 0.36);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -265,7 +265,7 @@ a {
 }
 
 .v-btn--variant-flat:not(.v-btn--disabled) {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 1px 3px rgba(45, 99, 232, 0.24);
+  box-shadow: var(--btn-flat-shadow);
 }
 
 .v-btn--variant-outlined {
@@ -288,23 +288,12 @@ a {
 .v-overlay__content .v-card,
 .v-overlay__content .v-sheet,
 .v-overlay__content .v-stepper {
-  background: rgb(var(--v-theme-surface)) !important;
+  background: var(--surface-overlay) !important;
 }
 
 .v-field--variant-solo-filled {
   border: 1px solid rgba(var(--v-theme-primary), 0.08);
   box-shadow: none;
-}
-
-/* ─── Bridge Marobase-UI tokens → Vuetify theme ──────────────────── */
-/* Consumed by CommerceCloudLanding.vue — remove after migrating it   */
-/* to --mp-* tokens.                                                  */
-.v-application {
-  --mb-color-primary: rgb(var(--v-theme-primary));
-  --mb-color-primary-soft: rgba(var(--v-theme-primary), 0.10);
-  --mb-color-primary-soft-hover: rgba(var(--v-theme-primary), 0.16);
-  --mb-tabs-focus-ring: 0 0 0 2px rgb(var(--v-theme-primary));
-  --mb-focus-ring: 0 0 0 2px rgba(var(--v-theme-primary), 0.70);
 }
 
 .v-tab {
@@ -412,22 +401,6 @@ tr:focus-within .action-btns {
   .action-btns { opacity: 1; }
 }
 
-/* ─── Card Hover Lift (humane, subtle) ───────────────────────── */
-.card-hover {
-  transition:
-    transform var(--dur-slow) var(--ease),
-    box-shadow var(--dur-slow) var(--ease),
-    border-color var(--dur-base) var(--ease),
-    background-color var(--dur-base) var(--ease);
-  cursor: pointer;
-  will-change: transform;
-}
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--mp-shadow-md);
-  border-color: rgba(var(--v-theme-primary), 0.24) !important;
-}
-
 /* ─── Settings Card Hover ───────────────────────────────────── */
 .settings-tile {
   transition: all var(--dur-fast) var(--ease);
@@ -445,12 +418,12 @@ tr:focus-within .action-btns {
   bottom: 24px;
   left: calc(var(--v-layout-left, 0px) + (100vw - var(--v-layout-left, 0px) - var(--v-layout-right, 0px)) / 2);
   transform: translateX(-50%);
-  z-index: 100;
+  z-index: var(--mp-zIndex-bulkActionBar);
   max-width: calc(100vw - var(--v-layout-left, 0px) - var(--v-layout-right, 0px) - 48px);
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);
   box-shadow: none;
-  border-radius: $mp-radius-xl;
+  border-radius: $mp-borderRadius-xl;
   padding: 16px 24px;
 }
 
@@ -474,6 +447,16 @@ tr:focus-within .action-btns {
 .v-data-table > .v-divider {
   opacity: 1;
   border-top-color: var(--mp-border-table-footer-divider);
+}
+
+/* Generic dividers outside cards/overlays — Vuetify defaults to 50% border opacity. */
+.v-divider:not(.v-card .v-divider):not(.v-overlay__content .v-divider):not(.mp-form-drawer .v-divider) {
+  opacity: 1;
+  border-top-color: var(--mp-border-subtle);
+}
+
+.v-application.v-theme--maropostDark .v-divider:not(.v-card .v-divider):not(.v-overlay__content .v-divider):not(.mp-form-drawer .v-divider) {
+  border-top-color: var(--mp-color-dark-borderDividerMuted);
 }
 
 .v-data-table .v-data-table-footer {
@@ -507,7 +490,7 @@ tr:focus-within .action-btns {
 .v-data-table .v-table__wrapper > table > thead > tr > th.v-data-table__th {
   background: transparent;
   border-bottom-color: var(--mp-border-table-header);
-  color: rgb(var(--v-theme-on-surface-variant)) !important;
+  color: var(--text-muted) !important;
   font-size: 11px !important;
   line-height: 1.05 !important;
   font-weight: var(--mp-typography-fontWeight-semibold) !important;
@@ -526,9 +509,10 @@ tr:focus-within .action-btns {
   font-weight: inherit !important;
 }
 
-/* Dialog/modal scrim — Vuetify default 0.32 is too light; use 0.56 for legible contrast */
+/* Dialog/modal scrim — semantic backdrop token */
 .v-overlay__scrim {
-  opacity: 0.56 !important;
+  background: var(--scrim-overlay) !important;
+  opacity: 1 !important;
 }
 
 .v-overlay.v-tooltip {
@@ -563,10 +547,10 @@ tr:focus-within .action-btns {
 .v-menu > .v-overlay__content > .v-card,
 .v-menu > .v-overlay__content > .v-list,
 .v-menu > .v-overlay__content > .v-sheet {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid var(--mp-border-subtle) !important;
+  background: var(--surface-overlay);
+  border: 1px solid var(--border-default) !important;
   border-radius: var(--mp-borderRadius-md) !important;
-  box-shadow: var(--mp-shadow-lg), var(--mp-shadow-md) !important;
+  box-shadow: var(--elevation-overlay) !important;
   overflow: hidden;
 }
 
@@ -595,8 +579,8 @@ tr:focus-within .action-btns {
 /* ─── Scrollbar Styling ─────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.28); }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-default); }
 
 /* ─── Hide Scrollbar Utility ────────────────────────────────── */
 .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -680,7 +664,9 @@ tr:focus-within .action-btns {
 .v-dialog > .v-overlay__content > .v-card,
 .v-dialog > .v-overlay__content > .v-sheet {
   border-radius: var(--mp-component-dialog-radius-default) !important;
-  background: rgb(var(--v-theme-surface)) !important;
+  background: var(--surface-overlay) !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: var(--elevation-modal) !important;
 }
 
 /* Normalize dialog card title typography */

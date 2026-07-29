@@ -339,7 +339,7 @@ const recentSynonyms = computed(() => store.synonymList.slice(0, 5))
               >{{ todo.title }}</v-list-item-title>
               <v-list-item-subtitle class="merch-list-sub">{{ todo.desc }}</v-list-item-subtitle>
               <template #append>
-                <v-icon size="14" color="medium-emphasis">chevron-right</v-icon>
+                <v-icon size="14" class="text-medium-emphasis">chevron-right</v-icon>
               </template>
             </v-list-item>
           </v-list>

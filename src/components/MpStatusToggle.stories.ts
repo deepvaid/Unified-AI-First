@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 import MpStatusToggle from './MpStatusToggle.vue'
 
 const meta = {
@@ -76,6 +77,21 @@ type Story = StoryObj<typeof meta>
 
 export const Active: Story = {
   args: { status: 'Active' },
+}
+
+export const DarkModeAllStates: Story = {
+  globals: darkModeGlobals,
+  render: () => ({
+    components: { MpStatusToggle },
+    template: `
+      <div class="d-flex flex-column ga-3">
+        <MpStatusToggle status="Active" />
+        <MpStatusToggle status="Paused" />
+        <MpStatusToggle status="Draft" />
+      </div>
+    `,
+  }),
+  args: {} as any,
 }
 
 export const Paused: Story = {

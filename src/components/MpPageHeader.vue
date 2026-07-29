@@ -86,7 +86,7 @@ withDefaults(defineProps<{
 .mp-page-header__eyebrow {
   display: block;
   margin-bottom: 4px;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--text-muted);
 }
 
 .mp-page-header__subtitle {
@@ -123,7 +123,7 @@ withDefaults(defineProps<{
 
 .mp-page-header__back:focus-visible {
   outline: none;
-  border-color: rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.25);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 40%, transparent);
 }
 </style>

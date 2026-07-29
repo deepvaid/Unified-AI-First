@@ -283,7 +283,7 @@ function statusIcon(status: string): string {
               >{{ todo.title }}</v-list-item-title>
               <v-list-item-subtitle class="retail-list-sub">{{ todo.desc }}</v-list-item-subtitle>
               <template #append>
-                <v-icon size="14" color="medium-emphasis">chevron-right</v-icon>
+                <v-icon size="14" class="text-medium-emphasis">chevron-right</v-icon>
               </template>
             </v-list-item>
           </v-list>

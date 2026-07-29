@@ -330,7 +330,7 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   --sf-radius: 12px;
   --sf-heading-font: inherit;
   --sf-body-font: inherit;
-  --sf-on-brand: var(--mp-color-light-onPrimary);
+  --sf-on-brand: var(--accent-on);
   --sf-soft-line: color-mix(in oklch, var(--sf-text) 12%, transparent);
   --sf-soft-fill: color-mix(in oklch, var(--sf-text) 7%, var(--sf-bg));
   overflow: hidden;

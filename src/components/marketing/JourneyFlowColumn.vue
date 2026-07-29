@@ -27,8 +27,8 @@ const emit = defineEmits<{
 // (grey-darken-1 is a Material class name, not a --v-theme var) → neutral mix.
 const accentVars = (c: NodeCategory) => c === 'end'
   ? {
-      '--node-accent': 'rgba(var(--v-theme-on-surface), 0.55)',
-      '--node-accent-soft': 'rgba(var(--v-theme-on-surface), 0.08)',
+      '--node-accent': 'var(--text-muted)',
+      '--node-accent-soft': 'var(--surface-secondary)',
     }
   : {
       '--node-accent': `rgb(var(--v-theme-${categoryColor[c]}))`,
@@ -172,7 +172,7 @@ const endsRun = computed(() => {
   content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
   background: var(--node-accent); opacity: 0.9; transition: opacity var(--dur-fast) var(--ease);
 }
-.flow-node:hover { box-shadow: var(--mp-shadow-lg); border-color: rgba(var(--v-theme-on-surface), 0.18); }
+.flow-node:hover { box-shadow: var(--mp-shadow-lg); border-color: var(--border-hover); }
 .flow-node:hover::before { opacity: 1; }
 .flow-node--selected {
   border-color: rgb(var(--v-theme-primary));
@@ -193,7 +193,7 @@ const endsRun = computed(() => {
   display: block; width: 100%; padding: 0; margin: 0; border: 0;
   background: transparent; text-align: left; cursor: pointer; color: inherit;
 }
-.flow-node__open:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; border-radius: var(--mp-component-card-radius-md); }
+.flow-node__open:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: var(--mp-component-card-radius-md); }
 .flow-node__main { display: flex; align-items: flex-start; gap: 10px; padding: 12px 64px 12px 16px; }
 .flow-node__icon {
   display: inline-flex; align-items: center; justify-content: center;
@@ -212,13 +212,13 @@ const endsRun = computed(() => {
 }
 .flow-node__body {
   margin-top: 2px; font-size: 0.75rem; line-height: 1.4;
-  color: rgba(var(--v-theme-on-surface), 0.62);
+  color: var(--text-muted);
   overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
   -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 .flow-node__foot {
   display: flex; align-items: center; padding: 6px 16px 8px 60px;
-  font-size: 0.6875rem; font-weight: 600; color: rgba(var(--v-theme-on-surface), 0.55);
+  font-size: 0.6875rem; font-weight: 600; color: var(--text-muted);
   border-top: 1px solid rgba(var(--v-border-color), calc(var(--v-border-opacity) * 0.7));
 }
 .flow-node__setup {
@@ -237,18 +237,18 @@ const endsRun = computed(() => {
 .flow-node-wrap:focus-within .flow-node__tools { opacity: 1; }
 
 /* ── Connectors ─────────────────────────────────────────────────────────── */
-.flow-connector { width: 2.5px; height: 22px; background: rgba(var(--v-theme-on-surface), 0.22); flex-shrink: 0; }
+.flow-connector { width: 2.5px; height: 22px; background: var(--border-default); flex-shrink: 0; }
 .flow-connector--arrow { position: relative; height: 26px; }
 .flow-connector--arrow::after {
   content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
   border-left: 5px solid transparent; border-right: 5px solid transparent;
-  border-top: 6px solid rgba(var(--v-theme-on-surface), 0.32);
+  border-top: 6px solid var(--border-strong);
 }
 .add-btn {
   width: 24px; height: 24px; min-width: 24px;
   background: rgb(var(--v-theme-surface));
-  border: 1.5px solid rgba(var(--v-theme-on-surface), 0.28);
-  color: rgba(var(--v-theme-on-surface), 0.6);
+  border: 1.5px solid var(--border-default);
+  color: var(--text-muted);
   opacity: 0.55; transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
 .flow-node-wrap:hover .add-btn, .add-btn:hover, .add-btn:focus-visible { opacity: 1; }
@@ -258,9 +258,9 @@ const endsRun = computed(() => {
 }
 .flow-end {
   display: inline-flex; align-items: center; padding: 5px 14px;
-  border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.3); border-radius: 999px;
+  border: 1.5px dashed var(--border-default); border-radius: 999px;
   font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-  color: rgba(var(--v-theme-on-surface), 0.55); background: rgb(var(--v-theme-surface));
+  color: var(--text-muted); background: rgb(var(--v-theme-surface));
 }
 
 /* ── Branch columns ─────────────────────────────────────────────────────────
@@ -274,35 +274,35 @@ const endsRun = computed(() => {
 }
 .branch-col::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2.5px;
-  background: rgba(var(--v-theme-on-surface), 0.22);
+  background: var(--border-default);
 }
 .branch-col:first-child::before {
   left: calc(50% - 1.25px); height: 16px; background: transparent;
-  border-top: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
-  border-left: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-top: 2.5px solid var(--border-default);
+  border-left: 2.5px solid var(--border-default);
   border-top-left-radius: 12px;
 }
 .branch-col:last-child::before {
   right: calc(50% - 1.25px); left: 0; height: 16px; background: transparent;
-  border-top: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
-  border-right: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-top: 2.5px solid var(--border-default);
+  border-right: 2.5px solid var(--border-default);
   border-top-right-radius: 12px;
 }
 .branch-col:only-child::before { display: none; }
 .branch-col--joins::after {
   content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2.5px;
-  background: rgba(var(--v-theme-on-surface), 0.22);
+  background: var(--border-default);
 }
 .branch-col--joins:first-child::after {
   left: calc(50% - 1.25px); height: 16px; background: transparent;
-  border-bottom: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
-  border-left: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-bottom: 2.5px solid var(--border-default);
+  border-left: 2.5px solid var(--border-default);
   border-bottom-left-radius: 12px;
 }
 .branch-col--joins:last-child::after {
   right: calc(50% - 1.25px); left: 0; height: 16px; background: transparent;
-  border-bottom: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
-  border-right: 2.5px solid rgba(var(--v-theme-on-surface), 0.22);
+  border-bottom: 2.5px solid var(--border-default);
+  border-right: 2.5px solid var(--border-default);
   border-bottom-right-radius: 12px;
 }
 .branch-col--joins:only-child::after { display: none; }
@@ -310,8 +310,8 @@ const endsRun = computed(() => {
 /* Outer columns: the elbow's border-left/right already draws the descender —
    keep the stub for spacing but paint it only on middle columns. */
 .branch-stub { width: 2.5px; height: 16px; background: transparent; margin-bottom: 8px; flex-shrink: 0; }
-.branch-col:not(:first-child):not(:last-child) .branch-stub { background: rgba(var(--v-theme-on-surface), 0.22); }
-.branch-drop { flex: 1 1 auto; width: 2.5px; min-height: 14px; background: rgba(var(--v-theme-on-surface), 0.22); margin-top: 8px; }
+.branch-col:not(:first-child):not(:last-child) .branch-stub { background: var(--border-default); }
+.branch-drop { flex: 1 1 auto; width: 2.5px; min-height: 14px; background: var(--border-default); margin-top: 8px; }
 .branch-col--joins:first-child .branch-drop,
 .branch-col--joins:last-child .branch-drop { margin-bottom: 14px; }
 
@@ -320,13 +320,13 @@ const endsRun = computed(() => {
 .branch-empty {
   display: flex; align-items: center; justify-content: center;
   width: 320px; padding: 12px;
-  border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.25);
+  border: 1.5px dashed var(--border-default);
   border-radius: var(--mp-component-card-radius-md); background: transparent; cursor: pointer;
-  color: rgba(var(--v-theme-on-surface), 0.6); transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+  color: var(--text-muted); transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 .branch-empty:hover {
   border-color: rgba(var(--v-theme-primary), 0.6); color: rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.04);
 }
-.branch-empty:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
+.branch-empty:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 </style>

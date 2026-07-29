@@ -17,11 +17,17 @@
 
 [data-theme='dark'],
 .v-application.v-theme--maropostDark {
+  --cloud-commerce-accent: #4ade80;
   --cloud-commerce-text: #86efac;
+  --cloud-marketing-accent: #a78bfa;
   --cloud-marketing-text: #c4b5fd;
+  --cloud-analytics-accent: #60a5fa;
   --cloud-analytics-text: #93c5fd;
+  --cloud-contacts-accent: #22d3ee;
   --cloud-contacts-text: #67e8f9;
+  --cloud-service-accent: #818cf8;
   --cloud-service-text: #a5b4fc;
+  --cloud-retail-accent: #2dd4bf;
   --cloud-retail-text: #5eead4;
   --cloud-retail-link: #5eead4;
   --cloud-retail-link-hover: #99f6e4;

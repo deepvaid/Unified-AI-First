@@ -87,6 +87,20 @@ export const Default: Story = {
    - `src/design-tokens/generated/tokens.ts`
 4. Components referencing these tokens pick up changes via HMR
 
+### SCSS in components
+
+Vite and Storybook inject `src/design-tokens/generated/_variables.scss` globally (`$mp-spacing-*`, `$mp-borderRadius-*`, etc.). Import generated variables explicitly in a `<style>` block only when needed:
+
+```scss
+@use '@/design-tokens/generated/variables' as *;
+```
+
+Do not recreate colours in component SCSS — use semantic CSS aliases (`--text-primary`, `--border-subtle`) or Vuetify theme channels.
+
+### Dark mode
+
+See [`docs/dark-mode/06-theme-architecture.md`](dark-mode/06-theme-architecture.md). Use Storybook **Theme** and **Accent** toolbars to verify components; pinned `DarkMode*` stories document critical categories.
+
 ### Adding a New View
 
 1. Create `src/views/Section/NewPage.vue`

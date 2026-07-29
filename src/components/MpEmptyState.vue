@@ -41,7 +41,7 @@ const hasIllustration = computed(
       </slot>
     </div>
     <div v-else-if="icon" class="mp-empty-state__icon">
-      <v-icon :size="40" color="medium-emphasis">{{ icon }}</v-icon>
+      <v-icon :size="40" class="text-medium-emphasis">{{ icon }}</v-icon>
     </div>
 
     <div class="mp-empty-state__title" role="heading" :aria-level="headingLevel">{{ title }}</div>

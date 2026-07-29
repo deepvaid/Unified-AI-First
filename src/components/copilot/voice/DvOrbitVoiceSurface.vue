@@ -435,7 +435,7 @@ function onGhost() {
 }
 
 .dv-orbit__success-check-icon {
-  color: #ffffff;
+  color: var(--dv-orbit-on-fill);
 }
 
 .dv-orbit__success-text {

@@ -117,10 +117,6 @@ function onKeydown(e: KeyboardEvent) {
 </template>
 
 <style scoped>
-.mp-form-drawer {
-  z-index: 2005;
-}
-
 /* Float the drawer as a rounded surface, like .copilot-drawer — a 12px gutter on
    the right, top and bottom, plus radius, border and a soft shadow. Vuetify sets
    top/height/bottom inline from the layout (top: 56px + bottom: 0 under the app
@@ -134,11 +130,11 @@ function onKeydown(e: KeyboardEvent) {
   margin-top: 12px;
   margin-bottom: 12px;
   margin-right: 12px;
-  border: 1px solid var(--mp-border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: var(--mp-component-dialog-radius-default);
   /* Temporary drawers carry Vuetify's `elevation-0` utility, which sets
      box-shadow with !important — so the soft shell shadow needs it too. */
-  box-shadow: var(--mp-shadow-md) !important;
+  box-shadow: var(--elevation-modal) !important;
   overflow: hidden;
   transition-duration: var(--dur-base);
   transition-timing-function: var(--ease);
@@ -159,7 +155,7 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 .mp-form-drawer__panel {
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-overlay);
 }
 
 .mp-form-drawer__title {
@@ -177,7 +173,7 @@ function onKeydown(e: KeyboardEvent) {
     width: 100vw !important;
     max-width: 100vw !important;
     border: none;
-    border-left: 1px solid var(--mp-border-subtle);
+    border-left: 1px solid var(--border-default);
     border-radius: 0;
   }
 }

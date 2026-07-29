@@ -234,7 +234,7 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
         <v-col cols="12">
           <div class="text-subtitle-2 font-weight-bold mb-2 mt-2">Security</div>
           <v-card flat border rounded="lg" class="pa-3 d-flex align-center ga-3">
-            <v-icon size="18" color="medium-emphasis">key-round</v-icon>
+            <v-icon size="18" class="text-medium-emphasis">key-round</v-icon>
             <div class="flex-grow-1">
               <div class="text-body-2 font-weight-medium">POS PIN</div>
               <div class="text-caption text-medium-emphasis">

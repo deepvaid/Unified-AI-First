@@ -98,8 +98,8 @@ const selectedName = computed(() => {
 
 <style scoped>
 .mp-folder-select__activator {
-  border-color: rgba(var(--v-border-color), var(--v-border-opacity));
-  color: rgb(var(--v-theme-on-surface));
+  border-color: var(--border-default);
+  color: var(--text-primary);
   font-weight: 500;
 }
 

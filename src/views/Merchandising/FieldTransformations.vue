@@ -218,7 +218,7 @@ function doDelete() {
                 icon="more-vertical"
                 variant="text"
                 size="x-small"
-                color="medium-emphasis"
+                class="text-medium-emphasis"
                 aria-label="Row actions"
               />
             </template>

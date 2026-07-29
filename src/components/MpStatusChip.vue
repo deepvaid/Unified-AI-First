@@ -169,6 +169,12 @@ const iconPx = computed(() => (props.size === 'x-small' ? 11 : props.size === 's
   opacity: 0.072;
 }
 
+/* The 0.072 underlay is calibrated for light surfaces and reads as nearly invisible
+   on the darker dark-theme surfaces, so raise it in dark mode only. */
+.v-theme--maropostDark .mp-status-chip.v-chip--variant-tonal :deep(.v-chip__underlay) {
+  opacity: 0.15;
+}
+
 .mp-status-chip__icon {
   color: currentColor;
   flex-shrink: 0;

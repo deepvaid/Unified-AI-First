@@ -312,6 +312,16 @@ withDefaults(defineProps<{
 .tint-indigo { --tile-accent: #4f46e5; --tile-accent-ink: #4338ca; }
 .tint-teal   { --tile-accent: #0d9488; --tile-accent-ink: #0f766e; }
 
+/* Dark surfaces need lightened tints (same hue family) to stay readable. */
+.v-theme--maropostDark .tint-blue   { --tile-accent: #60a5fa; --tile-accent-ink: #93c5fd; }
+.v-theme--maropostDark .tint-violet { --tile-accent: #a78bfa; --tile-accent-ink: #c4b5fd; }
+.v-theme--maropostDark .tint-rose   { --tile-accent: #fb7185; --tile-accent-ink: #fda4af; }
+.v-theme--maropostDark .tint-green  { --tile-accent: #4ade80; --tile-accent-ink: #86efac; }
+.v-theme--maropostDark .tint-amber  { --tile-accent: #fbbf24; --tile-accent-ink: #fcd34d; }
+.v-theme--maropostDark .tint-cyan   { --tile-accent: #22d3ee; --tile-accent-ink: #67e8f9; }
+.v-theme--maropostDark .tint-indigo { --tile-accent: #818cf8; --tile-accent-ink: #a5b4fc; }
+.v-theme--maropostDark .tint-teal   { --tile-accent: #2dd4bf; --tile-accent-ink: #5eead4; }
+
 /* ===== Quick actions ===== */
 .quick-actions {
   display: grid;
@@ -529,18 +539,18 @@ withDefaults(defineProps<{
 }
 
 .activity-row__chip--order {
-  background: color-mix(in oklch, oklch(0.7 0.15 155) 14%, transparent);
-  color: oklch(0.45 0.15 155);
+  background: color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent);
+  color: var(--cloud-commerce-text);
 }
 
 .activity-row__chip--audience {
-  background: color-mix(in oklch, oklch(0.75 0.12 90) 18%, transparent);
-  color: oklch(0.45 0.12 90);
+  background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);
+  color: var(--cloud-contacts-text);
 }
 
 .activity-row__chip--automation {
-  background: color-mix(in oklch, oklch(0.7 0.13 300) 14%, transparent);
-  color: oklch(0.45 0.13 300);
+  background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent);
+  color: var(--cloud-marketing-text);
 }
 
 .activity-row__body {
@@ -602,7 +612,7 @@ withDefaults(defineProps<{
 }
 
 .side-card__chip--davinci {
-  background: linear-gradient(135deg, color-mix(in oklch, var(--accent) 18%, transparent), color-mix(in oklch, oklch(0.7 0.13 300) 18%, transparent));
+  background: linear-gradient(135deg, color-mix(in oklch, var(--accent) 18%, transparent), color-mix(in oklch, var(--cloud-marketing-accent) 18%, transparent));
   color: var(--accent-ink);
 }
 
@@ -642,7 +652,7 @@ withDefaults(defineProps<{
 }
 
 .setup-list__item--done .setup-list__check {
-  color: oklch(0.5 0.15 155);
+  color: var(--pos);
 }
 
 .setup-list__item--done .setup-list__label {

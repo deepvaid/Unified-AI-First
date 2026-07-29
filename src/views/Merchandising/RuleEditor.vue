@@ -357,7 +357,7 @@ function performDelete() {
                         variant="text"
                         size="small"
                         density="comfortable"
-                        color="medium-emphasis"
+                        class="text-medium-emphasis"
                         :aria-label="`Condition actions for ${condition.field}`"
                       />
                     </template>

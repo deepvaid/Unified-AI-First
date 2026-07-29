@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { watch } from 'vue'
 import { CHART_THEMES, type ChartPalette } from '@/plugins/chartPalette'
-import { useAppTheme } from '@/composables/useAppTheme'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
 import type {
@@ -13,13 +12,9 @@ import type {
 import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
 import PaletteScope from './PaletteScope.vue'
 
-// Force light mode — Ross's agreed direction is the light theme; the review happens on a
-// light surface, which the palettes are tuned for. Keep the Da Vinci drawer closed so it
-// never overlaps the side-by-side comparison (it opens during app init).
-const { setMode } = useAppTheme()
+// Keep the Da Vinci drawer closed so it never overlaps the side-by-side comparison.
 const copilot = useCopilotStore()
 watch(() => copilot.isOpen, (open) => { if (open) copilot.close() }, { immediate: true })
-onMounted(() => setMode('light'))
 
 const ACCOUNT_ID = '2000290'
 
@@ -81,16 +76,18 @@ const PANEL_META: PanelMeta[] = [
 
 const panels = PANEL_META.map((meta) => ({
   ...meta,
-  theme: CHART_THEMES[meta.id],
+  theme: CHART_THEMES[meta.id].light,
   liveLink: `/accounts/${ACCOUNT_ID}/dashboard?chart=${meta.id}`,
   widgets: panelWidgets(),
 }))
 
-const blueTheme = CHART_THEMES.blue
+const blueTheme = CHART_THEMES.blue.light
 const blueWidgets = panelWidgets()
 </script>
 
 <template>
+  <!-- Scoped light preview — palettes are tuned for light surfaces; does not mutate stored app theme. -->
+  <v-theme-provider theme="maropostLight" with-background class="ct-light-scope">
   <div class="ct-root">
     <header class="ct-header">
       <p class="ct-eyebrow">SCOP-312 · Gradient chart themes</p>
@@ -176,14 +173,15 @@ const blueWidgets = panelWidgets()
       options; each theme runs on one unified colour axis, validated on a light surface.
     </footer>
   </div>
+  </v-theme-provider>
 </template>
 
 <style scoped>
 .ct-root {
   min-height: 100dvh;
   width: 100%;
-  background: #f9fafb;
-  color: #111827;
+  background: var(--surface-canvas);
+  color: var(--text-primary);
   font-family: Inter, system-ui, sans-serif;
   padding: 40px clamp(16px, 4vw, 56px) 64px;
   box-sizing: border-box;
@@ -199,7 +197,7 @@ const blueWidgets = panelWidgets()
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #1a56db;
+  color: var(--accent-default);
   margin: 0 0 8px;
 }
 .ct-title {
@@ -211,7 +209,7 @@ const blueWidgets = panelWidgets()
 .ct-lede {
   font-size: 15px;
   line-height: 1.6;
-  color: #4b5563;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -224,8 +222,8 @@ const blueWidgets = panelWidgets()
   gap: 24px;
   align-items: center;
   padding: 20px 24px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
 }
 .ct-reference__name {
@@ -235,7 +233,7 @@ const blueWidgets = panelWidgets()
 }
 .ct-reference__note {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin: 0 0 12px;
 }
 .ct-reference__charts {
@@ -254,8 +252,8 @@ const blueWidgets = panelWidgets()
   gap: 24px;
 }
 .ct-panel {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
   border-radius: 16px;
   padding: 24px;
   display: flex;
@@ -278,7 +276,7 @@ const blueWidgets = panelWidgets()
 }
 .ct-panel__tag {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
   margin: 4px 0 14px;
 }
 
@@ -292,8 +290,8 @@ const blueWidgets = panelWidgets()
   letter-spacing: 0.02em;
 }
 .ct-chip--muted {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--surface-secondary);
+  color: var(--text-muted);
 }
 
 /* Swatches — one continuous gradient chip (the theme axis) + the 6 series dots below */
@@ -307,7 +305,7 @@ const blueWidgets = panelWidgets()
   width: 100%;
   height: 28px;
   border-radius: 8px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .ct-dots {
   display: flex;
@@ -317,7 +315,7 @@ const blueWidgets = panelWidgets()
   width: 20px;
   height: 20px;
   border-radius: 999px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 
 /* Widget cells — give the real widget cards a fixed height (the app grid usually sizes them) */
@@ -351,7 +349,7 @@ const blueWidgets = panelWidgets()
   gap: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #1a56db;
+  color: var(--accent-default);
   text-decoration: none;
 }
 .ct-cta:hover {
@@ -363,7 +361,7 @@ const blueWidgets = panelWidgets()
   margin: 40px auto 0;
   text-align: center;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 @media (max-width: 960px) {

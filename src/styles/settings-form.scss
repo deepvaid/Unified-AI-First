@@ -14,12 +14,12 @@
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined {
   border-radius: var(--mp-component-input-radius-default);
   font-size: 14px;
-  background: color-mix(in oklch, var(--surface-2) 55%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
   transition: background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover {
-  background: color-mix(in oklch, var(--surface-2) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
 }
 
 /* Baseline alpha: outline elements render at full opacity — the softness
@@ -67,7 +67,7 @@
 
 /* ── Focused border — primary color, no thickness bump, soft ring */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused {
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline__start,
@@ -83,7 +83,7 @@
 
 /* ── Error border + soft ring ───────────────────────────────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error:not(.v-field--focused) {
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-error), 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, rgb(var(--v-theme-error)) 35%, transparent);
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline__start,
@@ -99,13 +99,42 @@
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--disabled .v-field__input {
-  color: var(--muted);
+  color: var(--text-disabled);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--disabled .v-label {
+  color: var(--text-disabled);
 }
 
 /* ── Details / helper / error text ─────────────────────────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-messages__message {
   font-size: 12px;
   letter-spacing: 0.01em;
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input--error .v-messages__message {
+  color: rgb(var(--v-theme-error));
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input:not(.v-input--error) .v-messages__message {
+  color: var(--text-muted);
+}
+
+/* ── Selection controls — checkbox, radio, switch ───────────── */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-selection-control .v-label {
+  color: var(--text-primary);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-selection-control--disabled .v-label {
+  color: var(--text-disabled);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-selection-control__input::before {
+  border-color: var(--border-default);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-selection-control--focus-visible .v-selection-control__input::before {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
 /* ── Prepend / append inner icon ────────────────────────────── */
@@ -208,7 +237,7 @@
   padding: 16px 0 2px;
   margin-top: 4px;
   border-top: 1px solid var(--hairline);
-  background: linear-gradient(180deg, transparent 0, rgb(var(--v-theme-background)) 24px);
+  background: linear-gradient(180deg, transparent 0, rgb(var(--v-theme-surface)) 24px);
   z-index: 2;
 }
 

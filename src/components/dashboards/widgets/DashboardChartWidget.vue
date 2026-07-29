@@ -3,8 +3,15 @@ import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref
 import { useTheme } from 'vuetify'
 import type { ApexOptions } from 'apexcharts'
 import type { DashboardChartVariant, DashboardSeriesData, DashboardWidgetType } from '@/stores/dashboards/types'
-import { applyChartTheme, activeChartTheme, CHART_PALETTE_OVERRIDE, tintHex, type ChartTheme } from '@/plugins/chartPalette'
+import {
+  CHART_PALETTE_OVERRIDE,
+  chartLegendOptions,
+  tintHex,
+  useChartTheme,
+  type ChartTheme,
+} from '@/plugins/chartPalette'
 import { useAppTheme } from '@/composables/useAppTheme'
+import { useElementSize } from '@/composables/useElementSize'
 
 const props = withDefaults(defineProps<{
   data: DashboardSeriesData
@@ -63,8 +70,6 @@ function formatAxisValue(value: number, unit: DashboardSeriesData['unit']): stri
   return value >= 1000 ? `${Math.round(value / 1000)}k` : `${Math.round(value)}`
 }
 
-// Per-bar floating labels need one decimal of precision below 10k — whole-k rounding
-// makes neighbouring bars read as identical (e.g. four "$4k" labels).
 function formatBarLabel(value: number, unit: DashboardSeriesData['unit']): string {
   if (unit === 'percent') return `${value.toFixed(0)}%`
   const prefix = unit === 'currency' ? '$' : ''
@@ -79,22 +84,38 @@ const chartHeight = computed(() => {
   return Math.max(120, props.height - 4)
 })
 
+// Measure `.dashboard-chart-widget` itself (the overflow: hidden clipping
+// box) rather than trusting `props.height`, which is the parent card body's
+// size and includes padding this element doesn't have.
+const rootEl = ref<HTMLElement | null>(null)
+const { size: rootSize } = useElementSize(rootEl)
+
+// The Apex tooltip normally follows the cursor, which is the right default —
+// it never covers the axis/legend chrome. It only needs to be pinned when the
+// tooltip itself is taller than the clipping box above: follow-cursor can
+// then flip the tooltip above the hover point and past the container's top
+// edge. A rough tooltip-height estimate (title row + one row per series,
+// calibrated against a real 6-series tooltip measuring 235px) tells us when
+// that's actually at risk, instead of pinning unconditionally in every
+// widget/theme regardless of size — which just traded occasional clipping
+// for the tooltip permanently covering the y-axis and legend.
+const estimatedTooltipHeight = computed(() => 40 + props.data.series.length * 32)
+const tooltipNeedsPinning = computed(
+  () => rootSize.value.height > 0 && rootSize.value.height < estimatedTooltipHeight.value,
+)
+
 const { accentHex } = useAppTheme()
-// A theme pinned by an ancestor (the /chart-themes compare page) wins over both the
-// global theme and the accent-first override, so each panel shows its true colours.
+const { theme, applyChartTheme } = useChartTheme()
 const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
-const theme = computed<ChartTheme>(() => unref(themeOverride) ?? activeChartTheme.value)
-const palette = computed<string[]>(() => theme.value.series)
-const gradientMarks = computed(() => theme.value.gradientMarks)
+const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
+const gradientMarks = computed(() => resolvedTheme.value.gradientMarks)
 const vuetifyTheme = useTheme()
 const markerStrokeColor = computed(() => (
   vuetifyTheme.global.current.value.dark
-    ? 'rgb(var(--v-theme-surface))'
+    ? vuetifyTheme.global.current.value.colors.surface
     : '#ffffff'
 ))
-const base = applyChartTheme()
 
-// For single-series bar charts, distribute palette colors across categories.
 const isDistributedBar = computed(
   () => props.widgetType === 'bar' && props.data.series.length <= 1,
 )
@@ -105,53 +126,32 @@ const isHorizontalBar = computed(
 
 const apexChartType = computed<'area' | 'line' | 'bar'>(() => {
   if (props.widgetType === 'bar') return 'bar'
-  // timeseries
   if (props.chartVariant === 'line') return 'line'
   return 'area'
 })
 
-// Show a synthetic "Previous" dashed-gray overlay for single-series timeseries charts.
-const showPreviousOverlay = computed(
-  () => props.widgetType === 'timeseries' && props.data.series.length === 1,
-)
-
-// Synthesize a Previous series scaled down by ~15% for visual reference.
-const chartSeries = computed(() => {
-  if (!showPreviousOverlay.value) return props.data.series
-  const current = props.data.series[0]!
-  const previousData = (current.data as number[]).map((v) =>
-    typeof v === 'number' ? Math.round(v * 0.85) : v,
-  )
-  return [current, { name: 'Previous', data: previousData }]
-})
-
-const lastDataPointIndex = computed(() => {
-  if (!props.data.series[0]) return 0
-  return (props.data.series[0].data as number[]).length - 1
-})
+const chartSeries = computed(() => props.data.series)
 
 const chartOptions = computed<ApexOptions>(() => {
-  const isPrev = showPreviousOverlay.value
+  const base = applyChartTheme.value()
+  const activePalette = resolvedTheme.value.series
+  const chrome = resolvedTheme.value.chrome
   const gm = gradientMarks.value
   const isBar = props.widgetType === 'bar'
   const isVerticalBar = isBar && !isHorizontalBar.value
   const singleOrDistributedBar = isDistributedBar.value || props.data.series.length === 1
-  // Floating value labels: only for vertical bar charts with a small number of columns.
   const floatingBarLabels = gm && isVerticalBar && props.data.labels.length <= 8
+  const showLegend = props.data.series.length > 1
 
-  // Hyper-style gradient fill; when gradientMarks is off this falls through to today's fill.
   const gradientFill = (): ApexOptions['fill'] => {
     if (isBar) {
       if (isVerticalBar && singleOrDistributedBar) {
-        // One through-mark vertical gradient shared by all bars: bright end at the top
-        // (offset 0), deep end at the bottom (offset 100).
-        const stops = theme.value.axis
+        const stops = resolvedTheme.value.axis
           .slice()
           .reverse()
           .map((color, i, arr) => ({ offset: i * (100 / (arr.length - 1)), color, opacity: 1 }))
         return { type: 'gradient', gradient: { type: 'vertical', colorStops: stops } }
       }
-      // Multi-series bars (vertical or horizontal): per-series gradient toward a tint.
       return {
         type: 'gradient',
         gradient: {
@@ -159,7 +159,7 @@ const chartOptions = computed<ApexOptions>(() => {
           shadeIntensity: 0,
           opacityFrom: 1,
           opacityTo: 0.92,
-          gradientToColors: palette.value.map((c) => tintHex(c, 0.45)),
+          gradientToColors: activePalette.map((c) => tintHex(c, 0.45)),
         },
       }
     }
@@ -169,33 +169,31 @@ const chartOptions = computed<ApexOptions>(() => {
         gradient: { shadeIntensity: 0.18, opacityFrom: 0.45, opacityTo: 0.03, stops: [0, 96, 100] },
       }
     }
-    // Single-series line: gradient stroke running along the x-axis through the theme axis.
     if (props.chartVariant === 'line' && props.data.series.length === 1) {
-      const stops = theme.value.axis.map((color, i, arr) => ({
+      const stops = resolvedTheme.value.axis.map((color, i, arr) => ({
         offset: i * (100 / (arr.length - 1)),
         color,
         opacity: 1,
       }))
       return { type: 'gradient', gradient: { type: 'horizontal', colorStops: stops } }
     }
-    // Multi-series line: keep solid per-series strokes (glow via chart.dropShadow only).
     return { type: 'solid' }
   }
 
+  const seriesColors = (themeOverride || gm)
+    ? activePalette
+    : [accentHex.value, ...activePalette.slice(1)]
+
   return {
     ...base,
-    colors: (themeOverride || gm)
-      ? palette.value
-      : isPrev
-        ? [accentHex.value, '#75D6FF']
-        : [accentHex.value, ...palette.value.slice(1)],
+    colors: seriesColors,
     chart: {
       ...base.chart,
       sparkline: { enabled: false },
       zoom: { enabled: false },
       redrawOnParentResize: false,
       ...(gm && props.widgetType === 'timeseries'
-        ? { dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: 0.16, color: palette.value[0] } }
+        ? { dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: 0.16, color: activePalette[0] } }
         : {}),
     },
     ...(floatingBarLabels
@@ -203,8 +201,12 @@ const chartOptions = computed<ApexOptions>(() => {
       : {}),
     stroke: {
       curve: 'smooth',
-      width: isPrev ? [3, 2] : (props.widgetType === 'timeseries' ? 3 : 0),
-      ...(isPrev ? { dashArray: [0, 6] } : {}),
+      width: props.widgetType === 'timeseries'
+        ? props.data.series.map((_, i) => (i === 0 ? 3 : 2))
+        : 0,
+      dashArray: props.widgetType === 'timeseries' && props.data.series.length > 1
+        ? props.data.series.map((_, i) => (i === 0 ? 0 : 6))
+        : undefined,
     },
     plotOptions: {
       bar: {
@@ -216,40 +218,28 @@ const chartOptions = computed<ApexOptions>(() => {
         ...(floatingBarLabels ? { dataLabels: { position: 'top' } } : {}),
       },
     },
-    fill: isPrev
-      ? {
-          type: 'gradient',
+    fill: gm
+      ? gradientFill()
+      : {
+          type: apexChartType.value === 'area' ? 'gradient' : 'solid',
           gradient: {
             shadeIntensity: 0.18,
-            opacityFrom: 0.34,
+            opacityFrom: 0.36,
             opacityTo: 0.02,
             stops: [0, 96, 100],
           },
-        }
-      : gm
-        ? gradientFill()
-        : {
-            type: apexChartType.value === 'area' ? 'gradient' : 'solid',
-            gradient: {
-              shadeIntensity: 0.18,
-              opacityFrom: 0.36,
-              opacityTo: 0.02,
-              stops: [0, 96, 100],
-            },
-          },
-    ...(isPrev
+        },
+    ...(props.widgetType === 'timeseries' && props.data.series.length === 1
       ? {
           markers: {
             size: 0,
-            discrete: [
-              {
-                seriesIndex: 0,
-                dataPointIndex: lastDataPointIndex.value,
-                fillColor: accentHex.value,
-                strokeColor: markerStrokeColor.value,
-                size: 5,
-              },
-            ],
+            discrete: [{
+              seriesIndex: 0,
+              dataPointIndex: (props.data.series[0]?.data as number[]).length - 1,
+              fillColor: accentHex.value,
+              strokeColor: markerStrokeColor.value,
+              size: 5,
+            }],
             hover: { size: 5 },
           },
         }
@@ -261,13 +251,13 @@ const chartOptions = computed<ApexOptions>(() => {
           style: {
             fontSize: '11px',
             fontWeight: 600,
-            colors: ['rgba(var(--v-theme-on-surface), 0.72)'],
+            colors: [chrome.axisLabel],
           },
           formatter: (value: number) => formatBarLabel(value, props.data.unit),
         }
       : { enabled: false },
-    legend: (isPrev || props.data.series.length > 1)
-      ? { show: true, position: 'top', horizontalAlign: 'right', fontSize: '12px', fontWeight: 500 }
+    legend: showLegend
+      ? chartLegendOptions(activePalette, chrome, 'top')
       : { show: false },
     xaxis: {
       ...base.xaxis,
@@ -281,7 +271,7 @@ const chartOptions = computed<ApexOptions>(() => {
       labels: {
         formatter: (value: number) => formatAxisValue(value, props.data.unit),
         style: {
-          colors: 'rgba(var(--v-theme-on-surface), 0.55)',
+          colors: chrome.axisLabel,
           fontSize: '12px',
           fontWeight: 500,
         },
@@ -289,6 +279,18 @@ const chartOptions = computed<ApexOptions>(() => {
     },
     tooltip: {
       ...base.tooltip,
+      // Only pin the tooltip (see `tooltipNeedsPinning` above) when it's
+      // genuinely too tall for the widget to show it follow-cursor without
+      // clipping — same geometry issue in both themes, so no theme branch.
+      // Pin to top-right rather than top-left: the y-axis scale sits at the
+      // left of every widget, so anchoring right keeps it clear (bottomRight
+      // was tried and rejected — Apex anchors bottom-pinned tooltips to the
+      // plot's own height, not the widget's, which pushed a too-tall tooltip
+      // past the *top* edge by more than the ~8px topLeft/topRight ever clip
+      // at the bottom).
+      fixed: tooltipNeedsPinning.value
+        ? { enabled: true, position: 'topRight', offsetX: -4, offsetY: 0 }
+        : { enabled: false },
       y: {
         formatter: (value: number) => formatAxisValue(value, props.data.unit),
       },
@@ -298,7 +300,7 @@ const chartOptions = computed<ApexOptions>(() => {
 </script>
 
 <template>
-  <div class="dashboard-chart-widget">
+  <div ref="rootEl" class="dashboard-chart-widget">
     <ApexChart
       v-if="chartReady"
       :height="chartHeight"

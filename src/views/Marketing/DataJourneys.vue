@@ -168,7 +168,7 @@ function createDataJourney() {
           <div class="action-btns d-flex align-center">
             <v-tooltip text="Edit in builder" location="top">
               <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" icon="pencil" variant="text" size="x-small" color="medium-emphasis"
+                <v-btn v-bind="props" icon="pencil" variant="text" size="x-small" class="text-medium-emphasis"
                   aria-label="Edit in builder" @click="openBuilder(item.id)"></v-btn>
               </template>
             </v-tooltip>

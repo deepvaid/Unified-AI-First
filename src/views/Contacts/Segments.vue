@@ -289,7 +289,7 @@ function confirmDelete() {
               icon="x"
               variant="text"
               size="x-small"
-              color="medium-emphasis"
+              class="text-medium-emphasis"
               aria-label="Remove criteria"
               :disabled="rule.criteria.length === 1"
               @click="removeCriterion(rule, crit.id)"

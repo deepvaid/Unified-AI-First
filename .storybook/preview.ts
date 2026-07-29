@@ -45,6 +45,9 @@ const storybookRouter = createRouter({
 
 void storybookRouter.push('/accounts/2000290/dashboard')
 
+type ThemeMode = 'light' | 'dark'
+type AccentKey = 'cyan' | 'blue' | 'gray' | 'purple'
+
 // ── Register plugins globally for all stories ──────────────────────────────
 setup((app) => {
   app.use(vuetify)
@@ -52,31 +55,46 @@ setup((app) => {
   app.use(storybookRouter)
 })
 
-function normalizeTheme(theme: string) {
+function normalizeTheme(theme: string): ThemeMode {
   return theme === 'maropostDark' || theme === 'dark' ? 'dark' : 'light'
 }
 
-function syncDocumentTheme(theme: 'light' | 'dark') {
+function normalizeAccent(accent: string): AccentKey {
+  if (accent === 'blue' || accent === 'gray' || accent === 'purple') return accent
+  return 'cyan'
+}
+
+/**
+ * Mirrors useAppTheme's applyMode (data-theme on <html>), plus stamps the
+ * Vuetify theme class on <body>. In the real app, <body> sits inside the
+ * v-app root so it inherits --v-theme-background from Vuetify's global
+ * theme class; in Storybook the story tree is wrapped in a nested
+ * <v-theme-provider> instead, which scopes those CSS variables to its own
+ * subtree and never reaches its <body> ancestor. Without this, global.scss's
+ * `body { background: rgb(var(--v-theme-background)) }` falls back to the
+ * default (light) theme regardless of the selected Storybook theme.
+ */
+function syncDocumentTheme(theme: ThemeMode) {
   if (typeof document === 'undefined') {
     return
   }
 
-  const isDark = theme === 'dark'
+  document.documentElement.dataset.theme = theme
+  document.body.classList.toggle('v-theme--maropostDark', theme === 'dark')
+  document.body.classList.toggle('v-theme--maropostLight', theme !== 'dark')
+}
+
+/** Mirrors useAppTheme accent bridge — cyan has no data-accent attribute. */
+function syncDocumentAccent(accent: AccentKey) {
+  if (typeof document === 'undefined') {
+    return
+  }
+
   const root = document.documentElement
-  const body = document.body
-
-  root.dataset.theme = theme
-  root.classList.toggle('theme-dark', isDark)
-  root.classList.toggle('theme-light', !isDark)
-  root.classList.toggle('v-theme--dark', isDark)
-  root.classList.toggle('v-theme--light', !isDark)
-
-  if (body) {
-    body.dataset.theme = theme
-    body.classList.toggle('theme-dark', isDark)
-    body.classList.toggle('theme-light', !isDark)
-    body.classList.toggle('v-theme--dark', isDark)
-    body.classList.toggle('v-theme--light', !isDark)
+  if (accent === 'cyan') {
+    delete root.dataset.accent
+  } else {
+    root.dataset.accent = accent
   }
 }
 
@@ -95,21 +113,39 @@ const preview: Preview = {
         dynamicTitle: true,
       },
     },
+    accent: {
+      description: 'Brand accent preset (maps to accent-presets.css)',
+      toolbar: {
+        title: 'Accent',
+        icon: 'circlehollow',
+        items: [
+          { value: 'cyan', title: 'Cyan (default)' },
+          { value: 'blue', title: 'Blue' },
+          { value: 'gray', title: 'Gray' },
+          { value: 'purple', title: 'Purple' },
+        ],
+        dynamicTitle: true,
+      },
+    },
   },
   initialGlobals: {
     theme: 'light',
+    accent: 'cyan',
   },
   decorators: [
     (story, context) => ({
       components: { story },
       setup() {
         const theme = normalizeTheme(String(context.globals.theme ?? 'light'))
+        const accent = normalizeAccent(String(context.globals.accent ?? 'cyan'))
         const vuetifyTheme = theme === 'dark' ? 'maropostDark' : 'maropostLight'
 
         syncDocumentTheme(theme)
+        syncDocumentAccent(accent)
 
         return {
           theme,
+          accent,
           vuetifyTheme,
         }
       },
@@ -118,6 +154,7 @@ const preview: Preview = {
           class="mp-storybook-root"
           :class="theme === 'dark' ? 'mp-storybook-root--dark' : 'mp-storybook-root--light'"
           :data-theme="theme"
+          :data-accent="accent === 'cyan' ? undefined : accent"
           data-visual-root
         >
           <v-app>
@@ -163,6 +200,11 @@ if (typeof document !== 'undefined' && !document.getElementById('mp-storybook-pr
 
     .mp-storybook-root .v-application {
       background: transparent;
+    }
+
+    .mp-storybook-root .mp-story-canvas {
+      background: var(--surface-canvas, rgb(var(--v-theme-background)));
+      min-height: calc(100vh - 48px);
     }
   `
   document.head.appendChild(style)

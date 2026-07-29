@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 import MpDataTableToolbar from './MpDataTableToolbar.vue'
 import MpFloatingBulkBar from './MpFloatingBulkBar.vue'
 import { ref, computed } from 'vue'
@@ -601,4 +602,9 @@ export const FullFeatured: Story = {
     filterTitle: 'Contact filters',
     filterSubtitle: 'Narrow the table by status and list',
   },
+}
+
+export const DarkMode: Story = {
+  globals: darkModeGlobals,
+  ...Default,
 }

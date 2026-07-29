@@ -1,59 +1,134 @@
 /**
- * Accent Presets — runtime override of primary / accent CSS vars.
- * Applied via [data-accent="..."] on <html>. Default (cyan) requires no attribute.
- * Each block overrides both Vuetify theme variables (on .v-theme--*) and
- * the semantic --accent / --accent-ink / --accent-soft aliases (on :root).
+ * Accent Presets — CSS-only overrides for non-default accents.
+ * Applied via [data-accent="..."] on <html>. Cyan remains the canonical
+ * token-backed Vuetify theme, so no cyan selector is needed.
  */
 
-/* Cyan (default) — no attribute needed, values come from tokens.json */
-
 /* ─── Blue ─────────────────────────────────────────────────── */
-[data-accent="blue"] {
-  --accent: #2D63E8;
-  --accent-fg: #ffffff;
-  --accent-ink: #1E449B;
-  --accent-soft: color-mix(in oklch, #2D63E8 12%, transparent);
+[data-accent="blue"] .v-theme--maropostLight {
+  --v-theme-primary: var(--mp-rgb-color-light-accent-blue-default);
+  --v-theme-info: var(--mp-rgb-color-light-accent-blue-default);
+  --v-theme-on-primary: var(--mp-rgb-color-light-accent-blue-onAccent);
+  --v-theme-primary-container: var(--mp-rgb-color-light-accent-blue-container);
+  --v-theme-on-primary-container: var(--mp-rgb-color-light-accent-blue-onContainer);
+  --accent-default: var(--mp-color-light-accent-blue-default);
+  --accent-hover: var(--mp-color-light-accent-blue-hover);
+  --accent-active: var(--mp-color-light-accent-blue-active);
+  --accent-selected-bg: var(--mp-color-light-accent-blue-selectedBackground);
+  --accent-subtle-bg: var(--mp-color-light-accent-blue-subtleBackground);
+  --accent-focus-ring: var(--mp-color-light-accent-blue-focusRing);
+  --accent-on: var(--mp-color-light-accent-blue-onAccent);
+  --accent-container: var(--mp-color-light-accent-blue-container);
+  --accent-on-container: var(--mp-color-light-accent-blue-onContainer);
+  --accent: var(--accent-default);
+  --accent-fg: var(--accent-on);
+  --accent-ink: var(--accent-active);
+  --accent-soft: var(--accent-subtle-bg);
 }
-[data-accent="blue"] .v-theme--maropostLight,
+
 [data-accent="blue"] .v-theme--maropostDark {
-  --v-theme-primary: 45, 99, 232;
-  --v-theme-on-primary: 255, 255, 255;
-  --v-theme-primary-container: 235, 240, 255;
-  --v-theme-on-primary-container: 30, 68, 155;
-  --v-theme-info: 45, 99, 232;
-  --v-theme-secondary: 45, 99, 232;
+  --v-theme-primary: var(--mp-rgb-color-dark-accent-blue-default);
+  --v-theme-info: var(--mp-rgb-color-dark-accent-blue-default);
+  --v-theme-on-primary: var(--mp-rgb-color-dark-accent-blue-onAccent);
+  --v-theme-primary-container: var(--mp-rgb-color-dark-accent-blue-container);
+  --v-theme-on-primary-container: var(--mp-rgb-color-dark-accent-blue-onContainer);
+  --accent-default: var(--mp-color-dark-accent-blue-default);
+  --accent-hover: var(--mp-color-dark-accent-blue-hover);
+  --accent-active: var(--mp-color-dark-accent-blue-active);
+  --accent-selected-bg: var(--mp-color-dark-accent-blue-selectedBackground);
+  --accent-subtle-bg: var(--mp-color-dark-accent-blue-subtleBackground);
+  --accent-focus-ring: var(--mp-color-dark-accent-blue-focusRing);
+  --accent-on: var(--mp-color-dark-accent-blue-onAccent);
+  --accent-container: var(--mp-color-dark-accent-blue-container);
+  --accent-on-container: var(--mp-color-dark-accent-blue-onContainer);
+  --accent: var(--accent-default);
+  --accent-fg: var(--accent-on);
+  --accent-ink: var(--accent-on-container);
+  --accent-soft: var(--accent-subtle-bg);
 }
 
 /* ─── Gray ─────────────────────────────────────────────────── */
-[data-accent="gray"] {
-  --accent: #4B5563;
-  --accent-fg: #ffffff;
-  --accent-ink: #1F2937;
-  --accent-soft: color-mix(in oklch, #4B5563 12%, transparent);
+[data-accent="gray"] .v-theme--maropostLight {
+  --v-theme-primary: var(--mp-rgb-color-light-accent-gray-default);
+  --v-theme-info: var(--mp-rgb-color-light-accent-gray-default);
+  --v-theme-on-primary: var(--mp-rgb-color-light-accent-gray-onAccent);
+  --v-theme-primary-container: var(--mp-rgb-color-light-accent-gray-container);
+  --v-theme-on-primary-container: var(--mp-rgb-color-light-accent-gray-onContainer);
+  --accent-default: var(--mp-color-light-accent-gray-default);
+  --accent-hover: var(--mp-color-light-accent-gray-hover);
+  --accent-active: var(--mp-color-light-accent-gray-active);
+  --accent-selected-bg: var(--mp-color-light-accent-gray-selectedBackground);
+  --accent-subtle-bg: var(--mp-color-light-accent-gray-subtleBackground);
+  --accent-focus-ring: var(--mp-color-light-accent-gray-focusRing);
+  --accent-on: var(--mp-color-light-accent-gray-onAccent);
+  --accent-container: var(--mp-color-light-accent-gray-container);
+  --accent-on-container: var(--mp-color-light-accent-gray-onContainer);
+  --accent: var(--accent-default);
+  --accent-fg: var(--accent-on);
+  --accent-ink: var(--accent-active);
+  --accent-soft: var(--accent-subtle-bg);
 }
-[data-accent="gray"] .v-theme--maropostLight,
+
 [data-accent="gray"] .v-theme--maropostDark {
-  --v-theme-primary: 75, 85, 99;
-  --v-theme-on-primary: 255, 255, 255;
-  --v-theme-primary-container: 229, 231, 235;
-  --v-theme-on-primary-container: 31, 41, 55;
-  --v-theme-info: 75, 85, 99;
-  --v-theme-secondary: 75, 85, 99;
+  --v-theme-primary: var(--mp-rgb-color-dark-accent-gray-default);
+  --v-theme-info: var(--mp-rgb-color-dark-accent-gray-default);
+  --v-theme-on-primary: var(--mp-rgb-color-dark-accent-gray-onAccent);
+  --v-theme-primary-container: var(--mp-rgb-color-dark-accent-gray-container);
+  --v-theme-on-primary-container: var(--mp-rgb-color-dark-accent-gray-onContainer);
+  --accent-default: var(--mp-color-dark-accent-gray-default);
+  --accent-hover: var(--mp-color-dark-accent-gray-hover);
+  --accent-active: var(--mp-color-dark-accent-gray-active);
+  --accent-selected-bg: var(--mp-color-dark-accent-gray-selectedBackground);
+  --accent-subtle-bg: var(--mp-color-dark-accent-gray-subtleBackground);
+  --accent-focus-ring: var(--mp-color-dark-accent-gray-focusRing);
+  --accent-on: var(--mp-color-dark-accent-gray-onAccent);
+  --accent-container: var(--mp-color-dark-accent-gray-container);
+  --accent-on-container: var(--mp-color-dark-accent-gray-onContainer);
+  --accent: var(--accent-default);
+  --accent-fg: var(--accent-on);
+  --accent-ink: var(--accent-on-container);
+  --accent-soft: var(--accent-subtle-bg);
 }
 
 /* ─── Purple ───────────────────────────────────────────────── */
-[data-accent="purple"] {
-  --accent: #8B5CF6;
-  --accent-fg: #ffffff;
-  --accent-ink: #6D28D9;
-  --accent-soft: color-mix(in oklch, #8B5CF6 12%, transparent);
+[data-accent="purple"] .v-theme--maropostLight {
+  --v-theme-primary: var(--mp-rgb-color-light-accent-purple-default);
+  --v-theme-info: var(--mp-rgb-color-light-accent-purple-default);
+  --v-theme-on-primary: var(--mp-rgb-color-light-accent-purple-onAccent);
+  --v-theme-primary-container: var(--mp-rgb-color-light-accent-purple-container);
+  --v-theme-on-primary-container: var(--mp-rgb-color-light-accent-purple-onContainer);
+  --accent-default: var(--mp-color-light-accent-purple-default);
+  --accent-hover: var(--mp-color-light-accent-purple-hover);
+  --accent-active: var(--mp-color-light-accent-purple-active);
+  --accent-selected-bg: var(--mp-color-light-accent-purple-selectedBackground);
+  --accent-subtle-bg: var(--mp-color-light-accent-purple-subtleBackground);
+  --accent-focus-ring: var(--mp-color-light-accent-purple-focusRing);
+  --accent-on: var(--mp-color-light-accent-purple-onAccent);
+  --accent-container: var(--mp-color-light-accent-purple-container);
+  --accent-on-container: var(--mp-color-light-accent-purple-onContainer);
+  --accent: var(--accent-default);
+  --accent-fg: var(--accent-on);
+  --accent-ink: var(--accent-active);
+  --accent-soft: var(--accent-subtle-bg);
 }
-[data-accent="purple"] .v-theme--maropostLight,
+
 [data-accent="purple"] .v-theme--maropostDark {
-  --v-theme-primary: 139, 92, 246;
-  --v-theme-on-primary: 255, 255, 255;
-  --v-theme-primary-container: 237, 233, 254;
-  --v-theme-on-primary-container: 76, 29, 149;
-  --v-theme-info: 139, 92, 246;
-  --v-theme-secondary: 139, 92, 246;
+  --v-theme-primary: var(--mp-rgb-color-dark-accent-purple-default);
+  --v-theme-info: var(--mp-rgb-color-dark-accent-purple-default);
+  --v-theme-on-primary: var(--mp-rgb-color-dark-accent-purple-onAccent);
+  --v-theme-primary-container: var(--mp-rgb-color-dark-accent-purple-container);
+  --v-theme-on-primary-container: var(--mp-rgb-color-dark-accent-purple-onContainer);
+  --accent-default: var(--mp-color-dark-accent-purple-default);
+  --accent-hover: var(--mp-color-dark-accent-purple-hover);
+  --accent-active: var(--mp-color-dark-accent-purple-active);
+  --accent-selected-bg: var(--mp-color-dark-accent-purple-selectedBackground);
+  --accent-subtle-bg: var(--mp-color-dark-accent-purple-subtleBackground);
+  --accent-focus-ring: var(--mp-color-dark-accent-purple-focusRing);
+  --accent-on: var(--mp-color-dark-accent-purple-onAccent);
+  --accent-container: var(--mp-color-dark-accent-purple-container);
+  --accent-on-container: var(--mp-color-dark-accent-purple-onContainer);
+  --accent: var(--accent-default);
+  --accent-fg: var(--accent-on);
+  --accent-ink: var(--accent-on-container);
+  --accent-soft: var(--accent-subtle-bg);
 }

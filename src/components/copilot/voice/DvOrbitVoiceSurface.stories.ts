@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvOrbitVoiceSurface from './DvOrbitVoiceSurface.vue'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 // Global orbit keyframes (ripple, bars, dots, blink, shimmer) — imported by
 // src/main.ts in the app; pulled in here for the Storybook preview bundle.
 import '@/styles/dv-orbit.css'
@@ -142,4 +143,9 @@ export const PermissionDenied: Story = {
 /** Paused — dim slow orb, muted mic with slash. */
 export const Paused: Story = {
   args: { state: 'paused' },
+}
+
+export const DarkModeListening: Story = {
+  globals: darkModeGlobals,
+  ...Listening,
 }

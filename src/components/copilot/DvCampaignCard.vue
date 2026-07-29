@@ -42,23 +42,23 @@ const emit = defineEmits<{
 
       <div class="d-flex flex-column ga-2 text-body-2">
         <div class="d-flex align-center ga-2">
-          <v-icon size="14" color="medium-emphasis">text</v-icon>
+          <v-icon size="14" class="text-medium-emphasis">text</v-icon>
           <span class="campaign-card__label text-medium-emphasis">Subject</span>
           <span class="font-weight-medium">{{ subject }}</span>
         </div>
         <div class="d-flex align-center ga-2">
-          <v-icon size="14" color="medium-emphasis">users</v-icon>
+          <v-icon size="14" class="text-medium-emphasis">users</v-icon>
           <span class="campaign-card__label text-medium-emphasis">Audience</span>
           <span class="font-weight-medium">{{ audience }}</span>
           <v-chip size="x-small" variant="tonal" color="primary">{{ audienceSize.toLocaleString() }}</v-chip>
         </div>
         <div class="d-flex align-center ga-2">
-          <v-icon size="14" color="medium-emphasis">clock</v-icon>
+          <v-icon size="14" class="text-medium-emphasis">clock</v-icon>
           <span class="campaign-card__label text-medium-emphasis">Send</span>
           <span class="font-weight-medium">{{ sendTime }}</span>
         </div>
         <div class="d-flex align-center ga-2">
-          <v-icon size="14" color="medium-emphasis">send</v-icon>
+          <v-icon size="14" class="text-medium-emphasis">send</v-icon>
           <span class="campaign-card__label text-medium-emphasis">Channel</span>
           <span class="font-weight-medium">{{ channel }}</span>
         </div>

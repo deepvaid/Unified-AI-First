@@ -1122,7 +1122,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   background: var(--sidebar-bg);
   cursor: pointer;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.30), 0 1px 2px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--elevation-raised);
   transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 
@@ -1135,7 +1135,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .sidebar-toggle-pill:hover {
   background: color-mix(in oklch, var(--sidebar-bg) 86%, var(--sidebar-text));
   border-color: color-mix(in oklch, var(--sidebar-text) 50%, transparent);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.40), 0 1px 4px rgba(0, 0, 0, 0.20);
+  box-shadow: var(--elevation-overlay);
 }
 
 .sidebar-toggle-pill:hover :deep(.v-icon) {
@@ -1145,7 +1145,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .sidebar-toggle-pill:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--sidebar-focus-ring),
-              0 2px 8px rgba(0, 0, 0, 0.35);
+              var(--elevation-raised);
 }
 
 /* Anchored variant — sits half-outside the header's right edge */
@@ -1154,7 +1154,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   top: 50%;
   right: -12px;
   transform: translateY(-50%);
-  z-index: 1010;
+  z-index: var(--mp-zIndex-navSidebarTogglePill);
   transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1),
               background var(--dur-fast) var(--ease),
               border-color var(--dur-fast) var(--ease),
@@ -1439,7 +1439,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .sidebar-expanded-flyout {
   position: fixed;
   left: 240px;
-  z-index: 1005;
+  z-index: var(--mp-zIndex-navSidebarFlyout);
 }
 
 /* Rail flyout — single card (tokens: sidebar-dark.css + light defaults below) */

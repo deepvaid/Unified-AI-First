@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { DashboardSeriesData } from '@/stores/dashboards/types'
 import DashboardChartWidget from './DashboardChartWidget.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const REVENUE_SERIES: DashboardSeriesData = {
   kind: 'series',
@@ -28,7 +29,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'ApexCharts body for timeseries and bar widgets. Single-series timeseries charts get a synthetic dashed "Previous" overlay; single-series bar charts distribute palette colors across categories. Shows a skeleton until the chart lazily mounts.',
+          'ApexCharts body for timeseries and bar widgets. Multi-series charts use dashed secondary strokes and explicit legend marker colours. Single-series bar charts distribute palette colors across categories. Shows a skeleton until the chart lazily mounts.',
       },
     },
   },
@@ -59,6 +60,11 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const TimeseriesArea: Story = {}
+
+export const DarkModeTimeseries: Story = {
+  globals: darkModeGlobals,
+  ...TimeseriesArea,
+}
 
 export const TimeseriesLine: Story = {
   args: { chartVariant: 'line' },

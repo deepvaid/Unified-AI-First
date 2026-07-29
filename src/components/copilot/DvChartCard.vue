@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { activeChartPalette } from '@/plugins/chartPalette'
+import { useChartTheme } from '@/plugins/chartPalette'
 
 defineProps<{
   title?: string
@@ -9,7 +9,8 @@ defineProps<{
   seriesNames?: string[]
 }>()
 
-const colors = activeChartPalette
+const { palette } = useChartTheme()
+const colors = palette
 
 function getMax(bars: number[][]) {
   return Math.max(...bars.map(b => b.reduce((s, v) => s + v, 0)))
@@ -65,7 +66,28 @@ function getMax(bars: number[][]) {
 .chart-x-label { font-size: var(--mp-typography-fontSize-xs); }
 .chart-legend-dot { width: 8px; height: 8px; border-radius: var(--mp-borderRadius-full); }
 .chart-area { display: flex; gap: var(--mp-spacing-1); height: 140px; }
-.chart-y-labels { display: flex; flex-direction: column; justify-content: space-between; font-size: var(--mp-typography-fontSize-xs); color: rgba(var(--v-theme-on-surface), 0.45); min-width: 36px; text-align: right; padding-right: 6px; }
-.chart-bars-wrap { display: flex; align-items: flex-end; gap: 3px; flex: 1; border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); padding: 0 2px; }
+.chart-y-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: var(--mp-typography-fontSize-xs);
+  color: var(--mp-color-chart-light-axisLabel);
+  min-width: 36px;
+  text-align: right;
+  padding-right: 6px;
+}
+.chart-bars-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  flex: 1;
+  border-left: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  padding: 0 2px;
+}
 .chart-bar-col { flex: 1; display: flex; flex-direction: column-reverse; }
+
+.v-theme--maropostDark .chart-y-labels {
+  color: var(--mp-color-chart-dark-axisLabel);
+}
 </style>

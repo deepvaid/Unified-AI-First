@@ -1,0 +1,51 @@
+/**
+ * ApexCharts tooltip chrome — token-backed overrides for both themes.
+ * Loaded via app-styles.ts (not global.scss) so Storybook matches the app.
+ */
+
+.apexcharts-tooltip {
+  border-radius: var(--mp-borderRadius-md, 8px) !important;
+  box-shadow: var(--elevation-overlay) !important;
+}
+
+.apexcharts-tooltip.apexcharts-theme-light {
+  background: var(--mp-color-chart-light-tooltipBackground) !important;
+  border: 1px solid var(--mp-color-chart-light-tooltipBorder) !important;
+  color: var(--mp-color-chart-light-tooltipText) !important;
+}
+
+.apexcharts-tooltip.apexcharts-theme-light .apexcharts-tooltip-title {
+  background: transparent !important;
+  border-bottom: 1px solid var(--mp-color-chart-light-tooltipBorder) !important;
+  color: var(--mp-color-chart-light-tooltipText) !important;
+  font-weight: 600;
+}
+
+.apexcharts-tooltip.apexcharts-theme-light .apexcharts-tooltip-series-group,
+.apexcharts-tooltip.apexcharts-theme-light .apexcharts-tooltip-y-group,
+.apexcharts-tooltip.apexcharts-theme-light .apexcharts-tooltip-text,
+.apexcharts-tooltip.apexcharts-theme-light .apexcharts-tooltip-text-y-value,
+.apexcharts-tooltip.apexcharts-theme-light .apexcharts-tooltip-text-y-label {
+  color: var(--mp-color-chart-light-tooltipText) !important;
+}
+
+.apexcharts-tooltip.apexcharts-theme-dark {
+  background: var(--mp-color-chart-dark-tooltipBackground) !important;
+  border: 1px solid var(--mp-color-chart-dark-tooltipBorder) !important;
+  color: var(--mp-color-chart-dark-tooltipText) !important;
+}
+
+.apexcharts-tooltip.apexcharts-theme-dark .apexcharts-tooltip-title {
+  background: transparent !important;
+  border-bottom: 1px solid var(--mp-color-chart-dark-tooltipBorder) !important;
+  color: var(--mp-color-chart-dark-tooltipText) !important;
+  font-weight: 600;
+}
+
+.apexcharts-tooltip.apexcharts-theme-dark .apexcharts-tooltip-series-group,
+.apexcharts-tooltip.apexcharts-theme-dark .apexcharts-tooltip-y-group,
+.apexcharts-tooltip.apexcharts-theme-dark .apexcharts-tooltip-text,
+.apexcharts-tooltip.apexcharts-theme-dark .apexcharts-tooltip-text-y-value,
+.apexcharts-tooltip.apexcharts-theme-dark .apexcharts-tooltip-text-y-label {
+  color: var(--mp-color-chart-dark-tooltipText) !important;
+}

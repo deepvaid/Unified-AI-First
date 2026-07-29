@@ -365,7 +365,7 @@ const usageRows = computed(() => {
           <div class="plan-banner__meta">{{ bannerMeta }}</div>
         </div>
         <div class="plan-banner__actions">
-          <v-btn variant="flat" color="white" class="text-none plan-banner__cta" prepend-icon="circle-arrow-up" @click="goToPlans">Upgrade Plan</v-btn>
+          <v-btn variant="flat" color="on-primary" class="text-none plan-banner__cta" prepend-icon="circle-arrow-up" @click="goToPlans">Upgrade Plan</v-btn>
           <v-btn variant="text" class="text-none plan-banner__link" size="small" @click="openCancelDrawer">Change or cancel plan</v-btn>
         </div>
       </div>

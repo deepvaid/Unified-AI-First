@@ -1,8 +1,9 @@
-import { provide } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
+import { provide } from 'vue'
 import { routeLocationKey } from 'vue-router'
 import MpDaVinciBot from './MpDaVinciBot.vue'
 import type { ChatMessage } from '@/stores/useCopilot'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 type StoryMessage = {
   id: string
@@ -197,4 +198,9 @@ export const CampaignOnboarding: Story = {
     initialMessages: onboardingMessages,
     subtitle: 'Guiding your first campaign',
   },
+}
+
+export const DarkModeCompactDrawer: Story = {
+  globals: darkModeGlobals,
+  ...CompactDrawer,
 }

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpRowActionsMenu from './MpRowActionsMenu.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Overlays/MpRowActionsMenu',
@@ -120,6 +121,12 @@ export const OpenMenu: Story = {
     const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Welcome Series actions"]')
     trigger?.click()
   },
+}
+
+/** L3 menu surface in dark mode — open via play interaction. */
+export const DarkModeOpen: Story = {
+  globals: darkModeGlobals,
+  ...OpenMenu,
 }
 
 /**

@@ -55,7 +55,7 @@ defineEmits<{
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(var(--v-theme-error), 0.08);
+  background: var(--neg-soft);
 }
 
 .mp-error-state__description {

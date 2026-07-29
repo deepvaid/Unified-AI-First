@@ -13,6 +13,9 @@ const config: StorybookConfig = {
   framework: '@storybook/vue3-vite',
   viteFinal: async (config) => {
     const srcDir = fileURLToPath(new URL('../src', import.meta.url))
+    const generatedVarsScss = fileURLToPath(
+      new URL('../src/design-tokens/generated/_variables.scss', import.meta.url),
+    )
 
     config.plugins?.push(
       vuetify({ autoImport: true })
@@ -26,7 +29,7 @@ const config: StorybookConfig = {
     config.css.preprocessorOptions = config.css.preprocessorOptions || {}
     config.css.preprocessorOptions.scss = {
       ...config.css.preprocessorOptions.scss,
-      additionalData: `@use "${srcDir}/styles/tokens" as *;\n`,
+      additionalData: `@use "${generatedVarsScss}" as *;\n`,
     }
     return config
   },

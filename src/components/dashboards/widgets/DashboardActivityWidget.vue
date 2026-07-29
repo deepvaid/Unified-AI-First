@@ -7,9 +7,9 @@ defineProps<{
 
 const tagColors: Record<string, { bg: string; color: string }> = {
   email: { bg: 'var(--accent-soft)', color: 'var(--accent-ink)' },
-  order: { bg: 'color-mix(in oklch, oklch(0.7 0.15 155) 14%, transparent)', color: 'oklch(0.45 0.15 155)' },
-  audience: { bg: 'color-mix(in oklch, oklch(0.75 0.12 90) 18%, transparent)', color: 'oklch(0.45 0.12 90)' },
-  automation: { bg: 'color-mix(in oklch, oklch(0.7 0.13 300) 14%, transparent)', color: 'oklch(0.45 0.13 300)' },
+  order: { bg: 'color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent)', color: 'var(--cloud-commerce-text)' },
+  audience: { bg: 'color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent)', color: 'var(--cloud-contacts-text)' },
+  automation: { bg: 'color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent)', color: 'var(--cloud-marketing-text)' },
 }
 
 function getTagStyle(tag: string) {

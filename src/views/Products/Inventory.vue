@@ -309,7 +309,7 @@ function notify(text: string) { snackText.value = text; snack.value = true }
             >
               <template #error>
                 <div class="w-100 h-100 d-flex align-center justify-center bg-surface-variant rounded-md">
-                  <v-icon size="16" color="medium-emphasis">image</v-icon>
+                  <v-icon size="16" class="text-medium-emphasis">image</v-icon>
                 </div>
               </template>
             </v-img>
@@ -337,7 +337,7 @@ function notify(text: string) { snackText.value = text; snack.value = true }
 
         <template v-slot:item.locationId="{ item }">
           <div class="d-flex align-center gap-2">
-            <v-icon size="15" color="medium-emphasis">map-pin</v-icon>
+            <v-icon size="15" class="text-medium-emphasis">map-pin</v-icon>
             <span class="text-body-2">{{ locationName(item.locationId) }}</span>
           </div>
         </template>

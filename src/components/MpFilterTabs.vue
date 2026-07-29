@@ -53,13 +53,13 @@ withDefaults(defineProps<{
 /* Unselected: quiet 500 weight, muted ink. */
 .mp-filter-tabs :deep(.v-tab.mp-filter-tabs__tab) {
   font-weight: 500;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--text-secondary);
 }
 
 /* Selected: 600 weight, full ink — the primary accent lives only in the slider. */
 .mp-filter-tabs :deep(.v-tab.mp-filter-tabs__tab.v-tab--selected) {
   font-weight: 600;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--text-primary);
 }
 
 /* Keep the underline, hold it to a 2px primary hairline. */
@@ -73,7 +73,7 @@ withDefaults(defineProps<{
   background: transparent !important;
   border: none;
   padding-inline: 0;
-  color: rgb(var(--v-theme-on-surface-variant));
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 

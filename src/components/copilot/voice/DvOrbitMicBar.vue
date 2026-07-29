@@ -100,7 +100,7 @@ const emit = defineEmits<{
 }
 
 .dv-orbit-micbar__mic-icon {
-  color: #ffffff;
+  color: var(--dv-orbit-on-fill);
 }
 
 .dv-orbit-micbar__slash {
@@ -110,7 +110,7 @@ const emit = defineEmits<{
   width: 64%;
   height: 2.5px;
   border-radius: 99px;
-  background: #ffffff;
+  background: var(--dv-orbit-on-fill);
   box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.7);
   transform: rotate(-45deg);
 }

@@ -6,31 +6,31 @@ export default create({
   brandUrl: 'https://maropost.com',
   brandTarget: '_self',
 
-  // Colors — MaroBase cyan + warm cream
+  // Colors — MaroBase cyan + neutral cool-grey
   colorPrimary: '#1ab7ea',
   colorSecondary: '#1a1814',
 
-  // UI — warm cream surfaces
-  appBg: '#f7f3ec',
-  appContentBg: '#fdfbf7',
-  appPreviewBg: '#fdfbf7',
-  appBorderColor: '#e6dfd1',
+  // UI — neutral cool-grey surfaces
+  appBg: '#f5f6f7',
+  appContentBg: '#ffffff',
+  appPreviewBg: '#ffffff',
+  appBorderColor: '#e2e4e7',
   appBorderRadius: 12,
 
   // Text
   textColor: '#1a1814',
   textInverseColor: '#FFFFFF',
-  textMutedColor: '#7a7466',
+  textMutedColor: '#6b7280',
 
   // Toolbar
-  barTextColor: '#7a7466',
+  barTextColor: '#6b7280',
   barSelectedColor: '#1ab7ea',
   barHoverColor: '#1ab7ea',
-  barBg: '#fdfbf7',
+  barBg: '#ffffff',
 
   // Inputs
-  inputBg: '#fdfbf7',
-  inputBorder: '#e6dfd1',
+  inputBg: '#ffffff',
+  inputBorder: '#e2e4e7',
   inputTextColor: '#1a1814',
   inputBorderRadius: 8,
 

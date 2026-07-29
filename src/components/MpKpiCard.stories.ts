@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpKpiCard from './MpKpiCard.vue'
 import { formatMoneyParts } from '@/utils/formatMoneyParts'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 // The app loads the --cloud-* accent tokens via main.ts; preview.ts doesn't.
 import '@/styles/source-cloud-colors.css'
 
@@ -252,4 +253,10 @@ export const DashboardRow: Story = {
     `,
   }),
   args: {} as any, // Fixes TS strict mode error
+}
+
+/** Pinned dark — trend colours resolve through --pos / --neg. */
+export const DarkModeDashboardRow: Story = {
+  globals: darkModeGlobals,
+  ...DashboardRow,
 }

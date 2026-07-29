@@ -2,7 +2,7 @@
 import { computed, inject, toRef, unref, useId } from 'vue'
 import { useLiveAgo } from '@/composables/useRelativeTime'
 import MpSourceCloudChip from '@/components/MpSourceCloudChip.vue'
-import { activeChartPalette, CHART_PALETTES, CHART_PALETTE_OVERRIDE } from '@/plugins/chartPalette'
+import { CHART_PALETTES, CHART_PALETTE_OVERRIDE, useChartTheme } from '@/plugins/chartPalette'
 import type { DashboardDataSource, DashboardKpiData } from '@/stores/dashboards/types'
 
 const sparkFillId = useId()
@@ -41,10 +41,11 @@ const updatedLabel = useLiveAgo(lastRefreshedAt)
 // Only when a palette is pinned (compare page) or a non-default palette is active —
 // the default keeps its existing accent color, so normal dashboards are unchanged.
 const paletteOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const { palette: chartPaletteRef } = useChartTheme()
 const sparkColor = computed<string | undefined>(() => {
   const override = unref(paletteOverride)
   if (override) return override.series[0]
-  if (activeChartPalette.value !== CHART_PALETTES.blue) return activeChartPalette.value[0]
+  if (chartPaletteRef.value !== CHART_PALETTES.blue) return chartPaletteRef.value[0]
   return undefined
 })
 
@@ -339,12 +340,12 @@ const sparklinePoints = computed(() => {
 }
 
 .dashboard-kpi-widget__trend-pill--positive {
-  color: var(--pos);
+  color: var(--pos-ink);
   background: color-mix(in oklch, var(--pos) 12%, transparent);
 }
 
 .dashboard-kpi-widget__trend-pill--negative {
-  color: var(--neg);
+  color: var(--neg-ink);
   background: color-mix(in oklch, var(--neg) 12%, transparent);
 }
 

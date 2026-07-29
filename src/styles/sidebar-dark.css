@@ -1,179 +1,206 @@
 /**
- * Dark Sidebar — applied when [data-sidebar="dark"] is on <html>.
+ * Dark side-nav chrome — one definition, two triggers:
+ *   [data-sidebar="dark"]     the dark skin, on a light app theme
+ *   html[data-theme="dark"]   the app's dark mode, whichever skin is selected
+ *
+ * In dark mode the side nav always matches the head nav, so the skin axis
+ * (white / gray / dark) only differentiates light mode.
+ *
+ * Values are sourced from the `dark` token ramp BY NAME (--mp-color-dark-*)
+ * rather than the theme-conditional --mp-color-sidebar-* aliases, because this
+ * chrome must also render under a light app theme (light + dark skin), where
+ * those aliases resolve to light values.
+ *
+ * The :is() union carries one extra element unit of specificity over the light
+ * skins' `[data-sidebar="…"] .mp-sidebar` rules, so it wins on the dark-mode
+ * axis regardless of stylesheet order (this file loads before sidebar-white
+ * and sidebar-gray).
+ *
  * All overrides are scoped to sidebar surfaces or rail flyouts.
  */
 
-[data-sidebar="dark"] .mp-sidebar,
-[data-sidebar="dark"] .rail-flyout-card {
-  /* Slate navy (Zoho-style) — active items still glow with the brand primary.
-     Muted enough to stay calm, blue enough to read clearly as navy. */
-  --sidebar-bg: #22304b;
-  --sidebar-border: rgba(255, 255, 255, 0.10);
-  --sidebar-line: rgba(255, 255, 255, 0.12);
-  --sidebar-text: rgba(255, 255, 255, 0.92);
-  --sidebar-muted: rgba(255, 255, 255, 0.64);
-  --sidebar-hover-bg: rgba(255, 255, 255, 0.07);
-  --sidebar-active-bg: color-mix(in oklch, rgb(var(--v-theme-primary)) 20%, transparent);
-  --sidebar-active-text: #ffffff;
-  --sidebar-focus-ring: color-mix(in oklch, rgb(var(--v-theme-primary)) 55%, transparent);
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-card {
+  /* Bound to the shared nav surface (shell-variants.css) so the side nav and
+     head nav always match, per shell. */
+  --sidebar-bg: var(--mp-nav-surface, var(--mp-color-dark-surface));
+  /* Chrome seams are low-alpha white overlays, like the app bar's own hairline —
+     the opaque mid-grey border tokens belong to content containers (cards,
+     popovers) and read as a hard rule against nav chrome. */
+  --sidebar-border: var(--mp-color-dark-borderDividerMuted);
+  --sidebar-line: var(--mp-color-dark-borderDividerMuted);
+  --sidebar-text: var(--mp-color-dark-textPrimary);
+  --sidebar-muted: var(--mp-color-dark-textMuted);
+  --sidebar-hover-bg: var(--mp-color-dark-interactiveHover);
+  /* Active items carry the brand accent explicitly rather than a neutral tint. */
+  --sidebar-active-bg: var(--mp-color-dark-accent-cyan-selectedBackground);
+  --sidebar-active-text: var(--mp-color-dark-textPrimary);
+  --sidebar-focus-ring: var(--mp-color-dark-accent-cyan-focusRing);
 }
 
-[data-sidebar="dark"] .mp-sidebar,
-[data-sidebar="dark"] .mp-sidebar *,
-[data-sidebar="dark"] .rail-flyout-card,
-[data-sidebar="dark"] .rail-flyout-card * {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar *,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-card,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-card * {
   transition:
     background-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
     color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
     border-color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-[data-sidebar="dark"] .mp-sidebar {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar {
   background: var(--sidebar-bg) !important;
   border-right-color: var(--sidebar-border) !important;
   color: var(--sidebar-text);
 }
 
-[data-sidebar="dark"] .mp-sidebar .sidebar-header,
-[data-sidebar="dark"] .mp-sidebar .sidebar-controls,
-[data-sidebar="dark"] .mp-sidebar .sidebar-divider {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-header,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-controls {
   border-color: var(--sidebar-border) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .v-list {
+/* Group separators repeat down the panel, so they ride the divider role. */
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-divider {
+  border-color: var(--sidebar-line) !important;
+}
+
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .v-list {
   background: transparent !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .sidebar-brand__wordmark,
-[data-sidebar="dark"] .mp-sidebar .sidebar-brand__mark-simple,
-[data-sidebar="dark"] .mp-sidebar .v-list-item-title,
-[data-sidebar="dark"] .mp-sidebar .sidebar-subgroup-row__title {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-brand__wordmark,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-brand__mark-simple,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .v-list-item-title,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-subgroup-row__title {
   color: var(--sidebar-text) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .v-icon,
-[data-sidebar="dark"] .mp-sidebar .sidebar-parent-row__chevron,
-[data-sidebar="dark"] .mp-sidebar .sidebar-apps-toggle,
-[data-sidebar="dark"] .mp-sidebar .sidebar-controls__label,
-[data-sidebar="dark"] .mp-sidebar .sidebar-app-item__status,
-[data-sidebar="dark"] .mp-sidebar .sidebar-tree-row--grandchild .v-list-item-title {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .v-icon,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-parent-row__chevron,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-apps-toggle,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-controls__label,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-app-item__status,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-tree-row--grandchild .v-list-item-title {
   color: var(--sidebar-muted) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .sidebar-crown {
-  color: rgba(255, 255, 255, 0.36) !important;
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-crown {
+  color: var(--mp-color-dark-textDisabled) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .rail-brand-box {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .rail-brand-box {
   background: var(--sidebar-text);
   color: var(--sidebar-bg);
 }
 
-[data-sidebar="dark"] .mp-sidebar .v-list-item:hover:not(.v-list-item--active):not(.active-nav-item),
-[data-sidebar="dark"] .mp-sidebar .sidebar-subgroup-row:hover,
-[data-sidebar="dark"] .mp-sidebar .sidebar-menu-btn:hover,
-[data-sidebar="dark"] .mp-sidebar .sidebar-rail-btn:hover,
-[data-sidebar="dark"] .mp-sidebar .sidebar-parent-row__chevron:hover,
-[data-sidebar="dark"] .mp-sidebar .sidebar-apps-toggle:hover {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .v-list-item:hover:not(.v-list-item--active):not(.active-nav-item),
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-subgroup-row:hover,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-menu-btn:hover,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-rail-btn:hover,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-parent-row__chevron:hover,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-apps-toggle:hover {
   background: var(--sidebar-hover-bg) !important;
   color: var(--sidebar-active-text) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .v-list-item--active,
-[data-sidebar="dark"] .mp-sidebar .active-nav-item,
-[data-sidebar="dark"] .mp-sidebar .sidebar-parent--active .sidebar-parent-row__label,
-[data-sidebar="dark"] .mp-sidebar .sidebar-tree-row--active .sidebar-tree-link,
-[data-sidebar="dark"] .mp-sidebar .rail-icon-hovered {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .v-list-item--active,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .active-nav-item,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-parent--active .sidebar-parent-row__label,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-tree-row--active .sidebar-tree-link,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .rail-icon-hovered {
   background: var(--sidebar-active-bg) !important;
   color: var(--sidebar-active-text) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .v-list-item--active .v-list-item-title,
-[data-sidebar="dark"] .mp-sidebar .v-list-item--active .v-icon,
-[data-sidebar="dark"] .mp-sidebar .active-nav-item .v-list-item-title,
-[data-sidebar="dark"] .mp-sidebar .active-nav-item .v-icon,
-[data-sidebar="dark"] .mp-sidebar .sidebar-parent--active .v-list-item-title,
-[data-sidebar="dark"] .mp-sidebar .sidebar-parent--active .v-icon,
-[data-sidebar="dark"] .mp-sidebar .sidebar-tree-row--active .v-list-item-title,
-[data-sidebar="dark"] .mp-sidebar .sidebar-tree-row--active .v-icon,
-[data-sidebar="dark"] .mp-sidebar .sidebar-tree-branch--active > .sidebar-subgroup-row,
-[data-sidebar="dark"] .mp-sidebar .sidebar-tree-branch--expanded > .sidebar-subgroup-row,
-[data-sidebar="dark"] .mp-sidebar .sidebar-tree-branch--active > .sidebar-subgroup-row .v-icon,
-[data-sidebar="dark"] .mp-sidebar .sidebar-tree-branch--expanded > .sidebar-subgroup-row .v-icon,
-[data-sidebar="dark"] .mp-sidebar .rail-icon-hovered .v-icon {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .v-list-item--active .v-list-item-title,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .v-list-item--active .v-icon,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .active-nav-item .v-list-item-title,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .active-nav-item .v-icon,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-parent--active .v-list-item-title,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-parent--active .v-icon,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-tree-row--active .v-list-item-title,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-tree-row--active .v-icon,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-tree-branch--active > .sidebar-subgroup-row,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-tree-branch--expanded > .sidebar-subgroup-row,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-tree-branch--active > .sidebar-subgroup-row .v-icon,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-tree-branch--expanded > .sidebar-subgroup-row .v-icon,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .rail-icon-hovered .v-icon {
   color: var(--sidebar-active-text) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .sidebar-parent__children::before,
-[data-sidebar="dark"] .mp-sidebar .sidebar-subgroup__children::before {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-parent__children::before,
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-subgroup__children::before {
   background: var(--sidebar-line) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .sidebar-tree-row--active::before {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-tree-row--active::before {
   border-color: var(--sidebar-line) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .sidebar-badge {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .sidebar-badge {
   background: var(--sidebar-active-bg) !important;
   color: var(--sidebar-muted) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .accent-swatch--active {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .accent-swatch--active {
   box-shadow: 0 0 0 2px var(--sidebar-bg), 0 0 0 3.5px currentColor !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar .v-switch .v-switch__track {
-  background: rgba(255, 255, 255, 0.18) !important;
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar .v-switch .v-switch__track {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.18) !important;
 }
 
-[data-sidebar="dark"] .mp-sidebar ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar ::-webkit-scrollbar-thumb {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.14);
 }
 
-[data-sidebar="dark"] .mp-sidebar ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.24);
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .mp-sidebar ::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.24);
 }
 
-[data-sidebar="dark"] .rail-flyout-card {
-  --sidebar-border: rgba(255, 255, 255, 0.10) !important;
-  --sidebar-text: rgba(255, 255, 255, 0.92) !important;
-  --sidebar-muted: rgba(255, 255, 255, 0.64) !important;
-  --sidebar-hover-bg: rgba(255, 255, 255, 0.07) !important;
-  --sidebar-active-bg: color-mix(in oklch, rgb(var(--v-theme-primary)) 20%, transparent) !important;
-  --sidebar-active-text: #ffffff !important;
-  background: var(--sidebar-bg) !important;
+/* The rail flyout is an overlay, so it sits a tier above the panel and takes the
+   shared popover chrome (matching .v-menu surfaces in global.scss) rather than
+   the panel's seam overlay. */
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-card {
+  --sidebar-border: var(--mp-color-dark-borderSubtle) !important;
+  --sidebar-text: var(--mp-color-dark-textPrimary) !important;
+  --sidebar-muted: var(--mp-color-dark-textMuted) !important;
+  --sidebar-hover-bg: var(--mp-color-dark-interactiveHover) !important;
+  --sidebar-active-bg: var(--mp-color-dark-accent-cyan-selectedBackground) !important;
+  --sidebar-active-text: var(--mp-color-dark-textPrimary) !important;
+  background: var(--mp-color-dark-surfaceOverlay) !important;
   border-color: var(--sidebar-border) !important;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.40), 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+  box-shadow: var(--mp-shadow-dark-md) !important;
 }
 
-[data-sidebar="dark"] .rail-flyout-card__header {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-card__header {
   color: var(--sidebar-muted) !important;
   border-bottom-color: var(--sidebar-border) !important;
 }
 
-[data-sidebar="dark"] .rail-flyout-item {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-item {
   color: var(--sidebar-text) !important;
 }
 
-[data-sidebar="dark"] .rail-flyout-item:hover {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-item:hover {
   background: var(--sidebar-hover-bg) !important;
   color: var(--sidebar-active-text) !important;
 }
 
-[data-sidebar="dark"] .rail-flyout-item--active {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-item--active {
   background: var(--sidebar-active-bg) !important;
   color: var(--sidebar-active-text) !important;
 }
 
-[data-sidebar="dark"] .rail-flyout-card::-webkit-scrollbar {
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-card::-webkit-scrollbar {
   width: 6px;
 }
 
-[data-sidebar="dark"] .rail-flyout-card::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-card::-webkit-scrollbar-thumb {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.18);
   border-radius: 999px;
 }
 
-[data-sidebar="dark"] .rail-flyout-card::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.28);
+:is(html[data-theme="dark"], [data-sidebar="dark"]) .rail-flyout-card::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.28);
 }

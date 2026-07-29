@@ -399,7 +399,7 @@ function notify(text: string) { snackText.value = text; saveSnack.value = true }
           aria-label="No image"
           @click="form.image = undefined"
         >
-          <v-icon size="18" color="medium-emphasis">image-off</v-icon>
+          <v-icon size="18" class="text-medium-emphasis">image-off</v-icon>
           <span class="text-caption text-medium-emphasis">None</span>
         </button>
         <button

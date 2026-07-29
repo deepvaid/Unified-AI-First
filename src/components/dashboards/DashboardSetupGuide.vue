@@ -118,17 +118,17 @@ function toggle() {
 .setup-guide-widget {
   padding: 18px 22px 8px;
   background: var(--surface-1);
-  border-color: color-mix(in oklch, var(--ink) 7%, transparent) !important;
+  border-color: var(--border-subtle) !important;
   /* Match the widget-card radius so every dashboard card is identical */
   border-radius: var(--r-section) !important;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--elevation-raised);
   overflow: hidden;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .setup-guide-widget:hover {
-  border-color: color-mix(in oklch, var(--ink) 18%, transparent) !important;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06);
+  border-color: var(--border-default) !important;
+  box-shadow: var(--elevation-overlay);
 }
 
 .setup-guide-widget__header {
@@ -192,7 +192,7 @@ function toggle() {
 
 .setup-guide-widget__toggle:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
 .setup-guide-widget__body {
@@ -283,7 +283,7 @@ function toggle() {
 
 .setup-guide-task__btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
   border-radius: 6px;
 }
 
