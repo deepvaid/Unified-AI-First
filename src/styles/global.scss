@@ -401,22 +401,6 @@ tr:focus-within .action-btns {
   .action-btns { opacity: 1; }
 }
 
-/* ─── Card Hover Lift (humane, subtle) ───────────────────────── */
-.card-hover {
-  transition:
-    transform var(--dur-slow) var(--ease),
-    box-shadow var(--dur-slow) var(--ease),
-    border-color var(--dur-base) var(--ease),
-    background-color var(--dur-base) var(--ease);
-  cursor: pointer;
-  will-change: transform;
-}
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--elevation-overlay);
-  border-color: rgba(var(--v-theme-primary), 0.24) !important;
-}
-
 /* ─── Settings Card Hover ───────────────────────────────────── */
 .settings-tile {
   transition: all var(--dur-fast) var(--ease);

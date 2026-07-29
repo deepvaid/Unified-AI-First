@@ -64,32 +64,13 @@ function normalizeAccent(accent: string): AccentKey {
   return 'cyan'
 }
 
+/** Mirrors useAppTheme's applyMode — the app only ever sets data-theme on <html>. */
 function syncDocumentTheme(theme: ThemeMode) {
   if (typeof document === 'undefined') {
     return
   }
 
-  const isDark = theme === 'dark'
-  const root = document.documentElement
-  const body = document.body
-
-  root.dataset.theme = theme
-  root.classList.toggle('theme-dark', isDark)
-  root.classList.toggle('theme-light', !isDark)
-  root.classList.toggle('v-theme--dark', isDark)
-  root.classList.toggle('v-theme--light', !isDark)
-  root.classList.toggle('v-theme--maropostDark', isDark)
-  root.classList.toggle('v-theme--maropostLight', !isDark)
-
-  if (body) {
-    body.dataset.theme = theme
-    body.classList.toggle('theme-dark', isDark)
-    body.classList.toggle('theme-light', !isDark)
-    body.classList.toggle('v-theme--dark', isDark)
-    body.classList.toggle('v-theme--light', !isDark)
-    body.classList.toggle('v-theme--maropostDark', isDark)
-    body.classList.toggle('v-theme--maropostLight', !isDark)
-  }
+  document.documentElement.dataset.theme = theme
 }
 
 /** Mirrors useAppTheme accent bridge — cyan has no data-accent attribute. */

@@ -19,6 +19,7 @@ import {
   mp_typography_fontSize_xs,
 } from '@/design-tokens/generated/tokens'
 import { tokensByPrefix } from './foundationTokens'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Foundations/Colors',
@@ -265,6 +266,12 @@ export const SemanticSurfaces: Story = {
   }),
 }
 
+/** Pinned dark — same surface tiers, forced to the dark theme regardless of the toolbar. */
+export const DarkModeSemanticSurfaces: Story = {
+  globals: darkModeGlobals,
+  ...SemanticSurfaces,
+}
+
 export const SemanticTextAndIcons: Story = {
   parameters: { controls: { disable: true } },
   render: () => ({
@@ -286,6 +293,12 @@ export const SemanticTextAndIcons: Story = {
   }),
 }
 
+/** Pinned dark — text + icon hierarchy, forced to the dark theme regardless of the toolbar. */
+export const DarkModeSemanticTextAndIcons: Story = {
+  globals: darkModeGlobals,
+  ...SemanticTextAndIcons,
+}
+
 export const SemanticBordersAndFocus: Story = {
   parameters: { controls: { disable: true } },
   render: () => ({
@@ -295,6 +308,12 @@ export const SemanticBordersAndFocus: Story = {
     },
     template: `<AliasRow heading="Borders and focus — active theme" :rows="borderRows" />`,
   }),
+}
+
+/** Pinned dark — border tiers, forced to the dark theme regardless of the toolbar. */
+export const DarkModeSemanticBordersAndFocus: Story = {
+  globals: darkModeGlobals,
+  ...SemanticBordersAndFocus,
 }
 
 export const SemanticAccents: Story = {
@@ -325,6 +344,12 @@ export const SemanticFeedback: Story = {
     },
     template: `<AliasRow heading="Feedback colours — active theme" :rows="feedbackRows" />`,
   }),
+}
+
+/** Pinned dark — feedback colours, forced to the dark theme regardless of the toolbar. */
+export const DarkModeSemanticFeedback: Story = {
+  globals: darkModeGlobals,
+  ...SemanticFeedback,
 }
 
 /** Side-by-side light and dark surface tiers using generated token literals (not Storybook-only). */

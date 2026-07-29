@@ -117,10 +117,6 @@ function onKeydown(e: KeyboardEvent) {
 </template>
 
 <style scoped>
-.mp-form-drawer {
-  z-index: 2005;
-}
-
 /* Float the drawer as a rounded surface, like .copilot-drawer — a 12px gutter on
    the right, top and bottom, plus radius, border and a soft shadow. Vuetify sets
    top/height/bottom inline from the layout (top: 56px + bottom: 0 under the app
