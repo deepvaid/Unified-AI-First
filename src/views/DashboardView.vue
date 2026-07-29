@@ -1156,7 +1156,7 @@ function toggleFavoriteActive() {
 
 .dashboard-date-menu__group {
   padding: 10px 8px 4px;
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;

@@ -43,7 +43,7 @@
   --accent-on-container: var(--mp-color-dark-accent-blue-onContainer);
   --accent: var(--accent-default);
   --accent-fg: var(--accent-on);
-  --accent-ink: var(--accent-active);
+  --accent-ink: var(--accent-on-container);
   --accent-soft: var(--accent-subtle-bg);
 }
 
@@ -86,7 +86,7 @@
   --accent-on-container: var(--mp-color-dark-accent-gray-onContainer);
   --accent: var(--accent-default);
   --accent-fg: var(--accent-on);
-  --accent-ink: var(--accent-active);
+  --accent-ink: var(--accent-on-container);
   --accent-soft: var(--accent-subtle-bg);
 }
 
@@ -129,6 +129,6 @@
   --accent-on-container: var(--mp-color-dark-accent-purple-onContainer);
   --accent: var(--accent-default);
   --accent-fg: var(--accent-on);
-  --accent-ink: var(--accent-active);
+  --accent-ink: var(--accent-on-container);
   --accent-soft: var(--accent-subtle-bg);
 }

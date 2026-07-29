@@ -183,7 +183,7 @@
   --hairline: var(--border-subtle);
   --accent: var(--accent-default);
   --accent-fg: var(--accent-on);
-  --accent-ink: var(--accent-active);
+  --accent-ink: var(--accent-on-container);
   --accent-soft: var(--accent-subtle-bg);
 
   --primary-container: var(--accent-container);
