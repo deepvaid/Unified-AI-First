@@ -1172,7 +1172,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   top: 50%;
   right: -12px;
   transform: translateY(-50%);
-  z-index: 1010;
+  z-index: var(--mp-zIndex-navSidebarTogglePill);
   transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1),
               background var(--dur-fast) var(--ease),
               border-color var(--dur-fast) var(--ease),
@@ -1457,7 +1457,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .sidebar-expanded-flyout {
   position: fixed;
   left: 240px;
-  z-index: 1005;
+  z-index: var(--mp-zIndex-navSidebarFlyout);
 }
 
 /* Rail flyout — single card (tokens: sidebar-dark.css + light defaults below) */

@@ -43,7 +43,7 @@ const { toasts, triggerAction } = useDaVinciToasts()
   display: flex;
   flex-direction: column;
   gap: 8px;
-  z-index: 10000;
+  z-index: var(--mp-zIndex-toast);
   pointer-events: none;
 }
 

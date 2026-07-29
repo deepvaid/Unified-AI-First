@@ -323,7 +323,7 @@ async function onApproved() {
   align-items: center;
   justify-content: center;
   background: rgba(var(--v-theme-on-surface), 0.4);
-  z-index: 2400;
+  z-index: var(--mp-zIndex-modal);
 }
 
 .provisioning-card {
