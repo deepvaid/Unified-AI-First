@@ -73,8 +73,10 @@
   /* Semantic colors */
   --pos: rgb(var(--v-theme-success));
   --pos-soft: rgb(var(--v-theme-success-container));
+  --pos-ink: rgb(var(--v-theme-on-success-container));
   --neg: rgb(var(--v-theme-error));
   --neg-soft: rgb(var(--v-theme-error-container));
+  --neg-ink: rgb(var(--v-theme-on-error-container));
 
   /* Elevation */
   --elevation-raised: var(--mp-shadow-sm);
@@ -190,8 +192,10 @@
   /* Semantic colors */
   --pos: rgb(var(--v-theme-success));
   --pos-soft: rgb(var(--v-theme-success-container));
+  --pos-ink: rgb(var(--v-theme-on-success-container));
   --neg: rgb(var(--v-theme-error));
   --neg-soft: rgb(var(--v-theme-error-container));
+  --neg-ink: rgb(var(--v-theme-on-error-container));
 
   /* Elevation */
   --elevation-raised: var(--mp-shadow-dark-sm);

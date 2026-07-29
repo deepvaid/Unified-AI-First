@@ -340,12 +340,12 @@ const sparklinePoints = computed(() => {
 }
 
 .dashboard-kpi-widget__trend-pill--positive {
-  color: var(--pos);
+  color: var(--pos-ink);
   background: color-mix(in oklch, var(--pos) 12%, transparent);
 }
 
 .dashboard-kpi-widget__trend-pill--negative {
-  color: var(--neg);
+  color: var(--neg-ink);
   background: color-mix(in oklch, var(--neg) 12%, transparent);
 }
 
