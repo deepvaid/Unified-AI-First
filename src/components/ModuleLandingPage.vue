@@ -313,14 +313,14 @@ withDefaults(defineProps<{
 .tint-teal   { --tile-accent: #0d9488; --tile-accent-ink: #0f766e; }
 
 /* Dark surfaces need lightened tints (same hue family) to stay readable. */
-:global(.v-theme--maropostDark) .tint-blue   { --tile-accent: #60a5fa; --tile-accent-ink: #93c5fd; }
-:global(.v-theme--maropostDark) .tint-violet { --tile-accent: #a78bfa; --tile-accent-ink: #c4b5fd; }
-:global(.v-theme--maropostDark) .tint-rose   { --tile-accent: #fb7185; --tile-accent-ink: #fda4af; }
-:global(.v-theme--maropostDark) .tint-green  { --tile-accent: #4ade80; --tile-accent-ink: #86efac; }
-:global(.v-theme--maropostDark) .tint-amber  { --tile-accent: #fbbf24; --tile-accent-ink: #fcd34d; }
-:global(.v-theme--maropostDark) .tint-cyan   { --tile-accent: #22d3ee; --tile-accent-ink: #67e8f9; }
-:global(.v-theme--maropostDark) .tint-indigo { --tile-accent: #818cf8; --tile-accent-ink: #a5b4fc; }
-:global(.v-theme--maropostDark) .tint-teal   { --tile-accent: #2dd4bf; --tile-accent-ink: #5eead4; }
+.v-theme--maropostDark .tint-blue   { --tile-accent: #60a5fa; --tile-accent-ink: #93c5fd; }
+.v-theme--maropostDark .tint-violet { --tile-accent: #a78bfa; --tile-accent-ink: #c4b5fd; }
+.v-theme--maropostDark .tint-rose   { --tile-accent: #fb7185; --tile-accent-ink: #fda4af; }
+.v-theme--maropostDark .tint-green  { --tile-accent: #4ade80; --tile-accent-ink: #86efac; }
+.v-theme--maropostDark .tint-amber  { --tile-accent: #fbbf24; --tile-accent-ink: #fcd34d; }
+.v-theme--maropostDark .tint-cyan   { --tile-accent: #22d3ee; --tile-accent-ink: #67e8f9; }
+.v-theme--maropostDark .tint-indigo { --tile-accent: #818cf8; --tile-accent-ink: #a5b4fc; }
+.v-theme--maropostDark .tint-teal   { --tile-accent: #2dd4bf; --tile-accent-ink: #5eead4; }
 
 /* ===== Quick actions ===== */
 .quick-actions {

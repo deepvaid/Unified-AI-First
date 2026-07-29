@@ -44,8 +44,13 @@
 }
 
 /* ── Placeholder ────────────────────────────────────────────── */
+/* Vuetify's own ::placeholder rule sets opacity: var(--v-disabled-opacity)
+   (0.5 in the dark theme), which halves --text-muted's contrast below AA.
+   --text-muted is already calibrated for full-strength text, so pin opacity
+   back to 1 here rather than relying on the disabled-state alpha. */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__input::placeholder {
   color: var(--text-muted);
+  opacity: 1;
 }
 
 /* ── Resting border — dark-mode-aware via --hairline alias ──── */

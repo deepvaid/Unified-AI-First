@@ -274,6 +274,18 @@ const metrics = [
   border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 
+/* The light lavender gradient is brand art with no dark equivalent — swap in
+   the dark accent containers (same violet/blue/cyan hue order) so the
+   on-surface headline/body text stays legible instead of near-invisible. */
+.v-theme--maropostDark .dv-hero {
+  background: linear-gradient(
+    135deg,
+    var(--mp-color-dark-accent-purple-container) 0%,
+    var(--mp-color-dark-accent-blue-container) 50%,
+    var(--mp-color-dark-accent-cyan-container) 100%
+  );
+}
+
 .dv-hero__headline {
   line-height: 1.15;
   letter-spacing: -0.02em;

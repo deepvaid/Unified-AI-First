@@ -45,7 +45,6 @@ const { size: bodySize } = useElementSize(bodyEl)
 const currentSize = computed<WidgetSize | null>(() => detectSize(props.widget.type, props.widget.layout.w, props.widget.layout.h))
 const isCompactHeight = computed(() => bodySize.value.height > 0 && bodySize.value.height < 128)
 const isKpiWidget = computed(() => data.value.kind === 'kpi')
-const isChartWidget = computed(() => data.value.kind === 'series')
 const metricIcon = computed(() => getMetricDescriptor(props.widget.metricId)?.icon ?? '')
 const rangeLabels: Record<DashboardFilterState['rangePreset'], string> = {
   today: 'Today',
@@ -133,7 +132,6 @@ function chooseSize(size: WidgetSize) {
       'dashboard-widget-card--preview': preview,
       'dashboard-widget-card--draggable': draggable,
       'dashboard-widget-card--kpi': isKpiWidget,
-      'dashboard-widget-card--chart': isChartWidget,
       'dashboard-widget-drag': draggable && isKpiWidget,
     }"
   >
@@ -401,13 +399,6 @@ function chooseSize(size: WidgetSize) {
   border-style: dashed;
 }
 
-/* Chart/pie widgets let ApexCharts tooltips escape the card's clipping
-   ancestors (see DashboardGrid hover z-index) instead of being cut off near
-   edges. KPI and table widgets are unaffected and keep overflow: hidden. */
-.dashboard-widget-card--chart {
-  overflow: visible !important;
-}
-
 .dashboard-widget-card__body {
   display: flex;
   flex-direction: column;
@@ -415,10 +406,6 @@ function chooseSize(size: WidgetSize) {
   min-height: 0;
   overflow: hidden;
   padding: 0 22px 14px;
-}
-
-.dashboard-widget-card--chart .dashboard-widget-card__body {
-  overflow: visible !important;
 }
 
 .dashboard-widget-card--kpi .dashboard-widget-card__body {

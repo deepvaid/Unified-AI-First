@@ -87,7 +87,7 @@ function getMax(bars: number[][]) {
 }
 .chart-bar-col { flex: 1; display: flex; flex-direction: column-reverse; }
 
-:global(.v-theme--maropostDark) .chart-y-labels {
+.v-theme--maropostDark .chart-y-labels {
   color: var(--mp-color-chart-dark-axisLabel);
 }
 </style>
