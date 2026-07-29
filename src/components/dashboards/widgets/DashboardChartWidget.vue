@@ -11,6 +11,7 @@ import {
   type ChartTheme,
 } from '@/plugins/chartPalette'
 import { useAppTheme } from '@/composables/useAppTheme'
+import { useElementSize } from '@/composables/useElementSize'
 
 const props = withDefaults(defineProps<{
   data: DashboardSeriesData
@@ -82,6 +83,26 @@ const chartHeight = computed(() => {
   if (!props.height || props.height < 60) return 220
   return Math.max(120, props.height - 4)
 })
+
+// Measure `.dashboard-chart-widget` itself (the overflow: hidden clipping
+// box) rather than trusting `props.height`, which is the parent card body's
+// size and includes padding this element doesn't have.
+const rootEl = ref<HTMLElement | null>(null)
+const { size: rootSize } = useElementSize(rootEl)
+
+// The Apex tooltip normally follows the cursor, which is the right default —
+// it never covers the axis/legend chrome. It only needs to be pinned when the
+// tooltip itself is taller than the clipping box above: follow-cursor can
+// then flip the tooltip above the hover point and past the container's top
+// edge. A rough tooltip-height estimate (title row + one row per series,
+// calibrated against a real 6-series tooltip measuring 235px) tells us when
+// that's actually at risk, instead of pinning unconditionally in every
+// widget/theme regardless of size — which just traded occasional clipping
+// for the tooltip permanently covering the y-axis and legend.
+const estimatedTooltipHeight = computed(() => 40 + props.data.series.length * 32)
+const tooltipNeedsPinning = computed(
+  () => rootSize.value.height > 0 && rootSize.value.height < estimatedTooltipHeight.value,
+)
 
 const { accentHex } = useAppTheme()
 const { theme, applyChartTheme } = useChartTheme()
@@ -258,15 +279,18 @@ const chartOptions = computed<ApexOptions>(() => {
     },
     tooltip: {
       ...base.tooltip,
-      // Pin the tooltip to a fixed corner in both themes — this is a
-      // geometry issue (`.dashboard-chart-widget` has overflow: hidden),
-      // not a theme issue. The default follow-cursor behaviour flips the
-      // tooltip above the hover point when there isn't room below, which
-      // pushes it past the widget's edges and clips the title/first series
-      // row on small widget sizes, in light mode just as much as dark.
-      // Pin to the top-left (the legend sits top-right) so the tooltip
-      // doesn't cover the series legend.
-      fixed: { enabled: true, position: 'topLeft', offsetX: 4, offsetY: 0 },
+      // Only pin the tooltip (see `tooltipNeedsPinning` above) when it's
+      // genuinely too tall for the widget to show it follow-cursor without
+      // clipping — same geometry issue in both themes, so no theme branch.
+      // Pin to top-right rather than top-left: the y-axis scale sits at the
+      // left of every widget, so anchoring right keeps it clear (bottomRight
+      // was tried and rejected — Apex anchors bottom-pinned tooltips to the
+      // plot's own height, not the widget's, which pushed a too-tall tooltip
+      // past the *top* edge by more than the ~8px topLeft/topRight ever clip
+      // at the bottom).
+      fixed: tooltipNeedsPinning.value
+        ? { enabled: true, position: 'topRight', offsetX: -4, offsetY: 0 }
+        : { enabled: false },
       y: {
         formatter: (value: number) => formatAxisValue(value, props.data.unit),
       },
@@ -276,7 +300,7 @@ const chartOptions = computed<ApexOptions>(() => {
 </script>
 
 <template>
-  <div class="dashboard-chart-widget">
+  <div ref="rootEl" class="dashboard-chart-widget">
     <ApexChart
       v-if="chartReady"
       :height="chartHeight"
