@@ -175,3 +175,7 @@ Every text/icon tier must meet WCAG AA (≥4.5:1 for text, ≥3:1 for large text
 ## Out of scope (sanctioned exceptions — do not touch)
 
 `Retail/PosPreview.vue`, `Deck/*`, `Showcase/*`, `Reel/*`, WebGL orb/ring gradient stops in `dv-tokens.css`, customer-preview content (`--sf-*`), light-mode sidebar skins (`sidebar-white.css`, `sidebar-gray.css`), light-theme values generally.
+
+## Accepted light-mode change: activity tag colors
+
+Fixing the dark-mode-invisible "audience"/"order"/"automation" activity tags in `DashboardActivityWidget.vue` and `ModuleLandingPage.vue` (previously a 1.5–1.9:1 contrast failure) meant switching them from hard-coded `oklch()` literals to the shared `--cloud-{commerce,contacts,marketing}-{accent,text}` tokens — the same tokens already used for KPI icon-chips elsewhere in the app. Because those tokens carry their own light-mode values, this also shifted the tags' **light-mode** hue — most notably "audience" moved from an olive/gold hue to teal-blue (the contacts cloud color). This was reviewed and accepted: contrast remains strong in both themes (light 6.24–8.94:1, dark 5.41–11.37:1), so it is not an accessibility regression, only a visual hue change, and it makes these activity tags visually consistent with the same four-category cloud color language already used for KPI chips elsewhere, rather than maintaining a second bespoke palette for the same categories.
