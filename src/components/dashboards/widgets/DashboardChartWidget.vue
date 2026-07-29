@@ -84,7 +84,7 @@ const chartHeight = computed(() => {
 })
 
 const { accentHex } = useAppTheme()
-const { theme, applyChartTheme } = useChartTheme()
+const { theme, applyChartTheme, mode } = useChartTheme()
 const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
 const gradientMarks = computed(() => resolvedTheme.value.gradientMarks)
@@ -258,12 +258,14 @@ const chartOptions = computed<ApexOptions>(() => {
     },
     tooltip: {
       ...base.tooltip,
-      // Pin the tooltip to a fixed corner instead of following the cursor.
-      // The default follow-cursor behaviour flips the tooltip above the
-      // hover point when there isn't room below, which pushes it past the
-      // top edge of `.dashboard-chart-widget` (overflow: hidden) and clips
-      // the title/first series row on small widget sizes.
-      fixed: { enabled: true },
+      // Pin the tooltip to a fixed corner in dark mode only. The default
+      // follow-cursor behaviour flips the tooltip above the hover point when
+      // there isn't room below, which pushes it past the top edge of
+      // `.dashboard-chart-widget` (overflow: hidden) and clips the
+      // title/first series row on small widget sizes — but only in dark mode
+      // (light mode's tooltip chrome doesn't have this clipping issue), so
+      // keep light mode on the default cursor-following tooltip.
+      fixed: { enabled: mode.value === 'dark' },
       y: {
         formatter: (value: number) => formatAxisValue(value, props.data.unit),
       },

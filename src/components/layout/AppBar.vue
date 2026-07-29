@@ -938,11 +938,21 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .assistant-menu-card {
   width: 280px;
-  background: var(--surface-overlay);
+  background: var(--surface-1);
   border: 1px solid var(--hairline);
   border-radius: 14px;
-  box-shadow: var(--elevation-overlay);
+  box-shadow:
+    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
+    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
   overflow: hidden;
+}
+
+/* Dark mode: --surface-1 matches the surface these menus float over, and the
+   --ink-derived shadow inverts to a white glow — give them a real elevation
+   step instead. Light mode keeps the hand-tuned two-layer shadow above. */
+.v-theme--maropostDark .assistant-menu-card {
+  background: var(--surface-overlay);
+  box-shadow: var(--elevation-overlay);
 }
 
 /* ── User pill ──────────────────────────────────── */
@@ -1009,13 +1019,21 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .um-cascade-card {
   width: 280px;
-  background: var(--surface-overlay);
+  background: var(--surface-1);
   border: 1px solid var(--hairline);
   border-radius: 14px;
-  box-shadow: var(--elevation-overlay);
+  box-shadow:
+    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
+    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
   overflow: hidden;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+/* Dark mode: see .assistant-menu-card override above for context. */
+.v-theme--maropostDark .um-cascade-card {
+  background: var(--surface-overlay);
+  box-shadow: var(--elevation-overlay);
 }
 
 .um-cascade-card__header {
@@ -1030,13 +1048,21 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .user-menu-card {
   width: 360px;
-  background: var(--surface-overlay);
+  background: var(--surface-1);
   border: 1px solid var(--hairline);
   border-radius: 14px;
-  box-shadow: var(--elevation-overlay);
+  box-shadow:
+    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
+    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
   overflow: hidden;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+/* Dark mode: see .assistant-menu-card override above for context. */
+.v-theme--maropostDark .user-menu-card {
+  background: var(--surface-overlay);
+  box-shadow: var(--elevation-overlay);
 }
 
 .um-header {
@@ -1304,6 +1330,15 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .theme-segment :deep(.v-btn--active) {
+  background: var(--surface-1);
+  box-shadow: 0 1px 3px color-mix(in oklch, var(--ink) 8%, transparent);
+}
+
+/* Dark mode: --surface-1 matches the track and the --ink-derived shadow
+   inverts to a glow, so the active pill reads as inset rather than raised.
+   --surface-overlay is lighter than the track's --surface-2 in dark, so this
+   keeps the raised look; light mode keeps the original shadow above. */
+.v-theme--maropostDark .theme-segment :deep(.v-btn--active) {
   background: var(--surface-overlay);
   box-shadow: var(--elevation-raised);
 }
