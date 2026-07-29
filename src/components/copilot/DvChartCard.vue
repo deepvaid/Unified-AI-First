@@ -81,8 +81,8 @@ function getMax(bars: number[][]) {
   align-items: flex-end;
   gap: 3px;
   flex: 1;
-  border-left: 1px solid var(--hairline);
-  border-bottom: 1px solid var(--hairline);
+  border-left: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
   padding: 0 2px;
 }
 .chart-bar-col { flex: 1; display: flex; flex-direction: column-reverse; }

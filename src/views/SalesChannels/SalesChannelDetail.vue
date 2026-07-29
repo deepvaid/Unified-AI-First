@@ -1113,7 +1113,7 @@ function locationRoleText(locationId: string) {
   align-items: center;
   gap: var(--mp-spacing-3);
   padding: var(--mp-spacing-3) var(--mp-spacing-4);
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .sc-preview-dialog__bar > div:first-child {
@@ -1123,7 +1123,7 @@ function locationRoleText(locationId: string) {
 
 .sc-preview-dialog__bar strong {
   display: block;
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: var(--mp-typography-fontSize-body);
   font-weight: 700;
 }
@@ -1140,7 +1140,7 @@ function locationRoleText(locationId: string) {
 
 .sc-preview-dialog__body {
   padding: var(--mp-spacing-5);
-  background: var(--surface-2);
+  background: var(--surface-secondary);
 }
 
 .sc-header__row {
@@ -1191,7 +1191,7 @@ function locationRoleText(locationId: string) {
 
 .sc-header__title-row h1 {
   margin: 0;
-  color: var(--ink);
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
@@ -1222,7 +1222,7 @@ function locationRoleText(locationId: string) {
 
 .sc-tabs {
   min-width: 0;
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .sc-tabs :deep(.v-slide-group__content) {
@@ -1269,9 +1269,9 @@ function locationRoleText(locationId: string) {
   margin-top: 12px;
   min-height: 40px;
   padding: 6px 10px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   color: var(--muted);
   font-family: var(--mp-typography-fontFamily-mono, monospace);
   font-size: 12px;
@@ -1302,9 +1302,9 @@ function locationRoleText(locationId: string) {
   align-items: center;
   gap: 10px;
   padding: var(--mp-spacing-3);
-  border: 1px solid color-mix(in oklch, var(--accent) 22%, var(--hairline));
+  border: 1px solid color-mix(in oklch, var(--accent) 22%, var(--border-subtle));
   border-radius: var(--r-section);
-  background: color-mix(in oklch, var(--accent) 5%, var(--surface-1));
+  background: color-mix(in oklch, var(--accent) 5%, var(--surface-primary));
 }
 
 .sc-setup-row strong,
@@ -1316,7 +1316,7 @@ function locationRoleText(locationId: string) {
 }
 
 .sc-setup-row strong {
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 800;
   line-height: 1.25;
@@ -1380,7 +1380,7 @@ function locationRoleText(locationId: string) {
 
 .sc-section-line h2 {
   margin: 0;
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 15px;
   font-weight: 800;
   line-height: 1.3;
@@ -1432,9 +1432,9 @@ function locationRoleText(locationId: string) {
   gap: 8px;
   min-height: 112px;
   padding: 14px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
-  background: var(--surface-1);
+  background: var(--surface-primary);
   color: inherit;
   cursor: pointer;
   text-align: left;
@@ -1453,7 +1453,7 @@ function locationRoleText(locationId: string) {
 
 .sc-location-row strong {
   display: block;
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 14px;
   font-style: normal;
   font-weight: 700;
@@ -1471,7 +1471,7 @@ function locationRoleText(locationId: string) {
 }
 
 .sc-location-row > span:last-child {
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: 700;
   white-space: nowrap;
@@ -1506,7 +1506,7 @@ function locationRoleText(locationId: string) {
 
 .sc-business-field strong {
   margin-top: 5px;
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.3;
@@ -1516,9 +1516,9 @@ function locationRoleText(locationId: string) {
 .sc-cross-sell-banner,
 .sc-assistant-card,
 .sc-feature-row {
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
-  background: var(--surface-1);
+  background: var(--surface-primary);
 }
 
 .sc-favicon-row {
@@ -1529,7 +1529,7 @@ function locationRoleText(locationId: string) {
   margin-top: 18px;
   padding: 12px;
   border-style: dashed;
-  background: color-mix(in oklch, var(--ink) 2%, var(--surface-1));
+  background: color-mix(in oklch, var(--text-primary) 2%, var(--surface-primary));
 }
 
 .sc-favicon-row__thumb {
@@ -1538,9 +1538,9 @@ function locationRoleText(locationId: string) {
   justify-content: center;
   width: 48px;
   height: 48px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   color: var(--muted);
 }
 
@@ -1553,7 +1553,7 @@ function locationRoleText(locationId: string) {
 }
 
 .sc-favicon-row strong {
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 700;
 }
@@ -1570,7 +1570,7 @@ function locationRoleText(locationId: string) {
   gap: 12px;
   margin-top: 18px;
   padding: 12px;
-  background: color-mix(in oklch, var(--accent) 5%, var(--surface-1));
+  background: color-mix(in oklch, var(--accent) 5%, var(--surface-primary));
 }
 
 .sc-cross-sell-banner__icon {
@@ -1592,7 +1592,7 @@ function locationRoleText(locationId: string) {
 }
 
 .sc-cross-sell-banner strong {
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
@@ -1632,7 +1632,7 @@ function locationRoleText(locationId: string) {
 }
 
 .sc-assistant-card strong {
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.25;
@@ -1667,7 +1667,7 @@ function locationRoleText(locationId: string) {
 }
 
 .sc-feature-row__title strong {
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.25;
@@ -1719,7 +1719,7 @@ function locationRoleText(locationId: string) {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--ink);
+  color: var(--text-primary);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -1750,7 +1750,7 @@ function locationRoleText(locationId: string) {
   gap: 12px;
   min-height: 54px;
   padding: 10px 12px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
 }
 
@@ -1761,7 +1761,7 @@ function locationRoleText(locationId: string) {
   width: 32px;
   height: 32px;
   border-radius: var(--r-chip);
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   color: var(--muted);
   font-size: 11px;
   font-weight: 800;
@@ -1776,7 +1776,7 @@ function locationRoleText(locationId: string) {
 }
 
 .sc-app-row strong {
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 700;
 }
@@ -1794,7 +1794,7 @@ function locationRoleText(locationId: string) {
 }
 
 .sc-status-dot--off {
-  background: color-mix(in oklch, var(--ink) 18%, transparent);
+  background: color-mix(in oklch, var(--text-primary) 18%, transparent);
 }
 
 @media (max-width: 1180px) {

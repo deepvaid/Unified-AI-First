@@ -325,8 +325,8 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 .sf-preview {
   --sf-brand: var(--accent);
   --sf-accent: var(--accent);
-  --sf-bg: var(--surface-1);
-  --sf-text: var(--ink);
+  --sf-bg: var(--surface-primary);
+  --sf-text: var(--text-primary);
   --sf-radius: 12px;
   --sf-heading-font: inherit;
   --sf-body-font: inherit;
@@ -334,9 +334,9 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   --sf-soft-line: color-mix(in oklch, var(--sf-text) 12%, transparent);
   --sf-soft-fill: color-mix(in oklch, var(--sf-text) 7%, var(--sf-bg));
   overflow: hidden;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
-  background: var(--surface-1);
+  background: var(--surface-primary);
 }
 
 /* ── Browser chrome ─────────────────────────────────────────────── */
@@ -346,15 +346,15 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   gap: 7px;
   min-height: 34px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--hairline);
-  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-secondary);
 }
 
 .sf-preview__bar span {
   width: 9px;
   height: 9px;
   border-radius: var(--r-pill);
-  background: color-mix(in oklch, var(--ink) 16%, transparent);
+  background: color-mix(in oklch, var(--text-primary) 16%, transparent);
 }
 
 .sf-preview__bar strong {
@@ -372,7 +372,7 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 .sf-preview--tablet .sf-preview__viewport,
 .sf-preview--mobile .sf-preview__viewport {
   margin-inline: auto;
-  border-inline: 1px solid var(--hairline);
+  border-inline: 1px solid var(--border-subtle);
 }
 
 .sf-preview--tablet .sf-preview__viewport {
@@ -390,14 +390,14 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   gap: 18px;
   min-height: 46px;
   padding: 0 16px;
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
   color: var(--muted);
   font-size: 13px;
   font-weight: 600;
 }
 
 .sf-preview__nav strong {
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 18px;
   letter-spacing: 0.08em;
 }
@@ -409,7 +409,7 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   gap: 12px;
   min-height: 344px;
   padding: 14px;
-  background: color-mix(in oklch, var(--accent) 3%, var(--surface-1));
+  background: color-mix(in oklch, var(--accent) 3%, var(--surface-primary));
 }
 
 .sf-preview__hero {
@@ -421,8 +421,8 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   grid-row: span 2;
   padding: 18px;
   border-radius: var(--r-section);
-  background: color-mix(in oklch, var(--accent) 13%, var(--surface-1));
-  color: var(--ink);
+  background: color-mix(in oklch, var(--accent) 13%, var(--surface-primary));
+  color: var(--text-primary);
 }
 
 .sf-preview__hero strong {
@@ -436,28 +436,28 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   min-height: 28px;
   padding: 0 12px;
   border-radius: var(--r-pill);
-  background: var(--ink);
-  color: var(--surface-1);
+  background: var(--text-primary);
+  color: var(--surface-primary);
   font-size: 12px;
   font-weight: 700;
 }
 
 .sf-preview__tile {
   border-radius: var(--r-section);
-  background: color-mix(in oklch, var(--ink) 7%, var(--surface-1));
+  background: color-mix(in oklch, var(--text-primary) 7%, var(--surface-primary));
 }
 
 .sf-preview__tile--2,
 .sf-preview__tile--5 {
-  background: color-mix(in oklch, var(--accent) 10%, var(--surface-1));
+  background: color-mix(in oklch, var(--accent) 10%, var(--surface-primary));
 }
 
 .sf-preview__tile--3 {
-  background: color-mix(in oklch, rgb(var(--v-theme-warning)) 14%, var(--surface-1));
+  background: color-mix(in oklch, rgb(var(--v-theme-warning)) 14%, var(--surface-primary));
 }
 
 .sf-preview__tile--4 {
-  background: color-mix(in oklch, rgb(var(--v-theme-success)) 12%, var(--surface-1));
+  background: color-mix(in oklch, rgb(var(--v-theme-success)) 12%, var(--surface-primary));
 }
 
 @media (max-width: 760px) {

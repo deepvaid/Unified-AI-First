@@ -622,7 +622,7 @@ const usageRows = computed(() => {
 .billing-card__title {
   font-size: 15px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .billing-card__title--danger {
@@ -729,9 +729,9 @@ const usageRows = computed(() => {
   display: flex;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
+  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .subscription-card__icon {
@@ -761,7 +761,7 @@ const usageRows = computed(() => {
 .subscription-card__name {
   font-size: 13.5px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .subscription-card__meta {
@@ -794,7 +794,7 @@ const usageRows = computed(() => {
 
 .product-row + .product-row,
 .doc-row + .doc-row {
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .product-row__icon,
@@ -813,7 +813,7 @@ const usageRows = computed(() => {
 .doc-row__name {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .product-row__tier,
@@ -826,7 +826,7 @@ const usageRows = computed(() => {
 .addon-drawer__name {
   font-size: 15px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
   margin: 0 0 4px;
 }
 
@@ -839,7 +839,7 @@ const usageRows = computed(() => {
 .addon-drawer__price {
   font-size: 20px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .addon-drawer__price span {
@@ -871,9 +871,9 @@ const usageRows = computed(() => {
 
 .usage-card {
   padding: 14px 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
+  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .usage-card__head {
@@ -886,7 +886,7 @@ const usageRows = computed(() => {
 .usage-card__label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .usage-card__values {
@@ -915,7 +915,7 @@ const usageRows = computed(() => {
 }
 
 .info-row + .info-row {
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .info-row__label {
@@ -926,7 +926,7 @@ const usageRows = computed(() => {
 .info-row__value {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -936,9 +936,9 @@ const usageRows = computed(() => {
   align-items: center;
   gap: 16px;
   padding: 14px 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
+  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .payment-row__copy {
@@ -948,7 +948,7 @@ const usageRows = computed(() => {
 .payment-row__title {
   font-size: 13.5px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .payment-row__sub {
@@ -957,15 +957,15 @@ const usageRows = computed(() => {
 }
 
 .invoice-table {
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   overflow: hidden;
-  background: var(--surface-1);
+  background: var(--surface-primary);
 }
 
 /* ─── Danger zone ─────────────────────────────────────────── */
 .danger-card {
-  border-color: color-mix(in oklch, rgb(var(--v-theme-error)) 35%, var(--hairline)) !important;
+  border-color: color-mix(in oklch, rgb(var(--v-theme-error)) 35%, var(--border-subtle)) !important;
 }
 
 .danger-card__copy {

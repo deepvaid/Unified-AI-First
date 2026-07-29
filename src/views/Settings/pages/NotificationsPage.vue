@@ -60,7 +60,7 @@ function save() { saved.value = true }
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -73,7 +73,7 @@ function save() { saved.value = true }
 }
 
 .notif-row + .notif-row {
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .notif-row__copy {
@@ -84,7 +84,7 @@ function save() { saved.value = true }
 .notif-row__title {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .notif-row__sub {

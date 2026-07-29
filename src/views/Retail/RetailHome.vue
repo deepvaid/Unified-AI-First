@@ -323,7 +323,7 @@ function statusIcon(status: string): string {
               </v-list-item-subtitle>
               <template #append>
                 <div class="d-flex flex-column align-end" style="gap: 2px;">
-                  <span class="font-weight-bold" :class="parseFloat(txn.total) < 0 ? 'text-error' : ''" style="color: var(--ink); font-size: 13px;">
+                  <span class="font-weight-bold" :class="parseFloat(txn.total) < 0 ? 'text-error' : ''" style="color: var(--text-primary); font-size: 13px;">
                     {{ fmtMoney(parseFloat(txn.total)) }}
                   </span>
                   <span class="text-caption text-medium-emphasis">{{ txn.paymentMethod }}</span>

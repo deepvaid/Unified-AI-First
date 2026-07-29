@@ -1880,7 +1880,7 @@ const apkQrUrl = computed(() =>
   --cloud-retail-accent: #0d9488;
   width: 100vw;
   height: 100vh;
-  background: color-mix(in oklch, var(--ink) 6%, var(--surface-1));
+  background: color-mix(in oklch, var(--text-primary) 6%, var(--surface-primary));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1893,7 +1893,7 @@ const apkQrUrl = computed(() =>
   gap: 16px;
   padding: 10px 20px;
   background: rgb(var(--v-theme-surface));
-  border-bottom: 1px solid color-mix(in oklch, var(--ink) 8%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--text-primary) 8%, transparent);
   flex-shrink: 0;
   flex-wrap: wrap;
 
@@ -1907,7 +1907,7 @@ const apkQrUrl = computed(() =>
     align-items: center;
     font-weight: 600;
     font-size: 14px;
-    color: var(--ink);
+    color: var(--text-primary);
   }
 
   &__controls {
@@ -2688,13 +2688,13 @@ $pos-bg: #f4f4f5;
   width: 100%;
   padding: 10px 16px;
   border: none;
-  border-bottom: 1px solid color-mix(in oklch, var(--ink) 5%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--text-primary) 5%, transparent);
   background: none;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
 
-  &:hover { background: color-mix(in oklch, var(--ink) 2%, transparent); }
+  &:hover { background: color-mix(in oklch, var(--text-primary) 2%, transparent); }
 
   &__id {
     font-size: 12px;
@@ -2949,7 +2949,7 @@ $pos-bg: #f4f4f5;
     width: 64px;
     height: 64px;
     border-radius: 16px;
-    background: color-mix(in oklch, var(--cloud-retail-accent) 12%, var(--surface-1));
+    background: color-mix(in oklch, var(--cloud-retail-accent) 12%, var(--surface-primary));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2959,7 +2959,7 @@ $pos-bg: #f4f4f5;
   &__title {
     font-size: 17px;
     font-weight: 700;
-    color: var(--ink);
+    color: var(--text-primary);
     margin: 0;
   }
 
@@ -2978,8 +2978,8 @@ $pos-bg: #f4f4f5;
   gap: 8px;
   padding: 12px;
   border-radius: 16px;
-  background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
 
   &__label {
     font-size: 11px;
@@ -3008,7 +3008,7 @@ $pos-bg: #f4f4f5;
 .pos-getapp-badge {
   font-size: 11px;
   color: var(--muted);
-  background: color-mix(in oklch, var(--ink) 6%, transparent);
+  background: color-mix(in oklch, var(--text-primary) 6%, transparent);
   padding: 4px 12px;
   border-radius: 20px;
   letter-spacing: 0.2px;
@@ -3017,8 +3017,8 @@ $pos-bg: #f4f4f5;
 .pos-getapp-steps {
   width: 100%;
   max-width: 300px;
-  background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 14px 16px;
   text-align: left;
@@ -3037,7 +3037,7 @@ $pos-bg: #f4f4f5;
 
   &__step {
     font-size: 12px;
-    color: var(--ink);
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -3432,7 +3432,7 @@ $pos-bg: #f4f4f5;
   width: 100%;
   padding: 10px 12px;
   border: none;
-  border-bottom: 1px solid color-mix(in oklch, var(--ink) 5%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--text-primary) 5%, transparent);
   background: none;
   font-family: inherit;
   text-align: left;
@@ -3694,7 +3694,7 @@ $pos-bg: #f4f4f5;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border-bottom: 1px solid color-mix(in oklch, var(--ink) 5%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--text-primary) 5%, transparent);
 
   &__icon {
     width: 32px;

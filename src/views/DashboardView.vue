@@ -777,7 +777,7 @@ function toggleFavoriteActive() {
 
 .dashboard-widget-expand {
   overflow: hidden;
-  background: var(--surface-1) !important;
+  background: var(--surface-primary) !important;
 }
 
 .dashboard-widget-expand__header {
@@ -786,7 +786,7 @@ function toggleFavoriteActive() {
   justify-content: space-between;
   gap: 16px;
   padding: 18px 20px;
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .dashboard-widget-expand__copy {
@@ -805,7 +805,7 @@ function toggleFavoriteActive() {
 .dashboard-widget-expand__title {
   overflow: hidden;
   margin-top: 3px;
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: 700;
   line-height: 1.25;
@@ -817,7 +817,7 @@ function toggleFavoriteActive() {
   height: min(68vh, 620px);
   min-height: 360px;
   padding: 16px;
-  background: var(--surface-2);
+  background: var(--surface-secondary);
 }
 
 .dashboard-widget-expand__body :deep(.dashboard-widget-card) {
@@ -826,8 +826,8 @@ function toggleFavoriteActive() {
 
 .dashboard-page-header {
   margin: -32px -36px 12px;
-  border-bottom: 1px solid var(--hairline);
-  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
 }
 
 :deep(.dashboard-grid) {
@@ -903,7 +903,7 @@ function toggleFavoriteActive() {
 }
 
 .dashboard-page-header__fav:hover {
-  background: var(--surface-2);
+  background: var(--surface-secondary);
 }
 
 .dashboard-page-header__fav--active {
@@ -928,15 +928,15 @@ function toggleFavoriteActive() {
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: var(--ink);
+  color: var(--text-primary);
   cursor: pointer;
   font: inherit;
   appearance: none;
 }
 
 .dashboard-title-switcher:hover {
-  background: var(--surface-2);
-  border-color: var(--hairline);
+  background: var(--surface-secondary);
+  border-color: var(--border-subtle);
 }
 
 .dashboard-title-switcher:focus-visible {
@@ -971,8 +971,8 @@ function toggleFavoriteActive() {
   justify-content: space-between;
   gap: 12px;
   padding: 4px 36px;
-  background: var(--surface-1);
-  border-top: 1px solid var(--hairline);
+  background: var(--surface-primary);
+  border-top: 1px solid var(--border-subtle);
 }
 
 @media (max-width: 1024px) {
@@ -1003,13 +1003,13 @@ function toggleFavoriteActive() {
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0;
-  color: var(--ink);
-  background: color-mix(in oklch, var(--ink) 5%, var(--surface-1)) !important;
+  color: var(--text-primary);
+  background: color-mix(in oklch, var(--text-primary) 5%, var(--surface-primary)) !important;
   box-shadow: none !important;
 }
 
 .dashboard-filter-btn--pill.v-btn:hover {
-  background: color-mix(in oklch, var(--ink) 9%, var(--surface-1)) !important;
+  background: color-mix(in oklch, var(--text-primary) 9%, var(--surface-primary)) !important;
 }
 
 .dashboard-filter-btn--pill :deep(.v-btn__prepend) {
@@ -1061,7 +1061,7 @@ function toggleFavoriteActive() {
 
 /* ── Rich action menu (Actions) — matches the global Create-new menu ── */
 .mp-menu {
-  border-color: var(--hairline);
+  border-color: var(--border-subtle);
   padding: 8px;
   overflow: hidden;
 }
@@ -1104,7 +1104,7 @@ function toggleFavoriteActive() {
 }
 
 .mp-menu-row__icon {
-  color: var(--ink);
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
@@ -1124,7 +1124,7 @@ function toggleFavoriteActive() {
   font-size: 13.5px;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .mp-menu-row__body small {
@@ -1150,7 +1150,7 @@ function toggleFavoriteActive() {
 
 .dashboard-date-menu__presets {
   padding: 8px;
-  border-right: 1px solid var(--hairline);
+  border-right: 1px solid var(--border-subtle);
   background: rgba(var(--v-theme-on-surface), 0.025);
 }
 
@@ -1182,7 +1182,7 @@ function toggleFavoriteActive() {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--ink);
+  color: var(--text-primary);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -1233,11 +1233,11 @@ function toggleFavoriteActive() {
 }
 
 .dashboard-switcher-card {
-  border-color: var(--hairline);
+  border-color: var(--border-subtle);
 }
 
 .dashboard-switcher-card__search {
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 @media (max-width: 960px) {
@@ -1265,7 +1265,7 @@ function toggleFavoriteActive() {
 
   .dashboard-date-menu__presets {
     border-right: 0;
-    border-bottom: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--border-subtle);
     max-height: 230px;
     overflow: auto;
   }

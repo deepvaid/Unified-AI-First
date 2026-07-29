@@ -120,11 +120,11 @@ function usage(id: string): number {
 .picker-group__locked-note {
   margin: 0;
   padding: 10px 12px;
-  border: 1px dashed var(--hairline);
+  border: 1px dashed var(--border-subtle);
   border-radius: 10px;
   font-size: 12.5px;
   color: var(--muted);
-  background: var(--surface-2);
+  background: var(--surface-secondary);
 }
 
 .picker-group__roles {
@@ -138,15 +138,15 @@ function usage(id: string): number {
   align-items: flex-start;
   gap: 4px;
   padding: 8px 10px 8px 4px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   transition: border-color 120ms ease, background 120ms ease;
 }
 
 .picker-role--selected {
   border-color: color-mix(in oklch, rgb(var(--v-theme-primary)) 45%, transparent);
-  background: color-mix(in oklch, rgb(var(--v-theme-primary)) 4%, var(--surface-1));
+  background: color-mix(in oklch, rgb(var(--v-theme-primary)) 4%, var(--surface-primary));
 }
 
 .picker-role__checkbox {
@@ -183,7 +183,7 @@ function usage(id: string): number {
 .picker-role__name {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .picker-role__usage {

@@ -280,7 +280,7 @@ a {
 }
 
 /* A11Y-001: settings-form.scss's "Global Outlined Field Baseline" hardcodes
-   the resting outline border to --hairline (an opaque #e2e8f0-family token)
+   the resting outline border to --border-subtle (an opaque #e2e8f0-family token)
    at full element opacity, which composites to ~1.2:1 against white/canvas —
    far under the 3:1 non-text contrast floor. Override at higher specificity
    (sanctioned by that file's own "components may add scoped specificity

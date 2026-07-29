@@ -279,7 +279,7 @@ function askRemove() {
   gap: 6px;
   font-size: 15px;
   font-weight: 650;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .access-identity__meta {
@@ -300,7 +300,7 @@ function askRemove() {
   align-items: baseline;
   gap: 8px;
   font-size: 13px;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .access-products__row .v-icon {
@@ -316,6 +316,6 @@ function askRemove() {
   border: 1px solid color-mix(in oklch, rgb(var(--v-theme-error)) 25%, transparent);
   border-radius: 12px;
   padding: 14px 16px;
-  background: color-mix(in oklch, rgb(var(--v-theme-error)) 2%, var(--surface-1));
+  background: color-mix(in oklch, rgb(var(--v-theme-error)) 2%, var(--surface-primary));
 }
 </style>

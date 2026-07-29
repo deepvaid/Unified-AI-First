@@ -94,9 +94,9 @@ const trackingDomains = ref([
 
 .domain-card {
   padding: 14px 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
+  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .domain-card__header {
@@ -117,7 +117,7 @@ const trackingDomains = ref([
 .domain-card__title {
   font-size: 14px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
   overflow-wrap: anywhere;
 }
 

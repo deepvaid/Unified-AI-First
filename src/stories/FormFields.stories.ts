@@ -5,8 +5,8 @@
  * v-combobox) share a single visual baseline defined in settings-form.scss:
  *   • 10px border radius
  *   • 40px minimum control height
- *   • Subtle surface-2 fill (color-mix with --surface-2 token)
- *   • Flat 1px outline using --hairline (dark-mode-aware)
+ *   • Subtle surface-2 fill (color-mix with --surface-secondary token)
+ *   • Flat 1px outline using --border-subtle (dark-mode-aware)
  *   • Primary-color border on focus, no ring/glow
  *   • Full-opacity disabled container with muted text
  *
@@ -30,7 +30,7 @@ Every outlined form control in the app shares a single visual style:
 - **Shape** – 10px border radius
 - **Height** – 40px minimum (all densities)
 - **Fill** – Subtle \`surface-2\` tint, slightly darker on hover
-- **Border** – Flat 1px, \`--hairline\` token (light & dark mode)
+- **Border** – Flat 1px, \`--border-subtle\` token (light & dark mode)
 - **Focus** – Primary-color border, no box-shadow ring
 - **Disabled** – Full opacity, muted text color
 - **Error** – Error-color border

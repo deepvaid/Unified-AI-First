@@ -406,7 +406,7 @@ function confirmDelete() {
 .role-cell__name {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .role-cell__description {

@@ -141,6 +141,6 @@ function applyCustom() {
 }
 
 .mp-range-custom {
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--border-subtle);
 }
 </style>

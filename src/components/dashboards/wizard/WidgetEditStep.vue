@@ -168,9 +168,9 @@ const subtitleModel = computed({
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -178,8 +178,8 @@ const subtitleModel = computed({
 }
 
 .widget-edit__chart-type:hover {
-  border-color: color-mix(in oklch, var(--accent) 28%, var(--hairline));
-  background: var(--surface-2);
+  border-color: color-mix(in oklch, var(--accent) 28%, var(--border-subtle));
+  background: var(--surface-secondary);
 }
 
 .widget-edit__chart-type--active {
@@ -190,9 +190,9 @@ const subtitleModel = computed({
 .widget-edit__chart-radio {
   width: 16px;
   height: 16px;
-  border: 1.5px solid var(--hairline);
+  border: 1.5px solid var(--border-subtle);
   border-radius: 999px;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -222,7 +222,7 @@ const subtitleModel = computed({
 .widget-edit__chart-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .widget-edit__preview-section {
@@ -241,9 +241,9 @@ const subtitleModel = computed({
 .widget-edit__preview-body {
   min-height: 280px;
   padding: 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  background: var(--surface-2);
+  background: var(--surface-secondary);
 }
 
 .widget-edit__preview-body :deep(.dashboard-widget-card) {

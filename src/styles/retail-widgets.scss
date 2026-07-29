@@ -3,8 +3,8 @@
    `retail-` prefix and retail accent (teal) as default. */
 
 .retail-widget-card {
-  background: var(--surface-1) !important;
-  border-color: color-mix(in oklch, var(--ink) 7%, transparent) !important;
+  background: var(--surface-primary) !important;
+  border-color: color-mix(in oklch, var(--text-primary) 7%, transparent) !important;
   border-radius: var(--r-section) !important;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
   overflow: hidden;
@@ -12,7 +12,7 @@
 }
 
 .retail-widget-card:hover {
-  border-color: color-mix(in oklch, var(--ink) 18%, transparent) !important;
+  border-color: color-mix(in oklch, var(--text-primary) 18%, transparent) !important;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06) !important;
 }
 
@@ -28,7 +28,7 @@
 .retail-widget-header__title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -57,9 +57,9 @@
   flex-direction: column;
   gap: 8px;
   padding: 14px;
-  border: 1px solid color-mix(in oklch, var(--ink) 8%, transparent);
+  border: 1px solid color-mix(in oklch, var(--text-primary) 8%, transparent);
   border-radius: var(--r-section);
-  background: var(--surface-1);
+  background: var(--surface-primary);
   cursor: pointer;
   transition: border-color 120ms ease, box-shadow 120ms ease;
   height: 100%;
@@ -99,7 +99,7 @@
 .retail-action-tile__title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   line-height: 1.25;
 }
 
@@ -135,7 +135,7 @@
 .retail-list-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   line-height: 1.3;
 }
 

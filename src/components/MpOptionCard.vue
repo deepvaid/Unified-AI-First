@@ -65,7 +65,7 @@ function onKeyActivate(e: KeyboardEvent) {
   box-shadow: 0 0 0 1px var(--accent-default);
 }
 .mp-option-card__media {
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--border-subtle);
   background: var(--surface-canvas);
 }
 </style>

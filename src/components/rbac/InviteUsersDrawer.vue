@@ -208,7 +208,7 @@ function sendInvites() {
   align-items: baseline;
   gap: 8px;
   font-size: 13px;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .review-access__row .v-icon {

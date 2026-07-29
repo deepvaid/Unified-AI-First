@@ -54,13 +54,11 @@
   --accent-container: var(--mp-color-light-accent-cyan-container);
   --accent-on-container: var(--mp-color-light-accent-cyan-onContainer);
 
-  /* Compatibility aliases — remove after the migration window. */
+  /* Compatibility aliases — remove after the migration window.
+     WP-F5 (AUD-L01): --surface-1/-2, --hairline, --ink retired after the
+     mechanical rename to their semantic equivalents across src/. */
   --surface-0: var(--surface-canvas);
-  --surface-1: var(--surface-primary);
-  --surface-2: var(--surface-secondary);
-  --ink: var(--text-primary);
   --muted: var(--text-muted);
-  --hairline: var(--border-subtle);
   --accent: var(--accent-default);
   --accent-fg: var(--accent-on);
   --accent-ink: var(--accent-active);
@@ -174,13 +172,11 @@
   --accent-container: var(--mp-color-dark-accent-cyan-container);
   --accent-on-container: var(--mp-color-dark-accent-cyan-onContainer);
 
-  /* Compatibility aliases — remove after the migration window. */
+  /* Compatibility aliases — remove after the migration window.
+     WP-F5 (AUD-L01): --surface-1/-2, --hairline, --ink retired after the
+     mechanical rename to their semantic equivalents across src/. */
   --surface-0: var(--surface-canvas);
-  --surface-1: var(--surface-primary);
-  --surface-2: var(--surface-secondary);
-  --ink: var(--text-primary);
   --muted: var(--text-muted);
-  --hairline: var(--border-subtle);
   --accent: var(--accent-default);
   --accent-fg: var(--accent-on);
   --accent-ink: var(--accent-on-container);

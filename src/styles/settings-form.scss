@@ -14,12 +14,12 @@
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined {
   border-radius: var(--mp-component-input-radius-default);
   font-size: 14px;
-  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+  background: color-mix(in srgb, var(--surface-secondary) 55%, transparent);
   transition: background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover {
-  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-secondary) 72%, transparent);
 }
 
 /* Baseline alpha: outline elements render at full opacity — the softness
@@ -49,12 +49,12 @@
   opacity: 0.65;
 }
 
-/* ── Resting border — dark-mode-aware via --hairline alias ──── */
+/* ── Resting border — dark-mode-aware via --border-subtle alias ──── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__start,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__end,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__notch::before,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__notch::after {
-  border-color: var(--hairline) !important;
+  border-color: var(--border-subtle) !important;
 }
 
 /* ── Hover border — one step darker than the resting hairline ── */
@@ -62,7 +62,7 @@
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover:not(.v-field--focused):not(.v-field--error) .v-field__outline__end,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover:not(.v-field--focused):not(.v-field--error) .v-field__outline__notch::before,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover:not(.v-field--focused):not(.v-field--error) .v-field__outline__notch::after {
-  border-color: var(--mp-border-subtle-hover, var(--hairline)) !important;
+  border-color: var(--mp-border-subtle-hover, var(--border-subtle)) !important;
 }
 
 /* ── Focused border — primary color, no thickness bump, soft ring */
@@ -236,7 +236,7 @@
   gap: 8px;
   padding: 16px 0 2px;
   margin-top: 4px;
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--border-subtle);
   background: linear-gradient(180deg, transparent 0, rgb(var(--v-theme-surface)) 24px);
   z-index: 2;
 }

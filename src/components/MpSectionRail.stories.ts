@@ -130,7 +130,7 @@ or there's only 2-3 destinations (inline tabs or \`MpFilterTabs\` are lighter).
   },
   decorators: [
     () => ({
-      template: '<div style="display: flex; height: 560px; border: 1px solid var(--hairline); border-radius: 8px; overflow: hidden;"><story /><div style="flex: 1; background: rgb(var(--v-theme-background));" /></div>',
+      template: '<div style="display: flex; height: 560px; border: 1px solid var(--border-subtle); border-radius: 8px; overflow: hidden;"><story /><div style="flex: 1; background: rgb(var(--v-theme-background));" /></div>',
     }),
   ],
 }

@@ -843,7 +843,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   width: 36px;
   height: 36px;
   border-radius: var(--r-pill);
-  color: var(--ink);
+  color: var(--text-primary);
   /* Faint resting surface so the icons read as tappable controls, not glyphs
      floating on the light bar. Theme-adaptive via on-surface alpha. */
   background: var(--surface-interactive);
@@ -854,7 +854,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 .appbar-utilities :deep(.appbar-action-btn:hover),
 .appbar-utilities :deep(.appbar-action-btn:focus-visible) {
   background: var(--surface-interactive-hover);
-  color: var(--ink);
+  color: var(--text-primary);
   outline: none;
 }
 
@@ -882,12 +882,12 @@ function onSearchKeydown(event: KeyboardEvent) {
   gap: 6px;
   height: 32px;
   padding: 5px 12px;
-  /* --hairline is tuned for white cards; on the light bar it vanishes (≈1.05:1).
+  /* --border-subtle is tuned for white cards; on the light bar it vanishes (≈1.05:1).
      A stronger on-surface edge + faint lift make the pill read as a control. */
   border: 1px solid var(--border-default);
   border-radius: var(--r-pill);
   background: var(--surface-primary);
-  color: var(--ink);
+  color: var(--text-primary);
   box-shadow: var(--elevation-raised);
   font: inherit;
   appearance: none;
@@ -938,16 +938,16 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .assistant-menu-card {
   width: 280px;
-  background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
   box-shadow:
-    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
-    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
+    0 8px 32px color-mix(in oklch, var(--text-primary) 12%, transparent),
+    0 2px 8px color-mix(in oklch, var(--text-primary) 6%, transparent);
   overflow: hidden;
 }
 
-/* Dark mode: --surface-1 matches the surface these menus float over, and the
+/* Dark mode: --surface-primary matches the surface these menus float over, and the
    --ink-derived shadow inverts to a white glow — give them a real elevation
    step instead. Light mode keeps the hand-tuned two-layer shadow above. */
 .v-theme--maropostDark .assistant-menu-card {
@@ -1019,12 +1019,12 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .um-cascade-card {
   width: 280px;
-  background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
   box-shadow:
-    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
-    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
+    0 8px 32px color-mix(in oklch, var(--text-primary) 12%, transparent),
+    0 2px 8px color-mix(in oklch, var(--text-primary) 6%, transparent);
   overflow: hidden;
   max-height: 90vh;
   overflow-y: auto;
@@ -1048,12 +1048,12 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .user-menu-card {
   width: 360px;
-  background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
   box-shadow:
-    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
-    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
+    0 8px 32px color-mix(in oklch, var(--text-primary) 12%, transparent),
+    0 2px 8px color-mix(in oklch, var(--text-primary) 6%, transparent);
   overflow: hidden;
   max-height: 90vh;
   overflow-y: auto;
@@ -1072,10 +1072,10 @@ function onSearchKeydown(event: KeyboardEvent) {
   padding: 20px;
   background: linear-gradient(
     180deg,
-    color-mix(in oklch, rgb(var(--v-theme-primary)) 10%, var(--surface-1)) 0%,
-    color-mix(in oklch, rgb(var(--v-theme-primary)) 4%, var(--surface-1)) 100%
+    color-mix(in oklch, rgb(var(--v-theme-primary)) 10%, var(--surface-primary)) 0%,
+    color-mix(in oklch, rgb(var(--v-theme-primary)) 4%, var(--surface-primary)) 100%
   );
-  border-bottom: 1px solid color-mix(in oklch, rgb(var(--v-theme-primary)) 14%, var(--hairline));
+  border-bottom: 1px solid color-mix(in oklch, rgb(var(--v-theme-primary)) 14%, var(--border-subtle));
 }
 
 .um-header__info {
@@ -1089,7 +1089,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   font-size: 17px;
   font-weight: 700;
   line-height: 1.2;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .um-header__email {
@@ -1099,7 +1099,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .um-divider {
   height: 1px;
-  background: var(--hairline);
+  background: var(--border-subtle);
 }
 
 .um-section {
@@ -1186,11 +1186,11 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 /* The Da Vinci mark stays full-ink in menus — never muted like generic icons */
 .um-item__icon.dv-orbit-orb {
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .um-item:hover .um-item__icon {
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .um-item__avatar {
@@ -1207,7 +1207,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   font-size: 14px;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .um-item__sub {
@@ -1243,9 +1243,9 @@ function onSearchKeydown(event: KeyboardEvent) {
   padding: 0 10px;
   margin: 0 12px 8px;
   height: 36px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 
@@ -1268,7 +1268,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   font-size: 13px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--ink);
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -1298,9 +1298,9 @@ function onSearchKeydown(event: KeyboardEvent) {
   min-height: 36px;
   height: auto !important;
   padding: 3px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-pill);
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   overflow-x: auto;
   overflow-y: visible;
 }
@@ -1330,13 +1330,13 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .theme-segment :deep(.v-btn--active) {
-  background: var(--surface-1);
-  box-shadow: 0 1px 3px color-mix(in oklch, var(--ink) 8%, transparent);
+  background: var(--surface-primary);
+  box-shadow: 0 1px 3px color-mix(in oklch, var(--text-primary) 8%, transparent);
 }
 
-/* Dark mode: --surface-1 matches the track and the --ink-derived shadow
+/* Dark mode: --surface-primary matches the track and the --ink-derived shadow
    inverts to a glow, so the active pill reads as inset rather than raised.
-   --surface-overlay is lighter than the track's --surface-2 in dark, so this
+   --surface-overlay is lighter than the track's --surface-secondary in dark, so this
    keeps the raised look; light mode keeps the original shadow above. */
 .v-theme--maropostDark .theme-segment :deep(.v-btn--active) {
   background: var(--surface-overlay);
@@ -1393,7 +1393,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   align-items: center;
   flex-shrink: 0;
   padding: 1px 6px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-pill);
   background: transparent;
   color: var(--muted);
@@ -1437,7 +1437,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: var(--ink);
+  color: var(--text-primary);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -1462,7 +1462,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   height: 30px;
   border-radius: 8px;
   background: var(--surface-interactive);
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .cmd-row--active .cmd-row__icon {
@@ -1589,7 +1589,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .appbar-search-result:hover,
 .appbar-search-result:focus-visible {
-  background: var(--surface-2);
+  background: var(--surface-secondary);
 }
 
 .appbar-search-result:focus-visible {
@@ -1625,7 +1625,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   font-size: 10px;
   line-height: 16px;
   background: var(--neg) !important;
-  box-shadow: 0 0 0 2px var(--surface-1);
+  box-shadow: 0 0 0 2px var(--surface-primary);
 }
 
 @media (max-width: 1180px) {
@@ -1675,7 +1675,7 @@ function onSearchKeydown(event: KeyboardEvent) {
     border: 0;
     border-radius: var(--r-pill);
     background: transparent;
-    color: var(--ink);
+    color: var(--text-primary);
     appearance: none;
     cursor: pointer;
     transition: background var(--dur-fast) var(--ease);
@@ -1703,7 +1703,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
@@ -1719,7 +1719,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .appbar-mobile-search-card__footer {
   padding: 12px 16px;
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
@@ -1736,7 +1736,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   /* Match the sibling action buttons: faint resting surface + dark glyph so the
      whole utility cluster reads as one row of tappable controls. */
   background: var(--surface-interactive);
-  color: var(--ink);
+  color: var(--text-primary);
   font: inherit;
   appearance: none;
   cursor: pointer;
@@ -1751,7 +1751,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 .appbar-create-btn:hover,
 .appbar-create-btn--open {
   background: var(--surface-interactive-hover);
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .appbar-create-btn:focus-visible {
@@ -1761,7 +1761,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .appbar-create-menu {
-  border-color: var(--hairline);
+  border-color: var(--border-subtle);
   padding: 8px;
   overflow: hidden;
 }
@@ -1810,7 +1810,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .appbar-create-row__icon {
-  color: var(--ink);
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
@@ -1826,7 +1826,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   font-size: 13.5px;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .appbar-create-row__body small {
@@ -1842,9 +1842,9 @@ function onSearchKeydown(event: KeyboardEvent) {
   min-width: 22px;
   height: 22px;
   padding: 0 6px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   color: var(--muted);
   font-family: ui-monospace, "SF Mono", monospace;
   font-size: 11px;

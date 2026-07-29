@@ -45,7 +45,7 @@ withDefaults(defineProps<{
   align-items: center;
   gap: 24px;
   padding: 14px 20px;
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .mp-table-skeleton__row--header {

@@ -113,15 +113,15 @@ const surfaces = computed(() => [
   justify-content: space-between;
   gap: 16px;
   padding: 12px 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
+  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .ai-surface-row__name {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .ai-surface-row__desc {

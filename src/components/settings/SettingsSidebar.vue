@@ -76,7 +76,7 @@ function routeTo(item: SettingsItem) {
   flex-direction: column;
   gap: 10px;
   padding: 20px 12px 16px 12px;
-  border-right: 1px solid var(--hairline);
+  border-right: 1px solid var(--border-subtle);
   align-self: stretch;
   min-height: 0;
   background: var(--surface-primary);
@@ -87,7 +87,7 @@ function routeTo(item: SettingsItem) {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .settings-sidebar__search {
@@ -97,7 +97,7 @@ function routeTo(item: SettingsItem) {
   margin: 0 8px 4px;
   padding: 0 10px;
   height: 34px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   background: var(--surface-primary);
   transition: border-color 120ms ease, box-shadow 120ms ease;
@@ -121,7 +121,7 @@ function routeTo(item: SettingsItem) {
   background: transparent;
   font-size: 13px;
   font-family: inherit;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .settings-sidebar__search-input::placeholder {
@@ -160,7 +160,7 @@ function routeTo(item: SettingsItem) {
   gap: 6px;
   padding: 7px 12px;
   border-radius: 6px;
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 13.5px;
   font-weight: 500;
   text-decoration: none;
@@ -210,7 +210,7 @@ function routeTo(item: SettingsItem) {
     width: 100%;
     max-height: 320px;
     border-right: 0;
-    border-bottom: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--border-subtle);
   }
 }
 

@@ -528,7 +528,7 @@ function bulkDeactivate() {
   gap: 5px;
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
@@ -544,9 +544,9 @@ function bulkDeactivate() {
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  border: 1px solid var(--hairline);
-  background: var(--surface-1);
-  color: var(--ink);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--text-primary);
 }
 
 .product-dot--marketing { color: var(--cloud-marketing-text); }

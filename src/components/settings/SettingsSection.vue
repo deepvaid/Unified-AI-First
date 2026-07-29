@@ -25,8 +25,8 @@ defineProps<{
 
 <style scoped lang="scss">
 .settings-section {
-  background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
   padding: 20px 24px;
 }
@@ -57,7 +57,7 @@ defineProps<{
 
 .settings-section__title {
   margin: 0 0 3px;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .settings-section__description {

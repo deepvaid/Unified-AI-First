@@ -258,7 +258,7 @@ function chooseSize(size: WidgetSize) {
   position: relative;
   border-color: var(--border-subtle) !important;
   border-radius: var(--r-section) !important;
-  background: var(--surface-1) !important;
+  background: var(--surface-primary) !important;
   overflow: hidden;
   min-height: 0;
   box-shadow: var(--elevation-raised);
@@ -293,7 +293,7 @@ function chooseSize(size: WidgetSize) {
 .dashboard-widget-card__title {
   min-width: 0;
   overflow: hidden;
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 650;
   line-height: 1.25;
@@ -354,8 +354,8 @@ function chooseSize(size: WidgetSize) {
 
 .dashboard-widget-card__actions :deep(.v-btn:hover),
 .dashboard-widget-card__kpi-actions :deep(.v-btn:hover) {
-  background: var(--surface-2);
-  color: var(--ink);
+  background: var(--surface-secondary);
+  color: var(--text-primary);
 }
 
 .dashboard-widget-card__actions :deep(.v-icon),
@@ -431,7 +431,7 @@ function chooseSize(size: WidgetSize) {
   width: 44px;
   height: 44px;
   border-radius: 9999px;
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   color: var(--muted);
   margin-bottom: 4px;
 }
@@ -439,7 +439,7 @@ function chooseSize(size: WidgetSize) {
 .dashboard-widget-card__empty-title {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .dashboard-widget-card__empty-sub {
@@ -460,8 +460,8 @@ function chooseSize(size: WidgetSize) {
   justify-content: space-between;
   gap: 8px;
   padding: 10px 16px;
-  border-top: 1px solid var(--hairline);
-  background: var(--surface-1);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
   min-height: 40px;
   flex-shrink: 0;
 }

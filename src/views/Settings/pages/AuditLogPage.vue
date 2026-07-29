@@ -289,7 +289,7 @@ function actionMeta(event: AuditEvent) {
 .audit-target__label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   white-space: nowrap;
 }
 

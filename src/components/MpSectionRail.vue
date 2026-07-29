@@ -166,7 +166,7 @@ function isActive(item: MpSectionRailItem): boolean {
   flex-direction: column;
   gap: 12px;
   padding: 16px 12px;
-  border-right: 1px solid var(--hairline);
+  border-right: 1px solid var(--border-subtle);
   align-self: stretch;
   min-height: 0;
   background: var(--surface-primary);
@@ -186,7 +186,7 @@ function isActive(item: MpSectionRailItem): boolean {
 }
 
 .mp-section-rail__back:hover {
-  color: var(--ink);
+  color: var(--text-primary);
   background: var(--surface-secondary);
 }
 
@@ -195,7 +195,7 @@ function isActive(item: MpSectionRailItem): boolean {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .mp-section-rail__identity {
@@ -204,7 +204,7 @@ function isActive(item: MpSectionRailItem): boolean {
   gap: 10px;
   margin: 0 4px;
   padding: 10px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   background: var(--surface-primary);
 }
@@ -217,7 +217,7 @@ function isActive(item: MpSectionRailItem): boolean {
 .mp-section-rail__identity-name {
   font-size: 13px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .mp-section-rail__identity-caption {
@@ -232,7 +232,7 @@ function isActive(item: MpSectionRailItem): boolean {
   margin: 0 4px;
   padding: 0 10px;
   height: 34px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   background: var(--surface-primary);
   transition: border-color 120ms ease, box-shadow 120ms ease;
@@ -256,7 +256,7 @@ function isActive(item: MpSectionRailItem): boolean {
   background: transparent;
   font-size: 13px;
   font-family: inherit;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .mp-section-rail__search-input::placeholder {
@@ -295,7 +295,7 @@ function isActive(item: MpSectionRailItem): boolean {
   gap: 10px;
   padding: 8px 12px;
   border-radius: 6px;
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 13.5px;
   font-weight: 500;
   text-decoration: none;
@@ -370,7 +370,7 @@ function isActive(item: MpSectionRailItem): boolean {
 .mp-section-rail__footer {
   margin: 0 4px;
   padding-top: 10px;
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--border-subtle);
 }
 
 @media (max-width: 900px) {
@@ -378,7 +378,7 @@ function isActive(item: MpSectionRailItem): boolean {
     width: 100%;
     max-height: 320px;
     border-right: 0;
-    border-bottom: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--border-subtle);
   }
 }
 

@@ -191,7 +191,7 @@ function onFile(e: Event) {
 }
 
 .profile-image-upload-btn {
-  border-color: var(--hairline) !important;
-  color: var(--ink) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
 }
 </style>

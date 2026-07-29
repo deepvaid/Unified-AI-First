@@ -113,15 +113,15 @@ function save() { saved.value = true }
   justify-content: space-between;
   gap: 16px;
   padding: 14px 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
+  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .toggle-row__title {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .toggle-row__sub {
@@ -148,15 +148,15 @@ function save() { saved.value = true }
   justify-content: space-between;
   gap: 16px;
   padding: 12px 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
+  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .template-card__name {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .template-card__preview {

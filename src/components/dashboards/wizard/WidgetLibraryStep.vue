@@ -191,19 +191,19 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 999px;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
   font-weight: 500;
-  color: var(--ink);
+  color: var(--text-primary);
   transition: background 120ms ease, border-color 120ms ease;
 }
 
 .widget-library__category:hover {
-  background: var(--surface-2);
+  background: var(--surface-secondary);
 }
 
 .widget-library__category--active {
@@ -235,7 +235,7 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   align-items: center;
   justify-content: center;
   padding: 40px 16px;
-  border: 1px dashed var(--hairline);
+  border: 1px dashed var(--border-subtle);
   border-radius: 12px;
   text-align: center;
 }
@@ -246,9 +246,9 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -256,8 +256,8 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 }
 
 .widget-library__item:hover {
-  background: var(--surface-2);
-  border-color: color-mix(in oklch, var(--accent) 28%, var(--hairline));
+  background: var(--surface-secondary);
+  border-color: color-mix(in oklch, var(--accent) 28%, var(--border-subtle));
 }
 
 .widget-library__item--active {
@@ -300,7 +300,7 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 .widget-library__item-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .widget-library__item-recommended {

@@ -158,3 +158,40 @@ Append-only. One section per WP, in execution order.
 **Known issues:** None introduced.
 
 ---
+
+## WP-F5 — Dark-mode low closure (AUD-L01) + compat alias retirement
+
+**Status:** Done
+
+**Grep-pattern verification before the sweep (per the task's specific caution):** a naive `--ink\b` grep over-matches — `\b` only requires a word→non-word transition, so `--ink-panel-bg`, `--ink-panel-fg`, `--ink-panel-muted-fg`, `--ink-panel-accent`, `--ink-panel-border` (a legitimate, actively-used token family for the confident-editorial ink-panel surface, unrelated to the deprecated `--ink` alias) all matched too (28 of 189 raw hits). Corrected to a negative-lookahead pattern, `--ink(?!-)\b` (via `grep -P` / Python `re`), which excludes `--ink-panel-*` and a comment-only "`--ink-derived`" phrase in `AppBar.vue` (never a real token) while still catching every genuine `var(--ink)` reference. `--surface-1`, `--surface-2`, `--hairline` had no such collisions (verified no `--surface-10`-style or `--mp-border-hairline`-style false matches exist).
+
+**Work completed:**
+1. Confirmed via `grep -rnE -- "^\s*--(surface-1|surface-2|hairline|ink)\s*:" src/` that the only *definitions* of these four names are the two theme blocks in `src/styles/mp-theme-aliases.css` — no component locally redefines them, so a global rename is safe.
+2. Mechanically renamed every consumption site (`--surface-1` → `--surface-primary`, `--surface-2` → `--surface-secondary`, `--hairline` → `--border-subtle`, `--ink` → `--text-primary`, using the corrected pattern) across `src/` (excluding `src/design-tokens/generated/`) with a value-preserving Python script — 75 + 45 + 120 + 157 = 397 replacements across 54 files. Prose comments mentioning the old names (e.g. "`--hairline` is tuned for white cards…") were updated too, since they document the same concept under its new name.
+3. **D6 correction:** the bulk pass initially touched `src/views/Retail/PosPreview.vue` (a declared showcase/fixed-look exception). Reverted that file, then reconsidered: `PosPreview.vue` has no local redefinition of these 4 names and depends entirely on the global aliases being retired in step 4 below — leaving it un-renamed would not preserve its look, it would silently break it once the aliases are deleted (`var(--surface-1)` etc. would resolve to nothing). Re-applied the same value-preserving rename to `PosPreview.vue` alone (4× `--surface-1`, 2× `--hairline`, 10× `--ink`) as the only way to keep D6's "untouched appearance" guarantee intact under the alias deletion — this is a byte-for-byte-equivalent substitution (same resolved values), not a visual/design change, so it doesn't reopen the D6 exception. Verified rendered `/commerce/2000290/retail/pos-preview` before and after: identical.
+4. Deleted the four alias definitions (`--surface-1`, `--surface-2`, `--ink`, `--hairline`) from both theme blocks in `mp-theme-aliases.css`, leaving the other compat aliases in that same block (`--surface-0`, `--muted`, `--accent`, `--accent-fg`, `--accent-ink`, `--accent-soft`) untouched — those are out of this WP's named scope.
+
+**Files changed:** `src/styles/mp-theme-aliases.css` + 54 consumer files (`.vue`/`.scss`/`.css`/`.ts` under `src/components`, `src/views`, `src/styles`, `src/stories`) — full list is every file touched in this commit.
+
+**Grep-zero acceptance (final state):**
+```
+grep -rn -- "--surface-1\b" src/ | grep -v generated   →  (none)
+grep -rn -- "--surface-2\b" src/ | grep -v generated   →  (none)
+grep -rn -- "--hairline\b" src/ | grep -v generated    →  (none)
+grep -rnP -- "--ink(?!-)\b" src/ | grep -v generated   →  (none)
+```
+(the only remaining hits anywhere are inside this log and one explanatory code comment in `mp-theme-aliases.css` documenting the retirement, both prose not CSS).
+
+**Tests run:**
+- `npm run type-check` / `npm run build` — same pre-existing baseline `ReelFlyView.vue` failures only; `npx vite build` — pass, `✓ built in ~11s`.
+- Dev-server visual pass, light + dark:
+  - Settings → Account Defaults: unchanged from the WP-F2/F3 baseline screenshots (left nav, form fields, borders).
+  - Section-rail page (`StoreThemeBuilder`, `/accounts/2000290/sales_channels/retest-sales-notification/theme`): rail + canvas render identically in both themes.
+  - `/commerce/2000290/retail/pos-preview` (the D6 exception file touched per item 3 above): renders identically to its pre-rename appearance.
+  - Console: zero errors on any of the three screens, either theme.
+
+**Deviations from plan:** One necessary addition beyond the plan's literal file scope: `PosPreview.vue` (a D6 "out of scope" file) received the same value-preserving rename as everything else, because leaving it on the soon-to-be-deleted aliases would have broken its rendering rather than preserved it. No visual change resulted (verified before/after); this is treated as required plumbing to honor D6's "untouched appearance" intent, not a new design decision on that surface.
+
+**Known issues:** None introduced. `--surface-0`, `--muted`, `--accent`, `--accent-fg`, `--accent-ink`, `--accent-soft` remain as compat aliases in `mp-theme-aliases.css` — out of WP-F5's named scope, not evaluated here.
+
+---

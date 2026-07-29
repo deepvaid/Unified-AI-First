@@ -307,7 +307,7 @@ watch(open, (value) => {
   text-align: left;
   color: var(--muted);
 }
-.asd-cat:hover { background: var(--surface-2); }
+.asd-cat:hover { background: var(--surface-secondary); }
 .asd-cat:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
 .asd-cat__chev { transition: transform 0.15s; color: var(--muted); }
 .asd-cat__chev--open { transform: rotate(90deg); }
@@ -330,10 +330,10 @@ watch(open, (value) => {
   cursor: pointer;
   border-radius: var(--r-chip);
   text-align: left;
-  color: var(--ink);
+  color: var(--text-primary);
   transition: background 0.15s;
 }
-.asd-item:hover { background: var(--surface-2); }
+.asd-item:hover { background: var(--surface-secondary); }
 .asd-item:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
 .asd-item--active,
 .asd-item--active:hover { background: var(--accent-soft); }
@@ -362,9 +362,9 @@ watch(open, (value) => {
   flex-direction: column;
   gap: 6px;
   padding: 8px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
-  background: var(--surface-1);
+  background: var(--surface-primary);
   cursor: pointer;
   text-align: left;
   transition: border-color 0.15s, box-shadow 0.15s;

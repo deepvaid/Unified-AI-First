@@ -46,8 +46,8 @@ const categories = [
 
 <style scoped lang="scss">
 .retail-shell-card {
-  background: var(--surface-1) !important;
-  border-color: color-mix(in oklch, var(--ink) 7%, transparent) !important;
+  background: var(--surface-primary) !important;
+  border-color: color-mix(in oklch, var(--text-primary) 7%, transparent) !important;
   border-radius: var(--r-section) !important;
 }
 
@@ -67,9 +67,9 @@ const categories = [
   align-items: flex-start;
   gap: 12px;
   padding: 14px;
-  border: 1px solid color-mix(in oklch, var(--ink) 8%, transparent);
+  border: 1px solid color-mix(in oklch, var(--text-primary) 8%, transparent);
   border-radius: var(--r-section);
-  background: var(--surface-1);
+  background: var(--surface-primary);
   height: 100%;
 }
 
@@ -88,7 +88,7 @@ const categories = [
 .retail-feature-tile__title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   line-height: 1.3;
 }
 

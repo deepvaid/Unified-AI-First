@@ -225,8 +225,8 @@ watch(
   line-height: 1;
 }
 
-.border-b { border-bottom: 1px solid var(--hairline); }
-.border-t { border-top: 1px solid var(--hairline); }
+.border-b { border-bottom: 1px solid var(--border-subtle); }
+.border-t { border-top: 1px solid var(--border-subtle); }
 
 /* ── Welcome ─────────────────────────────────────────────────────── */
 .tdv__welcome { padding: 4px 4px 0; }
@@ -256,13 +256,13 @@ watch(
 .tdv-bot__body { flex: 1; min-width: 0; }
 .tdv-bot__text {
   line-height: 1.5;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .tdv-result {
   padding: 12px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-chip);
-  background: var(--surface-1);
+  background: var(--surface-primary);
 }
 </style>

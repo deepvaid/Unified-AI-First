@@ -189,7 +189,7 @@ function grantedInProduct(key: ProductKey): number {
 
 <style scoped lang="scss">
 .matrix-tabs {
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .matrix-modules {
@@ -199,9 +199,9 @@ function grantedInProduct(key: ProductKey): number {
 }
 
 .matrix-module {
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   overflow: hidden;
 }
 
@@ -210,14 +210,14 @@ function grantedInProduct(key: ProductKey): number {
   align-items: center;
   gap: 8px;
   padding: 8px 10px 8px 14px;
-  border-bottom: 1px solid var(--hairline);
-  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-secondary);
 }
 
 .matrix-module__title {
   font-size: 13px;
   font-weight: 650;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .matrix-module__meta {
@@ -261,7 +261,7 @@ function grantedInProduct(key: ProductKey): number {
   padding: 0;
   font-family: inherit;
   font-size: 13px;
-  color: var(--ink);
+  color: var(--text-primary);
   text-align: left;
   cursor: pointer;
   overflow: hidden;

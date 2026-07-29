@@ -146,9 +146,9 @@ function generateKey() {
 
 .connection-card {
   padding: 14px 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
+  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .connection-card__header {
@@ -162,7 +162,7 @@ function generateKey() {
 .connection-card__title {
   font-size: 14px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .connection-card__sub {
@@ -182,7 +182,7 @@ function generateKey() {
   display: block;
   padding: 10px 12px;
   border-radius: 8px;
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   font-family: ui-monospace, 'SF Mono', monospace;
   font-size: 12px;
   word-break: break-all;

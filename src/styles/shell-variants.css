@@ -88,7 +88,7 @@ html[data-theme="light"][data-sidebar="white"] .mp-appbar {
 
 /* ── Dark app theme: the nav cluster paints from the dark token ramp ─────
    Same bind, dark value, so the side nav (sidebar-dark.css) and head nav stay
-   in lockstep. Classic's app bar already paints --surface-1 and Studio's
+   in lockstep. Classic's app bar already paints --surface-primary and Studio's
    paints the canvas (rule above), which is exactly what these binds resolve
    to — so the seam between the two navs is one continuous surface.
    Declared after the light binds above: equal specificity, later wins. */
@@ -193,7 +193,7 @@ html[data-theme="light"][data-shell="studio"]:not([data-sidebar="dark"]) .mp-sid
 }
 
 html[data-shell="studio"]:not([data-sidebar="dark"]) .mp-appbar .appbar-create-btn {
-  color: var(--ink) !important;
+  color: var(--text-primary) !important;
 }
 
 html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-action-btn:hover,

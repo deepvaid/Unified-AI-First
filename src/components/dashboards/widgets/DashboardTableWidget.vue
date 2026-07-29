@@ -117,7 +117,7 @@ const campaignRows = computed(() => {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 12px;
-  color: var(--ink);
+  color: var(--text-primary);
   font-size: 13.5px;
 }
 
@@ -133,7 +133,7 @@ const campaignRows = computed(() => {
   font-weight: 700;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .dashboard-campaign-list__meter {
@@ -196,18 +196,18 @@ const campaignRows = computed(() => {
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--muted);
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   z-index: 1;
   white-space: nowrap;
 }
 
 .dashboard-table-widget :deep(td) {
   font-size: 13.5px;
-  color: var(--ink);
-  border-bottom: 1px solid var(--hairline);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -220,6 +220,6 @@ const campaignRows = computed(() => {
 }
 
 .dashboard-table-widget :deep(tr:hover td) {
-  background: var(--surface-2);
+  background: var(--surface-secondary);
 }
 </style>

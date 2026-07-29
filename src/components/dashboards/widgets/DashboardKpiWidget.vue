@@ -308,7 +308,7 @@ const sparklinePoints = computed(() => {
   line-height: 1.05;
   letter-spacing: -0.025em;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -363,8 +363,8 @@ const sparklinePoints = computed(() => {
   margin-top: 6px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in oklch, var(--ink) 5%, var(--surface-1));
-  border: 1px solid var(--hairline);
+  background: color-mix(in oklch, var(--text-primary) 5%, var(--surface-primary));
+  border: 1px solid var(--border-subtle);
   color: var(--muted);
   font-size: 11px;
   font-weight: 500;
@@ -457,8 +457,8 @@ const sparklinePoints = computed(() => {
   gap: 8px;
   margin: 12px -18px -16px;
   padding: 8px 18px;
-  border-top: 1px solid var(--hairline);
-  background: var(--surface-1);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
   min-height: 36px;
   flex-shrink: 0;
 }

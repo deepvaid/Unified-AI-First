@@ -46,7 +46,7 @@ defineProps<{
 .settings-placeholder__title {
   font-size: 14px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 

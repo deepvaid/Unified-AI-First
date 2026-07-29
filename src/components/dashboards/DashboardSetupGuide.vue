@@ -117,7 +117,7 @@ function toggle() {
 <style scoped lang="scss">
 .setup-guide-widget {
   padding: 18px 22px 8px;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   border-color: var(--border-subtle) !important;
   /* Match the widget-card radius so every dashboard card is identical */
   border-radius: var(--r-section) !important;
@@ -166,7 +166,7 @@ function toggle() {
   margin: 0;
   font-size: 14px;
   font-weight: 650;
-  color: var(--ink);
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
@@ -186,8 +186,8 @@ function toggle() {
 }
 
 .setup-guide-widget__toggle:hover {
-  background: var(--surface-2);
-  color: var(--ink);
+  background: var(--surface-secondary);
+  color: var(--text-primary);
 }
 
 .setup-guide-widget__toggle:focus-visible {
@@ -213,7 +213,7 @@ function toggle() {
 
 .setup-guide-widget__progress {
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
   flex: 0 0 auto;
 }
 
@@ -224,21 +224,21 @@ function toggle() {
 }
 
 .setup-guide-widget__pill strong {
-  color: var(--ink);
+  color: var(--text-primary);
   font-weight: 700;
 }
 
 .setup-guide-widget__bar {
   height: 6px;
   border-radius: 999px;
-  background: color-mix(in oklch, var(--ink) 8%, var(--surface-1));
+  background: color-mix(in oklch, var(--text-primary) 8%, var(--surface-primary));
   overflow: hidden;
 }
 
 .setup-guide-widget__bar-fill {
   display: block;
   height: 100%;
-  background: var(--ink);
+  background: var(--text-primary);
   border-radius: 999px;
   transition: width 240ms ease;
 }
@@ -253,7 +253,7 @@ function toggle() {
 }
 
 .setup-guide-task {
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .setup-guide-task:last-child {
@@ -311,7 +311,7 @@ function toggle() {
 .setup-guide-task__label {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;

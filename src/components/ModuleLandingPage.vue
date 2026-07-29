@@ -335,10 +335,10 @@ withDefaults(defineProps<{
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-card);
-  background: var(--surface-1);
-  color: var(--ink);
+  background: var(--surface-primary);
+  color: var(--text-primary);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -346,7 +346,7 @@ withDefaults(defineProps<{
 }
 
 .quick-action:hover {
-  border-color: color-mix(in oklch, var(--ink) 32%, var(--hairline));
+  border-color: color-mix(in oklch, var(--text-primary) 32%, var(--border-subtle));
   transform: translateY(-1px);
 }
 
@@ -361,7 +361,7 @@ withDefaults(defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   color: var(--muted);
   border-radius: 8px;
   flex-shrink: 0;
@@ -376,7 +376,7 @@ withDefaults(defineProps<{
 .quick-action__label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -400,17 +400,17 @@ withDefaults(defineProps<{
   display: flex;
   flex-direction: column;
   padding: 14px 16px 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-card);
-  background: var(--surface-1);
-  color: var(--ink);
+  background: var(--surface-primary);
+  color: var(--text-primary);
   text-decoration: none;
   transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
   min-height: 110px;
 }
 
 .child-card:hover {
-  border-color: color-mix(in oklch, var(--ink) 32%, var(--hairline));
+  border-color: color-mix(in oklch, var(--text-primary) 32%, var(--border-subtle));
   transform: translateY(-1px);
 }
 
@@ -437,7 +437,7 @@ withDefaults(defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-2);
+  background: var(--surface-secondary);
   color: var(--muted);
   border-radius: 8px;
   flex-shrink: 0;
@@ -472,7 +472,7 @@ withDefaults(defineProps<{
 .child-card__title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   line-height: 1.3;
   margin-bottom: 4px;
 }
@@ -485,9 +485,9 @@ withDefaults(defineProps<{
 
 /* ===== Activity feed ===== */
 .activity-card {
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-card);
-  background: var(--surface-1);
+  background: var(--surface-primary);
   padding: 4px 14px;
 }
 
@@ -496,7 +496,7 @@ withDefaults(defineProps<{
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .activity-row--last {
@@ -515,7 +515,7 @@ withDefaults(defineProps<{
 
 .activity-row--link:hover,
 .activity-row--link:focus-visible {
-  background: var(--surface-2);
+  background: var(--surface-secondary);
 }
 
 .activity-row--link:focus-visible {
@@ -567,7 +567,7 @@ withDefaults(defineProps<{
 
 .activity-row__title {
   font-size: 13.5px;
-  color: var(--ink);
+  color: var(--text-primary);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -583,9 +583,9 @@ withDefaults(defineProps<{
 
 /* ===== Side cards ===== */
 .side-card {
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-card);
-  background: var(--surface-1);
+  background: var(--surface-primary);
   padding: 16px 18px;
 }
 
@@ -619,7 +619,7 @@ withDefaults(defineProps<{
 .side-card__title {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .side-card__desc {
@@ -643,7 +643,7 @@ withDefaults(defineProps<{
   align-items: center;
   gap: 8px;
   font-size: 12.5px;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .setup-list__check {
@@ -658,7 +658,7 @@ withDefaults(defineProps<{
 .setup-list__item--done .setup-list__label {
   color: var(--muted);
   text-decoration: line-through;
-  text-decoration-color: var(--hairline);
+  text-decoration-color: var(--border-subtle);
 }
 
 .setup-list__label {
@@ -673,7 +673,7 @@ a.setup-list__label:hover {
 
 /* ===== Da Vinci suggestions ===== */
 .davinci-card {
-  background: linear-gradient(180deg, color-mix(in oklch, var(--accent) 4%, var(--surface-1)), var(--surface-1));
+  background: linear-gradient(180deg, color-mix(in oklch, var(--accent) 4%, var(--surface-primary)), var(--surface-primary));
 }
 
 .davinci-list {
@@ -691,10 +691,10 @@ a.setup-list__label:hover {
   gap: 8px;
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  background: var(--surface-1);
-  color: var(--ink);
+  background: var(--surface-primary);
+  color: var(--text-primary);
   font: inherit;
   font-size: 12.5px;
   font-weight: 500;
@@ -705,8 +705,8 @@ a.setup-list__label:hover {
 }
 
 .davinci-list__item:hover {
-  background: var(--surface-2);
-  border-color: color-mix(in oklch, var(--tile-accent, var(--accent)) 30%, var(--hairline));
+  background: var(--surface-secondary);
+  border-color: color-mix(in oklch, var(--tile-accent, var(--accent)) 30%, var(--border-subtle));
 }
 
 .davinci-list__icon {

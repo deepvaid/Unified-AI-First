@@ -295,7 +295,7 @@ function statusLabel(status: string): string {
 .holders__name {
   font-size: 13px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .holders__email {

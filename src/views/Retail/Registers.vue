@@ -403,14 +403,14 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
-  border: 1px solid color-mix(in oklch, var(--ink) 7%, transparent);
+  border: 1px solid color-mix(in oklch, var(--text-primary) 7%, transparent);
   border-radius: var(--r-section);
-  background: var(--surface-1);
+  background: var(--surface-primary);
 
   &__value {
     font-size: 20px;
     font-weight: 700;
-    color: var(--ink);
+    color: var(--text-primary);
     line-height: 1;
   }
 
@@ -431,7 +431,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
   gap: 8px;
   padding: 10px 14px;
   border-radius: var(--r-section);
-  background: color-mix(in oklch, var(--ink) 4%, transparent);
+  background: color-mix(in oklch, var(--text-primary) 4%, transparent);
 
   &--online { background: color-mix(in oklch, #22c55e 8%, transparent); }
   &--offline { background: color-mix(in oklch, #ef4444 8%, transparent); }
@@ -449,8 +449,8 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
 }
 
 .retail-detail-list {
-  background: color-mix(in oklch, var(--ink) 2%, var(--surface-1));
-  border: 1px solid color-mix(in oklch, var(--ink) 7%, transparent);
+  background: color-mix(in oklch, var(--text-primary) 2%, var(--surface-primary));
+  border: 1px solid color-mix(in oklch, var(--text-primary) 7%, transparent);
   border-radius: var(--r-section);
 }
 

@@ -726,13 +726,13 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
 /* Ensure all cards use the design kit's subtle border and white background */
 .v-card:not(.bg-transparent) {
-  border-color: var(--hairline) !important;
+  border-color: var(--border-subtle) !important;
   box-shadow: none !important;
-  background: var(--surface-1) !important;
+  background: var(--surface-primary) !important;
 }
 
 .v-card.bg-transparent {
-  border-color: var(--hairline) !important;
+  border-color: var(--border-subtle) !important;
   box-shadow: none !important;
 }
 
@@ -865,14 +865,14 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 .ce-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-card);
   overflow: hidden;
 }
 
 .ce-stat {
   padding: 16px 18px;
-  border-left: 1px solid var(--hairline);
+  border-left: 1px solid var(--border-subtle);
 }
 
 .ce-stat:first-child {
@@ -884,7 +884,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: -0.02em;
-  color: var(--ink);
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 

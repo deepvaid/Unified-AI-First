@@ -104,10 +104,10 @@ const previewItems = computed(() =>
 
 <style scoped>
 .mpv-frame {
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--r-chip);
   overflow: hidden;
-  background: var(--surface-1);
+  background: var(--surface-primary);
 }
 
 .mpv-topbar {
@@ -116,7 +116,7 @@ const previewItems = computed(() =>
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .mpv-logo {
@@ -133,7 +133,7 @@ const previewItems = computed(() =>
   gap: 12px;
   flex-wrap: wrap;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .mpv-link {

@@ -59,9 +59,9 @@ const integrations = [
   display: flex;
   flex-direction: column;
   padding: 16px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  background: color-mix(in oklch, var(--surface-2) 34%, transparent);
+  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .integration-card__header {
@@ -74,7 +74,7 @@ const integrations = [
 .integration-card__name {
   font-size: 14px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 

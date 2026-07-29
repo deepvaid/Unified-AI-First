@@ -55,7 +55,7 @@ function getTagStyle(tag: string) {
   align-items: flex-start;
   gap: 10px;
   padding: 10px 0;
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .activity-feed__row--last {
@@ -88,7 +88,7 @@ function getTagStyle(tag: string) {
 .activity-feed__title {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

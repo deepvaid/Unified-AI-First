@@ -42,9 +42,9 @@ const iconSize = computed(() => (props.size === 'sm' ? 12 : 13))
   padding: 0 9px;
   height: 22px;
   border-radius: 999px;
-  background: var(--surface-1);
-  border: 1px solid var(--hairline);
-  color: var(--ink);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -57,7 +57,7 @@ const iconSize = computed(() => (props.size === 'sm' ? 12 : 13))
 .mp-source-cloud-chip--analytics { color: var(--cloud-analytics-text); }
 .mp-source-cloud-chip--contacts { color: var(--cloud-contacts-text); }
 .mp-source-cloud-chip--service { color: var(--cloud-service-text); }
-.mp-source-cloud-chip--neto { color: var(--ink); }
+.mp-source-cloud-chip--neto { color: var(--text-primary); }
 .mp-source-cloud-chip--retail { color: var(--cloud-retail-text); }
 
 .mp-source-cloud-chip--sm {

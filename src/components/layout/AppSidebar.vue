@@ -1009,10 +1009,10 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
 <style scoped lang="scss">
 .mp-sidebar {
-  --sidebar-bg: var(--mp-color-sidebar-surface, var(--surface-1));
-  --sidebar-border: var(--mp-color-sidebar-border, var(--hairline));
+  --sidebar-bg: var(--mp-color-sidebar-surface, var(--surface-primary));
+  --sidebar-border: var(--mp-color-sidebar-border, var(--border-subtle));
   --sidebar-line: var(--sidebar-border);
-  --sidebar-text: var(--mp-color-sidebar-text, var(--ink));
+  --sidebar-text: var(--mp-color-sidebar-text, var(--text-primary));
   --sidebar-muted: var(--mp-color-sidebar-textMuted, var(--muted));
   --sidebar-hover-bg: color-mix(in oklch, var(--sidebar-text) 5%, transparent);
   --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 7%, transparent);
@@ -1444,14 +1444,14 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
 /* Rail flyout — single card (tokens: sidebar-dark.css + light defaults below) */
 .rail-flyout-card {
-  --sidebar-border: var(--hairline);
-  --sidebar-text: var(--ink);
-  --sidebar-muted: color-mix(in oklch, var(--ink) 62%, transparent);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-text: var(--text-primary);
+  --sidebar-muted: color-mix(in oklch, var(--text-primary) 62%, transparent);
   --sidebar-hover-bg: color-mix(in oklch, var(--sidebar-text) 7%, transparent);
   --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 11%, transparent);
   --sidebar-active-text: var(--sidebar-text);
   --sidebar-radius: 8px;
-  background: var(--surface-1);
+  background: var(--surface-primary);
   /* Shared popover chrome (matches .v-menu overlay surfaces in global.scss) */
   border: 1px solid var(--mp-border-subtle);
   border-radius: var(--mp-borderRadius-md);
