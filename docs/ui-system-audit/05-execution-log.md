@@ -89,3 +89,45 @@ Append-only. One section per WP, in execution order.
 **Known issues:** None introduced.
 
 ---
+
+## WP-F3 — Overlay defaults + z-index hygiene + selected checkmark
+
+**Status:** Done
+
+**Work completed:**
+
+1. **`maropostDefaults` additions** (`src/plugins/maropostTheme.ts`):
+   - **VDialog radius — verified, not added.** Vuetify's `rounded="xl"` compiles to `border-radius: 24px !important` (`node_modules/vuetify/lib/styles/main.css` `.rounded-xl`), but `component.dialog.radius.default` is `16px` and `global.scss`'s existing `.v-dialog > .v-overlay__content > .v-card/.v-sheet` rule already forces `border-radius: var(--mp-component-dialog-radius-default) !important` (16px). The two values do not match, and the plan's own instruction ("if so, keep dialogs on the existing global.scss radius rule … do not change dialog radius visually") applies. No `VDialog` entry was added — documented inline in `maropostTheme.ts` instead of adding a default that isn't true.
+   - Added `VMenu: { offset: 4 }`, `VTooltip: { location: 'top', openDelay: 150, closeDelay: 0 }`, `VSnackbar: { timeout: 2500, location: 'bottom center' }` exactly as specified.
+2. **Menu chrome tokenization** (`global.scss`, popover-surfaces block):
+   - List padding `4px` → `var(--mp-spacing-1)` (exact value match, no visual change).
+   - Item radius `8px` → **`var(--mp-borderRadius-chip)`, not `var(--mp-borderRadius-md)` as the plan suggested** — verified `--mp-borderRadius-md` generates `12px` (`src/design-tokens/generated/variables.css:19`), which would visually enlarge the radius from 8px to 12px. `--mp-borderRadius-chip` generates `8px` exactly, preserving the current look. Logged here per the same "verify before applying" discipline as the VDialog check.
+   - Removed `!important` from the popover surface's `border` and `box-shadow` (kept it on `border-radius`, which must beat Vuetify's `!important` `.rounded-lg` utility class from `VCard`'s `rounded: 'lg'` default). Verified in the running app (light + dark, Settings Industry select) that the border and shadow still render correctly without `!important` — the existing selector (`.v-menu > .v-overlay__content > .v-card` etc., 3 class levels) already out-specifies Vuetify's own variant/elevation rules.
+3. **UX-008 selected checkmark** — added `.v-overlay .v-list-item--active[aria-selected='true']::after` with a masked inline-SVG Lucide-check data URI, `background-color: rgb(var(--v-theme-primary))`, 16×16px, right-aligned at `right: 12px`, vertically centered. Verified scoping two ways: (a) code inspection — the Settings left-nav active item and AppSidebar nav items are plain `<a>` tags with `aria-current="page"` and custom classes (`settings-sidebar__item--active`), not `.v-list-item` at all, and are never rendered inside `.v-overlay`; (b) live DOM check in the running app confirmed the Settings "Account Defaults" active nav link has `ariaSelected: null` and lives outside any `.v-overlay`. Confirmed via `getComputedStyle(el, '::after')` on the open Industry `v-select` that the checkmark renders on the correct (selected "E-Commerce") option in both themes, picking up theme-correct primary color (light `rgb(0,115,171)` / dark `rgb(44,196,255)` = `#2CC4FF`, the untouched D7 cyan accent) automatically via `rgb(var(--v-theme-primary))`.
+4. **Z-index hygiene** — inspected intent for each of the 3 named literals (28 others are pre-classified "justified" per the plan and untouched):
+   - `App.vue:238` (`.skip-link`, was `1000`) — an app-level floating a11y element that sits, and always sat, numerically **under** the sidebar flyout tier (`--mp-zIndex-navSidebarFlyout` 1005 / `TogglePill` 1010). Mapped to `var(--mp-zIndex-bulkActionBar)` (100) — the nearest documented token below that tier — with a comment explaining the relative-order intent is unchanged from the old literal.
+   - `DaVinciExperience.vue` `.dvx__debug` (was `9999`, a `?debug=1`-only diagnostic HUD) — must stay visible above modals while debugging their state, so it needed the "must sit above modals" branch: mapped to `var(--mp-zIndex-toast)` (10000, "above all overlays") with a comment.
+   - `DvHistoryDrawer.vue:225` (`z-index: 40`) — confirmed it's a local stacking context only (`position: absolute` slide-in panel inside the copilot drawer's own bounding box, unrelated to the app-wide overlay ladder); added a one-line comment documenting that, no token/value change, per the plan.
+
+**Files changed:**
+- `src/plugins/maropostTheme.ts`
+- `src/styles/global.scss`
+- `src/App.vue`
+- `src/views/DaVinci/DaVinciExperience.vue`
+- `src/components/copilot/DvHistoryDrawer.vue`
+
+**Tests run:**
+- `npm run type-check` / `npm run build` — same pre-existing baseline `ReelFlyView.vue` failures only; `npx vite build` — pass, `✓ built in ~11s`.
+- Dev-server visual pass, both themes, Settings → Account Defaults:
+  - Industry `v-select` menu opens with visible gap (offset), tokenized rounded chrome, border+shadow intact without `!important`.
+  - Selected option ("E-Commerce") shows the trailing checkmark in both themes (`getComputedStyle` confirmed `width: 16px`, correct theme-primary `background-color`, `position: absolute`, `right: 12px`).
+  - Settings left-nav / AppSidebar active items confirmed to carry **no** checkmark (verified they are not `.v-list-item` / not inside `.v-overlay` / no `aria-selected`).
+  - Console: zero errors in either theme.
+
+**Deviations from plan (both are "compute and verify" outcomes, not new decisions):**
+1. `VDialog: { rounded: 'xl' }` not added — verified `rounded="xl"` (24px) ≠ `component.dialog.radius.default` (16px); adding it would either do nothing (global.scss's `!important` wins) or invite future drift from an inaccurate default. Plan explicitly allowed this branch.
+2. Item radius tokenized to `var(--mp-borderRadius-chip)` (8px) instead of the plan's suggested `var(--mp-borderRadius-md)`, because `--mp-borderRadius-md` is actually 12px and would have changed the visual size. `--mp-borderRadius-chip` is the exact existing 8px value.
+
+**Known issues:** None introduced.
+
+---

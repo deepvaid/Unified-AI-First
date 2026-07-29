@@ -572,20 +572,53 @@ tr:focus-within .action-btns {
 .v-menu > .v-overlay__content > .v-list,
 .v-menu > .v-overlay__content > .v-sheet {
   background: var(--surface-overlay);
-  border: 1px solid var(--border-default) !important;
+  /* border/box-shadow: no !important — this selector (3 class levels) already
+     out-specifies Vuetify's own variant/elevation rules, verified in both
+     themes. border-radius keeps !important: VCard's default rounded="lg"
+     stamps a `.rounded-lg` utility class, and Vuetify's own utility classes
+     are always !important, so removing it here would let that win instead. */
+  border: 1px solid var(--border-default);
   border-radius: var(--mp-borderRadius-md) !important;
-  box-shadow: var(--elevation-overlay) !important;
+  box-shadow: var(--elevation-overlay);
   overflow: hidden;
 }
 
 /* Menu items float inside the surface (inset + rounded) rather than
    running edge-to-edge. */
 .v-menu > .v-overlay__content > .v-list {
-  padding: 4px;
+  padding: var(--mp-spacing-1);
 }
 /* !important: VListItem stamps a `rounded-0 !important` utility class by default */
 .v-menu > .v-overlay__content .v-list-item {
-  border-radius: 8px !important;
+  border-radius: var(--mp-borderRadius-chip) !important;
+}
+
+/* UX-008: trailing checkmark on the selected option inside select/menu
+   overlays only (menus teleport into `.v-overlay`). Scoped so it never
+   reaches in-page lists like the AppSidebar nav or MpSectionRail — those
+   aren't rendered inside `.v-overlay`. Composes with the existing active
+   tint rather than replacing it. */
+.v-overlay .v-list-item--active[aria-selected='true'] {
+  position: relative;
+}
+
+.v-overlay .v-list-item--active[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  background-color: rgb(var(--v-theme-primary));
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
 }
 
 /* ─── Chip tonal variants (design kit) ──────────────────────── */

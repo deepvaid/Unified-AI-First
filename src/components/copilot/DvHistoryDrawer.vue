@@ -222,6 +222,10 @@ function buildSub(item: DaVinciHistoryItem): string {
   transition: transform 220ms ease;
   display: flex;
   flex-direction: column;
+  /* WP-F3 z-index hygiene: local stacking context only — this slide-in panel
+     only needs to sit above its own siblings inside the copilot drawer
+     (position: absolute within that container), not the app-wide overlay
+     ladder in tokens.json's zIndex scale. */
   z-index: 40;
   height: calc(100% - 56px);
 }

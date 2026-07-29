@@ -282,4 +282,23 @@ export const maropostDefaults = {
     border: true,
     rounded: 'lg',
   },
+  // WP-F3: VDialog rounded default intentionally omitted. Vuetify's
+  // rounded="xl" computes to 24px (.rounded-xl in Vuetify's own main.css),
+  // but component.dialog.radius.default is 16px and global.scss already
+  // forces that radius with !important on the dialog card — adding
+  // rounded="xl" here would not match and would change nothing visually
+  // (the !important rule always wins), so it is left out rather than
+  // documenting a default that isn't true.
+  VMenu: {
+    offset: 4,
+  },
+  VTooltip: {
+    location: 'top',
+    openDelay: 150,
+    closeDelay: 0,
+  },
+  VSnackbar: {
+    timeout: 2500,
+    location: 'bottom center',
+  },
 }

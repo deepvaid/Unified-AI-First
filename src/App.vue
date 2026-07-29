@@ -235,7 +235,12 @@ const copilotDrawerWidth = computed(() => {
   position: absolute;
   left: 16px;
   top: -48px;
-  z-index: 1000;
+  /* WP-F3 z-index hygiene: an app-level floating element that only needs to
+     clear ordinary page content, sitting under the sidebar flyout tier
+     (--mp-zIndex-navSidebarFlyout/TogglePill, 1005/1010) as it did at the
+     old literal (1000) — --mp-zIndex-bulkActionBar is the nearest documented
+     token below that tier. */
+  z-index: var(--mp-zIndex-bulkActionBar);
   padding: 10px 14px;
   border-radius: 999px;
   background: rgb(var(--v-theme-primary));

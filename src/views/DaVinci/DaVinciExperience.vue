@@ -989,12 +989,16 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Diagnostic overlay (?debug=1) — intentionally plain; never shipped to users. */
+/* Diagnostic overlay (?debug=1) — intentionally plain; never shipped to users.
+   WP-F3 z-index hygiene: must stay visible above modals/dialogs while
+   debugging their state, so it shares the toast tier (the only documented
+   layer above Vuetify's own modal z-index) rather than an undocumented
+   literal — reference-only per tokens.json, this is a hand-rolled overlay. */
 .dvx__debug {
   position: fixed;
   top: 8px;
   left: 8px;
-  z-index: 9999;
+  z-index: var(--mp-zIndex-toast);
   padding: 8px 10px;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.82);
