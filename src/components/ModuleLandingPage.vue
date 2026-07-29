@@ -539,18 +539,18 @@ withDefaults(defineProps<{
 }
 
 .activity-row__chip--order {
-  background: color-mix(in oklch, oklch(0.7 0.15 155) 14%, transparent);
-  color: oklch(0.45 0.15 155);
+  background: color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent);
+  color: var(--cloud-commerce-text);
 }
 
 .activity-row__chip--audience {
-  background: color-mix(in oklch, oklch(0.75 0.12 90) 18%, transparent);
-  color: oklch(0.45 0.12 90);
+  background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);
+  color: var(--cloud-contacts-text);
 }
 
 .activity-row__chip--automation {
-  background: color-mix(in oklch, oklch(0.7 0.13 300) 14%, transparent);
-  color: oklch(0.45 0.13 300);
+  background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent);
+  color: var(--cloud-marketing-text);
 }
 
 .activity-row__body {
@@ -612,7 +612,7 @@ withDefaults(defineProps<{
 }
 
 .side-card__chip--davinci {
-  background: linear-gradient(135deg, color-mix(in oklch, var(--accent) 18%, transparent), color-mix(in oklch, oklch(0.7 0.13 300) 18%, transparent));
+  background: linear-gradient(135deg, color-mix(in oklch, var(--accent) 18%, transparent), color-mix(in oklch, var(--cloud-marketing-accent) 18%, transparent));
   color: var(--accent-ink);
 }
 
@@ -652,7 +652,7 @@ withDefaults(defineProps<{
 }
 
 .setup-list__item--done .setup-list__check {
-  color: oklch(0.5 0.15 155);
+  color: var(--pos);
 }
 
 .setup-list__item--done .setup-list__label {
