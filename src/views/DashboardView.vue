@@ -1156,11 +1156,18 @@ function toggleFavoriteActive() {
 
 .dashboard-date-menu__group {
   padding: 10px 8px 4px;
-  color: var(--text-secondary);
+  color: var(--muted);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+/* --muted is calibrated against the plain menu surface; this rail double-tints
+   it, which pushes dark mode under AA. --text-secondary clears it without
+   touching light's stronger --muted pass. */
+.v-theme--maropostDark .dashboard-date-menu__group {
+  color: var(--text-secondary);
 }
 
 .dashboard-date-menu__group:first-child {
