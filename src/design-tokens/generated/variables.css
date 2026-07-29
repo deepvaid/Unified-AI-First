@@ -54,8 +54,8 @@
   --mp-rgb-color-light-surfaceVariant: 236, 236, 236;
   --mp-color-light-surfaceTint: #eef0ff;
   --mp-rgb-color-light-surfaceTint: 238, 240, 255;
-  --mp-color-light-onSurfaceVariant: #737373;
-  --mp-rgb-color-light-onSurfaceVariant: 115, 115, 115;
+  --mp-color-light-onSurfaceVariant: #5C6066;
+  --mp-rgb-color-light-onSurfaceVariant: 92, 96, 102;
   --mp-color-light-primary: #0073AB;
   --mp-rgb-color-light-primary: 0, 115, 171;
   --mp-color-light-primaryDarken: #005E8A;
@@ -100,6 +100,9 @@
   --mp-rgb-color-light-onErrorContainer: 122, 31, 21;
   --mp-color-light-surfaceBright: #ffffff;
   --mp-rgb-color-light-surfaceBright: 255, 255, 255;
+  --mp-color-light-surfaceOverlay: #FFFFFF;
+  --mp-rgb-color-light-surfaceOverlay: 255, 255, 255;
+  --mp-color-light-scrim: rgba(26, 24, 20, 0.32);
   --mp-color-light-outline: #d4d4d4;
   --mp-rgb-color-light-outline: 212, 212, 212;
   --mp-color-light-outlineVariant: #e5e5e5;
@@ -319,8 +322,8 @@
   --mp-rgb-color-dark-success: 76, 194, 138;
   --mp-color-dark-warning: #e1a04a;
   --mp-rgb-color-dark-warning: 225, 160, 74;
-  --mp-color-dark-error: #EF8176;
-  --mp-rgb-color-dark-error: 239, 129, 118;
+  --mp-color-dark-error: #F18E84;
+  --mp-rgb-color-dark-error: 241, 142, 132;
   --mp-color-dark-info: #2CC4FF;
   --mp-rgb-color-dark-info: 44, 196, 255;
   --mp-color-dark-onPrimary: #06212c;
@@ -395,7 +398,7 @@
   --mp-color-dark-aiMetric-positive: var(--mp-color-dark-success);
   --mp-rgb-color-dark-aiMetric-positive: 76, 194, 138;
   --mp-color-dark-aiMetric-negative: var(--mp-color-dark-error);
-  --mp-rgb-color-dark-aiMetric-negative: 239, 129, 118;
+  --mp-rgb-color-dark-aiMetric-negative: 241, 142, 132;
   --mp-color-dark-aiMetric-neutral: var(--mp-color-dark-textMuted);
   --mp-rgb-color-dark-aiMetric-neutral: 155, 163, 172;
   --mp-color-dark-flowLogic-primary: #A78BFA;

@@ -17,14 +17,14 @@
   --surface-primary: var(--mp-color-light-surface);
   --surface-secondary: var(--mp-color-light-surfaceVariant);
   --surface-raised: var(--mp-color-light-surfaceBright);
-  --surface-overlay: var(--mp-color-light-surfaceBright);
+  --surface-overlay: var(--mp-color-light-surfaceOverlay);
   --surface-sunken: var(--mp-color-light-background);
   --surface-interactive: var(--mp-color-light-surface);
   --surface-interactive-hover: var(--mp-color-light-surfaceVariant);
   --surface-interactive-active: var(--mp-color-light-surfaceBright);
   --surface-interactive-selected: var(--mp-color-light-accent-cyan-selectedBackground);
   --surface-interactive-disabled: var(--mp-color-light-surfaceVariant);
-  --scrim-overlay: rgba(var(--mp-rgb-color-light-textPrimary), 0.32);
+  --scrim-overlay: var(--mp-color-light-scrim);
 
   /* Text and icons */
   --text-primary: var(--mp-color-light-textPrimary);
