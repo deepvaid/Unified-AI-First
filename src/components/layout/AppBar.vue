@@ -938,12 +938,10 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .assistant-menu-card {
   width: 280px;
-  background: var(--surface-1);
+  background: var(--surface-overlay);
   border: 1px solid var(--hairline);
   border-radius: 14px;
-  box-shadow:
-    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
-    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
+  box-shadow: var(--elevation-overlay);
   overflow: hidden;
 }
 
@@ -1011,12 +1009,10 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .um-cascade-card {
   width: 280px;
-  background: var(--surface-1);
+  background: var(--surface-overlay);
   border: 1px solid var(--hairline);
   border-radius: 14px;
-  box-shadow:
-    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
-    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
+  box-shadow: var(--elevation-overlay);
   overflow: hidden;
   max-height: 90vh;
   overflow-y: auto;
@@ -1034,12 +1030,10 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .user-menu-card {
   width: 360px;
-  background: var(--surface-1);
+  background: var(--surface-overlay);
   border: 1px solid var(--hairline);
   border-radius: 14px;
-  box-shadow:
-    0 8px 32px color-mix(in oklch, var(--ink) 12%, transparent),
-    0 2px 8px color-mix(in oklch, var(--ink) 6%, transparent);
+  box-shadow: var(--elevation-overlay);
   overflow: hidden;
   max-height: 90vh;
   overflow-y: auto;
@@ -1310,8 +1304,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .theme-segment :deep(.v-btn--active) {
-  background: var(--surface-1);
-  box-shadow: 0 1px 3px color-mix(in oklch, var(--ink) 8%, transparent);
+  background: var(--surface-overlay);
+  box-shadow: var(--elevation-raised);
 }
 
 .appbar-search {
