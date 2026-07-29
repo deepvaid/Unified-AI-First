@@ -64,13 +64,24 @@ function normalizeAccent(accent: string): AccentKey {
   return 'cyan'
 }
 
-/** Mirrors useAppTheme's applyMode — the app only ever sets data-theme on <html>. */
+/**
+ * Mirrors useAppTheme's applyMode (data-theme on <html>), plus stamps the
+ * Vuetify theme class on <body>. In the real app, <body> sits inside the
+ * v-app root so it inherits --v-theme-background from Vuetify's global
+ * theme class; in Storybook the story tree is wrapped in a nested
+ * <v-theme-provider> instead, which scopes those CSS variables to its own
+ * subtree and never reaches its <body> ancestor. Without this, global.scss's
+ * `body { background: rgb(var(--v-theme-background)) }` falls back to the
+ * default (light) theme regardless of the selected Storybook theme.
+ */
 function syncDocumentTheme(theme: ThemeMode) {
   if (typeof document === 'undefined') {
     return
   }
 
   document.documentElement.dataset.theme = theme
+  document.body.classList.toggle('v-theme--maropostDark', theme === 'dark')
+  document.body.classList.toggle('v-theme--maropostLight', theme !== 'dark')
 }
 
 /** Mirrors useAppTheme accent bridge — cyan has no data-accent attribute. */

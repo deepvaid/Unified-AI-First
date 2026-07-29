@@ -77,6 +77,12 @@ const options = computed<ApexOptions>(() => {
     },
     tooltip: {
       ...base.tooltip,
+      // Apex fills .apexcharts-tooltip-series-group with the raw series
+      // colour for pie/donut by default; our CSS then forces the row text
+      // to the theme's tooltipText token regardless, which reads near-white
+      // on bright slice colours in dark mode. Disabling the fill keeps rows
+      // on the standard tooltipBackground so tooltipText stays legible.
+      fillSeriesColor: false,
       y: {
         formatter: (value: number) => {
           if (props.data.unit === 'currency') {

@@ -14,12 +14,12 @@
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined {
   border-radius: var(--mp-component-input-radius-default);
   font-size: 14px;
-  background: color-mix(in oklch, var(--surface-2) 55%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
   transition: background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover {
-  background: color-mix(in oklch, var(--surface-2) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
 }
 
 /* Baseline alpha: outline elements render at full opacity — the softness

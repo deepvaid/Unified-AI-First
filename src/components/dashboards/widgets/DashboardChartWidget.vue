@@ -258,6 +258,12 @@ const chartOptions = computed<ApexOptions>(() => {
     },
     tooltip: {
       ...base.tooltip,
+      // Pin the tooltip to a fixed corner instead of following the cursor.
+      // The default follow-cursor behaviour flips the tooltip above the
+      // hover point when there isn't room below, which pushes it past the
+      // top edge of `.dashboard-chart-widget` (overflow: hidden) and clips
+      // the title/first series row on small widget sizes.
+      fixed: { enabled: true },
       y: {
         formatter: (value: number) => formatAxisValue(value, props.data.unit),
       },

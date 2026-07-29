@@ -90,19 +90,19 @@ const features = [
   {
     title: 'Generate content and grow your audience',
     description: 'Email subject lines, campaign briefs, and creative variations on demand — tuned to your brand voice.',
-    gradient: 'linear-gradient(135deg, #ede9fe 0%, #dbeafe 100%)',
+    tone: 'violet-blue',
     icon: 'sparkles',
   },
   {
     title: 'Scale revenue without scaling complexity',
     description: 'Predictive send times, churn signals, and AI-tuned audience targeting working quietly in the background.',
-    gradient: 'linear-gradient(135deg, #dbeafe 0%, #cffafe 100%)',
+    tone: 'blue-cyan',
     icon: 'trending-up',
   },
   {
     title: 'Resolve tickets faster with AI',
     description: 'Auto-summarize threads, draft replies in your tone, and route conversations to the right agent.',
-    gradient: 'linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%)',
+    tone: 'indigo-violet',
     icon: 'headset',
   },
 ]
@@ -183,7 +183,7 @@ const metrics = [
       <v-row>
         <v-col v-for="f in features" :key="f.title" cols="12" md="4">
           <v-card flat border rounded="lg" class="h-100 d-flex flex-column">
-            <div class="dv-feature-media d-flex align-center justify-center" :style="{ background: f.gradient }">
+            <div class="dv-feature-media d-flex align-center justify-center" :class="`dv-feature-media--${f.tone}`">
               <div class="dv-feature-play">
                 <v-icon size="22" color="primary">play</v-icon>
               </div>
@@ -299,6 +299,23 @@ const metrics = [
   overflow: hidden;
 }
 
+.dv-feature-media--violet-blue { background: linear-gradient(135deg, #ede9fe 0%, #dbeafe 100%); }
+.dv-feature-media--blue-cyan { background: linear-gradient(135deg, #dbeafe 0%, #cffafe 100%); }
+.dv-feature-media--indigo-violet { background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%); }
+
+/* Dark equivalents — same violet/blue/cyan accent-container tokens the
+   .dv-hero gradient above uses, so the play glyph's card stays legible
+   instead of the light pastel art rendering near-white on a dark page. */
+.v-theme--maropostDark .dv-feature-media--violet-blue {
+  background: linear-gradient(135deg, var(--mp-color-dark-accent-purple-container) 0%, var(--mp-color-dark-accent-blue-container) 100%);
+}
+.v-theme--maropostDark .dv-feature-media--blue-cyan {
+  background: linear-gradient(135deg, var(--mp-color-dark-accent-blue-container) 0%, var(--mp-color-dark-accent-cyan-container) 100%);
+}
+.v-theme--maropostDark .dv-feature-media--indigo-violet {
+  background: linear-gradient(135deg, var(--mp-color-dark-accent-blue-container) 0%, var(--mp-color-dark-accent-purple-container) 100%);
+}
+
 .dv-feature-play {
   width: 48px;
   height: 48px;
@@ -308,6 +325,13 @@ const metrics = [
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark mode: the near-white circle leaves the bright cyan primary glyph at
+   ~1.8:1. Swap to the dark scrim token so the same bright icon reads at
+   full contrast against a dark surface instead. */
+.v-theme--maropostDark .dv-feature-play {
+  background: var(--scrim-overlay);
 }
 
 .dv-included-card--locked {
