@@ -1808,6 +1808,9 @@ const apkQrUrl = computed(() =>
 <style scoped lang="scss">
 /* ── Shell ─────────────────────────────────────────────────────── */
 .pos-preview-shell {
+  /* Sanctioned fixed-look POS mock: pin the retail accent to its light value so this
+     terminal never shifts color under the dark-mode cloud-accent override. */
+  --cloud-retail-accent: #0d9488;
   width: 100vw;
   height: 100vh;
   background: color-mix(in oklch, var(--ink) 6%, var(--surface-1));
