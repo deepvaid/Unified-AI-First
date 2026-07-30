@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref, watch, nextTick, mergeProps } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useCopilotStore } from '@/stores/useCopilot'
@@ -259,9 +259,22 @@ type PaletteItem = {
   run: () => void
 }
 
+// Type tabs narrow results without retyping — "All" plus one tab per
+// searchSources category, in first-seen order.
+const paletteTypeTabs = computed<string[]>(() => {
+  const seen = new Set<string>()
+  const groups: string[] = []
+  searchSources.value.forEach((s) => {
+    if (!seen.has(s.group)) { seen.add(s.group); groups.push(s.group) }
+  })
+  return ['All', ...groups]
+})
+const activePaletteType = ref('All')
+
 const paletteItems = computed<PaletteItem[]>(() => {
   const raw = searchQuery.value.trim()
   const q = raw.toLowerCase()
+  const typeTab = activePaletteType.value
   const navItem = (s: (typeof searchSources.value)[number], label: string): PaletteItem => ({
     id: `nav-${s.title}`, kind: 'nav', sectionLabel: label, icon: s.icon,
     title: s.title, subtitle: s.subtitle, run: () => navigateToRoute(s.route),
@@ -284,16 +297,22 @@ const paletteItems = computed<PaletteItem[]>(() => {
     run: askDaVinciFromSearch,
   }]
 
+  // Quick-create actions aren't a searchSources category, so they only show
+  // on "All" — a specific type tab narrows to just that category's results.
+  const sources = typeTab === 'All' ? searchSources.value : searchSources.value.filter(s => s.group === typeTab)
+
   if (!q) {
-    createItems.value.forEach(c => items.push(actionItem(c, 'Quick actions')))
-    searchSources.value.forEach(s => items.push(navItem(s, 'Jump to')))
+    if (typeTab === 'All') createItems.value.forEach(c => items.push(actionItem(c, 'Quick actions')))
+    sources.forEach(s => items.push(navItem(s, 'Suggested')))
   } else {
-    searchSources.value
+    sources
       .filter(s => s.title.toLowerCase().includes(q) || s.subtitle.toLowerCase().includes(q) || s.group.toLowerCase().includes(q))
       .forEach(s => items.push(navItem(s, 'Results')))
-    createItems.value
-      .filter(c => c.title.toLowerCase().includes(q) || c.sub.toLowerCase().includes(q))
-      .forEach(c => items.push(actionItem(c, 'Actions')))
+    if (typeTab === 'All') {
+      createItems.value
+        .filter(c => c.title.toLowerCase().includes(q) || c.sub.toLowerCase().includes(q))
+        .forEach(c => items.push(actionItem(c, 'Actions')))
+    }
   }
   return items
 })
@@ -307,7 +326,11 @@ function resetActiveIndex() {
   activeIndex.value = searchQuery.value.trim() && firstResult !== -1 ? firstResult : 0
 }
 watch(searchQuery, resetActiveIndex)
-watch(searchOpen, (open) => { if (open) resetActiveIndex() })
+watch(activePaletteType, resetActiveIndex)
+watch(searchOpen, (open) => {
+  if (open) resetActiveIndex()
+  else activePaletteType.value = 'All'
+})
 
 function moveActive(delta: number) {
   const n = paletteItems.value.length
@@ -373,6 +396,18 @@ function onSearchKeydown(event: KeyboardEvent) {
             </v-text-field>
           </template>
           <v-card width="640" max-width="calc(100vw - 32px)" rounded="lg" flat border class="cmd-palette">
+            <div v-if="paletteTypeTabs.length > 1" class="cmd-palette__tabs" role="group" aria-label="Filter results by type">
+              <button
+                v-for="tab in paletteTypeTabs"
+                :key="tab"
+                type="button"
+                class="cmd-palette__tab"
+                :class="{ 'cmd-palette__tab--active': tab === activePaletteType }"
+                :aria-pressed="tab === activePaletteType"
+                @mousedown.prevent
+                @click="activePaletteType = tab"
+              >{{ tab }}</button>
+            </div>
             <ul id="cmd-palette-list" class="cmd-palette__list" role="listbox" aria-label="Search results and actions">
               <template v-for="(item, i) in paletteItems" :key="item.id">
                 <li
@@ -430,18 +465,22 @@ function onSearchKeydown(event: KeyboardEvent) {
       <div class="appbar-utilities">
         <PlgTrialChip />
         <v-menu v-model="createOpen" location="bottom end" offset="8" :close-on-content-click="false">
-          <template #activator="{ props }">
-            <button
-              v-bind="props"
-              type="button"
-              class="appbar-create-btn"
-              :class="{ 'appbar-create-btn--open': createOpen }"
-              aria-label="Quick create"
-              aria-haspopup="menu"
-              :aria-expanded="createOpen"
-            >
-              <v-icon size="18">plus</v-icon>
-            </button>
+          <template #activator="{ props: menuProps }">
+            <v-tooltip text="Quick create" location="bottom">
+              <template #activator="{ props: tooltipProps }">
+                <button
+                  v-bind="mergeProps(menuProps, tooltipProps)"
+                  type="button"
+                  class="appbar-create-btn"
+                  :class="{ 'appbar-create-btn--open': createOpen }"
+                  aria-label="Quick create"
+                  aria-haspopup="menu"
+                  :aria-expanded="createOpen"
+                >
+                  <v-icon size="18">plus</v-icon>
+                </button>
+              </template>
+            </v-tooltip>
           </template>
           <v-card
             width="340"
@@ -1411,6 +1450,43 @@ function onSearchKeydown(event: KeyboardEvent) {
   padding: 6px;
   margin: 0;
   list-style: none;
+}
+
+.cmd-palette__tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.cmd-palette__tab {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.cmd-palette__tab:hover {
+  background: var(--surface-interactive-hover);
+  color: var(--text-primary);
+}
+
+.cmd-palette__tab--active {
+  background: var(--surface-interactive-active);
+  color: var(--text-primary);
+}
+
+.cmd-palette__tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 .cmd-palette__section-label {
