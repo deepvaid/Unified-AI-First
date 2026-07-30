@@ -32,4 +32,16 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/** Default "All" state — widgets group under muted section headers (Commerce/Marketing/
+ *  Service/Retail/Merchandising), the UX-002 fix that replaced a flat, icon-only 28-item list. */
 export const Default: Story = {}
+
+/** Clicking a category chip narrows to a flat, single-category list (headers only appear
+ *  when "All" is active — a single category is already unambiguous). */
+export const FilteredByCategory: Story = {
+  play: async ({ canvasElement }) => {
+    await new Promise(resolve => setTimeout(resolve, 300))
+    const chip = canvasElement.querySelector('.widget-library__category:not(:first-child)') as HTMLElement
+    chip?.click()
+  },
+}
