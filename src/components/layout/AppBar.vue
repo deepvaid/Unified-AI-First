@@ -1705,6 +1705,12 @@ function onSearchKeydown(event: KeyboardEvent) {
   line-height: 16px;
   background: var(--neg) !important;
   box-shadow: 0 0 0 2px var(--surface-primary);
+  /* The badge overlaps a few px into the next utility button (4px gap,
+     floating badge). Both it and that button are position:relative/absolute
+     with z-index:auto, so DOM order decides paint order — the later Settings
+     button was covering the badge's edge. Explicit z-index wins regardless
+     of sibling order. */
+  z-index: 1;
 }
 
 @media (max-width: 1180px) {
