@@ -11,33 +11,31 @@ defineEmits<{
 </script>
 
 <template>
-  <transition name="mp-fbb">
-    <div
-      v-if="count > 0"
-      class="mp-floating-bulk-bar d-flex align-center gap-3"
-      role="status"
-      aria-label="Bulk actions"
-    >
-      <div class="mp-fbb__meta">
-        <span class="mp-fbb__count">{{ count }}</span>
-        <span class="mp-fbb__label">selected</span>
-      </div>
-      <v-btn
-        v-if="total != null && count < total"
-        size="small"
-        variant="text"
-        class="text-none mp-fbb__muted-btn"
-        @click="$emit('selectAll')"
-      >
-        Select all ({{ total }})
-      </v-btn>
-      <slot />
-      <v-spacer />
-      <v-btn size="small" variant="text" class="text-none mp-fbb__muted-btn" @click="$emit('clear')">
-        Clear selection
-      </v-btn>
+  <div
+    class="mp-floating-bulk-bar d-flex align-center gap-3"
+    :class="{ 'is-visible': count > 0 }"
+    role="status"
+    aria-label="Bulk actions"
+  >
+    <div class="mp-fbb__meta">
+      <span class="mp-fbb__count">{{ count }}</span>
+      <span class="mp-fbb__label">selected</span>
     </div>
-  </transition>
+    <v-btn
+      v-if="total != null && count < total"
+      size="small"
+      variant="text"
+      class="text-none mp-fbb__muted-btn"
+      @click="$emit('selectAll')"
+    >
+      Select all ({{ total }})
+    </v-btn>
+    <slot />
+    <v-spacer />
+    <v-btn size="small" variant="text" class="text-none mp-fbb__muted-btn" @click="$emit('clear')">
+      Clear selection
+    </v-btn>
+  </div>
 </template>
 
 <style scoped>
@@ -52,6 +50,25 @@ defineEmits<{
   color: var(--ink-panel-fg);
   border: 1px solid var(--ink-panel-border);
   box-shadow: 0 8px 32px -12px rgba(11, 53, 88, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(12px);
+  transition:
+    transform var(--dur-base) var(--ease),
+    opacity var(--dur-base) var(--ease),
+    visibility 0s linear var(--dur-base);
+}
+
+.mp-floating-bulk-bar.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+  transition:
+    transform var(--dur-base) var(--ease),
+    opacity var(--dur-base) var(--ease),
+    visibility 0s linear 0s;
 }
 
 .mp-fbb__meta {
@@ -84,19 +101,5 @@ defineEmits<{
 .mp-floating-bulk-bar :deep(.v-btn:hover) .v-btn__overlay {
   opacity: 1;
   background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.08);
-}
-
-/* Entrance — transform/opacity on the base motion tokens */
-.mp-fbb-enter-active,
-.mp-fbb-leave-active {
-  transition:
-    transform var(--dur-base) var(--ease),
-    opacity var(--dur-base) var(--ease);
-}
-
-.mp-fbb-enter-from,
-.mp-fbb-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(12px);
 }
 </style>

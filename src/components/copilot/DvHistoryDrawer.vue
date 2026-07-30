@@ -164,6 +164,7 @@ function buildSub(item: DaVinciHistoryItem): string {
             tabindex="0"
             class="dv-history__item"
             :class="{ 'is-active': item.id === activeId }"
+            :aria-current="item.id === activeId ? 'true' : undefined"
             @click="emit('select', item.id)"
             @keydown.enter.space.prevent="emit('select', item.id)"
           >
