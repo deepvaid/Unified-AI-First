@@ -9,6 +9,7 @@ import SettingsSection from '@/components/settings/SettingsSection.vue'
 import PermissionMatrix from '@/components/rbac/PermissionMatrix.vue'
 import { useRbacStore } from '@/stores/useRbac'
 import { PERMISSION_INDEX, PRODUCT_META, PRODUCT_ORDER, type ProductKey } from '@/stores/rbacData'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -67,12 +68,9 @@ const baseRoleName = computed(() =>
   role.value?.baseRoleId ? rbac.roleById(role.value.baseRoleId)?.name ?? null : null,
 )
 
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
+const toast = useToast()
 function notify(text: string) {
-  snackbarText.value = text
-  snackbar.value = true
+  toast.info(text)
 }
 
 function save() {
@@ -268,10 +266,6 @@ function statusLabel(status: string): string {
         @confirm="confirmDelete"
       />
     </template>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" rounded="pill" location="bottom center">
-      {{ snackbarText }}
-    </v-snackbar>
   </div>
 </template>
 

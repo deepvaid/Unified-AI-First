@@ -2,6 +2,9 @@
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const company = ref({
   accountId: '2000290',
@@ -21,16 +24,14 @@ const company = ref({
   dateFormat: 'MM/DD/YYYY',
 })
 
-const saved = ref(false)
-
 function copyId() {
   if (typeof navigator !== 'undefined' && navigator.clipboard) {
     navigator.clipboard.writeText(company.value.accountId).catch(() => {})
   }
 }
 
-function save() { saved.value = true }
-function discard() { saved.value = false }
+function save() { toast.success('Account details saved') }
+function discard() {}
 </script>
 
 <template>
@@ -239,10 +240,6 @@ function discard() { saved.value = false }
       <v-btn variant="text" class="text-none" @click="discard">Discard changes</v-btn>
       <v-btn color="primary" variant="flat" class="text-none" @click="save">Save changes</v-btn>
     </div>
-
-    <v-snackbar v-model="saved" :timeout="2400" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon>Account details saved</div>
-    </v-snackbar>
   </div>
 </template>
 

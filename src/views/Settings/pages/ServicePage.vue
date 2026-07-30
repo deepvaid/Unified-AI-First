@@ -2,6 +2,9 @@
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const serviceSettings = ref({
   supportEmail: 'support@scootervillage.com',
@@ -17,8 +20,7 @@ const replyTemplates = ref([
   { id: 2, name: 'Order tracking update',      preview: 'Hi {{first_name}}, Your order {{order_id}} is...' },
 ])
 
-const saved = ref(false)
-function save() { saved.value = true }
+function save() { toast.success('Service settings saved') }
 </script>
 
 <template>
@@ -95,10 +97,6 @@ function save() { saved.value = true }
     <div class="settings-save-bar">
       <v-btn color="primary" variant="flat" class="text-none" @click="save">Save changes</v-btn>
     </div>
-
-    <v-snackbar v-model="saved" :timeout="2400" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon>Service settings saved</div>
-    </v-snackbar>
   </div>
 </template>
 

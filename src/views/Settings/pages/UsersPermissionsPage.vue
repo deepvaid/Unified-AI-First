@@ -16,6 +16,7 @@ import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { formatAgo } from '@/composables/useRelativeTime'
 import { PRODUCT_META, type ProductKey, type UserAccount } from '@/stores/rbacData'
+import { useToast } from '@/composables/useToast'
 
 const rbac = useRbacStore()
 const { loading } = useInitialLoad()
@@ -99,12 +100,9 @@ function statusLabel(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1)
 }
 
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
+const toast = useToast()
 function notify(text: string) {
-  snackbarText.value = text
-  snackbar.value = true
+  toast.info(text)
 }
 
 // Invite + access drawers
@@ -502,10 +500,6 @@ function bulkDeactivate() {
       danger
       @confirm="confirmRevoke"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" rounded="pill" location="bottom center">
-      {{ snackbarText }}
-    </v-snackbar>
   </div>
 </template>
 

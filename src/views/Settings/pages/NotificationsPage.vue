@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
+import { useToast } from '@/composables/useToast'
 
 interface NotifPref { key: string; label: string; desc: string; value: boolean }
 
@@ -14,8 +15,8 @@ const prefs = ref<NotifPref[]>([
   { key: 'productUpdates', label: 'Product Updates',           desc: 'Be notified about new Maropost features',               value: false },
 ])
 
-const saved = ref(false)
-function save() { saved.value = true }
+const toast = useToast()
+function save() { toast.success('Preferences saved') }
 </script>
 
 <template>
@@ -47,10 +48,6 @@ function save() { saved.value = true }
     <div class="settings-save-bar">
       <v-btn color="primary" variant="flat" class="text-none" @click="save">Save preferences</v-btn>
     </div>
-
-    <v-snackbar v-model="saved" :timeout="2400" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon>Preferences saved</div>
-    </v-snackbar>
   </div>
 </template>
 

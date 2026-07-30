@@ -6,6 +6,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { formatAgo } from '@/composables/useRelativeTime'
+import { useToast } from '@/composables/useToast'
 
 const search = ref('')
 
@@ -33,9 +34,9 @@ const users = ref<TeamUser[]>([
   { name: 'Analyst Temp', email: 'analyst@contract.com', role: 'Viewer', status: 'Suspended' },
 ])
 
-const snackbar = ref({ visible: false, message: '' })
+const toast = useToast()
 function showToast(message: string) {
-  snackbar.value = { visible: true, message }
+  toast.info(message)
 }
 
 /* ── Edit role ─────────────────────────────────────────────────── */
@@ -148,9 +149,5 @@ function removeUser() {
       danger
       @confirm="removeUser"
     />
-
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>

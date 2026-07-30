@@ -4,6 +4,9 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const apiKeys = ref([
   { id: 1, label: 'Production Key', user: 'Ross@maropost.com', key: 'mp_live_sk_••••••••••••••••••••••4xyz', created: '2024-01-15', lastUsed: '2026-03-07', status: 'Active' },
@@ -18,7 +21,6 @@ const webhooks = ref([
 const addKeyDrawer = ref(false)
 const newKeyLabel = ref('')
 const newKeyEnv = ref<'production' | 'test'>('production')
-const generatedSnack = ref(false)
 
 function generateKey() {
   const prefix = newKeyEnv.value === 'production' ? 'mp_live_sk_' : 'mp_test_sk_'
@@ -32,7 +34,7 @@ function generateKey() {
     lastUsed: '—',
     status: 'Active',
   })
-  generatedSnack.value = true
+  toast.success('API key generated successfully.')
   addKeyDrawer.value = false
   newKeyLabel.value = ''
   newKeyEnv.value = 'production'
@@ -126,8 +128,6 @@ function generateKey() {
       <v-btn color="primary" variant="flat" class="text-none" :disabled="!newKeyLabel.trim()" @click="generateKey">Generate Key</v-btn>
     </template>
   </MpFormDrawer>
-
-  <v-snackbar v-model="generatedSnack" color="success" timeout="3000">API key generated successfully.</v-snackbar>
 </template>
 
 <style scoped lang="scss">

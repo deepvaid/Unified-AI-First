@@ -3,6 +3,9 @@ import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import { useUserProfile } from '@/stores/useUserProfile'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const profileStore = useUserProfile()
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -24,9 +27,8 @@ const security = ref({
 
 const profileInitials = 'RP'
 
-const saved = ref(false)
-function save() { saved.value = true }
-function discard() { saved.value = false }
+function save() { toast.success('Profile saved') }
+function discard() {}
 
 function onFile(e: Event) {
   const target = e.target as HTMLInputElement
@@ -153,10 +155,6 @@ function onFile(e: Event) {
       <v-btn variant="text" class="text-none" @click="discard">Discard changes</v-btn>
       <v-btn color="primary" variant="flat" class="text-none" @click="save">Save changes</v-btn>
     </div>
-
-    <v-snackbar v-model="saved" :timeout="2400" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon>Profile saved</div>
-    </v-snackbar>
   </div>
 </template>
 

@@ -13,6 +13,7 @@ import { useRbacStore } from '@/stores/useRbac'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { PRODUCT_META, PRODUCT_ORDER, type ProductKey, type Role } from '@/stores/rbacData'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -68,12 +69,9 @@ function baseRoleName(role: Role): string | null {
   return role.baseRoleId ? rbac.roleById(role.baseRoleId)?.name ?? null : null
 }
 
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
+const toast = useToast()
 function notify(text: string) {
-  snackbarText.value = text
-  snackbar.value = true
+  toast.info(text)
 }
 
 function openRole(roleId: string) {
@@ -379,10 +377,6 @@ function confirmDelete() {
       danger
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" rounded="pill" location="bottom center">
-      {{ snackbarText }}
-    </v-snackbar>
   </div>
 </template>
 
