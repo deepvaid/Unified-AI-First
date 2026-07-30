@@ -10,10 +10,11 @@ import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import { useRetailStore } from '@/stores/useRetail'
 import type { Register, RegisterStatus } from '@/stores/useRetail'
 import { formatAgo } from '@/composables/useRelativeTime'
+import { useToast } from '@/composables/useToast'
 
 const store = useRetailStore()
-const snackbar = ref({ visible: false, message: '' })
-function showToast(message: string) { snackbar.value = { visible: true, message } }
+const toast = useToast()
+function showToast(message: string) { toast.info(message) }
 
 /* ── Filter tabs ───────────────────────────────────────────────── */
 const activeTab = ref('all')
@@ -390,10 +391,6 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         <v-btn color="primary" variant="flat" class="text-none" @click="savePair">Pair device</v-btn>
       </template>
     </MpFormDrawer>
-
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>
 

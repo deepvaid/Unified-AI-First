@@ -11,11 +11,12 @@ import { useCommerceStore } from '@/stores/useCommerce'
 import type { StaffMember, StaffRole } from '@/stores/useRetail'
 import { STAFF_ROLE_LABELS } from '@/stores/useRetail'
 import { formatAgo } from '@/composables/useRelativeTime'
+import { useToast } from '@/composables/useToast'
 
 const store = useRetailStore()
 const commerce = useCommerceStore()
-const snackbar = ref({ visible: false, message: '' })
-function showToast(message: string) { snackbar.value = { visible: true, message } }
+const toast = useToast()
+function showToast(message: string) { toast.info(message) }
 
 /* ── Filter tabs ───────────────────────────────────────────────── */
 const activeTab = ref('all')
@@ -306,10 +307,6 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
         <v-btn color="primary" variant="flat" class="text-none" @click="saveNewStaffMember">Add staff member</v-btn>
       </template>
     </MpFormDrawer>
-
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>
 

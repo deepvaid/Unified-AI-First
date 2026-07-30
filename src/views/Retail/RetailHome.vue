@@ -4,15 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useRetailStore } from '@/stores/useRetail'
 import { useCommerceStore } from '@/stores/useCommerce'
 import { formatAgo } from '@/composables/useRelativeTime'
+import { useToast } from '@/composables/useToast'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 
 const route = useRoute()
 const router = useRouter()
 const store = useRetailStore()
+const toast = useToast()
 const accountId = computed(() => route.params.accountId as string)
-
-const snackbar = ref({ visible: false, message: '' })
-function showToast(message: string) { snackbar.value = { visible: true, message } }
 
 const retailBase = computed(() => `/commerce/${accountId.value}/retail`)
 function go(path: string) {
@@ -117,7 +116,7 @@ const todoProgress = computed(() => {
 
 function onTodoClick(todo: TodoItem) {
   if (todo.path) go(todo.path)
-  else showToast('Coming soon')
+  else toast.info('Coming soon')
 }
 
 /* ── Recent activity ────────────────────────────────────────── */
@@ -371,10 +370,6 @@ function statusIcon(status: string): string {
         </v-card>
       </v-col>
     </v-row>
-
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom" attach="body">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>
 
