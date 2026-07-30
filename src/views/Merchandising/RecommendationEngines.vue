@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 import {
   useMerchandisingStore,
   ENGINE_TYPE_LABELS,
@@ -17,6 +18,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
+const toast = useToast()
 const search = ref('')
 
 // Channel-scoped editor route — this view only mounts inside the merchandising shell.
@@ -29,14 +31,14 @@ const confirmDelete = ref<RecommendationEngine | null>(null)
 function performDelete() {
   if (confirmDelete.value) {
     store.deleteEngine(confirmDelete.value.id)
-    showToast(`Engine “${confirmDelete.value.name}” deleted`)
+    toast.info(`Engine “${confirmDelete.value.name}” deleted`)
   }
   confirmDelete.value = null
 }
 
 function duplicate(engine: RecommendationEngine) {
   const copy = store.duplicateEngine(engine.id)
-  if (copy) showToast(`Engine duplicated as “${copy.name}”`)
+  if (copy) toast.info(`Engine duplicated as “${copy.name}”`)
 }
 const filterPage = ref<'all' | EnginePage>('all')
 const filterType = ref<'all' | EngineType>('all')
@@ -86,11 +88,6 @@ const typeColor: Record<EngineType, string> = {
   recently_viewed: 'secondary',
   viewed_together: 'success',
   new_trending: 'warning',
-}
-
-const snackbar = ref({ visible: false, message: '' })
-function showToast(message: string) {
-  snackbar.value = { visible: true, message }
 }
 
 function onToggle(engine: RecommendationEngine) {
@@ -257,8 +254,5 @@ function onToggle(engine: RecommendationEngine) {
       @confirm="performDelete"
     />
 
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>

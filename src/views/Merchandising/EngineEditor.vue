@@ -6,6 +6,7 @@ import MpErrorState from '@/components/MpErrorState.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
+import { useToast } from '@/composables/useToast'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useCopilotStore } from '@/stores/useCopilot'
 import {
@@ -28,6 +29,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
+const toast = useToast()
 const copilot = useCopilotStore()
 
 // Channel-scoped routes — this editor only mounts inside the merchandising shell.
@@ -166,7 +168,6 @@ const previewProducts = computed(() => {
 })
 
 /* ── Save / delete ────────────────────────────────────────────── */
-const saveSnack = ref(false)
 const confirmDelete = ref(false)
 
 function save() {
@@ -185,14 +186,14 @@ function save() {
     const created = store.createEngine(payload)
     savedSnapshot.value = JSON.stringify(draft.value)
     allowNextLeave()
-    saveSnack.value = true
+    toast.success('Engine saved')
     router.replace({ name: 'MerchandisingChannelEngineEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, engineId: created.id } })
     return
   }
   store.saveEngine({ id: engineId.value, ...payload })
   savedSnapshot.value = JSON.stringify(draft.value)
   allowNextLeave()
-  saveSnack.value = true
+  toast.success('Engine saved')
 }
 
 function performDelete() {
@@ -599,9 +600,6 @@ function goToStep(target: number) {
       @confirm="discardAndLeave"
     />
 
-    <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Engine saved</div>
-    </v-snackbar>
   </div>
 
   <div v-else class="pa-10">

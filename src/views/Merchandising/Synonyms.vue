@@ -5,6 +5,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 import {
   useMerchandisingStore,
   SYNONYM_TYPE_LABELS,
@@ -13,6 +14,7 @@ import {
 } from '@/stores/useMerchandising'
 
 const store = useMerchandisingStore()
+const toast = useToast()
 const search = ref('')
 const filterStatus = ref<'all' | 'active' | 'inactive'>('all')
 const filterType = ref<'all' | 'one_way' | 'two_way'>('all')
@@ -34,37 +36,32 @@ const filteredSynonyms = computed(() => {
   return rows
 })
 
-const snackbar = ref({ visible: false, message: '' })
-function showToast(message: string) {
-  snackbar.value = { visible: true, message }
-}
-
 function onToggle(synonym: Synonym) {
   store.toggleSynonymStatus(synonym.id)
 }
 
 function bulkEnable() {
   store.bulkSetSynonymStatus(selected.value, 'active')
-  showToast(`${selected.value.length} synonym(s) enabled`)
+  toast.info(`${selected.value.length} synonym(s) enabled`)
   selected.value = []
 }
 
 function bulkDisable() {
   store.bulkSetSynonymStatus(selected.value, 'inactive')
-  showToast(`${selected.value.length} synonym(s) disabled`)
+  toast.info(`${selected.value.length} synonym(s) disabled`)
   selected.value = []
 }
 
 function bulkDelete() {
   const count = selected.value.length
   store.deleteSynonyms(selected.value)
-  showToast(`${count} synonym(s) deleted`)
+  toast.info(`${count} synonym(s) deleted`)
   selected.value = []
 }
 
 function duplicate(item: Synonym) {
   const copy = store.duplicateSynonym(item.id)
-  if (copy) showToast('Synonym duplicated')
+  if (copy) toast.info('Synonym duplicated')
 }
 
 /* ── Edit drawer ───────────────────────────────────────────────── */
@@ -117,7 +114,7 @@ function removeEditLeadsTo(t: string) {
 function submitEdit() {
   if (!editTarget.value) return
   if (editQueries.value.length === 0) {
-    showToast('Add at least one query.')
+    toast.error('Add at least one query.')
     return
   }
   store.saveSynonym(editTarget.value.id, {
@@ -126,7 +123,7 @@ function submitEdit() {
     leadsTo: editType.value === 'two_way' ? [] : [...editLeadsTo.value],
   })
   editDrawer.value = false
-  showToast('Synonym updated')
+  toast.info('Synonym updated')
 }
 
 /* ── Delete confirm ────────────────────────────────────────────── */
@@ -141,7 +138,7 @@ function askDelete(item: Synonym) {
 function doDelete() {
   if (pendingDelete.value) {
     store.deleteSynonyms([pendingDelete.value.id])
-    showToast('Synonym deleted')
+    toast.info('Synonym deleted')
   }
   pendingDelete.value = null
 }
@@ -154,7 +151,7 @@ function doDelete() {
       :subtitle="`Boost recall by mapping equivalent search terms for ${store.activeStore.domain}`"
     >
       <template #actions>
-        <v-btn variant="outlined" class="text-none" prepend-icon="upload" @click="showToast('Upload — coming soon')">
+        <v-btn variant="outlined" class="text-none" prepend-icon="upload" @click="toast.info('Upload — coming soon')">
           Upload
         </v-btn>
         <v-btn
@@ -162,7 +159,7 @@ function doDelete() {
           variant="flat"
           class="text-none"
           prepend-icon="plus"
-          @click="showToast('Add new synonym — coming soon')"
+          @click="toast.info('Add new synonym — coming soon')"
         >
           Add new
         </v-btn>
@@ -340,7 +337,7 @@ function doDelete() {
             :description="search ? 'Try a different keyword or clear filters.' : 'Add your first synonym to improve search recall.'"
             :action-label="!search ? 'Add new' : undefined"
             action-icon="plus"
-            @action="showToast('Add new synonym — coming soon')"
+            @action="toast.info('Add new synonym — coming soon')"
           />
         </template>
       </v-data-table>
@@ -436,9 +433,6 @@ function doDelete() {
       @confirm="doDelete"
     />
 
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>
 

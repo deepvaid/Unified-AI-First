@@ -5,10 +5,12 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 import { useMerchandisingStore, type MerchBanner, type MerchPromoScope } from '@/stores/useMerchandising'
 
 const route = useRoute()
 const store = useMerchandisingStore()
+const toast = useToast()
 
 // Same component instance serves both routes — everything scope-derived is computed.
 const scope = computed<MerchPromoScope>(() =>
@@ -23,11 +25,6 @@ const termsHint = computed(() =>
 )
 
 const banners = computed(() => store.bannerList.filter((b) => b.scope === scope.value))
-
-const snackbar = ref({ visible: false, message: '' })
-function showToast(message: string) {
-  snackbar.value = { visible: true, message }
-}
 
 /* — Create drawer — */
 const drawer = ref(false)
@@ -51,7 +48,7 @@ function save() {
     terms: form.value.terms,
   })
   drawer.value = false
-  showToast('Banner created')
+  toast.info('Banner created')
 }
 
 /* — Delete — */
@@ -67,7 +64,7 @@ function doDelete() {
   if (!pendingDelete.value) return
   store.deleteBanner(pendingDelete.value.id)
   pendingDelete.value = null
-  showToast('Banner deleted')
+  toast.info('Banner deleted')
 }
 </script>
 
@@ -193,9 +190,6 @@ function doDelete() {
       @confirm="doDelete"
     />
 
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>
 

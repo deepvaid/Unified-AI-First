@@ -5,9 +5,11 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 import { useMerchandisingStore, type FieldTransformation } from '@/stores/useMerchandising'
 
 const store = useMerchandisingStore()
+const toast = useToast()
 const search = ref('')
 
 const headers = [
@@ -30,11 +32,6 @@ const ruleTypeOptions = [
   { title: 'Value Transformation', value: 'value_transformation' },
 ]
 
-const snackbar = ref({ visible: false, message: '' })
-function showToast(message: string) {
-  snackbar.value = { visible: true, message }
-}
-
 function onToggle(item: FieldTransformation) {
   store.toggleFieldStatus(item.id)
 }
@@ -43,7 +40,7 @@ const filteredRules = computed(() => store.fieldList)
 
 function duplicate(item: FieldTransformation) {
   const copy = store.duplicateField(item.id)
-  if (copy) showToast(`Rule duplicated as “${copy.name}”`)
+  if (copy) toast.info(`Rule duplicated as “${copy.name}”`)
 }
 
 /* ── Edit drawer ───────────────────────────────────────────────── */
@@ -98,7 +95,7 @@ function submitEdit() {
     translations: editDraft.value.translations,
   })
   editDrawer.value = false
-  showToast(`Rule “${name}” updated`)
+  toast.info(`Rule “${name}” updated`)
 }
 
 /* ── Delete confirm ────────────────────────────────────────────── */
@@ -113,7 +110,7 @@ function askDelete(item: FieldTransformation) {
 function doDelete() {
   if (pendingDelete.value) {
     store.deleteField(pendingDelete.value.id)
-    showToast(`Rule “${pendingDelete.value.name}” deleted`)
+    toast.info(`Rule “${pendingDelete.value.name}” deleted`)
   }
   pendingDelete.value = null
 }
@@ -131,7 +128,7 @@ function doDelete() {
           variant="flat"
           class="text-none"
           prepend-icon="plus"
-          @click="showToast('Create new rule — coming soon')"
+          @click="toast.info('Create new rule — coming soon')"
         >
           Create new rule
         </v-btn>
@@ -243,7 +240,7 @@ function doDelete() {
             description="Add a rule to normalize, rename, or translate product fields before they enter the search index."
             action-label="Create new rule"
             action-icon="plus"
-            @action="showToast('Create new rule — coming soon')"
+            @action="toast.info('Create new rule — coming soon')"
           />
         </template>
       </v-data-table>
@@ -328,8 +325,5 @@ function doDelete() {
       @confirm="doDelete"
     />
 
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>

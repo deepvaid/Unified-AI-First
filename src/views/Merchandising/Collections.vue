@@ -7,6 +7,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 import {
   useMerchandisingStore,
   COLLECTION_FILTER_LABELS,
@@ -17,6 +18,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
+const toast = useToast()
 const search = ref('')
 
 /** Open the collection configuration editor (Shopify Filters / Activation / Sorting). */
@@ -49,18 +51,13 @@ const filteredCollections = computed(() => {
   return rows
 })
 
-const snackbar = ref({ visible: false, message: '' })
-function showToast(message: string) {
-  snackbar.value = { visible: true, message }
-}
-
 function onToggle(collection: SmartCollection) {
   store.toggleCollectionStatus(collection.id)
 }
 
 function duplicate(collection: SmartCollection) {
   const copy = store.duplicateCollection(collection.id)
-  if (copy) showToast(`Collection duplicated as “${copy.name}”`)
+  if (copy) toast.info(`Collection duplicated as “${copy.name}”`)
 }
 
 /* ── Delete confirm ────────────────────────────────────────────── */
@@ -75,7 +72,7 @@ function askDelete(collection: SmartCollection) {
 function doDelete() {
   if (pendingDelete.value) {
     store.deleteCollection(pendingDelete.value.id)
-    showToast(`Collection “${pendingDelete.value.name}” deleted`)
+    toast.info(`Collection “${pendingDelete.value.name}” deleted`)
   }
   pendingDelete.value = null
 }
@@ -94,7 +91,7 @@ function submitCreate() {
   if (!name) return
   store.createCollection({ name, filterType: newCollection.value.filterType })
   createDrawer.value = false
-  showToast(`Collection “${name}” created`)
+  toast.info(`Collection “${name}” created`)
 }
 </script>
 
@@ -253,9 +250,6 @@ function submitCreate() {
       @confirm="doDelete"
     />
 
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>
 

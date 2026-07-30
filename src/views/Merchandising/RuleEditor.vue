@@ -6,6 +6,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 import {
   useMerchandisingStore,
   applyRuleToProducts,
@@ -17,6 +18,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
+const toast = useToast()
 
 // Channel-scoped routes — this editor only mounts inside the merchandising shell.
 const listRoute = computed(() => ({ name: 'MerchandisingChannelDefaults', params: { accountId: route.params.accountId, channelId: route.params.channelId } }))
@@ -145,7 +147,6 @@ const previewGrid = computed(() => {
 })
 
 /* ── Save / delete ────────────────────────────────────────────── */
-const saveSnack = ref(false)
 const confirmDelete = ref(false)
 
 function save() {
@@ -156,7 +157,7 @@ function save() {
   }
   store.saveMerchRule({ id, ...draft.value, updatedAt: '' })
   savedSnapshot.value = JSON.stringify(draft.value)
-  saveSnack.value = true
+  toast.success('Merchandising rule saved')
   if (isNew.value) router.replace({ name: 'MerchandisingChannelRuleEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, ruleId: id } })
 }
 
@@ -436,9 +437,6 @@ function performDelete() {
       @confirm="performDelete"
     />
 
-    <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Merchandising rule saved</div>
-    </v-snackbar>
   </div>
 
   <div v-else class="pa-10">

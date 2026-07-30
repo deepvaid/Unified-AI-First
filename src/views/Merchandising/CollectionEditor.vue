@@ -6,6 +6,7 @@ import MpErrorState from '@/components/MpErrorState.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import {
   useMerchandisingStore,
@@ -19,6 +20,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
+const toast = useToast()
 
 const listRoute = computed(() => ({ name: 'MerchandisingChannelCollections', params: { accountId: route.params.accountId, channelId: route.params.channelId } }))
 
@@ -67,8 +69,6 @@ function removeFilter(index: number) {
   draft.value.filters.splice(index, 1)
 }
 
-const saveSnack = ref(false)
-
 function save() {
   if (!collection.value || !dirty.value) return
   store.saveCollectionConfig(collection.value.id, {
@@ -78,7 +78,7 @@ function save() {
     sortBy: draft.value.sortBy,
   })
   savedSnapshot.value = JSON.stringify(draft.value)
-  saveSnack.value = true
+  toast.success('Collection saved')
 }
 </script>
 
@@ -216,9 +216,6 @@ function save() {
       @confirm="discardAndLeave"
     />
 
-    <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Collection saved</div>
-    </v-snackbar>
   </div>
 
   <div v-else class="pa-10">

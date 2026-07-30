@@ -3,9 +3,11 @@ import { computed, ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import { useToast } from '@/composables/useToast'
 import { useMerchandisingStore, type PageRedirect } from '@/stores/useMerchandising'
 
 const store = useMerchandisingStore()
+const toast = useToast()
 const createOpen = ref(true)
 const draftQueries = ref<string[]>([])
 const draftQueryInput = ref('')
@@ -30,11 +32,6 @@ const filteredRedirects = computed(() => {
   )
 })
 
-const snackbar = ref({ visible: false, message: '' })
-function showToast(message: string) {
-  snackbar.value = { visible: true, message }
-}
-
 function addQuery() {
   const trimmed = draftQueryInput.value.trim()
   if (!trimmed || draftQueries.value.includes(trimmed)) {
@@ -57,22 +54,22 @@ function resetDraft() {
 
 function createRedirect() {
   if (draftQueries.value.length === 0 || !draftUrl.value.trim()) {
-    showToast('Add at least one query and a destination URL.')
+    toast.error('Add at least one query and a destination URL.')
     return
   }
   store.createRedirect({ queries: [...draftQueries.value], leadsTo: draftUrl.value.trim() })
-  showToast('Page redirect created')
+  toast.info('Page redirect created')
   resetDraft()
 }
 
 function deleteRow(id: string) {
   store.deleteRedirect(id)
-  showToast('Page redirect deleted')
+  toast.info('Page redirect deleted')
 }
 
 function duplicate(item: PageRedirect) {
   const copy = store.duplicateRedirect(item.id)
-  if (copy) showToast('Page redirect duplicated')
+  if (copy) toast.info('Page redirect duplicated')
 }
 
 /* ── Edit drawer ───────────────────────────────────────────────── */
@@ -107,12 +104,12 @@ function removeEditQuery(q: string) {
 function submitEdit() {
   if (!editTarget.value) return
   if (editQueries.value.length === 0 || !editUrl.value.trim()) {
-    showToast('Add at least one query and a destination URL.')
+    toast.error('Add at least one query and a destination URL.')
     return
   }
   store.saveRedirect(editTarget.value.id, { queries: [...editQueries.value], leadsTo: editUrl.value.trim() })
   editDrawer.value = false
-  showToast('Page redirect updated')
+  toast.info('Page redirect updated')
 }
 </script>
 
@@ -329,9 +326,6 @@ function submitEdit() {
       </template>
     </MpFormDrawer>
 
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>
 

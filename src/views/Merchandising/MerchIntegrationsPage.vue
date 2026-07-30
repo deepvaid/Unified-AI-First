@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import { useToast } from '@/composables/useToast'
 import { useMerchandisingStore } from '@/stores/useMerchandising'
 
 const store = useMerchandisingStore()
+const toast = useToast()
 
 interface ReviewProvider {
   id: string
@@ -21,15 +23,13 @@ const PROVIDERS: ReviewProvider[] = [
 
 const connectedIds = ref<string[]>([])
 
-const snackbar = ref({ visible: false, message: '' })
-
 function toggleProvider(id: string) {
   if (connectedIds.value.includes(id)) {
     connectedIds.value = connectedIds.value.filter((c) => c !== id)
-    snackbar.value = { visible: true, message: 'Disconnected — prototype only' }
+    toast.info('Disconnected — prototype only')
   } else {
     connectedIds.value = [...connectedIds.value, id]
-    snackbar.value = { visible: true, message: 'Connected — prototype only' }
+    toast.info('Connected — prototype only')
   }
 }
 </script>
@@ -70,8 +70,5 @@ function toggleProvider(id: string) {
       </v-row>
     </div>
 
-    <v-snackbar v-model="snackbar.visible" :timeout="2000" location="bottom">
-      {{ snackbar.message }}
-    </v-snackbar>
   </div>
 </template>

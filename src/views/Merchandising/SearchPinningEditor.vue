@@ -7,6 +7,7 @@ import MpErrorState from '@/components/MpErrorState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
+import { useToast } from '@/composables/useToast'
 import {
   useMerchandisingStore,
   MERCH_SORT_OPTIONS,
@@ -20,6 +21,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
+const toast = useToast()
 
 // Channel-scoped routes — this editor only mounts inside the merchandising shell.
 const listRoute = computed(() => ({ name: 'MerchandisingChannelSearchPinning', params: { accountId: route.params.accountId, channelId: route.params.channelId } }))
@@ -128,7 +130,6 @@ function resetDrag() {
 }
 
 /* ── Save / delete ────────────────────────────────────────────── */
-const saveSnack = ref(false)
 const confirmDelete = ref(false)
 
 function save() {
@@ -136,13 +137,12 @@ function save() {
   const payload = { query: query.value.trim(), pinnedProductIds: [...pinnedIds.value] }
   if (isNew.value) {
     const created = store.createSearchPin(payload)
-    saveSnack.value = true
     router.replace({ name: 'MerchandisingChannelSearchPinEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, pinId: created.id } })
   } else if (pin.value) {
     store.saveSearchPin(pin.value.id, payload)
   }
   savedSnapshot.value = JSON.stringify({ q: query.value, p: pinnedIds.value })
-  saveSnack.value = true
+  toast.success('Pin saved')
 }
 
 function performDelete() {
@@ -328,9 +328,6 @@ function performDelete() {
       @confirm="performDelete"
     />
 
-    <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Pin saved</div>
-    </v-snackbar>
   </div>
 
   <div v-else class="pa-10">

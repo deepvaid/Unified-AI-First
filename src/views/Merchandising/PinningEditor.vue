@@ -7,6 +7,7 @@ import MpErrorState from '@/components/MpErrorState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 import {
   useMerchandisingStore,
   MERCH_SORT_OPTIONS,
@@ -17,6 +18,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const store = useMerchandisingStore()
+const toast = useToast()
 
 // Channel-scoped routes — this editor only mounts inside the merchandising shell.
 const listRoute = computed(() => ({ name: 'MerchandisingChannelDefaults', params: { accountId: route.params.accountId, channelId: route.params.channelId } }))
@@ -125,7 +127,6 @@ function resetDrag() {
 }
 
 /* ── Save / delete ────────────────────────────────────────────── */
-const saveSnack = ref(false)
 const confirmDelete = ref(false)
 
 function save() {
@@ -133,13 +134,12 @@ function save() {
   if (isNew.value) {
     const created = store.createPinningRule(collectionId.value)
     store.savePinningRule(created.id, { collectionId: collectionId.value, pinnedProductIds: pinnedIds.value })
-    saveSnack.value = true
     router.replace({ name: 'MerchandisingChannelPinning', params: { accountId: route.params.accountId, channelId: route.params.channelId, ruleId: created.id } })
   } else if (rule.value) {
     store.savePinningRule(rule.value.id, { collectionId: collectionId.value, pinnedProductIds: pinnedIds.value })
   }
   savedSnapshot.value = JSON.stringify({ c: collectionId.value, p: pinnedIds.value })
-  saveSnack.value = true
+  toast.success('Pinning rule saved')
 }
 
 function performDelete() {
@@ -328,9 +328,6 @@ function performDelete() {
       @confirm="performDelete"
     />
 
-    <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Pinning rule saved</div>
-    </v-snackbar>
   </div>
 
   <div v-else class="pa-10">
