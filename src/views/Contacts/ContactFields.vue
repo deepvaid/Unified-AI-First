@@ -4,6 +4,9 @@ import { useCdpEntitiesStore, type CdpField, type CdpFieldType } from '@/stores/
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -27,10 +30,16 @@ const typeIcon: Record<string, string> = {
 const headers = [
   { title: 'Field Name', key: 'name', sortable: true },
   { title: 'Data Type', key: 'type' },
-  { title: 'Default Value', key: 'defaultValue' },
-  { title: 'Edit Profile', key: 'addToEditProfile', align: 'center' as const },
+  { title: 'Default Value', key: 'defaultValue', hideBelow: 'md' as const },
+  { title: 'Edit Profile', key: 'addToEditProfile', align: 'center' as const, hideBelow: 'sm' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+
+// Row identity + its headline count always show; supporting columns drop out
+// progressively. The actions column is never tiered — the kebab must stay
+// reachable at every width.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 // Create / edit drawer
 const drawer = ref(false)
@@ -93,8 +102,10 @@ function confirmDelete() {
         :total-count="store.fields.length"
       />
 
-      <v-data-table
-        :headers="headers"
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
+
+      <v-data-table v-else
+        :headers="visibleHeaders"
         :items="store.fields"
         :search="search"
         :items-per-page="15"
@@ -121,7 +132,7 @@ function confirmDelete() {
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Field actions">
+          <MpRowActionsMenu ariaLabel="Field actions" :itemLabel="item.name">
             <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" style="opacity: 0.4" />
             <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
