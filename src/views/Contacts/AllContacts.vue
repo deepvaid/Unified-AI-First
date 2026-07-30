@@ -308,7 +308,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       >
         <template v-slot:item.contact="{ item }">
           <div class="d-flex align-center py-2">
-            <v-avatar size="36" class="mr-3 border">
+            <v-avatar size="36" class="mr-3 border contact-avatar">
               <v-img :src="(item as any).avatarUrl" :alt="`${(item as any).firstName} ${(item as any).lastName}`" cover>
                 <template #placeholder>
                   <div class="avatar-fallback">{{ (item as any).firstName?.[0] ?? '?' }}</div>
@@ -569,6 +569,32 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
   font-size: 12.5px;
   line-height: 1.3;
   color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+/* At phone widths the identity cell is what forces the table to side-scroll: the
+   email has no truncation, so its intrinsic width sets the column (measured 244px
+   of a 311px-wide table). Capping the block and ellipsizing both lines keeps the
+   name — the thing you scan for — fully legible. Wider viewports are untouched. */
+@media (max-width: 599.98px) {
+  /* The avatar is a nice-to-have identifier next to the name it duplicates; at this
+     width the ~44px it costs is better spent on the name and status. */
+  .contact-avatar {
+    display: none;
+  }
+
+  .contact-identity {
+    max-width: 132px;
+    min-width: 0;
+  }
+
+  .contact-link,
+  .contact-email {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .contact-link:hover,
