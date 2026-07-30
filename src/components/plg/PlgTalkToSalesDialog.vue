@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useToast } from '@/composables/useToast'
 
 withDefaults(defineProps<{
   modelValue: boolean
@@ -19,7 +20,7 @@ const INTEREST_OPTIONS = [
 
 const interest = ref<string | null>(null)
 const notes = ref('')
-const confirmationOpen = ref(false)
+const toast = useToast()
 
 function close() {
   emit('update:modelValue', false)
@@ -28,7 +29,7 @@ function close() {
 function submit() {
   close()
   emit('submitted')
-  confirmationOpen.value = true
+  toast.info('Thanks — our team will reach out within one business day.')
   interest.value = null
   notes.value = ''
 }
@@ -76,10 +77,6 @@ function submit() {
       </v-card-actions>
     </v-card>
   </v-dialog>
-
-  <v-snackbar v-model="confirmationOpen" timeout="3200" location="bottom right">
-    Thanks — our team will reach out within one business day.
-  </v-snackbar>
 </template>
 
 <style scoped>

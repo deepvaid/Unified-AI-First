@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
+import { useToast } from '@/composables/useToast'
 import { useAccountsStore } from '@/stores/useAccounts'
 import {
   usePlgStore,
@@ -112,15 +113,10 @@ function continueToCheckout() {
   router.push({ name: 'Checkout', params: { accountId: accountId.value }, query })
 }
 
-// ── Prototype snackbar (Talk to sales / ticket / enterprise CTAs) ──────────
-const snackbar = ref(false)
-const snackText = ref('')
-function notify(text: string) {
-  snackText.value = text
-  snackbar.value = true
-}
+// ── Prototype toast (Talk to sales / ticket / enterprise CTAs) ────────────
+const toast = useToast()
 function talkToSales() {
-  notify('Our team will reach out.')
+  toast.info('Our team will reach out.')
 }
 </script>
 
@@ -336,13 +332,9 @@ function talkToSales() {
       </div>
       <div class="d-flex ga-2 flex-shrink-0">
         <v-btn color="primary" variant="flat" class="text-none" @click="talkToSales">Talk to sales</v-btn>
-        <v-btn variant="outlined" class="text-none" @click="notify('Prototype action')">Raise a ticket</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="toast.info('Prototype action')">Raise a ticket</v-btn>
       </div>
     </v-card>
-
-    <v-snackbar v-model="snackbar" :timeout="3000" rounded="pill" location="bottom center">
-      {{ snackText }}
-    </v-snackbar>
   </div>
 </template>
 
