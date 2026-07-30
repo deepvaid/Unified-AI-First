@@ -252,7 +252,7 @@ function onGripDragStart(e: DragEvent) {
   align-items: center;
   justify-content: center;
   color: rgba(var(--v-theme-on-surface), 0.55);
-  background: linear-gradient(135deg, color-mix(in oklch, var(--lp-accent, #0073AB) 18%, transparent), color-mix(in oklch, var(--lp-accent, #0073AB) 6%, transparent));
+  background: linear-gradient(135deg, color-mix(in oklch, var(--lp-accent, rgb(var(--v-theme-primary))) 18%, transparent), color-mix(in oklch, var(--lp-accent, rgb(var(--v-theme-primary))) 6%, transparent));
   border-radius: 4px;
 }
 .lbv-image--rounded { border-radius: 14px; }
@@ -297,7 +297,7 @@ function onGripDragStart(e: DragEvent) {
 .lbv-button:hover { filter: brightness(0.94); }
 .lbv-button--filled {
   background: var(--lp-accent, rgb(var(--v-theme-primary)));
-  color: #fff;
+  color: rgb(var(--v-theme-on-primary));
   border: 1.5px solid transparent;
 }
 .lbv-button--outline {

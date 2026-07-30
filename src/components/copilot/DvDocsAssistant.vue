@@ -163,7 +163,9 @@ onBeforeUnmount(() => abort?.abort())
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--dv-hero-grad, linear-gradient(135deg, #2563eb, #7e3af2));
+  /* --dv-hero-grad is always set globally (dv-tokens.css, app-styles.ts manifest) —
+     no fallback needed. */
+  background: var(--dv-hero-grad);
   flex: none;
 }
 

@@ -62,16 +62,24 @@ let handle: OrbHandle | null = null
 const { mode, accentHex } = useAppTheme()
 const { size } = useElementSize(rootEl)
 
+// Last-resort defaults for resolveColors() below — only used if --dv-accent /
+// --dv-orb-c1/c2/c3 (always set globally by dv-tokens.css) can't be read from the
+// DOM. Named here so the render function has no scattered hex literals.
+const DV_ORB_FALLBACK_ACCENT = '#0092D4'
+const DV_ORB_FALLBACK_GLOW_C1 = '#5EEAD4'
+const DV_ORB_FALLBACK_GLOW_C2 = '#93C5FD'
+const DV_ORB_FALLBACK_GLOW_C3 = '#A78BFA'
+
 // Colors must be resolved on an element INSIDE .v-application — the dark-theme
 // --accent override lives on .v-theme--maropostDark, not :root.
 function resolveColors(el: HTMLElement): OrbColorOptions {
   const cs = getComputedStyle(el)
   const read = (name: string, fallback: string) => cs.getPropertyValue(name).trim() || fallback
   return {
-    accent: read('--dv-accent', accentHex.value || '#0092D4'),
-    glowA: read('--dv-orb-c1', '#5EEAD4'),
-    glowB: read('--dv-orb-c2', '#93C5FD'),
-    glowC: read('--dv-orb-c3', '#A78BFA'),
+    accent: read('--dv-accent', accentHex.value || DV_ORB_FALLBACK_ACCENT),
+    glowA: read('--dv-orb-c1', DV_ORB_FALLBACK_GLOW_C1),
+    glowB: read('--dv-orb-c2', DV_ORB_FALLBACK_GLOW_C2),
+    glowC: read('--dv-orb-c3', DV_ORB_FALLBACK_GLOW_C3),
   }
 }
 

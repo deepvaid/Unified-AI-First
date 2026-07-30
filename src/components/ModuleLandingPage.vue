@@ -302,25 +302,27 @@ withDefaults(defineProps<{
   margin-bottom: 10px;
 }
 
-/* ===== Per-tile accent tints (icon tile, count pill, hover/focus) ===== */
-.tint-blue   { --tile-accent: #2563eb; --tile-accent-ink: #1d4ed8; }
-.tint-violet { --tile-accent: #7c3aed; --tile-accent-ink: #6d28d9; }
-.tint-rose   { --tile-accent: #e11d48; --tile-accent-ink: #be123c; }
-.tint-green  { --tile-accent: #16a34a; --tile-accent-ink: #15803d; }
-.tint-amber  { --tile-accent: #f59e0b; --tile-accent-ink: #b45309; }
-.tint-cyan   { --tile-accent: #0891b2; --tile-accent-ink: #0e7490; }
-.tint-indigo { --tile-accent: #4f46e5; --tile-accent-ink: #4338ca; }
-.tint-teal   { --tile-accent: #0d9488; --tile-accent-ink: #0f766e; }
+/* ===== Per-tile accent tints (icon tile, count pill, hover/focus) =====
+   AUD-L02: sourced from the color.{light,dark}.moduleTile.* tokens (tokens.json)
+   instead of raw hex — see that group's $description for the tint ledger. */
+.tint-blue   { --tile-accent: var(--mp-color-light-moduleTile-blue-accent); --tile-accent-ink: var(--mp-color-light-moduleTile-blue-ink); }
+.tint-violet { --tile-accent: var(--mp-color-light-moduleTile-violet-accent); --tile-accent-ink: var(--mp-color-light-moduleTile-violet-ink); }
+.tint-rose   { --tile-accent: var(--mp-color-light-moduleTile-rose-accent); --tile-accent-ink: var(--mp-color-light-moduleTile-rose-ink); }
+.tint-green  { --tile-accent: var(--mp-color-light-moduleTile-green-accent); --tile-accent-ink: var(--mp-color-light-moduleTile-green-ink); }
+.tint-amber  { --tile-accent: var(--mp-color-light-moduleTile-amber-accent); --tile-accent-ink: var(--mp-color-light-moduleTile-amber-ink); }
+.tint-cyan   { --tile-accent: var(--mp-color-light-moduleTile-cyan-accent); --tile-accent-ink: var(--mp-color-light-moduleTile-cyan-ink); }
+.tint-indigo { --tile-accent: var(--mp-color-light-moduleTile-indigo-accent); --tile-accent-ink: var(--mp-color-light-moduleTile-indigo-ink); }
+.tint-teal   { --tile-accent: var(--mp-color-light-moduleTile-teal-accent); --tile-accent-ink: var(--mp-color-light-moduleTile-teal-ink); }
 
 /* Dark surfaces need lightened tints (same hue family) to stay readable. */
-.v-theme--maropostDark .tint-blue   { --tile-accent: #60a5fa; --tile-accent-ink: #93c5fd; }
-.v-theme--maropostDark .tint-violet { --tile-accent: #a78bfa; --tile-accent-ink: #c4b5fd; }
-.v-theme--maropostDark .tint-rose   { --tile-accent: #fb7185; --tile-accent-ink: #fda4af; }
-.v-theme--maropostDark .tint-green  { --tile-accent: #4ade80; --tile-accent-ink: #86efac; }
-.v-theme--maropostDark .tint-amber  { --tile-accent: #fbbf24; --tile-accent-ink: #fcd34d; }
-.v-theme--maropostDark .tint-cyan   { --tile-accent: #22d3ee; --tile-accent-ink: #67e8f9; }
-.v-theme--maropostDark .tint-indigo { --tile-accent: #818cf8; --tile-accent-ink: #a5b4fc; }
-.v-theme--maropostDark .tint-teal   { --tile-accent: #2dd4bf; --tile-accent-ink: #5eead4; }
+.v-theme--maropostDark .tint-blue   { --tile-accent: var(--mp-color-dark-moduleTile-blue-accent); --tile-accent-ink: var(--mp-color-dark-moduleTile-blue-ink); }
+.v-theme--maropostDark .tint-violet { --tile-accent: var(--mp-color-dark-moduleTile-violet-accent); --tile-accent-ink: var(--mp-color-dark-moduleTile-violet-ink); }
+.v-theme--maropostDark .tint-rose   { --tile-accent: var(--mp-color-dark-moduleTile-rose-accent); --tile-accent-ink: var(--mp-color-dark-moduleTile-rose-ink); }
+.v-theme--maropostDark .tint-green  { --tile-accent: var(--mp-color-dark-moduleTile-green-accent); --tile-accent-ink: var(--mp-color-dark-moduleTile-green-ink); }
+.v-theme--maropostDark .tint-amber  { --tile-accent: var(--mp-color-dark-moduleTile-amber-accent); --tile-accent-ink: var(--mp-color-dark-moduleTile-amber-ink); }
+.v-theme--maropostDark .tint-cyan   { --tile-accent: var(--mp-color-dark-moduleTile-cyan-accent); --tile-accent-ink: var(--mp-color-dark-moduleTile-cyan-ink); }
+.v-theme--maropostDark .tint-indigo { --tile-accent: var(--mp-color-dark-moduleTile-indigo-accent); --tile-accent-ink: var(--mp-color-dark-moduleTile-indigo-ink); }
+.v-theme--maropostDark .tint-teal   { --tile-accent: var(--mp-color-dark-moduleTile-teal-accent); --tile-accent-ink: var(--mp-color-dark-moduleTile-teal-ink); }
 
 /* ===== Quick actions ===== */
 .quick-actions {

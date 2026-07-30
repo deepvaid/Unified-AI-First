@@ -231,7 +231,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         <template #item.actions="{ item }">
           <v-menu location="bottom end">
             <template #activator="{ props }">
-              <v-btn icon="more-horizontal" variant="text" size="x-small" v-bind="props" @click.stop />
+              <v-btn icon="more-horizontal" variant="text" size="x-small" v-bind="props" :aria-label="`Actions for ${item.name}`" @click.stop />
             </template>
             <v-list density="compact">
               <v-list-item title="Force resync" prepend-icon="refresh-cw" @click="store.forceResync([item.id]); showToast(`Resync sent to ${item.name}`)" />
@@ -430,9 +430,9 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
   border-radius: var(--r-section);
   background: color-mix(in oklch, var(--text-primary) 4%, transparent);
 
-  &--online { background: color-mix(in oklch, #22c55e 8%, transparent); }
-  &--offline { background: color-mix(in oklch, #ef4444 8%, transparent); }
-  &--syncing { background: color-mix(in oklch, #f59e0b 8%, transparent); }
+  &--online { background: color-mix(in oklch, var(--pos) 8%, transparent); }
+  &--offline { background: color-mix(in oklch, var(--neg) 8%, transparent); }
+  &--syncing { background: color-mix(in oklch, rgb(var(--v-theme-warning)) 8%, transparent); }
 }
 
 .register-offline-warning {
@@ -440,9 +440,9 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
   align-items: flex-start;
   gap: 10px;
   padding: 12px;
-  border: 1px solid color-mix(in oklch, #f59e0b 30%, transparent);
+  border: 1px solid color-mix(in oklch, rgb(var(--v-theme-warning)) 30%, transparent);
   border-radius: var(--r-section);
-  background: color-mix(in oklch, #f59e0b 8%, transparent);
+  background: color-mix(in oklch, rgb(var(--v-theme-warning)) 8%, transparent);
 }
 
 .retail-detail-list {

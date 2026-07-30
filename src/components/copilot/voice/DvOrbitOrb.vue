@@ -68,7 +68,12 @@ watch(
 .dv-orbit-orb {
   position: relative;
   flex: none;
-  color: var(--dv-ink, #16181d);
+  /* --dv-ink is always set globally (dv-tokens.css, in the app-styles.ts manifest) —
+     no fallback needed. --dv-orb-* below name the two literals that had no existing
+     token, centralizing them instead of leaving them scattered in the modifiers. */
+  --dv-orb-dim: #94a3b8;
+  --dv-orb-mask-stop: #000;
+  color: var(--dv-ink);
 }
 
 /* The canvas fills the box; `color` is inherited and read by the engine for the
@@ -108,14 +113,14 @@ watch(
     transparent 360deg
   );
   opacity: 0.75;
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), var(--dv-orb-mask-stop) calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), var(--dv-orb-mask-stop) calc(100% - 3px));
   animation: dv-orbit-spin 1.3s linear infinite;
 }
 
 /* Dim — slate mark, breathe stilled (error/paused) */
 .dv-orbit-orb--dim {
-  color: #94a3b8;
+  color: var(--dv-orb-dim);
 }
 
 .dv-orbit-orb--dim .dv-orbit-orb__canvas {

@@ -269,6 +269,10 @@ const metrics = [
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 
+/* Light lavender→blue→cyan pastel — intentional Da Vinci feature-gradient brand
+   art (WP-C9): only the purple stop matches an existing accent-container token
+   1:1, so recoloring via the core semantic palette would shift the hue instead
+   of just centralizing it. Not covered by AUD-L02/the core semantic palette. */
 .dv-hero {
   background: linear-gradient(135deg, #ede9fe 0%, #dbeafe 50%, #cffafe 100%);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
@@ -299,6 +303,7 @@ const metrics = [
   overflow: hidden;
 }
 
+/* Same intentional feature-gradient art as .dv-hero above — not core semantic palette. */
 .dv-feature-media--violet-blue { background: linear-gradient(135deg, #ede9fe 0%, #dbeafe 100%); }
 .dv-feature-media--blue-cyan { background: linear-gradient(135deg, #dbeafe 0%, #cffafe 100%); }
 .dv-feature-media--indigo-violet { background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%); }
