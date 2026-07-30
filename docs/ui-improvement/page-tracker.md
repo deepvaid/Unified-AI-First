@@ -59,7 +59,17 @@ deliberately left for per-page adoption, to check on each page as you polish it:
 
 ## Module 03 — Contacts (Audience)   [module-status: done]
 
-> **Systemic finding deferred (not fixed here) — table cell padding at phone widths.**
+> **RESOLVED after the gate** (commits `e8d7327`, `f4d26b7`) — see the strikethrough note
+> below for the original diagnosis. Both systemic items are now fixed: the dead
+> `padding-block` rule is revived under a `.v-application` scope, and inline cell padding
+> halves below `sm`. That cleared ContactLists (7px→0), ContactTags (20px→0) and
+> DashboardsList (13px→0). `AllContacts` went 192px→**48px** (email truncation + avatar
+> hidden below `sm`); the last 48px is exactly the select-checkbox column, so closing it
+> fully means dropping mobile bulk-select — left as a product call.
+> Correction to the original note: AllContacts *does* already have `hideBelow` tiers — the
+> claim that it had none was wrong; its overflow was caused by the untruncated email.
+>
+> ~~**Systemic finding deferred (not fixed here) — table cell padding at phone widths.**~~
 > ContactLists and ContactTags keep a small residual 375px overflow (7px / 20px) that
 > column-priority *cannot* fix: their remaining columns are already load-bearing.
 > Measured cause on ContactTags — 156 + 112 + 64 = 332px against 311px usable, of which
