@@ -4,6 +4,9 @@ import { useCdpEntitiesStore, type CdpTag } from '@/stores/useCdpEntities'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -15,9 +18,14 @@ const search = ref('')
 
 const headers = [
   { title: 'Tag Name', key: 'name', sortable: true },
-  { title: 'Contacts Tagged', key: 'count', align: 'end' as const },
+  { title: 'Contacts', key: 'count', align: 'end' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+
+// Only 3 columns, all load-bearing (name, count, actions) — nothing is tiered;
+// the composable is wired so a future column gets priority handling for free.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 // Create / edit drawer
 const drawer = ref(false)
@@ -68,8 +76,10 @@ function confirmDelete() {
         :total-count="store.tags.length"
       />
 
-      <v-data-table
-        :headers="headers"
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="3" />
+
+      <v-data-table v-else
+        :headers="visibleHeaders"
         :items="store.tags"
         :search="search"
         :items-per-page="15"
@@ -82,7 +92,7 @@ function confirmDelete() {
           <span class="text-body-2 font-weight-medium">{{ item.count.toLocaleString() }}</span>
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Tag actions">
+          <MpRowActionsMenu ariaLabel="Tag actions" :itemLabel="item.name">
             <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" style="opacity: 0.4" />
             <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
