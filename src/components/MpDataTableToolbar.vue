@@ -252,17 +252,36 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   border-color: rgb(var(--v-theme-outline-variant));
 }
 
-/* Ghost search: transparent until focus. A11Y-001 raised the global resting
-   outlined-field border to a compliant ≥3:1, which would make a hairline
-   override here sub-3:1 again — so the resting boundary cue is a fill
-   instead of a thin border. Focus restores the primary ring on a transparent
-   field, consistent with the global outlined-field style. */
+/* Pill search, matching the AppBar universal-search field (src/components/
+   layout/AppBar.vue .appbar-search) so search inputs read as one consistent
+   pattern across the app. A11Y-001 raised the global resting outlined-field
+   border to a compliant ≥3:1, which would make a hairline override here
+   sub-3:1 again — so, same as AppBar, the resting boundary cue is a fill +
+   custom border with Vuetify's own outline hidden, not the raised default. */
 .mp-toolbar-search :deep(.v-field) {
-  background: transparent;
+  border-radius: var(--r-pill);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-default);
 }
 
-.mp-toolbar-search :deep(.v-field:not(.v-field--focused)) {
-  background: var(--surface-secondary);
+.mp-toolbar-search :deep(.v-field__outline) {
+  --v-field-border-opacity: 0;
+}
+
+.mp-toolbar-search :deep(.v-field--focused) {
+  background: var(--surface-primary);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-color: var(--accent);
+}
+
+.mp-toolbar-search :deep(input::placeholder) {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.mp-toolbar-search :deep(.v-field__prepend-inner .v-icon) {
+  color: var(--muted);
 }
 
 .mp-toolbar-heading {

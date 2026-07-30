@@ -42,7 +42,7 @@ html[data-shell="studio"][data-sidebar="gray"] .mp-sidebar {
 }
 
 html[data-theme="light"][data-shell="studio"] .mp-appbar {
-  background: rgb(var(--v-theme-background)) !important;
+  background: var(--mp-nav-surface) !important;
   border-bottom: 0 !important;
 }
 
