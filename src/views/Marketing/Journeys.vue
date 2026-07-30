@@ -228,7 +228,7 @@ function confirmDelete() {
                 ></v-btn>
               </template>
             </v-tooltip>
-            <MpRowActionsMenu ariaLabel="Journey actions">
+            <MpRowActionsMenu ariaLabel="Journey actions" :itemLabel="item.name">
               <v-list-item prepend-icon="bar-chart-2" title="View analytics" value="analytics" @click="viewAnalytics()"></v-list-item>
               <v-list-item prepend-icon="copy" title="Duplicate" value="duplicate" @click="duplicateJourney(item)"></v-list-item>
               <v-list-item

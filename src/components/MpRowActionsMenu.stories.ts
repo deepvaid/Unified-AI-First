@@ -70,6 +70,10 @@ type-checking fails with a missing-prop error (see cleanup-report §6).
       control: 'text',
       description: 'Required accessible name for the kebab trigger, e.g. "Journey actions". Bind as camelCase `ariaLabel` — kebab-case `aria-label` bypasses the prop (see docs).',
     },
+    itemLabel: {
+      control: 'text',
+      description: 'Optional row identity (name/title/number) appended to `ariaLabel` for a per-row accessible name, e.g. `ariaLabel="Contact actions"` + `itemLabel="James Anderson"` → "Contact actions for James Anderson". Omit to leave behavior unchanged.',
+    },
     default: {
       control: false,
       description: 'Slot — menu content: `v-list-item`s (destructive actions last, behind a `v-divider`, with `class="text-error"`).',
@@ -127,6 +131,34 @@ export const OpenMenu: Story = {
 export const DarkModeOpen: Story = {
   globals: darkModeGlobals,
   ...OpenMenu,
+}
+
+/**
+ * `itemLabel` appends the row's identity to `ariaLabel`, giving each row in a table its own
+ * accessible name (e.g. "Contact actions for James Anderson") instead of one repeated static
+ * string. Omitting `itemLabel` leaves behavior unchanged.
+ */
+export const WithItemLabel: Story = {
+  render: (args) => ({
+    components: { MpRowActionsMenu },
+    setup: () => ({ args }),
+    template: `
+      <div class="d-flex justify-center pt-4" style="min-height: 320px;">
+        <MpRowActionsMenu v-bind="args">
+          <v-list-item prepend-icon="bar-chart-2" title="View analytics"></v-list-item>
+          <v-list-item prepend-icon="copy" title="Duplicate"></v-list-item>
+          <v-divider></v-divider>
+          <v-list-item prepend-icon="trash-2" title="Delete" class="text-error"></v-list-item>
+        </MpRowActionsMenu>
+      </div>
+    `,
+  }),
+  args: { ariaLabel: 'Contact actions', itemLabel: 'James Anderson' },
+  play: async ({ canvasElement }) => {
+    await new Promise(resolve => setTimeout(resolve, 300))
+    const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Contact actions for James Anderson"]')
+    trigger?.click()
+  },
 }
 
 /**

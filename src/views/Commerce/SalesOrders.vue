@@ -410,7 +410,7 @@ function exportOrders() {
         <!-- Row actions -->
         <template v-slot:item.actions="{ item }">
           <div @click.stop>
-            <MpRowActionsMenu ariaLabel="Order actions">
+            <MpRowActionsMenu ariaLabel="Order actions" :itemLabel="item.orderNumber">
               <v-list-item prepend-icon="eye" title="View order" @click="goToOrder(item.id)"></v-list-item>
               <v-list-item prepend-icon="package-check" title="Mark fulfilled" :disabled="item.fulfillmentStatus === 'Shipped' || item.status === 'Cancelled'" @click="markFulfilled(item)"></v-list-item>
               <v-list-item prepend-icon="printer" title="Print invoice" @click="printInvoice(item)"></v-list-item>

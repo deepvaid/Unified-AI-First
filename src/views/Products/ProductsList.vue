@@ -422,7 +422,7 @@ onMounted(() => {
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Product actions">
+          <MpRowActionsMenu ariaLabel="Product actions" :itemLabel="item.name">
             <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
             <v-divider class="my-1" style="opacity: 0.4" />
@@ -483,7 +483,7 @@ onMounted(() => {
                   <div class="product-sku text-truncate">{{ item.sku }}</div>
                 </div>
                 <div @click.stop>
-                  <MpRowActionsMenu ariaLabel="Product actions">
+                  <MpRowActionsMenu ariaLabel="Product actions" :itemLabel="item.name">
                     <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
                     <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
                     <v-divider class="my-1" style="opacity: 0.4" />
