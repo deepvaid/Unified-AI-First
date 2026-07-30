@@ -229,3 +229,14 @@ grep -rnP -- "--ink(?!-)\b" src/ | grep -v generated   →  (none)
 **Known issues:** None introduced. The shared `toasts` ref is returned directly (not wrapped in a read-only `computed`) from `useToast()`, matching `useDaVinciToasts`'s existing convention — this is what makes the Storybook singleton-reset idiom (`toast.toasts.value = []`) work without inventing a new `clear()` API only for stories, but it does mean a consumer could in principle mutate the array directly instead of going through `show`/`success`/`error`/`info`; no such usage exists yet since there are no call sites migrated in this WP.
 
 ---
+
+## WP-C1 — Toast system migration (post-workflow integration)
+
+**Agent:** Workflow `wf_1b458dda-58d` (1 foundation agent + 12 parallel module-batch agents), integrated by main loop.
+
+- Foundation commit `f0eb28f9`: `useToast.ts` + `MpToastStack.vue` (+ story) + mounted in `App.vue`. Verified in Storybook: persistent `aria-live="polite"` container, per-card `role="status"`/`"alert"`, axe 0 violations on the WithAction story, hover/focus pause confirmed with real timers (14.7s+ on a 4500ms-default toast while hovered).
+- 12 module batches (Layout, Analytics, Commerce, Contacts, Merchandising, Marketing, Products, Retail, SalesChannels, Service, Settings, Misc/Plg) migrated in parallel, edit-only (no commits inside the workflow) to avoid concurrent git-index races; committed sequentially afterward, one commit per module (12 commits + foundation = 13 total).
+- **Deviation caught in review:** the Retail batch's agent migrated `src/views/Retail/PosPreview.vue` (4 snackbar sites) despite it being a named out-of-scope showcase surface (plan D6). Reverted that file to its pre-migration state via `git checkout --` before committing the Retail batch; the other 3 Retail files (RetailHome, Staff, Registers) were committed normally.
+- **Stragglers found post-sweep:** `src/views/DashboardView.vue` (Layout's second census file, outside the batch's `src/components/layout`-only directory scope) and `src/views/Billing/BillingView.vue` (Billing is its own top-level `src/views/Billing/` directory, not nested under Settings as CLAUDE.md's prose implies — the Settings batch, scoped to `src/views/Settings`, correctly missed it). Both migrated directly (info-type, matching the established "notice"-pattern precedent from the Layout batch) and committed together.
+- **Final sweep:** `grep -rl "v-snackbar" src/views src/components` → only `PosPreview.vue` (intentional exclusion) and a doc-comment mention inside `MpToastStack.stories.ts` (not a real usage).
+- **Verification:** `npm run type-check` — zero new errors (only pre-existing `ReelFlyView.vue` baseline, confirmed byte-identical to master via `git diff master`). `npx vite build` — succeeds, `built in 8.17s`.
