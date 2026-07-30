@@ -6,6 +6,7 @@ import { useCopilotStore } from '@/stores/useCopilot'
 import { useUserProfile } from '@/stores/useUserProfile'
 import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
 import { useMobileNav } from '@/composables/useMobileNav'
+import { useToast } from '@/composables/useToast'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import PlgTrialChip from '@/components/plg/PlgTrialChip.vue'
 import { usePlgStore, PLG_DEMO_PRESETS, type PlgDemoPreset } from '@/stores/usePlg'
@@ -13,6 +14,7 @@ import { usePlgStore, PLG_DEMO_PRESETS, type PlgDemoPreset } from '@/stores/useP
 const copilot = useCopilotStore()
 const mobileNav = useMobileNav()
 const mobileSearchOpen = ref(false)
+const toast = useToast()
 
 const router = useRouter()
 const accountsStore = useAccountsStore()
@@ -33,8 +35,6 @@ const profileStore = useUserProfile()
 const userAvatarUrl = computed(() => profileStore.avatarUrl)
 const searchOpen = ref(false)
 const searchQuery = ref('')
-const appbarNotice = ref('')
-const appbarNoticeVisible = ref(false)
 
 const currentAccountId = computed(() => accountsStore.activeId)
 const settingsRoute = computed(() => ({ name: 'Settings' as const, params: { accountId: currentAccountId.value } }))
@@ -124,8 +124,7 @@ const filteredSearchGroups = computed(() => {
 })
 
 function showAppbarNotice(message: string) {
-  appbarNotice.value = message
-  appbarNoticeVisible.value = true
+  toast.info(message)
 }
 
 function navigateToRoute(routeLocation: object) {
@@ -793,10 +792,6 @@ function onSearchKeydown(event: KeyboardEvent) {
         </div>
       </v-card>
     </v-dialog>
-
-    <v-snackbar v-model="appbarNoticeVisible" timeout="2400" color="surface" location="bottom right">
-      {{ appbarNotice }}
-    </v-snackbar>
   </v-app-bar>
 </template>
 
