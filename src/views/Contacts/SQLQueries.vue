@@ -5,6 +5,9 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -18,12 +21,18 @@ const tableOptions = computed(() => store.tables.map(t => t.name))
 
 const headers = [
   { title: 'Query Name', key: 'name', sortable: true },
-  { title: 'Update Type', key: 'updateType' },
-  { title: 'Records', key: 'records', align: 'end' as const },
-  { title: 'Last Run', key: 'lastRun' },
+  { title: 'Update Type', key: 'updateType', hideBelow: 'md' as const },
+  { title: 'Records', key: 'records', align: 'end' as const, hideBelow: 'sm' as const },
+  { title: 'Last Run', key: 'lastRun', hideBelow: 'lg' as const },
   { title: 'Status', key: 'status' },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+
+// Row identity + its headline count always show; supporting columns drop out
+// progressively. The actions column is never tiered — the kebab must stay
+// reachable at every width.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 // Create / edit drawer
 const drawer = ref(false)
@@ -142,8 +151,10 @@ function confirmDelete() {
         :total-count="store.queries.length"
       />
 
-      <v-data-table
-        :headers="headers"
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="6" />
+
+      <v-data-table v-else
+        :headers="visibleHeaders"
         :items="store.queries"
         :search="search"
         :items-per-page="15"
@@ -164,7 +175,7 @@ function confirmDelete() {
           <MpStatusChip :status="item.status" type="general" />
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Query actions">
+          <MpRowActionsMenu ariaLabel="Query actions" :itemLabel="item.name">
             <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" style="opacity: 0.4" />
             <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
