@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
 import { useAccountsStore } from '@/stores/useAccounts'
+import { useToast } from '@/composables/useToast'
 import type { PreChatFieldType, QuickPromptIntent } from '@/stores/useChatbot'
 import type { SubscriptionKey } from '@/stores/useAccounts'
 import MpBuilderShell from '@/components/MpBuilderShell.vue'
@@ -18,6 +19,7 @@ const id = computed(() => Number(route.params.id))
 
 const cb = useChatbotStore()
 const accounts = useAccountsStore()
+const toast = useToast()
 const chatbot = computed(() => cb.getById(id.value))
 const cfg = computed(() => chatbot.value!.config)
 
@@ -225,7 +227,6 @@ function confirmRemoveSource() {
   sourceToRemove.value = null
 }
 
-const saved = ref(false)
 function goBack() { router.push({ name: 'ChatbotList', params: { accountId: accountId.value } }) }
 
 // Publish modal
@@ -252,7 +253,7 @@ async function copyScript() {
 }
 function finishPublish() {
   publishOpen.value = false
-  saved.value = true
+  toast.success('Chatbot published')
   captureConfigSnapshot()
   allowNextLeave()
 }
@@ -842,10 +843,6 @@ function sendChat() {
           </div>
         </div>
       </div>
-
-      <v-snackbar v-model="saved" :timeout="2200" color="success" rounded="pill" location="bottom center">
-        <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Chatbot published</div>
-      </v-snackbar>
 
       <!-- Publish modal -->
       <v-dialog v-model="publishOpen" max-width="560">

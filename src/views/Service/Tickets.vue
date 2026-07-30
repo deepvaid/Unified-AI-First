@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useTicketsStore, SUPPORT_INBOXES } from '@/stores/useTickets'
+import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
@@ -44,8 +45,8 @@ const replyPlaceholder = computed(() => {
 })
 
 // ── New Ticket Drawer ────────────────────────────────────────────────────
+const toast = useToast()
 const newTicketDrawer = ref(false)
-const saveSnack = ref(false)
 const formTouched = ref(false)
 
 const emptyForm = () => ({
@@ -80,7 +81,7 @@ function submitTicket() {
   if (!formValid.value) return
   store.createTicket({ ...newTicket.value })
   newTicketDrawer.value = false
-  saveSnack.value = true
+  toast.success('Ticket created and assigned')
   newTicket.value = emptyForm()
   formTouched.value = false
 }
@@ -162,8 +163,6 @@ function deleteActiveTicket() {
 // ── Multi-select + bulk actions ────────────────────────────────────────────
 const selectedIds = ref<number[]>([])
 const selectedSet = computed(() => new Set(selectedIds.value))
-const bulkSnack = ref(false)
-const bulkSnackText = ref('')
 const confirmBulkDelete = ref(false)
 
 function toggleSelected(id: number) {
@@ -187,8 +186,7 @@ watch(filteredTickets, tickets => {
 })
 
 function announceBulk(n: number, verb: string) {
-  bulkSnackText.value = `${n} ticket${n === 1 ? '' : 's'} ${verb}`
-  bulkSnack.value = true
+  toast.success(`${n} ticket${n === 1 ? '' : 's'} ${verb}`)
 }
 function bulkResolve() {
   const ids = [...selectedIds.value]
@@ -657,18 +655,6 @@ function bulkDelete() {
     danger
     @confirm="bulkDelete"
   />
-
-  <!-- Snackbars -->
-  <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-    <div class="d-flex align-center gap-2">
-      <v-icon>circle-check</v-icon> Ticket created and assigned
-    </div>
-  </v-snackbar>
-  <v-snackbar v-model="bulkSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-    <div class="d-flex align-center gap-2">
-      <v-icon>circle-check</v-icon> {{ bulkSnackText }}
-    </div>
-  </v-snackbar>
 </template>
 
 <style scoped>
