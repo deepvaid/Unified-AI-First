@@ -322,6 +322,23 @@ const chartOptions = computed<ApexOptions>(() => {
   min-height: 0;
   overflow: hidden;
   padding-top: 4px;
+  container-type: inline-size;
+}
+
+/* Legend items ("Revenue", "Paid Search", …) have no fixed width from Apex —
+   below ~220px (e.g. Da Vinci panel open narrows the grid column to ~196px)
+   there isn't room for every label, so cap each item and ellipsis it rather
+   than letting Apex wrap/truncate mid-word ("Paid Sea…" becoming unreadable
+   across multiple lines). */
+@container (max-width: 220px) {
+  .dashboard-chart-widget :deep(.apexcharts-legend-text) {
+    display: inline-block;
+    max-width: 68px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
 }
 
 .dashboard-chart-widget__placeholder {

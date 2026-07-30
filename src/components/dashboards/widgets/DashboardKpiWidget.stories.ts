@@ -103,6 +103,22 @@ export const DaVinciGenerated: Story = {
   args: { aiGenerated: true },
 }
 
+export const NarrowContainer: Story = {
+  args: {
+    dataSource: 'commerce',
+    lastRefreshedAt: minutesAgo(14 * 60),
+  },
+  render: (args) => ({
+    components: { DashboardKpiWidget },
+    setup: () => ({ args }),
+    template: `
+      <v-card flat border rounded="lg" style="width:200px;height:190px;">
+        <DashboardKpiWidget v-bind="args" />
+      </v-card>
+    `,
+  }),
+}
+
 export const RetailWithViewReport: Story = {
   args: {
     data: {

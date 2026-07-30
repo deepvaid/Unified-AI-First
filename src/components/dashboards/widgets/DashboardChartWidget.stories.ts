@@ -21,6 +21,18 @@ const CHANNEL_SERIES: DashboardSeriesData = {
   ],
 }
 
+// Long, multi-series names so the legend has something to truncate.
+const CHANNEL_MULTI_SERIES: DashboardSeriesData = {
+  kind: 'series',
+  unit: 'currency',
+  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+  series: [
+    { name: 'Paid Search', data: [1200, 1400, 1600, 1800, 2000] },
+    { name: 'Organic Search', data: [900, 1100, 1000, 1300, 1250] },
+    { name: 'Email Marketing', data: [700, 650, 800, 900, 950] },
+  ],
+}
+
 const meta = {
   title: 'Dashboards/Widgets/DashboardChartWidget',
   component: DashboardChartWidget,
@@ -84,4 +96,22 @@ export const HorizontalBarChart: Story = {
     widgetType: 'bar',
     chartVariant: 'horizontal',
   },
+}
+
+export const NarrowContainer: Story = {
+  args: {
+    data: CHANNEL_MULTI_SERIES,
+    widgetType: 'timeseries',
+    chartVariant: 'line',
+    height: 260,
+  },
+  render: (args) => ({
+    components: { DashboardChartWidget },
+    setup: () => ({ args }),
+    template: `
+      <v-card flat border rounded="lg" style="width:200px;height:260px;padding:12px 10px;">
+        <DashboardChartWidget v-bind="args" />
+      </v-card>
+    `,
+  }),
 }

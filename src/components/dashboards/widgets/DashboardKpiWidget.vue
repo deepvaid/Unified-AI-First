@@ -167,12 +167,16 @@ const sparklinePoints = computed(() => {
         class="dashboard-kpi-widget__view-report"
         @click="emit('viewReport')"
       >
-        View Report
+        <span class="dashboard-kpi-widget__view-report-text">View Report</span>
         <v-icon size="12">arrow-up-right</v-icon>
       </button>
-      <span v-else-if="updatedLabel" class="dashboard-kpi-widget__updated">
+      <span
+        v-else-if="updatedLabel"
+        class="dashboard-kpi-widget__updated"
+        :title="`Updated ${updatedLabel}`"
+      >
         <v-icon size="11">clock</v-icon>
-        Updated {{ updatedLabel }}
+        <span class="dashboard-kpi-widget__updated-text">Updated {{ updatedLabel }}</span>
       </span>
     </footer>
   </div>
@@ -192,6 +196,31 @@ const sparklinePoints = computed(() => {
 
   .dashboard-kpi-widget__value {
     font-size: 26px;
+  }
+}
+
+// Footer (source chip + "Updated Xh ago" / "View Report") has no room to
+// spare once the card drops below ~220px (e.g. Da Vinci panel open narrows
+// the grid column to ~196px) — the source chip stays fixed-width, and the
+// trailing label truncates with an ellipsis instead of clipping/overflowing
+// the card. Full text stays available via the `title` attribute above.
+@container (max-width: 220px) {
+  .dashboard-kpi-widget__foot {
+    gap: 6px;
+  }
+
+  .dashboard-kpi-widget__updated,
+  .dashboard-kpi-widget__view-report {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .dashboard-kpi-widget__updated-text,
+  .dashboard-kpi-widget__view-report-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
