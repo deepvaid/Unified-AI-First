@@ -5,6 +5,7 @@ import { useDisplay } from 'vuetify'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppBar from '@/components/layout/AppBar.vue'
 import MpDaVinciBot from '@/components/MpDaVinciBot.vue'
+import MpToastStack from '@/components/MpToastStack.vue'
 import {
   useAppTheme,
   applySidebarTheme,
@@ -227,6 +228,9 @@ const copilotDrawerWidth = computed(() => {
         @expand="copilot.toggleExpanded()"
       />
     </v-navigation-drawer>
+
+    <!-- Shared toast stack (WP-C1) — mounted once, Teleports to body itself. -->
+    <MpToastStack />
   </v-app>
 </template>
 
