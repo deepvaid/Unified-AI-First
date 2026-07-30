@@ -45,6 +45,26 @@ const filteredEntries = computed(() => {
   })
 })
 
+/**
+ * In the "All" view, group entries under muted section headers (reusing the
+ * CATEGORIES labels) so a 28-widget flat list becomes scannable — pattern
+ * matches JourneyAddStepMenu's "Common"/"Actions" section headers. When a
+ * specific category chip is active, this collapses back to a single
+ * unlabeled group, i.e. the original flat list.
+ */
+const displayGroups = computed(() => {
+  if (activeCategory.value !== 'all') {
+    return [{ key: activeCategory.value, label: null as string | null, items: filteredEntries.value }]
+  }
+  const groups: Array<{ key: string; label: string | null; items: DashboardWidgetLibraryEntry[] }> = []
+  for (const category of CATEGORIES) {
+    if (category.key === 'all') continue
+    const items = filteredEntries.value.filter(entry => entry.category === category.key)
+    if (items.length) groups.push({ key: category.key, label: category.label, items })
+  }
+  return groups
+})
+
 const selectedId = ref<string | null>(null)
 
 function selectEntry(entry: DashboardWidgetLibraryEntry) {
@@ -103,36 +123,51 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
     </div>
 
     <div v-else class="widget-library__list">
-      <button
-        v-for="entry in filteredEntries"
-        :key="entry.id"
-        type="button"
-        class="widget-library__item"
-        :class="{ 'widget-library__item--active': selectedId === entry.id }"
-        @click="selectEntry(entry)"
+      <div
+        v-for="group in displayGroups"
+        :key="group.key"
+        class="widget-library__group"
+        :role="group.label ? 'group' : undefined"
+        :aria-labelledby="group.label ? `widget-library-group-${group.key}` : undefined"
       >
-        <div class="widget-library__item-icon">
-          <v-icon size="18">{{ entry.icon }}</v-icon>
-        </div>
-        <div class="widget-library__item-body">
-          <div class="widget-library__item-title-row">
-            <span class="widget-library__item-title">{{ entry.title }}</span>
-            <v-chip
-              v-if="entry.recommended"
-              size="x-small"
-              color="success"
-              variant="tonal"
-              class="widget-library__item-recommended"
-            >
-              Recommended
-            </v-chip>
+        <h3
+          v-if="group.label"
+          :id="`widget-library-group-${group.key}`"
+          class="widget-library__group-label px-3 py-1 text-caption text-medium-emphasis font-weight-bold"
+        >
+          {{ group.label }}
+        </h3>
+        <button
+          v-for="entry in group.items"
+          :key="entry.id"
+          type="button"
+          class="widget-library__item"
+          :class="{ 'widget-library__item--active': selectedId === entry.id }"
+          @click="selectEntry(entry)"
+        >
+          <div class="widget-library__item-icon">
+            <v-icon size="18">{{ entry.icon }}</v-icon>
           </div>
-          <div class="widget-library__item-description">{{ entry.description }}</div>
-        </div>
-        <div class="widget-library__item-type">
-          {{ TYPE_LABELS[entry.type] }}
-        </div>
-      </button>
+          <div class="widget-library__item-body">
+            <div class="widget-library__item-title-row">
+              <span class="widget-library__item-title">{{ entry.title }}</span>
+              <v-chip
+                v-if="entry.recommended"
+                size="x-small"
+                color="success"
+                variant="tonal"
+                class="widget-library__item-recommended"
+              >
+                Recommended
+              </v-chip>
+            </div>
+            <div class="widget-library__item-description">{{ entry.description }}</div>
+          </div>
+          <div class="widget-library__item-type">
+            {{ TYPE_LABELS[entry.type] }}
+          </div>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -226,7 +261,17 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 .widget-library__list {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.widget-library__group {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+}
+
+.widget-library__group-label {
+  margin: 0;
 }
 
 .widget-library__empty {

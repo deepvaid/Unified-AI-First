@@ -12,6 +12,8 @@ const props = withDefaults(defineProps<{
   period?: string
   /** 'hero' renders the value at display scale (48px/800) for a single headline metric. */
   emphasis?: 'default' | 'hero'
+  /** Optional last-updated meta line ("Updated 2h ago"), rendered as the smallest, most-muted caption at the card's bottom edge. */
+  updatedAt?: string
 }>(), {
   emphasis: 'default',
 })
@@ -73,6 +75,8 @@ const trendUp = computed(() => props.trendPositive !== false)
     </div>
 
     <slot />
+
+    <div v-if="updatedAt" class="text-caption text-medium-emphasis mt-2">{{ updatedAt }}</div>
   </v-card>
 </template>
 

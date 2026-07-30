@@ -76,6 +76,7 @@ const meta = {
       options: ['default', 'hero'],
       description: 'Value scale: `default` (32px/700) or `hero` (48px/800) for a single headline metric.',
     },
+    updatedAt: { control: 'text', description: 'Optional last-updated meta line ("Updated 2h ago"), rendered as the smallest, most-muted caption at the card\'s bottom edge.' },
     sparkline: { control: false, description: 'Slot — 96px-wide mini chart aligned with the value. A `#value` slot also exists to replace the default value rendering (e.g. demoted-cents money).', table: { category: 'slots' } },
     default: { control: false, description: 'Slot — extra content below the stat block.', table: { category: 'slots' } },
   },
@@ -126,6 +127,20 @@ export const WithPeriod: Story = {
     trend: '+4.8%',
     trendPositive: true,
     period: 'Today',
+  },
+}
+
+/** `updatedAt` renders as the smallest, most-muted caption at the card's bottom edge. */
+export const WithUpdatedAt: Story = {
+  args: {
+    label: 'Total Revenue',
+    value: '$12,430',
+    icon: 'dollar-sign',
+    color: 'success',
+    trend: '+12.5%',
+    trendPositive: true,
+    subStat: 'vs last month',
+    updatedAt: 'Updated 2h ago',
   },
 }
 
