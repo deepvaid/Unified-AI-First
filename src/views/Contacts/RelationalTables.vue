@@ -4,6 +4,9 @@ import { useCdpEntitiesStore, type RelationalTable, type RelationalColumn, type 
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -20,10 +23,16 @@ const allowNullOptions: RelationalColumn['allowNull'][] = ['Yes', 'No']
 const headers = [
   { title: 'Table Name', key: 'name', sortable: true },
   { title: 'Rows', key: 'rows', align: 'end' as const },
-  { title: 'Primary Key', key: 'primaryKey' },
-  { title: 'Last Updated', key: 'updated' },
+  { title: 'Primary Key', key: 'primaryKey', hideBelow: 'sm' as const },
+  { title: 'Last Updated', key: 'updated', hideBelow: 'md' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+
+// Row identity + its headline count always show; supporting columns drop out
+// progressively. The actions column is never tiered — the kebab must stay
+// reachable at every width.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 // Create drawer
 const drawer = ref(false)
@@ -75,8 +84,10 @@ function confirmDelete() {
         :total-count="store.tables.length"
       />
 
-      <v-data-table
-        :headers="headers"
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
+
+      <v-data-table v-else
+        :headers="visibleHeaders"
         :items="store.tables"
         :search="search"
         :items-per-page="15"
@@ -89,7 +100,7 @@ function confirmDelete() {
           <span class="text-body-2 font-weight-medium">{{ item.rows.toLocaleString() }}</span>
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Table actions">
+          <MpRowActionsMenu ariaLabel="Table actions" :itemLabel="item.name">
             <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
