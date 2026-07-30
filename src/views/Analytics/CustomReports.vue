@@ -6,9 +6,11 @@ import type { CustomReport, CustomReportType, CustomReportScheduleMode } from '@
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useAnalyticsStore()
 const { customReports } = storeToRefs(store)
+const toast = useToast()
 
 const vizIcon: Record<CustomReport['visualization'], string> = {
   Bar: 'bar-chart-3',
@@ -36,9 +38,6 @@ const dateRanges = ['Last 7 days', 'Last 30 days', 'Last 90 days', 'This quarter
 
 const drawer = ref(false)
 const editingId = ref<number | null>(null)
-
-const snackbar = ref(false)
-const snackbarText = ref('')
 
 interface ReportForm {
   name: string
@@ -117,7 +116,7 @@ function saveReport() {
     if (existing) {
       Object.assign(existing, payload, { lastRun: new Date().toISOString().slice(0, 10) })
     }
-    snackbarText.value = 'Report updated'
+    toast.success('Report updated')
   } else {
     const nextId = Math.max(0, ...customReports.value.map((r) => r.id)) + 1
     customReports.value.unshift({
@@ -126,15 +125,13 @@ function saveReport() {
       lastRun: new Date().toISOString().slice(0, 10),
       ...payload,
     })
-    snackbarText.value = 'Report created'
+    toast.success('Report created')
   }
   drawer.value = false
-  snackbar.value = true
 }
 
 function runReport(report: CustomReport) {
-  snackbarText.value = `Report queued: ${report.name}`
-  snackbar.value = true
+  toast.success(`Report queued: ${report.name}`)
 }
 </script>
 
@@ -314,9 +311,5 @@ function runReport(report: CustomReport) {
         </v-btn>
       </template>
     </MpFormDrawer>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>

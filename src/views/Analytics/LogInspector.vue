@@ -7,13 +7,12 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
 
+const toast = useToast()
 const search = ref('')
 const filterLevel = ref<string[]>([])
 const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
-
-const snackbar = ref(false)
-const snackbarText = ref('')
 
 const headers = [
   { title: 'Timestamp', key: 'time', sortable: true },
@@ -55,8 +54,7 @@ function exportCsv() {
     { title: 'Level', value: (l) => l.level ?? '' },
     { title: 'Message', value: 'message' },
   ])
-  snackbarText.value = `Exported ${filteredLogs.value.length} rows`
-  snackbar.value = true
+  toast.success(`Exported ${filteredLogs.value.length} rows`)
 }
 </script>
 
@@ -115,9 +113,5 @@ function exportCsv() {
         </template>
       </v-data-table>
     </v-card>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>

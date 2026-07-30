@@ -7,15 +7,14 @@ import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
 
 const store = useAnalyticsStore()
 const { accountMetrics, salesChannels } = storeToRefs(store)
+const toast = useToast()
 
 // Channel attribution has no per-row date, so the range is a labelled reporting-window control.
 const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
-
-const snackbar = ref(false)
-const snackbarText = ref('')
 
 function exportCsv() {
   downloadCsv('sales-summary', salesChannels.value, [
@@ -26,8 +25,7 @@ function exportCsv() {
     { title: 'Share', value: (c) => `${c.share.toFixed(1)}%` },
     { title: 'vs. prior', value: (c) => `${c.delta >= 0 ? '+' : ''}${c.delta.toFixed(1)}%` },
   ])
-  snackbarText.value = `Exported ${salesChannels.value.length} rows`
-  snackbar.value = true
+  toast.success(`Exported ${salesChannels.value.length} rows`)
 }
 
 const totalOrders = computed(() => salesChannels.value.reduce((sum, c) => sum + c.orders, 0))
@@ -168,10 +166,6 @@ const tableHeaders = [
         </template>
       </v-data-table>
     </v-card>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

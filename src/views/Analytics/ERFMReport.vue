@@ -7,15 +7,14 @@ import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
 
 const store = useAnalyticsStore()
 const { rfmAnalyzed, rfmSegments } = storeToRefs(store)
+const toast = useToast()
 
 // Segments are computed over the whole base, so the range is a labelled analysis-window control.
 const dateRange = ref<DateRangeValue>({ preset: 'Last 90 days' })
-
-const snackbar = ref(false)
-const snackbarText = ref('')
 
 function exportSegments() {
   downloadCsv('erfm-segments', rfmSegments.value, [
@@ -27,8 +26,7 @@ function exportSegments() {
     { title: 'Avg Value', value: 'avgValue' },
     { title: 'Recommended Action', value: 'action' },
   ])
-  snackbarText.value = `Exported ${rfmSegments.value.length} rows`
-  snackbar.value = true
+  toast.success(`Exported ${rfmSegments.value.length} rows`)
 }
 
 const toneColor: Record<string, string> = {
@@ -149,10 +147,6 @@ const currency = (n: number) =>
       title="No segments yet"
       description="RFM segmentation appears once enough order history is available."
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

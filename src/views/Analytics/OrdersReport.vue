@@ -8,14 +8,13 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
+const toast = useToast()
 const search = ref('')
 const filterStatus = ref<string[]>([])
 const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
-
-const snackbar = ref(false)
-const snackbarText = ref('')
 
 const headers = [
   { title: 'Order Number', key: 'orderNumber', sortable: true },
@@ -55,8 +54,7 @@ function exportCsv() {
     { title: 'Status', value: (o) => o.status ?? '' },
     { title: 'Date', value: 'date' },
   ])
-  snackbarText.value = `Exported ${filteredOrders.value.length} rows`
-  snackbar.value = true
+  toast.success(`Exported ${filteredOrders.value.length} rows`)
 }
 </script>
 
@@ -117,9 +115,5 @@ function exportCsv() {
         </template>
       </v-data-table>
     </v-card>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>

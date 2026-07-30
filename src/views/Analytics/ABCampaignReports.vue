@@ -7,14 +7,13 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
 
 const store = useCampaignsStore()
+const toast = useToast()
 const search = ref('')
 const filterWinner = ref<string[]>([])
 const dateRange = ref<DateRangeValue>({ preset: 'This year' })
-
-const snackbar = ref(false)
-const snackbarText = ref('')
 
 const headers = [
   { title: 'Test Name', key: 'name', sortable: true },
@@ -59,8 +58,7 @@ function exportCsv() {
     { title: 'Winning Variant', value: (t) => t.winner ?? '' },
     { title: 'Lift', value: 'lift' },
   ])
-  snackbarText.value = `Exported ${filteredTests.value.length} rows`
-  snackbar.value = true
+  toast.success(`Exported ${filteredTests.value.length} rows`)
 }
 </script>
 
@@ -122,9 +120,5 @@ function exportCsv() {
         </template>
       </v-data-table>
     </v-card>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>

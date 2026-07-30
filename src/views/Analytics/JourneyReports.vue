@@ -8,14 +8,13 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
 
 const store = useCampaignsStore()
+const toast = useToast()
 const search = ref('')
 const filterStatus = ref<string[]>([])
 const dateRange = ref<DateRangeValue>({ preset: 'This year' })
-
-const snackbar = ref(false)
-const snackbarText = ref('')
 
 const headers = [
   { title: 'Journey Name', key: 'name', sortable: true },
@@ -52,8 +51,7 @@ function exportCsv() {
     { title: 'Active Contacts', value: (j) => activeContacts(j) },
     { title: 'Status', value: 'status' },
   ])
-  snackbarText.value = `Exported ${filteredJourneys.value.length} rows`
-  snackbar.value = true
+  toast.success(`Exported ${filteredJourneys.value.length} rows`)
 }
 </script>
 
@@ -113,9 +111,5 @@ function exportCsv() {
         </template>
       </v-data-table>
     </v-card>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
