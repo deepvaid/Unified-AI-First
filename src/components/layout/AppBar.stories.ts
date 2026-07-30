@@ -215,6 +215,24 @@ export const SearchOpen: Story = {
   },
 }
 
+/** Search open with a non-"All" type tab selected, narrowing results to one searchSources
+ *  category without retyping (WP-C3). Tabs are `role="group"`-labeled, real `<button>`s
+ *  (keyboard-reachable), and the combobox's own `aria-activedescendant` wiring is unaffected
+ *  by which tab is active. */
+export const SearchOpenWithTypeTabs: Story = {
+  name: 'Search (Type Tabs)',
+  render: appBarStory(),
+  play: async ({ canvasElement }) => {
+    await new Promise(resolve => setTimeout(resolve, 500))
+    const trigger = canvasElement.querySelector('[aria-label="Universal AI search"]') as HTMLElement
+    if (trigger) trigger.click()
+    await new Promise(resolve => setTimeout(resolve, 300))
+    const tabs = document.querySelectorAll('.cmd-palette__tab')
+    const nonAllTab = Array.from(tabs).find(t => t.textContent?.trim() !== 'All') as HTMLElement | undefined
+    nonAllTab?.click()
+  },
+}
+
 /** The bar at a 375px viewport (canvas only — the docs page doesn't resize). */
 export const Mobile375: Story = {
   render: appBarStory(),
