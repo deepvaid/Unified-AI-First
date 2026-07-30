@@ -256,14 +256,17 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
    layout/AppBar.vue .appbar-search) so search inputs read as one consistent
    pattern across the app. White resting fill matches the toolbar's other
    controls (Filter, column-toggle — both `variant="outlined"` on the white
-   toolbar shell), not a gray ghost fill. A11Y-001 raised the global resting
-   outlined-field border to a compliant ≥3:1, which would make a hairline
-   override here sub-3:1 again — so, same as AppBar, the resting boundary cue
-   is a border (not Vuetify's own outline, which stays hidden). */
+   toolbar shell), not a gray ghost fill. Vuetify's own outline is hidden
+   below (opacity 0) since this draws its own border instead — that border
+   must use the SAME compliant color-mix global.scss's A11Y-001 fix uses
+   (color-mix(in srgb, var(--text-secondary) 75%, transparent), ~3.4-3.6:1
+   both themes), not --border-default (~1.3:1) — a Phase 6 independent audit
+   caught this as a regression: --border-default was visually similar but
+   never re-verified for contrast against this fully-white background. */
 .mp-toolbar-search :deep(.v-field) {
   border-radius: var(--r-pill);
   background: var(--surface-primary);
-  border: 1px solid var(--border-default);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 75%, transparent);
 }
 
 .mp-toolbar-search :deep(.v-field__outline) {
