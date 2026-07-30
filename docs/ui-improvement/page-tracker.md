@@ -15,7 +15,22 @@
 - contactId: _resolve at runtime_ — uids are seeded-rng ULIDs (useContacts.ts:295); open `/accounts/2000290/contacts`, use the first row's link. Record it here once known: `TBD`
 - Baseline console noise (pre-existing, ignore — recorded 2026-07-03): zero **errors**; recurring **warnings**: `[Vuetify UPGRADE] 'theme.global.name.value = maropostLight' is deprecated` and `[Vue Router warn]: The next() callback in navigation guards is deprecated` (fires on every route change). Bar = zero NEW errors; these warnings don't count.
 
-## Module 01 — Dashboard   [module-status: pending]
+## Standing items from the design-system consolidation (2026-07-30)
+
+The UI system consolidation (`docs/ui-system-audit/`, merged to master) improved the shared
+foundation every page below inherits — so per-page work should now be smaller. Two items it
+deliberately left for per-page adoption, to check on each page as you polish it:
+
+1. **`MpRowActionsMenu` `itemLabel`** — the prop exists and identifies the row in the kebab's
+   accessible name (`"Contact actions for James Anderson"`). Adopted on AllContacts, SalesOrders,
+   ProductsList, Journeys, Tickets; **every other list view still passes only the static
+   `ariaLabel`**. Thread `itemLabel` through when polishing a list page (UX-004).
+2. **Mobile table column priority** — UX-009 shipped the systemic fix (a trailing scroll-shadow
+   affordance in `global.scss`). The fuller per-table fix (collapse low-priority columns behind
+   the existing kebab at `smAndDown`) was deliberately deferred: apply it only where a specific
+   table is genuinely phone-critical, not by default.
+
+## Module 01 — Dashboard   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
