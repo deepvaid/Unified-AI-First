@@ -874,8 +874,16 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .appbar-utilities :deep(.appbar-action-btn) {
-  width: 36px;
-  height: 36px;
+  /* maropostDefaults.VBtn ships a blanket inline min-height:40px +
+     padding-inline:14px meant for text buttons; it beats this rule's own
+     height/width unless matched with !important, which made these render as
+     36x40 pills (icon squeezed into an 8px content box) instead of a 36x36
+     circle matching the Quick-create button beside them. */
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  padding-inline: 0 !important;
   border-radius: var(--r-pill);
   color: var(--text-primary);
   /* Faint resting surface so the icons read as tappable controls, not glyphs
