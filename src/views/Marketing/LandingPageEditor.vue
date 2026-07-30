@@ -16,6 +16,7 @@ import LandingPageStylePanel from '@/components/marketing/landing/LandingPageSty
 import LandingBlockSettings from '@/components/marketing/landing/LandingBlockSettings.vue'
 import LandingBlockView from '@/components/marketing/landing/LandingBlockView.vue'
 import LandingInsertionPoint from '@/components/marketing/landing/LandingInsertionPoint.vue'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -231,8 +232,8 @@ watch([blocks, pageStyle, pageName, pageUrl, seo], markDirty, { deep: true })
 onUnmounted(() => { if (dirty.value) flushSave() })
 
 // ─── Topbar actions ────────────────────────────────────────────────────────
-const toast = ref<{ show: boolean; text: string }>({ show: false, text: '' })
-function notify(text: string) { toast.value = { show: true, text } }
+const toast = useToast()
+function notify(text: string) { toast.success(text) }
 
 function verifyDomainAction() {
   if (!page.value) return
@@ -507,8 +508,6 @@ function saveAndClose() {
         danger
         @confirm="confirmUnpublish"
       />
-
-      <v-snackbar v-model="toast.show" color="success" timeout="1600" location="bottom right">{{ toast.text }}</v-snackbar>
   </MpBuilderShell>
 
   <div v-else class="lpe-missing d-flex align-center justify-center">

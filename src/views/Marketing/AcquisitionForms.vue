@@ -12,6 +12,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
@@ -154,11 +155,11 @@ const activeForm = ref<AcquisitionForm | null>(null)
 function openPreview(form: AcquisitionForm) { activeForm.value = form; previewDialog.value = true }
 function openEmbed(form: AcquisitionForm) { activeForm.value = form; embedDialog.value = true }
 const embedSnippets = computed(() => (activeForm.value ? embedScriptFor(activeForm.value) : { script: '', manual: '' }))
-const copiedSnack = ref(false)
+const toast = useToast()
 async function copyText(text: string) {
   try {
     await navigator.clipboard.writeText(text)
-    copiedSnack.value = true
+    toast.success('Copied to clipboard')
   } catch {
     // clipboard unavailable — no-op in this prototype
   }
@@ -494,10 +495,6 @@ async function copyText(text: string) {
       @update:model-value="confirmDeleteIds = null"
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="copiedSnack" :timeout="1800" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Copied to clipboard</div>
-    </v-snackbar>
   </div>
 </template>
 

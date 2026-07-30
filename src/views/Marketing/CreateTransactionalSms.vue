@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useSmsStore } from '@/stores/useSms'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,7 +22,7 @@ const message = ref('')
 const senderId = ref('MAROPOST')
 const template = ref<string | null>(null)
 const optOutConfirmed = ref(false)
-const saved = ref(false)
+const toast = useToast()
 
 const tokenExample = '{{ first_name }}'
 const TEMPLATES = [
@@ -96,7 +97,7 @@ function save() {
     store.createTransactionalSms(input)
   }
   savedSnapshot.value = serializeForm()
-  saved.value = true
+  toast.success(editId.value != null ? 'Transactional SMS updated' : 'Transactional SMS saved')
   allowNextLeave()
   setTimeout(() => router.push(backTo.value), 700)
 }
@@ -255,9 +256,6 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS
       </div>
     </div>
 
-    <v-snackbar v-model="saved" color="success" timeout="700" location="bottom right">
-      {{ editId != null ? 'Transactional SMS updated' : 'Transactional SMS saved' }}
-    </v-snackbar>
     <MpConfirmDialog
       v-model="confirmLeave"
       danger

@@ -8,6 +8,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useSmsStore, type SmsCampaign } from '@/stores/useSms'
 import { usePlgStore } from '@/stores/usePlg'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
@@ -30,8 +31,8 @@ const fromNumber = ref('+61481074914')
 const FROM_NUMBERS = ['+61481074914', '+61481074915', '+61481074916']
 const message = ref('')
 const testPhone = ref('')
-const testSent = ref(false)
 const clickTrackingEnabled = ref(false)
+const toast = useToast()
 
 const INSERT_CHIPS: { key: string; label: string; icon: string; token: string }[] = [
   { key: 'image', label: 'Image (MMS)', icon: 'image', token: '' },
@@ -47,7 +48,7 @@ function insertHelper(chip: typeof INSERT_CHIPS[number]) {
 
 function sendTest() {
   if (!testPhone.value.trim()) return
-  testSent.value = true
+  toast.success(`Test message sent to ${testPhone.value}`)
 }
 
 // GSM-7 segmentation: 160 chars single, 153 per part once concatenated.
@@ -315,7 +316,6 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
       </div>
     </div>
 
-    <v-snackbar v-model="testSent" color="success" timeout="1600" location="bottom right">Test message sent to {{ testPhone }}</v-snackbar>
     </template>
     <MpConfirmDialog
       v-model="confirmLeave"

@@ -6,6 +6,7 @@ import { useSmsStore } from '@/stores/useSms'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,7 +29,7 @@ const previewText = ref('')
 const brand = ref('Maropost')
 const tag = ref<string | null>(null)
 const address = ref('100 King St, Sydney NSW 2000')
-const saved = ref(false)
+const toast = useToast()
 
 const LANGUAGES = ['English (US)', 'English (UK)', 'French', 'German', 'Spanish', 'Italian']
 const BRAND_OPTIONS = ['Maropost', 'Storefront Co', 'Wholesale Division']
@@ -81,7 +82,7 @@ function create() {
     store.createTransactionalEmail(input)
   }
   savedSnapshot.value = serializeForm()
-  saved.value = true
+  toast.success(editId.value != null ? 'Transactional email updated' : 'Transactional email created')
   allowNextLeave()
   setTimeout(() => router.push(backTo.value), 700)
 }
@@ -256,9 +257,6 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
       </v-btn>
     </div>
 
-    <v-snackbar v-model="saved" color="success" timeout="700" location="bottom right">
-      {{ editId != null ? 'Transactional email updated' : 'Transactional email created' }}
-    </v-snackbar>
     <MpConfirmDialog
       v-model="confirmLeave"
       danger

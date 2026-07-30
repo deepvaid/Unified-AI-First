@@ -6,6 +6,7 @@ import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useToast } from '@/composables/useToast'
 import {
   useFormsStore, newFormDefaults, SUBSCRIPTION_LISTS, POPUP_POSITIONS, defaultFormBlock,
 } from '@/stores/useForms'
@@ -162,11 +163,11 @@ const reviewTab = ref<'details' | 'preview'>('details')
 const embedId = computed(() => persistedId.value ?? 'draft')
 const embedScript = computed(() => `<script src="https://forms.maropost.com/embed/${embedId.value}.js" async><\/script>`)
 const manualScript = computed(() => `<div id="mp-form-${embedId.value}"></div>\n<script>\n  window.MaropostForms = window.MaropostForms || [];\n  window.MaropostForms.push({ formId: "${embedId.value}", target: "#mp-form-${embedId.value}" });\n<\/script>`)
-const copiedSnack = ref(false)
+const toast = useToast()
 async function copyText(text: string) {
   try {
     await navigator.clipboard.writeText(text)
-    copiedSnack.value = true
+    toast.success('Copied to clipboard')
   } catch {
     // clipboard unavailable — no-op in this prototype
   }
@@ -238,7 +239,6 @@ let baseline = ''
 function markClean() { baseline = snapshot.value }
 const dirty = computed(() => snapshot.value !== baseline)
 
-const saveSnack = ref(false)
 const {
   confirmLeave,
   allowNextLeave,
@@ -251,7 +251,7 @@ const {
   message: 'You have unsaved changes. Leaving now will discard them.',
 })
 
-function saveDraft() { persist(); markClean(); saveSnack.value = true }
+function saveDraft() { persist(); markClean(); toast.success('Saved') }
 function saveAndExit() {
   persist()
   markClean()
@@ -781,13 +781,6 @@ function publishForm() {
         </div>
       </div>
     </div>
-
-    <v-snackbar v-model="saveSnack" :timeout="2200" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Saved</div>
-    </v-snackbar>
-    <v-snackbar v-model="copiedSnack" :timeout="1800" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Copied to clipboard</div>
-    </v-snackbar>
 
     <MpConfirmDialog
       v-model="confirmLeave"

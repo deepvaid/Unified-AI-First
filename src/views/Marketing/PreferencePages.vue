@@ -7,6 +7,7 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useMarketingAssetsStore()
 const search = ref('')
@@ -116,10 +117,9 @@ function doDelete() {
   pendingDelete.value = null
 }
 
-// ── Snackbar ──────────────────────────────────────────────────────────────
-const snack = ref(false)
-const snackText = ref('')
-function notify(text: string) { snackText.value = text; snack.value = true }
+// ── Toast ─────────────────────────────────────────────────────────────────
+const toast = useToast()
+function notify(text: string) { toast.success(text) }
 </script>
 
 <template>
@@ -260,9 +260,5 @@ function notify(text: string) { snackText.value = text; snack.value = true }
       danger
       @confirm="doDelete"
     />
-
-    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
-    </v-snackbar>
   </div>
 </template>

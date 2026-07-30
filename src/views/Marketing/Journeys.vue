@@ -11,6 +11,7 @@ import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { formatCurrency } from '@/utils/formatCurrency'
+import { useToast } from '@/composables/useToast'
 
 const store = useCampaignsStore()
 const router = useRouter()
@@ -89,13 +90,11 @@ function toggleStatus(journey: typeof store.journeys[0]) {
   journey.status = journey.status === 'Active' ? 'Paused' : 'Active'
 }
 
-const toastOpen = ref(false)
-const toastMessage = ref('')
+const toast = useToast()
 
 function duplicateJourney(journey: typeof store.journeys[0]) {
   store.duplicateJourney(journey.id)
-  toastMessage.value = `Duplicated "${journey.name}"`
-  toastOpen.value = true
+  toast.info(`Duplicated "${journey.name}"`)
 }
 
 function viewAnalytics() {
@@ -107,8 +106,7 @@ const deleteTarget = ref<typeof store.journeys[0] | null>(null)
 
 function requestDelete(journey: typeof store.journeys[0]) {
   if (journey.status === 'Active') {
-    toastMessage.value = `Pause "${journey.name}" before deleting.`
-    toastOpen.value = true
+    toast.info(`Pause "${journey.name}" before deleting.`)
     return
   }
   deleteTarget.value = journey
@@ -267,10 +265,6 @@ function confirmDelete() {
       confirm-label="Delete journey"
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="toastOpen" :timeout="3000" rounded="pill" location="bottom center">
-      {{ toastMessage }}
-    </v-snackbar>
   </div>
 </template>
 

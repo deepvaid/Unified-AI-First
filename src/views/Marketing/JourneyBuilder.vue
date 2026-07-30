@@ -15,6 +15,7 @@ import type { CatalogItem, FlowNode } from '@/stores/journeyFlowData'
 import { catalogByKind, dataNodeCatalog, nodeCatalog } from '@/stores/journeyFlowData'
 import { addNodeAfter as insertNodeAfter, buildSegments, detachNode, flowValidation, removeNode, type FlowSegment } from '@/composables/useFlowTree'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
@@ -77,8 +78,7 @@ const journeyName = computed({
 const journeyStatus = computed(() => journey.value?.status ?? 'Draft')
 const editingName = ref(false)
 const nameInput = ref('')
-const saveSnack = ref(false)
-const saveMessage = ref('Journey saved')
+const toast = useToast()
 const selectedNodeId = ref<string | null>(null)
 
 // Icon-tile accent (soft container + colored glyph) shared by palette rows and
@@ -273,8 +273,7 @@ function saveNode() {
     n.configured = true
   }
   // Apply closes the panel; canvas Save persists the whole flow.
-  saveMessage.value = 'Step applied'
-  saveSnack.value = true
+  toast.success('Step applied')
   selectedNodeId.value = null
 }
 function cancelPanel() { selectedNodeId.value = null; showStepMore.value = false }
@@ -288,8 +287,7 @@ function removeSelected() {
 
 function saveDraftJourney() {
   persistFlow()
-  saveMessage.value = 'Draft saved'
-  saveSnack.value = true
+  toast.success('Draft saved')
 }
 
 const copilot = useCopilotStore()
@@ -306,8 +304,7 @@ function tryActivate() {
   if (journeyStatus.value === 'Active') {
     setStatus('Paused')
     persistFlow()
-    saveMessage.value = 'Journey paused'
-    saveSnack.value = true
+    toast.success('Journey paused')
     void nextTick(() => { issuesOpen.value = false })
     return
   }
@@ -317,8 +314,7 @@ function tryActivate() {
   }
   setStatus('Active')
   persistFlow()
-  saveMessage.value = 'Journey activated'
-  saveSnack.value = true
+  toast.success('Journey activated')
   void nextTick(() => { issuesOpen.value = false })
 }
 
@@ -762,10 +758,6 @@ onBeforeUnmount(() => {
       </aside>
     </div>
     </div>
-
-    <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ saveMessage }}</div>
-    </v-snackbar>
 
     <MpConfirmDialog
       v-model="deleteDialog"

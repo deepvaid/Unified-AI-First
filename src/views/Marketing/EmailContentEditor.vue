@@ -7,6 +7,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpBuilderPreviewDialog from '@/components/MpBuilderPreviewDialog.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useToast } from '@/composables/useToast'
 
 type BlockType = 'title' | 'paragraph' | 'list' | 'image' | 'button' | 'divider' | 'spacer' | 'social' | 'html'
 
@@ -81,7 +82,7 @@ const {
   leaveConfirmLabel,
 } = useDirtyLeaveGuard(isDirty)
 
-const saveSnack = ref(false)
+const toast = useToast()
 const previewOpen = ref(false)
 
 function addBlock(type: BlockType) {
@@ -112,7 +113,7 @@ function setListText(block: EmailBlock, value: string) {
 }
 function save() {
   savedSnapshot.value = JSON.stringify(blocks.value)
-  saveSnack.value = true
+  toast.success('Content saved')
 }
 function saveAndClose() {
   save()
@@ -276,7 +277,6 @@ watch(contentId, () => {
         </div>
       </MpBuilderPreviewDialog>
 
-      <v-snackbar v-model="saveSnack" color="success" timeout="2000" location="bottom right">Content saved</v-snackbar>
       <MpConfirmDialog
         v-model="confirmLeave"
         danger
