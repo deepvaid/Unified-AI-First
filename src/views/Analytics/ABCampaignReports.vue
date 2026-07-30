@@ -7,7 +7,10 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useCampaignsStore()
 const toast = useToast()
@@ -17,10 +20,15 @@ const dateRange = ref<DateRangeValue>({ preset: 'This year' })
 
 const headers = [
   { title: 'Test Name', key: 'name', sortable: true },
-  { title: 'Status', key: 'status' },
-  { title: 'Winning Variant', key: 'winner' },
+  { title: 'Status', key: 'status', hideBelow: 'sm' as const },
+  { title: 'Winning Variant', key: 'winner', hideBelow: 'md' as const },
   { title: 'Lift', key: 'lift' },
 ]
+
+// Identity + headline metric always show; supporting columns drop out
+// progressively so the table never side-scrolls on a phone.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 const abTests = store.campaigns.slice(10, 20).map(c => ({
   ...c,
@@ -103,7 +111,9 @@ function exportCsv() {
           </div>
         </template>
       </MpDataTableToolbar>
-      <v-data-table :headers="headers" :items="filteredTests" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="4" />
+
+      <v-data-table v-else :headers="visibleHeaders" :items="filteredTests" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.winner="{ item }">
           <span class="font-weight-bold text-primary">{{ item.winner }}</span>
         </template>
