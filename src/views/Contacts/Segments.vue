@@ -4,6 +4,9 @@ import { useContactsStore, type Segment, type SegmentRule, type SegmentMatchLogi
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -26,10 +29,16 @@ const MAX_FILTERS = 100
 
 const headers = [
   { title: 'Segment Name', key: 'name', sortable: true },
-  { title: 'Total Contacts', key: 'count', align: 'end' as const },
-  { title: 'Last Calculated', key: 'lastCalc' },
+  { title: 'Contacts', key: 'count', align: 'end' as const },
+  { title: 'Last Calculated', key: 'lastCalc', hideBelow: 'sm' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+
+// Row identity + its headline count always show; supporting columns drop out
+// progressively. The actions column is never tiered — the kebab must stay
+// reachable at every width.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 // ── Condition builder state ────────────────────────────────────────────────────
 const drawer = ref(false)
@@ -195,8 +204,10 @@ function confirmDelete() {
         :total-count="store.segments.length"
       />
 
-      <v-data-table
-        :headers="headers"
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="4" />
+
+      <v-data-table v-else
+        :headers="visibleHeaders"
         :items="store.segments"
         :search="search"
         :items-per-page="15"
@@ -210,7 +221,7 @@ function confirmDelete() {
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Segment actions">
+          <MpRowActionsMenu ariaLabel="Segment actions" :itemLabel="item.name">
             <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-list-item prepend-icon="refresh-cw" title="Recalculate" @click="recalculate(item)" />
             <v-divider class="my-1" style="opacity: 0.4" />
