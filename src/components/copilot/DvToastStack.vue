@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
 
-const { toasts, triggerAction } = useDaVinciToasts()
+const { toasts, triggerAction, pause, resume } = useDaVinciToasts()
 </script>
 
 <template>
@@ -13,6 +13,10 @@ const { toasts, triggerAction } = useDaVinciToasts()
         class="dv-toast"
         :class="{ 'is-leaving': toast.leaving }"
         role="status"
+        @mouseenter="pause(toast.id)"
+        @mouseleave="resume(toast.id)"
+        @focusin="pause(toast.id)"
+        @focusout="resume(toast.id)"
       >
         <div class="dv-toast__icon">
           <v-icon size="14" color="white">check</v-icon>

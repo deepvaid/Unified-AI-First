@@ -17,12 +17,52 @@ export interface DaVinciToast extends Required<Pick<DaVinciToastInput, 'title' |
 }
 
 const toasts = ref<DaVinciToast[]>([])
-const timers = new Map<string, ReturnType<typeof setTimeout>>()
 const DEFAULT_DURATION = 4200
 const LEAVE_MS = 180
 
+// Same elapsed/remaining-time bookkeeping as useToast.ts, so an actionable
+// toast's timer can be paused on hover/focus and resumed on leave/blur
+// (WCAG 2.2.1 Timing Adjustable — A11Y-009).
+interface TimerState {
+  timeoutId: ReturnType<typeof setTimeout> | null
+  remaining: number
+  startedAt: number
+}
+const timers = new Map<string, TimerState>()
+
 function makeId() {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+}
+
+function clearTimer(id: string) {
+  const timer = timers.get(id)
+  if (timer?.timeoutId) clearTimeout(timer.timeoutId)
+}
+
+function startTimer(id: string, duration: number) {
+  clearTimer(id)
+  timers.set(id, {
+    timeoutId: setTimeout(() => dismissToast(id), duration),
+    remaining: duration,
+    startedAt: Date.now(),
+  })
+}
+
+/** Pause the auto-dismiss timer — call on :hover / :focus-within. */
+function pause(id: string) {
+  const timer = timers.get(id)
+  if (!timer || !timer.timeoutId) return
+  clearTimeout(timer.timeoutId)
+  timer.remaining = Math.max(0, timer.remaining - (Date.now() - timer.startedAt))
+  timer.timeoutId = null
+}
+
+/** Resume a paused timer — call on leave/blur. */
+function resume(id: string) {
+  const timer = timers.get(id)
+  if (!timer || timer.timeoutId) return
+  timer.startedAt = Date.now()
+  timer.timeoutId = setTimeout(() => dismissToast(id), timer.remaining)
 }
 
 function dismissToast(id: string) {
@@ -34,8 +74,7 @@ function dismissToast(id: string) {
   const next = [...toasts.value]
   next[idx] = { ...existing, leaving: true }
   toasts.value = next
-  const timer = timers.get(id)
-  if (timer) clearTimeout(timer)
+  clearTimer(id)
   timers.delete(id)
   setTimeout(() => {
     toasts.value = toasts.value.filter((t) => t.id !== id)
@@ -54,8 +93,7 @@ function pushToast(input: DaVinciToastInput): string {
     leaving: false,
   }
   toasts.value = [...toasts.value, toast]
-  const timer = setTimeout(() => dismissToast(id), toast.durationMs)
-  timers.set(id, timer)
+  startTimer(id, toast.durationMs)
   return id
 }
 
@@ -72,5 +110,7 @@ export function useDaVinciToasts() {
     pushToast,
     dismissToast,
     triggerAction,
+    pause,
+    resume,
   }
 }
