@@ -554,7 +554,7 @@ tr:focus-within .action-btns {
 .v-table__wrapper {
   background-repeat: no-repeat;
   background-position: right top, right top;
-  background-size: 28px 100%, 28px 100%;
+  background-size: var(--mp-spacing-7) 100%, var(--mp-spacing-7) 100%;
   background-attachment: local, scroll;
   background-image:
     linear-gradient(to left, rgb(var(--v-theme-surface)), rgb(var(--v-theme-surface))),
