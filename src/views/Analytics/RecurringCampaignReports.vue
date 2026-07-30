@@ -7,7 +7,10 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useCampaignsStore()
 const toast = useToast()
@@ -18,9 +21,14 @@ const dateRange = ref<DateRangeValue>({ preset: 'This year' })
 const headers = [
   { title: 'Recurring Campaign Name', key: 'name', sortable: true },
   { title: 'Frequency', key: 'frequency' },
-  { title: 'Next Run', key: 'nextRun' },
-  { title: 'Avg Opens', key: 'metrics.opens', align: 'end' as const },
+  { title: 'Next Run', key: 'nextRun', hideBelow: 'md' as const },
+  { title: 'Avg Opens', key: 'metrics.opens', align: 'end' as const, hideBelow: 'sm' as const },
 ]
+
+// Identity + headline metric always show; supporting columns drop out
+// progressively so the table never side-scrolls on a phone.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 const recurringItems = store.campaigns.slice(0, 10).map(c => ({
   ...c,
@@ -102,7 +110,9 @@ function exportCsv() {
           </div>
         </template>
       </MpDataTableToolbar>
-      <v-data-table :headers="headers" :items="filteredItems" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="4" />
+
+      <v-data-table v-else :headers="visibleHeaders" :items="filteredItems" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template #no-data>
           <MpEmptyState
             icon="repeat"
