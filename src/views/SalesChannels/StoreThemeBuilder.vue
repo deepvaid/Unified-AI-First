@@ -766,7 +766,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 v-if="sectionAcceptsBlocks(section)"
                 :icon="expandedSectionIds.has(section.id) ? 'chevron-down' : 'chevron-right'"
                 variant="text"
-                size="x-small"
+                size="small"
                 density="comfortable"
                 class="tb-section-row__expand"
                 :aria-label="expandedSectionIds.has(section.id) ? `Collapse ${section.label} blocks` : `Expand ${section.label} blocks`"
@@ -788,7 +788,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 <v-btn
                   :icon="section.hidden ? 'eye-off' : 'eye'"
                   variant="text"
-                  size="x-small"
+                  size="small"
                   density="comfortable"
                   :aria-label="section.hidden ? `Show ${section.label}` : `Hide ${section.label}`"
                   @click="toggleHidden(section)"
@@ -796,7 +796,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 <v-btn
                   icon="chevron-up"
                   variant="text"
-                  size="x-small"
+                  size="small"
                   density="comfortable"
                   :disabled="index === 0"
                   :aria-label="`Move ${section.label} up`"
@@ -805,7 +805,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 <v-btn
                   icon="chevron-down"
                   variant="text"
-                  size="x-small"
+                  size="small"
                   density="comfortable"
                   :disabled="index === activeSections.length - 1"
                   :aria-label="`Move ${section.label} down`"
@@ -814,7 +814,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                 <v-btn
                   icon="trash-2"
                   variant="text"
-                  size="x-small"
+                  size="small"
                   density="comfortable"
                   :aria-label="`Remove ${section.label}`"
                   @click="askRemove(section)"
@@ -854,7 +854,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                   <v-btn
                     icon="chevron-up"
                     variant="text"
-                    size="x-small"
+                    size="small"
                     density="comfortable"
                     :disabled="bIndex === 0"
                     :aria-label="`Move ${blockLabel(block)} up`"
@@ -863,7 +863,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                   <v-btn
                     icon="chevron-down"
                     variant="text"
-                    size="x-small"
+                    size="small"
                     density="comfortable"
                     :disabled="bIndex === (section.blocks?.length ?? 0) - 1"
                     :aria-label="`Move ${blockLabel(block)} down`"
@@ -872,7 +872,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                   <v-btn
                     icon="trash-2"
                     variant="text"
-                    size="x-small"
+                    size="small"
                     density="comfortable"
                     :aria-label="`Remove ${blockLabel(block)}`"
                     @click="askRemoveBlock(section.id, block.id)"

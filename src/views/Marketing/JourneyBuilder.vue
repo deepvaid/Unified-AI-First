@@ -657,14 +657,22 @@ onBeforeUnmount(() => {
             </template>
           </v-tooltip>
           <v-divider vertical style="height:20px;"></v-divider>
-          <v-btn icon="zoom-out" variant="text" size="small" aria-label="Zoom out" :disabled="zoom <= 0.5" @click="zoomOut"></v-btn>
+          <v-tooltip text="Zoom out" location="top">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" icon="zoom-out" variant="text" size="small" aria-label="Zoom out" :disabled="zoom <= 0.5" @click="zoomOut"></v-btn>
+            </template>
+          </v-tooltip>
           <v-tooltip text="Reset to 100%" location="top">
             <template #activator="{ props }">
               <button v-bind="props" class="jb-zoom__pct text-caption font-weight-medium" aria-label="Reset zoom to 100%"
                 @click="resetZoom">{{ zoomPct }}%</button>
             </template>
           </v-tooltip>
-          <v-btn icon="zoom-in" variant="text" size="small" aria-label="Zoom in" :disabled="zoom >= 1.5" @click="zoomIn"></v-btn>
+          <v-tooltip text="Zoom in" location="top">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" icon="zoom-in" variant="text" size="small" aria-label="Zoom in" :disabled="zoom >= 1.5" @click="zoomIn"></v-btn>
+            </template>
+          </v-tooltip>
         </div>
       </div>
 

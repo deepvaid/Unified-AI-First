@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, mergeProps } from 'vue'
 import MpFormDrawer from './MpFormDrawer.vue'
 
 const search = defineModel<string>('search', { default: '' })
@@ -89,21 +89,25 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
           location="bottom end"
         >
           <template #activator="{ props: menuProps }">
-            <v-btn
-              v-bind="menuProps"
-              variant="outlined"
-              icon="columns-3"
-              class="mp-filter-btn mp-filter-btn--icon"
-              :aria-label="hiddenColumns.length ? `Toggle visible columns (${hiddenColumns.length} hidden)` : 'Toggle visible columns'"
-            >
-              <v-icon size="18">columns-3</v-icon>
-              <v-badge
-                v-if="hiddenColumns.length"
-                :content="hiddenColumns.length"
-                color="primary"
-                floating
-              />
-            </v-btn>
+            <v-tooltip text="Toggle visible columns" location="bottom">
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="mergeProps(menuProps, tooltipProps)"
+                  variant="outlined"
+                  icon="columns-3"
+                  class="mp-filter-btn mp-filter-btn--icon"
+                  :aria-label="hiddenColumns.length ? `Toggle visible columns (${hiddenColumns.length} hidden)` : 'Toggle visible columns'"
+                >
+                  <v-icon size="18">columns-3</v-icon>
+                  <v-badge
+                    v-if="hiddenColumns.length"
+                    :content="hiddenColumns.length"
+                    color="primary"
+                    floating
+                  />
+                </v-btn>
+              </template>
+            </v-tooltip>
           </template>
           <v-card min-width="220" max-width="280" flat border rounded="lg" class="mt-1 mp-toolbar-panel">
             <div class="pa-3">

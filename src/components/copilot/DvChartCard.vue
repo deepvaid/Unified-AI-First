@@ -26,9 +26,21 @@ function getMax(bars: number[][]) {
           <div v-if="subtitle" class="text-caption text-medium-emphasis mt-1">{{ subtitle }}</div>
         </div>
         <div class="d-flex ga-1">
-          <v-btn icon size="28" variant="text"><v-icon size="16">save</v-icon></v-btn>
-          <v-btn icon size="28" variant="text"><v-icon size="16">download</v-icon></v-btn>
-          <v-btn icon size="28" variant="text"><v-icon size="16">maximize-2</v-icon></v-btn>
+          <v-tooltip text="Save" location="top">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" icon size="28" variant="text" aria-label="Save"><v-icon size="16">save</v-icon></v-btn>
+            </template>
+          </v-tooltip>
+          <v-tooltip text="Download" location="top">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" icon size="28" variant="text" aria-label="Download"><v-icon size="16">download</v-icon></v-btn>
+            </template>
+          </v-tooltip>
+          <v-tooltip text="Enlarge" location="top">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" icon size="28" variant="text" aria-label="Enlarge"><v-icon size="16">maximize-2</v-icon></v-btn>
+            </template>
+          </v-tooltip>
         </div>
       </div>
 

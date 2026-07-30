@@ -654,7 +654,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
                     v-bind="tipProps"
                     :icon="appsExpanded ? 'minus' : 'plus'"
                     variant="text"
-                    size="x-small"
+                    size="small"
                     density="comfortable"
                     class="sidebar-apps-toggle"
                     :aria-label="appsExpanded ? 'Hide installed apps' : 'Show installed apps'"
@@ -1233,8 +1233,10 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .sidebar-apps-toggle {
-  width: 24px !important;
-  height: 24px !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
   color: var(--sidebar-muted) !important;
 }
 

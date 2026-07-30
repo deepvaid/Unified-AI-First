@@ -224,7 +224,7 @@ watch(channelId, () => {
                 <v-btn
                   icon="x"
                   variant="text"
-                  size="x-small"
+                  size="small"
                   density="comfortable"
                   class="tc-file-row__close"
                   :aria-label="`Close ${fileLeafLabel(path)}`"
@@ -290,7 +290,7 @@ watch(channelId, () => {
               <v-btn
                 icon="x"
                 variant="text"
-                size="x-small"
+                size="small"
                 density="comfortable"
                 class="tc-tab__close"
                 :aria-label="`Close ${fileLeafLabel(path)}`"

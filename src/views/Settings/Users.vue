@@ -113,7 +113,7 @@ function removeUser() {
         <template v-slot:item.actions="{ item }">
           <v-menu>
             <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" />
+              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" :aria-label="`Actions for ${item.name}`" />
             </template>
             <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
               <v-list-item prepend-icon="pencil" @click="openEditRole(item)">Edit Role</v-list-item>
