@@ -57,20 +57,45 @@ deliberately left for per-page adoption, to check on each page as you polish it:
 | 13 | Analytics/TransactionalReports.vue | /accounts/2000290/analytics/transactional_reports | standard | done | 4a3ac7f | loading state + responsive columns (Event+Delivery Rate at 375px); 0 overflow |
 | 14 | Analytics/LogInspector.vue | /accounts/2000290/analytics/log_inspector | standard | done | 7af1d59 | loading state + responsive columns; Level+Message kept at 375px and Timestamp dropped (inverse of report tables — the message is the content); 0 overflow |
 
-## Module 03 — Contacts (Audience)   [module-status: pending]
+## Module 03 — Contacts (Audience)   [module-status: done]
+
+> **Systemic finding deferred (not fixed here) — table cell padding at phone widths.**
+> ContactLists and ContactTags keep a small residual 375px overflow (7px / 20px) that
+> column-priority *cannot* fix: their remaining columns are already load-bearing.
+> Measured cause on ContactTags — 156 + 112 + 64 = 332px against 311px usable, of which
+> **96px is cell padding** (Vuetify's `padding: 0 16px`, ×2 sides ×3 columns).
+> Two things surfaced while investigating, both worth a dedicated design-system task
+> rather than a per-page patch:
+> 1. Halving inline cell padding below `sm` would fix this class of overflow app-wide,
+>    but it restyles *every* table — too broad to verify inside a Contacts module gate.
+> 2. **`global.scss`'s existing `padding-block: 14px` table-cell rule is dead code.**
+>    Vuetify's `.v-table > .v-table__wrapper > table > tbody > tr > td { padding: 0 16px }`
+>    has equal specificity and later source order, so the shorthand wins and computed
+>    block padding is `0px`. Any fix here must out-specify that selector (e.g.
+>    `.v-table.v-data-table > .v-table__wrapper > …`), not just add another equal-weight rule.
+>
+> A `width:` hint on the numeric column was tried and **reverted** — Vuetify treats it as a
+> hint and content+padding still won (column stayed 112px), so it would have been dead code.
+>
+> **Pre-existing residuals spotted at this gate on rows already marked `done` in earlier
+> sessions** (not introduced by this pass, not fixed — flagged so they aren't lost):
+> `Contacts/AllContacts` still side-scrolls **192px** at 375px, and `Dashboards/DashboardsList`
+> **13px**. Both predate `useResponsiveTableHeaders` being applied broadly; AllContacts is the
+> highest-traffic page in this module, so it's the best candidate for a targeted revisit
+> (its row-1 note claims responsive headers but the table has no `hideBelow` tiers).
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
 | 1 | Contacts/AllContacts.vue | /accounts/2000290/contacts | standard | done | a97a169 | ad-hoc polish (subtitle count bug, chip vocab, dates, CTA variants) + redesign (score dots, hover hint removed); touched shared MpStatusChip (additive contact-map entries) — spot-check prior pages at gate |
 | 2 | Contacts/ContactDetail.vue | /accounts/2000290/contacts/:contactId (see Defaults) | standard | done | 4ffb855 | ad-hoc redesign: flat profile (gradient hero removed), KPIs 8→4, sidebar 6→4 cards, back-to header |
-| 3 | Contacts/ContactLists.vue | /accounts/2000290/lists | standard | pending | | |
-| 4 | Contacts/Segments.vue | /accounts/2000290/segments | standard | pending | | |
-| 5 | Contacts/ContactFields.vue | /accounts/2000290/contact_fields | standard | pending | | |
-| 6 | Contacts/ContactTags.vue | /accounts/2000290/tags | standard | pending | | |
-| 7 | Contacts/RelationalTables.vue | /accounts/2000290/relational_tables | standard | pending | | |
-| 8 | Contacts/SQLQueries.vue | /accounts/2000290/sql_queries | standard | pending | | |
-| 9 | Contacts/SecureLists.vue | /accounts/2000290/secure_lists | standard | pending | | |
-| 10 | Contacts/WebTracking.vue | /accounts/2000290/web_tracking | standard | pending | | |
+| 3 | Contacts/ContactLists.vue | /accounts/2000290/lists | standard | done | a2bd399 | loading state + responsive columns (229px→**7px** at 375px — residual is cell-padding-driven, not column-driven; see Module 03 note) + itemLabel on row kebabs (6 identical→6 unique names); label "Total Contacts"→"Contacts" for cross-page consistency |
+| 4 | Contacts/Segments.vue | /accounts/2000290/segments | standard | done | a50de68 | loading state + responsive columns (106px→0 at 375px) + itemLabel (12 identical→12 unique); label "Total Contacts"→"Contacts" |
+| 5 | Contacts/ContactFields.vue | /accounts/2000290/contact_fields | standard | done | 22ed118 | loading state + responsive columns (170px→0 at 375px) + itemLabel (5 identical→5 unique) |
+| 6 | Contacts/ContactTags.vue | /accounts/2000290/tags | standard | done | 9cef1ae | loading state + itemLabel (5 identical→5 unique); label "Contacts Tagged"→"Contacts". No column tiering — only 3 cols, all load-bearing; residual **20px** overflow at 375px is cell-padding-driven (see Module 03 note) |
+| 7 | Contacts/RelationalTables.vue | /accounts/2000290/relational_tables | standard | done | 52df3ff | loading state + responsive columns (171px→0 at 375px) + itemLabel (3 identical→3 unique) |
+| 8 | Contacts/SQLQueries.vue | /accounts/2000290/sql_queries | standard | done | 5b3260b | loading state + responsive columns (250px→0 at 375px) + itemLabel (3 identical→3 unique) |
+| 9 | Contacts/SecureLists.vue | /accounts/2000290/secure_lists | standard | done | 3c6fb11 | loading state + responsive columns (88px→0 at 375px) + itemLabel (2 identical→2 unique) |
+| 10 | Contacts/WebTracking.vue | /accounts/2000290/web_tracking | standard | done | 1a420c9 | a11y: read-only tracking-domain field had a dangling aria-labelledby and no accessible name (WCAG 4.1.2) — added aria-label, verified via a11y tree. Static page: table/list states N/A; 0 overflow at 375px |
 
 ## Module 04 — Products   [module-status: pending]
 
