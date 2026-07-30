@@ -8,6 +8,8 @@ withDefaults(defineProps<{
   confirmLabel?: string
   /** Destructive action: error icon + error confirm button. */
   danger?: boolean
+  /** Optional bullet list of consequences, rendered between the message and the actions. */
+  consequences?: string[]
 }>(), {
   confirmLabel: 'Confirm',
   danger: false,
@@ -41,6 +43,11 @@ const messageId = useId()
         {{ title }}
       </v-card-title>
       <v-card-text :id="messageId" class="text-body-2 text-medium-emphasis">{{ message }}</v-card-text>
+      <v-card-text v-if="consequences?.length" class="text-body-2 text-medium-emphasis pt-0">
+        <ul class="mp-confirm-consequences pl-5 mb-0">
+          <li v-for="(consequence, index) in consequences" :key="index">{{ consequence }}</li>
+        </ul>
+      </v-card-text>
       <v-card-actions class="justify-end">
         <v-btn variant="text" class="text-none" @click="emit('update:modelValue', false)">Cancel</v-btn>
         <v-btn :color="danger ? 'error' : 'primary'" variant="flat" class="text-none" @click="confirm">
@@ -50,3 +57,9 @@ const messageId = useId()
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.mp-confirm-consequences li + li {
+  margin-top: var(--mp-spacing-1);
+}
+</style>

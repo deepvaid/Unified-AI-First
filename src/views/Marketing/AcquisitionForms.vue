@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, useId } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useFormsStore, newFormDefaults, embedScriptFor } from '@/stores/useForms'
 import type { AcquisitionForm, FormType, PopupPosition } from '@/stores/useForms'
@@ -114,6 +114,7 @@ const FORM_TEMPLATES: FormTemplate[] = [
 ]
 
 const chooseDialog = ref(false)
+const chooseDialogTitleId = useId()
 const selectedTemplate = ref<string | null>(null)
 const templateSearch = ref('')
 const filterType = ref<'All' | FormType>('All')
@@ -150,7 +151,9 @@ function openBuilder() {
 
 // ─── Preview & embed-code dialogs ───────────────────────────────────────
 const previewDialog = ref(false)
+const previewDialogTitleId = useId()
 const embedDialog = ref(false)
+const embedDialogTitleId = useId()
 const activeForm = ref<AcquisitionForm | null>(null)
 function openPreview(form: AcquisitionForm) { activeForm.value = form; previewDialog.value = true }
 function openEmbed(form: AcquisitionForm) { activeForm.value = form; embedDialog.value = true }
@@ -387,11 +390,11 @@ async function copyText(text: string) {
     </MpFloatingBulkBar>
 
     <!-- Template picker -->
-    <v-dialog v-model="chooseDialog" max-width="820" rounded="xl">
+    <v-dialog v-model="chooseDialog" max-width="820" rounded="xl" :aria-labelledby="chooseDialogTitleId">
       <v-card rounded="lg" border flat color="surface" class="template-dialog-card">
         <div class="pa-5 pb-3 d-flex align-center justify-space-between">
           <div>
-            <div class="text-h6 font-weight-bold">Choose a Template</div>
+            <div :id="chooseDialogTitleId" class="text-h6 font-weight-bold">Choose a Template</div>
             <div class="text-caption text-medium-emphasis">Pick a starting point or begin from scratch</div>
           </div>
           <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="chooseDialog = false" />
@@ -436,10 +439,10 @@ async function copyText(text: string) {
     </v-dialog>
 
     <!-- Preview dialog: readonly render of the form's blocks -->
-    <v-dialog v-model="previewDialog" max-width="520" rounded="xl">
+    <v-dialog v-model="previewDialog" max-width="520" rounded="xl" :aria-labelledby="previewDialogTitleId">
       <v-card v-if="activeForm" rounded="lg" border flat class="pa-5">
         <div class="d-flex align-center justify-space-between mb-4">
-          <div class="text-h6 font-weight-bold">{{ activeForm.name }}</div>
+          <div :id="previewDialogTitleId" class="text-h6 font-weight-bold">{{ activeForm.name }}</div>
           <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="previewDialog = false" />
         </div>
         <div class="preview-stage d-flex justify-center pa-6">
@@ -470,10 +473,10 @@ async function copyText(text: string) {
     </v-dialog>
 
     <!-- Embed code dialog -->
-    <v-dialog v-model="embedDialog" max-width="560" rounded="xl">
+    <v-dialog v-model="embedDialog" max-width="560" rounded="xl" :aria-labelledby="embedDialogTitleId">
       <v-card v-if="activeForm" rounded="lg" border flat class="pa-5">
         <div class="d-flex align-center justify-space-between mb-4">
-          <div class="text-h6 font-weight-bold">Embed “{{ activeForm.name }}”</div>
+          <div :id="embedDialogTitleId" class="text-h6 font-weight-bold">Embed “{{ activeForm.name }}”</div>
           <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="embedDialog = false" />
         </div>
         <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Website Embed</div>

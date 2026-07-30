@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useCommerceStore,
@@ -203,6 +203,7 @@ function markAsPaid() {
 
 // Payment link
 const paymentLinkDialog = ref(false)
+const paymentLinkDialogTitleId = useId()
 const paymentLink = ref('')
 const savedDraftId = ref<number | null>(null)
 function generatePaymentLink() {
@@ -520,9 +521,9 @@ onMounted(() => {
     </MpFormDrawer>
 
     <!-- ── Payment link dialog ─────────────────────────────────────── -->
-    <v-dialog v-model="paymentLinkDialog" max-width="480" persistent>
+    <v-dialog v-model="paymentLinkDialog" max-width="480" persistent :aria-labelledby="paymentLinkDialogTitleId">
       <v-card rounded="lg" border flat class="pa-1">
-        <v-card-title class="text-body-1 font-weight-bold d-flex align-center gap-2">
+        <v-card-title :id="paymentLinkDialogTitleId" class="text-body-1 font-weight-bold d-flex align-center gap-2">
           <v-icon color="success" size="20">circle-check</v-icon>
           Payment link generated
         </v-card-title>

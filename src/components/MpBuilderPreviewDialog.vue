@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useId } from 'vue'
+
 withDefaults(
   defineProps<{
     modelValue: boolean
@@ -23,6 +25,8 @@ defineSlots<{
 function close() {
   emit('update:modelValue', false)
 }
+
+const titleId = useId()
 </script>
 
 <template>
@@ -30,11 +34,12 @@ function close() {
     :model-value="modelValue"
     fullscreen
     transition="dialog-bottom-transition"
+    :aria-labelledby="titleId"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <v-card class="mp-builder-preview d-flex flex-column" rounded="0" flat>
       <div class="mp-builder-preview__bar d-flex align-center ga-3 px-4">
-        <div class="text-subtitle-2 font-weight-bold text-truncate">{{ title }}</div>
+        <div :id="titleId" class="text-subtitle-2 font-weight-bold text-truncate">{{ title }}</div>
         <v-spacer />
         <slot name="toolbar" />
         <v-btn icon="x" variant="text" size="small" aria-label="Close preview" @click="close" />

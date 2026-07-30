@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
@@ -116,6 +116,7 @@ function advanceStage(item: FulfillmentQueueItem) {
 const shipDialog = ref(false)
 const shipIds = ref<number[]>([])
 const shipTracking = ref('')
+const shipDialogTitleId = useId()
 function askShip(ids: number[]) {
   shipIds.value = ids
   shipTracking.value = ''
@@ -305,9 +306,9 @@ function exportFulfillments() {
     </MpFloatingBulkBar>
 
     <!-- ── Mark Shipped dialog (tracking number) ───────────────────── -->
-    <v-dialog v-model="shipDialog" max-width="440">
+    <v-dialog v-model="shipDialog" max-width="440" :aria-labelledby="shipDialogTitleId">
       <v-card rounded="lg" border flat class="pa-1">
-        <v-card-title class="text-body-1 font-weight-bold">
+        <v-card-title :id="shipDialogTitleId" class="text-body-1 font-weight-bold">
           Mark {{ shipIds.length === 1 ? 'fulfillment' : `${shipIds.length} fulfillments` }} shipped?
         </v-card-title>
         <v-card-text class="pt-1">

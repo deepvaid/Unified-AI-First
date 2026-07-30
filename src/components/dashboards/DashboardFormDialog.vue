@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { accentToVuetifyColor } from './dashboardOptions'
 import type { Dashboard } from '@/stores/dashboards/types'
 import { useDashboardsStore } from '@/stores/useDashboards'
@@ -82,17 +82,19 @@ function handleNameEnter() {
   if (isEditMode.value) return
   submit()
 }
+
+const titleId = useId()
 </script>
 
 <template>
-  <v-dialog v-model="model" max-width="560" persistent scrollable>
+  <v-dialog v-model="model" max-width="560" persistent scrollable :aria-labelledby="titleId">
     <v-card flat rounded="lg" color="surface" class="dashboard-form-dialog">
       <v-card-title class="d-flex align-center ga-3 pa-5">
         <v-avatar size="44" variant="tonal" :color="previewColor">
           <v-icon>{{ previewIcon }}</v-icon>
         </v-avatar>
         <div class="flex-grow-1 min-width-0">
-          <div class="text-overline text-medium-emphasis">{{ isEditMode ? 'Edit dashboard' : 'New dashboard' }}</div>
+          <div :id="titleId" class="text-overline text-medium-emphasis">{{ isEditMode ? 'Edit dashboard' : 'New dashboard' }}</div>
           <div class="text-h6 font-weight-bold">{{ trimmedName || 'Untitled dashboard' }}</div>
         </div>
         <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="close" />

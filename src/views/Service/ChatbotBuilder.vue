@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, useId, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
 import { useAccountsStore } from '@/stores/useAccounts'
@@ -231,6 +231,7 @@ function goBack() { router.push({ name: 'ChatbotList', params: { accountId: acco
 
 // Publish modal
 const publishOpen = ref(false)
+const publishDialogTitleId = useId()
 const copied = ref(false)
 const installScript = computed(() =>
   `<!-- ${chatbot.value?.store ?? 'Store'} AI Chatbot Widget -->
@@ -845,10 +846,10 @@ function sendChat() {
       </div>
 
       <!-- Publish modal -->
-      <v-dialog v-model="publishOpen" max-width="560">
+      <v-dialog v-model="publishOpen" max-width="560" :aria-labelledby="publishDialogTitleId">
         <v-card flat rounded="lg" class="pa-6">
           <div class="d-flex align-start justify-space-between mb-1">
-            <div class="text-h6 font-weight-bold">Publish chatbot</div>
+            <div :id="publishDialogTitleId" class="text-h6 font-weight-bold">Publish chatbot</div>
             <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="publishOpen = false" />
           </div>
           <div class="text-body-2 text-medium-emphasis mb-4">Copy this snippet into your website to make your chatbot live.</div>

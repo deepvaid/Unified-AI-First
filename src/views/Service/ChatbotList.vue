@@ -12,6 +12,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormDrawer from '@/components/MpFormDrawer.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -233,18 +234,15 @@ function doCreate() {
       @confirm="doArchive"
     />
 
-    <v-dialog v-model="createOpen" max-width="480">
-      <v-card flat rounded="lg" class="pa-6">
-        <div class="text-h6 font-weight-bold mb-1">Create new chatbot</div>
-        <div class="text-body-2 text-medium-emphasis mb-5">Each chatbot powers one store. Add the store details to get started.</div>
-        <v-text-field v-model="form.store" label="Store name" placeholder="e.g. Johny Style Store" variant="outlined" density="comfortable" autofocus class="mb-3" />
-        <v-text-field v-model="form.storeUrl" label="Store URL" placeholder="https://mystore.com" variant="outlined" density="comfortable" prepend-inner-icon="link" hide-details class="mb-2" />
-        <div class="d-flex justify-end ga-2 mt-4">
-          <v-btn variant="text" class="text-none" @click="createOpen = false">Cancel</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plus" :disabled="!canCreate" @click="doCreate">Create &amp; customize</v-btn>
-        </div>
-      </v-card>
-    </v-dialog>
+    <MpFormDrawer v-model="createOpen" title="Create new chatbot" :width="420">
+      <div class="text-body-2 text-medium-emphasis mb-5">Each chatbot powers one store. Add the store details to get started.</div>
+      <v-text-field v-model="form.store" label="Store name" placeholder="e.g. Johny Style Store" variant="outlined" density="comfortable" autofocus class="mb-3" />
+      <v-text-field v-model="form.storeUrl" label="Store URL" placeholder="https://mystore.com" variant="outlined" density="comfortable" prepend-inner-icon="link" hide-details />
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="createOpen = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plus" :disabled="!canCreate" @click="doCreate">Create &amp; customize</v-btn>
+      </template>
+    </MpFormDrawer>
   </div>
 </template>
 

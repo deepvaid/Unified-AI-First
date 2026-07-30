@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
@@ -131,6 +131,7 @@ const addedAssistantIds = ref<string[]>([])
 const activeTab = ref<DetailTab>('overview')
 const showCompletedSetup = ref(false)
 const previewDialogOpen = ref(false)
+const previewDialogTitleId = useId()
 const previewDevice = ref<'desktop' | 'mobile'>('desktop')
 
 const accountId = computed(() => {
@@ -1045,11 +1046,11 @@ function locationRoleText(locationId: string) {
         </v-card>
       </section>
 
-      <v-dialog v-model="previewDialogOpen" max-width="1040" scrollable>
+      <v-dialog v-model="previewDialogOpen" max-width="1040" scrollable :aria-labelledby="previewDialogTitleId">
         <v-card flat rounded="lg" class="sc-preview-dialog">
           <div class="sc-preview-dialog__bar">
             <div class="min-width-0">
-              <strong>Storefront preview</strong>
+              <strong :id="previewDialogTitleId">Storefront preview</strong>
               <span v-if="channel.webStore?.domain">{{ channel.webStore.domain }}</span>
             </div>
             <v-btn-toggle v-model="previewDevice" mandatory density="compact" rounded="lg" border>

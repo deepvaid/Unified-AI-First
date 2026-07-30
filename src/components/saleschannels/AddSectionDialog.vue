@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import {
   sectionCatalog,
   sectionCategories,
@@ -91,14 +91,16 @@ watch(open, (value) => {
     collapsed.value = new Set()
   }
 })
+
+const titleId = useId()
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="640" scrollable>
+  <v-dialog v-model="open" max-width="640" scrollable :aria-labelledby="titleId">
     <v-card rounded="lg" flat border class="asd-card">
       <!-- Header -->
       <div class="asd-header d-flex align-center justify-space-between px-4 border-b flex-shrink-0">
-        <div class="text-body-1 font-weight-bold">Add section</div>
+        <div :id="titleId" class="text-body-1 font-weight-bold">Add section</div>
         <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="open = false"></v-btn>
       </div>
 

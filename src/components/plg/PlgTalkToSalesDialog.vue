@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, useId } from 'vue'
 import { useToast } from '@/composables/useToast'
 
 withDefaults(defineProps<{
@@ -33,12 +33,14 @@ function submit() {
   interest.value = null
   notes.value = ''
 }
+
+const titleId = useId()
 </script>
 
 <template>
-  <v-dialog :model-value="modelValue" max-width="460" @update:model-value="emit('update:modelValue', $event)">
+  <v-dialog :model-value="modelValue" max-width="460" :aria-labelledby="titleId" @update:model-value="emit('update:modelValue', $event)">
     <v-card flat rounded="lg" class="pa-1">
-      <v-card-title class="text-body-1 font-weight-bold d-flex align-center gap-2">
+      <v-card-title :id="titleId" class="text-body-1 font-weight-bold d-flex align-center gap-2">
         <v-icon size="20" color="primary">messages-square</v-icon>
         Talk to sales
       </v-card-title>

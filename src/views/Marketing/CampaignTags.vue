@@ -153,32 +153,27 @@ function notify(text: string) { toast.success(text) }
       </template>
     </MpFormDrawer>
 
-    <!-- Import tags dialog -->
-    <v-dialog v-model="importDialog" max-width="480">
-      <v-card rounded="lg" border flat class="pa-1">
-        <v-card-title class="text-body-1 font-weight-bold">Import Tags</v-card-title>
-        <v-card-text>
-          <p class="text-body-2 text-medium-emphasis mb-3">
-            Paste tag names separated by commas or new lines. Each one becomes a new tag.
-          </p>
-          <v-textarea
-            v-model="importText"
-            variant="outlined"
-            density="comfortable"
-            rows="6"
-            placeholder="Newsletter, Promo_2026, Onboarding"
-            hide-details
-          />
-          <div v-if="importPreview.length" class="text-caption text-medium-emphasis mt-2">
-            {{ importPreview.length }} tag{{ importPreview.length === 1 ? '' : 's' }} ready to import
-          </div>
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" class="text-none" @click="importDialog = false">Cancel</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" :disabled="!importPreview.length" @click="importTags">Import</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- Import tags drawer -->
+    <MpFormDrawer v-model="importDialog" title="Import Tags" :width="420">
+      <p class="text-body-2 text-medium-emphasis mb-3">
+        Paste tag names separated by commas or new lines. Each one becomes a new tag.
+      </p>
+      <v-textarea
+        v-model="importText"
+        variant="outlined"
+        density="comfortable"
+        rows="6"
+        placeholder="Newsletter, Promo_2026, Onboarding"
+        hide-details
+      />
+      <div v-if="importPreview.length" class="text-caption text-medium-emphasis mt-2">
+        {{ importPreview.length }} tag{{ importPreview.length === 1 ? '' : 's' }} ready to import
+      </div>
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="importDialog = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!importPreview.length" @click="importTags">Import</v-btn>
+      </template>
+    </MpFormDrawer>
 
     <MpConfirmDialog
       v-model="confirmDelete"

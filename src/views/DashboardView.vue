@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref, useId, watch } from 'vue'
 import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import DashboardGrid from '@/components/dashboards/DashboardGrid.vue'
 import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
@@ -132,6 +132,7 @@ const expandedWidgetOpen = computed({
     if (!isOpen) expandedWidgetId.value = null
   },
 })
+const expandedWidgetTitleId = useId()
 const activeWidgetDraft = computed<DashboardWidgetDraft | null>(() => {
   const draft = dashboardsStore.widgetEditorDraft
   if (!draft || draft.dashboardId !== activeDashboardId.value) return null
@@ -725,12 +726,12 @@ function toggleFavoriteActive() {
       :dashboard="editDashboardTarget"
     />
 
-    <v-dialog v-model="expandedWidgetOpen" max-width="1120" width="calc(100vw - 32px)">
+    <v-dialog v-model="expandedWidgetOpen" max-width="1120" width="calc(100vw - 32px)" :aria-labelledby="expandedWidgetTitleId">
       <v-card v-if="expandedWidget" rounded="lg" flat border color="surface" class="dashboard-widget-expand">
         <div class="dashboard-widget-expand__header">
           <div class="dashboard-widget-expand__copy">
             <div class="dashboard-widget-expand__eyebrow">Expanded widget</div>
-            <div class="dashboard-widget-expand__title">{{ expandedWidget.title }}</div>
+            <div :id="expandedWidgetTitleId" class="dashboard-widget-expand__title">{{ expandedWidget.title }}</div>
           </div>
           <v-btn
             icon="x"

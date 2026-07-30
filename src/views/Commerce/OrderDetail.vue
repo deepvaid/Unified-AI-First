@@ -382,20 +382,17 @@ function timelineIcon(entry: { kind: string; text: string }): string {
     />
 
     <!-- ── Refund dialog ────────────────────────────────────────────── -->
-    <v-dialog v-model="refundDialog" max-width="440">
-      <v-card rounded="lg" border flat class="pa-1">
-        <v-card-title class="text-body-1 font-weight-bold">Refund {{ order.orderNumber }}</v-card-title>
-        <v-card-text class="pt-1">
-          <div class="text-body-2 text-medium-emphasis mb-4">Up to ${{ order.total }} captured on {{ order.paymentMethod }}.</div>
-          <v-text-field v-model="refundAmount" label="Refund amount" prefix="$" type="number" variant="outlined" density="comfortable" class="mb-3" hide-details />
-          <v-text-field v-model="refundReason" label="Reason (optional)" variant="outlined" density="comfortable" hide-details />
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" class="text-none" @click="refundDialog = false">Cancel</v-btn>
-          <v-btn color="error" variant="flat" class="text-none" :disabled="!refundValid" @click="submitRefund">Issue Refund</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <MpFormDrawer v-model="refundDialog" :title="`Refund ${order.orderNumber}`" :width="420">
+      <div class="text-body-2 text-medium-emphasis mb-4">Up to ${{ order.total }} captured on {{ order.paymentMethod }}.</div>
+      <v-row dense>
+        <v-col cols="12"><v-text-field v-model="refundAmount" label="Refund amount" prefix="$" type="number" variant="outlined" density="comfortable" hide-details /></v-col>
+        <v-col cols="12"><v-text-field v-model="refundReason" label="Reason (optional)" variant="outlined" density="comfortable" hide-details /></v-col>
+      </v-row>
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="refundDialog = false">Cancel</v-btn>
+        <v-btn color="error" variant="flat" class="text-none" :disabled="!refundValid" @click="submitRefund">Issue Refund</v-btn>
+      </template>
+    </MpFormDrawer>
 
     <!-- ── Address drawer ───────────────────────────────────────────── -->
     <MpFormDrawer v-model="addressDrawer" :title="addressKind === 'shipping' ? 'Edit Shipping Address' : 'Edit Billing Address'" :width="420">

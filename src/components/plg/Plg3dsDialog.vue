@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -39,6 +39,8 @@ watch(
     }
   },
 )
+
+const titleId = useId()
 </script>
 
 <template>
@@ -46,6 +48,7 @@ watch(
     :model-value="modelValue"
     max-width="400"
     persistent
+    :aria-labelledby="titleId"
     @update:model-value="(v: boolean) => emit('update:modelValue', v)"
   >
     <v-card flat border rounded="lg" class="plg-3ds pa-2">
@@ -54,7 +57,7 @@ watch(
           <v-icon size="20">landmark</v-icon>
         </v-avatar>
         <div class="min-width-0">
-          <div class="text-body-2 font-weight-bold">Verification — Maropost purchase</div>
+          <div :id="titleId" class="text-body-2 font-weight-bold">Verification — Maropost purchase</div>
           <div class="text-caption text-medium-emphasis">{{ amountLabel }}</div>
         </div>
       </div>

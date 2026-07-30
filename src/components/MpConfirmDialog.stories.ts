@@ -73,6 +73,7 @@ it and offer undo).
     message: { control: 'text', description: 'The consequence of confirming — plain body text.' },
     confirmLabel: { control: 'text', description: 'Verb-first confirm button label. Defaults to "Confirm"; never use "OK".' },
     danger: { control: 'boolean', description: 'Destructive styling: error triangle icon + error confirm button.' },
+    consequences: { control: 'object', description: 'Optional bullet list of consequences, rendered between the message and the action buttons.' },
     confirm: { control: false, description: 'Event — emitted when the confirm button is clicked (the dialog then closes itself).', table: { category: 'events' } },
   },
   render: (args) => ({
@@ -121,6 +122,21 @@ export const LongMessage: Story = {
       + 'the remaining contacts later, duplicate the campaign and target the "Not yet received" segment.',
     confirmLabel: 'Stop send',
     danger: true,
+  },
+}
+
+/** Bullet list of consequences rendered between the message and the action buttons. */
+export const WithConsequences: Story = {
+  args: {
+    title: 'Delete this segment?',
+    message: 'Deleting "VIP — Repeat Buyers" removes it everywhere it is used.',
+    confirmLabel: 'Delete segment',
+    danger: true,
+    consequences: [
+      '3 active campaigns targeting this segment will lose their audience.',
+      '2 journeys use this segment as an entry filter.',
+      'This cannot be undone.',
+    ],
   },
 }
 

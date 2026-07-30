@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
@@ -87,6 +87,7 @@ function handleRowClick(event: MouseEvent, payload: { item: unknown }) {
 
 // Custom-role creation — plan-tier gated
 const upsellDialog = ref(false)
+const upsellDialogTitleId = useId()
 const createDrawer = ref(false)
 
 const limitLabel = computed(() => {
@@ -344,10 +345,10 @@ function confirmDelete() {
     </MpFormDrawer>
 
     <!-- Plan-tier upsell -->
-    <v-dialog v-model="upsellDialog" max-width="440">
+    <v-dialog v-model="upsellDialog" max-width="440" :aria-labelledby="upsellDialogTitleId">
       <v-card rounded="lg" class="pa-6 text-center">
         <v-icon size="40" color="primary" class="mx-auto mb-3">lock</v-icon>
-        <div class="text-h6 font-weight-bold mb-2">
+        <div :id="upsellDialogTitleId" class="text-h6 font-weight-bold mb-2">
           {{ rbac.customRoleLimit === 0 ? 'Custom roles are a plan feature' : 'Custom role limit reached' }}
         </div>
         <p class="text-body-2 text-medium-emphasis mb-5">

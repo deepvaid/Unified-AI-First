@@ -28,6 +28,15 @@ watch(model, open => {
   }
 })
 
+// Bridges the single `selectedId` ref to VList's array-shaped selection model so
+// Vuetify renders role="listbox"/"option" (A11Y-006) instead of a bare list.
+const selectedList = computed<(string | null)[]>({
+  get: () => [selectedId.value],
+  set: value => {
+    selectedId.value = value[0] ?? null
+  },
+})
+
 // Inline "new folder"
 const creating = ref(false)
 const newName = ref('')
@@ -56,11 +65,19 @@ const titleId = useId()
       <v-card-subtitle v-if="itemLabel" class="px-5 text-body-2">{{ itemLabel }}</v-card-subtitle>
 
       <v-card-text class="px-3 py-2">
-        <v-list density="compact" class="py-0 mp-move-dialog__list" aria-label="Choose a folder">
+        <v-list
+          v-model:selected="selectedList"
+          density="compact"
+          class="py-0 mp-move-dialog__list"
+          aria-label="Choose a folder"
+          selectable
+          mandatory
+          select-strategy="single-independent"
+        >
           <v-list-item
+            :value="null"
             rounded="lg"
             :active="selectedId === null"
-            @click="selectedId = null"
           >
             <template #prepend>
               <v-icon size="18">folders</v-icon>
@@ -74,10 +91,10 @@ const titleId = useId()
           <v-list-item
             v-for="folder in folders"
             :key="folder.id"
+            :value="folder.id"
             rounded="lg"
             :class="{ 'mp-move-dialog__child': folder.parentId }"
             :active="selectedId === folder.id"
-            @click="selectedId = folder.id"
           >
             <template #prepend>
               <v-icon size="18">{{ folder.parentId ? 'corner-down-right' : 'folder' }}</v-icon>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import DvDraftPreview from '@/components/copilot/DvDraftPreview.vue'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 
@@ -32,15 +32,17 @@ function close() {
 function handleAdd() {
   emit('add')
 }
+
+const titleId = useId()
 </script>
 
 <template>
-  <v-dialog v-model="localOpen" max-width="880" scrollable width="calc(100vw - 32px)">
+  <v-dialog v-model="localOpen" max-width="880" scrollable width="calc(100vw - 32px)" :aria-labelledby="titleId">
     <v-card flat border rounded="lg" class="dv-expand">
       <header class="dv-expand__head">
         <v-icon color="primary" size="18">sparkles</v-icon>
         <div class="dv-expand__head-text">
-          <div class="dv-expand__title">{{ draft.title }}</div>
+          <div :id="titleId" class="dv-expand__title">{{ draft.title }}</div>
           <div class="dv-expand__sub">{{ subtitle }}</div>
         </div>
         <v-btn icon size="32" variant="text" aria-label="Close enlarged preview" @click="close">
