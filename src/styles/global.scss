@@ -533,6 +533,30 @@ tr:focus-within .action-btns {
   font-weight: inherit !important;
 }
 
+/* ─── Table horizontal-overflow affordance (UX-009) ──────────── */
+/* Trailing-edge scroll-shadow on .v-table__wrapper, CSS-only (no JS,
+   no per-view changes). Two background layers on the same element:
+   a "shadow" layer pinned to the wrapper's visible trailing edge via
+   `background-attachment: scroll` (stays fixed in the viewport as
+   content scrolls underneath it), and a "cover" layer — painted in
+   the wrapper's own surface color — pinned instead to the *content's*
+   trailing edge via `background-attachment: local` (scrolls away
+   with the content). When the table doesn't overflow, or once
+   scrolled to the true end, both edges coincide and the cover fully
+   cancels the shadow; otherwise the cover sits off-screen (past the
+   visible edge) and the shadow shows through. Shadow color reuses
+   --scrim-overlay (already theme-aware; no new hardcoded rgba
+   introduced), so both themes fall out of the token automatically. */
+.v-table__wrapper {
+  background-repeat: no-repeat;
+  background-position: right top, right top;
+  background-size: 28px 100%, 28px 100%;
+  background-attachment: local, scroll;
+  background-image:
+    linear-gradient(to left, rgb(var(--v-theme-surface)) 30%, transparent),
+    linear-gradient(to left, var(--scrim-overlay), transparent);
+}
+
 /* Dialog/modal scrim — semantic backdrop token */
 .v-overlay__scrim {
   background: var(--scrim-overlay) !important;
