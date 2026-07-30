@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { assetExtension, formatAssetSize, useStoreAssetsStore, type StoreAsset } from '@/stores/useStoreAssets'
+import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 
@@ -10,6 +11,7 @@ const route = useRoute()
 const router = useRouter()
 const salesChannelsStore = useSalesChannelsStore()
 const assetsStore = useStoreAssetsStore()
+const toast = useToast()
 
 const accountId = computed(() => {
   const value = route.params.accountId
@@ -67,8 +69,6 @@ function assetColor(asset: StoreAsset): string {
 
 // ── Mock upload (filenames only, no backend) ─────────────────────
 const fileInput = ref<HTMLInputElement | null>(null)
-const uploadSnack = ref(false)
-const uploadedCount = ref(0)
 
 function pickFiles() {
   fileInput.value?.click()
@@ -79,8 +79,7 @@ function onFilesPicked(event: Event) {
   const names = [...(input.files ?? [])].map((file) => file.name)
   if (names.length) {
     assetsStore.addAssets(channelId.value, names)
-    uploadedCount.value = names.length
-    uploadSnack.value = true
+    toast.success(`${names.length} asset${names.length === 1 ? '' : 's'} uploaded`)
     sortBy.value = 'uploadedAt'
     page.value = 1
   }
@@ -155,10 +154,6 @@ function onFilesPicked(event: Event) {
         </div>
       </template>
     </v-card>
-
-    <v-snackbar v-model="uploadSnack" timeout="2500" color="success" location="bottom right">
-      {{ uploadedCount }} asset{{ uploadedCount === 1 ? '' : 's' }} uploaded
-    </v-snackbar>
   </div>
 </template>
 

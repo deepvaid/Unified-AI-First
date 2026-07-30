@@ -6,6 +6,7 @@ import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
+import { useToast } from '@/composables/useToast'
 import {
   CHANNEL_STATUS_LABELS,
   CHANNEL_TYPE_LABELS,
@@ -124,9 +125,8 @@ const salesChannelsStore = useSalesChannelsStore()
 const retailStore = useRetailStore()
 const commerceStore = useCommerceStore()
 const storeThemesStore = useStoreThemesStore()
+const toast = useToast()
 
-const notice = ref('')
-const noticeVisible = ref(false)
 const addedAssistantIds = ref<string[]>([])
 const activeTab = ref<DetailTab>('overview')
 const showCompletedSetup = ref(false)
@@ -483,8 +483,7 @@ const crossSellFeatures = computed<CrossSellFeature[]>(() => {
 })
 
 function showNotice(message: string) {
-  notice.value = message
-  noticeVisible.value = true
+  toast.info(message)
 }
 
 function formatCurrency(value: number) {
@@ -1064,10 +1063,6 @@ function locationRoleText(locationId: string) {
           </div>
         </v-card>
       </v-dialog>
-
-      <v-snackbar v-model="noticeVisible" timeout="2400" color="surface" location="bottom right">
-        {{ notice }}
-      </v-snackbar>
     </template>
 
     <template v-else>

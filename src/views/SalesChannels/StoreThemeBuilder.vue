@@ -11,6 +11,7 @@ import AddSectionDialog from '@/components/saleschannels/AddSectionDialog.vue'
 import ThemeDaVinciPanel, { type ThemeChatMessage } from '@/components/saleschannels/ThemeDaVinciPanel.vue'
 import { generateSections } from '@/composables/useThemeGenerator'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useToast } from '@/composables/useToast'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
@@ -45,6 +46,7 @@ const channelId = computed(() => route.params.channelId as string)
 
 const salesChannelsStore = useSalesChannelsStore()
 const themesStore = useStoreThemesStore()
+const toast = useToast()
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
 const theme = computed(() => themesStore.themeForChannel(channelId.value))
@@ -449,15 +451,6 @@ function askDaVinci() {
   copilot.openWithPrompt(`Review my storefront theme "${theme.value?.name ?? ''}" and suggest improvements to layout and colors.`)
 }
 
-// ── Publish / discard flow ────────────────────────────────────────────────────
-const snack = ref(false)
-const snackMessage = ref('')
-
-function notify(message: string) {
-  snackMessage.value = message
-  snack.value = true
-}
-
 // ── Da Vinci generator (parent owns state + store writes) ─────────────────────
 const chatMessages = ref<ThemeChatMessage[]>([])
 // Transient "New" cue for sections Da Vinci just added — cleared on select,
@@ -519,7 +512,7 @@ function onGenerate(prompt: string) {
   addedIds.forEach((id) => newSectionIds.value.add(id))
   // Select the first added section without clearing its "New" cue (review aid).
   selected.value = { type: 'section', id: created[0]!.id }
-  notify(`Da Vinci added ${created.length} section${created.length === 1 ? '' : 's'}`)
+  toast.success(`Da Vinci added ${created.length} section${created.length === 1 ? '' : 's'}`)
 }
 
 function onUndo(ids: string[]) {
@@ -563,8 +556,7 @@ function confirmPublish() {
   if (!theme.value) return
   themesStore.publishTheme(theme.value.id)
   allowNextLeave()
-  snackMessage.value = 'Theme published'
-  snack.value = true
+  toast.success('Theme published')
 }
 
 const discardDialog = ref(false)
@@ -576,8 +568,7 @@ function confirmDiscard() {
   newSectionIds.value.clear()
   newBlockIds.value.clear()
   allowNextLeave()
-  snackMessage.value = 'Draft changes discarded'
-  snack.value = true
+  toast.success('Draft changes discarded')
 }
 
 // ── Narrow viewport: left panel collapses behind a toolbar toggle ─────────────
@@ -1193,10 +1184,6 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
       :confirm-label="leaveConfirmLabel"
       @confirm="discardAndLeave"
     />
-
-    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackMessage }}</div>
-    </v-snackbar>
   </MpBuilderShell>
 </template>
 

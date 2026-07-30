@@ -6,6 +6,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useToast } from '@/composables/useToast'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
 import { useThemeCodeStore } from '@/stores/useThemeCode'
@@ -19,6 +20,7 @@ const channelId = computed(() => route.params.channelId as string)
 const salesChannelsStore = useSalesChannelsStore()
 const themesStore = useStoreThemesStore()
 const codeStore = useThemeCodeStore()
+const toast = useToast()
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
 const theme = computed(() => themesStore.themeForChannel(channelId.value))
@@ -115,12 +117,11 @@ const {
   beforeUnload: true,
 })
 
-const snack = ref(false)
 function saveAll() {
   if (!codeStore.anyDirty) return
   codeStore.saveAll()
   allowNextLeave()
-  snack.value = true
+  toast.success('Theme code saved')
 }
 
 // Cmd/Ctrl+S saves (and always suppresses the browser save dialog).
@@ -336,10 +337,6 @@ watch(channelId, () => {
       :confirm-label="leaveConfirmLabel"
       @confirm="discardAndLeave"
     />
-
-    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> Theme code saved</div>
-    </v-snackbar>
   </MpBuilderShell>
 </template>
 
