@@ -5,21 +5,30 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { downloadCsv } from '@/utils/exportCsv'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useAnalyticsStore()
 const toast = useToast()
 const search = ref('')
 const dateRange = ref<DateRangeValue>({ preset: 'This year' })
+const { loading } = useInitialLoad()
 
+// Date + Revenue are the identity/headline pair and always show; the three
+// supporting metrics drop out on narrower viewports so the table never
+// side-scrolls on a phone.
 const headers = [
   { title: 'Date', key: 'date', sortable: true },
   { title: 'Total Revenue', key: 'revenue', align: 'end' as const },
-  { title: 'Orders Placed', key: 'orders', align: 'end' as const },
-  { title: 'Active Subscribers', key: 'subscribers', align: 'end' as const },
-  { title: 'Campaign Sends', key: 'sends', align: 'end' as const },
+  { title: 'Orders Placed', key: 'orders', align: 'end' as const, hideBelow: 'sm' as const },
+  { title: 'Active Subscribers', key: 'subscribers', align: 'end' as const, hideBelow: 'md' as const },
+  { title: 'Campaign Sends', key: 'sends', align: 'end' as const, hideBelow: 'md' as const },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 // Monthly rows are keyed by month name (not a full date), so the range acts as a
 // labelled control that annotates the period rather than filtering rows.
@@ -55,8 +64,11 @@ function exportCsv() {
         :title="`Historical Performance · ${dateRangeLabel(dateRange)}`"
         :total-count="rows.length"
       />
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
+
       <v-data-table
-        :headers="headers"
+        v-else
+        :headers="visibleHeaders"
         :items="rows"
         :search="search"
         hover
