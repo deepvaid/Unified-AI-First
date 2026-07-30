@@ -60,7 +60,7 @@ withDefaults(defineProps<{
             </div>
           </template>
         </div>
-        <div v-if="$slots.actions" class="d-flex align-center ga-2 flex-shrink-0">
+        <div v-if="$slots.actions" class="mp-page-header__actions d-flex align-center ga-2 flex-shrink-0">
           <slot name="actions" />
         </div>
       </div>
@@ -74,6 +74,22 @@ withDefaults(defineProps<{
 .mp-page-header__title {
   line-height: 1.2;
   color: rgb(var(--v-theme-on-surface));
+}
+
+/* Actions sit beside the title from tablet up. On phones the row wraps instead:
+   `flex-shrink-0` (correct on wide viewports, so a button cluster never squashes)
+   otherwise forces a wide cluster — e.g. a date-range select next to an Export
+   button — past the header's right edge, clipping the last action. Wrapping keeps
+   every action reachable at 375px without shrinking anything. */
+@media (max-width: 599.98px) {
+  .mp-page-header__main {
+    flex-wrap: wrap;
+  }
+
+  .mp-page-header__actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 }
 
 /* Level-2 (drawer / settings-page) title: modest scale, not the full masthead. */
