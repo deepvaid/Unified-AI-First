@@ -407,3 +407,324 @@ export const DarkModeAllStates: Story = {
   globals: darkModeGlobals,
   ...AllStates,
 }
+
+/**
+ * Fixtures for the open-menu state matrix below (UX-008 checkmark, grouping, truncation,
+ * scrolling, disabled items). Vuetify's `items` prop accepts plain strings alongside
+ * `{ type: 'subheader' }` entries in the same array — no custom slot needed for the
+ * recessed, non-interactive group headers (docs/ui-system-audit/00-reference-research.md §1).
+ */
+const groupedAssigneeItems = [
+  { type: 'subheader', title: 'Sales' },
+  'Jordan Lee',
+  'Casey Kim',
+  { type: 'subheader', title: 'Marketing' },
+  'Alex Rivera',
+  'Sam Patel',
+  { type: 'subheader', title: 'Support' },
+  'Morgan Blake',
+]
+
+const longLabelItems = [
+  'Premium Wireless Noise-Cancelling Over-Ear Headphones — Midnight Black',
+  'Organic Cotton Crewneck T-Shirt, Unisex, Made in Portugal',
+  'Stainless Steel Insulated Water Bottle with Bamboo Lid, 750ml',
+  'Limited Edition Hand-Poured Soy Candle — Sea Salt & Driftwood',
+]
+
+const manyCountryItems = [
+  'Argentina', 'Australia', 'Austria', 'Belgium', 'Brazil', 'Canada', 'Chile',
+  'Colombia', 'Denmark', 'Egypt', 'Finland', 'France', 'Germany', 'Greece',
+  'India', 'Indonesia', 'Ireland', 'Italy', 'Japan', 'Kenya', 'Malaysia',
+  'Mexico', 'Netherlands', 'New Zealand', 'Norway', 'Philippines', 'Poland',
+  'Portugal', 'Singapore', 'South Africa', 'South Korea', 'Spain', 'Sweden',
+  'Switzerland', 'Thailand', 'United Kingdom', 'United States', 'Vietnam',
+]
+
+const statusItemsWithDisabled = [
+  { title: 'Active', value: 'active' },
+  { title: 'Paused', value: 'paused' },
+  { title: 'Archived', value: 'archived', disabled: true },
+]
+
+/** Menu pre-opened with "Active" already selected — the active row shows the UX-008 trailing
+ * checkmark (global.scss `.v-overlay .v-list-item--active[aria-selected='true']`), composed with
+ * the existing tint rather than replacing it, per reference-research §1. */
+export const SelectedWithCheckmark: Story = {
+  name: 'Select — Selected (Checkmark)',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    setup() {
+      const status = ref('Active')
+      const menu = ref(true)
+      return { status, menu }
+    },
+    template: `
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Select — menu open, item selected</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-select
+              v-model="status"
+              v-model:menu="menu"
+              :items="['Active', 'Inactive', 'Pending', 'Archived']"
+              label="Status"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+            />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/** Menu pre-opened with items grouped under subheaders ("Sales" / "Marketing" / "Support") — group
+ * headers are visually recessed and non-interactive, never a clickable row. */
+export const GroupedOptions: Story = {
+  name: 'Select — Grouped Options',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    setup() {
+      const assignee = ref('Jordan Lee')
+      const menu = ref(true)
+      return { assignee, menu, groupedAssigneeItems }
+    },
+    template: `
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Select — grouped with subheaders</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-select
+              v-model="assignee"
+              v-model:menu="menu"
+              :items="groupedAssigneeItems"
+              label="Assign to"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+            />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/** Long option text truncates instead of wrapping or widening the field — both in the closed
+ * field's selected value and in each open-menu row. */
+export const LongLabels: Story = {
+  name: 'Select — Long Labels',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    setup() {
+      const closedValue = ref(longLabelItems[0])
+      const openValue = ref(longLabelItems[1])
+      const menu = ref(true)
+      return { closedValue, openValue, menu, longLabelItems }
+    },
+    template: `
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Select — long option text truncates</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Closed — selected value truncates</div>
+            <v-select
+              v-model="closedValue"
+              :items="longLabelItems"
+              label="Product"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+            />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Open — menu rows truncate</div>
+            <v-select
+              v-model="openValue"
+              v-model:menu="menu"
+              :items="longLabelItems"
+              label="Product"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+            />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/** 38 options pre-opened — the menu's default 310px max-height (VSelect's built-in cap) scrolls
+ * internally instead of growing to fit every row. */
+export const ManyOptionsScroll: Story = {
+  name: 'Select — Many Options (Scroll)',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    setup() {
+      const country = ref('')
+      const menu = ref(true)
+      return { country, menu, manyCountryItems }
+    },
+    template: `
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Select — many options, menu scrolls internally</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-select
+              v-model="country"
+              v-model:menu="menu"
+              :items="manyCountryItems"
+              label="Country"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+            />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/** Menu pre-opened with "Archived" disabled (can't file back into it directly) — Vuetify's
+ * built-in disabled row treatment: muted text, no hover/active state, unclickable. Uses
+ * `item-props` so each item object's own `disabled` flag reaches the underlying `v-list-item`. */
+export const DisabledItem: Story = {
+  name: 'Select — Disabled Item',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    setup() {
+      const status = ref('active')
+      const menu = ref(true)
+      return { status, menu, statusItemsWithDisabled }
+    },
+    template: `
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Select — one option disabled</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-select
+              v-model="status"
+              v-model:menu="menu"
+              :items="statusItemsWithDisabled"
+              item-props
+              label="Status"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+            />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/** Vuetify's built-in `loading` prop — a linear progress bar replaces the resting border while
+ * a value is being fetched. Works the same on `v-text-field` and `v-select`. */
+export const LoadingState: Story = {
+  name: 'Loading State',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    template: `
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Fields — loading</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field
+              label="Company name"
+              variant="outlined"
+              density="comfortable"
+              loading
+              hide-details
+            />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-select
+              :items="['Active', 'Inactive', 'Pending']"
+              label="Status"
+              variant="outlined"
+              density="comfortable"
+              loading="primary"
+              hide-details
+            />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/** Searchable autocomplete with a query that matches nothing — Vuetify's default no-data row
+ * renders in place of the list instead of an empty menu. */
+export const EmptyState: Story = {
+  name: 'Autocomplete — No Matches',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    setup() {
+      const country = ref(null)
+      const search = ref('Wakanda')
+      const menu = ref(true)
+      return { country, search, menu, manyCountryItems }
+    },
+    template: `
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Autocomplete — search matches nothing</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-autocomplete
+              v-model="country"
+              v-model:search="search"
+              v-model:menu="menu"
+              :items="manyCountryItems"
+              label="Country"
+              placeholder="Search countries…"
+              prepend-inner-icon="search"
+              variant="outlined"
+              density="comfortable"
+              clearable
+              hide-details
+            />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/** Select and textarea with `error-messages` set — complements AllStates' text-field error case
+ * with the same treatment on other field types. */
+export const ErrorState: Story = {
+  name: 'Error State',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    template: `
+      <div class="mp-story-canvas pa-6">
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Fields — error</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-select
+              :items="['Active', 'Inactive', 'Pending']"
+              label="Status"
+              variant="outlined"
+              density="comfortable"
+              error-messages="Select a status"
+            />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-textarea
+              label="Notes"
+              variant="outlined"
+              density="comfortable"
+              rows="3"
+              error-messages="Notes cannot be empty"
+            />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
