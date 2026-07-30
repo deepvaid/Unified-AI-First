@@ -254,13 +254,15 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
 
 /* Pill search, matching the AppBar universal-search field (src/components/
    layout/AppBar.vue .appbar-search) so search inputs read as one consistent
-   pattern across the app. A11Y-001 raised the global resting outlined-field
-   border to a compliant ≥3:1, which would make a hairline override here
-   sub-3:1 again — so, same as AppBar, the resting boundary cue is a fill +
-   custom border with Vuetify's own outline hidden, not the raised default. */
+   pattern across the app. White resting fill matches the toolbar's other
+   controls (Filter, column-toggle — both `variant="outlined"` on the white
+   toolbar shell), not a gray ghost fill. A11Y-001 raised the global resting
+   outlined-field border to a compliant ≥3:1, which would make a hairline
+   override here sub-3:1 again — so, same as AppBar, the resting boundary cue
+   is a border (not Vuetify's own outline, which stays hidden). */
 .mp-toolbar-search :deep(.v-field) {
   border-radius: var(--r-pill);
-  background: var(--surface-secondary);
+  background: var(--surface-primary);
   border: 1px solid var(--border-default);
 }
 
@@ -269,7 +271,6 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
 }
 
 .mp-toolbar-search :deep(.v-field--focused) {
-  background: var(--surface-primary);
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-color: var(--accent);
