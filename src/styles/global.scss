@@ -492,7 +492,30 @@ tr:focus-within .action-btns {
   border-bottom-color: var(--mp-border-table-row);
   /* Tabular figures so numeric columns align (affects digits only — no-op on text). */
   font-variant-numeric: tabular-nums;
+}
+
+/* Cell padding has to out-specify Vuetify, which sets it with the `padding: 0 16px`
+   SHORTHAND on `.v-table > .v-table__wrapper > table > tbody > tr > td` — same
+   specificity as the rule above but later in source order, so a bare
+   `padding-block` there is silently overridden (it computed to 0px for months).
+   Adding `.v-application` wins on specificity without `!important`, matching how
+   the A11Y-001 field-outline fix above scopes itself. */
+.v-application .v-table > .v-table__wrapper > table > tbody > tr > td {
   padding-block: 14px;
+}
+
+/* Phone-width table density. Vuetify's 16px inline padding costs 32px per column,
+   which on a 375px viewport (~311px usable) can push even a 3-column table into a
+   horizontal scroll on its own — measured on Contacts/ContactTags: 156 + 112 + 64 =
+   332px, of which 96px was padding. Column priority (`useResponsiveTableHeaders`)
+   can't help once the remaining columns are all load-bearing. Halving the inline
+   padding below `sm` reclaims 16px per column; block padding and every wider
+   viewport are untouched. */
+@media (max-width: 599.98px) {
+  .v-application .v-table > .v-table__wrapper > table > tbody > tr > td,
+  .v-application .v-table > .v-table__wrapper > table > thead > tr > th {
+    padding-inline: var(--mp-spacing-2);
+  }
 }
 
 /* First data column reads slightly stronger — the row's "identity" cell. */
