@@ -4,6 +4,9 @@ import { useCdpEntitiesStore, type SecureList } from '@/stores/useCdpEntities'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -16,9 +19,15 @@ const search = ref('')
 const headers = [
   { title: 'List Name', key: 'name', sortable: true },
   { title: 'Contacts', key: 'contacts', align: 'end' as const },
-  { title: 'Last Accessed', key: 'lastAccessed' },
+  { title: 'Last Accessed', key: 'lastAccessed', hideBelow: 'sm' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+
+// Row identity + its headline count always show; supporting columns drop out
+// progressively. The actions column is never tiered — the kebab must stay
+// reachable at every width.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 // Create / edit drawer
 const drawer = ref(false)
@@ -69,8 +78,10 @@ function confirmDelete() {
         :total-count="store.secureLists.length"
       />
 
-      <v-data-table
-        :headers="headers"
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="4" />
+
+      <v-data-table v-else
+        :headers="visibleHeaders"
         :items="store.secureLists"
         :search="search"
         :items-per-page="15"
@@ -83,7 +94,7 @@ function confirmDelete() {
           <span class="text-body-2 font-weight-medium">{{ item.contacts.toLocaleString() }}</span>
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Secure list actions">
+          <MpRowActionsMenu ariaLabel="Secure list actions" :itemLabel="item.name">
             <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" style="opacity: 0.4" />
             <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
