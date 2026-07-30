@@ -7,7 +7,10 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const toast = useToast()
 const search = ref('')
@@ -15,10 +18,16 @@ const filterLevel = ref<string[]>([])
 const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
 
 const headers = [
-  { title: 'Timestamp', key: 'time', sortable: true },
+  { title: 'Timestamp', key: 'time', sortable: true, hideBelow: 'sm' as const },
   { title: 'Level', key: 'level' },
   { title: 'Message', key: 'message' },
 ]
+
+// For a log, Level + Message are the content, so those always show and the
+// timestamp is what drops on a phone — the inverse of the report tables, where
+// the leading identity column stays.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 const logs = Array.from({ length: 50 }, (_, i) => ({
   time: new Date(Date.now() - i * 60000).toISOString(),
@@ -99,7 +108,9 @@ function exportCsv() {
           </div>
         </template>
       </MpDataTableToolbar>
-      <v-data-table :headers="headers" :items="filteredLogs" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="3" />
+
+      <v-data-table v-else :headers="visibleHeaders" :items="filteredLogs" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.level="{ item }">
           <MpStatusChip :status="item.level ?? ''" type="general" size="x-small" />
         </template>
