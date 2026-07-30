@@ -7,7 +7,10 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useAnalyticsStore()
 const { testCampaignReports } = storeToRefs(store)
@@ -19,10 +22,15 @@ const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
 const headers = [
   { title: 'Test Scenario', key: 'scenario', sortable: true },
   { title: 'Provider', key: 'provider' },
-  { title: 'Date Scheduled', key: 'scheduledDate' },
-  { title: 'Inbox Placement', key: 'placement', align: 'end' as const },
-  { title: 'Spam Score', key: 'spamScore', align: 'end' as const },
+  { title: 'Date Scheduled', key: 'scheduledDate', hideBelow: 'lg' as const },
+  { title: 'Inbox Placement', key: 'placement', align: 'end' as const, hideBelow: 'sm' as const },
+  { title: 'Spam Score', key: 'spamScore', align: 'end' as const, hideBelow: 'md' as const },
 ]
+
+// Identity + headline metric always show; supporting columns drop out
+// progressively so the table never side-scrolls on a phone.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 const providers = ['Gmail', 'Outlook', 'Yahoo', 'Apple Mail']
 
@@ -101,7 +109,9 @@ function exportCsv() {
           </div>
         </template>
       </MpDataTableToolbar>
-      <v-data-table :headers="headers" :items="filteredReports" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
+
+      <v-data-table v-else :headers="visibleHeaders" :items="filteredReports" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.placement="{ item }">
           <span class="font-weight-medium">{{ item.placement }}%</span>
         </template>
