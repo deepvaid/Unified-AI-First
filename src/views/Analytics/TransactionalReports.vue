@@ -7,7 +7,10 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useAnalyticsStore()
 const { transactionalReports } = storeToRefs(store)
@@ -18,11 +21,16 @@ const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
 
 const headers = [
   { title: 'Transactional Event', key: 'event', sortable: true },
-  { title: 'Type', key: 'type' },
-  { title: 'Trigger Date', key: 'triggerDate' },
-  { title: 'Sent', key: 'sent', align: 'end' as const },
+  { title: 'Type', key: 'type', hideBelow: 'md' as const },
+  { title: 'Trigger Date', key: 'triggerDate', hideBelow: 'lg' as const },
+  { title: 'Sent', key: 'sent', align: 'end' as const, hideBelow: 'sm' as const },
   { title: 'Delivery Rate', key: 'deliveryRate', align: 'end' as const },
 ]
+
+// Identity + headline metric always show; supporting columns drop out
+// progressively so the table never side-scrolls on a phone.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 const types = ['Order', 'Shipping', 'Account', 'Payment']
 
@@ -101,7 +109,9 @@ function exportCsv() {
           </div>
         </template>
       </MpDataTableToolbar>
-      <v-data-table :headers="headers" :items="filteredReports" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
+
+      <v-data-table v-else :headers="visibleHeaders" :items="filteredReports" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.sent="{ item }">{{ item.sent.toLocaleString() }}</template>
         <template v-slot:item.deliveryRate="{ item }">
           <span class="font-weight-medium">{{ item.deliveryRate }}%</span>
