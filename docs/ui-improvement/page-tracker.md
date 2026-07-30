@@ -38,24 +38,24 @@ deliberately left for per-page adoption, to check on each page as you polish it:
 | 2 | DashboardView.vue | /accounts/2000290/dashboard · /dashboard/2000290-home | standard | done | bea16b6 | serves 2 routes; ad-hoc redesign: compact grouped Actions/Add-content menus, switcher row buttons removed, single-header widget wizard |
 | 3 | Analytics/LiveView.vue | /accounts/2000290/analytics/live_view | standard | done | 5ca1f51 | ad-hoc light redesign: single live indicator, heading scale; 18 pre-existing `!important` untouched (roadmap #16 cluster) |
 
-## Module 02 — Analytics (Reports)   [module-status: pending]
+## Module 02 — Analytics (Reports)   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Analytics/MonthlyTotals.vue | /accounts/2000290/analytics/monthly_totals | standard | pending | | |
-| 2 | Analytics/OrdersReport.vue | /accounts/2000290/analytics/orders | standard | pending | | |
-| 3 | Analytics/DispatchedOrders.vue | /accounts/2000290/analytics/dispatched_orders | standard | pending | | |
-| 4 | Analytics/SalesSummary.vue | /accounts/2000290/analytics/sales_summary | standard | pending | | |
-| 5 | Analytics/ERFMReport.vue | /accounts/2000290/analytics/erfm_report | standard | pending | | |
-| 6 | Analytics/CampaignReports.vue | /accounts/2000290/reports | standard | pending | | |
-| 7 | Analytics/RecurringCampaignReports.vue | /accounts/2000290/analytics/recurring_campaign_reports | standard | pending | | |
-| 8 | Analytics/ABCampaignReports.vue | /accounts/2000290/analytics/ab_campaign_reports | standard | pending | | |
-| 9 | Analytics/TestCampaignReports.vue | /accounts/2000290/analytics/test_campaign_reports | standard | pending | | |
-| 10 | Analytics/WebsiteReports.vue | /accounts/2000290/analytics/website_reports | standard | pending | | |
-| 11 | Analytics/JourneyReports.vue | /accounts/2000290/analytics/journey_reports | standard | pending | | |
-| 12 | Analytics/CustomReports.vue | /accounts/2000290/analytics/custom_reports | standard | pending | | |
-| 13 | Analytics/TransactionalReports.vue | /accounts/2000290/analytics/transactional_reports | standard | pending | | |
-| 14 | Analytics/LogInspector.vue | /accounts/2000290/analytics/log_inspector | standard | pending | | |
+| 1 | Analytics/MonthlyTotals.vue | /accounts/2000290/analytics/monthly_totals | standard | done | 41df731 | loading state + responsive columns (table overflowed 201px→0 at 375px); error state N/A (no fetch path); **touched shared MpPageHeader** (actions wrap <600px, f923f0f — fixed 97px header clip) — spot-check prior pages at gate |
+| 2 | Analytics/OrdersReport.vue | /accounts/2000290/analytics/orders | standard | done | 1e29eb2 | loading state + responsive columns (0 overflow at 375px); MpStatusChip type="order" already correct; error state N/A |
+| 3 | Analytics/DispatchedOrders.vue | /accounts/2000290/analytics/dispatched_orders | standard | done | 8ff3f8d | loading state + responsive columns (0 overflow at 375px); error state N/A |
+| 4 | Analytics/SalesSummary.vue | /accounts/2000290/analytics/sales_summary | standard | done | f285b61 | loading state gates whole data region (bars+table); responsive columns (269px→0 at 375px); channel-bar rows already had a 700px breakpoint, measured 0 — untouched; error state N/A |
+| 5 | Analytics/ERFMReport.vue | /accounts/2000290/analytics/erfm_report | standard | done | | already compliant — no commit. Card-grid page (no table): 0 overflow at 375px, cols/sm/md grid correct, all colors via `rgb(var(--v-theme-*))`, MpEmptyState present. Loading state deliberately NOT added: MpTableSkeleton is table-shaped and no card-grid skeleton convention exists in the repo (every `useInitialLoad` consumer is a table) — inventing one is out of scope. Observation only: the 9 segment "action" buttons have no `@click` (prototype-wide, not a DoD defect) |
+| 6 | Analytics/CampaignReports.vue | /accounts/2000290/reports | standard | done | b042454 | loading state + responsive columns (Name+Status at 375px, 6 cols at 1280px); 0 overflow |
+| 7 | Analytics/RecurringCampaignReports.vue | /accounts/2000290/analytics/recurring_campaign_reports | standard | done | 51401c1 | loading state + responsive columns (Name+Frequency at 375px); 0 overflow |
+| 8 | Analytics/ABCampaignReports.vue | /accounts/2000290/analytics/ab_campaign_reports | standard | done | f4c105c | loading state + responsive columns (Test Name+Lift — the outcome — at 375px); 0 overflow |
+| 9 | Analytics/TestCampaignReports.vue | /accounts/2000290/analytics/test_campaign_reports | standard | done | af17ee5 | loading state + responsive columns (Scenario+Provider at 375px); 0 overflow |
+| 10 | Analytics/WebsiteReports.vue | /accounts/2000290/analytics/website_reports | standard | done | 059054b | loading state + responsive columns (Path+Pageviews at 375px); 0 overflow |
+| 11 | Analytics/JourneyReports.vue | /accounts/2000290/analytics/journey_reports | standard | done | b437bf9 | loading state + responsive columns (Name+Active Contacts at 375px); 0 overflow |
+| 12 | Analytics/CustomReports.vue | /accounts/2000290/analytics/custom_reports | standard | done | | already compliant — no commit. Card grid + MpFormDrawer builder; the one page in this module with a real primary CTA (`color="primary" variant="flat"` Create Report). 0 overflow at 375px (page/cards/footers/header), MpEmptyState with action, all icon buttons have aria-label, drawer goes full-width on phone with 0 overflow. Loading state not added (card grid — same reasoning as row 5). One flagged "unlabeled input" was a false positive: Vuetify's internal auto-grow sizer textarea (aria-hidden, readOnly, out of tab order); the real textarea is labelled |
+| 13 | Analytics/TransactionalReports.vue | /accounts/2000290/analytics/transactional_reports | standard | done | 4a3ac7f | loading state + responsive columns (Event+Delivery Rate at 375px); 0 overflow |
+| 14 | Analytics/LogInspector.vue | /accounts/2000290/analytics/log_inspector | standard | done | 7af1d59 | loading state + responsive columns; Level+Message kept at 375px and Timestamp dropped (inverse of report tables — the message is the content); 0 overflow |
 
 ## Module 03 — Contacts (Audience)   [module-status: pending]
 
