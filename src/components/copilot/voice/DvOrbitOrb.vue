@@ -69,9 +69,13 @@ watch(
   position: relative;
   flex: none;
   /* --dv-ink is always set globally (dv-tokens.css, in the app-styles.ts manifest) —
-     no fallback needed. --dv-orb-* below name the two literals that had no existing
-     token, centralizing them instead of leaving them scattered in the modifiers. */
-  --dv-orb-dim: #94a3b8;
+     no fallback needed. --dv-orb-mask-stop has no existing token (it's a mask-image
+     luminance stop, not a visual color — CSS masks read alpha/luminance, so giving
+     it a themed color would be semantically wrong; kept local and literal). The
+     `--dv-orb-dim` this block used to define locally was an exact duplicate of
+     dv-tokens.css's --dv-orbit-muted (#94a3b8 light) — removed in favor of that
+     token directly below, which also gains a real dark-mode value (#64748B) this
+     local duplicate never had. */
   --dv-orb-mask-stop: #000;
   color: var(--dv-ink);
 }
@@ -120,7 +124,7 @@ watch(
 
 /* Dim — slate mark, breathe stilled (error/paused) */
 .dv-orbit-orb--dim {
-  color: var(--dv-orb-dim);
+  color: var(--dv-orbit-muted);
 }
 
 .dv-orbit-orb--dim .dv-orbit-orb__canvas {
