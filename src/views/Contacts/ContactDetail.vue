@@ -14,11 +14,13 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
 const store = useContactsStore()
 const retail = useRetailStore()
+const toast = useToast()
 
 const contactId = computed(() => Number(route.params.id))
 const contact = computed(() => store.getContactById(contactId.value))
@@ -27,11 +29,6 @@ const detail = computed(() => store.getContactDetail(contactId.value))
 function goToContacts() {
   router.push(`/accounts/${route.params.accountId}/contacts`)
 }
-
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 // Export this contact as a single-row CSV
 const contactCsvColumns: CsvColumn<Contact>[] = [
@@ -51,7 +48,7 @@ const contactCsvColumns: CsvColumn<Contact>[] = [
 function exportContact() {
   if (!contact.value) return
   downloadCsv(`contact-${contact.value.firstName}-${contact.value.lastName}`.toLowerCase(), [contact.value], contactCsvColumns)
-  notify('Contact exported')
+  toast.success('Contact exported')
 }
 
 // Delete
@@ -68,12 +65,12 @@ function addContactTag() {
   if (!value || !contact.value) return
   store.addContactTags(contact.value.id, [value])
   tagInput.value = ''
-  notify('Tag added')
+  toast.success('Tag added')
 }
 function removeContactTag(tag: string) {
   if (!contact.value) return
   store.updateContact(contact.value.id, { tags: contact.value.tags.filter(t => t !== tag) })
-  notify('Tag removed')
+  toast.success('Tag removed')
 }
 
 // Tab state
@@ -105,7 +102,7 @@ function saveEdit() {
     company: editForm.value.company || null,
   })
   editDrawer.value = false
-  notify('Changes saved')
+  toast.success('Changes saved')
 }
 
 // Computed helpers
@@ -696,11 +693,6 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
       danger
       @confirm="confirmDelete"
     />
-
-    <!-- Snackbar -->
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
 
   </div>
 

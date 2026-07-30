@@ -8,8 +8,10 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useCdpEntitiesStore()
+const toast = useToast()
 const search = ref('')
 
 const tableOptions = computed(() => store.tables.map(t => t.name))
@@ -22,11 +24,6 @@ const headers = [
   { title: 'Status', key: 'status' },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
-
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 // Create / edit drawer
 const drawer = ref(false)
@@ -109,10 +106,10 @@ function save() {
   if (!canSave()) return
   if (editingId.value != null) {
     store.updateQuery(editingId.value, { ...form.value })
-    notify('Query updated')
+    toast.success('Query updated')
   } else {
     store.addQuery({ ...form.value })
-    notify('Query created')
+    toast.success('Query created')
   }
   drawer.value = false
 }
@@ -122,7 +119,7 @@ const deleteDialog = ref(false)
 const pendingQuery = ref<SqlQuery | null>(null)
 function askDelete(q: SqlQuery) { pendingQuery.value = q; deleteDialog.value = true }
 function confirmDelete() {
-  if (pendingQuery.value) { store.deleteQuery(pendingQuery.value.id); notify('Query deleted') }
+  if (pendingQuery.value) { store.deleteQuery(pendingQuery.value.id); toast.success('Query deleted') }
   pendingQuery.value = null
 }
 </script>
@@ -274,10 +271,6 @@ function confirmDelete() {
       danger
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

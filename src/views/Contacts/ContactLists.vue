@@ -11,9 +11,11 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useCdpEntitiesStore()
 const contactsStore = useContactsStore()
+const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const search = ref('')
@@ -38,10 +40,6 @@ const contactCsvColumns: CsvColumn<Contact>[] = [
   { title: 'Status', value: 'status' },
 ]
 
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 // Create / edit drawer
 const drawer = ref(false)
@@ -69,10 +67,10 @@ function save() {
   if (!canSave()) return
   if (editingId.value != null) {
     store.updateList(editingId.value, { ...form.value })
-    notify('List updated')
+    toast.success('List updated')
   } else {
     store.addList({ ...form.value })
-    notify('List created')
+    toast.success('List created')
   }
   drawer.value = false
 }
@@ -83,12 +81,12 @@ function viewContacts() {
 
 function exportContacts(list: CdpList) {
   downloadCsv(`${list.name.replace(/\s+/g, '-').toLowerCase()}-contacts`, contactsStore.contacts, contactCsvColumns)
-  notify('Contacts exported')
+  toast.success('Contacts exported')
 }
 
 function duplicate(list: CdpList) {
   store.duplicateList(list.id)
-  notify('List duplicated')
+  toast.success('List duplicated')
 }
 
 // Delete
@@ -96,7 +94,7 @@ const deleteDialog = ref(false)
 const pendingList = ref<CdpList | null>(null)
 function askDelete(list: CdpList) { pendingList.value = list; deleteDialog.value = true }
 function confirmDelete() {
-  if (pendingList.value) { store.deleteList(pendingList.value.id); notify('List deleted') }
+  if (pendingList.value) { store.deleteList(pendingList.value.id); toast.success('List deleted') }
   pendingList.value = null
 }
 </script>
@@ -201,9 +199,5 @@ function confirmDelete() {
       danger
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>

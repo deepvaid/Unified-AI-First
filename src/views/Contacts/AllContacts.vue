@@ -15,11 +15,13 @@ import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
 const store = useContactsStore()
 const cdp = useCdpEntitiesStore()
+const toast = useToast()
 const search = ref('')
 const selected = ref<number[]>([])
 const { loading } = useInitialLoad()
@@ -63,7 +65,7 @@ function saveContact() {
   addDrawer.value = false
   addStep.value = 1
   newContact.value = { firstName:'', lastName:'', email:'', phone:'', company:'', role:'', tags:[], list:'Newsletter Subscribers', status:'Subscribed' }
-  notify('Contact added')
+  toast.success('Contact added')
 }
 
 // Import drawer (2-step, legacy-parity)
@@ -92,13 +94,13 @@ function startImport() {
 function runImport() {
   importDrawer.value = false
   importStep.value = 1
-  notify('Import started — contacts will appear once processing completes')
+  toast.success('Import started — contacts will appear once processing completes')
 }
 
 // Export the current filtered set to CSV (header action)
 function exportContacts() {
   downloadCsv('contacts', filteredContacts.value, contactCsvColumns)
-  notify('Contacts exported')
+  toast.success('Contacts exported')
 }
 
 // Filters — vocab aligned to store enum values
@@ -176,11 +178,6 @@ const scoreColor = (s: number) => s >= 80 ? 'success' : s >= 50 ? 'warning' : 'e
 const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 const formatDate = (d?: string) => d ? dateFmt.format(new Date(d)) : '—'
 
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
-
 function selectAll() {
   selected.value = filteredContacts.value.map(c => c.id)
 }
@@ -189,7 +186,7 @@ function selectAll() {
 function exportSelected() {
   const rows = store.contacts.filter(c => selected.value.includes(c.id))
   downloadCsv('contacts-selected', rows, contactCsvColumns)
-  notify('Contacts exported')
+  toast.success('Contacts exported')
 }
 
 // Delete — single row and bulk (both via confirm dialog)
@@ -216,10 +213,10 @@ function confirmDelete() {
   if (bulkDelete.value) {
     store.deleteContacts([...selected.value])
     selected.value = []
-    notify('Contacts deleted')
+    toast.success('Contacts deleted')
   } else if (pendingContact.value) {
     store.deleteContact(pendingContact.value.id)
-    notify('Contact deleted')
+    toast.success('Contact deleted')
   }
   pendingContact.value = null
   bulkDelete.value = false
@@ -524,11 +521,6 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       danger
       @confirm="confirmDelete"
     />
-
-    <!-- Snackbar -->
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

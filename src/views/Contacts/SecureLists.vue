@@ -7,8 +7,10 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useCdpEntitiesStore()
+const toast = useToast()
 const search = ref('')
 
 const headers = [
@@ -17,11 +19,6 @@ const headers = [
   { title: 'Last Accessed', key: 'lastAccessed' },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
-
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 // Create / edit drawer
 const drawer = ref(false)
@@ -36,10 +33,10 @@ function save() {
   if (!name) return
   if (editingId.value != null) {
     store.updateSecureList(editingId.value, name)
-    notify('Secure list updated')
+    toast.success('Secure list updated')
   } else {
     store.addSecureList(name)
-    notify('Secure list created')
+    toast.success('Secure list created')
   }
   drawer.value = false
 }
@@ -49,7 +46,7 @@ const deleteDialog = ref(false)
 const pendingList = ref<SecureList | null>(null)
 function askDelete(list: SecureList) { pendingList.value = list; deleteDialog.value = true }
 function confirmDelete() {
-  if (pendingList.value) { store.deleteSecureList(pendingList.value.id); notify('Secure list deleted') }
+  if (pendingList.value) { store.deleteSecureList(pendingList.value.id); toast.success('Secure list deleted') }
   pendingList.value = null
 }
 </script>
@@ -131,9 +128,5 @@ function confirmDelete() {
       danger
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>

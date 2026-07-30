@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import { useToast } from '@/composables/useToast'
 
 const script = `<script src="https://track.maropost.com/js/track.js"><\/script>
 <script>mp.init('12345-ABCD');<\/script>`
 
-const snackbar = ref(false)
-const snackbarText = ref('')
+const toast = useToast()
 
 async function copyScript() {
   try {
     await navigator.clipboard.writeText(script)
-    snackbarText.value = 'Tracking script copied to clipboard'
+    toast.success('Tracking script copied to clipboard')
   } catch {
-    snackbarText.value = 'Could not copy — select the snippet and copy manually'
+    toast.error('Could not copy — select the snippet and copy manually')
   }
-  snackbar.value = true
 }
 </script>
 
@@ -42,10 +40,6 @@ async function copyScript() {
         &lt;script&gt;mp.init('12345-ABCD');&lt;/script&gt;
       </div>
     </v-card>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

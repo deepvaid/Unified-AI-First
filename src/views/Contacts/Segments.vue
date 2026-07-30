@@ -7,8 +7,10 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useContactsStore()
+const toast = useToast()
 const search = ref('')
 
 const CATEGORIES = [
@@ -28,11 +30,6 @@ const headers = [
   { title: 'Last Calculated', key: 'lastCalc' },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
-
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 // ── Condition builder state ────────────────────────────────────────────────────
 const drawer = ref(false)
@@ -157,17 +154,17 @@ function save() {
   }
   if (editingId.value != null) {
     store.updateSegment(editingId.value, { ...payload, count: matchEstimate.value })
-    notify('Segment updated')
+    toast.success('Segment updated')
   } else {
     store.addSegment({ ...payload, count: matchEstimate.value })
-    notify('Segment created')
+    toast.success('Segment created')
   }
   drawer.value = false
 }
 
 function recalculate(segment: Segment) {
   store.recalcSegment(segment.id)
-  notify('Segment recalculation started')
+  toast.success('Segment recalculation started')
 }
 
 // Delete
@@ -175,7 +172,7 @@ const deleteDialog = ref(false)
 const pendingSegment = ref<Segment | null>(null)
 function askDelete(segment: Segment) { pendingSegment.value = segment; deleteDialog.value = true }
 function confirmDelete() {
-  if (pendingSegment.value) { store.deleteSegment(pendingSegment.value.id); notify('Segment deleted') }
+  if (pendingSegment.value) { store.deleteSegment(pendingSegment.value.id); toast.success('Segment deleted') }
   pendingSegment.value = null
 }
 </script>
@@ -341,10 +338,6 @@ function confirmDelete() {
       danger
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

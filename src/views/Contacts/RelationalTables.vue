@@ -7,8 +7,10 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useCdpEntitiesStore()
+const toast = useToast()
 const search = ref('')
 
 const dataTypes: RelationalColumnType[] = ['Bigint', 'Boolean', 'Datetime', 'Email', 'UID', 'Float', 'Integer', 'String', 'Text']
@@ -22,11 +24,6 @@ const headers = [
   { title: 'Last Updated', key: 'updated' },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
-
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 // Create drawer
 const drawer = ref(false)
@@ -46,7 +43,7 @@ const canSave = () => tableName.value.trim().length > 0 && columns.value.some(c 
 function save() {
   if (!canSave()) return
   store.addTable({ name: tableName.value.trim(), columns: columns.value.filter(c => c.name.trim()) })
-  notify('Table created')
+  toast.success('Table created')
   drawer.value = false
 }
 
@@ -55,7 +52,7 @@ const deleteDialog = ref(false)
 const pendingTable = ref<RelationalTable | null>(null)
 function askDelete(table: RelationalTable) { pendingTable.value = table; deleteDialog.value = true }
 function confirmDelete() {
-  if (pendingTable.value) { store.deleteTable(pendingTable.value.id); notify('Table deleted') }
+  if (pendingTable.value) { store.deleteTable(pendingTable.value.id); toast.success('Table deleted') }
   pendingTable.value = null
 }
 </script>
@@ -157,10 +154,6 @@ function confirmDelete() {
       danger
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

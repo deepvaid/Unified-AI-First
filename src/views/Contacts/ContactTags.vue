@@ -7,8 +7,10 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useCdpEntitiesStore()
+const toast = useToast()
 const search = ref('')
 
 const headers = [
@@ -16,11 +18,6 @@ const headers = [
   { title: 'Contacts Tagged', key: 'count', align: 'end' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
-
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 // Create / edit drawer
 const drawer = ref(false)
@@ -35,10 +32,10 @@ function save() {
   if (!name) return
   if (editingId.value != null) {
     store.updateTag(editingId.value, name)
-    notify('Tag updated')
+    toast.success('Tag updated')
   } else {
     store.addTag(name)
-    notify('Tag created')
+    toast.success('Tag created')
   }
   drawer.value = false
 }
@@ -48,7 +45,7 @@ const deleteDialog = ref(false)
 const pendingTag = ref<CdpTag | null>(null)
 function askDelete(tag: CdpTag) { pendingTag.value = tag; deleteDialog.value = true }
 function confirmDelete() {
-  if (pendingTag.value) { store.deleteTag(pendingTag.value.id); notify('Tag deleted') }
+  if (pendingTag.value) { store.deleteTag(pendingTag.value.id); toast.success('Tag deleted') }
   pendingTag.value = null
 }
 </script>
@@ -130,9 +127,5 @@ function confirmDelete() {
       danger
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>

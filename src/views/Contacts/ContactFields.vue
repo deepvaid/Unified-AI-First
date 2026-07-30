@@ -7,8 +7,10 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useCdpEntitiesStore()
+const toast = useToast()
 const search = ref('')
 
 const fieldTypes: CdpFieldType[] = ['String', 'Integer', 'Boolean', 'Datetime', 'Text', 'Float']
@@ -29,11 +31,6 @@ const headers = [
   { title: 'Edit Profile', key: 'addToEditProfile', align: 'center' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
-
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
 
 // Create / edit drawer
 const drawer = ref(false)
@@ -60,10 +57,10 @@ function save() {
   if (!form.value.name.trim()) return
   if (editingId.value != null) {
     store.updateField(editingId.value, { ...form.value })
-    notify('Field updated')
+    toast.success('Field updated')
   } else {
     store.addField({ ...form.value })
-    notify('Field created')
+    toast.success('Field created')
   }
   drawer.value = false
 }
@@ -73,7 +70,7 @@ const deleteDialog = ref(false)
 const pendingField = ref<CdpField | null>(null)
 function askDelete(field: CdpField) { pendingField.value = field; deleteDialog.value = true }
 function confirmDelete() {
-  if (pendingField.value) { store.deleteField(pendingField.value.id); notify('Field deleted') }
+  if (pendingField.value) { store.deleteField(pendingField.value.id); toast.success('Field deleted') }
   pendingField.value = null
 }
 </script>
@@ -183,9 +180,5 @@ function confirmDelete() {
       danger
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
