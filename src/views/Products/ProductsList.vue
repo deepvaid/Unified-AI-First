@@ -6,6 +6,7 @@ import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useCommerceStore, type Product } from '@/stores/useCommerce'
 import { downloadCsv } from '@/utils/exportCsv'
 import { formatMoneyParts } from '@/utils/formatMoneyParts'
+import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -25,6 +26,7 @@ const page = ref(1)
 const ITEMS_PER_PAGE = 15
 const viewMode = ref<'list' | 'grid'>('list')
 const { loading } = useInitialLoad()
+const toast = useToast()
 
 const accountId = computed(() => {
   const value = route.params.accountId
@@ -148,7 +150,7 @@ function openEdit(product: Product) {
 
 function duplicate(product: Product) {
   store.duplicateProduct(product.id)
-  notify('Product duplicated')
+  toast.success('Product duplicated')
 }
 
 // ── Delete (row + bulk) ─────────────────────────────────────────────
@@ -173,10 +175,10 @@ function doDelete() {
     const count = selected.value.length
     store.deleteProducts(selected.value)
     selected.value = []
-    notify(`${count} product${count === 1 ? '' : 's'} deleted`)
+    toast.success(`${count} product${count === 1 ? '' : 's'} deleted`)
   } else if (pendingDelete.value) {
     store.deleteProduct(pendingDelete.value.id)
-    notify('Product deleted')
+    toast.success('Product deleted')
   }
   pendingDelete.value = null
   bulkDelete.value = false
@@ -244,14 +246,10 @@ function runExport() {
     { title: 'Status', value: 'status' },
   ])
   exportDialog.value = false
-  notify(`Exported ${exportRows.value.length} product${exportRows.value.length === 1 ? '' : 's'} as CSV`)
+  toast.success(`Exported ${exportRows.value.length} product${exportRows.value.length === 1 ? '' : 's'} as CSV`)
 }
 
-// ── Snackbar (incl. cross-page flash from the wizards) ────────────────
-const snack = ref(false)
-const snackText = ref('')
-function notify(text: string) { snackText.value = text; snack.value = true }
-
+// ── Cross-page flash from the wizards ─────────────────────────────────
 const flashMessages: Record<string, string> = {
   'product-draft': 'Product saved as draft',
   'product-published': 'Product published',
@@ -265,7 +263,7 @@ onMounted(() => {
   const flash = route.query.flash
   const key = Array.isArray(flash) ? flash[0] : flash
   if (key && flashMessages[key]) {
-    notify(flashMessages[key])
+    toast.success(flashMessages[key])
     router.replace({ query: {} })
   }
 })
@@ -560,10 +558,6 @@ onMounted(() => {
       danger
       @confirm="doDelete"
     />
-
-    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

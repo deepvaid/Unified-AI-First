@@ -5,6 +5,7 @@ import { useCommerceStore, type InventoryItem } from '@/stores/useCommerce'
 import { useRetailStore } from '@/stores/useRetail'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -20,6 +21,7 @@ const route = useRoute()
 const router = useRouter()
 const search = ref('')
 const { loading } = useInitialLoad()
+const toast = useToast()
 
 /**
  * One inventory surface, three lenses: the SKU list, a per-location pivot
@@ -127,7 +129,7 @@ const adjustPreview = computed(() => {
 function saveAdjust() {
   if (adjustItem.value) {
     store.adjustStock(adjustItem.value.id, adjustPreview.value)
-    notify('Stock adjusted')
+    toast.success('Stock adjusted')
   }
   adjustDrawer.value = false
 }
@@ -154,7 +156,7 @@ const transferOptions = computed(() =>
 function saveTransfer() {
   if (transferItem.value && transferTo.value) {
     store.transferStock(transferItem.value.id, transferTo.value, transferQty.value)
-    notify(`Moved ${transferQty.value} to ${locationName(transferTo.value)}`)
+    toast.success(`Moved ${transferQty.value} to ${locationName(transferTo.value)}`)
   }
   transferDrawer.value = false
 }
@@ -216,10 +218,6 @@ function exportInventory() {
   ])
 }
 
-// ── Snackbar ────────────────────────────────────────────────────────
-const snack = ref(false)
-const snackText = ref('')
-function notify(text: string) { snackText.value = text; snack.value = true }
 </script>
 
 <template>
@@ -405,7 +403,7 @@ function notify(text: string) { snackText.value = text; snack.value = true }
     <v-card v-else variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar title="Stock imports" :total-count="store.inventoryImports.length">
         <template #actions>
-          <v-btn color="primary" variant="flat" prepend-icon="upload" class="text-none" @click="notify('CSV upload is not wired up in the prototype')">Upload CSV</v-btn>
+          <v-btn color="primary" variant="flat" prepend-icon="upload" class="text-none" @click="toast.success('CSV upload is not wired up in the prototype')">Upload CSV</v-btn>
         </template>
       </MpDataTableToolbar>
       <v-data-table
@@ -476,10 +474,6 @@ function notify(text: string) { snackText.value = text; snack.value = true }
         <v-btn color="primary" variant="flat" class="text-none" prepend-icon="arrow-left-right" :disabled="!transferTo" @click="saveTransfer">Transfer</v-btn>
       </template>
     </MpFormDrawer>
-
-    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useProductExtrasStore, type RecommendationRule, type RecommendationLogic, type RecommendationPlacement } from '@/stores/useProductExtras'
 import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -15,6 +16,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 const store = useProductExtrasStore()
 const search = ref('')
 const { loading } = useInitialLoad()
+const toast = useToast()
 
 const LOGIC_TYPES: RecommendationLogic[] = ['Frequently Bought Together', 'Similar Items', 'Recently Viewed', 'Trending', 'Personalized']
 const PLACEMENTS: RecommendationPlacement[] = ['Cart Page', 'Product Detail Page', 'Homepage & Global Footer']
@@ -76,17 +78,17 @@ function saveRule() {
   const payload = { ...form.value, name: form.value.name.trim() || form.value.logicType }
   if (editingId.value !== null) {
     store.updateRule(editingId.value, payload)
-    notify('Recommendation rule updated')
+    toast.success('Recommendation rule updated')
   } else {
     store.addRule(payload)
-    notify('Recommendation rule created')
+    toast.success('Recommendation rule created')
   }
   drawer.value = false
 }
 
 function toggleRule(rule: RecommendationRule) {
   store.toggleRule(rule.id)
-  notify(rule.status === 'Active' ? 'Rule disabled' : 'Rule enabled')
+  toast.success(rule.status === 'Active' ? 'Rule disabled' : 'Rule enabled')
 }
 
 // ── Delete ──────────────────────────────────────────────────────────
@@ -99,7 +101,7 @@ function askDelete(rule: RecommendationRule) {
 function doDelete() {
   if (pendingDelete.value) {
     store.deleteRule(pendingDelete.value.id)
-    notify('Rule deleted')
+    toast.success('Rule deleted')
   }
   pendingDelete.value = null
 }
@@ -115,10 +117,6 @@ function exportRules() {
   ])
 }
 
-// ── Snackbar ────────────────────────────────────────────────────────
-const snack = ref(false)
-const snackText = ref('')
-function notify(text: string) { snackText.value = text; snack.value = true }
 </script>
 
 <template>
@@ -292,9 +290,5 @@ function notify(text: string) { snackText.value = text; snack.value = true }
       danger
       @confirm="doDelete"
     />
-
-    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
-    </v-snackbar>
   </div>
 </template>

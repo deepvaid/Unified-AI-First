@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useProductExtrasStore, type Reservation } from '@/stores/useProductExtras'
 import { useCommerceStore } from '@/stores/useCommerce'
+import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
@@ -13,6 +14,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 const store = useProductExtrasStore()
 const commerce = useCommerceStore()
 const search = ref('')
+const toast = useToast()
 
 const LOCATIONS = ['Main Warehouse - FL', 'Secondary Node - CA', 'Retail Hub - TX']
 
@@ -60,7 +62,7 @@ function saveReservation() {
     qty: Number(form.value.qty) || 1,
   })
   drawer.value = false
-  notify('Reservation created')
+  toast.success('Reservation created')
 }
 
 // ── Release hold ────────────────────────────────────────────────────
@@ -73,15 +75,11 @@ function askRelease(item: Reservation) {
 function doRelease() {
   if (pendingRelease.value) {
     store.releaseReservation(pendingRelease.value.id)
-    notify('Hold released')
+    toast.success('Hold released')
   }
   pendingRelease.value = null
 }
 
-// ── Snackbar ────────────────────────────────────────────────────────
-const snack = ref(false)
-const snackText = ref('')
-function notify(text: string) { snackText.value = text; snack.value = true }
 </script>
 
 <template>
@@ -211,10 +209,6 @@ function notify(text: string) { snackText.value = text; snack.value = true }
       danger
       @confirm="doRelease"
     />
-
-    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

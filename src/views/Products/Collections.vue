@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useProductExtrasStore, type Collection, type CollectionType } from '@/stores/useProductExtras'
 import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -12,6 +13,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
 const store = useProductExtrasStore()
 const search = ref('')
+const toast = useToast()
 
 const TYPES: CollectionType[] = ['Automated', 'Manual']
 const STATUSES = ['Active', 'Draft'] as const
@@ -78,10 +80,10 @@ function saveCollection() {
   }
   if (editingId.value !== null) {
     store.updateCollection(editingId.value, payload)
-    notify('Collection updated')
+    toast.success('Collection updated')
   } else {
     store.addCollection(payload)
-    notify('Collection created')
+    toast.success('Collection created')
   }
   drawer.value = false
 }
@@ -96,7 +98,7 @@ function askDelete(collection: Collection) {
 function doDelete() {
   if (pendingDelete.value) {
     store.deleteCollection(pendingDelete.value.id)
-    notify('Collection deleted')
+    toast.success('Collection deleted')
   }
   pendingDelete.value = null
 }
@@ -113,10 +115,6 @@ function exportCollections() {
   ])
 }
 
-// ── Snackbar ─────────────────────────────────────────────────────────────
-const snack = ref(false)
-const snackText = ref('')
-function notify(text: string) { snackText.value = text; snack.value = true }
 </script>
 
 <template>
@@ -240,10 +238,6 @@ function notify(text: string) { snackText.value = text; snack.value = true }
       danger
       @confirm="doDelete"
     />
-
-    <v-snackbar v-model="snack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
-    </v-snackbar>
   </div>
 </template>
 
