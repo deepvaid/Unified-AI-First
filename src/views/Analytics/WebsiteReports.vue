@@ -7,7 +7,10 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useAnalyticsStore()
 const { websiteReports } = storeToRefs(store)
@@ -18,11 +21,16 @@ const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
 
 const headers = [
   { title: 'Page Path', key: 'path', sortable: true },
-  { title: 'Category', key: 'category' },
+  { title: 'Category', key: 'category', hideBelow: 'md' as const },
   { title: 'Pageviews', key: 'views', align: 'end' as const },
-  { title: 'Unique Visitors', key: 'visitors', align: 'end' as const },
-  { title: 'Avg. Time on Page', key: 'avgTime' },
+  { title: 'Unique Visitors', key: 'visitors', align: 'end' as const, hideBelow: 'sm' as const },
+  { title: 'Avg. Time on Page', key: 'avgTime', hideBelow: 'md' as const },
 ]
+
+// Identity + headline metric always show; supporting columns drop out
+// progressively so the table never side-scrolls on a phone.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 const categories = ['Landing', 'Product', 'Checkout', 'Content']
 
@@ -99,7 +107,9 @@ function exportCsv() {
           </div>
         </template>
       </MpDataTableToolbar>
-      <v-data-table :headers="headers" :items="filteredReports" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
+
+      <v-data-table v-else :headers="visibleHeaders" :items="filteredReports" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.views="{ item }">
           <span class="font-weight-medium">{{ item.views.toLocaleString() }}</span>
         </template>
