@@ -13,6 +13,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
 const search = ref('')
@@ -230,10 +231,8 @@ const headers = [
 ]
 const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
-// ── Snackbar ─────────────────────────────────────────────────────
-const saveSnack = ref(false)
-const snackText = ref('')
-function notify(text: string) { snackText.value = text; saveSnack.value = true }
+const toast = useToast()
+function notify(text: string) { toast.success(text) }
 </script>
 
 <template>
@@ -448,10 +447,6 @@ function notify(text: string) { snackText.value = text; saveSnack.value = true }
       danger
       @confirm="doDelete"
     />
-
-    <v-snackbar v-model="saveSnack" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

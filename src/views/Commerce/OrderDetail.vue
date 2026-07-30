@@ -10,6 +10,7 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import { formatMoneyParts } from '@/utils/formatMoneyParts'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,10 +23,8 @@ const ordersListRoute = computed(() => ({ name: 'SalesOrders', params: { account
 const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 const formatDate = (d?: string | null) => d ? dateFmt.format(new Date(d)) : '—'
 
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
+const toast = useToast()
+function notify(text: string) { toast.success(text) }
 
 // ── Header actions ────────────────────────────────────────────────
 const cancelDialog = ref(false)
@@ -413,10 +412,6 @@ function timelineIcon(entry: { kind: string; text: string }): string {
         <v-btn color="primary" variant="flat" class="text-none" @click="saveAddress">Save Address</v-btn>
       </template>
     </MpFormDrawer>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 
   <!-- ── Not found ─────────────────────────────────────────────────── -->

@@ -16,6 +16,7 @@ import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,10 +36,8 @@ const editingId = computed(() => {
 const isEdit = computed(() => editingId.value !== null)
 const editingDraft = computed(() => isEdit.value ? store.draftOrders.find(d => d.id === editingId.value) : undefined)
 
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
+const toast = useToast()
+function notify(text: string) { toast.success(text) }
 
 // ── Contact ───────────────────────────────────────────────────────
 interface SeedContact { name: string; email: string; phone: string; city: string }
@@ -549,10 +548,6 @@ onMounted(() => {
       :confirm-label="leaveConfirmLabel"
       @confirm="discardAndLeave"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

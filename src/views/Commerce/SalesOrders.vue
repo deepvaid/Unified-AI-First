@@ -16,6 +16,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
 const retail = useRetailStore()
@@ -47,10 +48,8 @@ const selected = ref<number[]>([])
 const activeTab = ref('all')
 const { loading } = useInitialLoad()
 
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
+const toast = useToast()
+function notify(text: string) { toast.success(text) }
 
 // Tabs matching real Maropost app
 const tabs = computed(() =>
@@ -564,10 +563,6 @@ function exportOrders() {
       confirm-label="Mark Fulfilled"
       @confirm="confirmBulkFulfill"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

@@ -13,6 +13,7 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
 const route = useRoute()
@@ -22,10 +23,8 @@ const search = ref('')
 const selected = ref<number[]>([])
 const { loading } = useInitialLoad()
 
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
+const toast = useToast()
+function notify(text: string) { toast.success(text) }
 
 // ── Navigation to the full-page composer ─────────────────────────
 function goCreate() {
@@ -267,10 +266,6 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
       danger
       @confirm="confirmDelete"
     />
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 

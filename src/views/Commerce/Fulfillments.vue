@@ -5,6 +5,7 @@ import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeade
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useCommerceStore, FULFILLMENT_QUEUE_STATUSES, type FulfillmentQueueItem, type FulfillmentQueueStatus } from '@/stores/useCommerce'
 import { downloadCsv } from '@/utils/exportCsv'
+import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -21,10 +22,8 @@ const search = ref('')
 const selected = ref<number[]>([])
 const { loading } = useInitialLoad()
 
-// Snackbar
-const snackbar = ref(false)
-const snackbarText = ref('')
-function notify(text: string) { snackbarText.value = text; snackbar.value = true }
+const toast = useToast()
+function notify(text: string) { toast.success(text) }
 
 // Legacy-parity columns: ID | Order | Customer | Location | Fulfillment Status |
 // Payment Status | Product QTY | Order Status | Sales Channel | Total | Created At | Actions
@@ -330,10 +329,6 @@ function exportFulfillments() {
         </v-card-actions>
       </v-card>
     </v-dialog>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" rounded="pill" location="bottom center">
-      <div class="d-flex align-center gap-2"><v-icon>circle-check</v-icon> {{ snackbarText }}</div>
-    </v-snackbar>
   </div>
 </template>
 
