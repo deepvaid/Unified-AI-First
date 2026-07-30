@@ -255,3 +255,17 @@ grep -rnP -- "--ink(?!-)\b" src/ | grep -v generated   →  (none)
 - **Final sweeps:** zero remaining `v-snackbar` outside the intentional `PosPreview.vue` exclusion; `moduleTile` token references present in generated CSS (AUD-L02 closed).
 
 **Commits:** `0d681e3` (C2) · `f592790` (C3) · `49258ec` (C4) · `6dc6553` (AppBar combined C3+C4) · `0a6fd01` (C5) · `15215d4` (C6) · `cc5787b` (C7) · `65307d9` (C8) · `00b5eef` (C9 + Registers.vue combined C4+C9).
+
+## Phase 5 — Storybook sync
+
+**Agent:** Workflow `wf_e5af8c90-742` (7 independent story-authoring agents, no file overlap), integrated by main loop.
+
+- **U1** RBAC: `InviteUsersDrawer.stories.ts`, `UserAccessDrawer.stories.ts` — both drive real store data (`rbacData.ts`); used `play()` functions (native DOM event dispatch, no `@storybook/test` — correctly confirmed not installed) matching the existing `MpDateRangeSelect.stories.ts`/`MpFolderSelect.stories.ts` idiom, since InviteUsersDrawer has no prop-driven state to seed.
+- **U2** PLG: `Plg3dsDialog.stories.ts`, `PlgTalkToSalesDialog.stories.ts`, `PlgTrialChip.stories.ts` — new `PLG/` Storybook category. `Plg3dsDialog`'s `Verifying` story traced Vuetify's actual `VOtpInput` source to construct a valid synthetic paste event before trusting the interaction. `PlgTrialChip` (zero props, fully store-driven) calls the real `usePlgStore().applyDemoPreset(...)` action per story — same isolation fix as `MpToastStack.stories.ts` (`docs.story.inline=false`) since all stories share one Pinia singleton.
+- **U3** `JourneyAddStepMenu.stories.ts` — used the real `nodeCatalog` fixture (31 items) from `journeyFlowData.ts` rather than fabricated data, directly demonstrating the UX-002 grouping pattern the audit praised.
+- **U4** `LandingBlockSettings.stories.ts` — the one representative landing color-picker story per the plan (not both LandingBlockSettings/LandingPageStylePanel).
+- **U5** `FormFields.stories.ts` — added all 8 requested state-matrix stories (SelectedWithCheckmark, GroupedOptions, LongLabels, ManyOptionsScroll, DisabledItem, LoadingState, EmptyState, ErrorState) as new exports, extending rather than restructuring the existing file.
+- **U6** `Foundation/Tooltips.stories.ts` — agent correctly placed this in the existing `src/stories/Foundation/` subdirectory (a real convention already used by Buttons/Colors/Icons/etc.) rather than the flat path given in its prompt; confirmed this is the more accurate convention, kept as-is.
+- **U7** `Layering.stories.ts` — the highest-value unit: 4 live overlay-stacking proofs (menu over a card-grid with one deliberately `overflow: hidden` card, menu over a sticky-header table using the real `--mp-zIndex-stickyHeader` token, tooltip escaping a scroll container, MpConfirmDialog stacking above an open MpFormDrawer) plus 2 dark-mode-pinned variants. Manually reviewed in full — real production components throughout, correct z-index/teleport reasoning, no invented wrapper components.
+- **Verification:** `npm run type-check` clean (baseline `ReelFlyView.vue` only); `npm run build-storybook` succeeds (`built in 14.13s`); confirmed all 10 new/changed story files are represented in the build output via a targeted search of `dist-storybook/assets`. Live Storybook-dev-server visual spot-check was attempted but blocked by a browser-tool origin-approval gate on the new port that couldn't be satisfied non-interactively; substituted a full manual code review of the highest-risk file (`Layering.stories.ts`) instead.
+- **Commits:** one per unit (7 total), `git status` clean after.
