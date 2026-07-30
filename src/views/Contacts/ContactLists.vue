@@ -8,6 +8,9 @@ import type { Contact } from '@/stores/useContacts'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -25,11 +28,17 @@ const languages = ['English', 'Spanish', 'French', 'German']
 
 const headers = [
   { title: 'List Name', key: 'name', sortable: true },
-  { title: 'Total Contacts', key: 'count', align: 'end' as const },
-  { title: 'Type', key: 'type' },
-  { title: 'Created', key: 'created' },
+  { title: 'Contacts', key: 'count', align: 'end' as const },
+  { title: 'Type', key: 'type', hideBelow: 'sm' as const },
+  { title: 'Created', key: 'created', hideBelow: 'md' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+
+// Row identity + its headline count always show; supporting columns drop out
+// progressively. The actions column is never tiered — the kebab must stay
+// reachable at every width.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 const contactCsvColumns: CsvColumn<Contact>[] = [
   { title: 'First Name', value: 'firstName' },
@@ -117,8 +126,10 @@ function confirmDelete() {
         :total-count="store.lists.length"
       />
 
-      <v-data-table
-        :headers="headers"
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
+
+      <v-data-table v-else
+        :headers="visibleHeaders"
         :items="store.lists"
         :search="search"
         :items-per-page="15"
@@ -131,7 +142,7 @@ function confirmDelete() {
           <span class="text-body-2 font-weight-medium">{{ item.count.toLocaleString() }}</span>
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="List actions">
+          <MpRowActionsMenu ariaLabel="List actions" :itemLabel="item.name">
             <v-list-item prepend-icon="users" title="View Contacts" @click="viewContacts" />
             <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-list-item prepend-icon="share" title="Export Contacts" @click="exportContacts(item)" />
