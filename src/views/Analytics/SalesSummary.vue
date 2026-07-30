@@ -6,8 +6,11 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { downloadCsv } from '@/utils/exportCsv'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useAnalyticsStore()
 const { accountMetrics, salesChannels } = storeToRefs(store)
@@ -38,14 +41,20 @@ const maxRevenue = computed(() => Math.max(...salesChannels.value.map((c) => c.r
 const currency = (n: number) =>
   n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
+// Channel + Revenue are the identity/headline pair and always show; the derived
+// metrics drop out progressively so the table never side-scrolls on a phone.
+// (The channel-bar rows above have their own 700px breakpoint — already fine.)
 const tableHeaders = [
   { title: 'Channel', key: 'channel' },
   { title: 'Revenue', key: 'revenue', align: 'end' as const },
-  { title: 'Orders', key: 'orders', align: 'end' as const },
-  { title: 'Avg Order', key: 'aov', align: 'end' as const },
-  { title: 'Share', key: 'share', align: 'end' as const },
-  { title: 'vs. prior', key: 'delta', align: 'end' as const },
+  { title: 'Orders', key: 'orders', align: 'end' as const, hideBelow: 'sm' as const },
+  { title: 'Avg Order', key: 'aov', align: 'end' as const, hideBelow: 'md' as const },
+  { title: 'Share', key: 'share', align: 'end' as const, hideBelow: 'md' as const },
+  { title: 'vs. prior', key: 'delta', align: 'end' as const, hideBelow: 'sm' as const },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(tableHeaders)
+const { loading } = useInitialLoad()
 </script>
 
 <template>
@@ -110,6 +119,9 @@ const tableHeaders = [
         <span class="text-caption text-medium-emphasis">Attributed revenue, {{ dateRangeLabel(dateRange).toLowerCase() }}</span>
       </div>
 
+      <MpTableSkeleton v-if="loading" :rows="6" :columns="6" class="px-3 py-2" />
+
+      <template v-else>
       <div v-if="salesChannels.length" class="channel-bars px-5 py-4">
         <div v-for="c in salesChannels" :key="c.channel" class="channel-row">
           <div class="channel-row__label">
@@ -141,7 +153,7 @@ const tableHeaders = [
       <v-divider />
 
       <v-data-table
-        :headers="tableHeaders"
+        :headers="visibleHeaders"
         :items="salesChannels"
         density="comfortable"
         :items-per-page="-1"
@@ -165,6 +177,7 @@ const tableHeaders = [
           </span>
         </template>
       </v-data-table>
+      </template>
     </v-card>
   </div>
 </template>
