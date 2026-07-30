@@ -20,18 +20,18 @@ import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
 import { usePlgStore } from '@/stores/usePlg'
 import { useOnboardingStore } from '@/stores/useOnboarding'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
 const accountsStore = useAccountsStore()
 const plgStore = usePlgStore()
 const dashboardsStore = useDashboardsStore()
+const toast = useToast()
 
 const widgetWizardOpen = ref(false)
 const renderError = ref<string | null>(null)
 const dateMenuOpen = ref(false)
-const dashboardNotice = ref('')
-const dashboardNoticeVisible = ref(false)
 const expandedWidgetId = ref<string | null>(null)
 
 onErrorCaptured((err) => {
@@ -305,8 +305,7 @@ function applyDateDraft() {
 }
 
 function showDashboardNotice(message: string) {
-  dashboardNotice.value = message
-  dashboardNoticeVisible.value = true
+  toast.info(message)
 }
 
 function openSetupTask(task: SetupTask) {
@@ -762,9 +761,6 @@ function toggleFavoriteActive() {
       @confirm="performConfirm"
     />
 
-    <v-snackbar v-model="dashboardNoticeVisible" timeout="2600" color="surface" location="bottom right">
-      {{ dashboardNotice }}
-    </v-snackbar>
   </div>
 </template>
 

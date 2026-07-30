@@ -14,11 +14,13 @@ import {
   type PlanTier,
   type AddOnDef,
 } from '@/stores/usePlg'
+import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
 const accountsStore = useAccountsStore()
 const plg = usePlgStore()
+const toast = useToast()
 const accountId = computed(() => {
   const id = Array.isArray(route.params.accountId) ? route.params.accountId[0] : route.params.accountId
   return id ?? '2000290'
@@ -76,11 +78,8 @@ function formatUsageNumber(n: number): string {
   return n.toLocaleString('en-US')
 }
 
-const snackbar = ref(false)
-const snackbarText = ref('')
 function notify(text: string) {
-  snackbarText.value = text
-  snackbar.value = true
+  toast.info(text)
 }
 
 function goToPlans() {
@@ -584,7 +583,6 @@ const usageRows = computed(() => {
       @confirm="confirmDowngrade"
     />
 
-    <v-snackbar v-model="snackbar" timeout="2600">{{ snackbarText }}</v-snackbar>
   </div>
 </template>
 
