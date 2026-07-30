@@ -8,7 +8,10 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import { downloadCsv } from '@/utils/exportCsv'
+import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useToast } from '@/composables/useToast'
+import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useCampaignsStore()
 const toast = useToast()
@@ -19,11 +22,16 @@ const dateRange = ref<DateRangeValue>({ preset: 'This year' })
 const headers = [
   { title: 'Campaign Name', key: 'name', sortable: true },
   { title: 'Status', key: 'status' },
-  { title: 'Sent Date', key: 'sentDate' },
-  { title: 'Sent', key: 'metrics.sent', align: 'end' as const },
-  { title: 'Opens', key: 'metrics.opens', align: 'end' as const },
-  { title: 'Clicks', key: 'metrics.clicks', align: 'end' as const },
+  { title: 'Sent Date', key: 'sentDate', hideBelow: 'lg' as const },
+  { title: 'Sent', key: 'metrics.sent', align: 'end' as const, hideBelow: 'md' as const },
+  { title: 'Opens', key: 'metrics.opens', align: 'end' as const, hideBelow: 'sm' as const },
+  { title: 'Clicks', key: 'metrics.clicks', align: 'end' as const, hideBelow: 'md' as const },
 ]
+
+// Identity + headline metric always show; supporting columns drop out
+// progressively so the table never side-scrolls on a phone.
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const { loading } = useInitialLoad()
 
 const activeFilterEntries = computed(() => {
   const filters: Array<{ key: string; label: string }> = []
@@ -101,7 +109,9 @@ function exportCsv() {
           </div>
         </template>
       </MpDataTableToolbar>
-      <v-data-table :headers="headers" :items="filteredCampaigns" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="6" />
+
+      <v-data-table v-else :headers="visibleHeaders" :items="filteredCampaigns" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.status="{ item }">
           <MpStatusChip :status="item.status" type="campaign" size="x-small" />
         </template>
