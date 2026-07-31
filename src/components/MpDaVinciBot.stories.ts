@@ -61,53 +61,25 @@ const onboardingMessages: ChatMessage[] = [
   {
     id: 'onboarding-user',
     role: 'user',
-    text: 'Promote an offer to VIP customers',
+    text: 'Help me launch email marketing',
   },
   {
     id: 'onboarding-assistant',
     role: 'assistant',
-    text: 'I found one setup item to review. You can resolve it first or continue with the campaign brief.',
+    text: 'First, authenticate your sending domain. I’ll stay here while you complete the setup page.',
     componentData: [
       {
-        type: 'campaignOnboarding',
+        type: 'setupOnboarding',
         props: {
-          title: 'Review your campaign setup',
-          description: 'Da Vinci checks readiness, but you keep control of content, timing, and send.',
-          step: 3,
-          totalSteps: 4,
-          items: [
-            {
-              id: 'domain',
-              label: 'Sending domain',
-              description: 'This prototype cannot verify the domain yet.',
-              status: 'unknown',
-              routeName: 'SettingsDnsSetup',
-              actionLabel: 'Check DNS setup',
-              checkedAt: '2026-07-31T09:00:00.000Z',
-            },
-            {
-              id: 'audience',
-              label: 'Audience',
-              description: 'VIP Customer Circle has 312 contacts.',
-              status: 'ready',
-              routeName: 'ContactLists',
-              actionLabel: 'Review audience',
-              checkedAt: '2026-07-31T09:00:00.000Z',
-            },
-            {
-              id: 'content',
-              label: 'Email content',
-              description: 'Templates are available in the campaign builder.',
-              status: 'ready',
-              routeName: 'EmailContent',
-              actionLabel: 'Browse templates',
-              checkedAt: '2026-07-31T09:00:00.000Z',
-            },
-          ],
-          actions: [
-            { label: 'Review campaign brief', action: 'review-brief', icon: 'clipboard-list' },
-            { label: 'Change objective', action: 'change-objective', icon: 'refresh-cw' },
-          ],
+          kind: 'task',
+          title: 'Authenticate your sending domain',
+          description: 'Authentication protects your reputation and improves inbox placement.',
+          taskId: 'sending-domain',
+          status: 'pending',
+          step: 1,
+          totalSteps: 6,
+          primaryAction: { label: 'Set up DNS', action: 'open-task:sending-domain', icon: 'arrow-up-right' },
+          secondaryAction: { label: 'Skip for now', action: 'skip-current-task', icon: 'redo-2' },
         },
       },
     ],
@@ -189,11 +161,11 @@ export const CompactDrawer: Story = {
   }),
 }
 
-export const CampaignOnboarding: Story = {
+export const SetupOnboarding: Story = {
   args: {
     initialChatMode: true,
     initialMessages: onboardingMessages,
-    subtitle: 'Guiding your first campaign',
+    subtitle: 'Guiding your product setup',
   },
 }
 

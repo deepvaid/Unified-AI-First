@@ -2,7 +2,6 @@ import { ref } from 'vue'
 import router from '@/router'
 import { askGemini, type GeminiTurn } from '@/services/geminiClient'
 import { generateJourneyDraft, goalOptions, type JourneyGoal } from '@/composables/useJourneyGenerator'
-import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import {
   fallbackSpeech,
   productDrafts,
@@ -162,7 +161,6 @@ export function classifyIntent(text: string): DvIntentKind {
 
 export function useDaVinciIntents() {
   const pending = ref<DvPending | null>(null)
-  const campaignOnboarding = useDaVinciCampaignOnboarding()
   let seq = 0
 
   /**
@@ -170,19 +168,21 @@ export function useDaVinciIntents() {
    * the objective, inspect read-only readiness, and open the empty standard builder;
    * it never creates a campaign record or fills product fields.
    */
-  function startCampaignDiscovery(audienceHint: string): DvIntentResult {
-    const accountId = String(router.currentRoute.value.params.accountId ?? '2000290')
-    const active = campaignOnboarding.session.value
-    const response = active && active.accountId === accountId && active.stage !== 'complete'
-      ? (campaignOnboarding.resume() ?? campaignOnboarding.start(accountId, 'text', { audienceHint }))
-      : campaignOnboarding.start(accountId, 'text', { audienceHint })
-
+  function startCampaignDiscovery(_audienceHint: string): DvIntentResult {
     return {
       intent: 'campaign',
-      reply: response.reply,
-      speech: response.speech,
-      cards: response.cards ?? [],
-      quickReplies: response.quickReplies,
+      reply: 'I can guide you through campaign setup and explain each builder step. You will choose the audience, enter the content, review, and send.',
+      speech: 'I can guide you through campaign setup. You stay in control of every action.',
+      cards: [{
+        type: 'insight',
+        props: {
+          headline: 'Campaign guidance',
+          description: 'Open Get Started to follow the Marketing path, or open Email campaigns when your setup is ready.',
+          severity: 'info',
+          icon: 'megaphone',
+        },
+      }],
+      quickReplies: [{ label: 'What do I need first?', value: 'What do I need before my first campaign?', icon: 'list-checks' }],
       pending: null,
       steps: INTENT_STEPS.campaign,
     }

@@ -2,121 +2,33 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvCampaignOnboardingCard from './DvCampaignOnboardingCard.vue'
 
 const meta = {
-  title: 'Copilot/DvCampaignOnboardingCard',
-  component: DvCampaignOnboardingCard,
-  tags: ['autodocs'],
+  title: 'Copilot/DvSetupOnboardingCard', component: DvCampaignOnboardingCard, tags: ['autodocs'],
   args: {
-    title: 'Your campaign setup',
-    description: 'Da Vinci checked the three things needed for a safe first send.',
-    step: 3,
-    totalSteps: 4,
-    items: [
-      {
-        id: 'domain',
-        label: 'Sending domain',
-        description: 'Your sending identity is authenticated.',
-        status: 'ready',
-        routeName: 'SettingsDnsSetup',
-        actionLabel: 'Set up domain',
-        checkedAt: '2026-07-31T09:00:00.000Z',
-      },
-      {
-        id: 'audience',
-        label: 'Audience',
-        description: 'Choose at least one list or segment.',
-        status: 'needs-attention',
-        routeName: 'ContactLists',
-        actionLabel: 'Create an audience',
-        checkedAt: '2026-07-31T09:00:00.000Z',
-      },
-      {
-        id: 'content',
-        label: 'Email content',
-        description: 'Templates are available to use in the builder.',
-        status: 'ready',
-        routeName: 'EmailContent',
-        actionLabel: 'Browse templates',
-        checkedAt: '2026-07-31T09:00:00.000Z',
-      },
-    ],
-    actions: [
-      { label: 'Review campaign brief', action: 'review-brief', icon: 'clipboard-list' },
-      { label: 'Change objective', action: 'change-objective', icon: 'refresh-cw' },
-    ],
-  },
-  argTypes: {
-    step: { control: { type: 'number', min: 1, max: 4 } },
-    totalSteps: { control: { type: 'number', min: 1, max: 6 } },
+    kind: 'task', title: 'Authenticate your sending domain',
+    description: 'Authentication protects your reputation and improves inbox placement.',
+    step: 1, totalSteps: 6, taskId: 'sending-domain', status: 'pending',
+    primaryAction: { label: 'Set up DNS', action: 'open-task:sending-domain', icon: 'arrow-up-right' },
+    secondaryAction: { label: 'Skip for now', action: 'skip-current-task', icon: 'redo-2' },
   },
 } satisfies Meta<typeof DvCampaignOnboardingCard>
 
 export default meta
 type Story = StoryObj<typeof meta>
-
-export const NeedsSetup: Story = {}
-
-export const Ready: Story = {
+export const CurrentTask: Story = {}
+export const Plan: Story = {
   args: {
-    title: 'Campaign setup is ready',
-    description: 'Your sending domain, audience, and content library are available.',
+    kind: 'plan', title: 'Your marketing setup path', description: 'One task at a time.',
     items: [
-      {
-        id: 'domain',
-        label: 'Sending domain',
-        description: 'Your sending identity is authenticated.',
-        status: 'ready',
-        routeName: 'SettingsDnsSetup',
-        actionLabel: 'Review domain',
-        checkedAt: '2026-07-31T09:00:00.000Z',
-      },
-      {
-        id: 'audience',
-        label: 'Audience',
-        description: 'VIP Customer Circle has 312 contacts.',
-        status: 'ready',
-        routeName: 'ContactLists',
-        actionLabel: 'Review audience',
-        checkedAt: '2026-07-31T09:00:00.000Z',
-      },
-      {
-        id: 'content',
-        label: 'Email content',
-        description: 'Templates are available to use in the builder.',
-        status: 'ready',
-        routeName: 'EmailContent',
-        actionLabel: 'Browse templates',
-        checkedAt: '2026-07-31T09:00:00.000Z',
-      },
+      { id: 'sending-domain', label: 'Authenticate your sending domain', status: 'pending', minutes: 5 },
+      { id: 'link-tracking', label: 'Configure link tracking', status: 'pending', minutes: 2 },
+      { id: 'first-list', label: 'Create a contact list', status: 'pending', minutes: 2 },
     ],
+    primaryAction: { label: 'Start first task', action: 'start-current-task', icon: 'arrow-right' },
   },
 }
-
-export const CannotVerify: Story = {
+export const ManualConfirmation: Story = {
   args: {
-    title: 'One item needs a closer look',
-    description: 'Da Vinci will not claim readiness when the prototype cannot verify it.',
-    items: [
-      {
-        id: 'domain',
-        label: 'Sending domain',
-        description: 'Open DNS setup to confirm the current status.',
-        status: 'unknown',
-        routeName: 'SettingsDnsSetup',
-        actionLabel: 'Check DNS setup',
-        checkedAt: '2026-07-31T09:00:00.000Z',
-      },
-    ],
-  },
-}
-
-export const Complete: Story = {
-  args: {
-    kind: 'handoff',
-    title: 'Campaign builder opened',
-    description: 'Nothing was filled in or saved. Da Vinci remains available to explain each step.',
-    step: 4,
-    totalSteps: 4,
-    items: [],
-    actions: [],
+    kind: 'verification', title: 'Could not verify this task', status: 'pending',
+    primaryAction: { label: 'I completed this', action: 'confirm-current-task', icon: 'circle-check' },
   },
 }

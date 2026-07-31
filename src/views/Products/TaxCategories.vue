@@ -9,10 +9,12 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 const store = useProductExtrasStore()
 const search = ref('')
 const toast = useToast()
+const onboarding = useOnboardingStore()
 
 const TYPES: TaxCategoryType[] = ['Physical', 'Services', 'Events']
 const typeMeta: Record<TaxCategoryType, { icon: string; color: string }> = {
@@ -68,6 +70,7 @@ function saveCategory() {
     store.addTaxCategory(payload)
     toast.success('Tax category created')
   }
+  onboarding.complete('taxes')
   drawer.value = false
 }
 

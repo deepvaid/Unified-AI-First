@@ -12,6 +12,8 @@ import { useContactsStore } from '@/stores/useContacts'
 import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
 import { useContentStore } from '@/stores/useContent'
 import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
+import { useOnboardingStore } from '@/stores/useOnboarding'
+import { useDaVinciSetupOnboarding } from '@/composables/useDaVinciSetupOnboarding'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
 import { useCopilotStore } from '@/stores/useCopilot'
 
@@ -22,6 +24,8 @@ const contactsStore = useContactsStore()
 const cdpStore = useCdpEntitiesStore()
 const contentStore = useContentStore()
 const daVinciOnboarding = useDaVinciOnboardingStore()
+const setupOnboarding = useOnboardingStore()
+const setupGuide = useDaVinciSetupOnboarding()
 const copilot = useCopilotStore()
 
 const accountId = computed(() => route.params.accountId as string)
@@ -301,20 +305,17 @@ function exitWizard() {
 }
 
 function completeGuidedOnboarding(outcome: 'saved' | 'scheduled' | 'sent') {
-  if (route.query.source !== 'davinci' || draftId.value == null || !daVinciOnboarding.activeSession) return
-  if (daVinciOnboarding.activeSession.stage !== 'complete') daVinciOnboarding.complete()
-  trackDaVinciOnboardingEvent('onboarding_completed', accountId.value, {
-    campaignId: draftId.value,
-    verifiedOutcome: outcome,
+  if (!['davinci-setup', 'davinci'].includes(String(route.query.source)) || draftId.value == null || !daVinciOnboarding.activeSession) return
+  setupOnboarding.complete('first-email')
+  if (outcome !== 'saved') setupOnboarding.complete('first-campaign')
+  daVinciOnboarding.syncTaskStatuses(setupOnboarding.taskStatuses)
+  const response = setupGuide.verificationResponse()
+  trackDaVinciOnboardingEvent('task_verification_result', accountId.value, {
+    taskId: outcome === 'saved' ? 'first-email' : 'first-campaign',
+    result: 'verified',
+    productRecordId: draftId.value,
   })
-  const outcomeText = outcome === 'saved'
-    ? 'saved the campaign'
-    : outcome === 'scheduled'
-      ? 'scheduled the campaign'
-      : 'sent the campaign'
-  copilot.queueResume(
-    `I can see that you ${outcomeText}. That completes this guided setup. You can ask me to explain the result or help plan what comes next.`,
-  )
+  copilot.queueResume(response.reply)
 }
 
 // ── Edit hydration ────────────────────────────────────────────────────────────
@@ -362,9 +363,10 @@ function hydrateFrom(campaign: Campaign) {
 
 onMounted(() => {
   const idParam = route.query.id ?? route.params.id
-  if (route.query.source === 'davinci') {
+  if (route.query.source === 'davinci-setup' || route.query.source === 'davinci') {
+    setupOnboarding.activateAccount(accountId.value)
     daVinciOnboarding.begin(accountId.value)
-    daVinciOnboarding.markBuilderHandoff()
+    daVinciOnboarding.markTaskHandoff('CreateCampaign')
     copilot.setWidthMode('panel')
     copilot.open()
   }

@@ -2,10 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import type { DvCardDescriptor, DvQuickReply } from '@/composables/useDaVinciIntents'
-import type {
-  CampaignContextBrief,
-  CampaignReadinessItem,
-} from '@/stores/useDaVinciOnboarding'
+import type { SetupTaskStatus } from '@/stores/useOnboarding'
 
 // ── Shared conversation types ────────────────────────────────────────────────
 // The conversation lives here (not in MpDaVinciBot) so it survives route
@@ -23,32 +20,45 @@ export interface IntentCardsProps {
   quickReplies?: DvQuickReply[]
 }
 
-export interface CampaignOnboardingAction {
+export interface SetupOnboardingAction {
   label: string
   action: string
   icon?: string
 }
 
-export interface CampaignOnboardingProps {
-  title: string
+export interface SetupTaskCardItem {
+  id: string
+  label: string
   description?: string
-  kind?: 'readiness' | 'brief' | 'handoff' | 'unsupported'
-  step: number
-  totalSteps: number
-  items?: CampaignReadinessItem[]
-  brief?: CampaignContextBrief
-  actions?: CampaignOnboardingAction[]
-  primaryAction?: CampaignOnboardingAction
-  secondaryAction?: CampaignOnboardingAction
+  status: SetupTaskStatus
+  minutes?: number
 }
 
+export interface SetupOnboardingProps {
+  title: string
+  description?: string
+  kind?: 'goal' | 'plan' | 'task' | 'handoff' | 'verification' | 'complete' | 'unsupported'
+  step: number
+  totalSteps: number
+  taskId?: string
+  status?: SetupTaskStatus
+  items?: SetupTaskCardItem[]
+  actions?: SetupOnboardingAction[]
+  primaryAction?: SetupOnboardingAction
+  secondaryAction?: SetupOnboardingAction
+}
+
+/** Compatibility aliases for existing story and component imports during the setup-flow migration. */
+export type CampaignOnboardingAction = SetupOnboardingAction
+export type CampaignOnboardingProps = SetupOnboardingProps
+
 export interface ChatComponent {
-  type: 'widgetDraftSet' | 'insight' | 'intentCards' | 'campaignOnboarding'
+  type: 'widgetDraftSet' | 'insight' | 'intentCards' | 'setupOnboarding' | 'campaignOnboarding'
   props:
     | DraftSetProps
     | { headline: string; description: string; severity?: string }
     | IntentCardsProps
-    | CampaignOnboardingProps
+    | SetupOnboardingProps
 }
 
 export interface ChatMessage {

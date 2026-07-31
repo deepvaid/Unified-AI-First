@@ -3,8 +3,10 @@ import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import { useToast } from '@/composables/useToast'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 const toast = useToast()
+const onboarding = useOnboardingStore()
 
 const serviceSettings = ref({
   supportEmail: 'support@scootervillage.com',
@@ -20,7 +22,10 @@ const replyTemplates = ref([
   { id: 2, name: 'Order tracking update',      preview: 'Hi {{first_name}}, Your order {{order_id}} is...' },
 ])
 
-function save() { toast.success('Service settings saved') }
+function save() {
+  toast.success('Service settings saved')
+  onboarding.complete('support-inbox')
+}
 </script>
 
 <template>

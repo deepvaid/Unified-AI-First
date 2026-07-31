@@ -15,10 +15,12 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 const store = useCdpEntitiesStore()
 const contactsStore = useContactsStore()
 const toast = useToast()
+const onboarding = useOnboardingStore()
 const route = useRoute()
 const router = useRouter()
 const search = ref('')
@@ -79,6 +81,7 @@ function save() {
     toast.success('List updated')
   } else {
     store.addList({ ...form.value })
+    onboarding.complete('first-list')
     toast.success('List created')
   }
   drawer.value = false

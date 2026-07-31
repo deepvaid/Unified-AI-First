@@ -22,6 +22,7 @@ import { useCopilotStore } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { usePlgStore, isPlgDemoPreset } from '@/stores/usePlg'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 import PlgTrialBanner from '@/components/plg/PlgTrialBanner.vue'
 
 // Apply stored accent and theme to Vuetify on initial mount
@@ -31,6 +32,14 @@ setMode(mode.value)
 
 const accountsStore = useAccountsStore()
 const route = useRoute()
+const onboardingStore = useOnboardingStore()
+watch(
+  () => String(route.params.accountId ?? ''),
+  (accountId) => {
+    if (accountId) onboardingStore.activateAccount(accountId)
+  },
+  { immediate: true },
+)
 
 // Sidebar theme: a ?nav=white|gray|dark query param wins over the account's
 // preference (for stakeholder demos). Captured in-memory so it sticks across
@@ -214,11 +223,13 @@ const copilotDrawerWidth = computed(() => {
     <v-navigation-drawer
       v-if="copilotAvailable"
       v-model="copilotVisible"
-      location="right"
+      :location="smAndDown ? 'bottom' : 'right'"
+      :temporary="smAndDown"
       :width="copilotDrawerWidth + 12"
       :aria-hidden="copilotVisible ? undefined : 'true'"
       :inert="!copilotVisible"
       class="copilot-drawer"
+      :class="{ 'copilot-drawer--mobile': smAndDown }"
       :style="{
         '--copilot-top': isFullPage ? '4px' : '60px',
         '--copilot-w': copilotDrawerWidth + 'px',
@@ -322,5 +333,22 @@ const copilotDrawerWidth = computed(() => {
   flex-direction: column;
   overflow: hidden !important;
   border-radius: inherit;
+}
+
+@media (max-width: 600px) {
+  .copilot-drawer.copilot-drawer--mobile {
+    top: auto !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    left: 8px !important;
+    width: calc(100% - 16px) !important;
+    height: min(78dvh, 680px) !important;
+    margin: 0;
+    border-radius: 22px 22px 14px 14px;
+  }
+
+  .copilot-drawer.copilot-drawer--mobile.v-navigation-drawer:not(.v-navigation-drawer--active) {
+    transform: translateY(calc(100% + 24px)) !important;
+  }
 }
 </style>

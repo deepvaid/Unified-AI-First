@@ -17,7 +17,7 @@ import type { OrbitState } from './copilot/voice/orbit'
 import {
   useCopilotStore,
   type ChatMessage,
-  type CampaignOnboardingProps,
+  type SetupOnboardingProps,
   type DraftSetProps,
   type IntentCardsProps,
 } from '@/stores/useCopilot'
@@ -29,9 +29,9 @@ import { useDaVinciHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
 import { useDaVinciContext } from '@/composables/useDaVinciContext'
 import {
-  useDaVinciCampaignOnboarding,
-  type CampaignOnboardingResponse,
-} from '@/composables/useDaVinciCampaignOnboarding'
+  useDaVinciSetupOnboarding,
+  type SetupOnboardingResponse,
+} from '@/composables/useDaVinciSetupOnboarding'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
 import {
   useDaVinciIntents,
@@ -41,6 +41,7 @@ import {
 } from '@/composables/useDaVinciIntents'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
 import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 interface MpDaVinciBotProps {
   initialChatMode?: boolean
@@ -68,10 +69,11 @@ const dashboardsStore = useDashboardsStore()
 const { addItem, incrementAdded, clearAll } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
 const intents = useDaVinciIntents()
-const campaignOnboarding = useDaVinciCampaignOnboarding()
+const setupOnboarding = useDaVinciSetupOnboarding()
 const voice = useDaVinciVoice()
 const copilot = useCopilotStore()
 const onboarding = useDaVinciOnboardingStore()
+const setupProgress = useOnboardingStore()
 const { contextBlock } = useDaVinciContext()
 
 // The conversation lives in the copilot store so it survives navigation, drawer
@@ -122,6 +124,11 @@ const activeDashboard = computed(() => {
 })
 
 const targetAccountId = computed(() => routeAccountId.value ?? activeAccount.value?.id ?? null)
+const setupCompanionActive = computed(() =>
+  (route.query.source === 'davinci-setup' || route.query.source === 'davinci')
+  && onboarding.isActive
+  && !!setupOnboarding.currentTask.value,
+)
 
 watch(targetAccountId, (nextAccountId, previousAccountId) => {
   if (!nextAccountId || !previousAccountId || nextAccountId === previousAccountId) return
@@ -129,21 +136,22 @@ watch(targetAccountId, (nextAccountId, previousAccountId) => {
     onboarding.setPaused(true)
   }
   stopVoiceActivity()
-  const nextSession = onboarding.begin(nextAccountId)
+  setupProgress.activateAccount(nextAccountId)
+  onboarding.begin(nextAccountId)
   copilot.beginOnboarding(nextAccountId)
   copilot.queueResume(
-    `You switched accounts. I paused the previous account’s campaign guidance and have not loaded its details here. Confirm your goal before continuing with this account.`,
+    `You switched accounts. I paused the previous account’s setup and kept its progress separate. Choose a goal for this account when you are ready.`,
   )
-  if (nextSession.stage !== 'complete') onboarding.setStage('choice')
 }, { flush: 'post' })
 
-if (route.query.source === 'davinci' && targetAccountId.value) {
+if ((route.query.source === 'davinci-setup' || route.query.source === 'davinci') && targetAccountId.value) {
+  setupProgress.activateAccount(targetAccountId.value)
   onboarding.begin(targetAccountId.value)
   copilot.beginOnboarding(targetAccountId.value)
   copilot.open()
   if (!copilot.resumeMessage && messages.value.length === 0) {
     copilot.queueResume(
-      'Welcome back. Your campaign guidance is restored. Nothing has been filled in or saved; I can explain the page while you complete it.',
+      'I’m here with the same setup task. I can explain this page and recheck progress, but I won’t change anything for you.',
     )
   }
 }
@@ -537,17 +545,17 @@ function completeIntentResult(res: DvIntentResult, gen: number) {
   finishGeneration(gen)
 }
 
-function appendCampaignOnboardingResponse(res: CampaignOnboardingResponse) {
+function appendSetupOnboardingResponse(res: SetupOnboardingResponse) {
   const componentData: ChatMessage['componentData'] = []
-  if (res.cards?.length || res.quickReplies?.length) {
+  if (res.quickReplies?.length) {
     componentData.push({
       type: 'intentCards',
-      props: { cards: res.cards ?? [], quickReplies: res.quickReplies },
+      props: { cards: [], quickReplies: res.quickReplies },
     })
   }
   if (res.onboardingCard) {
     componentData.push({
-      type: 'campaignOnboarding',
+      type: 'setupOnboarding',
       props: res.onboardingCard,
     })
   }
@@ -558,10 +566,6 @@ function appendCampaignOnboardingResponse(res: CampaignOnboardingResponse) {
     componentData: componentData.length ? componentData : undefined,
   })
   chatMode.value = true
-  if (res.onboardingCard?.kind === 'readiness' && targetAccountId.value) {
-    const blockers = res.onboardingCard.items?.filter((item) => item.status !== 'ready').length ?? 0
-    trackDaVinciOnboardingEvent('readiness_shown', targetAccountId.value, { blockers })
-  }
   scrollToBottom()
   maybeSpeak(res.speech ?? res.reply)
 }
@@ -573,73 +577,68 @@ function pushUserTurn(text: string) {
   scrollToBottom()
 }
 
-function openCampaignBuilder() {
+function openSetupTask(action: string) {
   const accountId = targetAccountId.value
   if (!accountId) return
-  onboarding.markBuilderHandoff()
-  trackDaVinciOnboardingEvent('builder_opened', accountId)
-  const context = onboarding.activeSession?.contextBrief
+  const routeName = setupOnboarding.markHandoff(action)
+  if (!routeName) return
   copilot.queueResume(
-    `The standard campaign builder is open. ${context?.objective ? `Your objective is “${context.objective}”. ` : ''}Nothing has been filled in or saved; I can explain each step while you complete it.`,
+    'This is the real product page for the current task. I can explain what to do and recheck progress; you make and save every change.',
   )
   copilot.setWidthMode('panel')
   copilot.open()
   void router.push({
-    name: 'CreateCampaign',
+    name: routeName,
     params: { accountId },
-    query: { source: 'davinci' },
+    query: { source: 'davinci-setup' },
   }).catch(() => {
-    pushToast({ title: 'Campaign builder unavailable', sub: 'Opening Email campaigns instead' })
-    copilot.queueResume('The campaign builder could not open. Your campaign brief is safe; try again from Email campaigns.')
-    return router.push({ name: 'EmailCampaigns', params: { accountId } })
+    pushToast({ title: 'Setup page unavailable', sub: 'Opening Get Started instead' })
+    copilot.queueResume('That page could not open. Your setup progress is safe; choose the task again from Get Started.')
+    return router.push({ name: 'GetStarted', params: { accountId } })
   })
 }
 
-function openCampaignPrerequisite(action: string) {
+function openSetupDestination(action: string) {
   const accountId = targetAccountId.value
-  const routeName = campaignOnboarding.routeForAction(action)
+  const routeName = setupOnboarding.routeForAction(action)
   if (!accountId || !routeName) return
-  onboarding.markPrerequisiteHandoff(routeName)
-  trackDaVinciOnboardingEvent('prerequisite_opened', accountId, { routeName })
-  copilot.queueResume('I’m still with you. Complete this step, then I’ll check campaign readiness again.')
-  copilot.open()
-  void router.push({ name: routeName, params: { accountId }, query: { source: 'davinci' } })
+  if (action.startsWith('open-task:')) {
+    openSetupTask(action)
+    return
+  }
+  if (action === 'explore-dashboard') {
+    if (onboarding.activeSession?.stage === 'milestone-complete') {
+      onboarding.complete()
+      trackDaVinciOnboardingEvent('onboarding_completed', accountId, {
+        goal: onboarding.activeSession?.goal ?? null,
+      })
+    }
+    else onboarding.setPaused(true)
+  }
+  void router.push({ name: routeName, params: { accountId } })
 }
 
-function onCampaignOnboardingAction(action: string) {
-  if (action === 'open-builder') {
-    openCampaignBuilder()
+function reportWrongSetupPage() {
+  if (!targetAccountId.value) return
+  trackDaVinciOnboardingEvent('wrong_route_reported', targetAccountId.value, {
+    taskId: setupOnboarding.currentTask.value?.id ?? null,
+    routeName: typeof route.name === 'string' ? route.name : null,
+  })
+  pushToast({ title: 'Feedback noted', sub: 'Return to Get Started to choose another setup page.' })
+}
+
+function onSetupOnboardingAction(action: string) {
+  if (setupOnboarding.routeForAction(action)) {
+    openSetupDestination(action)
     return
   }
-  if (action === 'review-brief') {
-    appendCampaignOnboardingResponse(campaignOnboarding.buildContextBrief())
-    return
-  }
-  if (action === 'change-brief' || action === 'change-objective') {
-    if (targetAccountId.value) trackDaVinciOnboardingEvent('brief_corrected', targetAccountId.value)
-  } else if (action === 'change-audience') {
-    if (targetAccountId.value) trackDaVinciOnboardingEvent('audience_corrected', targetAccountId.value)
-  }
-  const response = campaignOnboarding.handleAction(action)
+  const response = setupOnboarding.handleAction(action)
   if (response) {
-    appendCampaignOnboardingResponse(response)
-  } else if (action.startsWith('open-')) {
-    openCampaignPrerequisite(action)
+    appendSetupOnboardingResponse(response)
   }
 }
 
 function onIntentCardAction(payload: { card: DvCardDescriptor; action: string }) {
-  if (payload.card.type === 'campaign') {
-    if (payload.action === 'open-builder') {
-      openCampaignBuilder()
-      return
-    }
-    if (payload.action === 'change-brief') {
-      if (targetAccountId.value) trackDaVinciOnboardingEvent('brief_corrected', targetAccountId.value)
-      appendCampaignOnboardingResponse(campaignOnboarding.changeObjective())
-      return
-    }
-  }
   const titles: Record<string, string> = {
     save: 'Segment saved',
     use: 'Copy ready to use',
@@ -653,25 +652,25 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
 
 function processQuery(text: string) {
   if (!text) return
-  const onboardingResponse = onboarding.isActive ? campaignOnboarding.handleText(text) : null
+  const onboardingResponse = onboarding.isActive ? setupOnboarding.handleText(text) : null
   if (onboardingResponse) {
     pushUserTurn(text)
-    appendCampaignOnboardingResponse(onboardingResponse)
+    appendSetupOnboardingResponse(onboardingResponse)
     return
   }
   // The wizard pauses itself for off-topic questions; acknowledge the switch
   // once, then answer the actual question through the normal path.
-  const pauseNotice = campaignOnboarding.consumePauseNotice()
+  const pauseNotice = setupOnboarding.consumePauseNotice()
   // Text mode mid-generation: show the turn immediately, answer it after the
   // current reply lands (queued follow-up).
   if (isTyping.value && !isVoiceMode.value) {
     pushUserTurn(text)
-    if (pauseNotice) appendCampaignOnboardingResponse(pauseNotice)
+    if (pauseNotice) appendSetupOnboardingResponse(pauseNotice)
     queuedPrompts.value.push(text)
     return
   }
   pushUserTurn(text)
-  if (pauseNotice) appendCampaignOnboardingResponse(pauseNotice)
+  if (pauseNotice) appendSetupOnboardingResponse(pauseNotice)
   runGeneration(text)
 }
 
@@ -879,10 +878,10 @@ function getIntentCardsProps(msg: ChatMessage): IntentCardsProps | null {
   return comp.props as IntentCardsProps
 }
 
-function getCampaignOnboardingProps(msg: ChatMessage): CampaignOnboardingProps | null {
-  const comp = msg.componentData?.find((item) => item.type === 'campaignOnboarding')
-  if (!comp || comp.type !== 'campaignOnboarding') return null
-  return comp.props as CampaignOnboardingProps
+function getSetupOnboardingProps(msg: ChatMessage): SetupOnboardingProps | null {
+  const comp = msg.componentData?.find((item) => item.type === 'setupOnboarding' || item.type === 'campaignOnboarding')
+  if (!comp || (comp.type !== 'setupOnboarding' && comp.type !== 'campaignOnboarding')) return null
+  return comp.props as SetupOnboardingProps
 }
 
 function handleClearAll() {
@@ -992,6 +991,19 @@ function onComposerKeydown(event: KeyboardEvent) {
       </aside>
 
       <div class="dv-panel__main">
+    <div v-if="setupCompanionActive" class="dv-setup-companion">
+      <div class="dv-setup-companion__meta">
+        <span>SETUP · STEP {{ setupOnboarding.progressFor().step }} OF {{ setupOnboarding.progressFor().total }}</span>
+        <v-chip size="x-small" variant="tonal">{{ setupProgress.statusFor(setupOnboarding.currentTask.value!.id) }}</v-chip>
+      </div>
+      <strong>{{ setupOnboarding.currentTask.value!.title }}</strong>
+      <p>{{ setupOnboarding.currentTask.value!.description }}</p>
+      <div class="d-flex ga-2">
+        <v-btn color="primary" variant="flat" size="small" class="text-none" @click="onSetupOnboardingAction('verify-current-task')">I’m done</v-btn>
+        <v-btn variant="text" size="small" class="text-none" @click="onSetupOnboardingAction('pause-setup')">Pause</v-btn>
+        <v-btn variant="text" size="small" class="text-none" @click="reportWrongSetupPage">Wrong page?</v-btn>
+      </div>
+    </div>
     <!-- ═══ ORBIT VOICE SURFACE (voice mode) — owns the whole body + footer ═══ -->
     <DvOrbitVoiceSurface
       v-if="isVoiceMode"
@@ -1103,9 +1115,9 @@ function onComposerKeydown(event: KeyboardEvent) {
             </template>
 
             <DvCampaignOnboardingCard
-              v-if="getCampaignOnboardingProps(msg)"
-              v-bind="getCampaignOnboardingProps(msg)!"
-              @action="onCampaignOnboardingAction"
+              v-if="getSetupOnboardingProps(msg)"
+              v-bind="getSetupOnboardingProps(msg)!"
+              @action="onSetupOnboardingAction"
             />
           </div>
         </div>
@@ -1237,6 +1249,39 @@ function onComposerKeydown(event: KeyboardEvent) {
   overflow: hidden;
   /* Clip header/composer corners when hosted in the rounded copilot drawer */
   border-radius: inherit;
+}
+
+.dv-setup-companion {
+  flex: none;
+  margin: 12px 12px 0;
+  padding: 13px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.2);
+  border-radius: 14px;
+  background: rgba(var(--v-theme-primary), 0.045);
+}
+
+.dv-setup-companion__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: rgb(var(--v-theme-primary));
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+
+.dv-setup-companion > strong {
+  display: block;
+  font-size: 14px;
+}
+
+.dv-setup-companion > p {
+  margin: 4px 0 10px;
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 /* ─── Header ───────────────────────────────────────────────────────── */

@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { ONBOARDING_PHASES, useOnboardingStore } from '@/stores/useOnboarding'
 
 const route = useRoute()
+const router = useRouter()
 const store = useOnboardingStore()
 const accountId = computed(() => String(route.params.accountId ?? '1'))
+store.activateAccount(accountId.value)
 
 // Exactly one step is expanded at a time. Follows the store's next task, but the
 // user can peek at any step by clicking its row.
@@ -30,7 +32,7 @@ function refocusRow(id: string) {
 }
 
 function markDone(id: string) {
-  store.complete(id)
+  store.confirm(id)
   refocusRow(id)
 }
 function markNotDone(id: string) {
@@ -60,6 +62,14 @@ function taskRoute(routeName: string) {
   return { name: routeName, params: { accountId: accountId.value } }
 }
 
+function openDaVinciGuide() {
+  void router.push({
+    name: 'DaVinciExperience',
+    params: { accountId: accountId.value },
+    query: { onboarding: 'setup' },
+  })
+}
+
 const phaseComplete = (phaseId: string) =>
   store.phaseDone(phaseId) === ONBOARDING_PHASES.find((p) => p.id === phaseId)!.tasks.length
 
@@ -78,6 +88,9 @@ function doReset() {
       subtitle="A guided path from empty account to first sale — pick up where you left off anytime."
     >
       <template #actions>
+        <v-btn color="primary" variant="flat" prepend-icon="sparkles" class="text-none" @click="openDaVinciGuide">
+          Ask Da Vinci to guide me
+        </v-btn>
         <v-menu location="bottom end">
           <template #activator="{ props }">
             <v-btn v-bind="props" icon="more-vertical" variant="text" size="small" aria-label="Guide options" />
@@ -203,7 +216,7 @@ function doReset() {
                         size="small"
                         class="text-none text-medium-emphasis"
                         @click="markDone(task.id)"
-                      >Mark as done</v-btn>
+                      >I completed this</v-btn>
                       <v-btn
                         v-else
                         variant="text"
@@ -225,6 +238,14 @@ function doReset() {
                         class="text-none text-medium-emphasis"
                         @click="unskipTask(task.id)"
                       >Unskip</v-btn>
+                      <v-chip
+                        v-if="store.statusFor(task.id) === 'verified'"
+                        size="x-small" color="success" variant="tonal" prepend-icon="badge-check"
+                      >Verified by Maropost</v-chip>
+                      <v-chip
+                        v-else-if="store.statusFor(task.id) === 'user-confirmed'"
+                        size="x-small" color="info" variant="tonal" prepend-icon="circle-check"
+                      >Confirmed by you</v-chip>
                     </div>
                   </div>
                 </div>

@@ -21,16 +21,20 @@ for (const seg of plan.segments) {
   bounds.push(acc)
 }
 // Camera dolly value v (px of world translateZ) at each segment boundary.
-const V = [200, 2700, 5500, 9700, 10150]
-const T = [0, ...bounds] // seconds at each boundary
+const V: [number, number, number, number, number] = [200, 2700, 5500, 9700, 10150]
+const T = [0, ...bounds] as [number, number, number, number, number] // seconds at each boundary
 const flipTime = T[3] + plan.flipAt // world goes dark this many seconds in
 
 /** Seconds at which the camera dolly reaches value v (piecewise linear). */
 function vToTime(v: number): number | null {
   for (let i = 0; i < V.length - 1; i++) {
-    if (v >= V[i] && v <= V[i + 1]) {
-      const f = (v - V[i]) / (V[i + 1] - V[i])
-      return T[i] + f * (T[i + 1] - T[i])
+    const currentV = V[i]!
+    const nextV = V[i + 1]!
+    const currentT = T[i]!
+    const nextT = T[i + 1]!
+    if (v >= currentV && v <= nextV) {
+      const f = (v - currentV) / (nextV - currentV)
+      return currentT + f * (nextT - currentT)
     }
   }
   return null // camera never reaches it

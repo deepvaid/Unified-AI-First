@@ -3,8 +3,10 @@ import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import { useToast } from '@/composables/useToast'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 const toast = useToast()
+const onboarding = useOnboardingStore()
 
 const company = ref({
   accountId: '2000290',
@@ -30,7 +32,10 @@ function copyId() {
   }
 }
 
-function save() { toast.success('Account details saved') }
+function save() {
+  toast.success('Account details saved')
+  onboarding.complete('store-branding')
+}
 function discard() {}
 </script>
 
@@ -242,4 +247,3 @@ function discard() {}
     </div>
   </div>
 </template>
-

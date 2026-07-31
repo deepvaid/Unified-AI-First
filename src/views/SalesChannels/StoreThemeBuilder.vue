@@ -15,6 +15,7 @@ import { useToast } from '@/composables/useToast'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useStoreThemesStore } from '@/stores/useStoreThemes'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 import {
   blockCatalog,
   getBlockDef,
@@ -47,6 +48,7 @@ const channelId = computed(() => route.params.channelId as string)
 const salesChannelsStore = useSalesChannelsStore()
 const themesStore = useStoreThemesStore()
 const toast = useToast()
+const onboarding = useOnboardingStore()
 
 const channel = computed(() => salesChannelsStore.getChannel(accountId.value, channelId.value))
 const theme = computed(() => themesStore.themeForChannel(channelId.value))
@@ -555,6 +557,7 @@ const publishMessage = computed(
 function confirmPublish() {
   if (!theme.value) return
   themesStore.publishTheme(theme.value.id)
+  onboarding.complete('theme')
   allowNextLeave()
   toast.success('Theme published')
 }

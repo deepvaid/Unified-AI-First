@@ -3,6 +3,9 @@ import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
+import { useOnboardingStore } from '@/stores/useOnboarding'
+
+const onboarding = useOnboardingStore()
 
 const sendingDomains = ref([
   { domain: 'scootervillage.com',     status: 'Verified', dkim: 'Pass', spf: 'Pass',    dmarc: 'Pass',    isDefault: true },
@@ -13,6 +16,16 @@ const trackingDomains = ref([
   { domain: 'track.scootervillage.com', status: 'Verified', ssl: true,  isDefault: true },
   { domain: 'click.scootervillage.io',  status: 'Pending',  ssl: false, isDefault: false },
 ])
+
+function recheckSending(status: string) {
+  if (status === 'Verified') onboarding.complete('sending-domain')
+  else onboarding.block('sending-domain')
+}
+
+function recheckTracking(status: string) {
+  if (status === 'Verified') onboarding.complete('link-tracking')
+  else onboarding.block('link-tracking')
+}
 
 </script>
 
@@ -37,6 +50,7 @@ const trackingDomains = ref([
             </div>
             <div class="domain-card__actions">
               <MpStatusChip :status="d.status" type="general" size="x-small" />
+              <v-btn icon="refresh-cw" variant="text" size="small" aria-label="Recheck sending domain" @click="recheckSending(d.status)" />
               <v-btn icon="server" variant="text" size="small" aria-label="View DNS records" />
               <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Remove domain" />
             </div>
@@ -69,6 +83,7 @@ const trackingDomains = ref([
             <div class="domain-card__actions">
               <MpStatusChip :status="d.ssl ? 'SSL Active' : 'SSL Pending'" type="general" size="x-small" />
               <MpStatusChip :status="d.status" type="general" size="x-small" />
+              <v-btn icon="refresh-cw" variant="text" size="small" aria-label="Recheck tracking domain" @click="recheckTracking(d.status)" />
               <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Remove" />
             </div>
           </div>

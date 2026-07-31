@@ -6,12 +6,14 @@ import { usePlgStore, type TrialSignupPayload } from '@/stores/usePlg'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useUserProfile } from '@/stores/useUserProfile'
 import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 const router = useRouter()
 const plg = usePlgStore()
 const accounts = useAccountsStore()
 const profile = useUserProfile()
 const daVinciOnboarding = useDaVinciOnboardingStore()
+const setupOnboarding = useOnboardingStore()
 
 type Stage = 'details' | 'verify' | 'provisioning' | 'success'
 
@@ -116,12 +118,13 @@ onUnmounted(clearTimers)
 function enterMaropost() {
   accounts.switchTo(newAccountId.value)
   profile.setName(`${firstName.value} ${lastName.value}`)
+  setupOnboarding.activateAccount(newAccountId.value, { fresh: true })
   daVinciOnboarding.reset(newAccountId.value)
-  daVinciOnboarding.begin(newAccountId.value, { restart: true, freshAccount: true })
+  daVinciOnboarding.begin(newAccountId.value, { restart: true })
   router.push({
     name: 'DaVinciExperience',
     params: { accountId: newAccountId.value },
-    query: { onboarding: 'campaign' },
+    query: { onboarding: 'setup' },
   })
 }
 
