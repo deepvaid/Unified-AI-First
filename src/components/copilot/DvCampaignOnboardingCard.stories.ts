@@ -18,14 +18,16 @@ const meta = {
         status: 'ready',
         routeName: 'SettingsDnsSetup',
         actionLabel: 'Set up domain',
+        checkedAt: '2026-07-31T09:00:00.000Z',
       },
       {
         id: 'audience',
         label: 'Audience',
         description: 'Choose at least one list or segment.',
-        status: 'needs-setup',
+        status: 'needs-attention',
         routeName: 'ContactLists',
         actionLabel: 'Create an audience',
+        checkedAt: '2026-07-31T09:00:00.000Z',
       },
       {
         id: 'content',
@@ -34,18 +36,13 @@ const meta = {
         status: 'ready',
         routeName: 'EmailContent',
         actionLabel: 'Browse templates',
+        checkedAt: '2026-07-31T09:00:00.000Z',
       },
     ],
-    primaryAction: {
-      label: 'Continue with a draft',
-      action: 'continue-draft',
-      icon: 'file-pen-line',
-    },
-    secondaryAction: {
-      label: 'Change brief',
-      action: 'change-brief',
-      icon: 'refresh-cw',
-    },
+    actions: [
+      { label: 'Review campaign brief', action: 'review-brief', icon: 'clipboard-list' },
+      { label: 'Change objective', action: 'change-objective', icon: 'refresh-cw' },
+    ],
   },
   argTypes: {
     step: { control: { type: 'number', min: 1, max: 4 } },
@@ -60,7 +57,7 @@ export const NeedsSetup: Story = {}
 
 export const Ready: Story = {
   args: {
-    title: 'Everything is ready for a draft',
+    title: 'Campaign setup is ready',
     description: 'Your sending domain, audience, and content library are available.',
     items: [
       {
@@ -70,6 +67,7 @@ export const Ready: Story = {
         status: 'ready',
         routeName: 'SettingsDnsSetup',
         actionLabel: 'Review domain',
+        checkedAt: '2026-07-31T09:00:00.000Z',
       },
       {
         id: 'audience',
@@ -78,6 +76,7 @@ export const Ready: Story = {
         status: 'ready',
         routeName: 'ContactLists',
         actionLabel: 'Review audience',
+        checkedAt: '2026-07-31T09:00:00.000Z',
       },
       {
         id: 'content',
@@ -86,6 +85,7 @@ export const Ready: Story = {
         status: 'ready',
         routeName: 'EmailContent',
         actionLabel: 'Browse templates',
+        checkedAt: '2026-07-31T09:00:00.000Z',
       },
     ],
   },
@@ -103,6 +103,7 @@ export const CannotVerify: Story = {
         status: 'unknown',
         routeName: 'SettingsDnsSetup',
         actionLabel: 'Check DNS setup',
+        checkedAt: '2026-07-31T09:00:00.000Z',
       },
     ],
   },
@@ -110,12 +111,12 @@ export const CannotVerify: Story = {
 
 export const Complete: Story = {
   args: {
-    title: 'Draft opened in the campaign builder',
-    description: 'Da Vinci prepared the details and audience. The merchant still controls content, timing, and send.',
+    kind: 'handoff',
+    title: 'Campaign builder opened',
+    description: 'Nothing was filled in or saved. Da Vinci remains available to explain each step.',
     step: 4,
     totalSteps: 4,
     items: [],
-    primaryAction: undefined,
-    secondaryAction: undefined,
+    actions: [],
   },
 }

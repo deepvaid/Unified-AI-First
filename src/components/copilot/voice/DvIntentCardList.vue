@@ -26,7 +26,7 @@ function onAction(card: DvCardDescriptor, action: string) {
       <DvCampaignCard
         v-if="card.type === 'campaign'"
         v-bind="card.props"
-        @review="onAction(card, 'review-draft')"
+        @review="onAction(card, 'open-builder')"
         @change="onAction(card, 'change-brief')"
       />
       <DvContentCard

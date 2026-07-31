@@ -9,11 +9,9 @@ withDefaults(defineProps<{
   sendTime: string
   channel: string
   status?: string
-  draftId?: number
   remaining?: string[]
 }>(), {
-  status: 'Draft',
-  draftId: undefined,
+  status: 'Planning',
   remaining: () => [],
 })
 
@@ -32,7 +30,7 @@ const emit = defineEmits<{
         </v-avatar>
         <div>
           <div class="text-subtitle-2 font-weight-bold">{{ name }}</div>
-          <div class="text-caption text-medium-emphasis">Editable campaign draft</div>
+          <div class="text-caption text-medium-emphasis">Campaign guidance</div>
         </div>
         <v-spacer />
         <MpStatusChip :status="status" type="campaign" size="x-small" />
@@ -73,7 +71,7 @@ const emit = defineEmits<{
 
       <div class="d-flex flex-wrap ga-2 mt-4">
         <v-btn color="primary" variant="flat" size="small" prepend-icon="arrow-up-right" @click="emit('review')">
-          Review editable draft
+          Open campaign builder
         </v-btn>
         <v-btn variant="outlined" size="small" prepend-icon="refresh-cw" @click="emit('change')">
           Change brief

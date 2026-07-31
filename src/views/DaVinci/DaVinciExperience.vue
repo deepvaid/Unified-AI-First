@@ -30,7 +30,6 @@ import {
   type IntentCardsProps,
 } from '@/stores/useCopilot'
 import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
-import { ONBOARDING_PHASES, useOnboardingStore } from '@/stores/useOnboarding'
 import { useUserProfile } from '@/stores/useUserProfile'
 
 const route = useRoute()
@@ -42,7 +41,6 @@ const { pushToast } = useDaVinciToasts()
 const profile = useUserProfile()
 const copilot = useCopilotStore()
 const onboarding = useDaVinciOnboardingStore()
-const setupGuide = useOnboardingStore()
 const { messages, chatMode } = storeToRefs(copilot)
 
 const accountId = computed(() => {
@@ -55,6 +53,9 @@ const inputText = ref('')
 const inputFocused = ref(false)
 const captionText = ref('')
 const voiceRecoveryMessage = ref('')
+const pendingVoiceTranscript = ref('')
+const originalVoiceTranscript = ref('')
+const voiceConsentPromptVisible = ref(false)
 const threadEl = ref<HTMLElement | null>(null)
 const hasThread = computed(() => messages.value.length > 0)
 const busy = computed(() => voice.state.value !== 'idle')
@@ -65,15 +66,16 @@ const campaignEntry = computed(
 const welcomeVisible = computed(() => {
   if (!campaignEntry.value) return false
   const stage = onboarding.activeSession?.stage
-  return !stage || stage === 'welcome' || stage === 'consent'
+  return !stage || stage === 'welcome' || stage === 'choice' || stage === 'voice-consent'
 })
-const micEducationVisible = computed(() => onboarding.activeSession?.stage === 'consent')
+const micEducationVisible = computed(() => onboarding.activeSession?.stage === 'voice-consent')
 let micPermissionTracked = false
 
 // ── Live (hands-free) conversation ───────────────────────────────────────────
 const liveActive = ref(false)
 let loopToken = 0
 let autoStarted = false
+let silentTurnCount = 0
 // True when the cold-load greeting couldn't play (browser blocked autoplay until
 // a user gesture). Flips the focal mic into an explicit "Tap to start" that speaks
 // the greeting aloud on the first tap — so it works on a fresh load / shared link.
@@ -102,7 +104,9 @@ const stageHint = computed(() => {
   if (liveActive.value) {
     switch (voice.state.value) {
       case 'listening':
-        return voice.interimTranscript.value || 'Listening…'
+        return voice.interimTranscript.value
+          ? maskSensitiveTranscript(voice.interimTranscript.value)
+          : 'Listening…'
       case 'thinking':
         return 'Thinking…'
       case 'speaking':
@@ -154,7 +158,7 @@ function appendAssistantResponse(response: CampaignOnboardingResponse | DvIntent
     toolSteps: 'steps' in response ? response.steps : undefined,
   })
   chatMode.value = true
-  if ('onboardingCard' in response && response.onboardingCard) {
+  if ('onboardingCard' in response && response.onboardingCard?.kind === 'readiness') {
     const blockers = response.onboardingCard.items?.filter((item) => item.status !== 'ready').length ?? 0
     trackDaVinciOnboardingEvent('readiness_shown', accountId.value, { blockers })
   }
@@ -197,8 +201,9 @@ async function respond(text: string, { awaitSpeech = false } = {}) {
   appendAssistantResponse(res)
   const speech = res.speech ?? res.reply
   captionText.value = speech
-  if (awaitSpeech) await voice.speak(speech)
-  else void voice.speak(speech)
+  const shouldSpeak = liveActive.value || copilot.readAloud
+  if (shouldSpeak && awaitSpeech) await voice.speak(speech)
+  else if (shouldSpeak) void voice.speak(speech)
 }
 
 /** Typed / quick-reply turn. In live mode it interjects, then resumes the listen loop. */
@@ -206,6 +211,9 @@ function sendText(raw: string) {
   voice.unlockSpeech() // prime TTS + mic within the gesture (Safari/iOS autoplay)
   const text = raw.trim()
   if (!text) return
+  silentTurnCount = 0
+  pendingVoiceTranscript.value = ''
+  originalVoiceTranscript.value = ''
   if (liveActive.value) {
     loopToken++ // supersede the in-flight listen so its continuation bails
     voice.abortListening()
@@ -255,69 +263,71 @@ function continueByTyping() {
 
 function explainVoiceAccess() {
   prepareCampaignSession()
-  onboarding.setStage('consent')
+  onboarding.setStage('voice-consent')
 }
 
 async function enableVoiceOnboarding() {
   prepareCampaignSession()
+  const startingJourney = messages.value.length === 0
   voiceRecoveryMessage.value = ''
-  copilot.setReadAloud(true)
-  trackDaVinciOnboardingEvent('onboarding_started', accountId.value, { inputMode: 'voice' })
+  voiceConsentPromptVisible.value = false
+  if (startingJourney) {
+    trackDaVinciOnboardingEvent('onboarding_started', accountId.value, { inputMode: 'voice' })
+  }
   trackDaVinciOnboardingEvent('input_mode_selected', accountId.value, { inputMode: 'voice' })
   trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'requested' })
+  try {
+    await voice.requestMicrophonePermission()
+    micPermissionTracked = true
+    trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'allowed' })
+  } catch (error) {
+    reportVoiceError(error)
+    switchToTextFallback(error instanceof VoiceError ? error.code : 'unknown', true)
+    return
+  }
+  copilot.setReadAloud(true)
+  onboarding.setInputMode('voice')
   voice.setMuted(false)
   voice.unlockSpeech()
-  // Greet by name first, then ask the first question — each captioned as it is spoken.
-  const greeting = appendGreeting()
-  captionText.value = greeting
   await voice.playChime('open')
-  await voice.speak(greeting)
-  const response = campaignOnboarding.start(accountId.value, 'voice')
-  appendAssistantResponse(response)
-  captionText.value = response.speech ?? response.reply
-  await voice.speak(response.speech ?? response.reply)
+  if (startingJourney) {
+    // Permission has succeeded. Only now may the greeting play and listening begin.
+    const greeting = appendGreeting()
+    captionText.value = greeting
+    await voice.speak(greeting)
+    const response = campaignOnboarding.start(accountId.value, 'voice')
+    appendAssistantResponse(response)
+    captionText.value = response.speech ?? response.reply
+    await voice.speak(response.speech ?? response.reply)
+  } else {
+    const response: CampaignOnboardingResponse = {
+      intent: 'campaign',
+      reply: 'Voice is ready. I’ll show what I hear before using it.',
+      speech: 'Voice is ready. I will show what I hear before using it.',
+    }
+    appendAssistantResponse(response)
+    captionText.value = response.speech ?? response.reply
+    await voice.speak(response.speech ?? response.reply)
+  }
   if (!voice.sttSupported) return
   liveActive.value = true
   void armListening()
 }
 
-// ── Other goals ──────────────────────────────────────────────────────────────
-// A first campaign isn't everyone's first job. These route to the matching Get
-// Started task instead, and hand the user to the drawer so guidance continues there.
-const WELCOME_GOALS = [
-  { key: 'store', label: 'Set up my store', icon: 'store' },
-  { key: 'contacts', label: 'Import contacts', icon: 'users' },
-  { key: 'explore', label: 'Just exploring', icon: 'compass' },
-] as const
-
-/** First task in a guide phase the user hasn't finished or skipped. */
-function firstOpenTask(phaseId: string, preferIds: string[] = []) {
-  const tasks = ONBOARDING_PHASES.find((phase) => phase.id === phaseId)?.tasks ?? []
-  const pool = preferIds.length ? tasks.filter((task) => preferIds.includes(task.id)) : tasks
-  const open = pool.find((task) => !setupGuide.completed[task.id] && !setupGuide.skipped[task.id])
-  return open ?? pool[0] ?? null
-}
-
-function chooseGoal(key: (typeof WELCOME_GOALS)[number]['key']) {
-  trackDaVinciOnboardingEvent('onboarding_skipped', accountId.value, { goal: key })
+function exploreMaropost() {
+  prepareCampaignSession()
+  trackDaVinciOnboardingEvent('onboarding_skipped', accountId.value, { goal: 'explore' })
+  trackDaVinciOnboardingEvent('onboarding_paused', accountId.value, {
+    from: onboarding.activeSession?.stage ?? 'choice',
+  })
   endLive()
-  // Pause rather than discard — the campaign path stays resumable from the drawer.
-  if (onboarding.activeSession) onboarding.setPaused(true)
-
-  const task = key === 'store'
-    ? firstOpenTask('store')
-    : key === 'contacts'
-      ? firstOpenTask('customers', ['first-list', 'add-contacts'])
-      : null
-
-  const routeName = task?.routeName ?? 'Dashboard'
-  const message = task
-    ? `Next up: ${task.title} — about ${task.minutes} minutes. ${task.why} Ask me anything as you go, or say “continue campaign” to pick that back up.`
-    : 'Have a look around. Your Get Started guide is in the sidebar, and I’m in the top right whenever you need me.'
-
-  copilot.queueResume(message)
-  copilot.open()
-  router.push({ name: routeName, params: { accountId: accountId.value } })
+  onboarding.setPaused(true)
+  copilot.setReadAloud(false)
+  copilot.queueResume(
+    'Campaign guidance is paused. Explore Maropost, then open Ask Da Vinci and say “continue campaign” whenever you want to resume.',
+  )
+  copilot.close()
+  void router.push({ name: 'Dashboard', params: { accountId: accountId.value } })
 }
 
 // Hide the starter chips on blur, but after a beat so a chip tap still registers.
@@ -345,6 +355,28 @@ function reportVoiceError(err: unknown) {
   }
 }
 
+function maskSensitiveTranscript(text: string) {
+  return text
+    .replace(/\b(?:\d[ -]*?){13,19}\b/g, '[payment number hidden]')
+    .replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[identifier hidden]')
+    .replace(/\b(?:api[_ -]?key|password|secret)\s*(?:is|:)?\s*\S+/gi, '[sensitive value hidden]')
+}
+
+function switchToTextFallback(reason: string, startCampaign: boolean) {
+  endLive()
+  copilot.setReadAloud(false)
+  onboarding.setInputMode('text')
+  voiceConsentPromptVisible.value = false
+  trackDaVinciOnboardingEvent('voice_to_text_fallback', accountId.value, { reason })
+  if (startCampaign && messages.value.length === 0) {
+    appendGreeting()
+    appendAssistantResponse(campaignOnboarding.start(accountId.value, 'text'))
+  }
+  nextTick(() => {
+    document.querySelector<HTMLInputElement>('.dvx__input')?.focus()
+  })
+}
+
 /** One listen → respond turn, then re-arm — the continuous hands-free loop.
  *  `silent` suppresses the error toast for the first auto-start arm, where a
  *  cold-load mic may be blocked by the browser until the user interacts. */
@@ -359,19 +391,63 @@ async function armListening(silent = false) {
       trackDaVinciOnboardingEvent('microphone_permission', accountId.value, { outcome: 'allowed' })
     }
   } catch (err) {
+    const recoveredTranscript = err instanceof VoiceError
+      ? maskSensitiveTranscript(err.transcript)
+      : ''
     if (!silent) reportVoiceError(err)
     endLive()
+    if (!silent) {
+      switchToTextFallback(err instanceof VoiceError ? err.code : 'unknown', false)
+      if (recoveredTranscript) inputText.value = recoveredTranscript
+    }
     return
   }
   if (myToken !== loopToken || !liveActive.value) return // superseded by a typed turn / ended
   if (!text) {
-    // Silence never ends hands-free — keep listening until the user explicitly
-    // ends the conversation (End button / Esc / leaving the page).
-    void armListening()
+    silentTurnCount++
+    if (silentTurnCount === 1) {
+      const response: CampaignOnboardingResponse = {
+        intent: 'campaign',
+        reply: 'I didn’t catch anything. Try once more, or use the text box below.',
+        speech: 'I didn’t catch anything. Try once more, or type below.',
+      }
+      appendAssistantResponse(response)
+      captionText.value = response.speech ?? response.reply
+      await voice.speak(response.speech ?? response.reply)
+      if (liveActive.value) void armListening()
+      return
+    }
+    voiceRecoveryMessage.value = 'I still couldn’t hear you, so I switched to typing. Your progress is safe.'
+    switchToTextFallback('silence', false)
     return
   }
+  silentTurnCount = 0
+  originalVoiceTranscript.value = maskSensitiveTranscript(text)
+  pendingVoiceTranscript.value = originalVoiceTranscript.value
+  nextTick(() => {
+    document.querySelector<HTMLInputElement>('.dvx__transcript-input input')?.focus()
+  })
+}
+
+async function confirmVoiceTranscript() {
+  const text = pendingVoiceTranscript.value.trim()
+  if (!text) return
+  if (text !== originalVoiceTranscript.value) {
+    trackDaVinciOnboardingEvent('transcript_corrected', accountId.value, {
+      stage: onboarding.activeSession?.stage ?? 'unknown',
+    })
+  }
+  pendingVoiceTranscript.value = ''
+  originalVoiceTranscript.value = ''
   await respond(text, { awaitSpeech: true })
-  if (myToken === loopToken && liveActive.value) void armListening()
+  if (liveActive.value) void armListening()
+}
+
+function retryVoiceTranscript() {
+  pendingVoiceTranscript.value = ''
+  originalVoiceTranscript.value = ''
+  voiceRecoveryMessage.value = ''
+  if (liveActive.value) void armListening()
 }
 
 /** Tap to begin a hands-free conversation. */
@@ -390,6 +466,8 @@ function endLive() {
   voice.abortListening()
   voice.cancelSpeech()
   voice.setThinking(false)
+  pendingVoiceTranscript.value = ''
+  originalVoiceTranscript.value = ''
   if (wasLive) void voice.playChime('close') // comm channel signs off
 }
 
@@ -545,11 +623,18 @@ async function startGreeting() {
 function onCenterMic() {
   if (liveActive.value) {
     onLiveControl()
+  } else if (campaignEntry.value && (!micPermissionTracked || onboarding.activeSession?.inputMode !== 'voice')) {
+    voiceConsentPromptVisible.value = true
   } else if (audioBlocked.value) {
     void startGreeting()
   } else {
     startLive()
   }
+}
+
+function switchToTyping() {
+  switchToTextFallback('user-choice', false)
+  voiceRecoveryMessage.value = 'Voice is off. Continue in the text box; your campaign progress is unchanged.'
 }
 
 function appendAndSpeak(response: CampaignOnboardingResponse) {
@@ -562,7 +647,7 @@ function appendAndSpeak(response: CampaignOnboardingResponse) {
 
 function openProductRoute(routeName: string) {
   endLive()
-  onboarding.setLastRoute(routeName)
+  onboarding.markPrerequisiteHandoff(routeName)
   trackDaVinciOnboardingEvent('prerequisite_opened', accountId.value, { routeName })
   copilot.queueResume('I’m still with you. Complete this step, then return here and I’ll check your campaign readiness again.')
   copilot.setWidthMode('panel')
@@ -570,38 +655,45 @@ function openProductRoute(routeName: string) {
   void router.push({ name: routeName, params: { accountId: accountId.value }, query: { source: 'davinci' } })
 }
 
-function reviewDraft(draftId: number) {
+function openCampaignBuilder() {
   endLive()
-  onboarding.markHandoff()
-  trackDaVinciOnboardingEvent('draft_opened', accountId.value, { draftId })
+  onboarding.markBuilderHandoff()
+  trackDaVinciOnboardingEvent('builder_opened', accountId.value)
+  const context = onboarding.activeSession?.contextBrief
   copilot.queueResume(
-    'Your draft is open. I filled the details we agreed on. You still control content, timing, and send. Nothing has been sent.',
+    `The standard campaign builder is open. ${context?.objective ? `Your objective is “${context.objective}”. ` : ''}Nothing has been filled in or saved; I can explain each step while you complete it.`,
   )
   copilot.setWidthMode('panel')
   copilot.open()
   void router.push({
     name: 'CreateCampaign',
     params: { accountId: accountId.value },
-    query: { id: String(draftId), source: 'davinci' },
+    query: { source: 'davinci' },
+  }).catch(() => {
+    pushToast({ title: 'Campaign builder unavailable', sub: 'Opening Email campaigns instead' })
+    copilot.queueResume('The campaign builder could not open. Your campaign brief is safe; try again from Email campaigns.')
+    return router.push({ name: 'EmailCampaigns', params: { accountId: accountId.value } })
   })
 }
 
 function onOnboardingAction(action: string) {
-  if (action === 'continue-draft') {
-    const response = campaignOnboarding.createDraft()
-    appendAndSpeak(response)
-    const card = response.cards?.find((item) => item.type === 'campaign')
-    if (card?.type === 'campaign' && card.props.draftId) {
-      trackDaVinciOnboardingEvent('draft_created', accountId.value, { draftId: card.props.draftId })
-    }
+  if (action === 'open-builder') {
+    openCampaignBuilder()
     return
   }
-  if (action === 'change-brief') {
+  if (action === 'review-brief') {
+    appendAndSpeak(campaignOnboarding.buildContextBrief())
+    return
+  }
+  if (action === 'change-brief' || action === 'change-objective') {
     trackDaVinciOnboardingEvent('brief_corrected', accountId.value)
-    appendAndSpeak(campaignOnboarding.changeBrief())
-    return
+  } else if (action === 'change-audience') {
+    trackDaVinciOnboardingEvent('audience_corrected', accountId.value)
   }
-  if (action.startsWith('open-')) {
+  const response = campaignOnboarding.handleAction(action)
+  if (response) {
+    appendAndSpeak(response)
+  } else if (action.startsWith('open-')) {
     const routeName = campaignOnboarding.routeForAction(action)
     if (routeName) openProductRoute(routeName)
   }
@@ -609,23 +701,13 @@ function onOnboardingAction(action: string) {
 
 function onCardAction(payload: { card: DvCardDescriptor; action: string }) {
   if (payload.card.type === 'campaign') {
-    if (payload.action === 'review-draft') {
-      if (payload.card.props.draftId) {
-        reviewDraft(payload.card.props.draftId)
-        return
-      }
-      // A campaign card with no draft id can only come from a restored snapshot
-      // predating the real-draft flow. Create the draft instead of reporting a
-      // success that never happened.
-      const draft = campaignOnboarding.createDraft()
-      const draftId = draft.cards?.find((card) => card.type === 'campaign')?.props.draftId
-      if (draftId) reviewDraft(draftId)
-      else appendAndSpeak(draft)
+    if (payload.action === 'open-builder') {
+      openCampaignBuilder()
       return
     }
     if (payload.action === 'change-brief') {
       trackDaVinciOnboardingEvent('brief_corrected', accountId.value)
-      appendAndSpeak(campaignOnboarding.changeBrief())
+      appendAndSpeak(campaignOnboarding.changeObjective())
       return
     }
   }
@@ -659,6 +741,12 @@ function openClassicUI() {
   router.push({ name: 'DaVinciCopilot', params: { accountId: accountId.value } })
 }
 
+function toggleReadAloud() {
+  const enabled = !copilot.readAloud
+  copilot.setReadAloud(enabled)
+  voice.setMuted(!enabled)
+}
+
 function exitExperience() {
   router.push({ name: 'DaVinciAI', params: { accountId: accountId.value } })
 }
@@ -690,9 +778,15 @@ onMounted(() => {
   })()
   if (route.query.onboarding === 'campaign') {
     trackDaVinciOnboardingEvent('onboarding_viewed', accountId.value)
+    trackDaVinciOnboardingEvent('choice_screen_viewed', accountId.value)
     const session = onboarding.begin(accountId.value)
     copilot.beginOnboarding(accountId.value)
-    if (session.stage !== 'welcome' && session.stage !== 'consent' && messages.value.length === 0) {
+    if (
+      session.stage !== 'welcome'
+      && session.stage !== 'choice'
+      && session.stage !== 'voice-consent'
+      && messages.value.length === 0
+    ) {
       trackDaVinciOnboardingEvent('onboarding_resumed', accountId.value, { stage: session.stage })
       const response = campaignOnboarding.resume()
       if (response) appendAssistantResponse(response)
@@ -750,15 +844,16 @@ onBeforeUnmount(() => {
           <span class="dvx__btn-label">New chat</span>
         </v-btn>
         <v-btn
+          v-if="hasThread"
           variant="outlined"
           size="small"
           rounded="pill"
-          :prepend-icon="voice.muted.value ? 'volume-x' : 'volume-2'"
-          :aria-label="voice.muted.value ? 'Turn voice on' : 'Turn voice off'"
+          :prepend-icon="copilot.readAloud ? 'volume-2' : 'volume-x'"
+          :aria-label="copilot.readAloud ? 'Turn read aloud off' : 'Turn read aloud on'"
           class="dvx__ghost-btn"
-          @click="voice.setMuted(!voice.muted.value)"
+          @click="toggleReadAloud"
         >
-          <span class="dvx__btn-label">{{ voice.muted.value ? 'Voice off' : 'Voice on' }}</span>
+          <span class="dvx__btn-label">{{ copilot.readAloud ? 'Read aloud on' : 'Read aloud off' }}</span>
         </v-btn>
         <v-btn
           variant="outlined"
@@ -782,14 +877,14 @@ onBeforeUnmount(() => {
       <section v-if="welcomeVisible" class="dvx__welcome" aria-labelledby="dvx-welcome-title">
         <div class="dvx__welcome-eyebrow">
           <v-icon size="16">sparkles</v-icon>
-          Your first campaign, guided by Da Vinci
+          Voice-first campaign guidance
         </div>
         <h1 id="dvx-welcome-title" class="dvx__welcome-title text-h3">
-          Turn your first idea into an editable email campaign.
+          Shape your first campaign with Da Vinci.
         </h1>
         <p class="dvx__welcome-copy">
-          I’ll check your setup, explain what’s missing, and prepare a draft. You control the content,
-          timing, and send — I won’t send anything.
+          I’ll help shape your campaign, check what’s ready, and guide you through the campaign builder.
+          You’ll review and complete every step.
         </p>
 
         <div v-if="micEducationVisible" class="dvx__permission pa-4">
@@ -801,7 +896,7 @@ onBeforeUnmount(() => {
               <div class="text-subtitle-2 font-weight-bold">Use your microphone for this session</div>
               <div class="text-body-2 text-medium-emphasis mt-1">
                 Da Vinci listens only while the conversation is active. A live transcript, Stop,
-                Mute, and Type instead stay available.
+                Mute, and Type instead stay available. Raw audio is not retained.
               </div>
             </div>
           </div>
@@ -824,7 +919,13 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-else class="d-flex flex-wrap ga-3">
-          <v-btn color="primary" size="large" prepend-icon="mic" @click="explainVoiceAccess">
+          <v-btn
+            color="primary"
+            size="large"
+            prepend-icon="mic"
+            :disabled="!voice.sttSupported"
+            @click="explainVoiceAccess"
+          >
             Start with voice
           </v-btn>
           <v-btn variant="outlined" size="large" prepend-icon="keyboard" @click="continueByTyping">
@@ -832,20 +933,13 @@ onBeforeUnmount(() => {
           </v-btn>
         </div>
 
-        <div v-if="!micEducationVisible" class="dvx__welcome-goals mt-5">
-          <span class="dvx__welcome-goals-label">Something else first?</span>
-          <div class="d-flex flex-wrap ga-2 mt-2">
-            <v-btn
-              v-for="goal in WELCOME_GOALS"
-              :key="goal.key"
-              variant="tonal"
-              size="small"
-              :prepend-icon="goal.icon"
-              @click="chooseGoal(goal.key)"
-            >
-              {{ goal.label }}
-            </v-btn>
-          </div>
+        <div v-if="!micEducationVisible" class="mt-4">
+          <v-btn variant="text" prepend-icon="compass" @click="exploreMaropost">
+            Explore Maropost
+          </v-btn>
+          <p v-if="!voice.sttSupported" class="text-caption text-medium-emphasis mt-2 mb-0">
+            Voice input is unavailable in this browser. Typing follows the same guided experience.
+          </p>
         </div>
 
         <p v-if="voiceRecoveryMessage" class="text-caption text-error mt-4 mb-0" role="alert">
@@ -854,13 +948,14 @@ onBeforeUnmount(() => {
 
         <div class="dvx__welcome-promise d-flex flex-wrap ga-4 mt-5">
           <span><v-icon size="16">shield-check</v-icon> Permission before listening</span>
-          <span><v-icon size="16">file-pen-line</v-icon> Draft only</span>
+          <span><v-icon size="16">list-checks</v-icon> Guidance only</span>
           <span><v-icon size="16">keyboard</v-icon> Type at any time</span>
         </div>
 
         <p class="dvx__welcome-disclosure mt-3 mb-0">
-          You’re chatting with an AI assistant. If you use voice, audio is processed by your browser’s
-          speech service.
+          Da Vinci is an AI assistant. It can answer questions and check account setup, but it cannot
+          create, edit, schedule, or send a campaign. Voice is optional and the microphone stays off
+          until you explicitly allow it.
         </p>
       </section>
 
@@ -903,6 +998,34 @@ onBeforeUnmount(() => {
 
       <!-- Focal voice control — small mic centered in the orb -->
       <div v-if="!welcomeVisible" class="dvx__stage">
+        <v-card
+          v-if="voiceConsentPromptVisible"
+          flat
+          border
+          rounded="lg"
+          class="dvx__transcript pa-4"
+          aria-label="Microphone permission"
+        >
+          <div class="text-subtitle-2 font-weight-bold">Turn on voice for this conversation?</div>
+          <p class="text-body-2 text-medium-emphasis mt-1 mb-3">
+            Da Vinci listens only while voice is active, shows a transcript for review, and does not
+            retain raw audio.
+          </p>
+          <div class="d-flex flex-wrap ga-2">
+            <v-btn
+              color="primary"
+              size="small"
+              prepend-icon="mic"
+              :disabled="!voice.sttSupported"
+              @click="enableVoiceOnboarding"
+            >
+              Allow microphone and start
+            </v-btn>
+            <v-btn variant="outlined" size="small" prepend-icon="keyboard" @click="switchToTyping">
+              Continue by typing
+            </v-btn>
+          </div>
+        </v-card>
         <button
           type="button"
           class="dvx__centermic"
@@ -934,6 +1057,35 @@ onBeforeUnmount(() => {
         <p v-if="voiceRecoveryMessage" class="text-caption text-error mb-0" role="alert">
           {{ voiceRecoveryMessage }}
         </p>
+        <v-card
+          v-if="pendingVoiceTranscript"
+          flat
+          border
+          rounded="lg"
+          class="dvx__transcript pa-3 mt-3"
+          aria-label="Review voice transcript"
+        >
+          <v-text-field
+            v-model="pendingVoiceTranscript"
+            class="dvx__transcript-input"
+            label="I heard"
+            variant="outlined"
+            density="compact"
+            hide-details
+            @keydown.enter.prevent="confirmVoiceTranscript"
+          />
+          <div class="d-flex flex-wrap ga-2 mt-2">
+            <v-btn color="primary" size="small" prepend-icon="check" @click="confirmVoiceTranscript">
+              Use transcript
+            </v-btn>
+            <v-btn variant="outlined" size="small" prepend-icon="rotate-ccw" @click="retryVoiceTranscript">
+              Try again
+            </v-btn>
+          </div>
+          <p class="text-caption text-medium-emphasis mt-2 mb-0">
+            Review or edit what Da Vinci heard before the campaign guidance advances.
+          </p>
+        </v-card>
         <div v-if="liveActive" class="dvx__live-controls">
           <button v-if="voice.state.value === 'speaking'" type="button" class="dvx__live-btn" @click="voice.cancelSpeech()">
             <v-icon size="15">square</v-icon>
@@ -942,6 +1094,10 @@ onBeforeUnmount(() => {
           <button type="button" class="dvx__live-btn dvx__live-btn--end" @click="endLive">
             <v-icon size="15">x</v-icon>
             End conversation
+          </button>
+          <button type="button" class="dvx__live-btn" @click="switchToTyping">
+            <v-icon size="15">keyboard</v-icon>
+            Type instead
           </button>
         </div>
       </div>
@@ -1246,6 +1402,13 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 14px;
   text-align: center;
+}
+
+.dvx__transcript {
+  width: min(520px, 92vw);
+  text-align: left;
+  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 94%, transparent);
+  backdrop-filter: blur(var(--mp-spacing-2));
 }
 
 /* Small mic — the primary "tap to talk" affordance, with a soft accent glow */

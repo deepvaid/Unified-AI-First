@@ -58,7 +58,7 @@ the work still remaining, and a safe handoff into the campaign builder.
 - Never imply that a draft was sent or scheduled
 
 ## Best Practices
-- Keep Review editable draft as the primary action
+- Keep Open campaign builder as the primary action
 - Show every remaining prerequisite before handoff
         `
       }
@@ -77,8 +77,7 @@ export const Default: Story = {
     audienceSize: 5234,
     sendTime: 'Tomorrow at 10:00 AM EST',
     channel: 'Email',
-    status: 'Draft',
-    draftId: 26,
+    status: 'Planning',
     remaining: ['Email content', 'Send time'],
   }
 }
@@ -91,8 +90,7 @@ export const NeedsDomainSetup: Story = {
     audienceSize: 8912,
     sendTime: 'Not scheduled',
     channel: 'Email',
-    status: 'Draft',
-    draftId: 27,
+    status: 'Planning',
     remaining: ['Sending domain', 'Email content', 'Send time'],
   }
 }

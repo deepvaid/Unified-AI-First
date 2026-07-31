@@ -18,11 +18,13 @@ export type VoiceErrorCode =
 
 export class VoiceError extends Error {
   readonly code: VoiceErrorCode
+  readonly transcript: string
 
-  constructor(code: VoiceErrorCode, message?: string) {
+  constructor(code: VoiceErrorCode, message?: string, transcript = '') {
     super(message ?? code)
     this.name = 'VoiceError'
     this.code = code
+    this.transcript = transcript
   }
 }
 
@@ -168,7 +170,8 @@ function startListening(opts: StartListeningOptions): Promise<string> {
         settle(() => resolve(''))
         return
       }
-      settle(() => reject(new VoiceError(code, e.message)))
+      const partialTranscript = (finalText || interimRef.value).trim()
+      settle(() => reject(new VoiceError(code, e.message, partialTranscript)))
     }
     recog.onend = () => settle(() => resolve(finalText.trim()))
 
@@ -178,6 +181,31 @@ function startListening(opts: StartListeningOptions): Promise<string> {
       settle(() => reject(new VoiceError('unknown', err instanceof Error ? err.message : undefined)))
     }
   })
+}
+
+/**
+ * Ask for microphone access without starting recognition or retaining audio.
+ * The stream is stopped immediately; this lets onboarding explain the request
+ * before the browser prompt and greet only after permission succeeds.
+ */
+async function requestMicrophonePermission(): Promise<void> {
+  if (!hasWindow || !navigator.mediaDevices?.getUserMedia) {
+    throw new VoiceError('unsupported')
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    stream.getTracks().forEach((track) => track.stop())
+  } catch (error) {
+    if (error instanceof DOMException) {
+      if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
+        throw new VoiceError('permission', error.message)
+      }
+      if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        throw new VoiceError('audio', error.message)
+      }
+    }
+    throw new VoiceError('unknown', error instanceof Error ? error.message : undefined)
+  }
 }
 
 /** Graceful stop — lets a pending final result flush before resolving. */
@@ -1025,6 +1053,7 @@ export function useDaVinciVoice() {
     muted: computed(() => mutedRef.value),
     voiceDebug: computed(() => debugRef.value),
     setMuted,
+    requestMicrophonePermission,
     startListening,
     stopListening,
     abortListening,

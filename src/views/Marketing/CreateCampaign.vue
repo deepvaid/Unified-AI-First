@@ -12,8 +12,8 @@ import { useContactsStore } from '@/stores/useContacts'
 import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
 import { useContentStore } from '@/stores/useContent'
 import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
-import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
+import { useCopilotStore } from '@/stores/useCopilot'
 
 const router = useRouter()
 const route = useRoute()
@@ -22,7 +22,7 @@ const contactsStore = useContactsStore()
 const cdpStore = useCdpEntitiesStore()
 const contentStore = useContentStore()
 const daVinciOnboarding = useDaVinciOnboardingStore()
-const daVinciCampaign = useDaVinciCampaignOnboarding()
+const copilot = useCopilotStore()
 
 const accountId = computed(() => route.params.accountId as string)
 const campaignsRoute = computed(() => ({ name: 'EmailCampaigns', params: { accountId: accountId.value } }))
@@ -280,6 +280,7 @@ function prevStep() {
 
 function saveDraft() {
   saveProgress(false)
+  completeGuidedOnboarding('saved')
   allowNextLeave()
   router.push(campaignsRoute.value)
 }
@@ -287,14 +288,33 @@ function saveDraft() {
 function scheduleCampaign() {
   if (!step4Valid.value) return
   saveProgress(true)
+  completeGuidedOnboarding(scheduleType.value === 'now' ? 'sent' : 'scheduled')
   allowNextLeave()
   router.push(campaignsRoute.value)
 }
 
 function exitWizard() {
   saveProgress(false)
+  completeGuidedOnboarding('saved')
   allowNextLeave()
   router.push(campaignsRoute.value)
+}
+
+function completeGuidedOnboarding(outcome: 'saved' | 'scheduled' | 'sent') {
+  if (route.query.source !== 'davinci' || draftId.value == null || !daVinciOnboarding.activeSession) return
+  if (daVinciOnboarding.activeSession.stage !== 'complete') daVinciOnboarding.complete()
+  trackDaVinciOnboardingEvent('onboarding_completed', accountId.value, {
+    campaignId: draftId.value,
+    verifiedOutcome: outcome,
+  })
+  const outcomeText = outcome === 'saved'
+    ? 'saved the campaign'
+    : outcome === 'scheduled'
+      ? 'scheduled the campaign'
+      : 'sent the campaign'
+  copilot.queueResume(
+    `I can see that you ${outcomeText}. That completes this guided setup. You can ask me to explain the result or help plan what comes next.`,
+  )
 }
 
 // ── Edit hydration ────────────────────────────────────────────────────────────
@@ -341,15 +361,12 @@ function hydrateFrom(campaign: Campaign) {
 }
 
 onMounted(() => {
-  let idParam = route.query.id ?? route.params.id
-  if (route.query.source === 'davinci' && (!idParam || !store.getCampaign(Number(idParam)))) {
+  const idParam = route.query.id ?? route.params.id
+  if (route.query.source === 'davinci') {
     daVinciOnboarding.begin(accountId.value)
-    daVinciCampaign.createDraft()
-    const restoredId = daVinciOnboarding.activeSession?.draftId
-    if (restoredId) {
-      idParam = String(restoredId)
-      void router.replace({ query: { ...route.query, id: String(restoredId) } })
-    }
+    daVinciOnboarding.markBuilderHandoff()
+    copilot.setWidthMode('panel')
+    copilot.open()
   }
   const existing = idParam ? store.getCampaign(Number(idParam)) : undefined
   if (existing) {
@@ -358,12 +375,6 @@ onMounted(() => {
     step.value = 1
     maxStepReached.value = totalSteps
     captureFormSnapshot()
-    if (route.query.source === 'davinci' && daVinciOnboarding.activeSession) {
-      if (daVinciOnboarding.activeSession.stage !== 'complete') {
-        daVinciOnboarding.complete()
-        trackDaVinciOnboardingEvent('onboarding_completed', accountId.value, { draftId: existing.id })
-      }
-    }
   } else {
     focusCard(emailCardRef)
   }

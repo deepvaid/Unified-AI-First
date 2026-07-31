@@ -1,8 +1,11 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import type { DvCardDescriptor, DvQuickReply } from '@/composables/useDaVinciIntents'
-import type { CampaignReadinessItem } from '@/stores/useDaVinciOnboarding'
+import type {
+  CampaignContextBrief,
+  CampaignReadinessItem,
+} from '@/stores/useDaVinciOnboarding'
 
 // ── Shared conversation types ────────────────────────────────────────────────
 // The conversation lives here (not in MpDaVinciBot) so it survives route
@@ -29,9 +32,12 @@ export interface CampaignOnboardingAction {
 export interface CampaignOnboardingProps {
   title: string
   description?: string
+  kind?: 'readiness' | 'brief' | 'handoff' | 'unsupported'
   step: number
   totalSteps: number
   items?: CampaignReadinessItem[]
+  brief?: CampaignContextBrief
+  actions?: CampaignOnboardingAction[]
   primaryAction?: CampaignOnboardingAction
   secondaryAction?: CampaignOnboardingAction
 }
@@ -56,6 +62,29 @@ export interface ChatMessage {
 
 /** Panel 400px · wide 720px · full = the whole content area (in-place takeover). */
 export type CopilotWidthMode = 'panel' | 'wide' | 'full'
+const ONBOARDING_TRANSCRIPT_PREFIX = 'mp.davinci.onboarding-transcript.v1'
+const MAX_ONBOARDING_MESSAGES = 80
+
+function onboardingTranscriptKey(accountId: string) {
+  return `${ONBOARDING_TRANSCRIPT_PREFIX}:${accountId}`
+}
+
+function readOnboardingTranscript(accountId: string): ChatMessage[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const stored: unknown = JSON.parse(window.localStorage.getItem(onboardingTranscriptKey(accountId)) ?? '[]')
+    if (!Array.isArray(stored)) return []
+    return stored.filter((message: unknown): message is ChatMessage => {
+      if (!message || typeof message !== 'object') return false
+      const candidate = message as Partial<ChatMessage>
+      return typeof candidate.id === 'string'
+        && (candidate.role === 'user' || candidate.role === 'assistant')
+        && typeof candidate.text === 'string'
+    }).slice(-MAX_ONBOARDING_MESSAGES)
+  } catch {
+    return []
+  }
+}
 
 export const useCopilotStore = defineStore('copilot', () => {
   const isOpen = ref(false)
@@ -87,7 +116,29 @@ export const useCopilotStore = defineStore('copilot', () => {
     return prompt
   }
 
+  function persistOnboardingTranscript(accountId: string, transcript = messages.value) {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(
+        onboardingTranscriptKey(accountId),
+        JSON.stringify(transcript.slice(-MAX_ONBOARDING_MESSAGES)),
+      )
+    } catch {
+      /* Transcript persistence is best effort and must not block the assistant. */
+    }
+  }
+
   function beginOnboarding(accountId: string) {
+    const previousAccountId = activeOnboardingAccountId.value
+    if (previousAccountId && previousAccountId !== accountId) {
+      persistOnboardingTranscript(previousAccountId)
+      messages.value = readOnboardingTranscript(accountId)
+      chatMode.value = messages.value.length > 0
+      conversationId.value = null
+    } else if (!previousAccountId && messages.value.length === 0) {
+      messages.value = readOnboardingTranscript(accountId)
+      chatMode.value = messages.value.length > 0
+    }
     activeOnboardingAccountId.value = accountId
   }
 
@@ -122,11 +173,25 @@ export const useCopilotStore = defineStore('copilot', () => {
     widthMode.value = widthMode.value === 'panel' ? 'wide' : 'panel'
   }
 
-  function resetConversation() {
+  function resetConversation(options: { forgetStored?: boolean } = {}) {
+    const forgetStored = options.forgetStored ?? true
+    if (forgetStored && activeOnboardingAccountId.value && typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(onboardingTranscriptKey(activeOnboardingAccountId.value))
+      } catch {
+        /* Storage cleanup is best effort. */
+      }
+    }
     messages.value = []
     chatMode.value = false
     conversationId.value = null
   }
+
+  watch(messages, (nextMessages) => {
+    if (activeOnboardingAccountId.value) {
+      persistOnboardingTranscript(activeOnboardingAccountId.value, nextMessages)
+    }
+  }, { deep: true })
 
   return {
     isOpen,

@@ -66,7 +66,7 @@ const onboardingMessages: ChatMessage[] = [
   {
     id: 'onboarding-assistant',
     role: 'assistant',
-    text: 'I found one setup item to review. We can still save an editable draft without sending anything.',
+    text: 'I found one setup item to review. You can resolve it first or continue with the campaign brief.',
     componentData: [
       {
         type: 'campaignOnboarding',
@@ -83,6 +83,7 @@ const onboardingMessages: ChatMessage[] = [
               status: 'unknown',
               routeName: 'SettingsDnsSetup',
               actionLabel: 'Check DNS setup',
+              checkedAt: '2026-07-31T09:00:00.000Z',
             },
             {
               id: 'audience',
@@ -91,6 +92,7 @@ const onboardingMessages: ChatMessage[] = [
               status: 'ready',
               routeName: 'ContactLists',
               actionLabel: 'Review audience',
+              checkedAt: '2026-07-31T09:00:00.000Z',
             },
             {
               id: 'content',
@@ -99,18 +101,13 @@ const onboardingMessages: ChatMessage[] = [
               status: 'ready',
               routeName: 'EmailContent',
               actionLabel: 'Browse templates',
+              checkedAt: '2026-07-31T09:00:00.000Z',
             },
           ],
-          primaryAction: {
-            label: 'Continue with a draft',
-            action: 'continue-draft',
-            icon: 'file-pen-line',
-          },
-          secondaryAction: {
-            label: 'Change brief',
-            action: 'change-brief',
-            icon: 'refresh-cw',
-          },
+          actions: [
+            { label: 'Review campaign brief', action: 'review-brief', icon: 'clipboard-list' },
+            { label: 'Change objective', action: 'change-objective', icon: 'refresh-cw' },
+          ],
         },
       },
     ],

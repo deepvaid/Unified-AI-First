@@ -123,13 +123,27 @@ const activeDashboard = computed(() => {
 
 const targetAccountId = computed(() => routeAccountId.value ?? activeAccount.value?.id ?? null)
 
+watch(targetAccountId, (nextAccountId, previousAccountId) => {
+  if (!nextAccountId || !previousAccountId || nextAccountId === previousAccountId) return
+  if (onboarding.activeAccountId === previousAccountId && onboarding.isActive) {
+    onboarding.setPaused(true)
+  }
+  stopVoiceActivity()
+  const nextSession = onboarding.begin(nextAccountId)
+  copilot.beginOnboarding(nextAccountId)
+  copilot.queueResume(
+    `You switched accounts. I paused the previous account’s campaign guidance and have not loaded its details here. Confirm your goal before continuing with this account.`,
+  )
+  if (nextSession.stage !== 'complete') onboarding.setStage('choice')
+}, { flush: 'post' })
+
 if (route.query.source === 'davinci' && targetAccountId.value) {
   onboarding.begin(targetAccountId.value)
   copilot.beginOnboarding(targetAccountId.value)
   copilot.open()
   if (!copilot.resumeMessage && messages.value.length === 0) {
     copilot.queueResume(
-      'Welcome back. Your Da Vinci campaign checkpoint is restored. This draft is still editable, and nothing has been sent.',
+      'Welcome back. Your campaign guidance is restored. Nothing has been filled in or saved; I can explain the page while you complete it.',
     )
   }
 }
@@ -544,7 +558,7 @@ function appendCampaignOnboardingResponse(res: CampaignOnboardingResponse) {
     componentData: componentData.length ? componentData : undefined,
   })
   chatMode.value = true
-  if (res.onboardingCard && targetAccountId.value) {
+  if (res.onboardingCard?.kind === 'readiness' && targetAccountId.value) {
     const blockers = res.onboardingCard.items?.filter((item) => item.status !== 'ready').length ?? 0
     trackDaVinciOnboardingEvent('readiness_shown', targetAccountId.value, { blockers })
   }
@@ -559,20 +573,25 @@ function pushUserTurn(text: string) {
   scrollToBottom()
 }
 
-function openCampaignDraft(draftId: number) {
+function openCampaignBuilder() {
   const accountId = targetAccountId.value
   if (!accountId) return
-  onboarding.markHandoff()
-  trackDaVinciOnboardingEvent('draft_opened', accountId, { draftId })
+  onboarding.markBuilderHandoff()
+  trackDaVinciOnboardingEvent('builder_opened', accountId)
+  const context = onboarding.activeSession?.contextBrief
   copilot.queueResume(
-    'Your draft is open. I filled the details we agreed on. You still control content, timing, and send. Nothing has been sent.',
+    `The standard campaign builder is open. ${context?.objective ? `Your objective is “${context.objective}”. ` : ''}Nothing has been filled in or saved; I can explain each step while you complete it.`,
   )
   copilot.setWidthMode('panel')
   copilot.open()
   void router.push({
     name: 'CreateCampaign',
     params: { accountId },
-    query: { id: String(draftId), source: 'davinci' },
+    query: { source: 'davinci' },
+  }).catch(() => {
+    pushToast({ title: 'Campaign builder unavailable', sub: 'Opening Email campaigns instead' })
+    copilot.queueResume('The campaign builder could not open. Your campaign brief is safe; try again from Email campaigns.')
+    return router.push({ name: 'EmailCampaigns', params: { accountId } })
   })
 }
 
@@ -580,7 +599,7 @@ function openCampaignPrerequisite(action: string) {
   const accountId = targetAccountId.value
   const routeName = campaignOnboarding.routeForAction(action)
   if (!accountId || !routeName) return
-  onboarding.setLastRoute(routeName)
+  onboarding.markPrerequisiteHandoff(routeName)
   trackDaVinciOnboardingEvent('prerequisite_opened', accountId, { routeName })
   copilot.queueResume('I’m still with you. Complete this step, then I’ll check campaign readiness again.')
   copilot.open()
@@ -588,42 +607,36 @@ function openCampaignPrerequisite(action: string) {
 }
 
 function onCampaignOnboardingAction(action: string) {
-  if (action === 'continue-draft') {
-    const response = campaignOnboarding.createDraft()
-    appendCampaignOnboardingResponse(response)
-    const card = response.cards?.find((item) => item.type === 'campaign')
-    if (card?.type === 'campaign' && card.props.draftId && targetAccountId.value) {
-      trackDaVinciOnboardingEvent('draft_created', targetAccountId.value, { draftId: card.props.draftId })
-    }
+  if (action === 'open-builder') {
+    openCampaignBuilder()
     return
   }
-  if (action === 'change-brief') {
+  if (action === 'review-brief') {
+    appendCampaignOnboardingResponse(campaignOnboarding.buildContextBrief())
+    return
+  }
+  if (action === 'change-brief' || action === 'change-objective') {
     if (targetAccountId.value) trackDaVinciOnboardingEvent('brief_corrected', targetAccountId.value)
-    appendCampaignOnboardingResponse(campaignOnboarding.changeBrief())
-    return
+  } else if (action === 'change-audience') {
+    if (targetAccountId.value) trackDaVinciOnboardingEvent('audience_corrected', targetAccountId.value)
   }
-  if (action.startsWith('open-')) openCampaignPrerequisite(action)
+  const response = campaignOnboarding.handleAction(action)
+  if (response) {
+    appendCampaignOnboardingResponse(response)
+  } else if (action.startsWith('open-')) {
+    openCampaignPrerequisite(action)
+  }
 }
 
 function onIntentCardAction(payload: { card: DvCardDescriptor; action: string }) {
   if (payload.card.type === 'campaign') {
-    if (payload.action === 'review-draft') {
-      if (payload.card.props.draftId) {
-        openCampaignDraft(payload.card.props.draftId)
-        return
-      }
-      // A campaign card with no draft id can only come from a restored snapshot
-      // predating the real-draft flow. Create the draft instead of reporting a
-      // success that never happened.
-      const draft = campaignOnboarding.createDraft()
-      const draftId = draft.cards?.find((card) => card.type === 'campaign')?.props.draftId
-      if (draftId) openCampaignDraft(draftId)
-      else appendCampaignOnboardingResponse(draft)
+    if (payload.action === 'open-builder') {
+      openCampaignBuilder()
       return
     }
     if (payload.action === 'change-brief') {
       if (targetAccountId.value) trackDaVinciOnboardingEvent('brief_corrected', targetAccountId.value)
-      appendCampaignOnboardingResponse(campaignOnboarding.changeBrief())
+      appendCampaignOnboardingResponse(campaignOnboarding.changeObjective())
       return
     }
   }

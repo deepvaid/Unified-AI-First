@@ -35,7 +35,6 @@ export type DvCardDescriptor =
         sendTime: string
         channel: string
         status?: string
-        draftId?: number
         remaining?: string[]
       }
     }
@@ -167,9 +166,9 @@ export function useDaVinciIntents() {
   let seq = 0
 
   /**
-   * Hands a campaign request to the onboarding wizard, which asks for the objective
-   * and audience before creating a real, editable draft. Never fabricates a draft:
-   * every card it returns carries a draftId that opens the real campaign builder.
+   * Hands a campaign request to the guide-only onboarding flow. It can understand
+   * the objective, inspect read-only readiness, and open the empty standard builder;
+   * it never creates a campaign record or fills product fields.
    */
   function startCampaignDiscovery(audienceHint: string): DvIntentResult {
     const accountId = String(router.currentRoute.value.params.accountId ?? '2000290')
