@@ -257,17 +257,29 @@ function chooseSize(size: WidgetSize) {
 .dashboard-widget-card {
   position: relative;
   border-color: var(--border-subtle) !important;
-  border-radius: var(--r-section) !important;
+  /* 18px matches the Overview v2 reference, intentionally off the --r-* scale */
+  border-radius: 18px !important;
   background: var(--surface-primary) !important;
   overflow: hidden;
   min-height: 0;
-  box-shadow: var(--elevation-raised);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: none;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.2s ease;
 }
 
 .dashboard-widget-card:hover {
-  border-color: var(--border-default) !important;
-  box-shadow: var(--elevation-overlay);
+  /* !important so the lift beats the finished .mp-enter animation (fill: both
+     keeps its final transform:none applied; only !important wins over it) */
+  transform: translateY(-2px) !important;
+  border-color: color-mix(in oklch, var(--accent) 26%, var(--border-subtle)) !important;
+  box-shadow: var(--elevation-modal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-widget-card:hover {
+    transform: none !important;
+  }
 }
 
 .dashboard-widget-card__header {

@@ -120,15 +120,26 @@ function toggle() {
   background: var(--surface-primary);
   border-color: var(--border-subtle) !important;
   /* Match the widget-card radius so every dashboard card is identical */
-  border-radius: var(--r-section) !important;
-  box-shadow: var(--elevation-raised);
+  border-radius: 18px !important;
+  box-shadow: none;
   overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.2s ease;
 }
 
 .setup-guide-widget:hover {
-  border-color: var(--border-default) !important;
-  box-shadow: var(--elevation-overlay);
+  /* !important so the lift beats the finished .mp-enter animation (fill: both
+     keeps its final transform:none applied; only !important wins over it) */
+  transform: translateY(-2px) !important;
+  border-color: color-mix(in oklch, var(--accent) 26%, var(--border-subtle)) !important;
+  box-shadow: var(--elevation-modal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setup-guide-widget:hover {
+    transform: none !important;
+  }
 }
 
 .setup-guide-widget__header {
