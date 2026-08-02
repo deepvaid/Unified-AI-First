@@ -79,6 +79,12 @@ function formatBarLabel(value: number, unit: DashboardSeriesData['unit']): strin
   return `${prefix}${text}k`
 }
 
+function formatTooltipValue(value: number, unit: DashboardSeriesData['unit']): string {
+  if (unit === 'currency') return `$${Math.round(value).toLocaleString('en-US')}`
+  if (unit === 'percent') return `${value.toFixed(1)}%`
+  return Math.round(value).toLocaleString('en-US')
+}
+
 const chartHeight = computed(() => {
   if (!props.height || props.height < 60) return 220
   return Math.max(120, props.height - 4)
@@ -120,6 +126,24 @@ const isDistributedBar = computed(
   () => props.widgetType === 'bar' && props.data.series.length <= 1,
 )
 
+const chartAriaLabel = computed(() => {
+  const { labels, series, unit } = props.data
+  const kind = props.widgetType === 'bar'
+    ? 'Bar chart'
+    : props.chartVariant === 'line' ? 'Line chart' : 'Area chart'
+  if (!series.length || !labels.length) return kind
+  if (series.length === 1) {
+    const values = series[0]!.data
+    const first = values[0] ?? 0
+    const last = values[values.length - 1] ?? 0
+    if (props.widgetType === 'bar') {
+      return `${kind} of ${series[0]!.name} across ${labels.length} categories, ${labels[0]} to ${labels[labels.length - 1]}.`
+    }
+    return `${kind} of ${series[0]!.name}, ${labels[0]} to ${labels[labels.length - 1]}, from ${formatTooltipValue(first, unit)} to ${formatTooltipValue(last, unit)}.`
+  }
+  return `${kind} comparing ${series.map((s) => s.name).join(', ')} across ${labels.length} points.`
+})
+
 const isHorizontalBar = computed(
   () => props.widgetType === 'bar' && props.chartVariant === 'horizontal',
 )
@@ -131,6 +155,29 @@ const apexChartType = computed<'area' | 'line' | 'bar'>(() => {
 })
 
 const chartSeries = computed(() => props.data.series)
+
+const seriesColors = computed(() => {
+  const activePalette = resolvedTheme.value.series
+  return (themeOverride || gradientMarks.value)
+    ? activePalette
+    : [accentHex.value, ...activePalette.slice(1)]
+})
+
+// Card-style rich tooltip (shadcn look): title + colored-dot rows, rendered
+// via tooltip.custom and styled by the scoped .mp-chart-tip rules below.
+function chartTooltip({ dataPointIndex }: { dataPointIndex: number }): string {
+  const { labels, series, unit } = props.data
+  const colors = seriesColors.value
+  const rows = series
+    .map((s, si) => {
+      const color = isDistributedBar.value
+        ? colors[dataPointIndex % colors.length]
+        : colors[si % colors.length]
+      return `<div class="mp-chart-tip__row"><span class="mp-chart-tip__dot" style="background:${color}"></span><span class="mp-chart-tip__label">${s.name}</span><span class="mp-chart-tip__value">${formatTooltipValue(s.data[dataPointIndex] ?? 0, unit)}</span></div>`
+    })
+    .join('')
+  return `<div class="mp-chart-tip"><div class="mp-chart-tip__title">${labels[dataPointIndex] ?? ''}</div>${rows}</div>`
+}
 
 const chartOptions = computed<ApexOptions>(() => {
   const base = applyChartTheme.value()
@@ -180,13 +227,9 @@ const chartOptions = computed<ApexOptions>(() => {
     return { type: 'solid' }
   }
 
-  const seriesColors = (themeOverride || gm)
-    ? activePalette
-    : [accentHex.value, ...activePalette.slice(1)]
-
   return {
     ...base,
-    colors: seriesColors,
+    colors: seriesColors.value,
     chart: {
       ...base.chart,
       sparkline: { enabled: false },
@@ -196,13 +239,21 @@ const chartOptions = computed<ApexOptions>(() => {
         ? { dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: 0.16, color: activePalette[0] } }
         : {}),
     },
-    ...(floatingBarLabels
-      ? { grid: { ...base.grid, padding: { ...base.grid?.padding, top: 24 } } }
-      : {}),
+    // shadcn chrome: solid horizontal-only grid lines, no vertical rules.
+    grid: {
+      ...base.grid,
+      show: true,
+      strokeDashArray: 0,
+      xaxis: { lines: { show: false } },
+      yaxis: { lines: { show: true } },
+      ...(floatingBarLabels ? { padding: { ...base.grid?.padding, top: 24 } } : {}),
+    },
     stroke: {
       curve: 'smooth',
+      // shadcn strokes: single-series area/line 2px; multi-series keeps the
+      // solid-3px lead + dashed-2px companions.
       width: props.widgetType === 'timeseries'
-        ? props.data.series.map((_, i) => (i === 0 ? 3 : 2))
+        ? (props.data.series.length > 1 ? props.data.series.map((_, i) => (i === 0 ? 3 : 2)) : 2)
         : 0,
       dashArray: props.widgetType === 'timeseries' && props.data.series.length > 1
         ? props.data.series.map((_, i) => (i === 0 ? 0 : 6))
@@ -210,9 +261,10 @@ const chartOptions = computed<ApexOptions>(() => {
     },
     plotOptions: {
       bar: {
-        borderRadius: gm ? 10 : 8,
-        ...(gm ? { borderRadiusApplication: 'end' } : {}),
-        columnWidth: gm ? '52%' : '46%',
+        // shadcn bars: rounded ends, 45% single / 72% grouped columns.
+        borderRadius: gm ? 10 : 6,
+        borderRadiusApplication: 'end',
+        columnWidth: gm ? '52%' : (props.data.series.length > 1 ? '72%' : '45%'),
         distributed: isDistributedBar.value,
         horizontal: isHorizontalBar.value,
         ...(floatingBarLabels ? { dataLabels: { position: 'top' } } : {}),
@@ -223,10 +275,11 @@ const chartOptions = computed<ApexOptions>(() => {
       : {
           type: apexChartType.value === 'area' ? 'gradient' : 'solid',
           gradient: {
-            shadeIntensity: 0.18,
-            opacityFrom: 0.36,
-            opacityTo: 0.02,
-            stops: [0, 96, 100],
+            type: 'vertical',
+            shadeIntensity: 0,
+            opacityFrom: 0.4,
+            opacityTo: 0.05,
+            stops: [0, 100],
           },
         },
     ...(props.widgetType === 'timeseries' && props.data.series.length === 1
@@ -257,7 +310,11 @@ const chartOptions = computed<ApexOptions>(() => {
         }
       : { enabled: false },
     legend: showLegend
-      ? chartLegendOptions(activePalette, chrome, 'top')
+      ? {
+          ...chartLegendOptions(activePalette, chrome, 'top'),
+          // shadcn legend: small square markers.
+          markers: { size: 8, shape: 'square', strokeWidth: 0, fillColors: activePalette },
+        }
       : { show: false },
     xaxis: {
       ...base.xaxis,
@@ -266,16 +323,23 @@ const chartOptions = computed<ApexOptions>(() => {
         ...base.xaxis?.labels,
         offsetY: 2,
       },
+      crosshairs: isBar
+        ? { show: false }
+        : { show: true, width: 1, stroke: { color: chrome.grid, width: 1, dashArray: 0 } },
     },
+    // shadcn hides the y-axis scale (values live in the tooltip); the
+    // multi-series line view and horizontal bars keep their labels.
     yaxis: {
-      labels: {
-        formatter: (value: number) => formatAxisValue(value, props.data.unit),
-        style: {
-          colors: chrome.axisLabel,
-          fontSize: '12px',
-          fontWeight: 500,
-        },
-      },
+      labels: (props.chartVariant === 'line' || isHorizontalBar.value)
+        ? {
+            formatter: (value: number) => formatAxisValue(value, props.data.unit),
+            style: {
+              colors: chrome.axisLabel,
+              fontSize: '12px',
+              fontWeight: 500,
+            },
+          }
+        : { show: false },
     },
     tooltip: {
       ...base.tooltip,
@@ -291,6 +355,9 @@ const chartOptions = computed<ApexOptions>(() => {
       fixed: tooltipNeedsPinning.value
         ? { enabled: true, position: 'topRight', offsetX: -4, offsetY: 0 }
         : { enabled: false },
+      shared: true,
+      intersect: false,
+      custom: chartTooltip,
       y: {
         formatter: (value: number) => formatAxisValue(value, props.data.unit),
       },
@@ -300,7 +367,7 @@ const chartOptions = computed<ApexOptions>(() => {
 </script>
 
 <template>
-  <div ref="rootEl" class="dashboard-chart-widget">
+  <div ref="rootEl" class="dashboard-chart-widget" role="img" :aria-label="chartAriaLabel">
     <ApexChart
       v-if="chartReady"
       :height="chartHeight"
@@ -345,5 +412,57 @@ const chartOptions = computed<ApexOptions>(() => {
   width: 100%;
   height: 100%;
   min-height: 120px;
+}
+
+/* Card-style tooltip skin over the .mp-chart-tip markup from tooltip.custom —
+   the native Apex tooltip chrome is nulled out so only the card shows. */
+.dashboard-chart-widget :deep(.apexcharts-tooltip) {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-chart-widget :deep(.mp-chart-tip) {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: var(--elevation-modal);
+  padding: 8px 10px;
+  min-width: 140px;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.dashboard-chart-widget :deep(.mp-chart-tip__title) {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.dashboard-chart-widget :deep(.mp-chart-tip__row) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.dashboard-chart-widget :deep(.mp-chart-tip__dot) {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.dashboard-chart-widget :deep(.mp-chart-tip__label) {
+  color: var(--muted);
+}
+
+.dashboard-chart-widget :deep(.mp-chart-tip__value) {
+  margin-left: auto;
+  padding-left: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 </style>

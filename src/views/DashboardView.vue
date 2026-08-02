@@ -333,6 +333,17 @@ function handleResizeWidget(payload: { widgetId: string; size: WidgetSize }) {
   dashboardsStore.resizeWidget(accountId.value, activeDashboard.value.id, payload.widgetId, payload.size)
 }
 
+// Attention-banner collapse: patch just that widget's grid height; the layout
+// store call leaves every other widget untouched and vertical-compact reflows.
+function handleSetWidgetHeight(payload: { widgetId: string; h: number }) {
+  if (!activeDashboard.value) return
+  const widget = activeDashboard.value.widgets.find((candidate) => candidate.id === payload.widgetId)
+  if (!widget) return
+  dashboardsStore.updateLayout(accountId.value, activeDashboard.value.id, [
+    { i: widget.id, x: widget.layout.x, y: widget.layout.y, w: widget.layout.w, h: payload.h },
+  ])
+}
+
 function handleExpandWidget(widgetId: string) {
   const widget = activeDashboard.value?.widgets.find((candidate) => candidate.id === widgetId)
   if (!widget) return
@@ -701,6 +712,7 @@ function toggleFavoriteActive() {
       @refresh-widget="handleRefreshWidget"
       @remove-widget="handleRemoveWidget"
       @resize-widget="handleResizeWidget"
+      @set-widget-height="handleSetWidgetHeight"
       @update-layout="handleLayoutUpdate"
       @add-widget="openWidgetBuilder()"
       @select-setup-task="openSetupTask"
@@ -828,7 +840,7 @@ function toggleFavoriteActive() {
 }
 
 :deep(.dashboard-grid) {
-  margin-top: -8px;
+  margin-top: -36px;
 }
 
 @media (max-width: 1024px) {

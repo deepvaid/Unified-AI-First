@@ -136,6 +136,8 @@ const sparklinePoints = computed(() => {
       <span v-if="comparisonLabel" class="dashboard-kpi-widget__comparison">{{ comparisonLabel }}</span>
     </div>
 
+    <div v-if="data.secondaryStat" class="dashboard-kpi-widget__secondary num">{{ data.secondaryStat }}</div>
+
     <div v-if="data.location" class="dashboard-kpi-widget__location-chip">
       <v-icon size="11">map-pin</v-icon>
       {{ data.location }}
@@ -383,6 +385,16 @@ const sparklinePoints = computed(() => {
   font-weight: 500;
   color: var(--muted);
   white-space: nowrap;
+}
+
+.dashboard-kpi-widget__secondary {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dashboard-kpi-widget__location-chip {

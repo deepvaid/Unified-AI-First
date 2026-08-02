@@ -45,9 +45,9 @@ function toggle() {
   >
     <header class="setup-guide-widget__header">
       <div class="setup-guide-widget__title-row">
-        <v-icon v-if="draggable" size="18" class="setup-guide-widget__drag-handle">grip-vertical</v-icon>
         <h2 class="setup-guide-widget__title">Setup guide</h2>
       </div>
+      <v-icon v-if="draggable" size="18" class="setup-guide-widget__drag-handle">grip-vertical</v-icon>
       <button
         type="button"
         class="setup-guide-widget__toggle"
@@ -120,7 +120,7 @@ function toggle() {
   background: var(--surface-primary);
   border-color: var(--border-subtle) !important;
   /* Match the widget-card radius so every dashboard card is identical */
-  border-radius: 18px !important;
+  border-radius: 14px !important;
   box-shadow: none;
   overflow: hidden;
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -159,6 +159,8 @@ function toggle() {
 
 /* Drag grip fades in on hover; the whole guide is the drag region in grid context. */
 .setup-guide-widget__drag-handle {
+  /* Sits with the collapse toggle in the top-right (consistent grip placement). */
+  margin-left: auto;
   color: var(--muted);
   cursor: grab;
   opacity: 0;

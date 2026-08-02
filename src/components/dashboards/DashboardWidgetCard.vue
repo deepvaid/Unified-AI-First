@@ -5,14 +5,24 @@ import { useWidgetData } from '@/composables/useWidgetData'
 import { useElementSize } from '@/composables/useElementSize'
 import { useLiveAgo } from '@/composables/useRelativeTime'
 import { DASHBOARD_SOURCE_META, getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
-import type { DashboardFilterState, DashboardWidget } from '@/stores/dashboards/types'
+import type { DashboardAttentionItem, DashboardFilterState, DashboardInsightItem, DashboardWidget } from '@/stores/dashboards/types'
 import MpSourceCloudChip from '@/components/MpSourceCloudChip.vue'
+import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import { detectSize, type WidgetSize } from './widgetSizePresets'
 import DashboardChartWidget from './widgets/DashboardChartWidget.vue'
 import DashboardKpiWidget from './widgets/DashboardKpiWidget.vue'
 import DashboardPieWidget from './widgets/DashboardPieWidget.vue'
 import DashboardActivityWidget from './widgets/DashboardActivityWidget.vue'
+import DashboardAttentionWidget from './widgets/DashboardAttentionWidget.vue'
+import DashboardInsightsWidget from './widgets/DashboardInsightsWidget.vue'
 import DashboardTableWidget from './widgets/DashboardTableWidget.vue'
+import DashboardMetricExplorerWidget from './widgets/DashboardMetricExplorerWidget.vue'
+import DashboardFunnelWidget from './widgets/DashboardFunnelWidget.vue'
+import DashboardDonutWidget from './widgets/DashboardDonutWidget.vue'
+import DashboardGaugeWidget from './widgets/DashboardGaugeWidget.vue'
+import DashboardBarListWidget from './widgets/DashboardBarListWidget.vue'
+import DashboardBreakdownWidget from './widgets/DashboardBreakdownWidget.vue'
+import DashboardTabsWidget from './widgets/DashboardTabsWidget.vue'
 import DashboardWidgetActionMenu from './DashboardWidgetActionMenu.vue'
 
 const props = withDefaults(defineProps<{
@@ -35,16 +45,34 @@ const emit = defineEmits<{
   refresh: [widgetId: string]
   remove: [widgetId: string]
   resize: [payload: { widgetId: string; size: WidgetSize }]
+  setHeight: [payload: { widgetId: string; h: number }]
 }>()
 
 const router = useRouter()
 const bodyEl = ref<HTMLElement | null>(null)
-const { data } = useWidgetData(computed(() => props.widget), computed(() => props.filters))
+
+// Trend/Compare toggle for the channel-trend widget: "Compare" renders the same
+// generated channel data as one bar per channel. Card-local view state only —
+// the persisted widget config stays `timeseries`.
+const supportsChannelToggle = computed(() => props.widget.metricId === 'demo_channel_trend')
+const channelMode = ref<'trend' | 'compare'>(props.widget.type === 'bar' ? 'compare' : 'trend')
+const effectiveWidget = computed<DashboardWidget>(() => (
+  supportsChannelToggle.value && channelMode.value === 'compare'
+    ? { ...props.widget, type: 'bar', chartVariant: undefined }
+    : props.widget
+))
+
+const { data } = useWidgetData(effectiveWidget, computed(() => props.filters))
 const { size: bodySize } = useElementSize(bodyEl)
 
 const currentSize = computed<WidgetSize | null>(() => detectSize(props.widget.type, props.widget.layout.w, props.widget.layout.h))
 const isCompactHeight = computed(() => bodySize.value.height > 0 && bodySize.value.height < 128)
 const isKpiWidget = computed(() => data.value.kind === 'kpi')
+// These types render their own top row (KPI strip / tab bar / collapse toggle),
+// so the standard card header is suppressed and the floating actions overlay
+// (drag grip + menu) is used instead — same treatment as KPI cards.
+const bespokeHeader = computed(() => ['metric_explorer', 'tabs', 'attention'].includes(props.widget.type))
+const hasFloatingActions = computed(() => !props.preview && props.showActions)
 const metricIcon = computed(() => getMetricDescriptor(props.widget.metricId)?.icon ?? '')
 const rangeLabels: Record<DashboardFilterState['rangePreset'], string> = {
   today: 'Today',
@@ -83,10 +111,17 @@ const kpiComparisonLabel = computed(() => {
   if (range === 'year_to_date') return 'vs prev YTD'
   return 'vs previous period'
 })
+const DOTTED_TYPES = ['metric_explorer', 'funnel', 'donut', 'gauge', 'bar_list', 'breakdown', 'tabs']
+
 const widgetSubtitle = computed(() => {
   if (props.widget.subtitle) return props.widget.subtitle
   if (isKpiWidget.value) {
     if (props.widget.metricId === 'contacts_total') return 'All time'
+    return rangeLabels[props.filters.rangePreset]
+  }
+
+  // The dotted v2 widgets aren't grain-driven — fall back to the range label.
+  if (DOTTED_TYPES.includes(props.widget.type)) {
     return rangeLabels[props.filters.rangePreset]
   }
 
@@ -103,6 +138,8 @@ const widgetSubtitle = computed(() => {
 const isDataEmpty = computed(() => {
   if (data.value.kind === 'table') return data.value.rows.length === 0
   if (data.value.kind === 'series') return data.value.labels.length === 0 || data.value.series.every((series) => series.data.length === 0)
+  if (data.value.kind === 'donut') return data.value.segments.every((segment) => segment.value === 0)
+  if (data.value.kind === 'bar_list' || data.value.kind === 'breakdown') return data.value.rows.length === 0
   return false
 })
 
@@ -117,8 +154,31 @@ function openDrilldown() {
   })
 }
 
+function handleItemAction(item: DashboardAttentionItem | DashboardInsightItem) {
+  router.push({
+    name: item.routeName,
+    params: { accountId: props.accountId },
+  })
+}
+
 function chooseSize(size: WidgetSize) {
   emit('resize', { widgetId: props.widget.id, size })
+}
+
+// Attention banner collapse: shrink the grid row to just the summary row and
+// restore the pre-collapse height on expand (vertical-compact reflows the rest).
+const COLLAPSED_H = 1
+const expandedHeight = ref<number | null>(null)
+
+function handleAttentionCollapse(collapsed: boolean) {
+  if (props.preview) return
+  if (collapsed) {
+    expandedHeight.value = props.widget.layout.h
+    emit('setHeight', { widgetId: props.widget.id, h: COLLAPSED_H })
+  } else {
+    emit('setHeight', { widgetId: props.widget.id, h: expandedHeight.value ?? 6 })
+    expandedHeight.value = null
+  }
 }
 </script>
 
@@ -132,11 +192,14 @@ function chooseSize(size: WidgetSize) {
       'dashboard-widget-card--preview': preview,
       'dashboard-widget-card--draggable': draggable,
       'dashboard-widget-card--kpi': isKpiWidget,
+      'dashboard-widget-card--bespoke': bespokeHeader,
+      'dashboard-widget-card--attention': widget.type === 'attention',
+      'dashboard-widget-card--has-actions': hasFloatingActions,
       'dashboard-widget-drag': draggable && isKpiWidget,
     }"
   >
-    <div v-if="isKpiWidget && !preview && showActions" class="dashboard-widget-card__kpi-actions">
-      <v-icon v-if="draggable" size="18" class="dashboard-widget-card__drag-handle">grip-vertical</v-icon>
+    <div v-if="(isKpiWidget || bespokeHeader) && !preview && showActions" class="dashboard-widget-card__kpi-actions">
+      <v-icon v-if="draggable" size="18" class="dashboard-widget-card__drag-handle" :class="{ 'dashboard-widget-drag': bespokeHeader }">grip-vertical</v-icon>
       <DashboardWidgetActionMenu
         :widget-title="widget.title"
         :current-size="currentSize"
@@ -148,10 +211,10 @@ function chooseSize(size: WidgetSize) {
       />
     </div>
 
-    <div v-if="!isKpiWidget" class="dashboard-widget-card__header" :class="{ 'dashboard-widget-drag': draggable }">
+    <div v-if="!isKpiWidget && !bespokeHeader" class="dashboard-widget-card__header" :class="{ 'dashboard-widget-drag': draggable }">
       <div class="dashboard-widget-card__header-copy">
         <div class="dashboard-widget-card__title-row">
-          <v-icon v-if="draggable" size="18" class="dashboard-widget-card__drag-handle">grip-vertical</v-icon>
+          <DvOrbitOrb v-if="widget.type === 'insights'" :size="14" :speed="1" class="dashboard-widget-card__orb" />
           <div class="dashboard-widget-card__title">{{ widget.title }}</div>
           <v-tooltip
             v-if="widget.aiProvenance"
@@ -170,6 +233,20 @@ function chooseSize(size: WidgetSize) {
       </div>
 
       <div class="dashboard-widget-card__actions">
+        <v-icon v-if="draggable" size="18" class="dashboard-widget-card__drag-handle">grip-vertical</v-icon>
+        <v-btn-toggle
+          v-if="supportsChannelToggle && !preview"
+          v-model="channelMode"
+          mandatory
+          density="compact"
+          variant="outlined"
+          divided
+          class="dashboard-widget-card__view-toggle"
+          aria-label="Revenue by channel view"
+        >
+          <v-btn value="trend" size="small">Trend</v-btn>
+          <v-btn value="compare" size="small">Compare</v-btn>
+        </v-btn-toggle>
         <DashboardWidgetActionMenu
           v-if="!preview && showActions"
           :widget-title="widget.title"
@@ -229,13 +306,54 @@ function chooseSize(size: WidgetSize) {
       <DashboardChartWidget
         v-else-if="data.kind === 'series'"
         :data="data"
-        :widget-type="widget.type as 'timeseries' | 'bar'"
-        :chart-variant="widget.chartVariant"
+        :widget-type="effectiveWidget.type as 'timeseries' | 'bar'"
+        :chart-variant="effectiveWidget.chartVariant"
         :height="bodySize.height"
       />
       <DashboardActivityWidget
         v-else-if="data.kind === 'activity'"
         :data="data"
+      />
+      <DashboardAttentionWidget
+        v-else-if="data.kind === 'attention'"
+        :data="data"
+        @action="handleItemAction"
+        @collapse="handleAttentionCollapse"
+      />
+      <DashboardInsightsWidget
+        v-else-if="data.kind === 'insights'"
+        :data="data"
+        @action="handleItemAction"
+      />
+      <DashboardMetricExplorerWidget
+        v-else-if="data.kind === 'metric_explorer'"
+        :data="data"
+      />
+      <DashboardFunnelWidget
+        v-else-if="data.kind === 'funnel'"
+        :data="data"
+      />
+      <DashboardDonutWidget
+        v-else-if="data.kind === 'donut'"
+        :data="data"
+      />
+      <DashboardGaugeWidget
+        v-else-if="data.kind === 'gauge'"
+        :data="data"
+      />
+      <DashboardBarListWidget
+        v-else-if="data.kind === 'bar_list'"
+        :data="data"
+      />
+      <DashboardBreakdownWidget
+        v-else-if="data.kind === 'breakdown'"
+        :data="data"
+        @drilldown="openDrilldown"
+      />
+      <DashboardTabsWidget
+        v-else-if="data.kind === 'tabs'"
+        :data="data"
+        @drilldown="openDrilldown"
       />
       <DashboardTableWidget
         v-else
@@ -243,7 +361,10 @@ function chooseSize(size: WidgetSize) {
       />
     </div>
 
-    <footer v-if="!isKpiWidget" class="dashboard-widget-card__foot">
+    <!-- The attention banner has no footer at all (design reference): items span
+         clouds and carry their own timestamps, and the collapsed state must be a
+         single tight row. -->
+    <footer v-if="!isKpiWidget && data.kind !== 'attention'" class="dashboard-widget-card__foot">
       <MpSourceCloudChip :data-source="widget.dataSource" size="md" />
       <span v-if="updatedLabel" class="dashboard-widget-card__updated">
         <v-icon size="12">clock</v-icon>
@@ -257,8 +378,9 @@ function chooseSize(size: WidgetSize) {
 .dashboard-widget-card {
   position: relative;
   border-color: var(--border-subtle) !important;
-  /* 18px matches the Overview v2 reference, intentionally off the --r-* scale */
-  border-radius: 18px !important;
+  /* 14px matches the dotted Overview v2 mockup's card radius (--scn-radius in
+     the lab view), intentionally off the --r-* scale */
+  border-radius: 14px !important;
   background: var(--surface-primary) !important;
   overflow: hidden;
   min-height: 0;
@@ -354,6 +476,34 @@ function chooseSize(size: WidgetSize) {
   margin-top: -2px;
 }
 
+.dashboard-widget-card__orb {
+  flex-shrink: 0;
+}
+
+.dashboard-widget-card__view-toggle {
+  height: 28px;
+  margin-right: 6px;
+  border-color: var(--border-subtle);
+}
+
+/* Undo the square icon-button sizing the shared actions rule below applies. */
+.dashboard-widget-card__actions .dashboard-widget-card__view-toggle :deep(.v-btn) {
+  width: auto !important;
+  min-width: 0;
+  height: 26px !important;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+.dashboard-widget-card__actions .dashboard-widget-card__view-toggle :deep(.v-btn.v-btn--active) {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+}
+
 .dashboard-widget-card__actions :deep(.v-btn),
 .dashboard-widget-card__kpi-actions :deep(.v-btn) {
   min-width: 32px;
@@ -420,8 +570,29 @@ function chooseSize(size: WidgetSize) {
   padding: 0 22px 14px;
 }
 
-.dashboard-widget-card--kpi .dashboard-widget-card__body {
+.dashboard-widget-card--kpi .dashboard-widget-card__body,
+.dashboard-widget-card--bespoke .dashboard-widget-card__body {
   padding: 0;
+}
+
+/* Bespoke-header widgets render their own top-right controls ("View all",
+   "Show", the last KPI cell) — inset them so the floating actions overlay
+   (drag grip + kebab, ~64px from the right edge) never sits on top of them. */
+.dashboard-widget-card--bespoke.dashboard-widget-card--has-actions :deep(.tabs-widget__bar),
+.dashboard-widget-card--bespoke.dashboard-widget-card--has-actions :deep(.attention-widget__toggle) {
+  padding-right: 76px;
+}
+
+.dashboard-widget-card--bespoke.dashboard-widget-card--has-actions :deep(.mx__cell:last-child) {
+  padding-right: 60px;
+}
+
+/* The attention banner's collapsed toggle row is much shorter than the other
+   bespoke headers (a single compact line, not a KPI cell or tab bar) — the
+   shared top:12px overlay offset sits too low against it, so re-center the
+   grip/kebab against this specific row height instead. */
+.dashboard-widget-card--attention .dashboard-widget-card__kpi-actions {
+  top: 1px;
 }
 
 .dashboard-widget-card__empty {
@@ -482,6 +653,8 @@ function chooseSize(size: WidgetSize) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  /* Keeps "Updated …" right-aligned when the cloud chip is hidden (attention widget). */
+  margin-left: auto;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.02em;

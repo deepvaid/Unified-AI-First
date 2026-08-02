@@ -329,6 +329,11 @@ const routes: RouteRecordRaw[] = [
   { path: '/reel', name: 'Reel', component: () => import('@/views/Reel/ReelView.vue'), meta: { fullPage: true } },
   { path: '/reel/fly', name: 'ReelFly', component: () => import('@/views/Reel/ReelFlyView.vue'), meta: { fullPage: true } },
   { path: '/chart-themes', name: 'ChartThemes', component: () => import('@/views/ChartThemes/ChartThemesView.vue'), meta: { fullPage: true } },
+  { path: '/accounts/:accountId/chart-lab', name: 'ChartLab', component: () => import('@/views/ChartLab/ChartLabView.vue'), meta: { fullPage: true } },
+  { path: '/accounts/:accountId/dashboard-lab', name: 'DashboardLab', component: () => import('@/views/ChartLab/DashboardLabView.vue') },
+  { path: '/accounts/:accountId/dashboard-lab-2', name: 'DashboardLab2', component: () => import('@/views/ChartLab/DashboardLab2View.vue') },
+  { path: '/accounts/:accountId/dashboard-shadcn', name: 'DashboardShadcn', component: () => import('@/views/ShadcnDashboard/ShadcnDashboardView.vue') },
+  { path: '/accounts/:accountId/dashboard-evil', name: 'DashboardEvil', component: () => import('@/views/EvilDashboard/EvilDashboardView.vue') },
 
   // Redirect root to dashboard
   { path: '/', redirect: '/accounts/2000290/dashboard' },

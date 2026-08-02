@@ -193,6 +193,65 @@ function pickPreviousValue(filters: DashboardFilterState, current: number, previ
   return previous
 }
 
+/** Per-day value buckets for the current and previous windows (both `days` long). */
+function bucketDaily<T>(
+  records: T[],
+  dateGetter: (record: T) => Date,
+  valueGetter: (record: T) => number,
+  window: DateWindow,
+): { cur: number[]; prev: number[] } {
+  const cur = new Array<number>(window.days).fill(0)
+  const prev = new Array<number>(window.days).fill(0)
+  records.forEach((record) => {
+    const date = dateGetter(record)
+    if (Number.isNaN(date.getTime())) return
+    if (date >= window.currentStart && date <= window.currentEnd) {
+      const index = Math.floor((startOfDay(date).getTime() - window.currentStart.getTime()) / MS_PER_DAY)
+      if (index >= 0 && index < window.days) cur[index] = (cur[index] ?? 0) + valueGetter(record)
+    } else if (date >= window.previousStart && date <= window.previousEnd) {
+      const index = Math.floor((startOfDay(date).getTime() - window.previousStart.getTime()) / MS_PER_DAY)
+      if (index >= 0 && index < window.days) prev[index] = (prev[index] ?? 0) + valueGetter(record)
+    }
+  })
+  return { cur, prev }
+}
+
+/** Deterministic series shaped like `template`, centered on `mid` (± spread/2). */
+function wobbleSeries(template: number[], mid: number, spread: number): number[] {
+  const mx = Math.max(...template)
+  const mn = Math.min(...template)
+  const d = mx - mn || 1
+  return template.map((v) => mid * (1 - spread / 2 + spread * ((v - mn) / d)))
+}
+
+function signedPct(current: number, previous: number): { text: string; positive: boolean } {
+  if (!previous) return { text: 'New in range', positive: current >= 0 }
+  const delta = ((current - previous) / previous) * 100
+  return { text: `${delta >= 0 ? '+' : '−'}${Math.abs(delta).toFixed(1)}%`, positive: delta >= 0 }
+}
+
+function comparisonVsLabels(filters: DashboardFilterState, days: number): { vsLabel: string; vsLabelLong: string } {
+  switch (filters.comparison) {
+    case 'none':
+      return { vsLabel: '', vsLabelLong: 'no comparison' }
+    case 'previous_year':
+      return { vsLabel: 'vs same period last year', vsLabelLong: 'compared with the same period last year' }
+    case 'custom':
+      return { vsLabel: 'vs custom period', vsLabelLong: 'compared with the custom period' }
+    case 'previous_period':
+    default:
+      return { vsLabel: `vs prev ${days} days`, vsLabelLong: `compared with the previous ${days} days` }
+  }
+}
+
+/** Five evenly spaced "Jul 3"-style labels across the current window. */
+function windowAxisLabels(window: DateWindow): string[] {
+  const format = (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return [0, 0.25, 0.5, 0.75, 1].map((fraction) =>
+    format(new Date(window.currentStart.getTime() + fraction * (window.days - 1) * MS_PER_DAY)),
+  )
+}
+
 export function useWidgetData(
   widgetRef: MaybeRefOrGetter<DashboardWidget>,
   filtersRef: MaybeRefOrGetter<DashboardFilterState>,
@@ -232,6 +291,10 @@ export function useWidgetData(
           ? ranges.previous.reduce((total, order) => total + parseFloat(order.total), 0) / ranges.previous.length
           : 0
         return buildKpiData(current, pickPreviousValue(filters, current, previous), 'currency', 'Average order value for the current period')
+      }
+      case 'commerce_conversion_rate': {
+        // TODO(mock): replace with real sessions/conversion data when a traffic source exists.
+        return buildKpiData(2.6, pickPreviousValue(filters, 2.6, 2.42), 'percent', 'Sessions that converted to an order')
       }
       case 'commerce_revenue_over_time': {
         const sorted = [...commerce.orders].sort((left, right) => (left.date ?? '').localeCompare(right.date ?? '')).slice(-days)
@@ -316,7 +379,7 @@ export function useWidgetData(
             campaign: campaign.name,
             status: campaign.status,
             openRate: `${((campaign.metrics.opens / Math.max(campaign.metrics.sent, 1)) * 100).toFixed(1)}%`,
-            revenue: `$${campaign.metrics.revenue.toLocaleString()}`,
+            revenue: formatNumber(campaign.metrics.revenue, 'currency'),
           }))
         return buildTableData(
           [
@@ -368,7 +431,7 @@ export function useWidgetData(
           .slice(0, 6)
           .map((segment) => ({
             segment: segment.name,
-            count: segment.count.toLocaleString(),
+            count: formatNumber(segment.count, 'count'),
             type: segment.type,
             status: segment.status,
           }))
@@ -432,6 +495,18 @@ export function useWidgetData(
         const unresolved = tickets.tickets.filter((t) => t.status !== 'Resolved').length
         return buildKpiData(unresolved, unresolved * 1.05, 'count', 'All unresolved tickets')
       }
+      case 'service_support_health': {
+        const open = tickets.tickets.filter((t) => t.status === 'Open').length
+        const unresolved = tickets.tickets.filter((t) => t.status !== 'Resolved' && t.status !== 'Closed')
+        const kpi = buildKpiData(open, open * 1.08, 'count', 'Open tickets requiring action')
+        if (!unresolved.length) return kpi
+        const oldestMs = Math.min(...unresolved.map((t) => new Date(t.createdAt ?? '').getTime()).filter((ms) => !Number.isNaN(ms)))
+        const oldestDays = Number.isFinite(oldestMs) ? Math.max(1, Math.round((Date.now() - oldestMs) / MS_PER_DAY)) : null
+        return {
+          ...kpi,
+          secondaryStat: `${unresolved.length} unresolved${oldestDays != null ? ` · oldest ${oldestDays}d` : ''}`,
+        } as DashboardWidgetData
+      }
       case 'service_tickets_by_channel': {
         const channels = ['Email', 'Inbound call', 'Walk in']
         const counts = channels.map((_channel, i) => {
@@ -474,11 +549,11 @@ export function useWidgetData(
           .map((c) => ({
             campaign: c.name,
             status: c.status,
-            sent: c.metrics.sent.toLocaleString(),
-            delivered: Math.round(c.metrics.sent * 0.97).toLocaleString(),
+            sent: formatNumber(c.metrics.sent, 'count'),
+            delivered: formatNumber(Math.round(c.metrics.sent * 0.97), 'count'),
             opens: `${((c.metrics.opens / Math.max(c.metrics.sent, 1)) * 100).toFixed(0)}%`,
             clicks: `${((c.metrics.clicks / Math.max(c.metrics.opens, 1)) * 100).toFixed(0)}%`,
-            revenue: `$${c.metrics.revenue.toLocaleString()}`,
+            revenue: formatNumber(c.metrics.revenue, 'currency'),
           }))
         return buildTableData(
           [
@@ -528,9 +603,9 @@ export function useWidgetData(
             { key: 'value', label: 'Value', align: 'end' },
           ],
           [
-            { metric: 'Unique Subscribers', value: subscribed.toLocaleString() },
-            { metric: 'Unique Unsubscribers', value: unsubscribed.toLocaleString() },
-            { metric: 'Net Growth/Attrition', value: (net >= 0 ? '+' : '') + net.toLocaleString() },
+            { metric: 'Unique Subscribers', value: formatNumber(subscribed, 'count') },
+            { metric: 'Unique Unsubscribers', value: formatNumber(unsubscribed, 'count') },
+            { metric: 'Net Growth/Attrition', value: (net >= 0 ? '+' : '') + formatNumber(net, 'count') },
           ],
         )
       }
@@ -640,9 +715,9 @@ export function useWidgetData(
           })
         })
         const rows = Array.from(tally.entries())
-          .map(([sku, v]) => ({ sku, units: v.count.toLocaleString(), revenue: `$${v.revenue.toLocaleString()}` }))
-          .sort((a, b) => Number(b.revenue.replace(/[^0-9.-]/g, '')) - Number(a.revenue.replace(/[^0-9.-]/g, '')))
+          .sort(([, a], [, b]) => b.revenue - a.revenue)
           .slice(0, 6)
+          .map(([sku, v]) => ({ sku, units: formatNumber(v.count, 'count'), revenue: formatNumber(v.revenue, 'currency') }))
         return buildTableData(
           [
             { key: 'sku', label: 'SKU' },
@@ -669,8 +744,8 @@ export function useWidgetData(
           .map((r) => ({
             staff: r.staff,
             role: r.role,
-            transactions: r.transactions.toLocaleString(),
-            revenue: `$${r.revenue.toLocaleString()}`,
+            transactions: formatNumber(r.transactions, 'count'),
+            revenue: formatNumber(r.revenue, 'currency'),
           }))
         return buildTableData(
           [
@@ -731,14 +806,25 @@ export function useWidgetData(
           { name: 'Organic', base: 4600, amp: 700, phase: 4 },
           { name: 'Referral', base: 2400, amp: 600, phase: 5 },
         ]
+        const channelSeries = channels.map((c) => ({
+          name: c.name,
+          data: labels.map((_, i) => Math.round(c.base + c.amp * Math.sin((i + c.phase) * 0.6) + i * 60)),
+        }))
+        // "Compare" view (widget.type === 'bar'): one total bar per channel,
+        // summed from the same generated points so both views always agree.
+        if (widget.type === 'bar') {
+          return {
+            kind: 'series',
+            unit: 'currency',
+            labels: channelSeries.map((s) => s.name),
+            series: [{ name: 'Revenue', data: channelSeries.map((s) => s.data.reduce((total, value) => total + value, 0)) }],
+          }
+        }
         return {
           kind: 'series',
           unit: 'currency',
           labels,
-          series: channels.map((c) => ({
-            name: c.name,
-            data: labels.map((_, i) => Math.round(c.base + c.amp * Math.sin((i + c.phase) * 0.6) + i * 60)),
-          })),
+          series: channelSeries,
         }
       }
       case 'demo_channel_mix': {
@@ -756,6 +842,429 @@ export function useWidgetData(
           unit: 'percent',
           labels: mix.map((m) => m.label),
           series: [{ name: 'Share', data: mix.map((m) => m.value) }],
+        }
+      }
+      case 'overview_metric_explorer': {
+        // Composite KPI-strip + chart payload. Always daily buckets (grain is
+        // intentionally ignored, like the standalone KPI widgets).
+        const orderDate = (order: (typeof commerce.orders)[number]) => new Date(order.date ?? '')
+        const revenue = bucketDaily(commerce.orders, orderDate, (order) => parseFloat(order.total), dateWindow)
+        const orderCounts = bucketDaily(commerce.orders, orderDate, () => 1, dateWindow)
+        const compareOff = filters.comparison === 'none'
+
+        const revTotal = revenue.cur.reduce((a, b) => a + b, 0)
+        const revPrevTotal = revenue.prev.reduce((a, b) => a + b, 0)
+        const orderTotal = orderCounts.cur.reduce((a, b) => a + b, 0)
+        const orderPrevTotal = orderCounts.prev.reduce((a, b) => a + b, 0)
+        const aov = orderTotal ? revTotal / orderTotal : 0
+        const aovPrev = orderPrevTotal ? revPrevTotal / orderPrevTotal : 0
+        const aovSeries = (rev: number[], counts: number[], fallback: number) =>
+          rev.map((value, index) => ((counts[index] ?? 0) > 0 ? value / (counts[index] ?? 1) : fallback))
+        // TODO(mock): conversion pair mirrors commerce_conversion_rate until a traffic source exists.
+        const conv = 2.6
+        const convPrev = 2.42
+
+        const deltaOf = (current: number, previous: number) => {
+          if (compareOff) return { text: '', positive: true }
+          return signedPct(current, previous)
+        }
+        const convDelta = compareOff
+          ? { text: '', positive: true }
+          : { text: `${conv >= convPrev ? '+' : '−'}${Math.abs(conv - convPrev).toFixed(1)} pp`, positive: conv >= convPrev }
+
+        return {
+          kind: 'metric_explorer',
+          ...comparisonVsLabels(filters, days),
+          xLabels: windowAxisLabels(dateWindow),
+          metrics: [
+            {
+              key: 'revenue', label: 'Revenue', sub: 'Daily net revenue', unit: 'currency',
+              value: revTotal, formattedValue: formatNumber(revTotal, 'currency'),
+              ...(() => { const d = deltaOf(revTotal, revPrevTotal); return { delta: d.text, deltaPositive: d.positive } })(),
+              cur: revenue.cur, prev: revenue.prev, zeroBased: true,
+            },
+            {
+              key: 'orders', label: 'Orders', sub: 'Orders placed per day', unit: 'count',
+              value: orderTotal, formattedValue: formatNumber(orderTotal, 'count'),
+              ...(() => { const d = deltaOf(orderTotal, orderPrevTotal); return { delta: d.text, deltaPositive: d.positive } })(),
+              cur: orderCounts.cur, prev: orderCounts.prev, zeroBased: true,
+            },
+            {
+              key: 'aov', label: 'Average order value', sub: 'Average order value per day', unit: 'currency',
+              value: aov, formattedValue: formatNumber(aov, 'currency'),
+              ...(() => { const d = deltaOf(aov, aovPrev); return { delta: d.text, deltaPositive: d.positive } })(),
+              cur: aovSeries(revenue.cur, orderCounts.cur, aov), prev: aovSeries(revenue.prev, orderCounts.prev, aovPrev), zeroBased: false,
+            },
+            {
+              key: 'conv', label: 'Conversion rate', sub: 'Visit-to-order conversion', unit: 'percent',
+              value: conv, formattedValue: `${conv.toFixed(1)}%`,
+              delta: convDelta.text, deltaPositive: convDelta.positive,
+              cur: wobbleSeries(revenue.cur, conv, 0.5), prev: wobbleSeries(revenue.prev, convPrev, 0.5), zeroBased: false,
+            },
+          ],
+        }
+      }
+      case 'overview_campaign_funnel': {
+        // TODO(mock): fixture stage counts until cross-cloud funnel data exists.
+        const stages = [
+          { label: 'Emails sent', value: 9840 },
+          { label: 'Opened', value: 5370 },
+          { label: 'Clicked through', value: 1150 },
+          { label: 'Store sessions', value: 870 },
+          { label: 'Added to cart', value: 248 },
+          { label: 'Orders placed', value: 10 },
+        ]
+        const first = stages[0]?.value ?? 1
+        return {
+          kind: 'funnel',
+          stages: stages.map((stage, index) => ({
+            label: stage.label,
+            formattedValue: formatNumber(stage.value, 'count'),
+            share: index === 0 ? '100%' : `${((stage.value / first) * 100).toFixed(stage.value / first < 0.01 ? 2 : 1)}%`,
+            pct: stage.value / first,
+            accent: index === stages.length - 1,
+          })),
+          footerStats: [
+            { label: 'Attributed revenue', value: '$4,450' },
+            { label: 'Share of store revenue', value: '21.9%' },
+            { label: 'Cart to order', value: '4.0%' },
+          ],
+          warning: 'Biggest drop-off: opened → clicked, 78.6% lost',
+        }
+      }
+      case 'commerce_revenue_attribution': {
+        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const total = ranges.current.reduce((sum, order) => sum + parseFloat(order.total), 0)
+        // TODO(mock): fixed channel ratios until attribution data exists (demo_channel_mix precedent).
+        const channels: Array<[string, number]> = [
+          ['Direct', 0.31], ['Email', 0.219], ['Paid search', 0.17],
+          ['Social', 0.12], ['Organic', 0.10], ['Referral', 0.081],
+        ]
+        const sentCampaigns = campaigns.campaigns.filter((c) => c.status === 'Sent')
+        const openRate = sentCampaigns.length
+          ? sentCampaigns.reduce((sum, c) => sum + (c.metrics.opens / Math.max(c.metrics.sent, 1)) * 100, 0) / sentCampaigns.length
+          : 0
+        return {
+          kind: 'donut',
+          variant: 'ring',
+          segments: channels.map(([label, share]) => ({
+            label,
+            value: total * share,
+            formattedValue: `${formatNumber(total * share, 'currency')} · ${(share * 100).toFixed(share * 100 % 1 ? 1 : 0)}%`,
+          })),
+          centerValue: formatNumber(total, 'currency'),
+          centerCaption: 'attributed',
+          footerStats: [
+            { label: 'Email open rate', value: `${openRate.toFixed(1)}%` },
+            { label: 'Total contacts', value: formatNumber(contacts.contacts.length, 'count') },
+          ],
+        }
+      }
+      case 'commerce_orders_by_channel': {
+        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const channels = ['Online store', 'POS retail', 'Marketplace', 'Social shop']
+        const counts = channels.map(() => 0)
+        ranges.current.forEach((order) => {
+          const index = order.id % channels.length
+          counts[index] = (counts[index] ?? 0) + 1
+        })
+        const revenue = ranges.current.reduce((sum, order) => sum + parseFloat(order.total), 0)
+        const aov = ranges.current.length ? revenue / ranges.current.length : 0
+        return {
+          kind: 'donut',
+          variant: 'pie',
+          segments: channels.map((label, index) => ({
+            label,
+            value: counts[index] ?? 0,
+            formattedValue: formatNumber(counts[index] ?? 0, 'count'),
+          })),
+          footerStats: [
+            { label: 'Fastest growing', value: 'Marketplace' },
+            { label: 'Average order value', value: formatNumber(aov, 'currency') },
+          ],
+        }
+      }
+      case 'commerce_new_vs_returning': {
+        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        // "Returning" = repeat buyer (more than one order on record) — the mock
+        // orders all sit inside one window, so a strictly-before-window check
+        // would always yield zero.
+        const orderCounts = new Map<string, number>()
+        commerce.orders.forEach((order) => {
+          orderCounts.set(order.customer.name, (orderCounts.get(order.customer.name) ?? 0) + 1)
+        })
+        const returning = ranges.current.filter((order) => (orderCounts.get(order.customer.name) ?? 0) > 1).length
+        const firstTime = ranges.current.length - returning
+        const returningPct = ranges.current.length ? Math.round((returning / ranges.current.length) * 100) : 0
+        return {
+          kind: 'donut',
+          variant: 'ring',
+          segments: [
+            { label: 'Returning customers', value: returning, formattedValue: `${formatNumber(returning, 'count')} orders` },
+            { label: 'First-time buyers', value: firstTime, formattedValue: `${formatNumber(firstTime, 'count')} orders` },
+          ],
+          centerValue: `${returningPct}%`,
+          centerCaption: 'returning',
+        }
+      }
+      case 'commerce_revenue_goal': {
+        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const revenue = ranges.current.reduce((sum, order) => sum + parseFloat(order.total), 0)
+        // TODO(mock): $1,000/day goal until goals are configurable.
+        const goal = days * 1000
+        const pct = Math.min(100, Math.round((revenue / goal) * 100))
+        const daysLeft = Math.max(1, Math.round(days * 0.15))
+        return {
+          kind: 'gauge',
+          pct,
+          centerValue: `${pct}%`,
+          centerCaption: `of ${formatNumber(goal, 'currency')}`,
+          footerStats: [
+            { label: 'Pace per day', value: formatNumber(revenue / days, 'currency') },
+            { label: 'Needed per day', value: formatNumber(Math.max(0, goal - revenue) / daysLeft, 'currency') },
+          ],
+        }
+      }
+      case 'overview_tabs': {
+        const orderRows = [...commerce.orders]
+          .sort((left, right) => (right.date ?? '').localeCompare(left.date ?? ''))
+          .slice(0, 5)
+          .map((order) => ({
+            order: order.orderNumber,
+            customer: order.customer.name,
+            status: order.status ?? 'Unknown',
+            total: formatNumber(parseFloat(order.total), 'currency'),
+          }))
+        const sentCampaigns = [...campaigns.campaigns]
+          .filter((c) => c.status === 'Sent')
+          .sort((a, b) => b.metrics.revenue - a.metrics.revenue)
+          .slice(0, 4)
+        const maxRevenue = Math.max(...sentCampaigns.map((c) => c.metrics.revenue), 1)
+        return {
+          kind: 'tabs',
+          orders: orderRows,
+          activity: [
+            { id: 'a1', tag: 'email', icon: 'send', eyebrow: '2m ago', title: 'Spring Refresh — Segment A sent', meta: '2,400 recipients' },
+            { id: 'a2', tag: 'order', icon: 'shopping-bag', eyebrow: '6m ago', title: 'Order #A-29481 placed by Maya Lin', meta: '$248.00 · paid' },
+            { id: 'a3', tag: 'audience', icon: 'users', eyebrow: '14m ago', title: 'Segment ‘VIP repeat buyers’ updated', meta: '+312 contacts' },
+            { id: 'a4', tag: 'automation', icon: 'zap', eyebrow: '22m ago', title: 'Automation ‘Cart abandoned — Step 2’ triggered', meta: '84 contacts in flow' },
+            { id: 'a5', tag: 'order', icon: 'shopping-bag', eyebrow: '31m ago', title: 'Order #A-29479 placed by Theo Park', meta: '$96.40 · paid' },
+          ],
+          campaigns: sentCampaigns.map((c) => ({
+            name: c.name,
+            revenue: formatNumber(c.metrics.revenue, 'currency'),
+            pct: Math.round((c.metrics.revenue / maxRevenue) * 100),
+            meta: `${((c.metrics.opens / Math.max(c.metrics.sent, 1)) * 100).toFixed(1)}% open rate · ${formatNumber(c.metrics.sent, 'count')} sent`,
+          })),
+          campaignsCaption: `Last ${days} days · by attributed revenue`,
+        }
+      }
+      case 'commerce_best_sellers': {
+        const tally = new Map<string, { units: number; revenue: number }>()
+        commerce.posOrders.forEach((order) => {
+          if (order.status !== 'Completed') return
+          order.lineItems.forEach((li) => {
+            const key = li.product || li.sku
+            const row = tally.get(key) ?? { units: 0, revenue: 0 }
+            row.units += li.qty
+            row.revenue += li.qty * parseFloat(li.price)
+            tally.set(key, row)
+          })
+        })
+        const top = Array.from(tally.entries())
+          .sort(([, a], [, b]) => b.revenue - a.revenue)
+          .slice(0, 4)
+        const max = Math.max(...top.map(([, v]) => v.revenue), 1)
+        return {
+          kind: 'bar_list',
+          rows: top.map(([name, v]) => ({
+            label: name,
+            value: formatNumber(v.revenue, 'currency'),
+            pct: Math.round((v.revenue / max) * 100),
+            meta: `${formatNumber(v.units, 'count')} units`,
+          })),
+        }
+      }
+      case 'retail_today_breakdown': {
+        const k = retail.kpis
+        const delta = signedPct(k.salesToday, k.salesYesterday)
+        const rows = retail.locationList
+          .map((loc) => {
+            const sales = commerce.posOrders.filter((o) => o.pos?.locationId === loc.id && o.status === 'Completed')
+            return { label: loc.name, value: sales.reduce((sum, o) => sum + parseFloat(o.total), 0) }
+          })
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 4)
+        const max = Math.max(...rows.map((r) => r.value), 1)
+        return {
+          kind: 'bar_list',
+          headline: { value: formatNumber(k.salesToday, 'currency'), delta: delta.text, deltaPositive: delta.positive },
+          rows: rows.map((row) => ({
+            label: row.label,
+            value: formatNumber(row.value, 'currency'),
+            pct: Math.round((row.value / max) * 100),
+          })),
+        }
+      }
+      case 'commerce_fulfillment_queue': {
+        // Queue statuses → MpStatusChip fulfillment map entries.
+        const chipStatus: Record<string, string> = {
+          Picked: 'Picking',
+          Packed: 'Packed',
+          'Label Created': 'Ready to ship',
+          Shipped: 'Shipped',
+        }
+        const counts = new Map<string, number>()
+        commerce.fulfillments.forEach((item) => {
+          counts.set(item.status, (counts.get(item.status) ?? 0) + 1)
+        })
+        return {
+          kind: 'breakdown',
+          rows: Array.from(counts.entries()).map(([status, count]) => ({
+            label: status,
+            value: formatNumber(count, 'count'),
+            chip: { status: chipStatus[status] ?? status, type: 'fulfillment' },
+          })),
+          linkLabel: 'Open fulfillment',
+        }
+      }
+      case 'service_tickets_breakdown': {
+        const open = tickets.tickets.filter((t) => t.status !== 'Resolved' && t.status !== 'Closed')
+        const awaiting = tickets.tickets.filter((t) => t.status === 'Awaiting Reply').length
+        const slaCutoff = Date.now() - 48 * 60 * 60 * 1000
+        const breaching = open.filter((t) => new Date(t.createdAt ?? '').getTime() < slaCutoff).length
+        const resolved = tickets.tickets.filter((t) => t.status === 'Resolved').length
+        return {
+          kind: 'breakdown',
+          headline: { value: formatNumber(open.length, 'count'), caption: 'open tickets' },
+          rows: [
+            { label: 'Awaiting your reply', value: formatNumber(awaiting, 'count') },
+            // Red only when there is actually something breaching — a red zero is noise.
+            { label: 'Breaching SLA', value: formatNumber(breaching, 'count'), tone: breaching > 0 ? 'alert' : 'default' },
+            { label: 'Resolved today', value: formatNumber(resolved, 'count') },
+          ],
+          linkLabel: 'Open ticket queue',
+        }
+      }
+      case 'marketing_deliverability_breakdown': {
+        const sentCampaigns = campaigns.campaigns.filter((c) => c.status === 'Sent')
+        const totalSent = sentCampaigns.reduce((sum, c) => sum + c.metrics.sent, 0)
+        const delivered = totalSent ? 97 + (totalSent % 13) / 10 : 98.2
+        return {
+          kind: 'breakdown',
+          headline: { value: `${delivered.toFixed(1)}%`, caption: 'delivered' },
+          progress: { pct: delivered, tone: 'green' },
+          rows: [
+            { label: 'Bounce rate', value: `${(100 - delivered - 0.6).toFixed(1)}%` },
+            // TODO(mock): fixture complaint/unsub rates until send telemetry exists.
+            { label: 'Spam complaints', value: '0.04%' },
+            { label: 'Unsubscribes', value: '0.31%' },
+          ],
+          warning: 'DKIM not verified on 1 sending domain',
+        }
+      }
+      case 'marketing_journeys_in_flight': {
+        const rows = [...campaigns.journeys]
+          .filter((journey) => journey.status !== 'Draft')
+          .map((journey) => ({
+            journey,
+            inFlight: Math.max(0, journey.enrolled - journey.completed),
+            conversion: journey.enrolled ? (journey.completed / journey.enrolled) * 100 : 0,
+          }))
+          .sort((a, b) => b.inFlight - a.inFlight)
+          .slice(0, 4)
+        return {
+          kind: 'breakdown',
+          rows: rows.map(({ journey, inFlight, conversion }) => ({
+            label: journey.name.split(' — ')[0] ?? journey.name,
+            meta: journey.status === 'Paused'
+              ? 'Paused · needs review'
+              : `${journey.trigger} · ${conversion.toFixed(1)}% conversion`,
+            value: formatNumber(inFlight, 'count'),
+            tone: journey.status === 'Paused' ? 'warning' : 'success',
+          })),
+          linkLabel: 'View all journeys',
+        }
+      }
+      case 'overview_attention': {
+        const now = Date.now()
+        const hoursAgo = (h: number) => new Date(now - h * 60 * 60 * 1000).toISOString()
+        return {
+          kind: 'attention',
+          items: [
+            {
+              id: 'att-payments',
+              severity: 'critical',
+              title: '3 payments failed in the last 24h',
+              context: 'Retry or contact the customers before the orders auto-cancel.',
+              occurredAt: hoursAgo(2),
+              actionLabel: 'Review',
+              dataSource: 'commerce',
+              routeName: 'SalesOrders',
+              icon: 'credit-card',
+            },
+            {
+              id: 'att-stock',
+              severity: 'warning',
+              title: 'Low stock: 2 of your top 10 sellers',
+              context: 'Trail Runner XT and Canvas Tote are below their reorder point.',
+              occurredAt: hoursAgo(5),
+              actionLabel: 'View products',
+              dataSource: 'commerce',
+              routeName: 'ProductsList',
+              icon: 'package',
+            },
+            {
+              id: 'att-approval',
+              severity: 'info',
+              title: 'Campaign ‘Spring Refresh’ pending approval',
+              context: 'Scheduled to send tomorrow at 9:00 AM once approved.',
+              occurredAt: hoursAgo(26),
+              actionLabel: 'Approve',
+              dataSource: 'marketing',
+              routeName: 'EmailCampaigns',
+              icon: 'mail',
+            },
+            {
+              id: 'att-dns',
+              severity: 'warning',
+              title: 'Sending domain DNS not verified',
+              context: 'Unverified DKIM records hurt deliverability on every send.',
+              occurredAt: hoursAgo(72),
+              actionLabel: 'Fix',
+              dataSource: 'marketing',
+              routeName: 'CampaignReports',
+              icon: 'shield-alert',
+            },
+          ],
+        }
+      }
+      case 'davinci_insights': {
+        return {
+          kind: 'insights',
+          items: [
+            {
+              id: 'ins-carts',
+              observation: 'Cart abandonment is up 14% on mobile since Tuesday',
+              stat: '312 carts, $8.4k est. value',
+              actionLabel: 'Investigate',
+              routeName: 'OrdersReport',
+            },
+            {
+              id: 'ins-subject',
+              observation: 'Campaigns with question-style subject lines opened 9% more this month',
+              stat: '6 of your last 20 sends, avg 31.2% open rate',
+              actionLabel: 'View campaigns',
+              routeName: 'CampaignReports',
+            },
+            {
+              id: 'ins-vip',
+              observation: 'Your VIP repeat buyers segment grew twice as fast as the overall list',
+              stat: '+312 contacts in 30 days',
+              actionLabel: 'View segment',
+              routeName: 'Segments',
+            },
+          ],
         }
       }
       default:

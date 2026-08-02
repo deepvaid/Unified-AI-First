@@ -27,6 +27,7 @@ const emit = defineEmits<{
   refreshWidget: [widgetId: string]
   removeWidget: [widgetId: string]
   resizeWidget: [payload: { widgetId: string; size: WidgetSize }]
+  setWidgetHeight: [payload: { widgetId: string; h: number }]
   updateLayout: [layout: Array<{ i: string; x: number; y: number; w: number; h: number }>]
   addWidget: []
   selectSetupTask: [task: SetupGuideTask]
@@ -127,9 +128,37 @@ watch(
   { immediate: true, deep: true },
 )
 
+function rectsOverlap(
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+}
+
+/**
+ * Horizontal compaction pass: the grid library only compacts vertically, so a
+ * widget moved out of a row leaves a hole beside its old neighbours. Slide
+ * each item as far left as it can go without colliding (reading order, so
+ * earlier rows settle first).
+ */
+function compactLeft<T extends { x: number; y: number; w: number; h: number }>(items: T[]): T[] {
+  const compacted = items.map((item) => ({ ...item }))
+  const order = [...compacted].sort((left, right) => left.y - right.y || left.x - right.x)
+  for (const item of order) {
+    while (item.x > 0) {
+      const candidate = { ...item, x: item.x - 1 }
+      const collides = compacted.some((other) => other !== item && rectsOverlap(candidate, other))
+      if (collides) break
+      item.x -= 1
+    }
+  }
+  return compacted
+}
+
 function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number; w: number; h: number }>) {
-  if (layoutsMatch(nextLayout, layoutFromWidgets.value)) return
-  emit('updateLayout', nextLayout)
+  const compacted = compactLeft(nextLayout)
+  if (layoutsMatch(compacted, layoutFromWidgets.value)) return
+  emit('updateLayout', compacted)
 }
 </script>
 
@@ -197,6 +226,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
             @refresh="emit('refreshWidget', $event)"
             @remove="emit('removeWidget', $event)"
             @resize="emit('resizeWidget', $event)"
+            @set-height="emit('setWidgetHeight', $event)"
           />
         </template>
       </GridItem>
@@ -210,6 +240,10 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
         :class="{
           'dashboard-grid__mobile-item--kpi': widget.type === 'kpi',
           'dashboard-grid__mobile-item--table': widget.type === 'table',
+          'dashboard-grid__mobile-item--explorer': widget.type === 'metric_explorer',
+          'dashboard-grid__mobile-item--tall': widget.type === 'tabs' || widget.type === 'funnel',
+          'dashboard-grid__mobile-item--attention': widget.type === 'attention',
+          'dashboard-grid__mobile-item--auto': ['breakdown', 'bar_list', 'donut', 'gauge'].includes(widget.type),
         }"
       >
         <DashboardSetupGuide
@@ -265,6 +299,13 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
   }
 }
 
+/* 3-up KPI cells on medium widths (tablet landscape); charts stay full-width. */
+@media (min-width: 960px) {
+  .dashboard-grid__mobile-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .dashboard-grid__mobile-item {
   height: 360px;
 }
@@ -276,6 +317,29 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
 
 .dashboard-grid__mobile-item--table {
   height: 340px;
+}
+
+/* Dotted v2 widgets: the composite explorer needs room for strip + chart, the
+   tabbed/funnel cards for their content, and the list cards size to content. */
+.dashboard-grid__mobile-item--explorer {
+  height: auto;
+  min-height: 560px;
+}
+
+.dashboard-grid__mobile-item--tall {
+  height: auto;
+  min-height: 420px;
+}
+
+.dashboard-grid__mobile-item--auto {
+  height: auto;
+  min-height: 168px;
+}
+
+/* Collapsed by default — a single compact row, not the shared chart-card minimum. */
+.dashboard-grid__mobile-item--attention {
+  height: auto;
+  min-height: 0;
 }
 
 /* Column guides appear only while a card is actively being dragged or resized.
@@ -327,9 +391,9 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
   display: none;
 }
 
-/* Resize handle fades in on card hover and stays visible while resizing.
-   A refined three-dot corner grip (rounded, soft) instead of hard diagonal
-   ticks — reads as a gentle affordance, not a CAD handle. */
+/* Resize handle fades in on card hover and stays visible while resizing:
+   a single rounded corner arc in the primary blue (replaces the library's
+   hard black ::before corner and the old dot grip). */
 .dashboard-grid :deep(.vgl-item:hover .vgl-item__resizer),
 .dashboard-grid :deep(.vgl-item--resizing .vgl-item__resizer) {
   display: block;
@@ -340,14 +404,26 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
   height: 26px;
   cursor: nwse-resize;
   z-index: 4;
-  background-repeat: no-repeat;
-  background-image:
-    radial-gradient(circle at 18px 18px, rgba(var(--v-theme-on-surface), 0.34) 1.5px, transparent 2.1px),
-    radial-gradient(circle at 12px 18px, rgba(var(--v-theme-on-surface), 0.34) 1.5px, transparent 2.1px),
-    radial-gradient(circle at 18px 12px, rgba(var(--v-theme-on-surface), 0.34) 1.5px, transparent 2.1px);
   opacity: 0;
-  transition: opacity 140ms ease, background-image 120ms ease;
+  transition: opacity 140ms ease;
   animation: mp-resizer-in 160ms ease forwards;
+}
+
+/* Override grid-layout-plus's default ::before (2px solid #444 square corner):
+   a bold blue arc sitting ON the card's border stroke, tracing its 14px
+   corner radius. */
+.dashboard-grid :deep(.vgl-item__resizer::before) {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 0;
+  border-right: 3px solid rgb(var(--v-theme-primary));
+  border-bottom: 3px solid rgb(var(--v-theme-primary));
+  border-bottom-right-radius: 14px;
+  transition: border-color 120ms ease;
 }
 
 @keyframes mp-resizer-in {
@@ -355,11 +431,10 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
   to { opacity: 1; }
 }
 
-.dashboard-grid :deep(.vgl-item__resizer:hover) {
-  background-image:
-    radial-gradient(circle at 18px 18px, rgb(var(--v-theme-primary)) 1.7px, transparent 2.3px),
-    radial-gradient(circle at 12px 18px, rgb(var(--v-theme-primary)) 1.7px, transparent 2.3px),
-    radial-gradient(circle at 18px 12px, rgb(var(--v-theme-primary)) 1.7px, transparent 2.3px),
-    radial-gradient(130% 130% at 100% 100%, rgba(var(--v-theme-primary), 0.12), transparent 68%);
+.dashboard-grid :deep(.vgl-item__resizer:hover::before),
+.dashboard-grid :deep(.vgl-item--resizing .vgl-item__resizer::before) {
+  border-right-color: rgb(var(--v-theme-primary));
+  border-bottom-color: rgb(var(--v-theme-primary));
+  filter: drop-shadow(0 0 3px rgba(var(--v-theme-primary), 0.45));
 }
 </style>

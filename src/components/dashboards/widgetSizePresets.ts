@@ -52,6 +52,61 @@ export const SIZE_PRESETS: Record<DashboardWidgetType, Record<WidgetSize, Widget
     L: { w: 4, h: 10, minW: 3, minH: 6 },
     XL: { w: 5, h: 11, minW: 3, minH: 6 },
   },
+  attention: {
+    /* minH 1 allows the collapsed (default) single-row summary height. */
+    S: { w: 12, h: 5, minW: 6, minH: 1 },
+    M: { w: 12, h: 6, minW: 6, minH: 1 },
+    L: { w: 12, h: 7, minW: 6, minH: 1 },
+    XL: { w: 12, h: 8, minW: 6, minH: 1 },
+  },
+  insights: {
+    S: { w: 4, h: 6, minW: 3, minH: 4 },
+    M: { w: 6, h: 8, minW: 3, minH: 4 },
+    L: { w: 8, h: 9, minW: 3, minH: 4 },
+    XL: { w: 12, h: 9, minW: 3, minH: 4 },
+  },
+  metric_explorer: {
+    S: { w: 8, h: 9, minW: 6, minH: 7 },
+    M: { w: 8, h: 10, minW: 6, minH: 7 },
+    L: { w: 12, h: 10, minW: 6, minH: 7 },
+    XL: { w: 12, h: 11, minW: 6, minH: 7 },
+  },
+  funnel: {
+    S: { w: 8, h: 7, minW: 6, minH: 6 },
+    M: { w: 12, h: 8, minW: 6, minH: 6 },
+    L: { w: 12, h: 9, minW: 6, minH: 6 },
+    XL: { w: 12, h: 10, minW: 6, minH: 6 },
+  },
+  donut: {
+    S: { w: 3, h: 7, minW: 3, minH: 5 },
+    M: { w: 4, h: 8, minW: 3, minH: 5 },
+    L: { w: 4, h: 10, minW: 3, minH: 5 },
+    XL: { w: 6, h: 10, minW: 3, minH: 5 },
+  },
+  gauge: {
+    S: { w: 3, h: 7, minW: 3, minH: 5 },
+    M: { w: 4, h: 8, minW: 3, minH: 5 },
+    L: { w: 4, h: 10, minW: 3, minH: 5 },
+    XL: { w: 6, h: 10, minW: 3, minH: 5 },
+  },
+  bar_list: {
+    S: { w: 3, h: 7, minW: 3, minH: 5 },
+    M: { w: 4, h: 8, minW: 3, minH: 5 },
+    L: { w: 6, h: 8, minW: 3, minH: 5 },
+    XL: { w: 8, h: 9, minW: 3, minH: 5 },
+  },
+  breakdown: {
+    S: { w: 3, h: 7, minW: 3, minH: 5 },
+    M: { w: 4, h: 8, minW: 3, minH: 5 },
+    L: { w: 6, h: 8, minW: 3, minH: 5 },
+    XL: { w: 8, h: 9, minW: 3, minH: 5 },
+  },
+  tabs: {
+    S: { w: 6, h: 7, minW: 5, minH: 6 },
+    M: { w: 7, h: 8, minW: 5, minH: 6 },
+    L: { w: 9, h: 9, minW: 5, minH: 6 },
+    XL: { w: 12, h: 9, minW: 5, minH: 6 },
+  },
 }
 
 export const WIDGET_SIZES: WidgetSize[] = ['S', 'M', 'L', 'XL']

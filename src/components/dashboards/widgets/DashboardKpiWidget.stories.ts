@@ -119,6 +119,26 @@ export const NarrowContainer: Story = {
   }),
 }
 
+export const WithSecondaryStat: Story = {
+  args: {
+    data: {
+      kind: 'kpi',
+      unit: 'count',
+      value: 15,
+      formattedValue: '15',
+      delta: -7.4,
+      deltaLabel: '-7.4%',
+      helperText: 'Open tickets requiring action',
+      secondaryStat: '18 unresolved · oldest 3d',
+    },
+    title: 'Support health',
+    subtitle: 'Last 30 days',
+    comparisonLabel: 'vs prev 30d',
+    icon: 'heart-pulse',
+    dataSource: 'service',
+  },
+}
+
 export const RetailWithViewReport: Story = {
   args: {
     data: {

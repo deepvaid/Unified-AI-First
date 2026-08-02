@@ -12,7 +12,7 @@ const emit = defineEmits<{
 }>()
 
 const search = ref('')
-const activeCategory = ref<'all' | 'commerce' | 'marketing' | 'service' | 'retail' | 'merchandising'>('all')
+const activeCategory = ref<'all' | 'commerce' | 'marketing' | 'service' | 'retail' | 'merchandising' | 'davinci'>('all')
 
 const CATEGORIES: Array<{ key: typeof activeCategory.value; label: string; icon?: string }> = [
   { key: 'all', label: 'All' },
@@ -21,6 +21,7 @@ const CATEGORIES: Array<{ key: typeof activeCategory.value; label: string; icon?
   { key: 'service', label: 'Service', icon: 'headset' },
   { key: 'retail', label: 'Retail', icon: 'store' },
   { key: 'merchandising', label: 'Merchandising', icon: 'tag' },
+  { key: 'davinci', label: 'Da Vinci', icon: 'sparkles' },
 ]
 
 const TYPE_LABELS: Record<DashboardWidgetType, string> = {
@@ -31,6 +32,15 @@ const TYPE_LABELS: Record<DashboardWidgetType, string> = {
   table: 'Table',
   activity: 'Activity',
   setup: 'Setup',
+  attention: 'List',
+  insights: 'Insights',
+  metric_explorer: 'Explorer',
+  funnel: 'Funnel',
+  donut: 'Chart',
+  gauge: 'Gauge',
+  bar_list: 'List',
+  breakdown: 'List',
+  tabs: 'Tabs',
 }
 
 const filteredEntries = computed(() => {

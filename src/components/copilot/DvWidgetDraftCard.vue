@@ -97,6 +97,15 @@ const TYPE_META: Record<DashboardWidgetType, { label: string; icon: string }> = 
   table: { label: 'Table', icon: 'table' },
   setup: { label: 'Setup guide', icon: 'list-checks' },
   activity: { label: 'Activity feed', icon: 'list' },
+  attention: { label: 'Attention list', icon: 'bell-ring' },
+  insights: { label: 'Da Vinci insights', icon: 'sparkles' },
+  metric_explorer: { label: 'Metric explorer', icon: 'chart-spline' },
+  funnel: { label: 'Funnel', icon: 'filter' },
+  donut: { label: 'Donut chart', icon: 'chart-pie' },
+  gauge: { label: 'Goal gauge', icon: 'goal' },
+  bar_list: { label: 'Progress list', icon: 'list-ordered' },
+  breakdown: { label: 'Breakdown list', icon: 'list' },
+  tabs: { label: 'Tabbed lists', icon: 'layout-list' },
 }
 
 const typeMeta = computed(() => {

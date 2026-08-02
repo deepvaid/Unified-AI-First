@@ -43,7 +43,7 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v15'
+const STORAGE_KEY = 'mp.dashboard-hub.v20'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -213,21 +213,37 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
   const widgets: DashboardWidget[] = []
 
   // Orders and revenue are the shared backbone — either cloud sells them.
+  // Layout mirrors the approved "Dashboard Overview v2 – dotted" design.
   if (account.subscriptions.includes('commerce') || account.subscriptions.includes('retail')) {
+    const hasService = account.subscriptions.includes('service')
+    const hasRetail = account.subscriptions.includes('retail')
     widgets.push(
-      makeWidget('Revenue', 'commerce_revenue', 'kpi', createLayout(0, 0, 3, 4)),
-      makeWidget('Orders', 'commerce_orders', 'kpi', createLayout(3, 0, 3, 4)),
-      makeWidget('Open Rate', 'marketing_open_rate', 'kpi', createLayout(6, 0, 3, 4)),
-      makeWidget('Total Contacts', 'contacts_total', 'kpi', createLayout(9, 0, 3, 4)),
-      ...comparisonWidgets(4),
-      makeSetupWidget(createLayout(0, 11, 4, 8)),
-      makeWidget('Revenue Over Time', 'commerce_revenue_over_time', 'timeseries', createLayout(4, 11, 8, 8)),
-      makeWidget('Live activity', 'marketing_live_activity', 'activity', createLayout(0, 19, 6, 8)),
-      makeWidget('Top Campaigns', 'marketing_top_campaigns', 'table', createLayout(6, 19, 6, 7)),
-      makeWidget('Recent Orders', 'commerce_recent_orders', 'table', createLayout(0, 27, 7, 7)),
-      makeWidget('Revenue by Channel', 'commerce_revenue_by_channel', 'bar', createLayout(7, 27, 5, 7)),
-      makeWidget('Email Volume', 'marketing_email_volume', 'timeseries', createLayout(0, 34, 6, 7)),
-      makeWidget('Email Address by Domain', 'contacts_by_domain', 'bar', createLayout(6, 34, 6, 7)),
+      // h=1 — the banner defaults to collapsed, so it seeds at its single-row
+      // summary height, not the expanded list height.
+      makeWidget('Needs your attention', 'overview_attention', 'attention', createLayout(0, 0, 12, 1)),
+      makeWidget('Store performance', 'overview_metric_explorer', 'metric_explorer', createLayout(0, 1, 8, 10)),
+      { ...makeWidget('Where revenue comes from', 'commerce_revenue_attribution', 'donut', createLayout(8, 1, 4, 10)), subtitle: 'Share of attributed revenue' },
+      { ...makeWidget('Campaign to purchase funnel', 'overview_campaign_funnel', 'funnel', createLayout(0, 11, 12, 8)), subtitle: 'Marketing sends through to commerce orders' },
+      makeWidget('Orders by sales channel', 'commerce_orders_by_channel', 'donut', createLayout(0, 19, 4, 8)),
+      makeWidget('Rolling revenue goal', 'commerce_revenue_goal', 'gauge', createLayout(4, 19, 4, 8)),
+      { ...makeWidget('New vs returning', 'commerce_new_vs_returning', 'donut', createLayout(8, 19, 4, 8)), subtitle: 'Share of orders placed' },
+      makeWidget('Orders & activity', 'overview_tabs', 'tabs', createLayout(0, 27, 7, 8)),
+      { ...makeWidget('Da Vinci insights', 'davinci_insights', 'insights', createLayout(7, 27, 5, 8)), subtitle: 'Fresh observations from your data' },
+      // The two list rows are sized to their content (h=6/h=7), not chart height.
+      { ...makeWidget('Fulfillment queue', 'commerce_fulfillment_queue', 'breakdown', createLayout(0, 35, 4, 6)), subtitle: 'Orders in the pipeline' },
+    )
+    if (hasService) {
+      widgets.push(makeWidget('Service tickets', 'service_tickets_breakdown', 'breakdown', createLayout(4, 35, 4, 6)))
+    }
+    widgets.push(
+      makeWidget('Email deliverability', 'marketing_deliverability_breakdown', 'breakdown', createLayout(8, 35, 4, 6)),
+      { ...makeWidget('Best sellers', 'commerce_best_sellers', 'bar_list', createLayout(0, 41, 4, 7)), subtitle: 'By revenue' },
+    )
+    if (hasRetail) {
+      widgets.push({ ...makeWidget('Retail today', 'retail_today_breakdown', 'bar_list', createLayout(4, 41, 4, 7)), subtitle: 'POS takings by location' })
+    }
+    widgets.push(
+      { ...makeWidget('Journeys in flight', 'marketing_journeys_in_flight', 'breakdown', createLayout(8, 41, 4, 7)), subtitle: 'Contacts in automations' },
     )
   } else {
     widgets.push(
@@ -246,13 +262,20 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
     )
   }
 
-  if (account.subscriptions.includes('service')) {
-    // Start after the commerce email row (y=34, h=7 → row ends at y=41)
+  // Commerce/retail accounts get their service card inside the v2 grid above;
+  // analytics-only accounts still get the classic service row appended here.
+  if (
+    account.subscriptions.includes('service')
+    && !account.subscriptions.includes('commerce')
+    && !account.subscriptions.includes('retail')
+  ) {
+    // Start after the email row (analytics branch ends at y=40).
+    // Support health gets h=7 so the KPI stays flush with Ticket Volume —
+    // vertical-compact would otherwise pull Tickets by Channel into the gap.
     widgets.push(
-      makeWidget('Open Tickets', 'service_open_tickets', 'kpi', createLayout(0, 41, 3, 4)),
-      makeWidget('Unresolved Tickets', 'service_unresolved_tickets', 'kpi', createLayout(3, 41, 3, 4)),
-      makeWidget('Ticket Volume', 'service_ticket_volume', 'timeseries', createLayout(6, 41, 6, 7)),
-      makeWidget('Tickets by Channel', 'service_tickets_by_channel', 'bar', createLayout(0, 45, 6, 7)),
+      makeWidget('Support health', 'service_support_health', 'kpi', createLayout(0, 47, 3, 7)),
+      makeWidget('Ticket Volume', 'service_ticket_volume', 'timeseries', createLayout(3, 47, 9, 7)),
+      makeWidget('Tickets by Channel', 'service_tickets_by_channel', 'bar', createLayout(0, 54, 6, 7)),
     )
   }
 
