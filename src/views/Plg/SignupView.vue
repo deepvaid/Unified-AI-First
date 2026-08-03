@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, defineAsyncComponent, onUnmounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import { usePlgStore, type TrialSignupPayload } from '@/stores/usePlg'
 import { useAccountsStore } from '@/stores/useAccounts'
@@ -8,7 +8,12 @@ import { useUserProfile } from '@/stores/useUserProfile'
 import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
 
 const router = useRouter()
+const route = useRoute()
 const plg = usePlgStore()
+
+// Same three.js particle orb the landing/login pages mount — loaded lazily so
+// the signup chunk stays light. Has its own CSS fallback while loading.
+const DvOrbCanvas = defineAsyncComponent(() => import('@/components/copilot/voice/DvOrbCanvas.vue'))
 const accounts = useAccountsStore()
 const profile = useUserProfile()
 const daVinciOnboarding = useDaVinciOnboardingStore()
@@ -38,7 +43,8 @@ const stage = ref<Stage>('details')
 // ── Step 1 — Details ────────────────────────────────────────────────────
 const firstName = ref('')
 const lastName = ref('')
-const email = ref('')
+// Prefilled when arriving from the landing login page (/main-landing/login.html#signup)
+const email = ref(typeof route.query.email === 'string' ? route.query.email : '')
 const companyName = ref('')
 const companyUrl = ref('')
 const submitted = ref(false)
@@ -125,10 +131,6 @@ function enterMaropost() {
   })
 }
 
-function goBackToDemo() {
-  router.back()
-}
-
 const wizardCurrent = computed(() => {
   if (stage.value === 'details') return 1
   if (stage.value === 'verify') return 2
@@ -137,44 +139,33 @@ const wizardCurrent = computed(() => {
 </script>
 
 <template>
-  <div class="plg-signup d-flex flex-column">
-    <div class="d-flex align-center justify-space-between px-6 px-sm-10 py-6">
-      <div>
-        <div class="plg-signup__wordmark">MAROPOST</div>
-        <div class="text-caption text-medium-emphasis">Free trial</div>
-      </div>
-      <v-btn
-        variant="text"
-        size="small"
-        class="text-none text-medium-emphasis"
-        prepend-icon="arrow-left"
-        @click="goBackToDemo"
-      >
-        Back to demo
-      </v-btn>
+  <div class="plg-signup">
+    <a class="plg-signup__wordmark" href="/main-landing/">MAROPOST</a>
+    <a class="plg-signup__back" href="/main-landing/">← Back to site</a>
+
+    <div class="plg-signup__backdrop" aria-hidden="true">
+      <DvOrbCanvas state="idle" />
     </div>
 
-    <div class="flex-grow-1 d-flex align-center justify-center px-4 pb-10">
-      <div class="plg-signup__content">
-        <div class="d-flex justify-center mb-6">
+    <div class="plg-signup__center">
+      <div class="plg-signup__card">
+        <div class="d-flex justify-center mb-8">
           <MpWizardSteps :steps="wizardSteps" :current="wizardCurrent" />
         </div>
 
-        <v-card flat border rounded="xl" class="pa-8">
-          <transition name="plg-fade" mode="out-in">
+        <transition name="plg-fade" mode="out-in">
             <!-- Stage 1 — Details -->
             <div v-if="stage === 'details'" key="details">
-              <div class="text-h5 font-weight-bold mb-2">Start your 14-day free trial</div>
-              <div class="text-body-2 text-medium-emphasis mb-6">
-                Marketing, Commerce &amp; Service Cloud — no credit card required.
-              </div>
+              <h1 class="plg-signup__title">Create your account</h1>
+              <div class="plg-signup__sub">Start your free trial — no card required.</div>
 
               <v-form @submit.prevent="submitDetails">
                 <v-row dense>
                   <v-col cols="6">
                     <v-text-field
                       v-model="firstName"
-                      label="First name"
+                      placeholder="First name"
+                      aria-label="First name"
                       variant="outlined"
                       density="comfortable"
                       autocomplete="given-name"
@@ -185,7 +176,8 @@ const wizardCurrent = computed(() => {
                   <v-col cols="6">
                     <v-text-field
                       v-model="lastName"
-                      label="Last name"
+                      placeholder="Last name"
+                      aria-label="Last name"
                       variant="outlined"
                       density="comfortable"
                       autocomplete="family-name"
@@ -196,11 +188,11 @@ const wizardCurrent = computed(() => {
                   <v-col cols="12">
                     <v-text-field
                       v-model="email"
-                      label="Work email"
+                      placeholder="Work email"
+                      aria-label="Work email"
                       type="email"
                       variant="outlined"
                       density="comfortable"
-                      prepend-inner-icon="mail"
                       autocomplete="email"
                       :error="submitted && !emailValid"
                       :error-messages="emailErrorMessage ? [emailErrorMessage] : []"
@@ -209,10 +201,10 @@ const wizardCurrent = computed(() => {
                   <v-col cols="12">
                     <v-text-field
                       v-model="companyName"
-                      label="Company name"
+                      placeholder="Company name"
+                      aria-label="Company name"
                       variant="outlined"
                       density="comfortable"
-                      prepend-inner-icon="building-2"
                       autocomplete="organization"
                       :error="submitted && !companyNameValid"
                       :error-messages="submitted && !companyNameValid ? ['Company name is required'] : []"
@@ -221,11 +213,10 @@ const wizardCurrent = computed(() => {
                   <v-col cols="12">
                     <v-text-field
                       v-model="companyUrl"
-                      label="Company URL"
-                      placeholder="https://yourcompany.com"
+                      placeholder="Company URL — https://yourcompany.com"
+                      aria-label="Company URL"
                       variant="outlined"
                       density="comfortable"
-                      prepend-inner-icon="link"
                       :error="submitted && !companyUrlValid"
                       :error-messages="submitted && !companyUrlValid ? ['Company URL is required'] : []"
                     />
@@ -235,38 +226,34 @@ const wizardCurrent = computed(() => {
                 <v-btn
                   type="submit"
                   block
-                  color="primary"
                   variant="flat"
                   size="large"
-                  class="text-none mt-2"
-                  append-icon="arrow-right"
+                  class="text-none mt-1 plg-signup__primary"
                 >
-                  Start free trial
+                  Create account
                 </v-btn>
               </v-form>
 
-              <div class="text-caption text-medium-emphasis text-center mt-4">
-                By continuing you agree to the Terms of Service.
+              <div class="plg-signup__switch">
+                Already have an account? <a href="/main-landing/login.html">Log in</a>
               </div>
             </div>
 
             <!-- Stage 2 — Verify email -->
             <div v-else-if="stage === 'verify'" key="verify" class="d-flex flex-column align-center text-center">
               <div class="plg-signup__icon-circle mb-5">
-                <v-icon size="28" color="primary">mail</v-icon>
+                <v-icon size="28">mail</v-icon>
               </div>
-              <div class="text-h5 font-weight-bold mb-2">Check your inbox</div>
-              <div class="text-body-2 text-medium-emphasis mb-6">
+              <h1 class="plg-signup__title">Check your inbox</h1>
+              <div class="plg-signup__sub">
                 We sent a verification link to <strong class="text-high-emphasis">{{ email }}</strong>.
               </div>
 
               <v-btn
                 block
-                color="primary"
                 variant="flat"
                 size="large"
-                class="text-none mb-3"
-                prepend-icon="mouse-pointer-click"
+                class="text-none mb-3 plg-signup__primary"
                 @click="startProvisioning"
               >
                 Simulate clicking the verification link
@@ -281,11 +268,9 @@ const wizardCurrent = computed(() => {
             </div>
 
             <!-- Stage 3 — Provisioning -->
-            <div v-else-if="stage === 'provisioning'" key="provisioning">
-              <div class="text-h5 font-weight-bold mb-1 text-center">Setting up your workspace</div>
-              <div class="text-body-2 text-medium-emphasis mb-6 text-center">
-                This takes just a few seconds.
-              </div>
+            <div v-else-if="stage === 'provisioning'" key="provisioning" class="text-center">
+              <h1 class="plg-signup__title">Setting up your workspace</h1>
+              <div class="plg-signup__sub">This takes just a few seconds.</div>
 
               <div class="plg-signup__checklist">
                 <div v-for="(item, i) in checklist" :key="i" class="plg-signup__checklist-row">
@@ -303,49 +288,186 @@ const wizardCurrent = computed(() => {
               <div class="plg-signup__icon-circle plg-signup__icon-circle--success mb-5">
                 <v-icon size="28" color="success">check</v-icon>
               </div>
-              <div class="text-h5 font-weight-bold mb-2">You're in, {{ firstName }}!</div>
-              <div class="text-body-2 text-medium-emphasis mb-6">
+              <h1 class="plg-signup__title">You're in, {{ firstName }}!</h1>
+              <div class="plg-signup__sub">
                 Your 14-day trial of all three clouds is ready.
               </div>
 
               <v-btn
                 block
-                color="primary"
                 variant="flat"
                 size="large"
-                class="text-none"
-                append-icon="arrow-right"
+                class="text-none plg-signup__primary"
                 @click="enterMaropost"
               >
                 Enter Maropost
               </v-btn>
             </div>
-          </transition>
-        </v-card>
+        </transition>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Visual language mirrors public/main-landing/login.html — the page users
+   arrive from — so landing → signup → onboarding reads as one surface. */
 .plg-signup {
-  min-height: 100vh;
-  width: 100%;
-  background:
-    radial-gradient(circle at 12% 18%, rgba(var(--v-theme-primary), 0.14), transparent 55%),
-    radial-gradient(circle at 88% 82%, rgba(var(--v-theme-secondary), 0.12), transparent 55%),
-    rgb(var(--v-theme-background));
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--plg-bg);
+  --plg-bg: #ffffff;
+  --plg-ink: #1c1f24;
+  --plg-ink-contrast: #ffffff;
+  --plg-ink-hover: #000000;
+  --plg-dim: #8b929c;
+  --plg-line: rgba(24, 27, 33, 0.14);
+  --plg-field: #fcfcfd;
+  --plg-accent: #1877f2;
 }
 
+.v-theme--dark .plg-signup {
+  --plg-bg: rgb(var(--v-theme-background));
+  --plg-ink: #eef1f5;
+  --plg-ink-contrast: #14161a;
+  --plg-ink-hover: #ffffff;
+  --plg-line: rgba(255, 255, 255, 0.18);
+  --plg-field: rgba(255, 255, 255, 0.05);
+}
+
+/* Fixed chrome — wordmark top-left, back link top-right, as on login.html */
 .plg-signup__wordmark {
+  position: fixed;
+  top: 27px;
+  left: clamp(22px, 4vw, 48px);
+  z-index: 6;
   font-weight: 800;
-  font-size: 1.125rem;
-  letter-spacing: 0.08em;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--plg-ink);
+  text-decoration: none;
 }
 
-.plg-signup__content {
-  width: 100%;
-  max-width: 520px;
+.plg-signup__back {
+  position: fixed;
+  top: 30px;
+  right: clamp(22px, 4vw, 48px);
+  z-index: 6;
+  color: var(--plg-dim);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.18s;
+}
+.plg-signup__back:hover {
+  color: var(--plg-ink);
+}
+
+/* Orb backdrop — same engine the landing/login pages mount */
+.plg-signup__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.plg-signup__center {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 88px 24px 48px;
+}
+
+.plg-signup__card {
+  width: min(420px, 90vw);
+  display: flex;
+  flex-direction: column;
+}
+
+.plg-signup__title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+
+.plg-signup__sub {
+  font-size: 14px;
+  color: var(--plg-dim);
+  margin-bottom: 18px;
+}
+
+/* Fields — hairline border, 7px radius, quiet fill, accent focus ring */
+.plg-signup :deep(.v-field) {
+  border-radius: 7px;
+  background: var(--plg-field);
+  font-size: 15px;
+}
+.plg-signup :deep(.v-field__outline) {
+  --v-field-border-opacity: 1;
+  color: var(--plg-line);
+}
+.plg-signup :deep(.v-field--focused) {
+  box-shadow: 0 0 0 3px rgba(24, 118, 242, 0.14);
+}
+.plg-signup :deep(.v-field--focused .v-field__outline) {
+  color: var(--plg-accent);
+}
+.plg-signup :deep(.v-field--error .v-field__outline) {
+  color: rgb(var(--v-theme-error));
+}
+.plg-signup :deep(.v-field input::placeholder) {
+  color: var(--plg-dim);
+  opacity: 1;
+}
+
+/* Primary CTA — near-black ink, matching login.html's .primary */
+.plg-signup__primary {
+  background: var(--plg-ink) !important;
+  color: var(--plg-ink-contrast) !important;
+  /* !important: the global button skin pill-rounds v-btn */
+  border-radius: 7px !important;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.plg-signup__primary:hover {
+  background: var(--plg-ink-hover) !important;
+}
+
+.plg-signup__switch {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 13.5px;
+  color: var(--plg-dim);
+}
+.plg-signup__switch a {
+  color: var(--plg-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.plg-signup__switch a:hover {
+  text-decoration: underline;
+}
+
+/* Wizard steps — quieted to sit directly on the orb */
+.plg-signup :deep(.mp-wizard-step) {
+  color: var(--plg-dim);
+}
+.plg-signup :deep(.mp-wizard-step--active) {
+  color: var(--plg-ink);
+}
+.plg-signup :deep(.mp-wizard-step--active .mp-wizard-step__num) {
+  background: var(--plg-ink);
+  border-color: var(--plg-ink);
+  color: var(--plg-ink-contrast);
+}
+.plg-signup :deep(.mp-wizard-step--done .mp-wizard-step__num) {
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  color: var(--plg-ink);
 }
 
 .plg-signup__icon-circle {
@@ -355,7 +477,8 @@ const wizardCurrent = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(var(--v-theme-primary), 0.12);
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  color: var(--plg-ink);
 }
 
 .plg-signup__icon-circle--success {

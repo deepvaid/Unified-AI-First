@@ -265,12 +265,37 @@ const copilotDrawerWidth = computed(() => {
   /* margins (4 + 12) + borders (2) + the 4px slack the old 52px constant
      absorbed — keeps viewport-sized sub-shells exactly flush inside. */
   --mp-frame-offset: 22px;
+  position: relative;
+  isolation: isolate;
   margin: 4px 12px 12px 4px;
   min-height: calc(100vh - 56px - 16px);
-  background: rgb(var(--v-theme-surface));
+  /* A hair off-white so the white widget cards read against the bed. */
+  background: #f9f9f9;
   border: 1px solid var(--mp-border-subtle);
   border-radius: var(--mp-component-card-radius-lg);
   overflow: hidden;
+}
+
+html[data-theme='dark'] .mp-content-frame {
+  background: rgb(var(--v-theme-surface));
+}
+
+/* Faint Da Vinci-orb stipple on the content bed. A ::before overlay (not the
+   element's background) so the white-sidebar variant's `background !important`
+   override can't wipe it. Two mismatched dot periods break the visible grid. */
+.mp-content-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(var(--v-theme-on-surface), 0.08) 1px, transparent 1.1px),
+    radial-gradient(circle, rgba(var(--v-theme-on-surface), 0.08) 1px, transparent 1.1px);
+  background-size: 22px 22px, 34px 34px;
+  background-position: 0 0, 11px 17px;
+  /* the global reset defaults pseudo-elements to no-repeat */
+  background-repeat: repeat;
 }
 
 .mp-main-shell {
