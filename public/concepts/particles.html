@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Analytics Dashboard — v7</title>
+<style>
+  :root{
+    --ink:#15171B;
+    --sub:#9497A0;
+    --line:#EAEAEC;
+    --bg:#FAFAFA;
+    --card:#FFFFFF;
+    --accent:#162ADE;
+    --good:#1FAA6D;
+    --bad:#E5484D;
+    --mono:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ font-family:var(--sans); background:var(--bg); color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased; }
+  .shell{display:flex; min-height:100vh;}
+
+  .sidebar{
+    width:68px; background:#101114;
+    display:flex; flex-direction:column; align-items:center; padding:22px 0; gap:4px;
+  }
+  .sidebar .logo{ width:30px;height:30px;border-radius:8px; background:var(--accent); margin-bottom:26px; }
+  .nav-icon{ width:38px;height:38px;border-radius:10px; display:flex;align-items:center;justify-content:center; color:#5B5D66; cursor:pointer; margin:2px 0; }
+  .nav-icon svg{width:17px;height:17px;}
+  .nav-icon.active{ background:#1B1D22; color:#fff; }
+  .nav-spacer{flex:1;}
+
+  .main{flex:1; padding:36px 44px 56px; max-width:1320px;}
+  .topline{display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;}
+  .topline h1{font-size:20px; margin:0; letter-spacing:-0.01em; font-weight:600;}
+  .pill-tag{ font-size:11.5px; color:var(--sub); border:1px solid var(--line); padding:5px 11px; border-radius:999px; }
+
+  .card{ background:var(--card); border-radius:14px; }
+  .eyebrow{ font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--sub); font-weight:600; }
+
+  canvas{display:block; width:100%;}
+
+  /* KPI row */
+  .kpi-row{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  .kpi-card{padding:20px 22px 16px;}
+  .kpi-top{display:flex; align-items:center; justify-content:space-between;}
+  .kpi-value-row{display:flex; align-items:baseline; gap:9px; margin-top:9px;}
+  .kpi-value{font-family:var(--mono); font-size:24px; font-weight:400; letter-spacing:-0.02em;}
+  .delta{font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px;}
+  .delta.up{color:var(--good); background:rgba(31,170,109,0.10);}
+  .delta.down{color:var(--bad); background:rgba(229,72,77,0.10);}
+  .kpi-spark{margin-top:12px;}
+
+  .grid-2{display:grid; grid-template-columns:1.5fr 1fr; gap:18px; margin-top:18px; align-items:stretch;}
+  @media (max-width: 1100px){ .grid-2{grid-template-columns:1fr;} }
+  .grid-3{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:18px; margin-top:18px; align-items:stretch;}
+  @media (max-width: 1100px){ .grid-3{grid-template-columns:1fr;} }
+
+  .panel{padding:22px 22px 20px;}
+  .panel-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--line);}
+  .panel h3{font-size:13.5px; margin:0; font-weight:600;}
+  .see-all{font-size:11.5px; color:var(--sub); text-decoration:none;}
+
+  .legend-row{display:flex; gap:18px; margin:14px 2px 0; flex-wrap:wrap;}
+  .legend-item{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--sub);}
+  .ldot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+
+  .center-stat{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;}
+  .center-stat b{font-family:var(--mono); font-size:20px; font-weight:400;}
+  .center-stat span{font-size:10.5px; color:var(--sub); margin-top:2px;}
+
+  .dist-list{margin-top:16px;}
+  .dist-row{display:flex; align-items:center; gap:10px; padding:8px 0;}
+  .dist-row .ldot{flex:none;}
+  .dist-row .l{font-size:12.5px; color:#54565F; width:78px; flex:none;}
+  .hbar-track{flex:1; height:6px; border-radius:999px; background:var(--line); overflow:hidden;}
+  .hbar-fill{height:100%; border-radius:999px;}
+  .dist-row .r{font-family:var(--mono); font-size:12px; color:var(--sub); width:40px; text-align:right; flex:none;}
+
+  .int-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
+  .int-row:last-child{border-bottom:none;}
+  .int-icon{ width:30px;height:30px;border-radius:9px;flex:none; display:flex;align-items:center;justify-content:center; background:#F2F2F3; color:#54565F; font-size:13px; }
+  .int-name{font-size:13px; font-weight:400;}
+  .int-desc{font-size:11px; color:var(--sub); margin-top:1px;}
+  .int-right{margin-left:auto; text-align:right;}
+  .int-rate{font-family:var(--mono); font-size:12px; color:var(--sub);}
+  .rate-track{width:70px; height:4px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:6px;}
+  .rate-fill{height:100%; background:var(--ink); border-radius:999px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="sidebar">
+    <div class="logo"></div>
+    <div class="nav-icon active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 11l2 2 4-4"/></svg></div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg></div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12A9 9 0 1112 3v9z"/></svg></div>
+    <div class="nav-spacer"></div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9"/></svg></div>
+  </div>
+
+  <div class="main">
+    <div class="topline">
+      <h1>Analytics</h1>
+      <div class="pill-tag">v7 · particle charts</div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="card kpi-card">
+        <div class="kpi-top"><div class="eyebrow">Page Views</div><span class="delta up">↑ 1.3%</span></div>
+        <div class="kpi-value-row"><span class="kpi-value">4.20</span></div>
+        <canvas id="spark1" height="42" class="kpi-spark"></canvas>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-top"><div class="eyebrow">Total Revenue</div><span class="delta up">↑ 3.4%</span></div>
+        <div class="kpi-value-row"><span class="kpi-value">326.60K</span></div>
+        <canvas id="spark2" height="42" class="kpi-spark"></canvas>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-top"><div class="eyebrow">Bounce Rate</div><span class="delta down">↓ 1.2%</span></div>
+        <div class="kpi-value-row"><span class="kpi-value">42.34%</span></div>
+        <canvas id="spark3" height="42" class="kpi-spark"></canvas>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card panel">
+        <div class="panel-top"><h3>Sales Overview</h3><a class="see-all" href="#">See all</a></div>
+        <canvas id="salesChart" height="220"></canvas>
+        <div class="legend-row">
+          <div class="legend-item"><span class="ldot" style="background:var(--ink)"></span>This month</div>
+          <div class="legend-item"><span class="ldot" style="background:var(--accent)"></span>Last month</div>
+        </div>
+      </div>
+
+      <div class="card panel">
+        <div class="panel-top"><h3>Total Subscriber</h3><a class="see-all" href="#">See all</a></div>
+        <canvas id="subChart" height="220"></canvas>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card panel" style="grid-column: span 1;">
+        <div class="panel-top"><h3>Sales Distribution</h3></div>
+        <div style="position:relative; height:150px;">
+          <canvas id="distDonut" height="150"></canvas>
+          <div class="center-stat"><b>68%</b><span>Total sales</span></div>
+        </div>
+        <div class="dist-list" id="distList"></div>
+      </div>
+
+      <div class="card panel" style="grid-column: span 2;">
+        <div class="panel-top"><h3>List of Integration</h3><a class="see-all" href="#">See all</a></div>
+        <div id="intList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- helpers ---------- */
+function setupCanvas(canvas, hCss){
+  const dpr = window.devicePixelRatio||1;
+  const rect = canvas.getBoundingClientRect();
+  const h = hCss || rect.height;
+  canvas.width = rect.width*dpr;
+  canvas.height = h*dpr;
+  canvas.style.height = h+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  return {ctx, W:rect.width, H:h};
+}
+function hash(n){ const x=Math.sin(n*12.9898)*43758.5453; return x-Math.floor(x); }
+function hexToRgb(hex){ const v=hex.replace('#',''); const n=parseInt(v.length===3?v.split('').map(c=>c+c).join(''):v,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function withAlpha(hex,a){ const [r,g,b]=hexToRgb(hex); return `rgba(${r},${g},${b},${Math.max(0,a)})`; }
+
+function toPts(values, W, H, padL, padR, topPad, bottomPad){
+  const max=Math.max(...values), min=Math.min(...values);
+  const usableW=W-padL-padR, usableH=H-topPad-bottomPad;
+  return values.map((v,i)=>({ x: padL+(i/(values.length-1))*usableW, y: topPad+(1-(v-min)/(max-min||1))*usableH, v }));
+}
+
+/* sample the exact quadratic-through-midpoints curve as a dense point array */
+function sampleTrace(pts, stepsPerSeg){
+  const out=[];
+  let cur = {x:pts[0].x, y:pts[0].y};
+  out.push({x:cur.x,y:cur.y});
+  for(let i=0;i<pts.length-1;i++){
+    const ctrl=pts[i], p1=pts[i+1];
+    const end={x:(ctrl.x+p1.x)/2, y:(ctrl.y+p1.y)/2};
+    for(let s=1;s<=stepsPerSeg;s++){
+      const t=s/stepsPerSeg;
+      const it=1-t;
+      out.push({
+        x: it*it*cur.x + 2*it*t*ctrl.x + t*t*end.x,
+        y: it*it*cur.y + 2*it*t*ctrl.y + t*t*end.y
+      });
+    }
+    cur = end;
+  }
+  const last = pts[pts.length-1];
+  for(let s=1;s<=stepsPerSeg;s++){
+    const t=s/stepsPerSeg;
+    out.push({x:cur.x+(last.x-cur.x)*t, y:cur.y+(last.y-cur.y)*t});
+  }
+  return out;
+}
+
+/* dense particle band tracing a curve, with a sparse scattered halo above/below */
+function drawParticleLine(ctx, pts, color, o){
+  o=o||{};
+  const spine = sampleTrace(pts, o.stepsPerSeg||9);
+  const core = o.coreSpread!=null?o.coreSpread:2.6;
+  const outer = o.outerSpread!=null?o.outerSpread:8.5;
+  const coreDots = o.coreDots||2;
+  const dotR = o.dotR!=null?o.dotR:0.7;
+  const seed = o.seed||0;
+  spine.forEach((p,i)=>{
+    for(let j=0;j<coreDots;j++){
+      const h1=hash(seed+p.x*0.37+p.y*0.19+i*2.7+j*5.3);
+      const h2=hash(seed+p.x*0.53+p.y*0.71+i*3.1+j*7.9);
+      const offset=((h1+h2)/2-0.5)*2*core;
+      const a=0.55+0.4*hash(seed+p.x*0.9+p.y*0.4+i*9.3+j*4.1);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y+offset, dotR*(0.65+0.5*hash(seed+i*1.3+j)), 0, Math.PI*2);
+      ctx.fillStyle=withAlpha(color,a);
+      ctx.fill();
+    }
+    if(i%2===0){
+      const h3=hash(seed+p.x*1.7+i*5.9);
+      if(h3<0.55){
+        const h4=hash(seed+p.x*2.3+i*7.1);
+        const off2=(h4-0.5)*2*outer;
+        const a2=0.08+0.16*hash(seed+p.x*0.9+i*2.2);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y+off2, dotR*0.75, 0, Math.PI*2);
+        ctx.fillStyle=withAlpha(color,a2);
+        ctx.fill();
+      }
+    }
+  });
+}
+
+/* halftone mountain fill under a curve: dense near the line, fading to sparse near the baseline */
+function drawDotMountainFill(ctx, spine, baseY, color, o){
+  o=o||{};
+  const stepX=o.stepX||4, stepY=o.stepY||4.2, dotR=o.dotR||0.55, seed=o.seed||0;
+  let ptr=0;
+  for(let x=spine[0].x; x<=spine[spine.length-1].x; x+=stepX){
+    while(ptr<spine.length-1 && spine[ptr].x<x) ptr++;
+    const topY = spine[ptr].y;
+    const h = baseY-topY; if(h<=0) continue;
+    for(let y=topY; y<baseY; y+=stepY){
+      const depth=(y-topY)/h;
+      const prob=Math.max(0, 1-depth*1.2);
+      if(hash(seed+x*0.31+y*0.53)>prob) continue;
+      const a=0.42*prob+0.05;
+      ctx.beginPath(); ctx.arc(x,y,dotR,0,Math.PI*2);
+      ctx.fillStyle=withAlpha(color,a);
+      ctx.fill();
+    }
+  }
+}
+
+/* dotted vertical guide lines with endpoint dots */
+function drawVDotGrid(ctx, xs, topY, botY, color){
+  xs.forEach(x=>{
+    for(let y=topY+5; y<=botY-2; y+=6){
+      ctx.beginPath(); ctx.arc(x,y,0.55,0,Math.PI*2);
+      ctx.fillStyle=withAlpha(color,0.5);
+      ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(x,topY,1.5,0,Math.PI*2); ctx.fillStyle=withAlpha(color,0.9); ctx.fill();
+    ctx.beginPath(); ctx.arc(x,botY,1.5,0,Math.PI*2); ctx.fillStyle=withAlpha(color,0.9); ctx.fill();
+  });
+}
+
+/* KPI sparklines — small particle bands, matching the finance mini-chart treatment (fill + line + end marker) */
+function drawSparkline(id, values, accent){
+  const canvas = document.getElementById(id);
+  const {ctx,W,H} = setupCanvas(canvas,42);
+  ctx.clearRect(0,0,W,H);
+  const pts = toPts(values, W, H, 2,2,6,8);
+  const spine = sampleTrace(pts, 7);
+  drawDotMountainFill(ctx, spine, H-8, accent, {seed: id.length*17+values[0], stepX:3.2, stepY:3.2, dotR:0.45});
+  drawParticleLine(ctx, pts, accent, {seed: id.length*17+values[0], coreSpread:1.5, outerSpread:4, dotR:0.55, stepsPerSeg:7});
+
+  const lastPt = pts[pts.length-1];
+  ctx.beginPath(); ctx.arc(lastPt.x,lastPt.y,2.6,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.lineWidth=1.2; ctx.strokeStyle=accent; ctx.stroke();
+}
+drawSparkline('spark1', [3.6,3.8,3.7,4.0,3.9,4.1,4.2], '#15171B');
+drawSparkline('spark2', [260,280,270,300,310,305,326], '#15171B');
+drawSparkline('spark3', [46,45,44.5,43,43.8,42.9,42.34], '#15171B');
+
+/* Sales Overview — two particle lines, black + accent, dotted vertical grid */
+function drawSalesChart(){
+  const canvas = document.getElementById('salesChart');
+  const {ctx,W,H} = setupCanvas(canvas,220);
+  ctx.clearRect(0,0,W,H);
+  const months=['Jul','Aug','Sep','Oct','Nov','Dec'];
+  const thisMonth=[280,340,300,420,380,410];
+  const lastMonth=[220,260,310,280,350,320];
+  const padL=6, padR=6, topPad=10, bottomPad=26;
+  const usableW=W-padL-padR, usableH=H-topPad-bottomPad;
+  const all=[...thisMonth,...lastMonth];
+  const max=Math.max(...all), min=Math.min(...all);
+  const mk=(vals)=>vals.map((v,i)=>({x:padL+(i/(vals.length-1))*usableW, y:topPad+(1-(v-min)/(max-min||1))*usableH, v}));
+  const pts1=mk(thisMonth), pts2=mk(lastMonth);
+
+  drawVDotGrid(ctx, pts1.map(p=>p.x), topPad, H-bottomPad, '#C9CBD0');
+
+  const baseY = H-bottomPad;
+  const spine2 = sampleTrace(pts2, 9);
+  drawDotMountainFill(ctx, spine2, baseY, '#162ADE', {seed:53, stepX:4, stepY:4.2, dotR:0.4});
+  drawParticleLine(ctx, pts2, '#162ADE', {seed:53, coreSpread:2.2, outerSpread:6.5, dotR:0.62});
+
+  const spine1 = sampleTrace(pts1, 9);
+  drawDotMountainFill(ctx, spine1, baseY, '#15171B', {seed:71, stepX:4, stepY:4.2, dotR:0.55});
+  drawParticleLine(ctx, pts1, '#15171B', {seed:71, coreSpread:2.4, outerSpread:8, dotR:0.7});
+
+  const last1 = pts1[pts1.length-1], last2 = pts2[pts2.length-1];
+  ctx.beginPath(); ctx.arc(last2.x,last2.y,3,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.lineWidth=1.3; ctx.strokeStyle='#162ADE'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(last1.x,last1.y,3.5,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.lineWidth=1.4; ctx.strokeStyle='#15171B'; ctx.stroke();
+
+  const peak = pts1.reduce((a,b)=>b.v>a.v?b:a);
+  ctx.font='400 11px '+"'Inter',sans-serif"; ctx.fillStyle='#15171B'; ctx.textAlign='center';
+  ctx.fillText(peak.v.toLocaleString()+' visits', peak.x, peak.y-12);
+
+  ctx.fillStyle='#B4B6BE'; ctx.font='10.5px Inter, sans-serif'; ctx.textAlign='center';
+  pts1.forEach((p,i)=>ctx.fillText(months[i], p.x, H-8));
+}
+drawSalesChart();
+
+/* Total Subscriber — dot-matrix bars: dense at base, fraying into particles toward the tip */
+function drawDotBar(ctx, cx, yTop, yBottom, halfWidth, color, seed){
+  const stepX=3, stepY=3;
+  const h = yBottom-yTop;
+  if(h<=0) return;
+  for(let y=yTop; y<yBottom; y+=stepY){
+    const t=(y-yTop)/h; // 0 at tip, 1 at base
+    const prob=Math.min(1, t/0.4+0.06);
+    for(let x=cx-halfWidth; x<=cx+halfWidth; x+=stepX){
+      if(hash(seed+x*0.41+y*0.63)>prob) continue;
+      const a=0.3+0.55*prob;
+      ctx.beginPath(); ctx.arc(x,y,0.55,0,Math.PI*2);
+      ctx.fillStyle=withAlpha(color,a);
+      ctx.fill();
+    }
+  }
+}
+function drawSubChart(){
+  const canvas = document.getElementById('subChart');
+  const {ctx,W,H} = setupCanvas(canvas,220);
+  ctx.clearRect(0,0,W,H);
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const values=[62,80,45,90,70,55,84];
+  const padL=10, padR=10, topPad=10, bottomPad=26;
+  const usableW=W-padL-padR, usableH=H-topPad-bottomPad;
+  const max=Math.max(...values);
+  const barW = usableW/values.length*0.42;
+
+  drawVDotGrid(ctx, values.map((v,i)=>padL+(i+0.5)/values.length*usableW), topPad, topPad+usableH, '#C9CBD0');
+
+  values.forEach((v,i)=>{
+    const cx = padL + (i+0.5)/values.length*usableW;
+    const barH = (v/max)*usableH;
+    const y0 = topPad+usableH-barH;
+    const color = i===3 ? '#162ADE' : '#15171B';
+    drawDotBar(ctx, cx, y0, topPad+usableH, barW/2, color, 90+i*13);
+    if(i===3){
+      ctx.fillStyle='#15171B'; ctx.font='400 11px '+"'Inter',sans-serif"; ctx.textAlign='center';
+      ctx.fillText(v, cx, y0-8);
+    }
+  });
+
+  ctx.fillStyle='#B4B6BE'; ctx.font='10.5px Inter, sans-serif'; ctx.textAlign='center';
+  days.forEach((d,i)=>{
+    const cx = padL + (i+0.5)/values.length*usableW;
+    ctx.fillText(d, cx, H-8);
+  });
+}
+drawSubChart();
+
+/* Sales Distribution — dense field of tiny, mostly-translucent dots filling the ring band,
+   with a soft glow and a light taper past the edges. This is the "ring logo" vibe: hundreds of
+   small uniform dots whose varying opacity reads as a glowing band, not a granular scatter. */
+function drawDotArc(ctx, cx, cy, rInner, rOuter, startAngle, endAngle, color, seed){
+  const span = endAngle-startAngle;
+
+  ctx.save();
+  ctx.shadowColor = withAlpha(color, 0.5);
+  ctx.shadowBlur = 3;
+
+  // dense core fill of the band — many tiny, translucent dots (never fully opaque)
+  const area = span*(rOuter*rOuter-rInner*rInner)/2;
+  const count = Math.max(25, Math.round(area*0.25));
+  for(let k=0;k<count;k++){
+    const h1=hash(seed+k*3.7), h2=hash(seed+k*7.1+1.3), h3=hash(seed+k*5.3+2.1);
+    const ang = startAngle + h1*span;
+    const rad = Math.sqrt(h2*(rOuter*rOuter-rInner*rInner)+rInner*rInner);
+    const x=cx+Math.cos(ang)*rad, y=cy+Math.sin(ang)*rad;
+    const a = 0.14+0.34*h3;
+    const r = 0.4+0.3*hash(seed+k*2.3+9);
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=withAlpha(color,a);
+    ctx.fill();
+  }
+
+  // light taper just past the inner/outer edges — softens the boundary without losing the ring
+  const bandW = rOuter-rInner;
+  const rOut2 = rOuter+bandW*0.3, rIn2 = Math.max(0, rInner-bandW*0.3);
+  const taperArea = span*(rOut2*rOut2-rIn2*rIn2)/2 - area;
+  const taperCount = Math.max(6, Math.round(taperArea*0.08));
+  for(let k=0;k<taperCount;k++){
+    const h1=hash(seed+k*4.3+80), h2=hash(seed+k*6.9+81), h3=hash(seed+k*5.1+82);
+    const ang = startAngle + h1*span;
+    const rad = Math.sqrt(h2*(rOut2*rOut2-rIn2*rIn2)+rIn2*rIn2);
+    const x=cx+Math.cos(ang)*rad, y=cy+Math.sin(ang)*rad;
+    const a = 0.05+0.1*h3;
+    const r = 0.35+0.25*hash(seed+k*2.9+90);
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=withAlpha(color,a);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+function drawDistDonut(){
+  const canvas = document.getElementById('distDonut');
+  const {ctx,W,H} = setupCanvas(canvas,150);
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2, cy=H/2, rOuter=Math.min(W,H)/2-6, rInner=rOuter*0.55;
+  const segs=[
+    {v:44, color:'#15171B'},
+    {v:32, color:'#162ADE'},
+    {v:24, color:'#B9BBC0'},
+  ];
+  const total = segs.reduce((s,x)=>s+x.v,0);
+  let start=-Math.PI/2;
+  segs.forEach((s,i)=>{
+    const angle=(s.v/total)*Math.PI*2;
+    drawDotArc(ctx, cx, cy, rInner, rOuter, start, start+angle, s.color, 200+i*37);
+    start+=angle;
+  });
+}
+drawDistDonut();
+
+document.getElementById('distList').innerHTML = [
+  {l:'New Sales', pct:44, color:'#15171B'},
+  {l:'Returning', pct:32, color:'#162ADE'},
+  {l:'Referral', pct:24, color:'#B9BBC0'},
+].map(d=>`
+  <div class="dist-row">
+    <span class="ldot" style="background:${d.color}"></span>
+    <span class="l">${d.l}</span>
+    <div class="hbar-track"><div class="hbar-fill" style="width:${d.pct}%; background:${d.color};"></div></div>
+    <span class="r">${d.pct}%</span>
+  </div>
+`).join('');
+
+window.addEventListener('resize', ()=>{
+  drawSparkline('spark1', [3.6,3.8,3.7,4.0,3.9,4.1,4.2], '#15171B');
+  drawSparkline('spark2', [260,280,270,300,310,305,326], '#15171B');
+  drawSparkline('spark3', [46,45,44.5,43,43.8,42.9,42.34], '#15171B');
+  drawSalesChart();
+  drawSubChart();
+  drawDistDonut();
+});
+
+/* ---------- integrations list ---------- */
+const integrations = [
+  {name:'Stripe', desc:'Payments processing', rate:92},
+  {name:'Slack', desc:'Team notifications', rate:78},
+  {name:'HubSpot', desc:'CRM sync', rate:64},
+  {name:'Zapier', desc:'Workflow automation', rate:51},
+];
+document.getElementById('intList').innerHTML = integrations.map(i=>`
+  <div class="int-row">
+    <div class="int-icon">${i.name[0]}</div>
+    <div><div class="int-name">${i.name}</div><div class="int-desc">${i.desc}</div></div>
+    <div class="int-right">
+      <div class="int-rate">${i.rate}%</div>
+      <div class="rate-track"><div class="rate-fill" style="width:${i.rate}%"></div></div>
+    </div>
+  </div>
+`).join('');
+</script>
+</body>
+</html>

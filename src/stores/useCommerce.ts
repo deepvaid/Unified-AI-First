@@ -286,6 +286,16 @@ export const SALES_CHANNELS = ['Online Store', 'POS', 'Amazon', 'eBay', 'Instagr
 const WEB_SEED_CHANNELS = SALES_CHANNELS.filter((c) => c !== 'POS')
 
 /**
+ * Local calendar date key. The dashboards bucket days in local time
+ * (`startOfDay`/`endOfDay` in useWidgetData), so seeding with `toISOString()`
+ * — which is UTC — left today's bucket empty for anyone ahead of UTC and the
+ * trend chart dropped to zero on its last point.
+ */
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+/**
  * Channel per web order, weighted so the mix reads like a real storefront
  * (~55% own store, the rest split across marketplaces) instead of the even
  * split a plain `i % channels.length` produces.
@@ -576,7 +586,7 @@ function buildPosOrders(): Order[] {
     const totalNum = t.status === 'voided' ? 0 : t.status === 'refunded' ? -gross : gross
     const map = STATUS_MAP[t.status]
     const at = new Date(now - t.daysAgo * 86_400_000 - (i * 7 + 25) * 60_000)
-    const date = at.toISOString().split('T')[0]!
+    const date = localDateKey(at)
     const name = t.customerName ?? 'Walk-in customer'
     const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
@@ -853,7 +863,7 @@ export const useCommerceStore = defineStore('commerce', () => {
     const fulfillmentStatus = fulfillmentStatuses[i % fulfillmentStatuses.length]!
     const trackingNum = `1Z${String(900000000 + i * 7919)}`
     const city = cities[i % cities.length]!
-    const date = new Date(seedNow - i * 86400000).toISOString().split('T')[0]!
+    const date = localDateKey(new Date(seedNow - i * 86400000))
     const shipped = fulfillmentStatus === 'Shipped'
     const paymentStatus = status === 'Refunded' ? 'Refunded' : status === 'Cancelled' ? 'Voided' : 'Paid'
     // Map queue state onto the detail step indicator

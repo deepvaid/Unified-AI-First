@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Analytics Dashboard — v9</title>
+<style>
+  :root{
+    --ink:#15171B;
+    --sub:#9497A0;
+    --line:#EAEAEC;
+    --bg:#FAFAFA;
+    --card:#FFFFFF;
+    --accent:#162ADE;
+    --good:#1FAA6D;
+    --bad:#E5484D;
+    --mono:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ font-family:var(--sans); background:var(--bg); color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased; }
+  .shell{display:flex; min-height:100vh;}
+
+  .sidebar{
+    width:68px; background:#101114;
+    display:flex; flex-direction:column; align-items:center; padding:22px 0; gap:4px;
+  }
+  .sidebar .logo{ width:30px;height:30px;border-radius:8px; background:var(--accent); margin-bottom:26px; }
+  .nav-icon{ width:38px;height:38px;border-radius:10px; display:flex;align-items:center;justify-content:center; color:#5B5D66; cursor:pointer; margin:2px 0; }
+  .nav-icon svg{width:17px;height:17px;}
+  .nav-icon.active{ background:#1B1D22; color:#fff; }
+  .nav-spacer{flex:1;}
+
+  .main{flex:1; padding:36px 44px 56px; max-width:1320px;}
+  .topline{display:flex; align-items:center; justify-content:space-between; margin-bottom:28px;}
+  .topline h1{font-size:20px; margin:0; letter-spacing:-0.01em; font-weight:600;}
+  .pill-tag{ font-size:11.5px; color:var(--sub); border:1px solid var(--line); padding:5px 11px; border-radius:999px; }
+
+  .card{ background:var(--card); border-radius:14px; }
+  .eyebrow{ font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--sub); font-weight:600; }
+
+  canvas{display:block; width:100%;}
+
+  /* KPI row */
+  .kpi-row{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  .kpi-card{padding:20px 22px 16px;}
+  .kpi-top{display:flex; align-items:center; justify-content:space-between;}
+  .kpi-value-row{display:flex; align-items:baseline; gap:9px; margin-top:9px;}
+  .kpi-value{font-family:var(--mono); font-size:24px; font-weight:400; letter-spacing:-0.02em;}
+  .delta{font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px;}
+  .delta.up{color:var(--good); background:rgba(31,170,109,0.10);}
+  .delta.down{color:var(--bad); background:rgba(229,72,77,0.10);}
+  .kpi-spark{margin-top:12px;}
+
+  .grid-2{display:grid; grid-template-columns:1.5fr 1fr; gap:18px; margin-top:18px; align-items:stretch;}
+  @media (max-width: 1100px){ .grid-2{grid-template-columns:1fr;} }
+  .grid-3{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:18px; margin-top:18px; align-items:stretch;}
+  @media (max-width: 1100px){ .grid-3{grid-template-columns:1fr;} }
+
+  .panel{padding:22px 22px 20px;}
+  .panel-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--line);}
+  .panel h3{font-size:13.5px; margin:0; font-weight:600;}
+  .see-all{font-size:11.5px; color:var(--sub); text-decoration:none;}
+
+  .legend-row{display:flex; gap:18px; margin:14px 2px 0; flex-wrap:wrap;}
+  .legend-item{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--sub);}
+  .ldot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+
+  .center-stat{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;}
+  .center-stat b{font-family:var(--mono); font-size:20px; font-weight:400;}
+  .center-stat span{font-size:10.5px; color:var(--sub); margin-top:2px;}
+
+  .dist-list{margin-top:16px;}
+  .dist-row{display:flex; align-items:center; gap:10px; padding:8px 0;}
+  .dist-row .ldot{flex:none;}
+  .dist-row .l{font-size:12.5px; color:#54565F; width:78px; flex:none;}
+  .hbar-track{flex:1; height:6px; border-radius:999px; background:var(--line); overflow:hidden;}
+  .hbar-fill{height:100%; border-radius:999px;}
+  .dist-row .r{font-family:var(--mono); font-size:12px; color:var(--sub); width:40px; text-align:right; flex:none;}
+
+  .int-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
+  .int-row:last-child{border-bottom:none;}
+  .int-icon{ width:30px;height:30px;border-radius:9px;flex:none; display:flex;align-items:center;justify-content:center; background:#F2F2F3; color:#54565F; font-size:13px; }
+  .int-name{font-size:13px; font-weight:400;}
+  .int-desc{font-size:11px; color:var(--sub); margin-top:1px;}
+  .int-right{margin-left:auto; text-align:right;}
+  .int-rate{font-family:var(--mono); font-size:12px; color:var(--sub);}
+  .rate-track{width:70px; height:4px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:6px;}
+  .rate-fill{height:100%; background:var(--ink); border-radius:999px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="sidebar">
+    <div class="logo"></div>
+    <div class="nav-icon active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 11l2 2 4-4"/></svg></div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg></div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12A9 9 0 1112 3v9z"/></svg></div>
+    <div class="nav-spacer"></div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9"/></svg></div>
+  </div>
+
+  <div class="main">
+    <div class="topline">
+      <h1>Analytics</h1>
+      <div class="pill-tag">v9 · soundwave charts</div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="card kpi-card">
+        <div class="kpi-top"><div class="eyebrow">Page Views</div><span class="delta up">↑ 1.3%</span></div>
+        <div class="kpi-value-row"><span class="kpi-value">4.20</span></div>
+        <canvas id="spark1" height="42" class="kpi-spark"></canvas>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-top"><div class="eyebrow">Total Revenue</div><span class="delta up">↑ 3.4%</span></div>
+        <div class="kpi-value-row"><span class="kpi-value">326.60K</span></div>
+        <canvas id="spark2" height="42" class="kpi-spark"></canvas>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-top"><div class="eyebrow">Bounce Rate</div><span class="delta down">↓ 1.2%</span></div>
+        <div class="kpi-value-row"><span class="kpi-value">42.34%</span></div>
+        <canvas id="spark3" height="42" class="kpi-spark"></canvas>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card panel">
+        <div class="panel-top"><h3>Sales Overview</h3><a class="see-all" href="#">See all</a></div>
+        <canvas id="salesChart" height="220"></canvas>
+        <div class="legend-row">
+          <div class="legend-item"><span class="ldot" style="background:var(--ink)"></span>This month</div>
+          <div class="legend-item"><span class="ldot" style="background:var(--accent)"></span>Last month</div>
+        </div>
+      </div>
+
+      <div class="card panel">
+        <div class="panel-top"><h3>Total Subscriber</h3><a class="see-all" href="#">See all</a></div>
+        <canvas id="subChart" height="220"></canvas>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card panel" style="grid-column: span 1;">
+        <div class="panel-top"><h3>Sales Distribution</h3></div>
+        <div style="position:relative; height:150px;">
+          <canvas id="distDonut" height="150"></canvas>
+          <div class="center-stat"><b>68%</b><span>Total sales</span></div>
+        </div>
+        <div class="dist-list" id="distList"></div>
+      </div>
+
+      <div class="card panel" style="grid-column: span 2;">
+        <div class="panel-top"><h3>List of Integration</h3><a class="see-all" href="#">See all</a></div>
+        <div id="intList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- helpers ---------- */
+function setupCanvas(canvas, hCss){
+  const dpr = window.devicePixelRatio||1;
+  const rect = canvas.getBoundingClientRect();
+  const h = hCss || rect.height;
+  canvas.width = rect.width*dpr;
+  canvas.height = h*dpr;
+  canvas.style.height = h+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  return {ctx, W:rect.width, H:h};
+}
+function hash(n){ const x=Math.sin(n*12.9898)*43758.5453; return x-Math.floor(x); }
+function hexToRgb(hex){ const v=hex.replace('#',''); const n=parseInt(v.length===3?v.split('').map(c=>c+c).join(''):v,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function withAlpha(hex,a){ const [r,g,b]=hexToRgb(hex); return `rgba(${r},${g},${b},${Math.max(0,a)})`; }
+
+function toPts(values, W, H, padL, padR, topPad, bottomPad){
+  const max=Math.max(...values), min=Math.min(...values);
+  const usableW=W-padL-padR, usableH=H-topPad-bottomPad;
+  return values.map((v,i)=>({ x: padL+(i/(values.length-1))*usableW, y: topPad+(1-(v-min)/(max-min||1))*usableH, v }));
+}
+
+/* sample the exact quadratic-through-midpoints curve — used only to get a smooth envelope for the waveform */
+function sampleTrace(pts, stepsPerSeg){
+  const out=[];
+  let cur = {x:pts[0].x, y:pts[0].y};
+  out.push({x:cur.x,y:cur.y});
+  for(let i=0;i<pts.length-1;i++){
+    const ctrl=pts[i], p1=pts[i+1];
+    const end={x:(ctrl.x+p1.x)/2, y:(ctrl.y+p1.y)/2};
+    for(let s=1;s<=stepsPerSeg;s++){
+      const t=s/stepsPerSeg;
+      const it=1-t;
+      out.push({
+        x: it*it*cur.x + 2*it*t*ctrl.x + t*t*end.x,
+        y: it*it*cur.y + 2*it*t*ctrl.y + t*t*end.y
+      });
+    }
+    cur = end;
+  }
+  const last = pts[pts.length-1];
+  for(let s=1;s<=stepsPerSeg;s++){
+    const t=s/stepsPerSeg;
+    out.push({x:cur.x+(last.x-cur.x)*t, y:cur.y+(last.y-cur.y)*t});
+  }
+  return out;
+}
+
+/* dotted vertical guide lines with endpoint dots */
+function drawVDotGrid(ctx, xs, topY, botY, color){
+  xs.forEach(x=>{
+    for(let y=topY+5; y<=botY-2; y+=6){
+      ctx.beginPath(); ctx.arc(x,y,0.55,0,Math.PI*2);
+      ctx.fillStyle=withAlpha(color,0.5);
+      ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(x,topY,1.5,0,Math.PI*2); ctx.fillStyle=withAlpha(color,0.9); ctx.fill();
+    ctx.beginPath(); ctx.arc(x,botY,1.5,0,Math.PI*2); ctx.fillStyle=withAlpha(color,0.9); ctx.fill();
+  });
+}
+
+/* audio-waveform: many thin, rounded bars mirrored around a center axis, height driven by the
+   data envelope with a touch of per-bar jitter so it reads as a soundwave rather than a bar chart */
+function drawSoundwave(ctx, pts, centerY, maxHalfH, color, o){
+  o = o||{};
+  const spine = sampleTrace(pts, o.stepsPerSeg||9);
+  const ys = spine.map(p=>p.y);
+  const minV = Math.min(...ys), maxV = Math.max(...ys);
+  const barGap = o.barGap||3.4, barW = o.barW||1.0, seed = o.seed||0;
+  const startOffset = o.startOffset||0;
+  let ptr = 0;
+  ctx.save();
+  ctx.lineCap='round';
+  if(o.glow){ ctx.shadowColor = withAlpha(color,0.3); ctx.shadowBlur = o.glow; }
+  for(let x=spine[0].x+startOffset; x<=spine[spine.length-1].x; x+=barGap){
+    while(ptr<spine.length-1 && spine[ptr].x<x) ptr++;
+    const y = spine[ptr].y;
+    const norm = maxV>minV ? (maxV-y)/(maxV-minV) : 0.5;
+    const jitter = 0.72+0.55*hash(seed+x*0.83);
+    const halfH = Math.max(1.2, (norm*0.86+0.1)*maxHalfH*jitter);
+    ctx.beginPath();
+    ctx.moveTo(x, centerY-halfH);
+    ctx.lineTo(x, centerY+halfH);
+    ctx.lineWidth = barW;
+    ctx.strokeStyle = withAlpha(color, Math.min(0.6, 0.18+0.32*norm));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* KPI sparklines — small soundwave bands */
+function drawSparkline(id, values, color){
+  const canvas = document.getElementById(id);
+  const {ctx,W,H} = setupCanvas(canvas,42);
+  ctx.clearRect(0,0,W,H);
+  const pts = toPts(values, W, H, 2,2,5,7);
+  const centerY = H/2, maxHalfH = H/2-3;
+  drawSoundwave(ctx, pts, centerY, maxHalfH, color, {seed: id.length*17+values[0], barGap:2.3, barW:0.8, glow:1.2, stepsPerSeg:7});
+
+  const lastNorm = 0.5;
+  const values2 = pts.map(p=>p.y);
+  const minV=Math.min(...values2), maxV=Math.max(...values2);
+  const lastY = pts[pts.length-1].y;
+  const norm = maxV>minV ? (maxV-lastY)/(maxV-minV) : 0.5;
+  const halfH = (norm*0.86+0.1)*maxHalfH;
+  ctx.beginPath(); ctx.arc(pts[pts.length-1].x, centerY-halfH, 2.4, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.lineWidth=0.8; ctx.strokeStyle=withAlpha(color,0.55); ctx.stroke();
+}
+drawSparkline('spark1', [3.6,3.8,3.7,4.0,3.9,4.1,4.2], '#15171B');
+drawSparkline('spark2', [260,280,270,300,310,305,326], '#15171B');
+drawSparkline('spark3', [46,45,44.5,43,43.8,42.9,42.34], '#15171B');
+
+/* Sales Overview — two interleaved soundwaves (this month / last month), dotted vertical grid, value tags */
+function drawSalesChart(){
+  const canvas = document.getElementById('salesChart');
+  const {ctx,W,H} = setupCanvas(canvas,220);
+  ctx.clearRect(0,0,W,H);
+  const months=['Jul','Aug','Sep','Oct','Nov','Dec'];
+  const thisMonth=[280,340,300,420,380,410];
+  const lastMonth=[220,260,310,280,350,320];
+  const padL=6, padR=6, topPad=10, bottomPad=26;
+  const usableW=W-padL-padR, usableH=H-topPad-bottomPad;
+  const all=[...thisMonth,...lastMonth];
+  const max=Math.max(...all), min=Math.min(...all);
+  const mk=(vals)=>vals.map((v,i)=>({x:padL+(i/(vals.length-1))*usableW, y:topPad+(1-(v-min)/(max-min||1))*usableH, v}));
+  const pts1=mk(thisMonth), pts2=mk(lastMonth);
+
+  const centerY = topPad + usableH/2;
+  const maxHalfH = usableH/2 - 3;
+
+  drawVDotGrid(ctx, pts1.map(p=>p.x), topPad, topPad+usableH, '#C9CBD0');
+  drawSoundwave(ctx, pts2, centerY, maxHalfH, '#162ADE', {seed:53, barGap:3.6, barW:0.9, glow:1.5, startOffset:1.8});
+  drawSoundwave(ctx, pts1, centerY, maxHalfH, '#15171B', {seed:71, barGap:3.6, barW:1.0, glow:1.5});
+
+  const peak = pts1.reduce((a,b)=>b.v>a.v?b:a);
+  const peakNorm = (peak.v-min)/(max-min||1);
+  const peakHalfH = (peakNorm*0.86+0.1)*maxHalfH;
+  const last1 = pts1[pts1.length-1], last2 = pts2[pts2.length-1];
+  const last1Norm=(last1.v-min)/(max-min||1), last2Norm=(last2.v-min)/(max-min||1);
+  const last1HalfH=(last1Norm*0.86+0.1)*maxHalfH, last2HalfH=(last2Norm*0.86+0.1)*maxHalfH;
+
+  ctx.beginPath(); ctx.arc(last2.x,centerY-last2HalfH,3,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.lineWidth=0.9; ctx.strokeStyle=withAlpha('#162ADE',0.6); ctx.stroke();
+  ctx.beginPath(); ctx.arc(last1.x,centerY-last1HalfH,3.5,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.lineWidth=0.9; ctx.strokeStyle=withAlpha('#15171B',0.55); ctx.stroke();
+  ctx.beginPath(); ctx.arc(peak.x,centerY-peakHalfH,3,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.lineWidth=0.9; ctx.strokeStyle=withAlpha('#15171B',0.55); ctx.stroke();
+
+  ctx.font='400 11px '+"'Inter',sans-serif"; ctx.fillStyle='#15171B'; ctx.textAlign='center';
+  ctx.fillText(peak.v.toLocaleString()+' visits', peak.x, centerY-peakHalfH-12);
+
+  ctx.fillStyle='#B4B6BE'; ctx.font='10.5px Inter, sans-serif'; ctx.textAlign='center';
+  pts1.forEach((p,i)=>ctx.fillText(months[i], p.x, H-8));
+}
+drawSalesChart();
+
+/* Total Subscriber — equalizer bars with rounded caps, glow, and a faint mirrored reflection */
+function drawEqualizerBar(ctx, cx, yTop, yBottom, halfWidth, color){
+  const w = Math.max(1.1, halfWidth*1.0);
+  ctx.save();
+  ctx.lineCap='round';
+  ctx.shadowColor = withAlpha(color,0.25);
+  ctx.shadowBlur = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, yBottom);
+  ctx.lineTo(cx, yTop);
+  ctx.lineWidth = w;
+  ctx.strokeStyle = withAlpha(color, 0.55);
+  ctx.stroke();
+  ctx.restore();
+
+  const reflH = Math.min(9, (yBottom-yTop)*0.22);
+  ctx.save();
+  ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(cx, yBottom+3);
+  ctx.lineTo(cx, yBottom+3+reflH);
+  ctx.lineWidth = w;
+  ctx.strokeStyle = withAlpha(color, 0.10);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawSubChart(){
+  const canvas = document.getElementById('subChart');
+  const {ctx,W,H} = setupCanvas(canvas,220);
+  ctx.clearRect(0,0,W,H);
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const values=[62,80,45,90,70,55,84];
+  const padL=10, padR=10, topPad=10, bottomPad=26;
+  const usableW=W-padL-padR, usableH=H-topPad-bottomPad;
+  const max=Math.max(...values);
+  const barW = usableW/values.length*0.42;
+
+  drawVDotGrid(ctx, values.map((v,i)=>padL+(i+0.5)/values.length*usableW), topPad, topPad+usableH, '#C9CBD0');
+
+  values.forEach((v,i)=>{
+    const cx = padL + (i+0.5)/values.length*usableW;
+    const barH = (v/max)*usableH;
+    const y0 = topPad+usableH-barH;
+    const color = i===3 ? '#162ADE' : '#15171B';
+    drawEqualizerBar(ctx, cx, y0, topPad+usableH, barW/2, color);
+    if(i===3){
+      ctx.fillStyle='#15171B'; ctx.font='400 11px '+"'Inter',sans-serif"; ctx.textAlign='center';
+      ctx.fillText(v, cx, y0-8);
+    }
+  });
+
+  ctx.fillStyle='#B4B6BE'; ctx.font='10.5px Inter, sans-serif'; ctx.textAlign='center';
+  days.forEach((d,i)=>{
+    const cx = padL + (i+0.5)/values.length*usableW;
+    ctx.fillText(d, cx, H-8);
+  });
+}
+drawSubChart();
+
+/* Sales Distribution — circular audio-spectrum ring: short radiating bars of varying length per segment */
+function drawSpectrumRing(ctx, cx, cy, rInner, rOuter, startAngle, endAngle, color, seed){
+  const span = endAngle-startAngle;
+  const rMid = (rInner+rOuter)/2;
+  const arcLen = Math.abs(span)*rMid;
+  const bars = Math.max(5, Math.round(arcLen/4.2));
+  ctx.save();
+  ctx.lineCap='round';
+  ctx.shadowColor = withAlpha(color,0.3);
+  ctx.shadowBlur = 1.5;
+  for(let i=0;i<=bars;i++){
+    const t=i/bars;
+    const ang = startAngle + t*span;
+    const h1 = hash(seed+i*3.7+t*11);
+    const len = (rOuter-rInner)*(0.28+0.72*h1);
+    const rEnd = rInner+len;
+    const x0=cx+Math.cos(ang)*rInner, y0=cy+Math.sin(ang)*rInner;
+    const x1=cx+Math.cos(ang)*rEnd, y1=cy+Math.sin(ang)*rEnd;
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1);
+    ctx.lineWidth=1.3;
+    ctx.strokeStyle=withAlpha(color, 0.32+0.28*h1);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawDistDonut(){
+  const canvas = document.getElementById('distDonut');
+  const {ctx,W,H} = setupCanvas(canvas,150);
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2, cy=H/2, rOuter=Math.min(W,H)/2-6, rInner=rOuter*0.5;
+  const segs=[
+    {v:44, color:'#15171B'},
+    {v:32, color:'#162ADE'},
+    {v:24, color:'#B9BBC0'},
+  ];
+  const total = segs.reduce((s,x)=>s+x.v,0);
+  let start=-Math.PI/2;
+  segs.forEach((s,i)=>{
+    const angle=(s.v/total)*Math.PI*2;
+    drawSpectrumRing(ctx, cx, cy, rInner, rOuter, start, start+angle, s.color, 200+i*37);
+    start+=angle;
+  });
+}
+drawDistDonut();
+
+document.getElementById('distList').innerHTML = [
+  {l:'New Sales', pct:44, color:'#15171B'},
+  {l:'Returning', pct:32, color:'#162ADE'},
+  {l:'Referral', pct:24, color:'#B9BBC0'},
+].map(d=>`
+  <div class="dist-row">
+    <span class="ldot" style="background:${d.color}"></span>
+    <span class="l">${d.l}</span>
+    <div class="hbar-track"><div class="hbar-fill" style="width:${d.pct}%; background:${d.color};"></div></div>
+    <span class="r">${d.pct}%</span>
+  </div>
+`).join('');
+
+window.addEventListener('resize', ()=>{
+  drawSparkline('spark1', [3.6,3.8,3.7,4.0,3.9,4.1,4.2], '#15171B');
+  drawSparkline('spark2', [260,280,270,300,310,305,326], '#15171B');
+  drawSparkline('spark3', [46,45,44.5,43,43.8,42.9,42.34], '#15171B');
+  drawSalesChart();
+  drawSubChart();
+  drawDistDonut();
+});
+
+/* ---------- integrations list ---------- */
+const integrations = [
+  {name:'Stripe', desc:'Payments processing', rate:92},
+  {name:'Slack', desc:'Team notifications', rate:78},
+  {name:'HubSpot', desc:'CRM sync', rate:64},
+  {name:'Zapier', desc:'Workflow automation', rate:51},
+];
+document.getElementById('intList').innerHTML = integrations.map(i=>`
+  <div class="int-row">
+    <div class="int-icon">${i.name[0]}</div>
+    <div><div class="int-name">${i.name}</div><div class="int-desc">${i.desc}</div></div>
+    <div class="int-right">
+      <div class="int-rate">${i.rate}%</div>
+      <div class="rate-track"><div class="rate-fill" style="width:${i.rate}%"></div></div>
+    </div>
+  </div>
+`).join('');
+</script>
+</body>
+</html>
