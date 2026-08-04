@@ -437,7 +437,7 @@ export interface DashboardStackedBarData {
   kind: 'stacked_bar'
   buckets: DashboardStackedBarBucket[]
   /** Legend order matches segment order (bottom of the stack first). */
-  legend: { key: string; label: string }[]
+  legend: { key: string; label: string; total: string; pct: number }[]
 }
 
 export interface DashboardTabsOrderRow {

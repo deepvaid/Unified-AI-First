@@ -1,18 +1,17 @@
 <script setup lang="ts">
 // Stacked bar chart (dotted Overview v2), after shadcn's "Bar Chart -
-// Stacked + Legend": rounded two-segment stacks in the trend blues with a
-// centered swatch legend. Light hue sits at the bottom of the stack,
-// dark on top, matching the reference.
+// Stacked + Legend": rounded stacks in the blue ramp (light at the bottom of
+// the stack, dark on top) with a legend that also carries each series' total
+// and share, the way the reference dashboards annotate their distributions.
 import { computed } from 'vue'
-import { TREND_CURRENT, TREND_PREVIOUS } from '../dotted/dottedChartMath'
+import { STACK_BLUES } from '../dotted/dottedChartMath'
 import type { DashboardStackedBarData } from '@/stores/dashboards/types'
 
 const props = defineProps<{
   data: DashboardStackedBarData
 }>()
 
-/** Segment colors by stack position: bottom light, top dark. */
-const STACK_COLORS = [TREND_PREVIOUS, TREND_CURRENT] as const
+const STACK_COLORS = STACK_BLUES
 
 const maxTotal = computed(() =>
   Math.max(1, ...props.data.buckets.map((bucket) =>
@@ -56,10 +55,12 @@ function bucketTitle(bucket: DashboardStackedBarData['buckets'][number]): string
       </div>
     </div>
     <div class="stackbar-widget__legend">
-      <span v-for="(entry, index) in data.legend" :key="entry.key" class="stackbar-widget__legend-item">
+      <div v-for="(entry, index) in data.legend" :key="entry.key" class="stackbar-widget__legend-row">
         <span class="stackbar-widget__swatch" :style="{ background: STACK_COLORS[index] }" />
-        {{ entry.label }}
-      </span>
+        <span class="stackbar-widget__legend-label">{{ entry.label }}</span>
+        <span class="stackbar-widget__legend-value">{{ entry.total }}</span>
+        <span class="stackbar-widget__legend-pct">{{ entry.pct }}%</span>
+      </div>
     </div>
   </div>
 </template>
@@ -120,16 +121,40 @@ function bucketTitle(bucket: DashboardStackedBarData['buckets'][number]): string
 
 .stackbar-widget__legend {
   display: flex;
-  justify-content: center;
-  gap: 18px;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.06));
 }
 
-.stackbar-widget__legend-item {
-  display: inline-flex;
+.stackbar-widget__legend-row {
+  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 12px;
   color: var(--text-primary);
+}
+
+.stackbar-widget__legend-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackbar-widget__legend-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+.stackbar-widget__legend-pct {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  width: 34px;
+  text-align: right;
+  flex: none;
 }
 
 .stackbar-widget__swatch {

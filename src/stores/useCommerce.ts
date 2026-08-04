@@ -285,6 +285,21 @@ export const SALES_CHANNELS = ['Online Store', 'POS', 'Amazon', 'eBay', 'Instagr
  */
 const WEB_SEED_CHANNELS = SALES_CHANNELS.filter((c) => c !== 'POS')
 
+/**
+ * Channel per web order, weighted so the mix reads like a real storefront
+ * (~55% own store, the rest split across marketplaces) instead of the even
+ * split a plain `i % channels.length` produces.
+ */
+const WEB_CHANNEL_MIX = [
+  'Online Store', 'Amazon', 'Online Store', 'Online Store', 'eBay',
+  'Online Store', 'Instagram Shop', 'Online Store', 'Amazon', 'Online Store',
+  'eBay', 'Online Store', 'Online Store', 'Amazon', 'Online Store',
+  'Instagram Shop', 'Online Store', 'eBay', 'Online Store', 'Amazon',
+]
+function webChannelFor(index: number): string {
+  return WEB_CHANNEL_MIX[index % WEB_CHANNEL_MIX.length]!
+}
+
 /** Map the human channel label onto the structured channel identity. */
 function channelIdentity(label: string): { channelType: OrderChannelType; channelId: string | null } {
   if (label === 'Online Store') return { channelType: 'web_store', channelId: 'retest-sales-notification' }
@@ -808,14 +823,21 @@ export const useCommerceStore = defineStore('commerce', () => {
   }
 
   // One web order per day, indexed by days-ago. First 30 values are the current
-  // 30-day window (index 0 = today), next 30 the previous window — a smooth,
-  // deterministic curve so the Overview metric explorer reads cleanly and the
-  // period-over-period deltas stay plausible.
+  // 30-day window (index 0 = today), next 30 the previous window. Day-to-day
+  // steps stay gradual so the Overview trend chart reads smooth, while the
+  // week-level swings (strong week → dip → recovery) give the weekly stacked
+  // bars real shape instead of a flat ramp.
   const WEB_DAILY_TOTALS = [
-    1100, 830, 720, 980, 640, 520, 760, 810, 590, 460, 700, 540, 620, 880, 1150,
-    690, 520, 470, 830, 610, 540, 760, 900, 480, 560, 720, 640, 380, 510, 420,
-    700, 600, 540, 660, 510, 450, 560, 590, 480, 410, 560, 470, 520, 640, 700,
-    520, 430, 400, 610, 500, 460, 580, 620, 410, 470, 560, 500, 350, 420, 390,
+    1180, 1040, 1120, 890, 760, 820, 940,
+    680, 590, 520, 610, 700, 640, 560,
+    620, 730, 850, 960, 1040, 900, 810,
+    720, 640, 560, 480, 520, 610, 680,
+    740, 820,
+    760, 700, 640, 580, 620, 690, 730,
+    660, 590, 540, 500, 560, 620, 580,
+    520, 480, 540, 610, 680, 720, 650,
+    590, 540, 490, 450, 500, 560, 610,
+    560, 520,
   ]
   const seedNow = Date.now()
 
@@ -840,7 +862,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       : fulfillmentStatus === 'Not Ready' ? 'Picked' : 'Pack'
 
     const timeline: OrderTimelineEvent[] = [
-      { id: 1, kind: 'event', text: `Order placed via ${WEB_SEED_CHANNELS[i % WEB_SEED_CHANNELS.length]}`, date },
+      { id: 1, kind: 'event', text: `Order placed via ${webChannelFor(i)}`, date },
     ]
     if (paymentStatus === 'Paid') timeline.push({ id: 2, kind: 'event', text: `Payment of $${total} captured (${paymentMethods[i % paymentMethods.length]})`, date })
     if (shipped) timeline.push({ id: 3, kind: 'event', text: `Shipped via ${['UPS', 'FedEx', 'USPS', 'DHL'][i % 4]} — tracking ${trackingNum}`, date })
@@ -876,7 +898,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       })),
       notes: i % 7 === 0 ? 'Customer requested gift wrapping.' : null,
       tags: pickOrderTags(i),
-      salesChannel: WEB_SEED_CHANNELS[i % WEB_SEED_CHANNELS.length]!,
+      salesChannel: webChannelFor(i),
       currency: 'USD',
       region: city.split(', ')[1] ?? '—',
       country: 'United States',
@@ -886,7 +908,7 @@ export const useCommerceStore = defineStore('commerce', () => {
       fulfillmentStage,
       fulfilledFromLocation: WAREHOUSE_LOCATIONS[i % WAREHOUSE_LOCATIONS.length]!,
       timeline,
-      ...channelIdentity(WEB_SEED_CHANNELS[i % WEB_SEED_CHANNELS.length]!),
+      ...channelIdentity(webChannelFor(i)),
     }
   }).concat(buildPosOrders()))
 

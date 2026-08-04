@@ -260,9 +260,9 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     {
       id: 'commerce_channel_weekly',
       dataSource: 'commerce',
-      label: 'Online vs In-store',
-      description: 'Weekly revenue stacked by online and in-store channels.',
-      defaultTitle: 'Online vs in-store',
+      label: 'Revenue by Channel',
+      description: 'Weekly revenue stacked by online store, marketplace, and in-store.',
+      defaultTitle: 'Revenue by channel',
       defaultWidgetType: 'stacked_bar',
       supportedWidgetTypes: ['stacked_bar'],
       unit: 'currency',

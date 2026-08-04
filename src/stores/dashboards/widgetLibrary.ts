@@ -382,8 +382,8 @@ export const WIDGET_LIBRARY: DashboardWidgetLibraryEntry[] = [
   },
   {
     id: 'lib-channel-weekly',
-    title: 'Online vs in-store',
-    description: 'Weekly revenue stacked by online and in-store channels',
+    title: 'Revenue by channel',
+    description: 'Weekly revenue stacked by online store, marketplace, and in-store',
     category: 'commerce',
     type: 'stacked_bar',
     icon: 'bar-chart-3',

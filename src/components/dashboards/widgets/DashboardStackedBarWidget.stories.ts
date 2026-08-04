@@ -2,37 +2,29 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import type { DashboardStackedBarData } from '@/stores/dashboards/types'
 import DashboardStackedBarWidget from './DashboardStackedBarWidget.vue'
 
+const bucket = (label: string, online: number, marketplace: number, instore: number) => ({
+  label,
+  segments: [
+    { key: 'online', value: online, formattedValue: `$${online.toLocaleString('en-US')}` },
+    { key: 'marketplace', value: marketplace, formattedValue: `$${marketplace.toLocaleString('en-US')}` },
+    { key: 'instore', value: instore, formattedValue: `$${instore.toLocaleString('en-US')}` },
+  ],
+})
+
 const WEEKLY_CHANNELS: DashboardStackedBarData = {
   kind: 'stacked_bar',
   buckets: [
-    { label: 'Jun 29', segments: [
-      { key: 'online', value: 3620, formattedValue: '$3,620' },
-      { key: 'instore', value: 940, formattedValue: '$940' },
-    ] },
-    { label: 'Jul 6', segments: [
-      { key: 'online', value: 4480, formattedValue: '$4,480' },
-      { key: 'instore', value: 1210, formattedValue: '$1,210' },
-    ] },
-    { label: 'Jul 13', segments: [
-      { key: 'online', value: 3980, formattedValue: '$3,980' },
-      { key: 'instore', value: 760, formattedValue: '$760' },
-    ] },
-    { label: 'Jul 20', segments: [
-      { key: 'online', value: 5240, formattedValue: '$5,240' },
-      { key: 'instore', value: 1480, formattedValue: '$1,480' },
-    ] },
-    { label: 'Jul 27', segments: [
-      { key: 'online', value: 4370, formattedValue: '$4,370' },
-      { key: 'instore', value: 1120, formattedValue: '$1,120' },
-    ] },
-    { label: 'Aug 3', segments: [
-      { key: 'online', value: 4890, formattedValue: '$4,890' },
-      { key: 'instore', value: 1360, formattedValue: '$1,360' },
-    ] },
+    bucket('Jun 29', 2480, 940, 720),
+    bucket('Jul 6', 3310, 1180, 380),
+    bucket('Jul 13', 2260, 720, 540),
+    bucket('Jul 20', 3640, 1420, 860),
+    bucket('Jul 27', 2140, 830, 410),
+    bucket('Aug 3', 3980, 1260, 680),
   ],
   legend: [
-    { key: 'online', label: 'Online' },
-    { key: 'instore', label: 'In store' },
+    { key: 'online', label: 'Online store', total: '$17,810', pct: 63 },
+    { key: 'marketplace', label: 'Marketplace', total: '$6,350', pct: 24 },
+    { key: 'instore', label: 'In store', total: '$3,590', pct: 13 },
   ],
 }
 

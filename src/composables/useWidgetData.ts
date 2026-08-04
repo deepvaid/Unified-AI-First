@@ -11,6 +11,7 @@ import {
   DOTTED_BLUES,
   DOTTED_PIE_BLUES,
   FUNNEL_GRADIENT_STOPS,
+  STACK_BLUES,
   TREND_CURRENT,
   TREND_PREVIOUS,
 } from '@/components/dashboards/dotted/dottedChartMath'
@@ -982,8 +983,16 @@ export function useWidgetData(
         const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
         const channels = ['Online store', 'POS retail', 'Marketplace', 'Social shop']
         const counts = channels.map(() => 0)
+        // Bucket by the order's actual sales channel — `id % channels.length`
+        // produced a synthetic even split that hid the real mix.
+        const channelIndex = (order: { salesChannel?: string }): number => {
+          if (order.salesChannel === 'Online Store') return 0
+          if (order.salesChannel === 'POS') return 1
+          if (order.salesChannel === 'Instagram Shop') return 3
+          return 2
+        }
         ranges.current.forEach((order) => {
-          const index = order.id % channels.length
+          const index = channelIndex(order)
           counts[index] = (counts[index] ?? 0) + 1
         })
         const revenue = ranges.current.reduce((sum, order) => sum + parseFloat(order.total), 0)
@@ -1208,40 +1217,54 @@ export function useWidgetData(
         const WEEKS = 6
         const dayMs = 86400000
         const todayStart = new Date(new Date().toDateString()).getTime()
+        // Three legends off the structured channel identity: own storefront,
+        // marketplaces (Amazon/eBay/Instagram), and register sales.
+        const SERIES = [
+          { key: 'online', label: 'Online store', channelType: 'web_store' },
+          { key: 'marketplace', label: 'Marketplace', channelType: 'marketplace' },
+          { key: 'instore', label: 'In store', channelType: 'offline_store' },
+        ] as const
         const buckets = Array.from({ length: WEEKS }, (_, index) => ({
           label: new Date(todayStart - (WEEKS - 1 - index) * 7 * dayMs - 6 * dayMs)
             .toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          online: 0,
-          instore: 0,
+          totals: SERIES.map(() => 0),
         }))
         commerce.orders.forEach((order) => {
           const time = new Date(order.date ?? '').getTime()
           if (Number.isNaN(time)) return
           const weekIndex = Math.floor((todayStart - time) / (7 * dayMs))
           if (weekIndex < 0 || weekIndex >= WEEKS) return
+          const seriesIndex = SERIES.findIndex((series) => series.channelType === order.channelType)
+          if (seriesIndex < 0) return
           const bucket = buckets[WEEKS - 1 - weekIndex]!
-          const total = Math.max(0, parseFloat(order.total))
-          if (order.channelType === 'offline_store') bucket.instore += total
-          else bucket.online += total
+          bucket.totals[seriesIndex] = (bucket.totals[seriesIndex] ?? 0) + Math.max(0, parseFloat(order.total))
         })
+        const seriesTotals = SERIES.map((_, index) =>
+          buckets.reduce((sum, bucket) => sum + (bucket.totals[index] ?? 0), 0),
+        )
+        const grandTotal = seriesTotals.reduce((sum, value) => sum + value, 0)
         return {
           kind: 'stacked_bar',
           buckets: buckets.map((bucket) => ({
             label: bucket.label,
-            segments: [
-              { key: 'online', value: bucket.online, formattedValue: formatNumber(bucket.online, 'currency') },
-              { key: 'instore', value: bucket.instore, formattedValue: formatNumber(bucket.instore, 'currency') },
-            ],
+            segments: SERIES.map((series, index) => ({
+              key: series.key,
+              value: bucket.totals[index] ?? 0,
+              formattedValue: formatNumber(bucket.totals[index] ?? 0, 'currency'),
+            })),
           })),
-          legend: [
-            { key: 'online', label: 'Online' },
-            { key: 'instore', label: 'In store' },
-          ],
+          legend: SERIES.map((series, index) => ({
+            key: series.key,
+            label: series.label,
+            total: formatNumber(seriesTotals[index] ?? 0, 'currency'),
+            pct: grandTotal ? Math.round(((seriesTotals[index] ?? 0) / grandTotal) * 100) : 0,
+          })),
         }
       }
       case 'design_palette': {
         const groups = [
           { title: 'Trend lines', caption: 'Store performance — current / previous', shades: [TREND_CURRENT, TREND_PREVIOUS] },
+          { title: 'Stacked bars', caption: 'Revenue by channel', shades: [...STACK_BLUES] },
           { title: 'Ring & donut ramp', caption: 'Revenue attribution', shades: [...DOTTED_BLUES] },
           { title: 'Pie ramp', caption: 'Orders by sales channel', shades: [...DOTTED_PIE_BLUES] },
           { title: 'Funnel gradient', caption: 'Campaign to purchase', shades: FUNNEL_GRADIENT_STOPS.map((stop) => stop.color) },

@@ -5,6 +5,7 @@ import {
   DOTTED_BLUES,
   DOTTED_PIE_BLUES,
   FUNNEL_GRADIENT_STOPS,
+  STACK_BLUES,
   TREND_CURRENT,
   TREND_PREVIOUS,
 } from '../dotted/dottedChartMath'
@@ -13,11 +14,12 @@ const LIVE_PALETTE: DashboardPaletteData = {
   kind: 'palette',
   groups: [
     { title: 'Trend lines', caption: 'Store performance — current / previous', shades: [TREND_CURRENT, TREND_PREVIOUS] },
+    { title: 'Stacked bars', caption: 'Revenue by channel', shades: [...STACK_BLUES] },
     { title: 'Ring & donut ramp', caption: 'Revenue attribution', shades: [...DOTTED_BLUES] },
     { title: 'Pie ramp', caption: 'Orders by sales channel', shades: [...DOTTED_PIE_BLUES] },
     { title: 'Funnel gradient', caption: 'Campaign to purchase', shades: FUNNEL_GRADIENT_STOPS.map((stop) => stop.color) },
   ],
-  footnote: '17 shades across 4 chart families',
+  footnote: '20 shades across 5 chart families',
 }
 
 const meta = {
