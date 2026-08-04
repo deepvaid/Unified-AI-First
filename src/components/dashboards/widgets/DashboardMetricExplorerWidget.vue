@@ -15,9 +15,9 @@ const props = defineProps<{
 /** Current period / previous period hues (shadcn-style two-series area).
     Each series drifts blue → teal left-to-right across the plot. */
 const CURRENT_COLOR = '#0092D4'
-const CURRENT_COLOR_END = '#2BBFA4'
+const CURRENT_COLOR_END = '#3FC0CE'
 const PREVIOUS_COLOR = '#7ACFF1'
-const PREVIOUS_COLOR_END = '#9FE0D2'
+const PREVIOUS_COLOR_END = '#A9E1E8'
 
 /** Interpolate between two hex colors (t in 0–1) so hover dots and tooltip
     swatches match the gradient stroke at the hovered x position. */

@@ -18,9 +18,9 @@ export const BAR_GRADIENT_GREEN = 'linear-gradient(90deg, #1f8a5b 0%, #3FB489 10
 
 export const FUNNEL_GRADIENT_STOPS = [
   { offset: '0%', color: '#5B5BF0' },
-  { offset: '28%', color: '#2E9FD4' },
-  { offset: '52%', color: '#1FBF9C' },
-  { offset: '76%', color: '#2BC1C8' },
+  { offset: '28%', color: '#3B82E8' },
+  { offset: '52%', color: '#2E9FD4' },
+  { offset: '76%', color: '#35B9D6' },
   { offset: '100%', color: '#4EC3F0' },
 ] as const
 
