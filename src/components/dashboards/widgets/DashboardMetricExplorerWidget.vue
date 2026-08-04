@@ -1,16 +1,20 @@
 <script setup lang="ts">
 // Composite metric explorer (dotted Overview v2): a joined 4-cell KPI selector
-// strip driving an embedded dotted area chart, with a per-widget Compare
+// strip driving an embedded gradient area chart, with a per-widget Compare
 // toggle. Metric selection and Compare are widget-local; the data window comes
 // from the dashboard's global filters via useWidgetData. Renders bespoke — the
 // widget card suppresses its standard header for this type.
 import { computed, ref } from 'vue'
-import { bounds, linePath, CHART_H, CHART_W } from '../dotted/dottedChartMath'
+import { bounds, linePath, valueToY, CHART_H, CHART_W } from '../dotted/dottedChartMath'
 import type { DashboardMetricExplorerData, DashboardMetricExplorerMetric } from '@/stores/dashboards/types'
 
 const props = defineProps<{
   data: DashboardMetricExplorerData
 }>()
+
+/** Current period / previous period hues (shadcn-style two-series area). */
+const CURRENT_COLOR = '#0092D4'
+const PREVIOUS_COLOR = '#7ACFF1'
 
 const selectedKey = ref<DashboardMetricExplorerMetric['key']>('revenue')
 const compare = ref(true)
@@ -22,12 +26,10 @@ const selected = computed<DashboardMetricExplorerMetric>(() => {
 const compareAvailable = computed(() => selected.value.prev.some((value) => value > 0) && selected.value.delta !== '')
 const compareOn = computed(() => compare.value && compareAvailable.value)
 
-function formatAxis(metric: DashboardMetricExplorerMetric, value: number): string {
+function formatValue(metric: DashboardMetricExplorerMetric, value: number): string {
   if (metric.unit === 'percent') return `${value.toFixed(1)}%`
-  if (metric.unit === 'currency') {
-    return value >= 1000 ? `$${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k` : `$${Math.round(value)}`
-  }
-  return String(Math.round(value))
+  if (metric.unit === 'currency') return `$${Math.round(value).toLocaleString('en-US')}`
+  return Math.round(value).toLocaleString('en-US')
 }
 
 const chart = computed(() => {
@@ -35,13 +37,75 @@ const chart = computed(() => {
   const vals = compareOn.value ? metric.cur.concat(metric.prev) : metric.cur
   let [lo, hi] = bounds(vals, metric.zeroBased)
   if (metric.key === 'orders') hi = Math.max(2, Math.ceil(hi / 2) * 2)
+  const close = (d: string) => (d ? `${d} L ${CHART_W} ${CHART_H} L 0 ${CHART_H} Z` : '')
   const line = linePath(metric.cur, hi, lo)
+  const prev = compareOn.value ? linePath(metric.prev, hi, lo) : ''
   return {
     strokePath: line,
-    areaPath: line ? `${line} L ${CHART_W} ${CHART_H} L 0 ${CHART_H} Z` : '',
-    prevPath: compareOn.value ? linePath(metric.prev, hi, lo) : '',
-    yLabels: [formatAxis(metric, hi), formatAxis(metric, (hi + lo) / 2), formatAxis(metric, lo)],
+    areaPath: close(line),
+    prevStrokePath: prev,
+    prevAreaPath: close(prev),
+    lo,
+    hi,
   }
+})
+
+// ── Hover tooltip ─────────────────────────────────────────────────────────
+const plotEl = ref<HTMLElement | null>(null)
+const hoverIndex = ref<number | null>(null)
+
+function onPointerMove(event: PointerEvent) {
+  const el = plotEl.value
+  const count = selected.value.cur.length
+  if (!el || count < 2) return
+  const rect = el.getBoundingClientRect()
+  if (rect.width === 0) return
+  const ratio = (event.clientX - rect.left) / rect.width
+  hoverIndex.value = Math.min(count - 1, Math.max(0, Math.round(ratio * (count - 1))))
+}
+
+interface HoverPoint {
+  key: string
+  label: string
+  color: string
+  value: string
+  /** Vertical position on the plot, 0–100%. */
+  topPct: number
+}
+
+const hoverPoints = computed<HoverPoint[]>(() => {
+  const index = hoverIndex.value
+  if (index == null) return []
+  const metric = selected.value
+  const { lo, hi } = chart.value
+  const point = (key: string, label: string, color: string, raw: number | undefined): HoverPoint => ({
+    key,
+    label,
+    color,
+    value: formatValue(metric, raw ?? 0),
+    topPct: Math.min(100, Math.max(0, (valueToY(raw ?? 0, hi, lo) / CHART_H) * 100)),
+  })
+  const rows = [point('current', metric.label, CURRENT_COLOR, metric.cur[index])]
+  if (compareOn.value) rows.push(point('previous', 'Previous period', PREVIOUS_COLOR, metric.prev[index]))
+  return rows
+})
+
+const hoverLeftPct = computed(() => {
+  const index = hoverIndex.value
+  const count = selected.value.cur.length
+  if (index == null || count < 2) return 0
+  return (index / (count - 1)) * 100
+})
+
+const hoverLabel = computed(() =>
+  hoverIndex.value == null ? '' : props.data.pointLabels[hoverIndex.value] ?? '',
+)
+
+/** Anchor the tooltip so it never overflows the card at either edge. */
+const tooltipTransform = computed(() => {
+  if (hoverLeftPct.value < 15) return 'translateX(0)'
+  if (hoverLeftPct.value > 85) return 'translateX(-100%)'
+  return 'translateX(-50%)'
 })
 </script>
 
@@ -84,36 +148,67 @@ const chart = computed(() => {
           <span class="mx__compare-dash" :style="{ opacity: compare ? 1 : 0.25 }" aria-hidden="true" />Compare
         </button>
       </div>
-      <div class="mx__plot-row">
-        <div class="mx__yaxis">
-          <span v-for="label in chart.yLabels" :key="label">{{ label }}</span>
-        </div>
-        <div class="mx__plot">
+      <div class="mx__plot">
+        <div
+          ref="plotEl"
+          class="mx__canvas"
+          @pointermove="onPointerMove"
+          @pointerleave="hoverIndex = null"
+        >
           <svg viewBox="0 0 720 200" preserveAspectRatio="none" class="mx__svg" role="img" :aria-label="`${selected.label} trend chart`">
             <defs>
+              <!-- shadcn's gradient recipe: .8 → .1 stops, then fill-opacity .4
+                   on the path (effective .32 → .04) — that pairing is what makes
+                   the reference read airy rather than saturated. -->
               <linearGradient id="mxFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#0092D4" stop-opacity="0.18" />
-                <stop offset="60%" stop-color="#3FB4E6" stop-opacity="0.07" />
-                <stop offset="100%" stop-color="#63CDEF" stop-opacity="0" />
+                <stop offset="5%" :stop-color="CURRENT_COLOR" stop-opacity="0.8" />
+                <stop offset="95%" :stop-color="CURRENT_COLOR" stop-opacity="0.1" />
               </linearGradient>
-              <pattern id="mxDots" width="9" height="9" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1.15" fill="#0092D4" fill-opacity="0.30" />
-              </pattern>
-              <linearGradient id="mxStroke" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#0092D4" />
-                <stop offset="60%" stop-color="#3FB4E6" />
-                <stop offset="100%" stop-color="#63CDEF" />
+              <linearGradient id="mxFillPrev" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" :stop-color="PREVIOUS_COLOR" stop-opacity="0.8" />
+                <stop offset="95%" :stop-color="PREVIOUS_COLOR" stop-opacity="0.1" />
               </linearGradient>
+              <!-- Contains the cardinal curve's slight overshoot at sharp
+                   peaks/valleys, the way recharts clips to its plot area. -->
+              <clipPath id="mxClip">
+                <rect x="0" y="0" width="720" height="200" />
+              </clipPath>
             </defs>
-            <line v-for="y in [0, 100, 200]" :key="y" x1="0" :y1="y" x2="720" :y2="y" class="mx__grid" stroke-dasharray="2 5" vector-effect="non-scaling-stroke" />
-            <path :d="chart.areaPath" fill="url(#mxFill)" />
-            <path :d="chart.areaPath" fill="url(#mxDots)" />
-            <path v-if="chart.prevPath" :d="chart.prevPath" fill="none" class="mx__prev" stroke-width="1.5" stroke-dasharray="5 5" vector-effect="non-scaling-stroke" />
-            <path :d="chart.strokePath" fill="none" stroke="url(#mxStroke)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+            <!-- Horizontal only, and no rule on the baseline (as in the reference). -->
+            <line v-for="y in [0, 50, 100, 150]" :key="y" x1="0" :y1="y" x2="720" :y2="y" class="mx__grid" vector-effect="non-scaling-stroke" />
+            <!-- Previous period sits behind the current one (overlaid, not stacked:
+                 period-over-period values aren't additive). -->
+            <g clip-path="url(#mxClip)">
+              <path v-if="chart.prevAreaPath" :d="chart.prevAreaPath" fill="url(#mxFillPrev)" fill-opacity="0.4" />
+              <path v-if="chart.prevStrokePath" :d="chart.prevStrokePath" fill="none" :stroke="PREVIOUS_COLOR" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+              <path :d="chart.areaPath" fill="url(#mxFill)" fill-opacity="0.4" />
+              <path :d="chart.strokePath" fill="none" :stroke="CURRENT_COLOR" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+            </g>
           </svg>
-          <div class="mx__xaxis">
-            <span v-for="label in data.xLabels" :key="label">{{ label }}</span>
-          </div>
+
+          <!-- Active dots and tooltip are HTML, not SVG: the canvas is
+               preserveAspectRatio="none", so an SVG circle would stretch into
+               an ellipse. -->
+          <template v-if="hoverPoints.length">
+            <span
+              v-for="point in hoverPoints"
+              :key="point.key"
+              class="mx__dot"
+              :style="{ left: `${hoverLeftPct}%`, top: `${point.topPct}%`, background: point.color }"
+              aria-hidden="true"
+            />
+            <div class="mp-chart-tip" :style="{ left: `${hoverLeftPct}%`, transform: tooltipTransform }">
+              <div class="mp-chart-tip__title">{{ hoverLabel }}</div>
+              <div v-for="point in hoverPoints" :key="point.key" class="mp-chart-tip__row">
+                <span class="mp-chart-tip__dot" :style="{ background: point.color }" />
+                <span class="mp-chart-tip__label">{{ point.label }}</span>
+                <span class="mp-chart-tip__value">{{ point.value }}</span>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="mx__xaxis">
+          <span v-for="label in data.xLabels" :key="label">{{ label }}</span>
         </div>
       </div>
     </div>
@@ -293,40 +388,27 @@ const chart = computed(() => {
   background: var(--muted);
 }
 
-.mx__plot-row {
-  display: flex;
-  gap: 12px;
-  flex: 1;
-  min-height: 180px;
-}
-
-.mx__yaxis {
-  width: 44px;
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding-bottom: 26px;
-  font-size: 11px;
-  color: var(--muted);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
+/* No y-axis column (matching the shadcn reference) — the plot runs full-bleed
+   and values are read from the hover tooltip. */
 .mx__plot {
   flex: 1;
   min-width: 0;
+  min-height: 180px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.mx__svg {
-  width: 100%;
+.mx__canvas {
+  position: relative;
   flex: 1;
   min-height: 140px;
+}
+
+.mx__svg {
+  width: 100%;
+  height: 100%;
   display: block;
-  overflow: visible;
 }
 
 .mx__grid {
@@ -334,16 +416,72 @@ const chart = computed(() => {
   stroke-width: 1;
 }
 
-.mx__prev {
-  stroke: var(--muted);
-  opacity: 0.55;
-}
-
 .mx__xaxis {
   display: flex;
   justify-content: space-between;
   font-size: 11.5px;
   color: var(--muted);
+}
+
+/* Active dot — ringed in the card surface so it reads on top of the fill. */
+.mx__dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--surface-primary);
+  pointer-events: none;
+}
+
+/* Tooltip — same anatomy/skin as the Apex charts' .mp-chart-tip so every
+   chart in the app shares one tooltip look. */
+.mp-chart-tip {
+  position: absolute;
+  top: 8px;
+  z-index: 2;
+  pointer-events: none;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: var(--elevation-modal);
+  padding: 8px 10px;
+  min-width: 140px;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.mp-chart-tip__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.mp-chart-tip__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.mp-chart-tip__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.mp-chart-tip__label {
+  color: var(--muted);
+}
+
+.mp-chart-tip__value {
+  margin-left: auto;
+  padding-left: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 @container (max-width: 620px) {

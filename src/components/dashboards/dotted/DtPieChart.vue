@@ -1,7 +1,6 @@
 <script setup lang="ts">
-// Solid pie with the full-circle dotted texture overlay. Wedges computed from
-// raw values, colors assigned by index.
-import { computed, useId } from 'vue'
+// Solid pie. Wedges computed from raw values, colors assigned by index.
+import { computed } from 'vue'
 import { DOTTED_PIE_BLUES, pieWedges } from './dottedChartMath'
 
 const props = withDefaults(defineProps<{
@@ -12,7 +11,6 @@ const props = withDefaults(defineProps<{
   colors: () => DOTTED_PIE_BLUES,
 })
 
-const patternId = `dtPieDots-${useId()}`
 const wedges = computed(() => pieWedges(props.values))
 </script>
 
@@ -24,12 +22,6 @@ const wedges = computed(() => pieWedges(props.values))
       :d="d"
       :fill="colors[i % colors.length]"
     />
-    <defs>
-      <pattern :id="patternId" width="6" height="6" patternUnits="userSpaceOnUse">
-        <circle cx="1.5" cy="1.5" r="0.95" fill="#ffffff" fill-opacity="0.5" />
-      </pattern>
-    </defs>
-    <circle cx="60" cy="60" r="56" :fill="`url(#${patternId})`" />
   </svg>
 </template>
 

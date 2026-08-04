@@ -35,31 +35,40 @@ export function shortCurrency(n: number): string {
 export function bounds(vals: number[], zeroBased: boolean): [number, number] {
   const mx = Math.max(...vals)
   const mn = Math.min(...vals)
-  if (zeroBased) return [0, niceMax(mx || 1)]
+  // 10% headroom above the max so the cardinal curve's rounded peaks never
+  // reach the plot top (they'd be sheared flat by the clipPath).
+  if (zeroBased) return [0, niceMax((mx || 1) * 1.1)]
   const pad = (mx - mn) * 0.45 || mx * 0.1 || 1
   return [Math.max(0, mn - pad), mx + pad * 0.4]
 }
 
-/** Smooth cubic path through the points on the 720×200 design canvas. */
+/** Y position on the 200-tall canvas for a value within [min, max]. */
+export function valueToY(value: number, max: number, min = 0): number {
+  if (max === min) return CHART_H
+  return CHART_H - ((value - min) / (max - min)) * CHART_H
+}
+
+/**
+ * Flowing cardinal (Catmull-Rom) path through the points on the 720×200 design
+ * canvas — the rounded curve shadcn's `type="natural"` produces. Tangents are
+ * never zeroed at a local extremum, so peaks and valleys stay smooth instead of
+ * developing corners. The small overshoot this can introduce is clipped to the
+ * plot box by the chart's clipPath, so it never shows.
+ */
 export function linePath(vals: number[], max: number, min = 0): string {
   const n = vals.length
   if (n < 2 || max === min) return ''
-  const pt = (i: number): [number, number] => [
-    i * (CHART_W / (n - 1)),
-    CHART_H - (((vals[i] ?? 0) - min) / (max - min)) * CHART_H,
-  ]
-  let d = ''
-  for (let i = 0; i < n; i++) {
-    const [x, y] = pt(i)
-    if (i === 0) { d += `M ${x.toFixed(1)} ${y.toFixed(1)}`; continue }
-    const [px, py] = pt(i - 1)
-    const [ppx, ppy] = i > 1 ? pt(i - 2) : [px, py]
-    const [nx, ny] = i < n - 1 ? pt(i + 1) : [x, y]
-    const c1x = px + (x - ppx) / 6
-    const c1y = py + (y - ppy) / 6
-    const c2x = x - (nx - px) / 6
-    const c2y = y - (ny - py) / 6
-    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${x.toFixed(1)} ${y.toFixed(1)}`
+  const stepX = CHART_W / (n - 1)
+  // Clamped index lookup — duplicating the endpoints is the standard way to
+  // give the first and last segment a Catmull-Rom tangent.
+  const y = (i: number) => valueToY(vals[Math.min(n - 1, Math.max(0, i))] ?? 0, max, min)
+
+  let d = `M 0.0 ${y(0).toFixed(1)}`
+  for (let i = 0; i < n - 1; i++) {
+    const x1 = (i + 1) * stepX
+    const c1y = y(i) + (y(i + 1) - y(i - 1)) / 6
+    const c2y = y(i + 1) - (y(i + 2) - y(i)) / 6
+    d += ` C ${(i * stepX + stepX / 3).toFixed(1)} ${c1y.toFixed(1)}, ${(x1 - stepX / 3).toFixed(1)} ${c2y.toFixed(1)}, ${x1.toFixed(1)} ${y(i + 1).toFixed(1)}`
   }
   return d
 }

@@ -21,7 +21,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Rolling revenue-goal gauge from the dotted Overview v2 design: a round-capped progress ring with the white-dot texture overlay, centered percentage, and pace/needed footer stats.',
+          'Rolling revenue-goal gauge from the Overview v2 design: a round-capped progress ring on a soft track, centered percentage, and pace/needed footer stats.',
       },
     },
   },

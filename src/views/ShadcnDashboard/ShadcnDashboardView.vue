@@ -93,13 +93,25 @@ const chart = computed(() => {
   const prev = m.prev(s)
   let [lo, hi] = bounds(compare.value ? cur.concat(prev) : cur, m.zero)
   if (m.snap) hi = Math.ceil(hi / m.snap) * m.snap
+  const close = (d: string) => (d ? `${d} L 720 200 L 0 200 Z` : '')
   const line = linePath(cur, hi, lo)
+  const prevLine = compare.value ? linePath(prev, hi, lo) : ''
   return {
     label: m.label,
     strokePath: line,
-    areaPath: `${line} L 720 200 L 0 200 Z`,
-    prevPath: compare.value ? linePath(prev, hi, lo) : '',
-    yLabels: [m.fmt(hi), m.fmt((hi + lo) / 2), m.fmt(lo)] as [string, string, string],
+    areaPath: close(line),
+    prevStrokePath: prevLine,
+    prevAreaPath: close(prevLine),
+    curValues: cur,
+    prevValues: prev,
+    lo,
+    hi,
+    // Full-precision values for the tooltip (m.fmt is the abbreviated axis form).
+    formatValue: (value: number) => {
+      if (metric.value === 'conv') return `${value.toFixed(1)}%`
+      if (metric.value === 'orders') return Math.round(value).toLocaleString('en-US')
+      return `$${Math.round(value).toLocaleString('en-US')}`
+    },
   }
 })
 </script>
@@ -172,10 +184,16 @@ const chart = computed(() => {
             :metric-label="chart.label"
             :vs-label-long="series.vsLong"
             :area-path="chart.areaPath"
-            :prev-path="chart.prevPath"
             :stroke-path="chart.strokePath"
-            :y-labels="chart.yLabels"
+            :prev-area-path="chart.prevAreaPath"
+            :prev-stroke-path="chart.prevStrokePath"
             :x-labels="series.x"
+            :point-labels="series.pointLabels"
+            :cur-values="chart.curValues"
+            :prev-values="chart.prevValues"
+            :lo="chart.lo"
+            :hi="chart.hi"
+            :format-value="chart.formatValue"
           />
           <DtCard title="Where revenue comes from" subtitle="Share of attributed revenue">
             <div class="dt-donut-block">
@@ -315,7 +333,7 @@ const chart = computed(() => {
                 <span class="dt-deliv__value">{{ DELIVERABILITY.delivered }}%</span>
                 <span class="dt-deliv__caption">delivered</span>
               </div>
-              <DtDottedBar :pct="DELIVERABILITY.delivered" :gradient="BAR_GRADIENT_GREEN" :dot-alpha="0.55" />
+              <DtDottedBar :pct="DELIVERABILITY.delivered" :gradient="BAR_GRADIENT_GREEN" />
             </div>
             <div class="dt-list">
               <div v-for="row in DELIVERABILITY.rows" :key="row.label" class="dt-list__row dt-list__row--text">

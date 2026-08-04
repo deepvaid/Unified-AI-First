@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// Stroked-circle donut with the dotted texture overlay. Segments are computed
-// from raw values; colors assigned by index from the dotted blues.
-import { computed, useId } from 'vue'
+// Stroked-circle donut. Segments are computed from raw values; colors
+// assigned by index from the chart blues.
+import { computed } from 'vue'
 import { DOTTED_BLUES, ringSegments } from './dottedChartMath'
 
 const props = withDefaults(defineProps<{
@@ -15,18 +15,12 @@ const props = withDefaults(defineProps<{
   centerSize: 22,
 })
 
-const patternId = `dtDonutDots-${useId()}`
 const segments = computed(() => ringSegments(props.values))
 </script>
 
 <template>
   <div class="dt-donut">
     <svg viewBox="0 0 140 140" class="dt-donut__svg" role="img" :aria-label="`${centerValue ?? ''} ${centerCaption ?? 'donut chart'}`">
-      <defs>
-        <pattern :id="patternId" width="6" height="6" patternUnits="userSpaceOnUse">
-          <circle cx="1.5" cy="1.5" r="0.95" fill="#ffffff" fill-opacity="0.5" />
-        </pattern>
-      </defs>
       <g transform="rotate(-90 70 70)" fill="none" stroke-width="17">
         <circle
           v-for="(seg, i) in segments"
@@ -36,7 +30,6 @@ const segments = computed(() => ringSegments(props.values))
           :stroke-dasharray="seg.dash"
           :stroke-dashoffset="seg.offset"
         />
-        <circle cx="70" cy="70" r="54" :stroke="`url(#${patternId})`" />
       </g>
     </svg>
     <div v-if="centerValue" class="dt-donut__center">

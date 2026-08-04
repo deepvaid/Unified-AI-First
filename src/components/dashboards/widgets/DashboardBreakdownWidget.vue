@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Flexible label/value breakdown widget (dotted Overview v2): optional
-// big-number headline, optional dotted progress bar, rows that render as
+// big-number headline, optional progress bar, rows that render as
 // status chips / tone dots / alert text, warning chip, footer drilldown link.
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import DtDottedBar from '../dotted/DtDottedBar.vue'
@@ -26,7 +26,6 @@ const emit = defineEmits<{
       v-if="data.progress"
       :pct="data.progress.pct"
       :gradient="data.progress.tone === 'green' ? BAR_GRADIENT_GREEN : BAR_GRADIENT"
-      :dot-alpha="0.55"
       class="breakdown-widget__progress"
     />
     <div class="breakdown-widget__rows">

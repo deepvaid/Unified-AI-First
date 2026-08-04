@@ -31,7 +31,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Dotted progress-bar list from the Overview v2 design: label/value rows over stippled gradient pills, with optional per-row meta and an optional big-number headline (used by Retail today).',
+          'Progress-bar list from the Overview v2 design: label/value rows over gradient pills, with optional per-row meta and an optional big-number headline (used by Retail today).',
       },
     },
   },

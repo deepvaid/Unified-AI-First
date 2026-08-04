@@ -55,7 +55,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Flexible label/value breakdown card from the dotted Overview v2 design. Optional fields select the flourishes: MpStatusChip rows (fulfillment queue), a big-number headline (service tickets), a dotted progress bar + warning chip (deliverability), or tone-dot rows with metas (journeys in flight). `drilldown` is emitted from the footer link.',
+          'Flexible label/value breakdown card from the dotted Overview v2 design. Optional fields select the flourishes: MpStatusChip rows (fulfillment queue), a big-number headline (service tickets), a progress bar + warning chip (deliverability), or tone-dot rows with metas (journeys in flight). `drilldown` is emitted from the footer link.',
       },
     },
   },

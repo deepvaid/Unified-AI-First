@@ -244,11 +244,21 @@ function comparisonVsLabels(filters: DashboardFilterState, days: number): { vsLa
   }
 }
 
+function shortDate(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 /** Five evenly spaced "Jul 3"-style labels across the current window. */
 function windowAxisLabels(window: DateWindow): string[] {
-  const format = (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   return [0, 0.25, 0.5, 0.75, 1].map((fraction) =>
-    format(new Date(window.currentStart.getTime() + fraction * (window.days - 1) * MS_PER_DAY)),
+    shortDate(new Date(window.currentStart.getTime() + fraction * (window.days - 1) * MS_PER_DAY)),
+  )
+}
+
+/** One "Jul 3"-style label per day in the current window (hover tooltip). */
+function windowPointLabels(window: DateWindow): string[] {
+  return Array.from({ length: window.days }, (_, index) =>
+    shortDate(new Date(window.currentStart.getTime() + index * MS_PER_DAY)),
   )
 }
 
@@ -876,6 +886,7 @@ export function useWidgetData(
           kind: 'metric_explorer',
           ...comparisonVsLabels(filters, days),
           xLabels: windowAxisLabels(dateWindow),
+          pointLabels: windowPointLabels(dateWindow),
           metrics: [
             {
               key: 'revenue', label: 'Revenue', sub: 'Daily net revenue', unit: 'currency',

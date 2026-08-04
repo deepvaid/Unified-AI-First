@@ -1,7 +1,6 @@
 <script setup lang="ts">
-// Stroked-circle donut with the dotted texture overlay (Overview v2 mockup).
+// Stroked-circle donut (Overview v2 mockup).
 // Segments are precomputed dash arrays on the r=54 ring (viewBox 140).
-import { useId } from 'vue'
 import type { DonutSegment } from '../dottedDemoData'
 
 defineProps<{
@@ -12,17 +11,11 @@ defineProps<{
   centerSize?: number
 }>()
 
-const patternId = `dtDonutDots-${useId()}`
 </script>
 
 <template>
   <div class="dt-donut">
     <svg viewBox="0 0 140 140" class="dt-donut__svg" role="img" :aria-label="`${centerValue} ${centerCaption}`">
-      <defs>
-        <pattern :id="patternId" width="6" height="6" patternUnits="userSpaceOnUse">
-          <circle cx="1.5" cy="1.5" r="0.95" fill="#ffffff" fill-opacity="0.5" />
-        </pattern>
-      </defs>
       <g transform="rotate(-90 70 70)" fill="none" stroke-width="17">
         <circle
           v-for="seg in segments"
@@ -32,7 +25,6 @@ const patternId = `dtDonutDots-${useId()}`
           :stroke-dasharray="seg.dash"
           :stroke-dashoffset="seg.offset"
         />
-        <circle cx="70" cy="70" r="54" :stroke="`url(#${patternId})`" />
       </g>
     </svg>
     <div class="dt-donut__center">

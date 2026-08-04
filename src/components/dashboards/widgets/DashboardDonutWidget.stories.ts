@@ -44,7 +44,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Dotted donut widget from the Overview v2 design. The ring variant is a stroked-circle donut with a white-dot texture overlay, centered figure, and legend below; the pie variant is a solid wedge pie with the legend beside it. Segment colors come from the dotted blues palette by index.',
+          'Donut widget from the Overview v2 design. The ring variant is a stroked-circle donut with a centered figure and legend below; the pie variant is a solid wedge pie with the legend beside it. Segment colors come from the chart blues palette by index.',
       },
     },
   },

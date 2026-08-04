@@ -13,9 +13,25 @@ export interface DottedSeries {
   ordersPrev: number
   conv: number
   convPrev: number
+  /** The 5 evenly spaced axis ticks. */
   x: string[]
+  /** One label per data point, for the hover tooltip. */
+  pointLabels: string[]
   vs: string
   vsLong: string
+}
+
+/**
+ * One "Jul 3"-style label per data point, counting back from the fixture's
+ * fixed end date (1 Aug 2026) — `spanDays / count` days apart.
+ */
+function pointLabelsFor(count: number, spanDays: number): string[] {
+  const step = spanDays / count
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(2026, 7, 1)
+    date.setDate(date.getDate() - Math.round((count - 1 - index) * step))
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  })
 }
 
 export const SERIES: Record<DottedRange, DottedSeries> = {
@@ -24,6 +40,7 @@ export const SERIES: Record<DottedRange, DottedSeries> = {
     prev: [520, 600, 700, 640, 720, 690, 640],
     orders: 15, ordersPrev: 13, conv: 2.9, convPrev: 2.5,
     x: ['Jul 26', 'Jul 28', 'Jul 29', 'Jul 31', 'Aug 1'],
+    pointLabels: pointLabelsFor(7, 7),
     vs: 'vs prev 7 days', vsLong: 'compared with the previous 7 days',
   },
   '30d': {
@@ -31,6 +48,7 @@ export const SERIES: Record<DottedRange, DottedSeries> = {
     prev: [390, 420, 350, 500, 560, 470, 410, 620, 580, 460, 500, 610, 400, 430, 520, 700, 640, 520, 470, 560, 410, 480, 590, 560, 450, 510, 660, 540, 600, 700],
     orders: 47, ordersPrev: 41, conv: 2.6, convPrev: 2.2,
     x: ['Jul 3', 'Jul 10', 'Jul 17', 'Jul 24', 'Aug 1'],
+    pointLabels: pointLabelsFor(30, 30),
     vs: 'vs prev 30 days', vsLong: 'compared with the previous 30 days',
   },
   '90d': {
@@ -38,6 +56,7 @@ export const SERIES: Record<DottedRange, DottedSeries> = {
     prev: [1500, 1620, 1480, 1780, 1900, 1720, 1600, 2000, 1880, 1700, 1760, 1980, 1560, 1640, 1820, 2140, 2000, 1780, 1700, 1880, 1620, 1740, 1920, 1880, 1700, 1800, 2020, 1900, 1960, 2080],
     orders: 158, ordersPrev: 129, conv: 2.4, convPrev: 2.3,
     x: ['May 4', 'May 25', 'Jun 15', 'Jul 6', 'Aug 1'],
+    pointLabels: pointLabelsFor(30, 90),
     vs: 'vs prev 90 days', vsLong: 'compared with the previous 90 days',
   },
 }
@@ -113,30 +132,36 @@ export const METRICS: Record<DottedMetric, MetricDef> = {
 export function bounds(vals: number[], zeroBased: boolean): [number, number] {
   const mx = Math.max(...vals)
   const mn = Math.min(...vals)
-  if (zeroBased) return [0, niceMax(mx)]
+  // 10% headroom above the max so the cardinal curve's rounded peaks never
+  // reach the plot top (they'd be sheared flat by the clipPath).
+  if (zeroBased) return [0, niceMax(mx * 1.1)]
   const pad = (mx - mn) * 0.45 || mx * 0.1
   return [Math.max(0, mn - pad), mx + pad * 0.4]
 }
 
-// Smooth cubic path through the points on the 720×200 design canvas.
+/** Y position on the 200-tall canvas for a value within [min, max]. */
+export function valueToY(value: number, max: number, min = 0): number {
+  if (max === min) return CHART_H
+  return CHART_H - ((value - min) / (max - min)) * CHART_H
+}
+
+/**
+ * Flowing cardinal (Catmull-Rom) path on the 720×200 design canvas — the rounded
+ * curve shadcn's `type="natural"` produces. Any small overshoot is clipped to
+ * the plot box by the chart's clipPath.
+ */
 export function linePath(vals: number[], max: number, min = 0): string {
   const n = vals.length
-  const pt = (i: number): [number, number] => [
-    i * (CHART_W / (n - 1)),
-    CHART_H - (((vals[i] ?? 0) - min) / (max - min)) * CHART_H,
-  ]
-  let d = ''
-  for (let i = 0; i < n; i++) {
-    const [x, y] = pt(i)
-    if (i === 0) { d += `M ${x.toFixed(1)} ${y.toFixed(1)}`; continue }
-    const [px, py] = pt(i - 1)
-    const [ppx, ppy] = i > 1 ? pt(i - 2) : [px, py]
-    const [nx, ny] = i < n - 1 ? pt(i + 1) : [x, y]
-    const c1x = px + (x - ppx) / 6
-    const c1y = py + (y - ppy) / 6
-    const c2x = x - (nx - px) / 6
-    const c2y = y - (ny - py) / 6
-    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${x.toFixed(1)} ${y.toFixed(1)}`
+  if (n < 2 || max === min) return ''
+  const stepX = CHART_W / (n - 1)
+  const y = (i: number) => valueToY(vals[Math.min(n - 1, Math.max(0, i))] ?? 0, max, min)
+
+  let d = `M 0.0 ${y(0).toFixed(1)}`
+  for (let i = 0; i < n - 1; i++) {
+    const x1 = (i + 1) * stepX
+    const c1y = y(i) + (y(i + 1) - y(i - 1)) / 6
+    const c2y = y(i + 1) - (y(i + 2) - y(i)) / 6
+    d += ` C ${(i * stepX + stepX / 3).toFixed(1)} ${c1y.toFixed(1)}, ${(x1 - stepX / 3).toFixed(1)} ${c2y.toFixed(1)}, ${x1.toFixed(1)} ${y(i + 1).toFixed(1)}`
   }
   return d
 }

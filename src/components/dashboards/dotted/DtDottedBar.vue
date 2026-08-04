@@ -1,11 +1,9 @@
 <script setup lang="ts">
-// 6px progress pill with the white-dot stipple over a gradient fill
-// (dotted Overview v2 visual language).
+// 6px progress pill with a gradient fill on a soft track.
 import { BAR_GRADIENT } from './dottedChartMath'
 
-withDefaults(defineProps<{ pct: number; gradient?: string; dotAlpha?: number }>(), {
+withDefaults(defineProps<{ pct: number; gradient?: string }>(), {
   gradient: BAR_GRADIENT,
-  dotAlpha: 0.6,
 })
 </script>
 
@@ -15,7 +13,7 @@ withDefaults(defineProps<{ pct: number; gradient?: string; dotAlpha?: number }>(
       class="dt-bar__fill"
       :style="{
         width: `${Math.min(100, Math.max(0, pct))}%`,
-        backgroundImage: `radial-gradient(circle at 1.5px 1.5px, rgba(255,255,255,${dotAlpha}) 0.9px, transparent 0), ${gradient}`,
+        backgroundImage: gradient,
       }"
     />
   </div>
@@ -32,6 +30,5 @@ withDefaults(defineProps<{ pct: number; gradient?: string; dotAlpha?: number }>(
 .dt-bar__fill {
   height: 100%;
   border-radius: 99px;
-  background-size: 5px 5px, auto;
 }
 </style>

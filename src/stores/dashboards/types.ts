@@ -318,7 +318,10 @@ export interface DashboardMetricExplorerData {
   kind: 'metric_explorer'
   vsLabel: string
   vsLabelLong: string
+  /** The 5 evenly spaced axis ticks. */
   xLabels: string[]
+  /** One label per data point, for the hover tooltip. */
+  pointLabels: string[]
   metrics: DashboardMetricExplorerMetric[]
 }
 

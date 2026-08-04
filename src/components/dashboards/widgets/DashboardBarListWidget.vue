@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Dotted progress-bar list widget (Overview v2): optional big-number headline
-// + labeled rows with stippled gradient bars (best sellers, retail today).
+// + labeled rows with gradient bars (best sellers, retail today).
 import DtDottedBar from '../dotted/DtDottedBar.vue'
 import type { DashboardBarListData } from '@/stores/dashboards/types'
 

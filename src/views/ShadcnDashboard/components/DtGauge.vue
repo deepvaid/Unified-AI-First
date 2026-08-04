@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Rolling-goal gauge: round-capped progress arc + dotted texture overlay.
-import { computed, useId } from 'vue'
+// Rolling-goal gauge: round-capped progress arc over a soft track.
+import { computed } from 'vue'
 
 const props = defineProps<{
   /* 0–100 */
@@ -9,7 +9,6 @@ const props = defineProps<{
   centerCaption: string
 }>()
 
-const patternId = `dtGaugeDots-${useId()}`
 // r=52 ring circumference, split by pct (mockup: 221.5 105.2 for 68%).
 const CIRC = 2 * Math.PI * 52
 const dash = computed(() => {
@@ -21,15 +20,9 @@ const dash = computed(() => {
 <template>
   <div class="dt-gauge">
     <svg viewBox="0 0 140 140" class="dt-gauge__svg" role="img" :aria-label="`${centerValue} ${centerCaption}`">
-      <defs>
-        <pattern :id="patternId" width="6" height="6" patternUnits="userSpaceOnUse">
-          <circle cx="1.5" cy="1.5" r="0.95" fill="#ffffff" fill-opacity="0.5" />
-        </pattern>
-      </defs>
       <g transform="rotate(-90 70 70)" fill="none" stroke-width="15" stroke-linecap="round">
         <circle cx="70" cy="70" r="52" class="dt-gauge__track" />
         <circle cx="70" cy="70" r="52" stroke="#0092D4" :stroke-dasharray="dash" />
-        <circle cx="70" cy="70" r="52" :stroke="`url(#${patternId})`" :stroke-dasharray="dash" />
       </g>
     </svg>
     <div class="dt-gauge__center">

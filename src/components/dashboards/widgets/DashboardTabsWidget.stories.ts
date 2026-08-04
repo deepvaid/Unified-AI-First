@@ -34,7 +34,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Tabbed list card from the dotted Overview v2 design: Recent orders (MpStatusChip rows), Live activity (cloud-tinted icon tiles), and Top campaigns (dotted revenue bars). Tab state is widget-local; "View all" emits `drilldown`.',
+          'Tabbed list card from the dotted Overview v2 design: Recent orders (MpStatusChip rows), Live activity (cloud-tinted icon tiles), and Top campaigns (gradient revenue bars). Tab state is widget-local; "View all" emits `drilldown`.',
       },
     },
   },
