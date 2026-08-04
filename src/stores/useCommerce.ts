@@ -522,27 +522,27 @@ function buildPosOrders(): Order[] {
 
   const seed: PosSeed[] = [
     { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', staffId: 'assoc-1', customerName: 'Hannah Cole',    tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_B(2), CAP()] },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', staffId: 'assoc-3', customerName: undefined,        tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [CAP()] },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', staffId: 'assoc-1', customerName: "Liam O'Connor",  tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JEAN(), TEE_W(2), CAP(), TEE_B()] },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-3', staffId: 'assoc-2', customerName: 'Mia Tan',        tender: 'split',      status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [HOOD(), CAP()] },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', staffId: 'assoc-1', customerName: 'Noah Williams',  tender: 'card',       status: 'refunded',       origin: 'boris',    hasReceipt: true,  daysAgo: 2, lines: [HOOD()] },
-    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', staffId: 'assoc-3', customerName: 'Zoe Patel',      tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 3, lines: [TEE_B(), HOOD()] },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: 'Aria Singh',     tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_B(2), JEAN()] },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: undefined,        tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [CAP()] },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-2',  staffId: 'assoc-2', customerName: 'Lucas Chen',     tender: 'card',       status: 'partial_refund', origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JACK(), HOOD(), TEE_W(2)] },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: 'Ivy Nguyen',     tender: 'gift_card',  status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 2, lines: [CAP(), TEE_B()] },
-    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: undefined,        tender: 'cash',       status: 'voided',         origin: 'in_store', hasReceipt: false, daysAgo: 4, lines: [CAP()] },
-    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  staffId: 'assoc-6', customerName: 'Olivia Walker',  tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [TEE_W(), CAP()] },
-    { locationId: 'loc-auckland',  registerId: 'reg-auck-2',  staffId: 'assoc-6', customerName: 'Jack Pierce',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [SNEAK(), CAP(2), TEE_B()] },
-    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  staffId: 'assoc-6', customerName: 'Ruby Anand',     tender: 'cash',       status: 'suspended',      origin: 'in_store', hasReceipt: false, daysAgo: 3, lines: [TEE_B()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Henry Adler',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [BAG(), CAP(), TEE_B()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Maya Diaz',      tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 0, lines: [BAG(), JACK(), SNEAK(), JEAN(), TEE_B(2)] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  staffId: 'assoc-8', customerName: undefined,        tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [CAP()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  staffId: 'assoc-8', customerName: 'Sophia Renner',  tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 1, lines: [JEAN(), HOOD(), TEE_W(2)] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Owen Castillo',  tender: 'card',       status: 'refunded',       origin: 'boris',    hasReceipt: true,  daysAgo: 2, lines: [SNEAK()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  staffId: 'assoc-8', customerName: 'Lily Brooks',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 3, lines: [TEE_B(), CAP()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Caleb Foster',   tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 4, lines: [HOOD(), TEE_W(), CAP()] },
-    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  staffId: 'assoc-8', customerName: 'Ella Ross',      tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 5, lines: [CAP()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', staffId: 'assoc-3', customerName: undefined,        tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 2, lines: [CAP()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', staffId: 'assoc-1', customerName: "Liam O'Connor",  tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 5, lines: [JEAN(), TEE_W(2), CAP(), TEE_B()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-3', staffId: 'assoc-2', customerName: 'Mia Tan',        tender: 'split',      status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 7, lines: [HOOD(), CAP()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-1', staffId: 'assoc-1', customerName: 'Noah Williams',  tender: 'card',       status: 'refunded',       origin: 'boris',    hasReceipt: true,  daysAgo: 9, lines: [HOOD()] },
+    { locationId: 'loc-bondi',     registerId: 'reg-bondi-2', staffId: 'assoc-3', customerName: 'Zoe Patel',      tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 12, lines: [TEE_B(), HOOD()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: 'Aria Singh',     tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 14, lines: [TEE_B(2), JEAN()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: undefined,        tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 16, lines: [CAP()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-2',  staffId: 'assoc-2', customerName: 'Lucas Chen',     tender: 'card',       status: 'partial_refund', origin: 'in_store', hasReceipt: true,  daysAgo: 19, lines: [JACK(), HOOD(), TEE_W(2)] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: 'Ivy Nguyen',     tender: 'gift_card',  status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 21, lines: [CAP(), TEE_B()] },
+    { locationId: 'loc-chadstone', registerId: 'reg-chad-1',  staffId: 'assoc-4', customerName: undefined,        tender: 'cash',       status: 'voided',         origin: 'in_store', hasReceipt: false, daysAgo: 23, lines: [CAP()] },
+    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  staffId: 'assoc-6', customerName: 'Olivia Walker',  tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 26, lines: [TEE_W(), CAP()] },
+    { locationId: 'loc-auckland',  registerId: 'reg-auck-2',  staffId: 'assoc-6', customerName: 'Jack Pierce',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 28, lines: [SNEAK(), CAP(2), TEE_B()] },
+    { locationId: 'loc-auckland',  registerId: 'reg-auck-1',  staffId: 'assoc-6', customerName: 'Ruby Anand',     tender: 'cash',       status: 'suspended',      origin: 'in_store', hasReceipt: false, daysAgo: 31, lines: [TEE_B()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Henry Adler',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 33, lines: [BAG(), CAP(), TEE_B()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Maya Diaz',      tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 36, lines: [BAG(), TEE_B(2)] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  staffId: 'assoc-8', customerName: undefined,        tender: 'cash',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 39, lines: [CAP()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  staffId: 'assoc-8', customerName: 'Sophia Renner',  tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 42, lines: [JEAN(), HOOD(), TEE_W(2)] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Owen Castillo',  tender: 'card',       status: 'refunded',       origin: 'boris',    hasReceipt: true,  daysAgo: 46, lines: [SNEAK()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-2',  staffId: 'assoc-8', customerName: 'Lily Brooks',    tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 50, lines: [TEE_B(), CAP()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-1',  staffId: 'assoc-7', customerName: 'Caleb Foster',   tender: 'card',       status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 54, lines: [HOOD(), TEE_W(), CAP()] },
+    { locationId: 'loc-soho',      registerId: 'reg-soho-3',  staffId: 'assoc-8', customerName: 'Ella Ross',      tender: 'tap_to_pay', status: 'completed',      origin: 'in_store', hasReceipt: true,  daysAgo: 58, lines: [CAP()] },
   ]
 
   // Counter sales are fulfilled on the spot, so they never enter the fulfillment queue.
@@ -807,19 +807,31 @@ export const useCommerceStore = defineStore('commerce', () => {
     resyncTotals(item)
   }
 
-  const orders = ref<Order[]>(Array.from({ length: 30 }, (_, i) => {
+  // One web order per day, indexed by days-ago. First 30 values are the current
+  // 30-day window (index 0 = today), next 30 the previous window — a smooth,
+  // deterministic curve so the Overview metric explorer reads cleanly and the
+  // period-over-period deltas stay plausible.
+  const WEB_DAILY_TOTALS = [
+    1100, 830, 720, 980, 640, 520, 760, 810, 590, 460, 700, 540, 620, 880, 1150,
+    690, 520, 470, 830, 610, 540, 760, 900, 480, 560, 720, 640, 380, 510, 420,
+    700, 600, 540, 660, 510, 450, 560, 590, 480, 410, 560, 470, 520, 640, 700,
+    520, 430, 400, 610, 500, 460, 580, 620, 410, 470, 560, 500, 350, 420, 390,
+  ]
+  const seedNow = Date.now()
+
+  const orders = ref<Order[]>(Array.from({ length: 60 }, (_, i) => {
     const fName = customerFirstNames[i % customerFirstNames.length]!
     const lName = customerLastNames[i % customerLastNames.length]!
     const customerName = `${fName} ${lName}`
-    const itemCount = Math.floor(Math.random() * 5) + 1
-    const subtotal = (Math.random() * 980 + 45).toFixed(2)
-    const shipping = (Math.random() * 25 + 4.99).toFixed(2)
-    const total = (parseFloat(subtotal) + parseFloat(shipping)).toFixed(2)
+    const itemCount = (i * 7) % 4 + 1
+    const shipping = (4.99 + (i % 5) * 3).toFixed(2)
+    const total = WEB_DAILY_TOTALS[i]!.toFixed(2)
+    const subtotal = (WEB_DAILY_TOTALS[i]! - parseFloat(shipping)).toFixed(2)
     const status = orderStatuses[i % orderStatuses.length]!
     const fulfillmentStatus = fulfillmentStatuses[i % fulfillmentStatuses.length]!
-    const trackingNum = `1Z${Math.random().toString(36).substring(2, 11).toUpperCase()}`
+    const trackingNum = `1Z${String(900000000 + i * 7919)}`
     const city = cities[i % cities.length]!
-    const date = new Date(Date.now() - (i * 86400000 * 1.2)).toISOString().split('T')[0]!
+    const date = new Date(seedNow - i * 86400000).toISOString().split('T')[0]!
     const shipped = fulfillmentStatus === 'Shipped'
     const paymentStatus = status === 'Refunded' ? 'Refunded' : status === 'Cancelled' ? 'Voided' : 'Paid'
     // Map queue state onto the detail step indicator
@@ -856,8 +868,8 @@ export const useCommerceStore = defineStore('commerce', () => {
       lineItems: Array.from({ length: itemCount }, (_, j): OrderLineItem => ({
         product: productNames[(i + j) % productNames.length]!,
         sku: `SKU-${String(10000 + (i + j) % productNames.length).padStart(5, '0')}`,
-        qty: Math.floor(Math.random() * 3) + 1,
-        price: (Math.random() * 150 + 10).toFixed(2),
+        qty: (i + j) % 3 + 1,
+        price: ((i + j) * 37 % 140 + 12).toFixed(2),
         status: shipped ? 'Shipped' : status === 'Cancelled' ? 'Cancelled' : 'Processing',
         coupon: (i + j) % 6 === 0 ? 'WELCOME20' : null,
         discountPct: (i + j) % 6 === 0 ? 20 : 0,
