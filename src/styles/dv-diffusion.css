@@ -1,0 +1,163 @@
+/* ─── Da Vinci diffusion field ────────────────────────────────────────────────
+   Shared visual material for the voice-first flow (signup → onboarding →
+   experience): an aura of drifting light pools behind the orb, and a borderless
+   feathered glass field that dissolves into the page instead of stacking on it.
+   Single source of truth — SignupView and DaVinciExperience both consume these
+   classes; do not fork the values back into components. */
+
+:root {
+  --dv-fog-core: rgba(252, 252, 254, 0.25);
+  --dv-fog-mid: rgba(252, 252, 254, 0.11);
+  --dv-aura-violet: rgba(124, 58, 237, 0.13);
+  --dv-aura-blue: rgba(37, 99, 235, 0.12);
+  --dv-aura-cyan: rgba(8, 145, 178, 0.1);
+}
+
+[data-theme='dark'] {
+  --dv-fog-core: rgba(30, 32, 38, 0.27);
+  --dv-fog-mid: rgba(30, 32, 38, 0.13);
+  --dv-aura-violet: rgba(139, 92, 246, 0.26);
+  --dv-aura-blue: rgba(59, 130, 246, 0.22);
+  --dv-aura-cyan: rgba(34, 211, 238, 0.2);
+}
+
+/* ─── Aura — soft cool light pools that give the glass colour to refract ───── */
+.dv-aura {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.dv-aura__blob {
+  position: absolute;
+  width: 55vw;
+  height: 55vw;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform, opacity;
+}
+
+/* Resting state must stand on its own: the global reduced-motion rule freezes
+   each blob at its `from` keyframe. */
+.dv-aura__blob--violet {
+  top: -20vw;
+  left: -12vw;
+  background: radial-gradient(circle, var(--dv-aura-violet), transparent 65%);
+  animation: dv-drift-a 26s ease-in-out infinite alternate;
+}
+
+.dv-aura__blob--blue {
+  bottom: -24vw;
+  right: -14vw;
+  background: radial-gradient(circle, var(--dv-aura-blue), transparent 65%);
+  animation: dv-drift-b 34s ease-in-out infinite alternate;
+}
+
+/* Centred so the glass always has colour directly beneath it */
+.dv-aura__blob--cyan {
+  top: 50%;
+  left: 50%;
+  width: 46vw;
+  height: 46vw;
+  margin: -23vw 0 0 -23vw;
+  background: radial-gradient(circle, var(--dv-aura-cyan), transparent 68%);
+  animation: dv-drift-c 30s ease-in-out infinite alternate;
+}
+
+@keyframes dv-drift-a {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(8vw, 6vh) scale(1.16); }
+}
+@keyframes dv-drift-b {
+  from { transform: translate(0, 0) scale(1.1); }
+  to { transform: translate(-7vw, -5vh) scale(0.95); }
+}
+@keyframes dv-drift-c {
+  from { transform: translate(0, 0) scale(1); opacity: 0.9; }
+  to { transform: translate(4vw, -4vh) scale(1.12); opacity: 1; }
+}
+
+/* ─── Glass field — feathered frost that merges with the page ──────────────
+   Mask geometry: closest-side radii resolve the stops against the layer's own
+   half-size, so the fade COMPLETES just inside the box (no hard rectangle).
+   The boxes overhang the content; the horizontal overhang is capped at the
+   free space beside it (minus a scrollbar allowance) so nothing can exceed
+   the viewport. No border-radius / overflow:hidden near these layers —
+   masked stacked backdrop-filters break with them in Chromium. */
+.dv-glass-field {
+  position: relative;
+}
+
+/* Outer feather — a wide, gentle pre-blur so the frost has no starting line */
+.dv-glass-field::before {
+  content: '';
+  position: absolute;
+  inset: -220px calc(-1 * clamp(0px, (100vw - 100%) / 2 - 16px, 220px));
+  z-index: -1;
+  pointer-events: none;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 40%, transparent 96%);
+  -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 40%, transparent 96%);
+}
+
+/* Core frost — carries legibility under the text */
+.dv-glass-field::after {
+  content: '';
+  position: absolute;
+  inset: -140px calc(-1 * clamp(0px, (100vw - 100%) / 2 - 16px, 140px));
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse closest-side at 50% 48%, var(--dv-fog-core), var(--dv-fog-mid) 70%, transparent 97%);
+  backdrop-filter: blur(40px) saturate(170%) brightness(1.03);
+  -webkit-backdrop-filter: blur(40px) saturate(170%) brightness(1.03);
+  mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 68%, transparent 98%);
+  -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 68%, transparent 98%);
+}
+
+/* Narrow screens: the side overhang collapses, so widen the opaque plateau —
+   the fade lands at the viewport edge, where nothing shows. */
+@media (max-width: 600px) {
+  .dv-glass-field::after {
+    mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 86%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 86%, transparent 100%);
+  }
+}
+
+/* ─── Accessibility parity (Apple Reduce Transparency / Increase Contrast) ── */
+@media (prefers-reduced-motion: reduce) {
+  .dv-aura__blob {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .dv-glass-field {
+    background: rgb(var(--v-theme-surface));
+    border-radius: 20px;
+  }
+  .dv-glass-field::before,
+  .dv-glass-field::after {
+    display: none;
+  }
+  .dv-aura {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .dv-glass-field {
+    background: rgb(var(--v-theme-surface));
+    border-radius: 20px;
+    border: 1px solid rgb(var(--v-theme-on-surface));
+  }
+  .dv-glass-field::before,
+  .dv-glass-field::after {
+    display: none;
+  }
+  .dv-aura {
+    opacity: 0.2;
+  }
+}

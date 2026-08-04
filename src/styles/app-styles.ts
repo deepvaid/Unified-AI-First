@@ -15,3 +15,5 @@ import './sidebar-white.css'
 import './sidebar-gray.css'
 import './shell-variants.css'
 import './retail-widgets.scss'
+// Shared aura + diffusion-field material for the voice-first Da Vinci flow
+import './dv-diffusion.css'

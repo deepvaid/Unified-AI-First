@@ -55,7 +55,7 @@ export interface TrialSignupPayload {
   lastName: string
   email: string
   companyName: string
-  companyUrl: string
+  companyUrl?: string
 }
 
 export interface PlgEntitlements {

@@ -62,12 +62,15 @@ const avatarSpeed = computed(() => ({ idle: 1, listening: 2.4, thinking: 1.6, sp
 const campaignEntry = computed(
   () => route.query.onboarding === 'campaign' || (onboarding.activeAccountId === accountId.value && onboarding.isActive),
 )
+// Signup already granted the mic and unlocked audio; while the handoff auto-start
+// runs, suppress the welcome so the greeting is captioned instead of hidden behind
+// stale buttons.
+const voiceHandoff = ref(false)
 const welcomeVisible = computed(() => {
   if (!campaignEntry.value) return false
   const stage = onboarding.activeSession?.stage
-  return !stage || stage === 'welcome' || stage === 'consent'
+  return (!stage || stage === 'welcome' || stage === 'consent') && !voiceHandoff.value
 })
-const micEducationVisible = computed(() => onboarding.activeSession?.stage === 'consent')
 let micPermissionTracked = false
 
 // ── Live (hands-free) conversation ───────────────────────────────────────────
@@ -251,11 +254,6 @@ function continueByTyping() {
   nextTick(() => {
     document.querySelector<HTMLInputElement>('.dvx__input')?.focus()
   })
-}
-
-function explainVoiceAccess() {
-  prepareCampaignSession()
-  onboarding.setStage('consent')
 }
 
 async function enableVoiceOnboarding() {
@@ -672,7 +670,13 @@ onMounted(() => {
   // Seed the greeting audio from the pre-baked static WAV so it plays INSTANTLY in
   // the natural Gemini voice on the first gesture (no ~5s synth wait). Falls back to
   // browser TTS if the asset is missing. The speak paths await this handle (capped).
-  greetingPrefetch = voice.prefetchSpeech(greetingText.value, '/davinci/greeting.wav')
+  // The WAV was baked for the demo user's exact greeting (scripts/bake-greeting.mjs) —
+  // seeding it under any other name's text would greet fresh signups as "Ross".
+  const bakedGreeting = "Hi Ross — welcome to Maropost. I'm Da Vinci, your guide."
+  greetingPrefetch = voice.prefetchSpeech(
+    greetingText.value,
+    greetingText.value === bakedGreeting ? '/davinci/greeting.wav' : undefined,
+  )
   // Warm the HTTP cache for the session earcons (decode happens on first playChime).
   void fetch('/davinci/chime-open.wav').catch(() => {})
   void fetch('/davinci/chime-close.wav').catch(() => {})
@@ -692,6 +696,17 @@ onMounted(() => {
     trackDaVinciOnboardingEvent('onboarding_viewed', accountId.value)
     const session = onboarding.begin(accountId.value)
     copilot.beginOnboarding(accountId.value)
+    // Voice-first signup handoff: the mic was already granted and audio unlocked
+    // in this document, so skip the welcome/consent screens and start speaking.
+    // If the unlock probe fails we fall through to the normal welcome — never a dead end.
+    if (route.query.voice === 'granted' && voice.sttSupported && session.stage === 'welcome') {
+      voiceHandoff.value = true
+      void (async () => {
+        if (await voice.tryUnlockAudio()) void enableVoiceOnboarding()
+        else voiceHandoff.value = false // autoplay still blocked → normal welcome, never a dead end
+      })()
+      return
+    }
     if (session.stage !== 'welcome' && session.stage !== 'consent' && messages.value.length === 0) {
       trackDaVinciOnboardingEvent('onboarding_resumed', accountId.value, { stage: session.stage })
       const response = campaignOnboarding.resume()
@@ -728,6 +743,13 @@ onBeforeUnmount(() => {
     <!-- Orb backdrop -->
     <div class="dvx__backdrop">
       <DvOrbCanvas :state="voice.state.value" :audio-source="voice.getVoiceFrame" class="dvx__orb" />
+    </div>
+
+    <!-- Luminous light pools the diffusion field refracts (same as signup) -->
+    <div class="dv-aura" aria-hidden="true">
+      <div class="dv-aura__blob dv-aura__blob--violet"></div>
+      <div class="dv-aura__blob dv-aura__blob--blue"></div>
+      <div class="dv-aura__blob dv-aura__blob--cyan"></div>
     </div>
 
     <!-- Top bar -->
@@ -779,12 +801,12 @@ onBeforeUnmount(() => {
 
     <!-- Centered content over the orb -->
     <main class="dvx__center" :class="{ 'dvx__center--thread': hasThread }">
-      <section v-if="welcomeVisible" class="dvx__welcome" aria-labelledby="dvx-welcome-title">
+      <section v-if="welcomeVisible" class="dvx__welcome dv-glass-field" aria-labelledby="dvx-welcome-title">
         <div class="dvx__welcome-eyebrow">
           <v-icon size="16">sparkles</v-icon>
           Your first campaign, guided by Da Vinci
         </div>
-        <h1 id="dvx-welcome-title" class="dvx__welcome-title text-h3">
+        <h1 id="dvx-welcome-title" class="dvx__welcome-title">
           Turn your first idea into an editable email campaign.
         </h1>
         <p class="dvx__welcome-copy">
@@ -792,39 +814,15 @@ onBeforeUnmount(() => {
           timing, and send — I won’t send anything.
         </p>
 
-        <div v-if="micEducationVisible" class="dvx__permission pa-4">
-          <div class="d-flex align-start ga-3">
-            <v-avatar color="primary" variant="tonal" size="36">
-              <v-icon size="20">mic</v-icon>
-            </v-avatar>
-            <div>
-              <div class="text-subtitle-2 font-weight-bold">Use your microphone for this session</div>
-              <div class="text-body-2 text-medium-emphasis mt-1">
-                Da Vinci listens only while the conversation is active. A live transcript, Stop,
-                Mute, and Type instead stay available.
-              </div>
-            </div>
-          </div>
-          <div class="d-flex flex-wrap ga-2 mt-4">
-            <v-btn
-              color="primary"
-              prepend-icon="mic"
-              :disabled="!voice.sttSupported"
-              @click="enableVoiceOnboarding"
-            >
-              Allow microphone and start
-            </v-btn>
-            <v-btn variant="outlined" prepend-icon="keyboard" @click="continueByTyping">
-              Continue by typing
-            </v-btn>
-          </div>
-          <p v-if="!voice.sttSupported" class="text-caption text-medium-emphasis mt-3 mb-0">
-            Voice input is unavailable in this browser. You can complete the same onboarding by typing.
-          </p>
-        </div>
-
-        <div v-else class="d-flex flex-wrap ga-3">
-          <v-btn color="primary" size="large" prepend-icon="mic" @click="explainVoiceAccess">
+        <div class="d-flex flex-wrap ga-3">
+          <v-btn
+            variant="flat"
+            size="large"
+            prepend-icon="mic"
+            class="dvx__welcome-primary"
+            :disabled="!voice.sttSupported"
+            @click="enableVoiceOnboarding"
+          >
             Start with voice
           </v-btn>
           <v-btn variant="outlined" size="large" prepend-icon="keyboard" @click="continueByTyping">
@@ -832,7 +830,11 @@ onBeforeUnmount(() => {
           </v-btn>
         </div>
 
-        <div v-if="!micEducationVisible" class="dvx__welcome-goals mt-5">
+        <p v-if="!voice.sttSupported" class="text-caption text-medium-emphasis mt-3 mb-0">
+          Voice input is unavailable in this browser. You can complete the same onboarding by typing.
+        </p>
+
+        <div class="dvx__welcome-goals mt-5">
           <span class="dvx__welcome-goals-label">Something else first?</span>
           <div class="d-flex flex-wrap ga-2 mt-2">
             <v-btn
@@ -852,12 +854,6 @@ onBeforeUnmount(() => {
           {{ voiceRecoveryMessage }}
         </p>
 
-        <div class="dvx__welcome-promise d-flex flex-wrap ga-4 mt-5">
-          <span><v-icon size="16">shield-check</v-icon> Permission before listening</span>
-          <span><v-icon size="16">file-pen-line</v-icon> Draft only</span>
-          <span><v-icon size="16">keyboard</v-icon> Type at any time</span>
-        </div>
-
         <p class="dvx__welcome-disclosure mt-3 mb-0">
           You’re chatting with an AI assistant. If you use voice, audio is processed by your browser’s
           speech service.
@@ -865,7 +861,8 @@ onBeforeUnmount(() => {
       </section>
 
       <!-- Conversation thread -->
-      <section v-if="!welcomeVisible && hasThread" ref="threadEl" class="dvx__thread" aria-live="polite">
+      <div v-if="!welcomeVisible && hasThread" class="dvx__thread-shell dv-glass-field">
+        <section ref="threadEl" class="dvx__thread" aria-live="polite">
         <div
           v-for="msg in messages"
           :key="msg.id"
@@ -899,7 +896,8 @@ onBeforeUnmount(() => {
             </button>
           </div>
         </div>
-      </section>
+        </section>
+      </div>
 
       <!-- Focal voice control — small mic centered in the orb -->
       <div v-if="!welcomeVisible" class="dvx__stage">
@@ -1103,25 +1101,27 @@ onBeforeUnmount(() => {
   padding-bottom: 34px;
 }
 
-/* ─── Thread (glass panel over the orb) ───────────────────────────────── */
-.dvx__thread {
+/* ─── Thread (diffusion field over the orb) ───────────────────────────── */
+/* Shell carries the diffusion field; the thread scrolls INSIDE it so the
+   feathered pseudo-layers aren't clipped by an overflow container. */
+.dvx__thread-shell {
   width: min(640px, 92vw);
   flex: 0 1 auto;
   min-height: 0;
   max-height: 52vh;
+  display: flex;
+}
+
+.dvx__thread {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 22px;
   padding: 18px 20px;
   scrollbar-width: thin;
-  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 60%, transparent);
-  backdrop-filter: blur(14px) saturate(130%);
-  -webkit-backdrop-filter: blur(14px) saturate(130%);
-  border: 1px solid color-mix(in srgb, rgb(var(--v-theme-surface)) 70%, var(--dv-border));
-  border-radius: 18px;
-  /* glass needs shadow separation on pure white */
-  box-shadow: 0 1px 2px rgba(24, 27, 33, 0.04), 0 24px 60px -32px rgba(24, 27, 33, 0.28);
 }
 
 .dvx__turn {
@@ -1168,14 +1168,10 @@ onBeforeUnmount(() => {
 }
 
 /* ─── First-run campaign welcome ─────────────────────────────────────── */
+/* Sizing only — the frost comes from .dv-glass-field in src/styles/dv-diffusion.css */
 .dvx__welcome {
-  width: min(var(--mp-layout-searchMaxWidth), 92vw);
-  padding: var(--mp-spacing-8);
-  border: 1px solid var(--dv-border);
-  border-radius: var(--mp-borderRadius-xl);
-  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 92%, transparent);
-  box-shadow: var(--mp-shadow-lg);
-  backdrop-filter: blur(var(--mp-spacing-3));
+  width: min(640px, 92vw);
+  padding: clamp(28px, 4vw, 46px);
 }
 
 .dvx__welcome-eyebrow {
@@ -1189,8 +1185,21 @@ onBeforeUnmount(() => {
 
 .dvx__welcome-title {
   margin: 0;
-  color: var(--dv-text-primary);
+  /* ink, not brand navy — matches the register (signup) typography on glass */
+  color: var(--dv-ink);
   line-height: 1.12;
+  font-size: clamp(28px, 5vw, 44px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+/* Ink capsule CTA — same treatment as the signup's primary button */
+.dvx__welcome-primary {
+  background: var(--dv-ink) !important;
+  color: rgb(var(--v-theme-surface)) !important;
+  border-radius: 7px !important;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .dvx__welcome-copy {
@@ -1198,23 +1207,6 @@ onBeforeUnmount(() => {
   color: var(--dv-text-secondary);
   font-size: 1rem;
   line-height: 1.6;
-}
-
-.dvx__permission {
-  border: 1px solid var(--dv-border);
-  border-radius: var(--mp-borderRadius-lg);
-  background: rgb(var(--v-theme-surface));
-}
-
-.dvx__welcome-promise {
-  color: var(--dv-text-secondary);
-  font-size: 0.75rem;
-}
-
-.dvx__welcome-promise span {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mp-spacing-1);
 }
 
 .dvx__welcome-goals-label {
@@ -1397,7 +1389,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgb(var(--v-theme-surface));
+  background: color-mix(in srgb, rgb(var(--v-theme-surface)) 40%, transparent);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
   border: 1px solid var(--dv-border);
   border-radius: 999px;
   padding: 7px 7px 7px 20px;
@@ -1521,7 +1515,6 @@ onBeforeUnmount(() => {
 @media (max-width: 560px) {
   .dvx__welcome {
     padding: var(--mp-spacing-5);
-    border-radius: var(--mp-borderRadius-lg);
   }
 
   .dvx__welcome-title {
@@ -1536,7 +1529,7 @@ onBeforeUnmount(() => {
     font-size: 0.875rem;
   }
 
-  .dvx__thread {
+  .dvx__thread-shell {
     max-height: 46vh;
   }
 
@@ -1579,4 +1572,5 @@ onBeforeUnmount(() => {
     animation: none;
   }
 }
+
 </style>

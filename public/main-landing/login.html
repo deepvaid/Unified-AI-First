@@ -37,7 +37,6 @@
     margin-bottom:10px; transition:border-color .18s, box-shadow .18s; }
   .field::placeholder{ color:var(--dim); }
   .field:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(24,118,242,.14); background:#fff; }
-  .hide{ display:none; }
 
   .primary{ width:100%; background:var(--ink); color:#fff; border:0; border-radius:7px; padding:14px;
     font-family:'Inter',sans-serif; font-size:15px; font-weight:600; cursor:pointer; margin-top:4px; transition:background .18s, transform .1s; }
@@ -85,7 +84,6 @@
   <div class="center">
     <form class="card" id="authForm" autocomplete="off">
       <h1 id="title">Login</h1>
-      <div class="sub hide" id="sub">Start your free trial — no card required.</div>
 
       <input class="field" id="email" type="email" placeholder="Email" autocomplete="email" required>
       <input class="field" id="password" type="password" placeholder="Password" autocomplete="current-password" required>
@@ -103,42 +101,19 @@
         <button class="soft" id="microsoft" type="button"><span class="ms"><i></i><i></i><i></i><i></i></span></button>
       </div>
 
-      <div class="switch" id="switch">New to Maropost? <a id="toggle">Create account</a></div>
+      <div class="switch">New to Maropost? <a href="/signup">Start free trial</a></div>
     </form>
   </div>
 
 <script>
+  // Signups no longer stop here — the landing CTAs link straight to the
+  // conversational /signup. Redirect stale "#signup" bookmarks the same way.
+  if (location.hash === '#signup') location.replace('/signup');
+
+  // Login lands on the DaVinci app (mock — no real backend).
   const goApp = () => { window.location.href = '/accounts/2000290/da-vinci/experience'; };
-  const goSignup = () => {
-    const email = document.getElementById('email').value.trim();
-    window.location.href = '/signup' + (email ? '?email=' + encodeURIComponent(email) : '');
-  };
-  const form = document.getElementById('authForm');
-  const title = document.getElementById('title');
-  const sub = document.getElementById('sub');
-  const submitBtn = document.getElementById('submit');
-  const switchTxt = document.getElementById('switch');
-  let signup = false;
-
-  function setMode(s){
-    signup = s;
-    title.textContent = signup ? 'Create your account' : 'Login';
-    submitBtn.textContent = signup ? 'Create account' : 'Login';
-    sub.classList.toggle('hide', !signup);
-    switchTxt.innerHTML = signup
-      ? 'Already have an account? <a id="toggle">Log in</a>'
-      : 'New to Maropost? <a id="toggle">Create account</a>';
-    document.getElementById('toggle').addEventListener('click', () => setMode(!signup));
-  }
-  document.getElementById('toggle').addEventListener('click', () => setMode(!signup));
-
-  // Login mode lands on the DaVinci app (mock — no real backend);
-  // signup mode continues into the in-app signup wizard.
-  form.addEventListener('submit', (e) => { e.preventDefault(); signup ? goSignup() : goApp(); });
-  ['passkey','google','microsoft'].forEach(id => document.getElementById(id).addEventListener('click', () => { signup ? goSignup() : goApp(); }));
-
-  // Start in signup mode when arriving from "Start free trial"; otherwise login.
-  setMode(location.hash === '#signup');
+  document.getElementById('authForm').addEventListener('submit', (e) => { e.preventDefault(); goApp(); });
+  ['passkey','google','microsoft'].forEach(id => document.getElementById(id).addEventListener('click', goApp));
 </script>
 
 <script type="importmap">
