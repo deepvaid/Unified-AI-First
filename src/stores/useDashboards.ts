@@ -43,7 +43,7 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v20'
+const STORAGE_KEY = 'mp.dashboard-hub.v21'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -226,7 +226,7 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
       { ...makeWidget('Campaign to purchase funnel', 'overview_campaign_funnel', 'funnel', createLayout(0, 11, 12, 8)), subtitle: 'Marketing sends through to commerce orders' },
       makeWidget('Orders by sales channel', 'commerce_orders_by_channel', 'donut', createLayout(0, 19, 4, 8)),
       makeWidget('Rolling revenue goal', 'commerce_revenue_goal', 'gauge', createLayout(4, 19, 4, 8)),
-      { ...makeWidget('New vs returning', 'commerce_new_vs_returning', 'donut', createLayout(8, 19, 4, 8)), subtitle: 'Share of orders placed' },
+      { ...makeWidget('Dashboard palette', 'design_palette', 'palette', createLayout(8, 19, 4, 8)), subtitle: 'Every shade in the Overview charts' },
       makeWidget('Orders & activity', 'overview_tabs', 'tabs', createLayout(0, 27, 7, 8)),
       { ...makeWidget('Da Vinci insights', 'davinci_insights', 'insights', createLayout(7, 27, 5, 8)), subtitle: 'Fresh observations from your data' },
       // The two list rows are sized to their content (h=6/h=7), not chart height.

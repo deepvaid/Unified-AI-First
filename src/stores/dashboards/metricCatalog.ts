@@ -488,6 +488,19 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
   ],
   analytics: [
     {
+      id: 'design_palette',
+      dataSource: 'analytics',
+      label: 'Dashboard Palette',
+      description: 'Every shade used by the Overview chart family, for design review.',
+      defaultTitle: 'Dashboard palette',
+      defaultWidgetType: 'palette',
+      supportedWidgetTypes: ['palette'],
+      unit: 'count',
+      icon: 'palette',
+      drilldown: { routeName: 'DashboardShadcn', label: 'Open design lab' },
+      aiKeywords: ['palette', 'colors', 'shades', 'design review', 'chart colors'],
+    },
+    {
       id: 'overview_attention',
       dataSource: 'analytics',
       label: 'Needs Your Attention',

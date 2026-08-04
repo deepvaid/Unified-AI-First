@@ -5,28 +5,18 @@
 // from the dashboard's global filters via useWidgetData. Renders bespoke — the
 // widget card suppresses its standard header for this type.
 import { computed, ref } from 'vue'
-import { bounds, linePath, valueToY, CHART_H, CHART_W } from '../dotted/dottedChartMath'
+import { bounds, linePath, valueToY, CHART_H, CHART_W, TREND_CURRENT, TREND_PREVIOUS } from '../dotted/dottedChartMath'
 import type { DashboardMetricExplorerData, DashboardMetricExplorerMetric } from '@/stores/dashboards/types'
 
 const props = defineProps<{
   data: DashboardMetricExplorerData
 }>()
 
-/** Current period / previous period hues (shadcn-style two-series area).
-    Each series drifts blue → teal left-to-right across the plot. */
-const CURRENT_COLOR = '#0092D4'
-const CURRENT_COLOR_END = '#3FC0CE'
-const PREVIOUS_COLOR = '#7ACFF1'
-const PREVIOUS_COLOR_END = '#A9E1E8'
-
-/** Interpolate between two hex colors (t in 0–1) so hover dots and tooltip
-    swatches match the gradient stroke at the hovered x position. */
-function lerpHex(from: string, to: string, t: number): string {
-  const f = parseInt(from.slice(1), 16)
-  const g = parseInt(to.slice(1), 16)
-  const ch = (shift: number) => Math.round(((f >> shift) & 0xff) + (((g >> shift) & 0xff) - ((f >> shift) & 0xff)) * t)
-  return `rgb(${ch(16)}, ${ch(8)}, ${ch(0)})`
-}
+/** Current period / previous period hues (shadcn area-gradient recipe: two
+    blues, each with a vertical fill fading to the baseline). Shared via
+    dottedChartMath so the palette-review widget stays in sync. */
+const CURRENT_COLOR = TREND_CURRENT
+const PREVIOUS_COLOR = TREND_PREVIOUS
 
 const selectedKey = ref<DashboardMetricExplorerMetric['key']>('revenue')
 const compare = ref(true)
@@ -97,9 +87,8 @@ const hoverPoints = computed<HoverPoint[]>(() => {
     value: formatValue(metric, raw ?? 0),
     topPct: Math.min(100, Math.max(0, (valueToY(raw ?? 0, hi, lo) / CHART_H) * 100)),
   })
-  const t = metric.cur.length > 1 ? index / (metric.cur.length - 1) : 0
-  const rows = [point('current', metric.label, lerpHex(CURRENT_COLOR, CURRENT_COLOR_END, t), metric.cur[index])]
-  if (compareOn.value) rows.push(point('previous', 'Previous period', lerpHex(PREVIOUS_COLOR, PREVIOUS_COLOR_END, t), metric.prev[index]))
+  const rows = [point('current', metric.label, CURRENT_COLOR, metric.cur[index])]
+  if (compareOn.value) rows.push(point('previous', 'Previous period', PREVIOUS_COLOR, metric.prev[index]))
   return rows
 })
 
@@ -170,25 +159,18 @@ const tooltipTransform = computed(() => {
         >
           <svg viewBox="0 0 720 200" preserveAspectRatio="none" class="mx__svg" role="img" :aria-label="`${selected.label} trend chart`">
             <defs>
-              <!-- shadcn's gradient recipe: .8 → .1 stops, then fill-opacity .4
-                   on the path (effective .32 → .04) — that pairing is what makes
-                   the reference read airy rather than saturated. Diagonal so the
-                   fill fades top → bottom while drifting blue → teal left → right. -->
-              <linearGradient id="mxFill" x1="0" y1="0" x2="1" y2="1">
+              <!-- shadcn's area-gradient recipe: .8 → .1 stops fading straight
+                   down to the baseline, then fill-opacity on the path (effective
+                   ~.35 → .04) — that pairing is what makes the reference read
+                   airy rather than saturated. One gradient per series, both in
+                   the blue family. -->
+              <linearGradient id="mxFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" :stop-color="CURRENT_COLOR" stop-opacity="0.8" />
-                <stop offset="95%" :stop-color="CURRENT_COLOR_END" stop-opacity="0.1" />
+                <stop offset="95%" :stop-color="CURRENT_COLOR" stop-opacity="0.1" />
               </linearGradient>
-              <linearGradient id="mxFillPrev" x1="0" y1="0" x2="1" y2="1">
+              <linearGradient id="mxFillPrev" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" :stop-color="PREVIOUS_COLOR" stop-opacity="0.8" />
-                <stop offset="95%" :stop-color="PREVIOUS_COLOR_END" stop-opacity="0.1" />
-              </linearGradient>
-              <linearGradient id="mxStroke" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" :stop-color="CURRENT_COLOR" />
-                <stop offset="100%" :stop-color="CURRENT_COLOR_END" />
-              </linearGradient>
-              <linearGradient id="mxStrokePrev" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" :stop-color="PREVIOUS_COLOR" />
-                <stop offset="100%" :stop-color="PREVIOUS_COLOR_END" />
+                <stop offset="95%" :stop-color="PREVIOUS_COLOR" stop-opacity="0.1" />
               </linearGradient>
               <!-- Contains the cardinal curve's slight overshoot at sharp
                    peaks/valleys, the way recharts clips to its plot area. -->
@@ -201,10 +183,12 @@ const tooltipTransform = computed(() => {
             <!-- Previous period sits behind the current one (overlaid, not stacked:
                  period-over-period values aren't additive). -->
             <g clip-path="url(#mxClip)">
-              <path v-if="chart.prevAreaPath" :d="chart.prevAreaPath" fill="url(#mxFillPrev)" fill-opacity="0.4" />
-              <path v-if="chart.prevStrokePath" :d="chart.prevStrokePath" fill="none" stroke="url(#mxStrokePrev)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
-              <path :d="chart.areaPath" fill="url(#mxFill)" fill-opacity="0.4" />
-              <path :d="chart.strokePath" fill="none" stroke="url(#mxStroke)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+              <!-- Previous period reads as backdrop: lighter blue, slightly
+                   fainter fill — the current period stays the foreground. -->
+              <path v-if="chart.prevAreaPath" :d="chart.prevAreaPath" fill="url(#mxFillPrev)" fill-opacity="0.3" />
+              <path v-if="chart.prevStrokePath" :d="chart.prevStrokePath" fill="none" :stroke="PREVIOUS_COLOR" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+              <path :d="chart.areaPath" fill="url(#mxFill)" fill-opacity="0.45" />
+              <path :d="chart.strokePath" fill="none" :stroke="CURRENT_COLOR" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
             </g>
           </svg>
 

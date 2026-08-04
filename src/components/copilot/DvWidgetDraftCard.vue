@@ -105,6 +105,7 @@ const TYPE_META: Record<DashboardWidgetType, { label: string; icon: string }> = 
   gauge: { label: 'Goal gauge', icon: 'goal' },
   bar_list: { label: 'Progress list', icon: 'list-ordered' },
   breakdown: { label: 'Breakdown list', icon: 'list' },
+  palette: { label: 'Palette review', icon: 'palette' },
   tabs: { label: 'Tabbed lists', icon: 'layout-list' },
 }
 

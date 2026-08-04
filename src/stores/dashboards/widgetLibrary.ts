@@ -381,6 +381,17 @@ export const WIDGET_LIBRARY: DashboardWidgetLibraryEntry[] = [
     drilldown: { routeName: 'SalesOrders', label: 'Open sales orders' },
   },
   {
+    id: 'lib-design-palette',
+    title: 'Dashboard palette',
+    description: 'Every shade used by the Overview charts, for design review',
+    category: 'davinci',
+    type: 'palette',
+    icon: 'palette',
+    metricId: 'design_palette',
+    dataSource: 'analytics',
+    drilldown: { routeName: 'DashboardShadcn', label: 'Open design lab' },
+  },
+  {
     id: 'lib-new-vs-returning',
     title: 'New vs returning',
     description: 'Share of orders from returning customers',

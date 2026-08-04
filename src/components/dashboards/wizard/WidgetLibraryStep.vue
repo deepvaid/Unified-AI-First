@@ -40,6 +40,7 @@ const TYPE_LABELS: Record<DashboardWidgetType, string> = {
   gauge: 'Gauge',
   bar_list: 'List',
   breakdown: 'List',
+  palette: 'Palette',
   tabs: 'Tabs',
 }
 

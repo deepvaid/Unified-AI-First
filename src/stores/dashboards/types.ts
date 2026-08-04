@@ -15,6 +15,7 @@ export type DashboardWidgetType =
   | 'gauge'
   | 'bar_list'
   | 'breakdown'
+  | 'palette'
   | 'tabs'
 export type DashboardChartVariant = 'horizontal' | 'vertical' | 'area' | 'line'
 export type DashboardDataSource = 'commerce' | 'marketing' | 'analytics' | 'contacts' | 'service' | 'neto' | 'retail' | 'merchandising'
@@ -109,6 +110,7 @@ export type DashboardMetricId =
   | 'service_tickets_breakdown'
   | 'marketing_deliverability_breakdown'
   | 'marketing_journeys_in_flight'
+  | 'design_palette'
 
 export interface DashboardLayout {
   x: number
@@ -404,6 +406,20 @@ export interface DashboardBreakdownData {
   linkLabel?: string
 }
 
+export interface DashboardPaletteGroup {
+  title: string
+  /** Which chart(s) the ramp is used by. */
+  caption: string
+  /** Ordered hex shades, rendered as a segmented bar with hex labels. */
+  shades: string[]
+}
+
+export interface DashboardPaletteData {
+  kind: 'palette'
+  groups: DashboardPaletteGroup[]
+  footnote?: string
+}
+
 export interface DashboardTabsOrderRow {
   order: string
   customer: string
@@ -439,4 +455,5 @@ export type DashboardWidgetData =
   | DashboardGaugeData
   | DashboardBarListData
   | DashboardBreakdownData
+  | DashboardPaletteData
   | DashboardTabsData

@@ -13,6 +13,11 @@ export const DOTTED_BLUES = ['#0092D4', '#21A4DE', '#45B7E6', '#59C6D8', '#7AD4C
 /** 4-slice pie palette ("Orders by sales channel"), same blue → teal drift. */
 export const DOTTED_PIE_BLUES = ['#0092D4', '#3AB2E4', '#63C6DE', '#9FE2D8'] as const
 
+/** Metric-explorer trend hues (shadcn area-gradient recipe: solid stroke per
+    series, vertical fill fading to the baseline). Two blues, current darker. */
+export const TREND_CURRENT = '#0092D4'
+export const TREND_PREVIOUS = '#7ACFF1'
+
 export const BAR_GRADIENT = 'linear-gradient(90deg, #0092D4 0%, #3FB4E6 60%, #63CDEF 100%)'
 export const BAR_GRADIENT_GREEN = 'linear-gradient(90deg, #1f8a5b 0%, #3FB489 100%)'
 

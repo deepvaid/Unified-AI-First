@@ -7,6 +7,13 @@ import { useContactsStore } from '@/stores/useContacts'
 import { useMerchandisingStore } from '@/stores/useMerchandising'
 import { useRetailStore, STAFF_ROLE_LABELS } from '@/stores/useRetail'
 import { useTicketsStore } from '@/stores/useTickets'
+import {
+  DOTTED_BLUES,
+  DOTTED_PIE_BLUES,
+  FUNNEL_GRADIENT_STOPS,
+  TREND_CURRENT,
+  TREND_PREVIOUS,
+} from '@/components/dashboards/dotted/dottedChartMath'
 import type {
   DashboardFilterState,
   DashboardMetricUnit,
@@ -1195,6 +1202,20 @@ export function useWidgetData(
             tone: journey.status === 'Paused' ? 'warning' : 'success',
           })),
           linkLabel: 'View all journeys',
+        }
+      }
+      case 'design_palette': {
+        const groups = [
+          { title: 'Trend lines', caption: 'Store performance — current / previous', shades: [TREND_CURRENT, TREND_PREVIOUS] },
+          { title: 'Ring & donut ramp', caption: 'Revenue attribution', shades: [...DOTTED_BLUES] },
+          { title: 'Pie ramp', caption: 'Orders by sales channel', shades: [...DOTTED_PIE_BLUES] },
+          { title: 'Funnel gradient', caption: 'Campaign to purchase', shades: FUNNEL_GRADIENT_STOPS.map((stop) => stop.color) },
+        ]
+        const total = groups.reduce((sum, group) => sum + group.shades.length, 0)
+        return {
+          kind: 'palette',
+          groups,
+          footnote: `${total} shades across ${groups.length} chart families`,
         }
       }
       case 'overview_attention': {
