@@ -3,11 +3,28 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
-import { ONBOARDING_PHASES, useOnboardingStore } from '@/stores/useOnboarding'
+import { useOnboardingStore, type OnboardingPhase, type SetupGoal } from '@/stores/useOnboarding'
+import { usePlgStore } from '@/stores/usePlg'
 
 const route = useRoute()
 const store = useOnboardingStore()
+const plg = usePlgStore()
 const accountId = computed(() => String(route.params.accountId ?? '1'))
+
+// The guide shows the personalized plan (subscribed clouds ∩ chosen goal).
+// The goal only drives the plan on trials — paid plans follow the purchase.
+const GOAL_LABELS: Partial<Record<SetupGoal, string>> = {
+  marketing: 'email marketing',
+  store: 'your online store',
+  both: 'marketing and your store',
+  service: 'customer support',
+}
+const subtitle = computed(() => {
+  const label = plg.isTrial && store.goal ? GOAL_LABELS[store.goal] : null
+  return label
+    ? `Your guided path for ${label} — chosen with Da Vinci. Pick up where you left off anytime.`
+    : 'A guided path from empty account to first sale — pick up where you left off anytime.'
+})
 
 // Exactly one step is expanded at a time. Follows the store's next task, but the
 // user can peek at any step by clicking its row.
@@ -30,7 +47,8 @@ function refocusRow(id: string) {
 }
 
 function markDone(id: string) {
-  store.complete(id)
+  // Manual mark = user-confirmed (kept distinct from product-verified completion).
+  store.confirm(id)
   refocusRow(id)
 }
 function markNotDone(id: string) {
@@ -60,8 +78,7 @@ function taskRoute(routeName: string) {
   return { name: routeName, params: { accountId: accountId.value } }
 }
 
-const phaseComplete = (phaseId: string) =>
-  store.phaseDone(phaseId) === ONBOARDING_PHASES.find((p) => p.id === phaseId)!.tasks.length
+const phaseComplete = (phase: OnboardingPhase) => store.phaseDone(phase.id) === phase.tasks.length
 
 // Reset wipes all progress — gate behind a confirm dialog per the destructive-action convention.
 const confirmReset = ref(false)
@@ -75,7 +92,7 @@ function doReset() {
   <div class="gs-page">
     <MpPageHeader
       title="Get started"
-      subtitle="A guided path from empty account to first sale — pick up where you left off anytime."
+      :subtitle="subtitle"
     >
       <template #actions>
         <v-menu location="bottom end">
@@ -137,12 +154,12 @@ function doReset() {
 
     <!-- ── Phases ───────────────────────────────────────────────── -->
     <template v-else>
-      <section v-for="phase in ONBOARDING_PHASES" :key="phase.id" class="mb-6">
+      <section v-for="phase in store.visiblePhases" :key="phase.id" class="mb-6">
         <div class="d-flex align-baseline justify-space-between mb-2 px-1">
           <div>
             <h2 class="text-subtitle-1 font-weight-semibold gs-phase-title">
               {{ phase.title }}
-              <span v-if="phaseComplete(phase.id)" class="gs-phase-done" role="img" aria-label="Phase complete">🎉</span>
+              <span v-if="phaseComplete(phase)" class="gs-phase-done" role="img" aria-label="Phase complete">🎉</span>
             </h2>
             <p class="text-body-2 text-medium-emphasis mb-0">{{ phase.blurb }}</p>
           </div>

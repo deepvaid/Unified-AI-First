@@ -9,6 +9,7 @@ import DvToastStack from './copilot/DvToastStack.vue'
 import DvInsightCard from './copilot/DvInsightCard.vue'
 import DvIntentCardList from './copilot/voice/DvIntentCardList.vue'
 import DvCampaignOnboardingCard from './copilot/DvCampaignOnboardingCard.vue'
+import DvSetupOnboardingCard from './copilot/DvSetupOnboardingCard.vue'
 import DvLandingHero from './copilot/DvLandingHero.vue'
 import DvOrbitOrb from './copilot/voice/DvOrbitOrb.vue'
 import DvOrbitVoiceSurface from './copilot/voice/DvOrbitVoiceSurface.vue'
@@ -20,6 +21,7 @@ import {
   type CampaignOnboardingProps,
   type DraftSetProps,
   type IntentCardsProps,
+  type SetupOnboardingProps,
 } from '@/stores/useCopilot'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
@@ -32,6 +34,11 @@ import {
   useDaVinciCampaignOnboarding,
   type CampaignOnboardingResponse,
 } from '@/composables/useDaVinciCampaignOnboarding'
+import {
+  setupHandoffFollowText,
+  useDaVinciSetupOnboarding,
+  type SetupOnboardingResponse,
+} from '@/composables/useDaVinciSetupOnboarding'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
 import {
   useDaVinciIntents,
@@ -41,6 +48,8 @@ import {
 } from '@/composables/useDaVinciIntents'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
 import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
+import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 
 interface MpDaVinciBotProps {
   initialChatMode?: boolean
@@ -69,9 +78,12 @@ const { addItem, incrementAdded, clearAll } = useDaVinciHistory()
 const { pushToast } = useDaVinciToasts()
 const intents = useDaVinciIntents()
 const campaignOnboarding = useDaVinciCampaignOnboarding()
+const setupOnboarding = useDaVinciSetupOnboarding()
 const voice = useDaVinciVoice()
 const copilot = useCopilotStore()
 const onboarding = useDaVinciOnboardingStore()
+const setupStore = useDaVinciSetupStore()
+const setupGuide = useOnboardingStore()
 const { contextBlock } = useDaVinciContext()
 
 // The conversation lives in the copilot store so it survives navigation, drawer
@@ -124,15 +136,45 @@ const activeDashboard = computed(() => {
 const targetAccountId = computed(() => routeAccountId.value ?? activeAccount.value?.id ?? null)
 
 if (route.query.source === 'davinci' && targetAccountId.value) {
-  onboarding.begin(targetAccountId.value)
-  copilot.beginOnboarding(targetAccountId.value)
-  copilot.open()
-  if (!copilot.resumeMessage && messages.value.length === 0) {
-    copilot.queueResume(
-      'Welcome back. Your Da Vinci campaign checkpoint is restored. This draft is still editable, and nothing has been sent.',
-    )
+  // A live guided-setup session wins the restore; otherwise fall back to the
+  // legacy campaign-wizard checkpoint behaviour.
+  const setupSession = setupStore.peek(targetAccountId.value)
+  if (setupSession && setupSession.stage !== 'complete') {
+    setupStore.begin(targetAccountId.value)
+    copilot.beginOnboarding(targetAccountId.value)
+    copilot.open()
+    if (!copilot.resumeMessage && messages.value.length === 0) {
+      copilot.queueResume(setupHandoffFollowText(setupGuide.taskById(setupSession.currentTaskId)))
+    }
+  } else {
+    onboarding.begin(targetAccountId.value)
+    copilot.beginOnboarding(targetAccountId.value)
+    copilot.open()
+    if (!copilot.resumeMessage && messages.value.length === 0) {
+      copilot.queueResume(
+        'Welcome back. Your Da Vinci campaign checkpoint is restored. This draft is still editable, and nothing has been sent.',
+      )
+    }
   }
 }
+
+// Cold load / account switch anywhere mid-onboarding: silently adopt a live
+// persisted setup session for the current account so typed messages keep
+// routing through the guided flow (no drawer open, no resume message).
+watch(
+  targetAccountId,
+  (accountId) => {
+    if (!accountId || setupStore.activeAccountId === accountId) return
+    const setupSession = setupStore.peek(accountId)
+    if (setupSession && setupSession.stage !== 'complete') setupStore.begin(accountId)
+  },
+  { immediate: true },
+)
+
+/** The guided setup flow only answers for the account it belongs to. */
+const setupFlowActive = computed(
+  () => setupStore.isActive && setupStore.activeAccountId === targetAccountId.value,
+)
 
 const targetDashboard = computed(() => {
   if (activeDashboard.value) return activeDashboard.value
@@ -552,6 +594,55 @@ function appendCampaignOnboardingResponse(res: CampaignOnboardingResponse) {
   maybeSpeak(res.speech ?? res.reply)
 }
 
+function appendSetupOnboardingResponse(res: SetupOnboardingResponse) {
+  const componentData: ChatMessage['componentData'] = []
+  if (res.quickReplies?.length) {
+    componentData.push({
+      type: 'intentCards',
+      props: { cards: [], quickReplies: res.quickReplies },
+    })
+  }
+  if (res.setupCard) {
+    componentData.push({
+      type: 'setupOnboarding',
+      props: res.setupCard,
+    })
+  }
+  messages.value.push({
+    id: makeId('a'),
+    role: 'assistant',
+    text: res.reply,
+    componentData: componentData.length ? componentData : undefined,
+  })
+  chatMode.value = true
+  scrollToBottom()
+  maybeSpeak(res.speech ?? res.reply)
+}
+
+function onSetupOnboardingAction(action: string) {
+  const accountId = targetAccountId.value
+  if (action.startsWith('open-task:') || action === 'view-all-tasks' || action === 'explore-dashboard') {
+    const routeName = setupOnboarding.markHandoff(action)
+    if (!accountId || !routeName) return
+    copilot.queueResume(
+      action.startsWith('open-task:')
+        ? setupHandoffFollowText(setupOnboarding.currentTask.value)
+        : 'I’m here whenever you need me — pick any task from the guide and I’ll follow along.',
+    )
+    copilot.setWidthMode('panel')
+    copilot.open()
+    void router.push({ name: routeName, params: { accountId }, query: { source: 'davinci' } })
+    return
+  }
+  const response = setupOnboarding.handleAction(action)
+  if (response) {
+    appendSetupOnboardingResponse(response)
+    if (response.exitToDashboard && accountId) {
+      void router.push({ name: 'Dashboard', params: { accountId } })
+    }
+  }
+}
+
 function pushUserTurn(text: string) {
   messages.value.push({ id: makeId('u'), role: 'user', text })
   chatMode.value = true
@@ -640,27 +731,58 @@ function onIntentCardAction(payload: { card: DvCardDescriptor; action: string })
 
 function processQuery(text: string) {
   if (!text) return
+  // Routing precedence (kept identical to the Experience surface): guided
+  // setup → campaign wizard → the normal assistant.
+  const setupResponse = setupFlowActive.value ? setupOnboarding.handleText(text) : null
+  if (setupResponse) {
+    pushUserTurn(text)
+    appendSetupOnboardingResponse(setupResponse)
+    if (setupResponse.exitToDashboard && targetAccountId.value) {
+      void router.push({ name: 'Dashboard', params: { accountId: targetAccountId.value } })
+    }
+    return
+  }
   const onboardingResponse = onboarding.isActive ? campaignOnboarding.handleText(text) : null
   if (onboardingResponse) {
     pushUserTurn(text)
     appendCampaignOnboardingResponse(onboardingResponse)
     return
   }
-  // The wizard pauses itself for off-topic questions; acknowledge the switch
+  // Either flow pauses itself for off-topic questions; acknowledge the switch
   // once, then answer the actual question through the normal path.
+  const setupPauseNotice = setupOnboarding.consumePauseNotice()
   const pauseNotice = campaignOnboarding.consumePauseNotice()
   // Text mode mid-generation: show the turn immediately, answer it after the
   // current reply lands (queued follow-up).
   if (isTyping.value && !isVoiceMode.value) {
     pushUserTurn(text)
+    if (setupPauseNotice) appendSetupOnboardingResponse(setupPauseNotice)
     if (pauseNotice) appendCampaignOnboardingResponse(pauseNotice)
     queuedPrompts.value.push(text)
     return
   }
   pushUserTurn(text)
+  if (setupPauseNotice) appendSetupOnboardingResponse(setupPauseNotice)
   if (pauseNotice) appendCampaignOnboardingResponse(pauseNotice)
   runGeneration(text)
 }
+
+// A product hook verified the current setup task while the drawer is visible —
+// congratulate and advance in place (this is the "user imported contacts and
+// Da Vinci noticed" moment).
+watch(
+  () => {
+    const taskId = setupStore.activeSession?.currentTaskId
+    return taskId ? setupGuide.completed[taskId] === true : false
+  },
+  (done) => {
+    if (!done || !surfaceVisible.value || !setupFlowActive.value) return
+    const taskId = setupStore.activeSession?.currentTaskId
+    if (!taskId) return
+    const response = setupOnboarding.onTaskAutoCompleted(taskId)
+    if (response) appendSetupOnboardingResponse(response)
+  },
+)
 
 /** Answer `text` (the user turn is already in the transcript). */
 function runGeneration(text: string) {
@@ -870,6 +992,12 @@ function getCampaignOnboardingProps(msg: ChatMessage): CampaignOnboardingProps |
   const comp = msg.componentData?.find((item) => item.type === 'campaignOnboarding')
   if (!comp || comp.type !== 'campaignOnboarding') return null
   return comp.props as CampaignOnboardingProps
+}
+
+function getSetupOnboardingProps(msg: ChatMessage): SetupOnboardingProps | null {
+  const comp = msg.componentData?.find((item) => item.type === 'setupOnboarding')
+  if (!comp || comp.type !== 'setupOnboarding') return null
+  return comp.props as SetupOnboardingProps
 }
 
 function handleClearAll() {
@@ -1093,6 +1221,11 @@ function onComposerKeydown(event: KeyboardEvent) {
               v-if="getCampaignOnboardingProps(msg)"
               v-bind="getCampaignOnboardingProps(msg)!"
               @action="onCampaignOnboardingAction"
+            />
+            <DvSetupOnboardingCard
+              v-if="getSetupOnboardingProps(msg)"
+              v-bind="getSetupOnboardingProps(msg)!"
+              @action="onSetupOnboardingAction"
             />
           </div>
         </div>

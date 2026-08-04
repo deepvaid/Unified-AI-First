@@ -18,14 +18,12 @@ import type {
 } from '@/stores/dashboards/types'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDashboardsStore } from '@/stores/useDashboards'
-import { usePlgStore } from '@/stores/usePlg'
 import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useToast } from '@/composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
 const accountsStore = useAccountsStore()
-const plgStore = usePlgStore()
 const dashboardsStore = useDashboardsStore()
 const toast = useToast()
 
@@ -140,8 +138,9 @@ const activeWidgetDraft = computed<DashboardWidgetDraft | null>(() => {
 })
 const onboardingStore = useOnboardingStore()
 const setupTasks = computed<SetupTask[]>(() => {
-  // PLG trial accounts see the next steps from the Get Started guide instead.
-  if (plgStore.isTrial) {
+  // PLG accounts (trial or purchased) see the next steps from their
+  // personalized Get Started plan instead of the static demo tasks.
+  if (onboardingStore.showGuideSurfaces) {
     return onboardingStore.nextTasks(5).map(task => ({
       title: task.title,
       description: task.description,
@@ -187,14 +186,14 @@ const setupTasks = computed<SetupTask[]>(() => {
   ]
 })
 const completedSetupTasks = computed(() =>
-  plgStore.isTrial ? onboardingStore.doneCount : setupTasks.value.filter((task) => task.complete).length
+  onboardingStore.showGuideSurfaces ? onboardingStore.doneCount : setupTasks.value.filter((task) => task.complete).length
 )
-const setupTotal = computed(() => (plgStore.isTrial ? onboardingStore.totalCount : undefined))
+const setupTotal = computed(() => (onboardingStore.showGuideSurfaces ? onboardingStore.totalCount : undefined))
 const setupGuideRoute = computed(() =>
-  plgStore.isTrial ? { name: 'GetStarted', params: { accountId: accountId.value } } : undefined
+  onboardingStore.showGuideSurfaces ? { name: 'GetStarted', params: { accountId: accountId.value } } : undefined
 )
 const setupProgress = computed(() =>
-  plgStore.isTrial
+  onboardingStore.showGuideSurfaces
     ? onboardingStore.progress
     : Math.round((completedSetupTasks.value / setupTasks.value.length) * 100)
 )

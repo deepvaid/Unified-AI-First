@@ -4,7 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePlgStore, type TrialSignupPayload } from '@/stores/usePlg'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useUserProfile } from '@/stores/useUserProfile'
-import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
+import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
 import DvOrbitMicBar from '@/components/copilot/voice/DvOrbitMicBar.vue'
 
@@ -17,7 +18,8 @@ const plg = usePlgStore()
 const DvOrbCanvas = defineAsyncComponent(() => import('@/components/copilot/voice/DvOrbCanvas.vue'))
 const accounts = useAccountsStore()
 const profile = useUserProfile()
-const daVinciOnboarding = useDaVinciOnboardingStore()
+const daVinciSetup = useDaVinciSetupStore()
+const onboardingChecklist = useOnboardingStore()
 const voice = useDaVinciVoice()
 
 type Stage = 'intro' | 'ask' | 'verify' | 'provisioning' | 'success'
@@ -465,13 +467,15 @@ onUnmounted(() => {
 function enterMaropost() {
   accounts.switchTo(newAccountId.value)
   profile.setName(`${firstName.value} ${lastName.value}`)
-  daVinciOnboarding.reset(newAccountId.value)
-  daVinciOnboarding.begin(newAccountId.value, { restart: true, freshAccount: true })
+  // A brand-new trial starts with an empty checklist — clear the lived-in demo
+  // seeds that activation applies to unknown accounts. Must run AFTER switchTo.
+  onboardingChecklist.reset()
+  daVinciSetup.begin(newAccountId.value, { restart: true, entry: 'signup' })
   router.push({
     name: 'DaVinciExperience',
     params: { accountId: newAccountId.value },
     query: {
-      onboarding: 'campaign',
+      onboarding: 'setup',
       // Mic already granted + audio unlocked in this document → the experience
       // can skip its consent screen and start speaking right away.
       ...(voiceMode.value && !micDenied.value ? { voice: 'granted' } : {}),

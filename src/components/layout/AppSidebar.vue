@@ -21,11 +21,12 @@ const emit = defineEmits<{
 const accountsStore = useAccountsStore()
 const plgStore = usePlgStore()
 
-// PLG trial onboarding — pinned "Get started" entry above the nav (reactive; the
-// guide store updates as tasks complete anywhere in the app).
+// PLG onboarding — pinned "Get started" entry above the nav (reactive; the
+// guide store updates as tasks complete anywhere in the app, and the total
+// follows the subscription/goal-filtered plan).
 const onboardingStore = useOnboardingStore()
 const onboardingDone = computed(() => onboardingStore.doneCount)
-const onboardingTotal = onboardingStore.totalCount
+const onboardingTotal = computed(() => onboardingStore.totalCount)
 const onboardingProgress = computed(() => onboardingStore.progress)
 
 // ─── Navigation Structure ────────────────────────────────────
@@ -594,8 +595,8 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
       </v-tooltip>
     </div>
 
-    <!-- PLG trial onboarding — pinned Get Started entry -->
-    <template v-if="plgStore.isTrial && !plgStore.isExpired && !onboardingStore.allResolved">
+    <!-- PLG onboarding (trial or purchased) — pinned Get Started entry -->
+    <template v-if="onboardingStore.showGuideSurfaces">
       <button
         v-if="!effectiveRail"
         type="button"

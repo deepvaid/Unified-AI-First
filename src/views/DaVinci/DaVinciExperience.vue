@@ -3,13 +3,14 @@
 // (formerly linked externally as https://davinci-ai-first.vercel.app).
 // fullPage route: the app shell + copilot drawer are unmounted, so this view
 // owns the mic exclusively and provides its own exits (Esc / Classic UI / close).
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import DvOrbCanvas from '@/components/copilot/voice/DvOrbCanvas.vue'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import DvIntentCardList from '@/components/copilot/voice/DvIntentCardList.vue'
 import DvCampaignOnboardingCard from '@/components/copilot/DvCampaignOnboardingCard.vue'
+import DvSetupOnboardingCard from '@/components/copilot/DvSetupOnboardingCard.vue'
 import DvToastStack from '@/components/copilot/DvToastStack.vue'
 import { useDaVinciVoice, VoiceError } from '@/composables/useDaVinciVoice'
 import {
@@ -21,6 +22,11 @@ import {
   useDaVinciCampaignOnboarding,
   type CampaignOnboardingResponse,
 } from '@/composables/useDaVinciCampaignOnboarding'
+import {
+  setupHandoffFollowText,
+  useDaVinciSetupOnboarding,
+  type SetupOnboardingResponse,
+} from '@/composables/useDaVinciSetupOnboarding'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
 import {
@@ -28,9 +34,11 @@ import {
   type CampaignOnboardingProps,
   type ChatMessage,
   type IntentCardsProps,
+  type SetupOnboardingProps,
 } from '@/stores/useCopilot'
-import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
-import { ONBOARDING_PHASES, useOnboardingStore } from '@/stores/useOnboarding'
+import { useDaVinciOnboardingStore, type DaVinciInputMode } from '@/stores/useDaVinciOnboarding'
+import { useDaVinciSetupStore, type SetupEntry } from '@/stores/useDaVinciSetup'
+import { useOnboardingStore } from '@/stores/useOnboarding'
 import { useUserProfile } from '@/stores/useUserProfile'
 
 const route = useRoute()
@@ -38,10 +46,12 @@ const router = useRouter()
 const voice = useDaVinciVoice()
 const intents = useDaVinciIntents()
 const campaignOnboarding = useDaVinciCampaignOnboarding()
+const setupOnboarding = useDaVinciSetupOnboarding()
 const { pushToast } = useDaVinciToasts()
 const profile = useUserProfile()
 const copilot = useCopilotStore()
 const onboarding = useDaVinciOnboardingStore()
+const setupStore = useDaVinciSetupStore()
 const setupGuide = useOnboardingStore()
 const { messages, chatMode } = storeToRefs(copilot)
 
@@ -59,17 +69,49 @@ const threadEl = ref<HTMLElement | null>(null)
 const hasThread = computed(() => messages.value.length > 0)
 const busy = computed(() => voice.state.value !== 'idle')
 const avatarSpeed = computed(() => ({ idle: 1, listening: 2.4, thinking: 1.6, speaking: 1.4 })[voice.state.value])
-const campaignEntry = computed(
-  () => route.query.onboarding === 'campaign' || (onboarding.activeAccountId === accountId.value && onboarding.isActive),
+// Guided setup (post-signup / post-checkout) is the primary arrival flow;
+// `?onboarding=campaign` stays as a back-compat entry to the campaign wizard.
+const setupEntry = computed(
+  () => route.query.onboarding === 'setup' || (setupStore.activeAccountId === accountId.value && setupStore.isActive),
 )
+const campaignEntry = computed(
+  () => !setupEntry.value
+    && (route.query.onboarding === 'campaign' || (onboarding.activeAccountId === accountId.value && onboarding.isActive)),
+)
+function setupEntryKind(): SetupEntry {
+  if (route.query.entry === 'checkout') return 'checkout'
+  return route.query.onboarding === 'setup' ? 'signup' : 'manual'
+}
 // Signup already granted the mic and unlocked audio; while the handoff auto-start
 // runs, suppress the welcome so the greeting is captioned instead of hidden behind
 // stale buttons.
 const voiceHandoff = ref(false)
 const welcomeVisible = computed(() => {
-  if (!campaignEntry.value) return false
-  const stage = onboarding.activeSession?.stage
-  return (!stage || stage === 'welcome' || stage === 'consent') && !voiceHandoff.value
+  if (voiceHandoff.value) return false
+  if (setupEntry.value) {
+    const stage = setupStore.activeSession?.stage
+    return !stage || stage === 'welcome'
+  }
+  if (campaignEntry.value) {
+    const stage = onboarding.activeSession?.stage
+    return !stage || stage === 'welcome' || stage === 'consent'
+  }
+  return false
+})
+const welcomeEyebrow = computed(() =>
+  setupEntry.value ? 'Your guided setup, with Da Vinci' : 'Your first campaign, guided by Da Vinci',
+)
+const welcomeTitle = computed(() =>
+  setupEntry.value ? 'Let’s get your account working.' : 'Turn your first idea into an editable email campaign.',
+)
+const welcomeCopy = computed(() => {
+  if (!setupEntry.value) {
+    return 'I’ll check your setup, explain what’s missing, and prepare a draft. You control the content, timing, and send — I won’t send anything.'
+  }
+  if (setupEntryKind() === 'checkout') {
+    return 'Your plan is live. I’ll explain what matters, take you to the right pages, and keep track as you go — you make every change. I never save, publish, or send anything.'
+  }
+  return 'I’ll show you around, explain what matters, and take you to the right pages — you make every change. I never save, publish, or send anything.'
 })
 let micPermissionTracked = false
 
@@ -130,9 +172,11 @@ function scrollThread() {
   })
 }
 
-function componentDataFor(response: CampaignOnboardingResponse | DvIntentResult) {
+type ExperienceResponse = CampaignOnboardingResponse | DvIntentResult | SetupOnboardingResponse
+
+function componentDataFor(response: ExperienceResponse) {
   const components: ChatMessage['componentData'] = []
-  const cards = response.cards ?? []
+  const cards = 'cards' in response ? response.cards ?? [] : []
   if (cards.length || response.quickReplies?.length) {
     components.push({
       type: 'intentCards',
@@ -145,10 +189,16 @@ function componentDataFor(response: CampaignOnboardingResponse | DvIntentResult)
       props: response.onboardingCard,
     })
   }
+  if ('setupCard' in response && response.setupCard) {
+    components.push({
+      type: 'setupOnboarding',
+      props: response.setupCard,
+    })
+  }
   return components.length ? components : undefined
 }
 
-function appendAssistantResponse(response: CampaignOnboardingResponse | DvIntentResult) {
+function appendAssistantResponse(response: ExperienceResponse) {
   messages.value.push({
     id: makeId('a'),
     role: 'assistant',
@@ -174,6 +224,11 @@ function onboardingCardFor(message: ChatMessage): CampaignOnboardingProps | null
   return component ? component.props as CampaignOnboardingProps : null
 }
 
+function setupCardFor(message: ChatMessage): SetupOnboardingProps | null {
+  const component = message.componentData?.find((item) => item.type === 'setupOnboarding')
+  return component ? component.props as SetupOnboardingProps : null
+}
+
 /** Generate + render a reply; speak it (awaiting in live mode so the loop waits for TTS). */
 async function respond(text: string, { awaitSpeech = false } = {}) {
   messages.value.push({ id: makeId('u'), role: 'user', text })
@@ -189,17 +244,30 @@ async function respond(text: string, { awaitSpeech = false } = {}) {
   // ~620-1040ms → ~200-400ms: real TTS latency now supplies the "processing" beat, and
   // for LLM turns this runs concurrently with the (slower) brain call anyway.
   const minDelay = new Promise<void>((r) => setTimeout(r, 200 + Math.random() * 200))
-  const onboardingResponse = campaignEntry.value && onboarding.isActive ? campaignOnboarding.handleText(text) : null
-  // The wizard pauses itself for off-topic questions; acknowledge the switch once,
+  // Routing precedence (kept identical to the drawer): guided setup → campaign
+  // wizard → the normal assistant (Gemini for open questions).
+  const setupResponse = setupEntry.value && setupStore.isActive ? setupOnboarding.handleText(text) : null
+  const onboardingResponse = setupResponse
+    ? null
+    : campaignEntry.value && onboarding.isActive
+      ? campaignOnboarding.handleText(text)
+      : null
+  // Either flow pauses itself for off-topic questions; acknowledge the switch once,
   // then let the normal assistant answer the actual question.
-  const pauseNotice = onboardingResponse ? null : campaignOnboarding.consumePauseNotice()
-  const res = onboardingResponse ?? await intents.answer(text, { history })
+  const pauseNotice = setupResponse || onboardingResponse
+    ? null
+    : setupOnboarding.consumePauseNotice() ?? campaignOnboarding.consumePauseNotice()
+  const res = setupResponse ?? onboardingResponse ?? await intents.answer(text, { history })
   await minDelay
   voice.setThinking(false)
   if (pauseNotice) appendAssistantResponse(pauseNotice)
   appendAssistantResponse(res)
   const speech = res.speech ?? res.reply
   captionText.value = speech
+  if ('exitToDashboard' in res && res.exitToDashboard) {
+    exitSetupToDashboard()
+    return
+  }
   if (awaitSpeech) await voice.speak(speech)
   else void voice.speak(speech)
 }
@@ -230,26 +298,34 @@ function onQuickReply(value: string) {
   sendText(value)
 }
 
-function prepareCampaignSession() {
-  onboarding.begin(accountId.value)
+function prepareOnboardingSession() {
+  if (setupEntry.value) setupStore.begin(accountId.value, { entry: setupEntryKind() })
+  else onboarding.begin(accountId.value)
   copilot.beginOnboarding(accountId.value)
+}
+
+/** First flow turn — guided setup on the primary arrival, campaign wizard on back-compat links. */
+function startFlowResponse(inputMode: DaVinciInputMode): ExperienceResponse {
+  return setupEntry.value
+    ? setupOnboarding.start(accountId.value, inputMode, { entry: setupEntryKind() })
+    : campaignOnboarding.start(accountId.value, inputMode)
 }
 
 /** Greets the user by name before the first question, on both the voice and text paths. */
 function appendGreeting() {
   const greeting = greetingText.value
-  appendAssistantResponse({ intent: 'campaign', reply: greeting, speech: greeting })
+  appendAssistantResponse({ intent: 'fallback', reply: greeting, speech: greeting, cards: [] })
   return greeting
 }
 
 function continueByTyping() {
-  prepareCampaignSession()
+  prepareOnboardingSession()
   endLive()
   copilot.setReadAloud(false)
   trackDaVinciOnboardingEvent('onboarding_started', accountId.value, { inputMode: 'text' })
   trackDaVinciOnboardingEvent('input_mode_selected', accountId.value, { inputMode: 'text' })
   appendGreeting()
-  const response = campaignOnboarding.start(accountId.value, 'text')
+  const response = startFlowResponse('text')
   appendAssistantResponse(response)
   nextTick(() => {
     document.querySelector<HTMLInputElement>('.dvx__input')?.focus()
@@ -257,7 +333,7 @@ function continueByTyping() {
 }
 
 async function enableVoiceOnboarding() {
-  prepareCampaignSession()
+  prepareOnboardingSession()
   voiceRecoveryMessage.value = ''
   copilot.setReadAloud(true)
   trackDaVinciOnboardingEvent('onboarding_started', accountId.value, { inputMode: 'voice' })
@@ -270,52 +346,13 @@ async function enableVoiceOnboarding() {
   captionText.value = greeting
   await voice.playChime('open')
   await voice.speak(greeting)
-  const response = campaignOnboarding.start(accountId.value, 'voice')
+  const response = startFlowResponse('voice')
   appendAssistantResponse(response)
   captionText.value = response.speech ?? response.reply
   await voice.speak(response.speech ?? response.reply)
   if (!voice.sttSupported) return
   liveActive.value = true
   void armListening()
-}
-
-// ── Other goals ──────────────────────────────────────────────────────────────
-// A first campaign isn't everyone's first job. These route to the matching Get
-// Started task instead, and hand the user to the drawer so guidance continues there.
-const WELCOME_GOALS = [
-  { key: 'store', label: 'Set up my store', icon: 'store' },
-  { key: 'contacts', label: 'Import contacts', icon: 'users' },
-  { key: 'explore', label: 'Just exploring', icon: 'compass' },
-] as const
-
-/** First task in a guide phase the user hasn't finished or skipped. */
-function firstOpenTask(phaseId: string, preferIds: string[] = []) {
-  const tasks = ONBOARDING_PHASES.find((phase) => phase.id === phaseId)?.tasks ?? []
-  const pool = preferIds.length ? tasks.filter((task) => preferIds.includes(task.id)) : tasks
-  const open = pool.find((task) => !setupGuide.completed[task.id] && !setupGuide.skipped[task.id])
-  return open ?? pool[0] ?? null
-}
-
-function chooseGoal(key: (typeof WELCOME_GOALS)[number]['key']) {
-  trackDaVinciOnboardingEvent('onboarding_skipped', accountId.value, { goal: key })
-  endLive()
-  // Pause rather than discard — the campaign path stays resumable from the drawer.
-  if (onboarding.activeSession) onboarding.setPaused(true)
-
-  const task = key === 'store'
-    ? firstOpenTask('store')
-    : key === 'contacts'
-      ? firstOpenTask('customers', ['first-list', 'add-contacts'])
-      : null
-
-  const routeName = task?.routeName ?? 'Dashboard'
-  const message = task
-    ? `Next up: ${task.title} — about ${task.minutes} minutes. ${task.why} Ask me anything as you go, or say “continue campaign” to pick that back up.`
-    : 'Have a look around. Your Get Started guide is in the sidebar, and I’m in the top right whenever you need me.'
-
-  copilot.queueResume(message)
-  copilot.open()
-  router.push({ name: routeName, params: { accountId: accountId.value } })
 }
 
 // Hide the starter chips on blur, but after a beat so a chip tap still registers.
@@ -550,11 +587,46 @@ function onCenterMic() {
   }
 }
 
-function appendAndSpeak(response: CampaignOnboardingResponse) {
+function appendAndSpeak(response: ExperienceResponse) {
   appendAssistantResponse(response)
   if (copilot.readAloud) {
     captionText.value = response.speech ?? response.reply
     void voice.speak(response.speech ?? response.reply)
+  }
+}
+
+/** "Just explore" — leave the conversation, keep Da Vinci reachable from the drawer. */
+function exitSetupToDashboard() {
+  endLive()
+  copilot.queueResume('I’m here if you need me — the Get Started guide in the sidebar has your full setup list.')
+  copilot.setWidthMode('panel')
+  copilot.open()
+  void router.push({ name: 'Dashboard', params: { accountId: accountId.value } })
+}
+
+/** Guided-setup deep link: queue the follow-up, open the drawer, then navigate —
+ *  the drawer survives the route change and speaks the queued line on arrival. */
+function openSetupRoute(routeName: string, action: string) {
+  endLive()
+  const followText = action.startsWith('open-task:')
+    ? setupHandoffFollowText(setupOnboarding.currentTask.value)
+    : 'I’m here whenever you need me — pick any task from the guide and I’ll follow along.'
+  copilot.queueResume(followText)
+  copilot.setWidthMode('panel')
+  copilot.open()
+  void router.push({ name: routeName, params: { accountId: accountId.value }, query: { source: 'davinci' } })
+}
+
+function onSetupAction(action: string) {
+  if (action.startsWith('open-task:') || action === 'view-all-tasks' || action === 'explore-dashboard') {
+    const routeName = setupOnboarding.markHandoff(action)
+    if (routeName) openSetupRoute(routeName, action)
+    return
+  }
+  const response = setupOnboarding.handleAction(action)
+  if (response) {
+    appendAndSpeak(response)
+    if (response.exitToDashboard) exitSetupToDashboard()
   }
 }
 
@@ -642,7 +714,11 @@ function newChat() {
   endLive()
   intents.reset()
   copilot.resetConversation()
-  if (campaignEntry.value) {
+  if (setupEntry.value) {
+    setupStore.reset(accountId.value)
+    setupStore.begin(accountId.value, { restart: true, entry: setupEntryKind() })
+    copilot.beginOnboarding(accountId.value)
+  } else if (campaignEntry.value) {
     onboarding.reset(accountId.value)
     onboarding.begin(accountId.value, { restart: true })
     copilot.beginOnboarding(accountId.value)
@@ -692,13 +768,31 @@ onMounted(() => {
       /* optional asset — canned lines fall back to streaming synth */
     }
   })()
-  if (route.query.onboarding === 'campaign') {
+  if (route.query.onboarding === 'setup') {
+    // Guided setup arrival — the primary post-signup / post-checkout flow.
+    trackDaVinciOnboardingEvent('onboarding_viewed', accountId.value)
+    const session = setupStore.begin(accountId.value, { entry: setupEntryKind() })
+    copilot.beginOnboarding(accountId.value)
+    // Voice-first signup handoff: the mic was already granted and audio unlocked
+    // in this document, so skip the welcome screen and start speaking.
+    // If the unlock probe fails we fall through to the normal welcome — never a dead end.
+    if (route.query.voice === 'granted' && voice.sttSupported && session.stage === 'welcome') {
+      voiceHandoff.value = true
+      void (async () => {
+        if (await voice.tryUnlockAudio()) void enableVoiceOnboarding()
+        else voiceHandoff.value = false // autoplay still blocked → normal welcome, never a dead end
+      })()
+      return
+    }
+    if (session.stage !== 'welcome' && messages.value.length === 0) {
+      trackDaVinciOnboardingEvent('onboarding_resumed', accountId.value, { stage: session.stage })
+      appendAssistantResponse(setupOnboarding.resume())
+    }
+  } else if (route.query.onboarding === 'campaign') {
+    // Back-compat: pre-guided-setup links still open the campaign wizard.
     trackDaVinciOnboardingEvent('onboarding_viewed', accountId.value)
     const session = onboarding.begin(accountId.value)
     copilot.beginOnboarding(accountId.value)
-    // Voice-first signup handoff: the mic was already granted and audio unlocked
-    // in this document, so skip the welcome/consent screens and start speaking.
-    // If the unlock probe fails we fall through to the normal welcome — never a dead end.
     if (route.query.voice === 'granted' && voice.sttSupported && session.stage === 'welcome') {
       voiceHandoff.value = true
       void (async () => {
@@ -716,6 +810,22 @@ onMounted(() => {
     void autoGreet() // Returning/general experience keeps the existing hands-free entry.
   }
 })
+
+// A product hook verified the current setup task while this surface is open
+// (e.g. the user finished it in another tab) — congratulate and advance in place.
+watch(
+  () => {
+    const taskId = setupStore.activeSession?.currentTaskId
+    return taskId ? setupGuide.completed[taskId] === true : false
+  },
+  (done) => {
+    if (!done || !setupStore.isActive || setupStore.activeAccountId !== accountId.value) return
+    const taskId = setupStore.activeSession?.currentTaskId
+    if (!taskId) return
+    const response = setupOnboarding.onTaskAutoCompleted(taskId)
+    if (response) appendAndSpeak(response)
+  },
+)
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
@@ -804,14 +914,13 @@ onBeforeUnmount(() => {
       <section v-if="welcomeVisible" class="dvx__welcome dv-glass-field" aria-labelledby="dvx-welcome-title">
         <div class="dvx__welcome-eyebrow">
           <v-icon size="16">sparkles</v-icon>
-          Your first campaign, guided by Da Vinci
+          {{ welcomeEyebrow }}
         </div>
         <h1 id="dvx-welcome-title" class="dvx__welcome-title">
-          Turn your first idea into an editable email campaign.
+          {{ welcomeTitle }}
         </h1>
         <p class="dvx__welcome-copy">
-          I’ll check your setup, explain what’s missing, and prepare a draft. You control the content,
-          timing, and send — I won’t send anything.
+          {{ welcomeCopy }}
         </p>
 
         <div class="d-flex flex-wrap ga-3">
@@ -833,22 +942,6 @@ onBeforeUnmount(() => {
         <p v-if="!voice.sttSupported" class="text-caption text-medium-emphasis mt-3 mb-0">
           Voice input is unavailable in this browser. You can complete the same onboarding by typing.
         </p>
-
-        <div class="dvx__welcome-goals mt-5">
-          <span class="dvx__welcome-goals-label">Something else first?</span>
-          <div class="d-flex flex-wrap ga-2 mt-2">
-            <v-btn
-              v-for="goal in WELCOME_GOALS"
-              :key="goal.key"
-              variant="tonal"
-              size="small"
-              :prepend-icon="goal.icon"
-              @click="chooseGoal(goal.key)"
-            >
-              {{ goal.label }}
-            </v-btn>
-          </div>
-        </div>
 
         <p v-if="voiceRecoveryMessage" class="text-caption text-error mt-4 mb-0" role="alert">
           {{ voiceRecoveryMessage }}
@@ -882,6 +975,12 @@ onBeforeUnmount(() => {
             v-bind="onboardingCardFor(msg)!"
             class="dvx__cards"
             @action="onOnboardingAction"
+          />
+          <DvSetupOnboardingCard
+            v-if="setupCardFor(msg)"
+            v-bind="setupCardFor(msg)!"
+            class="dvx__cards"
+            @action="onSetupAction"
           />
           <div v-if="intentCardsFor(msg)?.quickReplies?.length" class="dvx__quick">
             <button
@@ -1207,11 +1306,6 @@ onBeforeUnmount(() => {
   color: var(--dv-text-secondary);
   font-size: 1rem;
   line-height: 1.6;
-}
-
-.dvx__welcome-goals-label {
-  color: var(--dv-text-secondary);
-  font-size: 0.75rem;
 }
 
 .dvx__welcome-disclosure {

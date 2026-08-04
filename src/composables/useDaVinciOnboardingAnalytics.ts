@@ -12,6 +12,17 @@ export type DaVinciOnboardingEventName =
   | 'brief_corrected'
   | 'voice_recovery'
   | 'onboarding_completed'
+  // Guided setup (post-signup / post-checkout) events
+  | 'goal_selected'
+  | 'plan_generated'
+  | 'task_started'
+  | 'task_handoff_opened'
+  | 'task_completed'
+  | 'task_user_confirmed'
+  | 'task_skipped'
+  | 'milestone_completed'
+  | 'onboarding_paused'
+  | 'unsupported_action_requested'
 
 export interface DaVinciOnboardingEvent {
   name: DaVinciOnboardingEventName

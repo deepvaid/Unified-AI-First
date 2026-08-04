@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import type { DashboardWidgetDraft } from '@/stores/dashboards/types'
 import type { DvCardDescriptor, DvQuickReply } from '@/composables/useDaVinciIntents'
 import type { CampaignReadinessItem } from '@/stores/useDaVinciOnboarding'
+import type { SetupTaskStatus } from '@/stores/useOnboarding'
 
 // ── Shared conversation types ────────────────────────────────────────────────
 // The conversation lives here (not in MpDaVinciBot) so it survives route
@@ -36,13 +37,34 @@ export interface CampaignOnboardingProps {
   secondaryAction?: CampaignOnboardingAction
 }
 
+export interface SetupTaskCardItem {
+  id: string
+  label: string
+  status: SetupTaskStatus
+  minutes?: number
+}
+
+export interface SetupOnboardingProps {
+  kind: 'goal' | 'plan' | 'task' | 'verification' | 'complete' | 'unsupported'
+  title: string
+  description?: string
+  step: number
+  totalSteps: number
+  taskId?: string
+  status?: SetupTaskStatus
+  items?: SetupTaskCardItem[]
+  primaryAction?: CampaignOnboardingAction
+  secondaryAction?: CampaignOnboardingAction
+}
+
 export interface ChatComponent {
-  type: 'widgetDraftSet' | 'insight' | 'intentCards' | 'campaignOnboarding'
+  type: 'widgetDraftSet' | 'insight' | 'intentCards' | 'campaignOnboarding' | 'setupOnboarding'
   props:
     | DraftSetProps
     | { headline: string; description: string; severity?: string }
     | IntentCardsProps
     | CampaignOnboardingProps
+    | SetupOnboardingProps
 }
 
 export interface ChatMessage {

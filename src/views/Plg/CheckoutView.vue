@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import Plg3dsDialog from '@/components/plg/Plg3dsDialog.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
+import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
 import {
   usePlgStore,
   PLAN_CATALOG,
@@ -119,7 +120,15 @@ async function onApproved() {
     provisioningDone.value = i + 1
   }
   plg.activatePaidPlan({ selections: selections.value, cycle: cycleParam.value, addOns: addOns.value })
-  router.push({ name: 'Dashboard', params: { accountId: accountId.value } })
+  // Hand the fresh plan to Da Vinci guided setup — the plan derives from the
+  // purchased clouds, so there is no goal question on this path.
+  const setup = useDaVinciSetupStore()
+  setup.begin(accountId.value, { restart: true, entry: 'checkout' })
+  router.push({
+    name: 'DaVinciExperience',
+    params: { accountId: accountId.value },
+    query: { onboarding: 'setup', entry: 'checkout' },
+  })
 }
 </script>
 
