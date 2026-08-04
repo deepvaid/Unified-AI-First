@@ -8,10 +8,10 @@ export const CHART_H = 200
 
 /** Light-optimized dotted-chart ramp; stays literal across themes (accepted).
     Drifts blue → teal segment-by-segment to echo FUNNEL_GRADIENT_STOPS. */
-export const DOTTED_BLUES = ['#0092D4', '#1FA9CE', '#2FBCBE', '#4CCBAF', '#7EDCC4', '#B5EDDE'] as const
+export const DOTTED_BLUES = ['#0092D4', '#21A4DE', '#45B7E6', '#59C6D8', '#7AD4CB', '#B0E9DF'] as const
 
 /** 4-slice pie palette ("Orders by sales channel"), same blue → teal drift. */
-export const DOTTED_PIE_BLUES = ['#0092D4', '#2FBCBE', '#5FD2B5', '#A8E8D8'] as const
+export const DOTTED_PIE_BLUES = ['#0092D4', '#3AB2E4', '#63C6DE', '#9FE2D8'] as const
 
 export const BAR_GRADIENT = 'linear-gradient(90deg, #0092D4 0%, #3FB4E6 60%, #63CDEF 100%)'
 export const BAR_GRADIENT_GREEN = 'linear-gradient(90deg, #1f8a5b 0%, #3FB489 100%)'
