@@ -43,7 +43,7 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v21'
+const STORAGE_KEY = 'mp.dashboard-hub.v22'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -227,20 +227,21 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
       makeWidget('Orders by sales channel', 'commerce_orders_by_channel', 'donut', createLayout(0, 19, 4, 8)),
       makeWidget('Rolling revenue goal', 'commerce_revenue_goal', 'gauge', createLayout(4, 19, 4, 8)),
       { ...makeWidget('Dashboard palette', 'design_palette', 'palette', createLayout(8, 19, 4, 8)), subtitle: 'Every shade in the Overview charts' },
-      makeWidget('Orders & activity', 'overview_tabs', 'tabs', createLayout(0, 27, 7, 8)),
+      { ...makeWidget('Online vs in-store', 'commerce_channel_weekly', 'stacked_bar', createLayout(0, 27, 7, 8)), subtitle: 'Weekly revenue by channel' },
+      makeWidget('Orders & activity', 'overview_tabs', 'tabs', createLayout(0, 35, 7, 8)),
       { ...makeWidget('Da Vinci insights', 'davinci_insights', 'insights', createLayout(7, 27, 5, 8)), subtitle: 'Fresh observations from your data' },
       // The two list rows are sized to their content (h=6/h=7), not chart height.
-      { ...makeWidget('Fulfillment queue', 'commerce_fulfillment_queue', 'breakdown', createLayout(0, 35, 4, 6)), subtitle: 'Orders in the pipeline' },
+      { ...makeWidget('Fulfillment queue', 'commerce_fulfillment_queue', 'breakdown', createLayout(0, 43, 4, 6)), subtitle: 'Orders in the pipeline' },
     )
     if (hasService) {
-      widgets.push(makeWidget('Service tickets', 'service_tickets_breakdown', 'breakdown', createLayout(4, 35, 4, 6)))
+      widgets.push(makeWidget('Service tickets', 'service_tickets_breakdown', 'breakdown', createLayout(4, 43, 4, 6)))
     }
     widgets.push(
       makeWidget('Email deliverability', 'marketing_deliverability_breakdown', 'breakdown', createLayout(8, 35, 4, 6)),
-      { ...makeWidget('Best sellers', 'commerce_best_sellers', 'bar_list', createLayout(0, 41, 4, 7)), subtitle: 'By revenue' },
+      { ...makeWidget('Best sellers', 'commerce_best_sellers', 'bar_list', createLayout(0, 49, 4, 7)), subtitle: 'By revenue' },
     )
     if (hasRetail) {
-      widgets.push({ ...makeWidget('Retail today', 'retail_today_breakdown', 'bar_list', createLayout(4, 41, 4, 7)), subtitle: 'POS takings by location' })
+      widgets.push({ ...makeWidget('Retail today', 'retail_today_breakdown', 'bar_list', createLayout(4, 49, 4, 7)), subtitle: 'POS takings by location' })
     }
     widgets.push(
       { ...makeWidget('Journeys in flight', 'marketing_journeys_in_flight', 'breakdown', createLayout(8, 41, 4, 7)), subtitle: 'Contacts in automations' },

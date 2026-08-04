@@ -41,6 +41,7 @@ const TYPE_LABELS: Record<DashboardWidgetType, string> = {
   bar_list: 'List',
   breakdown: 'List',
   palette: 'Palette',
+  stacked_bar: 'Chart',
   tabs: 'Tabs',
 }
 

@@ -22,6 +22,7 @@ import DashboardDonutWidget from './widgets/DashboardDonutWidget.vue'
 import DashboardGaugeWidget from './widgets/DashboardGaugeWidget.vue'
 import DashboardBarListWidget from './widgets/DashboardBarListWidget.vue'
 import DashboardPaletteWidget from './widgets/DashboardPaletteWidget.vue'
+import DashboardStackedBarWidget from './widgets/DashboardStackedBarWidget.vue'
 import DashboardBreakdownWidget from './widgets/DashboardBreakdownWidget.vue'
 import DashboardTabsWidget from './widgets/DashboardTabsWidget.vue'
 import DashboardWidgetActionMenu from './DashboardWidgetActionMenu.vue'
@@ -353,6 +354,10 @@ function handleAttentionCollapse(collapsed: boolean) {
       />
       <DashboardPaletteWidget
         v-else-if="data.kind === 'palette'"
+        :data="data"
+      />
+      <DashboardStackedBarWidget
+        v-else-if="data.kind === 'stacked_bar'"
         :data="data"
       />
       <DashboardTabsWidget

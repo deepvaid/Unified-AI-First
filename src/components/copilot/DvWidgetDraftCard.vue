@@ -106,6 +106,7 @@ const TYPE_META: Record<DashboardWidgetType, { label: string; icon: string }> = 
   bar_list: { label: 'Progress list', icon: 'list-ordered' },
   breakdown: { label: 'Breakdown list', icon: 'list' },
   palette: { label: 'Palette review', icon: 'palette' },
+  stacked_bar: { label: 'Stacked bars', icon: 'bar-chart-3' },
   tabs: { label: 'Tabbed lists', icon: 'layout-list' },
 }
 

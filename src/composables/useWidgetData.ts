@@ -1204,6 +1204,41 @@ export function useWidgetData(
           linkLabel: 'View all journeys',
         }
       }
+      case 'commerce_channel_weekly': {
+        const WEEKS = 6
+        const dayMs = 86400000
+        const todayStart = new Date(new Date().toDateString()).getTime()
+        const buckets = Array.from({ length: WEEKS }, (_, index) => ({
+          label: new Date(todayStart - (WEEKS - 1 - index) * 7 * dayMs - 6 * dayMs)
+            .toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          online: 0,
+          instore: 0,
+        }))
+        commerce.orders.forEach((order) => {
+          const time = new Date(order.date ?? '').getTime()
+          if (Number.isNaN(time)) return
+          const weekIndex = Math.floor((todayStart - time) / (7 * dayMs))
+          if (weekIndex < 0 || weekIndex >= WEEKS) return
+          const bucket = buckets[WEEKS - 1 - weekIndex]!
+          const total = Math.max(0, parseFloat(order.total))
+          if (order.channelType === 'offline_store') bucket.instore += total
+          else bucket.online += total
+        })
+        return {
+          kind: 'stacked_bar',
+          buckets: buckets.map((bucket) => ({
+            label: bucket.label,
+            segments: [
+              { key: 'online', value: bucket.online, formattedValue: formatNumber(bucket.online, 'currency') },
+              { key: 'instore', value: bucket.instore, formattedValue: formatNumber(bucket.instore, 'currency') },
+            ],
+          })),
+          legend: [
+            { key: 'online', label: 'Online' },
+            { key: 'instore', label: 'In store' },
+          ],
+        }
+      }
       case 'design_palette': {
         const groups = [
           { title: 'Trend lines', caption: 'Store performance — current / previous', shades: [TREND_CURRENT, TREND_PREVIOUS] },

@@ -16,6 +16,7 @@ export type DashboardWidgetType =
   | 'bar_list'
   | 'breakdown'
   | 'palette'
+  | 'stacked_bar'
   | 'tabs'
 export type DashboardChartVariant = 'horizontal' | 'vertical' | 'area' | 'line'
 export type DashboardDataSource = 'commerce' | 'marketing' | 'analytics' | 'contacts' | 'service' | 'neto' | 'retail' | 'merchandising'
@@ -111,6 +112,7 @@ export type DashboardMetricId =
   | 'marketing_deliverability_breakdown'
   | 'marketing_journeys_in_flight'
   | 'design_palette'
+  | 'commerce_channel_weekly'
 
 export interface DashboardLayout {
   x: number
@@ -420,6 +422,24 @@ export interface DashboardPaletteData {
   footnote?: string
 }
 
+export interface DashboardStackedBarSegment {
+  key: string
+  value: number
+  formattedValue: string
+}
+
+export interface DashboardStackedBarBucket {
+  label: string
+  segments: DashboardStackedBarSegment[]
+}
+
+export interface DashboardStackedBarData {
+  kind: 'stacked_bar'
+  buckets: DashboardStackedBarBucket[]
+  /** Legend order matches segment order (bottom of the stack first). */
+  legend: { key: string; label: string }[]
+}
+
 export interface DashboardTabsOrderRow {
   order: string
   customer: string
@@ -456,4 +476,5 @@ export type DashboardWidgetData =
   | DashboardBarListData
   | DashboardBreakdownData
   | DashboardPaletteData
+  | DashboardStackedBarData
   | DashboardTabsData

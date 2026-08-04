@@ -381,6 +381,17 @@ export const WIDGET_LIBRARY: DashboardWidgetLibraryEntry[] = [
     drilldown: { routeName: 'SalesOrders', label: 'Open sales orders' },
   },
   {
+    id: 'lib-channel-weekly',
+    title: 'Online vs in-store',
+    description: 'Weekly revenue stacked by online and in-store channels',
+    category: 'commerce',
+    type: 'stacked_bar',
+    icon: 'bar-chart-3',
+    metricId: 'commerce_channel_weekly',
+    dataSource: 'commerce',
+    drilldown: { routeName: 'SalesOrders', label: 'Open sales orders' },
+  },
+  {
     id: 'lib-design-palette',
     title: 'Dashboard palette',
     description: 'Every shade used by the Overview charts, for design review',

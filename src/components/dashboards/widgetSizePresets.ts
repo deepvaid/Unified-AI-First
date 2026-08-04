@@ -107,6 +107,12 @@ export const SIZE_PRESETS: Record<DashboardWidgetType, Record<WidgetSize, Widget
     L: { w: 6, h: 8, minW: 3, minH: 5 },
     XL: { w: 8, h: 9, minW: 3, minH: 5 },
   },
+  stacked_bar: {
+    S: { w: 4, h: 7, minW: 3, minH: 5 },
+    M: { w: 6, h: 8, minW: 3, minH: 5 },
+    L: { w: 7, h: 8, minW: 3, minH: 5 },
+    XL: { w: 9, h: 9, minW: 3, minH: 5 },
+  },
   tabs: {
     S: { w: 6, h: 7, minW: 5, minH: 6 },
     M: { w: 7, h: 8, minW: 5, minH: 6 },
