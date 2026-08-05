@@ -95,7 +95,12 @@ const isPhone = computed(() => posBreakpoint.value === 'phone')
 
 /* Phone-only: full cart rendered as a slide-up sheet */
 const cartSheetOpen = ref(false)
-watch(posBreakpoint, (bp) => { if (bp !== 'phone') cartSheetOpen.value = false })
+watch(posBreakpoint, (bp) => {
+  if (bp !== 'phone') {
+    cartSheetOpen.value = false
+    productDetailSheetOpen.value = false
+  }
+})
 
 /* ── Offline mode toggle ───────────────────────────────────────── */
 const isOffline = computed(() => store.offlineMode)
@@ -106,11 +111,12 @@ const activeStaffId = ref('assoc-1')
 const activeStaffMember = computed(() => store.staffList.find((a) => a.id === activeStaffId.value) ?? store.staffList[0]!)
 
 /* ── POS navigation ────────────────────────────────────────────── */
-type PosView = 'sale' | 'customers' | 'transactions' | 'settings' | 'getapp'
+type PosView = 'sale' | 'products' | 'customers' | 'transactions' | 'settings' | 'getapp'
 const posView = ref<PosView>('sale')
 
 const POS_NAV = [
   { key: 'sale',         icon: 'shopping-cart',  label: 'Sale' },
+  { key: 'products',     icon: 'package',         label: 'Products' },
   { key: 'customers',    icon: 'users',           label: 'Customers' },
   { key: 'transactions', icon: 'receipt',         label: 'History' },
   { key: 'settings',     icon: 'settings',        label: 'Settings' },
@@ -194,6 +200,114 @@ function selectVariant(item: PosCatalogItem) {
   variantPickerOpen.value = false
 }
 
+/* ── Products view (catalog lookup + details panel) ─────────────── */
+// Retail feedback: Products in the left nav is a LOOKUP surface — more room
+// for details (stock elsewhere, options) — distinct from the Sale quick-add flow.
+const productsSearch = ref('')
+const productsCollection = ref<Collection>('all')
+const selectedProductKey = ref<string | null>(null)   // VariantGroup.baseName
+const selectedProductSku = ref<string | null>(null)   // selected variant within group
+const productDetailSheetOpen = ref(false)             // phone-only slide-up detail
+const otherLocationsOpen = ref(false)                 // stock-by-location sheet
+
+// SKU prefix → collection, so the chips actually filter in the lookup view
+const COLLECTION_BY_PREFIX: [string, Collection][] = [
+  ['TEE-', 'apparel'], ['HOOD-', 'apparel'], ['JACK-', 'apparel'], ['JEAN-', 'apparel'],
+  ['SNEAK-', 'footwear'],
+  ['CAP-', 'accessories'], ['BAG-', 'accessories'],
+]
+
+function collectionOf(sku: string): Collection {
+  return COLLECTION_BY_PREFIX.find(([prefix]) => sku.startsWith(prefix))?.[1] ?? 'accessories'
+}
+
+// Same grouping as catalogGroups, but with independent search/collection state
+// so a lookup here never disturbs the Sale screen's scan field.
+const productsGroups = computed<VariantGroup[]>(() => {
+  const query = productsSearch.value.trim().toLowerCase()
+  const map = new Map<string, PosCatalogItem[]>()
+  posCatalog.value
+    .filter((p) =>
+      (!query ||
+        p.productName.toLowerCase().includes(query) ||
+        p.sku.toLowerCase().includes(query)) &&
+      (productsCollection.value === 'all' || collectionOf(p.sku) === productsCollection.value),
+    )
+    .forEach((p) => {
+      const { name } = parseTileProduct(p.productName)
+      if (!map.has(name)) map.set(name, [])
+      map.get(name)!.push(p)
+    })
+  return [...map.entries()].map(([baseName, variants]) => ({
+    baseName,
+    representative: variants[0]!,
+    variants,
+  }))
+})
+
+const selectedGroup = computed<VariantGroup | null>(
+  () => productsGroups.value.find((g) => g.baseName === selectedProductKey.value) ?? null,
+)
+
+const selectedVariant = computed<PosCatalogItem | null>(() =>
+  selectedGroup.value?.variants.find((v) => v.sku === selectedProductSku.value) ??
+  selectedGroup.value?.representative ??
+  null,
+)
+
+function selectProduct(group: VariantGroup) {
+  selectedProductKey.value = group.baseName
+  selectedProductSku.value = group.representative.sku
+  if (isPhone.value) productDetailSheetOpen.value = true
+}
+
+// Tablet/wide: keep the panel populated when a filter drops the current selection
+watch(productsGroups, (groups) => {
+  if (isPhone.value || posView.value !== 'products' || groups.length === 0) return
+  if (!groups.some((g) => g.baseName === selectedProductKey.value)) {
+    selectedProductKey.value = groups[0]!.baseName
+    selectedProductSku.value = groups[0]!.representative.sku
+  }
+})
+
+// Deterministic per-location stock — the shared inventory store uses a
+// different SKU keyspace, so the register mocks quantities (stable per reload).
+function stockAt(sku: string, locationId: string): number {
+  const key = `${sku}:${locationId}`
+  let hash = 0
+  for (let i = 0; i < key.length; i++) hash = ((hash << 5) - hash) + key.charCodeAt(i)
+  const qty = Math.abs(hash) % 41
+  return qty < 5 ? 0 : qty // some location/SKU pairs genuinely out of stock
+}
+
+function stockBadge(qty: number): { label: string; cls: string } {
+  if (qty === 0) return { label: 'Out of stock', cls: 'pos-stock-badge--out' }
+  if (qty < 8) return { label: `Low stock · ${qty}`, cls: 'pos-stock-badge--low' }
+  return { label: 'In Stock', cls: 'pos-stock-badge--in' }
+}
+
+const selectedVariantStock = computed(() =>
+  selectedVariant.value ? stockAt(selectedVariant.value.sku, store.activeLocation.id) : 0,
+)
+
+const otherLocationRows = computed(() =>
+  store.locationList
+    .filter((l) => l.id !== store.activeLocation.id)
+    .map((l) => ({ loc: l, qty: selectedVariant.value ? stockAt(selectedVariant.value.sku, l.id) : 0 })),
+)
+
+function addSelectedToCart() {
+  if (!selectedVariant.value || selectedVariantStock.value === 0) return
+  addToCart(selectedVariant.value)
+  flashGridToast(`${selectedVariant.value.productName} added to sale`)
+  if (isPhone.value) productDetailSheetOpen.value = false
+  // Stay on Products — that's the point of the lookup flow
+}
+
+function lockRegister() {
+  flashGridToast('Register locked — enter PIN to resume')
+}
+
 /* ── Scan / search from the default sale screen ─────────────────── */
 // Retail feedback: a register session almost always starts by adding a product,
 // so the scan field lives on the sale home (smart grid) — not behind Browse.
@@ -231,6 +345,11 @@ onMounted(() => {
 })
 watch(posView, (view) => {
   if (view === 'sale') focusScanField()
+  // Products on tablet/wide: panel should never sit empty (matches the real app)
+  if (view === 'products' && !selectedProductKey.value && !isPhone.value) {
+    const first = productsGroups.value[0]
+    if (first) selectProduct(first)
+  }
 })
 
 /* ── Parse product name / variant from "Name — Variant" pattern ─── */
@@ -1046,6 +1165,139 @@ const apkQrUrl = computed(() =>
               </div>
             </template>
 
+            <!-- ── PRODUCTS VIEW (catalog lookup + details panel) ── -->
+            <div v-else-if="posView === 'products'" class="pos-products">
+              <!-- Main pane: search + collection chips + product grid -->
+              <div class="pos-products__main">
+                <div class="pos-pane-head">
+                  <div class="pos-pane-head__title">Products</div>
+                  <button class="pos-pane-head__link" @click="lockRegister">
+                    <v-icon size="13" style="margin-right: 2px;">lock</v-icon>
+                    Lock
+                  </button>
+                </div>
+
+                <div class="pos-scanbar">
+                  <v-text-field
+                    v-model="productsSearch"
+                    placeholder="Search products…"
+                    density="compact"
+                    variant="solo"
+                    flat
+                    prepend-inner-icon="search"
+                    hide-details
+                    clearable
+                    bg-color="surface"
+                    rounded="lg"
+                    style="font-size: 13px;"
+                  />
+                </div>
+
+                <div class="pos-catalog__chips">
+                  <button
+                    v-for="chip in COLLECTION_CHIPS"
+                    :key="chip.value"
+                    class="pos-chip"
+                    :class="{ 'pos-chip--active': productsCollection === chip.value }"
+                    @click="productsCollection = chip.value"
+                  >
+                    {{ chip.label }}
+                  </button>
+                </div>
+
+                <div class="pos-catalog__grid">
+                  <button
+                    v-for="group in productsGroups"
+                    :key="group.baseName"
+                    class="pos-product-tile"
+                    :class="{ 'pos-product-tile--selected': selectedProductKey === group.baseName }"
+                    @click="selectProduct(group)"
+                  >
+                    <div class="pos-product-tile__image" :style="{ background: tileGradient(group.representative.sku) }">
+                      <v-icon size="20" color="#11182766">package</v-icon>
+                      <div v-if="group.variants.length > 1" class="pos-product-tile__variants-badge">
+                        {{ group.variants.length }} variants
+                      </div>
+                    </div>
+                    <div class="pos-product-tile__body">
+                      <div class="pos-product-tile__name">{{ group.baseName }}</div>
+                      <div class="pos-product-tile__variant">{{ group.representative.sku }}</div>
+                      <div class="pos-product-tile__price">
+                        <template v-if="group.variants.length === 1">{{ fmt(group.representative.pos) }}</template>
+                        <template v-else>from {{ fmt(Math.min(...group.variants.map(v => v.pos))) }}</template>
+                      </div>
+                    </div>
+                  </button>
+
+                  <div v-if="productsGroups.length === 0" class="pos-catalog__empty">
+                    <v-icon size="32" class="text-medium-emphasis">search</v-icon>
+                    <div>No products found</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Phone: scrim behind the detail sheet -->
+              <div v-if="isPhone && productDetailSheetOpen" class="pos-cart-scrim" @click="productDetailSheetOpen = false" />
+
+              <!-- Details panel — persistent on tablet/wide, slide-up sheet on phone -->
+              <div class="pos-products__detail" :class="{ 'pos-products__detail--open': productDetailSheetOpen }">
+                <div v-if="!selectedGroup" class="pos-customers__detail-empty">
+                  <v-icon size="40" color="#9ca3af">package</v-icon>
+                  <div class="pos-customers__detail-empty-title">Select a product</div>
+                  <div class="pos-customers__detail-empty-sub">View pricing, options, and stock at every location.</div>
+                </div>
+
+                <template v-else>
+                  <div class="pos-products__detail-head">
+                    <div class="pos-products__detail-thumb" :style="{ background: tileGradient(selectedVariant!.sku) }">
+                      <v-icon size="18" color="#11182766">package</v-icon>
+                    </div>
+                    <div class="pos-products__detail-id">
+                      <div class="pos-products__detail-name">{{ selectedGroup.baseName }}</div>
+                      <div class="pos-products__detail-sku">SKU: {{ selectedVariant!.sku }} · GST 10%</div>
+                    </div>
+                    <button v-if="isPhone" class="pos-cart__collapse" aria-label="Close product details" @click="productDetailSheetOpen = false">
+                      <v-icon size="16">chevron-down</v-icon>
+                    </button>
+                  </div>
+
+                  <div class="pos-products__detail-price">{{ fmt(selectedVariant!.pos) }}</div>
+
+                  <div class="pos-products__stockrow">
+                    <span class="pos-stock-badge" :class="stockBadge(selectedVariantStock).cls">
+                      {{ stockBadge(selectedVariantStock).label }}
+                    </span>
+                    <button class="pos-pane-head__link" @click="otherLocationsOpen = true">
+                      Check Other Locations
+                    </button>
+                  </div>
+
+                  <div class="pos-profile__section-title">Options</div>
+                  <div class="pos-products__options">
+                    <button
+                      v-for="v in selectedGroup.variants"
+                      :key="v.sku"
+                      class="pos-chip"
+                      :class="{ 'pos-chip--active': selectedProductSku === v.sku }"
+                      @click="selectedProductSku = v.sku"
+                    >
+                      {{ parseTileProduct(v.productName).variant ?? 'Default' }}
+                    </button>
+                  </div>
+
+                  <div class="pos-products__detail-spacer" />
+
+                  <button
+                    class="pos-charge-btn"
+                    :class="{ 'pos-charge-btn--disabled': selectedVariantStock === 0 }"
+                    @click="addSelectedToCart"
+                  >
+                    Add to Cart · {{ fmt(selectedVariant!.pos) }}
+                  </button>
+                </template>
+              </div>
+            </div>
+
             <!-- ── CUSTOMERS VIEW ──────────────────────────────── -->
             <div v-else-if="posView === 'customers'" class="pos-customers" :class="{ 'pos-customers--detail': isPhone && selectedCustomerId }">
               <!-- List column -->
@@ -1628,6 +1880,47 @@ const apkQrUrl = computed(() =>
                     </div>
                   </div>
                 </template>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ── Stock at other locations sheet ───────────────── -->
+          <transition name="pos-variant-up">
+            <div
+              v-if="otherLocationsOpen"
+              class="pos-variant-overlay"
+              @click.self="otherLocationsOpen = false"
+            >
+              <div class="pos-variant-sheet">
+                <div class="pos-variant-sheet__grabber" />
+
+                <div class="pos-variant-sheet__header">
+                  <div
+                    class="pos-variant-sheet__thumb"
+                    :style="{ background: tileGradient(selectedVariant?.sku ?? '') }"
+                  >
+                    <v-icon size="16" color="#11182766">map-pin</v-icon>
+                  </div>
+                  <div class="pos-variant-sheet__info">
+                    <div class="pos-variant-sheet__title">Stock at other locations</div>
+                    <div class="pos-variant-sheet__sub">{{ selectedVariant?.productName }} · {{ selectedVariant?.sku }}</div>
+                  </div>
+                  <button class="pos-variant-sheet__close" @click="otherLocationsOpen = false">
+                    <v-icon size="14">x</v-icon>
+                  </button>
+                </div>
+
+                <div class="pos-variant-sheet__list">
+                  <div v-for="row in otherLocationRows" :key="row.loc.id" class="pos-variant-row pos-variant-row--static">
+                    <div class="pos-variant-row__swatch" :style="{ background: tileGradient(row.loc.id) }" />
+                    <div class="pos-variant-row__info">
+                      <div class="pos-variant-row__label">{{ row.loc.name }}</div>
+                      <div class="pos-variant-row__sku">{{ row.loc.kind === 'warehouse' ? 'Warehouse' : row.loc.address }}</div>
+                    </div>
+                    <div class="pos-variant-row__price">{{ row.qty }}</div>
+                    <span class="pos-stock-badge" :class="stockBadge(row.qty).cls">{{ stockBadge(row.qty).label }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </transition>
@@ -3425,6 +3718,122 @@ $pos-bg: #f4f4f5;
   }
 }
 
+/* ── Products screen (catalog lookup + details panel) ──────────── */
+.pos-products {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  background: $pos-bg;
+
+  &__main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* Mirrors .pos-cart so Sale → Products keeps a stable right-panel width */
+  &__detail {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: $pos-surface;
+    border-left: 1px solid $pos-hairline;
+    padding: 16px 18px;
+    overflow-y: auto;
+  }
+
+  &__detail-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__detail-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__detail-id { flex: 1; min-width: 0; }
+
+  &__detail-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: $pos-ink;
+    letter-spacing: -0.2px;
+    line-height: 1.3;
+  }
+
+  &__detail-sku {
+    font-size: 11px;
+    color: $pos-muted;
+    margin-top: 1px;
+  }
+
+  &__detail-price {
+    font-size: 26px;
+    font-weight: 800;
+    color: $pos-ink;
+    letter-spacing: -0.4px;
+    margin: 10px 0 6px;
+  }
+
+  &__stockrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+
+    .pos-pane-head__link { padding-left: 4px; }
+  }
+
+  &__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__detail-spacer { flex: 1; min-height: 16px; }
+
+  .pos-charge-btn { margin: 12px 0 0; }
+}
+
+.pos-stock-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+
+  &--in  { background: #dcfce7; color: #15803d; }
+  &--low { background: #fef3c7; color: #b45309; }
+  &--out { background: #fee2e2; color: #b91c1c; }
+}
+
+.pos-product-tile--selected {
+  border-color: var(--cloud-retail-accent, #0d9488);
+  box-shadow: 0 0 0 1px var(--cloud-retail-accent, #0d9488);
+
+  &:hover { border-color: var(--cloud-retail-accent, #0d9488); }
+}
+
+.pos-variant-row--static {
+  cursor: default;
+
+  &:hover,
+  &:active { background: transparent; }
+}
+
 .pos-customer-row {
   display: flex;
   align-items: center;
@@ -3894,6 +4303,7 @@ $pos-bg: #f4f4f5;
 
 /* — Tablet portrait: 2-pane retained, narrower cart — */
 .pos-screen--tablet .pos-cart { width: 280px; }
+.pos-screen--tablet .pos-products__detail { width: 280px; }
 
 /* — Phone: single column · rail → bottom tab bar · cart → sheet — */
 .pos-screen--phone {
@@ -3927,7 +4337,7 @@ $pos-bg: #f4f4f5;
 
   .pos-main { order: 1; }
   .pos-cartbar { order: 2; }
-  .pos-customers, .pos-history-pane, .pos-settings { order: 1; }
+  .pos-customers, .pos-products, .pos-history-pane, .pos-settings { order: 1; }
 
   /* Full cart panel becomes a slide-up sheet over the screen */
   .pos-cart {
@@ -3947,6 +4357,30 @@ $pos-bg: #f4f4f5;
     transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), visibility 0s 240ms;
 
     &.pos-cart--open {
+      transform: translateY(0);
+      visibility: visible;
+      transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), visibility 0s;
+    }
+  }
+
+  /* Products: detail panel becomes a slide-up sheet (same treatment as the cart) */
+  .pos-products__detail {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: calc(100% - 48px);
+    border-left: none;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -16px 48px rgba(15, 23, 42, 0.25);
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    z-index: 15;
+    transform: translateY(102%);
+    visibility: hidden;
+    transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), visibility 0s 240ms;
+
+    &.pos-products__detail--open {
       transform: translateY(0);
       visibility: visible;
       transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), visibility 0s;
