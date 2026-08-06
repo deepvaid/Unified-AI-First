@@ -506,21 +506,41 @@ function handleAttentionCollapse(collapsed: boolean) {
 
 .dashboard-widget-card__view-toggle {
   height: 28px;
+  min-height: 0;
   margin-right: 6px;
   border-color: var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-/* Undo the square icon-button sizing the shared actions rule below applies. */
+/* Undo the square icon-button sizing the shared actions rule below applies.
+   Every property the global VBtn default writes as an inline style
+   (min-height, border-radius, font-size, padding-inline — see
+   `maropostDefaults` in plugins/maropostTheme.ts) needs !important here:
+   inline styles outrank scoped class rules, and 40px pills blow out the
+   28px header row. */
 .dashboard-widget-card__actions .dashboard-widget-card__view-toggle :deep(.v-btn) {
   width: auto !important;
   min-width: 0;
   height: 26px !important;
-  padding: 0 10px;
-  font-size: 12px;
+  min-height: 0 !important;
+  padding: 0 10px !important;
+  border-radius: 0 !important;
+  font-size: 12px !important;
   font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
   color: var(--muted);
+}
+
+.dashboard-widget-card__actions .dashboard-widget-card__view-toggle :deep(.v-btn:first-child) {
+  border-start-start-radius: 7px !important;
+  border-end-start-radius: 7px !important;
+}
+
+.dashboard-widget-card__actions .dashboard-widget-card__view-toggle :deep(.v-btn:last-child) {
+  border-start-end-radius: 7px !important;
+  border-end-end-radius: 7px !important;
 }
 
 .dashboard-widget-card__actions .dashboard-widget-card__view-toggle :deep(.v-btn.v-btn--active) {
