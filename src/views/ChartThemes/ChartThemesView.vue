@@ -69,7 +69,7 @@ interface PanelMeta {
 }
 
 const PANEL_META: PanelMeta[] = [
-  { id: 'shopify', descriptor: 'Polaris Viz grammar — flat marks, categorical multi-hue series, dashed previous-period comparison. The active default.' },
+  { id: 'shopify', descriptor: 'Polaris Viz grammar — flat marks and a dashed previous-period line — on one Maropost-blue-to-teal family. The active default.' },
   { id: 'indigo', descriptor: 'One indigo axis, deep to sky — the closest read of the Hyper Charts reference.' },
   { id: 'ocean', descriptor: "Maropost blue flowing into turquoise — the brand's sea-blue heritage as one gradient." },
   { id: 'aurora', descriptor: 'Blue drifting into violet — bolder, still one unified axis.' },

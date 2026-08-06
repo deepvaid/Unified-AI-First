@@ -160,14 +160,24 @@ const DARK_CHROME: ChartChrome = {
  * sourced from generated tokens; chrome (labels, grid, tooltip) is mode-specific.
  */
 export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> = {
-  // Shopify admin analytics look (Polaris Viz light theme): flat marks, multi-hue
-  // categorical series led by the Polaris light blue, dashed comparison stroke.
-  // Hexes come from @shopify/polaris-viz-core LIGHT_THEME seriesColors — kept
-  // literal (not tokens) since they are a third-party reference palette.
+  // Shopify admin analytics *grammar* (Polaris Viz): flat marks, 2px strokes,
+  // dashed previous-period comparison. Polaris's own seriesColors are a
+  // multi-hue categorical set (purples/magentas); we keep the grammar but hold
+  // the hue inside the Maropost blue (#0092D4) → Shopify azure (#13ACF0)
+  // family, drifting only as far as teal on the tail slots — the same
+  // blue → teal philosophy as DOTTED_BLUES. Separation between adjacent
+  // slices/lines comes from lightness, not hue.
   shopify: {
     light: {
       label: 'Shopify',
-      series: ['#13ACF0', '#6A42E9', '#597EED', '#23BABA', '#D147AC', '#9B3CDD'],
+      series: [
+        '#13ACF0', // Shopify azure — lead
+        '#075E82', // deep harbour blue
+        '#6FD1F5', // pale sky
+        '#0092D4', // Maropost blue
+        '#35C4BE', // teal (greenish edge of the family)
+        '#A9E3E0', // pale teal
+      ],
       axis: ['#0A4C66', '#0C749E', '#0A97D5', '#13ACF0', '#63CCF7'],
       gradientMarks: false,
       flatMarks: true,
@@ -176,7 +186,7 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
     },
     dark: {
       label: 'Shopify',
-      series: ['#4CC9FF', '#9B7BFF', '#7E9BFF', '#3FD6D6', '#E56FC5', '#B565F0'],
+      series: ['#4CC9FF', '#0E7FA8', '#A5E4FF', '#2CB6EE', '#48D6CF', '#BFEFEA'],
       axis: ['#0C749E', '#0A97D5', '#13ACF0', '#4CC9FF', '#8ADBFF'],
       gradientMarks: false,
       flatMarks: true,
