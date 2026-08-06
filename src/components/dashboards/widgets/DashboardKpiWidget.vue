@@ -2,6 +2,7 @@
 import { computed, inject, toRef, unref, useId } from 'vue'
 import { useLiveAgo } from '@/composables/useRelativeTime'
 import MpSourceCloudChip from '@/components/MpSourceCloudChip.vue'
+import DashboardTrendFooter from './DashboardTrendFooter.vue'
 import { CHART_PALETTES, CHART_PALETTE_OVERRIDE, useChartTheme } from '@/plugins/chartPalette'
 import type { DashboardDataSource, DashboardKpiData } from '@/stores/dashboards/types'
 
@@ -133,8 +134,17 @@ const sparklinePoints = computed(() => {
         <v-icon size="12">{{ trendIcon }}</v-icon>
         {{ displayDeltaLabel }}
       </span>
-      <span v-if="comparisonLabel" class="dashboard-kpi-widget__comparison">{{ comparisonLabel }}</span>
+      <!-- The shadcn trend footer carries the comparison sentence; skip the short label. -->
+      <span v-if="comparisonLabel && !data.footer" class="dashboard-kpi-widget__comparison">{{ comparisonLabel }}</span>
     </div>
+
+    <DashboardTrendFooter
+      v-if="data.footer && !compact"
+      class="dashboard-kpi-widget__trend-footer"
+      :trend="data.footer.trend"
+      :caption="data.footer.caption"
+      :direction="data.footer.direction"
+    />
 
     <div v-if="data.secondaryStat" class="dashboard-kpi-widget__secondary num">{{ data.secondaryStat }}</div>
 
@@ -385,6 +395,10 @@ const sparklinePoints = computed(() => {
   font-weight: 500;
   color: var(--muted);
   white-space: nowrap;
+}
+
+.dashboard-kpi-widget__trend-footer {
+  margin-top: 12px;
 }
 
 .dashboard-kpi-widget__secondary {

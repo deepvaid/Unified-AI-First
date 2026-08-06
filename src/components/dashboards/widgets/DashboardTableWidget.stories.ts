@@ -43,7 +43,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Table body for dashboard widgets. Generic column/row payloads render as a compact sticky-header table; payloads with `campaign` + `revenue` columns switch to the top-campaigns meter-list layout.',
+          'Table body for dashboard widgets. Generic column/row payloads render as a compact sticky-header table; payloads with `campaign` + `revenue` columns switch to the top-campaigns meter-list layout unless a column carries `cellType: "status"`, which keeps the real table and renders that column as MpStatusChips.',
       },
     },
   },
@@ -71,4 +71,32 @@ export const GenericTable: Story = {}
 
 export const TopCampaignsList: Story = {
   args: { data: TOP_CAMPAIGNS },
+}
+
+const STATUS_CHIP_TABLE: DashboardTableData = {
+  kind: 'table',
+  columns: [
+    { key: 'campaign', label: 'Campaign' },
+    { key: 'status', label: 'Status', cellType: 'status', statusType: 'campaign' },
+    { key: 'openRate', label: 'Open Rate', align: 'end' },
+    { key: 'revenue', label: 'Revenue', align: 'end' },
+  ],
+  rows: [
+    { campaign: 'Flash Sale — 4 Hours Only', status: 'Sent', openRate: '69.6%', revenue: '$134,521.75' },
+    { campaign: 'Cyber Monday Flash Sale', status: 'Sent', openRate: '47.4%', revenue: '$98,432.75' },
+    { campaign: 'January Sale', status: 'Scheduled', openRate: '37.4%', revenue: '$56,789.25' },
+    { campaign: 'December Holiday Gift Guide', status: 'Draft', openRate: '41.8%', revenue: '$45,234.50' },
+  ],
+}
+
+export const StatusChipColumns: Story = {
+  args: { data: STATUS_CHIP_TABLE },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A status column (`cellType: "status"`) renders MpStatusChips and opts the table out of the campaign meter-list treatment — this is the shadcn Overview "Top campaigns" configuration.',
+      },
+    },
+  },
 }

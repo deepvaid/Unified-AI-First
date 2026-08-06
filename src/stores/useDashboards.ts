@@ -43,7 +43,7 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v23'
+const STORAGE_KEY = 'mp.dashboard-hub.v24'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -213,38 +213,29 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
   const widgets: DashboardWidget[] = []
 
   // Orders and revenue are the shared backbone — either cloud sells them.
-  // Layout mirrors the approved "Dashboard Overview v2 – dotted" design.
+  // Layout mirrors the approved shadcn dashboard-01 Overview: KPI row with
+  // trend footers, gradient area + radial score, six-channel line + mix donut,
+  // grouped volume bars + domain donut, two chip tables, activity feed.
+  // SCOP-312's palette comparison stays satisfied — demo_channel_trend and
+  // demo_channel_mix are both in this set.
   if (account.subscriptions.includes('commerce') || account.subscriptions.includes('retail')) {
-    const hasService = account.subscriptions.includes('service')
-    const hasRetail = account.subscriptions.includes('retail')
     widgets.push(
-      // h=1 — the banner defaults to collapsed, so it seeds at its single-row
-      // summary height, not the expanded list height.
-      makeWidget('Needs your attention', 'overview_attention', 'attention', createLayout(0, 0, 12, 1)),
-      makeWidget('Store performance', 'overview_metric_explorer', 'metric_explorer', createLayout(0, 1, 8, 10)),
-      { ...makeWidget('Where revenue comes from', 'commerce_revenue_attribution', 'donut', createLayout(8, 1, 4, 10)), subtitle: 'Share of attributed revenue' },
-      { ...makeWidget('Campaign to purchase funnel', 'overview_campaign_funnel', 'funnel', createLayout(0, 11, 12, 8)), subtitle: 'Marketing sends through to commerce orders' },
-      makeWidget('Orders by sales channel', 'commerce_orders_by_channel', 'donut', createLayout(0, 19, 4, 8)),
-      makeWidget('Rolling revenue goal', 'commerce_revenue_goal', 'gauge', createLayout(4, 19, 4, 8)),
-      { ...makeWidget('Dashboard palette', 'design_palette', 'palette', createLayout(8, 19, 4, 8)), subtitle: 'Every shade in the Overview charts' },
-      { ...makeWidget('Revenue by channel', 'commerce_channel_weekly', 'stacked_bar', createLayout(0, 27, 7, 8)), subtitle: 'Weekly split across channels' },
-      makeWidget('Orders & activity', 'overview_tabs', 'tabs', createLayout(0, 35, 7, 8)),
-      { ...makeWidget('Da Vinci insights', 'davinci_insights', 'insights', createLayout(7, 27, 5, 8)), subtitle: 'Fresh observations from your data' },
-      // The two list rows are sized to their content (h=6/h=7), not chart height.
-      { ...makeWidget('Fulfillment queue', 'commerce_fulfillment_queue', 'breakdown', createLayout(0, 43, 4, 6)), subtitle: 'Orders in the pipeline' },
-    )
-    if (hasService) {
-      widgets.push(makeWidget('Service tickets', 'service_tickets_breakdown', 'breakdown', createLayout(4, 43, 4, 6)))
-    }
-    widgets.push(
-      makeWidget('Email deliverability', 'marketing_deliverability_breakdown', 'breakdown', createLayout(8, 35, 4, 6)),
-      { ...makeWidget('Best sellers', 'commerce_best_sellers', 'bar_list', createLayout(0, 49, 4, 7)), subtitle: 'By revenue' },
-    )
-    if (hasRetail) {
-      widgets.push({ ...makeWidget('Retail today', 'retail_today_breakdown', 'bar_list', createLayout(4, 49, 4, 7)), subtitle: 'POS takings by location' })
-    }
-    widgets.push(
-      { ...makeWidget('Journeys in flight', 'marketing_journeys_in_flight', 'breakdown', createLayout(8, 41, 4, 7)), subtitle: 'Contacts in automations' },
+      makeWidget('Revenue', 'commerce_revenue', 'kpi', createLayout(0, 0, 3, 4)),
+      makeWidget('Orders', 'commerce_orders', 'kpi', createLayout(3, 0, 3, 4)),
+      makeWidget('Average Order Value', 'commerce_aov', 'kpi', createLayout(6, 0, 3, 4)),
+      makeWidget('Open Rate', 'marketing_open_rate', 'kpi', createLayout(9, 0, 3, 4)),
+      { ...makeWidget('Revenue over time', 'commerce_revenue_over_time', 'timeseries', createLayout(0, 4, 8, 8)), chartVariant: 'area', subtitle: 'Showing daily revenue for the selected period' },
+      { ...makeWidget('Deliverability', 'marketing_deliverability_score', 'gauge', createLayout(8, 4, 4, 8)), subtitle: 'Sender score · rolling 30 days' },
+      { ...makeWidget('Revenue by channel', 'demo_channel_trend', 'timeseries', createLayout(0, 12, 7, 8)), chartVariant: 'line' },
+      makeWidget('Traffic mix', 'demo_channel_mix', 'pie', createLayout(7, 12, 5, 8)),
+      // h=9: the ring donut needs the extra row for its 5 legend rows + footer.
+      { ...makeWidget('Email volume', 'marketing_email_volume', 'bar', createLayout(0, 20, 7, 9)), subtitle: 'Sent vs delivered · last 5 sends' },
+      { ...makeWidget('Contacts by domain', 'contacts_by_domain', 'donut', createLayout(7, 20, 5, 9)), subtitle: 'All contacts · top 5 domains' },
+      // dimension 'table' opts Top campaigns into the real table + status chips
+      // (without it the campaign/revenue columns render as the meter list).
+      { ...makeWidget('Top campaigns', 'marketing_top_campaigns', 'table', createLayout(0, 29, 7, 7)), dimension: 'table', subtitle: 'By revenue · sent campaigns' },
+      { ...makeWidget('Recent orders', 'commerce_recent_orders', 'table', createLayout(7, 29, 5, 7)), subtitle: 'Latest 6 orders across channels' },
+      { ...makeWidget('Live activity', 'marketing_live_activity', 'activity', createLayout(0, 36, 12, 8)), subtitle: 'Realtime events across your account' },
     )
   } else {
     widgets.push(

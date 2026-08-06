@@ -4,18 +4,29 @@
 import { computed, useId } from 'vue'
 import { tintHex } from '@/plugins/chartPalette'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   /** 0–100 */
   pct: number
   centerValue: string
   centerCaption: string
-}>()
+  /** Arc sweep in degrees; 270 gives the shadcn radial that opens at the bottom. */
+  sweep?: number
+}>(), {
+  sweep: 360,
+})
 
 const CIRC = 2 * Math.PI * 52
+const arcLength = computed(() => CIRC * (props.sweep / 360))
 const dash = computed(() => {
-  const on = (Math.min(100, Math.max(0, props.pct)) / 100) * CIRC
+  const on = (Math.min(100, Math.max(0, props.pct)) / 100) * arcLength.value
   return `${on.toFixed(1)} ${(CIRC - on).toFixed(1)}`
 })
+const trackDash = computed(() => `${arcLength.value.toFixed(1)} ${(CIRC - arcLength.value).toFixed(1)}`)
+// Full ring starts at 12 o'clock; a partial sweep centers its gap on the
+// bottom (shadcn radial: 270° runs from 7:30 clockwise to 4:30).
+const rotation = computed(() => (
+  props.sweep < 360 ? `rotate(${90 + (360 - props.sweep) / 2} 70 70)` : 'rotate(-90 70 70)'
+))
 const ARC_COLOR = '#0092D4'
 // SVG gradient ids are global to the page — scope them per instance.
 const uid = useId()
@@ -30,8 +41,8 @@ const uid = useId()
           <stop offset="100%" :stop-color="tintHex(ARC_COLOR, 0.35)" />
         </linearGradient>
       </defs>
-      <g transform="rotate(-90 70 70)" fill="none" stroke-width="15" stroke-linecap="round">
-        <circle cx="70" cy="70" r="52" class="dt-gauge__track" />
+      <g :transform="rotation" fill="none" stroke-width="15" stroke-linecap="round">
+        <circle cx="70" cy="70" r="52" class="dt-gauge__track" :stroke-dasharray="sweep < 360 ? trackDash : undefined" />
         <circle cx="70" cy="70" r="52" :stroke="`url(#${uid}-arc)`" :stroke-dasharray="dash" />
       </g>
     </svg>

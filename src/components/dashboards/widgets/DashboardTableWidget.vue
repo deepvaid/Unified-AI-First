@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import type { DashboardTableData } from '@/stores/dashboards/types'
 
 const props = defineProps<{
@@ -12,9 +13,12 @@ function parseCurrency(value: string | number | undefined): number {
   return Number(value.replace(/[^0-9.-]/g, '')) || 0
 }
 
+// Status-chip columns opt the table out of the campaign meter-list treatment —
+// they exist only on tables meant to render as real tables (shadcn Overview).
 const isCampaignRevenueTable = computed(() =>
   props.data.columns.some((column) => column.key === 'campaign')
-  && props.data.columns.some((column) => column.key === 'revenue'),
+  && props.data.columns.some((column) => column.key === 'revenue')
+  && !props.data.columns.some((column) => column.cellType === 'status'),
 )
 
 const campaignRows = computed(() => {
@@ -72,7 +76,13 @@ const campaignRows = computed(() => {
             :key="column.key"
             :class="column.align === 'end' ? 'text-right' : column.align === 'center' ? 'text-center' : 'text-left'"
           >
-            <span class="text-body-2">{{ row[column.key] }}</span>
+            <MpStatusChip
+              v-if="column.cellType === 'status'"
+              :status="String(row[column.key] ?? '')"
+              :type="column.statusType ?? 'general'"
+              size="x-small"
+            />
+            <span v-else class="text-body-2">{{ row[column.key] }}</span>
           </td>
         </tr>
       </tbody>

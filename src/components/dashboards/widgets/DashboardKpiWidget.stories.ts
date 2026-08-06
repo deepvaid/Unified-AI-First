@@ -159,3 +159,24 @@ export const RetailWithViewReport: Story = {
     showViewReport: true,
   },
 }
+
+export const WithTrendFooter: Story = {
+  args: {
+    data: {
+      ...REVENUE_KPI,
+      footer: {
+        trend: 'Trending up this period',
+        caption: 'Compared with the previous 30 days',
+        direction: 'up',
+      },
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'shadcn dashboard-01 footer: the two-line trend sentence replaces the short comparison label next to the delta pill.',
+      },
+    },
+  },
+}

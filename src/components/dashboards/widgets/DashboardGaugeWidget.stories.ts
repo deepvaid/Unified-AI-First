@@ -33,3 +33,23 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: { data: DATA },
 }
+
+export const ThreeQuarterArc: Story = {
+  args: {
+    data: {
+      kind: 'gauge',
+      pct: 100,
+      centerValue: '10 / 10',
+      centerCaption: 'score',
+      arc: 'three-quarter',
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "shadcn radial variant (`arc: 'three-quarter'`): a 270° arc whose gap opens at the bottom — used by the Deliverability score on the Overview.",
+      },
+    },
+  },
+}

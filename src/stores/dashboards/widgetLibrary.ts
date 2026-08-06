@@ -332,6 +332,28 @@ export const WIDGET_LIBRARY: DashboardWidgetLibraryEntry[] = [
     dataSource: 'contacts',
     drilldown: { routeName: 'AllContacts', label: 'Open all contacts' },
   },
+  {
+    id: 'lib-contacts-by-domain-donut',
+    title: 'Contacts by domain',
+    description: 'Top email domains as a ring donut with contact total',
+    category: 'marketing',
+    type: 'donut',
+    icon: 'pie-chart',
+    metricId: 'contacts_by_domain',
+    dataSource: 'contacts',
+    drilldown: { routeName: 'AllContacts', label: 'Open all contacts' },
+  },
+  {
+    id: 'lib-deliverability-gauge',
+    title: 'Deliverability score',
+    description: 'Sender score as a radial gauge with inbox placement',
+    category: 'marketing',
+    type: 'gauge',
+    icon: 'shield-check',
+    metricId: 'marketing_deliverability_score',
+    dataSource: 'marketing',
+    drilldown: { routeName: 'CampaignReports', label: 'Open campaign reports' },
+  },
 
   // ── Dotted Overview v2 widget family ──────────────────────────────
   {

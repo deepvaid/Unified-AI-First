@@ -225,6 +225,20 @@ export interface DashboardTableColumn {
   key: string
   label: string
   align?: 'start' | 'center' | 'end'
+  /** 'status' renders the cell as an MpStatusChip instead of plain text. */
+  cellType?: 'text' | 'status'
+  /** MpStatusChip type used when cellType is 'status'. */
+  statusType?: 'order' | 'fulfillment' | 'payment' | 'campaign' | 'contact' | 'ticket'
+}
+
+/**
+ * shadcn-style card footer: a trend sentence with a small trending icon over
+ * a muted caption line ("Trending up by 19.4% this month / July 1 – 30").
+ */
+export interface DashboardTrendFooter {
+  trend: string
+  caption?: string
+  direction?: 'up' | 'down' | 'none'
 }
 
 export interface DashboardKpiData {
@@ -238,6 +252,7 @@ export interface DashboardKpiData {
   location?: string
   /** Inline secondary stat below the delta pill, e.g. "15 unresolved · oldest 3d". */
   secondaryStat?: string
+  footer?: DashboardTrendFooter
 }
 
 export interface DashboardSeriesData {
@@ -245,6 +260,7 @@ export interface DashboardSeriesData {
   unit: DashboardMetricUnit
   labels: string[]
   series: Array<{ name: string; data: number[] }>
+  footer?: DashboardTrendFooter
 }
 
 export interface DashboardTableData {
@@ -364,6 +380,7 @@ export interface DashboardDonutData {
   centerValue?: string
   centerCaption?: string
   footerStats?: DashboardStatPair[]
+  footer?: DashboardTrendFooter
 }
 
 export interface DashboardGaugeData {
@@ -371,7 +388,10 @@ export interface DashboardGaugeData {
   pct: number
   centerValue: string
   centerCaption: string
+  /** 'three-quarter' renders a 270° arc opening at the bottom (shadcn radial). */
+  arc?: 'full' | 'three-quarter'
   footerStats?: DashboardStatPair[]
+  footer?: DashboardTrendFooter
 }
 
 export interface DashboardBarListRow {

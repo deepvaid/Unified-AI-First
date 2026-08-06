@@ -12,7 +12,12 @@ defineProps<{
 <template>
   <div class="gauge-widget">
     <div class="gauge-widget__center">
-      <DtGauge :pct="data.pct" :center-value="data.centerValue" :center-caption="data.centerCaption" />
+      <DtGauge
+        :pct="data.pct"
+        :center-value="data.centerValue"
+        :center-caption="data.centerCaption"
+        :sweep="data.arc === 'three-quarter' ? 270 : 360"
+      />
     </div>
     <div v-if="data.footerStats?.length" class="gauge-widget__footer">
       <div v-for="stat in data.footerStats" :key="stat.label" class="gauge-widget__stat">
