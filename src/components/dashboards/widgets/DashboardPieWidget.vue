@@ -77,7 +77,9 @@ const options = computed<ApexOptions>(() => {
     },
     labels: props.data.labels,
     colors: palette.value,
-    ...(gradientMarks.value ? { fill: { type: 'gradient' } } : {}),
+    // All themes shade slices with Apex's donut gradient; only the gradient
+    // themes add the drop shadow above.
+    fill: { type: 'gradient' },
     legend: chartLegendOptions(palette.value, chrome, 'bottom'),
     dataLabels: {
       enabled: true,

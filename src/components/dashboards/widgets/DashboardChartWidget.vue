@@ -272,16 +272,30 @@ const chartOptions = computed<ApexOptions>(() => {
     },
     fill: gm
       ? gradientFill()
-      : {
-          type: apexChartType.value === 'area' ? 'gradient' : 'solid',
-          gradient: {
-            type: 'vertical',
-            shadeIntensity: 0,
-            opacityFrom: 0.4,
-            opacityTo: 0.05,
-            stops: [0, 100],
+      : isBar
+        ? {
+            // Blue-theme bars keep their series colours but fade toward a
+            // lighter tint instead of a flat fill (same recipe as the
+            // gradient themes' grouped bars above).
+            type: 'gradient',
+            gradient: {
+              type: isHorizontalBar.value ? 'horizontal' : 'vertical',
+              shadeIntensity: 0,
+              opacityFrom: 1,
+              opacityTo: 0.92,
+              gradientToColors: seriesColors.value.map((c) => tintHex(c, 0.45)),
+            },
+          }
+        : {
+            type: apexChartType.value === 'area' ? 'gradient' : 'solid',
+            gradient: {
+              type: 'vertical',
+              shadeIntensity: 0,
+              opacityFrom: 0.4,
+              opacityTo: 0.05,
+              stops: [0, 100],
+            },
           },
-        },
     ...(props.widgetType === 'timeseries' && props.data.series.length === 1
       ? {
           markers: {

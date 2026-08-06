@@ -1,6 +1,8 @@
 <script setup lang="ts">
-// Goal gauge: round-capped progress arc over a soft track.
-import { computed } from 'vue'
+// Goal gauge: round-capped progress arc over a soft track. The arc shades
+// from the base blue toward a lighter tint along the sweep.
+import { computed, useId } from 'vue'
+import { tintHex } from '@/plugins/chartPalette'
 
 const props = defineProps<{
   /** 0–100 */
@@ -14,14 +16,23 @@ const dash = computed(() => {
   const on = (Math.min(100, Math.max(0, props.pct)) / 100) * CIRC
   return `${on.toFixed(1)} ${(CIRC - on).toFixed(1)}`
 })
+const ARC_COLOR = '#0092D4'
+// SVG gradient ids are global to the page — scope them per instance.
+const uid = useId()
 </script>
 
 <template>
   <div class="dt-gauge">
     <svg viewBox="0 0 140 140" class="dt-gauge__svg" role="img" :aria-label="`${centerValue} ${centerCaption}`">
+      <defs>
+        <linearGradient :id="`${uid}-arc`" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" :stop-color="ARC_COLOR" />
+          <stop offset="100%" :stop-color="tintHex(ARC_COLOR, 0.35)" />
+        </linearGradient>
+      </defs>
       <g transform="rotate(-90 70 70)" fill="none" stroke-width="15" stroke-linecap="round">
         <circle cx="70" cy="70" r="52" class="dt-gauge__track" />
-        <circle cx="70" cy="70" r="52" stroke="#0092D4" :stroke-dasharray="dash" />
+        <circle cx="70" cy="70" r="52" :stroke="`url(#${uid}-arc)`" :stroke-dasharray="dash" />
       </g>
     </svg>
     <div class="dt-gauge__center">

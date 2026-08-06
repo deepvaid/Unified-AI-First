@@ -4,6 +4,7 @@
 // the stack, dark on top) with a legend that also carries each series' total
 // and share, the way the reference dashboards annotate their distributions.
 import { computed } from 'vue'
+import { tintHex } from '@/plugins/chartPalette'
 import { STACK_BLUES } from '../dotted/dottedChartMath'
 import type { DashboardStackedBarData } from '@/stores/dashboards/types'
 
@@ -12,6 +13,12 @@ const props = defineProps<{
 }>()
 
 const STACK_COLORS = STACK_BLUES
+
+/** Segment fill: base colour at the bottom fading to a lighter tint on top. */
+function segmentFill(index: number): string {
+  const color = STACK_COLORS[index] ?? STACK_COLORS[0]!
+  return `linear-gradient(to top, ${color}, ${tintHex(color, 0.3)})`
+}
 
 const maxTotal = computed(() =>
   Math.max(1, ...props.data.buckets.map((bucket) =>
@@ -47,7 +54,7 @@ function bucketTitle(bucket: DashboardStackedBarData['buckets'][number]): string
             class="stackbar-widget__segment"
             :style="{
               height: `${segmentPct(segment.value)}%`,
-              background: STACK_COLORS[bucket.segments.length - 1 - index],
+              background: segmentFill(bucket.segments.length - 1 - index),
             }"
           />
         </div>

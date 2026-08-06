@@ -1,7 +1,9 @@
 <script setup lang="ts">
 // Stroked-circle donut. Segments are computed from raw values; colors
-// assigned by index from the chart blues.
-import { computed } from 'vue'
+// assigned by index from the chart blues, each shading from a light tint
+// at the top of the ring toward the base colour.
+import { computed, useId } from 'vue'
+import { tintHex } from '@/plugins/chartPalette'
 import { DOTTED_BLUES, ringSegments } from './dottedChartMath'
 
 const props = withDefaults(defineProps<{
@@ -16,17 +18,25 @@ const props = withDefaults(defineProps<{
 })
 
 const segments = computed(() => ringSegments(props.values))
+// SVG gradient ids are global to the page — scope them per instance.
+const uid = useId()
 </script>
 
 <template>
   <div class="dt-donut">
     <svg viewBox="0 0 140 140" class="dt-donut__svg" role="img" :aria-label="`${centerValue ?? ''} ${centerCaption ?? 'donut chart'}`">
+      <defs>
+        <linearGradient v-for="(color, i) in colors" :id="`${uid}-s${i}`" :key="i" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" :stop-color="tintHex(color, 0.26)" />
+          <stop offset="100%" :stop-color="color" />
+        </linearGradient>
+      </defs>
       <g transform="rotate(-90 70 70)" fill="none" stroke-width="17">
         <circle
           v-for="(seg, i) in segments"
           :key="i"
           cx="70" cy="70" r="54"
-          :stroke="colors[i % colors.length]"
+          :stroke="`url(#${uid}-s${i % colors.length})`"
           :stroke-dasharray="seg.dash"
           :stroke-dashoffset="seg.offset"
         />
