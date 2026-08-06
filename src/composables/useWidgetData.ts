@@ -601,13 +601,13 @@ export function useWidgetData(
         return buildSeriesData(labels, labels.map((l) => typeCounts.get(l) ?? 0), 'count', 'Tickets')
       }
       case 'marketing_email_volume': {
-        // Grouped-bar view (shadcn Overview) shows the last 5 sends; the
-        // timeseries view keeps its 7 points.
+        // Grouped-bar view (shadcn Overview) shows the last 8 sends so the
+        // chart reads as a full comparison; the timeseries view keeps its 7.
         const isBars = widget.type === 'bar'
         const sentCampaigns = [...campaigns.campaigns]
           .filter((c) => c.status === 'Sent')
           .sort((a, b) => (a.sentDate ?? '').localeCompare(b.sentDate ?? ''))
-          .slice(isBars ? -5 : -7)
+          .slice(isBars ? -8 : -7)
         const labels = sentCampaigns.map((c) => c.sentDate?.slice(5) ?? '--')
         const sentData = sentCampaigns.map((c) => c.metrics.sent)
         const deliveredData = sentCampaigns.map((c) => Math.round(c.metrics.sent * 0.97))

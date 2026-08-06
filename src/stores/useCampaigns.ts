@@ -112,6 +112,19 @@ export const useCampaignsStore = defineStore('campaigns', () => {
     { id: 23, name: 'Product Review Request — How Did We Do?', folderId: 'cmp-transactional', status: 'Sent', sentDate: '2026-02-10', listName: 'Master Subscriber List', metrics: { sent: 1234, opens: 891, clicks: 412, unsubscribes: 3, revenue: 0 } },
     { id: 24, name: 'Weekend Only Deal — Shop Before Monday', folderId: 'cmp-promotions', status: 'Draft', sentDate: null, listName: 'Master Subscriber List', metrics: { sent: 0, opens: 0, clicks: 0, unsubscribes: 0, revenue: 0 } },
     { id: 25, name: 'New Blog: "10 Ways To Boost Your Fitness Routine"', folderId: 'cmp-newsletter', status: 'Draft', sentDate: null, listName: 'Newsletter Opt-in', metrics: { sent: 0, opens: 0, clicks: 0, unsubscribes: 0, revenue: 0 } },
+    // Mar–Aug 2026 sends. The earlier history mixes 312-recipient VIP notes with
+    // 45k blasts, so any "last N sends" chart drew a couple of towers next to
+    // invisible slivers; these are the regular full-list campaigns the volume
+    // chart compares (29k–48k), and they carry the calendar up to the current
+    // month instead of stopping in February.
+    { id: 26, name: 'Spring Ride Season Kickoff — 25% Off Scooters', folderId: 'cmp-seasonal', status: 'Sent', sentDate: '2026-03-12', listName: 'Master Subscriber List', metrics: { sent: 42310, opens: 19240, clicks: 6120, unsubscribes: 132, revenue: 68420.00 } },
+    { id: 27, name: 'Easter Weekend Sale — Two Days Only', folderId: 'cmp-promotions', status: 'Sent', sentDate: '2026-04-03', listName: 'Master Subscriber List', metrics: { sent: 38921, opens: 15890, clicks: 4980, unsubscribes: 98, revenue: 42310.50 } },
+    { id: 28, name: 'New Season Gear Drop — Helmets & Pads', folderId: 'cmp-announcements', status: 'Sent', sentDate: '2026-04-24', listName: 'Product Announcement', metrics: { sent: 29840, opens: 13210, clicks: 4120, unsubscribes: 71, revenue: 31280.00 } },
+    { id: 29, name: 'Mother\'s Day Picks — Gifts She\'ll Love', folderId: 'cmp-seasonal', status: 'Sent', sentDate: '2026-05-08', listName: 'Master Subscriber List', metrics: { sent: 44120, opens: 18730, clicks: 5340, unsubscribes: 121, revenue: 53910.25 } },
+    { id: 30, name: 'Memorial Day Blowout — Up to 40% Off', folderId: 'cmp-promotions', status: 'Sent', sentDate: '2026-05-25', listName: 'Master Subscriber List', metrics: { sent: 46280, opens: 21450, clicks: 7210, unsubscribes: 187, revenue: 88240.00 } },
+    { id: 31, name: 'Summer Commute Guide — Ride Smarter', folderId: 'cmp-newsletter', status: 'Sent', sentDate: '2026-06-16', listName: 'Newsletter Opt-in', metrics: { sent: 33750, opens: 14980, clicks: 3980, unsubscribes: 84, revenue: 27650.75 } },
+    { id: 32, name: 'Fourth of July Flash — 4 Hours, 40% Off', folderId: 'cmp-promotions', status: 'Sent', sentDate: '2026-07-03', listName: 'Master Subscriber List', metrics: { sent: 47910, opens: 22840, clicks: 8120, unsubscribes: 203, revenue: 79340.00 } },
+    { id: 33, name: 'Back to School Ride — Student Deals', folderId: 'cmp-seasonal', status: 'Sent', sentDate: '2026-07-28', listName: 'Master Subscriber List', metrics: { sent: 41230, opens: 17920, clicks: 5610, unsubscribes: 142, revenue: 46180.50 } },
   ])
 
 /** Applies the terminal status once the wizard's final action ("finalize") runs. */

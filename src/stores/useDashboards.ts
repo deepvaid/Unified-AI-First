@@ -43,7 +43,7 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v24'
+const STORAGE_KEY = 'mp.dashboard-hub.v25'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -229,7 +229,7 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
       { ...makeWidget('Revenue by channel', 'demo_channel_trend', 'timeseries', createLayout(0, 12, 7, 8)), chartVariant: 'line' },
       makeWidget('Traffic mix', 'demo_channel_mix', 'pie', createLayout(7, 12, 5, 8)),
       // h=9: the ring donut needs the extra row for its 5 legend rows + footer.
-      { ...makeWidget('Email volume', 'marketing_email_volume', 'bar', createLayout(0, 20, 7, 9)), subtitle: 'Sent vs delivered · last 5 sends' },
+      { ...makeWidget('Email volume', 'marketing_email_volume', 'bar', createLayout(0, 20, 7, 9)), subtitle: 'Sent vs delivered · last 8 sends' },
       { ...makeWidget('Contacts by domain', 'contacts_by_domain', 'donut', createLayout(7, 20, 5, 9)), subtitle: 'All contacts · top 5 domains' },
       // dimension 'table' opts Top campaigns into the real table + status chips
       // (without it the campaign/revenue columns render as the meter list).
