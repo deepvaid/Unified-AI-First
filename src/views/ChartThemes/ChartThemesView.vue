@@ -69,6 +69,7 @@ interface PanelMeta {
 }
 
 const PANEL_META: PanelMeta[] = [
+  { id: 'shopify', descriptor: 'Polaris Viz grammar — flat marks, categorical multi-hue series, dashed previous-period comparison. The active default.' },
   { id: 'indigo', descriptor: 'One indigo axis, deep to sky — the closest read of the Hyper Charts reference.' },
   { id: 'ocean', descriptor: "Maropost blue flowing into turquoise — the brand's sea-blue heritage as one gradient." },
   { id: 'aurora', descriptor: 'Blue drifting into violet — bolder, still one unified axis.' },
@@ -103,9 +104,9 @@ const blueWidgets = panelWidgets()
     <!-- Current baseline reference -->
     <section class="ct-reference">
       <div class="ct-reference__label">
-        <span class="ct-chip ct-chip--muted">Current baseline</span>
+        <span class="ct-chip ct-chip--muted">Previous baseline</span>
         <h2 class="ct-reference__name">Blue</h2>
-        <p class="ct-reference__note">Today's flat single-hue blue — shown for reference.</p>
+        <p class="ct-reference__note">The former flat single-hue blue — shown for reference.</p>
         <div class="ct-swatches">
           <span class="ct-axis" :style="{ background: `linear-gradient(90deg, ${blueTheme.axis.join(', ')})` }" />
           <div class="ct-dots">

@@ -68,17 +68,17 @@ watch(() => route.query.frame, (f) => {
   if (isFramePref(f)) setFrameOverride(f)
 }, { immediate: true })
 
-// Dashboard chart palette: a ?chart=blue|indigo|ocean|aurora query param
+// Dashboard chart palette: a ?chart=shopify|blue|indigo|ocean|aurora query param
 // (stakeholder demo), same in-memory-per-tab handling as ?nav=. Independent of, and
-// composes with, ?nav=. Unknown values fall back to blue (the default).
-const VALID_CHART_PALETTES: readonly ChartPalette[] = ['blue', 'indigo', 'ocean', 'aurora']
+// composes with, ?nav=. Unknown values fall back to shopify (the default).
+const VALID_CHART_PALETTES: readonly ChartPalette[] = ['shopify', 'blue', 'indigo', 'ocean', 'aurora']
 const isChartPalette = (v: unknown): v is ChartPalette =>
   typeof v === 'string' && (VALID_CHART_PALETTES as readonly string[]).includes(v)
 const chartOverride = ref<ChartPalette | null>(isChartPalette(route.query.chart) ? route.query.chart : null)
 watch(() => route.query.chart, (chart) => {
   if (isChartPalette(chart)) chartOverride.value = chart
 })
-watch(() => chartOverride.value ?? 'blue', applyChartPalette, { immediate: true })
+watch(() => chartOverride.value ?? 'shopify', applyChartPalette, { immediate: true })
 
 // PLG demo state: a ?plg=trial-d3|trial-d12|trial-expired|paid-build|...|grace
 // query param (stakeholder share links) applies a subscription preset to the

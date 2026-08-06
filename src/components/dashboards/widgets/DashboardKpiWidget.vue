@@ -2,7 +2,6 @@
 import { computed, inject, toRef, unref, useId } from 'vue'
 import { useLiveAgo } from '@/composables/useRelativeTime'
 import MpSourceCloudChip from '@/components/MpSourceCloudChip.vue'
-import DashboardTrendFooter from './DashboardTrendFooter.vue'
 import { CHART_PALETTES, CHART_PALETTE_OVERRIDE, useChartTheme } from '@/plugins/chartPalette'
 import type { DashboardDataSource, DashboardKpiData } from '@/stores/dashboards/types'
 
@@ -72,6 +71,15 @@ const moneyParts = computed(() => {
 })
 
 const sparklineValues = computed(() => {
+  // Real windowed data (Shopify home-metric style mini area chart) when the
+  // metric provides it; deterministic wobble shaped by the delta otherwise.
+  const real = props.data.sparkline
+  if (real && real.length >= 2) {
+    const max = Math.max(...real)
+    const min = Math.min(...real)
+    const span = max - min || 1
+    return real.map((value) => 0.08 + ((value - min) / span) * 0.82)
+  }
   const delta = props.data.delta ?? 12
   const slope = Math.max(-0.2, Math.min(0.24, delta / 900))
   const base = [0.2, 0.23, 0.31, 0.28, 0.36, 0.34, 0.43, 0.40, 0.51, 0.47, 0.56]
@@ -134,17 +142,8 @@ const sparklinePoints = computed(() => {
         <v-icon size="12">{{ trendIcon }}</v-icon>
         {{ displayDeltaLabel }}
       </span>
-      <!-- The shadcn trend footer carries the comparison sentence; skip the short label. -->
-      <span v-if="comparisonLabel && !data.footer" class="dashboard-kpi-widget__comparison">{{ comparisonLabel }}</span>
+      <span v-if="comparisonLabel" class="dashboard-kpi-widget__comparison">{{ comparisonLabel }}</span>
     </div>
-
-    <DashboardTrendFooter
-      v-if="data.footer && !compact"
-      class="dashboard-kpi-widget__trend-footer"
-      :trend="data.footer.trend"
-      :caption="data.footer.caption"
-      :direction="data.footer.direction"
-    />
 
     <div v-if="data.secondaryStat" class="dashboard-kpi-widget__secondary num">{{ data.secondaryStat }}</div>
 
@@ -397,10 +396,6 @@ const sparklinePoints = computed(() => {
   white-space: nowrap;
 }
 
-.dashboard-kpi-widget__trend-footer {
-  margin-top: 12px;
-}
-
 .dashboard-kpi-widget__secondary {
   margin-top: 4px;
   font-size: 12px;
@@ -447,7 +442,7 @@ const sparklinePoints = computed(() => {
 .dashboard-kpi-widget__sparkline {
   display: block;
   width: 100%;
-  height: 40px;
+  height: 48px;
   overflow: visible;
 }
 

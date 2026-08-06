@@ -252,6 +252,8 @@ export interface DashboardKpiData {
   location?: string
   /** Inline secondary stat below the delta pill, e.g. "15 unresolved · oldest 3d". */
   secondaryStat?: string
+  /** Real windowed values for the card's mini area chart (Shopify home-metric style). */
+  sparkline?: number[]
   footer?: DashboardTrendFooter
 }
 
@@ -259,7 +261,8 @@ export interface DashboardSeriesData {
   kind: 'series'
   unit: DashboardMetricUnit
   labels: string[]
-  series: Array<{ name: string; data: number[] }>
+  /** `isComparison` marks a previous-period series (dashed Shopify-style stroke). */
+  series: Array<{ name: string; data: number[]; isComparison?: boolean }>
   footer?: DashboardTrendFooter
 }
 

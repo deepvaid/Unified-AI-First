@@ -160,22 +160,18 @@ export const RetailWithViewReport: Story = {
   },
 }
 
-export const WithTrendFooter: Story = {
+export const WithSparklineData: Story = {
   args: {
     data: {
       ...REVENUE_KPI,
-      footer: {
-        trend: 'Trending up this period',
-        caption: 'Compared with the previous 30 days',
-        direction: 'up',
-      },
+      sparkline: [820, 940, 610, 1180, 890, 1320, 760, 1450, 1210, 980, 1610, 1340, 1120, 1780],
     },
   },
   parameters: {
     docs: {
       description: {
         story:
-          'shadcn dashboard-01 footer: the two-line trend sentence replaces the short comparison label next to the delta pill.',
+          'Shopify home-metric style: when the metric supplies real windowed values via `sparkline`, the bottom mini area chart plots them instead of the delta-shaped wobble fallback.',
       },
     },
   },

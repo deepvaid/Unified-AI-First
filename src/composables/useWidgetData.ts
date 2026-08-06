@@ -18,7 +18,6 @@ import {
 import type {
   DashboardFilterState,
   DashboardMetricUnit,
-  DashboardTrendFooter,
   DashboardWidget,
   DashboardWidgetData,
   DashboardTableColumn,
@@ -255,17 +254,6 @@ function trendLine(current: number, previous: number, phrase: string): { trend: 
   return { trend: `Trending ${direction} by ${Math.abs(delta).toFixed(1)}% ${phrase}`, direction }
 }
 
-/** Two-line KPI footer: "Trending up this period / Compared with the previous 30 days". */
-function kpiTrendFooter(delta: number | null, filters: DashboardFilterState, days: number): DashboardTrendFooter {
-  const direction: 'up' | 'down' = delta == null || delta >= 0 ? 'up' : 'down'
-  const { vsLabelLong } = comparisonVsLabels(filters, days)
-  return {
-    trend: `Trending ${direction} this period`,
-    caption: filters.comparison === 'none' ? undefined : vsLabelLong.charAt(0).toUpperCase() + vsLabelLong.slice(1),
-    direction,
-  }
-}
-
 function longDate(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
 }
@@ -327,12 +315,14 @@ export function useWidgetData(
         const currentRevenue = ranges.current.reduce((total, order) => total + parseFloat(order.total), 0)
         const previousRevenue = ranges.previous.reduce((total, order) => total + parseFloat(order.total), 0)
         const kpi = buildKpiData(currentRevenue, pickPreviousValue(filters, currentRevenue, previousRevenue), 'currency', 'Gross revenue in the selected period')
-        return { ...kpi, footer: kpiTrendFooter(kpi.kind === 'kpi' ? kpi.delta : null, filters, days) } as DashboardWidgetData
+        const { cur } = bucketDaily(commerce.orders, (order) => new Date(order.date ?? ''), (order) => parseFloat(order.total), dateWindow)
+        return { ...kpi, sparkline: cur } as DashboardWidgetData
       }
       case 'commerce_orders': {
         const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
         const kpi = buildKpiData(ranges.current.length, pickPreviousValue(filters, ranges.current.length, ranges.previous.length), 'count', 'Orders placed in the selected period')
-        return { ...kpi, footer: kpiTrendFooter(kpi.kind === 'kpi' ? kpi.delta : null, filters, days) } as DashboardWidgetData
+        const { cur } = bucketDaily(commerce.orders, (order) => new Date(order.date ?? ''), () => 1, dateWindow)
+        return { ...kpi, sparkline: cur } as DashboardWidgetData
       }
       case 'commerce_aov': {
         const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
@@ -343,7 +333,13 @@ export function useWidgetData(
           ? ranges.previous.reduce((total, order) => total + parseFloat(order.total), 0) / ranges.previous.length
           : 0
         const kpi = buildKpiData(current, pickPreviousValue(filters, current, previous), 'currency', 'Average order value for the current period')
-        return { ...kpi, footer: kpiTrendFooter(kpi.kind === 'kpi' ? kpi.delta : null, filters, days) } as DashboardWidgetData
+        const orderDate = (order: (typeof commerce.orders)[number]) => new Date(order.date ?? '')
+        const revenueByDay = bucketDaily(commerce.orders, orderDate, (order) => parseFloat(order.total), dateWindow).cur
+        const ordersByDay = bucketDaily(commerce.orders, orderDate, () => 1, dateWindow).cur
+        return {
+          ...kpi,
+          sparkline: revenueByDay.map((revenue, index) => (ordersByDay[index] ? revenue / ordersByDay[index]! : 0)),
+        } as DashboardWidgetData
       }
       case 'commerce_conversion_rate': {
         // TODO(mock): replace with real sessions/conversion data when a traffic source exists.
@@ -357,13 +353,21 @@ export function useWidgetData(
         const currentTotal = cur.reduce((total, value) => total + value, 0)
         const previousTotal = prev.reduce((total, value) => total + value, 0)
         const line = trendLine(currentTotal, previousTotal, rangePhrase(filters.rangePreset))
-        return {
-          ...buildSeriesData(labels, cur, 'currency', 'Revenue'),
+        const revenueSeries: DashboardWidgetData = {
+          kind: 'series',
+          unit: 'currency',
+          labels,
+          series: [
+            { name: 'Revenue', data: cur },
+            // Shopify-style dashed previous-period line (aligned day-by-day).
+            ...(filters.comparison === 'none' ? [] : [{ name: 'Previous period', data: prev, isComparison: true }]),
+          ],
           footer: {
             ...line,
             caption: `${longDate(dateWindow.currentStart)} – ${longDate(dateWindow.currentEnd)}, ${dateWindow.currentEnd.getFullYear()}`,
           },
-        } as DashboardWidgetData
+        }
+        return revenueSeries
       }
       case 'commerce_revenue_by_channel': {
         const channels = ['Online Store', 'Instagram Shop', 'Marketplace', 'POS']
@@ -400,7 +404,10 @@ export function useWidgetData(
           ? sentCampaigns.reduce((total, campaign) => total + (campaign.metrics.opens / Math.max(campaign.metrics.sent, 1)) * 100, 0) / sentCampaigns.length
           : 0
         const kpi = buildKpiData(current, current - 1.8, 'percent', 'Average open rate across sent campaigns')
-        return { ...kpi, footer: kpiTrendFooter(kpi.kind === 'kpi' ? kpi.delta : null, filters, days) } as DashboardWidgetData
+        const perCampaign = [...sentCampaigns]
+          .sort((a, b) => (a.sentDate ?? '').localeCompare(b.sentDate ?? ''))
+          .map((campaign) => (campaign.metrics.opens / Math.max(campaign.metrics.sent, 1)) * 100)
+        return { ...kpi, sparkline: perCampaign } as DashboardWidgetData
       }
       case 'marketing_click_rate': {
         const sentCampaigns = campaigns.campaigns.filter((campaign) => campaign.status === 'Sent')

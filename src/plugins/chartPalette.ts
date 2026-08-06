@@ -106,7 +106,7 @@ import {
 } from '@/design-tokens/generated/tokens'
 
 /** Selectable chart themes (switchable via the `?chart=` URL param, see App.vue). */
-export type ChartPalette = 'blue' | 'indigo' | 'ocean' | 'aurora'
+export type ChartPalette = 'shopify' | 'blue' | 'indigo' | 'ocean' | 'aurora'
 
 export type ChartMode = 'light' | 'dark'
 
@@ -128,6 +128,10 @@ export interface ChartTheme {
   axis: string[]
   /** Hyper-style gradient mark treatment on/off */
   gradientMarks: boolean
+  /** Polaris-style flat marks: solid bars/slices, no accent swap, hover-only markers. */
+  flatMarks?: boolean
+  /** Stroke + legend dot for `isComparison` series (Shopify's dashed previous period). */
+  comparisonColor?: string
   chrome: ChartChrome
 }
 
@@ -156,6 +160,30 @@ const DARK_CHROME: ChartChrome = {
  * sourced from generated tokens; chrome (labels, grid, tooltip) is mode-specific.
  */
 export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> = {
+  // Shopify admin analytics look (Polaris Viz light theme): flat marks, multi-hue
+  // categorical series led by the Polaris light blue, dashed comparison stroke.
+  // Hexes come from @shopify/polaris-viz-core LIGHT_THEME seriesColors — kept
+  // literal (not tokens) since they are a third-party reference palette.
+  shopify: {
+    light: {
+      label: 'Shopify',
+      series: ['#13ACF0', '#6A42E9', '#597EED', '#23BABA', '#D147AC', '#9B3CDD'],
+      axis: ['#0A4C66', '#0C749E', '#0A97D5', '#13ACF0', '#63CCF7'],
+      gradientMarks: false,
+      flatMarks: true,
+      comparisonColor: '#0A97D5',
+      chrome: LIGHT_CHROME,
+    },
+    dark: {
+      label: 'Shopify',
+      series: ['#4CC9FF', '#9B7BFF', '#7E9BFF', '#3FD6D6', '#E56FC5', '#B565F0'],
+      axis: ['#0C749E', '#0A97D5', '#13ACF0', '#4CC9FF', '#8ADBFF'],
+      gradientMarks: false,
+      flatMarks: true,
+      comparisonColor: '#3E97C6',
+      chrome: DARK_CHROME,
+    },
+  },
   blue: {
     light: {
       label: 'Blue (current)',
@@ -331,7 +359,7 @@ export const CHART_PALETTES: Record<ChartPalette, string[]> = Object.fromEntries
   Object.entries(CHART_THEMES).map(([id, modes]) => [id, modes.light.series]),
 ) as Record<ChartPalette, string[]>
 
-const chartPaletteId = ref<ChartPalette>('blue')
+const chartPaletteId = ref<ChartPalette>('shopify')
 
 /**
  * Provide/inject key that lets a widget subtree pin an explicit theme instead of

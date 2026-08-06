@@ -98,6 +98,31 @@ export const HorizontalBarChart: Story = {
   },
 }
 
+const COMPARISON_SERIES: DashboardSeriesData = {
+  kind: 'series',
+  unit: 'currency',
+  labels: ['06-01', '06-04', '06-07', '06-10', '06-13', '06-16', '06-19', '06-22', '06-25', '06-28', '07-01', '07-04'],
+  series: [
+    { name: 'Revenue', data: [4200, 5100, 4800, 6400, 5900, 7200, 6800, 8100, 7600, 8900, 9400, 10200] },
+    { name: 'Previous period', data: [3800, 4300, 4600, 5200, 5500, 6100, 6300, 6900, 7100, 7400, 7900, 8300], isComparison: true },
+  ],
+}
+
+export const WithComparisonSeries: Story = {
+  args: {
+    data: COMPARISON_SERIES,
+    widgetType: 'timeseries',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Shopify-style period comparison: a series flagged `isComparison` renders as a dashed line in the theme\'s comparison colour with no area fill, next to the solid current-period line.',
+      },
+    },
+  },
+}
+
 export const NarrowContainer: Story = {
   args: {
     data: CHANNEL_MULTI_SERIES,
