@@ -25,7 +25,6 @@ import DashboardPaletteWidget from './widgets/DashboardPaletteWidget.vue'
 import DashboardStackedBarWidget from './widgets/DashboardStackedBarWidget.vue'
 import DashboardBreakdownWidget from './widgets/DashboardBreakdownWidget.vue'
 import DashboardTabsWidget from './widgets/DashboardTabsWidget.vue'
-import DashboardTrendFooter from './widgets/DashboardTrendFooter.vue'
 import DashboardWidgetActionMenu from './DashboardWidgetActionMenu.vue'
 
 const props = withDefaults(defineProps<{
@@ -145,11 +144,6 @@ const isDataEmpty = computed(() => {
   if (data.value.kind === 'bar_list' || data.value.kind === 'breakdown') return data.value.rows.length === 0
   return false
 })
-
-// shadcn trend footer carried on the data payload (KPI cards render their own).
-const trendFooter = computed(() => (
-  !isKpiWidget.value && 'footer' in data.value ? data.value.footer : undefined
-))
 
 const sourceMeta = computed(() => DASHBOARD_SOURCE_META[props.widget.dataSource])
 const lastRefreshedAt = toRef(() => props.widget.lastRefreshedAt)
@@ -376,14 +370,6 @@ function handleAttentionCollapse(collapsed: boolean) {
         :data="data"
       />
     </div>
-
-    <DashboardTrendFooter
-      v-if="trendFooter && !isDataEmpty"
-      class="dashboard-widget-card__trend-foot"
-      :trend="trendFooter.trend"
-      :caption="trendFooter.caption"
-      :direction="trendFooter.direction"
-    />
 
     <!-- The attention banner has no footer at all (design reference): items span
          clouds and carry their own timestamps, and the collapsed state must be a
@@ -679,11 +665,6 @@ function handleAttentionCollapse(collapsed: boolean) {
 .dashboard-widget-card__empty-cta {
   margin-top: 8px;
   text-transform: none;
-}
-
-.dashboard-widget-card__trend-foot {
-  flex-shrink: 0;
-  padding: 2px 22px 14px;
 }
 
 .dashboard-widget-card__foot {

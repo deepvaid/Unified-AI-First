@@ -231,16 +231,6 @@ export interface DashboardTableColumn {
   statusType?: 'order' | 'fulfillment' | 'payment' | 'campaign' | 'contact' | 'ticket'
 }
 
-/**
- * shadcn-style card footer: a trend sentence with a small trending icon over
- * a muted caption line ("Trending up by 19.4% this month / July 1 – 30").
- */
-export interface DashboardTrendFooter {
-  trend: string
-  caption?: string
-  direction?: 'up' | 'down' | 'none'
-}
-
 export interface DashboardKpiData {
   kind: 'kpi'
   unit: DashboardMetricUnit
@@ -254,7 +244,6 @@ export interface DashboardKpiData {
   secondaryStat?: string
   /** Real windowed values for the card's mini area chart (Shopify home-metric style). */
   sparkline?: number[]
-  footer?: DashboardTrendFooter
 }
 
 export interface DashboardSeriesData {
@@ -263,7 +252,6 @@ export interface DashboardSeriesData {
   labels: string[]
   /** `isComparison` marks a previous-period series (dashed Shopify-style stroke). */
   series: Array<{ name: string; data: number[]; isComparison?: boolean }>
-  footer?: DashboardTrendFooter
 }
 
 export interface DashboardTableData {
@@ -383,7 +371,6 @@ export interface DashboardDonutData {
   centerValue?: string
   centerCaption?: string
   footerStats?: DashboardStatPair[]
-  footer?: DashboardTrendFooter
 }
 
 export interface DashboardGaugeData {
@@ -394,7 +381,6 @@ export interface DashboardGaugeData {
   /** 'three-quarter' renders a 270° arc opening at the bottom (shadcn radial). */
   arc?: 'full' | 'three-quarter'
   footerStats?: DashboardStatPair[]
-  footer?: DashboardTrendFooter
 }
 
 export interface DashboardBarListRow {

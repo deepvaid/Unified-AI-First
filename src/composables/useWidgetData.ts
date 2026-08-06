@@ -238,26 +238,6 @@ function signedPct(current: number, previous: number): { text: string; positive:
   return { text: `${delta >= 0 ? '+' : '−'}${Math.abs(delta).toFixed(1)}%`, positive: delta >= 0 }
 }
 
-/** Human phrase for the active range, for trend footers ("this month"). */
-function rangePhrase(preset: DashboardFilterState['rangePreset']): string {
-  if (preset === 'last_30_days' || preset === 'month_to_date') return 'this month'
-  if (preset === 'last_7_days') return 'this week'
-  if (preset === 'today') return 'today'
-  return 'this period'
-}
-
-/** "Trending up by 19.4% this month" line computed from window totals. */
-function trendLine(current: number, previous: number, phrase: string): { trend: string; direction: 'up' | 'down' } {
-  if (!previous) return { trend: `Trending up ${phrase}`, direction: 'up' }
-  const delta = ((current - previous) / previous) * 100
-  const direction: 'up' | 'down' = delta >= 0 ? 'up' : 'down'
-  return { trend: `Trending ${direction} by ${Math.abs(delta).toFixed(1)}% ${phrase}`, direction }
-}
-
-function longDate(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
-}
-
 function comparisonVsLabels(filters: DashboardFilterState, days: number): { vsLabel: string; vsLabelLong: string } {
   switch (filters.comparison) {
     case 'none':
@@ -349,23 +329,15 @@ export function useWidgetData(
         // One point per calendar day (the old per-order points made the x-axis lie).
         const orderDate = (order: (typeof commerce.orders)[number]) => new Date(order.date ?? '')
         const { cur, prev } = bucketDaily(commerce.orders, orderDate, (order) => parseFloat(order.total), dateWindow)
-        const labels = windowPointLabels(dateWindow)
-        const currentTotal = cur.reduce((total, value) => total + value, 0)
-        const previousTotal = prev.reduce((total, value) => total + value, 0)
-        const line = trendLine(currentTotal, previousTotal, rangePhrase(filters.rangePreset))
         const revenueSeries: DashboardWidgetData = {
           kind: 'series',
           unit: 'currency',
-          labels,
+          labels: windowPointLabels(dateWindow),
           series: [
             { name: 'Revenue', data: cur },
             // Shopify-style dashed previous-period line (aligned day-by-day).
             ...(filters.comparison === 'none' ? [] : [{ name: 'Previous period', data: prev, isComparison: true }]),
           ],
-          footer: {
-            ...line,
-            caption: `${longDate(dateWindow.currentStart)} – ${longDate(dateWindow.currentEnd)}, ${dateWindow.currentEnd.getFullYear()}`,
-          },
         }
         return revenueSeries
       }
@@ -608,24 +580,14 @@ export function useWidgetData(
           .filter((c) => c.status === 'Sent')
           .sort((a, b) => (a.sentDate ?? '').localeCompare(b.sentDate ?? ''))
           .slice(isBars ? -8 : -7)
-        const labels = sentCampaigns.map((c) => c.sentDate?.slice(5) ?? '--')
-        const sentData = sentCampaigns.map((c) => c.metrics.sent)
-        const deliveredData = sentCampaigns.map((c) => Math.round(c.metrics.sent * 0.97))
-        const totalSent = sentData.reduce((total, value) => total + value, 0)
-        const totalDelivered = deliveredData.reduce((total, value) => total + value, 0)
         return {
           kind: 'series',
           unit: 'count',
-          labels,
+          labels: sentCampaigns.map((c) => c.sentDate?.slice(5) ?? '--'),
           series: [
-            { name: 'Sent', data: sentData },
-            { name: 'Delivered', data: deliveredData },
+            { name: 'Sent', data: sentCampaigns.map((c) => c.metrics.sent) },
+            { name: 'Delivered', data: sentCampaigns.map((c) => Math.round(c.metrics.sent * 0.97)) },
           ],
-          footer: {
-            trend: `Delivery rate steady at ${(totalSent ? (totalDelivered / totalSent) * 100 : 0).toFixed(1)}%`,
-            caption: `Across the last ${labels.length} campaigns`,
-            direction: 'up',
-          },
         }
       }
       case 'marketing_recent_campaigns': {
@@ -665,23 +627,18 @@ export function useWidgetData(
         return buildSeriesData(labels, values, 'currency', 'Revenue')
       }
       case 'marketing_deliverability_score': {
-        const sentCampaigns = campaigns.campaigns.filter((c) => c.status === 'Sent')
-        const totalSent = sentCampaigns.reduce((t, c) => t + c.metrics.sent, 0)
-        const totalDelivered = sentCampaigns.reduce((t, c) => t + Math.round(c.metrics.sent * 0.97), 0)
-        const score = totalSent ? Math.round((totalDelivered / totalSent) * 10) : 10
+        // Sender reputation grade out of 10. A mailbox provider weighs bounce
+        // history, complaint rate, and domain authentication alongside raw
+        // delivery — restating the seeded 97% delivery rate would peg this at
+        // 10/10 (a full ring, which reads as "no data" rather than "healthy").
+        const score = 8
         if (widget.type === 'gauge') {
-          const deliveredPct = totalSent ? (totalDelivered / totalSent) * 100 : 100
           return {
             kind: 'gauge',
             pct: score * 10,
             centerValue: `${score} / 10`,
             centerCaption: 'score',
             arc: 'three-quarter',
-            footer: {
-              trend: 'Inbox placement holding steady',
-              caption: `${deliveredPct.toFixed(0)}% of sends delivered · rolling 30 days`,
-              direction: 'up',
-            },
           }
         }
         return buildKpiData(score, score - 0.2, 'count', `${score} / 10 deliverability health`)
@@ -695,16 +652,12 @@ export function useWidgetData(
         const sorted = [...domainCounts.entries()].sort((a, b) => b[1] - a[1])
         if (widget.type === 'donut') {
           const top = sorted.slice(0, 5)
-          const leader = top[0]
           return {
             kind: 'donut',
             variant: 'ring',
             segments: top.map(([domain, count]) => ({ label: domain, value: count, formattedValue: formatNumber(count, 'count') })),
             centerValue: formatNumber(contacts.contacts.length, 'count'),
             centerCaption: 'contacts',
-            footer: leader
-              ? { trend: `${leader[0]} leads with ${leader[1]} contacts`, caption: 'Share of total contact base', direction: 'none' }
-              : undefined,
           }
         }
         const bars = sorted.slice(0, 6)
@@ -937,21 +890,11 @@ export function useWidgetData(
             series: [{ name: 'Revenue', data: channelSeries.map((s) => s.data.reduce((total, value) => total + value, 0)) }],
           }
         }
-        const direct = channelSeries[0]!.data
-        const first = direct[0] ?? 0
-        const last = direct[direct.length - 1] ?? 0
-        const directDelta = first ? ((last - first) / first) * 100 : 0
-        const directDirection: 'up' | 'down' = directDelta >= 0 ? 'up' : 'down'
         return {
           kind: 'series',
           unit: 'currency',
           labels,
           series: channelSeries,
-          footer: {
-            trend: `Direct trending ${directDirection} by ${Math.abs(directDelta).toFixed(1)}% this period`,
-            caption: `Weekly revenue by traffic source · W1 – W${points}`,
-            direction: directDirection,
-          },
         }
       }
       case 'demo_channel_mix': {
@@ -969,11 +912,6 @@ export function useWidgetData(
           unit: 'percent',
           labels: mix.map((m) => m.label),
           series: [{ name: 'Share', data: mix.map((m) => m.value) }],
-          footer: {
-            trend: `${mix[0]!.label} drives ${mix[0]!.value}% of traffic`,
-            caption: 'Share of sessions by source',
-            direction: 'none',
-          },
         }
       }
       case 'overview_metric_explorer': {
