@@ -12,9 +12,12 @@ const props = withDefaults(defineProps<{
   centerValue?: string
   centerCaption?: string
   centerSize?: number
+  /** Flat (Polaris) mode: plain segment colours, no gradient shading. */
+  flat?: boolean
 }>(), {
   colors: () => DOTTED_BLUES,
   centerSize: 22,
+  flat: false,
 })
 
 const segments = computed(() => ringSegments(props.values))
@@ -25,7 +28,7 @@ const uid = useId()
 <template>
   <div class="dt-donut">
     <svg viewBox="0 0 140 140" class="dt-donut__svg" role="img" :aria-label="`${centerValue ?? ''} ${centerCaption ?? 'donut chart'}`">
-      <defs>
+      <defs v-if="!flat">
         <linearGradient v-for="(color, i) in colors" :id="`${uid}-s${i}`" :key="i" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" :stop-color="tintHex(color, 0.26)" />
           <stop offset="100%" :stop-color="color" />
@@ -36,7 +39,7 @@ const uid = useId()
           v-for="(seg, i) in segments"
           :key="i"
           cx="70" cy="70" r="54"
-          :stroke="`url(#${uid}-s${i % colors.length})`"
+          :stroke="flat ? colors[i % colors.length] : `url(#${uid}-s${i % colors.length})`"
           :stroke-dasharray="seg.dash"
           :stroke-dashoffset="seg.offset"
         />

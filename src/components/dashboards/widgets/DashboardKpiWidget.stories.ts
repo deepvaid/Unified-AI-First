@@ -171,7 +171,7 @@ export const WithSparklineData: Story = {
     docs: {
       description: {
         story:
-          'Shopify home-metric style: when the metric supplies real windowed values via `sparkline`, the bottom mini area chart plots them instead of the delta-shaped wobble fallback.',
+          'Shopify stat-card style: real windowed values from `sparkline` are smoothed (moving average + downsample) and drawn as a soft bezier area curve — a stylized read of the trend, not a precise chart. Without data, the delta-shaped wobble fallback renders.',
       },
     },
   },

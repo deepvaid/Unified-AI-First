@@ -9,8 +9,11 @@ const props = withDefaults(defineProps<{
   values: number[]
   colors?: readonly string[]
   label: string
+  /** Flat (Polaris) mode: plain wedge colours, no gradient shading. */
+  flat?: boolean
 }>(), {
   colors: () => DOTTED_PIE_BLUES,
+  flat: false,
 })
 
 const wedges = computed(() => pieWedges(props.values))
@@ -20,7 +23,7 @@ const uid = useId()
 
 <template>
   <svg viewBox="0 0 120 120" class="dt-pie" role="img" :aria-label="label">
-    <defs>
+    <defs v-if="!flat">
       <linearGradient v-for="(color, i) in colors" :id="`${uid}-w${i}`" :key="i" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" :stop-color="tintHex(color, 0.26)" />
         <stop offset="100%" :stop-color="color" />
@@ -30,7 +33,7 @@ const uid = useId()
       v-for="(d, i) in wedges"
       :key="i"
       :d="d"
-      :fill="`url(#${uid}-w${i % colors.length})`"
+      :fill="flat ? colors[i % colors.length] : `url(#${uid}-w${i % colors.length})`"
     />
   </svg>
 </template>

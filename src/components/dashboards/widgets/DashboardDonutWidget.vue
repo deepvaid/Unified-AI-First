@@ -2,18 +2,29 @@
 // Dotted donut widget (Overview v2): ring variant (stroked circle + centered
 // figure, legend below) or pie variant (solid wedges, legend beside), with an
 // optional footer stat row.
-import { computed } from 'vue'
+import { computed, inject, unref } from 'vue'
 import DtRingDonut from '../dotted/DtRingDonut.vue'
 import DtPieChart from '../dotted/DtPieChart.vue'
 import DtLegendList, { type DtLegendRow } from '../dotted/DtLegendList.vue'
 import { DOTTED_BLUES, DOTTED_PIE_BLUES } from '../dotted/dottedChartMath'
+import { CHART_PALETTE_OVERRIDE, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import type { DashboardDonutData } from '@/stores/dashboards/types'
 
 const props = defineProps<{
   data: DashboardDonutData
 }>()
 
-const palette = computed(() => (props.data.variant === 'pie' ? DOTTED_PIE_BLUES : DOTTED_BLUES))
+const { theme } = useChartTheme()
+const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
+// Flat (Polaris) themes recolour the dotted segments with the theme's own
+// categorical series and drop the gradient shading.
+const flat = computed(() => !!resolvedTheme.value.flatMarks)
+
+const palette = computed(() => {
+  if (flat.value) return resolvedTheme.value.series
+  return props.data.variant === 'pie' ? DOTTED_PIE_BLUES : DOTTED_BLUES
+})
 const values = computed(() => props.data.segments.map((segment) => segment.value))
 const legendRows = computed<DtLegendRow[]>(() =>
   props.data.segments.map((segment, index) => ({
@@ -27,13 +38,15 @@ const legendRows = computed<DtLegendRow[]>(() =>
 <template>
   <div class="donut-widget">
     <div v-if="data.variant === 'pie'" class="donut-widget__pie-block">
-      <DtPieChart :values="values" label="Share by segment" />
+      <DtPieChart :values="values" :colors="palette" :flat="flat" label="Share by segment" />
       <DtLegendList :rows="legendRows" :gap="10" class="donut-widget__pie-legend" />
     </div>
     <template v-else>
       <div class="donut-widget__ring-block">
         <DtRingDonut
           :values="values"
+          :colors="palette"
+          :flat="flat"
           :center-value="data.centerValue"
           :center-caption="data.centerCaption"
         />

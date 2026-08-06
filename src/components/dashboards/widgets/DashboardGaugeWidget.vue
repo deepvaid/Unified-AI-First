@@ -1,12 +1,21 @@
 <script setup lang="ts">
 // Dotted goal gauge widget (Overview v2): centered progress ring + optional
-// footer stat row.
+// footer stat row. Flat (Polaris) themes drive the arc colour and drop the
+// gradient shading.
+import { computed, inject, unref } from 'vue'
 import DtGauge from '../dotted/DtGauge.vue'
+import { CHART_PALETTE_OVERRIDE, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import type { DashboardGaugeData } from '@/stores/dashboards/types'
 
 defineProps<{
   data: DashboardGaugeData
 }>()
+
+const { theme } = useChartTheme()
+const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
+const flat = computed(() => !!resolvedTheme.value.flatMarks)
+const arcColor = computed(() => (flat.value ? resolvedTheme.value.series[0] : undefined))
 </script>
 
 <template>
@@ -17,6 +26,8 @@ defineProps<{
         :center-value="data.centerValue"
         :center-caption="data.centerCaption"
         :sweep="data.arc === 'three-quarter' ? 270 : 360"
+        :color="arcColor"
+        :flat="flat"
       />
     </div>
     <div v-if="data.footerStats?.length" class="gauge-widget__footer">

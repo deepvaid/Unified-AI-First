@@ -200,6 +200,12 @@ const campaignRows = computed(() => {
   background: transparent !important;
 }
 
+/* Content must never scroll sideways under the sticky header (the clipped
+   column reads as a broken fade) — cells truncate instead. */
+.dashboard-table-widget :deep(.v-table__wrapper) {
+  overflow-x: hidden;
+}
+
 .dashboard-table-widget :deep(th) {
   font-size: 11px;
   font-weight: 500;
@@ -212,6 +218,9 @@ const campaignRows = computed(() => {
   background: var(--surface-primary);
   z-index: 1;
   white-space: nowrap;
+  /* !important: Vuetify's .v-table > .v-table__wrapper > table > thead > tr > th
+     selector outguns anything :deep() can express. */
+  padding: 0 8px !important;
 }
 
 .dashboard-table-widget :deep(td) {
@@ -221,8 +230,18 @@ const campaignRows = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
-  padding: 12px 4px;
+  max-width: 160px;
+  padding: 12px 8px !important;
+}
+
+.dashboard-table-widget :deep(th:first-child),
+.dashboard-table-widget :deep(td:first-child) {
+  padding-left: 2px !important;
+}
+
+.dashboard-table-widget :deep(th:last-child),
+.dashboard-table-widget :deep(td:last-child) {
+  padding-right: 2px !important;
 }
 
 .dashboard-table-widget :deep(tr:last-child td) {

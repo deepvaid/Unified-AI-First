@@ -3,8 +3,8 @@
 // Stacked + Legend": rounded stacks in the blue ramp (light at the bottom of
 // the stack, dark on top) with a legend that also carries each series' total
 // and share, the way the reference dashboards annotate their distributions.
-import { computed } from 'vue'
-import { tintHex } from '@/plugins/chartPalette'
+import { computed, inject, unref } from 'vue'
+import { CHART_PALETTE_OVERRIDE, tintHex, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import { STACK_BLUES } from '../dotted/dottedChartMath'
 import type { DashboardStackedBarData } from '@/stores/dashboards/types'
 
@@ -12,12 +12,17 @@ const props = defineProps<{
   data: DashboardStackedBarData
 }>()
 
-const STACK_COLORS = STACK_BLUES
+const { theme } = useChartTheme()
+const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
+// Flat (Polaris) themes use their own categorical colours with flat fills.
+const flat = computed(() => !!resolvedTheme.value.flatMarks)
+const STACK_COLORS = computed<readonly string[]>(() => (flat.value ? resolvedTheme.value.series : STACK_BLUES))
 
-/** Segment fill: base colour at the bottom fading to a lighter tint on top. */
+/** Segment fill: flat theme colour, or base fading to a lighter tint on top. */
 function segmentFill(index: number): string {
-  const color = STACK_COLORS[index] ?? STACK_COLORS[0]!
-  return `linear-gradient(to top, ${color}, ${tintHex(color, 0.3)})`
+  const color = STACK_COLORS.value[index] ?? STACK_COLORS.value[0]!
+  return flat.value ? color : `linear-gradient(to top, ${color}, ${tintHex(color, 0.3)})`
 }
 
 const maxTotal = computed(() =>

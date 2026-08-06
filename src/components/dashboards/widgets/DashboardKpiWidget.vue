@@ -70,15 +70,36 @@ const moneyParts = computed(() => {
   return { main: match[1], cents: match[2] }
 })
 
+/**
+ * Centered moving average + downsample to ≤14 points. The Shopify stat-card
+ * curve is a stylized read of the trend, not a precise chart — raw daily
+ * buckets read as noise at this size.
+ */
+function smoothSeries(values: number[]): number[] {
+  const window = Math.max(2, Math.round(values.length / 6))
+  const averaged = values.map((_, i) => {
+    const start = Math.max(0, i - window)
+    const end = Math.min(values.length - 1, i + window)
+    let sum = 0
+    for (let j = start; j <= end; j += 1) sum += values[j]!
+    return sum / (end - start + 1)
+  })
+  const target = 14
+  if (averaged.length <= target) return averaged
+  const step = (averaged.length - 1) / (target - 1)
+  return Array.from({ length: target }, (_, i) => averaged[Math.round(i * step)]!)
+}
+
 const sparklineValues = computed(() => {
-  // Real windowed data (Shopify home-metric style mini area chart) when the
-  // metric provides it; deterministic wobble shaped by the delta otherwise.
+  // Real windowed data (Shopify stat-card style mini area) when the metric
+  // provides it; deterministic wobble shaped by the delta otherwise.
   const real = props.data.sparkline
   if (real && real.length >= 2) {
-    const max = Math.max(...real)
-    const min = Math.min(...real)
+    const smoothed = smoothSeries(real)
+    const max = Math.max(...smoothed)
+    const min = Math.min(...smoothed)
     const span = max - min || 1
-    return real.map((value) => 0.08 + ((value - min) / span) * 0.82)
+    return smoothed.map((value) => 0.08 + ((value - min) / span) * 0.82)
   }
   const delta = props.data.delta ?? 12
   const slope = Math.max(-0.2, Math.min(0.24, delta / 900))
@@ -86,17 +107,30 @@ const sparklineValues = computed(() => {
   return base.map((value, index) => Math.min(0.9, Math.max(0.08, value + slope * index)))
 })
 
-const sparklinePoints = computed(() => {
+// Catmull-Rom → cubic bezier so the curve reads soft at stat-card size.
+const sparklinePath = computed(() => {
   const values = sparklineValues.value
-  const maxIndex = Math.max(values.length - 1, 1)
-  return values
-    .map((value, index) => {
-      const x = (index / maxIndex) * 100
-      const y = 38 - value * 30
-      return `${x.toFixed(1)},${y.toFixed(1)}`
-    })
-    .join(' ')
+  if (values.length < 2) return ''
+  const maxIndex = values.length - 1
+  const pts = values.map((value, index) => ({ x: (index / maxIndex) * 100, y: 38 - value * 30 }))
+  let d = `M ${pts[0]!.x.toFixed(1)} ${pts[0]!.y.toFixed(1)}`
+  for (let i = 0; i < pts.length - 1; i += 1) {
+    const p0 = pts[Math.max(0, i - 1)]!
+    const p1 = pts[i]!
+    const p2 = pts[i + 1]!
+    const p3 = pts[Math.min(pts.length - 1, i + 2)]!
+    const c1x = p1.x + (p2.x - p0.x) / 6
+    const c1y = p1.y + (p2.y - p0.y) / 6
+    const c2x = p2.x - (p3.x - p1.x) / 6
+    const c2y = p2.y - (p3.y - p1.y) / 6
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`
+  }
+  return d
 })
+
+const sparklineAreaPath = computed(() => (
+  sparklinePath.value ? `${sparklinePath.value} L 100 40 L 0 40 Z` : ''
+))
 
 </script>
 
@@ -161,12 +195,12 @@ const sparklinePoints = computed(() => {
             <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
           </linearGradient>
         </defs>
-        <polygon
-          :points="`0,40 ${sparklinePoints} 100,40`"
+        <path
+          :d="sparklineAreaPath"
           class="dashboard-kpi-widget__sparkline-fill"
           :fill="`url(#${sparkFillId})`"
         />
-        <polyline :points="sparklinePoints" class="dashboard-kpi-widget__sparkline-line" />
+        <path :d="sparklinePath" class="dashboard-kpi-widget__sparkline-line" />
       </svg>
     </div>
 

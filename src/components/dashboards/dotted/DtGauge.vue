@@ -11,8 +11,14 @@ const props = withDefaults(defineProps<{
   centerCaption: string
   /** Arc sweep in degrees; 270 gives the shadcn radial that opens at the bottom. */
   sweep?: number
+  /** Arc colour (theme-driven for flat Polaris themes). */
+  color?: string
+  /** Flat (Polaris) mode: solid arc, no gradient shading. */
+  flat?: boolean
 }>(), {
   sweep: 360,
+  color: '#0092D4',
+  flat: false,
 })
 
 const CIRC = 2 * Math.PI * 52
@@ -27,7 +33,6 @@ const trackDash = computed(() => `${arcLength.value.toFixed(1)} ${(CIRC - arcLen
 const rotation = computed(() => (
   props.sweep < 360 ? `rotate(${90 + (360 - props.sweep) / 2} 70 70)` : 'rotate(-90 70 70)'
 ))
-const ARC_COLOR = '#0092D4'
 // SVG gradient ids are global to the page — scope them per instance.
 const uid = useId()
 </script>
@@ -35,15 +40,15 @@ const uid = useId()
 <template>
   <div class="dt-gauge">
     <svg viewBox="0 0 140 140" class="dt-gauge__svg" role="img" :aria-label="`${centerValue} ${centerCaption}`">
-      <defs>
+      <defs v-if="!flat">
         <linearGradient :id="`${uid}-arc`" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" :stop-color="ARC_COLOR" />
-          <stop offset="100%" :stop-color="tintHex(ARC_COLOR, 0.35)" />
+          <stop offset="0%" :stop-color="color" />
+          <stop offset="100%" :stop-color="tintHex(color, 0.35)" />
         </linearGradient>
       </defs>
       <g :transform="rotation" fill="none" stroke-width="15" stroke-linecap="round">
         <circle cx="70" cy="70" r="52" class="dt-gauge__track" :stroke-dasharray="sweep < 360 ? trackDash : undefined" />
-        <circle cx="70" cy="70" r="52" :stroke="`url(#${uid}-arc)`" :stroke-dasharray="dash" />
+        <circle cx="70" cy="70" r="52" :stroke="flat ? color : `url(#${uid}-arc)`" :stroke-dasharray="dash" />
       </g>
     </svg>
     <div class="dt-gauge__center">
