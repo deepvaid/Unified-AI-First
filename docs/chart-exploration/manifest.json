@@ -80,9 +80,423 @@
       "mode": "light",
       "dsf": 1,
       "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "options/option-a/dashboard-full--option-a--1440--light.png",
+      "shot": "dashboard-full",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/dashboard-fold--option-a--1440--light.png",
+      "shot": "dashboard-fold",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-line--option-a--1440--light.png",
+      "shot": "widget-line",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-bar--option-a--1440--light.png",
+      "shot": "widget-bar",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-area--option-a--1440--light.png",
+      "shot": "widget-area",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-donut--option-a--1440--light.png",
+      "shot": "widget-donut",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-line-hover--option-a--1440--light.png",
+      "shot": "widget-line-hover",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-bar-hover--option-a--1440--light.png",
+      "shot": "widget-bar-hover",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/dashboard-full--option-a--1440--light--dsf1.png",
+      "shot": "dashboard-full",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 1,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-b/dashboard-full--option-b--1440--light.png",
+      "shot": "dashboard-full",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/dashboard-fold--option-b--1440--light.png",
+      "shot": "dashboard-fold",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/widget-line--option-b--1440--light.png",
+      "shot": "widget-line",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/widget-bar--option-b--1440--light.png",
+      "shot": "widget-bar",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/widget-area--option-b--1440--light.png",
+      "shot": "widget-area",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/widget-donut--option-b--1440--light.png",
+      "shot": "widget-donut",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/widget-line-hover--option-b--1440--light.png",
+      "shot": "widget-line-hover",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/widget-bar-hover--option-b--1440--light.png",
+      "shot": "widget-bar-hover",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/dashboard-full--option-b--1440--light--dsf1.png",
+      "shot": "dashboard-full",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 1,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-c/dashboard-full--option-c--1440--light.png",
+      "shot": "dashboard-full",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/dashboard-fold--option-c--1440--light.png",
+      "shot": "dashboard-fold",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/widget-line--option-c--1440--light.png",
+      "shot": "widget-line",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/widget-bar--option-c--1440--light.png",
+      "shot": "widget-bar",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/widget-area--option-c--1440--light.png",
+      "shot": "widget-area",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/widget-donut--option-c--1440--light.png",
+      "shot": "widget-donut",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/widget-line-hover--option-c--1440--light.png",
+      "shot": "widget-line-hover",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/widget-bar-hover--option-c--1440--light.png",
+      "shot": "widget-bar-hover",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/dashboard-full--option-c--1440--light--dsf1.png",
+      "shot": "dashboard-full",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 1,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-d/dashboard-full--option-d--1440--light.png",
+      "shot": "dashboard-full",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/dashboard-fold--option-d--1440--light.png",
+      "shot": "dashboard-fold",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-line--option-d--1440--light.png",
+      "shot": "widget-line",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-bar--option-d--1440--light.png",
+      "shot": "widget-bar",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-area--option-d--1440--light.png",
+      "shot": "widget-area",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-donut--option-d--1440--light.png",
+      "shot": "widget-donut",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-line-hover--option-d--1440--light.png",
+      "shot": "widget-line-hover",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-bar-hover--option-d--1440--light.png",
+      "shot": "widget-bar-hover",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/dashboard-full--option-d--1440--light--dsf1.png",
+      "shot": "dashboard-full",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 1,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "comparison/exploration-full--all--1440--light.png",
+      "shot": "exploration-full",
+      "chart": "all",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/chart-exploration"
+    },
+    {
+      "file": "comparison/specimen-grid--all--1440--light.png",
+      "shot": "specimen-grid",
+      "chart": "all",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/chart-exploration"
+    },
+    {
+      "file": "options/option-a/specimen--option-a--1440--light.png",
+      "shot": "specimen",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/chart-exploration"
+    },
+    {
+      "file": "options/option-a/tokens--option-a--1440--light.png",
+      "shot": "tokens",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/chart-exploration"
+    },
+    {
+      "file": "options/option-b/specimen--option-b--1440--light.png",
+      "shot": "specimen",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/chart-exploration"
+    },
+    {
+      "file": "options/option-b/tokens--option-b--1440--light.png",
+      "shot": "tokens",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/chart-exploration"
+    },
+    {
+      "file": "options/option-c/specimen--option-c--1440--light.png",
+      "shot": "specimen",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/chart-exploration"
+    },
+    {
+      "file": "options/option-c/tokens--option-c--1440--light.png",
+      "shot": "tokens",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/chart-exploration"
+    },
+    {
+      "file": "options/option-d/specimen--option-d--1440--light.png",
+      "shot": "specimen",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/chart-exploration"
+    },
+    {
+      "file": "options/option-d/tokens--option-d--1440--light.png",
+      "shot": "tokens",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/chart-exploration"
     }
   ],
-  "capturedAt": "2026-08-07T06:45:47.275Z",
-  "gitSha": "2bc211c",
+  "capturedAt": "2026-08-07T09:16:12.634Z",
+  "gitSha": "8f288c2",
   "baseUrl": "http://localhost:5173"
 }
