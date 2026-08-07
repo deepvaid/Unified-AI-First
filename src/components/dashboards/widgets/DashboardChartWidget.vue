@@ -269,6 +269,9 @@ const chartOptions = computed<ApexOptions>(() => {
   // option's treatment instead of the gradientMarks/flatMarks booleans.
   const treatmentFill = (tt: NonNullable<typeof t>): ApexOptions['fill'] => {
     if (isBar) {
+      // Diverging data wears the pos/neg vocabulary — solid fills so the
+      // ranges colors read; this outranks any decorative bar fill.
+      if (divergingBars) return { type: 'solid' }
       // Axis-ramp bars need a single ramp per column — grouped series fall back to
       // the tint recipe so each series keeps its own identity.
       if (tt.bar.fill === 'axis-gradient' && isVerticalBar && singleOrDistributedBar) {
