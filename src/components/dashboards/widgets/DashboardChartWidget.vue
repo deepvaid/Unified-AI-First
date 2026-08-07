@@ -6,6 +6,7 @@ import type { DashboardChartVariant, DashboardSeriesData, DashboardWidgetType } 
 import {
   CHART_PALETTE_OVERRIDE,
   chartLegendOptions,
+  embossStops,
   tintHex,
   useChartTheme,
   type ChartTheme,
@@ -288,13 +289,30 @@ const chartOptions = computed<ApexOptions>(() => {
       // Axis-ramp bars need a single ramp per column — grouped series fall back to
       // the tint recipe so each series keeps its own identity.
       if (tt.bar.fill === 'axis-gradient' && isVerticalBar && singleOrDistributedBar) {
-        const stops = resolvedTheme.value.axis
+        const ramp = resolvedTheme.value.axis
           .slice()
           .reverse()
           .map((color, i, arr) => ({ offset: i * (100 / (arr.length - 1)), color, opacity: 1 }))
+        const stops = tt.effects.gloss ? embossStops(ramp) : ramp
         return { type: 'gradient', gradient: { type: 'vertical', colorStops: stops } }
       }
       if (tt.bar.fill === 'solid' || divergingBars) return { type: 'solid' }
+      // Grouped/horizontal bars have no axis ramp to run through, so the emboss is
+      // built per series: lit tint at the head, the series colour, darkened lip.
+      if (tt.effects.gloss) {
+        return {
+          type: 'gradient',
+          gradient: {
+            type: isHorizontalBar.value ? 'horizontal' : 'vertical',
+            colorStops: resolvedSeriesColors.value.map((c) =>
+              embossStops([
+                { offset: 0, color: tintHex(c, 0.22), opacity: 1 },
+                { offset: 100, color: c, opacity: 1 },
+              ]),
+            ),
+          },
+        }
+      }
       return {
         type: 'gradient',
         gradient: {

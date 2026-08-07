@@ -20,6 +20,8 @@ const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.v
 const treatment = computed(() => resolvedTheme.value.treatment)
 const legacyFlat = computed(() => !!resolvedTheme.value.flatMarks)
 const flat = computed(() => (treatment.value ? treatment.value.svg.shade === 'flat' : legacyFlat.value))
+// Embossed marks (Option D): a lit top edge and a darker base lip inside each segment.
+const gloss = computed(() => !!treatment.value?.effects.gloss)
 const STACK_COLORS = computed<readonly string[]>(() => {
   const t = treatment.value
   if (t) return t.ramps?.stack ?? resolvedTheme.value.series
@@ -79,7 +81,7 @@ const barAriaLabel = computed(() =>
 
 <template>
   <!-- 'bar': label/value pairs over a single segmented bar (Sales by product name). -->
-  <div v-if="data.variant === 'bar'" class="stackbar-widget stackbar-widget--single">
+  <div v-if="data.variant === 'bar'" class="stackbar-widget stackbar-widget--single" :class="{ 'stackbar-widget--gloss': gloss }">
     <div class="stackbar-widget__pairs">
       <div v-for="(entry, index) in data.legend" :key="entry.key" class="stackbar-widget__pair">
         <span class="stackbar-widget__pair-label">
@@ -99,7 +101,7 @@ const barAriaLabel = computed(() =>
       />
     </div>
   </div>
-  <div v-else class="stackbar-widget">
+  <div v-else class="stackbar-widget" :class="{ 'stackbar-widget--gloss': gloss }">
     <div class="stackbar-widget__plot" role="img" aria-label="Stacked bar chart">
       <div
         v-for="bucket in data.buckets"
@@ -302,5 +304,20 @@ const barAriaLabel = computed(() =>
 .stackbar-widget__hsegment:last-child {
   border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
+}
+
+/* Emboss: an inset sheen along the lit edge and a soft shadow at the base, so a
+   segment reads as a solid catching light rather than a flat fill. Vertical
+   stacks light from the top; the horizontal bar lights from its left edge. */
+.stackbar-widget--gloss .stackbar-widget__segment {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -6px 8px -6px rgba(12, 10, 40, 0.5);
+}
+
+.stackbar-widget--gloss .stackbar-widget__hsegment {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -5px 7px -5px rgba(12, 10, 40, 0.45);
 }
 </style>

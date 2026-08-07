@@ -283,7 +283,7 @@ export interface ChartTreatment {
   /** Hand-rolled SVG family (DtGauge / DtRingDonut / stacked bar). */
   svg: { shade: 'flat' | 'tint' }
   kpiSpark: { color?: string; fillOpacity: number }
-  effects: { dropShadow: boolean }
+  effects: { dropShadow: boolean; gloss?: boolean }
   states: { hoverFilter: 'none' | 'lighten' | 'darken'; hoverFilterValue: number; dimmedOpacity: number }
   posNeg: { positive: string; negative: string; warning: string; neutral: string }
   /** Optional ramp overrides; unset ramps derive from `series` / `axis`. */
@@ -483,7 +483,9 @@ const OPTION_D_TREATMENT = makeTreatment({
   donut: { size: '64%', fill: 'gradient', strokeWidth: 2, showDataLabels: false },
   svg: { shade: 'tint' },
   kpiSpark: { fillOpacity: 0.24 },
-  effects: { dropShadow: true },
+  // Gloss is D's alone: a lit top edge + darker base lip so marks read as
+  // embossed solids. The other options stay matte by design.
+  effects: { dropShadow: true, gloss: true },
   states: { hoverFilter: 'lighten', hoverFilterValue: 0.04, dimmedOpacity: 0.2 },
   posNeg: {
     positive: mp_color_chart_light_optionD_positive,
@@ -985,6 +987,34 @@ export function useChartTheme() {
     activeChartPalette,
     activeChartTheme,
   }
+}
+
+/** Mix a hex colour toward black by fraction `t` (0..1) — the emboss shadow lip. */
+export function shadeHex(hex: string, t: number): string {
+  const clean = hex.replace('#', '')
+  const mix = (c: number) => Math.round(c * (1 - t))
+  const to2 = (i: number) => mix(parseInt(clean.slice(i, i + 2), 16)).toString(16).padStart(2, '0')
+  return `#${to2(0)}${to2(2)}${to2(4)}`
+}
+
+/**
+ * Wrap a vertical gradient ramp in an embossed shell: a bright gloss at the very
+ * top edge and a darker lip at the base, so a mark reads as a lit solid rather
+ * than a flat wash. Stops are compressed into the first/last few percent so the
+ * body of the ramp is untouched.
+ */
+export function embossStops(
+  stops: { offset: number; color: string; opacity: number }[],
+): { offset: number; color: string; opacity: number }[] {
+  if (stops.length < 2) return stops
+  const head = stops[0]!
+  const tail = stops[stops.length - 1]!
+  const squeeze = stops.map((s) => ({ ...s, offset: 6 + s.offset * 0.88 }))
+  return [
+    { offset: 0, color: tintHex(head.color, 0.5), opacity: 1 },
+    ...squeeze,
+    { offset: 100, color: shadeHex(tail.color, 0.16), opacity: 1 },
+  ]
 }
 
 /** Mix a hex colour toward white by fraction `t` (0..1) and return a hex string. */
