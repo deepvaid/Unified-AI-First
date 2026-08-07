@@ -44,6 +44,54 @@ import {
   mp_color_chart_dark_ocean_series4,
   mp_color_chart_dark_ocean_series5,
   mp_color_chart_dark_ocean_series6,
+  mp_color_chart_dark_optionA_axis1,
+  mp_color_chart_dark_optionA_axis2,
+  mp_color_chart_dark_optionA_axis3,
+  mp_color_chart_dark_optionA_axis4,
+  mp_color_chart_dark_optionA_axis5,
+  mp_color_chart_dark_optionA_comparison,
+  mp_color_chart_dark_optionA_series1,
+  mp_color_chart_dark_optionA_series2,
+  mp_color_chart_dark_optionA_series3,
+  mp_color_chart_dark_optionA_series4,
+  mp_color_chart_dark_optionA_series5,
+  mp_color_chart_dark_optionA_series6,
+  mp_color_chart_dark_optionB_axis1,
+  mp_color_chart_dark_optionB_axis2,
+  mp_color_chart_dark_optionB_axis3,
+  mp_color_chart_dark_optionB_axis4,
+  mp_color_chart_dark_optionB_axis5,
+  mp_color_chart_dark_optionB_comparison,
+  mp_color_chart_dark_optionB_series1,
+  mp_color_chart_dark_optionB_series2,
+  mp_color_chart_dark_optionB_series3,
+  mp_color_chart_dark_optionB_series4,
+  mp_color_chart_dark_optionB_series5,
+  mp_color_chart_dark_optionB_series6,
+  mp_color_chart_dark_optionC_axis1,
+  mp_color_chart_dark_optionC_axis2,
+  mp_color_chart_dark_optionC_axis3,
+  mp_color_chart_dark_optionC_axis4,
+  mp_color_chart_dark_optionC_axis5,
+  mp_color_chart_dark_optionC_comparison,
+  mp_color_chart_dark_optionC_series1,
+  mp_color_chart_dark_optionC_series2,
+  mp_color_chart_dark_optionC_series3,
+  mp_color_chart_dark_optionC_series4,
+  mp_color_chart_dark_optionC_series5,
+  mp_color_chart_dark_optionC_series6,
+  mp_color_chart_dark_optionD_axis1,
+  mp_color_chart_dark_optionD_axis2,
+  mp_color_chart_dark_optionD_axis3,
+  mp_color_chart_dark_optionD_axis4,
+  mp_color_chart_dark_optionD_axis5,
+  mp_color_chart_dark_optionD_comparison,
+  mp_color_chart_dark_optionD_series1,
+  mp_color_chart_dark_optionD_series2,
+  mp_color_chart_dark_optionD_series3,
+  mp_color_chart_dark_optionD_series4,
+  mp_color_chart_dark_optionD_series5,
+  mp_color_chart_dark_optionD_series6,
   mp_color_chart_dark_series1,
   mp_color_chart_dark_series2,
   mp_color_chart_dark_series3,
@@ -94,6 +142,70 @@ import {
   mp_color_chart_light_ocean_series4,
   mp_color_chart_light_ocean_series5,
   mp_color_chart_light_ocean_series6,
+  mp_color_chart_light_optionA_axis1,
+  mp_color_chart_light_optionA_axis2,
+  mp_color_chart_light_optionA_axis3,
+  mp_color_chart_light_optionA_axis4,
+  mp_color_chart_light_optionA_axis5,
+  mp_color_chart_light_optionA_comparison,
+  mp_color_chart_light_optionA_negative,
+  mp_color_chart_light_optionA_neutral,
+  mp_color_chart_light_optionA_positive,
+  mp_color_chart_light_optionA_series1,
+  mp_color_chart_light_optionA_series2,
+  mp_color_chart_light_optionA_series3,
+  mp_color_chart_light_optionA_series4,
+  mp_color_chart_light_optionA_series5,
+  mp_color_chart_light_optionA_series6,
+  mp_color_chart_light_optionA_warning,
+  mp_color_chart_light_optionB_axis1,
+  mp_color_chart_light_optionB_axis2,
+  mp_color_chart_light_optionB_axis3,
+  mp_color_chart_light_optionB_axis4,
+  mp_color_chart_light_optionB_axis5,
+  mp_color_chart_light_optionB_comparison,
+  mp_color_chart_light_optionB_negative,
+  mp_color_chart_light_optionB_neutral,
+  mp_color_chart_light_optionB_positive,
+  mp_color_chart_light_optionB_series1,
+  mp_color_chart_light_optionB_series2,
+  mp_color_chart_light_optionB_series3,
+  mp_color_chart_light_optionB_series4,
+  mp_color_chart_light_optionB_series5,
+  mp_color_chart_light_optionB_series6,
+  mp_color_chart_light_optionB_warning,
+  mp_color_chart_light_optionC_axis1,
+  mp_color_chart_light_optionC_axis2,
+  mp_color_chart_light_optionC_axis3,
+  mp_color_chart_light_optionC_axis4,
+  mp_color_chart_light_optionC_axis5,
+  mp_color_chart_light_optionC_comparison,
+  mp_color_chart_light_optionC_negative,
+  mp_color_chart_light_optionC_neutral,
+  mp_color_chart_light_optionC_positive,
+  mp_color_chart_light_optionC_series1,
+  mp_color_chart_light_optionC_series2,
+  mp_color_chart_light_optionC_series3,
+  mp_color_chart_light_optionC_series4,
+  mp_color_chart_light_optionC_series5,
+  mp_color_chart_light_optionC_series6,
+  mp_color_chart_light_optionC_warning,
+  mp_color_chart_light_optionD_axis1,
+  mp_color_chart_light_optionD_axis2,
+  mp_color_chart_light_optionD_axis3,
+  mp_color_chart_light_optionD_axis4,
+  mp_color_chart_light_optionD_axis5,
+  mp_color_chart_light_optionD_comparison,
+  mp_color_chart_light_optionD_negative,
+  mp_color_chart_light_optionD_neutral,
+  mp_color_chart_light_optionD_positive,
+  mp_color_chart_light_optionD_series1,
+  mp_color_chart_light_optionD_series2,
+  mp_color_chart_light_optionD_series3,
+  mp_color_chart_light_optionD_series4,
+  mp_color_chart_light_optionD_series5,
+  mp_color_chart_light_optionD_series6,
+  mp_color_chart_light_optionD_warning,
   mp_color_chart_light_series1,
   mp_color_chart_light_series2,
   mp_color_chart_light_series3,
@@ -277,18 +389,16 @@ function cloneChrome(chrome: ChartChrome, overrides: Partial<ChartChrome> = {}):
 }
 
 // --- Chart visual-system exploration (P5) -------------------------------------
-// Hexes are the P4-validated values from
-// `scripts/chart-exploration/option-palettes.mjs`; they move into tokens.json in
-// the token-freeze commit. Treatments translate the "Treatment spec" blocks in
-// `docs/chart-exploration/notes/option-{a,b,c,d}.md`.
+// Colors are the frozen `color.chart.{light,dark}.option*` tokens — the
+// P4-validated values recorded in `scripts/chart-exploration/option-palettes.mjs`.
+// Treatments translate the "Treatment spec" blocks in
+// `docs/chart-exploration/notes/option-{a,b,c,d}.md`; one treatment serves both
+// modes, so its comparison/posNeg colors read the light tokens.
 
 /** A — Restrained Blue: one blue weighted by importance, everything else neutral. */
-const OPTION_A_SERIES = ['#0E72B8', '#5FB9EB', '#234E92', '#38A8DC', '#5C6B7A', '#AFC3D1']
-const OPTION_A_AXIS = ['#123B63', '#15568C', '#0E72B8', '#2E96D2', '#63BCE8']
-const OPTION_A_COMPARISON = '#6E93AE'
 const OPTION_A_TREATMENT = makeTreatment({
   stroke: { curve: 'smooth', width: 2, companionWidth: 1.75, companionDash: 0, gradientLine: false },
-  comparison: { color: OPTION_A_COMPARISON, dash: 5, fillOpacity: 0 },
+  comparison: { color: mp_color_chart_light_optionA_comparison, dash: 5, fillOpacity: 0 },
   area: { fill: 'gradient', opacityFrom: 0.14, opacityTo: 0.02 },
   bar: { radius: 2, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
   grid: { show: true, dashArray: 0, xLines: false, yLines: true },
@@ -301,16 +411,18 @@ const OPTION_A_TREATMENT = makeTreatment({
   kpiSpark: { fillOpacity: 0.12 },
   effects: { dropShadow: false },
   states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.35 },
-  posNeg: { positive: '#1B7A46', negative: '#C2402A', warning: '#B27B00', neutral: '#8A94A0' },
+  posNeg: {
+    positive: mp_color_chart_light_optionA_positive,
+    negative: mp_color_chart_light_optionA_negative,
+    warning: mp_color_chart_light_optionA_warning,
+    neutral: mp_color_chart_light_optionA_neutral,
+  },
 })
 
 /** B — Sophisticated Multi-Color: one hue per data family, saturation one notch down. */
-const OPTION_B_SERIES = ['#2E6FC2', '#D4703A', '#17948C', '#6B5CC8', '#D078A3', '#515C67']
-const OPTION_B_AXIS = ['#1E4E93', '#2E67B5', '#4A82CE', '#6C9DDF', '#8FB3E6']
-const OPTION_B_COMPARISON = '#828E9A'
 const OPTION_B_TREATMENT = makeTreatment({
   stroke: { curve: 'straight', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false },
-  comparison: { color: OPTION_B_COMPARISON, dash: 4, fillOpacity: 0 },
+  comparison: { color: mp_color_chart_light_optionB_comparison, dash: 4, fillOpacity: 0 },
   area: { fill: 'solid', opacityFrom: 0.09, opacityTo: 0.09 },
   bar: { radius: 4, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
   grid: { show: true, dashArray: 4, xLines: false, yLines: true },
@@ -323,16 +435,18 @@ const OPTION_B_TREATMENT = makeTreatment({
   kpiSpark: { fillOpacity: 0.1 },
   effects: { dropShadow: false },
   states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.25 },
-  posNeg: { positive: '#178A50', negative: '#C6403D', warning: '#B27B00', neutral: '#8A94A0' },
+  posNeg: {
+    positive: mp_color_chart_light_optionB_positive,
+    negative: mp_color_chart_light_optionB_negative,
+    warning: mp_color_chart_light_optionB_warning,
+    neutral: mp_color_chart_light_optionB_neutral,
+  },
 })
 
 /** C — Blue · Teal · Green: one connected family, separation from alternating lightness. */
-const OPTION_C_SERIES = ['#0073AB', '#45C6E0', '#008268', '#4E9FDE', '#3FB68E', '#1F5099']
-const OPTION_C_AXIS = ['#0B3D5C', '#00618F', '#0073AB', '#1D96BE', '#4FC2CE']
-const OPTION_C_COMPARISON = '#5E93AA'
 const OPTION_C_TREATMENT = makeTreatment({
   stroke: { curve: 'smooth', width: 2.5, companionWidth: 2, companionDash: 0, gradientLine: false },
-  comparison: { color: OPTION_C_COMPARISON, dash: 5, fillOpacity: 0 },
+  comparison: { color: mp_color_chart_light_optionC_comparison, dash: 5, fillOpacity: 0 },
   area: { fill: 'gradient', opacityFrom: 0.28, opacityTo: 0.02 },
   bar: { radius: 6, columnWidthSingle: '45%', columnWidthGrouped: '70%', fill: 'tint-gradient', floatingLabels: false },
   grid: { show: true, dashArray: 0, xLines: false, yLines: true },
@@ -345,16 +459,18 @@ const OPTION_C_TREATMENT = makeTreatment({
   kpiSpark: { fillOpacity: 0.18 },
   effects: { dropShadow: false },
   states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.3 },
-  posNeg: { positive: '#38761D', negative: '#C2402A', warning: '#B27B00', neutral: '#8A94A0' },
+  posNeg: {
+    positive: mp_color_chart_light_optionC_positive,
+    negative: mp_color_chart_light_optionC_negative,
+    warning: mp_color_chart_light_optionC_warning,
+    neutral: mp_color_chart_light_optionC_neutral,
+  },
 })
 
 /** D — Modern Gradient: depth and light, every gradient encoding something. */
-const OPTION_D_SERIES = ['#2563EB', '#9A8EF9', '#433AB8', '#33ABEE', '#A855D8', '#64748B']
-const OPTION_D_AXIS = ['#312E81', '#4338CA', '#5B67EA', '#2E92E4', '#4FB3F2']
-const OPTION_D_COMPARISON = '#7C8CA3'
 const OPTION_D_TREATMENT = makeTreatment({
   stroke: { curve: 'smooth', width: 2.5, companionWidth: 2, companionDash: 0, gradientLine: true },
-  comparison: { color: OPTION_D_COMPARISON, dash: 5, fillOpacity: 0 },
+  comparison: { color: mp_color_chart_light_optionD_comparison, dash: 5, fillOpacity: 0 },
   area: { fill: 'gradient', opacityFrom: 0.35, opacityTo: 0 },
   bar: { radius: 8, columnWidthSingle: '45%', columnWidthGrouped: '66%', fill: 'axis-gradient', floatingLabels: true },
   // "fainter" grid per the option-D spec — the treatment carries it so the
@@ -369,7 +485,12 @@ const OPTION_D_TREATMENT = makeTreatment({
   kpiSpark: { fillOpacity: 0.24 },
   effects: { dropShadow: true },
   states: { hoverFilter: 'lighten', hoverFilterValue: 0.04, dimmedOpacity: 0.2 },
-  posNeg: { positive: '#148549', negative: '#C6403D', warning: '#B27B00', neutral: '#8A94A0' },
+  posNeg: {
+    positive: mp_color_chart_light_optionD_positive,
+    negative: mp_color_chart_light_optionD_negative,
+    warning: mp_color_chart_light_optionD_warning,
+    neutral: mp_color_chart_light_optionD_neutral,
+  },
 })
 
 /**
@@ -582,20 +703,46 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
   optionA: {
     light: {
       label: 'Restrained Blue',
-      series: OPTION_A_SERIES,
-      axis: OPTION_A_AXIS,
+      series: [
+        mp_color_chart_light_optionA_series1,
+        mp_color_chart_light_optionA_series2,
+        mp_color_chart_light_optionA_series3,
+        mp_color_chart_light_optionA_series4,
+        mp_color_chart_light_optionA_series5,
+        mp_color_chart_light_optionA_series6,
+      ],
+      axis: [
+        mp_color_chart_light_optionA_axis1,
+        mp_color_chart_light_optionA_axis2,
+        mp_color_chart_light_optionA_axis3,
+        mp_color_chart_light_optionA_axis4,
+        mp_color_chart_light_optionA_axis5,
+      ],
       gradientMarks: false,
-      comparisonColor: OPTION_A_COMPARISON,
+      comparisonColor: mp_color_chart_light_optionA_comparison,
       chrome: cloneChrome(LIGHT_CHROME, { grid: 'rgba(26, 24, 20, 0.07)' }),
       treatment: OPTION_A_TREATMENT,
     },
     // PROVISIONAL — light-only review; dark tuning is follow-up
     dark: {
       label: 'Restrained Blue',
-      series: OPTION_A_SERIES,
-      axis: OPTION_A_AXIS,
+      series: [
+        mp_color_chart_dark_optionA_series1,
+        mp_color_chart_dark_optionA_series2,
+        mp_color_chart_dark_optionA_series3,
+        mp_color_chart_dark_optionA_series4,
+        mp_color_chart_dark_optionA_series5,
+        mp_color_chart_dark_optionA_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_optionA_axis1,
+        mp_color_chart_dark_optionA_axis2,
+        mp_color_chart_dark_optionA_axis3,
+        mp_color_chart_dark_optionA_axis4,
+        mp_color_chart_dark_optionA_axis5,
+      ],
       gradientMarks: false,
-      comparisonColor: OPTION_A_COMPARISON,
+      comparisonColor: mp_color_chart_dark_optionA_comparison,
       chrome: cloneChrome(DARK_CHROME),
       treatment: OPTION_A_TREATMENT,
     },
@@ -603,20 +750,46 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
   optionB: {
     light: {
       label: 'Sophisticated Multi-Color',
-      series: OPTION_B_SERIES,
-      axis: OPTION_B_AXIS,
+      series: [
+        mp_color_chart_light_optionB_series1,
+        mp_color_chart_light_optionB_series2,
+        mp_color_chart_light_optionB_series3,
+        mp_color_chart_light_optionB_series4,
+        mp_color_chart_light_optionB_series5,
+        mp_color_chart_light_optionB_series6,
+      ],
+      axis: [
+        mp_color_chart_light_optionB_axis1,
+        mp_color_chart_light_optionB_axis2,
+        mp_color_chart_light_optionB_axis3,
+        mp_color_chart_light_optionB_axis4,
+        mp_color_chart_light_optionB_axis5,
+      ],
       gradientMarks: false,
-      comparisonColor: OPTION_B_COMPARISON,
+      comparisonColor: mp_color_chart_light_optionB_comparison,
       chrome: cloneChrome(LIGHT_CHROME),
       treatment: OPTION_B_TREATMENT,
     },
     // PROVISIONAL — light-only review; dark tuning is follow-up
     dark: {
       label: 'Sophisticated Multi-Color',
-      series: OPTION_B_SERIES,
-      axis: OPTION_B_AXIS,
+      series: [
+        mp_color_chart_dark_optionB_series1,
+        mp_color_chart_dark_optionB_series2,
+        mp_color_chart_dark_optionB_series3,
+        mp_color_chart_dark_optionB_series4,
+        mp_color_chart_dark_optionB_series5,
+        mp_color_chart_dark_optionB_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_optionB_axis1,
+        mp_color_chart_dark_optionB_axis2,
+        mp_color_chart_dark_optionB_axis3,
+        mp_color_chart_dark_optionB_axis4,
+        mp_color_chart_dark_optionB_axis5,
+      ],
       gradientMarks: false,
-      comparisonColor: OPTION_B_COMPARISON,
+      comparisonColor: mp_color_chart_dark_optionB_comparison,
       chrome: cloneChrome(DARK_CHROME),
       treatment: OPTION_B_TREATMENT,
     },
@@ -624,20 +797,46 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
   optionC: {
     light: {
       label: 'Blue Teal Green',
-      series: OPTION_C_SERIES,
-      axis: OPTION_C_AXIS,
+      series: [
+        mp_color_chart_light_optionC_series1,
+        mp_color_chart_light_optionC_series2,
+        mp_color_chart_light_optionC_series3,
+        mp_color_chart_light_optionC_series4,
+        mp_color_chart_light_optionC_series5,
+        mp_color_chart_light_optionC_series6,
+      ],
+      axis: [
+        mp_color_chart_light_optionC_axis1,
+        mp_color_chart_light_optionC_axis2,
+        mp_color_chart_light_optionC_axis3,
+        mp_color_chart_light_optionC_axis4,
+        mp_color_chart_light_optionC_axis5,
+      ],
       gradientMarks: false,
-      comparisonColor: OPTION_C_COMPARISON,
+      comparisonColor: mp_color_chart_light_optionC_comparison,
       chrome: cloneChrome(LIGHT_CHROME, { grid: 'rgba(26, 24, 20, 0.07)' }),
       treatment: OPTION_C_TREATMENT,
     },
     // PROVISIONAL — light-only review; dark tuning is follow-up
     dark: {
       label: 'Blue Teal Green',
-      series: OPTION_C_SERIES,
-      axis: OPTION_C_AXIS,
+      series: [
+        mp_color_chart_dark_optionC_series1,
+        mp_color_chart_dark_optionC_series2,
+        mp_color_chart_dark_optionC_series3,
+        mp_color_chart_dark_optionC_series4,
+        mp_color_chart_dark_optionC_series5,
+        mp_color_chart_dark_optionC_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_optionC_axis1,
+        mp_color_chart_dark_optionC_axis2,
+        mp_color_chart_dark_optionC_axis3,
+        mp_color_chart_dark_optionC_axis4,
+        mp_color_chart_dark_optionC_axis5,
+      ],
       gradientMarks: false,
-      comparisonColor: OPTION_C_COMPARISON,
+      comparisonColor: mp_color_chart_dark_optionC_comparison,
       chrome: cloneChrome(DARK_CHROME),
       treatment: OPTION_C_TREATMENT,
     },
@@ -645,20 +844,46 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
   optionD: {
     light: {
       label: 'Modern Gradient',
-      series: OPTION_D_SERIES,
-      axis: OPTION_D_AXIS,
+      series: [
+        mp_color_chart_light_optionD_series1,
+        mp_color_chart_light_optionD_series2,
+        mp_color_chart_light_optionD_series3,
+        mp_color_chart_light_optionD_series4,
+        mp_color_chart_light_optionD_series5,
+        mp_color_chart_light_optionD_series6,
+      ],
+      axis: [
+        mp_color_chart_light_optionD_axis1,
+        mp_color_chart_light_optionD_axis2,
+        mp_color_chart_light_optionD_axis3,
+        mp_color_chart_light_optionD_axis4,
+        mp_color_chart_light_optionD_axis5,
+      ],
       gradientMarks: false,
-      comparisonColor: OPTION_D_COMPARISON,
+      comparisonColor: mp_color_chart_light_optionD_comparison,
       chrome: cloneChrome(LIGHT_CHROME),
       treatment: OPTION_D_TREATMENT,
     },
     // PROVISIONAL — light-only review; dark tuning is follow-up
     dark: {
       label: 'Modern Gradient',
-      series: OPTION_D_SERIES,
-      axis: OPTION_D_AXIS,
+      series: [
+        mp_color_chart_dark_optionD_series1,
+        mp_color_chart_dark_optionD_series2,
+        mp_color_chart_dark_optionD_series3,
+        mp_color_chart_dark_optionD_series4,
+        mp_color_chart_dark_optionD_series5,
+        mp_color_chart_dark_optionD_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_optionD_axis1,
+        mp_color_chart_dark_optionD_axis2,
+        mp_color_chart_dark_optionD_axis3,
+        mp_color_chart_dark_optionD_axis4,
+        mp_color_chart_dark_optionD_axis5,
+      ],
       gradientMarks: false,
-      comparisonColor: OPTION_D_COMPARISON,
+      comparisonColor: mp_color_chart_dark_optionD_comparison,
       chrome: cloneChrome(DARK_CHROME),
       treatment: OPTION_D_TREATMENT,
     },
