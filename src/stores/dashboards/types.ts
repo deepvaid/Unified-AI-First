@@ -121,6 +121,10 @@ export type DashboardMetricId =
   | 'marketing_journeys_in_flight'
   | 'design_palette'
   | 'commerce_channel_weekly'
+  | 'analytics_sessions_by_device'
+  | 'analytics_sessions_by_country'
+  | 'commerce_customers_over_time'
+  | 'commerce_sales_by_product'
 
 export interface DashboardLayout {
   x: number

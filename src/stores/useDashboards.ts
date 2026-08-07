@@ -43,7 +43,7 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v25'
+const STORAGE_KEY = 'mp.dashboard-hub.v26'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -225,17 +225,20 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
       makeWidget('Average Order Value', 'commerce_aov', 'kpi', createLayout(6, 0, 3, 4)),
       makeWidget('Open Rate', 'marketing_open_rate', 'kpi', createLayout(9, 0, 3, 4)),
       { ...makeWidget('Revenue over time', 'commerce_revenue_over_time', 'timeseries', createLayout(0, 4, 8, 8)), chartVariant: 'area', subtitle: 'Showing daily revenue for the selected period' },
-      { ...makeWidget('Deliverability', 'marketing_deliverability_score', 'gauge', createLayout(8, 4, 4, 8)), subtitle: 'Sender score · rolling 30 days' },
+      { ...makeWidget('Sessions by device type', 'analytics_sessions_by_device', 'donut', createLayout(8, 4, 4, 8)), subtitle: 'Storefront sessions · vs previous period' },
       { ...makeWidget('Revenue by channel', 'demo_channel_trend', 'timeseries', createLayout(0, 12, 7, 8)), chartVariant: 'line' },
       makeWidget('Traffic mix', 'demo_channel_mix', 'pie', createLayout(7, 12, 5, 8)),
+      { ...makeWidget('Customers over time', 'commerce_customers_over_time', 'timeseries', createLayout(0, 20, 7, 8)), chartVariant: 'stacked-area', subtitle: 'First-time vs recurring buyers per day' },
+      { ...makeWidget('Sales by product name', 'commerce_sales_by_product', 'stacked_bar', createLayout(7, 20, 5, 8)), subtitle: 'Revenue share · top products' },
       // h=9: the ring donut needs the extra row for its 5 legend rows + footer.
-      { ...makeWidget('Email volume', 'marketing_email_volume', 'bar', createLayout(0, 20, 7, 9)), subtitle: 'Sent vs delivered · last 8 sends' },
-      { ...makeWidget('Contacts by domain', 'contacts_by_domain', 'donut', createLayout(7, 20, 5, 9)), subtitle: 'All contacts · top 5 domains' },
+      { ...makeWidget('Email volume', 'marketing_email_volume', 'bar', createLayout(0, 28, 7, 9)), subtitle: 'Sent vs delivered · last 8 sends' },
+      { ...makeWidget('Contacts by domain', 'contacts_by_domain', 'donut', createLayout(7, 28, 5, 9)), subtitle: 'All contacts · top 5 domains' },
+      { ...makeWidget('Sessions by country', 'analytics_sessions_by_country', 'bar', createLayout(0, 37, 7, 7)), chartVariant: 'stacked-column', subtitle: 'Weekly sessions · top 4 markets' },
+      { ...makeWidget('Recent orders', 'commerce_recent_orders', 'table', createLayout(7, 37, 5, 7)), subtitle: 'Latest 6 orders across channels' },
       // dimension 'table' opts Top campaigns into the real table + status chips
       // (without it the campaign/revenue columns render as the meter list).
-      { ...makeWidget('Top campaigns', 'marketing_top_campaigns', 'table', createLayout(0, 29, 7, 7)), dimension: 'table', subtitle: 'By revenue · sent campaigns' },
-      { ...makeWidget('Recent orders', 'commerce_recent_orders', 'table', createLayout(7, 29, 5, 7)), subtitle: 'Latest 6 orders across channels' },
-      { ...makeWidget('Live activity', 'marketing_live_activity', 'activity', createLayout(0, 36, 12, 8)), subtitle: 'Realtime events across your account' },
+      { ...makeWidget('Top campaigns', 'marketing_top_campaigns', 'table', createLayout(0, 44, 7, 7)), dimension: 'table', subtitle: 'By revenue · sent campaigns' },
+      { ...makeWidget('Live activity', 'marketing_live_activity', 'activity', createLayout(7, 44, 5, 7)), subtitle: 'Realtime events across your account' },
     )
   } else {
     widgets.push(

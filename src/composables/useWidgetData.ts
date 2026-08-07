@@ -41,6 +41,13 @@ function formatNumber(value: number, unit: DashboardMetricUnit): string {
   }).format(value)
 }
 
+/** Compact count for donut centres and their legends: 40K · 24.9K · 812. */
+function formatCompactCount(value: number): string {
+  if (value < 1000) return `${Math.round(value)}`
+  const thousands = value / 1000
+  return `${thousands < 10 ? thousands.toFixed(1).replace(/\.0$/, '') : Math.round(thousands)}K`
+}
+
 interface DateWindow {
   currentStart: Date
   currentEnd: Date
@@ -1086,6 +1093,71 @@ export function useWidgetData(
           centerCaption: 'returning',
         }
       }
+      case 'commerce_customers_over_time': {
+        // Buyers per day split by whether they had bought before. The mock
+        // storefront books ~1 order/day, which would plot as a 0/1/2 staircase —
+        // so the per-day *shape* comes from real daily revenue (the same
+        // deterministic series Revenue over time draws) converted to a buyer
+        // count, with the recurring share ramping across the window the way a
+        // maturing store's does. Same window ⇒ same chart, no randomness.
+        const orderDate = (order: (typeof commerce.orders)[number]) => new Date(order.date ?? '')
+        const { cur } = bucketDaily(commerce.orders, orderDate, (order) => parseFloat(order.total), dateWindow)
+        const REVENUE_PER_CUSTOMER = 24
+        const firstTime: number[] = []
+        const recurring: number[] = []
+        cur.forEach((revenue, index) => {
+          const customers = Math.max(4, Math.round(revenue / REVENUE_PER_CUSTOMER))
+          const recurringShare = 0.3 + 0.14 * (index / Math.max(1, cur.length - 1))
+          const repeat = Math.round(customers * recurringShare)
+          recurring.push(repeat)
+          firstTime.push(customers - repeat)
+        })
+        return {
+          kind: 'series',
+          unit: 'count',
+          labels: windowPointLabels(dateWindow),
+          // Stack order = series order: first-time buyers sit on the baseline.
+          series: [
+            { name: 'First time', data: firstTime },
+            { name: 'Recurring', data: recurring },
+          ],
+        }
+      }
+      case 'commerce_sales_by_product': {
+        const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
+        const revenue = ranges.current.reduce((sum, order) => sum + parseFloat(order.total), 0)
+        // TODO(mock): fixed product mix. The generated line items cycle evenly
+        // through 40 SKUs, so a real top-5 tally would leave "Other" at ~80% of
+        // the bar; the shares below keep the window's real revenue total.
+        const MIX = [
+          { name: 'Nike Air Max 270', share: 0.28 },
+          { name: 'Sony WH-1000XM5', share: 0.21 },
+          { name: 'Hydro Flask 32oz', share: 0.16 },
+          { name: 'YETI Rambler 20oz', share: 0.12 },
+          { name: 'Kindle Paperwhite', share: 0.09 },
+          { name: 'Other products', share: 0.14 },
+        ]
+        const rows = MIX.map((entry) => ({ name: entry.name, value: Math.round(revenue * entry.share) }))
+        const grandTotal = Math.max(1, rows.reduce((sum, row) => sum + row.value, 0))
+        return {
+          kind: 'stacked_bar',
+          variant: 'bar',
+          buckets: [{
+            label: 'Selected period',
+            segments: rows.map((row) => ({
+              key: row.name,
+              value: row.value,
+              formattedValue: formatNumber(row.value, 'currency'),
+            })),
+          }],
+          legend: rows.map((row) => ({
+            key: row.name,
+            label: row.name,
+            total: formatNumber(row.value, 'currency'),
+            pct: Math.round((row.value / grandTotal) * 100),
+          })),
+        }
+      }
       case 'commerce_revenue_goal': {
         const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
         const revenue = ranges.current.reduce((sum, order) => sum + parseFloat(order.total), 0)
@@ -1310,6 +1382,58 @@ export function useWidgetData(
             label: series.label,
             total: formatNumber(seriesTotals[index] ?? 0, 'currency'),
             pct: grandTotal ? Math.round(((seriesTotals[index] ?? 0) / grandTotal) * 100) : 0,
+          })),
+        }
+      }
+      case 'analytics_sessions_by_device': {
+        // TODO(mock): closed-form until a traffic source exists. Deterministic
+        // by construction — the only input is the window length.
+        const total = 1340 * days
+        const DEVICES = [
+          { label: 'Mobile', share: 0.62, delta: 5.2 },
+          { label: 'Desktop', share: 0.29, delta: -2.1 },
+          { label: 'Tablet', share: 0.06, delta: 1.4 },
+          { label: 'Other', share: 0.03, delta: 8.3 },
+        ]
+        return {
+          kind: 'donut',
+          variant: 'ring',
+          segments: DEVICES.map((device) => {
+            const value = Math.round(total * device.share)
+            return {
+              label: device.label,
+              value,
+              formattedValue: formatCompactCount(value),
+              delta: `${device.delta >= 0 ? '↗' : '↘'} ${Math.abs(device.delta).toFixed(1)}%`,
+              deltaPositive: device.delta >= 0,
+            }
+          }),
+          centerValue: formatCompactCount(total),
+          centerCaption: 'sessions',
+        }
+      }
+      case 'analytics_sessions_by_country': {
+        // TODO(mock): closed-form until a traffic source exists — a fixed sine
+        // per market so the stack has real shape and never moves between runs.
+        const WEEKS = 6
+        const MARKETS = [
+          { name: 'United States', base: 4200, amp: 620, phase: 0 },
+          { name: 'Canada', base: 2400, amp: 380, phase: 1.4 },
+          { name: 'United Kingdom', base: 1700, amp: 300, phase: 2.6 },
+          { name: 'France', base: 900, amp: 210, phase: 3.9 },
+        ]
+        const labels = Array.from({ length: WEEKS }, (_, index) =>
+          shortDate(new Date(dateWindow.currentEnd.getTime() - (WEEKS - 1 - index) * 7 * MS_PER_DAY)),
+        )
+        return {
+          kind: 'series',
+          unit: 'count',
+          labels,
+          series: MARKETS.map((market) => ({
+            name: market.name,
+            data: labels.map((_, index) =>
+              Math.round(market.base + market.amp * Math.sin((index + market.phase) * 0.7) + index * 55),
+            ),
           })),
         }
       }

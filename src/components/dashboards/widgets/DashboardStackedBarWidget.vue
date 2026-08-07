@@ -234,13 +234,15 @@ const barAriaLabel = computed(() =>
 /* --- 'bar' variant --- */
 .stackbar-widget--single {
   justify-content: center;
-  gap: 22px;
+  gap: 24px;
 }
 
+/* 180px tracks put two pairs per row in a half-width card, which both fits the
+   long product names and gives the block enough height to sit in the card. */
 .stackbar-widget__pairs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 16px 20px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 22px 24px;
 }
 
 .stackbar-widget__pair {
@@ -266,7 +268,7 @@ const barAriaLabel = computed(() =>
 }
 
 .stackbar-widget__pair-value {
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 650;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -278,7 +280,7 @@ const barAriaLabel = computed(() =>
   display: flex;
   gap: 3px;
   width: 100%;
-  height: 22px;
+  height: 26px;
   flex: none;
 }
 
