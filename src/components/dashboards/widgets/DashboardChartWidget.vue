@@ -640,10 +640,10 @@ const chartOptions = computed<ApexOptions>(() => {
 }
 
 .dashboard-chart-widget :deep(.mp-chart-tip) {
-  background: var(--surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  box-shadow: var(--elevation-modal);
+  background: var(--mp-tip-bg, var(--surface-primary));
+  border: 1px solid var(--mp-tip-border, var(--border-subtle));
+  border-radius: var(--mp-tip-radius, 8px);
+  box-shadow: var(--mp-tip-shadow, var(--elevation-modal));
   padding: 8px 10px;
   min-width: 140px;
   font-family: Inter, system-ui, sans-serif;
@@ -652,7 +652,7 @@ const chartOptions = computed<ApexOptions>(() => {
 .dashboard-chart-widget :deep(.mp-chart-tip__title) {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--mp-tip-title-color, var(--text-primary));
   margin-bottom: 4px;
 }
 
@@ -672,14 +672,14 @@ const chartOptions = computed<ApexOptions>(() => {
 }
 
 .dashboard-chart-widget :deep(.mp-chart-tip__label) {
-  color: var(--muted);
+  color: var(--mp-tip-muted, var(--muted));
 }
 
 .dashboard-chart-widget :deep(.mp-chart-tip__value) {
   margin-left: auto;
   padding-left: 12px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--mp-tip-text, var(--text-primary));
   font-variant-numeric: tabular-nums;
 }
 </style>

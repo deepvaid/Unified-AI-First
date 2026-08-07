@@ -1,0 +1,98 @@
+/**
+ * Per-theme chart CSS for the chart visual-system exploration (optionA–D).
+ * Loaded via app-styles.ts (never imported directly) so Storybook matches the app.
+ *
+ * Everything here is inert unless `[data-chart]` on <html> (or an ancestor, as on
+ * the /chart-themes compare page) is one of optionA–D:
+ *   - the custom-property blocks only declare variables inside option scopes;
+ *   - the one unscoped rule (`.legend-mouseover-inactive`) falls back to Apex's
+ *     own literal value, so legacy themes render exactly as before.
+ *
+ * The `--mp-tip-*` set is consumed by the scoped `.mp-chart-tip` skins in
+ * DashboardChartWidget / DashboardPieWidget / DashboardMetricExplorerWidget,
+ * each of which passes today's literal value as the var() fallback.
+ *
+ * Values track the "Treatment spec" tooltip lines in
+ * docs/chart-exploration/notes/option-{a,b,c,d}.md; `--mp-chart-dim-opacity`
+ * mirrors `treatment.states.dimmedOpacity` in src/plugins/chartPalette.ts.
+ * Light-mode review values — dark tuning is a follow-up, same as the themes.
+ */
+
+/* A — Restrained Blue: minimal light tooltip, hairline border, baseline anatomy. */
+[data-chart='optionA'] {
+  --mp-tip-bg: #ffffff;
+  --mp-tip-border: rgba(26, 24, 20, 0.1);
+  --mp-tip-text: #1a1814;
+  --mp-tip-muted: rgba(26, 24, 20, 0.55);
+  --mp-tip-radius: 8px;
+  --mp-tip-shadow: var(--elevation-modal, 0 8px 24px rgba(26, 24, 20, 0.12));
+  --mp-tip-title-color: rgba(26, 24, 20, 0.65);
+  --mp-chart-dim-opacity: 0.35;
+}
+
+/* B — Sophisticated Multi-Color: dark inverse tooltip, the system's signature move. */
+[data-chart='optionB'] {
+  --mp-tip-bg: #1d2733;
+  --mp-tip-border: rgba(255, 255, 255, 0.08);
+  --mp-tip-text: #f4f6f8;
+  --mp-tip-muted: rgba(244, 246, 248, 0.62);
+  --mp-tip-radius: 10px;
+  --mp-tip-shadow: 0 10px 28px rgba(13, 18, 25, 0.35);
+  --mp-tip-title-color: rgba(244, 246, 248, 0.72);
+  --mp-chart-dim-opacity: 0.25;
+}
+
+/* C — Blue · Teal · Green: light tooltip with a family-tinted border + title. */
+[data-chart='optionC'] {
+  --mp-tip-bg: #ffffff;
+  --mp-tip-border: rgba(0, 115, 171, 0.2);
+  --mp-tip-text: #14202b;
+  --mp-tip-muted: rgba(20, 32, 43, 0.55);
+  --mp-tip-radius: 10px;
+  --mp-tip-shadow: 0 8px 24px rgba(11, 61, 92, 0.14);
+  --mp-tip-title-color: #00618f;
+  --mp-chart-dim-opacity: 0.3;
+}
+
+/* D — Modern Gradient: deep indigo tooltip, shared anatomy with B. */
+[data-chart='optionD'] {
+  --mp-tip-bg: #17133a;
+  --mp-tip-border: rgba(154, 142, 249, 0.28);
+  --mp-tip-text: #eef0ff;
+  --mp-tip-muted: rgba(238, 240, 255, 0.62);
+  --mp-tip-radius: 12px;
+  --mp-tip-shadow: 0 12px 32px rgba(23, 19, 58, 0.38);
+  --mp-tip-title-color: rgba(238, 240, 255, 0.75);
+  --mp-chart-dim-opacity: 0.2;
+}
+
+/* Legend-hover series dimming.
+   Apex tags the non-hovered series <g> with `legend-mouseover-inactive` and dims
+   its *children* to `opacity: .2` from the stylesheet it injects at runtime (the
+   dist apexcharts.css is never imported here — the same rules ship inside
+   apexcharts.js). We re-point those exact child selectors at the per-option token
+   instead of also setting opacity on the group, because stacking both would
+   multiply (0.2 × 0.35). `!important` is required to beat Apex's runtime <style>,
+   and the fallback is Apex's own literal `.2` so legacy themes are untouched. */
+rect.legend-mouseover-inactive,
+.legend-mouseover-inactive rect,
+.legend-mouseover-inactive path,
+.legend-mouseover-inactive circle,
+.legend-mouseover-inactive line,
+.legend-mouseover-inactive text.apexcharts-yaxis-title-text,
+.legend-mouseover-inactive text.apexcharts-yaxis-label {
+  opacity: var(--mp-chart-dim-opacity, 0.2) !important;
+}
+
+/* Apex's own transition only exists while the class is on the element, so the
+   dim animates out but snaps back in. Putting it on the marks themselves makes
+   both directions ease — option scopes only, so legacy hover stays as-is. */
+:is(
+    [data-chart='optionA'],
+    [data-chart='optionB'],
+    [data-chart='optionC'],
+    [data-chart='optionD']
+  )
+  .apexcharts-series :is(path, rect, circle, line) {
+  transition: opacity 160ms ease;
+}
