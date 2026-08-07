@@ -18,8 +18,8 @@
 | 7 | Screenshots + Figma prep | ✅ done | a344532 + (this) | 55-shot one-session library, deck/index.html, Figma file olj3jdXnCXlKUTcS2di7LD pages 00–06 (webp→PNG refill lesson in figma-file.md) |
 | 8 | Executive comparison | ✅ done | (same) | Page 06 + deck §06: 4 folds, same-chart row, specimen grid, choose cards — verified via get_screenshot |
 | 9 | Fable final critique | ✅ done | (P10 commit) | Verdicts below; 3 fixes ordered (D donut shadow, specimen floating labels, vsToday copy) |
-| 10 | Opus polish | ◐ in progress | — | — |
-| 11 | Final Fable review + handoff | ☐ pending | — | — |
+| 10 | Opus polish | ✅ done | f186c9e + ae59f65 | 3 critique fixes + token freeze (32/32 round-trip, validator green, baseline DOM-verified) |
+| 11 | Final Fable review + handoff | ✅ done | (this commit) | All 7 brief questions answered YES; see below |
 
 Statuses: ☐ pending · ◐ in progress · ✅ done · ⚠ blocked (say why in Remaining tasks)
 
@@ -202,11 +202,37 @@ shots, rebuild deck, swap Figma hashes.
   `@playwright/test` path in the repo is dead.
 - Dev server: launch.json "Main App" → :5173 (autoPort — capture script asserts reachability).
 
-## Remaining tasks
+## P11 — Final review verdict (2026-08-07)
 
-- [ ] P0: baseline captures + audit commit
-- [ ] P1–P11 per Phase status table above
-- Follow-ups (explicitly out of scope, for after direction selection):
-  - [ ] Tune dark-mode palettes for the winning option
-  - [ ] Fix `DashboardKpiWidget.vue:48` dark-mode array-identity bug (one-liner, separate PR)
-  - [ ] Merge `feature/chart-exploration` → master (user's call; prod alias link for stakeholders)
+The brief's seven questions, answered against evidence:
+1. **Presentation-ready?** YES — verified at widget/fold/specimen scale + live interactions.
+2. **Meaningfully different?** YES — hue strategy, fill philosophy, grid, tooltip family and
+   legend anatomy all differ; the specimen grid proves it at a glance; A-vs-baseline made
+   honest via "What changed vs today" lines.
+3. **Credible references?** YES — 25 cited refs incl. anti-references + round-3 heritage.
+4. **Embarrassing/unfinished?** NO — D halo + specimen collisions fixed; dark mode is a
+   documented provisional (user decision), not an accident.
+5. **Objective comparison?** YES — baseline byte-identical (DOM-verified after every
+   commit incl. token freeze), one-session captures, identical specimen fixtures.
+6. **Technically achievable?** YES — already running in this codebase on ApexCharts +
+   the token pipeline; ApexCharts has a Vue 2 binding for the production app.
+7. **Enough quality to choose?** YES — each option ships philosophy, references,
+   validated accessibility, trade-offs, and honest deltas.
+
+## Deliverables (final)
+
+- **Figma**: https://www.figma.com/design/olj3jdXnCXlKUTcS2di7LD (pages Cover, 00–06)
+- **Live** (dev): `/accounts/2000290/dashboard?chart=optionA|optionB|optionC|optionD` + `/chart-exploration`
+- **Deck**: `docs/chart-exploration/deck/index.html` (self-contained)
+- **Branch**: `feature/chart-exploration` (local; 12 commits; master untouched)
+- Tokens frozen in `tokens.json` (`color.chart.{light,dark}.option*`)
+
+## Remaining tasks (follow-ups, post-direction-selection)
+
+- [ ] Tune dark-mode palettes + tooltip skins for the winning option (dark entries are
+      provisional light copies; treatment.posNeg/comparison read light tokens — split per
+      mode when tuning)
+- [ ] Fix `DashboardKpiWidget.vue:48` dark-mode array-identity bug (one-liner, separate PR)
+- [ ] Merge `feature/chart-exploration` → master + push (user's call; prod alias gives
+      shareable stakeholder links)
+- [ ] If Option D wins: revisit floating labels on grouped bars at narrow widget sizes
