@@ -138,11 +138,16 @@ function panelWidgets() {
       widget('Open Rate', 'marketing_open_rate', 'kpi', 3, 4),
     ],
     area: widget('Revenue over time', 'commerce_revenue_over_time', 'timeseries', 8, 8, 'area'),
-    gauge: widget('Deliverability', 'marketing_deliverability_score', 'gauge', 4, 8),
+    deviceDonut: widget('Sessions by device type', 'analytics_sessions_by_device', 'donut', 4, 8),
     line: widget('Revenue by channel', 'demo_channel_trend', 'timeseries', 7, 8, 'line'),
     pie: widget('Traffic mix', 'demo_channel_mix', 'pie', 5, 8),
+    customers: widget('Customers over time', 'commerce_customers_over_time', 'timeseries', 7, 8, 'stacked-area'),
+    salesByProduct: widget('Sales by product name', 'commerce_sales_by_product', 'stacked_bar', 5, 8),
     bar: widget('Email volume', 'marketing_email_volume', 'bar', 7, 9),
     donut: widget('Contacts by domain', 'contacts_by_domain', 'donut', 5, 9),
+    // Full width here: on the real dashboard this pairs with Recent orders, and
+    // tables carry no theme so the compare page leaves them out.
+    country: widget('Sessions by country', 'analytics_sessions_by_country', 'bar', 12, 7, 'stacked-column'),
   }
 }
 
@@ -298,7 +303,7 @@ const tokenStrips = OPTIONS.map((option) => {
               <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="panel.widgets.area" :filters="FILTERS" :show-actions="false" />
             </div>
             <div class="cx-cell cx-cell--narrow">
-              <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="panel.widgets.gauge" :filters="FILTERS" :show-actions="false" />
+              <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="panel.widgets.deviceDonut" :filters="FILTERS" :show-actions="false" />
             </div>
 
             <div class="cx-cell cx-cell--main">
@@ -308,11 +313,22 @@ const tokenStrips = OPTIONS.map((option) => {
               <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="panel.widgets.pie" :filters="FILTERS" :show-actions="false" />
             </div>
 
+            <div class="cx-cell cx-cell--main">
+              <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="panel.widgets.customers" :filters="FILTERS" :show-actions="false" />
+            </div>
+            <div class="cx-cell cx-cell--side">
+              <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="panel.widgets.salesByProduct" :filters="FILTERS" :show-actions="false" />
+            </div>
+
             <div class="cx-cell cx-cell--main cx-cell--tall">
               <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="panel.widgets.bar" :filters="FILTERS" :show-actions="false" />
             </div>
             <div class="cx-cell cx-cell--side cx-cell--tall">
               <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="panel.widgets.donut" :filters="FILTERS" :show-actions="false" />
+            </div>
+
+            <div class="cx-cell cx-cell--full">
+              <DashboardWidgetCard :account-id="ACCOUNT_ID" :widget="panel.widgets.country" :filters="FILTERS" :show-actions="false" />
             </div>
           </PaletteScope>
         </section>
@@ -590,6 +606,12 @@ const tokenStrips = OPTIONS.map((option) => {
 }
 .cx-cell--tall {
   height: 540px;
+}
+/* h=7 on the real grid — Sessions by country runs full width here because its
+   dashboard partner (Recent orders) is an unthemed table. */
+.cx-cell--full {
+  grid-column: span 12;
+  height: 432px;
 }
 
 /* Section 2 — specimen grid */
