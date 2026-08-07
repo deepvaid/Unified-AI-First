@@ -131,7 +131,11 @@ const isDistributedBar = computed(
 
 const chartAriaLabel = computed(() => {
   const { labels, series, unit } = props.data
-  const kind = props.widgetType === 'bar'
+  const kind = props.chartVariant === 'stacked-column'
+    ? 'Stacked column chart'
+    : props.chartVariant === 'stacked-area'
+    ? 'Stacked area chart'
+    : props.widgetType === 'bar'
     ? 'Bar chart'
     : props.chartVariant === 'line' ? 'Line chart' : 'Area chart'
   if (!series.length || !labels.length) return kind
@@ -151,7 +155,15 @@ const isHorizontalBar = computed(
   () => props.widgetType === 'bar' && props.chartVariant === 'horizontal',
 )
 
+// Stacked variants are the only ones that turn on Apex's `chart.stacked`; every
+// other variant keeps the exact options it had before stacking existed.
+const isStacked = computed(
+  () => props.chartVariant === 'stacked-area' || props.chartVariant === 'stacked-column',
+)
+
 const apexChartType = computed<'area' | 'line' | 'bar'>(() => {
+  if (props.chartVariant === 'stacked-column') return 'bar'
+  if (props.chartVariant === 'stacked-area') return 'area'
   if (props.widgetType === 'bar') return 'bar'
   if (props.chartVariant === 'line') return 'line'
   return 'area'
@@ -224,7 +236,8 @@ const chartOptions = computed<ApexOptions>(() => {
   const isTimeseries = props.widgetType === 'timeseries'
   const isVerticalBar = isBar && !isHorizontalBar.value
   const singleOrDistributedBar = isDistributedBar.value || props.data.series.length === 1
-  const floatingBarLabels = (t ? t.bar.floatingLabels : gm) && isVerticalBar && props.data.labels.length <= 8
+  // Stacked columns would get one floating label per segment — suppress them.
+  const floatingBarLabels = (t ? t.bar.floatingLabels : gm) && isVerticalBar && props.data.labels.length <= 8 && !isStacked.value
   const showLegend = props.data.series.length > 1
   const divergingBars = !!t && isBar && hasNegativeValues.value
 
@@ -323,6 +336,25 @@ const chartOptions = computed<ApexOptions>(() => {
     return { type: 'solid' }
   }
 
+  // Stacked marks read as bands/segments, not as translucent washes: the usual
+  // fade-to-0.02 area fill erases the lower band entirely once something is
+  // stacked on top of it. One recipe for every theme (legacy included, since
+  // the baseline seeds the stacked widgets too), with each option's
+  // solid-vs-gradient grammar surviving in the bottom stop only.
+  const stackedFill = (): ApexOptions['fill'] => {
+    if (apexChartType.value !== 'area') return { type: 'solid' }
+    return {
+      type: 'gradient',
+      gradient: {
+        type: 'vertical',
+        shadeIntensity: 0,
+        opacityFrom: 0.95,
+        opacityTo: t && t.area.fill === 'solid' ? 0.95 : 0.72,
+        stops: [0, 100],
+      },
+    }
+  }
+
   return {
     ...base,
     colors: resolvedSeriesColors.value,
@@ -331,6 +363,7 @@ const chartOptions = computed<ApexOptions>(() => {
       sparkline: { enabled: false },
       zoom: { enabled: false },
       redrawOnParentResize: false,
+      ...(isStacked.value ? { stacked: true } : {}),
       ...(t
         // Treatment shadows are the option-D guardrail: 1px blur on the marks, no glow.
         ? (t.effects.dropShadow && isTimeseries
@@ -371,15 +404,19 @@ const chartOptions = computed<ApexOptions>(() => {
       ? {
           curve: t.stroke.curve,
           // Lead series carries the full weight; companions and the previous-period
-          // comparison series step back to companionWidth.
+          // comparison series step back to companionWidth. Stacked bands are
+          // peers — every band keeps the full weight and stays solid, so the
+          // bright edge line reads on top of each filled area.
           width: isTimeseries
-            ? (props.data.series.length > 1
+            ? (isStacked.value
+                ? t.stroke.width
+                : props.data.series.length > 1
                 ? props.data.series.map((series, i) => (
                     series.isComparison || i > 0 ? t.stroke.companionWidth : t.stroke.width
                   ))
                 : t.stroke.width)
             : 0,
-          dashArray: isTimeseries
+          dashArray: isTimeseries && !isStacked.value
             ? props.data.series.map((series, i) => (
                 series.isComparison ? t.comparison.dash : i > 0 ? t.stroke.companionDash : 0
               ))
@@ -411,7 +448,14 @@ const chartOptions = computed<ApexOptions>(() => {
         // Polaris bars use a small 3px end radius; shadcn 6; gradient themes 10.
         borderRadius: t ? t.bar.radius : gm ? 10 : flatMarks.value ? 3 : 6,
         borderRadiusApplication: 'end',
-        columnWidth: t
+        // Without 'last' Apex rounds every segment of a stack; the reference
+        // rounds the top of the column only.
+        ...(isStacked.value ? { borderRadiusWhenStacked: 'last' as const } : {}),
+        // A stack is one column, so it takes the single-series width — the
+        // grouped width would leave almost no gap between buckets.
+        columnWidth: isStacked.value
+          ? (t ? t.bar.columnWidthSingle : '45%')
+          : t
           ? (props.data.series.length > 1 ? t.bar.columnWidthGrouped : t.bar.columnWidthSingle)
           : gm ? '52%' : (props.data.series.length > 1 ? '72%' : '45%'),
         distributed: isDistributedBar.value,
@@ -423,7 +467,9 @@ const chartOptions = computed<ApexOptions>(() => {
           : {}),
       },
     },
-    fill: t
+    fill: isStacked.value
+      ? stackedFill()
+      : t
       ? treatmentFill(t)
       : gm
       ? gradientFill()
@@ -549,8 +595,10 @@ const chartOptions = computed<ApexOptions>(() => {
     // shadcn hides the y-axis scale (values live in the tooltip); the
     // multi-series line view and horizontal bars keep their labels. Polaris
     // (flat) themes show the scale on timeseries too, Shopify-style.
+    // Stacked charts always keep the scale — the cumulative total is the point,
+    // and a stack read without a y-axis is just a texture.
     yaxis: {
-      labels: (props.chartVariant === 'line' || isHorizontalBar.value || (flatMarks.value && props.widgetType === 'timeseries') || (t?.axes.yLabelsOnTimeseries === true && isTimeseries))
+      labels: (isStacked.value || props.chartVariant === 'line' || isHorizontalBar.value || (flatMarks.value && props.widgetType === 'timeseries') || (t?.axes.yLabelsOnTimeseries === true && isTimeseries))
         ? {
             formatter: (value: number) => formatAxisValue(value, props.data.unit),
             style: {

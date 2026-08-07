@@ -18,7 +18,15 @@ export type DashboardWidgetType =
   | 'palette'
   | 'stacked_bar'
   | 'tabs'
-export type DashboardChartVariant = 'horizontal' | 'vertical' | 'area' | 'line'
+export type DashboardChartVariant =
+  | 'horizontal'
+  | 'vertical'
+  | 'area'
+  | 'line'
+  /** Apex `chart.stacked` bands (Customers over time). */
+  | 'stacked-area'
+  /** Apex `chart.stacked` columns, top segment rounded (Sessions by country). */
+  | 'stacked-column'
 export type DashboardDataSource = 'commerce' | 'marketing' | 'analytics' | 'contacts' | 'service' | 'neto' | 'retail' | 'merchandising'
 export type DashboardDatePreset =
   | 'today'
