@@ -232,8 +232,11 @@ const barAriaLabel = computed(() =>
 }
 
 /* --- 'bar' variant --- */
+/* Legend sits directly under the card subtitle and the bar is anchored to the
+   bottom edge (the Shopify composition), so spare card height never opens a
+   void above the values. */
 .stackbar-widget--single {
-  justify-content: center;
+  justify-content: flex-start;
   gap: 24px;
 }
 
@@ -242,7 +245,7 @@ const barAriaLabel = computed(() =>
 .stackbar-widget__pairs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 22px 24px;
+  gap: 26px 24px;
 }
 
 .stackbar-widget__pair {
@@ -282,6 +285,7 @@ const barAriaLabel = computed(() =>
   width: 100%;
   height: 26px;
   flex: none;
+  margin-top: auto;
 }
 
 .stackbar-widget__hsegment {

@@ -52,6 +52,10 @@ const WIDGETS = {
   bar: { metric: 'marketing_email_volume', title: 'Email volume' },
   area: { metric: 'commerce_revenue_over_time', title: 'Revenue over time' },
   donut: { metric: 'demo_channel_mix', title: 'Traffic mix' },
+  customers: { metric: 'commerce_customers_over_time', title: 'Customers over time' },
+  country: { metric: 'analytics_sessions_by_country', title: 'Sessions by country' },
+  products: { metric: 'commerce_sales_by_product', title: 'Sales by product name' },
+  devices: { metric: 'analytics_sessions_by_device', title: 'Sessions by device type' },
 }
 
 // Zero-duration (not `none`) so transitions/animations land on their END state.
@@ -105,7 +109,7 @@ async function newPage(browser, { dsf = 2 } = {}) {
   return { context, page }
 }
 
-async function settle(page, { minCharts = 4, timeout = 20000 } = {}) {
+async function settle(page, { minCharts = 6, timeout = 25000 } = {}) {
   await page.evaluate(() => document.fonts.ready)
   await page.waitForFunction(
     (n) =>

@@ -43,7 +43,7 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v26'
+const STORAGE_KEY = 'mp.dashboard-hub.v27'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -229,7 +229,7 @@ function buildHomeWidgets(account: Account): DashboardWidget[] {
       { ...makeWidget('Revenue by channel', 'demo_channel_trend', 'timeseries', createLayout(0, 12, 7, 8)), chartVariant: 'line' },
       makeWidget('Traffic mix', 'demo_channel_mix', 'pie', createLayout(7, 12, 5, 8)),
       { ...makeWidget('Customers over time', 'commerce_customers_over_time', 'timeseries', createLayout(0, 20, 7, 8)), chartVariant: 'stacked-area', subtitle: 'First-time vs recurring buyers per day' },
-      { ...makeWidget('Sales by product name', 'commerce_sales_by_product', 'stacked_bar', createLayout(7, 20, 5, 8)), subtitle: 'Revenue share · top products' },
+      { ...makeWidget('Sales by product name', 'commerce_sales_by_product', 'stacked_bar', createLayout(7, 20, 5, 6)), subtitle: 'Revenue share · top products' },
       // h=9: the ring donut needs the extra row for its 5 legend rows + footer.
       { ...makeWidget('Email volume', 'marketing_email_volume', 'bar', createLayout(0, 28, 7, 9)), subtitle: 'Sent vs delivered · last 8 sends' },
       { ...makeWidget('Contacts by domain', 'contacts_by_domain', 'donut', createLayout(7, 28, 5, 9)), subtitle: 'All contacts · top 5 domains' },
