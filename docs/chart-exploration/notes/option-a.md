@@ -62,3 +62,8 @@ tooltip: minimal light — white, hairline border, radius 8 (baseline anatomy, t
   the chromatic set, s5–s6 checked for ΔE separation + contrast only.
 - Donut with 6 slices in near-mono blues + slate is the hardest chart — check the
   specimen before sign-off; slice gaps (2px surface stroke) carry the separation.
+
+---
+**P4 note:** the draft anchors above were superseded by the validated palette in
+`scripts/chart-exploration/option-palettes.mjs` — see `p4-validation.md` for the
+final hexes and the archived gate output.

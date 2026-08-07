@@ -60,3 +60,8 @@ tooltip: minimal light with a family-tinted title bar accent (subtle)
 - s2 cyan vs s4 azure (both mid-light, 25° apart) is the second-riskiest pair.
 - Six family slices on the donut is the stress test (same as A) — 2px slice gaps
   + legend values carry it.
+
+---
+**P4 note:** the draft anchors above were superseded by the validated palette in
+`scripts/chart-exploration/option-palettes.mjs` — see `p4-validation.md` for the
+final hexes and the archived gate output.

@@ -70,3 +70,8 @@ tooltip: DARK inverse (shared anatomy with B, deeper surface) — premium signal
   specimen, drop floating labels first (they're one boolean).
 - Donut gradient arcs must keep 2px surface strokes or adjacent gradient slices
   smear together.
+
+---
+**P4 note:** the draft anchors above were superseded by the validated palette in
+`scripts/chart-exploration/option-palettes.mjs` — see `p4-validation.md` for the
+final hexes and the archived gate output.

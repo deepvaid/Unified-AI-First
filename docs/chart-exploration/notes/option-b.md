@@ -59,3 +59,8 @@ tooltip: DARK inverse — near-black surface, per-series dot rows, white values
 - KPI sparklines: all four KPI cards use s1 — B's multi-hue identity shows in
   multi-series charts, not in the KPI row (color follows the entity, and each KPI
   card is a single-series surface — cycling hues across cards would be decoration).
+
+---
+**P4 note:** the draft anchors above were superseded by the validated palette in
+`scripts/chart-exploration/option-palettes.mjs` — see `p4-validation.md` for the
+final hexes and the archived gate output.

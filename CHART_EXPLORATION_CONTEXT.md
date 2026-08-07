@@ -12,7 +12,7 @@
 | 1 | Deep visual research | ✅ done | (P1 commit) | 25 refs (Mobbin, 11 queries) + 8 pattern takeaways + 4 direction seeds |
 | 2 | Four mood boards / directions | ✅ done | (P2 commit) | copy.json + notes/option-{a..d}.md: palette logic, treatment specs, mood-board refs |
 | 3 | Fable design review gate | ✅ done | (P2 commit) | All four pass differentiation/philosophy checks; risk list handed to P4 validator |
-| 4 | Color systems + validator | ☐ pending | — | — |
+| 4 | Color systems + validator | ✅ done | (P4 commit) | All 4 palettes pass hard gates after 5 tuning rounds; QA record in notes/p4-validation.md; hex source = scripts/chart-exploration/option-palettes.mjs |
 | 5 | Implementation (Opus, 7 commits) | ☐ pending | — | — |
 | 6 | Interactions | ☐ pending | — | — |
 | 7 | Screenshots + Figma prep | ☐ pending | — | — |
@@ -131,6 +131,11 @@ in `src/design-tokens/tokens.json` → `npm run tokens:build`. Iterate inline in
 Validator: `node scripts/chart-exploration/validate-palettes.mjs` (P4).
 
 ## Design decisions
+
+- 2026-08-07 (P4) — Validated final palettes live in `scripts/chart-exploration/option-palettes.mjs`
+  (P5 copies to chartPalette.ts; token freeze later). Gate policies: muted slate slots
+  exempt from chroma/band only; positive-vs-series ΔE 8–15 = WARN legal via icon+label
+  pairing; light-slot sub-3:1 contrast = relief via legends/tooltips (dataviz method).
 
 - 2026-08-07 — Light-only palettes; dark = type-satisfying copies with DARK_CHROME (user).
 - 2026-08-07 — Autonomous end-to-end; new Figma file (user).
