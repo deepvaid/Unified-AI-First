@@ -132,6 +132,26 @@ Validator: `node scripts/chart-exploration/validate-palettes.mjs` (P4).
 
 ## Design decisions
 
+- 2026-08-07 (P13, **stakeholder direction**) — "instead of deliverability add these" +
+  "add these widgets in all options". The **Deliverability gauge is removed** from the
+  Overview seed and replaced by four Shopify-analytics-style widgets, seeded for the
+  BASELINE and all four options (user chose "same dashboard everywhere" so the
+  comparison stays apples-to-apples):
+  **Sessions by device type** (ring donut, center total, legend with values + deltas) ·
+  **Customers over time** (2-series stacked area) · **Sessions by country** (4-series
+  stacked columns) · **Sales by product name** (segmented horizontal bar + value legend).
+  New capability added to the chart system: `DashboardChartVariant` gains
+  `'stacked-area' | 'stacked-column'` (Apex `chart.stacked` + `borderRadiusWhenStacked:
+  'last'` so only the stack top rounds; floating labels suppressed when stacked; area
+  fills go near-solid so the lower band stays visible). `DtLegendRow` gains an optional
+  delta column; `DashboardStackedBarData` gains `variant: 'columns' | 'bar'`.
+  `STORAGE_KEY` → `mp.dashboard-hub.v27` (reshaped seed must replace persisted layouts).
+  Layout: device donut takes Deliverability's slot (8,4,4×8); Customers over time +
+  Sales by product at y=20 (7×8 / 5×6); Sessions by country at y=37 (7×7).
+  `marketing_deliverability_score` metric is KEPT (still used by the marketing dashboards).
+  Mock-data caveats are commented in `useWidgetData.ts` (fixed product mix scaled by real
+  windowed revenue; `REVENUE_PER_CUSTOMER` divisor).
+
 - 2026-08-07 (P12, **stakeholder direction — supersedes research takeaways 1–2 for the
   comparison series only**) — "use multi colour in comparing two periods". The
   previous-period series now takes a **distinct hue per option** instead of a neutral

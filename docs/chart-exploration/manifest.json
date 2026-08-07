@@ -55,6 +55,42 @@
       "route": "/accounts/2000290/dashboard?chart=shopify"
     },
     {
+      "file": "00-current/widget-customers--current--1440--light.png",
+      "shot": "widget-customers",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/widget-country--current--1440--light.png",
+      "shot": "widget-country",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/widget-products--current--1440--light.png",
+      "shot": "widget-products",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/widget-devices--current--1440--light.png",
+      "shot": "widget-devices",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
       "file": "00-current/widget-line-hover--current--1440--light.png",
       "shot": "widget-line-hover",
       "chart": "current",
@@ -129,6 +165,42 @@
     {
       "file": "options/option-a/widget-donut--option-a--1440--light.png",
       "shot": "widget-donut",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-customers--option-a--1440--light.png",
+      "shot": "widget-customers",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-country--option-a--1440--light.png",
+      "shot": "widget-country",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-products--option-a--1440--light.png",
+      "shot": "widget-products",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-devices--option-a--1440--light.png",
+      "shot": "widget-devices",
       "chart": "option-a",
       "width": 1440,
       "mode": "light",
@@ -217,6 +289,42 @@
       "route": "/accounts/2000290/dashboard?chart=optionB"
     },
     {
+      "file": "options/option-b/widget-customers--option-b--1440--light.png",
+      "shot": "widget-customers",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/widget-country--option-b--1440--light.png",
+      "shot": "widget-country",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/widget-products--option-b--1440--light.png",
+      "shot": "widget-products",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/widget-devices--option-b--1440--light.png",
+      "shot": "widget-devices",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
       "file": "options/option-b/widget-line-hover--option-b--1440--light.png",
       "shot": "widget-line-hover",
       "chart": "option-b",
@@ -298,6 +406,42 @@
       "route": "/accounts/2000290/dashboard?chart=optionC"
     },
     {
+      "file": "options/option-c/widget-customers--option-c--1440--light.png",
+      "shot": "widget-customers",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/widget-country--option-c--1440--light.png",
+      "shot": "widget-country",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/widget-products--option-c--1440--light.png",
+      "shot": "widget-products",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/widget-devices--option-c--1440--light.png",
+      "shot": "widget-devices",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
       "file": "options/option-c/widget-line-hover--option-c--1440--light.png",
       "shot": "widget-line-hover",
       "chart": "option-c",
@@ -372,6 +516,42 @@
     {
       "file": "options/option-d/widget-donut--option-d--1440--light.png",
       "shot": "widget-donut",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-customers--option-d--1440--light.png",
+      "shot": "widget-customers",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-country--option-d--1440--light.png",
+      "shot": "widget-country",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-products--option-d--1440--light.png",
+      "shot": "widget-products",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-devices--option-d--1440--light.png",
+      "shot": "widget-devices",
       "chart": "option-d",
       "width": 1440,
       "mode": "light",
@@ -496,7 +676,7 @@
       "route": "/chart-exploration"
     }
   ],
-  "capturedAt": "2026-08-07T11:06:27.987Z",
-  "gitSha": "aa60593",
+  "capturedAt": "2026-08-07T12:10:16.407Z",
+  "gitSha": "81ee627",
   "baseUrl": "http://localhost:5173"
 }

@@ -54,6 +54,7 @@ const optionSection = ([id, slug, num]) => {
   ${img(shot('tokens', slug), 'wide')}
   <h3>Chart examples</h3>
   <div class="row4">${['widget-line', 'widget-area', 'widget-bar', 'widget-donut'].map((w) => img(shot(w, slug))).join('')}</div>
+  <div class="row4">${['widget-customers', 'widget-country', 'widget-products', 'widget-devices'].map((w) => img(shot(w, slug))).join('')}</div>
   <div class="row4">${['widget-line-hover', 'widget-bar-hover'].map((w) => img(shot(w, slug))).join('')}${img(shot('specimen', slug))}</div>
   <h3>Full dashboard</h3>
   ${img(shot('dashboard-fold', slug), 'wide')}
@@ -121,6 +122,7 @@ const html = `<!doctype html>
   <p class="desc">${esc(copy.baseline.summary)}</p>
   ${img(shot('dashboard-fold', 'current'), 'wide')}
   <div class="row4">${['widget-line', 'widget-area', 'widget-bar', 'widget-donut'].map((w) => img(shot(w, 'current'))).join('')}</div>
+  <div class="row4">${['widget-customers', 'widget-country', 'widget-products', 'widget-devices'].map((w) => img(shot(w, 'current'))).join('')}</div>
   <p class="linkline"><a href="../${shot('dashboard-full', 'current') ?? ''}" target="_blank">Open full-page capture ↗</a> ·
      audit: <code>docs/chart-exploration/notes/00-audit.md</code></p>
 </section>
