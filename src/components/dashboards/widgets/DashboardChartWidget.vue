@@ -360,7 +360,23 @@ const chartOptions = computed<ApexOptions>(() => {
   // the baseline seeds the stacked widgets too), with each option's
   // solid-vs-gradient grammar surviving in the bottom stop only.
   const stackedFill = (): ApexOptions['fill'] => {
-    if (apexChartType.value !== 'area') return { type: 'solid' }
+    // Stacked columns emboss per segment, so each band in the stack reads as its
+    // own lit solid rather than one flat column of colour.
+    if (apexChartType.value !== 'area') {
+      if (!t?.effects.gloss) return { type: 'solid' }
+      return {
+        type: 'gradient',
+        gradient: {
+          type: 'vertical',
+          colorStops: resolvedSeriesColors.value.map((c) =>
+            embossStops([
+              { offset: 0, color: tintHex(c, 0.18), opacity: 1 },
+              { offset: 100, color: c, opacity: 1 },
+            ]),
+          ),
+        },
+      }
+    }
     return {
       type: 'gradient',
       gradient: {
