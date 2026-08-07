@@ -13,8 +13,8 @@
 | 2 | Four mood boards / directions | ✅ done | (P2 commit) | copy.json + notes/option-{a..d}.md: palette logic, treatment specs, mood-board refs |
 | 3 | Fable design review gate | ✅ done | (P2 commit) | All four pass differentiation/philosophy checks; risk list handed to P4 validator |
 | 4 | Color systems + validator | ✅ done | (P4 commit) | All 4 palettes pass hard gates after 5 tuning rounds; QA record in notes/p4-validation.md; hex source = scripts/chart-exploration/option-palettes.mjs |
-| 5 | Implementation (Opus, 7 commits) | ☐ pending | — | — |
-| 6 | Interactions | ☐ pending | — | — |
+| 5 | Implementation (Opus) | ✅ done | eafa177…7f356bc | Treatment system + 4 themes + CSS skins + library widgets + /chart-exploration; token freeze DEFERRED to post-polish |
+| 6 | Interactions | ✅ done | (verified live) | Tooltip skins ×4, crosshair/markers, legend dim (B 0.25) + deselect (0.45), comparison, pos/neg diverging all verified |
 | 7 | Screenshots + Figma prep | ☐ pending | — | — |
 | 8 | Executive comparison | ☐ pending | — | — |
 | 9 | Fable final critique | ☐ pending | — | — |
@@ -132,6 +132,17 @@ Validator: `node scripts/chart-exploration/validate-palettes.mjs` (P4).
 
 ## Design decisions
 
+- 2026-08-07 (P5/P6) — Commits: eafa177 (treatment type + themes + plumbing), d256e71
+  (Chart/Pie widgets), 4ff3211 (SVG family), 263d36f (CSS skins/dimming — dimming
+  re-points Apex's own child selectors via --mp-chart-dim-opacity to avoid opacity
+  multiplication), dee2673 (library widgets), cc86928 (/chart-exploration view +
+  data-widget-metric attr), 7f356bc (diverging bars outrank axis-gradient).
+  Type-check gate = "no NEW errors" (12 pre-existing in ReelFlyView.vue, present on
+  master). Token freeze into tokens.json DEFERRED until after P9/P10 polish so hexes
+  freeze exactly once. Baseline parity verified at DOM level (no-param → shopify
+  strokes/fills byte-exact) + tooltip CSS uses var(--mp-tip-*, <current literal>)
+  fallbacks. D's grouped bars use tint-gradient (a single axis ramp can't express
+  two grouped series); axis-gradient shows on single/distributed bars.
 - 2026-08-07 (P4) — Validated final palettes live in `scripts/chart-exploration/option-palettes.mjs`
   (P5 copies to chartPalette.ts; token freeze later). Gate policies: muted slate slots
   exempt from chroma/band only; positive-vs-series ΔE 8–15 = WARN legal via icon+label
