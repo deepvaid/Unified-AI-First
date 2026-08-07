@@ -44,6 +44,10 @@
   rectangles, so only 2 image swaps per option page is correct.
   `widget-line` images on 06 are deliberately unchanged (no comparison series, no new widget).
 
+- 2026-08-07 (P14): stat cards lost their source chip + "Updated …" stamp, so all five
+  `dashboard-fold` images re-uploaded and swapped on 00, 02–05 and 06 (4 there).
+  `specimen-grid` re-uploaded but hashed identically (no KPI cards in it) — no swap needed.
+
 ## Re-run instructions
 
 Screenshots come from `docs/chart-exploration/` (manifest.json). To refresh after a
