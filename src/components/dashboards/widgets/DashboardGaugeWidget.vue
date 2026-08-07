@@ -14,8 +14,16 @@ defineProps<{
 const { theme } = useChartTheme()
 const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
-const flat = computed(() => !!resolvedTheme.value.flatMarks)
-const arcColor = computed(() => (flat.value ? resolvedTheme.value.series[0] : undefined))
+// Exploration options drive the arc from their treatment; legacy themes keep the
+// flatMarks rule.
+const treatment = computed(() => resolvedTheme.value.treatment)
+const legacyFlat = computed(() => !!resolvedTheme.value.flatMarks)
+const flat = computed(() => (treatment.value ? treatment.value.svg.shade === 'flat' : legacyFlat.value))
+const arcColor = computed(() => (
+  treatment.value
+    ? resolvedTheme.value.series[0]
+    : (legacyFlat.value ? resolvedTheme.value.series[0] : undefined)
+))
 </script>
 
 <template>

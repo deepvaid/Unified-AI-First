@@ -41,13 +41,19 @@ const updatedLabel = useLiveAgo(lastRefreshedAt)
 // Only when a palette is pinned (compare page) or a non-default palette is active —
 // the default keeps its existing accent color, so normal dashboards are unchanged.
 const paletteOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
-const { palette: chartPaletteRef } = useChartTheme()
+const { palette: chartPaletteRef, theme: chartThemeRef } = useChartTheme()
+// `theme` already resolves an injected override, so this covers compare panels too.
+const treatment = computed(() => chartThemeRef.value.treatment)
 const sparkColor = computed<string | undefined>(() => {
+  const t = treatment.value
+  if (t) return t.kpiSpark.color ?? chartThemeRef.value.series[0]
   const override = unref(paletteOverride)
   if (override) return override.series[0]
   if (chartPaletteRef.value !== CHART_PALETTES.blue) return chartPaletteRef.value[0]
   return undefined
 })
+/** Area wash under the spark curve — 0.16 is the pre-treatment value. */
+const sparkFillOpacity = computed(() => treatment.value?.kpiSpark.fillOpacity ?? 0.16)
 
 const trendPositive = computed(() => props.data.delta == null || props.data.delta >= 0)
 const trendIcon = computed(() => (trendPositive.value ? 'chevron-up' : 'chevron-down'))
@@ -191,7 +197,7 @@ const sparklineAreaPath = computed(() => (
       <svg class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 40" preserveAspectRatio="none">
         <defs>
           <linearGradient :id="sparkFillId" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="currentColor" stop-opacity="0.16" />
+            <stop offset="0%" stop-color="currentColor" :stop-opacity="sparkFillOpacity" />
             <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
           </linearGradient>
         </defs>

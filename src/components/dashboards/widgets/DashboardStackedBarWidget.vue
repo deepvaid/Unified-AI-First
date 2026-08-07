@@ -15,9 +15,16 @@ const props = defineProps<{
 const { theme } = useChartTheme()
 const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
-// Flat (Polaris) themes use their own categorical colours with flat fills.
-const flat = computed(() => !!resolvedTheme.value.flatMarks)
-const STACK_COLORS = computed<readonly string[]>(() => (flat.value ? resolvedTheme.value.series : STACK_BLUES))
+// Flat (Polaris) themes use their own categorical colours with flat fills;
+// exploration options take the stack ramp (and flat/tint shading) from their treatment.
+const treatment = computed(() => resolvedTheme.value.treatment)
+const legacyFlat = computed(() => !!resolvedTheme.value.flatMarks)
+const flat = computed(() => (treatment.value ? treatment.value.svg.shade === 'flat' : legacyFlat.value))
+const STACK_COLORS = computed<readonly string[]>(() => {
+  const t = treatment.value
+  if (t) return t.ramps?.stack ?? resolvedTheme.value.series
+  return legacyFlat.value ? resolvedTheme.value.series : STACK_BLUES
+})
 
 /** Segment fill: flat theme colour, or base fading to a lighter tint on top. */
 function segmentFill(index: number): string {

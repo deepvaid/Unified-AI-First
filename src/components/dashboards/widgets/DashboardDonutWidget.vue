@@ -18,11 +18,14 @@ const { theme } = useChartTheme()
 const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
 // Flat (Polaris) themes recolour the dotted segments with the theme's own
-// categorical series and drop the gradient shading.
-const flat = computed(() => !!resolvedTheme.value.flatMarks)
+// categorical series and drop the gradient shading; exploration options do the
+// same recolour but take the shading from their treatment.
+const treatment = computed(() => resolvedTheme.value.treatment)
+const legacyFlat = computed(() => !!resolvedTheme.value.flatMarks)
+const flat = computed(() => (treatment.value ? treatment.value.svg.shade === 'flat' : legacyFlat.value))
 
 const palette = computed(() => {
-  if (flat.value) return resolvedTheme.value.series
+  if (legacyFlat.value || treatment.value) return resolvedTheme.value.series
   return props.data.variant === 'pie' ? DOTTED_PIE_BLUES : DOTTED_BLUES
 })
 const values = computed(() => props.data.segments.map((segment) => segment.value))
