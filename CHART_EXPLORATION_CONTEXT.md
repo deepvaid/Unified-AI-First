@@ -222,10 +222,17 @@ The brief's seven questions, answered against evidence:
 ## Deliverables (final)
 
 - **Figma**: https://www.figma.com/design/olj3jdXnCXlKUTcS2di7LD (pages Cover, 00–06)
-- **Live** (dev): `/accounts/2000290/dashboard?chart=optionA|optionB|optionC|optionD` + `/chart-exploration`
-- **Deck**: `docs/chart-exploration/deck/index.html` (self-contained)
-- **Branch**: `feature/chart-exploration` (local; 12 commits; master untouched)
+- **Live (PROD — shareable)**: https://ai-first-maropost.vercel.app
+  - Baseline: `/accounts/2000290/dashboard`
+  - Options: `/accounts/2000290/dashboard?chart=optionA|optionB|optionC|optionD`
+  - Side-by-side compare: `/chart-exploration`
+- **Deck**: `docs/chart-exploration/deck/index.html` (self-contained, local)
+- **Merged to master** 2026-08-07 (ff-only, 17 commits, `2bc211c..b590aa4`, pushed to
+  origin → Vercel prod). `feature/chart-exploration` kept as a reference branch.
 - Tokens frozen in `tokens.json` (`color.chart.{light,dark}.option*`)
+- Deploy note: Vercel's `buildCommand` runs `npx vite build` (NOT `npm run build`), so the
+  12 pre-existing `ReelFlyView.vue` type errors don't block prod. `npx vite build` verified
+  green before the push.
 
 ## Remaining tasks (follow-ups, post-direction-selection)
 
