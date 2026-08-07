@@ -48,6 +48,10 @@
   `dashboard-fold` images re-uploaded and swapped on 00, 02–05 and 06 (4 there).
   `specimen-grid` re-uploaded but hashed identically (no KPI cards in it) — no swap needed.
 
+- 2026-08-07 (P15): Option D gained an embossed gloss (lit top edge + darker base
+  lip). Re-uploaded and swapped D's bar, stacked-column, segmented-bar, bar-hover and
+  donut images on page 05 plus the specimen grid on 06. Only D changed — A/B/C stay matte.
+
 ## Re-run instructions
 
 Screenshots come from `docs/chart-exploration/` (manifest.json). To refresh after a

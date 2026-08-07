@@ -215,6 +215,17 @@ shadow); 2) specimen grid disables floatingLabels in small cells (view-level the
 3) copy.json `vsToday` per option → deck + Figma option pages; 4) recapture affected
 shots, rebuild deck, swap Figma hashes.
 
+### P15 — Option D emboss (2026-08-07, stakeholder direction)
+"in gradient add some inner shadow or gloss to look like emboss". New
+`ChartTreatment.effects.gloss` (D only): `embossStops()` in chartPalette.ts wraps any
+vertical ramp in a bright top edge (tint 0.5) and a darkened base lip (shade 0.16),
+compressed into the first/last 6% so the ramp body is untouched. Applied to axis-gradient
+bars, grouped/horizontal bars, and — via `stackedFill()` — each band of a stacked column.
+The CSS bar family (`DashboardStackedBarWidget`, both variants) gets a matching
+`box-shadow: inset` sheen behind a `--gloss` class. **Gotcha:** stacked charts use
+`stackedFill()`, which bypasses `treatmentFill()` entirely — gloss had to be wired there
+separately, and the tell was a byte-identical capture hash.
+
 ## Rejected ideas
 
 - Refactoring `gradientMarks`/`flatMarks` booleans into treatments for ALL themes —
