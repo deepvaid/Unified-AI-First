@@ -8,8 +8,8 @@
 
 | # | Phase (master brief) | Status | Commit | Summary (1 line) |
 |---|----------------------|--------|--------|------------------|
-| 0 | Baseline & audit | ◐ in progress | — | — |
-| 1 | Deep visual research | ☐ pending | — | — |
+| 0 | Baseline & audit | ✅ done | 22d323b | Branch, context, capture harness, 9 baseline shots, audit (notes/00-audit.md) |
+| 1 | Deep visual research | ✅ done | (P1 commit) | 25 refs (Mobbin, 11 queries) + 8 pattern takeaways + 4 direction seeds |
 | 2 | Four mood boards / directions | ☐ pending | — | — |
 | 3 | Fable design review gate | ☐ pending | — | — |
 | 4 | Color systems + validator | ☐ pending | — | — |
@@ -79,11 +79,22 @@ Theme system: `src/plugins/chartPalette.ts` (`CHART_THEMES`, `?chart=` in `App.v
 
 ## Research findings
 
-_(P1 fills this: per-pattern takeaways, link research-notes.md)_
+Full notes: `docs/chart-exploration/research/research-notes.md` (8 takeaways). Keys:
+1. Previous-period = same hue, reduced weight/dash (settled convention — keep, restyle only).
+2. De-emphasis uses **neutrals**, not paler brand tints → every option carries a muted-series token.
+3. Multi-color: ≤5 hue-spaced desaturated slots + 1 neutral, fixed assignment (Mixpanel rainbow = anti).
+4. Gradients read premium only when they encode: vertical fade-to-transparent + thin solid stroke, one family per chart (GitBook/beehiiv = cautions).
+5. Tooltip families: minimal-light (Vercel) vs dark-inverse (Monarch) — dark tooltip is the cheapest "designed" signal → B/D differentiator.
+6. Crosshair + hover-revealed marker is modern; per-point markers read dated.
+7. Donut: strong center total + value-bearing legend; ring thickness consistency > slice count.
+8. Axis restraint must be *consistent across the page* — baseline's per-widget axis policy is the tell.
 
 ## References
 
-_(P1: mirror of refs.json — product, screen, local file, informs-option)_
+25 downloaded refs in `docs/chart-exploration/research/refs/` mapped in `refs.json`
+(product, pattern, source URL, informs-option). Anti-refs included: Mixpanel rainbow,
+beehiiv pastel wash. Heritage (non-downloadable): Hyper Charts kit (round-3 gradient
+direction Ross liked), Polaris Viz (baseline grammar).
 
 ## Options being explored
 
