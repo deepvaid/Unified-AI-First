@@ -106,7 +106,23 @@ import {
 } from '@/design-tokens/generated/tokens'
 
 /** Selectable chart themes (switchable via the `?chart=` URL param, see App.vue). */
-export type ChartPalette = 'shopify' | 'blue' | 'indigo' | 'ocean' | 'aurora'
+export type ChartPalette =
+  | 'shopify'
+  | 'blue'
+  | 'indigo'
+  | 'ocean'
+  | 'aurora'
+  | 'optionA'
+  | 'optionB'
+  | 'optionC'
+  | 'optionD'
+
+/**
+ * The four chart visual systems built for the leadership exploration. They are the
+ * only themes that carry a `treatment`; every legacy theme leaves it undefined so
+ * the existing (baseline) code paths stay literally unchanged.
+ */
+export const OPTION_CHART_IDS = ['optionA', 'optionB', 'optionC', 'optionD'] as const
 
 export type ChartMode = 'light' | 'dark'
 
@@ -118,6 +134,54 @@ export interface ChartChrome {
   tooltipBackground: string
   tooltipText: string
   tooltipBorder: string
+}
+
+/**
+ * Full visual-system description for a chart theme — the exploration options
+ * (optionA–D) declare one; legacy themes leave `ChartTheme.treatment` undefined and
+ * keep their existing `gradientMarks`/`flatMarks` branches verbatim.
+ */
+export interface ChartTreatment {
+  stroke: {
+    curve: 'smooth' | 'straight' | 'monotoneCubic'
+    /** Lead/only series stroke width. */
+    width: number
+    /** Non-lead series in a multi-series chart. */
+    companionWidth: number
+    /** Dash for non-lead (non-comparison) series; 0 = solid. */
+    companionDash: number
+    /** Single-series line strokes run through the axis ramp. */
+    gradientLine: boolean
+  }
+  comparison: { color?: string; dash: number; fillOpacity: number }
+  area: { fill: 'gradient' | 'solid'; opacityFrom: number; opacityTo: number }
+  bar: {
+    radius: number
+    columnWidthSingle: string
+    columnWidthGrouped: string
+    fill: 'solid' | 'tint-gradient' | 'axis-gradient'
+    floatingLabels: boolean
+  }
+  grid: { show: boolean; dashArray: number; xLines: boolean; yLines: boolean; color?: string }
+  axes: { yLabelsOnTimeseries: boolean }
+  crosshair: { show: boolean; dash: number; color?: string }
+  markers: { hoverSize: number; lastPoint: boolean }
+  legend: { markerShape: 'square' | 'circle'; markerSize: number; hoverHighlight: boolean }
+  donut: { size: string; fill: 'solid' | 'gradient'; strokeWidth: number; showDataLabels: boolean }
+  /** Hand-rolled SVG family (DtGauge / DtRingDonut / stacked bar). */
+  svg: { shade: 'flat' | 'tint' }
+  kpiSpark: { color?: string; fillOpacity: number }
+  effects: { dropShadow: boolean }
+  states: { hoverFilter: 'none' | 'lighten' | 'darken'; hoverFilterValue: number; dimmedOpacity: number }
+  posNeg: { positive: string; negative: string; warning: string; neutral: string }
+  /** Optional ramp overrides; unset ramps derive from `series` / `axis`. */
+  ramps?: {
+    stack?: string[]
+    barGradient?: string
+    funnelStops?: { offset: string; color: string }[]
+    trendCurrent?: string
+    trendPrevious?: string
+  }
 }
 
 export interface ChartTheme {
@@ -133,6 +197,58 @@ export interface ChartTheme {
   /** Stroke + legend dot for `isComparison` series (Shopify's dashed previous period). */
   comparisonColor?: string
   chrome: ChartChrome
+  /**
+   * Exploration options only. When set, widgets read every visual decision from
+   * here instead of the legacy `gradientMarks`/`flatMarks` branches.
+   */
+  treatment?: ChartTreatment
+}
+
+/**
+ * Neutral starting point for option treatments — each option states deltas only via
+ * `makeTreatment`. Never consumed on its own (no theme ships BASE_TREATMENT as-is).
+ */
+const BASE_TREATMENT: ChartTreatment = {
+  stroke: { curve: 'smooth', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false },
+  comparison: { dash: 5, fillOpacity: 0 },
+  area: { fill: 'gradient', opacityFrom: 0.2, opacityTo: 0.02 },
+  bar: {
+    radius: 4,
+    columnWidthSingle: '45%',
+    columnWidthGrouped: '68%',
+    fill: 'solid',
+    floatingLabels: false,
+  },
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true },
+  axes: { yLabelsOnTimeseries: true },
+  crosshair: { show: true, dash: 0 },
+  markers: { hoverSize: 4, lastPoint: false },
+  legend: { markerShape: 'square', markerSize: 8, hoverHighlight: true },
+  donut: { size: '62%', fill: 'solid', strokeWidth: 2, showDataLabels: false },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0.16 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.35 },
+  posNeg: { positive: '#1B7A46', negative: '#C2402A', warning: '#B27B00', neutral: '#8A94A0' },
+}
+
+type TreatmentOverrides = {
+  [K in keyof ChartTreatment]?: Partial<NonNullable<ChartTreatment[K]>>
+}
+
+/**
+ * Shallow-per-section merge onto BASE_TREATMENT (every treatment section is a flat
+ * object, so one level of merge is exactly the depth needed).
+ */
+export function makeTreatment(overrides: TreatmentOverrides = {}): ChartTreatment {
+  const merged: Record<string, unknown> = { ...BASE_TREATMENT }
+  for (const key of Object.keys(overrides) as (keyof ChartTreatment)[]) {
+    const patch = overrides[key] as Record<string, unknown> | undefined
+    if (!patch) continue
+    const base = BASE_TREATMENT[key] as Record<string, unknown> | undefined
+    merged[key] = { ...(base ?? {}), ...patch }
+  }
+  return merged as unknown as ChartTreatment
 }
 
 const LIGHT_CHROME: ChartChrome = {
@@ -154,6 +270,107 @@ const DARK_CHROME: ChartChrome = {
   tooltipText: mp_color_chart_dark_tooltipText,
   tooltipBorder: mp_color_chart_dark_tooltipBorder,
 }
+
+/** Option themes never share a chrome object with the legacy themes. */
+function cloneChrome(chrome: ChartChrome, overrides: Partial<ChartChrome> = {}): ChartChrome {
+  return { ...chrome, ...overrides }
+}
+
+// --- Chart visual-system exploration (P5) -------------------------------------
+// Hexes are the P4-validated values from
+// `scripts/chart-exploration/option-palettes.mjs`; they move into tokens.json in
+// the token-freeze commit. Treatments translate the "Treatment spec" blocks in
+// `docs/chart-exploration/notes/option-{a,b,c,d}.md`.
+
+/** A — Restrained Blue: one blue weighted by importance, everything else neutral. */
+const OPTION_A_SERIES = ['#0E72B8', '#5FB9EB', '#234E92', '#38A8DC', '#5C6B7A', '#AFC3D1']
+const OPTION_A_AXIS = ['#123B63', '#15568C', '#0E72B8', '#2E96D2', '#63BCE8']
+const OPTION_A_COMPARISON = '#6E93AE'
+const OPTION_A_TREATMENT = makeTreatment({
+  stroke: { curve: 'smooth', width: 2, companionWidth: 1.75, companionDash: 0, gradientLine: false },
+  comparison: { color: OPTION_A_COMPARISON, dash: 5, fillOpacity: 0 },
+  area: { fill: 'gradient', opacityFrom: 0.14, opacityTo: 0.02 },
+  bar: { radius: 2, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true },
+  axes: { yLabelsOnTimeseries: true },
+  crosshair: { show: true, dash: 0 },
+  markers: { hoverSize: 4, lastPoint: false },
+  legend: { markerShape: 'square', markerSize: 8, hoverHighlight: true },
+  donut: { size: '62%', fill: 'solid', strokeWidth: 2, showDataLabels: false },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0.12 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.35 },
+  posNeg: { positive: '#1B7A46', negative: '#C2402A', warning: '#B27B00', neutral: '#8A94A0' },
+})
+
+/** B — Sophisticated Multi-Color: one hue per data family, saturation one notch down. */
+const OPTION_B_SERIES = ['#2E6FC2', '#D4703A', '#17948C', '#6B5CC8', '#D078A3', '#515C67']
+const OPTION_B_AXIS = ['#1E4E93', '#2E67B5', '#4A82CE', '#6C9DDF', '#8FB3E6']
+const OPTION_B_COMPARISON = '#828E9A'
+const OPTION_B_TREATMENT = makeTreatment({
+  stroke: { curve: 'straight', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false },
+  comparison: { color: OPTION_B_COMPARISON, dash: 4, fillOpacity: 0 },
+  area: { fill: 'solid', opacityFrom: 0.09, opacityTo: 0.09 },
+  bar: { radius: 4, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
+  grid: { show: true, dashArray: 4, xLines: false, yLines: true },
+  axes: { yLabelsOnTimeseries: true },
+  crosshair: { show: true, dash: 4 },
+  markers: { hoverSize: 5, lastPoint: false },
+  legend: { markerShape: 'circle', markerSize: 8, hoverHighlight: true },
+  donut: { size: '66%', fill: 'solid', strokeWidth: 2, showDataLabels: false },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0.1 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.25 },
+  posNeg: { positive: '#178A50', negative: '#C6403D', warning: '#B27B00', neutral: '#8A94A0' },
+})
+
+/** C — Blue · Teal · Green: one connected family, separation from alternating lightness. */
+const OPTION_C_SERIES = ['#0073AB', '#45C6E0', '#008268', '#4E9FDE', '#3FB68E', '#1F5099']
+const OPTION_C_AXIS = ['#0B3D5C', '#00618F', '#0073AB', '#1D96BE', '#4FC2CE']
+const OPTION_C_COMPARISON = '#5E93AA'
+const OPTION_C_TREATMENT = makeTreatment({
+  stroke: { curve: 'smooth', width: 2.5, companionWidth: 2, companionDash: 0, gradientLine: false },
+  comparison: { color: OPTION_C_COMPARISON, dash: 5, fillOpacity: 0 },
+  area: { fill: 'gradient', opacityFrom: 0.28, opacityTo: 0.02 },
+  bar: { radius: 6, columnWidthSingle: '45%', columnWidthGrouped: '70%', fill: 'tint-gradient', floatingLabels: false },
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true },
+  axes: { yLabelsOnTimeseries: true },
+  crosshair: { show: true, dash: 0 },
+  markers: { hoverSize: 4, lastPoint: true },
+  legend: { markerShape: 'circle', markerSize: 8, hoverHighlight: true },
+  donut: { size: '64%', fill: 'solid', strokeWidth: 2, showDataLabels: false },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0.18 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.3 },
+  posNeg: { positive: '#38761D', negative: '#C2402A', warning: '#B27B00', neutral: '#8A94A0' },
+})
+
+/** D — Modern Gradient: depth and light, every gradient encoding something. */
+const OPTION_D_SERIES = ['#2563EB', '#9A8EF9', '#433AB8', '#33ABEE', '#A855D8', '#64748B']
+const OPTION_D_AXIS = ['#312E81', '#4338CA', '#5B67EA', '#2E92E4', '#4FB3F2']
+const OPTION_D_COMPARISON = '#7C8CA3'
+const OPTION_D_TREATMENT = makeTreatment({
+  stroke: { curve: 'smooth', width: 2.5, companionWidth: 2, companionDash: 0, gradientLine: true },
+  comparison: { color: OPTION_D_COMPARISON, dash: 5, fillOpacity: 0 },
+  area: { fill: 'gradient', opacityFrom: 0.35, opacityTo: 0 },
+  bar: { radius: 8, columnWidthSingle: '45%', columnWidthGrouped: '66%', fill: 'axis-gradient', floatingLabels: true },
+  // "fainter" grid per the option-D spec — the treatment carries it so the
+  // crosshair keeps the standard chrome.grid weight.
+  grid: { show: true, dashArray: 0, xLines: false, yLines: true, color: 'rgba(26, 24, 20, 0.04)' },
+  axes: { yLabelsOnTimeseries: true },
+  crosshair: { show: true, dash: 0 },
+  markers: { hoverSize: 6, lastPoint: true },
+  legend: { markerShape: 'circle', markerSize: 8, hoverHighlight: true },
+  donut: { size: '64%', fill: 'gradient', strokeWidth: 2, showDataLabels: false },
+  svg: { shade: 'tint' },
+  kpiSpark: { fillOpacity: 0.24 },
+  effects: { dropShadow: true },
+  states: { hoverFilter: 'lighten', hoverFilterValue: 0.04, dimmedOpacity: 0.2 },
+  posNeg: { positive: '#148549', negative: '#C6403D', warning: '#B27B00', neutral: '#8A94A0' },
+})
 
 /**
  * Mode-aware chart themes. Each palette carries light and dark series/axis arrays
@@ -360,6 +577,90 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
       ],
       gradientMarks: true,
       chrome: DARK_CHROME,
+    },
+  },
+  optionA: {
+    light: {
+      label: 'Restrained Blue',
+      series: OPTION_A_SERIES,
+      axis: OPTION_A_AXIS,
+      gradientMarks: false,
+      comparisonColor: OPTION_A_COMPARISON,
+      chrome: cloneChrome(LIGHT_CHROME, { grid: 'rgba(26, 24, 20, 0.07)' }),
+      treatment: OPTION_A_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Restrained Blue',
+      series: OPTION_A_SERIES,
+      axis: OPTION_A_AXIS,
+      gradientMarks: false,
+      comparisonColor: OPTION_A_COMPARISON,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: OPTION_A_TREATMENT,
+    },
+  },
+  optionB: {
+    light: {
+      label: 'Sophisticated Multi-Color',
+      series: OPTION_B_SERIES,
+      axis: OPTION_B_AXIS,
+      gradientMarks: false,
+      comparisonColor: OPTION_B_COMPARISON,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: OPTION_B_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Sophisticated Multi-Color',
+      series: OPTION_B_SERIES,
+      axis: OPTION_B_AXIS,
+      gradientMarks: false,
+      comparisonColor: OPTION_B_COMPARISON,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: OPTION_B_TREATMENT,
+    },
+  },
+  optionC: {
+    light: {
+      label: 'Blue Teal Green',
+      series: OPTION_C_SERIES,
+      axis: OPTION_C_AXIS,
+      gradientMarks: false,
+      comparisonColor: OPTION_C_COMPARISON,
+      chrome: cloneChrome(LIGHT_CHROME, { grid: 'rgba(26, 24, 20, 0.07)' }),
+      treatment: OPTION_C_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Blue Teal Green',
+      series: OPTION_C_SERIES,
+      axis: OPTION_C_AXIS,
+      gradientMarks: false,
+      comparisonColor: OPTION_C_COMPARISON,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: OPTION_C_TREATMENT,
+    },
+  },
+  optionD: {
+    light: {
+      label: 'Modern Gradient',
+      series: OPTION_D_SERIES,
+      axis: OPTION_D_AXIS,
+      gradientMarks: false,
+      comparisonColor: OPTION_D_COMPARISON,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: OPTION_D_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Modern Gradient',
+      series: OPTION_D_SERIES,
+      axis: OPTION_D_AXIS,
+      gradientMarks: false,
+      comparisonColor: OPTION_D_COMPARISON,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: OPTION_D_TREATMENT,
     },
   },
 }
