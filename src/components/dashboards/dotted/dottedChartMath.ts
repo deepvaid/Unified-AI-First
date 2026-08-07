@@ -2,6 +2,11 @@
 // Geometry ported from the approved Claude Design mockup
 // ("Dashboard Overview v2 - dotted"); see the lab twin in
 // src/views/ShadcnDashboard/dottedDemoData.ts.
+//
+// The colour constants below stay literal — they are the legacy fallback every
+// widget uses when the active theme carries no `treatment`. The `derive*`
+// helpers at the bottom are the option-theme counterparts.
+import { tintHex } from '@/plugins/chartPalette'
 
 export const CHART_W = 720
 export const CHART_H = 200
@@ -31,6 +36,30 @@ export const FUNNEL_GRADIENT_STOPS = [
   { offset: '76%', color: '#35B9D6' },
   { offset: '100%', color: '#4EC3F0' },
 ] as const
+
+export interface GradientStop {
+  offset: string
+  color: string
+}
+
+/**
+ * Option-theme counterpart to FUNNEL_GRADIENT_STOPS: the theme's axis ramp laid
+ * out as evenly spaced stops (5 hexes -> 0/25/50/75/100%).
+ */
+export function deriveFunnelStops(axis: string[]): GradientStop[] {
+  if (axis.length === 0) return []
+  if (axis.length === 1) return [{ offset: '0%', color: axis[0]! }]
+  const last = axis.length - 1
+  return axis.map((color, index) => ({ offset: `${Math.round((index / last) * 100)}%`, color }))
+}
+
+/**
+ * Option-theme counterpart to BAR_GRADIENT: the same 0 / 60 / 100% ramp shape,
+ * run from a theme colour toward white instead of the literal blues.
+ */
+export function deriveBarGradient(base: string): string {
+  return `linear-gradient(90deg, ${base} 0%, ${tintHex(base, 0.25)} 60%, ${tintHex(base, 0.45)} 100%)`
+}
 
 export function niceMax(v: number): number {
   const step = Math.pow(10, Math.floor(Math.log10(v))) / 2

@@ -4,19 +4,43 @@
 // toggle. Metric selection and Compare are widget-local; the data window comes
 // from the dashboard's global filters via useWidgetData. Renders bespoke — the
 // widget card suppresses its standard header for this type.
-import { computed, ref } from 'vue'
+import { computed, inject, ref, unref } from 'vue'
 import { bounds, linePath, valueToY, CHART_H, CHART_W, TREND_CURRENT, TREND_PREVIOUS } from '../dotted/dottedChartMath'
+import { CHART_PALETTE_OVERRIDE, tintHex, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import type { DashboardMetricExplorerData, DashboardMetricExplorerMetric } from '@/stores/dashboards/types'
 
 const props = defineProps<{
   data: DashboardMetricExplorerData
 }>()
 
+const { theme } = useChartTheme()
+const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
+const treatment = computed(() => resolvedTheme.value.treatment)
+
 /** Current period / previous period hues (shadcn area-gradient recipe: two
-    blues, each with a vertical fill fading to the baseline). Shared via
-    dottedChartMath so the palette-review widget stays in sync. */
-const CURRENT_COLOR = TREND_CURRENT
-const PREVIOUS_COLOR = TREND_PREVIOUS
+    blues, each with a vertical fill fading to the baseline). Legacy themes keep
+    the literal dottedChartMath pair so the palette-review widget stays in sync;
+    exploration options take the lead series + its comparison colour. */
+const CURRENT_COLOR = computed(() => {
+  const t = treatment.value
+  if (!t) return TREND_CURRENT
+  return t.ramps?.trendCurrent ?? resolvedTheme.value.series[0]!
+})
+const PREVIOUS_COLOR = computed(() => {
+  const t = treatment.value
+  if (!t) return TREND_PREVIOUS
+  return t.ramps?.trendPrevious
+    ?? resolvedTheme.value.comparisonColor
+    ?? tintHex(resolvedTheme.value.series[0]!, 0.55)
+})
+
+/** Option themes align the SVG gridlines with the Apex charts' grid colour. */
+const gridColor = computed(() => {
+  const t = treatment.value
+  if (!t) return undefined
+  return t.grid.color ?? resolvedTheme.value.chrome.grid
+})
 
 const selectedKey = ref<DashboardMetricExplorerMetric['key']>('revenue')
 const compare = ref(true)
@@ -87,8 +111,8 @@ const hoverPoints = computed<HoverPoint[]>(() => {
     value: formatValue(metric, raw ?? 0),
     topPct: Math.min(100, Math.max(0, (valueToY(raw ?? 0, hi, lo) / CHART_H) * 100)),
   })
-  const rows = [point('current', metric.label, CURRENT_COLOR, metric.cur[index])]
-  if (compareOn.value) rows.push(point('previous', 'Previous period', PREVIOUS_COLOR, metric.prev[index]))
+  const rows = [point('current', metric.label, CURRENT_COLOR.value, metric.cur[index])]
+  if (compareOn.value) rows.push(point('previous', 'Previous period', PREVIOUS_COLOR.value, metric.prev[index]))
   return rows
 })
 
@@ -112,7 +136,7 @@ const tooltipTransform = computed(() => {
 </script>
 
 <template>
-  <div class="mx">
+  <div class="mx" :style="gridColor ? { '--mx-grid': gridColor } : undefined">
     <div class="mx__strip" role="group" aria-label="Metric selector">
       <button
         v-for="metric in data.metrics"
@@ -418,7 +442,8 @@ const tooltipTransform = computed(() => {
 }
 
 .mx__grid {
-  stroke: var(--border-subtle);
+  /* --mx-grid is only set by the exploration options (see gridColor above). */
+  stroke: var(--mx-grid, var(--border-subtle));
   stroke-width: 1;
 }
 

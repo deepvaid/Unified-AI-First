@@ -1,13 +1,25 @@
 <script setup lang="ts">
 // Campaign-to-purchase funnel (dotted Overview v2): 6-column stat header,
 // gradient funnel SVG, footer stats + biggest-drop-off warning chip.
-import { computed } from 'vue'
-import { FUNNEL_GRADIENT_STOPS, funnelPath } from '../dotted/dottedChartMath'
+import { computed, inject, unref } from 'vue'
+import { FUNNEL_GRADIENT_STOPS, deriveFunnelStops, funnelPath, type GradientStop } from '../dotted/dottedChartMath'
+import { CHART_PALETTE_OVERRIDE, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import type { DashboardFunnelData } from '@/stores/dashboards/types'
 
 const props = defineProps<{
   data: DashboardFunnelData
 }>()
+
+const { theme } = useChartTheme()
+const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
+// Exploration options run the funnel through their own axis ramp; legacy themes
+// keep the literal indigo -> cyan stops.
+const gradientStops = computed<readonly GradientStop[]>(() => {
+  const t = resolvedTheme.value.treatment
+  if (!t) return FUNNEL_GRADIENT_STOPS
+  return t.ramps?.funnelStops ?? deriveFunnelStops(resolvedTheme.value.axis)
+})
 
 const path = computed(() => funnelPath(props.data.stages.map((stage) => stage.pct)))
 const dividers = computed(() =>
@@ -28,7 +40,7 @@ const dividers = computed(() =>
     <svg viewBox="0 0 1200 260" preserveAspectRatio="none" class="funnel-widget__svg" role="img" aria-label="Funnel chart across the stages above">
       <defs>
         <linearGradient id="dtFunnelFill" x1="0" y1="0" x2="1" y2="0">
-          <stop v-for="stop in FUNNEL_GRADIENT_STOPS" :key="stop.offset" :offset="stop.offset" :stop-color="stop.color" />
+          <stop v-for="stop in gradientStops" :key="stop.offset" :offset="stop.offset" :stop-color="stop.color" />
         </linearGradient>
       </defs>
       <path :d="path" fill="url(#dtFunnelFill)" />

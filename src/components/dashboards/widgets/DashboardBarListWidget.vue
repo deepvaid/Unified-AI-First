@@ -1,12 +1,26 @@
 <script setup lang="ts">
 // Dotted progress-bar list widget (Overview v2): optional big-number headline
 // + labeled rows with gradient bars (best sellers, retail today).
+import { computed, inject, unref } from 'vue'
 import DtDottedBar from '../dotted/DtDottedBar.vue'
+import { BAR_GRADIENT, deriveBarGradient } from '../dotted/dottedChartMath'
+import { CHART_PALETTE_OVERRIDE, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import type { DashboardBarListData } from '@/stores/dashboards/types'
 
 defineProps<{
   data: DashboardBarListData
 }>()
+
+const { theme } = useChartTheme()
+const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
+// Exploration options run the pill through their lead series; legacy themes keep
+// DtDottedBar's literal BAR_GRADIENT default.
+const barGradient = computed(() => {
+  const t = resolvedTheme.value.treatment
+  if (!t) return BAR_GRADIENT
+  return t.ramps?.barGradient ?? deriveBarGradient(resolvedTheme.value.series[0]!)
+})
 </script>
 
 <template>
@@ -26,7 +40,7 @@ defineProps<{
           <span class="barlist-widget__label">{{ row.label }}</span>
           <span class="barlist-widget__value">{{ row.value }}</span>
         </div>
-        <DtDottedBar :pct="row.pct" />
+        <DtDottedBar :pct="row.pct" :gradient="barGradient" />
         <span v-if="row.meta" class="barlist-widget__meta">{{ row.meta }}</span>
       </div>
     </div>

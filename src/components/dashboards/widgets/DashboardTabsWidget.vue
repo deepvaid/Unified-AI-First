@@ -2,10 +2,23 @@
 // Tabbed list widget (dotted Overview v2): Recent orders / Live activity /
 // Top campaigns. Renders bespoke — the widget card suppresses its standard
 // header for this type.
-import { ref } from 'vue'
+import { computed, inject, ref, unref } from 'vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import DtDottedBar from '../dotted/DtDottedBar.vue'
+import { BAR_GRADIENT, deriveBarGradient } from '../dotted/dottedChartMath'
+import { CHART_PALETTE_OVERRIDE, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import type { DashboardTabsData } from '@/stores/dashboards/types'
+
+const { theme } = useChartTheme()
+const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
+const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
+// Exploration options run the pill through their lead series; legacy themes keep
+// DtDottedBar's literal BAR_GRADIENT default.
+const barGradient = computed(() => {
+  const t = resolvedTheme.value.treatment
+  if (!t) return BAR_GRADIENT
+  return t.ramps?.barGradient ?? deriveBarGradient(resolvedTheme.value.series[0]!)
+})
 
 defineProps<{
   data: DashboardTabsData
@@ -91,7 +104,7 @@ const tab = ref<Tab>('orders')
           <span class="tabs-widget__campaign-name">{{ row.name }}</span>
           <span class="tabs-widget__campaign-revenue">{{ row.revenue }}</span>
         </div>
-        <DtDottedBar :pct="row.pct" />
+        <DtDottedBar :pct="row.pct" :gradient="barGradient" />
         <span class="tabs-widget__campaign-meta">{{ row.meta }}</span>
       </div>
     </div>
