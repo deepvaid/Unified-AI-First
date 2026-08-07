@@ -297,7 +297,6 @@ function handleAttentionCollapse(collapsed: boolean) {
         :icon="metricIcon"
         :ai-generated="!!widget.aiProvenance"
         :data-source="widget.dataSource"
-        :last-refreshed-at="widget.lastRefreshedAt"
         :show-view-report="widget.dataSource === 'retail'"
         @view-report="openDrilldown"
       />

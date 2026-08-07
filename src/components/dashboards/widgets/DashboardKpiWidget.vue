@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, toRef, unref, useId } from 'vue'
-import { useLiveAgo } from '@/composables/useRelativeTime'
-import MpSourceCloudChip from '@/components/MpSourceCloudChip.vue'
+import { computed, inject, unref, useId } from 'vue'
 import { CHART_PALETTES, CHART_PALETTE_OVERRIDE, useChartTheme } from '@/plugins/chartPalette'
 import type { DashboardDataSource, DashboardKpiData } from '@/stores/dashboards/types'
 
@@ -16,7 +14,6 @@ const props = withDefaults(defineProps<{
   icon?: string
   aiGenerated?: boolean
   dataSource?: DashboardDataSource
-  lastRefreshedAt?: string
   showViewReport?: boolean
 }>(), {
   compact: false,
@@ -26,16 +23,12 @@ const props = withDefaults(defineProps<{
   icon: '',
   aiGenerated: false,
   dataSource: undefined,
-  lastRefreshedAt: undefined,
   showViewReport: false,
 })
 
 const emit = defineEmits<{
   viewReport: []
 }>()
-
-const lastRefreshedAt = toRef(() => props.lastRefreshedAt)
-const updatedLabel = useLiveAgo(lastRefreshedAt)
 
 // Tint the sparkline to the active chart palette so KPI cards differentiate per theme.
 // Only when a palette is pinned (compare page) or a non-default palette is active —
@@ -210,10 +203,12 @@ const sparklineAreaPath = computed(() => (
       </svg>
     </div>
 
-    <footer v-if="dataSource" class="dashboard-kpi-widget__foot">
-      <MpSourceCloudChip :data-source="dataSource" size="sm" :icon-only="compact" />
+    <!-- Stat cards carry the number, not its provenance: the source chip and
+         "Updated …" stamp stay on the chart/table cards only, so a KPI row reads
+         as four figures rather than four figures plus eight labels. The footer
+         survives solely for the View Report action. -->
+    <footer v-if="showViewReport" class="dashboard-kpi-widget__foot">
       <button
-        v-if="showViewReport"
         type="button"
         class="dashboard-kpi-widget__view-report"
         @click="emit('viewReport')"
@@ -221,14 +216,6 @@ const sparklineAreaPath = computed(() => (
         <span class="dashboard-kpi-widget__view-report-text">View Report</span>
         <v-icon size="12">arrow-up-right</v-icon>
       </button>
-      <span
-        v-else-if="updatedLabel"
-        class="dashboard-kpi-widget__updated"
-        :title="`Updated ${updatedLabel}`"
-      >
-        <v-icon size="11">clock</v-icon>
-        <span class="dashboard-kpi-widget__updated-text">Updated {{ updatedLabel }}</span>
-      </span>
     </footer>
   </div>
 </template>
@@ -260,13 +247,11 @@ const sparklineAreaPath = computed(() => (
     gap: 6px;
   }
 
-  .dashboard-kpi-widget__updated,
   .dashboard-kpi-widget__view-report {
     min-width: 0;
     flex-shrink: 1;
   }
 
-  .dashboard-kpi-widget__updated-text,
   .dashboard-kpi-widget__view-report-text {
     min-width: 0;
     overflow: hidden;
@@ -543,7 +528,7 @@ const sparklineAreaPath = computed(() => (
 .dashboard-kpi-widget__foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   margin: 12px -18px -16px;
   padding: 8px 18px;
@@ -557,21 +542,6 @@ const sparklineAreaPath = computed(() => (
   margin: 10px -16px -14px;
   padding: 6px 16px;
   min-height: 32px;
-}
-
-.dashboard-kpi-widget__updated {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.dashboard-kpi-widget__updated :deep(.v-icon) {
-  color: var(--muted);
 }
 
 .dashboard-kpi-widget__view-report {
