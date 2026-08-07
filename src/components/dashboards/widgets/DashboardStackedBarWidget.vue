@@ -48,10 +48,58 @@ function bucketTitle(bucket: DashboardStackedBarData['buckets'][number]): string
   )
   return `${bucket.label}: ${parts.join(' · ')}`
 }
+
+/* --- 'bar' variant: one full-width horizontal bar of proportional segments --- */
+
+/** Totals per legend slot, summed across whatever buckets the metric supplied. */
+const barTotals = computed(() =>
+  props.data.legend.map((_, index) =>
+    props.data.buckets.reduce((sum, bucket) => sum + (bucket.segments[index]?.value ?? 0), 0),
+  ),
+)
+
+/** Proportional widths, floored at 4% so a small tail segment stays visible. */
+const barWidths = computed(() => {
+  const total = Math.max(1, barTotals.value.reduce((sum, value) => sum + value, 0))
+  const floored = barTotals.value.map((value) => Math.max(4, (value / total) * 100))
+  const sum = floored.reduce((a, b) => a + b, 0)
+  return floored.map((value) => (value / sum) * 100)
+})
+
+/** Horizontal segments shade along the bar, not up it. */
+function hSegmentFill(index: number): string {
+  const color = STACK_COLORS.value[index] ?? STACK_COLORS.value[0]!
+  return flat.value ? color : `linear-gradient(to right, ${color}, ${tintHex(color, 0.28)})`
+}
+
+const barAriaLabel = computed(() =>
+  props.data.legend.map((entry) => `${entry.label} ${entry.total}`).join(', '),
+)
 </script>
 
 <template>
-  <div class="stackbar-widget">
+  <!-- 'bar': label/value pairs over a single segmented bar (Sales by product name). -->
+  <div v-if="data.variant === 'bar'" class="stackbar-widget stackbar-widget--single">
+    <div class="stackbar-widget__pairs">
+      <div v-for="(entry, index) in data.legend" :key="entry.key" class="stackbar-widget__pair">
+        <span class="stackbar-widget__pair-label">
+          <span class="stackbar-widget__swatch" :style="{ background: STACK_COLORS[index] }" />
+          <span class="stackbar-widget__pair-name">{{ entry.label }}</span>
+        </span>
+        <span class="stackbar-widget__pair-value">{{ entry.total }}</span>
+      </div>
+    </div>
+    <div class="stackbar-widget__hbar" role="img" :aria-label="barAriaLabel">
+      <span
+        v-for="(entry, index) in data.legend"
+        :key="entry.key"
+        class="stackbar-widget__hsegment"
+        :style="{ width: `${barWidths[index]}%`, background: hSegmentFill(index) }"
+        :title="`${entry.label} ${entry.total} · ${entry.pct}%`"
+      />
+    </div>
+  </div>
+  <div v-else class="stackbar-widget">
     <div class="stackbar-widget__plot" role="img" aria-label="Stacked bar chart">
       <div
         v-for="bucket in data.buckets"
@@ -181,5 +229,72 @@ function bucketTitle(bucket: DashboardStackedBarData['buckets'][number]): string
   height: 10px;
   border-radius: 3px;
   flex: none;
+}
+
+/* --- 'bar' variant --- */
+.stackbar-widget--single {
+  justify-content: center;
+  gap: 22px;
+}
+
+.stackbar-widget__pairs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 16px 20px;
+}
+
+.stackbar-widget__pair {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stackbar-widget__pair-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.stackbar-widget__pair-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stackbar-widget__pair-value {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.stackbar-widget__hbar {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  height: 22px;
+  flex: none;
+}
+
+.stackbar-widget__hsegment {
+  min-width: 0;
+  border-radius: 4px;
+}
+
+/* Rounded ends on the bar as a whole. */
+.stackbar-widget__hsegment:first-child {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.stackbar-widget__hsegment:last-child {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
 }
 </style>

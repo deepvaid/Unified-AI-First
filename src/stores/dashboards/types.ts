@@ -369,6 +369,9 @@ export interface DashboardDonutSegment {
   label: string
   value: number
   formattedValue: string
+  /** Optional period-over-period change shown after the legend value, e.g. "↗ 5%". */
+  delta?: string
+  deltaPositive?: boolean
 }
 
 export interface DashboardDonutData {
@@ -455,6 +458,12 @@ export interface DashboardStackedBarData {
   buckets: DashboardStackedBarBucket[]
   /** Legend order matches segment order (bottom of the stack first). */
   legend: { key: string; label: string; total: string; pct: number }[]
+  /**
+   * 'columns' (default) = one vertical stack per bucket. 'bar' = a single
+   * full-width horizontal bar of proportional segments with a label/value
+   * legend above it (Shopify's "Sales by product name").
+   */
+  variant?: 'columns' | 'bar'
 }
 
 export interface DashboardTabsOrderRow {

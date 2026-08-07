@@ -34,6 +34,8 @@ const legendRows = computed<DtLegendRow[]>(() =>
     label: segment.label,
     value: segment.formattedValue,
     color: palette.value[index % palette.value.length] ?? '#0092D4',
+    delta: segment.delta,
+    deltaPositive: segment.deltaPositive,
   })),
 )
 </script>

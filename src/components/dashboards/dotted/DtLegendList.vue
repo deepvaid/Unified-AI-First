@@ -4,6 +4,9 @@ export interface DtLegendRow {
   label: string
   value: string
   color: string
+  /** Optional period-over-period change, e.g. "↗ 5%" (rendered pos/neg tinted). */
+  delta?: string
+  deltaPositive?: boolean
 }
 
 withDefaults(defineProps<{ rows: DtLegendRow[]; gap?: number }>(), { gap: 9 })
@@ -16,6 +19,11 @@ withDefaults(defineProps<{ rows: DtLegendRow[]; gap?: number }>(), { gap: 9 })
       <span class="dt-legend__label">{{ row.label }}</span>
       <span class="dt-legend__spacer" />
       <span class="dt-legend__value">{{ row.value }}</span>
+      <span
+        v-if="row.delta"
+        class="dt-legend__delta"
+        :class="{ 'dt-legend__delta--neg': row.deltaPositive === false }"
+      >{{ row.delta }}</span>
     </div>
   </div>
 </template>
@@ -53,5 +61,19 @@ withDefaults(defineProps<{ rows: DtLegendRow[]; gap?: number }>(), { gap: 9 })
 .dt-legend__value {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+.dt-legend__delta {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--pos);
+  white-space: nowrap;
+  min-width: 44px;
+  text-align: right;
+}
+
+.dt-legend__delta--neg {
+  color: var(--neg);
 }
 </style>
