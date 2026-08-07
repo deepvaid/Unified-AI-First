@@ -33,6 +33,17 @@
 - Full-page dashboard captures are NOT in Figma (over the 4096px downsample cap) — they
   live in `docs/chart-exploration/**/dashboard-full*` and the deck.
 
+- 2026-08-07 (P12+P13, one pass): 34 refreshed PNGs uploaded. Swapped dashboard-fold
+  (baseline + A–D), widget-area (A–D) and specimen-grid to the multi-colour-comparison
+  + new-widget captures; recoloured the native **comparison swatch** rect + hex caption
+  on 02–05 (A #6E93AE→#1B4F7A, B #828E9A→#C2622E, C #5E93AA→#2E9E6B, D #7C8CA3→#C264C9);
+  rewrote the "What changed vs today" text from copy.json; inserted a
+  **NEW WIDGETS — SHOPIFY-STYLE SET** row (Customers over time / Sessions by country /
+  Sales by product name / Sessions by device type) before FULL DASHBOARD on 00 and 02–05.
+  Note: option pages have **no tokens screenshot** — the palette is native swatch
+  rectangles, so only 2 image swaps per option page is correct.
+  `widget-line` images on 06 are deliberately unchanged (no comparison series, no new widget).
+
 ## Re-run instructions
 
 Screenshots come from `docs/chart-exploration/` (manifest.json). To refresh after a
