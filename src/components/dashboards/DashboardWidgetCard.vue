@@ -190,6 +190,7 @@ function handleAttentionCollapse(collapsed: boolean) {
     border
     rounded="lg"
     class="dashboard-widget-card h-100 d-flex flex-column"
+    :data-widget-metric="widget.metricId"
     :class="{
       'dashboard-widget-card--preview': preview,
       'dashboard-widget-card--draggable': draggable,
