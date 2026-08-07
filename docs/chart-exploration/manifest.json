@@ -1,0 +1,88 @@
+{
+  "shots": [
+    {
+      "file": "00-current/dashboard-full--current--1440--light.png",
+      "shot": "dashboard-full",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/dashboard-fold--current--1440--light.png",
+      "shot": "dashboard-fold",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/widget-line--current--1440--light.png",
+      "shot": "widget-line",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/widget-bar--current--1440--light.png",
+      "shot": "widget-bar",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/widget-area--current--1440--light.png",
+      "shot": "widget-area",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/widget-donut--current--1440--light.png",
+      "shot": "widget-donut",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/widget-line-hover--current--1440--light.png",
+      "shot": "widget-line-hover",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/widget-bar-hover--current--1440--light.png",
+      "shot": "widget-bar-hover",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/dashboard-full--current--1440--light--dsf1.png",
+      "shot": "dashboard-full",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 1,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    }
+  ],
+  "capturedAt": "2026-08-07T06:45:47.275Z",
+  "gitSha": "2bc211c",
+  "baseUrl": "http://localhost:5173"
+}

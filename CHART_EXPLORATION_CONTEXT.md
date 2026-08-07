@@ -1,0 +1,144 @@
+# Chart Exploration — Working Context
+
+> Persistent state for the chart visual-system exploration (leadership review).
+> **Read this before starting any phase. Update the Phase status table and the
+> relevant sections at the end of every phase.** Newest notes on top within sections.
+
+## Phase status
+
+| # | Phase (master brief) | Status | Commit | Summary (1 line) |
+|---|----------------------|--------|--------|------------------|
+| 0 | Baseline & audit | ◐ in progress | — | — |
+| 1 | Deep visual research | ☐ pending | — | — |
+| 2 | Four mood boards / directions | ☐ pending | — | — |
+| 3 | Fable design review gate | ☐ pending | — | — |
+| 4 | Color systems + validator | ☐ pending | — | — |
+| 5 | Implementation (Opus, 7 commits) | ☐ pending | — | — |
+| 6 | Interactions | ☐ pending | — | — |
+| 7 | Screenshots + Figma prep | ☐ pending | — | — |
+| 8 | Executive comparison | ☐ pending | — | — |
+| 9 | Fable final critique | ☐ pending | — | — |
+| 10 | Opus polish | ☐ pending | — | — |
+| 11 | Final Fable review + handoff | ☐ pending | — | — |
+
+Statuses: ☐ pending · ◐ in progress · ✅ done · ⚠ blocked (say why in Remaining tasks)
+
+## Objective
+
+Give Maropost leadership (Ross, CEO — very high design bar) 4 genuinely distinct,
+production-credible **chart visual systems applied to the exact same dashboard**, so
+they can choose a data-visualization language in under a minute. NOT a dashboard
+redesign: only the visualization layer (series colors, fills, gradients, strokes,
+grid, axes, legends, tooltips, hover/selected/comparison/pos-neg states) differs.
+
+Continues SCOP-312: round-2 flat multi-color rejected ("random colors… too flat"),
+round-3 gradient themes landed (indigo/ocean/aurora), round-4/5 chrome overhaul
+rejected wholesale. Current default = `shopify` flat-blue (Polaris grammar, Maropost hues).
+
+## Constraints (do not relitigate)
+
+- Layout / widgets / positions / sizes / metrics / data / IA / nav / cards / hierarchy: **unchanged**.
+- No-param dashboard (`shopify` default) stays **byte-identical** — it IS baseline "00 — Current".
+- Existing palettes (blue/indigo/ocean/aurora) + `/chart-themes` keep working.
+- No round-4/5 resurrection (canvas token, borderless cards, showcase widgets).
+- Branch `feature/chart-exploration` only; merge to master/prod is the user's post-review call.
+- Light mode only (user decision 2026-08-07): dark theme entries = copies of light
+  series/axis/treatment with DARK_CHROME kept; dark tuning is explicit follow-up.
+- Autonomous end-to-end run (user decision); Figma deliverable = **new file** (user decision);
+  Design Kit `RyWEOafKLPhvZCltyQicOm` is never written to.
+- npm, not pnpm. Global CSS only via `src/styles/app-styles.ts` manifest.
+- Leave untracked `Maropost dashboard redesign.zip` alone. Never touch KPI dark-mode
+  identity bug (`DashboardKpiWidget.vue:48`) or `#ffffff` marker stroke — documented follow-ups.
+- Full plan: `~/.claude/plans/master-task-maropost-dashboard-happy-corbato.md`
+
+## Current dashboard structure (capture targets)
+
+`/accounts/2000290/dashboard` (the `/` redirect) → `src/views/DashboardView.vue`,
+"Overview" seed (`buildHomeWidgets`, `src/stores/useDashboards.ts:221-239`):
+
+| Widget | metricId | Viz | Tech |
+|---|---|---|---|
+| Revenue / Orders / AOV / Open Rate | commerce_revenue, commerce_orders, commerce_aov, marketing_open_rate | KPI + sparkline | hand-rolled SVG |
+| Revenue over time | commerce_revenue_over_time | area, 2 series (dashed `isComparison`) | ApexCharts |
+| Deliverability | marketing_deliverability_score | 270° ring gauge | SVG (DtGauge) |
+| Revenue by channel | demo_channel_trend | line, 6 series + Trend/Compare toggle | ApexCharts |
+| Traffic mix | demo_channel_mix | donut, 6 slices | ApexCharts |
+| Email volume | marketing_email_volume | grouped bar, 2×8 | ApexCharts |
+| Contacts by domain | contacts_by_domain | ring donut, 5 segments + custom legend | SVG (DtRingDonut) |
+| Top campaigns / Recent orders | marketing_top_campaigns, commerce_recent_orders | tables | v-table (NOT themed) |
+| Live activity | marketing_live_activity | feed | CSS (NOT themed) |
+
+Specimen mapping: line=demo_channel_trend · bar=marketing_email_volume ·
+area=commerce_revenue_over_time · donut=demo_channel_mix.
+Data: all positive; only Revenue-over-time has a comparison series. Data derives from
+Date.now() at day granularity → captures happen in one session (midnight guard).
+
+Theme system: `src/plugins/chartPalette.ts` (`CHART_THEMES`, `?chart=` in `App.vue:74`,
+`CHART_PALETTE_OVERRIDE` + `PaletteScope.vue` for per-panel pinning). Full audit:
+`docs/chart-exploration/notes/00-audit.md`.
+
+## Research findings
+
+_(P1 fills this: per-pattern takeaways, link research-notes.md)_
+
+## References
+
+_(P1: mirror of refs.json — product, screen, local file, informs-option)_
+
+## Options being explored
+
+- **Option A — Restrained Blue** (`?chart=optionA`) — Shopify-calm, systematized restraint. _(P2)_
+- **Option B — Sophisticated Multi-Color** (`?chart=optionB`) — Stripe/Linear curated hues. _(P2)_
+- **Option C — Blue + Teal + Green** (`?chart=optionC`) — ownable connected family. _(P2)_
+- **Option D — Modern Gradient** (`?chart=optionD`) — subtle depth, premium. _(P2)_
+
+## Color tokens
+
+Naming: `color.chart.{light,dark}.{optionA..D}.{series1..6, axis1..5, comparison,
+positive, negative, warning, neutral, grid, hover, selection, mutedSeries,
+gradientStart, gradientEnd, tooltip*}` + `component.chart.{option}.{...opacities}`
+in `src/design-tokens/tokens.json` → `npm run tokens:build`. Iterate inline in
+`chartPalette.ts` first; freeze to tokens as P5's final commit.
+Validator: `node scripts/chart-exploration/validate-palettes.mjs` (P4).
+
+## Design decisions
+
+- 2026-08-07 — Light-only palettes; dark = type-satisfying copies with DARK_CHROME (user).
+- 2026-08-07 — Autonomous end-to-end; new Figma file (user).
+- 2026-08-07 — Additive `ChartTreatment` on `ChartTheme`; legacy themes leave it
+  undefined → verbatim legacy code paths (baseline safety over refactor cleanliness).
+- 2026-08-07 — Per-theme tooltip/legend CSS via `[data-chart]` scopes + CSS-variable
+  indirection (`var(--mp-tip-*, <current literal>)`); do NOT consolidate duplicated
+  scoped tooltip blocks (specificity/injection-order risk to baseline).
+- 2026-08-07 — Option A must be *systematized restraint* (unified legend/tooltip/grid
+  discipline), not a recolor of the baseline — otherwise it's not a real choice.
+
+## Rejected ideas
+
+- Refactoring `gradientMarks`/`flatMarks` booleans into treatments for ALL themes —
+  cleaner but risks silent baseline drift; deferred to post-review follow-up.
+- Consolidating the 3 duplicated `.mp-chart-tip` scoped CSS blocks — same reason.
+- New charting library (Unovis etc. from round-5 notes) — ApexCharts + hand-rolled SVG
+  already render everything; a library swap is not a visualization-language decision.
+
+## Implementation notes (gotchas)
+
+- ApexCharts 5.10 honors `window.Apex` global defaults → `addInitScript` with
+  `{ chart: { animations: { enabled: false } } }` kills entrance animations (verified in dist).
+- `DashboardChartWidget` gates first paint on `requestIdleCallback` + skeleton →
+  settle = fonts.ready + no `.v-skeleton-loader` + ≥4 `.apexcharts-canvas`.
+- Copilot drawer is non-persistent (fresh context = closed).
+- Figma: images >4096px on long side get downsampled → dsf-1 variant for full-page shots.
+  Mandatory skills before tools: `figma:figma-create-new-file`, `figma:figma-use`.
+- Playwright is a plain dependency (`import { chromium } from 'playwright'`); the
+  `@playwright/test` path in the repo is dead.
+- Dev server: launch.json "Main App" → :5173 (autoPort — capture script asserts reachability).
+
+## Remaining tasks
+
+- [ ] P0: baseline captures + audit commit
+- [ ] P1–P11 per Phase status table above
+- Follow-ups (explicitly out of scope, for after direction selection):
+  - [ ] Tune dark-mode palettes for the winning option
+  - [ ] Fix `DashboardKpiWidget.vue:48` dark-mode array-identity bug (one-liner, separate PR)
+  - [ ] Merge `feature/chart-exploration` → master (user's call; prod alias link for stakeholders)
