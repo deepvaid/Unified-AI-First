@@ -15,8 +15,8 @@
 | 4 | Color systems + validator | ✅ done | (P4 commit) | All 4 palettes pass hard gates after 5 tuning rounds; QA record in notes/p4-validation.md; hex source = scripts/chart-exploration/option-palettes.mjs |
 | 5 | Implementation (Opus) | ✅ done | eafa177…7f356bc | Treatment system + 4 themes + CSS skins + library widgets + /chart-exploration; token freeze DEFERRED to post-polish |
 | 6 | Interactions | ✅ done | (verified live) | Tooltip skins ×4, crosshair/markers, legend dim (B 0.25) + deselect (0.45), comparison, pos/neg diverging all verified |
-| 7 | Screenshots + Figma prep | ☐ pending | — | — |
-| 8 | Executive comparison | ☐ pending | — | — |
+| 7 | Screenshots + Figma prep | ✅ done | a344532 + (this) | 55-shot one-session library, deck/index.html, Figma file olj3jdXnCXlKUTcS2di7LD pages 00–06 (webp→PNG refill lesson in figma-file.md) |
+| 8 | Executive comparison | ✅ done | (same) | Page 06 + deck §06: 4 folds, same-chart row, specimen grid, choose cards — verified via get_screenshot |
 | 9 | Fable final critique | ☐ pending | — | — |
 | 10 | Opus polish | ☐ pending | — | — |
 | 11 | Final Fable review + handoff | ☐ pending | — | — |
