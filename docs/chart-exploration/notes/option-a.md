@@ -33,7 +33,7 @@ and legend labels always accompany them).
 | s5 | muted | `#5C6B7A` | slate — context series |
 | s6 | muted-2 | `#AFC3D1` | steel — furthest background |
 
-Semantic: comparison `#8FAEC6` (cool gray-blue, dashed) · positive `#1B7A46` ·
+Semantic: comparison `#1B4F7A` (deep navy, dashed — see P12 note) · positive `#1B7A46` ·
 negative `#C2402A` · warning `#B27B00` · neutral `#8A94A0` · selection = s1 ·
 grid `rgba(26,24,20,0.07)` hairline solid.
 
@@ -41,7 +41,7 @@ grid `rgba(26,24,20,0.07)` hairline solid.
 
 ```
 stroke: { curve: smooth, width: 2, companionWidth: 1.75, companionDash: 0, gradientLine: false }
-comparison: { color: #8FAEC6, dash: 5, fillOpacity: 0 }
+comparison: { color: #1B4F7A, dash: 5, fillOpacity: 0 }
 area: { fill: gradient, opacityFrom: 0.14, opacityTo: 0.02 }        // quieter than baseline
 bar: { radius: 2, single: 45%, grouped: 68%, fill: solid, floatingLabels: false }
 grid: { show: true, dashArray: 0, xLines: false, yLines: true }
@@ -67,3 +67,10 @@ tooltip: minimal light — white, hairline border, radius 8 (baseline anatomy, t
 **P4 note:** the draft anchors above were superseded by the validated palette in
 `scripts/chart-exploration/option-palettes.mjs` — see `p4-validation.md` for the
 final hexes and the archived gate output.
+
+---
+**P12 note (2026-08-07, stakeholder direction):** the previous-period series now takes a
+**distinct hue** per option instead of a neutral gray. Rationale: gray read as
+"disabled/no data" rather than as a second real series. The dash is retained, so the
+grammar is now *hue = which period, dash = the past*. All four comparison colours were
+re-validated against their lead colour (normal ΔE, protan/deutan CVD, contrast vs white).

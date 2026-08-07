@@ -763,8 +763,8 @@
   --mp-rgb-color-chart-light-optionA-axis4: 46, 150, 210;
   --mp-color-chart-light-optionA-axis5: #63BCE8;
   --mp-rgb-color-chart-light-optionA-axis5: 99, 188, 232;
-  --mp-color-chart-light-optionA-comparison: #6E93AE;
-  --mp-rgb-color-chart-light-optionA-comparison: 110, 147, 174;
+  --mp-color-chart-light-optionA-comparison: #1B4F7A;
+  --mp-rgb-color-chart-light-optionA-comparison: 27, 79, 122;
   --mp-color-chart-light-optionA-positive: #1B7A46;
   --mp-rgb-color-chart-light-optionA-positive: 27, 122, 70;
   --mp-color-chart-light-optionA-negative: #C2402A;
@@ -795,8 +795,8 @@
   --mp-rgb-color-chart-light-optionB-axis4: 108, 157, 223;
   --mp-color-chart-light-optionB-axis5: #8FB3E6;
   --mp-rgb-color-chart-light-optionB-axis5: 143, 179, 230;
-  --mp-color-chart-light-optionB-comparison: #828E9A;
-  --mp-rgb-color-chart-light-optionB-comparison: 130, 142, 154;
+  --mp-color-chart-light-optionB-comparison: #C2622E;
+  --mp-rgb-color-chart-light-optionB-comparison: 194, 98, 46;
   --mp-color-chart-light-optionB-positive: #178A50;
   --mp-rgb-color-chart-light-optionB-positive: 23, 138, 80;
   --mp-color-chart-light-optionB-negative: #C6403D;
@@ -827,8 +827,8 @@
   --mp-rgb-color-chart-light-optionC-axis4: 29, 150, 190;
   --mp-color-chart-light-optionC-axis5: #4FC2CE;
   --mp-rgb-color-chart-light-optionC-axis5: 79, 194, 206;
-  --mp-color-chart-light-optionC-comparison: #5E93AA;
-  --mp-rgb-color-chart-light-optionC-comparison: 94, 147, 170;
+  --mp-color-chart-light-optionC-comparison: #2E9E6B;
+  --mp-rgb-color-chart-light-optionC-comparison: 46, 158, 107;
   --mp-color-chart-light-optionC-positive: #38761D;
   --mp-rgb-color-chart-light-optionC-positive: 56, 118, 29;
   --mp-color-chart-light-optionC-negative: #C2402A;
@@ -859,8 +859,8 @@
   --mp-rgb-color-chart-light-optionD-axis4: 46, 146, 228;
   --mp-color-chart-light-optionD-axis5: #4FB3F2;
   --mp-rgb-color-chart-light-optionD-axis5: 79, 179, 242;
-  --mp-color-chart-light-optionD-comparison: #7C8CA3;
-  --mp-rgb-color-chart-light-optionD-comparison: 124, 140, 163;
+  --mp-color-chart-light-optionD-comparison: #C264C9;
+  --mp-rgb-color-chart-light-optionD-comparison: 194, 100, 201;
   --mp-color-chart-light-optionD-positive: #148549;
   --mp-rgb-color-chart-light-optionD-positive: 20, 133, 73;
   --mp-color-chart-light-optionD-negative: #C6403D;
@@ -985,8 +985,8 @@
   --mp-rgb-color-chart-dark-optionA-axis4: 46, 150, 210;
   --mp-color-chart-dark-optionA-axis5: #63BCE8;
   --mp-rgb-color-chart-dark-optionA-axis5: 99, 188, 232;
-  --mp-color-chart-dark-optionA-comparison: #6E93AE;
-  --mp-rgb-color-chart-dark-optionA-comparison: 110, 147, 174;
+  --mp-color-chart-dark-optionA-comparison: #1B4F7A;
+  --mp-rgb-color-chart-dark-optionA-comparison: 27, 79, 122;
   --mp-color-chart-dark-optionA-positive: #1B7A46;
   --mp-rgb-color-chart-dark-optionA-positive: 27, 122, 70;
   --mp-color-chart-dark-optionA-negative: #C2402A;
@@ -1017,8 +1017,8 @@
   --mp-rgb-color-chart-dark-optionB-axis4: 108, 157, 223;
   --mp-color-chart-dark-optionB-axis5: #8FB3E6;
   --mp-rgb-color-chart-dark-optionB-axis5: 143, 179, 230;
-  --mp-color-chart-dark-optionB-comparison: #828E9A;
-  --mp-rgb-color-chart-dark-optionB-comparison: 130, 142, 154;
+  --mp-color-chart-dark-optionB-comparison: #C2622E;
+  --mp-rgb-color-chart-dark-optionB-comparison: 194, 98, 46;
   --mp-color-chart-dark-optionB-positive: #178A50;
   --mp-rgb-color-chart-dark-optionB-positive: 23, 138, 80;
   --mp-color-chart-dark-optionB-negative: #C6403D;
@@ -1049,8 +1049,8 @@
   --mp-rgb-color-chart-dark-optionC-axis4: 29, 150, 190;
   --mp-color-chart-dark-optionC-axis5: #4FC2CE;
   --mp-rgb-color-chart-dark-optionC-axis5: 79, 194, 206;
-  --mp-color-chart-dark-optionC-comparison: #5E93AA;
-  --mp-rgb-color-chart-dark-optionC-comparison: 94, 147, 170;
+  --mp-color-chart-dark-optionC-comparison: #2E9E6B;
+  --mp-rgb-color-chart-dark-optionC-comparison: 46, 158, 107;
   --mp-color-chart-dark-optionC-positive: #38761D;
   --mp-rgb-color-chart-dark-optionC-positive: 56, 118, 29;
   --mp-color-chart-dark-optionC-negative: #C2402A;
@@ -1081,8 +1081,8 @@
   --mp-rgb-color-chart-dark-optionD-axis4: 46, 146, 228;
   --mp-color-chart-dark-optionD-axis5: #4FB3F2;
   --mp-rgb-color-chart-dark-optionD-axis5: 79, 179, 242;
-  --mp-color-chart-dark-optionD-comparison: #7C8CA3;
-  --mp-rgb-color-chart-dark-optionD-comparison: 124, 140, 163;
+  --mp-color-chart-dark-optionD-comparison: #C264C9;
+  --mp-rgb-color-chart-dark-optionD-comparison: 194, 100, 201;
   --mp-color-chart-dark-optionD-positive: #148549;
   --mp-rgb-color-chart-dark-optionD-positive: 20, 133, 73;
   --mp-color-chart-dark-optionD-negative: #C6403D;

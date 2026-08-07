@@ -37,7 +37,7 @@ CAUTIONS: gitbook--gradient-area--01 (saturation ceiling), beehiiv--pastel-gauge
 Gradient axis (deep → bright, drives bar/donut/line-gradient marks):
 `#312E81 → #4338CA → #4F6BE8 → #38A7F8 → #7DD3FC`
 
-Semantic: comparison `#94A3B8` (slate, dashed) · positive `#178A50` · negative
+Semantic: comparison `#C264C9` (orchid, dashed — see P12 note) · positive `#178A50` · negative
 `#C6403D` · warning `#B27B00` · neutral `#8A94A0` · gradient-start/end +
 area-fill-opacity tokenized (the brief's gradient token set).
 
@@ -45,7 +45,7 @@ area-fill-opacity tokenized (the brief's gradient token set).
 
 ```
 stroke: { curve: smooth, width: 2.5, companionWidth: 2, companionDash: 0, gradientLine: true }
-comparison: { color: #94A3B8, dash: 5, fillOpacity: 0 }
+comparison: { color: #C264C9, dash: 5, fillOpacity: 0 }
 area: { fill: gradient, opacityFrom: 0.35, opacityTo: 0 }            // the signature fade
 bar: { radius: 8, single: 45%, grouped: 66%, fill: axis-gradient, floatingLabels: true }
 grid: { show: true, dashArray: 0, xLines: false, yLines: true, color: fainter }
@@ -75,3 +75,10 @@ tooltip: DARK inverse (shared anatomy with B, deeper surface) — premium signal
 **P4 note:** the draft anchors above were superseded by the validated palette in
 `scripts/chart-exploration/option-palettes.mjs` — see `p4-validation.md` for the
 final hexes and the archived gate output.
+
+---
+**P12 note (2026-08-07, stakeholder direction):** the previous-period series now takes a
+**distinct hue** per option instead of a neutral gray. Rationale: gray read as
+"disabled/no data" rather than as a second real series. The dash is retained, so the
+grammar is now *hue = which period, dash = the past*. All four comparison colours were
+re-validated against their lead colour (normal ΔE, protan/deutan CVD, contrast vs white).

@@ -29,7 +29,7 @@ mailchimp--accent-funnel--01 (gray de-emphasis rule carried over).
 | s5 | teal 180 | `#2AA893` | mid teal — between the poles |
 | s6 | navy 255 | `#173A66` | deep navy — dark bookend |
 
-Semantic: comparison `#7FB3C8` (family gray-cyan, dashed) · positive `#157A3E`
+Semantic: comparison `#2E9E6B` (family green, dashed — see P12 note) · positive `#157A3E`
 (reserved, yellower + deeper than s3/s5) · negative `#C2402A` · warning `#B27B00` ·
 neutral `#8A94A0` · grid `rgba(26,24,20,0.07)`.
 
@@ -37,7 +37,7 @@ neutral `#8A94A0` · grid `rgba(26,24,20,0.07)`.
 
 ```
 stroke: { curve: smooth, width: 2.5, companionWidth: 2, companionDash: 0, gradientLine: false }
-comparison: { color: #7FB3C8, dash: 5, fillOpacity: 0 }
+comparison: { color: #2E9E6B, dash: 5, fillOpacity: 0 }
 area: { fill: gradient, opacityFrom: 0.28, opacityTo: 0.02 }         // the family wash — C's signature
 bar: { radius: 6, single: 45%, grouped: 70%, fill: tint-gradient, floatingLabels: false }
 grid: { show: true, dashArray: 0, xLines: false, yLines: true }
@@ -65,3 +65,10 @@ tooltip: minimal light with a family-tinted title bar accent (subtle)
 **P4 note:** the draft anchors above were superseded by the validated palette in
 `scripts/chart-exploration/option-palettes.mjs` — see `p4-validation.md` for the
 final hexes and the archived gate output.
+
+---
+**P12 note (2026-08-07, stakeholder direction):** the previous-period series now takes a
+**distinct hue** per option instead of a neutral gray. Rationale: gray read as
+"disabled/no data" rather than as a second real series. The dash is retained, so the
+grammar is now *hue = which period, dash = the past*. All four comparison colours were
+re-validated against their lead colour (normal ΔE, protan/deutan CVD, contrast vs white).

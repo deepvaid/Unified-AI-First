@@ -132,6 +132,20 @@ Validator: `node scripts/chart-exploration/validate-palettes.mjs` (P4).
 
 ## Design decisions
 
+- 2026-08-07 (P12, **stakeholder direction — supersedes research takeaways 1–2 for the
+  comparison series only**) — "use multi colour in comparing two periods". The
+  previous-period series now takes a **distinct hue per option** instead of a neutral
+  gray, because gray read as *disabled / no data* rather than as a second real series.
+  The dash is retained → the grammar is now **hue = which period, dash = the past**.
+  New comparison tokens (validated vs each option's lead: normal ΔE / CVD ΔE / contrast):
+  A `#1B4F7A` navy 13.0/12.5/8.59 · B `#C2622E` terracotta 28.1/22.5/4.13 ·
+  C `#2E9E6B` green 18.7/18.1/3.38 · D `#C264C9` orchid 22.8/8.3/3.52.
+  **Option A stays tonal (navy, not a foreign hue) on purpose** — A's entire pitch is
+  "one blue"; giving it a second hue would collapse A into B and cost leadership a real
+  choice. One-line token change if that's not wanted.
+  Comparison never shares a chart with series slots 2–6 (only one comparison series
+  exists — `useWidgetData.ts:339`), so reusing family hues is collision-free.
+
 - 2026-08-07 (P5/P6) — Commits: eafa177 (treatment type + themes + plumbing), d256e71
   (Chart/Pie widgets), 4ff3211 (SVG family), 263d36f (CSS skins/dimming — dimming
   re-points Apex's own child selectors via --mp-chart-dim-opacity to avoid opacity

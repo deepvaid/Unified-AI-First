@@ -28,15 +28,14 @@ ANTI: mixpanel--rainbow--anti.
 | s5 | rose | `#C25E8E` | soft magenta, not pink-pastel |
 | s6 | neutral | `#66727E` | slate — the "everything else" slot |
 
-Semantic: comparison `#9AA5B1` (neutral, dashed — comparison is *context*, so it
-wears gray here, the strongest expression of takeaway 2) · positive `#178A50` ·
+Semantic: comparison `#C2622E` (terracotta, dashed — see P12 note) · positive `#178A50` ·
 negative `#C6403D` · warning `#B27B00` · neutral `#8A94A0` · grid dotted.
 
 ## Treatment spec
 
 ```
 stroke: { curve: straight, width: 2, companionWidth: 2, companionDash: 0, gradientLine: false }
-comparison: { color: #9AA5B1, dash: 4, fillOpacity: 0 }
+comparison: { color: #C2622E, dash: 4, fillOpacity: 0 }
 area: { fill: solid, opacityFrom: 0.09, opacityTo: 0.09 }            // flat translucent panes
 bar: { radius: 4, single: 45%, grouped: 68%, fill: solid, floatingLabels: false }
 grid: { show: true, dashArray: 4, xLines: false, yLines: true }      // dotted — editorial texture
@@ -64,3 +63,10 @@ tooltip: DARK inverse — near-black surface, per-series dot rows, white values
 **P4 note:** the draft anchors above were superseded by the validated palette in
 `scripts/chart-exploration/option-palettes.mjs` — see `p4-validation.md` for the
 final hexes and the archived gate output.
+
+---
+**P12 note (2026-08-07, stakeholder direction):** the previous-period series now takes a
+**distinct hue** per option instead of a neutral gray. Rationale: gray read as
+"disabled/no data" rather than as a second real series. The dash is retained, so the
+grammar is now *hue = which period, dash = the past*. All four comparison colours were
+re-validated against their lead colour (normal ΔE, protan/deutan CVD, contrast vs white).

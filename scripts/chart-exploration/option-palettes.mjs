@@ -21,7 +21,7 @@ export const OPTIONS = {
     mutedSlots: [4, 5],
     axis: ['#123B63', '#15568C', '#0E72B8', '#2E96D2', '#63BCE8'],
     semantic: {
-      comparison: '#6E93AE',
+      comparison: '#1B4F7A',
       positive: '#1B7A46',
       negative: '#C2402A',
       warning: '#B27B00',
@@ -34,7 +34,7 @@ export const OPTIONS = {
     mutedSlots: [5],
     axis: ['#1E4E93', '#2E67B5', '#4A82CE', '#6C9DDF', '#8FB3E6'],
     semantic: {
-      comparison: '#828E9A',
+      comparison: '#C2622E',
       positive: '#178A50',
       negative: '#C6403D',
       warning: '#B27B00',
@@ -47,7 +47,7 @@ export const OPTIONS = {
     mutedSlots: [],
     axis: ['#0B3D5C', '#00618F', '#0073AB', '#1D96BE', '#4FC2CE'],
     semantic: {
-      comparison: '#5E93AA',
+      comparison: '#2E9E6B',
       positive: '#38761D',
       negative: '#C2402A',
       warning: '#B27B00',
@@ -60,7 +60,7 @@ export const OPTIONS = {
     mutedSlots: [5],
     axis: ['#312E81', '#4338CA', '#5B67EA', '#2E92E4', '#4FB3F2'],
     semantic: {
-      comparison: '#7C8CA3',
+      comparison: '#C264C9',
       positive: '#148549',
       negative: '#C6403D',
       warning: '#B27B00',
