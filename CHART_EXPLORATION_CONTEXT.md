@@ -17,8 +17,8 @@
 | 6 | Interactions | ✅ done | (verified live) | Tooltip skins ×4, crosshair/markers, legend dim (B 0.25) + deselect (0.45), comparison, pos/neg diverging all verified |
 | 7 | Screenshots + Figma prep | ✅ done | a344532 + (this) | 55-shot one-session library, deck/index.html, Figma file olj3jdXnCXlKUTcS2di7LD pages 00–06 (webp→PNG refill lesson in figma-file.md) |
 | 8 | Executive comparison | ✅ done | (same) | Page 06 + deck §06: 4 folds, same-chart row, specimen grid, choose cards — verified via get_screenshot |
-| 9 | Fable final critique | ☐ pending | — | — |
-| 10 | Opus polish | ☐ pending | — | — |
+| 9 | Fable final critique | ✅ done | (P10 commit) | Verdicts below; 3 fixes ordered (D donut shadow, specimen floating labels, vsToday copy) |
+| 10 | Opus polish | ◐ in progress | — | — |
 | 11 | Final Fable review + handoff | ☐ pending | — | — |
 
 Statuses: ☐ pending · ◐ in progress · ✅ done · ⚠ blocked (say why in Remaining tasks)
@@ -157,6 +157,29 @@ Validator: `node scripts/chart-exploration/validate-palettes.mjs` (P4).
   scoped tooltip blocks (specificity/injection-order risk to baseline).
 - 2026-08-07 — Option A must be *systematized restraint* (unified legend/tooltip/grid
   discipline), not a recolor of the baseline — otherwise it's not a real choice.
+
+## P9 — Principal-designer critique (2026-08-07)
+
+Evidence: full capture library + Figma pages + live interaction pass.
+- **Visual quality**: B/C/D presentation-grade; A deliberately conservative but clean. PASS.
+- **Differentiation**: B/C/D unmistakable at every size. **A vs baseline is too subtle at
+  the fold** (its discipline shows in the 6-series line, donut, comparison gray) → fix:
+  per-option "What changed vs today" line so the comparison is honest and legible. PASS w/ fix.
+- **Data clarity**: all four legible; D's grouped-bar floating labels COLLIDE ONLY in the
+  small specimen cells (fine at real widget size) → fix at the specimen-view level.
+- **Scalability**: treatments cover every widget incl. library widgets; palettes
+  validator-gated (CVD + normal floors); light-slot relief documented. PASS.
+- **Maropost fit**: A/C anchored on brand blues; D justified by brand primary+secondary
+  violet; B is the deliberate hue-outlier (that's its job). PASS.
+- **Executive readiness**: 06 (Figma + deck) reads in <1 min. PASS after fixes.
+- **AI smell test**: two tells found — D donut's drop-shadow halo (sticker-like; shadow
+  was designed for strokes, not filled rings) and D's specimen-cell label collisions.
+  A donut at full size verified GOOD (pale steel slice carried by gaps + legend).
+
+**P10 fix list**: 1) remove treatment dropShadow from DashboardPieWidget (donuts never
+shadow); 2) specimen grid disables floatingLabels in small cells (view-level theme clone);
+3) copy.json `vsToday` per option → deck + Figma option pages; 4) recapture affected
+shots, rebuild deck, swap Figma hashes.
 
 ## Rejected ideas
 

@@ -46,6 +46,7 @@ const optionSection = ([id, slug, num]) => {
     <div><h4>Why it works</h4><p>${esc(o.whyItWorks)}</p></div>
     <div><h4>Why for Maropost</h4><p>${esc(o.whyForMaropost)}</p></div>
     <div><h4>Trade-off</h4><p>${esc(o.tradeoff)}</p></div>
+    <div><h4>What changed vs today</h4><p>${esc(o.vsToday ?? '')}</p></div>
   </div>
   <h3>Mood board</h3>
   <div class="refgrid">${informed.map((r) => `<figure>${img(refFile(r))}<figcaption>${esc(r.product)} — ${esc(r.pattern)}</figcaption></figure>`).join('')}</div>

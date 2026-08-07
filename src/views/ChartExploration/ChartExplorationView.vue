@@ -29,6 +29,15 @@ watch(() => copilot.isOpen, (open) => { if (open) copilot.close() }, { immediate
 
 const ACCOUNT_ID = '2000290'
 
+// Specimen cells are ~260px wide — Option D's floating bar labels collide at that
+// size (they read fine at real widget size), so small cells suppress them.
+const specimenTheme = (id: ChartPalette) => {
+  const base = CHART_THEMES[id].light
+  const t = base.treatment
+  if (!t?.bar.floatingLabels) return base
+  return { ...base, treatment: { ...t, bar: { ...t.bar, floatingLabels: false } } }
+}
+
 // Real dashboard filters (mirrors createDefaultFilters() in useDashboards.ts).
 const FILTERS: DashboardFilterState = {
   rangePreset: 'last_30_days',
@@ -342,7 +351,7 @@ const tokenStrips = OPTIONS.map((option) => {
             <PaletteScope
               v-for="row in SPECIMEN_ROWS"
               :key="row.key"
-              :theme="CHART_THEMES[option.id].light"
+              :theme="specimenTheme(option.id)"
               :chart-id="option.chartId"
               class="cx-specimen__cell"
               :style="{ height: `${row.height}px` }"

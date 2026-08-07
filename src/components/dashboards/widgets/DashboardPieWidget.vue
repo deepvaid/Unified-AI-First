@@ -75,10 +75,10 @@ const options = computed<ApexOptions>(() => {
       type: 'donut',
       fontFamily: 'inherit',
       toolbar: { show: false },
+      // Treatment shadows are a stroke effect — on a filled ring they read as a
+      // sticker halo, so donuts never take them (P9 critique).
       ...(t
-        ? (t.effects.dropShadow
-            ? { dropShadow: { enabled: true, top: 2, left: 0, blur: 1, opacity: 0.14 } }
-            : {})
+        ? {}
         : gradientMarks.value
           ? { dropShadow: { enabled: true, top: 2, left: 0, blur: 8, opacity: 0.12 } }
           : {}),

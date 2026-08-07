@@ -9,38 +9,62 @@
     "optionA": {
       "name": "Option A — Restrained Blue",
       "philosophy": "One blue, weighted by importance. Everything secondary steps back into neutrals.",
-      "references": ["Shopify", "Vercel", "Stripe (neutral context)", "Mailchimp"],
+      "references": [
+        "Shopify",
+        "Vercel",
+        "Stripe (neutral context)",
+        "Mailchimp"
+      ],
       "whyItWorks": "Blue creates consistency across every chart without adding noise, and neutral supporting series make the important line the obvious one. It matches the enterprise character Maropost already has.",
       "whyForMaropost": "The safest and most scalable direction across the product ecosystem — it upgrades today's look into a real system without changing its temperament.",
       "tradeoff": "The least distinctive of the four. With many series on one chart it relies on neutrals and labels rather than color to tell things apart.",
-      "figmaDescription": "This direction keeps visualization simple, calm, and easy to read. Inspired by Shopify and mature SaaS products that use color with restraint. Blue creates consistency across charts without making the dashboard feel noisy. It works well for Maropost because the product already has a strong enterprise character. This is the safest and most scalable direction across the product ecosystem."
+      "figmaDescription": "This direction keeps visualization simple, calm, and easy to read. Inspired by Shopify and mature SaaS products that use color with restraint. Blue creates consistency across charts without making the dashboard feel noisy. It works well for Maropost because the product already has a strong enterprise character. This is the safest and most scalable direction across the product ecosystem.",
+      "vsToday": "Deeper lead blue; true neutral slates for context series instead of pale blues; one axis, grid and legend policy on every chart; gray dashed comparison."
     },
     "optionB": {
       "name": "Option B — Sophisticated Multi-Color",
       "philosophy": "Color is meaning — one hue per data family, used intentionally, never decoratively.",
-      "references": ["Stripe", "Customer.io", "Zendesk", "Linear"],
+      "references": [
+        "Stripe",
+        "Customer.io",
+        "Zendesk",
+        "Linear"
+      ],
       "whyItWorks": "Five spaced, slightly muted hues plus one neutral make six-series charts instantly scannable — each channel keeps its own color everywhere it appears. A dark tooltip and round markers give analytics a designed, editorial feel.",
       "whyForMaropost": "Strongest when distinguishing data is the priority: multi-channel revenue, campaign comparisons, segment analytics. Gives the analytics surfaces energy while staying professional.",
       "tradeoff": "The furthest from the current all-blue identity, and it demands discipline — every new metric must map to the fixed color order or it drifts toward rainbow.",
-      "figmaDescription": "This direction uses a controlled multi-color palette to improve data differentiation. Inspired by products like Stripe, Linear and Intercom, where color is used intentionally rather than decoratively. It makes complex charts easier to scan when several data series appear together. For Maropost, it gives analytics more energy while remaining structured and professional. It is strongest when distinguishing data is the priority."
+      "figmaDescription": "This direction uses a controlled multi-color palette to improve data differentiation. Inspired by products like Stripe, Linear and Intercom, where color is used intentionally rather than decoratively. It makes complex charts easier to scan when several data series appear together. For Maropost, it gives analytics more energy while remaining structured and professional. It is strongest when distinguishing data is the priority.",
+      "vsToday": "Five meaningful hues replace six blues; comparison goes neutral gray; dark tooltip; dotted grid; round legend markers; strongest hover focus."
     },
     "optionC": {
       "name": "Option C — Maropost Blue · Teal · Green",
       "philosophy": "An ownable family — Maropost blue flowing through teal into green, one temperature.",
-      "references": ["Base44", "Klaviyo", "Expensify", "modern fintech families"],
+      "references": [
+        "Base44",
+        "Klaviyo",
+        "Expensify",
+        "modern fintech families"
+      ],
       "whyItWorks": "Related hues with alternating lightness separate six series better than six blues, while the whole dashboard still reads as one connected color story. Soft family-tinted fills add warmth without noise.",
       "whyForMaropost": "This could become a recognizable Maropost visualization identity across products — more ownable than standard blue, still unmistakably enterprise.",
       "tradeoff": "Teal and green neighbors need careful spacing (we verify with color-blindness checks), and the semantic 'positive green' must stay visually distinct from the series greens.",
-      "figmaDescription": "This direction builds a distinctive visualization language around blue, teal and green. It takes inspiration from modern SaaS systems that use a connected color family instead of unrelated chart colors. It creates enough differentiation between datasets while keeping the dashboard visually cohesive. For Maropost, this could become a recognizable visualization identity across products. It feels more ownable than standard blue while remaining suitable for enterprise use."
+      "figmaDescription": "This direction builds a distinctive visualization language around blue, teal and green. It takes inspiration from modern SaaS systems that use a connected color family instead of unrelated chart colors. It creates enough differentiation between datasets while keeping the dashboard visually cohesive. For Maropost, this could become a recognizable visualization identity across products. It feels more ownable than standard blue while remaining suitable for enterprise use.",
+      "vsToday": "Blue stays the anchor but flows through teal into green; soft family-tinted area washes; rounded tint-gradient bars; reserved deeper positive green."
     },
     "optionD": {
       "name": "Option D — Modern Gradient",
       "philosophy": "Data with presence — depth and light, never noise. Every gradient encodes something.",
-      "references": ["Posh", "Later", "Hyper Charts", "AI-first analytics products"],
+      "references": [
+        "Posh",
+        "Later",
+        "Hyper Charts",
+        "AI-first analytics products"
+      ],
       "whyItWorks": "Vertical fades under thin solid strokes make trends feel dimensional; gradient bars with rounded caps and floating values give key numbers presence. A dark tooltip and Maropost's blue-to-violet range keep it premium rather than flashy.",
       "whyForMaropost": "The boldest direction and the clearest chance at a distinctive visual signature — it makes the dashboard feel like a next-generation product, building on the gradient direction leadership responded to earlier.",
       "tradeoff": "The most execution-sensitive: one saturation step too far and it tips into decoration. It needs the strictest guardrails of the four.",
-      "figmaDescription": "This direction explores a more progressive visual language using subtle gradients, depth and richer chart treatments. Inspired by newer analytics and AI-first products that treat visualization as part of the product experience. It gives important data more presence without sacrificing readability. For Maropost, it creates a more modern and forward-looking impression. This is the boldest direction and has the strongest opportunity to create a distinctive visual signature."
+      "figmaDescription": "This direction explores a more progressive visual language using subtle gradients, depth and richer chart treatments. Inspired by newer analytics and AI-first products that treat visualization as part of the product experience. It gives important data more presence without sacrificing readability. For Maropost, it creates a more modern and forward-looking impression. This is the boldest direction and has the strongest opportunity to create a distinctive visual signature.",
+      "vsToday": "Gradient area fades and ramped bars with floating values; deep dark tooltip; gradient gauge and ring; subtle shadow on the lead stroke only."
     }
   }
 }
