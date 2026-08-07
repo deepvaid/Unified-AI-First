@@ -114,6 +114,9 @@ const { accentHex } = useAppTheme()
 const { theme, applyChartTheme } = useChartTheme()
 const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
+// Exploration options describe every visual decision through `treatment`; legacy
+// themes leave it undefined and keep the gradientMarks/flatMarks branches below.
+const treatment = computed(() => resolvedTheme.value.treatment)
 const gradientMarks = computed(() => resolvedTheme.value.gradientMarks)
 const vuetifyTheme = useTheme()
 const markerStrokeColor = computed(() => (
@@ -160,11 +163,16 @@ const flatMarks = computed(() => !!resolvedTheme.value.flatMarks)
 
 const seriesColors = computed(() => {
   const activePalette = resolvedTheme.value.series
-  // Flat (Shopify) themes keep their own lead colour — no accent swap.
-  return (themeOverride || gradientMarks.value || flatMarks.value)
+  // Flat (Shopify) and treatment-driven themes keep their own lead colour — no accent swap.
+  return (themeOverride || gradientMarks.value || flatMarks.value || !!treatment.value)
     ? activePalette
     : [accentHex.value, ...activePalette.slice(1)]
 })
+
+/** Diverging data (specimen only on the real dashboard) drives the pos/neg vocabulary. */
+const hasNegativeValues = computed(
+  () => props.data.series.some((series) => series.data.some((value) => value < 0)),
+)
 
 const hasComparisonSeries = computed(() => props.data.series.some((series) => series.isComparison))
 
@@ -173,8 +181,17 @@ const hasComparisonSeries = computed(() => props.data.series.some((series) => se
 // order. Without comparison series this is the plain palette (distributed
 // bars rely on the full array to colour per data point).
 const resolvedSeriesColors = computed(() => {
+  const t = treatment.value
+  // Diverging bars swap the categorical palette for the pos/neg vocabulary: the
+  // series reads positive, and plotOptions.bar.colors.ranges paints values < 0.
+  if (t && props.widgetType === 'bar' && hasNegativeValues.value) {
+    return props.data.series.map(() => t.posNeg.positive)
+  }
   if (!hasComparisonSeries.value) return seriesColors.value
-  const comparison = resolvedTheme.value.comparisonColor ?? seriesColors.value[1] ?? seriesColors.value[0]!
+  const comparison = t?.comparison.color
+    ?? resolvedTheme.value.comparisonColor
+    ?? seriesColors.value[1]
+    ?? seriesColors.value[0]!
   let slot = 0
   return props.data.series.map((series) => (
     series.isComparison ? comparison : seriesColors.value[slot++ % seriesColors.value.length]!
@@ -202,11 +219,14 @@ const chartOptions = computed<ApexOptions>(() => {
   const activePalette = resolvedTheme.value.series
   const chrome = resolvedTheme.value.chrome
   const gm = gradientMarks.value
+  const t = treatment.value
   const isBar = props.widgetType === 'bar'
+  const isTimeseries = props.widgetType === 'timeseries'
   const isVerticalBar = isBar && !isHorizontalBar.value
   const singleOrDistributedBar = isDistributedBar.value || props.data.series.length === 1
-  const floatingBarLabels = gm && isVerticalBar && props.data.labels.length <= 8
+  const floatingBarLabels = (t ? t.bar.floatingLabels : gm) && isVerticalBar && props.data.labels.length <= 8
   const showLegend = props.data.series.length > 1
+  const divergingBars = !!t && isBar && hasNegativeValues.value
 
   const gradientFill = (): ApexOptions['fill'] => {
     if (isBar) {
@@ -245,6 +265,61 @@ const chartOptions = computed<ApexOptions>(() => {
     return { type: 'solid' }
   }
 
+  // Treatment-driven fills — same recipes as above, but every knob comes from the
+  // option's treatment instead of the gradientMarks/flatMarks booleans.
+  const treatmentFill = (tt: NonNullable<typeof t>): ApexOptions['fill'] => {
+    if (isBar) {
+      // Axis-ramp bars need a single ramp per column — grouped series fall back to
+      // the tint recipe so each series keeps its own identity.
+      if (tt.bar.fill === 'axis-gradient' && isVerticalBar && singleOrDistributedBar) {
+        const stops = resolvedTheme.value.axis
+          .slice()
+          .reverse()
+          .map((color, i, arr) => ({ offset: i * (100 / (arr.length - 1)), color, opacity: 1 }))
+        return { type: 'gradient', gradient: { type: 'vertical', colorStops: stops } }
+      }
+      if (tt.bar.fill === 'solid' || divergingBars) return { type: 'solid' }
+      return {
+        type: 'gradient',
+        gradient: {
+          type: isHorizontalBar.value ? 'horizontal' : 'vertical',
+          shadeIntensity: 0,
+          opacityFrom: 1,
+          opacityTo: 0.92,
+          gradientToColors: resolvedSeriesColors.value.map((c) => tintHex(c, 0.45)),
+        },
+      }
+    }
+    if (apexChartType.value === 'area') {
+      const from = props.data.series.map((series) => (
+        series.isComparison ? tt.comparison.fillOpacity : tt.area.opacityFrom
+      ))
+      if (tt.area.fill === 'solid') return { type: 'solid', opacity: from }
+      return {
+        type: 'gradient',
+        gradient: {
+          type: 'vertical',
+          shadeIntensity: 0,
+          opacityFrom: from,
+          opacityTo: props.data.series.map((series) => (
+            series.isComparison ? tt.comparison.fillOpacity : tt.area.opacityTo
+          )),
+          stops: [0, 100],
+        },
+      }
+    }
+    // Single-series line strokes may run through the axis ramp (option D).
+    if (tt.stroke.gradientLine && props.chartVariant === 'line' && props.data.series.length === 1) {
+      const stops = resolvedTheme.value.axis.map((color, i, arr) => ({
+        offset: i * (100 / (arr.length - 1)),
+        color,
+        opacity: 1,
+      }))
+      return { type: 'gradient', gradient: { type: 'horizontal', colorStops: stops } }
+    }
+    return { type: 'solid' }
+  }
+
   return {
     ...base,
     colors: resolvedSeriesColors.value,
@@ -253,20 +328,61 @@ const chartOptions = computed<ApexOptions>(() => {
       sparkline: { enabled: false },
       zoom: { enabled: false },
       redrawOnParentResize: false,
-      ...(gm && props.widgetType === 'timeseries'
-        ? { dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: 0.16, color: activePalette[0] } }
-        : {}),
+      ...(t
+        // Treatment shadows are the option-D guardrail: 1px blur on the marks, no glow.
+        ? (t.effects.dropShadow && isTimeseries
+            ? { dropShadow: { enabled: true, top: 3, left: 0, blur: 1, opacity: 0.18, color: activePalette[0] } }
+            : {})
+        : gm && props.widgetType === 'timeseries'
+          ? { dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: 0.16, color: activePalette[0] } }
+          : {}),
     },
+    ...(t
+      ? {
+          states: {
+            hover: { filter: { type: t.states.hoverFilter, value: t.states.hoverFilterValue } },
+            active: { filter: { type: 'none', value: 0 } },
+          },
+        }
+      : {}),
     // shadcn chrome: solid horizontal-only grid lines, no vertical rules.
-    grid: {
-      ...base.grid,
-      show: true,
-      strokeDashArray: 0,
-      xaxis: { lines: { show: false } },
-      yaxis: { lines: { show: true } },
-      ...(floatingBarLabels ? { padding: { ...base.grid?.padding, top: 24 } } : {}),
-    },
-    stroke: flatMarks.value
+    grid: t
+      ? {
+          ...base.grid,
+          show: t.grid.show,
+          borderColor: t.grid.color ?? chrome.grid,
+          strokeDashArray: t.grid.dashArray,
+          xaxis: { lines: { show: t.grid.xLines } },
+          yaxis: { lines: { show: t.grid.yLines } },
+          ...(floatingBarLabels ? { padding: { ...base.grid?.padding, top: 24 } } : {}),
+        }
+      : {
+          ...base.grid,
+          show: true,
+          strokeDashArray: 0,
+          xaxis: { lines: { show: false } },
+          yaxis: { lines: { show: true } },
+          ...(floatingBarLabels ? { padding: { ...base.grid?.padding, top: 24 } } : {}),
+        },
+    stroke: t
+      ? {
+          curve: t.stroke.curve,
+          // Lead series carries the full weight; companions and the previous-period
+          // comparison series step back to companionWidth.
+          width: isTimeseries
+            ? (props.data.series.length > 1
+                ? props.data.series.map((series, i) => (
+                    series.isComparison || i > 0 ? t.stroke.companionWidth : t.stroke.width
+                  ))
+                : t.stroke.width)
+            : 0,
+          dashArray: isTimeseries
+            ? props.data.series.map((series, i) => (
+                series.isComparison ? t.comparison.dash : i > 0 ? t.stroke.companionDash : 0
+              ))
+            : undefined,
+        }
+      : flatMarks.value
       ? {
           // Polaris strokes: every series 2px solid; only a true previous-period
           // comparison series is dashed (Shopify's standardized treatment).
@@ -290,15 +406,23 @@ const chartOptions = computed<ApexOptions>(() => {
     plotOptions: {
       bar: {
         // Polaris bars use a small 3px end radius; shadcn 6; gradient themes 10.
-        borderRadius: gm ? 10 : flatMarks.value ? 3 : 6,
+        borderRadius: t ? t.bar.radius : gm ? 10 : flatMarks.value ? 3 : 6,
         borderRadiusApplication: 'end',
-        columnWidth: gm ? '52%' : (props.data.series.length > 1 ? '72%' : '45%'),
+        columnWidth: t
+          ? (props.data.series.length > 1 ? t.bar.columnWidthGrouped : t.bar.columnWidthSingle)
+          : gm ? '52%' : (props.data.series.length > 1 ? '72%' : '45%'),
         distributed: isDistributedBar.value,
         horizontal: isHorizontalBar.value,
         ...(floatingBarLabels ? { dataLabels: { position: 'top' } } : {}),
+        // Diverging bars: below-zero values take the option's negative colour.
+        ...(divergingBars && t
+          ? { colors: { ranges: [{ from: -1e12, to: 0, color: t.posNeg.negative }] } }
+          : {}),
       },
     },
-    fill: gm
+    fill: t
+      ? treatmentFill(t)
+      : gm
       ? gradientFill()
       : flatMarks.value
         ? {
@@ -337,7 +461,26 @@ const chartOptions = computed<ApexOptions>(() => {
                 stops: [0, 100],
               },
             },
-    ...(props.widgetType === 'timeseries' && flatMarks.value
+    ...(t
+      ? (isTimeseries
+          ? {
+              markers: t.markers.lastPoint && props.data.series.length === 1
+                ? {
+                    size: 0,
+                    discrete: [{
+                      seriesIndex: 0,
+                      dataPointIndex: (props.data.series[0]?.data as number[]).length - 1,
+                      // The dot belongs to the series, not to the app accent.
+                      fillColor: resolvedSeriesColors.value[0] ?? activePalette[0]!,
+                      strokeColor: markerStrokeColor.value,
+                      size: 5,
+                    }],
+                    hover: { size: t.markers.hoverSize },
+                  }
+                : { size: 0, strokeColors: markerStrokeColor.value, hover: { size: t.markers.hoverSize } },
+            }
+          : {})
+      : props.widgetType === 'timeseries' && flatMarks.value
       // Polaris is hover-only: no persistent last-point dot.
       ? { markers: { size: 0, strokeColors: markerStrokeColor.value, hover: { size: 4 } } }
       : props.widgetType === 'timeseries' && props.data.series.length === 1
@@ -372,7 +515,15 @@ const chartOptions = computed<ApexOptions>(() => {
           ...chartLegendOptions(resolvedSeriesColors.value, chrome, 'top'),
           // shadcn legend: small square markers. Dots use the same resolved
           // per-series colours as the marks (incl. the comparison stroke).
-          markers: { size: 8, shape: 'square', strokeWidth: 0, fillColors: resolvedSeriesColors.value },
+          markers: t
+            ? {
+                size: t.legend.markerSize,
+                shape: t.legend.markerShape,
+                strokeWidth: 0,
+                fillColors: resolvedSeriesColors.value,
+              }
+            : { size: 8, shape: 'square', strokeWidth: 0, fillColors: resolvedSeriesColors.value },
+          ...(t ? { onItemHover: { highlightDataSeries: t.legend.hoverHighlight } } : {}),
         }
       : { show: false },
     xaxis: {
@@ -384,13 +535,19 @@ const chartOptions = computed<ApexOptions>(() => {
       },
       crosshairs: isBar
         ? { show: false }
-        : { show: true, width: 1, stroke: { color: chrome.grid, width: 1, dashArray: 0 } },
+        : t
+          ? {
+              show: t.crosshair.show,
+              width: 1,
+              stroke: { color: t.crosshair.color ?? chrome.grid, width: 1, dashArray: t.crosshair.dash },
+            }
+          : { show: true, width: 1, stroke: { color: chrome.grid, width: 1, dashArray: 0 } },
     },
     // shadcn hides the y-axis scale (values live in the tooltip); the
     // multi-series line view and horizontal bars keep their labels. Polaris
     // (flat) themes show the scale on timeseries too, Shopify-style.
     yaxis: {
-      labels: (props.chartVariant === 'line' || isHorizontalBar.value || (flatMarks.value && props.widgetType === 'timeseries'))
+      labels: (props.chartVariant === 'line' || isHorizontalBar.value || (flatMarks.value && props.widgetType === 'timeseries') || (t?.axes.yLabelsOnTimeseries === true && isTimeseries))
         ? {
             formatter: (value: number) => formatAxisValue(value, props.data.unit),
             style: {

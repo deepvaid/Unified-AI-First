@@ -31,6 +31,9 @@ const { theme, applyChartTheme } = useChartTheme()
 const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
 const palette = computed<string[]>(() => resolvedTheme.value.series)
+// Exploration options describe the donut through `treatment`; legacy themes keep
+// the gradientMarks branches below.
+const treatment = computed(() => resolvedTheme.value.treatment)
 const gradientMarks = computed(() => resolvedTheme.value.gradientMarks)
 const vuetifyTheme = useTheme()
 const strokeColor = computed(() => vuetifyTheme.global.current.value.colors.surface)
@@ -64,6 +67,7 @@ function donutTooltip({ seriesIndex }: { seriesIndex: number }): string {
 const options = computed<ApexOptions>(() => {
   const chrome = resolvedTheme.value.chrome
   const base = applyChartTheme.value()
+  const t = treatment.value
 
   return {
     ...base,
@@ -71,26 +75,41 @@ const options = computed<ApexOptions>(() => {
       type: 'donut',
       fontFamily: 'inherit',
       toolbar: { show: false },
-      ...(gradientMarks.value
-        ? { dropShadow: { enabled: true, top: 2, left: 0, blur: 8, opacity: 0.12 } }
-        : {}),
+      ...(t
+        ? (t.effects.dropShadow
+            ? { dropShadow: { enabled: true, top: 2, left: 0, blur: 1, opacity: 0.14 } }
+            : {})
+        : gradientMarks.value
+          ? { dropShadow: { enabled: true, top: 2, left: 0, blur: 8, opacity: 0.12 } }
+          : {}),
     },
     labels: props.data.labels,
     colors: palette.value,
     // Gradient themes shade their slices; flat (Polaris) and blue render solid.
-    fill: { type: gradientMarks.value ? 'gradient' : 'solid' },
-    legend: chartLegendOptions(palette.value, chrome, 'bottom'),
+    fill: { type: t ? t.donut.fill : gradientMarks.value ? 'gradient' : 'solid' },
+    legend: t
+      ? {
+          ...chartLegendOptions(palette.value, chrome, 'bottom'),
+          markers: {
+            size: t.legend.markerSize,
+            shape: t.legend.markerShape,
+            strokeWidth: 0,
+            fillColors: palette.value,
+          },
+          onItemHover: { highlightDataSeries: t.legend.hoverHighlight },
+        }
+      : chartLegendOptions(palette.value, chrome, 'bottom'),
     dataLabels: {
-      enabled: true,
+      enabled: t ? t.donut.showDataLabels : true,
       formatter: (val: number) => `${val.toFixed(0)}%`,
       style: { fontSize: '11px', fontWeight: 600, colors: [chrome.axisLabel] },
       dropShadow: { enabled: false },
     },
-    stroke: { width: 2, colors: [strokeColor.value] },
+    stroke: { width: t ? t.donut.strokeWidth : 2, colors: [strokeColor.value] },
     plotOptions: {
       pie: {
         donut: {
-          size: '62%',
+          size: t ? t.donut.size : '62%',
           labels: { show: false },
         },
         expandOnClick: false,
