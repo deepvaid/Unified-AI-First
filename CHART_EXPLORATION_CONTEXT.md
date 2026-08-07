@@ -10,8 +10,8 @@
 |---|----------------------|--------|--------|------------------|
 | 0 | Baseline & audit | ✅ done | 22d323b | Branch, context, capture harness, 9 baseline shots, audit (notes/00-audit.md) |
 | 1 | Deep visual research | ✅ done | (P1 commit) | 25 refs (Mobbin, 11 queries) + 8 pattern takeaways + 4 direction seeds |
-| 2 | Four mood boards / directions | ☐ pending | — | — |
-| 3 | Fable design review gate | ☐ pending | — | — |
+| 2 | Four mood boards / directions | ✅ done | (P2 commit) | copy.json + notes/option-{a..d}.md: palette logic, treatment specs, mood-board refs |
+| 3 | Fable design review gate | ✅ done | (P2 commit) | All four pass differentiation/philosophy checks; risk list handed to P4 validator |
 | 4 | Color systems + validator | ☐ pending | — | — |
 | 5 | Implementation (Opus, 7 commits) | ☐ pending | — | — |
 | 6 | Interactions | ☐ pending | — | — |
@@ -98,10 +98,28 @@ direction Ross liked), Polaris Viz (baseline grammar).
 
 ## Options being explored
 
-- **Option A — Restrained Blue** (`?chart=optionA`) — Shopify-calm, systematized restraint. _(P2)_
-- **Option B — Sophisticated Multi-Color** (`?chart=optionB`) — Stripe/Linear curated hues. _(P2)_
-- **Option C — Blue + Teal + Green** (`?chart=optionC`) — ownable connected family. _(P2)_
-- **Option D — Modern Gradient** (`?chart=optionD`) — subtle depth, premium. _(P2)_
+Full specs: `docs/chart-exploration/notes/option-{a..d}.md` + `copy.json` (leadership copy).
+
+- **Option A — Restrained Blue**: mono-blue + designated neutral slots (s5/s6 slate/steel,
+  documented chroma-floor deviation), flat marks, solid hairline grid, square legends,
+  minimal light tooltip, unified y-axis policy. Must read as "baseline, systematized".
+- **Option B — Sophisticated Multi-Color**: 5 muted spaced hues (blue/terracotta/teal/
+  violet/rose) + slate 6th, straight strokes, dotted grid, circle legends, DARK tooltip,
+  neutral-gray comparison, dimming 0.25. Anti-Tailwind-default via terracotta/rose.
+- **Option C — Blue·Teal·Green family**: hue span 250→160 with alternating lightness,
+  soft gradient area wash (0.28→0.02), tint-gradient bars, last-point dot, reserved
+  deeper positive-green distinct from series greens.
+- **Option D — Modern Gradient**: blue→violet (brand primary+secondary justified),
+  fade-to-transparent areas under solid strokes, axis-ramp gradient bars + rounded caps
+  + floating labels (≤8 cats), gradient donut, deep dark tooltip, 1px-blur shadow max.
+  Guardrail list in notes; floating labels are the first fallback to drop.
+
+### P3 review verdict (2026-08-07)
+Pass. Four genuinely distinct systems (hue strategy / fill philosophy / grid texture /
+tooltip family / legend anatomy all differ). Named risks → P4 validator: A s2/s4
+adjacency; B terracotta-teal CVD + teal-vs-positive; C green/teal CVD pairs (make-or-
+break) + cyan/azure pair; D blue-axis adjacency. A-vs-baseline visible difference and
+D decoration-smell re-checked on real screenshots at P9.
 
 ## Color tokens
 
