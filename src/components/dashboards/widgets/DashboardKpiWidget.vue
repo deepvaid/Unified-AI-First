@@ -445,15 +445,18 @@ const peakFormatted = computed(() => {
   text-overflow: ellipsis;
 }
 
-/* Hero row (design 1c): value + delta bottom-left, fixed-size spark bottom-right.
-   No stretching — the compact card is content-sized. */
+/* Hero row (design 1c): value + delta bottom-left, spark bottom-right. The
+   hero absorbs the grid cell's spare height and the spark grows into it
+   (min 44px), so no void opens between the chart and the text. */
 .dashboard-kpi-widget__hero {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
 }
 
 .dashboard-kpi-widget__hero-main {
@@ -570,10 +573,15 @@ const peakFormatted = computed(() => {
   opacity: 0.85;
 }
 
-/* Fixed-height spark (design 1c): 44px tall, never stretches vertically. */
+/* Spark: 108px wide on compact cards, fills the hero's height (min 44px). */
 .dashboard-kpi-widget__spark {
   flex: none;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   width: 108px;
+  min-height: 0;
   color: var(--accent);
 }
 
@@ -588,12 +596,18 @@ const peakFormatted = computed(() => {
 
 .dashboard-kpi-widget__spark-hit {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .dashboard-kpi-widget__sparkline {
   display: block;
   width: 100%;
-  height: 44px;
+  flex: 1 1 44px;
+  min-height: 44px;
   overflow: visible;
 }
 
