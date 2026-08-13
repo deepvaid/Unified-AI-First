@@ -9,6 +9,7 @@ import {
   type ChartTheme,
 } from '@/plugins/chartPalette'
 import type { DashboardSeriesData } from '@/stores/dashboards/types'
+import { formatFullValue, formatPercent } from '@/utils/formatNumber'
 
 const props = withDefaults(defineProps<{
   data: DashboardSeriesData
@@ -44,16 +45,8 @@ const series = computed(() => {
   return first.data
 })
 
-function formatSliceValue(value: number): string {
-  if (props.data.unit === 'currency') {
-    return value >= 1000 ? `$${Math.round(value / 1000)}k` : `$${Math.round(value)}`
-  }
-  if (props.data.unit === 'percent') return `${value.toFixed(1)}%`
-  return value >= 1000 ? `${Math.round(value / 1000)}k` : `${Math.round(value)}`
-}
-
 const chartAriaLabel = computed(() => {
-  const parts = props.data.labels.map((label, i) => `${label} ${formatSliceValue(series.value[i] ?? 0)}`)
+  const parts = props.data.labels.map((label, i) => `${label} ${formatFullValue(series.value[i] ?? 0, props.data.unit)}`)
   return `Donut chart, ${parts.join(', ')}.`
 })
 
@@ -61,7 +54,7 @@ const chartAriaLabel = computed(() => {
 function donutTooltip({ seriesIndex }: { seriesIndex: number }): string {
   const label = props.data.labels[seriesIndex] ?? ''
   const color = palette.value[seriesIndex % palette.value.length]
-  return `<div class="mp-chart-tip"><div class="mp-chart-tip__row"><span class="mp-chart-tip__dot" style="background:${color}"></span><span class="mp-chart-tip__label">${label}</span><span class="mp-chart-tip__value">${formatSliceValue(series.value[seriesIndex] ?? 0)}</span></div></div>`
+  return `<div class="mp-chart-tip"><div class="mp-chart-tip__row"><span class="mp-chart-tip__dot" style="background:${color}"></span><span class="mp-chart-tip__label">${label}</span><span class="mp-chart-tip__value">${formatFullValue(series.value[seriesIndex] ?? 0, props.data.unit)}</span></div></div>`
 }
 
 const options = computed<ApexOptions>(() => {
@@ -101,7 +94,7 @@ const options = computed<ApexOptions>(() => {
       : chartLegendOptions(palette.value, chrome, 'bottom'),
     dataLabels: {
       enabled: t ? t.donut.showDataLabels : true,
-      formatter: (val: number) => `${val.toFixed(0)}%`,
+      formatter: (val: number) => formatPercent(val, 0),
       style: { fontSize: '11px', fontWeight: 600, colors: [chrome.axisLabel] },
       dropShadow: { enabled: false },
     },
@@ -125,7 +118,7 @@ const options = computed<ApexOptions>(() => {
       fillSeriesColor: false,
       custom: donutTooltip,
       y: {
-        formatter: (value: number) => formatSliceValue(value),
+        formatter: (value: number) => formatFullValue(value, props.data.unit),
       },
     },
   }

@@ -8,6 +8,7 @@ import { computed, inject, ref, unref } from 'vue'
 import { bounds, linePath, valueToY, CHART_H, CHART_W, TREND_CURRENT, TREND_PREVIOUS } from '../dotted/dottedChartMath'
 import { CHART_PALETTE_OVERRIDE, tintHex, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import type { DashboardMetricExplorerData, DashboardMetricExplorerMetric } from '@/stores/dashboards/types'
+import { formatFullValue } from '@/utils/formatNumber'
 
 const props = defineProps<{
   data: DashboardMetricExplorerData
@@ -53,9 +54,7 @@ const compareAvailable = computed(() => selected.value.prev.some((value) => valu
 const compareOn = computed(() => compare.value && compareAvailable.value)
 
 function formatValue(metric: DashboardMetricExplorerMetric, value: number): string {
-  if (metric.unit === 'percent') return `${value.toFixed(1)}%`
-  if (metric.unit === 'currency') return `$${Math.round(value).toLocaleString('en-US')}`
-  return Math.round(value).toLocaleString('en-US')
+  return formatFullValue(value, metric.unit)
 }
 
 const chart = computed(() => {

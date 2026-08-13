@@ -13,6 +13,7 @@ import {
 } from '@/plugins/chartPalette'
 import { useAppTheme } from '@/composables/useAppTheme'
 import { useElementSize } from '@/composables/useElementSize'
+import { formatCompactValue, formatFullValue } from '@/utils/formatNumber'
 
 const props = withDefaults(defineProps<{
   data: DashboardSeriesData
@@ -60,31 +61,6 @@ onBeforeUnmount(() => {
 
   globalThis.clearTimeout(deferredRenderHandle)
 })
-
-function formatAxisValue(value: number, unit: DashboardSeriesData['unit']): string {
-  if (unit === 'currency') {
-    return value >= 1000 ? `$${Math.round(value / 1000)}k` : `$${Math.round(value)}`
-  }
-  if (unit === 'percent') {
-    return `${value.toFixed(0)}%`
-  }
-  return value >= 1000 ? `${Math.round(value / 1000)}k` : `${Math.round(value)}`
-}
-
-function formatBarLabel(value: number, unit: DashboardSeriesData['unit']): string {
-  if (unit === 'percent') return `${value.toFixed(0)}%`
-  const prefix = unit === 'currency' ? '$' : ''
-  if (value < 1000) return `${prefix}${Math.round(value)}`
-  const k = value / 1000
-  const text = k < 10 ? k.toFixed(1).replace(/\.0$/, '') : `${Math.round(k)}`
-  return `${prefix}${text}k`
-}
-
-function formatTooltipValue(value: number, unit: DashboardSeriesData['unit']): string {
-  if (unit === 'currency') return `$${Math.round(value).toLocaleString('en-US')}`
-  if (unit === 'percent') return `${value.toFixed(1)}%`
-  return Math.round(value).toLocaleString('en-US')
-}
 
 const chartHeight = computed(() => {
   if (!props.height || props.height < 60) return 220
@@ -147,7 +123,7 @@ const chartAriaLabel = computed(() => {
     if (props.widgetType === 'bar') {
       return `${kind} of ${series[0]!.name} across ${labels.length} categories, ${labels[0]} to ${labels[labels.length - 1]}.`
     }
-    return `${kind} of ${series[0]!.name}, ${labels[0]} to ${labels[labels.length - 1]}, from ${formatTooltipValue(first, unit)} to ${formatTooltipValue(last, unit)}.`
+    return `${kind} of ${series[0]!.name}, ${labels[0]} to ${labels[labels.length - 1]}, from ${formatFullValue(first, unit)} to ${formatFullValue(last, unit)}.`
   }
   return `${kind} comparing ${series.map((s) => s.name).join(', ')} across ${labels.length} points.`
 })
@@ -221,7 +197,7 @@ function chartTooltip({ dataPointIndex }: { dataPointIndex: number }): string {
       const color = isDistributedBar.value
         ? colors[dataPointIndex % colors.length]
         : colors[si % colors.length]
-      return `<div class="mp-chart-tip__row"><span class="mp-chart-tip__dot" style="background:${color}"></span><span class="mp-chart-tip__label">${s.name}</span><span class="mp-chart-tip__value">${formatTooltipValue(s.data[dataPointIndex] ?? 0, unit)}</span></div>`
+      return `<div class="mp-chart-tip__row"><span class="mp-chart-tip__dot" style="background:${color}"></span><span class="mp-chart-tip__label">${s.name}</span><span class="mp-chart-tip__value">${formatFullValue(s.data[dataPointIndex] ?? 0, unit)}</span></div>`
     })
     .join('')
   return `<div class="mp-chart-tip"><div class="mp-chart-tip__title">${labels[dataPointIndex] ?? ''}</div>${rows}</div>`
@@ -590,7 +566,7 @@ const chartOptions = computed<ApexOptions>(() => {
             fontWeight: 600,
             colors: [chrome.axisLabel],
           },
-          formatter: (value: number) => formatBarLabel(value, props.data.unit),
+          formatter: (value: number) => formatCompactValue(value, props.data.unit),
         }
       : { enabled: false },
     legend: showLegend
@@ -634,7 +610,7 @@ const chartOptions = computed<ApexOptions>(() => {
     yaxis: {
       labels: (isStacked.value || props.chartVariant === 'line' || isHorizontalBar.value || (flatMarks.value && props.widgetType === 'timeseries') || (t?.axes.yLabelsOnTimeseries === true && isTimeseries))
         ? {
-            formatter: (value: number) => formatAxisValue(value, props.data.unit),
+            formatter: (value: number) => formatCompactValue(value, props.data.unit),
             style: {
               colors: chrome.axisLabel,
               fontSize: '12px',
@@ -661,7 +637,7 @@ const chartOptions = computed<ApexOptions>(() => {
       intersect: false,
       custom: chartTooltip,
       y: {
-        formatter: (value: number) => formatAxisValue(value, props.data.unit),
+        formatter: (value: number) => formatFullValue(value, props.data.unit),
       },
     },
   }

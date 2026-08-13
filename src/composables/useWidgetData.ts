@@ -22,30 +22,21 @@ import type {
   DashboardWidgetData,
   DashboardTableColumn,
 } from '@/stores/dashboards/types'
+import { formatCurrency, formatCurrencyCents } from '@/utils/formatCurrency'
+import { formatCompactValue, formatNumber as formatGroupedNumber, formatPercent } from '@/utils/formatNumber'
 
 function formatNumber(value: number, unit: DashboardMetricUnit): string {
   if (unit === 'currency') {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: value >= 100 ? 0 : 2,
-    }).format(value)
+    // KPIs under $100 keep cents; everything above rounds to whole dollars.
+    return value >= 100 ? formatCurrency(value) : formatCurrencyCents(value)
   }
-
-  if (unit === 'percent') {
-    return `${value.toFixed(1)}%`
-  }
-
-  return new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: value >= 1000 ? 0 : 1,
-  }).format(value)
+  if (unit === 'percent') return formatPercent(value)
+  return formatGroupedNumber(value, value >= 1000 ? 0 : 1)
 }
 
-/** Compact count for donut centres and their legends: 40K · 24.9K · 812. */
+/** Compact count for donut centres and their legends: 40k · 24.9k · 812. */
 function formatCompactCount(value: number): string {
-  if (value < 1000) return `${Math.round(value)}`
-  const thousands = value / 1000
-  return `${thousands < 10 ? thousands.toFixed(1).replace(/\.0$/, '') : Math.round(thousands)}K`
+  return formatCompactValue(value, 'count')
 }
 
 interface DateWindow {
