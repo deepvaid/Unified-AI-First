@@ -571,11 +571,13 @@ const OPTION_B_TREATMENT = dashboardColourTreatment(mp_color_chart_light_optionB
   neutral: mp_color_chart_light_optionB_neutral,
 })
 
-/** Gray + Blue — focal blue, gray de-emphasis, monochrome blue ramp for multi-series. */
+/** Gray + Blue — focal blue, gray de-emphasis, monochrome blue ramp for multi-series.
+    Shared by every color-only option; timeseries follow the ocean card look —
+    smooth 3px primary stroke, dashed comparison line, soft gradient wash. */
 const GRAY_BLUE_TREATMENT = makeTreatment({
-  stroke: { curve: 'straight', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false },
-  comparison: { color: mp_color_chart_light_grayBlue_comparison, dash: 0, fillOpacity: 0.08 },
-  area: { fill: 'solid', opacityFrom: 0.12, opacityTo: 0.12 },
+  stroke: { curve: 'smooth', width: 3, companionWidth: 2, companionDash: 5, gradientLine: false },
+  comparison: { color: mp_color_chart_light_grayBlue_comparison, dash: 5, fillOpacity: 0.06 },
+  area: { fill: 'gradient', opacityFrom: 0.25, opacityTo: 0.02 },
   bar: { radius: 4, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
   grid: { show: true, dashArray: 4, xLines: false, yLines: true },
   axes: { yLabelsOnTimeseries: true },
