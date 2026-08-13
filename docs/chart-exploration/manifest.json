@@ -190,24 +190,6 @@
       "route": "/accounts/2000290/dashboard?chart=shopify"
     },
     {
-      "file": "options/option-a/dashboard-full--option-a--1440--light.png",
-      "shot": "dashboard-full",
-      "chart": "option-a",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionA"
-    },
-    {
-      "file": "options/option-a/dashboard-fold--option-a--1440--light.png",
-      "shot": "dashboard-fold",
-      "chart": "option-a",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionA"
-    },
-    {
       "file": "options/option-a/widget-line--option-a--1440--light.png",
       "shot": "widget-line",
       "chart": "option-a",
@@ -277,15 +259,6 @@
       "width": 1440,
       "mode": "light",
       "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionA"
-    },
-    {
-      "file": "options/option-a/dashboard-full--option-a--1440--light--dsf1.png",
-      "shot": "dashboard-full",
-      "chart": "option-a",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 1,
       "route": "/accounts/2000290/dashboard?chart=optionA"
     },
     {
@@ -487,6 +460,33 @@
       "route": "/accounts/2000290/dashboard?chart=optionC"
     },
     {
+      "file": "options/option-a/dashboard-full--option-a--1440--light.png",
+      "shot": "dashboard-full",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/dashboard-fold--option-a--1440--light.png",
+      "shot": "dashboard-fold",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/dashboard-full--option-a--1440--light--dsf1.png",
+      "shot": "dashboard-full",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 1,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
       "file": "options/option-d/dashboard-full--option-d--1440--light.png",
       "shot": "dashboard-full",
       "chart": "option-d",
@@ -676,7 +676,7 @@
       "route": "/chart-exploration"
     }
   ],
-  "capturedAt": "2026-08-13T06:56:06.025Z",
-  "gitSha": "744b2f6",
+  "capturedAt": "2026-08-13T07:21:15.184Z",
+  "gitSha": "71cc308",
   "baseUrl": "http://localhost:5173"
 }

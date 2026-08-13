@@ -249,6 +249,14 @@ solid return preserved after it. That was a real bug — solid-fill options woul
 ignored the flag silently — so flipping any option to lit is now a one-line change.
 `BASE_TREATMENT` stays matte, so legacy themes are untouched.
 
+### P18 — Emboss extended to Option D's ring marks (2026-08-07)
+The bars were embossed but `DtRingDonut` / `DtGauge` kept a flat 2-stop tint, so one
+dashboard disagreed with itself about its mark material. Both now take an optional
+`emboss` prop fed by `effects.gloss` and share the `embossStops()` recipe. The gauge's
+gradient also flips from along-the-sweep (horizontal) to vertical when embossed, so it
+lights from the top like every other mark. **Still Option D only** — A/B/C keep flat
+rings (verified: A renders solid strokes, zero gradients).
+
 ## Rejected ideas
 
 - Refactoring `gradientMarks`/`flatMarks` booleans into treatments for ALL themes —

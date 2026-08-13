@@ -89,3 +89,8 @@ dashed stroke. It is now a **thin solid line over a translucent wash of its own 
 (shadcn area convention) so both periods can be compared as overlaid shapes.
 `comparison.dash` is 0 for every option; `comparison.fillOpacity` carries each option's
 own weight and fades to the same floor as the current period.
+
+---
+**P18 note (2026-08-07):** the emboss now covers D's ring marks too — `DtRingDonut` and
+`DtGauge` take an `emboss` prop from `effects.gloss`, so rings, bars and columns all read
+as the same lit material. The gauge gradient runs vertical when embossed.
