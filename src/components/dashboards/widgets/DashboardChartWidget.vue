@@ -63,8 +63,11 @@ onBeforeUnmount(() => {
 })
 
 const chartHeight = computed(() => {
-  if (!props.height || props.height < 60) return 220
-  return Math.max(120, props.height - 4)
+  // Readability floors: the main timeseries never renders below 240px, other
+  // charts never below 200px, regardless of how small the card body measures.
+  const floor = props.widgetType === 'timeseries' ? 240 : 200
+  if (!props.height || props.height < 60) return 240
+  return Math.max(floor, props.height - 4)
 })
 
 // Measure `.dashboard-chart-widget` itself (the overflow: hidden clipping

@@ -24,8 +24,9 @@ const ApexChart = defineAsyncComponent({
 })
 
 const chartHeight = computed(() => {
+  // Readability floor: donuts never render below 200px.
   if (!props.height || props.height < 60) return 220
-  return Math.max(140, props.height - 4)
+  return Math.max(200, props.height - 4)
 })
 
 const { theme, applyChartTheme } = useChartTheme()

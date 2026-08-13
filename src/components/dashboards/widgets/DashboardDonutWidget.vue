@@ -96,6 +96,15 @@ const legendRows = computed<DtLegendRow[]>(() =>
   flex: 1 1 auto;
 }
 
+/* Below tablet the side-by-side legend gets too cramped — stack it under the pie. */
+@media (max-width: 768px) {
+  .donut-widget__pie-block {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+}
+
 .donut-widget__pie-legend {
   flex: 1;
   min-width: 0;

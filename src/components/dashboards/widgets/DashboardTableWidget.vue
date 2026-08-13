@@ -70,7 +70,10 @@ const campaignRows = computed(() => {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(row, index) in data.rows" :key="index">
+        <tr
+          v-for="(row, index) in data.rows"
+          :key="`${String(row[data.columns[0]?.key ?? ''] ?? '')}-${index}`"
+        >
           <td
             v-for="column in data.columns"
             :key="column.key"
