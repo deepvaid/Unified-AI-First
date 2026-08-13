@@ -218,7 +218,9 @@ const chartOptions = computed<ApexOptions>(() => {
   const singleOrDistributedBar = isDistributedBar.value || props.data.series.length === 1
   // Stacked columns would get one floating label per segment — suppress them.
   const floatingBarLabels = (t ? t.bar.floatingLabels : gm) && isVerticalBar && props.data.labels.length <= 8 && !isStacked.value
-  const showLegend = props.data.series.length > 1
+  // Legends always on — even single-series charts show their color chip so the
+  // active theme's colors and shades read on every widget.
+  const showLegend = props.data.series.length >= 1
   const divergingBars = !!t && isBar && hasNegativeValues.value
 
   const gradientFill = (): ApexOptions['fill'] => {
@@ -378,9 +380,17 @@ const chartOptions = computed<ApexOptions>(() => {
       redrawOnParentResize: false,
       ...(isStacked.value ? { stacked: true } : {}),
       ...(t
-        // Treatment shadows are the option-D guardrail: 1px blur on the marks, no glow.
         ? (t.effects.dropShadow && isTimeseries
-            ? { dropShadow: { enabled: true, top: 3, left: 0, blur: 1, opacity: 0.18, color: activePalette[0] } }
+            ? {
+                dropShadow: {
+                  enabled: true,
+                  top: 3,
+                  left: 0,
+                  blur: 1,
+                  opacity: 0.18,
+                  color: activePalette[0],
+                },
+              }
             : {})
         : gm && props.widgetType === 'timeseries'
           ? { dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: 0.16, color: activePalette[0] } }
