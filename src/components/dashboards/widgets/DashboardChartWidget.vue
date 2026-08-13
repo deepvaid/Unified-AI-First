@@ -296,8 +296,7 @@ const chartOptions = computed<ApexOptions>(() => {
         const stops = tt.effects.gloss ? embossStops(ramp) : ramp
         return { type: 'gradient', gradient: { type: 'vertical', colorStops: stops } }
       }
-      // Gloss outranks a flat fill: an embossed solid is still a solid, just lit.
-      // Without this the `solid` options would ignore the flag entirely.
+      if (tt.bar.fill === 'solid' || divergingBars) return { type: 'solid' }
       // Grouped/horizontal bars have no axis ramp to run through, so the emboss is
       // built per series: lit tint at the head, the series colour, darkened lip.
       if (tt.effects.gloss) {
@@ -314,7 +313,6 @@ const chartOptions = computed<ApexOptions>(() => {
           },
         }
       }
-      if (tt.bar.fill === 'solid') return { type: 'solid' }
       return {
         type: 'gradient',
         gradient: {

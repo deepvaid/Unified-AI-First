@@ -237,14 +237,6 @@ alone now separates the periods, which is why P12's distinct comparison hues mat
 not less. Plumbing already existed (`treatmentFill` area branch + stroke dashArray);
 only treatment values changed plus one opacityTo line.
 
-### P17 — Emboss on all four options (2026-08-07, stakeholder direction)
-"do same for all options": `effects.gloss` is now true on A, B, C and D. The gloss branch
-in `treatmentFill()` moved **above** the `bar.fill === 'solid'` early return — otherwise
-the solid-fill options (A, B) silently ignored the flag; the solid return still exists
-after it for any future matte option. `BASE_TREATMENT` stays matte so legacy themes are
-untouched. Trade-off accepted: mark treatment is no longer a differentiator between the
-four directions — colour, grid, tooltip and legend anatomy still are.
-
 ## Rejected ideas
 
 - Refactoring `gradientMarks`/`flatMarks` booleans into treatments for ALL themes —
