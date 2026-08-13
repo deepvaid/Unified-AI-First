@@ -23,6 +23,8 @@ const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.v
 const treatment = computed(() => resolvedTheme.value.treatment)
 const legacyFlat = computed(() => !!resolvedTheme.value.flatMarks)
 const flat = computed(() => (treatment.value ? treatment.value.svg.shade === 'flat' : legacyFlat.value))
+// Embossed marks (Option D): the ring picks up the same lit crown as the bars.
+const emboss = computed(() => !!treatment.value?.effects.gloss)
 
 const palette = computed(() => {
   if (legacyFlat.value || treatment.value) return resolvedTheme.value.series
@@ -52,6 +54,7 @@ const legendRows = computed<DtLegendRow[]>(() =>
           :values="values"
           :colors="palette"
           :flat="flat"
+          :emboss="emboss"
           :center-value="data.centerValue"
           :center-caption="data.centerCaption"
         />

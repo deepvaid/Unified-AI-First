@@ -2,7 +2,7 @@
 // Goal gauge: round-capped progress arc over a soft track. The arc shades
 // from the base blue toward a lighter tint along the sweep.
 import { computed, useId } from 'vue'
-import { tintHex } from '@/plugins/chartPalette'
+import { embossStops, tintHex } from '@/plugins/chartPalette'
 
 const props = withDefaults(defineProps<{
   /** 0–100 */
@@ -15,11 +15,26 @@ const props = withDefaults(defineProps<{
   color?: string
   /** Flat (Polaris) mode: solid arc, no gradient shading. */
   flat?: boolean
+  /** Embossed mode: lit crown + darkened base lip, matching the bar marks. */
+  emboss?: boolean
 }>(), {
   sweep: 360,
   color: '#0092D4',
   flat: false,
+  emboss: false,
 })
+
+// Embossed arcs light from the top like every other mark, so the gradient runs
+// vertically; the default arc keeps its along-the-sweep horizontal shading.
+const arcStops = computed(() => (props.emboss
+  ? embossStops([
+      { offset: 0, color: tintHex(props.color, 0.3), opacity: 1 },
+      { offset: 100, color: props.color, opacity: 1 },
+    ])
+  : [
+      { offset: 0, color: props.color, opacity: 1 },
+      { offset: 100, color: tintHex(props.color, 0.35), opacity: 1 },
+    ]))
 
 const CIRC = 2 * Math.PI * 52
 const arcLength = computed(() => CIRC * (props.sweep / 360))
@@ -41,9 +56,17 @@ const uid = useId()
   <div class="dt-gauge">
     <svg viewBox="0 0 140 140" class="dt-gauge__svg" role="img" :aria-label="`${centerValue} ${centerCaption}`">
       <defs v-if="!flat">
-        <linearGradient :id="`${uid}-arc`" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" :stop-color="color" />
-          <stop offset="100%" :stop-color="tintHex(color, 0.35)" />
+        <linearGradient
+          :id="`${uid}-arc`"
+          x1="0" y1="0"
+          :x2="emboss ? 0 : 1" :y2="emboss ? 1 : 0"
+        >
+          <stop
+            v-for="(stop, si) in arcStops"
+            :key="si"
+            :offset="`${stop.offset}%`"
+            :stop-color="stop.color"
+          />
         </linearGradient>
       </defs>
       <g :transform="rotation" fill="none" stroke-width="15" stroke-linecap="round">

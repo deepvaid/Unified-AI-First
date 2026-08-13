@@ -19,6 +19,8 @@ const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.v
 const treatment = computed(() => resolvedTheme.value.treatment)
 const legacyFlat = computed(() => !!resolvedTheme.value.flatMarks)
 const flat = computed(() => (treatment.value ? treatment.value.svg.shade === 'flat' : legacyFlat.value))
+// Embossed marks (Option D): the arc picks up the same lit crown as the bars.
+const emboss = computed(() => !!treatment.value?.effects.gloss)
 const arcColor = computed(() => (
   treatment.value
     ? resolvedTheme.value.series[0]
@@ -36,6 +38,7 @@ const arcColor = computed(() => (
         :sweep="data.arc === 'three-quarter' ? 270 : 360"
         :color="arcColor"
         :flat="flat"
+      :emboss="emboss"
       />
     </div>
     <div v-if="data.footerStats?.length" class="gauge-widget__footer">
