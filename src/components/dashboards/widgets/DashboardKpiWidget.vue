@@ -348,7 +348,9 @@ const peakFormatted = computed(() => {
 
 <style scoped lang="scss">
 .dashboard-kpi-widget {
-  justify-content: flex-start;
+  /* Any slack between the grid cell (h=3, 172px) and the compact content
+     splits evenly around the hero instead of pooling above the footer. */
+  justify-content: space-between;
   gap: 10px;
   padding: 14px 16px 12px;
   container-type: inline-size;
@@ -503,7 +505,6 @@ const peakFormatted = computed(() => {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-top: auto;
   padding-top: 9px;
   border-top: 1px solid var(--border-subtle);
   min-width: 0;
@@ -569,11 +570,20 @@ const peakFormatted = computed(() => {
   opacity: 0.85;
 }
 
-/* Fixed-size spark (design 1c): 108×44, never stretches with the card. */
+/* Fixed-height spark (design 1c): 44px tall, never stretches vertically. */
 .dashboard-kpi-widget__spark {
   flex: none;
   width: 108px;
   color: var(--accent);
+}
+
+/* Wide cards (large desktops, 3-4 up on a 16" screen): the 108px spark leaves
+   an empty middle — let it take the card's right half, height still fixed. */
+@container (min-width: 360px) {
+  .dashboard-kpi-widget__spark {
+    width: 48%;
+    max-width: 260px;
+  }
 }
 
 .dashboard-kpi-widget__spark-hit {
