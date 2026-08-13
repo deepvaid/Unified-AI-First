@@ -398,7 +398,7 @@ function cloneChrome(chrome: ChartChrome, overrides: Partial<ChartChrome> = {}):
 /** A — Restrained Blue: one blue weighted by importance, everything else neutral. */
 const OPTION_A_TREATMENT = makeTreatment({
   stroke: { curve: 'smooth', width: 2, companionWidth: 1.75, companionDash: 0, gradientLine: false },
-  comparison: { color: mp_color_chart_light_optionA_comparison, dash: 5, fillOpacity: 0 },
+  comparison: { color: mp_color_chart_light_optionA_comparison, dash: 0, fillOpacity: 0.1 },
   area: { fill: 'gradient', opacityFrom: 0.14, opacityTo: 0.02 },
   bar: { radius: 2, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
   grid: { show: true, dashArray: 0, xLines: false, yLines: true },
@@ -422,7 +422,7 @@ const OPTION_A_TREATMENT = makeTreatment({
 /** B — Sophisticated Multi-Color: one hue per data family, saturation one notch down. */
 const OPTION_B_TREATMENT = makeTreatment({
   stroke: { curve: 'straight', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false },
-  comparison: { color: mp_color_chart_light_optionB_comparison, dash: 4, fillOpacity: 0 },
+  comparison: { color: mp_color_chart_light_optionB_comparison, dash: 0, fillOpacity: 0.08 },
   area: { fill: 'solid', opacityFrom: 0.09, opacityTo: 0.09 },
   bar: { radius: 4, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
   grid: { show: true, dashArray: 4, xLines: false, yLines: true },
@@ -446,7 +446,7 @@ const OPTION_B_TREATMENT = makeTreatment({
 /** C — Blue · Teal · Green: one connected family, separation from alternating lightness. */
 const OPTION_C_TREATMENT = makeTreatment({
   stroke: { curve: 'smooth', width: 2.5, companionWidth: 2, companionDash: 0, gradientLine: false },
-  comparison: { color: mp_color_chart_light_optionC_comparison, dash: 5, fillOpacity: 0 },
+  comparison: { color: mp_color_chart_light_optionC_comparison, dash: 0, fillOpacity: 0.16 },
   area: { fill: 'gradient', opacityFrom: 0.28, opacityTo: 0.02 },
   bar: { radius: 6, columnWidthSingle: '45%', columnWidthGrouped: '70%', fill: 'tint-gradient', floatingLabels: false },
   grid: { show: true, dashArray: 0, xLines: false, yLines: true },
@@ -470,7 +470,7 @@ const OPTION_C_TREATMENT = makeTreatment({
 /** D — Modern Gradient: depth and light, every gradient encoding something. */
 const OPTION_D_TREATMENT = makeTreatment({
   stroke: { curve: 'smooth', width: 2.5, companionWidth: 2, companionDash: 0, gradientLine: true },
-  comparison: { color: mp_color_chart_light_optionD_comparison, dash: 5, fillOpacity: 0 },
+  comparison: { color: mp_color_chart_light_optionD_comparison, dash: 0, fillOpacity: 0.18 },
   area: { fill: 'gradient', opacityFrom: 0.35, opacityTo: 0 },
   bar: { radius: 8, columnWidthSingle: '45%', columnWidthGrouped: '66%', fill: 'axis-gradient', floatingLabels: true },
   // "fainter" grid per the option-D spec — the treatment carries it so the

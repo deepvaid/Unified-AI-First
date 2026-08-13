@@ -335,9 +335,9 @@ const chartOptions = computed<ApexOptions>(() => {
           type: 'vertical',
           shadeIntensity: 0,
           opacityFrom: from,
-          opacityTo: props.data.series.map((series) => (
-            series.isComparison ? tt.comparison.fillOpacity : tt.area.opacityTo
-          )),
+          // The previous period is a wash, not a slab: it fades to the same floor
+          // as the current period so the two areas overlay without muddying.
+          opacityTo: props.data.series.map(() => tt.area.opacityTo),
           stops: [0, 100],
         },
       }
