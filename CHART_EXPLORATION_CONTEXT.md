@@ -237,6 +237,18 @@ alone now separates the periods, which is why P12's distinct comparison hues mat
 not less. Plumbing already existed (`treatmentFill` area branch + stroke dashArray);
 only treatment values changed plus one opacityTo line.
 
+### P17 — Emboss on all options: TRIED AND REVERTED (2026-08-07)
+Applied `effects.gloss` to A/B/C as well (e23b86d + 668fa0a), then reverted on the
+stakeholder's call. **The embossed mark treatment stays Option D's alone** — it is one of
+the few things separating the four directions, and spreading it flattened that. Do not
+reapply without an explicit ask.
+
+Kept from the attempt (harmless, and correct either way): the gloss branch in
+`treatmentFill()` now sits **above** the `bar.fill === 'solid'` early return, with the
+solid return preserved after it. That was a real bug — solid-fill options would have
+ignored the flag silently — so flipping any option to lit is now a one-line change.
+`BASE_TREATMENT` stays matte, so legacy themes are untouched.
+
 ## Rejected ideas
 
 - Refactoring `gradientMarks`/`flatMarks` booleans into treatments for ALL themes —
