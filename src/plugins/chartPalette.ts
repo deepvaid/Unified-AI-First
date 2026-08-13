@@ -202,6 +202,30 @@ import {
   mp_color_chart_dark_grayBlue_series4,
   mp_color_chart_dark_grayBlue_series5,
   mp_color_chart_dark_grayBlue_series6,
+  mp_color_chart_light_grayBlueGold_axis1,
+  mp_color_chart_light_grayBlueGold_axis2,
+  mp_color_chart_light_grayBlueGold_axis3,
+  mp_color_chart_light_grayBlueGold_axis4,
+  mp_color_chart_light_grayBlueGold_axis5,
+  mp_color_chart_light_grayBlueGold_comparison,
+  mp_color_chart_light_grayBlueGold_series1,
+  mp_color_chart_light_grayBlueGold_series2,
+  mp_color_chart_light_grayBlueGold_series3,
+  mp_color_chart_light_grayBlueGold_series4,
+  mp_color_chart_light_grayBlueGold_series5,
+  mp_color_chart_light_grayBlueGold_series6,
+  mp_color_chart_dark_grayBlueGold_axis1,
+  mp_color_chart_dark_grayBlueGold_axis2,
+  mp_color_chart_dark_grayBlueGold_axis3,
+  mp_color_chart_dark_grayBlueGold_axis4,
+  mp_color_chart_dark_grayBlueGold_axis5,
+  mp_color_chart_dark_grayBlueGold_comparison,
+  mp_color_chart_dark_grayBlueGold_series1,
+  mp_color_chart_dark_grayBlueGold_series2,
+  mp_color_chart_dark_grayBlueGold_series3,
+  mp_color_chart_dark_grayBlueGold_series4,
+  mp_color_chart_dark_grayBlueGold_series5,
+  mp_color_chart_dark_grayBlueGold_series6,
   mp_color_chart_light_optionC_axis1,
   mp_color_chart_light_optionC_axis2,
   mp_color_chart_light_optionC_axis3,
@@ -257,6 +281,7 @@ export type ChartPalette =
   | 'optionC'
   | 'optionD'
   | 'grayBlue'
+  | 'grayBlueGold'
 
 /**
  * The four chart visual systems built for the leadership exploration. They are the
@@ -986,6 +1011,55 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
       ],
       gradientMarks: false,
       comparisonColor: mp_color_chart_dark_grayBlue_comparison,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: GRAY_BLUE_TREATMENT,
+    },
+  },
+  // Shares GRAY_BLUE_TREATMENT — comparison/posNeg values are identical; only
+  // the series slots differ (subtle gold in the reference's orange position).
+  grayBlueGold: {
+    light: {
+      label: 'Gray + Blue + Gold',
+      series: [
+        mp_color_chart_light_grayBlueGold_series1,
+        mp_color_chart_light_grayBlueGold_series2,
+        mp_color_chart_light_grayBlueGold_series3,
+        mp_color_chart_light_grayBlueGold_series4,
+        mp_color_chart_light_grayBlueGold_series5,
+        mp_color_chart_light_grayBlueGold_series6,
+      ],
+      axis: [
+        mp_color_chart_light_grayBlueGold_axis1,
+        mp_color_chart_light_grayBlueGold_axis2,
+        mp_color_chart_light_grayBlueGold_axis3,
+        mp_color_chart_light_grayBlueGold_axis4,
+        mp_color_chart_light_grayBlueGold_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_grayBlueGold_comparison,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: GRAY_BLUE_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Gray + Blue + Gold',
+      series: [
+        mp_color_chart_dark_grayBlueGold_series1,
+        mp_color_chart_dark_grayBlueGold_series2,
+        mp_color_chart_dark_grayBlueGold_series3,
+        mp_color_chart_dark_grayBlueGold_series4,
+        mp_color_chart_dark_grayBlueGold_series5,
+        mp_color_chart_dark_grayBlueGold_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_grayBlueGold_axis1,
+        mp_color_chart_dark_grayBlueGold_axis2,
+        mp_color_chart_dark_grayBlueGold_axis3,
+        mp_color_chart_dark_grayBlueGold_axis4,
+        mp_color_chart_dark_grayBlueGold_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_grayBlueGold_comparison,
       chrome: cloneChrome(DARK_CHROME),
       treatment: GRAY_BLUE_TREATMENT,
     },
