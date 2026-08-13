@@ -181,9 +181,6 @@ const sparkHoverPoint = computed(() => {
   const v = values[lo]! + (values[hi]! - values[lo]!) * (pos - lo)
   return {
     x: ratio * 100,
-    // Clamp the tip's anchor so it never hangs past the card edges (the spark
-    // is only ~half the card wide, so the clamp is tighter than full-width).
-    tipX: Math.min(75, Math.max(25, ratio * 100)),
     topPct: ((38 - v * 30) / 40) * 100,
     value: formatFullValue(raw[index] ?? 0, props.data.unit),
     date: sparkDates.value?.[index] ?? '',
@@ -304,7 +301,7 @@ const peakFormatted = computed(() => {
               class="dashboard-kpi-widget__spark-dot"
               :style="{ left: `${sparkHoverPoint.x}%`, top: `${sparkHoverPoint.topPct}%` }"
             />
-            <div class="dashboard-kpi-widget__spark-tip" :style="{ left: `${sparkHoverPoint.tipX}%` }">
+            <div class="dashboard-kpi-widget__spark-tip">
               <span class="dashboard-kpi-widget__spark-tip-date">{{ sparkHoverPoint.date }}</span>
               <span class="dashboard-kpi-widget__spark-tip-value num">{{ sparkHoverPoint.value }}</span>
             </div>
@@ -352,14 +349,9 @@ const peakFormatted = computed(() => {
 <style scoped lang="scss">
 .dashboard-kpi-widget {
   justify-content: flex-start;
-  padding: 20px;
+  gap: 10px;
+  padding: 14px 16px 12px;
   container-type: inline-size;
-}
-
-@media (max-width: 768px) {
-  .dashboard-kpi-widget {
-    padding: 16px;
-  }
 }
 
 /* Narrow cards: the spark drops below the value block instead of squeezing beside it. */
@@ -369,7 +361,7 @@ const peakFormatted = computed(() => {
   }
 
   .dashboard-kpi-widget__spark {
-    flex-basis: 100%;
+    width: 100%;
   }
 }
 
@@ -446,27 +438,20 @@ const peakFormatted = computed(() => {
   min-width: 0;
   margin: 0;
   color: var(--muted);
-  /* Restyle spec: 12px KPI labels (the shared metaLabel token is 11px). */
-  font-size: 12px;
   line-height: 1.3;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-/* Hero row: value + delta on the left, sparkline filling the right half. */
+/* Hero row (design 1c): value + delta bottom-left, fixed-size spark bottom-right.
+   No stretching — the compact card is content-sized. */
 .dashboard-kpi-widget__hero {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
   flex-wrap: wrap;
-  flex: 1 1 auto;
-  margin-top: 8px;
   min-width: 0;
-  min-height: 0;
-}
-
-.dashboard-kpi-widget--compact .dashboard-kpi-widget__hero {
-  margin-top: 4px;
 }
 
 .dashboard-kpi-widget__hero-main {
@@ -476,12 +461,12 @@ const peakFormatted = computed(() => {
 
 .dashboard-kpi-widget__value {
   overflow: visible;
-  /* Dashboard-local hero size; the DS kpiValue token stays 32px for
-     hero KPIs elsewhere. */
-  font-size: 28px;
-  line-height: 1.05;
-  letter-spacing: -0.025em;
-  font-weight: 650;
+  /* Dashboard-local compact size (design 1c); the DS kpiValue token stays
+     32px for hero KPIs elsewhere. */
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -519,7 +504,7 @@ const peakFormatted = computed(() => {
   justify-content: space-between;
   gap: 12px;
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 9px;
   border-top: 1px solid var(--border-subtle);
   min-width: 0;
 }
@@ -537,13 +522,13 @@ const peakFormatted = computed(() => {
 }
 
 .dashboard-kpi-widget__stat-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--muted);
 }
 
 .dashboard-kpi-widget__stat-value {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
@@ -584,31 +569,21 @@ const peakFormatted = computed(() => {
   opacity: 0.85;
 }
 
-/* Sparkline beside the value (mock): fills the hero's right half. */
+/* Fixed-size spark (design 1c): 108×44, never stretches with the card. */
 .dashboard-kpi-widget__spark {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex: 1 1 50%;
-  align-self: stretch;
+  flex: none;
+  width: 108px;
   color: var(--accent);
-  min-width: 96px;
-  min-height: 0;
 }
 
 .dashboard-kpi-widget__spark-hit {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: 0;
 }
 
 .dashboard-kpi-widget__sparkline {
   display: block;
   width: 100%;
-  height: 64px;
-  min-height: 48px;
+  height: 44px;
   overflow: visible;
 }
 
@@ -616,12 +591,12 @@ const peakFormatted = computed(() => {
 .dashboard-kpi-widget__spark-end-dot {
   position: absolute;
   left: 100%;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   transform: translate(-60%, -50%);
   background: currentColor;
-  border: 1.5px solid var(--surface-primary);
+  box-shadow: 0 0 0 2px var(--surface-primary);
   pointer-events: none;
 }
 
@@ -638,22 +613,22 @@ const peakFormatted = computed(() => {
 
 .dashboard-kpi-widget__spark-dot {
   position: absolute;
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   transform: translate(-50%, -50%);
   background: currentColor;
-  border: 2px solid var(--surface-primary);
-  box-shadow: var(--elevation-raised);
+  box-shadow: 0 0 0 2px var(--surface-primary);
   pointer-events: none;
 }
 
 .dashboard-kpi-widget__spark-tip {
   position: absolute;
-  /* Sits in the empty air above the curve (the top strip of the spark area)
-     so it never covers the KPI value row. */
-  top: 0;
-  transform: translate(-50%, -35%);
+  /* Centered above the fixed spark block (design 1c); floats over the hero
+     whitespace, never over the value column. */
+  left: 50%;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%);
   display: flex;
   align-items: baseline;
   gap: 6px;
@@ -691,7 +666,7 @@ const peakFormatted = computed(() => {
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2;
+  stroke-width: 1.5;
   vector-effect: non-scaling-stroke;
 }
 

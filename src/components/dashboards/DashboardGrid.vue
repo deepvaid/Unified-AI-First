@@ -78,26 +78,24 @@ function layoutsMatch(
   })
 }
 
-const layoutFromWidgets = computed<LayoutItem[]>(() => {
-  const kpiRowsNeedingSpace = [...new Set(
-    props.widgets
-      .filter((widget) => widget.type === 'kpi' && widget.layout.h < 4)
-      .map((widget) => widget.layout.y),
-  )].sort((left, right) => left - right)
+// Compact KPI strip (design 1c): stat cards render at a fixed 3-row height —
+// persisted h:4 layouts from the taller pre-compact card are normalized down,
+// and vertical-compact pulls the rows below up to close the gap.
+const KPI_ROW_H = 3
 
+const layoutFromWidgets = computed<LayoutItem[]>(() => {
   return props.widgets.map((widget) => {
     const fallback = getDefaultPreset(widget.type)
-    const yOffset = kpiRowsNeedingSpace.filter((rowY) => widget.layout.y > rowY).length
-    const h = widget.type === 'kpi' ? Math.max(widget.layout.h, 4) : widget.layout.h
+    const h = widget.type === 'kpi' ? KPI_ROW_H : widget.layout.h
 
     return {
       i: widget.id,
       x: widget.layout.x,
-      y: widget.layout.y + yOffset,
+      y: widget.layout.y,
       w: widget.layout.w,
       h,
       minW: widget.layout.minW ?? fallback.minW,
-      minH: widget.layout.minH ?? fallback.minH,
+      minH: widget.type === 'kpi' ? KPI_ROW_H : (widget.layout.minH ?? fallback.minH),
     }
   })
 })
@@ -320,7 +318,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
 
 .dashboard-grid__mobile-item--kpi {
   height: auto;
-  min-height: 168px;
+  min-height: 136px;
 }
 
 .dashboard-grid__mobile-item--table {
