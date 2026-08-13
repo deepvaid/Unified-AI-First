@@ -50,14 +50,14 @@ const sparkColor = computed<string | undefined>(() => {
 const sparkFillOpacity = computed(() => treatment.value?.kpiSpark.fillOpacity ?? 0.16)
 
 const trendPositive = computed(() => props.data.delta == null || props.data.delta >= 0)
-const trendIcon = computed(() => (trendPositive.value ? 'chevron-up' : 'chevron-down'))
+const trendIcon = computed(() => (trendPositive.value ? 'arrow-up-right' : 'arrow-down-right'))
 
-const displayDeltaLabel = computed(() => {
-  if (props.data.delta == null) return props.data.deltaLabel
-  if (props.data.unit === 'percent') {
-    return `${props.data.delta >= 0 ? '+' : ''}${props.data.delta.toFixed(1)} pp`
-  }
-  return props.data.deltaLabel
+// Unsigned magnitude — the diagonal arrow carries the direction.
+const deltaText = computed(() => {
+  const { delta, deltaLabel, unit } = props.data
+  if (delta == null) return deltaLabel
+  if (unit === 'percent') return `${Math.abs(delta).toFixed(1)} pp`
+  return deltaLabel.replace(/^[+-]\s*/, '')
 })
 
 // Demote cents on currency values so the whole-dollar figure reads as the hero.
@@ -181,27 +181,59 @@ const sparkHoverPoint = computed(() => {
   const v = values[lo]! + (values[hi]! - values[lo]!) * (pos - lo)
   return {
     x: ratio * 100,
-    // Clamp the tip's anchor so it never hangs past the card edges.
-    tipX: Math.min(84, Math.max(16, ratio * 100)),
+    // Clamp the tip's anchor so it never hangs past the card edges (the spark
+    // is only ~half the card wide, so the clamp is tighter than full-width).
+    tipX: Math.min(75, Math.max(25, ratio * 100)),
     topPct: ((38 - v * 30) / 40) * 100,
     value: formatFullValue(raw[index] ?? 0, props.data.unit),
     date: sparkDates.value?.[index] ?? '',
   }
 })
 
+// Marker on the curve's last point (mock: the spark ends in a dot).
+const sparkEndPoint = computed(() => {
+  if (!rawSpark.value) return null
+  const values = sparklineValues.value
+  const v = values[values.length - 1]
+  if (v == null) return null
+  return { topPct: ((38 - v * 30) / 40) * 100 }
+})
+
+// "Prev. 30d $19,030" — the previous-period value reconstructed from the delta.
+const prevFormatted = computed(() => {
+  const { value, delta, unit } = props.data
+  if (delta == null) return ''
+  const prev = unit === 'percent' ? value - delta : value / (1 + delta / 100)
+  if (!Number.isFinite(prev)) return ''
+  return formatFullValue(prev, unit)
+})
+
+// Footer label derived from the comparison basis: "vs prev 30d" → "Prev. 30d",
+// "vs previous year" → "Prev. year", "vs yesterday" → "Yesterday".
+const prevStatLabel = computed(() => {
+  const stripped = props.comparisonLabel.replace(/^vs\s+/i, '').trim()
+  if (!stripped) return 'Prev. period'
+  const match = stripped.match(/^prev(?:ious)?\.?\s*(.*)$/i)
+  if (match) return `Prev. ${match[1] || 'period'}`
+  return stripped.charAt(0).toUpperCase() + stripped.slice(1)
+})
+
+// "Peak $1,365" — the highest daily bucket in the window.
+const peakFormatted = computed(() => {
+  const raw = rawSpark.value
+  if (!raw || !raw.length) return ''
+  const peak = Math.max(...raw)
+  if (!Number.isFinite(peak)) return ''
+  return formatFullValue(peak, props.data.unit)
+})
+
 </script>
 
 <template>
   <div class="dashboard-kpi-widget d-flex flex-column h-100" :class="{ 'dashboard-kpi-widget--compact': compact }">
-    <!-- Icon chip + label + period caption -->
+    <!-- Label only — the Prev/Peak footer carries the window, so no period
+         caption; the mock drops the icon chip entirely. -->
     <div class="dashboard-kpi-widget__header-row">
-      <div
-        v-if="icon"
-        class="dashboard-kpi-widget__icon-chip"
-        :class="dataSource && `dashboard-kpi-widget__icon-chip--${dataSource}`"
-      >
-        <v-icon :size="compact ? 13 : 14">{{ icon }}</v-icon>
-      </div>
       <div class="dashboard-kpi-widget__header-text">
         <div v-if="title" class="dashboard-kpi-widget__title-row">
           <h3 class="dashboard-kpi-widget__title mp-meta-label" :title="title">{{ title }}</h3>
@@ -214,26 +246,71 @@ const sparkHoverPoint = computed(() => {
             </template>
           </v-tooltip>
         </div>
-        <div class="dashboard-kpi-widget__period" v-if="subtitle">{{ subtitle }}</div>
       </div>
     </div>
 
-    <!-- Big value + delta badge on one row; the comparison basis ("vs prev 30d")
-         lives on as the badge's tooltip/aria instead of visible caption. -->
-    <div class="dashboard-kpi-widget__value-row">
-      <div class="dashboard-kpi-widget__value mp-kpi-value mp-money num">
-        <template v-if="moneyParts"><span>{{ moneyParts.main }}</span><span class="mp-money__cents">{{ moneyParts.cents }}</span></template>
-        <template v-else>{{ data.formattedValue }}</template>
+    <!-- Hero row: value + plain arrow delta on the left, sparkline beside it.
+         Hovering the spark reads out the underlying daily value (real data only). -->
+    <div class="dashboard-kpi-widget__hero">
+      <div class="dashboard-kpi-widget__hero-main">
+        <div class="dashboard-kpi-widget__value mp-kpi-value mp-money num">
+          <template v-if="moneyParts"><span>{{ moneyParts.main }}</span><span class="mp-money__cents">{{ moneyParts.cents }}</span></template>
+          <template v-else>{{ data.formattedValue }}</template>
+        </div>
+        <div
+          v-if="deltaText"
+          class="dashboard-kpi-widget__delta"
+          :class="data.delta == null
+            ? undefined
+            : trendPositive ? 'dashboard-kpi-widget__delta--positive' : 'dashboard-kpi-widget__delta--negative'"
+          :title="comparisonLabel || undefined"
+          :aria-label="data.delta == null
+            ? deltaText
+            : `${trendPositive ? 'Up' : 'Down'} ${deltaText}${comparisonLabel ? ` ${comparisonLabel}` : ''}`"
+        >
+          <v-icon v-if="data.delta != null" size="13">{{ trendIcon }}</v-icon>
+          {{ deltaText }}
+        </div>
       </div>
-      <span
-        class="dashboard-kpi-widget__trend-pill"
-        :class="trendPositive ? 'dashboard-kpi-widget__trend-pill--positive' : 'dashboard-kpi-widget__trend-pill--negative'"
-        :title="comparisonLabel || undefined"
-        :aria-label="comparisonLabel ? `${displayDeltaLabel} ${comparisonLabel}` : undefined"
-      >
-        <v-icon size="12">{{ trendIcon }}</v-icon>
-        {{ displayDeltaLabel }}
-      </span>
+
+      <div class="dashboard-kpi-widget__spark" aria-hidden="true" :style="sparkColor ? { color: sparkColor } : undefined">
+        <div
+          class="dashboard-kpi-widget__spark-hit"
+          @mousemove="onSparkMove"
+          @mouseleave="onSparkLeave"
+        >
+          <svg class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 40" preserveAspectRatio="none">
+            <defs>
+              <linearGradient :id="sparkFillId" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="currentColor" :stop-opacity="sparkFillOpacity" />
+                <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <path
+              :d="sparklineAreaPath"
+              class="dashboard-kpi-widget__sparkline-fill"
+              :fill="`url(#${sparkFillId})`"
+            />
+            <path :d="sparklinePath" class="dashboard-kpi-widget__sparkline-line" />
+          </svg>
+          <span
+            v-if="sparkEndPoint"
+            class="dashboard-kpi-widget__spark-end-dot"
+            :style="{ top: `${sparkEndPoint.topPct}%` }"
+          />
+          <template v-if="sparkHoverPoint">
+            <span class="dashboard-kpi-widget__spark-guide" :style="{ left: `${sparkHoverPoint.x}%` }" />
+            <span
+              class="dashboard-kpi-widget__spark-dot"
+              :style="{ left: `${sparkHoverPoint.x}%`, top: `${sparkHoverPoint.topPct}%` }"
+            />
+            <div class="dashboard-kpi-widget__spark-tip" :style="{ left: `${sparkHoverPoint.tipX}%` }">
+              <span class="dashboard-kpi-widget__spark-tip-date">{{ sparkHoverPoint.date }}</span>
+              <span class="dashboard-kpi-widget__spark-tip-value num">{{ sparkHoverPoint.value }}</span>
+            </div>
+          </template>
+        </div>
+      </div>
     </div>
 
     <div v-if="data.secondaryStat" class="dashboard-kpi-widget__secondary num">{{ data.secondaryStat }}</div>
@@ -243,45 +320,21 @@ const sparkHoverPoint = computed(() => {
       {{ data.location }}
     </div>
 
-    <!-- Full-width sparkline baseline, pinned to the bottom of the body.
-         Hovering it reads out the underlying daily value (real data only). -->
-    <div class="dashboard-kpi-widget__spark" aria-hidden="true" :style="sparkColor ? { color: sparkColor } : undefined">
-      <div
-        class="dashboard-kpi-widget__spark-hit"
-        @mousemove="onSparkMove"
-        @mouseleave="onSparkLeave"
-      >
-        <svg class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 40" preserveAspectRatio="none">
-          <defs>
-            <linearGradient :id="sparkFillId" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="currentColor" :stop-opacity="sparkFillOpacity" />
-              <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
-            </linearGradient>
-          </defs>
-          <path
-            :d="sparklineAreaPath"
-            class="dashboard-kpi-widget__sparkline-fill"
-            :fill="`url(#${sparkFillId})`"
-          />
-          <path :d="sparklinePath" class="dashboard-kpi-widget__sparkline-line" />
-        </svg>
-        <template v-if="sparkHoverPoint">
-          <span class="dashboard-kpi-widget__spark-guide" :style="{ left: `${sparkHoverPoint.x}%` }" />
-          <span
-            class="dashboard-kpi-widget__spark-dot"
-            :style="{ left: `${sparkHoverPoint.x}%`, top: `${sparkHoverPoint.topPct}%` }"
-          />
-          <div class="dashboard-kpi-widget__spark-tip" :style="{ left: `${sparkHoverPoint.tipX}%` }">
-            <span class="dashboard-kpi-widget__spark-tip-date">{{ sparkHoverPoint.date }}</span>
-            <span class="dashboard-kpi-widget__spark-tip-value num">{{ sparkHoverPoint.value }}</span>
-          </div>
-        </template>
-      </div>
-    </div>
+    <!-- Divider footer: previous-period value + window peak, derived from the
+         delta and the raw daily buckets. -->
+    <footer v-if="prevFormatted || peakFormatted" class="dashboard-kpi-widget__stats">
+      <span v-if="prevFormatted" class="dashboard-kpi-widget__stat">
+        <span class="dashboard-kpi-widget__stat-label">{{ prevStatLabel }}</span>
+        <span class="dashboard-kpi-widget__stat-value num">{{ prevFormatted }}</span>
+      </span>
+      <span v-if="peakFormatted" class="dashboard-kpi-widget__stat dashboard-kpi-widget__stat--end">
+        <span class="dashboard-kpi-widget__stat-label">Peak</span>
+        <span class="dashboard-kpi-widget__stat-value num">{{ peakFormatted }}</span>
+      </span>
+    </footer>
 
     <!-- Stat cards carry the number, not its provenance: the source chip and
-         "Updated …" stamp stay on the chart/table cards only, so a KPI row reads
-         as four figures rather than four figures plus eight labels. The footer
+         "Updated …" stamp stay on the chart/table cards only. This footer
          survives solely for the View Report action. -->
     <footer v-if="showViewReport" class="dashboard-kpi-widget__foot">
       <button
@@ -309,13 +362,14 @@ const sparkHoverPoint = computed(() => {
   }
 }
 
-@container (max-width: 260px) {
-  .dashboard-kpi-widget__icon-chip {
-    display: none;
-  }
-
+/* Narrow cards: the spark drops below the value block instead of squeezing beside it. */
+@container (max-width: 240px) {
   .dashboard-kpi-widget__value {
     font-size: 22px;
+  }
+
+  .dashboard-kpi-widget__spark {
+    flex-basis: 100%;
   }
 }
 
@@ -355,48 +409,6 @@ const sparkHoverPoint = computed(() => {
   gap: 2px;
   min-width: 0;
   flex: 1 1 auto;
-}
-
-.dashboard-kpi-widget__icon-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-chip);
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-}
-
-.dashboard-kpi-widget__icon-chip--commerce {
-  background: color-mix(in oklch, var(--cloud-commerce-accent) 12%, transparent);
-  color: var(--cloud-commerce-text);
-}
-
-.dashboard-kpi-widget__icon-chip--marketing {
-  background: color-mix(in oklch, var(--cloud-marketing-accent) 12%, transparent);
-  color: var(--cloud-marketing-text);
-}
-
-.dashboard-kpi-widget__icon-chip--analytics {
-  background: color-mix(in oklch, var(--cloud-analytics-accent) 12%, transparent);
-  color: var(--cloud-analytics-text);
-}
-
-.dashboard-kpi-widget__icon-chip--contacts {
-  background: color-mix(in oklch, var(--cloud-contacts-accent) 12%, transparent);
-  color: var(--cloud-contacts-text);
-}
-
-.dashboard-kpi-widget__icon-chip--service {
-  background: color-mix(in oklch, var(--cloud-service-accent) 12%, transparent);
-  color: var(--cloud-service-text);
-}
-
-.dashboard-kpi-widget__icon-chip--retail {
-  background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
-  color: var(--cloud-retail-text);
 }
 
 .dashboard-kpi-widget__title-row {
@@ -441,38 +453,35 @@ const sparkHoverPoint = computed(() => {
   text-overflow: ellipsis;
 }
 
-.dashboard-kpi-widget__period {
-  /* One notch quieter than the label so the header reads as one line + a whisper. */
-  color: color-mix(in oklch, var(--muted) 80%, transparent);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dashboard-kpi-widget__value-row {
+/* Hero row: value + delta on the left, sparkline filling the right half. */
+.dashboard-kpi-widget__hero {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  flex: 1 1 auto;
+  margin-top: 8px;
   min-width: 0;
+  min-height: 0;
 }
 
-.dashboard-kpi-widget--compact .dashboard-kpi-widget__value-row {
+.dashboard-kpi-widget--compact .dashboard-kpi-widget__hero {
   margin-top: 4px;
+}
+
+.dashboard-kpi-widget__hero-main {
+  min-width: 0;
+  flex: 0 0 auto;
 }
 
 .dashboard-kpi-widget__value {
   overflow: visible;
-  /* Dashboard-local 24px override; the DS kpiValue token stays 32px for
+  /* Dashboard-local hero size; the DS kpiValue token stays 32px for
      hero KPIs elsewhere. */
-  font-size: 24px;
+  font-size: 28px;
   line-height: 1.05;
   letter-spacing: -0.025em;
-  font-weight: 600;
+  font-weight: 650;
   color: var(--text-primary);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -482,27 +491,62 @@ const sparkHoverPoint = computed(() => {
   font-size: 22px;
 }
 
-.dashboard-kpi-widget__trend-pill {
+/* Plain-text delta: diagonal arrow + unsigned magnitude, no pill background. */
+.dashboard-kpi-widget__delta {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 3px 9px 3px 7px;
-  border-radius: 999px;
-  font-size: 12px;
+  gap: 3px;
+  margin-top: 6px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--muted);
   white-space: nowrap;
-  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.dashboard-kpi-widget__trend-pill--positive {
+.dashboard-kpi-widget__delta--positive {
   color: var(--pos-ink);
-  background: color-mix(in oklch, var(--pos) 12%, transparent);
 }
 
-.dashboard-kpi-widget__trend-pill--negative {
+.dashboard-kpi-widget__delta--negative {
   color: var(--neg-ink);
-  background: color-mix(in oklch, var(--neg) 12%, transparent);
+}
+
+/* Divider footer: "Prev. 30d $19,030" left, "Peak $1,365" right. */
+.dashboard-kpi-widget__stats {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+  min-width: 0;
+}
+
+.dashboard-kpi-widget__stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.dashboard-kpi-widget__stat--end {
+  margin-left: auto;
+}
+
+.dashboard-kpi-widget__stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.dashboard-kpi-widget__stat-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-kpi-widget__secondary {
@@ -540,17 +584,15 @@ const sparkHoverPoint = computed(() => {
   opacity: 0.85;
 }
 
-/* Full-width baseline sparkline pinned to the bottom of the card body. The
-   curve absorbs the card's spare height (48–96px) instead of leaving a dead
-   slab between the value and a fixed-height chart. */
+/* Sparkline beside the value (mock): fills the hero's right half. */
 .dashboard-kpi-widget__spark {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  flex: 1 1 auto;
-  margin-top: auto;
-  padding-top: 12px;
+  justify-content: center;
+  flex: 1 1 50%;
+  align-self: stretch;
   color: var(--accent);
+  min-width: 96px;
   min-height: 0;
 }
 
@@ -559,18 +601,28 @@ const sparkHoverPoint = computed(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  flex: 1 1 auto;
   min-height: 0;
-  max-height: 96px;
 }
 
 .dashboard-kpi-widget__sparkline {
   display: block;
   width: 100%;
-  flex: 1 1 48px;
+  height: 64px;
   min-height: 48px;
-  max-height: 96px;
   overflow: visible;
+}
+
+/* Marker on the curve's last point. */
+.dashboard-kpi-widget__spark-end-dot {
+  position: absolute;
+  left: 100%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transform: translate(-60%, -50%);
+  background: currentColor;
+  border: 1.5px solid var(--surface-primary);
+  pointer-events: none;
 }
 
 /* Hover readout: index cursor + dot on the curve + a small value tip. */
@@ -629,11 +681,8 @@ const sparkHoverPoint = computed(() => {
 
 @container (max-height: 150px) {
   .dashboard-kpi-widget__sparkline {
-    flex-basis: 28px;
+    height: 28px;
     min-height: 28px;
-  }
-  .dashboard-kpi-widget__spark {
-    padding-top: 8px;
   }
 }
 
@@ -655,18 +704,9 @@ const sparkHoverPoint = computed(() => {
   padding: 14px 16px;
 }
 
-.dashboard-kpi-widget--compact .dashboard-kpi-widget__spark {
-  padding-top: 8px;
-}
-
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__sparkline {
   height: 30px;
-}
-
-.dashboard-kpi-widget--compact .dashboard-kpi-widget__icon-chip {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
+  min-height: 30px;
 }
 
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__header-row {
@@ -676,10 +716,6 @@ const sparkHoverPoint = computed(() => {
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__title {
   font-size: 12px;
   line-height: 1.2;
-}
-
-.dashboard-kpi-widget--compact .dashboard-kpi-widget__period {
-  font-size: 10.5px;
 }
 
 .dashboard-kpi-widget__foot {
