@@ -160,22 +160,22 @@ const sparklineAreaPath = computed(() => (
       </div>
     </div>
 
-    <!-- Big value -->
-    <div class="dashboard-kpi-widget__value mp-kpi-value mp-money num">
-      <template v-if="moneyParts"><span>{{ moneyParts.main }}</span><span class="mp-money__cents">{{ moneyParts.cents }}</span></template>
-      <template v-else>{{ data.formattedValue }}</template>
-    </div>
-
-    <!-- Trend inline with comparison label (full width — no truncation) -->
-    <div class="dashboard-kpi-widget__trend">
+    <!-- Big value + delta badge on one row; the comparison basis ("vs prev 30d")
+         lives on as the badge's tooltip/aria instead of visible caption. -->
+    <div class="dashboard-kpi-widget__value-row">
+      <div class="dashboard-kpi-widget__value mp-kpi-value mp-money num">
+        <template v-if="moneyParts"><span>{{ moneyParts.main }}</span><span class="mp-money__cents">{{ moneyParts.cents }}</span></template>
+        <template v-else>{{ data.formattedValue }}</template>
+      </div>
       <span
         class="dashboard-kpi-widget__trend-pill"
         :class="trendPositive ? 'dashboard-kpi-widget__trend-pill--positive' : 'dashboard-kpi-widget__trend-pill--negative'"
+        :title="comparisonLabel || undefined"
+        :aria-label="comparisonLabel ? `${displayDeltaLabel} ${comparisonLabel}` : undefined"
       >
         <v-icon size="12">{{ trendIcon }}</v-icon>
         {{ displayDeltaLabel }}
       </span>
-      <span v-if="comparisonLabel" class="dashboard-kpi-widget__comparison">{{ comparisonLabel }}</span>
     </div>
 
     <div v-if="data.secondaryStat" class="dashboard-kpi-widget__secondary num">{{ data.secondaryStat }}</div>
@@ -375,9 +375,21 @@ const sparklineAreaPath = computed(() => (
   text-overflow: ellipsis;
 }
 
+.dashboard-kpi-widget__value-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.dashboard-kpi-widget--compact .dashboard-kpi-widget__value-row {
+  margin-top: 4px;
+}
+
 .dashboard-kpi-widget__value {
   overflow: visible;
-  margin-top: 10px;
   /* Dashboard-local 24px override; the DS kpiValue token stays 32px for
      hero KPIs elsewhere. */
   font-size: 24px;
@@ -390,17 +402,7 @@ const sparklineAreaPath = computed(() => (
 }
 
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__value {
-  margin-top: 4px;
   font-size: 22px;
-}
-
-.dashboard-kpi-widget__trend {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  min-width: 0;
-  flex-wrap: wrap;
 }
 
 .dashboard-kpi-widget__trend-pill {
@@ -423,13 +425,6 @@ const sparklineAreaPath = computed(() => (
 .dashboard-kpi-widget__trend-pill--negative {
   color: var(--neg-ink);
   background: color-mix(in oklch, var(--neg) 12%, transparent);
-}
-
-.dashboard-kpi-widget__comparison {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  white-space: nowrap;
 }
 
 .dashboard-kpi-widget__secondary {
