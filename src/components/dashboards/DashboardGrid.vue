@@ -179,7 +179,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
       v-model:layout="layout"
       :col-num="12"
       :row-height="44"
-      :margin="[18, 18]"
+      :margin="[20, 20]"
       :is-draggable="true"
       :is-resizable="true"
       :vertical-compact="true"
@@ -274,7 +274,15 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
 <style scoped lang="scss">
 .dashboard-grid {
   min-height: 260px;
-  margin-inline: -14px;
+}
+
+/* grid-layout-plus applies its [20,20] margin as an outer gutter too — pull
+   the desktop grid back out so card edges align with the page header. The
+   mobile list (<1280px) has no library gutter and stays on the page padding. */
+@media (min-width: 1280px) {
+  .dashboard-grid {
+    margin-inline: -20px;
+  }
 }
 
 .dashboard-grid__layout {
@@ -286,7 +294,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
 .dashboard-grid__mobile-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
 }
 
 @media (min-width: 640px) {

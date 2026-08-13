@@ -838,8 +838,12 @@ function toggleFavoriteActive() {
   background: var(--surface-primary);
 }
 
-:deep(.dashboard-grid) {
-  margin-top: -36px;
+/* Cancel the desktop grid library's 20px top gutter so the hub's 24px gap
+   is the real header→grid rhythm. The mobile list has no gutter to cancel. */
+@media (min-width: 1280px) {
+  :deep(.dashboard-grid) {
+    margin-top: -20px;
+  }
 }
 
 @media (max-width: 1024px) {
