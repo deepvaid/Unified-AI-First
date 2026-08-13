@@ -102,6 +102,11 @@ const campaignRows = computed(() => {
   border-radius: var(--r-card);
 }
 
+/* Digit columns (totals, counts) align across rows. */
+.dashboard-table-widget__table :deep(td) {
+  font-variant-numeric: tabular-nums;
+}
+
 .dashboard-campaign-list {
   display: flex;
   flex-direction: column;

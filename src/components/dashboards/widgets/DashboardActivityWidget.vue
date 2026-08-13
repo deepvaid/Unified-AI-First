@@ -99,5 +99,6 @@ function getTagStyle(tag: string) {
   font-weight: 500;
   color: var(--muted);
   margin-top: 1px;
+  font-variant-numeric: tabular-nums;
 }
 </style>

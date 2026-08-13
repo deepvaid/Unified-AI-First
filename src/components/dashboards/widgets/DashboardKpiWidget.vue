@@ -239,7 +239,7 @@ const sparklineAreaPath = computed(() => (
   }
 
   .dashboard-kpi-widget__value {
-    font-size: 26px;
+    font-size: 22px;
   }
 }
 
@@ -358,6 +358,8 @@ const sparklineAreaPath = computed(() => (
   min-width: 0;
   margin: 0;
   color: var(--muted);
+  /* Restyle spec: 12px KPI labels (the shared metaLabel token is 11px). */
+  font-size: 12px;
   line-height: 1.3;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -376,10 +378,12 @@ const sparklineAreaPath = computed(() => (
 .dashboard-kpi-widget__value {
   overflow: visible;
   margin-top: 10px;
-  font-size: 32px;
+  /* Dashboard-local 24px override; the DS kpiValue token stays 32px for
+     hero KPIs elsewhere. */
+  font-size: 24px;
   line-height: 1.05;
-  letter-spacing: -0.025em;
-  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
