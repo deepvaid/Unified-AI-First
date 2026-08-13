@@ -70,8 +70,8 @@ watch(() => route.query.frame, (f) => {
 
 // Dashboard chart palette: a ?chart=shopify|blue|indigo|ocean|aurora|optionA..D
 // query param (stakeholder demo), same in-memory-per-tab handling as ?nav=.
-// Independent of, and composes with, ?nav=. Unknown values fall back to shopify
-// (the default). optionA–D are the chart visual-system exploration themes.
+// Independent of, and composes with, ?nav=. Unknown values fall back to optionB
+// (the default — the accessible multi-color token palette).
 const VALID_CHART_PALETTES: readonly ChartPalette[] = [
   'shopify', 'blue', 'indigo', 'ocean', 'aurora',
   'optionA', 'optionB', 'optionC', 'optionD',
@@ -82,7 +82,7 @@ const chartOverride = ref<ChartPalette | null>(isChartPalette(route.query.chart)
 watch(() => route.query.chart, (chart) => {
   if (isChartPalette(chart)) chartOverride.value = chart
 })
-watch(() => chartOverride.value ?? 'shopify', applyChartPalette, { immediate: true })
+watch(() => chartOverride.value ?? 'optionB', applyChartPalette, { immediate: true })
 
 // PLG demo state: a ?plg=trial-d3|trial-d12|trial-expired|paid-build|...|grace
 // query param (stakeholder share links) applies a subscription preset to the

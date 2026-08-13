@@ -423,7 +423,7 @@ const OPTION_A_TREATMENT = makeTreatment({
 const OPTION_B_TREATMENT = makeTreatment({
   stroke: { curve: 'straight', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false },
   comparison: { color: mp_color_chart_light_optionB_comparison, dash: 0, fillOpacity: 0.08 },
-  area: { fill: 'solid', opacityFrom: 0.09, opacityTo: 0.09 },
+  area: { fill: 'solid', opacityFrom: 0.12, opacityTo: 0.12 },
   bar: { radius: 4, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
   grid: { show: true, dashArray: 4, xLines: false, yLines: true },
   axes: { yLabelsOnTimeseries: true },
@@ -897,7 +897,7 @@ export const CHART_PALETTES: Record<ChartPalette, string[]> = Object.fromEntries
   Object.entries(CHART_THEMES).map(([id, modes]) => [id, modes.light.series]),
 ) as Record<ChartPalette, string[]>
 
-const chartPaletteId = ref<ChartPalette>('shopify')
+const chartPaletteId = ref<ChartPalette>('optionB')
 
 /**
  * Provide/inject key that lets a widget subtree pin an explicit theme instead of
