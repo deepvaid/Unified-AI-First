@@ -52,6 +52,12 @@
   lip). Re-uploaded and swapped D's bar, stacked-column, segmented-bar, bar-hover and
   donut images on page 05 plus the specimen grid on 06. Only D changed — A/B/C stay matte.
 
+- 2026-08-07 (P16): previous period switched from a dashed line to a translucent overlay
+  — re-uploaded and swapped the `widget-area` image on 00, 02–05 plus the specimen grid
+  on 06. **Gotcha:** pages 04/05 had already been re-synced in an earlier round, so their
+  stored hashes no longer matched my records; a hash-map swap silently returned 0. Match
+  those rectangles by size (846×479 for the area shot) rather than by expected old hash.
+
 ## Re-run instructions
 
 Screenshots come from `docs/chart-exploration/` (manifest.json). To refresh after a
