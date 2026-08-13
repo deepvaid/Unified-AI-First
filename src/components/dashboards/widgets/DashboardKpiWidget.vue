@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, inject, unref, useId } from 'vue'
+import { computed, inject, ref, unref, useId } from 'vue'
 import { CHART_PALETTES, CHART_PALETTE_OVERRIDE, useChartTheme } from '@/plugins/chartPalette'
 import type { DashboardDataSource, DashboardKpiData } from '@/stores/dashboards/types'
+import { formatFullValue } from '@/utils/formatNumber'
 
 const sparkFillId = useId()
 
@@ -131,6 +132,63 @@ const sparklineAreaPath = computed(() => (
   sparklinePath.value ? `${sparklinePath.value} L 100 40 L 0 40 Z` : ''
 ))
 
+// --- Sparkline hover readout -------------------------------------------------
+// Only real windowed data gets a readout; the synthetic fallback wobble has no
+// values worth reporting.
+const rawSpark = computed(() => (
+  props.data.sparkline && props.data.sparkline.length >= 2 ? props.data.sparkline : null
+))
+
+// The sparkline is daily buckets over the current window ending today
+// (useWidgetData bucketDaily .cur), so dates derive from the index.
+const sparkDates = computed(() => {
+  const raw = rawSpark.value
+  if (!raw) return null
+  const today = new Date()
+  return raw.map((_, i) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() - (raw.length - 1 - i))
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  })
+})
+
+const sparkHoverIndex = ref<number | null>(null)
+
+function onSparkMove(event: MouseEvent) {
+  const raw = rawSpark.value
+  if (!raw) return
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  if (!rect.width) return
+  const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))
+  sparkHoverIndex.value = Math.round(ratio * (raw.length - 1))
+}
+
+function onSparkLeave() {
+  sparkHoverIndex.value = null
+}
+
+const sparkHoverPoint = computed(() => {
+  const raw = rawSpark.value
+  const index = sparkHoverIndex.value
+  if (!raw || index == null) return null
+  const ratio = raw.length > 1 ? index / (raw.length - 1) : 0
+  // Sit the cursor dot on the drawn (smoothed) curve: linear interpolation of
+  // the normalized points is close enough to the bezier at sparkline size.
+  const values = sparklineValues.value
+  const pos = ratio * (values.length - 1)
+  const lo = Math.floor(pos)
+  const hi = Math.min(values.length - 1, lo + 1)
+  const v = values[lo]! + (values[hi]! - values[lo]!) * (pos - lo)
+  return {
+    x: ratio * 100,
+    // Clamp the tip's anchor so it never hangs past the card edges.
+    tipX: Math.min(84, Math.max(16, ratio * 100)),
+    topPct: ((38 - v * 30) / 40) * 100,
+    value: formatFullValue(raw[index] ?? 0, props.data.unit),
+    date: sparkDates.value?.[index] ?? '',
+  }
+})
+
 </script>
 
 <template>
@@ -185,22 +243,40 @@ const sparklineAreaPath = computed(() => (
       {{ data.location }}
     </div>
 
-    <!-- Full-width sparkline baseline, pinned to the bottom of the body -->
+    <!-- Full-width sparkline baseline, pinned to the bottom of the body.
+         Hovering it reads out the underlying daily value (real data only). -->
     <div class="dashboard-kpi-widget__spark" aria-hidden="true" :style="sparkColor ? { color: sparkColor } : undefined">
-      <svg class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 40" preserveAspectRatio="none">
-        <defs>
-          <linearGradient :id="sparkFillId" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="currentColor" :stop-opacity="sparkFillOpacity" />
-            <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
-          </linearGradient>
-        </defs>
-        <path
-          :d="sparklineAreaPath"
-          class="dashboard-kpi-widget__sparkline-fill"
-          :fill="`url(#${sparkFillId})`"
-        />
-        <path :d="sparklinePath" class="dashboard-kpi-widget__sparkline-line" />
-      </svg>
+      <div
+        class="dashboard-kpi-widget__spark-hit"
+        @mousemove="onSparkMove"
+        @mouseleave="onSparkLeave"
+      >
+        <svg class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 40" preserveAspectRatio="none">
+          <defs>
+            <linearGradient :id="sparkFillId" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="currentColor" :stop-opacity="sparkFillOpacity" />
+              <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <path
+            :d="sparklineAreaPath"
+            class="dashboard-kpi-widget__sparkline-fill"
+            :fill="`url(#${sparkFillId})`"
+          />
+          <path :d="sparklinePath" class="dashboard-kpi-widget__sparkline-line" />
+        </svg>
+        <template v-if="sparkHoverPoint">
+          <span class="dashboard-kpi-widget__spark-guide" :style="{ left: `${sparkHoverPoint.x}%` }" />
+          <span
+            class="dashboard-kpi-widget__spark-dot"
+            :style="{ left: `${sparkHoverPoint.x}%`, top: `${sparkHoverPoint.topPct}%` }"
+          />
+          <div class="dashboard-kpi-widget__spark-tip" :style="{ left: `${sparkHoverPoint.tipX}%` }">
+            <span class="dashboard-kpi-widget__spark-tip-date">{{ sparkHoverPoint.date }}</span>
+            <span class="dashboard-kpi-widget__spark-tip-value num">{{ sparkHoverPoint.value }}</span>
+          </div>
+        </template>
+      </div>
     </div>
 
     <!-- Stat cards carry the number, not its provenance: the source chip and
@@ -276,7 +352,7 @@ const sparklineAreaPath = computed(() => (
 .dashboard-kpi-widget__header-text {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -366,7 +442,8 @@ const sparklineAreaPath = computed(() => (
 }
 
 .dashboard-kpi-widget__period {
-  color: var(--muted);
+  /* One notch quieter than the label so the header reads as one line + a whisper. */
+  color: color-mix(in oklch, var(--muted) 80%, transparent);
   font-size: 11px;
   font-weight: 500;
   line-height: 1.3;
@@ -378,9 +455,9 @@ const sparklineAreaPath = computed(() => (
 .dashboard-kpi-widget__value-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-top: 10px;
+  margin-top: 12px;
   min-width: 0;
 }
 
@@ -394,7 +471,7 @@ const sparklineAreaPath = computed(() => (
      hero KPIs elsewhere. */
   font-size: 24px;
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -409,12 +486,13 @@ const sparklineAreaPath = computed(() => (
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 2px 8px 2px 6px;
+  padding: 3px 9px 3px 7px;
   border-radius: 999px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-kpi-widget__trend-pill--positive {
@@ -462,24 +540,97 @@ const sparklineAreaPath = computed(() => (
   opacity: 0.85;
 }
 
-/* Full-width baseline sparkline, pinned to the bottom of the card body */
+/* Full-width baseline sparkline pinned to the bottom of the card body. The
+   curve absorbs the card's spare height (48–96px) instead of leaving a dead
+   slab between the value and a fixed-height chart. */
 .dashboard-kpi-widget__spark {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 1 1 auto;
   margin-top: auto;
-  padding-top: 14px;
+  padding-top: 12px;
   color: var(--accent);
   min-height: 0;
+}
+
+.dashboard-kpi-widget__spark-hit {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 96px;
 }
 
 .dashboard-kpi-widget__sparkline {
   display: block;
   width: 100%;
-  height: 48px;
+  flex: 1 1 48px;
+  min-height: 48px;
+  max-height: 96px;
   overflow: visible;
+}
+
+/* Hover readout: index cursor + dot on the curve + a small value tip. */
+.dashboard-kpi-widget__spark-guide {
+  position: absolute;
+  top: 0;
+  bottom: 2px;
+  width: 1px;
+  transform: translateX(-0.5px);
+  background: color-mix(in oklch, currentColor 30%, transparent);
+  pointer-events: none;
+}
+
+.dashboard-kpi-widget__spark-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: currentColor;
+  border: 2px solid var(--surface-primary);
+  box-shadow: var(--elevation-raised);
+  pointer-events: none;
+}
+
+.dashboard-kpi-widget__spark-tip {
+  position: absolute;
+  /* Sits in the empty air above the curve (the top strip of the spark area)
+     so it never covers the KPI value row. */
+  top: 0;
+  transform: translate(-50%, -35%);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
+  box-shadow: var(--elevation-raised);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.dashboard-kpi-widget__spark-tip-date {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.dashboard-kpi-widget__spark-tip-value {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 @container (max-height: 150px) {
   .dashboard-kpi-widget__sparkline {
-    height: 28px;
+    flex-basis: 28px;
+    min-height: 28px;
   }
   .dashboard-kpi-widget__spark {
     padding-top: 8px;
