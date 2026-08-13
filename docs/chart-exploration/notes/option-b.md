@@ -77,3 +77,10 @@ dashed stroke. It is now a **thin solid line over a translucent wash of its own 
 (shadcn area convention) so both periods can be compared as overlaid shapes.
 `comparison.dash` is 0 for every option; `comparison.fillOpacity` carries each option's
 own weight and fades to the same floor as the current period.
+
+---
+**P17 note (2026-08-07, stakeholder direction):** "do same for all options" — the
+embossed gloss introduced for Option D now applies to **every** option. Bars carry a lit
+top edge and a darkened base lip (`effects.gloss`), including the solid-fill options,
+where gloss now outranks the flat return. This deliberately trades one differentiator
+between the four directions for a consistent mark treatment.
