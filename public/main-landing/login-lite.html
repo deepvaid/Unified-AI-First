@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maropost — Sign in (lite orb)</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1c1f24; --ink-soft:#2b2f36; --dim:#8b929c; --dimmer:#aab0b8;
+    --line:rgba(24,27,33,0.14); --field:#fcfcfd; --accent:#1877f2;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{ background:var(--bg); color:var(--ink); font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; overflow:hidden; }
+
+  .wordmark{ position:fixed; top:27px; left:clamp(22px,4vw,48px); z-index:6; font-weight:800; font-size:22px; line-height:1; letter-spacing:0.01em; color:var(--ink); text-decoration:none; cursor:pointer; }
+  .back{ position:fixed; top:30px; right:clamp(22px,4vw,48px); z-index:6; color:var(--dim); text-decoration:none; font-size:14px; font-weight:500; transition:color .18s; }
+  .back:hover{ color:var(--ink); }
+
+  .orb-bg{ position:fixed; inset:0; z-index:0; pointer-events:none; }
+  .stage{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  #orb{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+
+  .center{ position:relative; z-index:1; height:100dvh; display:grid; place-items:center; padding:24px; }
+  .card{ width:min(330px,90vw); display:flex; flex-direction:column; }
+  .card h1{ font-size:24px; font-weight:600; letter-spacing:-0.01em; margin-bottom:18px; }
+  .card .sub{ font-size:14px; color:var(--dim); margin:-12px 0 18px; }
+
+  .field{ width:100%; background:var(--field); border:1px solid var(--line); border-radius:7px;
+    padding:13px 14px; font-family:'Inter',sans-serif; font-size:15px; color:var(--ink); outline:0;
+    margin-bottom:10px; transition:border-color .18s, box-shadow .18s; }
+  .field::placeholder{ color:var(--dim); }
+  .field:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(24,118,242,.14); background:#fff; }
+
+  .primary{ width:100%; background:var(--ink); color:#fff; border:0; border-radius:7px; padding:14px;
+    font-family:'Inter',sans-serif; font-size:15px; font-weight:600; cursor:pointer; margin-top:4px; transition:background .18s, transform .1s; }
+  .primary:hover{ background:#000; }
+  .primary:active{ transform:translateY(1px); }
+
+  .meta{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; font-size:13.5px; }
+  .remember{ display:flex; align-items:center; gap:8px; color:var(--ink-soft); cursor:pointer; user-select:none; }
+  .remember input{ width:15px; height:15px; accent-color:var(--accent); }
+  .meta a{ color:var(--ink-soft); text-decoration:none; cursor:pointer; }
+  .meta a:hover{ color:var(--accent); }
+
+  .divider{ height:1px; background:var(--line); margin:20px 0 16px; }
+
+  .soft{ width:100%; background:#f1f2f4; border:0; border-radius:7px; padding:13px; font-family:'Inter',sans-serif;
+    font-size:14.5px; font-weight:600; color:var(--ink); cursor:pointer; transition:background .18s, transform .1s; display:flex; align-items:center; justify-content:center; gap:9px; }
+  .soft:hover{ background:#e8e9ec; }
+  .soft:active{ transform:translateY(1px); }
+  .soft svg{ width:17px; height:17px; }
+  .social-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+  .gG{ font-weight:700; font-size:17px; color:#4285F4; font-family:'Inter',sans-serif; }
+  .ms{ display:grid; grid-template-columns:7px 7px; grid-template-rows:7px 7px; gap:2px; }
+  .ms i{ width:7px; height:7px; }
+  .ms i:nth-child(1){ background:#F25022; } .ms i:nth-child(2){ background:#7FBA00; }
+  .ms i:nth-child(3){ background:#00A4EF; } .ms i:nth-child(4){ background:#FFB900; }
+
+  .switch{ text-align:center; margin-top:20px; font-size:13.5px; color:var(--dim); }
+  .switch a{ color:var(--accent); text-decoration:none; font-weight:600; cursor:pointer; }
+  .switch a:hover{ text-decoration:underline; }
+
+</style>
+</head>
+<body>
+
+  <a class="wordmark" href="./">MAROPOST</a>
+  <a class="back" href="./">← Back to site</a>
+
+  <div class="orb-bg">
+    <div class="stage">
+      <canvas id="orb"></canvas>
+
+    </div>
+  </div>
+
+  <div class="center">
+    <form class="card" id="authForm" autocomplete="off">
+      <h1 id="title">Login</h1>
+
+      <input class="field" id="email" type="email" placeholder="Email" autocomplete="email" required>
+      <input class="field" id="password" type="password" placeholder="Password" autocomplete="current-password" required>
+
+      <button class="primary" id="submit" type="submit">Login</button>
+
+      <div class="divider"></div>
+
+      <button class="soft" id="passkey" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="10" r="4"/><path d="M12 13l8 0M16 13v3M20 13v3M8 14v6"/></svg>
+        Sign in with Passkey
+      </button>
+      <div class="social-row">
+        <button class="soft" id="google" type="button"><span class="gG">G</span></button>
+        <button class="soft" id="microsoft" type="button"><span class="ms"><i></i><i></i><i></i><i></i></span></button>
+      </div>
+
+      <div class="switch">New to Maropost? <a href="/signup">Start free trial</a></div>
+    </form>
+  </div>
+
+<script>
+  // Signups no longer stop here — the landing CTAs link straight to the
+  // conversational /signup. Redirect stale "#signup" bookmarks the same way.
+  if (location.hash === '#signup') location.replace('/signup');
+
+  // Login lands on the DaVinci app (mock — no real backend).
+  const goApp = () => { window.location.href = '/accounts/2000290/da-vinci/experience'; };
+  document.getElementById('authForm').addEventListener('submit', (e) => { e.preventDefault(); goApp(); });
+  ['passkey','google','microsoft'].forEach(id => document.getElementById(id).addEventListener('click', goApp));
+</script>
+
+<!-- Lite orb: no three.js / WebGL — dependency-free canvas-2D grain (~7 KB) -->
+<script type="module" src="/dv-orb/dv-orb-lite.js"></script>
+
+</body>
+</html>
