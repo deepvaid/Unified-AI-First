@@ -37,7 +37,7 @@ neutral `#8A94A0` · grid `rgba(26,24,20,0.07)`.
 
 ```
 stroke: { curve: smooth, width: 2.5, companionWidth: 2, companionDash: 0, gradientLine: false }
-comparison: { color: #2E9E6B, dash: 5, fillOpacity: 0 }
+comparison: { color: #2E9E6B, dash: 0, fillOpacity: 0.16 }
 area: { fill: gradient, opacityFrom: 0.28, opacityTo: 0.02 }         // the family wash — C's signature
 bar: { radius: 6, single: 45%, grouped: 70%, fill: tint-gradient, floatingLabels: false }
 grid: { show: true, dashArray: 0, xLines: false, yLines: true }
@@ -72,3 +72,10 @@ final hexes and the archived gate output.
 "disabled/no data" rather than as a second real series. The dash is retained, so the
 grammar is now *hue = which period, dash = the past*. All four comparison colours were
 re-validated against their lead colour (normal ΔE, protan/deutan CVD, contrast vs white).
+
+---
+**P16 note (2026-08-07, stakeholder direction):** the previous period is no longer a
+dashed stroke. It is now a **thin solid line over a translucent wash of its own colour**
+(shadcn area convention) so both periods can be compared as overlaid shapes.
+`comparison.dash` is 0 for every option; `comparison.fillOpacity` carries each option's
+own weight and fades to the same floor as the current period.

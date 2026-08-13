@@ -45,7 +45,7 @@ area-fill-opacity tokenized (the brief's gradient token set).
 
 ```
 stroke: { curve: smooth, width: 2.5, companionWidth: 2, companionDash: 0, gradientLine: true }
-comparison: { color: #C264C9, dash: 5, fillOpacity: 0 }
+comparison: { color: #C264C9, dash: 0, fillOpacity: 0.18 }
 area: { fill: gradient, opacityFrom: 0.35, opacityTo: 0 }            // the signature fade
 bar: { radius: 8, single: 45%, grouped: 66%, fill: axis-gradient, floatingLabels: true }
 grid: { show: true, dashArray: 0, xLines: false, yLines: true, color: fainter }
@@ -82,3 +82,10 @@ final hexes and the archived gate output.
 "disabled/no data" rather than as a second real series. The dash is retained, so the
 grammar is now *hue = which period, dash = the past*. All four comparison colours were
 re-validated against their lead colour (normal ΔE, protan/deutan CVD, contrast vs white).
+
+---
+**P16 note (2026-08-07, stakeholder direction):** the previous period is no longer a
+dashed stroke. It is now a **thin solid line over a translucent wash of its own colour**
+(shadcn area convention) so both periods can be compared as overlaid shapes.
+`comparison.dash` is 0 for every option; `comparison.fillOpacity` carries each option's
+own weight and fades to the same floor as the current period.

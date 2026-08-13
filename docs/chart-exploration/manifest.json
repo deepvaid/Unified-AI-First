@@ -1,6 +1,114 @@
 {
   "shots": [
     {
+      "file": "00-current/widget-line-hover--current--1440--light.png",
+      "shot": "widget-line-hover",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/widget-bar-hover--current--1440--light.png",
+      "shot": "widget-bar-hover",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "options/option-a/widget-line-hover--option-a--1440--light.png",
+      "shot": "widget-line-hover",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/widget-bar-hover--option-a--1440--light.png",
+      "shot": "widget-bar-hover",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-b/widget-line-hover--option-b--1440--light.png",
+      "shot": "widget-line-hover",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/widget-bar-hover--option-b--1440--light.png",
+      "shot": "widget-bar-hover",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-c/widget-line-hover--option-c--1440--light.png",
+      "shot": "widget-line-hover",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/widget-bar-hover--option-c--1440--light.png",
+      "shot": "widget-bar-hover",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-d/widget-line-hover--option-d--1440--light.png",
+      "shot": "widget-line-hover",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "options/option-d/widget-bar-hover--option-d--1440--light.png",
+      "shot": "widget-bar-hover",
+      "chart": "option-d",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionD"
+    },
+    {
+      "file": "00-current/dashboard-full--current--1440--light.png",
+      "shot": "dashboard-full",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
+      "file": "00-current/dashboard-fold--current--1440--light.png",
+      "shot": "dashboard-fold",
+      "chart": "current",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=shopify"
+    },
+    {
       "file": "00-current/widget-line--current--1440--light.png",
       "shot": "widget-line",
       "chart": "current",
@@ -73,22 +181,31 @@
       "route": "/accounts/2000290/dashboard?chart=shopify"
     },
     {
-      "file": "00-current/widget-line-hover--current--1440--light.png",
-      "shot": "widget-line-hover",
+      "file": "00-current/dashboard-full--current--1440--light--dsf1.png",
+      "shot": "dashboard-full",
       "chart": "current",
       "width": 1440,
       "mode": "light",
-      "dsf": 2,
+      "dsf": 1,
       "route": "/accounts/2000290/dashboard?chart=shopify"
     },
     {
-      "file": "00-current/widget-bar-hover--current--1440--light.png",
-      "shot": "widget-bar-hover",
-      "chart": "current",
+      "file": "options/option-a/dashboard-full--option-a--1440--light.png",
+      "shot": "dashboard-full",
+      "chart": "option-a",
       "width": 1440,
       "mode": "light",
       "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=shopify"
+      "route": "/accounts/2000290/dashboard?chart=optionA"
+    },
+    {
+      "file": "options/option-a/dashboard-fold--option-a--1440--light.png",
+      "shot": "dashboard-fold",
+      "chart": "option-a",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionA"
     },
     {
       "file": "options/option-a/widget-line--option-a--1440--light.png",
@@ -163,22 +280,31 @@
       "route": "/accounts/2000290/dashboard?chart=optionA"
     },
     {
-      "file": "options/option-a/widget-line-hover--option-a--1440--light.png",
-      "shot": "widget-line-hover",
+      "file": "options/option-a/dashboard-full--option-a--1440--light--dsf1.png",
+      "shot": "dashboard-full",
       "chart": "option-a",
       "width": 1440,
       "mode": "light",
-      "dsf": 2,
+      "dsf": 1,
       "route": "/accounts/2000290/dashboard?chart=optionA"
     },
     {
-      "file": "options/option-a/widget-bar-hover--option-a--1440--light.png",
-      "shot": "widget-bar-hover",
-      "chart": "option-a",
+      "file": "options/option-b/dashboard-full--option-b--1440--light.png",
+      "shot": "dashboard-full",
+      "chart": "option-b",
       "width": 1440,
       "mode": "light",
       "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionA"
+      "route": "/accounts/2000290/dashboard?chart=optionB"
+    },
+    {
+      "file": "options/option-b/dashboard-fold--option-b--1440--light.png",
+      "shot": "dashboard-fold",
+      "chart": "option-b",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionB"
     },
     {
       "file": "options/option-b/widget-line--option-b--1440--light.png",
@@ -253,22 +379,31 @@
       "route": "/accounts/2000290/dashboard?chart=optionB"
     },
     {
-      "file": "options/option-b/widget-line-hover--option-b--1440--light.png",
-      "shot": "widget-line-hover",
+      "file": "options/option-b/dashboard-full--option-b--1440--light--dsf1.png",
+      "shot": "dashboard-full",
       "chart": "option-b",
       "width": 1440,
       "mode": "light",
-      "dsf": 2,
+      "dsf": 1,
       "route": "/accounts/2000290/dashboard?chart=optionB"
     },
     {
-      "file": "options/option-b/widget-bar-hover--option-b--1440--light.png",
-      "shot": "widget-bar-hover",
-      "chart": "option-b",
+      "file": "options/option-c/dashboard-full--option-c--1440--light.png",
+      "shot": "dashboard-full",
+      "chart": "option-c",
       "width": 1440,
       "mode": "light",
       "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionB"
+      "route": "/accounts/2000290/dashboard?chart=optionC"
+    },
+    {
+      "file": "options/option-c/dashboard-fold--option-c--1440--light.png",
+      "shot": "dashboard-fold",
+      "chart": "option-c",
+      "width": 1440,
+      "mode": "light",
+      "dsf": 2,
+      "route": "/accounts/2000290/dashboard?chart=optionC"
     },
     {
       "file": "options/option-c/widget-line--option-c--1440--light.png",
@@ -336,141 +471,6 @@
     {
       "file": "options/option-c/widget-devices--option-c--1440--light.png",
       "shot": "widget-devices",
-      "chart": "option-c",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionC"
-    },
-    {
-      "file": "options/option-c/widget-line-hover--option-c--1440--light.png",
-      "shot": "widget-line-hover",
-      "chart": "option-c",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionC"
-    },
-    {
-      "file": "options/option-c/widget-bar-hover--option-c--1440--light.png",
-      "shot": "widget-bar-hover",
-      "chart": "option-c",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionC"
-    },
-    {
-      "file": "options/option-d/widget-line-hover--option-d--1440--light.png",
-      "shot": "widget-line-hover",
-      "chart": "option-d",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionD"
-    },
-    {
-      "file": "options/option-d/widget-bar-hover--option-d--1440--light.png",
-      "shot": "widget-bar-hover",
-      "chart": "option-d",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionD"
-    },
-    {
-      "file": "00-current/dashboard-full--current--1440--light.png",
-      "shot": "dashboard-full",
-      "chart": "current",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=shopify"
-    },
-    {
-      "file": "00-current/dashboard-fold--current--1440--light.png",
-      "shot": "dashboard-fold",
-      "chart": "current",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=shopify"
-    },
-    {
-      "file": "00-current/dashboard-full--current--1440--light--dsf1.png",
-      "shot": "dashboard-full",
-      "chart": "current",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 1,
-      "route": "/accounts/2000290/dashboard?chart=shopify"
-    },
-    {
-      "file": "options/option-a/dashboard-full--option-a--1440--light.png",
-      "shot": "dashboard-full",
-      "chart": "option-a",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionA"
-    },
-    {
-      "file": "options/option-a/dashboard-fold--option-a--1440--light.png",
-      "shot": "dashboard-fold",
-      "chart": "option-a",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionA"
-    },
-    {
-      "file": "options/option-a/dashboard-full--option-a--1440--light--dsf1.png",
-      "shot": "dashboard-full",
-      "chart": "option-a",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 1,
-      "route": "/accounts/2000290/dashboard?chart=optionA"
-    },
-    {
-      "file": "options/option-b/dashboard-full--option-b--1440--light.png",
-      "shot": "dashboard-full",
-      "chart": "option-b",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionB"
-    },
-    {
-      "file": "options/option-b/dashboard-fold--option-b--1440--light.png",
-      "shot": "dashboard-fold",
-      "chart": "option-b",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionB"
-    },
-    {
-      "file": "options/option-b/dashboard-full--option-b--1440--light--dsf1.png",
-      "shot": "dashboard-full",
-      "chart": "option-b",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 1,
-      "route": "/accounts/2000290/dashboard?chart=optionB"
-    },
-    {
-      "file": "options/option-c/dashboard-full--option-c--1440--light.png",
-      "shot": "dashboard-full",
-      "chart": "option-c",
-      "width": 1440,
-      "mode": "light",
-      "dsf": 2,
-      "route": "/accounts/2000290/dashboard?chart=optionC"
-    },
-    {
-      "file": "options/option-c/dashboard-fold--option-c--1440--light.png",
-      "shot": "dashboard-fold",
       "chart": "option-c",
       "width": 1440,
       "mode": "light",
@@ -676,7 +676,7 @@
       "route": "/chart-exploration"
     }
   ],
-  "capturedAt": "2026-08-07T13:22:48.893Z",
-  "gitSha": "ffe2cc7",
+  "capturedAt": "2026-08-13T06:38:11.178Z",
+  "gitSha": "bcb821f",
   "baseUrl": "http://localhost:5173"
 }

@@ -226,6 +226,17 @@ The CSS bar family (`DashboardStackedBarWidget`, both variants) gets a matching
 `stackedFill()`, which bypasses `treatmentFill()` entirely — gloss had to be wired there
 separately, and the tell was a byte-identical capture hash.
 
+### P16 — Previous period as an overlay (2026-08-07, stakeholder direction)
+"Instead of this dotted line, create a subtle overlay of the same color" (ref:
+ui.shadcn.com/charts/area). The comparison series is now a **thin solid stroke over a
+translucent wash in its own colour**, not a dashed line: `comparison.dash = 0` for all
+four options and `comparison.fillOpacity` set per option (A .10 · B .08 flat pane ·
+C .16 · D .18), with the wash fading to the same floor as the current period so the
+overlap reads clean. Supersedes the P12 "dash = the past" half of the grammar — colour
+alone now separates the periods, which is why P12's distinct comparison hues matter more,
+not less. Plumbing already existed (`treatmentFill` area branch + stroke dashArray);
+only treatment values changed plus one opacityTo line.
+
 ## Rejected ideas
 
 - Refactoring `gradientMarks`/`flatMarks` booleans into treatments for ALL themes —
