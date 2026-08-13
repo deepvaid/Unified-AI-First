@@ -218,7 +218,7 @@ function handleAttentionCollapse(collapsed: boolean) {
       <div class="dashboard-widget-card__header-copy">
         <div class="dashboard-widget-card__title-row">
           <DvOrbitOrb v-if="widget.type === 'insights'" :size="14" :speed="1" class="dashboard-widget-card__orb" />
-          <div class="dashboard-widget-card__title">{{ widget.title }}</div>
+          <h3 class="dashboard-widget-card__title">{{ widget.title }}</h3>
           <v-tooltip
             v-if="widget.aiProvenance"
             location="top"
@@ -388,30 +388,16 @@ function handleAttentionCollapse(collapsed: boolean) {
 .dashboard-widget-card {
   position: relative;
   border-color: var(--border-subtle) !important;
-  /* 14px matches the dotted Overview v2 mockup's card radius (--scn-radius in
-     the lab view), intentionally off the --r-* scale */
-  border-radius: 14px !important;
+  border-radius: var(--mp-component-card-radius-md) !important;
   background: var(--surface-primary) !important;
   overflow: hidden;
   min-height: 0;
   box-shadow: none;
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 0.2s ease;
+  transition: box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .dashboard-widget-card:hover {
-  /* !important so the lift beats the finished .mp-enter animation (fill: both
-     keeps its final transform:none applied; only !important wins over it) */
-  transform: translateY(-2px) !important;
-  border-color: color-mix(in oklch, var(--accent) 26%, var(--border-subtle)) !important;
-  box-shadow: var(--elevation-modal);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dashboard-widget-card:hover {
-    transform: none !important;
-  }
+  box-shadow: var(--elevation-raised);
 }
 
 .dashboard-widget-card__header {
@@ -420,7 +406,13 @@ function handleAttentionCollapse(collapsed: boolean) {
   align-items: start;
   gap: 12px;
   min-height: 60px;
-  padding: 20px 22px 14px;
+  padding: 20px 20px 8px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-widget-card__header {
+    padding: 16px 16px 8px;
+  }
 }
 
 .dashboard-widget-card__header-copy {
@@ -437,9 +429,10 @@ function handleAttentionCollapse(collapsed: boolean) {
 .dashboard-widget-card__title {
   min-width: 0;
   overflow: hidden;
+  margin: 0;
   color: var(--text-primary);
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -471,7 +464,7 @@ function handleAttentionCollapse(collapsed: boolean) {
   overflow: hidden;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.3;
   text-overflow: ellipsis;
@@ -597,7 +590,13 @@ function handleAttentionCollapse(collapsed: boolean) {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-  padding: 0 22px 14px;
+  padding: 0 20px 20px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-widget-card__body {
+    padding: 0 16px 16px;
+  }
 }
 
 .dashboard-widget-card--kpi .dashboard-widget-card__body,

@@ -146,7 +146,7 @@ const sparklineAreaPath = computed(() => (
       </div>
       <div class="dashboard-kpi-widget__header-text">
         <div v-if="title" class="dashboard-kpi-widget__title-row">
-          <div class="dashboard-kpi-widget__title mp-meta-label" :title="title">{{ title }}</div>
+          <h3 class="dashboard-kpi-widget__title mp-meta-label" :title="title">{{ title }}</h3>
           <v-tooltip v-if="aiGenerated" location="top" text="Made by Da Vinci">
             <template #activator="{ props: tipProps }">
               <span v-bind="tipProps" class="dashboard-kpi-widget__davinci-chip">
@@ -223,8 +223,14 @@ const sparklineAreaPath = computed(() => (
 <style scoped lang="scss">
 .dashboard-kpi-widget {
   justify-content: flex-start;
-  padding: 18px 20px;
+  padding: 20px;
   container-type: inline-size;
+}
+
+@media (max-width: 768px) {
+  .dashboard-kpi-widget {
+    padding: 16px;
+  }
 }
 
 @container (max-width: 260px) {
@@ -350,6 +356,7 @@ const sparklineAreaPath = computed(() => (
   overflow: hidden;
   flex: 0 1 auto;
   min-width: 0;
+  margin: 0;
   color: var(--muted);
   line-height: 1.3;
   white-space: nowrap;
