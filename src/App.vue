@@ -70,11 +70,11 @@ watch(() => route.query.frame, (f) => {
 
 // Dashboard chart palette: a ?chart=shopify|blue|indigo|ocean|aurora|optionA..D
 // query param (stakeholder demo), same in-memory-per-tab handling as ?nav=.
-// Independent of, and composes with, ?nav=. Unknown values fall back to optionB
-// (the default — the accessible multi-color token palette).
+// Independent of, and composes with, ?nav=. Unknown values fall back to grayBlue
+// (the default — focal blue + gray de-emphasis with a monochrome blue ramp).
 const VALID_CHART_PALETTES: readonly ChartPalette[] = [
   'shopify', 'blue', 'indigo', 'ocean', 'aurora',
-  'optionA', 'optionB', 'optionC', 'optionD',
+  'optionA', 'optionB', 'optionC', 'optionD', 'grayBlue',
 ]
 const isChartPalette = (v: unknown): v is ChartPalette =>
   typeof v === 'string' && (VALID_CHART_PALETTES as readonly string[]).includes(v)
@@ -82,7 +82,7 @@ const chartOverride = ref<ChartPalette | null>(isChartPalette(route.query.chart)
 watch(() => route.query.chart, (chart) => {
   if (isChartPalette(chart)) chartOverride.value = chart
 })
-watch(() => chartOverride.value ?? 'optionB', applyChartPalette, { immediate: true })
+watch(() => chartOverride.value ?? 'grayBlue', applyChartPalette, { immediate: true })
 
 // PLG demo state: a ?plg=trial-d3|trial-d12|trial-expired|paid-build|...|grace
 // query param (stakeholder share links) applies a subscription preset to the

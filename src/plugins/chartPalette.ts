@@ -174,6 +174,34 @@ import {
   mp_color_chart_light_optionB_series5,
   mp_color_chart_light_optionB_series6,
   mp_color_chart_light_optionB_warning,
+  mp_color_chart_light_grayBlue_axis1,
+  mp_color_chart_light_grayBlue_axis2,
+  mp_color_chart_light_grayBlue_axis3,
+  mp_color_chart_light_grayBlue_axis4,
+  mp_color_chart_light_grayBlue_axis5,
+  mp_color_chart_light_grayBlue_comparison,
+  mp_color_chart_light_grayBlue_negative,
+  mp_color_chart_light_grayBlue_neutral,
+  mp_color_chart_light_grayBlue_positive,
+  mp_color_chart_light_grayBlue_series1,
+  mp_color_chart_light_grayBlue_series2,
+  mp_color_chart_light_grayBlue_series3,
+  mp_color_chart_light_grayBlue_series4,
+  mp_color_chart_light_grayBlue_series5,
+  mp_color_chart_light_grayBlue_series6,
+  mp_color_chart_light_grayBlue_warning,
+  mp_color_chart_dark_grayBlue_axis1,
+  mp_color_chart_dark_grayBlue_axis2,
+  mp_color_chart_dark_grayBlue_axis3,
+  mp_color_chart_dark_grayBlue_axis4,
+  mp_color_chart_dark_grayBlue_axis5,
+  mp_color_chart_dark_grayBlue_comparison,
+  mp_color_chart_dark_grayBlue_series1,
+  mp_color_chart_dark_grayBlue_series2,
+  mp_color_chart_dark_grayBlue_series3,
+  mp_color_chart_dark_grayBlue_series4,
+  mp_color_chart_dark_grayBlue_series5,
+  mp_color_chart_dark_grayBlue_series6,
   mp_color_chart_light_optionC_axis1,
   mp_color_chart_light_optionC_axis2,
   mp_color_chart_light_optionC_axis3,
@@ -228,6 +256,7 @@ export type ChartPalette =
   | 'optionB'
   | 'optionC'
   | 'optionD'
+  | 'grayBlue'
 
 /**
  * The four chart visual systems built for the leadership exploration. They are the
@@ -440,6 +469,30 @@ const OPTION_B_TREATMENT = makeTreatment({
     negative: mp_color_chart_light_optionB_negative,
     warning: mp_color_chart_light_optionB_warning,
     neutral: mp_color_chart_light_optionB_neutral,
+  },
+})
+
+/** Gray + Blue — focal blue, gray de-emphasis, monochrome blue ramp for multi-series. */
+const GRAY_BLUE_TREATMENT = makeTreatment({
+  stroke: { curve: 'straight', width: 2, companionWidth: 2, companionDash: 0, gradientLine: false },
+  comparison: { color: mp_color_chart_light_grayBlue_comparison, dash: 0, fillOpacity: 0.08 },
+  area: { fill: 'solid', opacityFrom: 0.12, opacityTo: 0.12 },
+  bar: { radius: 4, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
+  grid: { show: true, dashArray: 4, xLines: false, yLines: true },
+  axes: { yLabelsOnTimeseries: true },
+  crosshair: { show: true, dash: 4 },
+  markers: { hoverSize: 5, lastPoint: false },
+  legend: { markerShape: 'circle', markerSize: 8, hoverHighlight: true },
+  donut: { size: '66%', fill: 'solid', strokeWidth: 2, showDataLabels: false },
+  svg: { shade: 'flat' },
+  kpiSpark: { fillOpacity: 0.1 },
+  effects: { dropShadow: false },
+  states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.25 },
+  posNeg: {
+    positive: mp_color_chart_light_grayBlue_positive,
+    negative: mp_color_chart_light_grayBlue_negative,
+    warning: mp_color_chart_light_grayBlue_warning,
+    neutral: mp_color_chart_light_grayBlue_neutral,
   },
 })
 
@@ -890,6 +943,53 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
       treatment: OPTION_D_TREATMENT,
     },
   },
+  grayBlue: {
+    light: {
+      label: 'Gray + Blue',
+      series: [
+        mp_color_chart_light_grayBlue_series1,
+        mp_color_chart_light_grayBlue_series2,
+        mp_color_chart_light_grayBlue_series3,
+        mp_color_chart_light_grayBlue_series4,
+        mp_color_chart_light_grayBlue_series5,
+        mp_color_chart_light_grayBlue_series6,
+      ],
+      axis: [
+        mp_color_chart_light_grayBlue_axis1,
+        mp_color_chart_light_grayBlue_axis2,
+        mp_color_chart_light_grayBlue_axis3,
+        mp_color_chart_light_grayBlue_axis4,
+        mp_color_chart_light_grayBlue_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_grayBlue_comparison,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: GRAY_BLUE_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Gray + Blue',
+      series: [
+        mp_color_chart_dark_grayBlue_series1,
+        mp_color_chart_dark_grayBlue_series2,
+        mp_color_chart_dark_grayBlue_series3,
+        mp_color_chart_dark_grayBlue_series4,
+        mp_color_chart_dark_grayBlue_series5,
+        mp_color_chart_dark_grayBlue_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_grayBlue_axis1,
+        mp_color_chart_dark_grayBlue_axis2,
+        mp_color_chart_dark_grayBlue_axis3,
+        mp_color_chart_dark_grayBlue_axis4,
+        mp_color_chart_dark_grayBlue_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_grayBlue_comparison,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: GRAY_BLUE_TREATMENT,
+    },
+  },
 }
 
 /** Back-compat: light series colourways keyed by palette. */
@@ -897,7 +997,7 @@ export const CHART_PALETTES: Record<ChartPalette, string[]> = Object.fromEntries
   Object.entries(CHART_THEMES).map(([id, modes]) => [id, modes.light.series]),
 ) as Record<ChartPalette, string[]>
 
-const chartPaletteId = ref<ChartPalette>('optionB')
+const chartPaletteId = ref<ChartPalette>('grayBlue')
 
 /**
  * Provide/inject key that lets a widget subtree pin an explicit theme instead of
