@@ -409,7 +409,7 @@ const OPTION_A_TREATMENT = makeTreatment({
   donut: { size: '62%', fill: 'solid', strokeWidth: 2, showDataLabels: false },
   svg: { shade: 'flat' },
   kpiSpark: { fillOpacity: 0.12 },
-  effects: { dropShadow: false },
+  effects: { dropShadow: false, gloss: true },
   states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.35 },
   posNeg: {
     positive: mp_color_chart_light_optionA_positive,
@@ -433,7 +433,7 @@ const OPTION_B_TREATMENT = makeTreatment({
   donut: { size: '66%', fill: 'solid', strokeWidth: 2, showDataLabels: false },
   svg: { shade: 'flat' },
   kpiSpark: { fillOpacity: 0.1 },
-  effects: { dropShadow: false },
+  effects: { dropShadow: false, gloss: true },
   states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.25 },
   posNeg: {
     positive: mp_color_chart_light_optionB_positive,
@@ -457,7 +457,7 @@ const OPTION_C_TREATMENT = makeTreatment({
   donut: { size: '64%', fill: 'solid', strokeWidth: 2, showDataLabels: false },
   svg: { shade: 'flat' },
   kpiSpark: { fillOpacity: 0.18 },
-  effects: { dropShadow: false },
+  effects: { dropShadow: false, gloss: true },
   states: { hoverFilter: 'none', hoverFilterValue: 0, dimmedOpacity: 0.3 },
   posNeg: {
     positive: mp_color_chart_light_optionC_positive,
