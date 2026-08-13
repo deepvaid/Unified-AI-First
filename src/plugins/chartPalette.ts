@@ -576,7 +576,7 @@ const OPTION_B_TREATMENT = dashboardColourTreatment(mp_color_chart_light_optionB
     smooth 3px primary stroke, dashed comparison line, soft gradient wash. */
 const GRAY_BLUE_TREATMENT = makeTreatment({
   stroke: { curve: 'smooth', width: 3, companionWidth: 2, companionDash: 5, gradientLine: false },
-  comparison: { color: mp_color_chart_light_grayBlue_comparison, dash: 5, fillOpacity: 0.06 },
+  comparison: { color: mp_color_chart_light_grayBlue_comparison, dash: 5, fillOpacity: 0.18 },
   area: { fill: 'gradient', opacityFrom: 0.25, opacityTo: 0.02 },
   bar: { radius: 4, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
   grid: { show: true, dashArray: 4, xLines: false, yLines: true },
