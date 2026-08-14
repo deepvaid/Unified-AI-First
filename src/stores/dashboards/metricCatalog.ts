@@ -92,6 +92,19 @@ export const DASHBOARD_SOURCE_META: Record<DashboardDataSource, DashboardSourceM
 const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = {
   commerce: [
     {
+      id: 'commerce_revenue_heatmap',
+      dataSource: 'commerce',
+      label: 'Revenue by Day of Week',
+      description: 'Revenue laid out as weekday against week, so recurring strong and slow days stand out.',
+      defaultTitle: 'Revenue by day of week',
+      defaultWidgetType: 'heatmap',
+      supportedWidgetTypes: ['heatmap'],
+      unit: 'currency',
+      icon: 'calendar-range',
+      drilldown: { routeName: 'SalesOrders', label: 'Open sales orders' },
+      aiKeywords: ['revenue heatmap', 'day of week', 'weekday revenue', 'best day to sell'],
+    },
+    {
       id: 'commerce_revenue',
       dataSource: 'commerce',
       label: 'Revenue',
@@ -526,6 +539,19 @@ const metricCatalog: Record<DashboardDataSource, DashboardMetricDescriptor[]> = 
     },
   ],
   analytics: [
+    {
+      id: 'analytics_rfm_engagement',
+      dataSource: 'analytics',
+      label: 'RFM Engagement Matrix',
+      description: 'Customer base bucketed by how recently they bought against how often — the eRFM segments as a grid.',
+      defaultTitle: 'RFM engagement',
+      defaultWidgetType: 'heatmap',
+      supportedWidgetTypes: ['heatmap'],
+      unit: 'count',
+      icon: 'grid-3x3',
+      drilldown: { routeName: 'ERFMReport', label: 'Open eRFM report' },
+      aiKeywords: ['rfm', 'recency frequency', 'engagement matrix', 'segments heatmap', 'customer segments'],
+    },
     {
       id: 'analytics_sessions_by_device',
       dataSource: 'analytics',

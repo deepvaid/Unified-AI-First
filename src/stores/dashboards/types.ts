@@ -18,6 +18,7 @@ export type DashboardWidgetType =
   | 'palette'
   | 'stacked_bar'
   | 'tabs'
+  | 'heatmap'
 export type DashboardChartVariant =
   | 'horizontal'
   | 'vertical'
@@ -45,6 +46,8 @@ export type DashboardMetricUnit = 'currency' | 'count' | 'percent'
 
 export type DashboardMetricId =
   | 'commerce_revenue'
+  | 'commerce_revenue_heatmap'
+  | 'analytics_rfm_engagement'
   | 'commerce_orders'
   | 'commerce_aov'
   | 'commerce_revenue_over_time'
@@ -388,6 +391,23 @@ export interface DashboardDonutData {
   footerStats?: DashboardStatPair[]
 }
 
+/**
+ * Matrix widget: `cells[rowIndex][columnIndex]`, coloured by intensity against
+ * the matrix maximum. Rows/columns carry their own labels so the widget stays
+ * agnostic about what the dimensions mean.
+ */
+export interface DashboardHeatmapData {
+  kind: 'heatmap'
+  unit: DashboardMetricUnit
+  rows: string[]
+  columns: string[]
+  cells: number[][]
+  /** Denominator for the tooltip's share line; defaults to the matrix total. */
+  total?: number
+  rowAxisLabel?: string
+  columnAxisLabel?: string
+}
+
 export interface DashboardGaugeData {
   kind: 'gauge'
   pct: number
@@ -508,3 +528,4 @@ export type DashboardWidgetData =
   | DashboardPaletteData
   | DashboardStackedBarData
   | DashboardTabsData
+  | DashboardHeatmapData

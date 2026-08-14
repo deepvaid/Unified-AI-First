@@ -119,6 +119,12 @@ export const SIZE_PRESETS: Record<DashboardWidgetType, Record<WidgetSize, Widget
     L: { w: 9, h: 9, minW: 5, minH: 6 },
     XL: { w: 12, h: 9, minW: 5, minH: 6 },
   },
+  heatmap: {
+    S: { w: 6, h: 7, minW: 5, minH: 6 },
+    M: { w: 7, h: 8, minW: 5, minH: 6 },
+    L: { w: 9, h: 9, minW: 5, minH: 6 },
+    XL: { w: 12, h: 10, minW: 5, minH: 6 },
+  },
 }
 
 export const WIDGET_SIZES: WidgetSize[] = ['S', 'M', 'L', 'XL']

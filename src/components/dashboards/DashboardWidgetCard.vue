@@ -25,6 +25,7 @@ import DashboardPaletteWidget from './widgets/DashboardPaletteWidget.vue'
 import DashboardStackedBarWidget from './widgets/DashboardStackedBarWidget.vue'
 import DashboardBreakdownWidget from './widgets/DashboardBreakdownWidget.vue'
 import DashboardTabsWidget from './widgets/DashboardTabsWidget.vue'
+import DashboardHeatmapWidget from './widgets/DashboardHeatmapWidget.vue'
 import DashboardWidgetActionMenu from './DashboardWidgetActionMenu.vue'
 
 const props = withDefaults(defineProps<{
@@ -364,6 +365,10 @@ function handleAttentionCollapse(collapsed: boolean) {
         v-else-if="data.kind === 'tabs'"
         :data="data"
         @drilldown="openDrilldown"
+      />
+      <DashboardHeatmapWidget
+        v-else-if="data.kind === 'heatmap'"
+        :data="data"
       />
       <DashboardTableWidget
         v-else

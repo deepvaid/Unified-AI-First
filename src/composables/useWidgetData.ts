@@ -288,6 +288,58 @@ export function useWidgetData(
     const days = dateWindow.days
 
     switch (widget.metricId) {
+      // Revenue matrix: weekday rows × week columns, reshaped from the same
+      // daily buckets the revenue KPI sparkline uses.
+      case 'commerce_revenue_heatmap': {
+        const { cur } = bucketDaily(commerce.orders, (order) => new Date(order.date ?? ''), (order) => parseFloat(order.total), dateWindow)
+        const weekCount = Math.max(1, Math.ceil(days / 7))
+        const rows = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        const cells = rows.map(() => new Array<number>(weekCount).fill(0))
+        // Index 0 is window.currentStart; getDay() is 0=Sunday, so shift to a
+        // Monday-first row order.
+        for (let i = 0; i < cur.length; i += 1) {
+          const date = new Date(dateWindow.currentStart)
+          date.setDate(date.getDate() + i)
+          const rowIndex = (date.getDay() + 6) % 7
+          const columnIndex = Math.min(weekCount - 1, Math.floor(i / 7))
+          cells[rowIndex]![columnIndex] = (cells[rowIndex]![columnIndex] ?? 0) + (cur[i] ?? 0)
+        }
+        return {
+          kind: 'heatmap',
+          unit: 'currency',
+          rows,
+          columns: Array.from({ length: weekCount }, (_, index) => `W${index + 1}`),
+          cells,
+          rowAxisLabel: 'Day of week',
+          columnAxisLabel: 'Week in period',
+        } as DashboardWidgetData
+      }
+      // RFM matrix: the analytics store's segments bucketed into recency rows ×
+      // frequency columns — the same analysis as the eRFM report, on a grid.
+      case 'analytics_rfm_engagement': {
+        const rows = ['0–30 days', '31–90 days', '91–180 days', '180+ days']
+        const columns = ['1–2 orders', '3–5 orders', '6+ orders']
+        const cells = rows.map(() => new Array<number>(columns.length).fill(0))
+        const rowFor = (recencyDays: number) => (
+          recencyDays <= 30 ? 0 : recencyDays <= 90 ? 1 : recencyDays <= 180 ? 2 : 3
+        )
+        const columnFor = (frequency: number) => (frequency <= 2 ? 0 : frequency <= 5 ? 1 : 2)
+        analytics.rfmSegments.forEach((segment) => {
+          const rowIndex = rowFor(segment.recencyDays)
+          const columnIndex = columnFor(segment.frequency)
+          cells[rowIndex]![columnIndex] = (cells[rowIndex]![columnIndex] ?? 0) + segment.count
+        })
+        return {
+          kind: 'heatmap',
+          unit: 'count',
+          rows,
+          columns,
+          cells,
+          total: analytics.rfmAnalyzed,
+          rowAxisLabel: 'Recency',
+          columnAxisLabel: 'Frequency',
+        } as DashboardWidgetData
+      }
       case 'commerce_revenue': {
         const ranges = sliceRecordsByWindow(commerce.orders, (order) => new Date(order.date ?? ''), dateWindow)
         const currentRevenue = ranges.current.reduce((total, order) => total + parseFloat(order.total), 0)

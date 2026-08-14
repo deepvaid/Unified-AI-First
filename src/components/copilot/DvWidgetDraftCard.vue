@@ -108,6 +108,7 @@ const TYPE_META: Record<DashboardWidgetType, { label: string; icon: string }> = 
   palette: { label: 'Palette review', icon: 'palette' },
   stacked_bar: { label: 'Stacked bars', icon: 'bar-chart-3' },
   tabs: { label: 'Tabbed lists', icon: 'layout-list' },
+  heatmap: { label: 'Heatmap', icon: 'grid-3x3' },
 }
 
 const typeMeta = computed(() => {

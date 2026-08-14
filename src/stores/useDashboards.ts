@@ -43,7 +43,9 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-const STORAGE_KEY = 'mp.dashboard-hub.v27'
+// v29: heatmap widgets seeded onto Commerce Overview + Contacts & Audience.
+// Persisted widget lists win over seeds, so new seeds need a key bump.
+const STORAGE_KEY = 'mp.dashboard-hub.v29'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -315,6 +317,8 @@ function buildSeedDashboards(account: Account): Dashboard[] {
           makeWidget('Revenue Over Time', 'commerce_revenue_over_time', 'timeseries', createLayout(0, 3, 8, 7)),
           makeWidget('Revenue by Channel', 'commerce_revenue_by_channel', 'bar', createLayout(8, 3, 4, 7)),
           makeWidget('Recent Orders', 'commerce_recent_orders', 'table', createLayout(0, 10, 12, 7)),
+          // 7 weekday rows need more height than the 4-row RFM matrix.
+          makeWidget('Revenue by day of week', 'commerce_revenue_heatmap', 'heatmap', createLayout(0, 17, 7, 10)),
         ],
         filters: createDefaultFilters(),
         createdAt,
@@ -501,6 +505,7 @@ function buildSeedDashboards(account: Account): Dashboard[] {
       makeWidget('Email Address by Domain', 'contacts_by_domain', 'bar', createLayout(0, 7, 6, 7)),
       makeWidget('Subscriber Summary', 'contacts_subscriber_summary', 'table', createLayout(6, 7, 6, 7)),
       makeWidget('Top Segments', 'contacts_top_segments', 'table', createLayout(0, 14, 12, 7)),
+      makeWidget('RFM engagement', 'analytics_rfm_engagement', 'heatmap', createLayout(0, 21, 7, 8)),
     ],
     filters: createDefaultFilters(),
     createdAt,

@@ -43,6 +43,7 @@ const TYPE_LABELS: Record<DashboardWidgetType, string> = {
   palette: 'Palette',
   stacked_bar: 'Chart',
   tabs: 'Tabs',
+  heatmap: 'Heatmap',
 }
 
 const filteredEntries = computed(() => {
