@@ -86,7 +86,6 @@ import {
   mp_color_chart_dark_commerce_axis3,
   mp_color_chart_dark_commerce_axis4,
   mp_color_chart_dark_commerce_axis5,
-  mp_color_chart_dark_commerce_comparison,
   mp_color_chart_dark_commerce_series1,
   mp_color_chart_dark_commerce_series2,
   mp_color_chart_dark_commerce_series3,
@@ -98,7 +97,6 @@ import {
   mp_color_chart_dark_social_axis3,
   mp_color_chart_dark_social_axis4,
   mp_color_chart_dark_social_axis5,
-  mp_color_chart_dark_social_comparison,
   mp_color_chart_dark_social_series1,
   mp_color_chart_dark_social_series2,
   mp_color_chart_dark_social_series3,
@@ -110,7 +108,6 @@ import {
   mp_color_chart_dark_layered_axis3,
   mp_color_chart_dark_layered_axis4,
   mp_color_chart_dark_layered_axis5,
-  mp_color_chart_dark_layered_comparison,
   mp_color_chart_dark_layered_series1,
   mp_color_chart_dark_layered_series2,
   mp_color_chart_dark_layered_series3,
@@ -122,7 +119,6 @@ import {
   mp_color_chart_dark_soft3d_axis3,
   mp_color_chart_dark_soft3d_axis4,
   mp_color_chart_dark_soft3d_axis5,
-  mp_color_chart_dark_soft3d_comparison,
   mp_color_chart_dark_soft3d_series1,
   mp_color_chart_dark_soft3d_series2,
   mp_color_chart_dark_soft3d_series3,
@@ -246,7 +242,6 @@ import {
   mp_color_chart_light_grayBlueGold_axis3,
   mp_color_chart_light_grayBlueGold_axis4,
   mp_color_chart_light_grayBlueGold_axis5,
-  mp_color_chart_light_grayBlueGold_comparison,
   mp_color_chart_light_grayBlueGold_series1,
   mp_color_chart_light_grayBlueGold_series2,
   mp_color_chart_light_grayBlueGold_series3,
@@ -258,7 +253,6 @@ import {
   mp_color_chart_dark_grayBlueGold_axis3,
   mp_color_chart_dark_grayBlueGold_axis4,
   mp_color_chart_dark_grayBlueGold_axis5,
-  mp_color_chart_dark_grayBlueGold_comparison,
   mp_color_chart_dark_grayBlueGold_series1,
   mp_color_chart_dark_grayBlueGold_series2,
   mp_color_chart_dark_grayBlueGold_series3,
@@ -287,7 +281,6 @@ import {
   mp_color_chart_light_commerce_axis3,
   mp_color_chart_light_commerce_axis4,
   mp_color_chart_light_commerce_axis5,
-  mp_color_chart_light_commerce_comparison,
   mp_color_chart_light_commerce_series1,
   mp_color_chart_light_commerce_series2,
   mp_color_chart_light_commerce_series3,
@@ -299,7 +292,6 @@ import {
   mp_color_chart_light_social_axis3,
   mp_color_chart_light_social_axis4,
   mp_color_chart_light_social_axis5,
-  mp_color_chart_light_social_comparison,
   mp_color_chart_light_social_series1,
   mp_color_chart_light_social_series2,
   mp_color_chart_light_social_series3,
@@ -311,7 +303,6 @@ import {
   mp_color_chart_light_layered_axis3,
   mp_color_chart_light_layered_axis4,
   mp_color_chart_light_layered_axis5,
-  mp_color_chart_light_layered_comparison,
   mp_color_chart_light_layered_series1,
   mp_color_chart_light_layered_series2,
   mp_color_chart_light_layered_series3,
@@ -323,7 +314,6 @@ import {
   mp_color_chart_light_soft3d_axis3,
   mp_color_chart_light_soft3d_axis4,
   mp_color_chart_light_soft3d_axis5,
-  mp_color_chart_light_soft3d_comparison,
   mp_color_chart_light_soft3d_series1,
   mp_color_chart_light_soft3d_series2,
   mp_color_chart_light_soft3d_series3,
@@ -571,12 +561,12 @@ const OPTION_B_TREATMENT = dashboardColourTreatment(mp_color_chart_light_optionB
   neutral: mp_color_chart_light_optionB_neutral,
 })
 
-/** Gray + Blue — focal blue, gray de-emphasis, monochrome blue ramp for multi-series.
-    Shared by every color-only option; timeseries follow the ocean card look —
-    smooth 3px primary stroke, dashed comparison line, soft gradient wash. */
-const GRAY_BLUE_TREATMENT = makeTreatment({
+/** Ocean-style line treatment shared by every color-only option — smooth 3px
+    primary stroke, dashed comparison line, soft gradient wash. Only the
+    comparison (secondary/previous-period) colour varies per theme. */
+const oceanLineTreatment = (comparison: string) => makeTreatment({
   stroke: { curve: 'smooth', width: 3, companionWidth: 2, companionDash: 5, gradientLine: false },
-  comparison: { color: mp_color_chart_light_grayBlue_comparison, dash: 5, fillOpacity: 0.18 },
+  comparison: { color: comparison, dash: 5, fillOpacity: 0.18 },
   area: { fill: 'gradient', opacityFrom: 0.25, opacityTo: 0.02 },
   bar: { radius: 4, columnWidthSingle: '45%', columnWidthGrouped: '68%', fill: 'solid', floatingLabels: false },
   grid: { show: true, dashArray: 4, xLines: false, yLines: true },
@@ -596,6 +586,16 @@ const GRAY_BLUE_TREATMENT = makeTreatment({
     neutral: mp_color_chart_light_grayBlue_neutral,
   },
 })
+
+// Per-option instances: gray stays the grayBlue identity; every other option's
+// secondary series takes that theme's own series-2 hue.
+const GRAY_BLUE_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlue_comparison)
+const GRAY_BLUE_GOLD_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlueGold_series2)
+const SINGLE_BLUE_TREATMENT = oceanLineTreatment(mp_color_chart_light_series2)
+const COMMERCE_TREATMENT = oceanLineTreatment(mp_color_chart_light_commerce_series2)
+const SOCIAL_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
+const LAYERED_TREATMENT = oceanLineTreatment(mp_color_chart_light_layered_series2)
+const SOFT3D_TREATMENT = oceanLineTreatment(mp_color_chart_light_soft3d_series2)
 
 /** D — Modern Gradient: depth and light, every gradient encoding something. */
 const OPTION_D_TREATMENT = makeTreatment({
@@ -1041,9 +1041,9 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_light_grayBlueGold_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_light_grayBlueGold_comparison,
+      comparisonColor: mp_color_chart_light_grayBlueGold_series2,
       chrome: cloneChrome(LIGHT_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: GRAY_BLUE_GOLD_TREATMENT,
     },
     // PROVISIONAL — light-only review; dark tuning is follow-up
     dark: {
@@ -1064,9 +1064,9 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_dark_grayBlueGold_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_dark_grayBlueGold_comparison,
+      comparisonColor: mp_color_chart_dark_grayBlueGold_series2,
       chrome: cloneChrome(DARK_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: GRAY_BLUE_GOLD_TREATMENT,
     },
   },
   // Five color-only themes from the Chart Theme Options design review —
@@ -1094,7 +1094,7 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
       gradientMarks: false,
       comparisonColor: mp_color_chart_light_series2,
       chrome: cloneChrome(LIGHT_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: SINGLE_BLUE_TREATMENT,
     },
     // PROVISIONAL — light-only review; dark tuning is follow-up
     dark: {
@@ -1117,7 +1117,7 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
       gradientMarks: false,
       comparisonColor: mp_color_chart_dark_series2,
       chrome: cloneChrome(DARK_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: SINGLE_BLUE_TREATMENT,
     },
   },
   commerce: {
@@ -1139,9 +1139,9 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_light_commerce_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_light_commerce_comparison,
+      comparisonColor: mp_color_chart_light_commerce_series2,
       chrome: cloneChrome(LIGHT_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: COMMERCE_TREATMENT,
     },
     // PROVISIONAL — light-only review; dark tuning is follow-up
     dark: {
@@ -1162,9 +1162,9 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_dark_commerce_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_dark_commerce_comparison,
+      comparisonColor: mp_color_chart_dark_commerce_series2,
       chrome: cloneChrome(DARK_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: COMMERCE_TREATMENT,
     },
   },
   social: {
@@ -1186,9 +1186,9 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_light_social_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_light_social_comparison,
+      comparisonColor: mp_color_chart_light_social_series2,
       chrome: cloneChrome(LIGHT_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: SOCIAL_TREATMENT,
     },
     // PROVISIONAL — light-only review; dark tuning is follow-up
     dark: {
@@ -1209,9 +1209,9 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_dark_social_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_dark_social_comparison,
+      comparisonColor: mp_color_chart_dark_social_series2,
       chrome: cloneChrome(DARK_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: SOCIAL_TREATMENT,
     },
   },
   layered: {
@@ -1233,9 +1233,9 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_light_layered_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_light_layered_comparison,
+      comparisonColor: mp_color_chart_light_layered_series2,
       chrome: cloneChrome(LIGHT_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: LAYERED_TREATMENT,
     },
     // PROVISIONAL — light-only review; dark tuning is follow-up
     dark: {
@@ -1256,9 +1256,9 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_dark_layered_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_dark_layered_comparison,
+      comparisonColor: mp_color_chart_dark_layered_series2,
       chrome: cloneChrome(DARK_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: LAYERED_TREATMENT,
     },
   },
   soft3d: {
@@ -1280,9 +1280,9 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_light_soft3d_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_light_soft3d_comparison,
+      comparisonColor: mp_color_chart_light_soft3d_series2,
       chrome: cloneChrome(LIGHT_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: SOFT3D_TREATMENT,
     },
     // PROVISIONAL — light-only review; dark tuning is follow-up
     dark: {
@@ -1303,9 +1303,9 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_dark_soft3d_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_dark_soft3d_comparison,
+      comparisonColor: mp_color_chart_dark_soft3d_series2,
       chrome: cloneChrome(DARK_CHROME),
-      treatment: GRAY_BLUE_TREATMENT,
+      treatment: SOFT3D_TREATMENT,
     },
   },
 }
