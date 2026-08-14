@@ -102,11 +102,14 @@ const options = computed<ApexOptions>(() => {
       style: { fontSize: '11px', fontWeight: 600, colors: [chrome.axisLabel] },
       dropShadow: { enabled: false },
     },
-    stroke: { width: t ? t.donut.strokeWidth : 2, colors: [strokeColor.value] },
+    // Apex derives the slice corner radius from stroke.width (roundPathCorners,
+    // width * 2), so the surface-coloured stroke gives both the rounded ends
+    // and the gap — themes without a treatment get the rounded look too.
+    stroke: { width: t ? t.donut.strokeWidth : 10, colors: [strokeColor.value] },
     plotOptions: {
       pie: {
         donut: {
-          size: t ? t.donut.size : '62%',
+          size: t ? t.donut.size : '68%',
           // Hovering a slice reads it out in the ring's centre. A standing
           // total only means something for absolute units — a percent mix
           // always totals 100%, which is noise.

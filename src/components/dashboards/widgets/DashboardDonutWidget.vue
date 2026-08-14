@@ -79,7 +79,7 @@ const options = computed<ApexOptions>(() => {
     // per-segment deltas Apex's own legend can't show.
     legend: { show: false },
     dataLabels: { enabled: false },
-    stroke: { width: t ? t.donut.strokeWidth : 8, colors: [strokeColor.value] },
+    stroke: { width: t ? t.donut.strokeWidth : 10, colors: [strokeColor.value] },
     plotOptions: {
       pie: {
         donut: {

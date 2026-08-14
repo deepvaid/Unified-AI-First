@@ -578,7 +578,7 @@ const oceanLineTreatment = (comparison: string) => makeTreatment({
   // (Pie.js roundPathCorners(path, strokeWidth * 2)), and the stroke is painted
   // in the card surface — so this one value gives both the rounded ends and the
   // gap between segments.
-  donut: { size: '68%', fill: 'solid', strokeWidth: 8, showDataLabels: false },
+  donut: { size: '68%', fill: 'solid', strokeWidth: 10, showDataLabels: false },
   svg: { shade: 'flat' },
   kpiSpark: { fillOpacity: 0.1 },
   effects: { dropShadow: false },
