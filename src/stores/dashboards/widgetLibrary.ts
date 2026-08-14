@@ -355,6 +355,17 @@ export const WIDGET_LIBRARY: DashboardWidgetLibraryEntry[] = [
     drilldown: { routeName: 'CampaignReports', label: 'Open reports' },
   },
   {
+    id: 'lib-subscriber-health',
+    title: 'Subscriber health',
+    description: 'Lifetime contacts, subscribed share, and net movement in one card',
+    category: 'marketing',
+    type: 'breakdown',
+    icon: 'user-check',
+    metricId: 'contacts_subscriber_health',
+    dataSource: 'contacts',
+    drilldown: { routeName: 'AllContacts', label: 'Open all contacts' },
+  },
+  {
     id: 'lib-rfm-engagement',
     title: 'RFM engagement',
     description: 'Recency against frequency — where your customer base actually sits',

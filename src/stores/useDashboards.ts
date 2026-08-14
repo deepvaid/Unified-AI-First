@@ -43,9 +43,10 @@ interface PersistedDashboardStateV3 {
 
 type AnyPersistedDashboardState = PersistedDashboardStateV1 | PersistedDashboardStateV2 | PersistedDashboardStateV3
 
-// v29: heatmap widgets seeded onto Commerce Overview + Contacts & Audience.
+// v30: heatmap + analytical card widgets seeded (Commerce Overview,
+// Contacts & Audience, Marketing Performance).
 // Persisted widget lists win over seeds, so new seeds need a key bump.
-const STORAGE_KEY = 'mp.dashboard-hub.v29'
+const STORAGE_KEY = 'mp.dashboard-hub.v30'
 const LEGACY_STORAGE_KEY_V1 = 'mp.dashboard-hub.v1'
 const MAX_WIDGETS_PER_DASHBOARD = 24
 const PERSIST_DEBOUNCE_MS = 250
@@ -319,6 +320,7 @@ function buildSeedDashboards(account: Account): Dashboard[] {
           makeWidget('Recent Orders', 'commerce_recent_orders', 'table', createLayout(0, 10, 12, 7)),
           // 7 weekday rows need more height than the 4-row RFM matrix.
           makeWidget('Revenue by day of week', 'commerce_revenue_heatmap', 'heatmap', createLayout(0, 17, 7, 10)),
+          makeWidget('Revenue attribution', 'commerce_revenue_attribution', 'donut', createLayout(7, 17, 5, 10)),
         ],
         filters: createDefaultFilters(),
         createdAt,
@@ -343,6 +345,8 @@ function buildSeedDashboards(account: Account): Dashboard[] {
           makeWidget('Recent Sent Campaigns', 'marketing_recent_campaigns', 'table', createLayout(0, 10, 12, 7)),
           makeWidget('Campaign Revenue by Folder', 'marketing_campaign_revenue', 'bar', createLayout(0, 17, 6, 7)),
           makeWidget('Open Rate Trend', 'marketing_open_rate_over_time', 'timeseries', createLayout(6, 17, 6, 7)),
+          makeWidget('Subscriber health', 'contacts_subscriber_health', 'breakdown', createLayout(0, 24, 6, 8)),
+          makeWidget('Deliverability', 'marketing_deliverability_score', 'gauge', createLayout(6, 24, 6, 8)),
         ],
         filters: createDefaultFilters(),
         createdAt,
@@ -433,6 +437,8 @@ function buildSeedDashboards(account: Account): Dashboard[] {
           makeWidget('Recent Sent Campaigns', 'marketing_recent_campaigns', 'table', createLayout(0, 10, 12, 7)),
           makeWidget('Campaign Revenue by Folder', 'marketing_campaign_revenue', 'bar', createLayout(0, 17, 6, 7)),
           makeWidget('Open Rate Trend', 'marketing_open_rate_over_time', 'timeseries', createLayout(6, 17, 6, 7)),
+          makeWidget('Subscriber health', 'contacts_subscriber_health', 'breakdown', createLayout(0, 24, 6, 8)),
+          makeWidget('Deliverability', 'marketing_deliverability_score', 'gauge', createLayout(6, 24, 6, 8)),
         ],
         filters: createDefaultFilters(),
         createdAt,

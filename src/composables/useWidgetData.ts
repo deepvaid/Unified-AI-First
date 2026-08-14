@@ -713,6 +713,32 @@ export function useWidgetData(
         const bars = sorted.slice(0, 6)
         return buildSeriesData(bars.map(([d]) => d), bars.map(([, v]) => v), 'count', 'Contacts')
       }
+      // Same derivations as the subscriber-summary table, on the breakdown
+      // chassis: lifetime total as the headline, subscribed share as the
+      // progress read, then the movement rows.
+      case 'contacts_subscriber_health': {
+        const subscribed = contacts.contacts.filter((c) => c.status === 'Subscribed').length
+        const unsubscribed = contacts.contacts.filter((c) => c.status === 'Unsubscribed').length
+        const net = subscribed - unsubscribed
+        const total = contacts.contacts.length
+        const subscribedPct = total > 0 ? (subscribed / total) * 100 : 0
+        return {
+          kind: 'breakdown',
+          headline: { value: formatNumber(total, 'count'), caption: 'Lifetime contacts' },
+          progress: { pct: subscribedPct, tone: 'blue' },
+          rows: [
+            { label: 'Unique subscribers', value: formatNumber(subscribed, 'count'), tone: 'success' },
+            { label: 'Unique unsubscribers', value: formatNumber(unsubscribed, 'count'), tone: net >= 0 ? 'default' : 'alert' },
+            {
+              label: 'Net growth / attrition',
+              value: (net >= 0 ? '+' : '') + formatNumber(net, 'count'),
+              tone: net >= 0 ? 'success' : 'alert',
+            },
+            { label: 'Subscribed share', value: formatPercent(subscribedPct), tone: 'default' },
+          ],
+          linkLabel: 'Open contacts',
+        } as DashboardWidgetData
+      }
       case 'contacts_subscriber_summary': {
         const subscribed = contacts.contacts.filter((c) => c.status === 'Subscribed').length
         const unsubscribed = contacts.contacts.filter((c) => c.status === 'Unsubscribed').length

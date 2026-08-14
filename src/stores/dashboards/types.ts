@@ -48,6 +48,7 @@ export type DashboardMetricId =
   | 'commerce_revenue'
   | 'commerce_revenue_heatmap'
   | 'analytics_rfm_engagement'
+  | 'contacts_subscriber_health'
   | 'commerce_orders'
   | 'commerce_aov'
   | 'commerce_revenue_over_time'
