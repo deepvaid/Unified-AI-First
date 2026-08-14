@@ -46,6 +46,9 @@ const series = computed(() => {
   return first.data
 })
 
+/** A percent mix always sums to 100% — only absolute units get a standing total. */
+const showCentreTotal = computed(() => props.data.unit !== 'percent')
+
 const chartAriaLabel = computed(() => {
   const parts = props.data.labels.map((label, i) => `${label} ${formatFullValue(series.value[i] ?? 0, props.data.unit)}`)
   return `Donut chart, ${parts.join(', ')}.`
@@ -104,7 +107,37 @@ const options = computed<ApexOptions>(() => {
       pie: {
         donut: {
           size: t ? t.donut.size : '62%',
-          labels: { show: false },
+          // Hovering a slice reads it out in the ring's centre. A standing
+          // total only means something for absolute units — a percent mix
+          // always totals 100%, which is noise.
+          labels: {
+            show: true,
+            name: {
+              fontSize: '11px',
+              fontWeight: 500,
+              color: chrome.axisLabel,
+              offsetY: -8,
+            },
+            value: {
+              fontSize: '20px',
+              fontWeight: 650,
+              color: chrome.tooltipText,
+              offsetY: 6,
+              formatter: (value: string | number) => formatFullValue(Number(value), props.data.unit),
+            },
+            total: {
+              show: showCentreTotal.value,
+              showAlways: false,
+              label: 'Total',
+              fontSize: '11px',
+              fontWeight: 500,
+              color: chrome.axisLabel,
+              formatter: (w: { globals: { seriesTotals: number[] } }) => formatFullValue(
+                w.globals.seriesTotals.reduce((sum, value) => sum + value, 0),
+                props.data.unit,
+              ),
+            },
+          },
         },
         expandOnClick: false,
       },
