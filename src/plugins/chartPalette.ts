@@ -1074,11 +1074,13 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
   singleBlue: {
     light: {
       label: 'Single Blue Hue',
+      // Bright Picton blue anchors slot 1 (sparklines, single-series charts);
+      // dark/light steps alternate behind it for adjacency.
       series: [
-        mp_color_chart_light_series9,
-        mp_color_chart_light_series8,
         mp_color_chart_light_series1,
+        mp_color_chart_light_series9,
         mp_color_chart_light_series7,
+        mp_color_chart_light_series8,
         mp_color_chart_light_series2,
         mp_color_chart_light_series5,
       ],
@@ -1090,7 +1092,7 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_light_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_light_series7,
+      comparisonColor: mp_color_chart_light_series2,
       chrome: cloneChrome(LIGHT_CHROME),
       treatment: GRAY_BLUE_TREATMENT,
     },
@@ -1098,10 +1100,10 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
     dark: {
       label: 'Single Blue Hue',
       series: [
-        mp_color_chart_dark_series9,
-        mp_color_chart_dark_series8,
         mp_color_chart_dark_series1,
+        mp_color_chart_dark_series9,
         mp_color_chart_dark_series7,
+        mp_color_chart_dark_series8,
         mp_color_chart_dark_series2,
         mp_color_chart_dark_series5,
       ],
@@ -1113,7 +1115,7 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
         mp_color_chart_dark_axis5,
       ],
       gradientMarks: false,
-      comparisonColor: mp_color_chart_dark_series7,
+      comparisonColor: mp_color_chart_dark_series2,
       chrome: cloneChrome(DARK_CHROME),
       treatment: GRAY_BLUE_TREATMENT,
     },
