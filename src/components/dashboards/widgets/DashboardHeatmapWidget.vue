@@ -148,6 +148,8 @@ const ariaLabel = computed(() => {
   width: 100%;
   height: 100%;
   min-height: 0;
+  /* Establishes the containment the cell-value query below measures against. */
+  container-type: inline-size;
 }
 
 .heatmap-widget__scroll {
