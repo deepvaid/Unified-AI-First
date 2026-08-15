@@ -4,7 +4,7 @@
 // per-segment deltas and the footer stat row are unchanged; only the mark
 // engine moved off the hand-rolled SVG so every donut on the dashboards reads
 // the same (rounded ends, surface-coloured gaps, centre readout).
-import { computed, defineAsyncComponent, inject, unref } from 'vue'
+import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref, unref } from 'vue'
 import { useTheme } from 'vuetify'
 import type { ApexOptions } from 'apexcharts'
 import DtLegendList, { type DtLegendRow } from '../dotted/DtLegendList.vue'
@@ -18,6 +18,34 @@ const props = defineProps<{
 const ApexChart = defineAsyncComponent({
   loader: async () => (await import('vue3-apexcharts')).default,
   suspensible: false,
+})
+
+// Defer mounting until layout settles (same idiom as DashboardChartWidget) —
+// vue3-apexcharts' options watcher crashes on a null chart if reactive options
+// churn during the initial measure pass.
+const chartReady = ref(false)
+let deferredRenderHandle: number | undefined
+onMounted(() => {
+  if (typeof window === 'undefined') {
+    chartReady.value = true
+    return
+  }
+  const revealChart = () => {
+    chartReady.value = true
+  }
+  if ('requestIdleCallback' in window) {
+    deferredRenderHandle = window.requestIdleCallback(revealChart, { timeout: 500 }) as unknown as number
+    return
+  }
+  deferredRenderHandle = globalThis.setTimeout(revealChart, 0)
+})
+onBeforeUnmount(() => {
+  if (typeof window === 'undefined' || deferredRenderHandle == null) return
+  if ('cancelIdleCallback' in window) {
+    window.cancelIdleCallback(deferredRenderHandle)
+    return
+  }
+  globalThis.clearTimeout(deferredRenderHandle)
 })
 
 const { theme, applyChartTheme } = useChartTheme()
@@ -79,9 +107,12 @@ const options = computed<ApexOptions>(() => {
     // per-segment deltas Apex's own legend can't show.
     legend: { show: false },
     dataLabels: { enabled: false },
-    stroke: { width: t ? t.donut.strokeWidth : 10, colors: [strokeColor.value] },
+    stroke: { width: t ? t.donut.strokeWidth : 0, colors: [strokeColor.value] },
     plotOptions: {
       pie: {
+        // Native rounded-donut geometry (Apex 6): pill slice ends + true gaps.
+        borderRadius: 8,
+        spacing: 4,
         donut: {
           size: t ? t.donut.size : '68%',
           labels: {
@@ -132,6 +163,7 @@ const options = computed<ApexOptions>(() => {
     <div v-if="data.variant === 'pie'" class="donut-widget__pie-block">
       <div class="donut-widget__pie-chart" role="img" :aria-label="chartAriaLabel">
         <ApexChart
+          v-if="chartReady"
           :height="chartHeight"
           width="100%"
           type="donut"
@@ -144,6 +176,7 @@ const options = computed<ApexOptions>(() => {
     <template v-else>
       <div class="donut-widget__ring-block" role="img" :aria-label="chartAriaLabel">
         <ApexChart
+          v-if="chartReady"
           :height="chartHeight"
           width="100%"
           type="donut"

@@ -574,11 +574,9 @@ const oceanLineTreatment = (comparison: string) => makeTreatment({
   crosshair: { show: true, dash: 4 },
   markers: { hoverSize: 5, lastPoint: false },
   legend: { markerShape: 'circle', markerSize: 8, hoverHighlight: true },
-  // Rounded donut: Apex derives the slice corner radius from stroke.width
-  // (Pie.js roundPathCorners(path, strokeWidth * 2)), and the stroke is painted
-  // in the card surface — so this one value gives both the rounded ends and the
-  // gap between segments.
-  donut: { size: '68%', fill: 'solid', strokeWidth: 10, showDataLabels: false },
+  // Rounded donut geometry lives in the widgets (Apex 6 native
+  // plotOptions.pie.borderRadius + spacing) — no stroke needed for the gaps.
+  donut: { size: '68%', fill: 'solid', strokeWidth: 0, showDataLabels: false },
   svg: { shade: 'flat' },
   kpiSpark: { fillOpacity: 0.1 },
   effects: { dropShadow: false },

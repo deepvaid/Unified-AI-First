@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, inject, unref } from 'vue'
+import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref, unref } from 'vue'
 import { useTheme } from 'vuetify'
 import type { ApexOptions } from 'apexcharts'
 import {
@@ -21,6 +21,34 @@ const props = withDefaults(defineProps<{
 const ApexChart = defineAsyncComponent({
   loader: async () => (await import('vue3-apexcharts')).default,
   suspensible: false,
+})
+
+// Defer mounting until layout settles (same idiom as DashboardChartWidget) —
+// vue3-apexcharts' options watcher crashes on a null chart if reactive options
+// churn during the initial measure pass.
+const chartReady = ref(false)
+let deferredRenderHandle: number | undefined
+onMounted(() => {
+  if (typeof window === 'undefined') {
+    chartReady.value = true
+    return
+  }
+  const revealChart = () => {
+    chartReady.value = true
+  }
+  if ('requestIdleCallback' in window) {
+    deferredRenderHandle = window.requestIdleCallback(revealChart, { timeout: 500 }) as unknown as number
+    return
+  }
+  deferredRenderHandle = globalThis.setTimeout(revealChart, 0)
+})
+onBeforeUnmount(() => {
+  if (typeof window === 'undefined' || deferredRenderHandle == null) return
+  if ('cancelIdleCallback' in window) {
+    window.cancelIdleCallback(deferredRenderHandle)
+    return
+  }
+  globalThis.clearTimeout(deferredRenderHandle)
 })
 
 const chartHeight = computed(() => {
@@ -102,12 +130,13 @@ const options = computed<ApexOptions>(() => {
       style: { fontSize: '11px', fontWeight: 600, colors: [chrome.axisLabel] },
       dropShadow: { enabled: false },
     },
-    // Apex derives the slice corner radius from stroke.width (roundPathCorners,
-    // width * 2), so the surface-coloured stroke gives both the rounded ends
-    // and the gap — themes without a treatment get the rounded look too.
-    stroke: { width: t ? t.donut.strokeWidth : 10, colors: [strokeColor.value] },
+    stroke: { width: t ? t.donut.strokeWidth : 0, colors: [strokeColor.value] },
     plotOptions: {
       pie: {
+        // Native rounded-donut geometry (Apex 6): pill slice ends + true gaps,
+        // matching the ApexCharts Rounded Donut reference.
+        borderRadius: 8,
+        spacing: 4,
         donut: {
           size: t ? t.donut.size : '68%',
           // Hovering a slice reads it out in the ring's centre. A standing
@@ -165,6 +194,7 @@ const options = computed<ApexOptions>(() => {
 <template>
   <div class="dashboard-pie-widget" role="img" :aria-label="chartAriaLabel">
     <ApexChart
+      v-if="chartReady"
       :height="chartHeight"
       width="100%"
       type="donut"
