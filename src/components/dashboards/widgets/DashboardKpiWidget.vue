@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref, unref, useId } from 'vue'
-import { CHART_PALETTES, CHART_PALETTE_OVERRIDE, useChartTheme } from '@/plugins/chartPalette'
+import { CHART_PALETTE_OVERRIDE, useChartTheme } from '@/plugins/chartPalette'
 import type { DashboardDataSource, DashboardKpiData } from '@/stores/dashboards/types'
 import { formatFullValue } from '@/utils/formatNumber'
 
@@ -43,8 +43,7 @@ const sparkColor = computed<string | undefined>(() => {
   if (t) return t.kpiSpark.color ?? chartThemeRef.value.series[0]
   const override = unref(paletteOverride)
   if (override) return override.series[0]
-  if (chartPaletteRef.value !== CHART_PALETTES.blue) return chartPaletteRef.value[0]
-  return undefined
+  return chartPaletteRef.value[0]
 })
 /** Area wash under the spark curve — 0.16 is the pre-treatment value. */
 const sparkFillOpacity = computed(() => treatment.value?.kpiSpark.fillOpacity ?? 0.16)

@@ -17,5 +17,5 @@ import './shell-variants.css'
 import './retail-widgets.scss'
 // Shared aura + diffusion-field material for the voice-first Da Vinci flow
 import './dv-diffusion.css'
-// Chart visual-system exploration (optionA–D) — inert unless [data-chart] is set
+// Per-theme chart hooks — inert unless a theme sets the [data-chart] vars
 import './chart-theme-variants.css'

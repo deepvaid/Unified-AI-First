@@ -8,7 +8,7 @@
 import type { ApexOptions } from 'apexcharts'
 import { CHART_THEMES } from '@/plugins/chartPalette'
 
-export const LAB_CHROME = CHART_THEMES.blue.light.chrome
+export const LAB_CHROME = CHART_THEMES.grayBlue.light.chrome
 
 export const LAB_FONT = 'Inter, system-ui, sans-serif'
 
