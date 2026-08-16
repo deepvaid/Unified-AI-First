@@ -74,6 +74,7 @@ watch(() => route.query.frame, (f) => {
 // (the default — focal blue + gray de-emphasis with a monochrome blue ramp).
 const VALID_CHART_PALETTES: readonly ChartPalette[] = [
   'grayBlue', 'grayBlueGold', 'social', 'ocean',
+  'socialGradient', 'grayBlueGradient', 'grayBlueGoldGradient', 'oceanGradient',
 ]
 const isChartPalette = (v: unknown): v is ChartPalette =>
   typeof v === 'string' && (VALID_CHART_PALETTES as readonly string[]).includes(v)

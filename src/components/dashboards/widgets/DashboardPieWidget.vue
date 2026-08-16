@@ -5,6 +5,7 @@ import type { ApexOptions } from 'apexcharts'
 import {
   CHART_PALETTE_OVERRIDE,
   chartLegendOptions,
+  embossDonutStops,
   useChartTheme,
   type ChartTheme,
 } from '@/plugins/chartPalette'
@@ -111,7 +112,20 @@ const options = computed<ApexOptions>(() => {
     labels: props.data.labels,
     colors: palette.value,
     // Gradient themes shade their slices; flat (Polaris) and blue render solid.
-    fill: { type: t ? t.donut.fill : gradientMarks.value ? 'gradient' : 'solid' },
+    // A treatment's 'gradient' means the emboss band — explicit stops pinned to
+    // the visible ring (Apex's own radial ramp would vanish into the hole).
+    fill: t
+      ? t.donut.fill === 'gradient'
+        ? {
+            type: 'gradient',
+            gradient: {
+              colorStops: palette.value
+                .slice(0, series.value.length)
+                .map((c) => embossDonutStops(c, parseFloat(t.donut.size) || 68)),
+            },
+          }
+        : { type: 'solid' }
+      : { type: gradientMarks.value ? 'gradient' : 'solid' },
     legend: t
       ? {
           ...chartLegendOptions(palette.value, chrome, 'bottom'),

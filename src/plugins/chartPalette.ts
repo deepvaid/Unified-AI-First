@@ -117,6 +117,12 @@ export type ChartPalette =
   | 'grayBlueGold'
   | 'social'
   | 'ocean'
+  /** Gradient exploration variants — each base palette with the emboss/duotone
+      treatment, shown on /dashboard-gradient (`socialGradient` is its default). */
+  | 'socialGradient'
+  | 'grayBlueGradient'
+  | 'grayBlueGoldGradient'
+  | 'oceanGradient'
 
 export type ChartMode = 'light' | 'dark'
 
@@ -303,6 +309,31 @@ const oceanLineTreatment = (comparison: string) => makeTreatment({
 const GRAY_BLUE_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlue_comparison)
 const GRAY_BLUE_GOLD_TREATMENT = oceanLineTreatment(mp_color_chart_light_grayBlueGold_series2)
 const SOCIAL_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
+// Own instance so the gradient exploration can retune stroke/bar/donut without
+// touching `social`. Identical values today — the two render the same.
+const SOCIAL_GRADIENT_TREATMENT = oceanLineTreatment(mp_color_chart_light_social_series2)
+
+/**
+ * Turn any base treatment into its gradient/emboss variant: bars route into the
+ * gloss branch ('solid' early-returns before it in DashboardChartWidget's
+ * treatmentFill, so any gradient fill value works), donut slices take the
+ * luminous band sweep, and `gloss` switches every widget's duotone recipes on.
+ * No Apex dropShadow: the gradient carries the depth, and shadows on a filled
+ * ring read as a sticker halo (P9 critique).
+ */
+const embossTreatment = (base: ChartTreatment): ChartTreatment => ({
+  ...base,
+  bar: { ...base.bar, fill: 'tint-gradient' },
+  donut: { ...base.donut, fill: 'gradient' },
+  effects: { dropShadow: false, gloss: true },
+})
+
+export const SOCIAL_GRADIENT_EMBOSS_TREATMENT = embossTreatment(SOCIAL_GRADIENT_TREATMENT)
+const GRAY_BLUE_GRADIENT_TREATMENT = embossTreatment(GRAY_BLUE_TREATMENT)
+const GRAY_BLUE_GOLD_GRADIENT_TREATMENT = embossTreatment(GRAY_BLUE_GOLD_TREATMENT)
+// Ocean ships without a treatment (legacy Hyper gradientMarks branches), so its
+// gradient variant starts from the standard ocean-line base.
+const OCEAN_GRADIENT_TREATMENT = embossTreatment(oceanLineTreatment(mp_color_chart_light_ocean_series2))
 
 
 /**
@@ -495,6 +526,197 @@ export const CHART_THEMES: Record<ChartPalette, Record<ChartMode, ChartTheme>> =
       treatment: SOCIAL_TREATMENT,
     },
   },
+  // Gradient exploration base — starts as an exact clone of `social` (same
+  // tokens, own treatment instance) so /dashboard-gradient can diverge without
+  // moving `?chart=social` or the production default.
+  socialGradient: {
+    light: {
+      label: 'Bright Social — Gradient',
+      series: [
+        mp_color_chart_light_social_series1,
+        mp_color_chart_light_social_series2,
+        mp_color_chart_light_social_series3,
+        mp_color_chart_light_social_series4,
+        mp_color_chart_light_social_series5,
+        mp_color_chart_light_social_series6,
+      ],
+      axis: [
+        mp_color_chart_light_social_axis1,
+        mp_color_chart_light_social_axis2,
+        mp_color_chart_light_social_axis3,
+        mp_color_chart_light_social_axis4,
+        mp_color_chart_light_social_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_social_series2,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: SOCIAL_GRADIENT_EMBOSS_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Bright Social — Gradient',
+      series: [
+        mp_color_chart_dark_social_series1,
+        mp_color_chart_dark_social_series2,
+        mp_color_chart_dark_social_series3,
+        mp_color_chart_dark_social_series4,
+        mp_color_chart_dark_social_series5,
+        mp_color_chart_dark_social_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_social_axis1,
+        mp_color_chart_dark_social_axis2,
+        mp_color_chart_dark_social_axis3,
+        mp_color_chart_dark_social_axis4,
+        mp_color_chart_dark_social_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_social_series2,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: SOCIAL_GRADIENT_EMBOSS_TREATMENT,
+    },
+  },
+  grayBlueGradient: {
+    light: {
+      label: 'Gray + Blue — Gradient',
+      series: [
+        mp_color_chart_light_grayBlue_series1,
+        mp_color_chart_light_grayBlue_series2,
+        mp_color_chart_light_grayBlue_series3,
+        mp_color_chart_light_grayBlue_series4,
+        mp_color_chart_light_grayBlue_series5,
+        mp_color_chart_light_grayBlue_series6,
+      ],
+      axis: [
+        mp_color_chart_light_grayBlue_axis1,
+        mp_color_chart_light_grayBlue_axis2,
+        mp_color_chart_light_grayBlue_axis3,
+        mp_color_chart_light_grayBlue_axis4,
+        mp_color_chart_light_grayBlue_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_grayBlue_comparison,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: GRAY_BLUE_GRADIENT_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Gray + Blue — Gradient',
+      series: [
+        mp_color_chart_dark_grayBlue_series1,
+        mp_color_chart_dark_grayBlue_series2,
+        mp_color_chart_dark_grayBlue_series3,
+        mp_color_chart_dark_grayBlue_series4,
+        mp_color_chart_dark_grayBlue_series5,
+        mp_color_chart_dark_grayBlue_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_grayBlue_axis1,
+        mp_color_chart_dark_grayBlue_axis2,
+        mp_color_chart_dark_grayBlue_axis3,
+        mp_color_chart_dark_grayBlue_axis4,
+        mp_color_chart_dark_grayBlue_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_grayBlue_comparison,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: GRAY_BLUE_GRADIENT_TREATMENT,
+    },
+  },
+  grayBlueGoldGradient: {
+    light: {
+      label: 'Gray + Blue + Gold — Gradient',
+      series: [
+        mp_color_chart_light_grayBlueGold_series1,
+        mp_color_chart_light_grayBlueGold_series2,
+        mp_color_chart_light_grayBlueGold_series3,
+        mp_color_chart_light_grayBlueGold_series4,
+        mp_color_chart_light_grayBlueGold_series5,
+        mp_color_chart_light_grayBlueGold_series6,
+      ],
+      axis: [
+        mp_color_chart_light_grayBlueGold_axis1,
+        mp_color_chart_light_grayBlueGold_axis2,
+        mp_color_chart_light_grayBlueGold_axis3,
+        mp_color_chart_light_grayBlueGold_axis4,
+        mp_color_chart_light_grayBlueGold_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_grayBlueGold_series2,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: GRAY_BLUE_GOLD_GRADIENT_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Gray + Blue + Gold — Gradient',
+      series: [
+        mp_color_chart_dark_grayBlueGold_series1,
+        mp_color_chart_dark_grayBlueGold_series2,
+        mp_color_chart_dark_grayBlueGold_series3,
+        mp_color_chart_dark_grayBlueGold_series4,
+        mp_color_chart_dark_grayBlueGold_series5,
+        mp_color_chart_dark_grayBlueGold_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_grayBlueGold_axis1,
+        mp_color_chart_dark_grayBlueGold_axis2,
+        mp_color_chart_dark_grayBlueGold_axis3,
+        mp_color_chart_dark_grayBlueGold_axis4,
+        mp_color_chart_dark_grayBlueGold_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_grayBlueGold_series2,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: GRAY_BLUE_GOLD_GRADIENT_TREATMENT,
+    },
+  },
+  oceanGradient: {
+    light: {
+      label: 'Ocean — Gradient',
+      series: [
+        mp_color_chart_light_ocean_series1,
+        mp_color_chart_light_ocean_series2,
+        mp_color_chart_light_ocean_series3,
+        mp_color_chart_light_ocean_series4,
+        mp_color_chart_light_ocean_series5,
+        mp_color_chart_light_ocean_series6,
+      ],
+      axis: [
+        mp_color_chart_light_ocean_axis1,
+        mp_color_chart_light_ocean_axis2,
+        mp_color_chart_light_ocean_axis3,
+        mp_color_chart_light_ocean_axis4,
+        mp_color_chart_light_ocean_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_light_ocean_series2,
+      chrome: cloneChrome(LIGHT_CHROME),
+      treatment: OCEAN_GRADIENT_TREATMENT,
+    },
+    // PROVISIONAL — light-only review; dark tuning is follow-up
+    dark: {
+      label: 'Ocean — Gradient',
+      series: [
+        mp_color_chart_dark_ocean_series1,
+        mp_color_chart_dark_ocean_series2,
+        mp_color_chart_dark_ocean_series3,
+        mp_color_chart_dark_ocean_series4,
+        mp_color_chart_dark_ocean_series5,
+        mp_color_chart_dark_ocean_series6,
+      ],
+      axis: [
+        mp_color_chart_dark_ocean_axis1,
+        mp_color_chart_dark_ocean_axis2,
+        mp_color_chart_dark_ocean_axis3,
+        mp_color_chart_dark_ocean_axis4,
+        mp_color_chart_dark_ocean_axis5,
+      ],
+      gradientMarks: false,
+      comparisonColor: mp_color_chart_dark_ocean_series2,
+      chrome: cloneChrome(DARK_CHROME),
+      treatment: OCEAN_GRADIENT_TREATMENT,
+    },
+  },
 }
 
 /** Back-compat: light series colourways keyed by palette. */
@@ -509,7 +731,16 @@ const chartPaletteId = ref<ChartPalette>('grayBlue')
  * the global palette. No provider ships today (the compare pages that used it
  * were retired); widgets still inject it so a scoped preview stays possible.
  */
-export const CHART_PALETTE_OVERRIDE: InjectionKey<Ref<ChartTheme> | ChartTheme> = Symbol('chartPaletteOverride')
+export const CHART_PALETTE_OVERRIDE: InjectionKey<Ref<ChartTheme | undefined> | ChartTheme> = Symbol('chartPaletteOverride')
+
+/**
+ * Per-widget theme overrides, keyed by metricId. A page provides the map (today
+ * only /dashboard-gradient's emboss POC does) and DashboardWidgetCard turns a
+ * matching entry into a CHART_PALETTE_OVERRIDE for that widget's subtree. With
+ * no provider the card provides `undefined` and widgets fall back to the
+ * global theme, so production pages are unaffected.
+ */
+export const WIDGET_THEME_OVERRIDES: InjectionKey<Ref<Partial<Record<string, ChartTheme>>>> = Symbol('widgetThemeOverrides')
 
 /** Set the active chart palette (mirrors onto <html data-chart> for debug). */
 export function applyChartPalette(id: ChartPalette) {
@@ -629,8 +860,94 @@ export function embossStops(
   return [
     { offset: 0, color: tintHex(head.color, 0.5), opacity: 1 },
     ...squeeze,
-    { offset: 100, color: shadeHex(tail.color, 0.16), opacity: 1 },
+    { offset: 100, color: shadeHex(tail.color, 0.1), opacity: 1 },
   ]
+}
+
+/**
+ * Donut/pie slice sweep. Apex's radial gradient spans the full circle radius,
+ * so the stops are pinned to the visible band (`holePct`..100): a smooth
+ * two-tone blend from the slice's luminous companion at the inner edge to the
+ * series colour at the rim — both ends bright, no shading (reference style).
+ */
+export function embossDonutStops(
+  color: string,
+  holePct: number,
+): { offset: number; color: string; opacity: number }[] {
+  const lit = tintHex(duotoneCompanion(color), 0.25)
+  return [
+    { offset: 0, color: lit, opacity: 0.94 },
+    { offset: holePct, color: lit, opacity: 0.94 },
+    { offset: 100, color, opacity: 0.94 },
+  ]
+}
+
+/** RGB hex → [hue 0-360, saturation 0-1, lightness 0-1]. */
+function hexToHsl(hex: string): [number, number, number] {
+  const clean = hex.replace('#', '')
+  const r = parseInt(clean.slice(0, 2), 16) / 255
+  const g = parseInt(clean.slice(2, 4), 16) / 255
+  const b = parseInt(clean.slice(4, 6), 16) / 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  const d = max - min
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1))
+  let h = 0
+  if (d !== 0) {
+    if (max === r) h = 60 * (((g - b) / d + 6) % 6)
+    else if (max === g) h = 60 * ((b - r) / d + 2)
+    else h = 60 * ((r - g) / d + 4)
+  }
+  return [h, s, l]
+}
+
+/** [h, s, l] → RGB hex string. */
+function hslToHex(h: number, s: number, l: number): string {
+  const c = (1 - Math.abs(2 * l - 1)) * s
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
+  const m = l - c / 2
+  const [r2, g2, b2] =
+    h < 60 ? [c, x, 0]
+    : h < 120 ? [x, c, 0]
+    : h < 180 ? [0, c, x]
+    : h < 240 ? [0, x, c]
+    : h < 300 ? [x, 0, c]
+    : [c, 0, x]
+  const to2 = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0')
+  return `#${to2(r2)}${to2(g2)}${to2(b2)}`
+}
+
+/** Shift a hex colour's hue by `deg` degrees (HSL space, S/L preserved). */
+export function hueShiftHex(hex: string, deg: number): string {
+  const [h, s, l] = hexToHsl(hex)
+  return hslToHex((h + deg + 360) % 360, s, l)
+}
+
+/** Boost a hex colour's HSL saturation by `amount` (clamped 0..1). */
+export function saturateHex(hex: string, amount: number): string {
+  const [h, s, l] = hexToHsl(hex)
+  return hslToHex(h, Math.min(1, Math.max(0, s + amount)), l)
+}
+
+/**
+ * The luminous partner a mark's gradient sweeps to, matched to the reference
+ * set (Stripe blue→sky-teal, Sea Blizz teal→mint, Near Moon violet→teal,
+ * Bora Bora teal→pale yellow): every hue travels counterclockwise along the
+ * cool arc — blue lands at teal, lavender at periwinkle-teal, cyan at spring
+ * mint, green at yellow-green. Both gradient ends stay bright; base series
+ * colours stay untouched everywhere (legends, tooltips, recognisability).
+ */
+export function duotoneCompanion(hex: string): string {
+  const [h, s] = hexToHsl(hex)
+  // Near-neutrals (grayBlue's gray slots) have no meaningful hue — shifting and
+  // saturating would tint them pink. They sweep by tint alone at the call sites.
+  if (s < 0.08) return hex
+  // ~25° of travel keeps each series differentiable end to end (Stripe and
+  // Messenger sweep about this far) — blue lands at cyan-blue, not aqua-green.
+  // Warm hues clamp tighter: gold at -30 would land on coral-red, which reads
+  // as a danger tint on a data mark — -15 keeps it amber-orange.
+  return saturateHex(hueShiftHex(hex, h >= 180 ? -25 : h < 60 ? -15 : -30), 0.12)
 }
 
 /** Mix a hex colour toward white by fraction `t` (0..1) and return a hex string. */

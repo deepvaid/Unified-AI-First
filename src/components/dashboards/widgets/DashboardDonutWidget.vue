@@ -8,7 +8,7 @@ import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref
 import { useTheme } from 'vuetify'
 import type { ApexOptions } from 'apexcharts'
 import DtLegendList, { type DtLegendRow } from '../dotted/DtLegendList.vue'
-import { CHART_PALETTE_OVERRIDE, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
+import { CHART_PALETTE_OVERRIDE, embossDonutStops, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import type { DashboardDonutData } from '@/stores/dashboards/types'
 
 const props = defineProps<{
@@ -102,7 +102,20 @@ const options = computed<ApexOptions>(() => {
     },
     labels: labels.value,
     colors: palette.value,
-    fill: { type: 'solid' },
+    // Treatments may emboss each slice: explicit stops pinned to the visible
+    // band (embossDonutStops), since Apex's radial gradient spans the full
+    // circle radius and the hole would swallow a shade-based ramp. Every
+    // shipped treatment declares 'solid'.
+    fill: t?.donut.fill === 'gradient'
+      ? {
+          type: 'gradient',
+          gradient: {
+            colorStops: palette.value
+              .slice(0, series.value.length)
+              .map((c) => embossDonutStops(c, parseFloat(t.donut.size) || 68)),
+          },
+        }
+      : { type: 'solid' },
     // The legend lives outside the chart (DtLegendList) — it carries the
     // per-segment deltas Apex's own legend can't show.
     legend: { show: false },

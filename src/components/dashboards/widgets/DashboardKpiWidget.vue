@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, inject, ref, unref, useId } from 'vue'
-import { CHART_PALETTE_OVERRIDE, useChartTheme } from '@/plugins/chartPalette'
+import { CHART_PALETTE_OVERRIDE, duotoneCompanion, tintHex, useChartTheme } from '@/plugins/chartPalette'
 import type { DashboardDataSource, DashboardKpiData } from '@/stores/dashboards/types'
 import { formatFullValue } from '@/utils/formatNumber'
 
 const sparkFillId = useId()
+const sparkLineId = useId()
 
 const props = withDefaults(defineProps<{
   data: DashboardKpiData
@@ -47,6 +48,15 @@ const sparkColor = computed<string | undefined>(() => {
 })
 /** Area wash under the spark curve — 0.16 is the pre-treatment value. */
 const sparkFillOpacity = computed(() => treatment.value?.kpiSpark.fillOpacity ?? 0.16)
+
+// Embossed themes sweep the spark like the big charts: the line stroke runs
+// from the luminous companion into the base colour, and the wash crests in the
+// companion. Non-emboss themes keep the plain currentColor spark.
+const sparkCompanion = computed<string | null>(() => (
+  treatment.value?.effects.gloss && sparkColor.value
+    ? tintHex(duotoneCompanion(sparkColor.value), 0.2)
+    : null
+))
 
 const trendPositive = computed(() => props.data.delta == null || props.data.delta >= 0)
 const trendIcon = computed(() => (trendPositive.value ? 'arrow-up-right' : 'arrow-down-right'))
@@ -278,8 +288,12 @@ const peakFormatted = computed(() => {
           <svg class="dashboard-kpi-widget__sparkline" viewBox="0 0 100 40" preserveAspectRatio="none">
             <defs>
               <linearGradient :id="sparkFillId" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="currentColor" :stop-opacity="sparkFillOpacity" />
+                <stop offset="0%" :stop-color="sparkCompanion ?? 'currentColor'" :stop-opacity="sparkFillOpacity" />
                 <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
+              </linearGradient>
+              <linearGradient v-if="sparkCompanion" :id="sparkLineId" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" :stop-color="sparkCompanion" />
+                <stop offset="100%" stop-color="currentColor" />
               </linearGradient>
             </defs>
             <path
@@ -287,7 +301,11 @@ const peakFormatted = computed(() => {
               class="dashboard-kpi-widget__sparkline-fill"
               :fill="`url(#${sparkFillId})`"
             />
-            <path :d="sparklinePath" class="dashboard-kpi-widget__sparkline-line" />
+            <path
+              :d="sparklinePath"
+              class="dashboard-kpi-widget__sparkline-line"
+              :style="sparkCompanion ? { stroke: `url(#${sparkLineId})` } : undefined"
+            />
           </svg>
           <span
             v-if="sparkEndPoint"

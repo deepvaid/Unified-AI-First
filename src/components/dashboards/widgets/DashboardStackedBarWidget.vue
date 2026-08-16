@@ -4,7 +4,7 @@
 // the stack, dark on top) with a legend that also carries each series' total
 // and share, the way the reference dashboards annotate their distributions.
 import { computed, inject, unref } from 'vue'
-import { CHART_PALETTE_OVERRIDE, tintHex, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
+import { CHART_PALETTE_OVERRIDE, duotoneCompanion, tintHex, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import { STACK_BLUES } from '../dotted/dottedChartMath'
 import type { DashboardStackedBarData } from '@/stores/dashboards/types'
 
@@ -28,10 +28,14 @@ const STACK_COLORS = computed<readonly string[]>(() => {
   return legacyFlat.value ? resolvedTheme.value.series : STACK_BLUES
 })
 
-/** Segment fill: flat theme colour, or base fading to a lighter tint on top. */
+/** Segment fill: flat theme colour, or base fading to a lighter tint on top —
+    embossed themes light the top with the segment's vivid duotone companion. */
 function segmentFill(index: number): string {
   const color = STACK_COLORS.value[index] ?? STACK_COLORS.value[0]!
-  return flat.value ? color : `linear-gradient(to top, ${color}, ${tintHex(color, 0.3)})`
+  // Emboss outranks the treatment's flat shade — the duotone companion IS the shading.
+  if (gloss.value) return `linear-gradient(to top, ${color}, ${tintHex(duotoneCompanion(color), 0.25)})`
+  if (flat.value) return color
+  return `linear-gradient(to top, ${color}, ${tintHex(color, 0.3)})`
 }
 
 const maxTotal = computed(() =>
@@ -71,7 +75,10 @@ const barWidths = computed(() => {
 /** Horizontal segments shade along the bar, not up it. */
 function hSegmentFill(index: number): string {
   const color = STACK_COLORS.value[index] ?? STACK_COLORS.value[0]!
-  return flat.value ? color : `linear-gradient(to right, ${color}, ${tintHex(color, 0.28)})`
+  // Emboss outranks the treatment's flat shade — the duotone companion IS the shading.
+  if (gloss.value) return `linear-gradient(to right, ${color}, ${tintHex(duotoneCompanion(color), 0.25)})`
+  if (flat.value) return color
+  return `linear-gradient(to right, ${color}, ${tintHex(color, 0.28)})`
 }
 
 const barAriaLabel = computed(() =>
@@ -308,16 +315,20 @@ const barAriaLabel = computed(() =>
 
 /* Emboss: an inset sheen along the lit edge and a soft shadow at the base, so a
    segment reads as a solid catching light rather than a flat fill. Vertical
-   stacks light from the top; the horizontal bar lights from its left edge. */
+   stacks light from the top; the horizontal bar lights from its left edge.
+   Segments sit slightly translucent with small blank gaps between them —
+   the same separation grammar as the rounded donuts. */
 .stackbar-widget--gloss .stackbar-widget__segment {
+  opacity: 0.95;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -6px 8px -6px rgba(12, 10, 40, 0.5);
+    inset 0 -6px 8px -6px rgba(12, 10, 40, 0.3);
 }
 
 .stackbar-widget--gloss .stackbar-widget__hsegment {
+  opacity: 0.95;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -5px 7px -5px rgba(12, 10, 40, 0.45);
+    inset 0 -5px 7px -5px rgba(12, 10, 40, 0.3);
 }
 </style>

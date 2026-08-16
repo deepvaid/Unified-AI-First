@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, toRef } from 'vue'
+import { computed, inject, provide, ref, toRef } from 'vue'
 import { useRouter } from 'vue-router'
+import { CHART_PALETTE_OVERRIDE, WIDGET_THEME_OVERRIDES } from '@/plugins/chartPalette'
 import { useWidgetData } from '@/composables/useWidgetData'
 import { useElementSize } from '@/composables/useElementSize'
 import { useLiveAgo } from '@/composables/useRelativeTime'
@@ -53,6 +54,13 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const bodyEl = ref<HTMLElement | null>(null)
+
+// Per-widget theme override: a page may provide a metricId-keyed map (today only
+// the /dashboard-gradient emboss POC). A matching entry becomes this widget's
+// CHART_PALETTE_OVERRIDE; everywhere else the computed is undefined and the
+// widgets fall back to the global theme.
+const widgetThemeOverrides = inject(WIDGET_THEME_OVERRIDES, undefined)
+provide(CHART_PALETTE_OVERRIDE, computed(() => widgetThemeOverrides?.value?.[props.widget.metricId]))
 
 // Trend/Compare toggle for the channel-trend widget: "Compare" renders the same
 // generated channel data as one bar per channel. Card-local view state only —

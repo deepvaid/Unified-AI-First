@@ -6,6 +6,7 @@ import type { DashboardChartVariant, DashboardSeriesData, DashboardWidgetType } 
 import {
   CHART_PALETTE_OVERRIDE,
   chartLegendOptions,
+  duotoneCompanion,
   embossStops,
   tintHex,
   useChartTheme,
@@ -278,19 +279,18 @@ const chartOptions = computed<ApexOptions>(() => {
         return { type: 'gradient', gradient: { type: 'vertical', colorStops: stops } }
       }
       if (tt.bar.fill === 'solid' || divergingBars) return { type: 'solid' }
-      // Grouped/horizontal bars have no axis ramp to run through, so the emboss is
-      // built per series: lit tint at the head, the series colour, darkened lip.
+      // Grouped/horizontal bars: a clean full-height sweep from the series'
+      // luminous companion at the head into the base colour — both ends
+      // bright, no gloss cap or dark lip (reference style: Stripe/Sea Blizz).
       if (tt.effects.gloss) {
         return {
           type: 'gradient',
           gradient: {
             type: isHorizontalBar.value ? 'horizontal' : 'vertical',
-            colorStops: resolvedSeriesColors.value.map((c) =>
-              embossStops([
-                { offset: 0, color: tintHex(c, 0.22), opacity: 1 },
-                { offset: 100, color: c, opacity: 1 },
-              ]),
-            ),
+            colorStops: resolvedSeriesColors.value.map((c) => [
+              { offset: 0, color: tintHex(duotoneCompanion(c), 0.25), opacity: 0.92 },
+              { offset: 100, color: c, opacity: 0.96 },
+            ]),
           },
         }
       }
@@ -310,6 +310,24 @@ const chartOptions = computed<ApexOptions>(() => {
         series.isComparison ? tt.comparison.fillOpacity : tt.area.opacityFrom
       ))
       if (tt.area.fill === 'solid') return { type: 'solid', opacity: from }
+      // Emboss: the wash sweeps from the series' vivid duotone companion at the
+      // crest into the base colour at the floor, keeping the per-series opacity
+      // ramp (comparison stays a faint wash).
+      if (tt.effects.gloss) {
+        return {
+          type: 'gradient',
+          gradient: {
+            type: 'vertical',
+            colorStops: props.data.series.map((_, i) => {
+              const c = resolvedSeriesColors.value[i % resolvedSeriesColors.value.length]!
+              return [
+                { offset: 0, color: tintHex(duotoneCompanion(c), 0.25), opacity: from[i] ?? tt.area.opacityFrom },
+                { offset: 100, color: c, opacity: tt.area.opacityTo },
+              ]
+            }),
+          },
+        }
+      }
       return {
         type: 'gradient',
         gradient: {
@@ -332,6 +350,21 @@ const chartOptions = computed<ApexOptions>(() => {
       }))
       return { type: 'gradient', gradient: { type: 'horizontal', colorStops: stops } }
     }
+    // Emboss: line strokes sweep horizontally from the duotone companion into
+    // the series colour (Apex paints line strokes from `fill`). Dashed
+    // comparison series stay subdued via width/dash, not colour.
+    if (tt.effects.gloss) {
+      return {
+        type: 'gradient',
+        gradient: {
+          type: 'horizontal',
+          colorStops: resolvedSeriesColors.value.map((c) => [
+            { offset: 0, color: tintHex(duotoneCompanion(c), 0.2), opacity: 1 },
+            { offset: 100, color: c, opacity: 1 },
+          ]),
+        },
+      }
+    }
     return { type: 'solid' }
   }
 
@@ -349,12 +382,24 @@ const chartOptions = computed<ApexOptions>(() => {
         type: 'gradient',
         gradient: {
           type: 'vertical',
-          colorStops: resolvedSeriesColors.value.map((c) =>
-            embossStops([
-              { offset: 0, color: tintHex(c, 0.18), opacity: 1 },
-              { offset: 100, color: c, opacity: 1 },
-            ]),
-          ),
+          colorStops: resolvedSeriesColors.value.map((c) => [
+            { offset: 0, color: tintHex(duotoneCompanion(c), 0.2), opacity: 0.92 },
+            { offset: 100, color: c, opacity: 0.96 },
+          ]),
+        },
+      }
+    }
+    // Stacked areas: emboss sweeps each band from its duotone companion into
+    // the base colour; other themes keep the plain opacity ramp.
+    if (t?.effects.gloss) {
+      return {
+        type: 'gradient',
+        gradient: {
+          type: 'vertical',
+          colorStops: resolvedSeriesColors.value.map((c) => [
+            { offset: 0, color: tintHex(duotoneCompanion(c), 0.25), opacity: 0.95 },
+            { offset: 100, color: c, opacity: t.area.fill === 'solid' ? 0.95 : 0.72 },
+          ]),
         },
       }
     }
@@ -438,7 +483,14 @@ const chartOptions = computed<ApexOptions>(() => {
                     series.isComparison || i > 0 ? t.stroke.companionWidth : t.stroke.width
                   ))
                 : t.stroke.width)
+            // Embossed stacked columns take a thin surface-coloured separator
+            // so each band reads on its own — same gap grammar as the donuts.
+            : isStacked.value && t.effects.gloss
+            ? 2
             : 0,
+          ...(!isTimeseries && isStacked.value && t.effects.gloss
+            ? { colors: [markerStrokeColor.value] }
+            : {}),
           dashArray: isTimeseries && !isStacked.value
             ? props.data.series.map((series, i) => (
                 series.isComparison ? t.comparison.dash : i > 0 ? t.stroke.companionDash : 0

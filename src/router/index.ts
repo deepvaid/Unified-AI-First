@@ -333,6 +333,10 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/dashboard-lab-2', name: 'DashboardLab2', component: () => import('@/views/ChartLab/DashboardLab2View.vue') },
   { path: '/accounts/:accountId/dashboard-shadcn', name: 'DashboardShadcn', component: () => import('@/views/ShadcnDashboard/ShadcnDashboardView.vue') },
   { path: '/accounts/:accountId/dashboard-evil', name: 'DashboardEvil', component: () => import('@/views/EvilDashboard/EvilDashboardView.vue') },
+  // Gradient exploration — copy of the Overview dashboard pinned to the
+  // socialGradient palette. Production /dashboard is untouched.
+  { path: '/accounts/:accountId/dashboard-gradient', name: 'DashboardGradient', component: () => import('@/views/DashboardGradient/DashboardGradientView.vue') },
+  { path: '/accounts/:accountId/dashboard-gradient/:dashboardId', name: 'DashboardGradientDetail', component: () => import('@/views/DashboardGradient/DashboardGradientView.vue') },
 
   // Redirect root to dashboard
   { path: '/', redirect: '/accounts/2000290/dashboard' },
