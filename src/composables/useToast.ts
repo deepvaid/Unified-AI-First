@@ -1,28 +1,43 @@
 import { ref } from 'vue'
 
+/** Drives the toast's icon and ARIA role — `error` renders `role="alert"`, others `role="status"`. */
 export type ToastType = 'success' | 'error' | 'info'
 
+/** Optional single action button rendered at the end of the toast. */
 export interface ToastAction {
+  /** Button label. Keep it a short verb phrase ("Undo", "View order"). */
   label: string
+  /** Invoked on click; the toast is dismissed immediately afterward. */
   onClick: () => void
 }
 
+/** Options accepted by `push(message, options)`. */
 export interface ToastOptions {
+  /** Optional bold line above the message. */
   title?: string
+  /** Severity. Defaults to `success`. */
   type?: ToastType
+  /** Optional action button. */
   action?: ToastAction
   /** Explicit override. If omitted: success/info auto-dismiss after 4500ms, error persists. */
   durationMs?: number
 }
 
+/** A live toast in the shared stack, as rendered by `MpToastStack`. */
 export interface Toast {
+  /** Stable id used for dismissal and timer bookkeeping. */
   id: string
+  /** Body copy — the required part of every toast. */
   message: string
+  /** Optional bold line above the message. */
   title?: string
+  /** Severity; drives icon and ARIA role. */
   type: ToastType
+  /** Optional action button; clicking it dismisses the toast. */
   action?: ToastAction
   /** null = persists until manually dismissed (default for error). */
   durationMs: number | null
+  /** True during the exit animation window, so the host can play the leave transition. */
   leaving: boolean
 }
 

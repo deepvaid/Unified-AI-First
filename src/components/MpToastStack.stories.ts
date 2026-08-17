@@ -67,6 +67,12 @@ toast.info('3 contacts were skipped because they already exist in this list.', {
   \`prefers-reduced-motion\` rule zeroes them automatically.
 - **Consumer must:** keep \`message\` meaningful on its own (screen readers announce it without
   surrounding page context) and give \`action.label\` a verb ("Undo", "View") — never "Click here".
+
+### API
+\`MpToastStack\` takes **no props, emits, or slots** — there is deliberately nothing to configure
+on the host. Its public API is the \`useToast()\` composable and the \`Toast\` / \`ToastOptions\` /
+\`ToastAction\` types in \`src/composables/useToast.ts\`, all documented inline there. That's why
+the Controls panel below is empty.
         `,
       },
     },

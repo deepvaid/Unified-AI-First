@@ -121,6 +121,14 @@ const meta = {
   title: 'AI/MpDaVinciBot',
   component: MpDaVinciBot,
   tags: ['autodocs'],
+  argTypes: {
+    initialChatMode: { control: 'boolean', description: 'Open straight into the chat transcript instead of the suggestion landing state. Default false.' },
+    initialMessages: { control: 'object', description: 'ChatMessage[] seeding the transcript. Assistant turns may carry componentData (chart/kpi/table) or an onboarding card payload. Default [].' },
+    subtitle: { control: 'text', description: 'Caption under the "Da Vinci" title in the header. Default "Intelligent AI assistant".' },
+    headerless: { control: 'boolean', description: 'Drops the internal header — use when the host surface (drawer, full-page experience) supplies its own chrome. Default false.' },
+    onClose: { action: 'close', description: 'Emitted from the header close button; the host owns the actual dismissal.' },
+    onExpand: { action: 'expand', description: 'Emitted from the header expand control; the host widens or full-screens its container.' },
+  },
   args: {
     initialChatMode: false,
     initialMessages: [],
