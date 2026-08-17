@@ -3,6 +3,13 @@
 // (`Dashboard Overview v2 - dotted.dc.html`). Read-only demo data — the
 // production dashboard stays on useWidgetData.
 
+// Values shared with the canonical dotted family are imported rather than
+// re-typed — they were byte-identical copies and drifted apart once already
+// (see SCN_DOTTED_BLUES below, which is genuinely a different ramp).
+import { BAR_GRADIENT, BAR_GRADIENT_GREEN, niceMax, valueToY } from '@/components/dashboards/dotted/dottedChartMath'
+
+export { BAR_GRADIENT, BAR_GRADIENT_GREEN, valueToY }
+
 export type DottedRange = '7d' | '30d' | '90d'
 export type DottedMetric = 'revenue' | 'orders' | 'aov' | 'conv'
 
@@ -78,10 +85,6 @@ export function pct(cur: number, prev: number): string {
   const d = ((cur - prev) / prev) * 100
   return (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(1) + '%'
 }
-function niceMax(v: number): number {
-  const step = Math.pow(10, Math.floor(Math.log10(v))) / 2
-  return Math.ceil(v / step) * step
-}
 function short(n: number): string {
   return n >= 1000 ? '$' + (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + 'k' : '$' + Math.round(n)
 }
@@ -140,10 +143,6 @@ export function bounds(vals: number[], zeroBased: boolean): [number, number] {
 }
 
 /** Y position on the 200-tall canvas for a value within [min, max]. */
-export function valueToY(value: number, max: number, min = 0): number {
-  if (max === min) return CHART_H
-  return CHART_H - ((value - min) / (max - min)) * CHART_H
-}
 
 /**
  * Flowing cardinal (Catmull-Rom) path on the 720×200 design canvas — the rounded
@@ -171,8 +170,6 @@ export function linePath(vals: number[], max: number, min = 0): string {
 // ---------------------------------------------------------------------------
 
 export const SCN_DOTTED_BLUES = ['#0092D4', '#26A6E0', '#4FBCEA', '#7ACFF1', '#A6E0F7', '#CDEDFB'] as const
-export const BAR_GRADIENT = 'linear-gradient(90deg, #0092D4 0%, #3FB4E6 60%, #63CDEF 100%)'
-export const BAR_GRADIENT_GREEN = 'linear-gradient(90deg, #1f8a5b 0%, #3FB489 100%)'
 
 // ---------------------------------------------------------------------------
 // Static widget fixtures (copied from the mockup markup)

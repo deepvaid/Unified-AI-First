@@ -6,7 +6,8 @@
 // The colour constants below stay literal — they are the legacy fallback every
 // widget uses when the active theme carries no `treatment`. The `derive*`
 // helpers at the bottom are the option-theme counterparts.
-import { tintHex } from '@/plugins/chartPalette'
+import { computed, type Ref } from 'vue'
+import { tintHex, type ChartTheme } from '@/plugins/chartPalette'
 
 export const CHART_W = 720
 export const CHART_H = 200
@@ -169,4 +170,28 @@ export function funnelPath(shares: number[], w = 1200, h = 260, exponent = 0.42)
     d += ` C${f(cx)} ${f(botY[i + 1]!)} ${f(cx)} ${f(botY[i]!)} ${f(x)} ${f(botY[i]!)}`
   }
   return d + ' Z'
+}
+
+/**
+ * Resolves the bar-pill gradients for the current chart theme, shared by the
+ * widgets that render DtDottedBar rows (bar list, breakdown, tabs). Exploration
+ * options run the pill through their lead series; legacy themes with no
+ * treatment keep DtDottedBar's literal BAR_GRADIENT defaults.
+ *
+ * @param resolvedTheme the widget's already-resolved theme (override ?? active).
+ */
+export function useBarGradients(resolvedTheme: Ref<ChartTheme>) {
+  const barGradient = computed(() => {
+    const t = resolvedTheme.value.treatment
+    if (!t) return BAR_GRADIENT
+    return t.ramps?.barGradient ?? deriveBarGradient(resolvedTheme.value.series[0]!)
+  })
+
+  const barGradientGreen = computed(() => {
+    const t = resolvedTheme.value.treatment
+    if (!t) return BAR_GRADIENT_GREEN
+    return deriveBarGradient(t.posNeg.positive)
+  })
+
+  return { barGradient, barGradientGreen }
 }

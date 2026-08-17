@@ -5,7 +5,7 @@
 import { computed, inject, unref } from 'vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import DtDottedBar from '../dotted/DtDottedBar.vue'
-import { BAR_GRADIENT, BAR_GRADIENT_GREEN, deriveBarGradient } from '../dotted/dottedChartMath'
+import { useBarGradients } from '../dotted/dottedChartMath'
 import { CHART_PALETTE_OVERRIDE, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
 import type { DashboardBreakdownData } from '@/stores/dashboards/types'
 
@@ -18,16 +18,7 @@ const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
 // Exploration options run the pill through their lead series (and their own
 // positive green for the `green` tone); legacy themes keep the literal pair.
-const barGradient = computed(() => {
-  const t = resolvedTheme.value.treatment
-  if (!t) return BAR_GRADIENT
-  return t.ramps?.barGradient ?? deriveBarGradient(resolvedTheme.value.series[0]!)
-})
-const barGradientGreen = computed(() => {
-  const t = resolvedTheme.value.treatment
-  if (!t) return BAR_GRADIENT_GREEN
-  return deriveBarGradient(t.posNeg.positive)
-})
+const { barGradient, barGradientGreen } = useBarGradients(resolvedTheme)
 
 const emit = defineEmits<{
   drilldown: []
