@@ -170,7 +170,7 @@ export function linePath(vals: number[], max: number, min = 0): string {
 // Palette — the mockup is light-only; chart hexes stay literal by design.
 // ---------------------------------------------------------------------------
 
-export const DOTTED_BLUES = ['#0092D4', '#26A6E0', '#4FBCEA', '#7ACFF1', '#A6E0F7', '#CDEDFB'] as const
+export const SCN_DOTTED_BLUES = ['#0092D4', '#26A6E0', '#4FBCEA', '#7ACFF1', '#A6E0F7', '#CDEDFB'] as const
 export const BAR_GRADIENT = 'linear-gradient(90deg, #0092D4 0%, #3FB4E6 60%, #63CDEF 100%)'
 export const BAR_GRADIENT_GREEN = 'linear-gradient(90deg, #1f8a5b 0%, #3FB489 100%)'
 

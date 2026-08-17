@@ -2,7 +2,7 @@
 // Tabbed list card: Recent orders / Live activity / Top campaigns.
 import { ref } from 'vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
-import DtDottedBar from './DtDottedBar.vue'
+import ScnDottedBar from './ScnDottedBar.vue'
 import { LIVE_ACTIVITY, RECENT_ORDERS, TOP_CAMPAIGNS } from '../dottedDemoData'
 
 type Tab = 'orders' | 'activity' | 'campaigns'
@@ -71,7 +71,7 @@ const tab = ref<Tab>('orders')
           <span class="dt-tabbed__campaign-name">{{ row.name }}</span>
           <span class="dt-tabbed__campaign-revenue">{{ row.revenue }}</span>
         </div>
-        <DtDottedBar :pct="row.pct" />
+        <ScnDottedBar :pct="row.pct" />
         <span class="dt-tabbed__campaign-meta">{{ row.meta }}</span>
       </div>
     </div>

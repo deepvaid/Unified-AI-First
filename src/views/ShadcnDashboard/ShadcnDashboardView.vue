@@ -38,14 +38,14 @@ import {
 } from './dottedDemoData'
 import DtAttentionBanner from './components/DtAttentionBanner.vue'
 import DtCard from './components/DtCard.vue'
-import DtDottedBar from './components/DtDottedBar.vue'
+import ScnDottedBar from './components/ScnDottedBar.vue'
 import DtFunnelCard from './components/DtFunnelCard.vue'
-import DtGauge from './components/DtGauge.vue'
+import ScnGauge from './components/ScnGauge.vue'
 import DtKpiStrip from './components/DtKpiStrip.vue'
-import DtLegendList from './components/DtLegendList.vue'
+import ScnLegendList from './components/ScnLegendList.vue'
 import DtMetricChart from './components/DtMetricChart.vue'
-import DtPieChart from './components/DtPieChart.vue'
-import DtRingDonut from './components/DtRingDonut.vue'
+import ScnPieChart from './components/ScnPieChart.vue'
+import ScnRingDonut from './components/ScnRingDonut.vue'
 import DtTabbedCard from './components/DtTabbedCard.vue'
 
 // Keep the Da Vinci drawer closed so the option reviews cleanly.
@@ -197,8 +197,8 @@ const chart = computed(() => {
           />
           <DtCard title="Where revenue comes from" subtitle="Share of attributed revenue">
             <div class="dt-donut-block">
-              <DtRingDonut :segments="CHANNEL_SEGMENTS" center-value="$20,330" center-caption="attributed" />
-              <DtLegendList :rows="CHANNEL_LEGEND" />
+              <ScnRingDonut :segments="CHANNEL_SEGMENTS" center-value="$20,330" center-caption="attributed" />
+              <ScnLegendList :rows="CHANNEL_LEGEND" />
             </div>
             <template #footer>
               <div class="dt-stat">
@@ -219,8 +219,8 @@ const chart = computed(() => {
         <section class="dt-row dt-row--thirds">
           <DtCard title="Orders by sales channel" subtitle="47 orders · last 30 days">
             <div class="dt-pie-block">
-              <DtPieChart :wedges="SALES_PIE_WEDGES" label="Orders by sales channel" />
-              <DtLegendList :rows="SALES_CHANNEL_LEGEND" :gap="10" class="dt-pie-block__legend" />
+              <ScnPieChart :wedges="SALES_PIE_WEDGES" label="Orders by sales channel" />
+              <ScnLegendList :rows="SALES_CHANNEL_LEGEND" :gap="10" class="dt-pie-block__legend" />
             </div>
             <template #footer>
               <div class="dt-stat">
@@ -236,7 +236,7 @@ const chart = computed(() => {
 
           <DtCard title="Rolling 30-day goal" subtitle="$9,670 to go · 4 days left in the window">
             <div class="dt-center">
-              <DtGauge :pct="68" center-value="68%" center-caption="of $30,000" />
+              <ScnGauge :pct="68" center-value="68%" center-caption="of $30,000" />
             </div>
             <template #footer>
               <div class="dt-stat">
@@ -252,9 +252,9 @@ const chart = computed(() => {
 
           <DtCard title="New vs returning" subtitle="Share of the 47 orders placed">
             <div class="dt-center">
-              <DtRingDonut :segments="NVR_SEGMENTS" center-value="62%" center-caption="returning" :center-size="26" />
+              <ScnRingDonut :segments="NVR_SEGMENTS" center-value="62%" center-caption="returning" :center-size="26" />
             </div>
-            <DtLegendList :rows="NVR_LEGEND" :gap="10" />
+            <ScnLegendList :rows="NVR_LEGEND" :gap="10" />
           </DtCard>
         </section>
 
@@ -333,7 +333,7 @@ const chart = computed(() => {
                 <span class="dt-deliv__value">{{ DELIVERABILITY.delivered }}%</span>
                 <span class="dt-deliv__caption">delivered</span>
               </div>
-              <DtDottedBar :pct="DELIVERABILITY.delivered" :gradient="BAR_GRADIENT_GREEN" />
+              <ScnDottedBar :pct="DELIVERABILITY.delivered" :gradient="BAR_GRADIENT_GREEN" />
             </div>
             <div class="dt-list">
               <div v-for="row in DELIVERABILITY.rows" :key="row.label" class="dt-list__row dt-list__row--text">
@@ -357,7 +357,7 @@ const chart = computed(() => {
                   <span class="dt-bars__label">{{ row.label }}</span>
                   <span class="dt-bars__value">{{ row.value }}</span>
                 </div>
-                <DtDottedBar :pct="row.pct" />
+                <ScnDottedBar :pct="row.pct" />
                 <span class="dt-bars__meta">{{ row.meta }}</span>
               </div>
             </div>
@@ -379,7 +379,7 @@ const chart = computed(() => {
                   <span class="dt-bars__label">{{ row.label }}</span>
                   <span class="dt-bars__muted-value">{{ row.value }}</span>
                 </div>
-                <DtDottedBar :pct="row.pct" />
+                <ScnDottedBar :pct="row.pct" />
               </div>
             </div>
           </DtCard>
