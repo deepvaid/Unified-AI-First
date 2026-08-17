@@ -57,6 +57,37 @@ const meta = {
   component: DvHistoryDrawer,
   tags: ['autodocs'],
   parameters: {
+    docs: {
+      description: {
+        component: `
+### Overview
+\`DvHistoryDrawer\` lists past Da Vinci conversations from \`useDaVinciHistory()\`, grouped into
+Today / Yesterday / Last 7 days / Older. It renders in two modes: \`overlay\` (a modal panel with
+full dialog semantics) and \`rail\` (inline inside the copilot surface, non-modal). Rows select a
+conversation; per-row and "Clear all" deletions route through \`MpConfirmDialog\`.
+
+**Use when:** offering conversation history inside a copilot surface.
+
+**Don't use when:** you need a general list view — this is bound to the Da Vinci history store.
+
+### 🟢 Do's
+- **Do** pass \`activeId\` so the current conversation is marked in the list.
+- **Do** use \`rail\` mode when the drawer sits inside an already-modal surface — nested focus
+  traps fight each other.
+
+### 🔴 Don'ts
+- **Don't** delete history without the confirm step; clearing all is irreversible.
+
+### A11y
+- **Provides:** in \`overlay\` mode the panel has \`role="dialog"\`, \`aria-modal\`,
+  \`aria-labelledby\`, Escape-to-close, focus-in/restore, and a Tab trap; in \`rail\` mode those
+  are deliberately inert since the drawer is inline, not modal.
+- **Consumer must:** keep exactly one modal overlay open at a time.
+        `,
+      },
+    },
+  },
+  parameters: {
     layout: 'fullscreen',
     // The drawer positions absolutely inside its host panel — isolate docs
     // examples in iframes so each story shows its own singleton state.

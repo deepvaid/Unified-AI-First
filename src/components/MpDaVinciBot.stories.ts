@@ -121,6 +121,51 @@ const meta = {
   title: 'AI/MpDaVinciBot',
   component: MpDaVinciBot,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Overview
+\`MpDaVinciBot\` is the Da Vinci copilot surface — the chat panel that hosts the \`copilot/\` Dv*
+components. It opens on a suggestion landing state and switches to a transcript once a
+conversation starts. Assistant turns can carry \`componentData\` (chart / KPI / table payloads
+rendered inline) or onboarding-card descriptors, so the assistant answers with real UI rather
+than text alone. It owns its own history drawer, toast layer (\`DvToastStack\`), intent layer, and
+voice mode; hosts supply only the container and chrome.
+
+**Use when:** embedding the copilot in a drawer, a rail, or the full-page Da Vinci experience.
+
+**Don't use when:** you need a single AI action rather than a conversation — call the intent
+layer directly.
+
+### Usage
+\`\`\`html
+<!-- Floating drawer: the host owns width and dismissal -->
+<MpDaVinciBot subtitle="Marketing assistant" @close="open = false" @expand="widen" />
+
+<!-- Full-page experience: host supplies chrome, so drop the internal header -->
+<MpDaVinciBot headerless :initial-chat-mode="true" :initial-messages="messages" />
+\`\`\`
+
+### 🟢 Do's
+- **Do** pass \`headerless\` when the host surface already has a title bar — two headers stack badly.
+- **Do** handle \`close\` and \`expand\`; the component emits intent but never resizes or unmounts itself.
+
+### 🔴 Don'ts
+- **Don't** mount more than one instance at a time — the history, toast, and voice layers are
+  module singletons and two surfaces will fight over them.
+- **Don't** render \`DvToastStack\` alongside it; the bot already includes one.
+
+### A11y
+- **Provides:** the transcript is a labelled region, streaming replies announce politely, and
+  the composer is a real form with a labelled textarea; the history drawer carries full dialog
+  semantics in overlay mode.
+- **Consumer must:** give the containing surface an accessible name, and restore focus to the
+  launcher when \`close\` fires.
+        `,
+      },
+    },
+  },
   argTypes: {
     initialChatMode: { control: 'boolean', description: 'Open straight into the chat transcript instead of the suggestion landing state. Default false.' },
     initialMessages: { control: 'object', description: 'ChatMessage[] seeding the transcript. Assistant turns may carry componentData (chart/kpi/table) or an onboarding card payload. Default [].' },

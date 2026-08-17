@@ -5,6 +5,36 @@ const meta = {
   title: 'Copilot/DvSetupOnboardingCard',
   component: DvSetupOnboardingCard,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Overview
+\`DvSetupOnboardingCard\` is the guided-setup chat card — the Da Vinci onboarding counterpart of
+\`DvCampaignOnboardingCard\`, sharing its shell (progress bar, item list, status chips, action
+row) but keyed to setup tasks rather than campaign readiness. The \`kind\` prop drives the eyebrow
+and icon across the flow's phases: \`goal\`, \`plan\`, \`task\`, \`verification\`, and \`complete\`.
+Task items render per-status chips distinguishing verified from user-confirmed from skipped.
+
+**Use when:** the assistant is guiding a merchant through account setup.
+
+**Don't use when:** the checklist is campaign send-readiness — use \`DvCampaignOnboardingCard\`.
+
+### 🟢 Do's
+- **Do** set \`kind\` to match the phase; it's the only thing distinguishing a plan card from a
+  verification card.
+- **Do** pass \`minutes\` on task items — the time estimate is what makes the plan feel finite.
+
+### 🔴 Don'ts
+- **Don't** render more than one card per assistant turn; the flow is stepwise by design.
+
+### A11y
+- **Provides:** status chips pair icon with text; the progress bar carries its Vuetify role.
+- **Consumer must:** handle the emitted \`action\` string — the card is presentational.
+        `,
+      },
+    },
+  },
   args: {
     kind: 'plan',
     title: 'Your setup path',
