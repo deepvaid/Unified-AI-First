@@ -1,4 +1,17 @@
-# Component Inventory (2026-07-05)
+# Component Inventory (2026-07-05) — SUPERSEDED
+
+> ⚠️ **This document is a historical snapshot and its counts are wrong.**
+> It records the repo as of 2026-07-05 (69 components, 31 story files). As of
+> 2026-08-17 the repo has **112 components and 122 story files**.
+>
+> For current numbers and the sidebar taxonomy, use
+> [storybook-structure.md](./storybook-structure.md), which is regenerated from
+> `dist-storybook/index.json` and is the maintained source of truth. For the
+> component API reference, use `CLAUDE.md` → Component Inventory, or the
+> Storybook autodocs (`npm run storybook`).
+>
+> Kept for the Phase-1 used-by analysis and deletion rationale below, which is
+> still useful history. Don't cite its totals.
 
 <!-- Artifact of the Component Inventory agent (design-system program, Phase 1). -->
 <!-- Used-by counts are grep-based; the cleanup agent re-verifies with proof before acting. -->

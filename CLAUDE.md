@@ -45,8 +45,8 @@ This is NOT a production app — it uses mock data and has no backend API.
 │   └── personas/              ← 4 merchant personas
 ├── maropost-screenshots/      ← 50+ screenshots of the real app
 ├── src/
-│   ├── components/            ← 65 components, all with stories (see Component Inventory)
-│   │   ├── Mp*.vue / ModuleLandingPage.vue ← 23 top-level design-system components
+│   ├── components/            ← 112 components, all with stories (see Component Inventory)
+│   │   ├── Mp*.vue / ModuleLandingPage.vue ← 30 top-level design-system components
 │   │   ├── layout/            ← AppBar (top bar) + AppSidebar (left nav, collapsible rail)
 │   │   ├── copilot/           ← 14 Dv* Da Vinci surfaces + voice/ (7 orbit voice components)
 │   │   ├── dashboards/        ← 7 dashboard containers + widgets/ (5) + wizard/ (2)
@@ -84,7 +84,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ## Component Inventory
 
-23 top-level components (post design-system program, 2026-07). **Full reference:**
+30 top-level components (counts refreshed 2026-08-17). **Full reference:**
 `docs/design-system/` (structure, Vuetify mapping, token plan, handoff) + Storybook autodocs (`npm run storybook`).
 
 ### Layout & structure
@@ -107,6 +107,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpErrorState** — same shape, recovery defaults (`role="alert"`). Error = something failed; don't merge with empty states.
 - **MpFloatingBulkBar** — `count`, `total?` · emits `clear` · default slot (actions). Shows on row selection; auto-hides at 0.
 - **MpTableSkeleton** — `rows?`, `columns?`, `showHeader?`. Loading placeholder inside table cards.
+- **MpComingSoonTiles** — `icon`, `title`, `description?`, `tiles` ({ icon, title, desc }[]), `smCols?`, `mdCols?`, `headingLevel?`. "Planned, not built yet" panel. Coming-soon = the surface doesn't exist yet; don't use it where `MpEmptyState` belongs.
 
 ### Forms & selection
 
