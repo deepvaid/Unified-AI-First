@@ -23,14 +23,14 @@ for (const seg of plan.segments) {
 // Camera dolly value v (px of world translateZ) at each segment boundary.
 const V = [200, 2700, 5500, 9700, 10150]
 const T = [0, ...bounds] // seconds at each boundary
-const flipTime = T[3] + plan.flipAt // world goes dark this many seconds in
+const flipTime = T[3]! + plan.flipAt // world goes dark this many seconds in
 
 /** Seconds at which the camera dolly reaches value v (piecewise linear). */
 function vToTime(v: number): number | null {
   for (let i = 0; i < V.length - 1; i++) {
-    if (v >= V[i] && v <= V[i + 1]) {
-      const f = (v - V[i]) / (V[i + 1] - V[i])
-      return T[i] + f * (T[i + 1] - T[i])
+    if (v >= V[i]! && v <= V[i + 1]!) {
+      const f = (v - V[i]!) / (V[i + 1]! - V[i]!)
+      return T[i]! + f * (T[i + 1]! - T[i]!)
     }
   }
   return null // camera never reaches it
@@ -105,9 +105,9 @@ const css = computed(() => {
   return `
 @keyframes fly-camera {
   0%       { transform: translate3d(0, -150px, ${v0}px) rotateX(7deg); }
-  ${pct(T[1])}% { transform: translate3d(0, 40px, ${v1}px) rotateX(1.5deg); }
-  ${pct(T[2])}% { transform: translate3d(0, 55px, ${v2}px) rotateX(0deg); }
-  ${pct(T[3])}% { transform: translate3d(0, 40px, ${v3}px) rotateX(0deg); }
+  ${pct(T[1]!)}% { transform: translate3d(0, 40px, ${v1}px) rotateX(1.5deg); }
+  ${pct(T[2]!)}% { transform: translate3d(0, 55px, ${v2}px) rotateX(0deg); }
+  ${pct(T[3]!)}% { transform: translate3d(0, 40px, ${v3}px) rotateX(0deg); }
   100%     { transform: translate3d(0, 20px, ${v4}px) rotateX(0deg); }
 }
 .fly-world { animation: fly-camera ${TOTAL}s linear both; }
