@@ -12,16 +12,6 @@ import AppSidebar from './AppSidebar.vue'
  */
 type SidebarSkin = 'gray' | 'white' | 'dark'
 
-const mobile375 = {
-  options: {
-    mobile375: {
-      name: 'Mobile 375',
-      styles: { width: '375px', height: '812px' },
-      type: 'mobile' as const,
-    },
-  },
-}
-
 /**
  * Story-side workaround (batch C convention): the Storybook preview router only has a
  * catch-all route, but AppBar resolves named routes eagerly (`:to="settingsRoute"`) and from
@@ -238,9 +228,6 @@ export const Mobile375: Story = {
   render: appBarStory(),
   globals: {
     viewport: { value: 'mobile375', isRotated: false },
-  },
-  parameters: {
-    viewport: mobile375,
   },
 }
 

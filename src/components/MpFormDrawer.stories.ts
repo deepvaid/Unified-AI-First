@@ -3,16 +3,6 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import MpFormDrawer from './MpFormDrawer.vue'
 import { darkModeGlobals } from '@/stories/storybookTheme'
 
-const mobile375 = {
-  options: {
-    mobile375: {
-      name: 'Mobile 375',
-      styles: { width: '375px', height: '812px' },
-      type: 'mobile' as const,
-    },
-  },
-}
-
 const meta = {
   title: 'Overlays/MpFormDrawer',
   component: MpFormDrawer,
@@ -444,9 +434,6 @@ export const Mobile375: Story = {
   },
   globals: {
     viewport: { value: 'mobile375', isRotated: false },
-  },
-  parameters: {
-    viewport: mobile375,
   },
   render: (args) => ({
     components: { MpFormDrawer },

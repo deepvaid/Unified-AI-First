@@ -9,16 +9,6 @@ import { ref } from 'vue'
  */
 type SidebarSkin = 'gray' | 'white' | 'dark'
 
-const mobile375 = {
-  options: {
-    mobile375: {
-      name: 'Mobile 375',
-      styles: { width: '375px', height: '812px' },
-      type: 'mobile' as const,
-    },
-  },
-}
-
 const meta = {
   title: 'Layout/AppSidebar',
   component: AppSidebar,
@@ -271,9 +261,6 @@ export const MobileTemporary: Story = {
   },
   globals: {
     viewport: { value: 'mobile375', isRotated: false },
-  },
-  parameters: {
-    viewport: mobile375,
   },
   render: () => ({
     components: { AppSidebar },

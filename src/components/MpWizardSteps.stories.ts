@@ -1,16 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpWizardSteps from './MpWizardSteps.vue'
 
-const mobile375 = {
-  options: {
-    mobile375: {
-      name: 'Mobile 375',
-      styles: { width: '375px', height: '812px' },
-      type: 'mobile' as const,
-    },
-  },
-}
-
 const meta = {
   title: 'Navigation/MpWizardSteps',
   component: MpWizardSteps,
@@ -110,8 +100,5 @@ export const SmallScreenCollapse: Story = {
   },
   globals: {
     viewport: { value: 'mobile375', isRotated: false },
-  },
-  parameters: {
-    viewport: mobile375,
   },
 }

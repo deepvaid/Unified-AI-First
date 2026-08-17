@@ -171,6 +171,17 @@ const preview: Preview = {
   parameters: {
     layout: 'fullscreen',
     backgrounds: { disable: true },
+    // Shared viewport presets — select per story via
+    // `globals: { viewport: { value: 'mobile375', isRotated: false } }`.
+    viewport: {
+      options: {
+        mobile375: {
+          name: 'Mobile 375',
+          styles: { width: '375px', height: '812px' },
+          type: 'mobile' as const,
+        },
+      },
+    },
     options: {
       storySort: {
         order: [
