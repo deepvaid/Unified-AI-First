@@ -55,7 +55,6 @@
     "@types/three": "^0.184.1",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vue/tsconfig": "^0.8.1",
-    "playwright": "^1.61.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "sass": "^1.97.3",
