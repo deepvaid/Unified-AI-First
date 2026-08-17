@@ -139,32 +139,6 @@ export function ringSegments(values: number[], r = 54, gap = 2): RingSegment[] {
 }
 
 /**
- * Solid pie wedge paths on the mockup's viewBox 120 canvas (center 60, r 56),
- * starting at 12 o'clock and sweeping clockwise.
- */
-export function pieWedges(values: number[], cx = 60, cy = 60, r = 56): string[] {
-  const total = values.reduce((a, b) => a + b, 0)
-  if (total <= 0) return []
-  if (values.filter((v) => v > 0).length === 1) {
-    // Single non-zero slice: a full circle (arc path degenerates).
-    return values.map((v) => (v > 0 ? `M${cx - r} ${cy} a${r} ${r} 0 1 0 ${r * 2} 0 a${r} ${r} 0 1 0 ${-r * 2} 0 Z` : ''))
-  }
-  const pt = (angle: number): [number, number] => [
-    cx + r * Math.sin(angle),
-    cy - r * Math.cos(angle),
-  ]
-  let start = 0
-  return values.map((v) => {
-    const sweep = (v / total) * Math.PI * 2
-    const [x1, y1] = pt(start)
-    const [x2, y2] = pt(start + sweep)
-    const largeArc = sweep > Math.PI ? 1 : 0
-    start += sweep
-    return `M${cx} ${cy} L${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`
-  })
-}
-
-/**
  * Symmetric funnel path on the mockup's 1200×260 canvas. `shares` are stage
  * sizes as fractions of the first stage (0–1). Heights use the mockup's
  * perceptual scaling (share^0.42) so tiny tail stages stay visible; boundary
