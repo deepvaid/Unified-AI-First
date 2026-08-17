@@ -58,3 +58,13 @@ trailer-build/
 
 # Fly-through source screens (copied by scripts/trailer/prep-screens.mjs)
 public/trailer-screens/
+
+# Handoff snapshots and exported archives. These are point-in-time copies of the
+# repo (or of adjacent prototypes) kept on disk for handover; none of them are on
+# the build graph — vite, tsconfig, and .storybook/main.ts all scope to src/ only.
+# Ignored so they stop showing up in `git status` and can't be swept into a
+# `git add .`. Delete them from disk when the handover they belong to is done.
+maropost-ds-handoff/
+keycloak-orb-update/
+keycloak-orb-update 2/
+*.zip
