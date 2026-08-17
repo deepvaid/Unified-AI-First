@@ -1,18 +1,30 @@
 import { ref } from 'vue'
 
+/** Payload accepted by `pushToast()`. */
 export interface DaVinciToastInput {
+  /** Bold first line — the required part of every Da Vinci toast. */
   title: string
+  /** Optional supporting line under the title. */
   sub?: string
+  /** Optional action label; rendered as a plain button at the end of the pill. */
   action?: string
+  /** Invoked when the action button is pressed. */
   onAction?: () => void
+  /** Auto-dismiss delay in ms. Defaults to 4200. */
   durationMs?: number
 }
 
+/** A live Da Vinci toast, as rendered by `DvToastStack`. */
 export interface DaVinciToast extends Required<Pick<DaVinciToastInput, 'title' | 'durationMs'>> {
+  /** Stable id used for dismissal and timer bookkeeping. */
   id: string
+  /** Optional supporting line under the title. */
   sub?: string
+  /** Optional action label. */
   action?: string
+  /** Invoked when the action button is pressed. */
   onAction?: () => void
+  /** True during the exit animation window, so the host can play the leave transition. */
   leaving: boolean
 }
 

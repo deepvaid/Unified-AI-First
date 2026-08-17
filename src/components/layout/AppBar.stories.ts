@@ -159,6 +159,11 @@ surfaces (login, builders) omit the bar entirely.
   arrow-key navigation inside the menu doesn't work (Tab only); the search menu's result list
   isn't a combobox/listbox pattern, so results aren't announced as suggestions (noted for the
   Phase 4 a11y pass).
+
+### API
+\`AppBar\` takes **no props, emits, or slots** — it is app chrome that reads everything it needs
+from the router and the accounts / theme / notifications stores, which is why the Controls panel
+is empty. Drive its states in stories and demos by seeding those stores, not by passing config.
         `,
       },
     },

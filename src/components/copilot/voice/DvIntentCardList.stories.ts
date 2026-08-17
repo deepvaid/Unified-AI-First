@@ -19,6 +19,16 @@ re-emits all card actions as a single \`action\` event.
       },
     },
   },
+  argTypes: {
+    cards: {
+      control: 'object',
+      description: 'DvCardDescriptor[] from `useDaVinciIntents`. Each descriptor is a `{ type, props }` pair; `type` selects which Dv* card component renders it, and `props` is spread onto that component.',
+    },
+    onAction: {
+      action: 'action',
+      description: 'Single re-emitted event for every card action, as `{ card, action }` — `card` is the originating descriptor and `action` is the child card\'s action name (e.g. `review-draft`, `change-brief`).',
+    },
+  },
 } satisfies Meta<typeof DvIntentCardList>
 
 export default meta

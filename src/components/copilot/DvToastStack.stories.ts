@@ -11,7 +11,35 @@ const meta = {
     // The stack teleports to <body> and positions fixed at the bottom of the
     // viewport — render docs examples in isolated iframes so each story shows
     // its own queue (the toast state is a module singleton).
-    docs: { story: { inline: false, height: '260px' } },
+    docs: {
+      story: { inline: false, height: '260px' },
+      description: {
+        component: `
+### Overview
+\`DvToastStack\` is the Da Vinci copilot's own toast layer — a bottom-center dark pill,
+deliberately distinct from the app's bottom-right \`MpToastStack\` card. It renders the queue from
+\`useDaVinciToasts()\` and is mounted by the copilot surfaces (\`MpDaVinciBot\`,
+\`DaVinciExperience\`), never by feature code.
+
+**Use when:** confirming a Da Vinci action from inside a copilot surface.
+
+**Don't use when:** the message is about the app rather than the assistant — use \`useToast()\`
+and the app's \`MpToastStack\` instead.
+
+### API
+\`DvToastStack\` takes **no props, emits, or slots** — there is nothing to configure on the host,
+which is why the Controls panel is empty. Its public API is the \`useDaVinciToasts()\` composable
+and the \`DaVinciToastInput\` / \`DaVinciToast\` types in \`src/composables/useDaVinciToasts.ts\`,
+documented inline there.
+
+### A11y
+- **Provides:** a persistent \`aria-live="polite"\` container with \`role="status"\` pills; the
+  auto-dismiss timer pauses on hover and focus and resumes on leave/blur, so a keyboard user
+  tabbing to the action button is never cut off (WCAG 2.2.1).
+- **Consumer must:** keep \`title\` meaningful on its own and give \`action\` a verb label.
+        `,
+      },
+    },
   },
   render: () => ({ components: { DvToastStack }, template: '<DvToastStack />' }),
 } satisfies Meta<typeof DvToastStack>
