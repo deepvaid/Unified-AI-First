@@ -53,6 +53,12 @@ another grant depends on renders checked + disabled with a "Required by …" too
       </section>
     `,
   }),
+  argTypes: {
+    modelValue: { control: 'object', description: 'Granted permission ids (v-model). The matrix is controlled — it never mutates this array.' },
+    products: { control: 'object', description: 'ProductKey[] limiting which product tabs render, in catalog order. Defaults to the full PRODUCT_ORDER catalog.' },
+    readonly: { control: 'boolean', description: 'Read-only rendering — check / minus icons instead of interactive checkboxes. Default false.' },
+    'update:modelValue': { action: 'update:modelValue', description: 'Emitted with the next granted-id array whenever a permission or module row is toggled.' },
+  },
 } satisfies Meta<typeof PermissionMatrix>
 
 export default meta

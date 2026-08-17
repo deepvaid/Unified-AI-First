@@ -50,6 +50,11 @@ final validation happens on save via \`rbac.validateAssignment\`.
       </section>
     `,
   }),
+  argTypes: {
+    modelValue: { control: 'object', description: 'Selected role ids (v-model). Controlled — the picker emits the next array rather than mutating this one.' },
+    disabled: { control: 'boolean', description: 'Disables every checkbox (e.g. the account owner\'s roles can\'t change). Individually locked roles stay locked regardless. Default false.' },
+    'update:modelValue': { action: 'update:modelValue', description: 'Emitted with the next selected-id array when a role is checked or unchecked.' },
+  },
 } satisfies Meta<typeof RolePicker>
 
 export default meta

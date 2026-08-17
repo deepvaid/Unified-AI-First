@@ -58,6 +58,12 @@ state — type in the canvas to try it; an empty result shows "No matching setti
 
 Stories register stub routes for the menu's route names and navigate to one of them, since the
 Storybook preview router only ships a catch-all route.
+
+### API
+\`SettingsSidebar\` takes **no props, emits, or slots** — the menu comes from \`SETTINGS_GROUPS\`
+in \`./settingsMenu.ts\`, the active item from \`route.name\`, and the account id from the
+\`accountId\` route param (falling back to \`'2000290'\`). That's why the Controls panel is empty:
+to change what it renders, edit the menu module or navigate the router.
         `,
       },
     },
