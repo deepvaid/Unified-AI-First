@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { CampaignOnboardingAction, SetupOnboardingProps } from '@/stores/useCopilot'
+import type { SetupOnboardingProps } from '@/stores/useCopilot'
 import type { SetupTaskStatus } from '@/stores/useOnboarding'
+import DvOnboardingCardShell from './DvOnboardingCardShell.vue'
 
 // Guided-setup chat card — the Da Vinci onboarding counterpart of
-// DvCampaignOnboardingCard. The `kind` drives the eyebrow and icon; task
-// items render with per-status chips (verified vs user-confirmed vs skipped).
+// DvCampaignOnboardingCard, sharing its chrome through DvOnboardingCardShell.
+// The `kind` drives the eyebrow and icon; task items render with per-status
+// chips (verified vs user-confirmed vs skipped).
 
 const props = withDefaults(defineProps<SetupOnboardingProps>(), {
   description: '',
@@ -19,8 +21,6 @@ const props = withDefaults(defineProps<SetupOnboardingProps>(), {
 const emit = defineEmits<{
   action: [action: string]
 }>()
-
-const progress = computed(() => Math.min(100, Math.max(0, (props.step / Math.max(1, props.totalSteps)) * 100)))
 
 const kindMeta: Record<SetupOnboardingProps['kind'], { eyebrow: string; icon: string }> = {
   goal: { eyebrow: 'Guided setup', icon: 'compass' },
@@ -38,6 +38,9 @@ const statusMeta: Record<SetupTaskStatus, { icon: string; label: string; color: 
   skipped: { icon: 'redo-2', label: 'Skipped', color: 'warning' },
 }
 
+/** The goal and unsupported phases have no meaningful step position yet. */
+const barless = computed(() => props.kind === 'goal' || props.kind === 'unsupported')
+
 const eyebrow = computed(() => {
   const base = kindMeta[props.kind].eyebrow
   return props.kind === 'task' || props.kind === 'complete'
@@ -45,92 +48,50 @@ const eyebrow = computed(() => {
     : base
 })
 
-function trigger(action?: CampaignOnboardingAction) {
-  if (action) emit('action', action.action)
-}
+const progress = computed(() =>
+  barless.value ? null : (props.step / Math.max(1, props.totalSteps)) * 100,
+)
 </script>
 
 <template>
-  <v-card flat border rounded="lg" class="setup-card">
-    <v-card-text class="pa-4">
-      <div class="d-flex align-start ga-3">
-        <v-avatar color="primary" variant="tonal" size="36">
-          <v-icon size="20">{{ kindMeta[kind].icon }}</v-icon>
-        </v-avatar>
-        <div class="flex-grow-1 min-width-0">
-          <div class="text-caption text-medium-emphasis mb-1">{{ eyebrow }}</div>
-          <div class="text-subtitle-1 font-weight-bold">{{ title }}</div>
-          <p v-if="description" class="text-body-2 text-medium-emphasis mt-1 mb-0">
-            {{ description }}
-          </p>
+  <DvOnboardingCardShell
+    :icon="kindMeta[kind].icon"
+    :eyebrow="eyebrow"
+    :title="title"
+    :description="description"
+    :progress="progress"
+    progress-label="Guided setup progress"
+    :primary-action="primaryAction"
+    :secondary-action="secondaryAction"
+    @action="emit('action', $event)"
+  >
+    <div v-if="items.length" class="d-flex flex-column ga-2" :class="{ 'mt-4': barless }">
+      <div
+        v-for="item in items"
+        :key="item.id"
+        class="setup-card__item d-flex align-center ga-3 pa-3"
+      >
+        <v-icon :color="statusMeta[item.status].color" size="20">
+          {{ statusMeta[item.status].icon }}
+        </v-icon>
+        <div class="flex-grow-1 setup-card__item-body">
+          <span class="text-body-2 font-weight-medium">{{ item.label }}</span>
         </div>
+        <span class="text-caption text-medium-emphasis text-no-wrap">
+          {{ item.status === 'pending' && item.minutes ? `≈ ${item.minutes} min` : statusMeta[item.status].label }}
+        </span>
       </div>
-
-      <v-progress-linear
-        v-if="kind !== 'goal' && kind !== 'unsupported'"
-        :model-value="progress"
-        color="primary"
-        bg-color="surface-variant"
-        rounded
-        height="6"
-        class="my-4"
-        aria-label="Guided setup progress"
-      />
-
-      <div v-if="items.length" class="d-flex flex-column ga-2" :class="{ 'mt-4': kind === 'goal' || kind === 'unsupported' }">
-        <div
-          v-for="item in items"
-          :key="item.id"
-          class="setup-card__item d-flex align-center ga-3 pa-3"
-        >
-          <v-icon :color="statusMeta[item.status].color" size="20">
-            {{ statusMeta[item.status].icon }}
-          </v-icon>
-          <div class="flex-grow-1 min-width-0">
-            <span class="text-body-2 font-weight-medium">{{ item.label }}</span>
-          </div>
-          <span class="text-caption text-medium-emphasis text-no-wrap">
-            {{ item.status === 'pending' && item.minutes ? `≈ ${item.minutes} min` : statusMeta[item.status].label }}
-          </span>
-        </div>
-      </div>
-
-      <div v-if="primaryAction || secondaryAction" class="d-flex flex-wrap ga-2 mt-4">
-        <v-btn
-          v-if="primaryAction"
-          color="primary"
-          variant="flat"
-          size="small"
-          :prepend-icon="primaryAction.icon"
-          @click="trigger(primaryAction)"
-        >
-          {{ primaryAction.label }}
-        </v-btn>
-        <v-btn
-          v-if="secondaryAction"
-          variant="outlined"
-          size="small"
-          :prepend-icon="secondaryAction.icon"
-          @click="trigger(secondaryAction)"
-        >
-          {{ secondaryAction.label }}
-        </v-btn>
-      </div>
-    </v-card-text>
-  </v-card>
+    </div>
+  </DvOnboardingCardShell>
 </template>
 
 <style scoped>
-.setup-card {
-  background: rgb(var(--v-theme-surface));
-}
-
 .setup-card__item {
   border-radius: var(--mp-borderRadius-md);
   background: rgb(var(--v-theme-surface-variant));
 }
 
-.min-width-0 {
+.setup-card__item-body {
   min-width: 0;
 }
 </style>
