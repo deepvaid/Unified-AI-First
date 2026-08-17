@@ -175,10 +175,10 @@ const preview: Preview = {
       storySort: {
         order: [
           'Introduction',
-          'Foundations', ['Colors', 'Typography', 'Spacing', 'Radius & Shadows', 'Icons', 'Buttons'],
+          'Foundations', ['Colors', 'Typography', 'Spacing', 'Radius & Shadows', 'Icons', 'Buttons', 'Tooltips'],
           'Layout', 'Navigation', 'Forms', 'Data Display', 'Feedback', 'Overlays',
           'Patterns', 'AI', 'Copilot', 'Dashboards', 'Marketing', 'Merchandising',
-          'RBAC', 'Sales Channels', 'Settings', '*',
+          'PLG', 'RBAC', 'Sales Channels', 'Settings', '*',
         ],
       },
     },
