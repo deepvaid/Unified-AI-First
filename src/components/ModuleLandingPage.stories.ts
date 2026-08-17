@@ -8,6 +8,7 @@ import type {
   SetupCardConfig,
 } from './ModuleLandingPage.vue'
 import ModuleLandingPage from './ModuleLandingPage.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 // Realistic config lifted from MarketingLanding.vue (the component's main consumer).
 const BASE = '/accounts/2000290'
@@ -126,6 +127,8 @@ renders conditionally.
   argTypes: {
     title: { control: 'text', description: 'Module name, rendered by MpPageHeader as the page h1.' },
     description: { control: 'text', description: 'One-line module summary under the title.' },
+    eyebrow: { control: 'text', description: 'Muted, tracked kicker rendered above the display headline.' },
+    inkDaVinciCard: { control: 'boolean', description: 'Renders the Da Vinci card as the ink panel — the page\'s single branded moment. Use at most once per page.' },
     primaryActions: { control: 'object', description: 'Pill buttons in the header ({ label, icon?, to?/href?, variant? }[]). The first entry defaults to primary color.' },
     quickActions: { control: 'object', description: 'Shortcut buttons row under the header ({ icon, label, description?, to }[]).' },
     childPages: { control: 'object', description: 'Required. Grid of section cards ({ icon, title, description, to, count? | status? }[]).' },
@@ -173,4 +176,41 @@ export const SetupComplete: Story = {
       ctaLabel: undefined,
     },
   },
+}
+
+/**
+ * A brand-new module: no activity yet and setup barely started. The activity section is gated on
+ * `recentActivity?.length`, so an empty array collapses it entirely rather than leaving a bare
+ * heading — the same result as passing `undefined`.
+ */
+export const EmptyActivity: Story = {
+  args: {
+    recentActivity: [],
+    setupCard: {
+      ...SETUP_CARD,
+      items: SETUP_CARD.items.map((i) => ({ ...i, complete: false })),
+    },
+    childPages: CHILD_PAGES.map((cp) => ({ ...cp, count: 0, status: undefined })),
+  },
+}
+
+/** The Da Vinci card promoted to the ink panel — the page's single branded moment. */
+export const InkDaVinciCard: Story = {
+  args: { inkDaVinciCard: true },
+}
+
+/** With the muted kicker above the display headline. */
+export const WithEyebrow: Story = {
+  args: { eyebrow: 'Marketing cloud' },
+}
+
+/** At 375px the quick-actions row stacks and the child-page grid collapses to one column. */
+export const Mobile375: Story = {
+  globals: {
+    viewport: { value: 'mobile375', isRotated: false },
+  },
+}
+
+export const DarkMode: Story = {
+  globals: darkModeGlobals,
 }
