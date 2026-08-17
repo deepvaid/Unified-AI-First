@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpIllustration, { type IllustrationName } from './MpIllustration.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const names: IllustrationName[] = [
   'no-results',
@@ -63,4 +64,10 @@ export const Gallery: Story = {
       </div>
     `,
   }),
+}
+
+/** The full illustration set on dark — line and fill tones are token-driven, so every spot piece re-tints. */
+export const DarkMode: Story = {
+  ...Gallery,
+  globals: darkModeGlobals,
 }

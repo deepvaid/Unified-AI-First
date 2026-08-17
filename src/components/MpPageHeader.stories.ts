@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpPageHeader from './MpPageHeader.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Layout/MpPageHeader',
@@ -158,4 +159,10 @@ export const LongTitle: Story = {
     title: 'Springtime Mega Sale — Returning VIP Customers (AU + NZ) Re-Engagement Program 2026',
     subtitle: 'A deliberately long subtitle that explains, in more words than strictly necessary, what this page covers so the wrapping behaviour of the header is visible.',
   },
+}
+
+/** Title, subtitle, and action row on the dark theme. */
+export const DarkMode: Story = {
+  ...WithActions,
+  globals: darkModeGlobals,
 }

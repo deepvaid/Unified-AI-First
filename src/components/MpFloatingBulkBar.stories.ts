@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpFloatingBulkBar from './MpFloatingBulkBar.vue'
 import { ref } from 'vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Feedback/MpFloatingBulkBar',
@@ -182,4 +183,10 @@ export const AllSelected: Story = {
       </div>
     `,
   }),
+}
+
+/** The floating bar over a dark canvas — it sits above content, so its own surface must carry contrast. */
+export const DarkMode: Story = {
+  ...WithThreeSelected,
+  globals: darkModeGlobals,
 }

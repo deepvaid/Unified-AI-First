@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpSectionHeader from './MpSectionHeader.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Layout/MpSectionHeader',
@@ -112,4 +113,10 @@ export const LongTitle: Story = {
     `,
   }),
   args: { title: 'Campaigns sent to VIP repeat buyers in the last 30 days' },
+}
+
+/** Section heading and actions on the dark theme. */
+export const DarkMode: Story = {
+  ...WithActions,
+  globals: darkModeGlobals,
 }

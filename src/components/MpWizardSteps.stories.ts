@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpWizardSteps from './MpWizardSteps.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Navigation/MpWizardSteps',
@@ -101,4 +102,10 @@ export const SmallScreenCollapse: Story = {
   globals: {
     viewport: { value: 'mobile375', isRotated: false },
   },
+}
+
+/** Step rail mid-progress on the dark theme. */
+export const DarkMode: Story = {
+  ...FourStepsMidProgress,
+  globals: darkModeGlobals,
 }

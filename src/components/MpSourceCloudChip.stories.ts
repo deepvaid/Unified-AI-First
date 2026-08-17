@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import MpSourceCloudChip from './MpSourceCloudChip.vue'
 // The app loads the --cloud-* accent tokens via main.ts; preview.ts doesn't.
 import '@/styles/source-cloud-colors.css'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Data Display/MpSourceCloudChip',
@@ -118,4 +119,10 @@ export const SizeMatrix: Story = {
     `,
   }),
   args: { dataSource: 'marketing' },
+}
+
+/** Every source cloud on dark — per-cloud colors come from source-cloud-colors.css and must stay legible on dark surfaces. */
+export const DarkMode: Story = {
+  ...AllSources,
+  globals: darkModeGlobals,
 }

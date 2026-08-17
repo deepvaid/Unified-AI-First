@@ -2,6 +2,7 @@ import { onBeforeUnmount, ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpMoveToFolderDialog from './MpMoveToFolderDialog.vue'
 import { useFoldersStore } from '@/stores/useFolders'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Forms/MpMoveToFolderDialog',
@@ -148,4 +149,10 @@ export const EmptyFolderList: Story = {
       </section>
     `,
   }),
+}
+
+/** The move-to-folder dialog on dark. */
+export const DarkMode: Story = {
+  ...Default,
+  globals: darkModeGlobals,
 }

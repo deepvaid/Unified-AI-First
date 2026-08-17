@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpBuilderShell from './MpBuilderShell.vue'
 import MpWizardSteps from './MpWizardSteps.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Layout/MpBuilderShell',
@@ -160,4 +161,10 @@ export const WithCenterToolbar: Story = {
       </div>
     `,
   }),
+}
+
+/** The builder chrome on the dark theme — top bar, canvas frame, and inspector surfaces. */
+export const DarkMode: Story = {
+  ...Default,
+  globals: darkModeGlobals,
 }

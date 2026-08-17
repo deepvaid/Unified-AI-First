@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpFolderSelect from './MpFolderSelect.vue'
 import type { Folder } from '@/stores/useFolders'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const sampleFolders: Folder[] = [
   { id: 'promotions', name: 'Promotions', parentId: null, scope: 'campaigns' },
@@ -136,4 +137,10 @@ export const OpenMenu: Story = {
     const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Filter by folder"]')
     trigger?.click()
   },
+}
+
+/** Folder menu trigger on the dark theme. */
+export const DarkMode: Story = {
+  ...WithSelection,
+  globals: darkModeGlobals,
 }

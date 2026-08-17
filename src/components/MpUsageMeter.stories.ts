@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpUsageMeter from './MpUsageMeter.vue'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Data Display/MpUsageMeter',
@@ -102,4 +103,10 @@ export const DenseWithHint: Story = {
     hint: 'Resets monthly · Upgrade for a larger allocation',
     dense: true,
   },
+}
+
+/** The usage meter at the warning threshold on dark. */
+export const DarkMode: Story = {
+  ...NearLimit,
+  globals: darkModeGlobals,
 }

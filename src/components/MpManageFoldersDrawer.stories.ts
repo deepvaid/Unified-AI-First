@@ -2,6 +2,7 @@ import { onBeforeUnmount, ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpManageFoldersDrawer from './MpManageFoldersDrawer.vue'
 import { useFoldersStore } from '@/stores/useFolders'
+import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Forms/MpManageFoldersDrawer',
@@ -142,4 +143,10 @@ export const EmptyFolderList: Story = {
       </section>
     `,
   }),
+}
+
+/** The folder CRUD drawer on dark — inherits MpFormDrawer's dark surface. */
+export const DarkMode: Story = {
+  ...Campaigns,
+  globals: darkModeGlobals,
 }
