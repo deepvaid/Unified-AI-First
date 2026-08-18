@@ -381,39 +381,51 @@ function tileGradient(sku: string): string {
 
 /* ── Cart ──────────────────────────────────────────────────────── */
 interface CartLine {
+  id: string              // stable per-line key
   sku: string
-  name: string
-  price: number
+  name: string            // base product name (variant split off)
+  variant: string | null  // e.g. "Black / M"
+  originalPrice: number   // catalog unit price, immutable after add
+  price: number           // actual unit sell price (override target)
   qty: number
+  note: string            // '' = no note
 }
 
 const cart = ref<CartLine[]>([])
 const discountPct = ref(0)
 const customerName = ref('')
+let lineSeq = 0
+
+const isOverridden = (l: CartLine) => Math.abs(l.price - l.originalPrice) > 0.005
 
 function addToCart(item: { sku: string; productName: string; pos: number }) {
-  const existing = cart.value.find((c) => c.sku === item.sku)
+  // Merge into an existing same-SKU line only if it's untouched (no note/override),
+  // so a modified line keeps its own identity.
+  const existing = cart.value.find((c) => c.sku === item.sku && !c.note && !isOverridden(c))
   if (existing) {
     existing.qty++
   } else {
-    cart.value.push({ sku: item.sku, name: item.productName, price: item.pos, qty: 1 })
+    const { name, variant } = parseTileProduct(item.productName)
+    cart.value.push({
+      id: `L${lineSeq++}`,
+      sku: item.sku,
+      name,
+      variant,
+      originalPrice: item.pos,
+      price: item.pos,
+      qty: 1,
+      note: '',
+    })
   }
 }
 
-function removeFromCart(sku: string) {
-  cart.value = cart.value.filter((c) => c.sku !== sku)
+function removeFromCart(id: string) {
+  cart.value = cart.value.filter((c) => c.id !== id)
 }
 
-function incrementQty(sku: string) {
-  const line = cart.value.find((c) => c.sku === sku)
+function incrementQty(id: string) {
+  const line = cart.value.find((c) => c.id === id)
   if (line) line.qty++
-}
-
-function decrementQty(sku: string) {
-  const line = cart.value.find((c) => c.sku === sku)
-  if (!line) return
-  if (line.qty <= 1) removeFromCart(sku)
-  else line.qty--
 }
 
 const subtotal = computed(() => cart.value.reduce((s, c) => s + c.price * c.qty, 0))
@@ -436,6 +448,73 @@ function clearCart() {
   discountDialogOpen.value = false
   customerPickerOpen.value = false
 }
+
+/* ── Line actions sheet (tap a cart line → edit menu) ──────────── */
+const lineActionsOpen = ref(false)
+const lineActionsId = ref<string | null>(null)
+const lineActionsLine = computed(() => cart.value.find((c) => c.id === lineActionsId.value) ?? null)
+const lineSheetMode = ref<'menu' | 'price' | 'note'>('menu')
+const pendingPrice = ref('')
+const pendingNote = ref('')
+
+function openLineActions(line: CartLine) {
+  lineActionsId.value = line.id
+  lineSheetMode.value = 'menu'
+  lineActionsOpen.value = true
+}
+
+function openPriceMode() {
+  if (!lineActionsLine.value) return
+  pendingPrice.value = lineActionsLine.value.price.toFixed(2)
+  lineSheetMode.value = 'price'
+}
+
+function applyPriceOverride() {
+  const line = lineActionsLine.value
+  if (!line) return
+  const parsed = parseFloat(pendingPrice.value)
+  if (!Number.isNaN(parsed)) line.price = Math.max(0, parsed)
+  lineSheetMode.value = 'menu'
+}
+
+function removePriceOverride() {
+  const line = lineActionsLine.value
+  if (line) line.price = line.originalPrice
+  lineSheetMode.value = 'menu'
+}
+
+function openNoteMode() {
+  if (!lineActionsLine.value) return
+  pendingNote.value = lineActionsLine.value.note
+  lineSheetMode.value = 'note'
+}
+
+function saveLineNote() {
+  const line = lineActionsLine.value
+  if (line) line.note = pendingNote.value.trim()
+  lineSheetMode.value = 'menu'
+}
+
+function sheetDecrementQty() {
+  const line = lineActionsLine.value
+  if (!line) return
+  if (line.qty <= 1) {
+    removeFromCart(line.id)
+    lineActionsOpen.value = false
+  } else {
+    line.qty--
+  }
+}
+
+function removeLineFromSheet() {
+  if (lineActionsLine.value) removeFromCart(lineActionsLine.value.id)
+  lineActionsOpen.value = false
+}
+
+// If the line disappears while the sheet is open (clear sale, checkout), close it.
+watch(lineActionsLine, (l) => {
+  if (!l) lineActionsOpen.value = false
+})
 
 /* ── Discount dialog ───────────────────────────────────────────── */
 const discountDialogOpen = ref(false)
@@ -558,7 +637,12 @@ function completeApproved() {
     total: grandTotal.value,
     tender: selectedTender.value,
     itemCount: cart.value.reduce((s, c) => s + c.qty, 0),
-    lines: cart.value.map((c) => ({ sku: c.sku, name: c.name, qty: c.qty, price: c.price })),
+    lines: cart.value.map((c) => ({
+      sku: c.sku,
+      name: c.variant ? `${c.name} — ${c.variant}` : c.name,
+      qty: c.qty,
+      price: c.price,
+    })),
   })
   if (attachedCustomerId.value) contacts.recordLoyaltyPurchase(attachedCustomerId.value, grandTotal.value)
   lastTxnId.value = txn.orderNumber
@@ -772,8 +856,17 @@ function flashGridToast(text: string) {
 }
 
 function addCustomSale() {
-  const lineId = `CUSTOM-${Date.now().toString(36).slice(-4).toUpperCase()}`
-  cart.value.push({ sku: lineId, name: 'Custom item', price: 25, qty: 1 })
+  const customSku = `CUSTOM-${Date.now().toString(36).slice(-4).toUpperCase()}`
+  cart.value.push({
+    id: `L${lineSeq++}`,
+    sku: customSku,
+    name: 'Custom item',
+    variant: null,
+    originalPrice: 25,
+    price: 25,
+    qty: 1,
+    note: '',
+  })
   saleMode.value = 'catalog'
   flashGridToast('Custom item added to sale')
 }
@@ -1089,18 +1182,30 @@ const apkQrUrl = computed(() =>
                   </div>
 
                   <transition-group name="pos-line-in">
-                    <div v-for="line in cart" :key="line.sku" class="pos-line">
+                    <div
+                      v-for="line in cart"
+                      :key="line.id"
+                      class="pos-line"
+                      role="button"
+                      tabindex="0"
+                      @click="openLineActions(line)"
+                      @keydown.enter="openLineActions(line)"
+                    >
                       <div class="pos-line__thumb" :style="{ background: tileGradient(line.sku) }" />
                       <div class="pos-line__body">
                         <div class="pos-line__name">{{ line.name }}</div>
-                        <div class="pos-line__sku">{{ line.sku }} · {{ fmt(line.price) }} ea</div>
+                        <div v-if="line.variant" class="pos-line__variant">{{ line.variant }}</div>
+                        <div class="pos-line__sku">{{ line.sku }}</div>
+                        <div v-if="isOverridden(line) || line.note" class="pos-line__tags">
+                          <span v-if="isOverridden(line)" class="pos-line-tag pos-line-tag--override">Price overridden</span>
+                          <span v-if="line.note" class="pos-line-tag pos-line-tag--note">Note</span>
+                        </div>
                       </div>
-                      <div class="pos-line__qty">
-                        <button class="pos-qty-btn" @click="decrementQty(line.sku)" aria-label="Decrease quantity">−</button>
-                        <span class="pos-qty-value">{{ line.qty }}</span>
-                        <button class="pos-qty-btn" @click="incrementQty(line.sku)" aria-label="Increase quantity">+</button>
+                      <div class="pos-line__pricing">
+                        <span v-if="line.qty > 1" class="pos-line__qtytext">× {{ line.qty }}</span>
+                        <span v-if="isOverridden(line)" class="pos-line__was">{{ fmt(line.originalPrice * line.qty) }}</span>
+                        <span class="pos-line__now">{{ fmt(line.price * line.qty) }}</span>
                       </div>
-                      <div class="pos-line__price">{{ fmt(line.price * line.qty) }}</div>
                     </div>
                   </transition-group>
                 </div>
@@ -1731,6 +1836,130 @@ const apkQrUrl = computed(() =>
                     <v-icon size="14" color="#9ca3af">chevron-right</v-icon>
                   </button>
                 </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ── Line actions sheet (tap a cart line → edit menu) ── -->
+          <transition name="pos-variant-up">
+            <div
+              v-if="lineActionsOpen && lineActionsLine"
+              class="pos-variant-overlay"
+              @click.self="lineActionsOpen = false"
+            >
+              <div class="pos-variant-sheet pos-line-sheet">
+                <div class="pos-variant-sheet__grabber" />
+
+                <!-- Header: line thumb + name + close -->
+                <div class="pos-variant-sheet__header">
+                  <div class="pos-variant-sheet__thumb" :style="{ background: tileGradient(lineActionsLine.sku) }">
+                    <v-icon size="16" color="#11182766">package</v-icon>
+                  </div>
+                  <div class="pos-variant-sheet__info">
+                    <div class="pos-variant-sheet__title">
+                      {{ lineActionsLine.name }}<template v-if="lineActionsLine.variant"> — {{ lineActionsLine.variant }}</template>
+                    </div>
+                    <div class="pos-variant-sheet__sub">SKU: {{ lineActionsLine.sku }}</div>
+                  </div>
+                  <button class="pos-variant-sheet__close" @click="lineActionsOpen = false">
+                    <v-icon size="14">x</v-icon>
+                  </button>
+                </div>
+
+                <!-- MENU MODE: qty stepper + action rows -->
+                <template v-if="lineSheetMode === 'menu'">
+                  <div class="pos-line-sheet__qty">
+                    <button
+                      class="pos-qty-btn pos-qty-btn--lg"
+                      :aria-label="lineActionsLine.qty <= 1 ? 'Remove item' : 'Decrease quantity'"
+                      @click="sheetDecrementQty"
+                    >
+                      <v-icon v-if="lineActionsLine.qty <= 1" size="14">trash-2</v-icon>
+                      <template v-else>−</template>
+                    </button>
+                    <span class="pos-qty-value pos-qty-value--lg">{{ lineActionsLine.qty }}</span>
+                    <button class="pos-qty-btn pos-qty-btn--lg" aria-label="Increase quantity" @click="incrementQty(lineActionsLine.id)">+</button>
+                  </div>
+
+                  <div class="pos-variant-sheet__list">
+                    <button class="pos-line-sheet__action" @click="openPriceMode">
+                      <v-icon size="15" color="#6b7280">pencil</v-icon>
+                      <div class="pos-line-sheet__action-info">
+                        <div class="pos-line-sheet__action-label">Override price</div>
+                        <div class="pos-line-sheet__action-sub">
+                          {{ fmt(lineActionsLine.price) }} ea
+                          <s v-if="isOverridden(lineActionsLine)">{{ fmt(lineActionsLine.originalPrice) }}</s>
+                        </div>
+                      </div>
+                      <v-icon size="14" color="#9ca3af">chevron-right</v-icon>
+                    </button>
+                    <button class="pos-line-sheet__action" @click="openNoteMode">
+                      <v-icon size="15" color="#6b7280">sticky-note</v-icon>
+                      <div class="pos-line-sheet__action-info">
+                        <div class="pos-line-sheet__action-label">{{ lineActionsLine.note ? 'Edit note' : 'Add note' }}</div>
+                        <div v-if="lineActionsLine.note" class="pos-line-sheet__action-sub pos-line-sheet__action-sub--clamp">{{ lineActionsLine.note }}</div>
+                      </div>
+                      <v-icon size="14" color="#9ca3af">chevron-right</v-icon>
+                    </button>
+                    <button class="pos-line-sheet__action" @click="flashGridToast('Line discounts coming soon')">
+                      <v-icon size="15" color="#6b7280">percent</v-icon>
+                      <div class="pos-line-sheet__action-info">
+                        <div class="pos-line-sheet__action-label">Apply discount</div>
+                      </div>
+                      <v-icon size="14" color="#9ca3af">chevron-right</v-icon>
+                    </button>
+                    <button class="pos-line-sheet__action pos-line-sheet__action--danger" @click="removeLineFromSheet">
+                      <v-icon size="15" color="#dc2626">trash-2</v-icon>
+                      <div class="pos-line-sheet__action-info">
+                        <div class="pos-line-sheet__action-label">Remove item</div>
+                      </div>
+                    </button>
+                  </div>
+                </template>
+
+                <!-- PRICE MODE -->
+                <template v-else-if="lineSheetMode === 'price'">
+                  <div class="pos-line-sheet__form">
+                    <label class="pos-line-sheet__field-label" for="pos-line-price">Unit price</label>
+                    <input
+                      id="pos-line-price"
+                      v-model="pendingPrice"
+                      class="pos-line-sheet__input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputmode="decimal"
+                    />
+                    <div v-if="isOverridden(lineActionsLine)" class="pos-line-sheet__hint">
+                      Original price {{ fmt(lineActionsLine.originalPrice) }}
+                    </div>
+                    <button class="pos-line-sheet__primary" @click="applyPriceOverride">Apply</button>
+                    <button
+                      v-if="isOverridden(lineActionsLine)"
+                      class="pos-line-sheet__ghost pos-line-sheet__ghost--danger"
+                      @click="removePriceOverride"
+                    >
+                      Remove override
+                    </button>
+                    <button class="pos-line-sheet__ghost" @click="lineSheetMode = 'menu'">Back</button>
+                  </div>
+                </template>
+
+                <!-- NOTE MODE -->
+                <template v-else>
+                  <div class="pos-line-sheet__form">
+                    <label class="pos-line-sheet__field-label" for="pos-line-note">Line note</label>
+                    <textarea
+                      id="pos-line-note"
+                      v-model="pendingNote"
+                      class="pos-line-sheet__textarea"
+                      rows="3"
+                      placeholder="e.g. Gift wrap this item"
+                    />
+                    <button class="pos-line-sheet__primary" @click="saveLineNote">Save note</button>
+                    <button class="pos-line-sheet__ghost" @click="lineSheetMode = 'menu'">Back</button>
+                  </div>
+                </template>
               </div>
             </div>
           </transition>
@@ -2782,17 +3011,21 @@ $pos-bg: #f4f4f5;
 
 .pos-line {
   display: grid;
-  grid-template-columns: 32px 1fr auto auto;
-  align-items: center;
+  grid-template-columns: 40px 1fr auto;
+  align-items: flex-start;
   gap: 10px;
   padding: 10px 18px;
   border-bottom: 1px solid rgba(17, 24, 39, 0.04);
+  cursor: pointer;
+  transition: background 80ms;
 
   &:last-child { border-bottom: none; }
+  &:hover      { background: rgba(17, 24, 39, 0.03); }
+  &:active     { background: rgba(17, 24, 39, 0.07); }
 
   &__thumb {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     border-radius: 8px;
     flex-shrink: 0;
   }
@@ -2810,8 +3043,8 @@ $pos-bg: #f4f4f5;
     white-space: nowrap;
   }
 
-  &__sku {
-    font-size: 11px;
+  &__variant {
+    font-size: 11.5px;
     color: $pos-muted;
     margin-top: 1px;
     overflow: hidden;
@@ -2819,23 +3052,58 @@ $pos-bg: #f4f4f5;
     white-space: nowrap;
   }
 
-  &__qty {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px;
-    background: rgba(17, 24, 39, 0.04);
-    border-radius: 8px;
+  &__sku {
+    font-size: 10.5px;
+    color: #9ca3af;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  &__price {
+  &__tags {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  &__pricing {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    white-space: nowrap;
+    min-width: 56px;
+  }
+
+  &__qtytext {
+    font-size: 11px;
+    font-weight: 600;
+    color: $pos-muted;
+  }
+
+  &__was {
+    font-size: 11px;
+    color: $pos-muted;
+    text-decoration: line-through;
+  }
+
+  &__now {
     font-size: 13px;
     font-weight: 700;
     color: $pos-ink;
-    white-space: nowrap;
-    text-align: right;
-    min-width: 56px;
   }
+}
+
+.pos-line-tag {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+
+  &--override { background: #fef3c7; color: #a16207; }
+  &--note     { background: #dbeafe; color: #1d4ed8; }
 }
 
 /* ── Cart total rows ───────────────────────────────────────────── */
@@ -2876,6 +3144,15 @@ $pos-bg: #f4f4f5;
   box-shadow: 0 1px 2px rgba(17, 24, 39, 0.06);
 
   &:hover { background: rgba(17, 24, 39, 0.06); }
+
+  &--lg {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 16px;
+    background: rgba(17, 24, 39, 0.05);
+    box-shadow: none;
+  }
 }
 
 .pos-qty-value {
@@ -2884,6 +3161,11 @@ $pos-bg: #f4f4f5;
   color: $pos-ink;
   min-width: 18px;
   text-align: center;
+
+  &--lg {
+    font-size: 15px;
+    min-width: 32px;
+  }
 }
 
 .pos-secondary-btn {
@@ -3484,6 +3766,126 @@ $pos-bg: #f4f4f5;
     font-weight: 700;
     color: $pos-ink;
     flex-shrink: 0;
+  }
+}
+
+/* ── Line actions sheet (tap a cart line) ──────────────────────── */
+.pos-line-sheet {
+  &__qty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-bottom: 1px solid $pos-hairline;
+    flex-shrink: 0;
+  }
+
+  &__action {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    border-bottom: 1px solid $pos-hairline;
+    transition: background 80ms;
+    width: 100%;
+
+    &:last-child { border-bottom: none; }
+    &:hover      { background: rgba(17, 24, 39, 0.03); }
+    &:active     { background: rgba(17, 24, 39, 0.07); }
+  }
+
+  &__action-info { flex: 1; min-width: 0; }
+
+  &__action-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: $pos-ink;
+  }
+
+  &__action--danger &__action-label { color: #dc2626; }
+
+  &__action-sub {
+    font-size: 11px;
+    color: $pos-muted;
+    margin-top: 1px;
+
+    s { margin-left: 4px; }
+
+    &--clamp {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px 6px;
+  }
+
+  &__field-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: $pos-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__input,
+  &__textarea {
+    width: 100%;
+    border: 1px solid $pos-hairline;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: $pos-ink;
+    background: $pos-surface;
+    outline: none;
+
+    &:focus { border-color: rgba(17, 24, 39, 0.28); }
+  }
+
+  &__textarea { resize: none; }
+
+  &__hint {
+    font-size: 11px;
+    color: $pos-muted;
+  }
+
+  &__primary {
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    background: $pos-ink;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover { opacity: 0.92; }
+  }
+
+  &__ghost {
+    border: none;
+    border-radius: 10px;
+    padding: 9px;
+    background: transparent;
+    color: $pos-muted;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover { background: rgba(17, 24, 39, 0.04); }
+
+    &--danger { color: #dc2626; }
   }
 }
 
