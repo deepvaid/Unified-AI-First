@@ -53,10 +53,10 @@ output/playwright/
 *.sw?
 .env*.local
 
-# Trailer build artifacts (video/audio renders — scripts/trailer/ is the source)
+# Trailer build artifacts (video/audio renders)
 trailer-build/
 
-# Fly-through source screens (copied by scripts/trailer/prep-screens.mjs)
+# Fly-through source screens for the demo-only /reel/fly route
 public/trailer-screens/
 
 # Handoff snapshots and exported archives. These are point-in-time copies of the

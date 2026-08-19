@@ -1,5 +1,5 @@
 {
-  "comment": "Single source of truth for the /reel/fly camera journey. The view derives its master animation from these durations; scripts/trailer/assemble.mjs places the VO lines at the same offsets, and capture.mjs derives the recording length. flipAt is seconds into s07 when the world crossfades to dark.",
+  "comment": "Single source of truth for the /reel/fly camera journey. The view derives its master animation from these durations. flipAt is seconds into s07 when the world crossfades to dark.",
   "segments": [
     { "id": "s04", "dur": 8.0 },
     { "id": "s05", "dur": 6.0 },

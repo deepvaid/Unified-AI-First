@@ -1,11 +1,10 @@
 <script setup lang="ts">
 // /reel/fly — continuous 3D camera fly-through over real product screens
-// (Atlassian "vision film" style). Timing comes from flyover-plan.json — the
-// SAME file scripts/trailer/assemble.mjs uses to place the voiceover, so the
-// camera waypoints and the narration stay in sync by construction.
+// (Atlassian "vision film" style). Timing comes from flyover-plan.json.
 //
-// Screens are served from /trailer-screens/ (run scripts/trailer/prep-screens.mjs).
-// R replays from t=0 (same convention as ReelView).
+// Demo-only route: the screens are served from /trailer-screens/, which is
+// gitignored and not part of a fresh clone, so this renders empty until those
+// captures are supplied. R replays from t=0 (same convention as ReelView).
 import { computed, onMounted, ref } from 'vue'
 import { useSlideKeyboard } from '@/views/Deck/useSlideKeyboard'
 import MpKpiCard from '@/components/MpKpiCard.vue'
