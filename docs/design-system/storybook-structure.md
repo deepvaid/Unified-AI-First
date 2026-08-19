@@ -40,7 +40,8 @@ never directly to `main.ts` or `preview.ts`.
 | Sales Channels | 5 | 21 | AddSectionDialog, MenuPreviewCard, StoreEditorSidebar, StorefrontPreview, ThemeDaVinciPanel |
 | Settings | 3 | 8 | SettingsPlaceholder, SettingsSection, SettingsSidebar |
 
-**Build total: 339 story exports across 84 files.** No Archive/Legacy Base section and no
+**Build total: 571 story exports plus 121 docs pages across 122 files** (verified 2026-08-19
+from `dist-storybook/index.json`). No Archive/Legacy Base section and no
 generated Visual Parity stories remain — both were deleted in the Storybook cleanup, along
 with `scripts/visual/` (the orphaned parity tooling that generated them) and
 `@storybook/addon-themes` (declared but unused).
