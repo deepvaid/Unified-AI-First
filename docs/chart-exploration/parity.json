@@ -1,0 +1,1187 @@
+{
+  "ok": true,
+  "diffs": [],
+  "records": {
+    "option-a": {
+      "widgets": [
+        {
+          "metric": "commerce_revenue",
+          "title": "",
+          "box": {
+            "x": 105,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_orders",
+          "title": "",
+          "box": {
+            "x": 432,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_aov",
+          "title": "",
+          "box": {
+            "x": 758,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_open_rate",
+          "title": "",
+          "box": {
+            "x": 1085,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_revenue_over_time",
+          "title": "Revenue over time",
+          "box": {
+            "x": 105,
+            "y": 411,
+            "w": 851,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-area",
+            "apexcharts-area-series",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "Revenue",
+            "Previous period"
+          ],
+          "axisLabels": [
+            "$1.4k$1.4k",
+            "$1.2k$1.2k",
+            "$1k$1k",
+            "$800$800",
+            "$600$600",
+            "$400$400",
+            "$200$200",
+            "Jul 15Jul 15",
+            "",
+            "",
+            "",
+            "Jul 19Jul 19",
+            "",
+            "",
+            "",
+            "Jul 23Jul 23",
+            "",
+            "",
+            "",
+            "Jul 27Jul 27",
+            "",
+            "",
+            "",
+            "Jul 31Jul 31",
+            "",
+            "",
+            "",
+            "Aug 4Aug 4",
+            "",
+            "",
+            "",
+            "Aug 8Aug 8",
+            "",
+            "",
+            "",
+            "Aug 12Aug 12",
+            ""
+          ]
+        },
+        {
+          "metric": "analytics_sessions_by_device",
+          "title": "Sessions by device type",
+          "box": {
+            "x": 976,
+            "y": 411,
+            "w": 415,
+            "h": 492
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "demo_channel_trend",
+          "title": "Revenue by channel",
+          "box": {
+            "x": 105,
+            "y": 923,
+            "w": 742,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-inner",
+            "apexcharts-line",
+            "apexcharts-line-series"
+          ],
+          "legends": [
+            "Direct",
+            "Email",
+            "Paid Search",
+            "Social",
+            "Organic",
+            "Referral"
+          ],
+          "axisLabels": [
+            "$10k$10k",
+            "$8k$8k",
+            "$6k$6k",
+            "$4k$4k",
+            "$2k$2k",
+            "$0$0",
+            "W1W1",
+            "",
+            "W3W3",
+            "",
+            "W5W5",
+            "",
+            "W7W7",
+            "",
+            "W9W9",
+            "",
+            "W11W11",
+            ""
+          ]
+        },
+        {
+          "metric": "demo_channel_mix",
+          "title": "Traffic mix",
+          "box": {
+            "x": 867,
+            "y": 923,
+            "w": 524,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-donut-slice-0",
+            "apexcharts-donut-slice-1",
+            "apexcharts-donut-slice-2",
+            "apexcharts-donut-slice-3",
+            "apexcharts-donut-slice-4",
+            "apexcharts-donut-slice-5",
+            "apexcharts-inner",
+            "apexcharts-pie",
+            "apexcharts-pie-area",
+            "apexcharts-pie-series"
+          ],
+          "legends": [
+            "Direct",
+            "Email",
+            "Paid Search",
+            "Social",
+            "Organic",
+            "Referral"
+          ],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_customers_over_time",
+          "title": "Customers over time",
+          "box": {
+            "x": 105,
+            "y": 1435,
+            "w": 742,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-area",
+            "apexcharts-area-series",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "First time",
+            "Recurring"
+          ],
+          "axisLabels": [
+            "6060",
+            "5050",
+            "4040",
+            "3030",
+            "2020",
+            "1010",
+            "00",
+            "Jul 15Jul 15",
+            "",
+            "",
+            "",
+            "Jul 19Jul 19",
+            "",
+            "",
+            "",
+            "Jul 23Jul 23",
+            "",
+            "",
+            "",
+            "Jul 27Jul 27",
+            "",
+            "",
+            "",
+            "Jul 31Jul 31",
+            "",
+            "",
+            "",
+            "Aug 4Aug 4",
+            "",
+            "",
+            "",
+            "Aug 8Aug 8",
+            "",
+            "",
+            "",
+            "Aug 12Aug 12",
+            ""
+          ]
+        },
+        {
+          "metric": "commerce_sales_by_product",
+          "title": "Sales by product name",
+          "box": {
+            "x": 867,
+            "y": 1435,
+            "w": 524,
+            "h": 364
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_email_volume",
+          "title": "Email volume",
+          "box": {
+            "x": 105,
+            "y": 1947,
+            "w": 742,
+            "h": 556
+          },
+          "chartTypes": [
+            "apexcharts-bar-area",
+            "apexcharts-bar-goals-markers",
+            "apexcharts-bar-series",
+            "apexcharts-bar-shadows",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "Sent",
+            "Delivered"
+          ],
+          "axisLabels": [
+            "03-1203-12",
+            "04-0304-03",
+            "04-2404-24",
+            "05-0805-08",
+            "05-2505-25",
+            "06-1606-16",
+            "07-0307-03",
+            "07-2807-28"
+          ]
+        },
+        {
+          "metric": "contacts_by_domain",
+          "title": "Contacts by domain",
+          "box": {
+            "x": 867,
+            "y": 1819,
+            "w": 524,
+            "h": 556
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "analytics_sessions_by_country",
+          "title": "Sessions by country",
+          "box": {
+            "x": 105,
+            "y": 2523,
+            "w": 742,
+            "h": 428
+          },
+          "chartTypes": [
+            "apexcharts-bar-area",
+            "apexcharts-bar-goals-markers",
+            "apexcharts-bar-series",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "United States",
+            "Canada",
+            "United Kingdom",
+            "France"
+          ],
+          "axisLabels": [
+            "12k12k",
+            "10k10k",
+            "8k8k",
+            "6k6k",
+            "4k4k",
+            "2k2k",
+            "00",
+            "Jul 9Jul 9",
+            "Jul 16Jul 16",
+            "Jul 23Jul 23",
+            "Jul 30Jul 30",
+            "Aug 6Aug 6",
+            "Aug 13Aug 13"
+          ]
+        },
+        {
+          "metric": "commerce_recent_orders",
+          "title": "Recent orders",
+          "box": {
+            "x": 867,
+            "y": 2395,
+            "w": 524,
+            "h": 428
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_top_campaigns",
+          "title": "Top campaigns",
+          "box": {
+            "x": 105,
+            "y": 2971,
+            "w": 742,
+            "h": 428
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_live_activity",
+          "title": "Live activity",
+          "box": {
+            "x": 867,
+            "y": 2843,
+            "w": 524,
+            "h": 428
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        }
+      ]
+    },
+    "option-b": {
+      "widgets": [
+        {
+          "metric": "commerce_revenue",
+          "title": "",
+          "box": {
+            "x": 105,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_orders",
+          "title": "",
+          "box": {
+            "x": 432,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_aov",
+          "title": "",
+          "box": {
+            "x": 758,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_open_rate",
+          "title": "",
+          "box": {
+            "x": 1085,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_revenue_over_time",
+          "title": "Revenue over time",
+          "box": {
+            "x": 105,
+            "y": 411,
+            "w": 851,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-area",
+            "apexcharts-area-series",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "Revenue",
+            "Previous period"
+          ],
+          "axisLabels": [
+            "$1.4k$1.4k",
+            "$1.2k$1.2k",
+            "$1k$1k",
+            "$800$800",
+            "$600$600",
+            "$400$400",
+            "$200$200",
+            "Jul 15Jul 15",
+            "",
+            "",
+            "",
+            "Jul 19Jul 19",
+            "",
+            "",
+            "",
+            "Jul 23Jul 23",
+            "",
+            "",
+            "",
+            "Jul 27Jul 27",
+            "",
+            "",
+            "",
+            "Jul 31Jul 31",
+            "",
+            "",
+            "",
+            "Aug 4Aug 4",
+            "",
+            "",
+            "",
+            "Aug 8Aug 8",
+            "",
+            "",
+            "",
+            "Aug 12Aug 12",
+            ""
+          ]
+        },
+        {
+          "metric": "analytics_sessions_by_device",
+          "title": "Sessions by device type",
+          "box": {
+            "x": 976,
+            "y": 411,
+            "w": 415,
+            "h": 492
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "demo_channel_trend",
+          "title": "Revenue by channel",
+          "box": {
+            "x": 105,
+            "y": 923,
+            "w": 742,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-inner",
+            "apexcharts-line",
+            "apexcharts-line-series"
+          ],
+          "legends": [
+            "Direct",
+            "Email",
+            "Paid Search",
+            "Social",
+            "Organic",
+            "Referral"
+          ],
+          "axisLabels": [
+            "$10k$10k",
+            "$8k$8k",
+            "$6k$6k",
+            "$4k$4k",
+            "$2k$2k",
+            "$0$0",
+            "W1W1",
+            "",
+            "W3W3",
+            "",
+            "W5W5",
+            "",
+            "W7W7",
+            "",
+            "W9W9",
+            "",
+            "W11W11",
+            ""
+          ]
+        },
+        {
+          "metric": "demo_channel_mix",
+          "title": "Traffic mix",
+          "box": {
+            "x": 867,
+            "y": 923,
+            "w": 524,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-donut-slice-0",
+            "apexcharts-donut-slice-1",
+            "apexcharts-donut-slice-2",
+            "apexcharts-donut-slice-3",
+            "apexcharts-donut-slice-4",
+            "apexcharts-donut-slice-5",
+            "apexcharts-inner",
+            "apexcharts-pie",
+            "apexcharts-pie-area",
+            "apexcharts-pie-series"
+          ],
+          "legends": [
+            "Direct",
+            "Email",
+            "Paid Search",
+            "Social",
+            "Organic",
+            "Referral"
+          ],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_customers_over_time",
+          "title": "Customers over time",
+          "box": {
+            "x": 105,
+            "y": 1435,
+            "w": 742,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-area",
+            "apexcharts-area-series",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "First time",
+            "Recurring"
+          ],
+          "axisLabels": [
+            "6060",
+            "5050",
+            "4040",
+            "3030",
+            "2020",
+            "1010",
+            "00",
+            "Jul 15Jul 15",
+            "",
+            "",
+            "",
+            "Jul 19Jul 19",
+            "",
+            "",
+            "",
+            "Jul 23Jul 23",
+            "",
+            "",
+            "",
+            "Jul 27Jul 27",
+            "",
+            "",
+            "",
+            "Jul 31Jul 31",
+            "",
+            "",
+            "",
+            "Aug 4Aug 4",
+            "",
+            "",
+            "",
+            "Aug 8Aug 8",
+            "",
+            "",
+            "",
+            "Aug 12Aug 12",
+            ""
+          ]
+        },
+        {
+          "metric": "commerce_sales_by_product",
+          "title": "Sales by product name",
+          "box": {
+            "x": 867,
+            "y": 1435,
+            "w": 524,
+            "h": 364
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_email_volume",
+          "title": "Email volume",
+          "box": {
+            "x": 105,
+            "y": 1947,
+            "w": 742,
+            "h": 556
+          },
+          "chartTypes": [
+            "apexcharts-bar-area",
+            "apexcharts-bar-goals-markers",
+            "apexcharts-bar-series",
+            "apexcharts-bar-shadows",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "Sent",
+            "Delivered"
+          ],
+          "axisLabels": [
+            "03-1203-12",
+            "04-0304-03",
+            "04-2404-24",
+            "05-0805-08",
+            "05-2505-25",
+            "06-1606-16",
+            "07-0307-03",
+            "07-2807-28"
+          ]
+        },
+        {
+          "metric": "contacts_by_domain",
+          "title": "Contacts by domain",
+          "box": {
+            "x": 867,
+            "y": 1819,
+            "w": 524,
+            "h": 556
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "analytics_sessions_by_country",
+          "title": "Sessions by country",
+          "box": {
+            "x": 105,
+            "y": 2523,
+            "w": 742,
+            "h": 428
+          },
+          "chartTypes": [
+            "apexcharts-bar-area",
+            "apexcharts-bar-goals-markers",
+            "apexcharts-bar-series",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "United States",
+            "Canada",
+            "United Kingdom",
+            "France"
+          ],
+          "axisLabels": [
+            "12k12k",
+            "10k10k",
+            "8k8k",
+            "6k6k",
+            "4k4k",
+            "2k2k",
+            "00",
+            "Jul 9Jul 9",
+            "Jul 16Jul 16",
+            "Jul 23Jul 23",
+            "Jul 30Jul 30",
+            "Aug 6Aug 6",
+            "Aug 13Aug 13"
+          ]
+        },
+        {
+          "metric": "commerce_recent_orders",
+          "title": "Recent orders",
+          "box": {
+            "x": 867,
+            "y": 2395,
+            "w": 524,
+            "h": 428
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_top_campaigns",
+          "title": "Top campaigns",
+          "box": {
+            "x": 105,
+            "y": 2971,
+            "w": 742,
+            "h": 428
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_live_activity",
+          "title": "Live activity",
+          "box": {
+            "x": 867,
+            "y": 2843,
+            "w": 524,
+            "h": 428
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        }
+      ]
+    },
+    "option-c": {
+      "widgets": [
+        {
+          "metric": "commerce_revenue",
+          "title": "",
+          "box": {
+            "x": 105,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_orders",
+          "title": "",
+          "box": {
+            "x": 432,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_aov",
+          "title": "",
+          "box": {
+            "x": 758,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_open_rate",
+          "title": "",
+          "box": {
+            "x": 1085,
+            "y": 219,
+            "w": 307,
+            "h": 172
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_revenue_over_time",
+          "title": "Revenue over time",
+          "box": {
+            "x": 105,
+            "y": 411,
+            "w": 851,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-area",
+            "apexcharts-area-series",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "Revenue",
+            "Previous period"
+          ],
+          "axisLabels": [
+            "$1.4k$1.4k",
+            "$1.2k$1.2k",
+            "$1k$1k",
+            "$800$800",
+            "$600$600",
+            "$400$400",
+            "$200$200",
+            "Jul 15Jul 15",
+            "",
+            "",
+            "",
+            "Jul 19Jul 19",
+            "",
+            "",
+            "",
+            "Jul 23Jul 23",
+            "",
+            "",
+            "",
+            "Jul 27Jul 27",
+            "",
+            "",
+            "",
+            "Jul 31Jul 31",
+            "",
+            "",
+            "",
+            "Aug 4Aug 4",
+            "",
+            "",
+            "",
+            "Aug 8Aug 8",
+            "",
+            "",
+            "",
+            "Aug 12Aug 12",
+            ""
+          ]
+        },
+        {
+          "metric": "analytics_sessions_by_device",
+          "title": "Sessions by device type",
+          "box": {
+            "x": 976,
+            "y": 411,
+            "w": 415,
+            "h": 492
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "demo_channel_trend",
+          "title": "Revenue by channel",
+          "box": {
+            "x": 105,
+            "y": 923,
+            "w": 742,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-inner",
+            "apexcharts-line",
+            "apexcharts-line-series"
+          ],
+          "legends": [
+            "Direct",
+            "Email",
+            "Paid Search",
+            "Social",
+            "Organic",
+            "Referral"
+          ],
+          "axisLabels": [
+            "$10k$10k",
+            "$8k$8k",
+            "$6k$6k",
+            "$4k$4k",
+            "$2k$2k",
+            "$0$0",
+            "W1W1",
+            "",
+            "W3W3",
+            "",
+            "W5W5",
+            "",
+            "W7W7",
+            "",
+            "W9W9",
+            "",
+            "W11W11",
+            ""
+          ]
+        },
+        {
+          "metric": "demo_channel_mix",
+          "title": "Traffic mix",
+          "box": {
+            "x": 867,
+            "y": 923,
+            "w": 524,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-donut-slice-0",
+            "apexcharts-donut-slice-1",
+            "apexcharts-donut-slice-2",
+            "apexcharts-donut-slice-3",
+            "apexcharts-donut-slice-4",
+            "apexcharts-donut-slice-5",
+            "apexcharts-inner",
+            "apexcharts-pie",
+            "apexcharts-pie-area",
+            "apexcharts-pie-series"
+          ],
+          "legends": [
+            "Direct",
+            "Email",
+            "Paid Search",
+            "Social",
+            "Organic",
+            "Referral"
+          ],
+          "axisLabels": []
+        },
+        {
+          "metric": "commerce_customers_over_time",
+          "title": "Customers over time",
+          "box": {
+            "x": 105,
+            "y": 1435,
+            "w": 742,
+            "h": 492
+          },
+          "chartTypes": [
+            "apexcharts-area",
+            "apexcharts-area-series",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "First time",
+            "Recurring"
+          ],
+          "axisLabels": [
+            "6060",
+            "5050",
+            "4040",
+            "3030",
+            "2020",
+            "1010",
+            "00",
+            "Jul 15Jul 15",
+            "",
+            "",
+            "",
+            "Jul 19Jul 19",
+            "",
+            "",
+            "",
+            "Jul 23Jul 23",
+            "",
+            "",
+            "",
+            "Jul 27Jul 27",
+            "",
+            "",
+            "",
+            "Jul 31Jul 31",
+            "",
+            "",
+            "",
+            "Aug 4Aug 4",
+            "",
+            "",
+            "",
+            "Aug 8Aug 8",
+            "",
+            "",
+            "",
+            "Aug 12Aug 12",
+            ""
+          ]
+        },
+        {
+          "metric": "commerce_sales_by_product",
+          "title": "Sales by product name",
+          "box": {
+            "x": 867,
+            "y": 1435,
+            "w": 524,
+            "h": 364
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_email_volume",
+          "title": "Email volume",
+          "box": {
+            "x": 105,
+            "y": 1947,
+            "w": 742,
+            "h": 556
+          },
+          "chartTypes": [
+            "apexcharts-bar-area",
+            "apexcharts-bar-goals-markers",
+            "apexcharts-bar-series",
+            "apexcharts-bar-shadows",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "Sent",
+            "Delivered"
+          ],
+          "axisLabels": [
+            "03-1203-12",
+            "04-0304-03",
+            "04-2404-24",
+            "05-0805-08",
+            "05-2505-25",
+            "06-1606-16",
+            "07-0307-03",
+            "07-2807-28"
+          ]
+        },
+        {
+          "metric": "contacts_by_domain",
+          "title": "Contacts by domain",
+          "box": {
+            "x": 867,
+            "y": 1819,
+            "w": 524,
+            "h": 556
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "analytics_sessions_by_country",
+          "title": "Sessions by country",
+          "box": {
+            "x": 105,
+            "y": 2523,
+            "w": 742,
+            "h": 428
+          },
+          "chartTypes": [
+            "apexcharts-bar-area",
+            "apexcharts-bar-goals-markers",
+            "apexcharts-bar-series",
+            "apexcharts-inner"
+          ],
+          "legends": [
+            "United States",
+            "Canada",
+            "United Kingdom",
+            "France"
+          ],
+          "axisLabels": [
+            "12k12k",
+            "10k10k",
+            "8k8k",
+            "6k6k",
+            "4k4k",
+            "2k2k",
+            "00",
+            "Jul 9Jul 9",
+            "Jul 16Jul 16",
+            "Jul 23Jul 23",
+            "Jul 30Jul 30",
+            "Aug 6Aug 6",
+            "Aug 13Aug 13"
+          ]
+        },
+        {
+          "metric": "commerce_recent_orders",
+          "title": "Recent orders",
+          "box": {
+            "x": 867,
+            "y": 2395,
+            "w": 524,
+            "h": 428
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_top_campaigns",
+          "title": "Top campaigns",
+          "box": {
+            "x": 105,
+            "y": 2971,
+            "w": 742,
+            "h": 428
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        },
+        {
+          "metric": "marketing_live_activity",
+          "title": "Live activity",
+          "box": {
+            "x": 867,
+            "y": 2843,
+            "w": 524,
+            "h": 428
+          },
+          "chartTypes": [],
+          "legends": [],
+          "axisLabels": []
+        }
+      ]
+    }
+  },
+  "console": {
+    "option-a": [],
+    "option-b": [],
+    "option-c": []
+  }
+}

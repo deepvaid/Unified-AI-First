@@ -1,47 +1,37 @@
-# Chart Visual System Exploration
+# Chart colour options
 
-Working assets for the leadership review of Maropost's chart / data-visualization
-language. Four candidate systems (`?chart=optionA…optionD`) applied to the exact same
-dashboard, compared against the untouched baseline (`shopify`, the default).
+Working assets for the stakeholder review of two light-mode chart palettes
+applied to the existing Overview dashboard. Layout, widgets, chart types,
+typography, axes, legends, tooltips, and interactions stay the same — only
+series, comparison, and ramp colours change.
 
-**State + decisions live in [`/CHART_EXPLORATION_CONTEXT.md`](../../CHART_EXPLORATION_CONTEXT.md).**
+**Live review (dev)**
+
+- Option 1 · Single Blue: `/accounts/2000290/dashboard?chart=optionA`
+- Option 2 · Multi Colour: `/accounts/2000290/dashboard?chart=optionB`
+- Side-by-side: `/chart-exploration`
 
 ## Layout
 
 ```
 docs/chart-exploration/
 ├── README.md              ← you are here
-├── manifest.json          ← written by capture.mjs (shot inventory + capturedAt + gitSha)
-├── copy.json              ← per-option copy (philosophy / references / why / trade-off)
-│                             — single source for the exploration view, deck, and Figma
-├── research/
-│   ├── refs.json          ← citation map (product, screen, source URL, local file, informs)
-│   ├── refs/              ← downloaded reference screenshots
-│   └── research-notes.md  ← citation table + per-pattern takeaways + direction seeds
-├── 00-current/            ← baseline captures (?chart=shopify explicitly)
-├── options/option-{a..d}/ ← per-option captures
+├── manifest.json          ← written by capture.mjs
+├── parity.json            ← DOM/layout parity across the three options
+├── copy.json              ← per-option stakeholder copy
+├── options/option-{a,b,c}/ ← per-option captures
 ├── comparison/            ← exploration-page + specimen-grid captures
-├── deck/index.html        ← self-contained review deck (fallback if Figma unavailable)
-├── notes/
-│   ├── 00-audit.md        ← baseline audit (inventory + what's weak)
-│   └── option-{a..d}.md   ← per-option rationale, tokens, validator output
-└── figma-file.md          ← Figma file link, page map, ops log
+└── notes/                 ← palette rationale (historical notes retained)
 ```
 
 ## Regenerating captures
 
 ```
-npm run dev                      # or the launch.json "Main App" config
-node scripts/chart-exploration/capture.mjs --only dashboard --charts current
-node scripts/chart-exploration/capture.mjs            # full matrix (once options exist)
+npm run dev
+node scripts/chart-exploration/validate-palettes.mjs
+node scripts/chart-exploration/capture.mjs --widths 1440,768,375
 ```
 
-Shots are named `<shot>--<chart>--<width>--<mode>.png`. All captures for a comparison
-must come from **one session** (data is seeded off Date.now() at day granularity; the
-script aborts if a run crosses midnight).
-
-## Live review URLs (dev)
-
-- Baseline: `/accounts/2000290/dashboard` (or explicit `?chart=shopify`)
-- Options: `/accounts/2000290/dashboard?chart=optionA` … `optionD`
-- Side-by-side: `/chart-exploration`
+Shots are named `<shot>--<chart>--<width>--<mode>.png`. All captures for a
+comparison must come from **one session** (data is seeded off Date.now() at
+day granularity; the script aborts if a run crosses midnight).

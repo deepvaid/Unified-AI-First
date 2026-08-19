@@ -3,7 +3,7 @@
 // assigned by index from the chart blues, each shading from a light tint
 // at the top of the ring toward the base colour.
 import { computed, useId } from 'vue'
-import { embossStops, tintHex } from '@/plugins/chartPalette'
+import { hyperPitchStops, tintHex } from '@/plugins/chartPalette'
 import { DOTTED_BLUES, ringSegments } from './dottedChartMath'
 
 const props = withDefaults(defineProps<{
@@ -25,10 +25,7 @@ const props = withDefaults(defineProps<{
 
 // Same recipe the bars use, so a ring and a column read as the same material.
 const rampFor = (color: string) => (props.emboss
-  ? embossStops([
-      { offset: 0, color: tintHex(color, 0.26), opacity: 1 },
-      { offset: 100, color, opacity: 1 },
-    ])
+  ? hyperPitchStops(color)
   : [
       { offset: 0, color: tintHex(color, 0.26), opacity: 1 },
       { offset: 100, color, opacity: 1 },

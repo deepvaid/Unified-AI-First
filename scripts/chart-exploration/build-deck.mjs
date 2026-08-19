@@ -21,7 +21,6 @@ const img = (file, cls = '') => (file ? `<img class="${cls}" loading="lazy" src=
 const OPTS = [
   ['optionA', 'option-a', '02'],
   ['optionB', 'option-b', '03'],
-  ['optionC', 'option-c', '04'],
   ['optionD', 'option-d', '05'],
 ]
 

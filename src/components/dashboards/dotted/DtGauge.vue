@@ -2,7 +2,7 @@
 // Goal gauge: round-capped progress arc over a soft track. The arc shades
 // from the base blue toward a lighter tint along the sweep.
 import { computed, useId } from 'vue'
-import { embossStops, tintHex } from '@/plugins/chartPalette'
+import { hyperPitchStops, tintHex } from '@/plugins/chartPalette'
 
 const props = withDefaults(defineProps<{
   /** 0–100 */
@@ -27,10 +27,7 @@ const props = withDefaults(defineProps<{
 // Embossed arcs light from the top like every other mark, so the gradient runs
 // vertically; the default arc keeps its along-the-sweep horizontal shading.
 const arcStops = computed(() => (props.emboss
-  ? embossStops([
-      { offset: 0, color: tintHex(props.color, 0.3), opacity: 1 },
-      { offset: 100, color: props.color, opacity: 1 },
-    ])
+  ? hyperPitchStops(props.color)
   : [
       { offset: 0, color: props.color, opacity: 1 },
       { offset: 100, color: tintHex(props.color, 0.35), opacity: 1 },

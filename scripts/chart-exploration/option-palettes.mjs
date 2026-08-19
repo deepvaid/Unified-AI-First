@@ -1,27 +1,28 @@
 /**
- * Option palettes for the chart visual-system exploration — the single hex
- * source for P4 validation. P5 copies these values into
- * src/plugins/chartPalette.ts, and the final token-freeze commit moves them
- * into tokens.json; this file remains the validated QA record.
+ * Option palettes for the chart colour-option review — the single hex
+ * source for validation. Values match `color.chart.light.option*` in
+ * src/design-tokens/tokens.json (regenerate with `npm run tokens:build`).
  *
- * Tuned 2026-08-07 across 5 validator rounds (see notes/option-*.md for the
- * archived gate output). Policies:
+ * Tuned 2026-08-13 so supplied stakeholder hues pass adjacency / CVD /
+ * lightness-band / chroma / semantic-contrast gates. Policies:
  * - `mutedSlots`: zero-based series indexes that are DESIGNED de-emphasis
  *   slots (slate/steel): exempt from chroma floor + lightness band (documented
- *   deviation), still held to full adjacency ΔE gates.
+ *   deviation), still held to full adjacency ΔE gates. A/B use none.
  * - positive-vs-series ΔE 8–15 is a WARN legal only because positives always
  *   ship with icon + label (KPI pills use chevron + delta text) — the dataviz
  *   method's status-collision rule.
+ * - optionD is a leftover exploration theme, kept so the validator still
+ *   covers it; it is not part of the three-option stakeholder review.
  */
 
 export const OPTIONS = {
   optionA: {
-    label: 'Restrained Blue',
-    series: ['#0E72B8', '#5FB9EB', '#234E92', '#38A8DC', '#5C6B7A', '#AFC3D1'],
-    mutedSlots: [4, 5],
-    axis: ['#123B63', '#15568C', '#0E72B8', '#2E96D2', '#63BCE8'],
+    label: 'Single Blue',
+    series: ['#0B5CAD', '#76B8F0', '#005889', '#4AA6D8', '#006C98', '#479CC9'],
+    mutedSlots: [],
+    axis: ['#024180', '#205899', '#3870B3', '#5088CD', '#68A1E7'],
     semantic: {
-      comparison: '#1B4F7A',
+      comparison: '#597494',
       positive: '#1B7A46',
       negative: '#C2402A',
       warning: '#B27B00',
@@ -29,27 +30,14 @@ export const OPTIONS = {
     },
   },
   optionB: {
-    label: 'Sophisticated Multi-Color',
-    series: ['#2E6FC2', '#D4703A', '#17948C', '#6B5CC8', '#D078A3', '#515C67'],
-    mutedSlots: [5],
+    label: 'Multi Colour',
+    series: ['#1689C9', '#F28E2B', '#009B94', '#E15759', '#266099', '#59A14F'],
+    mutedSlots: [],
     axis: ['#1E4E93', '#2E67B5', '#4A82CE', '#6C9DDF', '#8FB3E6'],
     semantic: {
-      comparison: '#C2622E',
+      comparison: '#5A7390',
       positive: '#178A50',
       negative: '#C6403D',
-      warning: '#B27B00',
-      neutral: '#8A94A0',
-    },
-  },
-  optionC: {
-    label: 'Blue Teal Green',
-    series: ['#0073AB', '#45C6E0', '#008268', '#4E9FDE', '#3FB68E', '#1F5099'],
-    mutedSlots: [],
-    axis: ['#0B3D5C', '#00618F', '#0073AB', '#1D96BE', '#4FC2CE'],
-    semantic: {
-      comparison: '#2E9E6B',
-      positive: '#38761D',
-      negative: '#C2402A',
       warning: '#B27B00',
       neutral: '#8A94A0',
     },

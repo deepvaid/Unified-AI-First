@@ -12,9 +12,9 @@
  *   node scripts/chart-exploration/capture.mjs --only dashboard --charts current
  *   node scripts/chart-exploration/capture.mjs --base http://localhost:5173
  *
- * Flags: --base <url> --only <families> --charts <ids> --mode light|dark --width <px>
- * Families: dashboard | widgets | hover | exploration
- * Chart ids: current | option-a | option-b | option-c | option-d
+ * Flags: --base <url> --only <families> --charts <ids> --mode light|dark --width <px> --widths <px,px>
+ * Families: dashboard | widgets | hover | exploration | parity
+ * Chart ids: current | option-a | option-b | option-d
  */
 import { chromium } from 'playwright'
 import { execSync } from 'node:child_process'
@@ -34,15 +34,15 @@ const flag = (name, dflt) => {
 const BASE = flag('base', 'http://localhost:5173')
 const MODE = flag('mode', 'light')
 const WIDTH = Number(flag('width', '1440'))
-const FAMILIES = flag('only', 'dashboard,widgets,hover,exploration').split(',').map((s) => s.trim())
-const CHART_IDS = flag('charts', 'current,option-a,option-b,option-c,option-d').split(',').map((s) => s.trim())
+const WIDTHS = flag('widths', String(WIDTH)).split(',').map((s) => Number(s.trim())).filter(Boolean)
+const FAMILIES = flag('only', 'dashboard,widgets,hover,exploration,parity').split(',').map((s) => s.trim())
+const CHART_IDS = flag('charts', 'option-a,option-b').split(',').map((s) => s.trim())
 
 /** File-name token → ?chart= value + output dir. `current` pins shopify explicitly. */
 const CHARTS = {
   current: { query: 'shopify', dir: '00-current' },
   'option-a': { query: 'optionA', dir: 'options/option-a' },
   'option-b': { query: 'optionB', dir: 'options/option-b' },
-  'option-c': { query: 'optionC', dir: 'options/option-c' },
   'option-d': { query: 'optionD', dir: 'options/option-d' },
 }
 
@@ -93,9 +93,9 @@ async function preflight() {
   }
 }
 
-async function newPage(browser, { dsf = 2 } = {}) {
+async function newPage(browser, { dsf = 2, width = WIDTH } = {}) {
   const context = await browser.newContext({
-    viewport: { width: WIDTH, height: 900 },
+    viewport: { width, height: 900 },
     deviceScaleFactor: dsf,
     colorScheme: MODE === 'dark' ? 'dark' : 'light',
     reducedMotion: 'reduce',
@@ -122,9 +122,69 @@ async function settle(page, { minCharts = 6, timeout = 25000 } = {}) {
   await page.waitForTimeout(450) // idle-callback reveal buffer + final layout
 }
 
-function record(file, shot, chart, route, dsf) {
-  shotsLog.push({ file, shot, chart, width: WIDTH, mode: MODE, dsf, route })
+function record(file, shot, chart, route, dsf, width = WIDTH) {
+  shotsLog.push({ file, shot, chart, width, mode: MODE, dsf, route })
   console.log(`  ✓ ${file}`)
+}
+
+const parityByChart = {}
+const consoleByChart = {}
+
+async function collectParity(page) {
+  return page.evaluate(() => {
+    const cards = [...document.querySelectorAll('[data-widget-metric]')]
+    return {
+      widgets: cards.map((el) => {
+        const r = el.getBoundingClientRect()
+        const typeClasses = [...el.querySelectorAll('[class*="apexcharts-"]')]
+          .flatMap((n) => [...n.classList].filter((c) =>
+            /^apexcharts-(line|area|bar|pie|donut|inner)/.test(c)))
+        return {
+          metric: el.getAttribute('data-widget-metric'),
+          title: el.querySelector('.dashboard-widget-card__title')?.textContent?.trim() ?? '',
+          box: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
+          chartTypes: [...new Set(typeClasses)].sort(),
+          legends: [...el.querySelectorAll('.apexcharts-legend-text')].map((n) => n.textContent.trim()),
+          axisLabels: [...el.querySelectorAll('.apexcharts-xaxis-label, .apexcharts-yaxis-label')].map((n) => n.textContent.trim()),
+        }
+      }),
+    }
+  })
+}
+
+function compareParity(records) {
+  const ids = Object.keys(records)
+  if (ids.length < 2) return []
+  const baseline = records[ids[0]]
+  const diffs = []
+  for (const id of ids.slice(1)) {
+    const other = records[id]
+    const a = baseline.widgets.map((w) => w.metric).join('|')
+    const b = other.widgets.map((w) => w.metric).join('|')
+    if (a !== b) diffs.push(`${ids[0]} vs ${id}: widget order ${a} ≠ ${b}`)
+    const n = Math.min(baseline.widgets.length, other.widgets.length)
+    for (let i = 0; i < n; i++) {
+      const left = baseline.widgets[i]
+      const right = other.widgets[i]
+      if (left.title !== right.title) diffs.push(`${left.metric}: title "${left.title}" ≠ "${right.title}"`)
+      if (left.box.w !== right.box.w || left.box.h !== right.box.h) {
+        diffs.push(`${left.metric}: box ${JSON.stringify(left.box)} ≠ ${JSON.stringify(right.box)}`)
+      }
+      if (left.chartTypes.join() !== right.chartTypes.join()) {
+        diffs.push(`${left.metric}: chart types ${left.chartTypes} ≠ ${right.chartTypes}`)
+      }
+      if (left.legends.join('|') !== right.legends.join('|')) {
+        diffs.push(`${left.metric}: legends differ`)
+      }
+      if (left.axisLabels.join('|') !== right.axisLabels.join('|')) {
+        diffs.push(`${left.metric}: axis labels differ`)
+      }
+    }
+    const logsA = (consoleByChart[ids[0]] ?? []).join('\n')
+    const logsB = (consoleByChart[id] ?? []).join('\n')
+    if (logsA !== logsB) diffs.push(`${ids[0]} vs ${id}: console output differs`)
+  }
+  return diffs
 }
 
 async function shoot(page, target, outDir, name, opts = {}) {
@@ -146,38 +206,49 @@ function widgetLocator(page, key) {
   }
 }
 
-async function captureDashboard(browser, chartId) {
+async function captureDashboard(browser, chartId, width = WIDTH) {
   const { query, dir } = CHARTS[chartId]
   const route = `/accounts/${ACCOUNT}/dashboard?chart=${query}`
   const outDir = path.join(OUT_ROOT, dir)
+  const detailWidth = width === 1440
 
   for (const dsf of [2, 1]) {
-    if (dsf === 1 && !FAMILIES.includes('dashboard')) break
-    const { context, page } = await newPage(browser, { dsf })
+    if (dsf === 1 && (!FAMILIES.includes('dashboard') || !detailWidth)) break
+    const { context, page } = await newPage(browser, { dsf, width })
+    const logs = []
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') logs.push(`${msg.type()}: ${msg.text()}`)
+    })
     await page.goto(BASE + route, { waitUntil: 'domcontentloaded' })
     await settle(page)
+    await page.evaluate(() => window.scrollTo(0, 0))
 
     if (FAMILIES.includes('dashboard')) {
       const suffix = dsf === 1 ? '--dsf1' : ''
-      const f1 = await shoot(page, page, outDir, `dashboard-full--${chartId}--${WIDTH}--${MODE}${suffix}.png`, { fullPage: true })
-      record(f1, 'dashboard-full', chartId, route, dsf)
-      if (dsf === 2) {
-        const f2 = await shoot(page, page, outDir, `dashboard-fold--${chartId}--${WIDTH}--${MODE}.png`)
-        record(f2, 'dashboard-fold', chartId, route, dsf)
+      const f1 = await shoot(page, page, outDir, `dashboard-full--${chartId}--${width}--${MODE}${suffix}.png`, { fullPage: true })
+      record(f1, 'dashboard-full', chartId, route, dsf, width)
+      if (dsf === 2 && detailWidth) {
+        const f2 = await shoot(page, page, outDir, `dashboard-fold--${chartId}--${width}--${MODE}.png`)
+        record(f2, 'dashboard-fold', chartId, route, dsf, width)
       }
     }
 
-    if (dsf === 2 && FAMILIES.includes('widgets')) {
+    if (dsf === 2 && detailWidth && FAMILIES.includes('parity') && !parityByChart[chartId]) {
+      parityByChart[chartId] = await collectParity(page)
+      consoleByChart[chartId] = logs
+    }
+
+    if (dsf === 2 && detailWidth && FAMILIES.includes('widgets')) {
       for (const key of Object.keys(WIDGETS)) {
         const card = await widgetLocator(page, key).resolve()
         await card.scrollIntoViewIfNeeded()
         await page.waitForTimeout(150)
-        const f = await shoot(page, card, outDir, `widget-${key}--${chartId}--${WIDTH}--${MODE}.png`)
-        record(f, `widget-${key}`, chartId, route, dsf)
+        const f = await shoot(page, card, outDir, `widget-${key}--${chartId}--${width}--${MODE}.png`)
+        record(f, `widget-${key}`, chartId, route, dsf, width)
       }
     }
 
-    if (dsf === 2 && FAMILIES.includes('hover')) {
+    if (dsf === 2 && detailWidth && FAMILIES.includes('hover')) {
       for (const key of ['line', 'bar']) {
         const card = await widgetLocator(page, key).resolve()
         await card.scrollIntoViewIfNeeded()
@@ -193,8 +264,8 @@ async function captureDashboard(browser, chartId) {
           console.warn(`  ⚠ tooltip did not activate for ${key} (${chartId})`)
         }
         await page.waitForTimeout(250)
-        const f = await shoot(page, card, outDir, `widget-${key}-hover--${chartId}--${WIDTH}--${MODE}.png`)
-        record(f, `widget-${key}-hover`, chartId, route, dsf)
+        const f = await shoot(page, card, outDir, `widget-${key}-hover--${chartId}--${width}--${MODE}.png`)
+        record(f, `widget-${key}-hover`, chartId, route, dsf, width)
         await page.mouse.move(0, 0)
         await page.waitForTimeout(150)
       }
@@ -250,16 +321,31 @@ async function main() {
   const gitSha = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim()
   const browser = await chromium.launch()
 
-  for (const chartId of CHART_IDS) {
-    if (!CHARTS[chartId]) { console.warn(`⚠ unknown chart id ${chartId}, skipping`); continue }
-    if (FAMILIES.some((f) => ['dashboard', 'widgets', 'hover'].includes(f))) {
-      console.log(`▶ ${chartId} (?chart=${CHARTS[chartId].query})`)
-      await captureDashboard(browser, chartId)
+  for (const width of WIDTHS) {
+    for (const chartId of CHART_IDS) {
+      if (!CHARTS[chartId]) { console.warn(`⚠ unknown chart id ${chartId}, skipping`); continue }
+      if (FAMILIES.some((f) => ['dashboard', 'widgets', 'hover', 'parity'].includes(f))) {
+        console.log(`▶ ${chartId} (?chart=${CHARTS[chartId].query}) @ ${width}px`)
+        await captureDashboard(browser, chartId, width)
+      }
     }
   }
   if (FAMILIES.includes('exploration')) {
     console.log('▶ /chart-exploration')
     await captureExploration(browser)
+  }
+
+  if (FAMILIES.includes('parity') && Object.keys(parityByChart).length) {
+    const diffs = compareParity(parityByChart)
+    const parityPath = path.join(OUT_ROOT, 'parity.json')
+    fs.writeFileSync(parityPath, JSON.stringify({ ok: diffs.length === 0, diffs, records: parityByChart, console: consoleByChart }, null, 2))
+    if (diffs.length) {
+      console.error(`\n✖ DOM parity failed (${diffs.length})`)
+      for (const d of diffs) console.error(`  · ${d}`)
+      process.exitCode = 1
+    } else {
+      console.log(`\n✓ DOM parity — widget order, boxes, chart types, legends, axes match across ${Object.keys(parityByChart).join(', ')}`)
+    }
   }
 
   await browser.close()

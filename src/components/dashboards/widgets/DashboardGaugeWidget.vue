@@ -38,7 +38,7 @@ const arcColor = computed(() => (
         :sweep="data.arc === 'three-quarter' ? 270 : 360"
         :color="arcColor"
         :flat="flat"
-      :emboss="emboss"
+        :emboss="emboss"
       />
     </div>
     <div v-if="data.footerStats?.length" class="gauge-widget__footer">
