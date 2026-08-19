@@ -1,7 +1,7 @@
 # Design System Operating Model
 
 **Status:** proposal — shared after the leadership showcase (2026-07-20) · **Owner:** Deepak (UX)
-**Companions:** [leadership-showcase-script.md](./leadership-showcase-script.md) · [showcase-faq-crib-sheet.md](./showcase-faq-crib-sheet.md) · [monday-showcase-talk-track.md](./monday-showcase-talk-track.md) (convergence strategy)
+**Companions:** [showcase-faq-crib-sheet.md](./showcase-faq-crib-sheet.md)
 
 This is the "how we'll actually work" document behind the showcase: how teams contribute, how design hands over to engineering, how QA and UAT fit, how AI-assisted contributions are governed, and how the timing works alongside the Vue 2 → Vue 3 migration. It's written to be pasted into Confluence and argued with — every section ends with what needs a decision.
 

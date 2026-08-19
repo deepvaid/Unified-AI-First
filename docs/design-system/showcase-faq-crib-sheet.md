@@ -1,6 +1,6 @@
 # FAQ Crib Sheet — Say-It-Out-Loud Answers
 
-Companion to [leadership-showcase-script.md](./leadership-showcase-script.md). Every answer is written to be **spoken**, in plain language a non-technical listener follows on first hearing. Each has an *If pushed:* line for the follow-up. Questions 24–36 cover teams, handover, QA/UAT, and governance — the full written plans behind those answers live in [operating-model.md](./operating-model.md).
+Every answer is written to be **spoken**, in plain language a non-technical listener follows on first hearing. Each has an *If pushed:* line for the follow-up. Questions 24–36 cover teams, handover, QA/UAT, and governance — the full written plans behind those answers live in [operating-model.md](./operating-model.md).
 
 Golden rules: never promise a date or a percentage before the pilots · never say "production-ready" · "converge into LiquidSky," never "replace."
 
