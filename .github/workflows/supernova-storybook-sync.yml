@@ -23,19 +23,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.28.0
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: npm install --legacy-peer-deps
 
       - name: Validate required Supernova secrets
         env:
@@ -52,7 +47,7 @@ jobs:
           fi
 
       - name: Build Storybook static site
-        run: pnpm build-storybook
+        run: npm run build-storybook
 
       - name: Install Supernova CLI
         run: npm install --global @supernovaio/cli
@@ -65,4 +60,4 @@ jobs:
           SUPERNOVA_STORYBOOK_NAME: ${{ secrets.SUPERNOVA_STORYBOOK_NAME }}
           SUPERNOVA_VERSION_ID: ${{ secrets.SUPERNOVA_VERSION_ID }}
           SUPERNOVA_BRAND_ID: ${{ secrets.SUPERNOVA_BRAND_ID }}
-        run: pnpm supernova:storybook:sync
+        run: npm run supernova:storybook:sync

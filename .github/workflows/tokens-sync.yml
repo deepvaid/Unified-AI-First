@@ -25,25 +25,20 @@ jobs:
         with:
           ref: tokens/studio-sync
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.28.0
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: npm install --legacy-peer-deps
 
       - name: Build design tokens
-        run: pnpm tokens:build
+        run: npm run tokens:build
 
       - name: Generate Tokens Studio export
-        run: pnpm tokens:push-figma
+        run: npm run tokens:push-figma
 
       - name: Commit generated files
         uses: stefanzweifel/git-auto-commit-action@v5

@@ -2,7 +2,9 @@ name: Deploy Storybook to GitHub Pages
 
 on:
   push:
-    branches: ["main"] # Trigger when pushing to the main branch
+    # NOTE: this repo's default branch is `master`, so this workflow never
+    # fires as configured. Add "master" here to enable Pages deploys.
+    branches: ["main"]
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
