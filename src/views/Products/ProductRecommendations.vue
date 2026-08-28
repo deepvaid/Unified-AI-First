@@ -1,274 +1,908 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useInitialLoad } from '@/composables/useInitialLoad'
-import { useProductExtrasStore, type RecommendationRule, type RecommendationLogic, type RecommendationPlacement } from '@/stores/useProductExtras'
-import { downloadCsv } from '@/utils/exportCsv'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  useProductExtrasStore, formatStamp,
+  CATALOG_SOURCES, CATALOG_CATEGORIES, FEED_TYPES, FEED_PERIODS, FEED_SORTS, FEED_BRANDS, FEED_STORES,
+  type CatalogProduct, type CatalogSource, type ProductFeed, type FeedTemplate,
+  type FeedInput, type FeedType,
+} from '@/stores/useProductExtras'
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
-import MpStatusChip from '@/components/MpStatusChip.vue'
-import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import MpDialog from '@/components/MpDialog.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
+/**
+ * Product Recommendations — the catalog that feeds e-mail recommendation
+ * blocks, the feeds that select from it, and the templates that render it.
+ * Rebuilt from UAT account 116000; see docs/rebuild/product-recommendations/.
+ */
 const store = useProductExtrasStore()
-const search = ref('')
-const { loading } = useInitialLoad()
+const route = useRoute()
+const router = useRouter()
 const toast = useToast()
 
-const LOGIC_TYPES: RecommendationLogic[] = ['Frequently Bought Together', 'Similar Items', 'Recently Viewed', 'Trending', 'Personalized']
-const PLACEMENTS: RecommendationPlacement[] = ['Cart Page', 'Product Detail Page', 'Homepage & Global Footer']
+const accountId = computed(() => String(route.params.accountId))
+const commerceBase = computed(() => `/commerce/${accountId.value}/product_recommendations`)
 
-const placementIcon: Record<string, string> = {
-  'Cart Page': 'shopping-cart',
-  'Product Detail Page': 'package',
-  'Homepage & Global Footer': 'layout-grid',
-}
+// ── Tabs (route-backed, like UAT) ────────────────────────────────────
+const TAB_KEYS = ['catalog', 'feeds', 'templates'] as const
+type TabKey = (typeof TAB_KEYS)[number]
 
-const headers = [
-  { title: 'Logic / Rule Name', key: 'name', sortable: true },
-  { title: 'Placement', key: 'placement' },
-  { title: 'Performance Lift', key: 'metric', align: 'end' as const },
-  { title: 'Status', key: 'status' },
-  { title: '', key: 'actions', sortable: false, width: 48 },
+const tabs = [
+  { label: 'Product Catalog', key: 'catalog' },
+  { label: 'Product Feeds', key: 'feeds' },
+  { label: 'Product Feed Templates', key: 'templates' },
 ]
 
-// ── Filters ────────────────────────────────────────────────────────
-const filters = ref({
-  status: [] as string[],
-  placement: [] as string[],
+function tabFromRoute(): TabKey {
+  const name = String(route.name ?? '')
+  if (name === 'ProductFeeds') return 'feeds'
+  if (name === 'ProductFeedTemplates') return 'templates'
+  return 'catalog'
+}
+
+const activeTab = ref<TabKey>(tabFromRoute())
+watch(() => route.name, () => { activeTab.value = tabFromRoute() })
+watch(activeTab, (tab) => {
+  const path = tab === 'catalog' ? commerceBase.value
+    : tab === 'feeds' ? `${commerceBase.value}/product_feeds`
+      : `${commerceBase.value}/product_feed_templates`
+  if (route.path !== path) router.replace(path)
 })
-const filterLabels = { status: 'Status', placement: 'Placement' }
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v.length > 0)
-    .map(([key, value]) => ({ key, label: `${filterLabels[key as keyof typeof filterLabels]}: ${(value as string[]).join(', ')}` }))
+
+const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(2)}`
+
+// ══ Tab 1 — Product Catalog ═════════════════════════════════════════
+const sourceFilter = ref<'All' | CatalogSource>('All')
+const catalogSearch = ref('')
+
+const catalogHeaders = [
+  { title: 'Item ID', key: 'itemId', sortable: true },
+  { title: 'Product', key: 'name', sortable: true, minWidth: '260px' },
+  { title: 'Price', key: 'price', align: 'end' as const, sortable: true },
+  { title: 'Created at', key: 'createdAt', sortable: true },
+  { title: 'Updated at', key: 'updatedAt', sortable: true },
+  { title: '', key: 'actions', sortable: false, width: 56 },
+]
+
+const filteredCatalog = computed(() => {
+  const term = catalogSearch.value.trim().toLowerCase()
+  return store.catalog.filter((p) => {
+    const bySource = sourceFilter.value === 'All' || p.source === sourceFilter.value
+    const byTerm = !term || p.name.toLowerCase().includes(term) || p.itemId.toLowerCase().includes(term)
+    return bySource && byTerm
+  })
+})
+
+/** Products missing a mandatory field are excluded from recommendations upstream. */
+function isIncomplete(p: CatalogProduct): boolean {
+  return !p.name.trim() || !p.storeUrl.trim() || !p.imageUrl.trim()
+}
+const incompleteCount = computed(() => store.catalog.filter(isIncomplete).length)
+
+// Edit product drawer
+const editDrawer = ref(false)
+const editGuard = ref(false)
+const editingItemId = ref<string | null>(null)
+const editForm = ref({ name: '', price: '', imageUrl: '', storeUrl: '', categories: [] as string[], description: '' })
+const editSnapshot = ref('')
+
+const editSource = computed(() => store.catalog.find((p) => p.itemId === editingItemId.value)?.source ?? '')
+const editDirty = computed(() => JSON.stringify(editForm.value) !== editSnapshot.value)
+const editValid = computed(() =>
+  editForm.value.name.trim().length > 0
+  && editForm.value.storeUrl.trim().length > 0
+  && editForm.value.price.trim().length > 0
+  && !Number.isNaN(Number(editForm.value.price)),
 )
-function removeFilter(key: string) { filters.value[key as keyof typeof filters.value] = [] }
-function clearAllFilters() { filters.value = { status: [], placement: [] } }
-const filteredRules = computed(() => {
-  let r = store.recommendations
-  if (filters.value.status.length) r = r.filter(x => filters.value.status.includes(x.status))
-  if (filters.value.placement.length) r = r.filter(x => filters.value.placement.includes(x.placement))
-  return r
-})
 
-// ── Rule builder drawer ─────────────────────────────────────────────
-const drawer = ref(false)
-const editingId = ref<number | null>(null)
-const form = ref<{ name: string; logicType: RecommendationLogic; placement: RecommendationPlacement; status: 'Active' | 'Paused' }>({
-  name: '', logicType: 'Frequently Bought Together', placement: 'Cart Page', status: 'Active',
-})
-
-function openCreate() {
-  editingId.value = null
-  form.value = { name: '', logicType: 'Frequently Bought Together', placement: 'Cart Page', status: 'Active' }
-  drawer.value = true
+function openEditProduct(product: CatalogProduct) {
+  editingItemId.value = product.itemId
+  editForm.value = {
+    name: product.name,
+    price: String(product.price),
+    imageUrl: product.imageUrl,
+    storeUrl: product.storeUrl,
+    categories: [...product.categories],
+    description: product.description,
+  }
+  editSnapshot.value = JSON.stringify(editForm.value)
+  editDrawer.value = true
 }
 
-function openEdit(rule: RecommendationRule) {
-  editingId.value = rule.id
-  form.value = { name: rule.name, logicType: rule.logicType, placement: rule.placement, status: rule.status }
-  drawer.value = true
+function requestCloseEdit() {
+  if (editDirty.value) editGuard.value = true
+  else editDrawer.value = false
 }
 
-function saveRule() {
-  const payload = { ...form.value, name: form.value.name.trim() || form.value.logicType }
-  if (editingId.value !== null) {
-    store.updateRule(editingId.value, payload)
-    toast.success('Recommendation rule updated')
+function discardEdit() {
+  editDrawer.value = false
+}
+
+function saveProduct() {
+  if (!editingItemId.value || !editValid.value) return
+  store.updateCatalogProduct(editingItemId.value, {
+    name: editForm.value.name.trim(),
+    price: Number(editForm.value.price),
+    imageUrl: editForm.value.imageUrl.trim(),
+    storeUrl: editForm.value.storeUrl.trim(),
+    categories: editForm.value.categories,
+    description: editForm.value.description.trim(),
+  })
+  editDrawer.value = false
+  toast.success('Product updated')
+}
+
+// Import catalog dialog
+const importDialog = ref(false)
+const importFile = ref<File[] | File | null>(null)
+const importDelimiter = ref<'Comma' | 'Semi-Colon'>('Comma')
+const importStep = ref<1 | 2>(1)
+const importing = ref(false)
+
+const importFileName = computed(() => {
+  const f = Array.isArray(importFile.value) ? importFile.value[0] : importFile.value
+  return f?.name ?? ''
+})
+
+function openImport() {
+  importFile.value = null
+  importDelimiter.value = 'Comma'
+  importStep.value = 1
+  importDialog.value = true
+}
+
+function continueImport() {
+  if (!importFileName.value) return
+  importStep.value = 2
+}
+
+async function runImport() {
+  importing.value = true
+  await new Promise((resolve) => setTimeout(resolve, 700))
+  const added = store.importCatalog(importFileName.value, 3)
+  importing.value = false
+  importDialog.value = false
+  toast.success(`${added} products imported from ${importFileName.value}`)
+}
+
+// ══ Tab 2 — Product Feeds ═══════════════════════════════════════════
+const feedSearch = ref('')
+
+const feedHeaders = [
+  { title: 'Name', key: 'name', sortable: true, minWidth: '240px' },
+  { title: 'Metric', key: 'metric', sortable: true },
+  { title: 'Created at', key: 'createdAt', sortable: true },
+  { title: 'Updated at', key: 'updatedAt', sortable: true },
+  { title: '', key: 'actions', sortable: false, width: 56 },
+]
+
+const filteredFeeds = computed(() => {
+  const term = feedSearch.value.trim().toLowerCase()
+  return term ? store.productFeeds.filter((f) => f.name.toLowerCase().includes(term)) : store.productFeeds
+})
+
+/** Metrics on legacy rows that the current form can no longer produce. */
+const LEGACY_METRICS = ['Bought Together', 'Similar Products', 'Trending']
+const isLegacyMetric = (metric: string) => LEGACY_METRICS.includes(metric)
+
+const feedDrawer = ref(false)
+const feedGuard = ref(false)
+const editingFeedId = ref<number | null>(null)
+const emptyFeedForm = (): FeedInput => ({
+  name: '', activeOnly: true, inStockOnly: true, webstoreApprovedOnly: true,
+  source: 'Default', storeName: '', brands: [], categoryMode: 'all', categories: [],
+  metric: 'Best Sellers', period: 'Last 5 days', sortBy: 'Random',
+})
+const feedForm = ref<FeedInput>(emptyFeedForm())
+const feedSnapshot = ref('')
+
+/** Only store-backed sources carry a store name; Default is account-wide. */
+const feedNeedsStore = computed(() => ['Shopify', 'Commerce Cloud', 'Magento', 'Woocommerce'].includes(feedForm.value.source))
+const feedDirty = computed(() => JSON.stringify(feedForm.value) !== feedSnapshot.value)
+const feedValid = computed(() =>
+  feedForm.value.name.trim().length > 0
+  && feedForm.value.source.length > 0
+  && (!feedNeedsStore.value || feedForm.value.storeName.length > 0)
+  && (feedForm.value.categoryMode === 'all' || feedForm.value.categories.length > 0),
+)
+
+function openCreateFeed() {
+  editingFeedId.value = null
+  feedForm.value = emptyFeedForm()
+  feedSnapshot.value = JSON.stringify(feedForm.value)
+  feedDrawer.value = true
+}
+
+function openEditFeed(feed: ProductFeed) {
+  editingFeedId.value = feed.id
+  feedForm.value = {
+    name: feed.name,
+    activeOnly: feed.activeOnly,
+    inStockOnly: feed.inStockOnly,
+    webstoreApprovedOnly: feed.webstoreApprovedOnly,
+    source: feed.source,
+    storeName: feed.storeName,
+    brands: [...feed.brands],
+    categoryMode: feed.categoryMode,
+    categories: [...feed.categories],
+    // Legacy metrics can't round-trip through the current type list.
+    metric: (FEED_TYPES as readonly string[]).includes(feed.metric) ? (feed.metric as FeedType) : 'Best Sellers',
+    period: feed.period,
+    sortBy: feed.sortBy,
+  }
+  feedSnapshot.value = JSON.stringify(feedForm.value)
+  feedDrawer.value = true
+}
+
+function requestCloseFeed() {
+  if (feedDirty.value) feedGuard.value = true
+  else feedDrawer.value = false
+}
+
+function saveFeed() {
+  if (!feedValid.value) return
+  const payload: FeedInput = {
+    ...feedForm.value,
+    name: feedForm.value.name.trim(),
+    storeName: feedNeedsStore.value ? feedForm.value.storeName : '',
+    categories: feedForm.value.categoryMode === 'all' ? [] : feedForm.value.categories,
+  }
+  if (editingFeedId.value !== null) {
+    store.updateFeed(editingFeedId.value, payload)
+    toast.success('Product feed updated')
   } else {
-    store.addRule(payload)
-    toast.success('Recommendation rule created')
+    store.addFeed(payload)
+    toast.success('Product feed created')
   }
-  drawer.value = false
+  feedDrawer.value = false
 }
 
-function toggleRule(rule: RecommendationRule) {
-  store.toggleRule(rule.id)
-  toast.success(rule.status === 'Active' ? 'Rule disabled' : 'Rule enabled')
+// ══ Tab 3 — Product Feed Templates ══════════════════════════════════
+const templateScope = ref<'active' | 'archived'>('active')
+const templateSearch = ref('')
+
+const templateHeaders = [
+  { title: 'Name', key: 'name', sortable: true, minWidth: '260px' },
+  { title: 'Block layout', key: 'layout', sortable: false },
+  { title: 'Created at', key: 'createdAt', sortable: true },
+  { title: 'Updated at', key: 'updatedAt', sortable: true },
+  { title: '', key: 'actions', sortable: false, width: 56 },
+]
+
+const filteredTemplates = computed(() => {
+  const term = templateSearch.value.trim().toLowerCase()
+  return store.feedTemplates.filter((t) => {
+    const byScope = templateScope.value === 'archived' ? t.archived : !t.archived
+    const byTerm = !term || t.name.toLowerCase().includes(term)
+    return byScope && byTerm
+  })
+})
+
+function openCreateTemplate() {
+  router.push(`${commerceBase.value}/product_feed_templates/new`)
 }
 
-// ── Delete ──────────────────────────────────────────────────────────
-const confirmDelete = ref(false)
-const pendingDelete = ref<RecommendationRule | null>(null)
-function askDelete(rule: RecommendationRule) {
-  pendingDelete.value = rule
-  confirmDelete.value = true
-}
-function doDelete() {
-  if (pendingDelete.value) {
-    store.deleteRule(pendingDelete.value.id)
-    toast.success('Rule deleted')
-  }
-  pendingDelete.value = null
+function openEditTemplate(template: FeedTemplate) {
+  router.push(`${commerceBase.value}/product_feed_templates/${template.id}`)
 }
 
-// ── Export ──────────────────────────────────────────────────────────
-function exportRules() {
-  downloadCsv('recommendation-rules', filteredRules.value, [
-    { title: 'Rule Name', value: 'name' },
-    { title: 'Logic Type', value: 'logicType' },
-    { title: 'Placement', value: 'placement' },
-    { title: 'Performance Lift', value: (r) => `${r.metric} ${r.metricLabel}` },
-    { title: 'Status', value: 'status' },
-  ])
+const confirmArchive = ref(false)
+const pendingArchive = ref<FeedTemplate | null>(null)
+
+function askArchive(template: FeedTemplate) {
+  pendingArchive.value = template
+  confirmArchive.value = true
 }
 
+function doArchive() {
+  if (!pendingArchive.value) return
+  store.archiveTemplate(pendingArchive.value.id)
+  toast.success(`“${pendingArchive.value.name}” archived`)
+  pendingArchive.value = null
+}
+
+function restore(template: FeedTemplate) {
+  store.restoreTemplate(template.id)
+  toast.success(`“${template.name}” restored`)
+}
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column gap-5">
+  <div class="h-100 d-flex flex-column ga-5">
     <MpPageHeader
+      eyebrow="My Product Recommendations"
       title="Product Recommendations"
-      :subtitle="`${store.recommendations.filter(r => r.status === 'Active').length} active recommendation rules`"
+      subtitle="Maintain the catalog, feeds and templates behind recommendation blocks in your emails."
     >
-      <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportRules">Export</v-btn>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">Configure Rules</v-btn>
+      <template #tabs>
+        <MpFilterTabs v-model="activeTab" :tabs="tabs" aria-label="Product recommendations sections" controls-id="rec-panel" />
       </template>
     </MpPageHeader>
 
-    <v-alert type="info" variant="tonal" rounded="lg" density="compact" class="text-body-2">
-      AI-powered recommendation engine automatically places products based on user browsing habits and cohort data.
-    </v-alert>
+    <div id="rec-panel" class="flex-grow-1 d-flex flex-column ga-4">
+      <!-- ══ Product Catalog ══════════════════════════════════════════ -->
+      <template v-if="activeTab === 'catalog'">
+        <v-alert type="info" variant="tonal" density="comfortable" class="rec-alert">
+          Importing a catalog creates or updates products. Products missing an Item ID, name, price,
+          image URL or store URL are left out of recommendations.
+          <a class="rec-alert__link" href="https://galaxy.maropost.com/s/article/Product-Catalog" target="_blank" rel="noopener">
+            Learn more about Product Catalog
+          </a>
+          <template v-if="incompleteCount > 0">
+            <br>
+            <strong>{{ incompleteCount }}</strong> {{ incompleteCount === 1 ? 'product is' : 'products are' }} incomplete right now.
+          </template>
+        </v-alert>
 
-    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-      <MpDataTableToolbar
-        v-model:search="search"
-        title="Recommendation Rules"
-        :active-filters="activeFilterEntries"
-        @remove-filter="removeFilter"
-        @clear-filters="clearAllFilters"
-      >
-        <!-- Filter popover: `hide-details` is deliberate — these selects can never
-             carry a hint or an error, and the popover is a dense surface. -->
-        <template #filter-content>
-          <MpFormGrid>
-            <v-select
-              v-model="filters.status"
-              :items="['Active', 'Paused']"
-              :label="filterLabels.status"
-              multiple
-              chips
-              closable-chips
+        <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+          <div class="rec-toolbar d-flex flex-wrap align-center ga-3">
+            <v-text-field
+              v-model="catalogSearch"
+              label="Search catalog"
+              placeholder="Product name or item ID"
+              prepend-inner-icon="search"
+              clearable
               hide-details
+              class="rec-toolbar__search"
             />
             <v-select
-              v-model="filters.placement"
-              :items="[...PLACEMENTS] as string[]"
-              :label="filterLabels.placement"
-              multiple
-              chips
-              closable-chips
+              v-model="sourceFilter"
+              :items="['All', ...CATALOG_SOURCES]"
+              label="Source"
               hide-details
+              class="rec-toolbar__select"
             />
-          </MpFormGrid>
-        </template>
-      </MpDataTableToolbar>
-
-      <MpTableSkeleton v-if="loading" :rows="3" :columns="5" />
-
-      <v-data-table
-        v-else
-        :headers="headers"
-        :items="filteredRules"
-        :search="search"
-        :items-per-page="15"
-        hover
-        density="comfortable"
-        fixed-header
-        class="flex-grow-1"
-      >
-        <template v-slot:item.name="{ item }">
-          <div class="text-body-2 font-weight-medium">{{ item.name }}</div>
-          <div class="text-caption text-medium-emphasis">{{ item.logicType }}</div>
-        </template>
-
-        <template v-slot:item.placement="{ item }">
-          <div class="d-flex align-center gap-2">
-            <v-icon size="16" class="text-medium-emphasis">{{ placementIcon[item.placement] ?? 'map-pin' }}</v-icon>
-            <span class="text-body-2">{{ item.placement }}</span>
+            <v-spacer />
+            <v-btn color="primary" variant="flat" prepend-icon="upload" class="text-none" @click="openImport">
+              Import product catalog
+            </v-btn>
           </div>
-        </template>
 
-        <template v-slot:item.metric="{ item }">
-          <v-chip v-if="item.metric !== '—'" size="small" variant="tonal" color="success" class="font-weight-bold" label>
-            <v-icon start size="13">trending-up</v-icon>
-            {{ item.metric }}
-            <span class="text-medium-emphasis font-weight-regular ms-1">{{ item.metricLabel }}</span>
-          </v-chip>
-          <span v-else class="text-disabled">—</span>
-        </template>
+          <v-data-table
+            :headers="catalogHeaders"
+            :items="filteredCatalog"
+            :items-per-page="10"
+            hover
+            density="comfortable"
+            fixed-header
+            class="flex-grow-1"
+          >
+            <template #item.itemId="{ item }">
+              <span class="rec-mono text-body-2">{{ item.itemId }}</span>
+            </template>
+            <template #item.name="{ item }">
+              <div class="d-flex align-center ga-3 py-2">
+                <v-avatar :size="36" rounded="lg" class="border flex-shrink-0">
+                  <v-img v-if="item.imageUrl" :src="item.imageUrl" cover :alt="''">
+                    <template #error>
+                      <div class="rec-thumb-fallback"><v-icon size="16">image</v-icon></div>
+                    </template>
+                  </v-img>
+                  <div v-else class="rec-thumb-fallback"><v-icon size="16">image</v-icon></div>
+                </v-avatar>
+                <div class="min-w-0">
+                  <div v-if="item.name" class="text-body-2 font-weight-medium">{{ item.name }}</div>
+                  <div v-else class="text-body-2 text-medium-emphasis font-italic">Untitled product</div>
+                  <div v-if="isIncomplete(item)" class="d-flex align-center ga-1 text-caption text-warning">
+                    <v-icon size="13">triangle-alert</v-icon>
+                    Incomplete — excluded from recommendations
+                  </div>
+                </div>
+              </div>
+            </template>
+            <template #item.price="{ item }">
+              <span class="text-body-2" :class="item.price <= 0 ? 'text-medium-emphasis' : ''">{{ money(item.price) }}</span>
+            </template>
+            <template #item.createdAt="{ item }">
+              <span class="text-body-2 text-medium-emphasis">{{ formatStamp(item.createdAt) }}</span>
+            </template>
+            <template #item.updatedAt="{ item }">
+              <span class="text-body-2 text-medium-emphasis">{{ formatStamp(item.updatedAt) }}</span>
+            </template>
+            <template #item.actions="{ item }">
+              <MpRowActionsMenu ariaLabel="Product actions" :item-label="item.name || item.itemId">
+                <v-list-item prepend-icon="pencil" title="Edit product" @click="openEditProduct(item)" />
+              </MpRowActionsMenu>
+            </template>
+            <template #no-data>
+              <MpEmptyState
+                icon="package"
+                :title="catalogSearch || sourceFilter !== 'All' ? 'No products match your filters' : 'No catalog products yet'"
+                :description="catalogSearch || sourceFilter !== 'All' ? 'Try a different search term or switch the source back to All.' : 'Import a product catalog to power recommendation blocks.'"
+                :action-label="catalogSearch || sourceFilter !== 'All' ? undefined : 'Import product catalog'"
+                :action-icon="catalogSearch || sourceFilter !== 'All' ? undefined : 'upload'"
+                class="py-10"
+                @action="openImport"
+              />
+            </template>
+          </v-data-table>
+        </v-card>
+      </template>
 
-        <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="general" />
-        </template>
+      <!-- ══ Product Feeds ════════════════════════════════════════════ -->
+      <template v-else-if="activeTab === 'feeds'">
+        <v-alert type="info" variant="tonal" density="comfortable" class="rec-alert">
+          Product recommendations are only generated once a product catalog has been imported.
+        </v-alert>
 
-        <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Rule actions">
-            <v-list-item prepend-icon="pencil" title="Edit Rule" @click="openEdit(item)" />
-            <v-list-item
-              :prepend-icon="item.status === 'Active' ? 'toggle-left' : 'toggle-right'"
-              :title="item.status === 'Active' ? 'Disable' : 'Enable'"
-              @click="toggleRule(item)"
+        <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+          <div class="rec-toolbar d-flex flex-wrap align-center ga-3">
+            <v-text-field
+              v-model="feedSearch"
+              label="Search feeds"
+              placeholder="Feed name"
+              prepend-inner-icon="search"
+              clearable
+              hide-details
+              class="rec-toolbar__search"
             />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
-          </MpRowActionsMenu>
-        </template>
+            <v-spacer />
+            <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreateFeed">
+              New product feed
+            </v-btn>
+          </div>
 
-        <template v-slot:no-data>
-          <MpEmptyState
-            icon="sparkles"
-            :title="search ? 'No rules match your search' : 'No recommendation rules'"
-            :description="search ? 'Try a different search term or clear your filters.' : 'Configure a rule to start placing personalised recommendations across your storefront.'"
-            :action-label="search ? undefined : 'Configure Rules'"
-            :action-icon="search ? undefined : 'plus'"
-            class="py-10"
-            @action="openCreate"
-          />
-        </template>
-      </v-data-table>
-    </v-card>
+          <v-data-table
+            :headers="feedHeaders"
+            :items="filteredFeeds"
+            :items-per-page="10"
+            hover
+            density="comfortable"
+            fixed-header
+            class="flex-grow-1"
+          >
+            <template #item.name="{ item }">
+              <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
+            </template>
+            <template #item.metric="{ item }">
+              <div class="d-flex align-center ga-2">
+                <v-chip size="small" variant="tonal" :color="isLegacyMetric(item.metric) ? 'secondary' : 'primary'" label>
+                  {{ item.metric }}
+                </v-chip>
+                <v-tooltip v-if="isLegacyMetric(item.metric)" location="top" text="Legacy metric — kept on existing feeds, but new feeds can't select it.">
+                  <template #activator="{ props: tip }">
+                    <v-icon v-bind="tip" size="15" class="text-medium-emphasis" tabindex="0" role="img"
+                            aria-label="Legacy metric — kept on existing feeds, but new feeds can't select it.">info</v-icon>
+                  </template>
+                </v-tooltip>
+              </div>
+            </template>
+            <template #item.createdAt="{ item }">
+              <span class="text-body-2 text-medium-emphasis">{{ formatStamp(item.createdAt) }}</span>
+            </template>
+            <template #item.updatedAt="{ item }">
+              <span class="text-body-2 text-medium-emphasis">{{ formatStamp(item.updatedAt) }}</span>
+            </template>
+            <template #item.actions="{ item }">
+              <MpRowActionsMenu ariaLabel="Feed actions" :item-label="item.name">
+                <v-list-item prepend-icon="pencil" title="Edit product feed" @click="openEditFeed(item)" />
+              </MpRowActionsMenu>
+            </template>
+            <template #no-data>
+              <MpEmptyState
+                icon="list-filter"
+                :title="feedSearch ? 'No feeds match your search' : 'No product feeds yet'"
+                :description="feedSearch ? 'Try a different search term.' : 'A feed picks the products a recommendation block should draw from.'"
+                :action-label="feedSearch ? undefined : 'New product feed'"
+                :action-icon="feedSearch ? undefined : 'plus'"
+                class="py-10"
+                @action="openCreateFeed"
+              />
+            </template>
+          </v-data-table>
+        </v-card>
+      </template>
 
-    <!-- Rule builder drawer -->
+      <!-- ══ Product Feed Templates ═══════════════════════════════════ -->
+      <template v-else>
+        <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
+          <div class="rec-toolbar d-flex flex-wrap align-center ga-3">
+            <v-text-field
+              v-model="templateSearch"
+              label="Search templates"
+              placeholder="Template name"
+              prepend-inner-icon="search"
+              clearable
+              hide-details
+              class="rec-toolbar__search"
+            />
+            <v-select
+              v-model="templateScope"
+              :items="[{ title: 'Active templates', value: 'active' }, { title: 'Archived templates', value: 'archived' }]"
+              label="Show"
+              hide-details
+              class="rec-toolbar__select"
+            />
+            <v-spacer />
+            <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreateTemplate">
+              New feed template
+            </v-btn>
+          </div>
+
+          <v-data-table
+            :headers="templateHeaders"
+            :items="filteredTemplates"
+            :items-per-page="10"
+            hover
+            density="comfortable"
+            fixed-header
+            class="flex-grow-1"
+          >
+            <template #item.name="{ item }">
+              <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
+            </template>
+            <template #item.layout="{ item }">
+              <v-chip size="small" variant="tonal" label>
+                {{ item.rows }} × {{ item.columns }}
+              </v-chip>
+              <span class="text-caption text-medium-emphasis ml-2">{{ item.rows * item.columns }} products</span>
+            </template>
+            <template #item.createdAt="{ item }">
+              <span class="text-body-2 text-medium-emphasis">{{ formatStamp(item.createdAt) }}</span>
+            </template>
+            <template #item.updatedAt="{ item }">
+              <span class="text-body-2 text-medium-emphasis">{{ formatStamp(item.updatedAt) }}</span>
+            </template>
+            <template #item.actions="{ item }">
+              <MpRowActionsMenu ariaLabel="Template actions" :item-label="item.name">
+                <v-list-item prepend-icon="pencil" title="Edit feed template" @click="openEditTemplate(item)" />
+                <template v-if="item.archived">
+                  <v-list-item prepend-icon="archive-restore" title="Restore feed template" @click="restore(item)" />
+                </template>
+                <template v-else>
+                  <v-divider class="my-1" />
+                  <v-list-item prepend-icon="archive" title="Archive feed template" @click="askArchive(item)" />
+                </template>
+              </MpRowActionsMenu>
+            </template>
+            <template #no-data>
+              <MpEmptyState
+                icon="layout-grid"
+                :title="templateScope === 'archived' ? 'No archived templates' : templateSearch ? 'No templates match your search' : 'No feed templates yet'"
+                :description="templateScope === 'archived' ? 'Templates you archive are kept here and can be restored.' : 'A template lays out how recommended products render inside an email.'"
+                :action-label="templateScope === 'archived' || templateSearch ? undefined : 'New feed template'"
+                :action-icon="templateScope === 'archived' || templateSearch ? undefined : 'plus'"
+                class="py-10"
+                @action="openCreateTemplate"
+              />
+            </template>
+          </v-data-table>
+        </v-card>
+      </template>
+    </div>
+
+    <!-- ── Edit catalog product ─────────────────────────────────────── -->
     <MpFormDrawer
-      v-model="drawer"
-      :title="editingId !== null ? 'Edit Recommendation Rule' : 'Configure Recommendation Rule'"
-      subtitle="Control what recommendations appear and where"
+      v-model="editDrawer"
+      title="Edit product"
+      subtitle="Catalog record used by recommendation blocks"
+      size="lg"
+      guarded
+      @close="requestCloseEdit"
     >
-      <MpFormGrid>
+      <v-alert type="warning" variant="tonal" density="comfortable">
+        Edits here are overwritten at the next catalog sync from
+        <strong>{{ editSource }}</strong>.
+      </v-alert>
+
+      <MpFormSection title="Identity" />
+      <MpFormGrid :cols="2">
+        <MpFormField label="Item ID">
+          <template #default="{ labelId }">
+            <div class="rec-readonly text-body-2" :aria-labelledby="labelId">{{ editingItemId }}</div>
+          </template>
+        </MpFormField>
+        <MpFormField label="Source">
+          <template #default="{ labelId }">
+            <div class="rec-readonly text-body-2" :aria-labelledby="labelId">{{ editSource }}</div>
+          </template>
+        </MpFormField>
+      </MpFormGrid>
+
+      <MpFormSection title="Details" required />
+      <MpFormGrid :cols="2">
         <v-text-field
-          v-model="form.name"
-          label="Rule name"
-          placeholder="e.g. Cart Cross-Sell"
-          hint="Leave blank to use the logic type as the name"
-          persistent-hint
+          v-model="editForm.name"
+          label="Name *"
+          :error-messages="editForm.name.trim() ? [] : ['Name is required']"
+          class="mp-form-grid__full"
         />
-        <v-select v-model="form.logicType" :items="LOGIC_TYPES" label="Logic type" />
-        <v-select v-model="form.placement" :items="PLACEMENTS" label="Placement" />
-        <v-select v-model="form.status" :items="['Active', 'Paused']" label="Status" />
+        <v-text-field
+          v-model="editForm.price"
+          label="Price *"
+          type="number"
+          prefix="$"
+          :error-messages="editForm.price.trim() && !Number.isNaN(Number(editForm.price)) ? [] : ['Enter a price']"
+        />
+        <v-text-field v-model="editForm.imageUrl" label="Image URL" placeholder="https://…" />
+        <v-text-field
+          v-model="editForm.storeUrl"
+          label="Store URL *"
+          placeholder="https://…"
+          :error-messages="editForm.storeUrl.trim() ? [] : ['Store URL is required']"
+          class="mp-form-grid__full"
+        />
+        <v-select
+          v-model="editForm.categories"
+          :items="CATALOG_CATEGORIES"
+          label="Category"
+          multiple
+          chips
+          closable-chips
+          hint="Choose one or more categories from the list."
+          persistent-hint
+          class="mp-form-grid__full"
+        />
+        <v-textarea v-model="editForm.description" label="Description" rows="3" class="mp-form-grid__full" />
       </MpFormGrid>
 
       <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveRule">
-          {{ editingId !== null ? 'Save Changes' : 'Create Rule' }}
+        <v-btn variant="text" class="text-none" @click="requestCloseEdit">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!editValid" @click="saveProduct">Save</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="editGuard"
+      title="Discard your changes?"
+      message="This product has unsaved edits. Closing now discards them."
+      confirm-label="Discard changes"
+      danger
+      @confirm="discardEdit"
+    />
+
+    <!-- ── Import product catalog ───────────────────────────────────── -->
+    <MpDialog v-model="importDialog" title="Import product catalog" size="md">
+      <template v-if="importStep === 1">
+        <p class="text-body-2 text-medium-emphasis">
+          Your catalog's data is used to build product feeds. Rows missing the mandatory fields —
+          <strong>Item ID, Name, Price, Image URL and Store URL</strong> — are skipped and won't appear
+          in recommendations.
+        </p>
+
+        <MpFormSection title="Select file" required description="CSV, TXT or ZIP up to 128 MB. A ZIP must contain exactly one .csv or .txt file." />
+        <v-file-input
+          v-model="importFile"
+          label="Catalog file *"
+          accept=".csv,.txt,.zip"
+          prepend-icon=""
+          prepend-inner-icon="paperclip"
+        />
+        <v-btn variant="text" size="small" prepend-icon="download" class="text-none align-self-start">
+          Download example file
+        </v-btn>
+
+        <MpFormSection title="Delimiter" />
+        <MpFormField label="Column delimiter">
+          <template #default="{ labelId }">
+            <v-radio-group v-model="importDelimiter" inline hide-details :aria-labelledby="labelId">
+              <v-radio label="Comma" value="Comma" />
+              <v-radio label="Semi-colon" value="Semi-Colon" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
+      </template>
+
+      <template v-else>
+        <p class="text-body-2">Ready to import <strong>{{ importFileName }}</strong>.</p>
+        <MpFormSection title="Summary" />
+        <div class="rec-summary">
+          <div class="rec-summary__row"><span>File</span><span>{{ importFileName }}</span></div>
+          <div class="rec-summary__row"><span>Delimiter</span><span>{{ importDelimiter === 'Comma' ? 'Comma' : 'Semi-colon' }}</span></div>
+          <div class="rec-summary__row"><span>Mode</span><span>Create or update by Item ID</span></div>
+        </div>
+      </template>
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" :disabled="importing" @click="importDialog = false">Cancel</v-btn>
+        <v-btn v-if="importStep === 1" color="primary" variant="flat" class="text-none" :disabled="!importFileName" @click="continueImport">
+          Continue
+        </v-btn>
+        <v-btn v-else color="primary" variant="flat" class="text-none" :loading="importing" @click="runImport">
+          Start import
+        </v-btn>
+      </template>
+      <template #footerStart>
+        <v-btn v-if="importStep === 2" variant="text" class="text-none" :disabled="importing" @click="importStep = 1">Back</v-btn>
+      </template>
+    </MpDialog>
+
+    <!-- ── New / Edit product feed ──────────────────────────────────── -->
+    <MpFormDrawer
+      v-model="feedDrawer"
+      :title="editingFeedId !== null ? 'Edit product feed' : 'New product feed'"
+      subtitle="Choose which catalog products a recommendation block draws from"
+      size="lg"
+      guarded
+      @close="requestCloseFeed"
+    >
+      <MpFormSection title="General" required />
+      <MpFormGrid>
+        <v-text-field
+          v-model="feedForm.name"
+          label="Product feed name *"
+          :error-messages="feedForm.name.trim() ? [] : ['Name is required']"
+        />
+        <MpFormField label="Include only">
+          <template #default="{ labelId }">
+            <div class="d-flex flex-column ga-2" :aria-labelledby="labelId">
+              <v-switch v-model="feedForm.activeOnly" label="Active products only" color="primary" hide-details density="compact" />
+              <v-switch v-model="feedForm.inStockOnly" label="In-stock products only" color="primary" hide-details density="compact" />
+              <v-switch v-model="feedForm.webstoreApprovedOnly" label="Webstore-approved products only" color="primary" hide-details density="compact" />
+            </div>
+          </template>
+        </MpFormField>
+      </MpFormGrid>
+
+      <MpFormSection title="Source" required />
+      <MpFormGrid :cols="2">
+        <v-select
+          v-model="feedForm.source"
+          :items="[...CATALOG_SOURCES]"
+          label="Source *"
+          :class="feedNeedsStore ? '' : 'mp-form-grid__full'"
+        />
+        <v-select
+          v-if="feedNeedsStore"
+          v-model="feedForm.storeName"
+          :items="FEED_STORES"
+          label="Store name *"
+          :error-messages="feedForm.storeName ? [] : ['Choose the store this feed reads from']"
+        />
+        <v-select
+          v-model="feedForm.brands"
+          :items="FEED_BRANDS"
+          label="Brand"
+          multiple
+          chips
+          closable-chips
+          clearable
+          class="mp-form-grid__full"
+        />
+      </MpFormGrid>
+
+      <MpFormSection title="Filter categories" />
+      <MpFormField label="Category scope">
+        <template #default="{ labelId }">
+          <v-radio-group v-model="feedForm.categoryMode" hide-details :aria-labelledby="labelId">
+            <v-radio label="Show all categories" value="all" />
+            <v-radio label="Limit to specific categories" value="limit" />
+            <v-radio label="Exclude specific categories" value="exclude" />
+          </v-radio-group>
+        </template>
+      </MpFormField>
+      <v-select
+        v-if="feedForm.categoryMode !== 'all'"
+        v-model="feedForm.categories"
+        :items="CATALOG_CATEGORIES"
+        :label="feedForm.categoryMode === 'limit' ? 'Categories to include *' : 'Categories to exclude *'"
+        multiple
+        chips
+        closable-chips
+        :error-messages="feedForm.categories.length ? [] : ['Choose at least one category']"
+      />
+
+      <MpFormSection title="Recommendations type" />
+      <MpFormGrid :cols="2">
+        <v-select v-model="feedForm.metric" :items="[...FEED_TYPES]" label="Type" />
+        <v-select v-model="feedForm.period" :items="[...FEED_PERIODS]" label="Based on" />
+      </MpFormGrid>
+
+      <MpFormSection title="Sort by" />
+      <MpFormField label="Product order">
+        <template #default="{ labelId }">
+          <v-radio-group v-model="feedForm.sortBy" hide-details :aria-labelledby="labelId">
+            <v-radio v-for="sort in FEED_SORTS" :key="sort" :label="sort" :value="sort" />
+          </v-radio-group>
+        </template>
+      </MpFormField>
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="requestCloseFeed">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!feedValid" @click="saveFeed">
+          {{ editingFeedId !== null ? 'Save changes' : 'Create feed' }}
         </v-btn>
       </template>
     </MpFormDrawer>
 
     <MpConfirmDialog
-      v-model="confirmDelete"
-      title="Delete recommendation rule?"
-      :message="`“${pendingDelete?.name}” will be removed and stop placing recommendations. This cannot be undone.`"
-      confirm-label="Delete Rule"
+      v-model="feedGuard"
+      title="Discard your changes?"
+      message="This feed has unsaved changes. Closing now discards them."
+      confirm-label="Discard changes"
       danger
-      @confirm="doDelete"
+      @confirm="feedDrawer = false"
+    />
+
+    <MpConfirmDialog
+      v-model="confirmArchive"
+      title="Archive this template?"
+      :message="`“${pendingArchive?.name}” stops being available to new emails. You can restore it from the archived list.`"
+      confirm-label="Archive template"
+      @confirm="doArchive"
     />
   </div>
 </template>
+
+<style scoped>
+.rec-alert :deep(.v-alert__content) {
+  font-size: var(--mp-fontSize-13);
+}
+
+.rec-alert__link {
+  color: inherit;
+  font-weight: var(--mp-fontWeight-semibold);
+}
+
+.rec-toolbar {
+  padding: var(--mp-component-card-padding);
+  border-bottom: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
+  min-height: var(--mp-component-toolbar-minHeight);
+}
+
+.rec-toolbar__search {
+  max-width: var(--mp-component-toolbar-searchWidth);
+  min-width: var(--mp-component-toolbar-searchMinWidth);
+}
+
+.rec-toolbar__select {
+  max-width: 240px;
+  min-width: 180px;
+}
+
+.rec-thumb-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--v-theme-surface-variant));
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.rec-mono {
+  font-family: var(--mp-fontFamily-mono);
+}
+
+.rec-readonly {
+  min-height: var(--mp-component-control-height);
+  display: flex;
+  align-items: center;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.rec-summary {
+  border: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
+  border-radius: var(--mp-component-card-radius);
+  overflow: hidden;
+}
+
+.rec-summary__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--mp-space-16);
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-component-listItem-paddingInline);
+  font-size: var(--mp-fontSize-13);
+}
+
+.rec-summary__row + .rec-summary__row {
+  border-top: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
+}
+
+.rec-summary__row span:first-child {
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+</style>

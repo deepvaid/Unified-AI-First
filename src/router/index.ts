@@ -53,14 +53,23 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/analytics/website_reports', name: 'WebsiteReports', component: () => import('@/views/Analytics/WebsiteReports.vue') },
   { path: '/accounts/:accountId/analytics/journey_reports', name: 'JourneyReports', component: () => import('@/views/Analytics/JourneyReports.vue') },
   { path: '/accounts/:accountId/analytics/custom_reports', name: 'CustomReports', component: () => import('@/views/Analytics/CustomReports.vue') },
+  { path: '/accounts/:accountId/analytics/custom_reports/new', name: 'CreateCustomReport', component: () => import('@/views/Analytics/CreateCustomReport.vue') },
+  { path: '/accounts/:accountId/analytics/custom_reports/new/:type', name: 'CreateCustomReportWizard', component: () => import('@/views/Analytics/CreateCustomReportWizard.vue') },
   { path: '/accounts/:accountId/analytics/transactional_reports', name: 'TransactionalReports', component: () => import('@/views/Analytics/TransactionalReports.vue') },
   { path: '/accounts/:accountId/analytics/log_inspector', name: 'LogInspector', component: () => import('@/views/Analytics/LogInspector.vue') },
 
   // 3. Contacts (Audience)
   { path: '/accounts/:accountId/contacts', name: 'AllContacts', component: () => import('@/views/Contacts/AllContacts.vue') },
+  // Must precede /contacts/:id, or :id swallows "new".
+  { path: '/accounts/:accountId/contacts/new', name: 'CreateContact', component: () => import('@/views/Contacts/CreateContact.vue'), meta: { builderShell: true } },
   { path: '/accounts/:accountId/contacts/:id', name: 'ContactDetail', component: () => import('@/views/Contacts/ContactDetail.vue') },
   { path: '/accounts/:accountId/lists', name: 'ContactLists', component: () => import('@/views/Contacts/ContactLists.vue') },
+  // Must precede /lists/:id, or :id swallows "new".
+  { path: '/accounts/:accountId/lists/new', name: 'CreateList', component: () => import('@/views/Contacts/CreateList.vue'), meta: { builderShell: true } },
+  { path: '/accounts/:accountId/lists/:id/edit', name: 'EditList', component: () => import('@/views/Contacts/CreateList.vue'), meta: { builderShell: true } },
   { path: '/accounts/:accountId/segments', name: 'Segments', component: () => import('@/views/Contacts/Segments.vue') },
+  { path: '/accounts/:accountId/segments/types', name: 'SegmentBuilderChooser', component: () => import('@/views/Contacts/SegmentBuilderChooser.vue') },
+  { path: '/accounts/:accountId/segments/next-gen', name: 'CreateSegmentNextGen', component: () => import('@/views/Contacts/CreateSegmentNextGen.vue'), meta: { builderShell: true } },
   { path: '/accounts/:accountId/contact_fields', name: 'ContactFields', component: () => import('@/views/Contacts/ContactFields.vue') },
   { path: '/accounts/:accountId/tags', name: 'ContactTags', component: () => import('@/views/Contacts/ContactTags.vue') },
   { path: '/accounts/:accountId/relational_tables', name: 'RelationalTables', component: () => import('@/views/Contacts/RelationalTables.vue') },
@@ -73,6 +82,10 @@ const routes: RouteRecordRaw[] = [
 
   // 4. Products
   { path: '/commerce/:accountId/product_recommendations', name: 'ProductRecommendations', component: () => import('@/views/Products/ProductRecommendations.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/product_recommendations/product_feeds', name: 'ProductFeeds', component: () => import('@/views/Products/ProductRecommendations.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/product_recommendations/product_feed_templates', name: 'ProductFeedTemplates', component: () => import('@/views/Products/ProductRecommendations.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/product_recommendations/product_feed_templates/new', name: 'ProductFeedTemplateNew', component: () => import('@/views/Products/FeedTemplateEditor.vue'), meta: commerceGate },
+  { path: '/commerce/:accountId/product_recommendations/product_feed_templates/:templateId', name: 'ProductFeedTemplateEdit', component: () => import('@/views/Products/FeedTemplateEditor.vue'), meta: commerceGate },
   { path: '/commerce/:accountId/products', name: 'Products', component: () => import('@/views/Products/ProductsList.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/products/new', name: 'ProductNew', component: () => import('@/views/Products/ProductWizard.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
   { path: '/commerce/:accountId/products/kits/new', name: 'ProductKitNew', component: () => import('@/views/Products/KitWizard.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
@@ -81,9 +94,17 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/products/:productId/edit', name: 'ProductEdit', component: () => import('@/views/Products/ProductWizard.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
   { path: '/commerce/:accountId/product_tax_category', name: 'ProductTaxCategory', component: () => import('@/views/Products/TaxCategories.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/products/collections', name: 'Collections', component: () => import('@/views/Products/Collections.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/products/collections/new', name: 'CollectionNew', component: () => import('@/views/Products/CollectionEditor.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/products/collections/:collectionId', name: 'CollectionEdit', component: () => import('@/views/Products/CollectionEditor.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/inventory', name: 'Inventory', component: () => import('@/views/Products/Inventory.vue'), meta: sharedCommerceGate },
-  { path: '/commerce/:accountId/products/price-lists', name: 'PriceLists', component: () => import('@/views/Products/PriceLists.vue'), meta: sharedCommerceGate },
-  { path: '/commerce/:accountId/products/reservations', name: 'Reservations', component: () => import('@/views/Products/Reservations.vue'), meta: sharedCommerceGate },
+  // Price lists and reservations sit on their UAT paths; the previous sandbox
+  // paths redirect so older links and bookmarks keep working.
+  { path: '/commerce/:accountId/price-lists', name: 'PriceLists', component: () => import('@/views/Products/PriceLists.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/price-lists/new', name: 'PriceListNew', component: () => import('@/views/Products/PriceListEditor.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/price-lists/:priceListId', name: 'PriceListEdit', component: () => import('@/views/Products/PriceListEditor.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/products/price-lists', redirect: (to) => `/commerce/${to.params.accountId}/price-lists` },
+  { path: '/commerce/:accountId/inventory/reservations', name: 'Reservations', component: () => import('@/views/Products/Reservations.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/products/reservations', redirect: (to) => `/commerce/${to.params.accountId}/inventory/reservations` },
 
   // 5. Commerce
   { path: '/commerce/:accountId/orders', name: 'SalesOrders', component: () => import('@/views/Commerce/SalesOrders.vue'), meta: sharedCommerceGate },

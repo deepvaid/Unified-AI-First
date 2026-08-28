@@ -1,175 +1,239 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useProductExtrasStore, type Reservation } from '@/stores/useProductExtras'
-import { useCommerceStore } from '@/stores/useCommerce'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import {
+  useProductExtrasStore, INVENTORY_LOCATIONS,
+  type Reservation, type InventoryLocation, type ReservableVariant,
+} from '@/stores/useProductExtras'
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
-import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpDialog from '@/components/MpDialog.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
+/**
+ * Inventory reservations — units held back from available stock per location,
+ * either automatically against an order or manually. Rebuilt from UAT
+ * `/inventory/reservations`; see docs/rebuild/inventory-reservations/.
+ */
 const store = useProductExtrasStore()
-const commerce = useCommerceStore()
-const search = ref('')
+const route = useRoute()
 const toast = useToast()
 
-const LOCATIONS = ['Main Warehouse - FL', 'Secondary Node - CA', 'Retail Hub - TX']
+const accountId = computed(() => String(route.params.accountId))
+const ordersPath = computed(() => `/commerce/${accountId.value}/orders`)
+
+const locationFilter = ref<'All locations' | InventoryLocation>('All locations')
+const search = ref('')
 
 const headers = [
-  { title: 'Hold ID', key: 'id', sortable: true },
-  { title: 'Product', key: 'product' },
-  { title: 'Order #', key: 'orderNumber' },
-  { title: 'Location', key: 'location' },
-  { title: 'Qty Held', key: 'qty', align: 'end' as const },
-  { title: 'Status', key: 'status' },
-  { title: '', key: 'actions', sortable: false, width: 48 },
+  { title: 'Item', key: 'item', sortable: true, minWidth: '240px' },
+  { title: 'SKU', key: 'sku', sortable: true },
+  { title: 'Order', key: 'orderNumber' },
+  { title: 'Location', key: 'location', sortable: true },
+  { title: 'Description', key: 'description' },
+  { title: 'Qty', key: 'qty', align: 'end' as const, sortable: true },
+  { title: '', key: 'actions', sortable: false, width: 56 },
 ]
 
-const filters = ref({ status: [] as string[] })
-const filterLabels = { status: 'Status' }
-const activeFilterEntries = computed(() =>
-  filters.value.status.length > 0
-    ? [{ key: 'status', label: `Status: ${filters.value.status.join(', ')}` }]
-    : []
-)
-function removeFilter(_key: string) { filters.value.status = [] }
-function clearAllFilters() { filters.value.status = [] }
-const filteredItems = computed(() =>
-  filters.value.status.length ? store.reservations.filter(i => filters.value.status.includes(i.status)) : store.reservations
+const filtered = computed(() => {
+  const term = search.value.trim().toLowerCase()
+  return store.reservations.filter((r) => {
+    const byLocation = locationFilter.value === 'All locations' || r.location === locationFilter.value
+    const byTerm = !term
+      || r.item.toLowerCase().includes(term)
+      || r.sku.toLowerCase().includes(term)
+      || r.description.toLowerCase().includes(term)
+    return byLocation && byTerm
+  })
+})
+
+const totalHeld = computed(() => filtered.value.reduce((sum, r) => sum + r.qty, 0))
+
+// ── Create / edit dialog ────────────────────────────────────────────
+const dialog = ref(false)
+const editingId = ref<number | null>(null)
+const saving = ref(false)
+const form = ref<{ sku: string; location: InventoryLocation | null; qty: string; description: string }>({
+  sku: '', location: null, qty: '1', description: '',
+})
+const snapshot = ref('')
+const guard = ref(false)
+
+const variantOptions = computed(() =>
+  store.reservableVariants.map((v) => ({ title: v.label, value: v.sku })),
 )
 
-// ── New reservation drawer ──────────────────────────────────────────
-const drawer = ref(false)
-const form = ref({ product: '', orderNumber: '', location: LOCATIONS[0]!, description: '', qty: 1 })
-const productOptions = computed(() => commerce.products.map(p => p.name))
+const selectedVariant = computed<ReservableVariant | undefined>(() =>
+  store.reservableVariants.find((v) => v.sku === form.value.sku),
+)
+
+const showSummary = computed(() => Boolean(selectedVariant.value && form.value.location))
+
+const qtyNumber = computed(() => Number(form.value.qty))
+const qtyError = computed(() => {
+  if (!form.value.qty.trim()) return ['Enter how many units to hold']
+  if (!Number.isInteger(qtyNumber.value) || qtyNumber.value < 1) return ['Enter a whole number of 1 or more']
+  const available = selectedVariant.value?.available ?? 0
+  if (editingId.value === null && qtyNumber.value > available) {
+    return [`Only ${available} unit${available === 1 ? '' : 's'} available at this location`]
+  }
+  return []
+})
+
+const dirty = computed(() => JSON.stringify(form.value) !== snapshot.value)
+const valid = computed(() => Boolean(form.value.sku) && Boolean(form.value.location) && qtyError.value.length === 0)
 
 function openCreate() {
-  form.value = { product: '', orderNumber: '', location: LOCATIONS[0]!, description: '', qty: 1 }
-  drawer.value = true
+  editingId.value = null
+  form.value = { sku: '', location: null, qty: '1', description: '' }
+  snapshot.value = JSON.stringify(form.value)
+  dialog.value = true
 }
 
-function saveReservation() {
-  const sku = commerce.products.find(p => p.name === form.value.product)?.sku ?? ''
-  store.addReservation({
-    product: form.value.product || 'Unnamed product',
-    sku,
-    orderNumber: form.value.orderNumber.trim(),
+function openEdit(reservation: Reservation) {
+  editingId.value = reservation.id
+  form.value = {
+    sku: reservation.sku,
+    location: reservation.location,
+    qty: String(reservation.qty),
+    description: reservation.description,
+  }
+  snapshot.value = JSON.stringify(form.value)
+  dialog.value = true
+}
+
+function requestClose() {
+  if (dirty.value) guard.value = true
+  else dialog.value = false
+}
+
+async function save() {
+  if (!valid.value || !form.value.location) return
+  saving.value = true
+  await new Promise((resolve) => setTimeout(resolve, 400))
+  const payload = {
+    item: selectedVariant.value?.label.split(' — ')[0] ?? form.value.sku,
+    sku: form.value.sku,
     location: form.value.location,
     description: form.value.description.trim(),
-    qty: Number(form.value.qty) || 1,
-  })
-  drawer.value = false
-  toast.success('Reservation created')
-}
-
-// ── Release hold ────────────────────────────────────────────────────
-const confirmRelease = ref(false)
-const pendingRelease = ref<Reservation | null>(null)
-function askRelease(item: Reservation) {
-  pendingRelease.value = item
-  confirmRelease.value = true
-}
-function doRelease() {
-  if (pendingRelease.value) {
-    store.releaseReservation(pendingRelease.value.id)
-    toast.success('Hold released')
+    qty: qtyNumber.value,
   }
-  pendingRelease.value = null
+  if (editingId.value !== null) {
+    store.updateReservation(editingId.value, payload)
+    toast.success('Reservation updated')
+  } else {
+    store.addReservation(payload)
+    toast.success('Reservation created')
+  }
+  saving.value = false
+  dialog.value = false
 }
 
+// Reset quantity when the item changes so a stale value can't outrun stock.
+watch(() => form.value.sku, () => {
+  if (editingId.value === null) form.value.qty = '1'
+})
+
+// ── Delete ──────────────────────────────────────────────────────────
+const confirmDelete = ref(false)
+const pendingDelete = ref<Reservation | null>(null)
+
+function askDelete(reservation: Reservation) {
+  pendingDelete.value = reservation
+  confirmDelete.value = true
+}
+
+function doDelete() {
+  if (!pendingDelete.value) return
+  store.deleteReservation(pendingDelete.value.id)
+  toast.success('Reservation released')
+  pendingDelete.value = null
+}
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column gap-5">
+  <div class="h-100 d-flex flex-column ga-5">
     <MpPageHeader
-      title="Inventory Reservations"
-      :subtitle="`${store.reservations.filter(i => i.status === 'Active Hold').length} active holds`"
+      eyebrow="Multi-location inventory"
+      title="Reservations"
+      :subtitle="`${filtered.length} reservation${filtered.length === 1 ? '' : 's'} holding ${totalHeld} unit${totalHeld === 1 ? '' : 's'}`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New Reservation</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">
+          New reservation
+        </v-btn>
       </template>
     </MpPageHeader>
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-      <MpDataTableToolbar
-        v-model:search="search"
-        title="All Reservations"
-        :active-filters="activeFilterEntries"
-        @remove-filter="removeFilter"
-        @clear-filters="clearAllFilters"
-      >
-        <!-- Filter popover: `hide-details` is deliberate — a table filter never
-             carries a hint or an error, and the popover is a dense surface. -->
-        <template #filter-content>
-          <v-select
-            v-model="filters.status"
-            :items="['Active Hold', 'Expired']"
-            :label="filterLabels.status"
-            multiple
-            chips
-            closable-chips
-            hide-details
-          />
-        </template>
-      </MpDataTableToolbar>
+      <div class="res-toolbar d-flex flex-wrap align-center ga-3">
+        <v-text-field
+          v-model="search"
+          label="Search reservations"
+          placeholder="Item, SKU or description"
+          prepend-inner-icon="search"
+          clearable
+          hide-details
+          class="res-toolbar__search"
+        />
+        <v-select
+          v-model="locationFilter"
+          :items="['All locations', ...INVENTORY_LOCATIONS]"
+          label="Location"
+          hide-details
+          class="res-toolbar__select"
+        />
+      </div>
 
       <v-data-table
         :headers="headers"
-        :items="filteredItems"
-        :search="search"
-        :items-per-page="15"
+        :items="filtered"
+        :items-per-page="10"
         hover
         density="comfortable"
         fixed-header
         class="flex-grow-1"
       >
-        <template v-slot:item.product="{ item }">
-          <div class="d-flex align-center gap-3 py-2">
-            <v-img
-              :src="`https://picsum.photos/seed/${item.id}/32/32`"
-              :width="32"
-              :height="32"
-              cover
-              rounded="md"
-              class="flex-shrink-0 border reservation-thumb"
-            >
-              <template #error>
-                <div class="w-100 h-100 d-flex align-center justify-center bg-surface-variant rounded-md">
-                  <v-icon size="16" class="text-medium-emphasis">image</v-icon>
-                </div>
-              </template>
-            </v-img>
-            <div>
-              <div class="text-body-2 font-weight-medium">{{ item.product }}</div>
-              <div v-if="item.description" class="text-caption text-medium-emphasis">{{ item.description }}</div>
-            </div>
-          </div>
+        <template #item.item="{ item }">
+          <span class="text-body-2 font-weight-medium">{{ item.item }}</span>
         </template>
-        <template v-slot:item.location="{ item }">
-          <div class="d-flex align-center gap-2">
+        <template #item.sku="{ item }">
+          <span class="res-mono text-body-2">{{ item.sku }}</span>
+        </template>
+        <template #item.orderNumber="{ item }">
+          <RouterLink v-if="item.orderNumber !== '—'" :to="ordersPath" class="res-link">{{ item.orderNumber }}</RouterLink>
+          <span v-else class="text-body-2 text-medium-emphasis">Manual hold</span>
+        </template>
+        <template #item.location="{ item }">
+          <div class="d-flex align-center ga-2">
             <v-icon size="15" class="text-medium-emphasis">map-pin</v-icon>
             <span class="text-body-2">{{ item.location }}</span>
           </div>
         </template>
-        <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="general" />
+        <template #item.description="{ item }">
+          <span class="text-body-2 text-medium-emphasis">{{ item.description || '—' }}</span>
         </template>
-        <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Reservation actions">
-            <v-list-item prepend-icon="circle-x" title="Release Hold" class="text-error" @click="askRelease(item)" />
+        <template #item.qty="{ item }">
+          <span class="text-body-2 font-weight-medium">{{ item.qty }}</span>
+        </template>
+        <template #item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Reservation actions" :item-label="item.item">
+            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-divider class="my-1" />
+            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
-        <template v-slot:no-data>
+        <template #no-data>
           <MpEmptyState
             icon="bookmark"
-            :title="search || filters.status.length ? 'No reservations match your filters' : 'No reservations'"
-            :description="search || filters.status.length ? 'Try a different search term or clear your filters.' : 'Create a hold to reserve inventory against an order.'"
-            :action-label="search || filters.status.length ? undefined : 'New Reservation'"
-            :action-icon="search || filters.status.length ? undefined : 'plus'"
+            :title="search || locationFilter !== 'All locations' ? 'No reservations match your filters' : 'No reservations'"
+            :description="search || locationFilter !== 'All locations' ? 'Try a different search term, or switch the location back to All locations.' : 'Reservations hold stock back from available inventory — orders create them automatically, and you can add manual holds.'"
+            :action-label="search || locationFilter !== 'All locations' ? undefined : 'New reservation'"
+            :action-icon="search || locationFilter !== 'All locations' ? undefined : 'plus'"
             class="py-10"
             @action="openCreate"
           />
@@ -177,42 +241,131 @@ function doRelease() {
       </v-data-table>
     </v-card>
 
-    <!-- New reservation drawer -->
-    <MpFormDrawer
-      v-model="drawer"
-      title="New Reservation"
-      subtitle="Hold inventory against an order"
+    <!-- ── New / edit reservation ───────────────────────────────────── -->
+    <MpDialog
+      v-model="dialog"
+      :title="editingId !== null ? 'Edit reservation' : 'New reservation'"
+      subtitle="Hold units back from available stock at one location"
+      size="md"
+      guarded
+      @close="requestClose"
     >
-      <MpFormGrid>
-        <v-combobox v-model="form.product" :items="productOptions" label="Product" />
-        <v-text-field v-model="form.orderNumber" label="Order #" placeholder="e.g. #10231" />
-        <v-select v-model="form.location" :items="LOCATIONS" label="Location" prepend-inner-icon="map-pin" />
-        <v-text-field v-model.number="form.qty" label="Quantity to hold" type="number" min="1" />
-        <v-textarea v-model="form.description" label="Description" rows="3" placeholder="Reason for the hold…" />
-      </MpFormGrid>
+      <MpFormSection title="What to hold" required />
+      <v-autocomplete
+        v-model="form.sku"
+        :items="variantOptions"
+        label="Item to reserve *"
+        placeholder="Search by product or SKU"
+        hint="Only products with inventory tracking turned on can be reserved."
+        persistent-hint
+        no-data-text="No inventory-tracked product matches that search."
+      />
+      <v-select
+        v-model="form.location"
+        :items="[...INVENTORY_LOCATIONS]"
+        label="Location *"
+        :disabled="!form.sku"
+      />
+
+      <template v-if="showSummary">
+        <MpFormSection title="Stock at this location" />
+        <div class="res-summary">
+          <div class="res-summary__row"><span>Item</span><span>{{ selectedVariant?.label }}</span></div>
+          <div class="res-summary__row"><span>SKU</span><span class="res-mono">{{ selectedVariant?.sku }}</span></div>
+          <div class="res-summary__row"><span>In stock</span><span>{{ selectedVariant?.inStock ?? 0 }}</span></div>
+          <div class="res-summary__row"><span>Available</span><span>{{ selectedVariant?.available ?? 0 }}</span></div>
+        </div>
+
+        <v-text-field
+          v-model="form.qty"
+          label="Reserve quantity *"
+          type="number"
+          min="1"
+          :error-messages="qtyError"
+        />
+        <v-textarea v-model="form.description" label="Description" rows="3" placeholder="Why this stock is held" />
+      </template>
+      <MpFormField v-else label="Quantity and description">
+        <template #default="{ labelId }">
+          <p class="text-body-2 text-medium-emphasis mb-0" :aria-labelledby="labelId">
+            Choose an item and a location to see stock levels and set the quantity.
+          </p>
+        </template>
+      </MpFormField>
 
       <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveReservation">Create Hold</v-btn>
+        <v-btn variant="text" class="text-none" :disabled="saving" @click="requestClose">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :loading="saving" :disabled="!valid" @click="save">
+          {{ editingId !== null ? 'Save reservation' : 'Create reservation' }}
+        </v-btn>
       </template>
-    </MpFormDrawer>
+    </MpDialog>
 
     <MpConfirmDialog
-      v-model="confirmRelease"
-      title="Release this hold?"
-      :message="`${pendingRelease?.id} (${pendingRelease?.product}) will be released and the held stock returned to available inventory.`"
-      confirm-label="Release Hold"
+      v-model="guard"
+      title="Discard your changes?"
+      message="This reservation has unsaved changes. Closing now discards them."
+      confirm-label="Discard changes"
       danger
-      @confirm="doRelease"
+      @confirm="dialog = false"
+    />
+
+    <MpConfirmDialog
+      v-model="confirmDelete"
+      title="Delete this reservation?"
+      :message="`${pendingDelete?.qty} unit${pendingDelete?.qty === 1 ? '' : 's'} of ${pendingDelete?.item} return to available stock at ${pendingDelete?.location}.`"
+      confirm-label="Delete reservation"
+      danger
+      @confirm="doDelete"
     />
   </div>
 </template>
 
 <style scoped>
-.reservation-thumb {
-  flex: 0 0 32px;
-  width: 32px !important;
-  height: 32px !important;
-  aspect-ratio: 1 / 1;
+.res-toolbar {
+  padding: var(--mp-component-card-padding);
+  border-bottom: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
+  min-height: var(--mp-component-toolbar-minHeight);
+}
+
+.res-toolbar__search {
+  max-width: var(--mp-component-toolbar-searchWidth);
+  min-width: var(--mp-component-toolbar-searchMinWidth);
+}
+
+.res-toolbar__select {
+  max-width: 240px;
+  min-width: 180px;
+}
+
+.res-mono {
+  font-family: var(--mp-fontFamily-mono);
+}
+
+.res-link {
+  color: rgb(var(--v-theme-primary));
+  font-weight: var(--mp-fontWeight-medium);
+}
+
+.res-summary {
+  border: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
+  border-radius: var(--mp-component-card-radius);
+  overflow: hidden;
+}
+
+.res-summary__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--mp-space-16);
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-component-listItem-paddingInline);
+  font-size: var(--mp-fontSize-13);
+}
+
+.res-summary__row + .res-summary__row {
+  border-top: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
+}
+
+.res-summary__row span:first-child {
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 </style>

@@ -1,251 +1,273 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useProductExtrasStore, type Collection, type CollectionType } from '@/stores/useProductExtras'
-import { downloadCsv } from '@/utils/exportCsv'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  useProductExtrasStore, formatStamp,
+  type Collection, type CollectionType, type CollectionStatus,
+} from '@/stores/useProductExtras'
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpFormSection from '@/components/MpFormSection.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 
+/**
+ * Product collections — automated (rule-driven) or manual groupings used for
+ * storefront merchandising. Rebuilt from UAT; see docs/rebuild/collections/.
+ */
 const store = useProductExtrasStore()
-const search = ref('')
+const route = useRoute()
+const router = useRouter()
 const toast = useToast()
 
-const TYPES: CollectionType[] = ['Automated', 'Manual']
-const STATUSES = ['Active', 'Draft'] as const
+const accountId = computed(() => String(route.params.accountId))
+const basePath = computed(() => `/commerce/${accountId.value}/products/collections`)
+
+const search = ref('')
+const typeFilter = ref<'All types' | CollectionType>('All types')
+const statusFilter = ref<'All statuses' | CollectionStatus>('All statuses')
+const parentFilter = ref<'All parents' | string>('All parents')
+const selected = ref<number[]>([])
 
 const headers = [
-  { title: 'Title', key: 'title', sortable: true, minWidth: '220px' },
-  { title: 'Handle', key: 'handle' },
-  { title: 'Type', key: 'type' },
+  { title: 'Title', key: 'title', sortable: true, minWidth: '260px' },
+  { title: 'Handle', key: 'handle', sortable: true },
+  { title: 'Type', key: 'type', sortable: true },
   { title: 'Products', key: 'productCount', align: 'end' as const, sortable: true },
-  { title: 'Status', key: 'status' },
+  { title: 'Status', key: 'status', sortable: true },
   { title: 'Updated at', key: 'updatedAt', sortable: true },
-  { title: '', key: 'actions', sortable: false, width: 48 },
+  { title: '', key: 'actions', sortable: false, width: 56 },
 ]
 
-// ── Filters ────────────────────────────────────────────────────────────
-const filters = ref({ type: [] as string[], status: [] as string[] })
-const filterLabels: Record<string, string> = { type: 'Type', status: 'Status' }
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v.length > 0)
-    .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${(value as string[]).join(', ')}` })),
+const parents = computed(() => Array.from(new Set(store.collections.map((c) => c.parent))))
+
+const filtered = computed(() => {
+  const term = search.value.trim().toLowerCase()
+  return store.collections.filter((c) => {
+    const byTerm = !term || c.title.toLowerCase().includes(term) || c.handle.toLowerCase().includes(term)
+    const byType = typeFilter.value === 'All types' || c.type === typeFilter.value
+    const byStatus = statusFilter.value === 'All statuses' || c.status === statusFilter.value
+    const byParent = parentFilter.value === 'All parents' || c.parent === parentFilter.value
+    return byTerm && byType && byStatus && byParent
+  })
+})
+
+const hasFilters = computed(() =>
+  Boolean(search.value) || typeFilter.value !== 'All types'
+  || statusFilter.value !== 'All statuses' || parentFilter.value !== 'All parents',
 )
-function removeFilter(key: string) { filters.value[key as keyof typeof filters.value] = [] }
-function clearAllFilters() { filters.value = { type: [], status: [] } }
 
-const filteredCollections = computed(() => {
-  let items = store.collections
-  if (filters.value.type.length) items = items.filter(c => filters.value.type.includes(c.type))
-  if (filters.value.status.length) items = items.filter(c => filters.value.status.includes(c.status))
-  return items
-})
-
-// ── Create / Edit drawer ─────────────────────────────────────────────────
-const drawer = ref(false)
-const editingId = ref<number | null>(null)
-const form = ref<{ title: string; handle: string; type: CollectionType; status: 'Active' | 'Draft' }>({
-  title: '', handle: '', type: 'Automated', status: 'Active',
-})
-const handleEdited = ref(false)
-
-// Keep the handle in sync with the title until the user edits it directly.
-watch(() => form.value.title, (title) => {
-  if (!handleEdited.value) form.value.handle = store.toHandle(title)
-})
-
-function openCreate() {
-  editingId.value = null
-  form.value = { title: '', handle: '', type: 'Automated', status: 'Active' }
-  handleEdited.value = false
-  drawer.value = true
+function clearFilters() {
+  search.value = ''
+  typeFilter.value = 'All types'
+  statusFilter.value = 'All statuses'
+  parentFilter.value = 'All parents'
 }
+
+function ruleSummary(collection: Collection): string {
+  if (collection.type !== 'Automated' || collection.rules.length === 0) return ''
+  const [first] = collection.rules
+  const suffix = collection.rules.length > 1 ? ` +${collection.rules.length - 1} more` : ''
+  return `${first!.field} ${first!.operator.toLowerCase()} “${first!.value}”${suffix}`
+}
+
+// ── Create / edit ───────────────────────────────────────────────────
+function createCollection(type: CollectionType) {
+  router.push(`${basePath.value}/new?type=${type === 'Automated' ? 'automated' : 'manual'}`)
+}
+
 function openEdit(collection: Collection) {
-  editingId.value = collection.id
-  form.value = { title: collection.title, handle: collection.handle, type: collection.type, status: collection.status }
-  handleEdited.value = true
-  drawer.value = true
-}
-function saveCollection() {
-  const payload = {
-    title: form.value.title.trim() || 'Untitled collection',
-    handle: form.value.handle.trim(),
-    type: form.value.type,
-    status: form.value.status,
-  }
-  if (editingId.value !== null) {
-    store.updateCollection(editingId.value, payload)
-    toast.success('Collection updated')
-  } else {
-    store.addCollection(payload)
-    toast.success('Collection created')
-  }
-  drawer.value = false
+  router.push(`${basePath.value}/${collection.id}`)
 }
 
-// ── Delete ────────────────────────────────────────────────────────────────
+// ── Delete ──────────────────────────────────────────────────────────
 const confirmDelete = ref(false)
 const pendingDelete = ref<Collection | null>(null)
+
 function askDelete(collection: Collection) {
   pendingDelete.value = collection
   confirmDelete.value = true
 }
+
 function doDelete() {
-  if (pendingDelete.value) {
-    store.deleteCollection(pendingDelete.value.id)
-    toast.success('Collection deleted')
-  }
+  if (!pendingDelete.value) return
+  store.deleteCollection(pendingDelete.value.id)
+  selected.value = selected.value.filter((id) => id !== pendingDelete.value?.id)
+  toast.success('Collection deleted')
   pendingDelete.value = null
 }
 
-// ── Export ──────────────────────────────────────────────────────────────
-function exportCollections() {
-  downloadCsv('collections', filteredCollections.value, [
-    { title: 'Title', value: 'title' },
-    { title: 'Handle', value: 'handle' },
-    { title: 'Type', value: 'type' },
-    { title: 'Products', value: 'productCount' },
-    { title: 'Status', value: 'status' },
-    { title: 'Updated at', value: 'updatedAt' },
-  ])
+// ── Bulk actions ────────────────────────────────────────────────────
+const confirmBulkDelete = ref(false)
+
+function bulkStatus(status: CollectionStatus) {
+  store.setCollectionsStatus(selected.value, status)
+  toast.success(`${selected.value.length} collection${selected.value.length === 1 ? '' : 's'} set to ${status.toLowerCase()}`)
+  selected.value = []
 }
 
+function doBulkDelete() {
+  const count = selected.value.length
+  store.deleteCollections(selected.value)
+  selected.value = []
+  toast.success(`${count} collection${count === 1 ? '' : 's'} deleted`)
+}
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column gap-5">
+  <div class="h-100 d-flex flex-column ga-5">
     <MpPageHeader
+      eyebrow="Products"
       title="Collections"
-      :subtitle="`${store.collections.length} collections`"
+      :subtitle="`${store.collections.length} collections across ${parents.length} parent${parents.length === 1 ? '' : 's'}`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCollections">Export</v-btn>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New Collection</v-btn>
+        <v-menu>
+          <template #activator="{ props: menu }">
+            <v-btn v-bind="menu" color="primary" variant="flat" prepend-icon="plus" append-icon="chevron-down" class="text-none">
+              New collection
+            </v-btn>
+          </template>
+          <v-list>
+            <v-list-item
+              prepend-icon="wand-sparkles"
+              title="Automated collection"
+              subtitle="Products join automatically when they match your rules"
+              @click="createCollection('Automated')"
+            />
+            <v-list-item
+              prepend-icon="hand"
+              title="Manual collection"
+              subtitle="You pick the exact products it contains"
+              @click="createCollection('Manual')"
+            />
+          </v-list>
+        </v-menu>
       </template>
     </MpPageHeader>
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-      <MpDataTableToolbar
-        v-model:search="search"
-        title="All Collections"
-        :active-filters="activeFilterEntries"
-        @remove-filter="removeFilter"
-        @clear-filters="clearAllFilters"
-      >
-        <!-- Filter popover: `hide-details` is deliberate — these selects can never
-             carry a hint or an error, and the popover is a dense surface. -->
-        <template #filter-content>
-          <div class="pa-4">
-            <MpFormGrid>
-              <MpFormSection title="Filter by" />
-              <v-select v-model="filters.type" :items="[...TYPES] as string[]" label="Type" multiple chips closable-chips hide-details />
-              <v-select v-model="filters.status" :items="[...STATUSES] as string[]" label="Status" multiple chips closable-chips hide-details />
-            </MpFormGrid>
-          </div>
-        </template>
-      </MpDataTableToolbar>
+      <div class="col-toolbar d-flex flex-wrap align-center ga-3">
+        <v-text-field
+          v-model="search"
+          label="Search collections"
+          placeholder="Title or handle"
+          prepend-inner-icon="search"
+          clearable
+          hide-details
+          class="col-toolbar__search"
+        />
+        <v-select v-model="typeFilter" :items="['All types', 'Automated', 'Manual']" label="Type" hide-details class="col-toolbar__select" />
+        <v-select v-model="statusFilter" :items="['All statuses', 'Active', 'Inactive']" label="Status" hide-details class="col-toolbar__select" />
+        <v-select v-model="parentFilter" :items="['All parents', ...parents]" label="Parent" hide-details class="col-toolbar__select" />
+        <v-btn v-if="hasFilters" variant="text" class="text-none" @click="clearFilters">Clear</v-btn>
+      </div>
 
       <v-data-table
+        v-model="selected"
         :headers="headers"
-        :items="filteredCollections"
-        :search="search"
-        :items-per-page="15"
+        :items="filtered"
+        :items-per-page="10"
+        item-value="id"
+        show-select
         hover
         density="comfortable"
         fixed-header
         class="flex-grow-1"
       >
-        <template v-slot:item.title="{ item }">
+        <template #item.title="{ item }">
           <div class="py-1">
             <div class="text-body-2 font-weight-medium">{{ item.title }}</div>
-            <div v-if="item.root" class="text-caption text-medium-emphasis">Root</div>
+            <div class="text-caption text-medium-emphasis">
+              {{ item.parent }}<template v-if="ruleSummary(item)"> · {{ ruleSummary(item) }}</template>
+            </div>
           </div>
         </template>
-        <template v-slot:item.handle="{ item }">
-          <span class="text-body-2 font-mono text-medium-emphasis">{{ item.handle }}</span>
+        <template #item.handle="{ item }">
+          <span class="col-mono text-body-2 text-medium-emphasis">{{ item.handle }}</span>
         </template>
-        <template v-slot:item.type="{ item }">
+        <template #item.type="{ item }">
           <v-chip size="small" variant="tonal" :color="item.type === 'Automated' ? 'primary' : 'secondary'" label>
             <v-icon start size="13">{{ item.type === 'Automated' ? 'wand-sparkles' : 'hand' }}</v-icon>
             {{ item.type }}
           </v-chip>
         </template>
-        <template v-slot:item.productCount="{ item }">
-          <span class="font-weight-medium">{{ item.productCount }}</span>
+        <template #item.productCount="{ item }">
+          <span class="text-body-2 font-weight-medium">{{ item.productCount }}</span>
         </template>
-        <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="general" />
+        <template #item.status="{ item }">
+          <MpStatusChip :status="item.status" type="general" size="sm" />
         </template>
-        <template v-slot:item.updatedAt="{ item }">
-          <span class="text-body-2 text-medium-emphasis">{{ item.updatedAt }}</span>
+        <template #item.updatedAt="{ item }">
+          <span class="text-body-2 text-medium-emphasis">{{ formatStamp(item.updatedAt) }}</span>
         </template>
-        <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Collection actions">
+        <template #item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Collection actions" :item-label="item.title">
             <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
+            <v-divider class="my-1" />
             <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
-        <template v-slot:no-data>
+        <template #no-data>
           <MpEmptyState
             icon="folder"
-            :title="search || activeFilterEntries.length ? 'No collections match your filters' : 'No collections yet'"
-            :description="search || activeFilterEntries.length ? 'Try a different search term or clear your filters.' : 'Create a collection to group and merchandise your products.'"
-            :action-label="search || activeFilterEntries.length ? undefined : 'New Collection'"
-            :action-icon="search || activeFilterEntries.length ? undefined : 'plus'"
+            :title="hasFilters ? 'No collections match your filters' : 'No collections yet'"
+            :description="hasFilters ? 'Try a different search term or clear your filters.' : 'Collections group products for storefront merchandising and navigation.'"
+            :action-label="hasFilters ? 'Clear filters' : 'New automated collection'"
+            :action-icon="hasFilters ? 'x' : 'plus'"
             class="py-10"
-            @action="openCreate"
+            @action="hasFilters ? clearFilters() : createCollection('Automated')"
           />
         </template>
       </v-data-table>
     </v-card>
 
-    <!-- Create / Edit drawer -->
-    <MpFormDrawer
-      v-model="drawer"
-      :title="editingId !== null ? 'Edit Collection' : 'New Collection'"
-      subtitle="Group products for merchandising and navigation"
-    >
-      <MpFormGrid>
-        <v-text-field v-model="form.title" label="Title" />
-        <v-text-field
-          v-model="form.handle"
-          label="Handle"
-          prefix="/"
-          hint="Auto-generated from the title — edit to override"
-          persistent-hint
-          @update:model-value="handleEdited = true"
-        />
-        <v-select v-model="form.type" :items="TYPES" label="Type" />
-        <v-select v-model="form.status" :items="[...STATUSES] as string[]" label="Status" />
-      </MpFormGrid>
-
-      <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveCollection">
-          {{ editingId !== null ? 'Save Changes' : 'Create Collection' }}
-        </v-btn>
-      </template>
-    </MpFormDrawer>
+    <MpFloatingBulkBar :count="selected.length" :total="filtered.length" @clear="selected = []">
+      <v-btn variant="text" class="text-none" prepend-icon="circle-check" @click="bulkStatus('Active')">Set active</v-btn>
+      <v-btn variant="text" class="text-none" prepend-icon="circle-pause" @click="bulkStatus('Inactive')">Set inactive</v-btn>
+      <v-btn variant="text" class="text-none text-error" prepend-icon="trash-2" @click="confirmBulkDelete = true">Delete</v-btn>
+    </MpFloatingBulkBar>
 
     <MpConfirmDialog
       v-model="confirmDelete"
-      title="Delete collection?"
-      :message="`“${pendingDelete?.title}” will be permanently deleted. This cannot be undone.`"
-      confirm-label="Delete"
+      title="Delete this collection?"
+      :message="`“${pendingDelete?.title}” is removed from your storefront. Its products aren't deleted.`"
+      confirm-label="Delete collection"
       danger
       @confirm="doDelete"
+    />
+
+    <MpConfirmDialog
+      v-model="confirmBulkDelete"
+      title="Delete selected collections?"
+      :message="`${selected.length} collection${selected.length === 1 ? '' : 's'} will be removed from your storefront. Their products aren't deleted.`"
+      confirm-label="Delete collections"
+      danger
+      @confirm="doBulkDelete"
     />
   </div>
 </template>
 
 <style scoped>
-.font-mono { font-family: monospace; }
+.col-toolbar {
+  padding: var(--mp-component-card-padding);
+  border-bottom: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
+  min-height: var(--mp-component-toolbar-minHeight);
+}
+
+.col-toolbar__search {
+  max-width: var(--mp-component-toolbar-searchWidth);
+  min-width: var(--mp-component-toolbar-searchMinWidth);
+}
+
+.col-toolbar__select {
+  max-width: 200px;
+  min-width: 160px;
+}
+
+.col-mono {
+  font-family: var(--mp-fontFamily-mono);
+}
 </style>

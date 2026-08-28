@@ -91,7 +91,7 @@ const childPages = computed<ChildPage[]>(() => [
     title: 'Product Recommendations',
     description: 'AI-driven product picks shown inside email and on-site placements.',
     to: `${commerceBase.value}/product_recommendations`,
-    count: productExtrasStore.recommendations.length,
+    count: productExtrasStore.productFeeds.length,
     color: 'indigo',
   },
   {
