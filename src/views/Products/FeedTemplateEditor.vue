@@ -262,6 +262,18 @@ function stepColumns(delta: number) {
               </div>
             </div>
           </div>
+
+          <!-- Parity: UAT shows this Merchandising Cloud upsell inside the editor. -->
+          <div class="tpl-upsell">
+            <div>
+              <div class="tpl-upsell__title">Unlock the full power of Merchandising Cloud</div>
+              <p class="tpl-upsell__copy">
+                Personalized recommendations, automated product suggestions, smart filtering and
+                brand-level styling — beyond what feed templates cover.
+              </p>
+            </div>
+            <v-btn variant="outlined" class="text-none flex-shrink-0" append-icon="arrow-up-right">Book a demo</v-btn>
+          </div>
         </v-card>
       </v-col>
 
@@ -548,6 +560,26 @@ function stepColumns(delta: number) {
   padding: var(--mp-space-8) var(--mp-space-12);
   font-size: var(--mp-fontSize-12);
   font-weight: var(--mp-fontWeight-semibold);
+}
+
+.tpl-upsell {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-16);
+  border: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
+  border-radius: var(--mp-radius-12);
+  padding: var(--mp-component-card-padding);
+}
+
+.tpl-upsell__title {
+  font-size: var(--mp-fontSize-15);
+  font-weight: var(--mp-fontWeight-semibold);
+}
+
+.tpl-upsell__copy {
+  margin: var(--mp-space-4) 0 0;
+  font-size: var(--mp-fontSize-13);
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .tpl-note :deep(.v-alert__content) {

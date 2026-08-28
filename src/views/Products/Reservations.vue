@@ -8,6 +8,7 @@ import {
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpDialog from '@/components/MpDialog.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
@@ -52,6 +53,10 @@ const filtered = computed(() => {
 })
 
 const totalHeld = computed(() => filtered.value.reduce((sum, r) => sum + r.qty, 0))
+
+const locationFilterEntries = computed(() =>
+  locationFilter.value === 'All locations' ? [] : [{ key: 'location', label: `Location: ${locationFilter.value}` }],
+)
 
 // ── Create / edit dialog ────────────────────────────────────────────
 const dialog = ref(false)
@@ -170,24 +175,26 @@ function doDelete() {
     </MpPageHeader>
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-      <div class="res-toolbar d-flex flex-wrap align-center ga-3">
-        <v-text-field
-          v-model="search"
-          label="Search reservations"
-          placeholder="Item, SKU or description"
-          prepend-inner-icon="search"
-          clearable
-          hide-details
-          class="res-toolbar__search"
-        />
-        <v-select
-          v-model="locationFilter"
-          :items="['All locations', ...INVENTORY_LOCATIONS]"
-          label="Location"
-          hide-details
-          class="res-toolbar__select"
-        />
-      </div>
+      <MpDataTableToolbar
+        v-model:search="search"
+        title="All reservations"
+        search-placeholder="Search item, SKU or description"
+        :total-count="filtered.length"
+        :active-filters="locationFilterEntries"
+        @remove-filter="locationFilter = 'All locations'"
+        @clear-filters="locationFilter = 'All locations'"
+      >
+        <template #actions>
+          <!-- Toolbar filter, not a form field: hide-details keeps the row height stable. -->
+          <v-select
+            v-model="locationFilter"
+            :items="['All locations', ...INVENTORY_LOCATIONS]"
+            label="Location"
+            hide-details
+            class="res-toolbar__select"
+          />
+        </template>
+      </MpDataTableToolbar>
 
       <v-data-table
         :headers="headers"
@@ -322,17 +329,6 @@ function doDelete() {
 </template>
 
 <style scoped>
-.res-toolbar {
-  padding: var(--mp-component-card-padding);
-  border-bottom: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-  min-height: var(--mp-component-toolbar-minHeight);
-}
-
-.res-toolbar__search {
-  max-width: var(--mp-component-toolbar-searchWidth);
-  min-width: var(--mp-component-toolbar-searchMinWidth);
-}
-
 .res-toolbar__select {
   max-width: 240px;
   min-width: 180px;

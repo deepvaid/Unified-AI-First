@@ -10,6 +10,7 @@ import {
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
@@ -87,6 +88,10 @@ function isIncomplete(p: CatalogProduct): boolean {
   return !p.name.trim() || !p.storeUrl.trim() || !p.imageUrl.trim()
 }
 const incompleteCount = computed(() => store.catalog.filter(isIncomplete).length)
+
+const catalogFilterEntries = computed(() =>
+  sourceFilter.value === 'All' ? [] : [{ key: 'source', label: `Source: ${sourceFilter.value}` }],
+)
 
 // Edit product drawer
 const editDrawer = ref(false)
@@ -323,6 +328,17 @@ function restore(template: FeedTemplate) {
       title="Product Recommendations"
       subtitle="Maintain the catalog, feeds and templates behind recommendation blocks in your emails."
     >
+      <template #actions>
+        <v-btn v-if="activeTab === 'catalog'" color="primary" variant="flat" prepend-icon="upload" class="text-none" @click="openImport">
+          Import product catalog
+        </v-btn>
+        <v-btn v-else-if="activeTab === 'feeds'" color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreateFeed">
+          New product feed
+        </v-btn>
+        <v-btn v-else color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreateTemplate">
+          New feed template
+        </v-btn>
+      </template>
       <template #tabs>
         <MpFilterTabs v-model="activeTab" :tabs="tabs" aria-label="Product recommendations sections" controls-id="rec-panel" />
       </template>
@@ -344,28 +360,26 @@ function restore(template: FeedTemplate) {
         </v-alert>
 
         <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-          <div class="rec-toolbar d-flex flex-wrap align-center ga-3">
-            <v-text-field
-              v-model="catalogSearch"
-              label="Search catalog"
-              placeholder="Product name or item ID"
-              prepend-inner-icon="search"
-              clearable
-              hide-details
-              class="rec-toolbar__search"
-            />
-            <v-select
-              v-model="sourceFilter"
-              :items="['All', ...CATALOG_SOURCES]"
-              label="Source"
-              hide-details
-              class="rec-toolbar__select"
-            />
-            <v-spacer />
-            <v-btn color="primary" variant="flat" prepend-icon="upload" class="text-none" @click="openImport">
-              Import product catalog
-            </v-btn>
-          </div>
+          <MpDataTableToolbar
+            v-model:search="catalogSearch"
+            title="Product catalog"
+            search-placeholder="Search name or item ID"
+            :total-count="filteredCatalog.length"
+            :active-filters="catalogFilterEntries"
+            @remove-filter="sourceFilter = 'All'"
+            @clear-filters="sourceFilter = 'All'"
+          >
+            <template #actions>
+              <!-- Toolbar filter, not a form field: hide-details keeps the row height stable. -->
+              <v-select
+                v-model="sourceFilter"
+                :items="['All', ...CATALOG_SOURCES]"
+                label="Source"
+                hide-details
+                class="rec-toolbar__select"
+              />
+            </template>
+          </MpDataTableToolbar>
 
           <v-data-table
             :headers="catalogHeaders"
@@ -435,21 +449,12 @@ function restore(template: FeedTemplate) {
         </v-alert>
 
         <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-          <div class="rec-toolbar d-flex flex-wrap align-center ga-3">
-            <v-text-field
-              v-model="feedSearch"
-              label="Search feeds"
-              placeholder="Feed name"
-              prepend-inner-icon="search"
-              clearable
-              hide-details
-              class="rec-toolbar__search"
-            />
-            <v-spacer />
-            <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreateFeed">
-              New product feed
-            </v-btn>
-          </div>
+          <MpDataTableToolbar
+            v-model:search="feedSearch"
+            title="Product feeds"
+            search-placeholder="Search feed name"
+            :total-count="filteredFeeds.length"
+          />
 
           <v-data-table
             :headers="feedHeaders"
@@ -505,28 +510,23 @@ function restore(template: FeedTemplate) {
       <!-- ══ Product Feed Templates ═══════════════════════════════════ -->
       <template v-else>
         <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-          <div class="rec-toolbar d-flex flex-wrap align-center ga-3">
-            <v-text-field
-              v-model="templateSearch"
-              label="Search templates"
-              placeholder="Template name"
-              prepend-inner-icon="search"
-              clearable
-              hide-details
-              class="rec-toolbar__search"
-            />
-            <v-select
-              v-model="templateScope"
-              :items="[{ title: 'Active templates', value: 'active' }, { title: 'Archived templates', value: 'archived' }]"
-              label="Show"
-              hide-details
-              class="rec-toolbar__select"
-            />
-            <v-spacer />
-            <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreateTemplate">
-              New feed template
-            </v-btn>
-          </div>
+          <MpDataTableToolbar
+            v-model:search="templateSearch"
+            title="Feed templates"
+            search-placeholder="Search template name"
+            :total-count="filteredTemplates.length"
+          >
+            <template #actions>
+              <!-- Toolbar filter, not a form field: hide-details keeps the row height stable. -->
+              <v-select
+                v-model="templateScope"
+                :items="[{ title: 'Active templates', value: 'active' }, { title: 'Archived templates', value: 'archived' }]"
+                label="Show"
+                hide-details
+                class="rec-toolbar__select"
+              />
+            </template>
+          </MpDataTableToolbar>
 
           <v-data-table
             :headers="templateHeaders"
@@ -841,17 +841,6 @@ function restore(template: FeedTemplate) {
 .rec-alert__link {
   color: inherit;
   font-weight: var(--mp-fontWeight-semibold);
-}
-
-.rec-toolbar {
-  padding: var(--mp-component-card-padding);
-  border-bottom: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-  min-height: var(--mp-component-toolbar-minHeight);
-}
-
-.rec-toolbar__search {
-  max-width: var(--mp-component-toolbar-searchWidth);
-  min-width: var(--mp-component-toolbar-searchMinWidth);
 }
 
 .rec-toolbar__select {

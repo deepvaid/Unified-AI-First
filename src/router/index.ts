@@ -91,7 +91,11 @@ const routes: RouteRecordRaw[] = [
   { path: '/commerce/:accountId/products/kits/new', name: 'ProductKitNew', component: () => import('@/views/Products/KitWizard.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
   { path: '/commerce/:accountId/products/import/new/csv', name: 'ProductImportCsv', component: () => import('@/views/Products/ProductImportWizard.vue'), props: { source: 'csv' }, meta: { ...sharedCommerceGate, builderShell: true } },
   { path: '/commerce/:accountId/products/import/new/ftp', name: 'ProductImportFtp', component: () => import('@/views/Products/ProductImportWizard.vue'), props: { source: 'ftp' }, meta: { ...sharedCommerceGate, builderShell: true } },
-  { path: '/commerce/:accountId/products/:productId/edit', name: 'ProductEdit', component: () => import('@/views/Products/ProductWizard.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
+  { path: '/commerce/:accountId/products/import', name: 'ProductImportLogs', component: () => import('@/views/Products/ProductImportLogs.vue'), meta: sharedCommerceGate },
+  // Editing is a single page (UAT splits create/edit); the wizard stays reachable
+  // for reworking options/variants on an existing product.
+  { path: '/commerce/:accountId/products/:productId/edit', name: 'ProductEdit', component: () => import('@/views/Products/ProductEditor.vue'), meta: sharedCommerceGate },
+  { path: '/commerce/:accountId/products/:productId/edit/wizard', name: 'ProductEditWizard', component: () => import('@/views/Products/ProductWizard.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
   { path: '/commerce/:accountId/product_tax_category', name: 'ProductTaxCategory', component: () => import('@/views/Products/TaxCategories.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/products/collections', name: 'Collections', component: () => import('@/views/Products/Collections.vue'), meta: sharedCommerceGate },
   { path: '/commerce/:accountId/products/collections/new', name: 'CollectionNew', component: () => import('@/views/Products/CollectionEditor.vue'), meta: sharedCommerceGate },

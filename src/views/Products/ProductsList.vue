@@ -1,159 +1,186 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
-import { useCommerceStore, type Product } from '@/stores/useCommerce'
+import { useCommerceStore, PRODUCT_TYPES, type Product, type ProductView } from '@/stores/useCommerce'
+import { useProductExtrasStore } from '@/stores/useProductExtras'
+import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { downloadCsv } from '@/utils/exportCsv'
-import { formatMoneyParts } from '@/utils/formatMoneyParts'
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpDialog from '@/components/MpDialog.vue'
 
+/**
+ * Products — the commerce catalog list. Rebuilt from UAT `/commerce/:id/products`;
+ * see docs/rebuild/products-list/.
+ */
 const store = useCommerceStore()
+const extras = useProductExtrasStore()
+const salesChannels = useSalesChannelsStore()
 const route = useRoute()
 const router = useRouter()
-const search = ref('')
-const selected = ref<number[]>([])
-const page = ref(1)
-const ITEMS_PER_PAGE = 15
-const viewMode = ref<'list' | 'grid'>('list')
-const { loading } = useInitialLoad()
 const toast = useToast()
+const { loading } = useInitialLoad()
 
 const accountId = computed(() => {
   const value = route.params.accountId
   return (Array.isArray(value) ? value[0] : value) ?? '2000290'
 })
 
-/** Split a stored price string into typographic money parts for `.mp-money` markup. */
-function money(value: string) {
-  return formatMoneyParts(parseFloat(value) || 0)
-}
+const search = ref('')
+const selected = ref<number[]>([])
+const page = ref(1)
+const ITEMS_PER_PAGE = 10
 
-// Multi-select filters
-const filters = ref({
-  category: [] as string[],
-  status: [] as string[],
-  vendor: [] as string[],
+// ── Filters ─────────────────────────────────────────────────────────
+type Filters = ProductView['filters']
+
+const emptyFilters = (): Filters => ({
+  publishStatus: [], collections: [], productTypes: [], vendors: [], salesChannels: [],
+  minPrice: '', maxPrice: '', kitted: 'any',
 })
 
-const filterOptions = {
-  category: ['Electronics', 'Apparel', 'Home & Kitchen', 'Sports & Outdoors', 'Beauty & Health', 'Tools & Garden'],
-  status: ['In Stock', 'Low Stock', 'Out of Stock'],
-  vendor: ['Acme Corp', 'Brand House', 'Global Goods', 'Prime Supplier', 'Local Artisan'],
-}
+const filters = ref<Filters>(emptyFilters())
 
-const filterLabels: Record<string, string> = {
-  category: 'Category',
-  status: 'Status',
-  vendor: 'Vendor',
-}
-
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v.length > 0)
-    .map(([key, value]) => ({
-      key,
-      label: `${filterLabels[key]}: ${(value as string[]).join(', ')}`,
-    }))
-)
-
-function removeFilter(key: string) {
-  filters.value[key as keyof typeof filters.value] = []
-}
+const collectionOptions = computed(() => extras.collections.map((c) => c.title))
+const vendorOptions = computed(() => Array.from(new Set(store.products.map((p) => p.vendor))).sort())
+const channelOptions = computed(() => {
+  const names = salesChannels.channelsForAccount(accountId.value).map((c) => c.name)
+  return names.length ? names : ['Online Store', 'POS', 'Amazon', 'eBay', 'Instagram Shop']
+})
 
 function clearAllFilters() {
-  filters.value = { category: [], status: [], vendor: [] }
+  filters.value = emptyFilters()
+  search.value = ''
+  activeView.value = 'all'
+  page.value = 1
 }
 
-function selectAll() {
-  selected.value = filteredProducts.value.map(p => p.id)
-}
-
-function toggleSelect(id: number) {
-  const i = selected.value.indexOf(id)
-  if (i === -1) selected.value.push(id)
-  else selected.value.splice(i, 1)
-}
-
-const filteredProducts = computed(() => {
-  let items = store.products
-  if (filters.value.category.length) items = items.filter(p => p.category != null && filters.value.category.includes(p.category))
-  if (filters.value.status.length) items = items.filter(p => p.status != null && filters.value.status.includes(p.status))
-  if (filters.value.vendor.length) items = items.filter(p => p.vendor != null && filters.value.vendor.includes(p.vendor))
-  return items
+const priceRangeError = computed(() => {
+  const min = Number(filters.value.minPrice)
+  const max = Number(filters.value.maxPrice)
+  if (!filters.value.minPrice || !filters.value.maxPrice) return ''
+  return max < min ? 'The maximum must be greater than the minimum' : ''
 })
 
+/** Human-readable chips for whatever is currently narrowing the table. */
+const activeFilterEntries = computed(() => {
+  const f = filters.value
+  const entries: Array<{ key: string; label: string }> = []
+  if (f.publishStatus.length) entries.push({ key: 'publishStatus', label: `Status: ${f.publishStatus.join(', ')}` })
+  if (f.collections.length) entries.push({ key: 'collections', label: `Collection: ${f.collections.join(', ')}` })
+  if (f.productTypes.length) entries.push({ key: 'productTypes', label: `Type: ${f.productTypes.join(', ')}` })
+  if (f.vendors.length) entries.push({ key: 'vendors', label: `Brand: ${f.vendors.join(', ')}` })
+  if (f.salesChannels.length) entries.push({ key: 'salesChannels', label: `Channel: ${f.salesChannels.join(', ')}` })
+  if (f.minPrice || f.maxPrice) entries.push({ key: 'price', label: `Price: ${f.minPrice || '0'}–${f.maxPrice || '∞'}` })
+  if (f.kitted !== 'any') entries.push({ key: 'kitted', label: f.kitted === 'yes' ? 'Kits only' : 'Excludes kits' })
+  return entries
+})
+
+function removeFilter(key: string) {
+  const f = filters.value
+  if (key === 'price') { f.minPrice = ''; f.maxPrice = '' } else if (key === 'kitted') { f.kitted = 'any' } else {
+    ;(f as unknown as Record<string, string[]>)[key] = []
+  }
+  page.value = 1
+}
+
+// ── Saved views ─────────────────────────────────────────────────────
+const activeView = ref<string>('all')
+
+const viewTabs = computed(() => [
+  { label: 'All', key: 'all', count: store.products.length },
+  ...store.productViews.map((v) => ({ label: v.name, key: String(v.id) })),
+])
+
+function onViewChange(key: string) {
+  activeView.value = key
+  page.value = 1
+  if (key === 'all') {
+    filters.value = emptyFilters()
+    return
+  }
+  const view = store.productViews.find((v) => String(v.id) === key)
+  if (view) filters.value = JSON.parse(JSON.stringify(view.filters))
+}
+
+const saveViewDialog = ref(false)
+const newViewName = ref('')
+
+function openSaveView() {
+  newViewName.value = ''
+  saveViewDialog.value = true
+}
+
+function saveView() {
+  const name = newViewName.value.trim()
+  if (!name) return
+  const view = store.addProductView(name, filters.value)
+  activeView.value = String(view.id)
+  saveViewDialog.value = false
+  toast.success(`View “${name}” saved`)
+}
+
+function deleteView(view: ProductView) {
+  store.removeProductView(view.id)
+  if (activeView.value === String(view.id)) onViewChange('all')
+  toast.success(`View “${view.name}” removed`)
+}
+
+// ── Filtering ───────────────────────────────────────────────────────
+const filteredProducts = computed(() => {
+  const f = filters.value
+  const term = search.value.trim().toLowerCase()
+  return store.products.filter((p) => {
+    if (term && !p.name.toLowerCase().includes(term) && !p.sku.toLowerCase().includes(term)) return false
+    if (f.publishStatus.length && !f.publishStatus.includes(p.publishStatus)) return false
+    if (f.collections.length && !p.collections.some((c) => f.collections.includes(c))) return false
+    if (f.productTypes.length && !f.productTypes.includes(p.productType)) return false
+    if (f.vendors.length && !f.vendors.includes(p.vendor)) return false
+    if (f.salesChannels.length && !p.salesChannelNames.some((c) => f.salesChannels.includes(c))) return false
+    const price = parseFloat(p.price) || 0
+    if (f.minPrice && price < Number(f.minPrice)) return false
+    if (f.maxPrice && price > Number(f.maxPrice)) return false
+    if (f.kitted === 'yes' && p.type !== 'kit') return false
+    if (f.kitted === 'no' && p.type === 'kit') return false
+    return true
+  })
+})
+
+const isFiltering = computed(() => Boolean(search.value.trim()) || activeFilterEntries.value.length > 0)
+
 const headers = [
-  { title: 'Product', key: 'name', sortable: true, minWidth: '280px' },
-  { title: 'Category', key: 'category', hideBelow: 'lg' as const },
-  { title: 'Vendor', key: 'vendor', hideBelow: 'lg' as const },
+  { title: 'Name', key: 'name', sortable: true, minWidth: '280px' },
+  { title: 'SKU', key: 'sku', sortable: true },
+  { title: 'Stock', key: 'status', sortable: true },
   { title: 'Price', key: 'price', align: 'end' as const, sortable: true },
-  { title: 'Inventory', key: 'inventory', align: 'end' as const, sortable: true, hideBelow: 'md' as const },
-  { title: 'Status', key: 'status' },
-  { title: '', key: 'actions', sortable: false, width: 48 },
+  { title: 'Categories', key: 'collections', sortable: false },
+  { title: 'Status', key: 'publishStatus', sortable: true },
+  { title: '', key: 'actions', sortable: false, width: 56 },
 ]
 
-const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const money = (value: string) => `$${(parseFloat(value) || 0).toFixed(2)}`
 
-// ── Empty / no-results state (shared by list + grid) ─────────────────
-const isSearching = computed(() => !!search.value.trim() || activeFilterEntries.value.length > 0)
-
-const emptyState = computed(() =>
-  isSearching.value
-    ? {
-        illustration: 'no-results' as const,
-        title: 'No products match your search',
-        description: 'Try a different term or clear your filters.',
-        actionLabel: 'Clear filters',
-        actionIcon: 'x',
-      }
-    : {
-        illustration: 'empty-products' as const,
-        title: 'No products yet',
-        description: 'Add your first product or import a catalog to get started.',
-        actionLabel: 'New Product',
-        actionIcon: 'plus',
-      }
-)
-
-function onEmptyAction() {
-  if (isSearching.value) {
-    clearAllFilters()
-    search.value = ''
-  } else {
-    openNewProduct()
-  }
-}
-
-// ── Create / Edit navigation (full-page wizards) ─────────────────────
-function openNewProduct() {
-  router.push({ name: 'ProductNew', params: { accountId: accountId.value } })
-}
-function openNewKit() {
-  router.push({ name: 'ProductKitNew', params: { accountId: accountId.value } })
-}
+// ── Navigation ──────────────────────────────────────────────────────
+function openNewProduct() { router.push({ name: 'ProductNew', params: { accountId: accountId.value } }) }
+function openNewKit() { router.push({ name: 'ProductKitNew', params: { accountId: accountId.value } }) }
 function openImport(source: 'csv' | 'ftp') {
   router.push({ name: source === 'csv' ? 'ProductImportCsv' : 'ProductImportFtp', params: { accountId: accountId.value } })
 }
+function openImportLogs() { router.push({ name: 'ProductImportLogs', params: { accountId: accountId.value } }) }
 function openEdit(product: Product) {
   router.push({ name: 'ProductEdit', params: { accountId: accountId.value, productId: product.id } })
-}
-
-function duplicate(product: Product) {
-  store.duplicateProduct(product.id)
-  toast.success('Product duplicated')
 }
 
 // ── Delete (row + bulk) ─────────────────────────────────────────────
@@ -189,37 +216,63 @@ function doDelete() {
 
 const deleteMessage = computed(() =>
   bulkDelete.value
-    ? `${selected.value.length} product${selected.value.length === 1 ? '' : 's'} will be permanently deleted. This cannot be undone.`
-    : `“${pendingDelete.value?.name}” will be permanently deleted. This cannot be undone.`
+    ? `${selected.value.length} product${selected.value.length === 1 ? '' : 's'} will be permanently deleted, including their variants. This cannot be undone.`
+    : `“${pendingDelete.value?.name}” will be permanently deleted, including its variants. This cannot be undone.`,
 )
 
-// ── Export dialog (scoped) ───────────────────────────────────────────
+// ── Bulk edits ──────────────────────────────────────────────────────
+type BulkKind = 'category' | 'collection' | 'channel'
+const bulkDialog = ref(false)
+const bulkKind = ref<BulkKind>('category')
+const bulkValue = ref('')
+
+const bulkCopy: Record<BulkKind, { title: string; label: string; options: () => string[] }> = {
+  category: { title: 'Edit category', label: 'Category', options: () => Array.from(new Set(store.products.map((p) => p.category))).sort() },
+  collection: { title: 'Edit collection', label: 'Collection', options: () => collectionOptions.value },
+  channel: { title: 'Add sales channel', label: 'Sales channel', options: () => channelOptions.value },
+}
+
+function openBulk(kind: BulkKind) {
+  bulkKind.value = kind
+  bulkValue.value = ''
+  bulkDialog.value = true
+}
+
+function applyBulk() {
+  if (!bulkValue.value) return
+  const count = selected.value.length
+  if (bulkKind.value === 'category') store.setProductsCategory(selected.value, bulkValue.value)
+  if (bulkKind.value === 'collection') store.setProductsCollection(selected.value, bulkValue.value)
+  if (bulkKind.value === 'channel') store.addProductsSalesChannel(selected.value, bulkValue.value)
+  bulkDialog.value = false
+  selected.value = []
+  toast.success(`${count} product${count === 1 ? '' : 's'} updated`)
+}
+
+function bulkPublish(status: 'Draft' | 'Published') {
+  const count = selected.value.length
+  store.setProductsPublishStatus(selected.value, status)
+  selected.value = []
+  toast.success(`${count} product${count === 1 ? '' : 's'} set to ${status.toLowerCase()}`)
+}
+
+// ── Export ──────────────────────────────────────────────────────────
 const exportDialog = ref(false)
 const exportScope = ref<'current' | 'all' | 'selected' | 'search'>('all')
 const exportFileName = ref('')
 
-const searchedProducts = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  if (!q) return filteredProducts.value
-  return filteredProducts.value.filter(p =>
-    p.name.toLowerCase().includes(q) ||
-    p.sku.toLowerCase().includes(q) ||
-    p.category.toLowerCase().includes(q) ||
-    p.vendor.toLowerCase().includes(q) ||
-    p.status.toLowerCase().includes(q),
-  )
-})
 const currentPageProducts = computed(() =>
-  searchedProducts.value.slice((page.value - 1) * ITEMS_PER_PAGE, page.value * ITEMS_PER_PAGE),
+  filteredProducts.value.slice((page.value - 1) * ITEMS_PER_PAGE, page.value * ITEMS_PER_PAGE),
 )
-const selectedProducts = computed(() => filteredProducts.value.filter(p => selected.value.includes(p.id)))
+const selectedProducts = computed(() => store.products.filter((p) => selected.value.includes(p.id)))
 
+/** `Product_Export_2026-08-29` — UAT's own default garbles the month; this doesn't. */
 function defaultExportName() {
   const today = new Date()
   const y = today.getFullYear()
-  const d = String(today.getDate()).padStart(2, '0')
   const m = String(today.getMonth() + 1).padStart(2, '0')
-  return `Product_Export_${y}-${d}-${m}`
+  const d = String(today.getDate()).padStart(2, '0')
+  return `Product_Export_${y}-${m}-${d}`
 }
 
 function openExport() {
@@ -232,7 +285,7 @@ const exportRows = computed<Product[]>(() => {
   switch (exportScope.value) {
     case 'current': return currentPageProducts.value
     case 'selected': return selectedProducts.value
-    case 'search': return searchedProducts.value
+    case 'search': return filteredProducts.value
     default: return store.products
   }
 })
@@ -242,315 +295,302 @@ function runExport() {
   downloadCsv(name, exportRows.value, [
     { title: 'Name', value: 'name' },
     { title: 'SKU', value: 'sku' },
-    { title: 'Category', value: 'category' },
-    { title: 'Vendor', value: 'vendor' },
+    { title: 'Stock', value: 'status' },
     { title: 'Price', value: (p) => `$${p.price}` },
-    { title: 'Inventory', value: 'inventory' },
-    { title: 'Status', value: 'status' },
+    { title: 'Categories', value: (p) => p.collections.join(' | ') },
+    { title: 'Status', value: 'publishStatus' },
   ])
   exportDialog.value = false
   toast.success(`Exported ${exportRows.value.length} product${exportRows.value.length === 1 ? '' : 's'} as CSV`)
 }
 
-// ── Cross-page flash from the wizards ─────────────────────────────────
+// ── Cross-page flash from the wizards ───────────────────────────────
 const flashMessages: Record<string, string> = {
   'product-draft': 'Product saved as draft',
   'product-published': 'Product published',
   'product-updated': 'Product updated',
   'kit-draft': 'Kit saved as draft',
   'kit-published': 'Kit published',
-  'import-complete': 'Import complete — 312 products added',
+  'import-complete': 'Import complete',
 }
 
 onMounted(() => {
   const flash = route.query.flash
   const key = Array.isArray(flash) ? flash[0] : flash
   if (key && flashMessages[key]) {
-    toast.success(flashMessages[key])
+    toast.success(flashMessages[key]!)
     router.replace({ query: {} })
   }
 })
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column gap-5">
+  <div class="h-100 d-flex flex-column ga-5">
     <MpPageHeader
-      eyebrow="Commerce · Products"
+      eyebrow="Commerce"
       title="Products"
-      :subtitle="`${filteredProducts.length} products`"
+      :subtitle="`${filteredProducts.length} of ${store.products.length} products`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="openExport">Export</v-btn>
+        <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="openExport">Export</v-btn>
 
         <v-menu location="bottom end">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" variant="flat" prepend-icon="upload" append-icon="chevron-down" class="text-none" color="surface">Import</v-btn>
+          <template #activator="{ props: menu }">
+            <v-btn v-bind="menu" variant="outlined" prepend-icon="upload" append-icon="chevron-down" class="text-none">Import</v-btn>
           </template>
           <v-list density="compact">
-            <v-list-item prepend-icon="file-text" title="CSV" @click="openImport('csv')" />
-            <v-list-item prepend-icon="server" title="FTP" @click="openImport('ftp')" />
+            <v-list-item prepend-icon="file-text" title="Upload file" subtitle="CSV up to 150 MB" @click="openImport('csv')" />
+            <v-list-item prepend-icon="server" title="Import over FTP" subtitle="Needs an SFTP connection" @click="openImport('ftp')" />
+            <v-divider class="my-1" />
+            <v-list-item prepend-icon="history" title="Import logs" @click="openImportLogs" />
           </v-list>
         </v-menu>
 
-        <v-btn-toggle v-model="viewMode" mandatory class="mp-view-toggle">
-          <v-btn value="list" icon="list" size="small" aria-label="List view" />
-          <v-btn value="grid" icon="layout-grid" size="small" aria-label="Grid view" />
-        </v-btn-toggle>
-
         <v-menu location="bottom end">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" color="primary" variant="flat" prepend-icon="plus" append-icon="chevron-down" class="text-none">New Product</v-btn>
+          <template #activator="{ props: menu }">
+            <v-btn v-bind="menu" color="primary" variant="flat" prepend-icon="plus" append-icon="chevron-down" class="text-none">New product</v-btn>
           </template>
           <v-list density="compact">
-            <v-list-item prepend-icon="package" title="New Product" @click="openNewProduct" />
-            <v-list-item prepend-icon="boxes" title="New Kit" @click="openNewKit" />
+            <v-list-item prepend-icon="package" title="New product" @click="openNewProduct" />
+            <v-list-item prepend-icon="boxes" title="New kit" subtitle="A product built from other products" @click="openNewKit" />
           </v-list>
         </v-menu>
       </template>
+
+      <template #tabs>
+        <div class="d-flex align-center ga-2">
+          <MpFilterTabs
+            :model-value="activeView"
+            :tabs="viewTabs"
+            aria-label="Saved product views"
+            controls-id="products-table"
+            @update:model-value="onViewChange"
+          />
+          <v-menu v-if="store.productViews.length" location="bottom end">
+            <template #activator="{ props: menu }">
+              <v-btn v-bind="menu" icon="ellipsis" size="small" variant="text" aria-label="Manage saved views" />
+            </template>
+            <v-list density="compact">
+              <v-list-subheader>Saved views</v-list-subheader>
+              <v-list-item
+                v-for="view in store.productViews"
+                :key="view.id"
+                :title="view.name"
+                prepend-icon="trash-2"
+                class="text-error"
+                @click="deleteView(view)"
+              />
+            </v-list>
+          </v-menu>
+        </div>
+      </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="lg" class="mp-enter flex-grow-1 d-flex flex-column overflow-hidden">
+    <v-card id="products-table" variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
-        title="All Products"
         v-model:search="search"
-        :active-filters="activeFilterEntries"
+        title="All products"
+        search-placeholder="Search name or SKU"
         :total-count="filteredProducts.length"
+        :active-filters="activeFilterEntries"
+        :headers="headers"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
-        <!-- Filter popover: `hide-details` is deliberate — these selects can never
-             carry a hint or an error, and the popover is a dense surface. -->
+        <!-- Filter drawer: `hide-details` throughout is deliberate — a table
+             filter never carries a hint, and the drawer is a dense surface. -->
         <template #filter-content>
-          <div class="pa-4">
-            <MpFormGrid>
-              <MpFormSection title="Filter by" />
-              <v-select
-                v-model="filters.category"
-                :items="filterOptions.category"
-                label="Category"
-                multiple
-                chips
-                closable-chips
-                hide-details
-              />
-              <v-select
-                v-model="filters.status"
-                :items="filterOptions.status"
-                label="Status"
-                multiple
-                chips
-                closable-chips
-                hide-details
-              />
-              <v-select
-                v-model="filters.vendor"
-                :items="filterOptions.vendor"
-                label="Vendor"
-                multiple
-                chips
-                closable-chips
-                hide-details
-              />
-            </MpFormGrid>
-          </div>
-        </template>
+          <MpFormSection title="Product" />
+          <MpFormGrid>
+            <v-select v-model="filters.publishStatus" :items="['Draft', 'Published']" label="Product status" multiple chips closable-chips hide-details />
+            <v-select v-model="filters.collections" :items="collectionOptions" label="Product collection" multiple chips closable-chips hide-details />
+            <v-select v-model="filters.productTypes" :items="PRODUCT_TYPES" label="Product type" multiple chips closable-chips hide-details />
+            <v-select v-model="filters.vendors" :items="vendorOptions" label="Brand" multiple chips closable-chips hide-details />
+            <v-select v-model="filters.salesChannels" :items="channelOptions" label="Sales channel" multiple chips closable-chips hide-details />
+          </MpFormGrid>
 
+          <MpFormSection title="Price" />
+          <MpFormGrid :cols="2">
+            <v-text-field v-model="filters.minPrice" label="Min price" type="number" prefix="$" min="0" />
+            <v-text-field
+              v-model="filters.maxPrice"
+              label="Max price"
+              type="number"
+              prefix="$"
+              min="0"
+              :error-messages="priceRangeError ? [priceRangeError] : []"
+            />
+          </MpFormGrid>
+
+          <MpFormSection title="Kits" />
+          <MpFormField label="Kitted products">
+            <template #default="{ labelId }">
+              <v-radio-group v-model="filters.kitted" hide-details :aria-labelledby="labelId">
+                <v-radio label="Include kits and products" value="any" />
+                <v-radio label="Kits only" value="yes" />
+                <v-radio label="Exclude kits" value="no" />
+              </v-radio-group>
+            </template>
+          </MpFormField>
+
+          <v-btn variant="outlined" prepend-icon="bookmark-plus" class="text-none align-self-start" @click="openSaveView">
+            Save as view
+          </v-btn>
+        </template>
       </MpDataTableToolbar>
 
       <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
-
-      <!-- List view -->
       <v-data-table
-        v-else-if="viewMode === 'list'"
-        :headers="visibleHeaders"
-        :items="filteredProducts"
+        v-else
         v-model="selected"
         v-model:page="page"
-        show-select
+        :headers="headers"
+        :items="filteredProducts"
+        :items-per-page="ITEMS_PER_PAGE"
         item-value="id"
-        :search="search"
-        class="flex-grow-1"
+        show-select
+        hover
         density="comfortable"
         fixed-header
-        :items-per-page="ITEMS_PER_PAGE"
-        hover
+        class="flex-grow-1"
       >
-        <template v-slot:item.name="{ item }">
-          <div class="d-flex align-center gap-3 py-1">
-            <v-img
-              :src="`https://picsum.photos/seed/${item.id}/80/80`"
-              alt=""
-              :width="40"
-              :height="40"
-              cover
-              rounded="md"
-              class="flex-shrink-0 border product-thumb"
-            >
-              <template #error>
-                <div class="w-100 h-100 d-flex align-center justify-center bg-surface-variant rounded-md">
-                  <v-icon size="16" class="text-medium-emphasis">image</v-icon>
-                </div>
-              </template>
-            </v-img>
-            <div class="min-width-0">
-              <div class="product-name d-flex align-center gap-2">
-                <span class="text-truncate">{{ item.name }}</span>
-                <v-chip v-if="item.type === 'kit'" size="x-small" variant="tonal" color="secondary" label>Kit</v-chip>
-                <v-chip v-if="item.publishStatus === 'Draft'" size="x-small" variant="tonal" color="warning" label>Draft</v-chip>
-              </div>
-              <div class="product-sku">{{ item.sku }} · {{ item.variants }} variant{{ item.variants > 1 ? 's' : '' }}</div>
+        <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            aria-label="Select all rows"
+            @update:model-value="selectAll(!allSelected)"
+          />
+        </template>
+        <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select ${internalItem.raw.name}`"
+            @update:model-value="toggleSelect(internalItem)"
+          />
+        </template>
+        <template #item.name="{ item }">
+          <div class="d-flex align-center ga-3 py-2">
+            <v-avatar :size="36" rounded="lg" class="border flex-shrink-0">
+              <div class="prod-thumb"><v-icon size="16">image</v-icon></div>
+            </v-avatar>
+            <div>
+              <RouterLink
+                :to="{ name: 'ProductEdit', params: { accountId, productId: item.id } }"
+                class="prod-link text-body-2 font-weight-medium"
+              >
+                {{ item.name }}
+              </RouterLink>
+              <div v-if="item.variants > 1" class="text-caption text-medium-emphasis">{{ item.variants }} variants</div>
+              <div v-else-if="item.type === 'kit'" class="text-caption text-medium-emphasis">Kit</div>
             </div>
           </div>
         </template>
-
-        <template v-slot:item.price="{ item }">
-          <div class="d-flex flex-column align-end">
-            <span class="mp-money product-price">{{ money(item.price).symbol }}{{ money(item.price).integer }}<span class="mp-money__cents">.{{ money(item.price).cents }}</span></span>
-            <span v-if="item.compareAtPrice !== item.price" class="mp-strike product-compare">{{ money(item.compareAtPrice).symbol }}{{ money(item.compareAtPrice).integer }}.{{ money(item.compareAtPrice).cents }}</span>
+        <template #item.sku="{ item }">
+          <span class="prod-mono text-body-2">{{ item.sku }}</span>
+        </template>
+        <template #item.status="{ item }">
+          <MpStatusChip :status="item.status" type="general" size="sm" />
+        </template>
+        <template #item.price="{ item }">
+          <span class="text-body-2">{{ money(item.price) }}</span>
+        </template>
+        <template #item.collections="{ item }">
+          <div v-if="item.collections.length" class="d-flex flex-wrap ga-1">
+            <v-chip size="x-small" variant="tonal" label>{{ item.collections[0] }}</v-chip>
+            <v-tooltip v-if="item.collections.length > 1" location="top" :text="item.collections.slice(1).join(', ')">
+              <template #activator="{ props: tip }">
+                <v-chip v-bind="tip" size="x-small" variant="text" tabindex="0">+{{ item.collections.length - 1 }} more</v-chip>
+              </template>
+            </v-tooltip>
           </div>
+          <span v-else class="text-body-2 text-medium-emphasis">Not in a collection</span>
         </template>
-
-        <template v-slot:item.inventory="{ item }">
-          <span v-if="item.status === 'Out of Stock'" class="mp-strike stock-count">{{ item.inventory }}</span>
-          <span v-else class="stock-count" :class="{ 'stock-low': item.status === 'Low Stock' }">{{ item.inventory }}</span>
+        <template #item.publishStatus="{ item }">
+          <MpStatusChip :status="item.publishStatus" type="general" size="sm" />
         </template>
-
-        <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="stock" show-icon />
-        </template>
-
-        <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Product actions" :itemLabel="item.name">
+        <template #item.actions="{ item }">
+          <MpRowActionsMenu ariaLabel="Product actions" :item-label="item.name">
             <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
+            <v-divider class="my-1" />
             <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template #no-data>
           <MpEmptyState
-            emphasis="prominent"
-            :illustration="emptyState.illustration"
-            :title="emptyState.title"
-            :description="emptyState.description"
-            :action-label="emptyState.actionLabel"
-            :action-icon="emptyState.actionIcon"
+            :icon="isFiltering ? 'search-x' : 'package'"
+            :title="isFiltering ? 'No products match your filters' : 'No products yet'"
+            :description="isFiltering ? 'Try a different term, or clear the filters to see the whole catalog.' : 'Add your first product or import a catalog to get started.'"
+            :action-label="isFiltering ? 'Clear all filters' : 'New product'"
+            :action-icon="isFiltering ? 'x' : 'plus'"
             class="py-10"
-            @action="onEmptyAction"
+            @action="isFiltering ? clearAllFilters() : openNewProduct()"
           />
         </template>
       </v-data-table>
-
-      <!-- Grid view -->
-      <div v-else class="flex-grow-1 overflow-auto pa-4">
-        <div v-if="searchedProducts.length" class="product-grid">
-          <v-card
-            v-for="item in searchedProducts"
-            :key="item.id"
-            variant="flat"
-            border
-            rounded="lg"
-            class="product-card"
-            @click="openEdit(item)"
-          >
-            <div class="product-card__media">
-              <v-img
-                :src="`https://picsum.photos/seed/${item.id}/320/320`"
-                alt=""
-                :aspect-ratio="1"
-                cover
-              >
-                <template #error>
-                  <div class="w-100 h-100 d-flex align-center justify-center bg-surface-variant">
-                    <v-icon size="22" class="text-medium-emphasis">image</v-icon>
-                  </div>
-                </template>
-              </v-img>
-              <v-checkbox-btn
-                class="product-card__check"
-                density="compact"
-                :aria-label="`Select ${item.name}`"
-                :model-value="selected.includes(item.id)"
-                @click.stop
-                @update:model-value="toggleSelect(item.id)"
-              />
-            </div>
-            <div class="pa-3">
-              <div class="d-flex align-start justify-space-between gap-1">
-                <div class="min-width-0">
-                  <div class="product-name text-truncate">{{ item.name }}</div>
-                  <div class="product-sku text-truncate">{{ item.sku }}</div>
-                </div>
-                <div @click.stop>
-                  <MpRowActionsMenu ariaLabel="Product actions" :itemLabel="item.name">
-                    <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-                    <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-                    <v-divider class="my-1" style="opacity: 0.4" />
-                    <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
-                  </MpRowActionsMenu>
-                </div>
-              </div>
-              <div class="d-flex align-center justify-space-between gap-2 mt-3">
-                <span class="mp-money product-price">{{ money(item.price).symbol }}{{ money(item.price).integer }}<span class="mp-money__cents">.{{ money(item.price).cents }}</span></span>
-                <MpStatusChip :status="item.status" type="stock" size="sm" />
-              </div>
-            </div>
-          </v-card>
-        </div>
-        <MpEmptyState
-          v-else
-          emphasis="prominent"
-          :illustration="emptyState.illustration"
-          :title="emptyState.title"
-          :description="emptyState.description"
-          :action-label="emptyState.actionLabel"
-          :action-icon="emptyState.actionIcon"
-          class="py-10"
-          @action="onEmptyAction"
-        />
-      </div>
     </v-card>
 
-    <MpFloatingBulkBar
-      :count="selected.length"
-      :total="filteredProducts.length"
-      @clear="selected = []"
-      @select-all="selectAll"
-    >
-      <v-btn variant="text" size="small" prepend-icon="download" class="text-none" @click="openExport">Export</v-btn>
-      <v-btn variant="text" size="small" prepend-icon="trash-2" class="text-none text-error" @click="askBulkDelete">Delete</v-btn>
+    <MpFloatingBulkBar :count="selected.length" :total="filteredProducts.length" @clear="selected = []">
+      <v-btn variant="text" class="text-none" prepend-icon="file-pen-line" @click="bulkPublish('Draft')">Set as draft</v-btn>
+      <v-btn variant="text" class="text-none" prepend-icon="globe" @click="bulkPublish('Published')">Publish</v-btn>
+      <v-btn variant="text" class="text-none" prepend-icon="tags" @click="openBulk('category')">Category</v-btn>
+      <v-btn variant="text" class="text-none" prepend-icon="folder" @click="openBulk('collection')">Collection</v-btn>
+      <v-btn variant="text" class="text-none" prepend-icon="store" @click="openBulk('channel')">Sales channel</v-btn>
+      <v-btn variant="text" class="text-none text-error" prepend-icon="trash-2" @click="askBulkDelete">Delete</v-btn>
     </MpFloatingBulkBar>
 
-    <!-- Export dialog -->
-    <MpFormDrawer
-      v-model="exportDialog"
-      title="Export Products"
-      subtitle="Your products will be downloaded as a CSV file."
-    >
-      <MpFormGrid>
-        <MpFormField label="What to export">
-          <template #default="{ labelId }">
-            <v-radio-group v-model="exportScope" :aria-labelledby="labelId">
-              <v-radio value="current" label="Current Page" />
-              <v-radio value="all" :label="`All Products (${store.products.length})`" />
-              <v-radio value="selected" :disabled="!selected.length" :label="`Selected: ${selected.length} Products`" />
-              <v-radio value="search" :disabled="!search.trim()" :label="`${searchedProducts.length} Products matching your search`" />
-            </v-radio-group>
-          </template>
-        </MpFormField>
+    <MpDialog v-model="saveViewDialog" title="Save this view" subtitle="It appears as a tab above the table" size="sm">
+      <v-text-field
+        v-model="newViewName"
+        label="View name *"
+        placeholder="e.g. Draft apparel"
+        :error-messages="newViewName.trim() ? [] : ['Give the view a name']"
+      />
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="saveViewDialog = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!newViewName.trim()" @click="saveView">Save view</v-btn>
+      </template>
+    </MpDialog>
 
-        <v-text-field v-model="exportFileName" label="File Name" suffix=".csv" />
-      </MpFormGrid>
+    <!-- ── Bulk edit dialog ────────────────────────────────────────── -->
+    <MpDialog v-model="bulkDialog" :title="bulkCopy[bulkKind].title" :subtitle="`Applies to ${selected.length} selected product${selected.length === 1 ? '' : 's'}`" size="sm">
+      <v-combobox
+        v-model="bulkValue"
+        :items="bulkCopy[bulkKind].options()"
+        :label="`${bulkCopy[bulkKind].label} *`"
+        :error-messages="bulkValue ? [] : [`Choose a ${bulkCopy[bulkKind].label.toLowerCase()}`]"
+      />
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="bulkDialog = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!bulkValue" @click="applyBulk">Apply to selection</v-btn>
+      </template>
+    </MpDialog>
+
+    <!-- ── Export dialog ───────────────────────────────────────────── -->
+    <MpDialog v-model="exportDialog" title="Export products" subtitle="Downloads a CSV of the rows you choose" size="md">
+      <MpFormField label="Rows to export">
+        <template #default="{ labelId }">
+          <v-radio-group v-model="exportScope" hide-details :aria-labelledby="labelId">
+            <v-radio :label="`Current page (${currentPageProducts.length})`" value="current" />
+            <v-radio :label="`All products (${store.products.length})`" value="all" />
+            <v-radio :label="`Selected products (${selected.length})`" value="selected" :disabled="selected.length === 0" />
+            <v-radio :label="`Products matching your filters (${filteredProducts.length})`" value="search" :disabled="!isFiltering" />
+          </v-radio-group>
+        </template>
+      </MpFormField>
+
+      <MpFormSection title="File name" />
+      <v-text-field v-model="exportFileName" label="File name" suffix=".csv" />
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="exportDialog = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" prepend-icon="download" @click="runExport">Export</v-btn>
       </template>
-    </MpFormDrawer>
+    </MpDialog>
 
     <MpConfirmDialog
       v-model="confirmDelete"
-      :title="bulkDelete ? 'Delete selected products?' : 'Delete product?'"
+      :title="bulkDelete ? 'Delete selected products?' : 'Delete this product?'"
       :message="deleteMessage"
       confirm-label="Delete"
       danger
@@ -560,80 +600,21 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.min-width-0 {
-  min-width: 0;
-}
-
-/* Square product thumbnail — v-img's width prop collapses in the flex cell,
-   so pin it to a fixed 40×40 square. */
-.product-thumb {
-  flex: 0 0 40px;
-  width: 40px !important;
-  height: 40px !important;
-  aspect-ratio: 1 / 1;
-}
-
-/* Row identity: product name reads as ink, SKU/variant line demoted to a quiet second line. */
-.product-name {
-  font-size: 13.5px;
-  font-weight: 550;
-  line-height: 1.3;
-  color: rgb(var(--v-theme-on-surface));
-}
-.product-sku {
-  margin-top: 2px;
-  font-size: 12.5px;
-  line-height: 1.3;
+.prod-thumb {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--v-theme-surface-variant));
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
-/* Price: tabular figures, cents demoted via .mp-money__cents. */
-.product-price {
-  font-size: 14px;
-  font-weight: 550;
-  color: rgb(var(--v-theme-on-surface));
-}
-.product-compare {
-  margin-top: 1px;
-  font-size: 12px;
+.prod-mono {
+  font-family: var(--mp-fontFamily-mono);
 }
 
-/* Stock expressed in the count itself — no extra badge. */
-.stock-count {
-  font-variant-numeric: tabular-nums;
-}
-.stock-low {
-  color: rgb(var(--v-theme-warning));
-  font-weight: 600;
-}
-
-.mp-view-toggle {
-  height: 40px;
-}
-
-/* Grid view — same editorial grammar as the rows. */
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
-}
-.product-card {
-  cursor: pointer;
-  transition: border-color var(--dur-fast, 120ms) var(--ease, ease), transform var(--dur-fast, 120ms) var(--ease, ease);
-}
-.product-card:hover {
-  border-color: rgba(var(--v-theme-on-surface), 0.24);
-  transform: translateY(-2px);
-}
-.product-card__media {
-  position: relative;
-}
-.product-card__check {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  border-radius: 6px;
-  background: rgba(var(--v-theme-surface), 0.9);
-  backdrop-filter: blur(2px);
+.prod-link {
+  color: rgb(var(--v-theme-primary));
 }
 </style>

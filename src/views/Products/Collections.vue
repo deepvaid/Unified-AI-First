@@ -8,6 +8,9 @@ import {
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -64,6 +67,20 @@ function clearFilters() {
   typeFilter.value = 'All types'
   statusFilter.value = 'All statuses'
   parentFilter.value = 'All parents'
+}
+
+const activeFilterEntries = computed(() => {
+  const entries: Array<{ key: string; label: string }> = []
+  if (typeFilter.value !== 'All types') entries.push({ key: 'type', label: `Type: ${typeFilter.value}` })
+  if (statusFilter.value !== 'All statuses') entries.push({ key: 'status', label: `Status: ${statusFilter.value}` })
+  if (parentFilter.value !== 'All parents') entries.push({ key: 'parent', label: `Parent: ${parentFilter.value}` })
+  return entries
+})
+
+function removeFilter(key: string) {
+  if (key === 'type') typeFilter.value = 'All types'
+  if (key === 'status') statusFilter.value = 'All statuses'
+  if (key === 'parent') parentFilter.value = 'All parents'
 }
 
 function ruleSummary(collection: Collection): string {
@@ -149,21 +166,27 @@ function doBulkDelete() {
     </MpPageHeader>
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-      <div class="col-toolbar d-flex flex-wrap align-center ga-3">
-        <v-text-field
-          v-model="search"
-          label="Search collections"
-          placeholder="Title or handle"
-          prepend-inner-icon="search"
-          clearable
-          hide-details
-          class="col-toolbar__search"
-        />
-        <v-select v-model="typeFilter" :items="['All types', 'Automated', 'Manual']" label="Type" hide-details class="col-toolbar__select" />
-        <v-select v-model="statusFilter" :items="['All statuses', 'Active', 'Inactive']" label="Status" hide-details class="col-toolbar__select" />
-        <v-select v-model="parentFilter" :items="['All parents', ...parents]" label="Parent" hide-details class="col-toolbar__select" />
-        <v-btn v-if="hasFilters" variant="text" class="text-none" @click="clearFilters">Clear</v-btn>
-      </div>
+      <MpDataTableToolbar
+        v-model:search="search"
+        title="All collections"
+        search-placeholder="Search title or handle"
+        :total-count="filtered.length"
+        :active-filters="activeFilterEntries"
+        :headers="headers"
+        @remove-filter="removeFilter"
+        @clear-filters="clearFilters"
+      >
+        <!-- Filter drawer: `hide-details` is deliberate — a table filter never
+             carries a hint, and the drawer is a dense surface. -->
+        <template #filter-content>
+          <MpFormSection title="Filter by" />
+          <MpFormGrid>
+            <v-select v-model="typeFilter" :items="['All types', 'Automated', 'Manual']" label="Type" hide-details />
+            <v-select v-model="statusFilter" :items="['All statuses', 'Active', 'Inactive']" label="Status" hide-details />
+            <v-select v-model="parentFilter" :items="['All parents', ...parents]" label="Parent collection" hide-details />
+          </MpFormGrid>
+        </template>
+      </MpDataTableToolbar>
 
       <v-data-table
         v-model="selected"
@@ -177,6 +200,21 @@ function doBulkDelete() {
         fixed-header
         class="flex-grow-1"
       >
+        <template #header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            aria-label="Select all rows"
+            @update:model-value="selectAll(!allSelected)"
+          />
+        </template>
+        <template #item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select ${internalItem.raw.title}`"
+            @update:model-value="toggleSelect(internalItem)"
+          />
+        </template>
         <template #item.title="{ item }">
           <div class="py-1">
             <div class="text-body-2 font-weight-medium">{{ item.title }}</div>
@@ -251,22 +289,6 @@ function doBulkDelete() {
 </template>
 
 <style scoped>
-.col-toolbar {
-  padding: var(--mp-component-card-padding);
-  border-bottom: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-  min-height: var(--mp-component-toolbar-minHeight);
-}
-
-.col-toolbar__search {
-  max-width: var(--mp-component-toolbar-searchWidth);
-  min-width: var(--mp-component-toolbar-searchMinWidth);
-}
-
-.col-toolbar__select {
-  max-width: 200px;
-  min-width: 160px;
-}
-
 .col-mono {
   font-family: var(--mp-fontFamily-mono);
 }

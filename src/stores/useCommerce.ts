@@ -88,6 +88,14 @@ export interface ProductDetail {
   countryOfOrigin: string
   discountable: boolean
   salesChannels: string[]
+  /** Search-listing metadata, edited on the single-page product editor. */
+  seo?: {
+    title: string
+    metaDescription: string
+    urlHandle: string
+    ogTitle: string
+    ogDescription: string
+  }
 }
 
 export interface Product {
@@ -104,8 +112,33 @@ export interface Product {
   variants: number
   type: ProductType
   publishStatus: PublishStatus
+  /** Collections this product belongs to (Products list "Categories" cell). */
+  collections: string[]
+  /** Storefront channels the product is published to. */
+  salesChannelNames: string[]
+  /** Merchandising type used by the Products filter drawer. */
+  productType: string
   detail?: ProductDetail
   components?: KitComponent[]
+}
+
+/** Product types offered in the Products filter drawer. */
+export const PRODUCT_TYPES = ['Physical', 'Digital', 'Service', 'Bundle']
+
+/** A named filter combination saved from the Products filter drawer. */
+export interface ProductView {
+  id: number
+  name: string
+  filters: {
+    publishStatus: string[]
+    collections: string[]
+    productTypes: string[]
+    vendors: string[]
+    salesChannels: string[]
+    minPrice: string
+    maxPrice: string
+    kitted: 'any' | 'yes' | 'no'
+  }
 }
 
 /** Input accepted by createProduct / updateProductDraft (the full-page wizards). */
@@ -671,7 +704,10 @@ export const useCommerceStore = defineStore('commerce', () => {
       images: 1,
       variants: Math.floor(Math.random() * 4) + 1,
       type: 'product',
-      publishStatus: 'Published',
+      publishStatus: i === 0 ? 'Draft' : 'Published',
+      collections: i % 3 === 0 ? [categories[i % categories.length]!] : [categories[i % categories.length]!, categories[(i + 1) % categories.length]!],
+      salesChannelNames: i % 4 === 0 ? [] : ['Online Store'],
+      productType: PRODUCT_TYPES[i % PRODUCT_TYPES.length]!,
     }
   }))
 
@@ -698,6 +734,9 @@ export const useCommerceStore = defineStore('commerce', () => {
       variants: input.variants,
       type: input.type,
       publishStatus: input.publishStatus,
+      collections: input.detail?.collection ? [input.detail.collection] : [],
+      salesChannelNames: input.detail?.salesChannels ?? [],
+      productType: PRODUCT_TYPES[0]!,
       detail: input.detail,
       components: input.components,
     }
@@ -721,8 +760,50 @@ export const useCommerceStore = defineStore('commerce', () => {
     product.variants = input.variants
     product.type = input.type
     product.publishStatus = input.publishStatus
+    if (input.detail) {
+      product.collections = input.detail.collection ? [input.detail.collection] : product.collections
+      product.salesChannelNames = input.detail.salesChannels
+    }
     product.detail = input.detail
     product.components = input.components
+  }
+
+  /** Bulk edits driven from the Products list selection bar. */
+  function setProductsPublishStatus(ids: number[], publishStatus: PublishStatus): void {
+    products.value.forEach((p) => { if (ids.includes(p.id)) p.publishStatus = publishStatus })
+  }
+
+  function setProductsCategory(ids: number[], category: string): void {
+    products.value.forEach((p) => { if (ids.includes(p.id)) p.category = category })
+  }
+
+  function setProductsCollection(ids: number[], collection: string): void {
+    products.value.forEach((p) => {
+      if (ids.includes(p.id) && !p.collections.includes(collection)) p.collections.push(collection)
+    })
+  }
+
+  function addProductsSalesChannel(ids: number[], channel: string): void {
+    products.value.forEach((p) => {
+      if (ids.includes(p.id) && !p.salesChannelNames.includes(channel)) p.salesChannelNames.push(channel)
+    })
+  }
+
+  // ── Saved product views (the Products list's custom filter tabs) ──
+  const productViews = ref<ProductView[]>([])
+
+  function addProductView(name: string, filters: ProductView['filters']): ProductView {
+    const view: ProductView = {
+      id: productViews.value.reduce((max, v) => Math.max(max, v.id), 0) + 1,
+      name,
+      filters: { ...filters },
+    }
+    productViews.value.push(view)
+    return view
+  }
+
+  function removeProductView(id: number): void {
+    productViews.value = productViews.value.filter((v) => v.id !== id)
   }
 
   function duplicateProduct(id: number): Product | undefined {
@@ -1512,6 +1593,8 @@ export const useCommerceStore = defineStore('commerce', () => {
     products, orders, promotions, fulfillments, draftOrders, customGiftCards, purchasableGiftCards,
     inventory,
     createProduct, updateProductDraft, duplicateProduct, deleteProduct, deleteProducts,
+    setProductsPublishStatus, setProductsCategory, setProductsCollection, addProductsSalesChannel,
+    productViews, addProductView, removeProductView,
     adjustStock, transferStock, inventoryImports,
     priceLists, priceOverrides, priceFor, deletePriceOverride,
     getOrderById, addOrderNote, setOrderTags, updateOrderAddress, cancelOrder, cancelOrders, refundOrder, markOrderFulfilled, markOrdersFulfilled,

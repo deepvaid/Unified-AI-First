@@ -6,6 +6,9 @@ import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -67,6 +70,18 @@ function clearFilters() {
   channelFilter.value = 'All channels'
 }
 
+const activeFilterEntries = computed(() => {
+  const entries: Array<{ key: string; label: string }> = []
+  if (statusFilter.value !== 'All statuses') entries.push({ key: 'status', label: `Status: ${statusFilter.value}` })
+  if (channelFilter.value !== 'All channels') entries.push({ key: 'channel', label: `Channel: ${channelFilter.value}` })
+  return entries
+})
+
+function removeFilter(key: string) {
+  if (key === 'status') statusFilter.value = 'All statuses'
+  if (key === 'channel') channelFilter.value = 'All channels'
+}
+
 function formatDate(date: string): string {
   if (!date) return ''
   const d = new Date(`${date}T00:00:00`)
@@ -119,20 +134,26 @@ function doDelete() {
     </MpPageHeader>
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-      <div class="pl-toolbar d-flex flex-wrap align-center ga-3">
-        <v-text-field
-          v-model="search"
-          label="Search price lists"
-          placeholder="Title or audience"
-          prepend-inner-icon="search"
-          clearable
-          hide-details
-          class="pl-toolbar__search"
-        />
-        <v-select v-model="statusFilter" :items="['All statuses', 'Draft', 'Active']" label="Status" hide-details class="pl-toolbar__select" />
-        <v-select v-model="channelFilter" :items="['All channels', ...channels]" label="Sales channel" hide-details class="pl-toolbar__select" />
-        <v-btn v-if="hasFilters" variant="text" class="text-none" @click="clearFilters">Clear</v-btn>
-      </div>
+      <MpDataTableToolbar
+        v-model:search="search"
+        title="All price lists"
+        search-placeholder="Search title or audience"
+        :total-count="filtered.length"
+        :active-filters="activeFilterEntries"
+        :headers="headers"
+        @remove-filter="removeFilter"
+        @clear-filters="clearFilters"
+      >
+        <!-- Filter drawer: `hide-details` is deliberate — a table filter never
+             carries a hint, and the drawer is a dense surface. -->
+        <template #filter-content>
+          <MpFormSection title="Filter by" />
+          <MpFormGrid>
+            <v-select v-model="statusFilter" :items="['All statuses', 'Draft', 'Active']" label="Status" hide-details />
+            <v-select v-model="channelFilter" :items="['All channels', ...channels]" label="Sales channel" hide-details />
+          </MpFormGrid>
+        </template>
+      </MpDataTableToolbar>
 
       <v-data-table
         :headers="headers"
@@ -202,22 +223,6 @@ function doDelete() {
 </template>
 
 <style scoped>
-.pl-toolbar {
-  padding: var(--mp-component-card-padding);
-  border-bottom: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-  min-height: var(--mp-component-toolbar-minHeight);
-}
-
-.pl-toolbar__search {
-  max-width: var(--mp-component-toolbar-searchWidth);
-  min-width: var(--mp-component-toolbar-searchMinWidth);
-}
-
-.pl-toolbar__select {
-  max-width: 200px;
-  min-width: 160px;
-}
-
 .pl-desc {
   max-width: 280px;
 }
