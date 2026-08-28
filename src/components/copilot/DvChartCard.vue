@@ -74,28 +74,28 @@ function getMax(bars: number[][]) {
 </template>
 
 <style scoped>
-.v-card.dv-chart-card { border-radius: var(--mp-component-card-radius-md) !important; }
-.chart-x-label { font-size: var(--mp-typography-fontSize-xs); }
-.chart-legend-dot { width: 8px; height: 8px; border-radius: var(--mp-borderRadius-full); }
-.chart-area { display: flex; gap: var(--mp-spacing-1); height: 140px; }
+.v-card.dv-chart-card { border-radius: var(--mp-radius-12) !important; }
+.chart-x-label { font-size: var(--mp-fontSize-11); }
+.chart-legend-dot { width: var(--mp-space-8); height: var(--mp-space-8); border-radius: var(--mp-radius-full); }
+.chart-area { display: flex; gap: var(--mp-space-4); height: 140px; }
 .chart-y-labels {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  font-size: var(--mp-typography-fontSize-xs);
+  font-size: var(--mp-fontSize-11);
   color: var(--mp-color-chart-light-axisLabel);
   min-width: 36px;
   text-align: right;
-  padding-right: 6px;
+  padding-right: var(--mp-space-6);
 }
 .chart-bars-wrap {
   display: flex;
   align-items: flex-end;
-  gap: 3px;
+  gap: var(--mp-space-4);
   flex: 1;
   border-left: 1px solid var(--border-subtle);
   border-bottom: 1px solid var(--border-subtle);
-  padding: 0 2px;
+  padding: 0 var(--mp-space-2);
 }
 .chart-bar-col { flex: 1; display: flex; flex-direction: column-reverse; }
 

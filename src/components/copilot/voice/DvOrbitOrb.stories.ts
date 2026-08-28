@@ -5,7 +5,7 @@ import DvOrbitOrb from './DvOrbitOrb.vue'
 import '@/styles/dv-orbit.css'
 
 const meta = {
-  title: 'Copilot/Voice/DvOrbitOrb',
+  title: 'Product/Da Vinci/Voice/DvOrbitOrb',
   component: DvOrbitOrb,
   tags: ['autodocs'],
   args: {

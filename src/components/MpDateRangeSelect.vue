@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import MpFormGrid from './MpFormGrid.vue'
 import {
   dateRangePresets,
   dateRangeLabel,
@@ -76,12 +77,13 @@ function applyCustom() {
       <div v-if="showCustom" class="mp-range-custom pa-3 pt-2">
         <!-- @click.stop on the fields only, so filling them never closes the menu.
              The buttons below stay un-stopped so their clicks close it natively. -->
-        <div class="d-flex flex-column gap-2" @click.stop>
+        <!-- Compact menu panel: the two dates stay dense and detail-free so the
+             popover can't resize under the pointer while it is open. -->
+        <MpFormGrid @click.stop>
           <v-text-field
             v-model="customFrom"
             type="date"
             label="From"
-            variant="outlined"
             density="compact"
             hide-details
           />
@@ -89,12 +91,11 @@ function applyCustom() {
             v-model="customTo"
             type="date"
             label="To"
-            variant="outlined"
             density="compact"
             hide-details
           />
-        </div>
-        <div class="d-flex justify-end gap-2 mt-3">
+        </MpFormGrid>
+        <div class="d-flex justify-end ga-2">
           <v-btn variant="text" size="small" class="text-none">Cancel</v-btn>
           <v-btn color="primary" variant="flat" size="small" class="text-none" :disabled="!customValid" @click="applyCustom">
             Apply
@@ -109,12 +110,12 @@ function applyCustom() {
 .mp-range-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
   height: 40px;
   max-width: 240px;
-  padding: 0 12px;
+  padding: 0 var(--mp-space-12);
   border: 1px solid var(--border-default);
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface));
   color: var(--text-primary);
   font-size: 0.875rem;
@@ -140,7 +141,12 @@ function applyCustom() {
   min-width: 0;
 }
 
+/* The panel owns the space between its fields and its actions — that used to be
+   an `mt-3` the button row carried itself. */
 .mp-range-custom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-component-field-groupGap);
   border-top: 1px solid var(--border-subtle);
 }
 </style>

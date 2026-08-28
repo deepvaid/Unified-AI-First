@@ -71,7 +71,7 @@ const emit = defineEmits<{
 .breakdown-widget {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--mp-space-14);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -80,7 +80,7 @@ const emit = defineEmits<{
 .breakdown-widget__headline {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: var(--mp-space-10);
 }
 
 .breakdown-widget__headline--split {
@@ -88,8 +88,8 @@ const emit = defineEmits<{
 }
 
 .breakdown-widget__headline-value {
-  font-size: 32px;
-  font-weight: 650;
+  font-size: var(--mp-fontSize-32);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: -0.03em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -97,23 +97,23 @@ const emit = defineEmits<{
 }
 
 .breakdown-widget__headline-value--sm {
-  font-size: 22px;
+  font-size: var(--mp-fontSize-24);
   letter-spacing: -0.025em;
 }
 
 .breakdown-widget__headline-caption {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
 }
 
 .breakdown-widget__progress {
-  margin-top: -6px;
+  margin-top: calc(var(--mp-space-6) * -1);
 }
 
 .breakdown-widget__rows {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--mp-space-12);
   /* Absorb the fixed grid row's spare height so the footer link/warning sit
      naturally instead of floating below a slab of dead space. */
   flex: 1 1 auto;
@@ -123,7 +123,7 @@ const emit = defineEmits<{
 .breakdown-widget__row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--mp-space-12);
   min-width: 0;
 }
 
@@ -145,9 +145,9 @@ const emit = defineEmits<{
 .breakdown-widget__text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--mp-space-2);
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
 }
 
 .breakdown-widget__label {
@@ -159,16 +159,16 @@ const emit = defineEmits<{
 
 .breakdown-widget__dot + .breakdown-widget__text .breakdown-widget__label {
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .breakdown-widget__text--alert .breakdown-widget__label {
   color: var(--neg);
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .breakdown-widget__meta {
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -180,8 +180,8 @@ const emit = defineEmits<{
 }
 
 .breakdown-widget__value {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
   flex: none;
@@ -195,19 +195,19 @@ const emit = defineEmits<{
   margin-top: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  gap: var(--mp-space-8);
+  padding: var(--mp-space-10) var(--mp-space-12);
+  border-radius: var(--mp-component-input-radius);
   background: var(--mp-color-light-warningContainer);
   color: var(--mp-color-light-onWarningContainer);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .breakdown-widget__link {
   margin-top: auto;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--accent);
   text-decoration: none;
 }

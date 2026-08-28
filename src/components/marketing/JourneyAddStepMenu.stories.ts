@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import JourneyAddStepMenu from './JourneyAddStepMenu.vue'
 import { nodeCatalog } from '@/stores/journeyFlowData'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Marketing/JourneyAddStepMenu',
+  title: 'Product/Marketing/Journeys/JourneyAddStepMenu',
   component: JourneyAddStepMenu,
   tags: ['autodocs'],
   parameters: {
@@ -120,10 +119,4 @@ export const LongCatalogScrolled: Story = {
     const scrollEl = document.querySelector<HTMLElement>('.jas-scroll')
     if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight
   },
-}
-
-/** The same opened, grouped catalog as an L4 overlay surface in dark mode. */
-export const DarkMode: Story = {
-  globals: darkModeGlobals,
-  ...Open,
 }

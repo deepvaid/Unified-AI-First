@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { VContainer } from 'vuetify/components'
 import {
-  mp_borderRadius_md,
+  mp_radius_12,
   mp_color_dark_background,
   mp_color_dark_border,
   mp_color_dark_surface,
@@ -12,14 +12,13 @@ import {
   mp_color_light_surface,
   mp_color_light_textMuted,
   mp_color_light_textPrimary,
-  mp_spacing_3,
-  mp_spacing_6,
-  mp_typography_fontFamily_mono,
-  mp_typography_fontSize_sm,
-  mp_typography_fontSize_xs,
+  mp_space_12,
+  mp_space_24,
+  mp_fontFamily_mono,
+  mp_fontSize_12,
+  mp_fontSize_11,
 } from '@/design-tokens/generated/tokens'
 import { tokensByPrefix } from './foundationTokens'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
   title: 'Foundations/Colors',
@@ -70,12 +69,12 @@ const SwatchGrid = {
   props: ['swatches', 'heading', 'panelBg', 'panelText', 'panelMuted', 'panelBorder'],
   setup() {
     return {
-      mp_borderRadius_md,
-      mp_spacing_3,
-      mp_spacing_6,
-      mp_typography_fontFamily_mono,
-      mp_typography_fontSize_sm,
-      mp_typography_fontSize_xs,
+      mp_radius_12,
+      mp_space_12,
+      mp_space_24,
+      mp_fontFamily_mono,
+      mp_fontSize_12,
+      mp_fontSize_11,
     }
   },
   template: `
@@ -83,25 +82,25 @@ const SwatchGrid = {
       :style="{
         background: panelBg,
         color: panelText,
-        padding: mp_spacing_6,
-        borderRadius: mp_borderRadius_md,
+        padding: mp_space_24,
+        borderRadius: mp_radius_12,
         border: '1px solid ' + panelBorder,
-        marginBottom: mp_spacing_6,
+        marginBottom: mp_space_24,
       }"
     >
-      <p class="text-overline" :style="{ color: panelMuted, marginBottom: mp_spacing_3 }">{{ heading }}</p>
-      <div :style="{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: mp_spacing_3 }">
+      <p class="text-overline" :style="{ color: panelMuted, marginBottom: mp_space_12 }">{{ heading }}</p>
+      <div :style="{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: mp_space_12 }">
         <div v-for="s in swatches" :key="s.token">
           <div
             :style="{
               background: s.value,
               height: '56px',
-              borderRadius: mp_borderRadius_md,
+              borderRadius: mp_radius_12,
               border: '1px solid ' + panelBorder,
             }"
           />
-          <div :style="{ fontSize: mp_typography_fontSize_sm, fontWeight: 600, marginTop: '6px', wordBreak: 'break-all' }">{{ s.name }}</div>
-          <div :style="{ fontFamily: mp_typography_fontFamily_mono, fontSize: mp_typography_fontSize_xs, color: panelMuted, wordBreak: 'break-all' }">{{ s.value }}</div>
+          <div :style="{ fontSize: mp_fontSize_12, fontWeight: 600, marginTop: '6px', wordBreak: 'break-all' }">{{ s.name }}</div>
+          <div :style="{ fontFamily: mp_fontFamily_mono, fontSize: mp_fontSize_11, color: panelMuted, wordBreak: 'break-all' }">{{ s.value }}</div>
         </div>
       </div>
     </section>
@@ -266,12 +265,6 @@ export const SemanticSurfaces: Story = {
   }),
 }
 
-/** Pinned dark — same surface tiers, forced to the dark theme regardless of the toolbar. */
-export const DarkModeSemanticSurfaces: Story = {
-  globals: darkModeGlobals,
-  ...SemanticSurfaces,
-}
-
 export const SemanticTextAndIcons: Story = {
   parameters: { controls: { disable: true } },
   render: () => ({
@@ -293,12 +286,6 @@ export const SemanticTextAndIcons: Story = {
   }),
 }
 
-/** Pinned dark — text + icon hierarchy, forced to the dark theme regardless of the toolbar. */
-export const DarkModeSemanticTextAndIcons: Story = {
-  globals: darkModeGlobals,
-  ...SemanticTextAndIcons,
-}
-
 export const SemanticBordersAndFocus: Story = {
   parameters: { controls: { disable: true } },
   render: () => ({
@@ -308,12 +295,6 @@ export const SemanticBordersAndFocus: Story = {
     },
     template: `<AliasRow heading="Borders and focus — active theme" :rows="borderRows" />`,
   }),
-}
-
-/** Pinned dark — border tiers, forced to the dark theme regardless of the toolbar. */
-export const DarkModeSemanticBordersAndFocus: Story = {
-  globals: darkModeGlobals,
-  ...SemanticBordersAndFocus,
 }
 
 export const SemanticAccents: Story = {
@@ -344,12 +325,6 @@ export const SemanticFeedback: Story = {
     },
     template: `<AliasRow heading="Feedback colours — active theme" :rows="feedbackRows" />`,
   }),
-}
-
-/** Pinned dark — feedback colours, forced to the dark theme regardless of the toolbar. */
-export const DarkModeSemanticFeedback: Story = {
-  globals: darkModeGlobals,
-  ...SemanticFeedback,
 }
 
 /** Side-by-side light and dark surface tiers using generated token literals (not Storybook-only). */

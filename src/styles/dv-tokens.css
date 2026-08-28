@@ -7,30 +7,30 @@
   --dv-accent: var(--accent);
   --dv-accent-hover: color-mix(in oklch, var(--accent) 85%, black);
   --dv-accent-active: color-mix(in oklch, var(--accent) 70%, black);
-  --dv-on-accent: #FFFFFF;
+  --dv-on-accent: var(--mp-color-light-dv-onAccent);
   /* Orb particle ink (read via inherited `color` by the canvas engine) — dark
      ink for light surfaces; the dark theme flips it to a light ink below. */
-  --dv-ink: #16181d;
+  --dv-ink: var(--mp-color-light-dv-ink);
   --dv-accent-soft: var(--mp-color-light-aiAccent-soft);
   --dv-border: var(--mp-color-light-aiAccent-border);
   --dv-text-primary: var(--mp-color-light-aiAccent-textPrimary);
   --dv-text-secondary: var(--mp-color-light-aiAccent-textSecondary);
   --dv-muted: var(--mp-color-light-aiAccent-muted);
   /* Da Vinci gradient — vibrant violet → blue → deep cyan (brand AI aesthetic) */
-  --dv-grad: linear-gradient(135deg, #7C3AED 0%, #2563EB 52%, #0891B2 100%);
+  --dv-grad: linear-gradient(135deg, var(--mp-color-light-dv-gradFrom) 0%, var(--mp-color-light-dv-gradMid) 52%, var(--mp-color-light-dv-gradTo) 100%);
   /* Hero greeting gradient text — violet → blue → cyan, left to right */
-  --dv-hero-grad: linear-gradient(90deg, #7C3AED 0%, #2563EB 50%, #0891B2 100%);
+  --dv-hero-grad: linear-gradient(90deg, var(--mp-color-light-dv-heroGradFrom) 0%, var(--mp-color-light-dv-heroGradMid) 50%, var(--mp-color-light-dv-heroGradTo) 100%);
   /* Orb particle colors (fed into WebGL uniforms — keep literal hex, never color-mix) */
-  --dv-orb-c1: #0891B2;
-  --dv-orb-c2: #3B82F6;
-  --dv-orb-c3: #8B5CF6;
+  --dv-orb-c1: var(--mp-color-light-dv-orbC1);
+  --dv-orb-c2: var(--mp-color-light-dv-orbC2);
+  --dv-orb-c3: var(--mp-color-light-dv-orbC3);
   /* Saturated neon stops — hover ring + the mark's particle gradient */
-  --dv-ring-c1: #2563EB;
-  --dv-ring-c2: #7C3AED;
-  --dv-ring-c3: #D946EF;
+  --dv-ring-c1: var(--mp-color-light-dv-ringC1);
+  --dv-ring-c2: var(--mp-color-light-dv-ringC2);
+  --dv-ring-c3: var(--mp-color-light-dv-ringC3);
   /* Immersive AI-experience backdrop — pure white paper (Marojarvis parity):
      the orb's ink particles were tuned for white; the ambient dust IS the texture */
-  --dv-experience-bg: #ffffff;
+  --dv-experience-bg: var(--mp-color-light-dv-experienceBg);
   --dv-header-grad: linear-gradient(
     120deg,
     var(--mp-color-light-aiAccent-soft) 0%,
@@ -52,32 +52,32 @@
 /* ── Orbit voice mode (drawer) — high-fidelity handoff values, light-theme spec.
    Exact hex from the Orbit design handoff; do not derive or color-mix. ── */
 :root {
-  --dv-orbit-grad: linear-gradient(135deg, #8B7CF8 0%, #5EA8F5 55%, #22D3EE 100%);
-  --dv-orbit-strip-grad: linear-gradient(120deg, #F4F1FE, #ECFAFE);
-  --dv-orbit-wave-grad: linear-gradient(180deg, #A78BFA, #22D3EE);
-  --dv-orbit-ink: #14304C;
-  --dv-orbit-slate: #5C7186;
-  --dv-orbit-body: #33506B;
-  --dv-orbit-mist: #8499AF;
-  --dv-orbit-chip: #4A6076;
-  --dv-orbit-line: #E4EAF1;
-  --dv-orbit-hairline: #EEF2F7;
-  --dv-orbit-surface: #F4F7FB;
-  --dv-orbit-echo-bg: #F8FAFC;
-  --dv-orbit-card-line: #E8EEF5;
-  --dv-orbit-blue: #1B9FE0;
-  --dv-orbit-blue-hover: #1690CC;
-  --dv-orbit-bar-light: #A5D8F3;
-  --dv-orbit-sep: #D2DCE6;
-  --dv-orbit-success: #16A34A;
-  --dv-orbit-success-text: #1E5638;
-  --dv-orbit-success-bg: #F0FAF4;
-  --dv-orbit-warn: #B45309;
-  --dv-orbit-warn-bg: #FEF6EC;
-  --dv-orbit-muted: #94A3B8;
-  --dv-orbit-muted-bg: #F1F5F9;
-  --dv-orbit-mic-shadow: 0 10px 26px rgba(99, 125, 247, 0.38);
-  --dv-orbit-input-shadow: 0 6px 18px rgba(15, 42, 67, 0.06);
+  --dv-orbit-grad: linear-gradient(135deg, var(--mp-color-light-dv-orbit-gradFrom) 0%, var(--mp-color-light-dv-orbit-gradMid) 55%, var(--mp-color-light-dv-orbit-gradTo) 100%);
+  --dv-orbit-strip-grad: linear-gradient(120deg, var(--mp-color-light-dv-orbit-stripGradFrom), var(--mp-color-light-dv-orbit-stripGradTo));
+  --dv-orbit-wave-grad: linear-gradient(180deg, var(--mp-color-light-dv-orbit-waveGradFrom), var(--mp-color-light-dv-orbit-waveGradTo));
+  --dv-orbit-ink: var(--mp-color-light-dv-orbit-ink);
+  --dv-orbit-slate: var(--mp-color-light-dv-orbit-slate);
+  --dv-orbit-body: var(--mp-color-light-dv-orbit-body);
+  --dv-orbit-mist: var(--mp-color-light-dv-orbit-mist);
+  --dv-orbit-chip: var(--mp-color-light-dv-orbit-chip);
+  --dv-orbit-line: var(--mp-color-light-dv-orbit-line);
+  --dv-orbit-hairline: var(--mp-color-light-dv-orbit-hairline);
+  --dv-orbit-surface: var(--mp-color-light-dv-orbit-surface);
+  --dv-orbit-echo-bg: var(--mp-color-light-dv-orbit-echoBg);
+  --dv-orbit-card-line: var(--mp-color-light-dv-orbit-cardLine);
+  --dv-orbit-blue: var(--mp-color-light-dv-orbit-blue);
+  --dv-orbit-blue-hover: var(--mp-color-light-dv-orbit-blueHover);
+  --dv-orbit-bar-light: var(--mp-color-light-dv-orbit-barLight);
+  --dv-orbit-sep: var(--mp-color-light-dv-orbit-sep);
+  --dv-orbit-success: var(--mp-color-light-dv-orbit-success);
+  --dv-orbit-success-text: var(--mp-color-light-dv-orbit-successText);
+  --dv-orbit-success-bg: var(--mp-color-light-dv-orbit-successBg);
+  --dv-orbit-warn: var(--mp-color-light-dv-orbit-warn);
+  --dv-orbit-warn-bg: var(--mp-color-light-dv-orbit-warnBg);
+  --dv-orbit-muted: var(--mp-color-light-dv-orbit-muted);
+  --dv-orbit-muted-bg: var(--mp-color-light-dv-orbit-mutedBg);
+  --dv-orbit-mic-shadow: var(--mp-shadow-dvOrbitMic);
+  --dv-orbit-input-shadow: var(--mp-shadow-dvOrbitInput);
 }
 
 /* ── Orbit voice mode — dark-theme overrides. Hand-tuned hex mirroring the
@@ -85,30 +85,30 @@
    dark (grad, wave-grad) are inherited unchanged. ── */
 .v-theme--maropostDark,
 [data-theme='dark'] {
-  --dv-orbit-strip-grad: linear-gradient(120deg, #2A2548, #123640);
-  --dv-orbit-ink: #E4EEF7;
-  --dv-orbit-slate: #94A8BC;
-  --dv-orbit-body: #C3D2E0;
-  --dv-orbit-mist: #7A8FA5;
-  --dv-orbit-chip: #A8BACB;
-  --dv-orbit-line: #2C3A48;
-  --dv-orbit-hairline: #26323F;
-  --dv-orbit-surface: #1B2531;
-  --dv-orbit-echo-bg: #1E2936;
-  --dv-orbit-card-line: #2C3A48;
-  --dv-orbit-blue: #3FB4EF;
-  --dv-orbit-blue-hover: #55BEF2;
-  --dv-orbit-bar-light: #2E5E7C;
-  --dv-orbit-sep: #33424F;
-  --dv-orbit-success: #34D27B;
-  --dv-orbit-success-text: #A7E8C6;
-  --dv-orbit-success-bg: #12291C;
-  --dv-orbit-warn: #F0A24B;
-  --dv-orbit-warn-bg: #2E2313;
-  --dv-orbit-muted: #64748B;
-  --dv-orbit-muted-bg: #222E3A;
-  --dv-orbit-mic-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
-  --dv-orbit-input-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --dv-orbit-strip-grad: linear-gradient(120deg, var(--mp-color-dark-dv-orbit-stripGradFrom), var(--mp-color-dark-dv-orbit-stripGradTo));
+  --dv-orbit-ink: var(--mp-color-dark-dv-orbit-ink);
+  --dv-orbit-slate: var(--mp-color-dark-dv-orbit-slate);
+  --dv-orbit-body: var(--mp-color-dark-dv-orbit-body);
+  --dv-orbit-mist: var(--mp-color-dark-dv-orbit-mist);
+  --dv-orbit-chip: var(--mp-color-dark-dv-orbit-chip);
+  --dv-orbit-line: var(--mp-color-dark-dv-orbit-line);
+  --dv-orbit-hairline: var(--mp-color-dark-dv-orbit-hairline);
+  --dv-orbit-surface: var(--mp-color-dark-dv-orbit-surface);
+  --dv-orbit-echo-bg: var(--mp-color-dark-dv-orbit-echoBg);
+  --dv-orbit-card-line: var(--mp-color-dark-dv-orbit-cardLine);
+  --dv-orbit-blue: var(--mp-color-dark-dv-orbit-blue);
+  --dv-orbit-blue-hover: var(--mp-color-dark-dv-orbit-blueHover);
+  --dv-orbit-bar-light: var(--mp-color-dark-dv-orbit-barLight);
+  --dv-orbit-sep: var(--mp-color-dark-dv-orbit-sep);
+  --dv-orbit-success: var(--mp-color-dark-dv-orbit-success);
+  --dv-orbit-success-text: var(--mp-color-dark-dv-orbit-successText);
+  --dv-orbit-success-bg: var(--mp-color-dark-dv-orbit-successBg);
+  --dv-orbit-warn: var(--mp-color-dark-dv-orbit-warn);
+  --dv-orbit-warn-bg: var(--mp-color-dark-dv-orbit-warnBg);
+  --dv-orbit-muted: var(--mp-color-dark-dv-orbit-muted);
+  --dv-orbit-muted-bg: var(--mp-color-dark-dv-orbit-mutedBg);
+  --dv-orbit-mic-shadow: var(--mp-shadow-dark-dvOrbitMic);
+  --dv-orbit-input-shadow: var(--mp-shadow-dark-dvOrbitInput);
 }
 
 .v-theme--maropostDark,
@@ -117,26 +117,26 @@
   --dv-accent: var(--accent);
   --dv-accent-hover: color-mix(in oklch, var(--accent) 85%, white);
   --dv-accent-active: color-mix(in oklch, var(--accent) 70%, white);
-  --dv-on-accent: #0B1530;
+  --dv-on-accent: var(--mp-color-dark-dv-onAccent);
   /* Light ink so the orb's particle mark reads on dark surfaces */
-  --dv-ink: #E4EEF7;
+  --dv-ink: var(--mp-color-dark-dv-ink);
   --dv-accent-soft: var(--mp-color-dark-aiAccent-soft);
   --dv-border: var(--mp-color-dark-aiAccent-border);
   --dv-text-primary: var(--mp-color-dark-aiAccent-textPrimary);
   --dv-text-secondary: var(--mp-color-dark-aiAccent-textSecondary);
   --dv-muted: var(--mp-color-dark-aiAccent-muted);
   /* Da Vinci gradient — vibrant violet → blue → deep cyan (brand AI aesthetic) */
-  --dv-grad: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 52%, #06B6D4 100%);
+  --dv-grad: linear-gradient(135deg, var(--mp-color-dark-dv-gradFrom) 0%, var(--mp-color-dark-dv-gradMid) 52%, var(--mp-color-dark-dv-gradTo) 100%);
   /* Hero greeting gradient text — brighter stops for luminance on dark surfaces */
-  --dv-hero-grad: linear-gradient(90deg, #A78BFA 0%, #60A5FA 50%, #22D3EE 100%);
+  --dv-hero-grad: linear-gradient(90deg, var(--mp-color-dark-dv-heroGradFrom) 0%, var(--mp-color-dark-dv-heroGradMid) 50%, var(--mp-color-dark-dv-heroGradTo) 100%);
   /* Orb particle colors — brighter stops so additive glow reads on dark surfaces */
-  --dv-orb-c1: #22D3EE;
-  --dv-orb-c2: #60A5FA;
-  --dv-orb-c3: #A78BFA;
+  --dv-orb-c1: var(--mp-color-dark-dv-orbC1);
+  --dv-orb-c2: var(--mp-color-dark-dv-orbC2);
+  --dv-orb-c3: var(--mp-color-dark-dv-orbC3);
   /* Saturated neon stops — hover ring + the mark's particle gradient */
-  --dv-ring-c1: #3B82F6;
-  --dv-ring-c2: #8B5CF6;
-  --dv-ring-c3: #E879F9;
+  --dv-ring-c1: var(--mp-color-dark-dv-ringC1);
+  --dv-ring-c2: var(--mp-color-dark-dv-ringC2);
+  --dv-ring-c3: var(--mp-color-dark-dv-ringC3);
   /* Immersive AI-experience backdrop */
   --dv-experience-bg: radial-gradient(
     1200px 800px at 50% 38%,

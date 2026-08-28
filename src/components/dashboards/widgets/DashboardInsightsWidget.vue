@@ -77,8 +77,8 @@ const { loading } = useInitialLoad(650)
 .insights-widget__row {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 0;
+  gap: var(--mp-space-10);
+  padding: var(--mp-space-10) 0;
   border-bottom: 1px solid var(--border-subtle);
   min-width: 0;
 }
@@ -93,17 +93,17 @@ const { loading } = useInitialLoad(650)
 }
 
 .insights-widget__observation {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   line-height: 1.35;
 }
 
 .insights-widget__stat {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
 }
 
 .insights-widget__action {
@@ -118,17 +118,17 @@ const { loading } = useInitialLoad(650)
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 24px;
-  font-size: 12.5px;
-  font-weight: 500;
+  padding: var(--mp-space-24);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
 }
 
 .insights-widget__disclaimer {
   flex-shrink: 0;
-  padding-top: 8px;
-  font-size: 11px;
-  font-weight: 500;
+  padding-top: var(--mp-space-8);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
 }
 
@@ -137,14 +137,14 @@ const { loading } = useInitialLoad(650)
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  padding: 4px 0;
+  padding: var(--mp-space-4) 0;
 }
 
 .insights-widget__skeleton-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 0;
+  gap: var(--mp-space-6);
+  padding: var(--mp-space-12) 0;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -154,7 +154,7 @@ const { loading } = useInitialLoad(650)
 
 .insights-widget__shimmer {
   height: 12px;
-  border-radius: 6px;
+  border-radius: var(--mp-component-chip-radius);
   background: linear-gradient(
     90deg,
     color-mix(in oklch, var(--text-primary) 8%, transparent) 25%,

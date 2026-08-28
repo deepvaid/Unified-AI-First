@@ -63,7 +63,7 @@ column, \`hover\`, \`density="comfortable"\`, and the \`search\` prop wired to t
 Style cells with custom \`#item.*\` templates:
 - Identifier column reads as a link: \`text-primary font-weight-bold\`.
 - Status columns always use \`MpStatusChip\` with the **correct \`type\`** (\`order\`,
-  \`fulfillment\`, \`payment\`, \`campaign\`, \`ticket\`…) and \`size="x-small"\` in tables.
+  \`fulfillment\`, \`payment\`, \`campaign\`, \`ticket\`…) and \`size="sm"\` in tables.
 - The last column is \`MpRowActionsMenu\` (kebab) with \`v-list-item\`s; destructive items get
   \`class="text-error"\` behind a divider. Wrap it in \`<div @click.stop>\` if rows navigate on click.
 
@@ -78,6 +78,32 @@ adjust) vs *truly empty* (nothing exists yet → offer the create action).
 \`count > 0\`. Pass \`count\` and \`total\` (filtered length), handle \`@clear\` and
 \`@select-all\`, and put bulk action buttons in the default slot — destructive ones confirmed
 via \`MpConfirmDialog\` with \`danger\`.
+
+### The table's own geometry (Phase 4, P4-4)
+The rows you see below are not sized by the pattern — they come from \`component.table.*\`,
+applied to \`v-data-table\` in \`global.scss\`. Row height is a stated decision now rather than
+an emergent side effect of padding plus line-height:
+
+| Token | Governs |
+|---|---|
+| \`table.rowMinHeight\` (48) | the body row's floor — a cell with a chip and a cell with plain text render the same height |
+| \`table.headerMinHeight\` (40) | the header row's floor, shared with buttons, form fields, nav items and list rows |
+| \`table.cellPaddingBlock\` (14) · \`cellPaddingInline\` (16) | body cells; the header takes the same inline inset, so a column label can never sit off-axis from its values |
+| \`table.headerPaddingBlock\` (8) | header cells — was an off-scale \`5px !important\` |
+| \`table.cellPaddingInlineCompact\` (8) | the sub-\`sm\` step that keeps a three-column table off a horizontal scrollbar at 375px |
+
+These are **floors, not caps.** A row whose tallest cell holds a real control still grows past
+them — a body row with a 40px row-actions kebab measures ~69, and a header row with a select
+checkbox measures ~52. That is correct: the token sets the resting rhythm and the content sets
+the exception. The visible effect of P4-4 is on rows that had no such cell — a header row
+without a selection column went from Vuetify's undecided 48 to a deliberate 40.
+
+\`MpTableSkeleton\` is pinned to the **same** tokens, so a table swapping from loading to loaded
+does not shift. It used to sit at the card inset (20) against the table's 16.
+
+Every control in \`MpDataTableToolbar\` — search field, Filter button, column toggle — resolves
+to \`component.control.height\` (40), the same baseline as the header row beneath it. Adding a
+control to that row means giving it the token, not a number.
 
 ### 🟢 Do's
 - **Do** compute tab counts from the full dataset and rows from the tab + drawer filters.
@@ -211,11 +237,11 @@ function tableStory(preselected: number[]) {
             </template>
 
             <template v-slot:item.fulfillment="{ item }">
-              <MpStatusChip :status="item.fulfillment" type="fulfillment" size="x-small" />
+              <MpStatusChip :status="item.fulfillment" type="fulfillment" size="sm" />
             </template>
 
             <template v-slot:item.status="{ item }">
-              <MpStatusChip :status="item.status" type="order" size="x-small" />
+              <MpStatusChip :status="item.status" type="order" size="sm" />
             </template>
 
             <template v-slot:item.actions="{ item }">

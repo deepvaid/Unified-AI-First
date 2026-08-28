@@ -6,7 +6,6 @@
  *   • src/plugins/maropostTheme.ts → VTooltip defaults (location: 'top', openDelay: 150, closeDelay: 0)
  */
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta: Meta = {
   title: 'Foundations/Tooltips',
@@ -114,12 +113,6 @@ export const Placements: Story = {
       </div>
     `,
   }),
-}
-
-/** Pinned dark — same four placements against the dark `surface-variant` tooltip surface. */
-export const DarkModePlacements: Story = {
-  globals: darkModeGlobals,
-  ...Placements,
 }
 
 /** Longer-than-recommended tooltip text (an edge case, not the house style) to confirm it

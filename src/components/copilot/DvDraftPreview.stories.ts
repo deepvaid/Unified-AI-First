@@ -15,7 +15,7 @@ function draft(overrides: Partial<DashboardWidgetDraft>): DashboardWidgetDraft {
 }
 
 const meta = {
-  title: 'Copilot/DvDraftPreview',
+  title: 'Product/Da Vinci/DvDraftPreview',
   component: DvDraftPreview,
   tags: ['autodocs'],
   args: {
@@ -23,7 +23,10 @@ const meta = {
     density: 'comfortable',
   },
   argTypes: {
-    draft: { control: 'object' },
+    draft: {
+      control: 'object',
+      description: '`DashboardWidgetDraft` — the widget Da Vinci proposed. `draft.type` selects the preview shape (KPI, bar, line/area, pie, table, funnel, scatter); the chart canvas geometry is deliberately off the spacing scale because it is plotting area, not padding.',
+    },
     density: {
       control: 'select',
       options: ['compact', 'comfortable', 'expanded'],
@@ -57,6 +60,81 @@ from presets keyed off \`metricId\`/\`dimension\` hints, so no store or API is i
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Default: Story = {
+  args: { draft: draft({ type: 'timeseries', title: 'Open Rate Trend' }) },
+}
+
+
+
+/** Every preview kind the component can render, from the draft's `type`. */
+export const Variants: Story = {
+  render: () => ({
+    components: { DvDraftPreview },
+    setup: () => ({
+      kinds: [
+        { label: 'kpi', d: draft({ type: 'kpi', title: 'Revenue', dataSource: 'commerce', metricId: 'commerce_revenue' }) },
+        { label: 'bar', d: draft({ type: 'bar', title: 'Revenue by Channel', dataSource: 'commerce', metricId: 'commerce_revenue_by_channel', dimension: 'channel' }) },
+        { label: 'timeseries', d: draft({ type: 'timeseries', title: 'Open Rate Trend' }) },
+        { label: 'donut', d: draft({ type: 'donut', title: 'Orders by Status', dataSource: 'commerce', metricId: 'commerce_orders_by_status', dimension: 'status' }) },
+        { label: 'table', d: draft({ type: 'table', title: 'Top Products', dataSource: 'commerce', metricId: 'commerce_top_products' }) },
+      ],
+    }),
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--mp-space-24);">
+        <div v-for="k in kinds" :key="k.label">
+          <div class="text-caption text-medium-emphasis mb-2">{{ k.label }}</div>
+          <DvDraftPreview :draft="k.d" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * `density` is the size axis — the same draft at the three sizes it is rendered at:
+ * the refine dialog, the draft card, and the full-size expand dialog.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { DvDraftPreview },
+    setup: () => ({ d: draft({ type: 'kpi', title: 'Revenue', dataSource: 'commerce', metricId: 'commerce_revenue' }) }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div v-for="den in ['compact', 'comfortable', 'expanded']" :key="den">
+          <div class="text-caption text-medium-emphasis mb-2">density="{{ den }}"</div>
+          <DvDraftPreview :draft="d" :density="den" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** The delta states a KPI preview can show — up, down, and flat. */
+export const States: Story = {
+  render: () => ({
+    components: { DvDraftPreview },
+    setup: () => ({
+      d: draft({ type: 'kpi', title: 'Revenue', dataSource: 'commerce', metricId: 'commerce_revenue' }),
+      t: draft({ type: 'timeseries', title: 'Open Rate Trend' }),
+    }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">KPI quad — up / down / flat deltas in one preset</div>
+          <DvDraftPreview :draft="d" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">timeseries — deterministic mock series</div>
+          <DvDraftPreview :draft="t" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
 
 /** 2×2 KPI quad with trend deltas (preset picked from the metric id). */
 export const KpiQuad: Story = {

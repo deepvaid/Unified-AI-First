@@ -100,11 +100,10 @@ const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.v
 const treatment = computed(() => resolvedTheme.value.treatment)
 const gradientMarks = computed(() => resolvedTheme.value.gradientMarks)
 const vuetifyTheme = useTheme()
-const markerStrokeColor = computed(() => (
-  vuetifyTheme.global.current.value.dark
-    ? vuetifyTheme.global.current.value.colors.surface
-    : '#ffffff'
-))
+/* P5.5: markers are stroked with the surface they sit on. Both branches used to
+   differ only in that the light one was a hardcoded '#ffffff'; the live theme
+   surface is the same value in light and the correct one in dark. */
+const markerStrokeColor = computed(() => vuetifyTheme.global.current.value.colors.surface)
 
 const isDistributedBar = computed(
   () => props.widgetType === 'bar' && props.data.series.length <= 1,
@@ -731,7 +730,7 @@ const chartOptions = computed<ApexOptions>(() => {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding-top: 4px;
+  padding-top: var(--mp-space-4);
   container-type: inline-size;
 }
 
@@ -770,30 +769,30 @@ const chartOptions = computed<ApexOptions>(() => {
   border: 1px solid var(--mp-tip-border, var(--border-subtle));
   border-radius: var(--mp-tip-radius, 8px);
   box-shadow: var(--mp-tip-shadow, var(--elevation-modal));
-  padding: 8px 10px;
+  padding: var(--mp-space-8) var(--mp-space-10);
   min-width: 140px;
   font-family: Inter, system-ui, sans-serif;
 }
 
 .dashboard-chart-widget :deep(.mp-chart-tip__title) {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--mp-tip-title-color, var(--text-primary));
-  margin-bottom: 4px;
+  margin-bottom: var(--mp-space-4);
 }
 
 .dashboard-chart-widget :deep(.mp-chart-tip__row) {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 2px 0;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-12);
+  padding: var(--mp-space-2) 0;
 }
 
 .dashboard-chart-widget :deep(.mp-chart-tip__dot) {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--mp-radius-4);
   flex-shrink: 0;
 }
 
@@ -803,8 +802,8 @@ const chartOptions = computed<ApexOptions>(() => {
 
 .dashboard-chart-widget :deep(.mp-chart-tip__value) {
   margin-left: auto;
-  padding-left: 12px;
-  font-weight: 500;
+  padding-left: var(--mp-space-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--mp-tip-text, var(--text-primary));
   font-variant-numeric: tabular-nums;
 }

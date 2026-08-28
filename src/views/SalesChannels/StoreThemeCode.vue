@@ -166,7 +166,7 @@ watch(channelId, () => {
   >
     <template #title>
       <div class="font-weight-bold text-body-1 text-truncate">{{ theme.name }}</div>
-      <MpStatusChip status="Theme code" type="general" size="x-small" />
+      <MpStatusChip status="Theme code" type="general" size="sm" />
     </template>
 
     <template #actions>

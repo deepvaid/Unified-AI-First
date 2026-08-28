@@ -1,11 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 import MpDataTableToolbar from './MpDataTableToolbar.vue'
 import MpFloatingBulkBar from './MpFloatingBulkBar.vue'
+import MpFilterTabs from './MpFilterTabs.vue'
+import MpStatusChip from './MpStatusChip.vue'
+import MpRowActionsMenu from './MpRowActionsMenu.vue'
+import MpEmptyState from './MpEmptyState.vue'
+import { ORDERS, ORDER_HEADERS, ORDER_FILTERS, ORDER_TABS } from '@/stories/fixtures'
 import { ref, computed } from 'vue'
 
 const meta = {
-  title: 'Data Display/MpDataTableToolbar',
+  title: 'Molecules/MpDataTableToolbar',
   component: MpDataTableToolbar,
   tags: ['autodocs'],
   parameters: {
@@ -72,6 +76,34 @@ page in the platform places this directly above the table inside the same \`v-ca
 - **Chip overflow:** only the first 3 filter chips render; the rest collapse into a "+N more"
   chip — remove hidden filters via the drawer or Clear.
 
+### Styling
+- All three controls in the row — search field, **Filter** button, **column-toggle** button —
+  resolve to **\`--mp-component-control-height\`** (40px): the one baseline shared by buttons,
+  form fields, list rows, nav items and table headers. Phase 4 (P4-4) removed the literal
+  \`height: 40px\` on the buttons and the \`min-height: 38px\` on the search field — 38 + borders
+  happened to land on 40, which was correct by arithmetic and 2px adrift the moment anything
+  moved. If you add another control to this row, give it the token, not a number.
+  (\`settings-form.scss\` pins \`.v-field__input\` to a 40px min-height and adds 2px of wrapper
+  padding, which would render 46px, so both are still neutralised in scoped styles.)
+- The toolbar's own \`min-height\` is **\`--mp-component-toolbar-minHeight\`** (P4-5). It used to
+  borrow \`$mp-layout-appbarHeight\`, which coupled every table toolbar to app-shell chrome —
+  resizing the app bar resized every table.
+- Counts are \`v-badge\`s that **wrap** their button, pinned to its top-right corner via
+  \`location="top end"\` + \`offset-x="8"\`. A \`v-badge\` positions its dot against its own default
+  slot, so a badge placed *beside* a button (or nested inside one) anchors to a 0×0 box and drifts
+  into the neighbouring control — that was a real bug here. Visibility is \`:model-value\`, not
+  \`v-if\`, so the button still renders at zero count.
+- The search field, the **Filter** button and the **column-toggle** button sit in one row and
+  deliberately share a border: all three resolve to \`--mp-border-subtle\` (\`#e2e8f0\` light /
+  \`#33373D\` dark). The buttons get it from \`global.scss\`'s \`.v-btn--variant-outlined\` rule; the
+  search field pins the same custom property in its own scoped style, since it hides Vuetify's
+  outline and draws its own border.
+- **Don't restyle one of them in isolation** — changing the outlined-button border means changing
+  the search field's border in the same pass, or the row splits into two control families again.
+- This border is intentionally below the 3:1 non-text contrast floor; consistency was chosen over
+  contrast and recorded as accepted risk (\`docs/ui-system-audit/03-accessibility-audit.md\`,
+  A11Y-002). The focus state is unaffected and stays compliant.
+
 ### A11y
 - **Provides:** the search field has an \`aria-label\` (mirroring the placeholder); the Filter and
   column-toggle buttons carry dynamic \`aria-label\`s that include their badge counts ("Open table
@@ -128,6 +160,221 @@ export const Default: Story = {
     title: 'All Orders',
     searchPlaceholder: 'Search orders…',
   },
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * The toolbar's structures, from the least to the most equipped. Every one is the same
+ * row at the same height — what changes is which controls are present.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpDataTableToolbar },
+    setup: () => ({ headers: ORDER_HEADERS, filters: ORDER_FILTERS }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">search only</div>
+          <v-card flat border rounded="lg">
+            <MpDataTableToolbar search-placeholder="Search orders…" />
+          </v-card>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">title + record count</div>
+          <v-card flat border rounded="lg">
+            <MpDataTableToolbar title="Sales Orders" :total-count="82" search-placeholder="Search orders…" />
+          </v-card>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">+ column toggle (pass :headers)</div>
+          <v-card flat border rounded="lg">
+            <MpDataTableToolbar title="Sales Orders" :total-count="82" :headers="headers" search-placeholder="Search orders…" />
+          </v-card>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">+ filter drawer and active chips</div>
+          <v-card flat border rounded="lg">
+            <MpDataTableToolbar title="Sales Orders" :total-count="12" :headers="headers" :active-filters="filters" search-placeholder="Search orders…">
+              <template #filter-content><v-select label="Status" :items="['Processing','Completed']" /></template>
+            </MpDataTableToolbar>
+          </v-card>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop — the toolbar spans its card. Its one sizing decision is the row
+ * height, and that is a token: `component.toolbar.minHeight` for the row,
+ * `component.control.height` for every control inside it. Shown here beside a plain button
+ * and a form field so the shared 40px baseline is visible.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpDataTableToolbar },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <v-card flat border rounded="lg">
+          <MpDataTableToolbar title="Sales Orders" :total-count="82" search-placeholder="Search orders…" />
+        </v-card>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">the same 40px baseline, outside the toolbar</div>
+          <div class="d-flex align-center ga-3">
+            <v-btn variant="outlined" class="text-none">A button</v-btn>
+            <v-text-field variant="outlined" density="comfortable" hide-details placeholder="A form field" style="max-width: 220px" />
+            <div class="text-caption text-medium-emphasis">← both --mp-component-control-height</div>
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * Search empty vs typed, no filters vs some vs overflowing, and the sub-960px collapse where
+ * the control cluster drops below the title and search goes full-width.
+ */
+export const States: Story = {
+  render: () => ({
+    components: { MpDataTableToolbar },
+    setup: () => ({ headers: ORDER_HEADERS, filters: ORDER_FILTERS }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">resting — empty search, no filters</div>
+          <v-card flat border rounded="lg">
+            <MpDataTableToolbar title="Sales Orders" :total-count="82" :headers="headers" search-placeholder="Search orders…" />
+          </v-card>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">searching — count reflects the filtered set</div>
+          <v-card flat border rounded="lg">
+            <MpDataTableToolbar title="Sales Orders" :total-count="3" :headers="headers" search="anderson" search-placeholder="Search orders…" />
+          </v-card>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">filtered — badge on Filter, chips below, Clear</div>
+          <v-card flat border rounded="lg">
+            <MpDataTableToolbar title="Sales Orders" :total-count="12" :headers="headers" :active-filters="filters" search-placeholder="Search orders…">
+              <template #filter-content><v-select label="Status" :items="['Processing','Completed']" /></template>
+            </MpDataTableToolbar>
+          </v-card>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">narrow (&lt;960px) — controls wrap under the title</div>
+          <div style="max-width: 720px">
+            <v-card flat border rounded="lg">
+              <MpDataTableToolbar title="Sales Orders" :total-count="82" :headers="headers" search-placeholder="Search orders…" />
+            </v-card>
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** The documented Data Table Pattern end to end, on real-looking orders:
+ * `MpFilterTabs` → `v-card` → `MpDataTableToolbar` → `v-data-table` with `MpStatusChip`
+ * cells and an `MpRowActionsMenu` per row. This is what every table page in the platform
+ * looks like, and the surface Phase 4's table tokens govern — search and buttons on the
+ * 40px control height, header cells centred on `component.table.headerMinHeight`, body
+ * cells on `cellPaddingBlock`/`cellPaddingInline`.
+ */
+export const InContextSalesOrdersTable: Story = {
+  render: () => ({
+    components: { MpDataTableToolbar, MpFilterTabs, MpStatusChip, MpRowActionsMenu, MpEmptyState },
+    setup() {
+      const search = ref('')
+      const tab = ref('all')
+      const hiddenColumns = ref<string[]>([])
+      const activeFilters = ref([...ORDER_FILTERS].slice(0, 2))
+      const rows = computed(() => {
+        const q = search.value.trim().toLowerCase()
+        return ORDERS.filter(r =>
+          (tab.value === 'all' || r.status.toLowerCase() === tab.value)
+          && (!q || r.customer.toLowerCase().includes(q) || r.order.includes(q)),
+        )
+      })
+      const headers = computed(() => ORDER_HEADERS.filter(h => !hiddenColumns.value.includes(h.key)))
+      return {
+        search, tab, hiddenColumns, activeFilters, rows, headers,
+        allHeaders: ORDER_HEADERS,
+        tabs: ORDER_TABS,
+        removeFilter: (key: string) => { activeFilters.value = activeFilters.value.filter(f => f.key !== key) },
+        clearFilters: () => { activeFilters.value = [] },
+      }
+    },
+    template: `
+      <div>
+        <MpFilterTabs v-model="tab" :tabs="tabs" aria-label="Filter orders by status" class="mb-4" />
+        <v-card flat border rounded="lg">
+          <MpDataTableToolbar
+            v-model:search="search"
+            v-model:hidden-columns="hiddenColumns"
+            title="Sales Orders"
+            :total-count="rows.length"
+            :headers="allHeaders"
+            :active-filters="activeFilters"
+            search-placeholder="Search orders…"
+            filter-title="Filter orders"
+            filter-subtitle="Changes apply immediately"
+            @remove-filter="removeFilter"
+            @clear-filters="clearFilters"
+          >
+            <template #actions>
+              <v-btn variant="outlined" class="text-none" prepend-icon="download">Export</v-btn>
+            </template>
+            <template #filter-content>
+              <v-select label="Status" :items="['Processing','Completed','Cancelled','Refunded','On Hold']" multiple chips />
+              <v-select label="Sales channel" :items="['Web store','POS','Marketplace']" multiple chips />
+            </template>
+          </MpDataTableToolbar>
+
+          <v-data-table
+            v-if="rows.length"
+            :headers="headers"
+            :items="rows"
+            item-value="id"
+            show-select
+            hide-default-footer
+          >
+            <template #item.fulfillment="{ item }">
+              <MpStatusChip :status="item.fulfillment" type="fulfillment" size="sm" />
+            </template>
+            <template #item.status="{ item }">
+              <MpStatusChip :status="item.status" type="order" size="sm" />
+            </template>
+            <template #item.actions="{ item }">
+              <MpRowActionsMenu aria-label="Order actions" :item-label="item.order">
+                <v-list-item title="View order" prepend-icon="eye" />
+                <v-list-item title="Print packing slip" prepend-icon="printer" />
+                <v-divider class="my-1" />
+                <v-list-item title="Cancel order" prepend-icon="ban" class="text-error" />
+              </MpRowActionsMenu>
+            </template>
+          </v-data-table>
+
+          <MpEmptyState
+            v-else
+            title="No orders match those filters"
+            icon="package-search"
+            description="Try clearing a filter or widening the date range."
+            action-label="Clear filters"
+            @action="clearFilters"
+          />
+        </v-card>
+      </div>
+    `,
+  }),
+  args: {} as never,
 }
 
 // ── 2. Search populated ───────────────────────────────────────────────────────
@@ -602,9 +849,4 @@ export const FullFeatured: Story = {
     filterTitle: 'Contact filters',
     filterSubtitle: 'Narrow the table by status and list',
   },
-}
-
-export const DarkMode: Story = {
-  globals: darkModeGlobals,
-  ...Default,
 }

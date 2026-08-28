@@ -34,13 +34,13 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <v-card flat border rounded="lg" class="coming-soon-card pa-6">
+  <v-card flat border rounded="lg" class="coming-soon-card">
     <div class="text-center mb-5">
       <div class="coming-soon-card__icon mx-auto mb-3">
         <v-icon size="28">{{ icon }}</v-icon>
       </div>
       <component :is="headingLevel" class="text-h6 mb-1">{{ title }}</component>
-      <p v-if="description" class="text-body-2 text-medium-emphasis mb-0 mx-auto" style="max-width: 460px;">
+      <p v-if="description" class="text-body-2 text-medium-emphasis mb-0 mx-auto" style="max-width: var(--mp-component-state-measureWide);">
         {{ description }}
       </p>
     </div>
@@ -65,13 +65,14 @@ withDefaults(defineProps<{
 .coming-soon-card {
   background: var(--surface-primary) !important;
   border-color: color-mix(in oklch, var(--text-primary) 7%, transparent) !important;
-  border-radius: var(--r-section) !important;
+  border-radius: var(--mp-component-card-radius) !important;
+  padding: var(--mp-component-card-padding);
 }
 
 .coming-soon-card__icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: var(--mp-space-48);
+  height: var(--mp-space-48);
+  border-radius: var(--mp-component-card-radius);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -82,10 +83,10 @@ withDefaults(defineProps<{
 .coming-soon-tile {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-component-card-paddingCompact);
   border: 1px solid color-mix(in oklch, var(--text-primary) 8%, transparent);
-  border-radius: var(--r-section);
+  border-radius: var(--mp-component-card-radius);
   background: var(--surface-primary);
   height: 100%;
 }
@@ -94,25 +95,25 @@ withDefaults(defineProps<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r-chip);
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
+  border-radius: var(--mp-component-chip-radius);
   background: color-mix(in oklch, var(--cloud-retail-accent) 12%, transparent);
   color: var(--cloud-retail-text);
   flex-shrink: 0;
 }
 
 .coming-soon-tile__title {
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.3;
 }
 
 .coming-soon-tile__desc {
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
   line-height: 1.4;
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
 }
 </style>

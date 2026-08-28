@@ -96,7 +96,7 @@ const KPIS = [
   aspect-ratio: 16 / 8.2;
   max-height: 56vh;
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   overflow: hidden;
   box-shadow: var(--mp-shadow-lg);
   background: rgb(var(--v-theme-surface));
@@ -257,7 +257,7 @@ const KPIS = [
 .mo__n-search {
   flex: 0 0 34%;
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   padding: 1% 3%;
   font-size: clamp(8px, 0.85vw, 12px);
   color: rgb(var(--v-theme-on-surface-variant));
@@ -329,7 +329,7 @@ const KPIS = [
   top: 4%;
   right: 2.5%;
   padding: 3px 12px;
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   font-size: clamp(9px, 0.8vw, 12px);
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -346,12 +346,12 @@ const KPIS = [
 }
 
 .mo__caption {
-  margin: var(--mp-spacing-5) auto 0;
+  margin: var(--mp-space-20) auto 0;
   max-width: 720px;
   text-align: center;
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-body);
-  line-height: var(--mp-typography-lineHeight-normal);
+  font-size: var(--mp-fontSize-14);
+  line-height: var(--mp-lineHeight-normal);
 }
 
 /* The wipe: today holds, tomorrow sweeps across, holds, then resets. */

@@ -106,10 +106,10 @@ function onFilesPicked(event: Event) {
       :subtitle="`Images and files for ${channel.name}`"
     >
       <template #actions>
+        <!-- Toolbar control: compact density and detail suppression are deliberate here. -->
         <v-select
           v-model="sortBy"
           :items="sortOptions"
-          variant="outlined"
           density="compact"
           hide-details
           prepend-inner-icon="arrow-down-narrow-wide"

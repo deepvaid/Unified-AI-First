@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpFloatingBulkBar from './MpFloatingBulkBar.vue'
 import { ref } from 'vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Feedback/MpFloatingBulkBar',
+  title: 'Molecules/MpFloatingBulkBar',
   component: MpFloatingBulkBar,
   tags: ['autodocs'],
   parameters: {
@@ -113,6 +112,53 @@ export const Default: Story = {
   args: {} as any, // Fixes TS strict mode error
 }
 
+/** With and without a select-all affordance in the default slot. */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpFloatingBulkBar },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">actions only</div>
+          <MpFloatingBulkBar :count="3">
+            <v-btn size="small" variant="text" class="text-none">Export</v-btn>
+            <v-btn size="small" variant="text" class="text-none text-error">Delete</v-btn>
+          </MpFloatingBulkBar>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with total — offers "select all"</div>
+          <MpFloatingBulkBar :count="3" :total="128">
+            <v-btn size="small" variant="text" class="text-none">Export</v-btn>
+          </MpFloatingBulkBar>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** The bar appears at 1 and hides at 0 — the count is the state. */
+export const States: Story = {
+  render: () => ({
+    components: { MpFloatingBulkBar },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div v-for="n in [1, 3, 128]" :key="n">
+          <div class="text-caption text-medium-emphasis mb-2">count={{ n }}</div>
+          <MpFloatingBulkBar :count="n" :total="128">
+            <v-btn size="small" variant="text" class="text-none">Export</v-btn>
+          </MpFloatingBulkBar>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">count=0 — renders nothing</div>
+          <MpFloatingBulkBar :count="0"><v-btn size="small" variant="text">Export</v-btn></MpFloatingBulkBar>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
 /** Partial selection with a known total — the "Select all (42)" escalation is visible. */
 export const WithSelectAll: Story = {
   render: () => ({
@@ -183,10 +229,4 @@ export const AllSelected: Story = {
       </div>
     `,
   }),
-}
-
-/** The floating bar over a dark canvas — it sits above content, so its own surface must carry contrast. */
-export const DarkMode: Story = {
-  ...WithThreeSelected,
-  globals: darkModeGlobals,
 }

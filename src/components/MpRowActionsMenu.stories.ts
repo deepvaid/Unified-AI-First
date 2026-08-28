@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpRowActionsMenu from './MpRowActionsMenu.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
+import MpStatusChip from './MpStatusChip.vue'
+import { ORDERS } from '@/stories/fixtures'
 
 const meta = {
-  title: 'Overlays/MpRowActionsMenu',
+  title: 'Molecules/MpRowActionsMenu',
   component: MpRowActionsMenu,
   tags: ['autodocs'],
   parameters: {
@@ -127,12 +128,6 @@ export const OpenMenu: Story = {
   },
 }
 
-/** L3 menu surface in dark mode — open via play interaction. */
-export const DarkModeOpen: Story = {
-  globals: darkModeGlobals,
-  ...OpenMenu,
-}
-
 /**
  * `itemLabel` appends the row's identity to `ariaLabel`, giving each row in a table its own
  * accessible name (e.g. "Contact actions for James Anderson") instead of one repeated static
@@ -187,4 +182,130 @@ export const DisabledItems: Story = {
     const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Draft journey actions"]')
     trigger?.click()
   },
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * One structure — a kebab trigger opening a `v-list`. What varies is the content you slot in:
+ * plain items, items with a destructive action separated by a divider, and items with icons.
+ * Open each to compare; the panel geometry is identical.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpRowActionsMenu },
+    template: `
+      <div class="d-flex ga-10">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">plain items</div>
+          <MpRowActionsMenu aria-label="Row actions">
+            <v-list-item title="View" />
+            <v-list-item title="Duplicate" />
+          </MpRowActionsMenu>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with icons</div>
+          <MpRowActionsMenu aria-label="Row actions">
+            <v-list-item title="View" prepend-icon="eye" />
+            <v-list-item title="Duplicate" prepend-icon="copy" />
+          </MpRowActionsMenu>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with a destructive action</div>
+          <MpRowActionsMenu aria-label="Row actions">
+            <v-list-item title="View" prepend-icon="eye" />
+            <v-list-item title="Duplicate" prepend-icon="copy" />
+            <v-divider class="my-1" />
+            <v-list-item title="Delete" prepend-icon="trash-2" class="text-error" />
+          </MpRowActionsMenu>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop. The trigger is a small icon button sized to sit inside a table row
+ * without stretching it, and the panel's rows are `component.listItem.*` — the same 40px floor
+ * and 12px inline inset as every other nav row in the system (P4-7). The panel's corner is
+ * `component.menu.radius` (12), the menu step of the concentric radius scale.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpRowActionsMenu },
+    template: `
+      <div class="d-flex align-center ga-4">
+        <MpRowActionsMenu aria-label="Row actions">
+          <v-list-item title="View" prepend-icon="eye" />
+          <v-list-item title="Duplicate" prepend-icon="copy" />
+        </MpRowActionsMenu>
+        <div class="text-body-2 text-medium-emphasis">Open the menu — its rows are 40px, like every nav row.</div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * Item states inside the panel: resting, disabled, destructive, and a row with a trailing hint.
+ * The trigger itself has resting, hover and focus states — tab to it to see the ring.
+ */
+export const States: Story = {
+  render: () => ({
+    components: { MpRowActionsMenu },
+    template: `
+      <MpRowActionsMenu aria-label="Row actions" item-label="Order #10002">
+        <v-list-item title="View order" prepend-icon="eye" />
+        <v-list-item title="Print packing slip" prepend-icon="printer" />
+        <v-list-item title="Refund" prepend-icon="undo-2" disabled subtitle="Already refunded" />
+        <v-divider class="my-1" />
+        <v-list-item title="Cancel order" prepend-icon="ban" class="text-error" />
+      </MpRowActionsMenu>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** One menu per row in a real orders table — the only place this component is
+ * meant to appear. Note the per-row accessible name: `itemLabel` turns "Order actions" into
+ * "Order actions for #10002", so a screen-reader user tabbing down the column hears which row
+ * each trigger belongs to.
+ */
+export const InContextOrdersTable: Story = {
+  render: () => ({
+    components: { MpRowActionsMenu, MpStatusChip },
+    setup: () => ({
+      rows: ORDERS.slice(0, 5),
+      headers: [
+        { title: 'Order', key: 'order' },
+        { title: 'Customer', key: 'customer' },
+        { title: 'Total', key: 'total', align: 'end' as const },
+        { title: 'Status', key: 'status' },
+        { title: '', key: 'actions', sortable: false, align: 'end' as const },
+      ],
+    }),
+    template: `
+      <v-card flat border rounded="lg">
+        <v-data-table :headers="headers" :items="rows" item-value="id" hide-default-footer>
+          <template #item.status="{ item }">
+            <MpStatusChip :status="item.status" type="order" size="sm" />
+          </template>
+          <template #item.actions="{ item }">
+            <MpRowActionsMenu aria-label="Order actions" :item-label="item.order">
+              <v-list-item title="View order" prepend-icon="eye" />
+              <v-list-item title="Print packing slip" prepend-icon="printer" />
+              <v-list-item title="Send receipt" prepend-icon="mail" />
+              <v-divider class="my-1" />
+              <v-list-item title="Cancel order" prepend-icon="ban" class="text-error" />
+            </MpRowActionsMenu>
+          </template>
+        </v-data-table>
+      </v-card>
+    `,
+  }),
+  args: {} as never,
 }

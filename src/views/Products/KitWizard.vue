@@ -6,6 +6,8 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
@@ -187,81 +189,77 @@ function save(publishStatus: PublishStatus) {
           <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
             <div class="text-subtitle-1 font-weight-bold mb-1">Kit Details</div>
             <div class="text-body-2 text-medium-emphasis mb-5">A kit bundles existing products together into one purchasable item.</div>
-            <v-row dense>
-              <v-col cols="12" md="8">
-                <v-text-field
-                  v-model="title"
-                  label="Kit Title *"
-                  variant="outlined"
-                  density="comfortable"
-                  :error="submitted && !titleValid"
-                  :error-messages="submitted && !titleValid ? ['Title is required'] : []"
-                />
-              </v-col>
-              <v-col cols="12" md="4"><v-text-field v-model="sku" label="SKU" placeholder="Auto-generated if blank" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" md="6"><v-text-field v-model="subtitle" label="Subtitle" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" md="6"><v-text-field v-model="url" label="Product URL" placeholder="/products/my-kit" prepend-inner-icon="link" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12"><v-textarea v-model="description" label="Description" rows="3" auto-grow variant="outlined" density="comfortable" /></v-col>
-            </v-row>
+            <MpFormGrid :cols="2">
+              <v-text-field
+                v-model="title"
+                label="Kit Title *"
+                :error="submitted && !titleValid"
+                :error-messages="submitted && !titleValid ? ['Title is required'] : []"
+              />
+              <v-text-field v-model="sku" label="SKU" placeholder="Auto-generated if blank" />
+              <v-text-field v-model="subtitle" label="Subtitle" />
+              <v-text-field v-model="url" label="Product URL" placeholder="/products/my-kit" prepend-inner-icon="link" />
+              <v-textarea v-model="description" label="Description" rows="3" auto-grow class="mp-form-grid__full" />
+            </MpFormGrid>
           </v-card>
 
           <v-card variant="flat" border rounded="lg" class="pa-6">
             <div class="text-subtitle-1 font-weight-bold mb-1">Kit Components</div>
             <div class="text-body-2 text-medium-emphasis mb-4">Search your catalogue and add products to this kit.</div>
-            <v-text-field
-              v-model="componentSearch"
-              placeholder="Search products by name or SKU"
-              prepend-inner-icon="search"
-              variant="outlined"
-              density="comfortable"
-              hide-details
-              clearable
-              class="mb-4"
-            />
-            <v-table density="comfortable">
-              <thead>
-                <tr>
-                  <th class="text-left">Name</th>
-                  <th class="text-left">SKU</th>
-                  <th class="text-right">In Stock</th>
-                  <th class="text-right">Price</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="p in searchResults" :key="p.id">
-                  <td class="text-body-2 font-weight-medium">{{ p.name }}</td>
-                  <td class="text-caption text-medium-emphasis">{{ p.sku }}</td>
-                  <td class="text-right">{{ p.inventory }}</td>
-                  <td class="text-right">${{ p.price }}</td>
-                  <td class="text-right">
-                    <v-btn
-                      :variant="isPicked(p.id) ? 'text' : 'tonal'"
-                      color="primary"
-                      size="small"
-                      class="text-none"
-                      :prepend-icon="isPicked(p.id) ? 'check' : 'plus'"
-                      :disabled="isPicked(p.id)"
-                      @click="addComponent(p.id)"
-                    >{{ isPicked(p.id) ? 'Added' : 'Add' }}</v-btn>
-                  </td>
-                </tr>
-                <tr v-if="!searchResults.length">
-                  <td colspan="5" class="text-center text-body-2 text-medium-emphasis py-6">No products match your search.</td>
-                </tr>
-              </tbody>
-            </v-table>
+            <MpFormGrid>
+              <v-text-field
+                v-model="componentSearch"
+                label="Search products"
+                placeholder="Name or SKU"
+                prepend-inner-icon="search"
+                clearable
+              />
+              <v-table density="comfortable">
+                <thead>
+                  <tr>
+                    <th class="text-left">Name</th>
+                    <th class="text-left">SKU</th>
+                    <th class="text-right">In Stock</th>
+                    <th class="text-right">Price</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="p in searchResults" :key="p.id">
+                    <td class="text-body-2 font-weight-medium">{{ p.name }}</td>
+                    <td class="text-caption text-medium-emphasis">{{ p.sku }}</td>
+                    <td class="text-right">{{ p.inventory }}</td>
+                    <td class="text-right">${{ p.price }}</td>
+                    <td class="text-right">
+                      <v-btn
+                        :variant="isPicked(p.id) ? 'text' : 'tonal'"
+                        color="primary"
+                        size="small"
+                        class="text-none"
+                        :prepend-icon="isPicked(p.id) ? 'check' : 'plus'"
+                        :disabled="isPicked(p.id)"
+                        @click="addComponent(p.id)"
+                      >{{ isPicked(p.id) ? 'Added' : 'Add' }}</v-btn>
+                    </td>
+                  </tr>
+                  <tr v-if="!searchResults.length">
+                    <td colspan="5" class="text-center text-body-2 text-medium-emphasis py-6">No products match your search.</td>
+                  </tr>
+                </tbody>
+              </v-table>
 
-            <div v-if="components.length" class="mt-4">
-              <div class="text-subtitle-2 font-weight-bold mb-2">{{ components.length }} component{{ components.length === 1 ? '' : 's' }} added</div>
-              <v-chip
-                v-for="c in components"
-                :key="c.productId"
-                closable
-                class="ma-1"
-                @click:close="removeComponent(c.productId)"
-              >{{ c.name }} × {{ c.qty }}</v-chip>
-            </div>
+              <template v-if="components.length">
+                <MpFormSection :title="`${components.length} component${components.length === 1 ? '' : 's'} added`" />
+                <div class="d-flex flex-wrap gap-2">
+                  <v-chip
+                    v-for="c in components"
+                    :key="c.productId"
+                    closable
+                    @click:close="removeComponent(c.productId)"
+                  >{{ c.name }} × {{ c.qty }}</v-chip>
+                </div>
+              </template>
+            </MpFormGrid>
           </v-card>
         </template>
 
@@ -291,7 +289,9 @@ function save(publishStatus: PublishStatus) {
               <template #item.inStock="{ item }">{{ item.inStock }}</template>
               <template #item.price="{ item }">
                 <div class="d-flex align-center justify-end gap-2">
-                  <v-text-field v-model.number="item.qty" type="number" min="1" density="compact" variant="outlined" hide-details style="max-width: 90px;" label="Qty" />
+                  <!-- Table-cell inline editor: compact + `hide-details` are
+                       deliberate, so a component row stays one line tall. -->
+                  <v-text-field v-model.number="item.qty" label="Qty" type="number" min="1" density="compact" hide-details style="max-width: 90px;" />
                   <span class="font-weight-medium" style="min-width: 70px; text-align: right;">${{ (Number(item.price) * item.qty).toFixed(2) }}</span>
                 </div>
               </template>
@@ -314,10 +314,12 @@ function save(publishStatus: PublishStatus) {
           <v-card variant="flat" border rounded="lg" class="pa-6">
             <div class="text-subtitle-1 font-weight-bold mb-1">Settings</div>
             <div class="text-body-2 text-medium-emphasis mb-5">Choose where this kit is available. Status is set by the action you take below.</div>
-            <v-select v-model="salesChannels" :items="SALES_CHANNELS" label="Sales Channels" variant="outlined" density="comfortable" multiple chips closable-chips class="mb-4" />
-            <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
-              Save as Draft keeps this kit hidden; Publish makes it available on the selected channels.
-            </v-alert>
+            <MpFormGrid>
+              <v-select v-model="salesChannels" :items="SALES_CHANNELS" label="Sales Channels" multiple chips closable-chips />
+              <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
+                Save as Draft keeps this kit hidden; Publish makes it available on the selected channels.
+              </v-alert>
+            </MpFormGrid>
           </v-card>
         </template>
 

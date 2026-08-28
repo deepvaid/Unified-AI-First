@@ -52,8 +52,8 @@ function onSelect(oneBased: number) {
 .mp-wizard-step {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.8125rem;
+  gap: var(--mp-space-8);
+  font-size: var(--mp-fontSize-13);
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.5);
   background: none;
@@ -70,17 +70,17 @@ button.mp-wizard-step--jumpable:hover {
 button.mp-wizard-step--jumpable:focus-visible {
   outline: 2px solid rgb(var(--v-theme-primary));
   outline-offset: 3px;
-  border-radius: 4px;
+  border-radius: var(--mp-radius-4);
 }
 .mp-wizard-step__num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: var(--mp-component-chip-height-sm);
+  height: var(--mp-component-chip-height-sm);
   border-radius: 50%;
   border: 1.5px solid rgba(var(--v-theme-on-surface), 0.25);
-  font-size: 0.6875rem;
+  font-size: var(--mp-fontSize-11);
   font-weight: 700;
 }
 .mp-wizard-step--active {
@@ -97,7 +97,7 @@ button.mp-wizard-step--jumpable:focus-visible {
   color: rgb(var(--v-theme-primary));
 }
 .mp-wizard-step__rail {
-  width: 32px;
+  width: var(--mp-space-32);
   height: 1.5px;
   background: rgba(var(--v-border-color), var(--v-border-opacity));
 }
@@ -109,7 +109,7 @@ button.mp-wizard-step--jumpable:focus-visible {
     gap: 0;
   }
   .mp-wizard-step__rail {
-    width: 14px;
+    width: var(--mp-space-14);
   }
 }
 </style>

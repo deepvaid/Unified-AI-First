@@ -31,7 +31,7 @@ const severityColor: Record<string, string> = {
         <v-icon :color="severityColor[severity || 'info']" size="22">{{ icon || 'lightbulb' }}</v-icon>
         <div class="flex-grow-1">
           <div class="text-subtitle-2 font-weight-bold mb-1">{{ headline }}</div>
-          <div class="text-body-2 text-medium-emphasis mb-2" style="line-height: var(--mp-typography-lineHeight-normal);">{{ description }}</div>
+          <div class="text-body-2 text-medium-emphasis mb-2" style="line-height: var(--mp-lineHeight-normal);">{{ description }}</div>
           <v-btn
             v-if="actionLabel"
             :color="severityColor[severity || 'info']"
@@ -49,5 +49,5 @@ const severityColor: Record<string, string> = {
 </template>
 
 <style scoped>
-.v-card.insight-card { border-radius: var(--mp-component-card-radius-md) !important; }
+.v-card.insight-card { border-radius: var(--mp-radius-12) !important; }
 </style>

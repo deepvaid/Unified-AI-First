@@ -70,7 +70,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
           <span class="chaos__raw-badge" style="background: #3366cc; border-radius: 2px; font-family: Arial">SHIPPED!!</span>
         </div>
         <div class="chaos__layer chaos__layer--after">
-          <MpStatusChip status="Shipped" type="fulfillment" size="small" show-icon />
+          <MpStatusChip status="Shipped" type="fulfillment" size="md" show-icon />
         </div>
       </div>
 
@@ -134,21 +134,21 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--mp-spacing-6);
+  gap: var(--mp-space-24);
   padding: 6%;
 }
 
 .chaos__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(180px, 240px));
-  gap: var(--mp-spacing-4);
+  gap: var(--mp-space-16);
 }
 
 .chaos__tile {
   position: relative;
   height: clamp(64px, 13vh, 96px);
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface));
   animation: chaos-pop var(--mp-motion-duration-entrance) var(--mp-motion-easing-standard) both;
   animation-delay: calc(var(--i) * 60ms);
@@ -161,7 +161,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--mp-spacing-2) var(--mp-spacing-3);
+  padding: var(--mp-space-8) var(--mp-space-12);
 }
 
 /* Before layer: pops in with the tile, wobbles, then gets snapped away. */
@@ -283,10 +283,10 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 }
 
 .chaos__metric {
-  font-size: var(--mp-typography-fontSize-xl);
-  font-weight: var(--mp-typography-fontWeight-bold);
+  font-size: var(--mp-fontSize-24);
+  font-weight: var(--mp-fontWeight-bold);
   font-variant-numeric: tabular-nums;
-  line-height: var(--mp-typography-lineHeight-tight);
+  line-height: var(--mp-lineHeight-tight);
 }
 
 @media (prefers-reduced-motion: reduce) {

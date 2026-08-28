@@ -35,7 +35,7 @@ const emit = defineEmits<{
           <div class="text-caption text-medium-emphasis">Editable campaign draft</div>
         </div>
         <v-spacer />
-        <MpStatusChip :status="status" type="campaign" size="x-small" />
+        <MpStatusChip :status="status" type="campaign" size="sm" />
       </div>
 
       <v-divider class="campaign-card__divider mb-3" />
@@ -89,11 +89,11 @@ const emit = defineEmits<{
 }
 
 .campaign-card__label {
-  min-width: var(--mp-spacing-20);
+  min-width: var(--mp-space-80);
 }
 
 .campaign-card__remaining {
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface-variant));
 }
 </style>

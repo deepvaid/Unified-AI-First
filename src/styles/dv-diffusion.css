@@ -6,20 +6,24 @@
    classes; do not fork the values back into components. */
 
 :root {
-  --dv-fog-core: rgba(252, 252, 254, 0.25);
-  --dv-fog-mid: rgba(252, 252, 254, 0.11);
-  --dv-aura-violet: rgba(124, 58, 237, 0.13);
-  --dv-aura-blue: rgba(37, 99, 235, 0.12);
-  --dv-aura-cyan: rgba(8, 145, 178, 0.1);
+  --dv-fog-core: rgba(var(--mp-rgb-color-light-dv-fogTint), 0.25);
+  --dv-fog-mid: rgba(var(--mp-rgb-color-light-dv-fogTint), 0.11);
+  --dv-aura-violet: rgba(var(--mp-rgb-color-light-dv-gradFrom), 0.13);
+  --dv-aura-blue: rgba(var(--mp-rgb-color-light-dv-gradMid), 0.12);
+  --dv-aura-cyan: rgba(var(--mp-rgb-color-light-dv-gradTo), 0.1);
 }
 
 [data-theme='dark'] {
-  --dv-fog-core: rgba(30, 32, 38, 0.27);
-  --dv-fog-mid: rgba(30, 32, 38, 0.13);
-  --dv-aura-violet: rgba(139, 92, 246, 0.26);
-  --dv-aura-blue: rgba(59, 130, 246, 0.22);
-  --dv-aura-cyan: rgba(34, 211, 238, 0.2);
+  --dv-fog-core: rgba(var(--mp-rgb-color-dark-dv-fogTint), 0.27);
+  --dv-fog-mid: rgba(var(--mp-rgb-color-dark-dv-fogTint), 0.13);
+  --dv-aura-violet: rgba(var(--mp-rgb-color-dark-dv-gradFrom), 0.26);
+  --dv-aura-blue: rgba(var(--mp-rgb-color-dark-dv-gradMid), 0.22);
+  --dv-aura-cyan: rgba(var(--mp-rgb-color-dark-dv-gradTo), 0.2);
 }
+
+/* NOTE: the `#000` stops in the mask-image gradients below are luminance stops,
+   not colour — in a mask, black means "fully opaque". Exempt from tokenization
+   on the same grounds as DvOrbitOrb's --dv-orb-mask-stop. */
 
 /* ─── Aura — soft cool light pools that give the glass colour to refract ───── */
 .dv-aura {

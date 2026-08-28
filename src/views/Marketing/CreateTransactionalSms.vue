@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useSmsStore } from '@/stores/useSms'
 import { useToast } from '@/composables/useToast'
@@ -144,64 +145,50 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS
               <v-icon size="18" class="text-medium-emphasis">message-square</v-icon>
               <span class="text-subtitle-2 font-weight-bold">Message</span>
             </div>
-            <v-text-field
-              v-model="name"
-              label="Transactional event name"
-              placeholder="e.g. Order Confirmation"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              class="mb-4"
-              :rules="[v => !!v || 'Name is required']"
-            />
-            <v-text-field
-              v-model="senderId"
-              label="Sender ID"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              :counter="11"
-              :maxlength="11"
-              hint="Up to 11 alphanumeric characters shown as the sender"
-              persistent-hint
-              class="mb-4"
-            />
-            <v-select
-              v-model="template"
-              label="Start from a template (optional)"
-              :items="TEMPLATES"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              placeholder="Choose a starting point"
-              clearable
-              class="mb-4"
-              @update:model-value="applyTemplate"
-            />
-            <v-textarea
-              v-model="message"
-              label="Message body *"
-              placeholder="Type your SMS. Add personalization tokens for a tailored message."
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              rows="4"
-              auto-grow
-              hide-details
-            />
-            <div class="d-flex align-center justify-space-between mt-2 mb-4">
-              <span class="text-caption text-medium-emphasis">
-                Personalize with tokens like <code>{{ tokenExample }}</code>
-              </span>
-              <span class="text-caption sms-count" :class="segments > 1 ? 'text-warning' : 'text-medium-emphasis'">
-                {{ charCount }} / {{ segmentCap }} · {{ segments }} segment{{ segments === 1 ? '' : 's' }}
-              </span>
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-              <v-chip v-for="chip in INSERT_CHIPS" :key="chip.key" size="small" variant="outlined" :prepend-icon="chip.icon" class="text-none" @click="insertHelper(chip)">
-                {{ chip.label }}
-              </v-chip>
-            </div>
+            <MpFormGrid>
+              <v-text-field
+                v-model="name"
+                label="Transactional event name"
+                placeholder="e.g. Order Confirmation"
+                :rules="[v => !!v || 'Name is required']"
+              />
+              <v-text-field
+                v-model="senderId"
+                label="Sender ID"
+                :counter="11"
+                :maxlength="11"
+                hint="Up to 11 alphanumeric characters shown as the sender"
+                persistent-hint
+              />
+              <v-select
+                v-model="template"
+                label="Start from a template (optional)"
+                :items="TEMPLATES"
+                placeholder="Choose a starting point"
+                clearable
+                @update:model-value="applyTemplate"
+              />
+              <v-textarea
+                v-model="message"
+                label="Message body *"
+                placeholder="Type your SMS. Add personalization tokens for a tailored message."
+                rows="4"
+                auto-grow
+              />
+              <div class="d-flex align-center justify-space-between">
+                <span class="text-caption text-medium-emphasis">
+                  Personalize with tokens like <code>{{ tokenExample }}</code>
+                </span>
+                <span class="text-caption sms-count" :class="segments > 1 ? 'text-warning' : 'text-medium-emphasis'">
+                  {{ charCount }} / {{ segmentCap }} · {{ segments }} segment{{ segments === 1 ? '' : 's' }}
+                </span>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <v-chip v-for="chip in INSERT_CHIPS" :key="chip.key" size="small" variant="outlined" :prepend-icon="chip.icon" class="text-none" @click="insertHelper(chip)">
+                  {{ chip.label }}
+                </v-chip>
+              </div>
+            </MpFormGrid>
           </v-card>
         </div>
 
@@ -212,7 +199,7 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS
               <v-icon size="18" class="text-medium-emphasis">shield-check</v-icon>
               <span class="text-subtitle-2 font-weight-bold">Compliance</span>
             </div>
-            <v-checkbox v-model="optOutConfirmed" color="primary" hide-details>
+            <v-checkbox v-model="optOutConfirmed">
               <template #label>
                 <span class="text-body-2">This message includes a clear opt-out and complies with local SMS marketing regulations.</span>
               </template>

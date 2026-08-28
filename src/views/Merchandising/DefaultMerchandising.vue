@@ -201,7 +201,7 @@ function performConfirm() {
         @click:row="(e: MouseEvent, { item }: { item: MerchRule }) => handleRowClick(e, () => openRule(item.id))"
       >
         <template #item.status="{ item }">
-          <MpStatusChip :status="item.active ? 'Active' : 'Inactive'" type="general" size="x-small" variant="flat" />
+          <MpStatusChip :status="item.active ? 'Active' : 'Inactive'" type="general" size="sm" variant="flat" />
         </template>
         <template #item.name="{ item }">
           <span class="text-body-2 font-weight-medium">{{ item.name }}</span>

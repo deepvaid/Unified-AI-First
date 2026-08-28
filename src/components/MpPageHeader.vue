@@ -9,12 +9,15 @@ withDefaults(defineProps<{
   density?: 'default' | 'compact'
   /** Muted, uppercase, tracked label above the title (e.g. "COMMERCE · ORDERS"). */
   eyebrow?: string
-  /** 'display' renders the title (and subtitle) as a two-tone display-scale masthead. */
-  variant?: 'default' | 'display'
+  /**
+   * Visual weight. 'prominent' renders the title (and subtitle) as a two-tone
+   * display-scale masthead. Shared system-wide vocabulary (P2-7).
+   */
+  emphasis?: 'default' | 'prominent'
 }>(), {
   level: 1,
   density: 'default',
-  variant: 'default',
+  emphasis: 'default',
 })
 </script>
 
@@ -41,7 +44,7 @@ withDefaults(defineProps<{
         <div class="min-width-0 flex-grow-1">
           <span v-if="eyebrow" class="mp-page-header__eyebrow mp-meta-label">{{ eyebrow }}</span>
 
-          <div v-if="variant === 'display'" class="mp-headline-duo">
+          <div v-if="emphasis === 'prominent'" class="mp-headline-duo">
             <component
               :is="level === 2 ? 'h2' : 'h1'"
               class="is-ink mp-display-sm"
@@ -94,14 +97,14 @@ withDefaults(defineProps<{
 
 /* Level-2 (drawer / settings-page) title: modest scale, not the full masthead. */
 .mp-page-title--sm {
-  font-size: 18px;
-  font-weight: 650;
+  font-size: var(--mp-fontSize-18);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: -0.01em;
 }
 
 .mp-page-header__eyebrow {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: var(--mp-space-4);
   color: var(--text-muted);
 }
 
@@ -113,16 +116,19 @@ withDefaults(defineProps<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 4px;
+  margin-top: var(--mp-space-4);
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
+  border-radius: var(--mp-component-chip-radius);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   background: rgb(var(--v-theme-surface));
   text-decoration: none;
   color: rgb(var(--v-theme-on-surface));
-  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  transition:
+    background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard),
+    border-color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard),
+    transform var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
   cursor: pointer;
 }
 

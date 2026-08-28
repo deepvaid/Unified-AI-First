@@ -97,7 +97,7 @@ function grantedInProduct(key: ProductKey): number {
       v-model="activeProduct"
       density="compact"
       color="primary"
-      class="matrix-tabs mb-4"
+      class="matrix-tabs"
       aria-label="Permission catalog by product"
     >
       <v-tab v-for="p in visibleProducts" :key="p.key" :value="p.key" class="text-none">
@@ -114,7 +114,7 @@ function grantedInProduct(key: ProductKey): number {
       variant="tonal"
       density="compact"
       rounded="lg"
-      class="text-body-2 mb-4"
+      class="text-body-2"
     >
       Commerce permissions are provisional — the MCC permission catalog is still being finalized by the product team.
     </v-alert>
@@ -190,6 +190,14 @@ function grantedInProduct(key: ProductKey): number {
 <style scoped lang="scss">
 .matrix-tabs {
   border-bottom: 1px solid var(--border-subtle);
+}
+
+/* The matrix owns the space between its tabs, its notice and the module list —
+   those two used to carry an `mb-4` each. */
+.mp-permission-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-component-field-groupGap);
 }
 
 .matrix-modules {

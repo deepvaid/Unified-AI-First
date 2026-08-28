@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -31,49 +32,34 @@ function save() { toast.success('Service settings saved') }
     />
 
     <SettingsSection title="Support Channel">
-      <div class="settings-grid">
-        <div class="settings-field settings-field--full">
-          <label class="settings-field__label">Support Email Address</label>
-          <v-text-field v-model="serviceSettings.supportEmail" variant="outlined" density="compact" prepend-inner-icon="mail" hide-details />
-        </div>
-        <div class="settings-field">
-          <label class="settings-field__label">Ticket ID Prefix</label>
-          <v-text-field v-model="serviceSettings.ticketPrefix" variant="outlined" density="compact" placeholder="TKT-" hide-details />
-        </div>
-        <div class="settings-field">
-          <label class="settings-field__label">Default SLA (hours)</label>
-          <v-text-field v-model.number="serviceSettings.slaHours" type="number" variant="outlined" density="compact" hide-details />
-        </div>
-        <div class="settings-field">
-          <label class="settings-field__label">Default Priority</label>
-          <v-select
-            v-model="serviceSettings.defaultPriority"
-            :items="['Low','Normal','High','Urgent']"
-            variant="outlined"
-            density="compact"
+      <MpFormGrid :cols="2">
+        <v-text-field label="Support Email Address" v-model="serviceSettings.supportEmail" class="mp-form-grid__full" prepend-inner-icon="mail" />
+        <v-text-field label="Ticket ID Prefix" v-model="serviceSettings.ticketPrefix" placeholder="TKT-" />
+        <v-text-field label="Default SLA (hours)" v-model.number="serviceSettings.slaHours" type="number" />
+        <v-select
+          label="Default Priority"
+          v-model="serviceSettings.defaultPriority"
+          :items="['Low','Normal','High','Urgent']"
+        />
+        <v-text-field label="Support Portal Name" v-model="serviceSettings.portalName" />
+
+        <div class="toggle-row mp-form-grid__full">
+          <div>
+            <div class="toggle-row__title">Auto-Assign Tickets</div>
+            <div class="toggle-row__sub">Automatically assign new tickets to available agents.</div>
+          </div>
+          <!-- `hide-details` is deliberate here: the switch sits in a list row that
+               carries its own title and description, so a details slot would only
+               add empty height. -->
+          <v-switch
+            v-model="serviceSettings.autoAssign"
+            color="primary"
             hide-details
+            inset
+            aria-label="Toggle automatic ticket assignment"
           />
         </div>
-        <div class="settings-field">
-          <label class="settings-field__label">Support Portal Name</label>
-          <v-text-field v-model="serviceSettings.portalName" variant="outlined" density="compact" hide-details />
-        </div>
-      </div>
-
-      <div class="toggle-row">
-        <div>
-          <div class="toggle-row__title">Auto-Assign Tickets</div>
-          <div class="toggle-row__sub">Automatically assign new tickets to available agents.</div>
-        </div>
-        <v-switch
-          v-model="serviceSettings.autoAssign"
-          color="primary"
-          hide-details
-          density="compact"
-          inset
-          aria-label="Toggle automatic ticket assignment"
-        />
-      </div>
+      </MpFormGrid>
     </SettingsSection>
 
     <SettingsSection title="Reply Templates" description="Reusable snippets for fast, consistent responses.">
@@ -101,10 +87,6 @@ function save() { toast.success('Service settings saved') }
 </template>
 
 <style scoped lang="scss">
-.settings-grid {
-  margin-bottom: 20px;
-}
-
 .toggle-row {
   display: flex;
   align-items: center;

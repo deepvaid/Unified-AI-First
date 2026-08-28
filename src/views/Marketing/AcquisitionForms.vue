@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, useId } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useFormsStore, newFormDefaults, embedScriptFor } from '@/stores/useForms'
 import type { AcquisitionForm, FormType, PopupPosition } from '@/stores/useForms'
@@ -12,6 +12,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpDialog from '@/components/MpDialog.vue'
 import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
@@ -114,7 +115,6 @@ const FORM_TEMPLATES: FormTemplate[] = [
 ]
 
 const chooseDialog = ref(false)
-const chooseDialogTitleId = useId()
 const selectedTemplate = ref<string | null>(null)
 const templateSearch = ref('')
 const filterType = ref<'All' | FormType>('All')
@@ -151,9 +151,7 @@ function openBuilder() {
 
 // ─── Preview & embed-code dialogs ───────────────────────────────────────
 const previewDialog = ref(false)
-const previewDialogTitleId = useId()
 const embedDialog = ref(false)
-const embedDialogTitleId = useId()
 const activeForm = ref<AcquisitionForm | null>(null)
 function openPreview(form: AcquisitionForm) { activeForm.value = form; previewDialog.value = true }
 function openEmbed(form: AcquisitionForm) { activeForm.value = form; embedDialog.value = true }
@@ -275,7 +273,7 @@ async function copyText(text: string) {
                   <div class="text-body-1 font-weight-bold text-truncate">{{ form.name }}</div>
                   <div class="d-flex align-center ga-2 mt-1">
                     <v-chip size="x-small" variant="tonal" color="secondary" rounded="lg">{{ form.type }}</v-chip>
-                    <MpStatusChip :status="form.status" type="general" size="x-small" />
+                    <MpStatusChip :status="form.status" type="general" size="sm" />
                   </div>
                 </div>
                 <MpRowActionsMenu :ariaLabel="`${form.name} actions`">
@@ -368,7 +366,7 @@ async function copyText(text: string) {
         <template #item.views="{ item }"><span class="font-weight-medium num">{{ item.views.toLocaleString() }}</span></template>
         <template #item.conversions="{ item }"><span class="font-weight-medium text-success num">{{ item.conversions.toLocaleString() }}</span></template>
         <template #item.rate="{ item }"><span class="font-weight-bold text-primary num">{{ item.rate }}%</span></template>
-        <template #item.status="{ item }"><MpStatusChip :status="item.status" type="general" size="x-small" /></template>
+        <template #item.status="{ item }"><MpStatusChip :status="item.status" type="general" size="sm" /></template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu :ariaLabel="`${item.name} actions`">
             <v-list-item prepend-icon="pencil" rounded="lg" @click="editInBuilder(item)">Edit in Builder</v-list-item>
@@ -390,104 +388,92 @@ async function copyText(text: string) {
     </MpFloatingBulkBar>
 
     <!-- Template picker -->
-    <v-dialog v-model="chooseDialog" max-width="820" rounded="xl" :aria-labelledby="chooseDialogTitleId">
-      <v-card rounded="lg" border flat color="surface" class="template-dialog-card">
-        <div class="pa-5 pb-3 d-flex align-center justify-space-between">
-          <div>
-            <div :id="chooseDialogTitleId" class="text-h6 font-weight-bold">Choose a Template</div>
-            <div class="text-caption text-medium-emphasis">Pick a starting point or begin from scratch</div>
-          </div>
-          <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="chooseDialog = false" />
-        </div>
-        <div class="pa-5 pt-0">
-          <div class="d-flex align-center ga-3 mb-4">
-            <v-btn-toggle v-model="filterType" density="compact" variant="outlined" divided rounded="lg" mandatory class="mp-toggle-group mp-toggle-group--segmented">
-              <v-btn v-for="t in ['All', 'Popup', 'Embedded']" :key="t" :value="t" size="small" class="text-none px-4">{{ t }}</v-btn>
-            </v-btn-toggle>
-            <v-text-field v-model="templateSearch" prepend-inner-icon="search" placeholder="Search templates…" variant="outlined" density="compact" hide-details rounded="lg" class="flex-grow-1" />
-          </div>
-          <v-row dense class="template-grid">
-            <v-col v-for="tmpl in filteredTemplates" :key="tmpl.id" cols="12" sm="6" md="4">
-              <v-card
-                :variant="selectedTemplate === tmpl.id ? 'tonal' : 'flat'"
-                :color="selectedTemplate === tmpl.id ? 'primary' : 'default'"
-                rounded="lg"
-                border
-                class="pa-4 cursor-pointer template-card h-100"
-                :class="{ selected: selectedTemplate === tmpl.id }"
-                @click="selectedTemplate = tmpl.id"
-              >
-                <div class="d-flex align-start justify-space-between mb-2">
-                  <v-icon :color="tmpl.color" size="28">{{ tmpl.icon }}</v-icon>
-                  <div v-if="tmpl.type" class="d-flex ga-1">
-                    <v-chip size="x-small" variant="tonal" rounded="lg">{{ tmpl.type }}</v-chip>
-                    <v-chip v-if="tmpl.position" size="x-small" variant="outlined" rounded="lg">Center</v-chip>
-                  </div>
-                </div>
-                <div class="text-body-2 font-weight-bold mb-1">{{ tmpl.name }}</div>
-                <div class="text-caption text-medium-emphasis">{{ tmpl.desc }}</div>
-                <v-icon v-if="selectedTemplate === tmpl.id" color="primary" class="selected-check" size="20">circle-check</v-icon>
-              </v-card>
-            </v-col>
-          </v-row>
-        </div>
-        <div class="pa-5 pt-3 d-flex justify-space-between align-center">
-          <v-btn variant="text" class="text-none" @click="chooseDialog = false">Cancel</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" :disabled="selectedTemplate === null" prepend-icon="ruler" @click="openBuilder">Open Builder</v-btn>
-        </div>
-      </v-card>
-    </v-dialog>
+    <MpDialog
+      v-model="chooseDialog"
+      size="lg"
+      title="Choose a Template"
+      subtitle="Pick a starting point or begin from scratch"
+    >
+      <div class="d-flex align-center ga-3">
+        <v-btn-toggle v-model="filterType" density="compact" variant="outlined" divided rounded="lg" mandatory class="mp-toggle-group mp-toggle-group--segmented">
+          <v-btn v-for="t in ['All', 'Popup', 'Embedded']" :key="t" :value="t" size="small" class="text-none px-4">{{ t }}</v-btn>
+        </v-btn-toggle>
+        <v-text-field v-model="templateSearch" prepend-inner-icon="search" placeholder="Search templates…" variant="outlined" density="compact" hide-details rounded="lg" class="flex-grow-1" />
+      </div>
+      <v-row dense class="template-grid">
+        <v-col v-for="tmpl in filteredTemplates" :key="tmpl.id" cols="12" sm="6" md="4">
+          <v-card
+            :variant="selectedTemplate === tmpl.id ? 'tonal' : 'flat'"
+            :color="selectedTemplate === tmpl.id ? 'primary' : 'default'"
+            rounded="lg"
+            border
+            class="pa-4 cursor-pointer template-card h-100"
+            :class="{ selected: selectedTemplate === tmpl.id }"
+            @click="selectedTemplate = tmpl.id"
+          >
+            <div class="d-flex align-start justify-space-between mb-2">
+              <v-icon :color="tmpl.color" size="28">{{ tmpl.icon }}</v-icon>
+              <div v-if="tmpl.type" class="d-flex ga-1">
+                <v-chip size="x-small" variant="tonal" rounded="lg">{{ tmpl.type }}</v-chip>
+                <v-chip v-if="tmpl.position" size="x-small" variant="outlined" rounded="lg">Center</v-chip>
+              </div>
+            </div>
+            <div class="text-body-2 font-weight-bold mb-1">{{ tmpl.name }}</div>
+            <div class="text-caption text-medium-emphasis">{{ tmpl.desc }}</div>
+            <v-icon v-if="selectedTemplate === tmpl.id" color="primary" class="selected-check" size="20">circle-check</v-icon>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="chooseDialog = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="selectedTemplate === null" prepend-icon="ruler" @click="openBuilder">Open Builder</v-btn>
+      </template>
+    </MpDialog>
 
     <!-- Preview dialog: readonly render of the form's blocks -->
-    <v-dialog v-model="previewDialog" max-width="520" rounded="xl" :aria-labelledby="previewDialogTitleId">
-      <v-card v-if="activeForm" rounded="lg" border flat class="pa-5">
-        <div class="d-flex align-center justify-space-between mb-4">
-          <div :id="previewDialogTitleId" class="text-h6 font-weight-bold">{{ activeForm.name }}</div>
-          <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="previewDialog = false" />
-        </div>
-        <div class="preview-stage d-flex justify-center pa-6">
-          <div
-            class="preview-form"
-            :style="{
-              width: Math.min(activeForm.design.width, 340) + 'px',
-              padding: `${activeForm.design.paddingTop}px ${activeForm.design.paddingRight}px ${activeForm.design.paddingBottom}px ${activeForm.design.paddingLeft}px`,
-              background: activeForm.design.backgroundType === 'color' ? activeForm.design.backgroundColor : '#1A1A2E',
-              borderRadius: activeForm.design.borderRadius + 'px',
-              border: `${activeForm.design.borderThickness}px solid ${activeForm.design.borderColor}`,
-            }"
-          >
-            <div v-for="b in activeForm.mainFormBlocks" :key="b.id" class="preview-block" :style="{ textAlign: b.align }">
-              <div v-if="b.type === 'title'" class="preview-block__title">{{ b.text }}</div>
-              <div v-else-if="b.type === 'paragraph' || b.type === 'text'" class="preview-block__paragraph">{{ b.text }}</div>
-              <ul v-else-if="b.type === 'list'" class="preview-block__list"><li v-for="(li, i) in b.items" :key="i">{{ li }}</li></ul>
-              <div v-else-if="b.type === 'image' || b.type === 'video'" class="preview-block__media"><v-icon size="24" color="white">{{ b.type === 'video' ? 'video' : 'image' }}</v-icon></div>
-              <hr v-else-if="b.type === 'divider'" class="preview-block__divider" />
-              <div v-else-if="b.type === 'email_submit'">
-                <div class="preview-block__field">Email address</div>
-                <div class="preview-block__submit">{{ b.text || activeForm.buttonLabel }}</div>
-              </div>
+    <MpDialog v-model="previewDialog" size="md" :title="activeForm?.name ?? 'Preview'">
+      <div v-if="activeForm" class="preview-stage d-flex justify-center pa-6">
+        <div
+          class="preview-form"
+          :style="{
+            width: Math.min(activeForm.design.width, 340) + 'px',
+            padding: `${activeForm.design.paddingTop}px ${activeForm.design.paddingRight}px ${activeForm.design.paddingBottom}px ${activeForm.design.paddingLeft}px`,
+            background: activeForm.design.backgroundType === 'color' ? activeForm.design.backgroundColor : '#1A1A2E',
+            borderRadius: activeForm.design.borderRadius + 'px',
+            border: `${activeForm.design.borderThickness}px solid ${activeForm.design.borderColor}`,
+          }"
+        >
+          <div v-for="b in activeForm.mainFormBlocks" :key="b.id" class="preview-block" :style="{ textAlign: b.align }">
+            <div v-if="b.type === 'title'" class="preview-block__title">{{ b.text }}</div>
+            <div v-else-if="b.type === 'paragraph' || b.type === 'text'" class="preview-block__paragraph">{{ b.text }}</div>
+            <ul v-else-if="b.type === 'list'" class="preview-block__list"><li v-for="(li, i) in b.items" :key="i">{{ li }}</li></ul>
+            <div v-else-if="b.type === 'image' || b.type === 'video'" class="preview-block__media"><v-icon size="24" color="white">{{ b.type === 'video' ? 'video' : 'image' }}</v-icon></div>
+            <hr v-else-if="b.type === 'divider'" class="preview-block__divider" />
+            <div v-else-if="b.type === 'email_submit'">
+              <div class="preview-block__field">Email address</div>
+              <div class="preview-block__submit">{{ b.text || activeForm.buttonLabel }}</div>
             </div>
           </div>
         </div>
-      </v-card>
-    </v-dialog>
+      </div>
+    </MpDialog>
 
     <!-- Embed code dialog -->
-    <v-dialog v-model="embedDialog" max-width="560" rounded="xl" :aria-labelledby="embedDialogTitleId">
-      <v-card v-if="activeForm" rounded="lg" border flat class="pa-5">
-        <div class="d-flex align-center justify-space-between mb-4">
-          <div :id="embedDialogTitleId" class="text-h6 font-weight-bold">Embed “{{ activeForm.name }}”</div>
-          <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="embedDialog = false" />
+    <MpDialog v-model="embedDialog" size="md" :title="`Embed “${activeForm?.name ?? ''}”`">
+      <template v-if="activeForm">
+        <div>
+          <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Website Embed</div>
+          <v-textarea :model-value="embedSnippets.script" readonly variant="outlined" density="compact" rows="2" class="embed-mono mb-2" hide-details />
+          <v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedSnippets.script)">Copy script</v-btn>
         </div>
-        <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Website Embed</div>
-        <v-textarea :model-value="embedSnippets.script" readonly variant="outlined" density="compact" rows="2" class="embed-mono mb-2" hide-details />
-        <v-btn variant="tonal" size="small" class="text-none mb-4" prepend-icon="copy" @click="copyText(embedSnippets.script)">Copy script</v-btn>
-
-        <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Manual Integration</div>
-        <v-textarea :model-value="embedSnippets.manual" readonly variant="outlined" density="compact" rows="4" class="embed-mono mb-2" hide-details />
-        <v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedSnippets.manual)">Copy snippet</v-btn>
-      </v-card>
-    </v-dialog>
+        <div>
+          <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Manual Integration</div>
+          <v-textarea :model-value="embedSnippets.manual" readonly variant="outlined" density="compact" rows="4" class="embed-mono mb-2" hide-details />
+          <v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedSnippets.manual)">Copy snippet</v-btn>
+        </div>
+      </template>
+    </MpDialog>
 
     <MpConfirmDialog
       :model-value="confirmDeleteIds !== null"
@@ -511,7 +497,7 @@ async function copyText(text: string) {
 .form-grid { row-gap: 20px; }
 
 .form-card {
-  transition: border-color $mp-transition-base, box-shadow $mp-transition-base;
+  transition: border-color var(--mp-motion-duration-base) var(--mp-motion-easing-standard), box-shadow var(--mp-motion-duration-base) var(--mp-motion-easing-standard);
   background: rgb(var(--v-theme-surface));
   border-color: var(--mp-border-subtle) !important;
 }
@@ -612,7 +598,7 @@ async function copyText(text: string) {
 .acquisition-data-table :deep(td) { padding-inline: 20px !important; }
 
 .add-card {
-  transition: border-color $mp-transition-base, background-color $mp-transition-base;
+  transition: border-color var(--mp-motion-duration-base) var(--mp-motion-easing-standard), background-color var(--mp-motion-duration-base) var(--mp-motion-easing-standard);
   background: linear-gradient(180deg, rgba(var(--v-theme-surface-variant), 0.18), rgba(var(--v-theme-surface-variant), 0.08));
   border-style: dashed !important;
   border-color: rgba(var(--v-theme-border), 0.9) !important;
@@ -623,11 +609,10 @@ async function copyText(text: string) {
   background: rgba(var(--v-theme-primary), 0.05);
 }
 
-.template-dialog-card { border-color: var(--mp-border-subtle); }
 .template-grid { max-height: 420px; overflow-y: auto; row-gap: 12px; }
 .template-card {
   position: relative;
-  transition: border-color $mp-transition-base, background-color $mp-transition-base;
+  transition: border-color var(--mp-motion-duration-base) var(--mp-motion-easing-standard), background-color var(--mp-motion-duration-base) var(--mp-motion-easing-standard);
   background: rgb(var(--v-theme-surface));
   border-color: var(--mp-border-subtle) !important;
 }

@@ -6,6 +6,8 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
 import AddSectionDialog from '@/components/saleschannels/AddSectionDialog.vue'
 import ThemeDaVinciPanel, { type ThemeChatMessage } from '@/components/saleschannels/ThemeDaVinciPanel.vue'
@@ -616,7 +618,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         @click="leftPanelOpen = !leftPanelOpen"
       ></v-btn>
       <div class="font-weight-bold text-body-1 text-truncate">{{ theme.name }}</div>
-      <MpStatusChip :status="theme.status" type="general" size="x-small" />
+      <MpStatusChip :status="theme.status" type="general" size="sm" />
       <v-menu location="bottom start">
         <template #activator="{ props }">
           <v-btn
@@ -638,13 +640,12 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
     </template>
 
     <template #toolbar-center>
+      <!-- Builder toolbar control: compact density and detail suppression are deliberate here. -->
       <v-select
         v-model="activeTemplate"
         :items="templateTypeItems"
         density="compact"
-        variant="outlined"
         hide-details
-        rounded="lg"
         class="tb-template-select flex-shrink-0"
         aria-label="Template type"
       ></v-select>
@@ -911,73 +912,70 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 
         <!-- Theme styles tab: global colors, fonts, radius, button style -->
         <div v-else class="flex-grow-1 overflow-y-auto pa-3">
-          <div v-for="row in styleColorRows" :key="row.key" class="mb-4">
-            <div class="text-caption font-weight-bold mb-2">{{ row.label }}</div>
-            <div class="tb-swatch-row" role="radiogroup" :aria-label="row.label">
-              <button
-                v-for="swatch in swatchPalette"
-                :key="swatch.value"
-                class="tb-swatch"
-                :class="{ 'tb-swatch--selected': theme.styles[row.key] === swatch.value }"
-                :style="{ background: swatch.value }"
-                role="radio"
-                :tabindex="swatchTabindex(swatch, theme.styles[row.key])"
-                :aria-checked="theme.styles[row.key] === swatch.value"
-                :aria-label="`${row.label}: ${swatch.label}`"
-                @click="setStyle({ [row.key]: swatch.value })"
-                @keydown="onSwatchKeydown($event, (v: string) => setStyle({ [row.key]: v }))"
-              ></button>
-            </div>
-          </div>
+          <MpFormGrid>
+            <MpFormField v-for="row in styleColorRows" :key="row.key" :label="row.label">
+              <template #default="{ labelId }">
+                <div class="tb-swatch-row" role="radiogroup" :aria-labelledby="labelId">
+                  <button
+                    v-for="swatch in swatchPalette"
+                    :key="swatch.value"
+                    class="tb-swatch"
+                    :class="{ 'tb-swatch--selected': theme.styles[row.key] === swatch.value }"
+                    :style="{ background: swatch.value }"
+                    role="radio"
+                    :tabindex="swatchTabindex(swatch, theme.styles[row.key])"
+                    :aria-checked="theme.styles[row.key] === swatch.value"
+                    :aria-label="`${row.label}: ${swatch.label}`"
+                    @click="setStyle({ [row.key]: swatch.value })"
+                    @keydown="onSwatchKeydown($event, (v: string) => setStyle({ [row.key]: v }))"
+                  ></button>
+                </div>
+              </template>
+            </MpFormField>
 
-          <v-divider class="mb-4"></v-divider>
+            <v-divider></v-divider>
 
-          <v-select
-            :model-value="theme.styles.headingFont"
-            label="Heading font"
-            :items="themeFonts"
-            variant="outlined"
-            density="compact"
-            class="mb-3"
-            @update:model-value="(v: string) => setStyle({ headingFont: v })"
-          ></v-select>
-          <v-select
-            :model-value="theme.styles.bodyFont"
-            label="Body font"
-            :items="themeFonts"
-            variant="outlined"
-            density="compact"
-            class="mb-4"
-            @update:model-value="(v: string) => setStyle({ bodyFont: v })"
-          ></v-select>
+            <v-select
+              :model-value="theme.styles.headingFont"
+              label="Heading font"
+              :items="themeFonts"
+              @update:model-value="(v: string) => setStyle({ headingFont: v })"
+            ></v-select>
+            <v-select
+              :model-value="theme.styles.bodyFont"
+              label="Body font"
+              :items="themeFonts"
+              @update:model-value="(v: string) => setStyle({ bodyFont: v })"
+            ></v-select>
 
-          <div class="text-caption font-weight-bold mb-2">Corner radius</div>
-          <v-slider
-            :model-value="theme.styles.cornerRadius"
-            :min="0"
-            :max="24"
-            :step="2"
-            density="compact"
-            color="primary"
-            thumb-label
-            hide-details
-            aria-label="Corner radius"
-            class="mb-4"
-            @update:model-value="(v: number) => setStyle({ cornerRadius: v })"
-          ></v-slider>
+            <MpFormField label="Corner radius">
+              <template #default="{ labelId }">
+                <v-slider
+                  :model-value="theme.styles.cornerRadius"
+                  :min="0"
+                  :max="24"
+                  :step="2"
+                  thumb-label
+                  :aria-labelledby="labelId"
+                  @update:model-value="(v: number) => setStyle({ cornerRadius: v })"
+                ></v-slider>
+              </template>
+            </MpFormField>
 
-          <div class="text-caption font-weight-bold mb-2">Button style</div>
-          <div class="d-flex flex-column gap-2">
-            <MpOptionCard
-              v-for="option in buttonStyleOptions"
-              :key="option.value"
-              :selected="theme.styles.buttonStyle === option.value"
-              :title="option.title"
-              :description="option.description"
-              :icon="option.icon"
-              @click="setStyle({ buttonStyle: option.value })"
-            />
-          </div>
+            <MpFormField label="Button style">
+              <div class="d-flex flex-column gap-2">
+                <MpOptionCard
+                  v-for="option in buttonStyleOptions"
+                  :key="option.value"
+                  :selected="theme.styles.buttonStyle === option.value"
+                  :title="option.title"
+                  :description="option.description"
+                  :icon="option.icon"
+                  @click="setStyle({ buttonStyle: option.value })"
+                />
+              </div>
+            </MpFormField>
+          </MpFormGrid>
         </div>
 
         <div v-if="leftTab === 'sections'" class="pa-3 border-t">
@@ -1033,100 +1031,85 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         </div>
 
         <div class="pa-4 flex-grow-1 overflow-y-auto">
-          <!-- Section rename (section-only) -->
-          <template v-if="!isBlockSelected">
-            <v-text-field
-              :model-value="selectedSection.label"
-              label="Section label"
-              variant="outlined"
-              density="compact"
-              class="mb-3"
-              @update:model-value="renameSection"
-            ></v-text-field>
-            <v-divider v-if="panelFields.length" class="mb-4"></v-divider>
-          </template>
+          <MpFormGrid>
+            <!-- Section rename (section-only) -->
+            <template v-if="!isBlockSelected">
+              <v-text-field
+                :model-value="selectedSection.label"
+                label="Section label"
+                @update:model-value="renameSection"
+              ></v-text-field>
+              <v-divider v-if="panelFields.length"></v-divider>
+            </template>
 
-          <!-- Shared schema-driven field renderer (section + block) -->
-          <template v-for="f in panelFields" :key="f.key">
-            <v-textarea
-              v-if="f.type === 'textarea'"
-              :model-value="panelText(f.key)"
-              :label="f.label"
-              variant="outlined"
-              density="compact"
-              rows="3"
-              auto-grow
-              class="mb-3"
-              @update:model-value="(v: string) => panelSet(f.key, v)"
-            ></v-textarea>
-            <v-select
-              v-else-if="f.type === 'select'"
-              :model-value="panelText(f.key)"
-              :label="f.label"
-              :items="f.options"
-              variant="outlined"
-              density="compact"
-              class="mb-3"
-              @update:model-value="(v: string) => panelSet(f.key, v)"
-            ></v-select>
-            <v-switch
-              v-else-if="f.type === 'toggle'"
-              :model-value="panelSettings[f.key] === true"
-              :label="f.label"
-              color="primary"
-              density="compact"
-              hide-details
-              class="mb-3"
-              @update:model-value="(v: unknown) => panelSet(f.key, v === true)"
-            ></v-switch>
-            <div v-else-if="f.type === 'color'" class="mb-4">
-              <div class="text-caption font-weight-bold mb-2">{{ f.label }}</div>
-              <div class="tb-swatch-row" role="radiogroup" :aria-label="f.label">
-                <button
-                  v-for="swatch in swatchPalette"
-                  :key="swatch.value"
-                  class="tb-swatch"
-                  :class="{ 'tb-swatch--selected': panelText(f.key) === swatch.value }"
-                  :style="{ background: swatch.value }"
-                  role="radio"
-                  :tabindex="swatchTabindex(swatch, panelText(f.key))"
-                  :aria-checked="panelText(f.key) === swatch.value"
-                  :aria-label="`${f.label}: ${swatch.label}`"
-                  @click="panelSet(f.key, swatch.value)"
-                  @keydown="onSwatchKeydown($event, (v: string) => panelSet(f.key, v))"
-                ></button>
-              </div>
-            </div>
-            <div v-else-if="f.type === 'slider'" class="mb-3">
-              <div class="text-caption font-weight-bold mb-1">{{ f.label }}</div>
-              <v-slider
-                :model-value="panelNum(f.key, f.min ?? 0)"
-                :min="f.min ?? 0"
-                :max="f.max ?? 10"
-                :step="1"
-                density="compact"
-                color="primary"
-                thumb-label
-                hide-details
-                :aria-label="f.label"
-                @update:model-value="(v: number) => panelSet(f.key, v)"
-              ></v-slider>
-            </div>
-            <v-text-field
-              v-else
-              :model-value="panelText(f.key)"
-              :label="f.label"
-              variant="outlined"
-              density="compact"
-              class="mb-3"
-              @update:model-value="(v: string) => panelSet(f.key, v)"
-            ></v-text-field>
-          </template>
+            <!-- Shared schema-driven field renderer (section + block) -->
+            <template v-for="f in panelFields" :key="f.key">
+              <v-textarea
+                v-if="f.type === 'textarea'"
+                :model-value="panelText(f.key)"
+                :label="f.label"
+                rows="3"
+                auto-grow
+                @update:model-value="(v: string) => panelSet(f.key, v)"
+              ></v-textarea>
+              <v-select
+                v-else-if="f.type === 'select'"
+                :model-value="panelText(f.key)"
+                :label="f.label"
+                :items="f.options"
+                @update:model-value="(v: string) => panelSet(f.key, v)"
+              ></v-select>
+              <v-switch
+                v-else-if="f.type === 'toggle'"
+                :model-value="panelSettings[f.key] === true"
+                :label="f.label"
+                @update:model-value="(v: unknown) => panelSet(f.key, v === true)"
+              ></v-switch>
+              <MpFormField v-else-if="f.type === 'color'" :label="f.label">
+                <template #default="{ labelId }">
+                  <div class="tb-swatch-row" role="radiogroup" :aria-labelledby="labelId">
+                    <button
+                      v-for="swatch in swatchPalette"
+                      :key="swatch.value"
+                      class="tb-swatch"
+                      :class="{ 'tb-swatch--selected': panelText(f.key) === swatch.value }"
+                      :style="{ background: swatch.value }"
+                      role="radio"
+                      :tabindex="swatchTabindex(swatch, panelText(f.key))"
+                      :aria-checked="panelText(f.key) === swatch.value"
+                      :aria-label="`${f.label}: ${swatch.label}`"
+                      @click="panelSet(f.key, swatch.value)"
+                      @keydown="onSwatchKeydown($event, (v: string) => panelSet(f.key, v))"
+                    ></button>
+                  </div>
+                </template>
+              </MpFormField>
+              <MpFormField v-else-if="f.type === 'slider'" :label="f.label">
+                <template #default="{ labelId }">
+                  <v-slider
+                    :model-value="panelNum(f.key, f.min ?? 0)"
+                    :min="f.min ?? 0"
+                    :max="f.max ?? 10"
+                    :step="1"
+                    thumb-label
+                    :aria-labelledby="labelId"
+                    @update:model-value="(v: number) => panelSet(f.key, v)"
+                  ></v-slider>
+                </template>
+              </MpFormField>
+              <v-text-field
+                v-else
+                :model-value="panelText(f.key)"
+                :label="f.label"
+                @update:model-value="(v: string) => panelSet(f.key, v)"
+              ></v-text-field>
+            </template>
 
-          <div class="tb-note d-flex align-start gap-2">
-            <v-icon size="15" class="flex-shrink-0 mt-1">info</v-icon>
-            <span class="text-caption">Changes apply to the preview as you type. Publish the theme to make them live.</span>
-          </div>
+            <div class="tb-note d-flex align-start gap-2">
+              <v-icon size="15" class="flex-shrink-0 mt-1">info</v-icon>
+              <span class="text-caption">Changes apply to the preview as you type. Publish the theme to make them live.</span>
+            </div>
+          </MpFormGrid>
         </div>
       </aside>
     </div>

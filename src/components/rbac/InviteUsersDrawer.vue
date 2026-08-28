@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import RolePicker from '@/components/rbac/RolePicker.vue'
 import { useRbacStore } from '@/stores/useRbac'
 import { useRetailStore } from '@/stores/useRetail'
@@ -85,27 +88,26 @@ function sendInvites() {
 </script>
 
 <template>
-  <MpFormDrawer v-model="open" title="Invite users" :subtitle="`Step ${step} of 2`" :width="520">
+  <MpFormDrawer v-model="open" title="Invite users" :subtitle="`Step ${step} of 2`">
     <!-- Step 1: who + which roles -->
-    <div v-if="step === 1">
-      <div class="text-subtitle-2 font-weight-bold mb-2">Email addresses</div>
+    <MpFormGrid v-if="step === 1">
       <v-combobox
         v-model="emails"
         multiple
         chips
         closable-chips
-        variant="outlined"
-        density="compact"
-        placeholder="name@company.com — press Enter after each"
+        label="Email addresses *"
+        placeholder="name@company.com"
+        hint="Press Enter after each address."
+        persistent-hint
         :error-messages="invalidEmails.length ? `Invalid email${invalidEmails.length === 1 ? '' : 's'}: ${invalidEmails.join(', ')}` : undefined"
-        class="mb-4"
-        aria-label="Email addresses to invite"
       />
 
-      <div class="text-subtitle-2 font-weight-bold mb-2">Roles</div>
-      <p class="text-caption text-medium-emphasis mt-0 mb-3">
-        Every invitee receives the same roles. Roles are grouped by product and filtered to this account’s subscriptions.
-      </p>
+      <MpFormSection
+        title="Roles"
+        required
+        description="Every invitee receives the same roles. Roles are grouped by product and filtered to this account’s subscriptions."
+      />
       <RolePicker v-model="roleIds" />
 
       <v-alert
@@ -114,17 +116,21 @@ function sendInvites() {
         variant="tonal"
         density="compact"
         rounded="lg"
-        class="text-body-2 mt-4"
+        class="text-body-2"
       >
         {{ validation.conflicts[0]!.a.name }} can’t be combined with {{ validation.conflicts[0]!.b.name }}. Remove one to continue.
       </v-alert>
 
       <template v-if="hasCommerceRole">
-        <div class="text-subtitle-2 font-weight-bold mt-5 mb-2">Store scope</div>
-        <v-radio-group v-model="scopeAll" hide-details density="compact" class="mb-2">
-          <v-radio label="All locations" :value="true" />
-          <v-radio label="Specific locations" :value="false" />
-        </v-radio-group>
+        <MpFormSection title="Store scope" />
+        <MpFormField label="Locations this invitation covers">
+          <template #default="{ labelId }">
+            <v-radio-group v-model="scopeAll" :aria-labelledby="labelId">
+              <v-radio label="All locations" :value="true" />
+              <v-radio label="Specific locations" :value="false" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
         <v-select
           v-if="!scopeAll"
           v-model="scopeLocationIds"
@@ -133,33 +139,30 @@ function sendInvites() {
           chips
           closable-chips
           label="Locations"
-          variant="outlined"
-          density="compact"
-          class="mb-2"
         />
         <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
           Location scoping is provisional — the commerce permission catalog is still being finalized.
         </v-alert>
       </template>
-    </div>
+    </MpFormGrid>
 
     <!-- Step 2: review & confirm -->
-    <div v-else>
-      <div class="text-subtitle-2 font-weight-bold mb-2">Inviting {{ emails.length }} {{ emails.length === 1 ? 'person' : 'people' }}</div>
-      <div class="d-flex flex-wrap gap-2 mb-5">
+    <MpFormGrid v-else>
+      <MpFormSection :title="`Inviting ${emails.length} ${emails.length === 1 ? 'person' : 'people'}`" />
+      <div class="d-flex flex-wrap ga-2">
         <v-chip v-for="email in emails" :key="email" size="small" variant="tonal" prepend-icon="mail">{{ email }}</v-chip>
       </div>
 
-      <div class="text-subtitle-2 font-weight-bold mb-2">Roles</div>
-      <div v-for="group in reviewGroups" :key="group.product" class="mb-3">
-        <div class="text-caption text-medium-emphasis mb-1">{{ group.label }}</div>
-        <div class="d-flex flex-wrap gap-2">
+      <MpFormSection title="Roles" />
+      <div v-for="group in reviewGroups" :key="group.product" class="d-flex flex-column ga-1">
+        <div class="text-caption text-medium-emphasis">{{ group.label }}</div>
+        <div class="d-flex flex-wrap ga-2">
           <v-chip v-for="role in group.roles" :key="role!.id" size="small" variant="tonal" color="secondary">{{ role!.name }}</v-chip>
         </div>
       </div>
 
-      <div class="text-subtitle-2 font-weight-bold mt-5 mb-2">Access summary</div>
-      <div class="review-access mb-5">
+      <MpFormSection title="Access summary" />
+      <div class="review-access">
         <div v-for="entry in reviewAccess" :key="entry.product" class="review-access__row">
           <v-icon size="15" :color="entry.entitled ? 'success' : 'warning'">
             {{ entry.entitled ? 'circle-check' : 'lock' }}
@@ -169,29 +172,27 @@ function sendInvites() {
         </div>
       </div>
 
-      <div v-if="hasCommerceRole" class="mb-5">
-        <div class="text-subtitle-2 font-weight-bold mb-1">Store scope</div>
+      <template v-if="hasCommerceRole">
+        <MpFormSection title="Store scope" />
         <span class="text-body-2 text-medium-emphasis">
           {{ scopeAll ? 'All locations' : scopeLocationIds.map(id => retail.locationName(id)).join(', ') }}
         </span>
-      </div>
+      </template>
 
       <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
         Each invitee receives a sign-up link by email. Access is granted after they accept, and every invitation is recorded in the audit log.
       </v-alert>
-    </div>
+    </MpFormGrid>
 
     <template #footer>
-      <div class="w-100 d-flex justify-end ga-2">
-        <v-btn v-if="step === 2" variant="text" class="text-none" @click="step = 1">Back</v-btn>
-        <v-btn v-else variant="text" class="text-none" @click="open = false">Cancel</v-btn>
-        <v-btn v-if="step === 1" color="primary" variant="flat" class="text-none" :disabled="!canContinue" @click="step = 2">
-          Continue
-        </v-btn>
-        <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="send" @click="sendInvites">
-          Send invitation{{ emails.length === 1 ? '' : 's' }}
-        </v-btn>
-      </div>
+      <v-btn v-if="step === 2" variant="text" class="text-none" @click="step = 1">Back</v-btn>
+      <v-btn v-else variant="text" class="text-none" @click="open = false">Cancel</v-btn>
+      <v-btn v-if="step === 1" color="primary" variant="flat" class="text-none" :disabled="!canContinue" @click="step = 2">
+        Continue
+      </v-btn>
+      <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="send" @click="sendInvites">
+        Send invitation{{ emails.length === 1 ? '' : 's' }}
+      </v-btn>
     </template>
   </MpFormDrawer>
 </template>

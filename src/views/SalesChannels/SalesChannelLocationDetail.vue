@@ -164,7 +164,7 @@ function registerStatusLabel(status: Register['status']) {
             <v-card-text>
               <div class="text-caption text-medium-emphasis">Status</div>
               <div class="mt-2">
-                <MpStatusChip :status="location.status === 'open' ? 'Open' : 'Closed'" type="general" size="small" />
+                <MpStatusChip :status="location.status === 'open' ? 'Open' : 'Closed'" type="general" size="md" />
               </div>
             </v-card-text>
           </v-card>
@@ -256,7 +256,7 @@ function registerStatusLabel(status: Register['status']) {
             <span class="text-body-2">{{ item.pendingOfflineTxns }}</span>
           </template>
           <template #item.status="{ item }">
-            <MpStatusChip :status="registerStatusLabel(item.status)" type="general" size="x-small" />
+            <MpStatusChip :status="registerStatusLabel(item.status)" type="general" size="sm" />
           </template>
           <template #item.lastSeenAt="{ item }">
             <span class="text-body-2">{{ formatDate(item.lastSeenAt) }}</span>
@@ -287,10 +287,10 @@ function registerStatusLabel(status: Register['status']) {
             <span class="text-body-2">{{ STAFF_ROLE_LABELS[item.role] }}</span>
           </template>
           <template #item.pinSet="{ item }">
-            <MpStatusChip :status="item.pinSet ? 'Enabled' : 'Disabled'" type="general" size="x-small" />
+            <MpStatusChip :status="item.pinSet ? 'Enabled' : 'Disabled'" type="general" size="sm" />
           </template>
           <template #item.active="{ item }">
-            <MpStatusChip :status="item.active ? 'Active' : 'Inactive'" type="general" size="x-small" />
+            <MpStatusChip :status="item.active ? 'Active' : 'Inactive'" type="general" size="sm" />
           </template>
           <template #item.lastLoginAt="{ item }">
             <span class="text-body-2">{{ formatDate(item.lastLoginAt) }}</span>

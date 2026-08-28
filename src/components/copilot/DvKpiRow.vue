@@ -34,20 +34,20 @@ defineProps<{
 .dv-kpi-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--mp-space-8);
 }
 
 .dv-kpi-tile {
   flex: 1 1 120px;
   min-width: 120px;
-  padding: 10px 12px;
+  padding: var(--mp-space-10) var(--mp-space-12);
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-md);
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface));
 }
 
 .dv-kpi-tile__label {
-  font-size: 11px;
+  font-size: var(--mp-fontSize-11);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -58,19 +58,19 @@ defineProps<{
 }
 
 .dv-kpi-tile__value {
-  font-size: 20px;
+  font-size: var(--mp-fontSize-20);
   font-weight: 700;
   line-height: 1.2;
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
   color: rgb(var(--v-theme-on-surface));
 }
 
 .dv-kpi-tile__trend {
   display: flex;
   align-items: center;
-  gap: 3px;
-  margin-top: 4px;
-  font-size: 12px;
+  gap: var(--mp-space-4);
+  margin-top: var(--mp-space-4);
+  font-size: var(--mp-fontSize-12);
   font-weight: 500;
 }
 

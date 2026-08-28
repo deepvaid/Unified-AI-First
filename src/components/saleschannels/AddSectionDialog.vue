@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import MpDialog from '@/components/MpDialog.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpListRow from '@/components/MpListRow.vue'
+import { computed, ref, watch } from 'vue'
 import {
   sectionCatalog,
   sectionCategories,
@@ -92,39 +95,37 @@ watch(open, (value) => {
   }
 })
 
-const titleId = useId()
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="640" scrollable :aria-labelledby="titleId">
-    <v-card rounded="lg" flat border class="asd-card">
-      <!-- Header -->
-      <div class="asd-header d-flex align-center justify-space-between px-4 border-b flex-shrink-0">
-        <div :id="titleId" class="text-body-1 font-weight-bold">Add section</div>
-        <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="open = false"></v-btn>
-      </div>
-
+  <!-- Composes MpDialog (P4-6). This dialog carried five different micro-insets
+       of its own (12x14 · 8x8 · 6x8 · 8 · 6px gaps); the shell owns the frame and
+       every repeating row is MpListRow, so there are two insets left: the row
+       inset (component.listItem.*) and the variant tile. -->
+  <MpDialog v-model="open" size="md" title="Add section" flush class="asd-dialog">
       <div class="asd-body d-flex">
         <!-- LEFT: generate + search + grouped catalog -->
         <div class="asd-left border-r d-flex flex-column">
-          <button class="tb-generate-row flex-shrink-0" @click="onGenerate">
-            <v-avatar color="primary" size="28" rounded="lg" class="flex-shrink-0">
-              <v-icon color="white" size="15">sparkles</v-icon>
-            </v-avatar>
-            <span class="tb-generate-row__body">
-              <span class="tb-generate-row__title text-primary">Generate with AI</span>
-              <span class="tb-generate-row__sub">Describe it — Da Vinci builds the section</span>
-            </span>
-            <v-icon size="16" class="tb-generate-row__chev">chevron-right</v-icon>
-          </button>
+          <MpListRow clickable class="tb-generate-row flex-shrink-0" @click="onGenerate">
+            <template #lead>
+              <v-avatar color="primary" size="28" rounded="lg" class="flex-shrink-0">
+                <v-icon color="on-primary" size="15">sparkles</v-icon>
+              </v-avatar>
+            </template>
+            <span class="tb-generate-row__title text-primary">Generate with AI</span>
+            <span class="tb-generate-row__sub">Describe it — Da Vinci builds the section</span>
+            <template #trailing>
+              <v-icon size="16" class="tb-generate-row__chev">chevron-right</v-icon>
+            </template>
+          </MpListRow>
 
           <div class="pa-3 pb-2 flex-shrink-0">
+            <!-- Picker filter, not a form field: compact and detail-free on
+                 purpose so the catalog below keeps its scroll height. -->
             <v-text-field
               v-model="search"
-              placeholder="Search sections"
-              aria-label="Search sections"
+              label="Search sections"
               prepend-inner-icon="search"
-              variant="outlined"
               density="compact"
               hide-details
               clearable
@@ -134,21 +135,26 @@ const titleId = useId()
           <div class="asd-left__scroll flex-grow-1 overflow-y-auto px-2 pb-2">
             <!-- Flat filtered list while searching -->
             <template v-if="isSearching">
-              <button
+              <MpListRow
                 v-for="def in filtered"
                 :key="def.kind"
+                clickable
+                :title="def.title"
                 class="asd-item"
                 :class="{ 'asd-item--disabled': isKindDisabled(def), 'asd-item--active': selectedDef?.kind === def.kind }"
                 :disabled="isKindDisabled(def)"
                 @click="onItemClick(def)"
               >
-                <v-avatar color="primary" variant="tonal" size="28" rounded="lg" class="flex-shrink-0">
-                  <v-icon size="15">{{ def.icon }}</v-icon>
-                </v-avatar>
-                <span class="asd-item__label text-truncate">{{ def.title }}</span>
-                <span v-if="isKindDisabled(def)" class="asd-item__hint">Already added</span>
-                <v-icon v-else-if="def.variants?.length" size="15" class="asd-item__chev">chevron-right</v-icon>
-              </button>
+                <template #lead>
+                  <v-avatar color="primary" variant="tonal" size="28" rounded="lg" class="flex-shrink-0">
+                    <v-icon size="15">{{ def.icon }}</v-icon>
+                  </v-avatar>
+                </template>
+                <template #trailing>
+                  <span v-if="isKindDisabled(def)" class="asd-item__hint">Already added</span>
+                  <v-icon v-else-if="def.variants?.length" size="15" class="asd-item__chev">chevron-right</v-icon>
+                </template>
+              </MpListRow>
               <div v-if="!filtered.length" class="text-caption text-medium-emphasis text-center pa-4">
                 No sections match “{{ search }}”.
               </div>
@@ -156,7 +162,7 @@ const titleId = useId()
 
             <!-- Grouped, collapsible categories otherwise -->
             <template v-else>
-              <div v-for="group in groups" :key="group.category" class="mb-1">
+              <div v-for="group in groups" :key="group.category" class="asd-group">
                 <button
                   class="asd-cat"
                   :aria-expanded="!collapsed.has(group.category)"
@@ -168,21 +174,26 @@ const titleId = useId()
                   <span class="asd-cat__label">{{ group.category }} ({{ group.defs.length }})</span>
                 </button>
                 <div v-show="!collapsed.has(group.category)">
-                  <button
+                  <MpListRow
                     v-for="def in group.defs"
                     :key="def.kind"
+                    clickable
+                    :title="def.title"
                     class="asd-item"
                     :class="{ 'asd-item--disabled': isKindDisabled(def), 'asd-item--active': selectedDef?.kind === def.kind }"
                     :disabled="isKindDisabled(def)"
                     @click="onItemClick(def)"
                   >
-                    <v-avatar color="primary" variant="tonal" size="28" rounded="lg" class="flex-shrink-0">
-                      <v-icon size="15">{{ def.icon }}</v-icon>
-                    </v-avatar>
-                    <span class="asd-item__label text-truncate">{{ def.title }}</span>
-                    <span v-if="isKindDisabled(def)" class="asd-item__hint">Already added</span>
-                    <v-icon v-else-if="def.variants?.length" size="15" class="asd-item__chev">chevron-right</v-icon>
-                  </button>
+                    <template #lead>
+                      <v-avatar color="primary" variant="tonal" size="28" rounded="lg" class="flex-shrink-0">
+                        <v-icon size="15">{{ def.icon }}</v-icon>
+                      </v-avatar>
+                    </template>
+                    <template #trailing>
+                      <span v-if="isKindDisabled(def)" class="asd-item__hint">Already added</span>
+                      <v-icon v-else-if="def.variants?.length" size="15" class="asd-item__chev">chevron-right</v-icon>
+                    </template>
+                  </MpListRow>
                 </div>
               </div>
             </template>
@@ -192,8 +203,7 @@ const titleId = useId()
         <!-- RIGHT: variant cards or empty state -->
         <div class="asd-right flex-grow-1 overflow-y-auto pa-4">
           <template v-if="selectedDef && selectedDef.variants?.length">
-            <div class="text-body-2 font-weight-bold mb-1">{{ selectedDef.title }}</div>
-            <div class="text-caption text-medium-emphasis mb-4">Pick a layout to add.</div>
+            <MpFormSection :title="selectedDef.title" description="Pick a layout to add." />
             <div class="asd-variants">
               <button
                 v-for="variant in selectedDef.variants"
@@ -247,65 +257,78 @@ const titleId = useId()
 
           <div v-else class="asd-empty d-flex flex-column align-center justify-center text-center">
             <v-icon size="28" class="asd-empty__icon">layout-template</v-icon>
-            <div class="text-body-2 font-weight-medium mt-3">Select a section to see layout options</div>
-            <div class="text-caption text-medium-emphasis mt-1">
+            <div class="text-body-2 font-weight-medium">Select a section to see layout options</div>
+            <div class="text-caption text-medium-emphasis">
               Sections with layouts show them here. Others add on click.
             </div>
           </div>
         </div>
       </div>
-    </v-card>
-  </v-dialog>
+  </MpDialog>
 </template>
 
 <style scoped>
-.asd-card { display: flex; flex-direction: column; overflow: hidden; }
-.asd-header { height: 52px; }
+/* MpDialog owns the frame; this dialog's body is a fixed-height two-pane split.
+   440px is a viewport measure for the pane, not a spacing step. */
 .asd-body { min-height: 0; height: 440px; }
+
+/* The two panes are edge-to-edge inside the shell — the split's own borders do
+   the framing, so the shell's inset would double it. That is the shell's `flush`
+   prop now, not a :deep() reach into MpDialog's internals (P6-6). */
 
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 .border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 
-.asd-left { width: 300px; flex-shrink: 0; min-height: 0; }
+.asd-left { width: var(--mp-component-toolbar-searchWidth); flex-shrink: 0; min-height: 0; }
 .asd-left__scroll { min-height: 0; }
-.asd-right { min-height: 0; background: rgba(var(--v-theme-on-surface), 0.02); }
 
-/* ── Generate-with-AI row (mirrors the builder's picker row) ──────────── */
-.tb-generate-row {
+/* The list owns the space between category groups; each group used to carry its
+   own `mb-1`. */
+.asd-group + .asd-group { margin-block-start: var(--mp-space-4); }
+
+/* The pane owns the rhythm between its heading and the tile grid. */
+.asd-right {
+  min-height: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 14px;
-  border: 0;
+  flex-direction: column;
+  gap: var(--mp-component-field-groupGap);
+  background: rgba(var(--v-theme-on-surface), 0.02);
+}
+
+/* ── Generate-with-AI row ─────────────────────────────────────────────── */
+/* An MpListRow now: height, inline inset, gap and hover all come from the row
+   primitive. Only the accent tint that marks it as the AI affordance is local. */
+.tb-generate-row {
+  padding-inline: var(--mp-component-listItem-paddingInline);
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   background: rgba(var(--v-theme-primary), 0.06);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.15s;
 }
 .tb-generate-row:hover { background: rgba(var(--v-theme-primary), 0.1); }
 .tb-generate-row:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
-.tb-generate-row__body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.tb-generate-row__title { font-size: 0.8125rem; font-weight: 700; }
+.tb-generate-row__title {
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-bold);
+}
 .tb-generate-row__sub {
-  font-size: 0.6875rem;
+  font-size: var(--mp-fontSize-11);
   color: rgba(var(--v-theme-on-surface), 0.6);
   line-height: 1.3;
 }
 .tb-generate-row__chev { color: rgb(var(--v-theme-primary)); flex-shrink: 0; }
 
 /* ── Category headers ────────────────────────────────────────────────── */
+/* Not a list row — a disclosure header — so it stays hand-rolled, but on the
+   same listItem inset as the rows it groups, at the compact tier. */
 .asd-cat {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
   width: 100%;
-  padding: 8px 8px;
+  padding: var(--mp-space-8) var(--mp-component-listItem-paddingInline);
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: var(--r-chip);
+  border-radius: var(--mp-component-nav-itemRadius);
   text-align: left;
   color: var(--muted);
 }
@@ -314,58 +337,55 @@ const titleId = useId()
 .asd-cat__chev { transition: transform 0.15s; color: var(--muted); }
 .asd-cat__chev--open { transform: rotate(90deg); }
 .asd-cat__label {
-  font-size: 0.6875rem;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 /* ── Section items ───────────────────────────────────────────────────── */
+/* MpListRow supplies height, inset, gap, hover and focus. Selection tint and the
+   disabled wash are the only things this list actually adds. */
 .asd-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 6px 8px;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  border-radius: var(--r-chip);
-  text-align: left;
-  color: var(--text-primary);
-  transition: background 0.15s;
+  padding-inline: var(--mp-component-listItem-paddingInline);
+  border-radius: var(--mp-component-nav-itemRadius);
 }
-.asd-item:hover { background: var(--surface-secondary); }
-.asd-item:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
 .asd-item--active,
 .asd-item--active:hover { background: var(--accent-soft); }
 .asd-item--disabled { opacity: 0.5; cursor: default; }
 .asd-item--disabled:hover { background: transparent; }
-.asd-item__label { font-size: 0.8125rem; font-weight: 600; flex: 1; min-width: 0; }
 .asd-item__hint {
   flex-shrink: 0;
-  font-size: 0.6875rem;
+  font-size: var(--mp-fontSize-11);
   color: var(--muted);
 }
 .asd-item__chev { flex-shrink: 0; color: var(--muted); }
 
 /* ── Right pane empty state ──────────────────────────────────────────── */
-.asd-empty { height: 100%; padding: 24px; }
+.asd-empty {
+  height: 100%;
+  gap: var(--mp-component-state-gap);
+  padding: var(--mp-component-state-padding);
+}
 .asd-empty__icon { color: rgba(var(--v-theme-on-surface), 0.3); }
 
 /* ── Variant cards ───────────────────────────────────────────────────── */
+/* A media-thumbnail grid, not a list — deliberately NOT MpOptionCard: that
+   card's inset (card.padding, 20) is designed for a full-width wizard tile and
+   would leave ~80px of content in a 120px thumbnail. This is the second of the
+   two insets P4-6 asked for, and it is the compact card tier. */
 .asd-variants {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
+  gap: var(--mp-component-card-paddingCompact);
 }
 .asd-variant {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
+  gap: var(--mp-space-6);
+  padding: var(--mp-component-card-gapCompact);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--r-section);
+  border-radius: var(--mp-radius-12);
   background: var(--surface-primary);
   cursor: pointer;
   text-align: left;
@@ -373,10 +393,13 @@ const titleId = useId()
 }
 .asd-variant:hover { border-color: var(--accent); }
 .asd-variant:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
-.asd-variant__label { font-size: 0.75rem; font-weight: 700; }
-.asd-variant__desc { font-size: 0.6875rem; color: rgba(var(--v-theme-on-surface), 0.6); line-height: 1.3; }
+.asd-variant__label { font-size: var(--mp-fontSize-12); font-weight: var(--mp-fontWeight-bold); }
+.asd-variant__desc { font-size: var(--mp-fontSize-11); color: rgba(var(--v-theme-on-surface), 0.6); line-height: 1.3; }
 
 /* ── Schematic mini-mocks (dark tonal surface, token fills) ──────────── */
+/* Everything below draws a miniature of a storefront layout. Its dimensions are
+   illustration geometry, not Marobase spacing — the same exemption chart-canvas
+   geometry carries (Phase 2/3 changelog). Left on raw values deliberately. */
 .asd-schematic {
   display: block;
   aspect-ratio: 16 / 10;

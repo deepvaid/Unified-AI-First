@@ -7,6 +7,7 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useMarketingAssetsStore()
@@ -158,67 +159,51 @@ function notify(text: string) { toast.success(text) }
     <MpFormDrawer
       v-model="drawer"
       :title="editingId !== null ? 'Edit Coupon Bank' : 'New Coupon'"
-      :width="520"
     >
-      <v-text-field
-        v-model="name"
-        label="Name"
-        placeholder="e.g. Spring Sale 20% Off"
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
-        :rules="[v => !!v || 'Name is required']"
-      />
-      <v-text-field
-        v-model="tag"
-        label="Coupon Tag"
-        placeholder="e.g. spring_sale_20"
-        hint="Lowercase letters, numbers, and underscores only"
-        persistent-hint
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
-        :error-messages="tagError ? [tagError] : []"
-      />
-      <v-row dense class="mb-2">
-        <v-col cols="12" sm="6">
-          <v-text-field
-            v-model.number="alertThreshold"
-            label="Alert Threshold"
-            type="number"
-            placeholder="e.g. 1000"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-          />
-        </v-col>
-        <v-col cols="12" sm="6">
-          <v-text-field
-            v-model="alertRecipients"
-            label="Alert Recipients"
-            placeholder="ops@example.com, team@example.com"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-          />
-        </v-col>
-      </v-row>
-      <p class="text-caption text-medium-emphasis mb-4 mt-2">Sends an alert email when unused codes fall below the threshold.</p>
+      <MpFormGrid :cols="2">
+        <v-text-field
+          v-model="name"
+          class="mp-form-grid__full"
+          label="Name"
+          placeholder="e.g. Spring Sale 20% Off"
+          :rules="[v => !!v || 'Name is required']"
+        />
+        <v-text-field
+          v-model="tag"
+          class="mp-form-grid__full"
+          label="Coupon Tag"
+          placeholder="e.g. spring_sale_20"
+          hint="Lowercase letters, numbers, and underscores only"
+          persistent-hint
+          :error-messages="tagError ? [tagError] : []"
+        />
+        <v-text-field
+          v-model.number="alertThreshold"
+          label="Alert Threshold"
+          type="number"
+          placeholder="e.g. 1000"
+        />
+        <v-text-field
+          v-model="alertRecipients"
+          label="Alert Recipients"
+          placeholder="ops@example.com, team@example.com"
+        />
+        <div class="mp-form-grid__full text-caption text-medium-emphasis">Sends an alert email when unused codes fall below the threshold.</div>
 
-      <v-textarea
-        v-model="codesText"
-        label="Default Coupon Codes"
-        placeholder="One code per line"
-        hint="The number of lines becomes the unused code count"
-        persistent-hint
-        variant="outlined"
-        density="comfortable"
-        rows="6"
-        :rules="[v => !!v || 'At least one coupon code is required']"
-      />
-      <div v-if="codeLines.length" class="text-caption text-medium-emphasis mt-2">
-        {{ codeLines.length.toLocaleString() }} code{{ codeLines.length === 1 ? '' : 's' }}
-      </div>
+        <v-textarea
+          v-model="codesText"
+          class="mp-form-grid__full"
+          label="Default Coupon Codes"
+          placeholder="One code per line"
+          hint="The number of lines becomes the unused code count"
+          persistent-hint
+          rows="5"
+          :rules="[v => !!v || 'At least one coupon code is required']"
+        />
+        <div v-if="codeLines.length" class="mp-form-grid__full text-caption text-medium-emphasis">
+          {{ codeLines.length.toLocaleString() }} code{{ codeLines.length === 1 ? '' : 's' }}
+        </div>
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>

@@ -96,10 +96,10 @@ const current = computed(() => CARDS[index.value]!)
 
 .reel-hint {
   position: fixed;
-  bottom: var(--mp-spacing-4);
+  bottom: var(--mp-space-16);
   left: 50%;
   transform: translateX(-50%);
-  font-size: var(--mp-typography-fontSize-sm);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-on-surface-variant));
   pointer-events: none;
   animation: reel-hint-fade 600ms var(--mp-motion-easing-exit) 2200ms forwards;

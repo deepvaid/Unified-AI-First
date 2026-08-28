@@ -53,10 +53,10 @@ const PAINS = [
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--mp-spacing-4);
-  padding: var(--mp-spacing-8) var(--mp-spacing-6);
+  gap: var(--mp-space-16);
+  padding: var(--mp-space-32) var(--mp-space-24);
   border: 1px dashed var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface));
   transform: rotate(-0.6deg);
 }
@@ -72,9 +72,9 @@ const PAINS = [
 
 .s03__pain {
   display: flex;
-  gap: var(--mp-spacing-4);
-  padding: var(--mp-spacing-4) 0;
-  font-size: var(--mp-typography-fontSize-lg);
-  line-height: var(--mp-typography-lineHeight-normal);
+  gap: var(--mp-space-16);
+  padding: var(--mp-space-16) 0;
+  font-size: var(--mp-fontSize-18);
+  line-height: var(--mp-lineHeight-normal);
 }
 </style>

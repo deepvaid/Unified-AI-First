@@ -7,6 +7,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -216,10 +217,11 @@ function createPage() {
     <!-- STAGE 1: Gallery -->
     <template v-if="stage === 'gallery'">
       <template v-if="galleryView === 'library'">
+        <!-- Gallery filter bar, not a form: compact + hide-details are deliberate here. -->
         <div class="d-flex ga-3 flex-wrap align-center">
-          <v-select v-model="usageFilter" :items="USAGE_OPTIONS" label="Usage" multiple chips closable-chips clearable variant="outlined" density="compact" hide-details class="lpt-filter" />
-          <v-select v-model="industryFilter" :items="INDUSTRY_OPTIONS" label="Industry" multiple chips closable-chips clearable variant="outlined" density="compact" hide-details class="lpt-filter" />
-          <v-select v-model="seasonalFilter" :items="SEASONAL_OPTIONS" label="Seasonal" multiple chips closable-chips clearable variant="outlined" density="compact" hide-details class="lpt-filter" />
+          <v-select v-model="usageFilter" :items="USAGE_OPTIONS" label="Usage" multiple chips closable-chips clearable density="compact" hide-details class="lpt-filter" />
+          <v-select v-model="industryFilter" :items="INDUSTRY_OPTIONS" label="Industry" multiple chips closable-chips clearable density="compact" hide-details class="lpt-filter" />
+          <v-select v-model="seasonalFilter" :items="SEASONAL_OPTIONS" label="Seasonal" multiple chips closable-chips clearable density="compact" hide-details class="lpt-filter" />
           <v-btn v-if="hasActiveFilters" variant="text" size="small" class="text-none" @click="clearAllFilters">Clear All</v-btn>
         </div>
 
@@ -309,27 +311,25 @@ function createPage() {
             Name your page and set its URL and schedule.
           </div>
 
-          <v-text-field v-model="pageName" label="Name *" placeholder="e.g. Spring Promo Landing Page" variant="outlined" density="comfortable" class="mb-4" />
-          <v-text-field
-            v-model="pageUrl"
-            label="Page URL *"
-            placeholder="promo.mystore.com/spring"
-            variant="outlined"
-            density="comfortable"
-            class="mb-1"
-            :error="urlTouched && !!pageUrl && !urlValid"
-            :error-messages="urlTouched && !!pageUrl && !urlValid ? ['Invalid URL'] : []"
-            @blur="urlTouched = true"
-          />
+          <MpFormGrid :cols="2">
+            <v-text-field v-model="pageName" class="mp-form-grid__full" label="Name *" placeholder="e.g. Spring Promo Landing Page" />
+            <v-text-field
+              v-model="pageUrl"
+              class="mp-form-grid__full"
+              label="Page URL *"
+              placeholder="promo.mystore.com/spring"
+              :error="urlTouched && !!pageUrl && !urlValid"
+              :error-messages="urlTouched && !!pageUrl && !urlValid ? ['Invalid URL'] : []"
+              @blur="urlTouched = true"
+            />
 
-          <v-row dense class="mt-3">
-            <v-col cols="6"><v-text-field v-model="publishDate" type="date" label="Publish at — Date" variant="outlined" density="comfortable" /></v-col>
-            <v-col cols="6"><v-text-field v-model="publishTime" type="time" label="Publish at — Time" variant="outlined" density="comfortable" /></v-col>
-            <v-col cols="6"><v-text-field v-model="expireDate" type="date" label="Expire at — Date" variant="outlined" density="comfortable" /></v-col>
-            <v-col cols="6"><v-text-field v-model="expireTime" type="time" label="Expire at — Time" variant="outlined" density="comfortable" /></v-col>
-          </v-row>
+            <v-text-field v-model="publishDate" type="date" label="Publish at — Date" />
+            <v-text-field v-model="publishTime" type="time" label="Publish at — Time" />
+            <v-text-field v-model="expireDate" type="date" label="Expire at — Date" />
+            <v-text-field v-model="expireTime" type="time" label="Expire at — Time" />
 
-          <v-textarea v-model="tracking" label="Page Tracking (optional)" placeholder="Paste analytics / pixel tracking code" variant="outlined" density="comfortable" rows="3" class="mt-2" />
+            <v-textarea v-model="tracking" class="mp-form-grid__full" label="Page Tracking (optional)" placeholder="Paste analytics / pixel tracking code" rows="3" />
+          </MpFormGrid>
 
           <div class="d-flex justify-space-between mt-6">
             <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="backToGallery">Back</v-btn>

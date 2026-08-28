@@ -102,11 +102,12 @@ const recommendationHeaders = [
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader :title="title" :subtitle="subtitle">
       <template #actions>
+        <!-- Page-header control, not a form field: compact + `hide-details` keep
+             the header row one control tall. -->
         <v-select
           v-model="dateRange"
           :items="DATE_RANGES"
           density="compact"
-          variant="outlined"
           hide-details
           prepend-inner-icon="calendar-range"
           class="merch-date-range"

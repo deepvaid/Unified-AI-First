@@ -37,7 +37,7 @@ defineProps<{
 .palette-widget {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--mp-space-12);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -49,25 +49,25 @@ defineProps<{
 .palette-widget__group {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--mp-space-6);
 }
 
 .palette-widget__head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .palette-widget__title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
 .palette-widget__count {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   font-variant-numeric: tabular-nums;
   color: var(--muted);
   flex: none;
@@ -76,9 +76,9 @@ defineProps<{
 .palette-widget__bar {
   display: flex;
   height: 20px;
-  border-radius: 6px;
+  border-radius: var(--mp-component-chip-radius);
   overflow: hidden;
-  gap: 2px;
+  gap: var(--mp-space-2);
 }
 
 .palette-widget__segment {
@@ -88,13 +88,13 @@ defineProps<{
 
 .palette-widget__hexes {
   display: flex;
-  gap: 2px;
+  gap: var(--mp-space-2);
 }
 
 .palette-widget__hex {
   flex: 1 1 0;
   min-width: 0;
-  font-size: 9.5px;
+  font-size: var(--mp-fontSize-10);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--muted);
@@ -105,13 +105,13 @@ defineProps<{
 }
 
 .palette-widget__caption {
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
 }
 
 .palette-widget__footnote {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 </style>

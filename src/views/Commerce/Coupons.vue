@@ -14,6 +14,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
@@ -221,17 +222,20 @@ onMounted(() => {
         <template #filter-content>
           <div class="pa-4 pb-2">
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <div v-for="(options, key) in filterOptions" :key="key" class="mb-3">
+            <!-- Toolbar filters stay compact and suppress details deliberately: this is a
+                 dense popover, not a form, and no select here carries validation. -->
+            <MpFormGrid>
               <v-select
+                v-for="(options, key) in filterOptions"
+                :key="key"
                 v-model="filters[key as keyof typeof filters]"
                 :label="filterLabels[key]"
                 :items="options"
-                variant="outlined"
                 density="compact"
                 hide-details
                 clearable
               />
-            </div>
+            </MpFormGrid>
           </div>
         </template>
       </MpDataTableToolbar>
@@ -290,7 +294,7 @@ onMounted(() => {
         <template v-slot:item.endDate="{ item }"><span class="text-body-2">{{ item.endDate || 'No end date' }}</span></template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="coupon" size="x-small" />
+          <MpStatusChip :status="item.status" type="coupon" size="sm" />
         </template>
 
         <template v-slot:item.actions="{ item }">

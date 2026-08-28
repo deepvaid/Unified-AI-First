@@ -322,6 +322,22 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
 </template>
 
 <style scoped>
+/* ─────────────────────────────────────────────────────────────────────────────
+ * P4-8 — DELIBERATELY OUT OF SYSTEM. Decided in Phase 4; do not "fix".
+ *
+ * Everything below draws a simulated MERCHANT's storefront inside the theme
+ * builder — a hero, a product grid, a testimonial band as the merchant's own
+ * theme would render them. It is not Marobase chrome, so its ~149 raw px values
+ * are not design-system drift: they are the thing being previewed. Forcing the
+ * Marobase spacing scale onto them would make the preview a less honest
+ * representation of the merchant's site, not a more consistent one.
+ *
+ * Same class of exemption as the chart-canvas geometry recorded in the Phase 2/3
+ * changelog. The builder CHROME around this preview (StoreEditorSidebar,
+ * AddSectionDialog, LandingBlockSettings) is fully tokenized — the line is drawn
+ * at the preview frame.
+ * ───────────────────────────────────────────────────────────────────────────── */
+
 .sf-preview {
   --sf-brand: var(--accent);
   --sf-accent: var(--accent);
@@ -361,7 +377,7 @@ function blockNum(block: ThemeBlock, key: string, fallback: number): number {
   overflow: hidden;
   margin-left: 8px;
   color: var(--muted);
-  font-family: var(--mp-typography-fontFamily-mono, monospace);
+  font-family: var(--mp-fontFamily-mono, monospace);
   font-size: 12px;
   font-weight: 700;
   text-overflow: ellipsis;

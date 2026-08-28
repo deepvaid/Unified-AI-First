@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import MpDialog from '@/components/MpDialog.vue'
 import { accentToVuetifyColor } from './dashboardOptions'
 import type { Dashboard } from '@/stores/dashboards/types'
 import { useDashboardsStore } from '@/stores/useDashboards'
@@ -83,58 +84,50 @@ function handleNameEnter() {
   submit()
 }
 
-const titleId = useId()
 </script>
 
 <template>
-  <v-dialog v-model="model" max-width="560" persistent scrollable :aria-labelledby="titleId">
-    <v-card flat rounded="lg" color="surface" class="dashboard-form-dialog">
-      <v-card-title class="d-flex align-center ga-3 pa-5">
-        <v-avatar size="44" variant="tonal" :color="previewColor">
-          <v-icon>{{ previewIcon }}</v-icon>
-        </v-avatar>
-        <div class="flex-grow-1 min-width-0">
-          <div :id="titleId" class="text-overline text-medium-emphasis">{{ isEditMode ? 'Edit dashboard' : 'New dashboard' }}</div>
-          <div class="text-h6 font-weight-bold">{{ trimmedName || 'Untitled dashboard' }}</div>
-        </div>
-        <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="close" />
-      </v-card-title>
+  <!-- Composes MpDialog (P4-6): header/body/footer insets, radius and width all
+       come from the shell; the avatar rides in on #lead and the mode label on
+       `eyebrow` (the same two names MpListRow and MpPageHeader already use). -->
+  <MpDialog
+    v-model="model"
+    size="sm"
+    persistent
+    :eyebrow="isEditMode ? 'Edit dashboard' : 'New dashboard'"
+    :title="trimmedName || 'Untitled dashboard'"
+  >
+    <template #lead>
+      <v-avatar size="44" variant="tonal" :color="previewColor">
+        <v-icon>{{ previewIcon }}</v-icon>
+      </v-avatar>
+    </template>
 
-      <v-divider />
+    <v-text-field
+      v-model="name"
+      label="Dashboard name *"
+      placeholder="e.g. Lifecycle Health"
+      :error-messages="nameError ? [nameError] : []"
+      counter="60"
+      :autofocus="!isEditMode"
+      @keydown.enter="handleNameEnter"
+    />
 
-      <v-card-text class="pa-5 d-flex flex-column ga-5">
-        <v-text-field
-          v-model="name"
-          label="Dashboard name"
-          placeholder="e.g. Lifecycle Health"
-          :error-messages="nameError ? [nameError] : []"
-          counter="60"
-          :autofocus="!isEditMode"
-          density="comfortable"
-          @keydown.enter="handleNameEnter"
-        />
+    <v-textarea
+      v-model="description"
+      label="Description"
+      hint="Optional — what does this dashboard answer?"
+      :error-messages="isEditMode && descriptionError ? [descriptionError] : []"
+      counter="240"
+      rows="3"
+      auto-grow
+    />
 
-        <v-textarea
-          v-model="description"
-          label="Description"
-          :placeholder="isEditMode ? 'What does this dashboard answer?' : 'Optional. What does this dashboard answer?'"
-          :error-messages="isEditMode && descriptionError ? [descriptionError] : []"
-          counter="240"
-          rows="2"
-          auto-grow
-          density="comfortable"
-        />
-      </v-card-text>
-
-      <v-divider />
-
-      <v-card-actions class="pa-4">
-        <v-spacer />
-        <v-btn variant="text" class="text-none" @click="close">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSubmit" @click="submit">
-          {{ isEditMode ? 'Save changes' : 'Create dashboard' }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    <template #footer>
+      <v-btn variant="text" class="text-none" @click="close">Cancel</v-btn>
+      <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSubmit" @click="submit">
+        {{ isEditMode ? 'Save changes' : 'Create dashboard' }}
+      </v-btn>
+    </template>
+  </MpDialog>
 </template>

@@ -245,6 +245,11 @@ const tooltipTransform = computed(() => {
 </template>
 
 <style scoped>
+/* P4-1: this widget draws its OWN header/body edges (DashboardWidgetCard zeroes
+   its body inset for bespoke-header widgets), so it states the widget inset
+   directly — `component.card.padding`, the same 20 the rest of the family gets
+   from the card. Stated as the role token, not the 20 primitive, so a change to
+   the standard moves this with it. */
 .mx {
   display: flex;
   flex-direction: column;
@@ -267,11 +272,11 @@ const tooltipTransform = computed(() => {
   position: relative;
   background: var(--surface-primary);
   border: 0;
-  padding: 16px 20px;
+  padding: var(--mp-space-16) var(--mp-component-card-padding);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--mp-space-8);
   font-family: inherit;
   text-align: left;
   cursor: pointer;
@@ -306,8 +311,8 @@ const tooltipTransform = computed(() => {
 
 .mx__label {
   position: relative;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -317,8 +322,8 @@ const tooltipTransform = computed(() => {
 
 .mx__value {
   position: relative;
-  font-size: 28px;
-  font-weight: 650;
+  font-size: var(--mp-fontSize-28);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: -0.03em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -329,13 +334,13 @@ const tooltipTransform = computed(() => {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--mp-space-8);
   min-width: 0;
 }
 
 .mx__delta {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   white-space: nowrap;
 }
 
@@ -348,7 +353,7 @@ const tooltipTransform = computed(() => {
 }
 
 .mx__vs {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -360,35 +365,35 @@ const tooltipTransform = computed(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px 22px 16px;
+  gap: var(--mp-space-14);
+  padding: var(--mp-component-card-padding);
 }
 
 .mx__chart-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--mp-space-16);
 }
 
 .mx__chart-heading {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--mp-space-4);
   min-width: 0;
 }
 
 .mx__chart-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-15);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: -0.012em;
   color: var(--text-primary);
 }
 
 .mx__chart-sub {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
 }
 
@@ -396,15 +401,15 @@ const tooltipTransform = computed(() => {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
   height: 30px;
-  padding: 0 12px;
+  padding: 0 var(--mp-space-12);
   border: 1px solid var(--border-subtle);
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: var(--surface-primary);
   font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   cursor: pointer;
   flex: none;
@@ -413,7 +418,7 @@ const tooltipTransform = computed(() => {
 .mx__compare-dash {
   width: 14px;
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--mp-radius-4);
   background: var(--muted);
 }
 
@@ -425,7 +430,7 @@ const tooltipTransform = computed(() => {
   min-height: 180px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--mp-space-10);
 }
 
 .mx__canvas {
@@ -449,7 +454,7 @@ const tooltipTransform = computed(() => {
 .mx__xaxis {
   display: flex;
   justify-content: space-between;
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
 }
 
@@ -458,8 +463,8 @@ const tooltipTransform = computed(() => {
   position: absolute;
   width: 8px;
   height: 8px;
-  margin: -4px 0 0 -4px;
-  border-radius: 999px;
+  margin: calc(var(--mp-space-4) * -1) 0 0 calc(var(--mp-space-4) * -1);
+  border-radius: var(--mp-radius-full);
   box-shadow: 0 0 0 2px var(--surface-primary);
   pointer-events: none;
 }
@@ -475,30 +480,30 @@ const tooltipTransform = computed(() => {
   border: 1px solid var(--mp-tip-border, var(--border-subtle));
   border-radius: var(--mp-tip-radius, 8px);
   box-shadow: var(--mp-tip-shadow, var(--elevation-modal));
-  padding: 8px 10px;
+  padding: var(--mp-space-8) var(--mp-space-10);
   min-width: 140px;
   font-family: Inter, system-ui, sans-serif;
 }
 
 .mp-chart-tip__title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--mp-tip-title-color, var(--text-primary));
-  margin-bottom: 4px;
+  margin-bottom: var(--mp-space-4);
 }
 
 .mp-chart-tip__row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 2px 0;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-12);
+  padding: var(--mp-space-2) 0;
 }
 
 .mp-chart-tip__dot {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--mp-radius-4);
   flex-shrink: 0;
 }
 
@@ -508,8 +513,8 @@ const tooltipTransform = computed(() => {
 
 .mp-chart-tip__value {
   margin-left: auto;
-  padding-left: 12px;
-  font-weight: 500;
+  padding-left: var(--mp-space-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--mp-tip-text, var(--text-primary));
   font-variant-numeric: tabular-nums;
 }

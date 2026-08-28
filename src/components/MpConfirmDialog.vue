@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useId } from 'vue'
+import MpDialog from './MpDialog.vue'
 
 withDefaults(defineProps<{
   modelValue: boolean
@@ -24,42 +24,50 @@ function confirm() {
   emit('confirm')
   emit('update:modelValue', false)
 }
-
-const titleId = useId()
-const messageId = useId()
 </script>
 
 <template>
-  <v-dialog
+  <!-- Composes MpDialog (P4-6): the header/body/footer rhythm, radius, width ramp
+       and close affordance all come from the shell. This component contributes
+       only what a confirm prompt actually is — the danger tone, the message, the
+       consequences list and the two-button footer. -->
+  <MpDialog
     :model-value="modelValue"
-    max-width="440"
-    :aria-labelledby="titleId"
-    :aria-describedby="messageId"
+    size="sm"
+    :title="title"
+    :icon="danger ? 'triangle-alert' : undefined"
+    :tone="danger ? 'error' : 'neutral'"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card rounded="lg" border flat class="pa-1">
-      <v-card-title :id="titleId" class="text-body-1 font-weight-bold d-flex align-center gap-2">
-        <v-icon v-if="danger" color="error" size="20">triangle-alert</v-icon>
-        {{ title }}
-      </v-card-title>
-      <v-card-text :id="messageId" class="text-body-2 text-medium-emphasis">{{ message }}</v-card-text>
-      <v-card-text v-if="consequences?.length" class="text-body-2 text-medium-emphasis pt-0">
-        <ul class="mp-confirm-consequences pl-5 mb-0">
-          <li v-for="(consequence, index) in consequences" :key="index">{{ consequence }}</li>
-        </ul>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <v-btn variant="text" class="text-none" @click="emit('update:modelValue', false)">Cancel</v-btn>
-        <v-btn :color="danger ? 'error' : 'primary'" variant="flat" class="text-none" @click="confirm">
-          {{ confirmLabel }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    <p class="mp-confirm__message">{{ message }}</p>
+    <ul v-if="consequences?.length" class="mp-confirm__consequences">
+      <li v-for="(consequence, index) in consequences" :key="index">{{ consequence }}</li>
+    </ul>
+
+    <template #footer>
+      <v-btn variant="text" class="text-none" @click="emit('update:modelValue', false)">Cancel</v-btn>
+      <v-btn :color="danger ? 'error' : 'primary'" variant="flat" class="text-none" @click="confirm">
+        {{ confirmLabel }}
+      </v-btn>
+    </template>
+  </MpDialog>
 </template>
 
 <style scoped>
-.mp-confirm-consequences li + li {
-  margin-top: var(--mp-spacing-1);
+.mp-confirm__message {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.mp-confirm__consequences {
+  margin: 0;
+  padding-left: var(--mp-space-20);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.mp-confirm__consequences li + li {
+  margin-top: var(--mp-space-4);
 }
 </style>

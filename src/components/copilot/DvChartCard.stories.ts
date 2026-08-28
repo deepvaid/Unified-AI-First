@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvChartCard from './DvChartCard.vue'
 
 const meta = {
-  title: 'Copilot/DvChartCard',
+  title: 'Product/Da Vinci/DvChartCard',
   component: DvChartCard,
   tags: ['autodocs'],
   argTypes: {
@@ -61,6 +61,7 @@ DvChartCard displays bar chart data with support for single or multi-series visu
 export default meta
 type Story = StoryObj<typeof meta>
 
+
 export const Default: Story = {
   args: {
     title: 'Revenue by Month',
@@ -68,6 +69,83 @@ export const Default: Story = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     bars: [[24000, 28000, 32000, 29000, 35000, 41000, 38000, 43000, 47000, 51000, 48000, 56000]]
   }
+}
+
+/** Single series vs multi-series with a legend — the structural axis. */
+export const Variants: Story = {
+  render: () => ({
+    components: { DvChartCard },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">single series — no legend</div>
+          <DvChartCard
+            title="Revenue by Month" subtitle="Last 6 months"
+            :labels="['Jan','Feb','Mar','Apr','May','Jun']"
+            :bars="[[24000, 28000, 32000, 29000, 35000, 41000]]"
+          />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">multi series — legend appears</div>
+          <DvChartCard
+            title="Revenue Comparison" subtitle="This year vs last"
+            :labels="['Jan','Feb','Mar','Apr','May','Jun']"
+            :series-names="['This Year','Last Year']"
+            :bars="[[24000, 28000, 32000, 29000, 35000, 41000], [19000, 21000, 26000, 24000, 28000, 33000]]"
+          />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Bar-count is the size axis — the plot area is fixed, so bars thin as the series grows. */
+export const Sizes: Story = {
+  render: () => ({
+    components: { DvChartCard },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">6 bars</div>
+          <DvChartCard title="Six months" :labels="['Jan','Feb','Mar','Apr','May','Jun']" :bars="[[24,28,32,29,35,41]]" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">12 bars</div>
+          <DvChartCard
+            title="Twelve months"
+            :labels="['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']"
+            :bars="[[24,28,32,29,35,41,38,43,47,51,48,56]]"
+          />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** With and without a subtitle, and a flat series where every bar is equal. */
+export const States: Story = {
+  render: () => ({
+    components: { DvChartCard },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with subtitle</div>
+          <DvChartCard title="Revenue" subtitle="Last 6 months" :labels="['Jan','Feb','Mar','Apr','May','Jun']" :bars="[[24,28,32,29,35,41]]" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">title only</div>
+          <DvChartCard title="Revenue" :labels="['Jan','Feb','Mar','Apr','May','Jun']" :bars="[[24,28,32,29,35,41]]" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">flat series — every bar at the max</div>
+          <DvChartCard title="Flat" :labels="['Jan','Feb','Mar','Apr','May','Jun']" :bars="[[30,30,30,30,30,30]]" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
 }
 
 export const WithLegend: Story = {

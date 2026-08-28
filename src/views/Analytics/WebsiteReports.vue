@@ -4,6 +4,8 @@ import { useAnalyticsStore, dateRangeLabel, type DateRangeValue } from '@/stores
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
@@ -88,23 +90,18 @@ function exportCsv() {
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
+          <MpFormSection title="Filter by" />
+          <MpFormGrid>
             <v-select
               v-model="filterCategory"
               label="Category"
               :items="categories"
-              variant="outlined"
-              density="compact"
-              hide-details
               clearable
               multiple
               chips
               closable-chips
-              rounded="lg"
-              class="mb-3"
             />
-          </div>
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
       <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />

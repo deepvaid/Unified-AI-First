@@ -7,6 +7,9 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useMarketingAssetsStore()
@@ -138,45 +141,41 @@ function notify(text: string) { toast.success(text) }
       v-model="drawer"
       :title="editingId !== null ? 'Edit Feed' : 'New Feed'"
     >
-      <div class="text-subtitle-2 font-weight-bold mb-2">Feed type</div>
-      <v-radio-group v-model="feedType" inline hide-details class="mb-4">
-        <v-radio label="Single" value="Single" />
-        <v-radio label="Merge" value="Merge" />
-      </v-radio-group>
+      <MpFormGrid :cols="2">
+        <MpFormField label="Feed type" class="mp-form-grid__full">
+          <template #default="{ labelId }">
+            <v-radio-group v-model="feedType" inline :aria-labelledby="labelId">
+              <v-radio label="Single" value="Single" />
+              <v-radio label="Merge" value="Merge" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
 
-      <v-text-field
-        v-model="name"
-        label="Name"
-        placeholder="e.g. Latest Blog Posts"
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
-        :rules="[v => !!v || 'Name is required']"
-      />
+        <v-text-field
+          v-model="name"
+          class="mp-form-grid__full"
+          label="Name"
+          placeholder="e.g. Latest Blog Posts"
+          :rules="[v => !!v || 'Name is required']"
+        />
 
-      <div class="text-subtitle-2 font-weight-bold mb-2">Update on</div>
-      <v-row dense class="mb-2">
-        <v-col cols="6">
-          <v-select v-model="updateDay" :items="DAYS" label="Day of week" variant="outlined" density="comfortable" hide-details />
-        </v-col>
-        <v-col cols="6">
-          <v-select v-model="updateHour" :items="HOURS" label="Hour" variant="outlined" density="comfortable" hide-details />
-        </v-col>
-      </v-row>
-      <p class="text-caption text-medium-emphasis mb-4">
-        Journey and transactional emails pull this feed live; campaign sends use the version cached at this scheduled time.
-      </p>
+        <MpFormSection
+          title="Update on"
+          description="Journey and transactional emails pull this feed live; campaign sends use the version cached at this scheduled time."
+        />
+        <v-select v-model="updateDay" :items="DAYS" label="Day of week" />
+        <v-select v-model="updateHour" :items="HOURS" label="Hour" />
 
-      <v-text-field
-        v-model="url"
-        label="URL"
-        placeholder="https://example.com/feed.xml"
-        variant="outlined"
-        density="comfortable"
-        hint="RSS, JSON, or product feed endpoint"
-        persistent-hint
-        :rules="[v => !!v || 'URL is required']"
-      />
+        <v-text-field
+          v-model="url"
+          class="mp-form-grid__full"
+          label="URL"
+          placeholder="https://example.com/feed.xml"
+          hint="RSS, JSON, or product feed endpoint"
+          persistent-hint
+          :rules="[v => !!v || 'URL is required']"
+        />
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>

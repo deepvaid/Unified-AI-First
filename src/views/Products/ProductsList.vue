@@ -14,6 +14,9 @@ import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
@@ -289,7 +292,7 @@ onMounted(() => {
           </v-list>
         </v-menu>
 
-        <v-btn-toggle v-model="viewMode" mandatory density="comfortable" variant="outlined" divided class="mp-view-toggle">
+        <v-btn-toggle v-model="viewMode" mandatory class="mp-view-toggle">
           <v-btn value="list" icon="list" size="small" aria-label="List view" />
           <v-btn value="grid" icon="layout-grid" size="small" aria-label="Grid view" />
         </v-btn-toggle>
@@ -315,45 +318,40 @@ onMounted(() => {
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
+        <!-- Filter popover: `hide-details` is deliberate — these selects can never
+             carry a hint or an error, and the popover is a dense surface. -->
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select
-              v-model="filters.category"
-              :items="filterOptions.category"
-              label="Category"
-              multiple
-              chips
-              closable-chips
-              density="compact"
-              variant="outlined"
-              hide-details
-              class="mb-3"
-            />
-            <v-select
-              v-model="filters.status"
-              :items="filterOptions.status"
-              label="Status"
-              multiple
-              chips
-              closable-chips
-              density="compact"
-              variant="outlined"
-              hide-details
-              class="mb-3"
-            />
-            <v-select
-              v-model="filters.vendor"
-              :items="filterOptions.vendor"
-              label="Vendor"
-              multiple
-              chips
-              closable-chips
-              density="compact"
-              variant="outlined"
-              hide-details
-              class="mb-2"
-            />
+          <div class="pa-4">
+            <MpFormGrid>
+              <MpFormSection title="Filter by" />
+              <v-select
+                v-model="filters.category"
+                :items="filterOptions.category"
+                label="Category"
+                multiple
+                chips
+                closable-chips
+                hide-details
+              />
+              <v-select
+                v-model="filters.status"
+                :items="filterOptions.status"
+                label="Status"
+                multiple
+                chips
+                closable-chips
+                hide-details
+              />
+              <v-select
+                v-model="filters.vendor"
+                :items="filterOptions.vendor"
+                label="Vendor"
+                multiple
+                chips
+                closable-chips
+                hide-details
+              />
+            </MpFormGrid>
           </div>
         </template>
 
@@ -431,7 +429,7 @@ onMounted(() => {
         </template>
         <template #no-data>
           <MpEmptyState
-            variant="expressive"
+            emphasis="prominent"
             :illustration="emptyState.illustration"
             :title="emptyState.title"
             :description="emptyState.description"
@@ -471,6 +469,7 @@ onMounted(() => {
               <v-checkbox-btn
                 class="product-card__check"
                 density="compact"
+                :aria-label="`Select ${item.name}`"
                 :model-value="selected.includes(item.id)"
                 @click.stop
                 @update:model-value="toggleSelect(item.id)"
@@ -493,14 +492,14 @@ onMounted(() => {
               </div>
               <div class="d-flex align-center justify-space-between gap-2 mt-3">
                 <span class="mp-money product-price">{{ money(item.price).symbol }}{{ money(item.price).integer }}<span class="mp-money__cents">.{{ money(item.price).cents }}</span></span>
-                <MpStatusChip :status="item.status" type="stock" size="x-small" />
+                <MpStatusChip :status="item.status" type="stock" size="sm" />
               </div>
             </div>
           </v-card>
         </div>
         <MpEmptyState
           v-else
-          variant="expressive"
+          emphasis="prominent"
           :illustration="emptyState.illustration"
           :title="emptyState.title"
           :description="emptyState.description"
@@ -528,21 +527,20 @@ onMounted(() => {
       title="Export Products"
       subtitle="Your products will be downloaded as a CSV file."
     >
-      <div class="text-subtitle-2 font-weight-bold mb-2">What to export</div>
-      <v-radio-group v-model="exportScope" hide-details class="mb-4">
-        <v-radio value="current" label="Current Page" />
-        <v-radio value="all" :label="`All Products (${store.products.length})`" />
-        <v-radio value="selected" :disabled="!selected.length" :label="`Selected: ${selected.length} Products`" />
-        <v-radio value="search" :disabled="!search.trim()" :label="`${searchedProducts.length} Products matching your search`" />
-      </v-radio-group>
+      <MpFormGrid>
+        <MpFormField label="What to export">
+          <template #default="{ labelId }">
+            <v-radio-group v-model="exportScope" :aria-labelledby="labelId">
+              <v-radio value="current" label="Current Page" />
+              <v-radio value="all" :label="`All Products (${store.products.length})`" />
+              <v-radio value="selected" :disabled="!selected.length" :label="`Selected: ${selected.length} Products`" />
+              <v-radio value="search" :disabled="!search.trim()" :label="`${searchedProducts.length} Products matching your search`" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
 
-      <v-text-field
-        v-model="exportFileName"
-        label="File Name"
-        suffix=".csv"
-        variant="outlined"
-        density="comfortable"
-      />
+        <v-text-field v-model="exportFileName" label="File Name" suffix=".csv" />
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="exportDialog = false">Cancel</v-btn>

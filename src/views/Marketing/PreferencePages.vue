@@ -7,6 +7,8 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useMarketingAssetsStore()
@@ -144,33 +146,33 @@ function notify(text: string) { toast.success(text) }
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
+          <!-- Dense filter popover, not a form: compact + hide-details are deliberate here. -->
           <div class="pa-4 pb-2">
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select
-              v-model="filters.editorType"
-              label="Editor Type"
-              :items="[...EDITOR_TYPES] as string[]"
-              multiple
-              chips
-              closable-chips
-              clearable
-              variant="outlined"
-              density="compact"
-              hide-details
-              class="mb-3"
-            />
-            <v-select
-              v-model="filters.pageType"
-              label="Page Type"
-              :items="[...PAGE_TYPES] as string[]"
-              multiple
-              chips
-              closable-chips
-              clearable
-              variant="outlined"
-              density="compact"
-              hide-details
-            />
+            <MpFormGrid>
+              <v-select
+                v-model="filters.editorType"
+                label="Editor Type"
+                :items="[...EDITOR_TYPES] as string[]"
+                multiple
+                chips
+                closable-chips
+                clearable
+                density="compact"
+                hide-details
+              />
+              <v-select
+                v-model="filters.pageType"
+                label="Page Type"
+                :items="[...PAGE_TYPES] as string[]"
+                multiple
+                chips
+                closable-chips
+                clearable
+                density="compact"
+                hide-details
+              />
+            </MpFormGrid>
           </div>
         </template>
       </MpDataTableToolbar>
@@ -210,9 +212,6 @@ function notify(text: string) { toast.success(text) }
         v-model="name"
         label="Name"
         placeholder="e.g. Default Subscription Center"
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
         :rules="[v => !!v || 'Name is required']"
       />
 
@@ -220,9 +219,6 @@ function notify(text: string) { toast.success(text) }
         v-model="pageType"
         :items="PAGE_TYPES"
         label="Page Type"
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
       />
 
       <v-text-field
@@ -232,17 +228,17 @@ function notify(text: string) { toast.success(text) }
         placeholder="https://example.com/thank-you"
         hint="Where subscribers land after saving their preferences"
         persistent-hint
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
       />
 
-      <div class="text-subtitle-2 font-weight-bold mb-2">Editor</div>
-      <v-radio-group v-model="editorType" inline hide-details>
-        <v-radio label="Drag & Drop" value="Drag & Drop" />
-        <v-radio label="WYSIWYG" value="WYSIWYG" />
-        <v-radio label="HTML" value="HTML" />
-      </v-radio-group>
+      <MpFormField label="Editor">
+        <template #default="{ labelId }">
+          <v-radio-group v-model="editorType" inline :aria-labelledby="labelId">
+            <v-radio label="Drag & Drop" value="Drag & Drop" />
+            <v-radio label="WYSIWYG" value="WYSIWYG" />
+            <v-radio label="HTML" value="HTML" />
+          </v-radio-group>
+        </template>
+      </MpFormField>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>

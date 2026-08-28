@@ -277,9 +277,13 @@ function onGripDragStart(e: DragEvent) {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: linear-gradient(135deg, rgba(20, 20, 24, 0.92), rgba(35, 35, 42, 0.92));
+  background: linear-gradient(
+    135deg,
+    rgba(var(--mp-rgb-color-light-inkPanel-bg), 0.92),
+    rgba(var(--mp-rgb-color-dark-inkPanel-bg), 0.92)
+  );
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--ink-panel-fg);
 }
 .lbv-video__play { opacity: 0.9; }
 .lbv-video__caption { font-size: 0.78rem; opacity: 0.8; }

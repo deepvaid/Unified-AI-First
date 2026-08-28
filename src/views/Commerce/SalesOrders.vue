@@ -16,6 +16,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
@@ -302,19 +303,22 @@ function exportOrders() {
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div v-for="(options, key) in filterOptions" :key="key" class="mb-4">
+          <!-- Toolbar filters stay compact and suppress details deliberately: this is a
+               dense popover, not a form, and no select here carries validation. -->
+          <MpFormGrid>
             <v-select
+              v-for="(options, key) in filterOptions"
+              :key="key"
               v-model="filters[key as keyof typeof filters]"
               :label="filterLabels[key]"
               :items="options"
-              variant="outlined"
               density="compact"
               hide-details
               clearable
               placeholder="All"
               persistent-placeholder
             />
-          </div>
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
 
@@ -383,7 +387,7 @@ function exportOrders() {
 
         <!-- Order Status -->
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status ?? ''" type="order" size="x-small" />
+          <MpStatusChip :status="item.status ?? ''" type="order" size="sm" />
         </template>
 
         <!-- Sales Channel -->
@@ -526,7 +530,7 @@ function exportOrders() {
           />
           <MpEmptyState
             v-else
-            variant="expressive"
+            emphasis="prominent"
             illustration="empty-orders"
             title="No orders yet"
             description="Orders appear here as your channels start selling."

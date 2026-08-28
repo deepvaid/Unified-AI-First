@@ -160,7 +160,7 @@ const deleteMessage = computed(() => {
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="general" size="x-small" />
+          <MpStatusChip :status="item.status" type="general" size="sm" />
         </template>
 
         <template v-slot:item.updatedAt="{ item }">

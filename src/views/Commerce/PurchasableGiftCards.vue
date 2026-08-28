@@ -13,6 +13,9 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
@@ -257,8 +260,12 @@ function notify(text: string) { toast.success(text) }
         <template #filter-content>
           <div class="pa-4 pb-2">
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select v-model="filters.status" label="Status" :items="filterOptions.status" variant="outlined" density="compact" hide-details clearable class="mb-3" />
-            <v-select v-model="filters.kind" label="Type" :items="filterOptions.kind" variant="outlined" density="compact" hide-details clearable />
+            <!-- Toolbar filters stay compact and suppress details deliberately: this is a
+                 dense popover, not a form, and neither select can carry validation. -->
+            <MpFormGrid>
+              <v-select v-model="filters.status" label="Status" :items="filterOptions.status" density="compact" hide-details clearable />
+              <v-select v-model="filters.kind" label="Type" :items="filterOptions.kind" density="compact" hide-details clearable />
+            </MpFormGrid>
           </div>
         </template>
       </MpDataTableToolbar>
@@ -306,7 +313,7 @@ function notify(text: string) { toast.success(text) }
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="general" size="x-small" />
+          <MpStatusChip :status="item.status" type="general" size="sm" />
         </template>
 
         <template v-slot:item.created="{ item }">
@@ -351,82 +358,89 @@ function notify(text: string) { toast.success(text) }
     <MpFormDrawer
       v-model="drawer"
       :title="isEdit ? 'Edit purchasable gift card' : 'New purchasable gift card'"
-      subtitle="Sell a gift card that customers can buy from your storefront"
-      :width="560"
+      subtitle="Sell a gift card that customers can buy from your storefront" size="lg"
     >
-      <div class="text-subtitle-2 font-weight-bold mb-3 text-uppercase text-medium-emphasis">General</div>
-      <v-text-field
-        v-model="form.name"
-        label="Name *"
-        variant="outlined"
-        density="comfortable"
-        placeholder="e.g. Digital Gift Card"
-        :error="submitted && !form.name.trim()"
-        :error-messages="submitted && !form.name.trim() ? ['Name is required'] : []"
-        class="mb-3"
-      />
-      <v-text-field
-        v-model="form.slug"
-        label="URL"
-        variant="outlined"
-        density="comfortable"
-        prefix="/"
-        hint="Auto-generated from the name — edit to customise"
-        persistent-hint
-        class="mb-3 font-mono-field"
-        @update:model-value="slugTouched = true"
-      />
-      <v-btn-toggle v-model="form.kind" mandatory divided variant="outlined" density="comfortable" class="mb-3">
-        <v-btn value="Digital" class="text-none" prepend-icon="mail">Digital</v-btn>
-        <v-btn value="Physical" class="text-none" prepend-icon="credit-card">Physical</v-btn>
-      </v-btn-toggle>
-      <v-textarea v-model="form.message" label="Gift card message" variant="outlined" density="comfortable" rows="2" auto-grow class="mb-4" />
-
-      <div class="text-subtitle-2 font-weight-bold mb-1 text-uppercase text-medium-emphasis">Denominations *</div>
-      <div class="text-caption text-medium-emphasis mb-3">The fixed values customers can buy this gift card in.</div>
-      <div v-for="(_, i) in form.denominations" :key="i" class="d-flex align-center gap-2 mb-2">
+      <MpFormSection title="General" />
+      <MpFormGrid>
         <v-text-field
-          v-model.number="form.denominations[i]"
-          label="Amount"
-          type="number"
-          min="1"
-          prefix="AUD $"
-          variant="outlined"
-          density="compact"
-          hide-details
-          class="flex-grow-1"
+          v-model="form.name"
+          label="Name *"
+          placeholder="e.g. Digital Gift Card"
+          :error="submitted && !form.name.trim()"
+          :error-messages="submitted && !form.name.trim() ? ['Name is required'] : []"
         />
-        <v-btn
-          icon="trash-2"
-          variant="text"
-          size="small"
-          class="text-medium-emphasis"
-          :disabled="form.denominations.length === 1"
-          :aria-label="`Remove denomination ${i + 1}`"
-          @click="removeDenomination(i)"
+        <v-text-field
+          v-model="form.slug"
+          label="URL"
+          prefix="/"
+          hint="Auto-generated from the name — edit to customise"
+          persistent-hint
+          class="font-mono-field"
+          @update:model-value="slugTouched = true"
         />
-      </div>
-      <v-btn variant="text" color="primary" class="text-none mb-1" prepend-icon="plus" size="small" @click="addDenomination">Add denomination</v-btn>
-      <div v-if="submitted && !validDenominations.length" class="text-caption text-error mb-3">Add at least one denomination greater than zero.</div>
+        <MpFormField label="Delivery type">
+          <div>
+            <v-btn-toggle v-model="form.kind" mandatory>
+              <v-btn value="Digital" class="text-none" prepend-icon="mail">Digital</v-btn>
+              <v-btn value="Physical" class="text-none" prepend-icon="credit-card">Physical</v-btn>
+            </v-btn-toggle>
+          </div>
+        </MpFormField>
+        <v-textarea v-model="form.message" label="Gift card message" rows="3" auto-grow />
+      </MpFormGrid>
 
-      <div class="text-subtitle-2 font-weight-bold mb-2 mt-4 text-uppercase text-medium-emphasis">Status</div>
-      <v-select v-model="form.status" label="Status" :items="['Draft', 'Active', 'Archived']" variant="outlined" density="comfortable" class="mb-4" />
+      <MpFormSection
+        title="Denominations"
+        description="The fixed values customers can buy this gift card in."
+        required
+      />
+      <MpFormGrid>
+        <div v-for="(_, i) in form.denominations" :key="i" class="mp-form-grid__trailing">
+          <v-text-field
+            v-model.number="form.denominations[i]"
+            label="Amount"
+            type="number"
+            min="1"
+            prefix="AUD $"
+          />
+          <v-btn
+            icon="trash-2"
+            variant="text"
+            size="small"
+            class="text-medium-emphasis"
+            :disabled="form.denominations.length === 1"
+            :aria-label="`Remove denomination ${i + 1}`"
+            @click="removeDenomination(i)"
+          />
+        </div>
+        <div>
+          <v-btn variant="text" color="primary" class="text-none" prepend-icon="plus" size="small" @click="addDenomination">Add denomination</v-btn>
+          <div v-if="submitted && !validDenominations.length" class="text-caption text-error">Add at least one denomination greater than zero.</div>
+        </div>
+      </MpFormGrid>
 
-      <div class="text-subtitle-2 font-weight-bold mb-2 text-uppercase text-medium-emphasis">Media</div>
-      <v-card variant="flat" border rounded="lg" class="pa-6 mb-4 d-flex flex-column align-center justify-center text-center media-placeholder">
+      <MpFormSection title="Status" />
+      <MpFormGrid>
+        <v-select v-model="form.status" label="Status" :items="['Draft', 'Active', 'Archived']" />
+      </MpFormGrid>
+
+      <MpFormSection title="Media" />
+      <v-card variant="flat" border rounded="lg" class="pa-6 d-flex flex-column align-center justify-center text-center media-placeholder">
         <v-icon size="28" class="text-medium-emphasis mb-2">image-plus</v-icon>
         <div class="text-body-2 font-weight-medium">Add media</div>
         <div class="text-caption text-medium-emphasis">Drag & drop or click to upload (mock)</div>
       </v-card>
 
-      <v-expansion-panels v-model="organiseOpen" variant="accordion" class="mb-2 organise-panels" multiple>
+      <v-expansion-panels v-model="organiseOpen" variant="accordion" class="organise-panels" multiple>
         <v-expansion-panel elevation="0" rounded="lg">
           <v-expansion-panel-title class="text-subtitle-2 font-weight-bold">Organise</v-expansion-panel-title>
           <v-expansion-panel-text>
-            <v-select v-model="form.taxCategory" label="Tax Category" :items="TAX_CATEGORIES" variant="outlined" density="comfortable" clearable class="mb-3" />
-            <v-select v-model="form.brand" label="Brand" :items="BRANDS" variant="outlined" density="comfortable" clearable class="mb-3" />
-            <v-select v-model="form.tags" label="Tags" :items="TAGS" variant="outlined" density="comfortable" multiple chips closable-chips class="mb-3" />
-            <v-select v-model="form.collections" label="Collections" :items="COLLECTIONS" variant="outlined" density="comfortable" multiple chips closable-chips />
+            <MpFormGrid>
+              <v-select v-model="form.taxCategory" label="Tax Category" :items="TAX_CATEGORIES" clearable />
+              <v-select v-model="form.brand" label="Brand" :items="BRANDS" clearable />
+              <v-select v-model="form.tags" label="Tags" :items="TAGS" multiple chips closable-chips />
+              <v-select v-model="form.collections" label="Collections" :items="COLLECTIONS" multiple chips closable-chips />
+            </MpFormGrid>
           </v-expansion-panel-text>
         </v-expansion-panel>
       </v-expansion-panels>

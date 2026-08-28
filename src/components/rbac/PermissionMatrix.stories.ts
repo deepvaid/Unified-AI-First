@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import PermissionMatrix from './PermissionMatrix.vue'
 
 const meta = {
-  title: 'RBAC/PermissionMatrix',
+  title: 'Product/RBAC/PermissionMatrix',
   component: PermissionMatrix,
   tags: ['autodocs'],
   parameters: {

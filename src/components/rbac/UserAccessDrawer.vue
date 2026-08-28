@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import PermissionMatrix from '@/components/rbac/PermissionMatrix.vue'
 import RolePicker from '@/components/rbac/RolePicker.vue'
@@ -113,10 +116,10 @@ function askRemove() {
 </script>
 
 <template>
-  <MpFormDrawer v-model="open" title="Manage access" :subtitle="user?.email" :width="560">
+  <MpFormDrawer v-model="open" title="Manage access" :subtitle="user?.email" size="lg">
     <template v-if="user">
       <!-- Identity -->
-      <div class="access-identity mb-5">
+      <div class="access-identity">
         <v-avatar color="primary" variant="tonal" size="44" class="font-weight-bold">{{ user.avatar }}</v-avatar>
         <div class="access-identity__text">
           <div class="access-identity__name">
@@ -128,7 +131,7 @@ function askRemove() {
             </v-tooltip>
           </div>
           <div class="access-identity__meta">
-            <MpStatusChip :status="user.status" type="general" size="x-small" />
+            <MpStatusChip :status="user.status" type="general" size="sm" />
             <span v-if="user.status === 'invited' && user.invitedAt" class="text-caption text-medium-emphasis">
               Invited {{ formatAgo(user.invitedAt) }} by {{ user.invitedBy }}
             </span>
@@ -139,12 +142,12 @@ function askRemove() {
         </div>
       </div>
 
-      <v-alert v-if="isOwner" type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2 mb-5">
+      <v-alert v-if="isOwner" type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
         The account owner always has full access across every product. Roles can’t be changed here.
       </v-alert>
 
       <!-- Roles -->
-      <div class="text-subtitle-2 font-weight-bold mb-2">Roles</div>
+      <MpFormSection title="Roles" />
       <RolePicker v-model="localRoleIds" :disabled="isOwner" />
 
       <v-alert
@@ -153,7 +156,7 @@ function askRemove() {
         variant="tonal"
         density="compact"
         rounded="lg"
-        class="text-body-2 mt-4"
+        class="text-body-2"
       >
         {{ validation.conflicts[0]!.a.name }} can’t be combined with {{ validation.conflicts[0]!.b.name }}. Remove one to save.
       </v-alert>
@@ -163,34 +166,38 @@ function askRemove() {
         variant="tonal"
         density="compact"
         rounded="lg"
-        class="text-body-2 mt-4"
+        class="text-body-2"
       >
         Users need at least one role. To take away all access, deactivate or remove the user instead.
       </v-alert>
 
       <!-- Commerce scope -->
       <template v-if="hasCommerceRole && !isOwner">
-        <div class="text-subtitle-2 font-weight-bold mt-5 mb-2">Store scope</div>
-        <v-radio-group v-model="scopeAll" hide-details density="compact" class="mb-2">
-          <v-radio label="All locations" :value="true" />
-          <v-radio label="Specific locations" :value="false" />
-        </v-radio-group>
-        <v-select
-          v-if="!scopeAll"
-          v-model="scopeLocationIds"
-          :items="locationItems"
-          multiple
-          chips
-          closable-chips
-          label="Locations"
-          variant="outlined"
-          density="compact"
-        />
+        <MpFormSection title="Store scope" />
+        <MpFormGrid>
+          <MpFormField label="Locations this user can work in">
+            <template #default="{ labelId }">
+              <v-radio-group v-model="scopeAll" :aria-labelledby="labelId">
+                <v-radio label="All locations" :value="true" />
+                <v-radio label="Specific locations" :value="false" />
+              </v-radio-group>
+            </template>
+          </MpFormField>
+          <v-select
+            v-if="!scopeAll"
+            v-model="scopeLocationIds"
+            :items="locationItems"
+            multiple
+            chips
+            closable-chips
+            label="Locations"
+          />
+        </MpFormGrid>
       </template>
 
       <!-- Access preview -->
-      <div class="d-flex align-center mt-6 mb-2">
-        <span class="text-subtitle-2 font-weight-bold">Product access</span>
+      <div class="d-flex align-center ga-2">
+        <MpFormSection title="Product access" />
         <v-spacer />
         <v-btn
           variant="text"
@@ -202,7 +209,7 @@ function askRemove() {
           {{ showPermissions ? 'Hide' : 'Show' }} effective permissions
         </v-btn>
       </div>
-      <div class="access-products mb-2">
+      <div class="access-products">
         <div v-for="entry in previewAccess" :key="entry.product" class="access-products__row">
           <v-icon size="15" :color="entry.entitled ? 'success' : 'warning'">
             {{ entry.entitled ? 'circle-check' : 'lock' }}
@@ -211,22 +218,21 @@ function askRemove() {
           <span v-if="!entry.entitled" class="access-products__note">Not in this account’s subscription</span>
         </div>
         <div v-if="previewAccess.length === 0" class="text-caption text-medium-emphasis">No access — assign at least one role.</div>
+        <p v-if="dirty" class="text-caption text-medium-emphasis">Previewing unsaved role selection.</p>
       </div>
-      <p v-if="dirty" class="text-caption text-medium-emphasis mt-0 mb-2">Previewing unsaved role selection.</p>
 
       <PermissionMatrix
         v-if="showPermissions && previewProducts.length"
         :model-value="[...previewPermissions]"
         :products="previewProducts"
         readonly
-        class="mt-2"
       />
 
       <!-- Danger zone -->
-      <div class="danger-zone mt-7">
-        <div class="text-subtitle-2 font-weight-bold mb-1">Danger zone</div>
+      <div class="danger-zone">
+        <MpFormSection title="Danger zone" />
         <template v-if="isOwner">
-          <p class="text-body-2 text-medium-emphasis mb-0">
+          <p class="text-body-2 text-medium-emphasis">
             The account owner can’t be deactivated, removed, or demoted. Ownership transfer is out of scope for this prototype.
           </p>
         </template>
@@ -234,7 +240,7 @@ function askRemove() {
           <p class="text-body-2 text-medium-emphasis">
             Deactivating suspends sign-in but keeps roles and history. Removing permanently deletes the user’s access.
           </p>
-          <div class="d-flex gap-3">
+          <div class="d-flex ga-3">
             <v-btn
               v-if="user.status !== 'invited'"
               variant="outlined"
@@ -254,10 +260,8 @@ function askRemove() {
     </template>
 
     <template #footer>
-      <div class="w-100 d-flex justify-end ga-2">
-        <v-btn variant="text" class="text-none" @click="open = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave" @click="save">Save changes</v-btn>
-      </div>
+      <v-btn variant="text" class="text-none" @click="open = false">Cancel</v-btn>
+      <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave" @click="save">Save changes</v-btn>
     </template>
   </MpFormDrawer>
 </template>
@@ -313,6 +317,11 @@ function askRemove() {
 }
 
 .danger-zone {
+  /* The panel owns the rhythm between its heading, its copy and its buttons —
+     those used to be flush because each child cancelled its own margin. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-8);
   border: 1px solid color-mix(in oklch, rgb(var(--v-theme-error)) 25%, transparent);
   border-radius: 12px;
   padding: 14px 16px;

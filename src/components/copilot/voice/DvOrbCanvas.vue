@@ -1,4 +1,10 @@
 <script lang="ts">
+import {
+  mp_color_chart_light_series1,
+  mp_color_light_dv_orbC3,
+  mp_color_light_dv_orbit_gradMid,
+  mp_color_light_dv_orbit_gradTo,
+} from '@/design-tokens/generated/tokens'
 import type { DvOrbEngineModule } from '@/lib/davinci-orb/types'
 
 // Module scope: start downloading three.js (~188KB gz lazy chunk) + the shared engine
@@ -65,10 +71,10 @@ const { size } = useElementSize(rootEl)
 // Last-resort defaults for resolveColors() below — only used if --dv-accent /
 // --dv-orb-c1/c2/c3 (always set globally by dv-tokens.css) can't be read from the
 // DOM. Named here so the render function has no scattered hex literals.
-const DV_ORB_FALLBACK_ACCENT = '#0092D4'
-const DV_ORB_FALLBACK_GLOW_C1 = '#5EEAD4'
-const DV_ORB_FALLBACK_GLOW_C2 = '#93C5FD'
-const DV_ORB_FALLBACK_GLOW_C3 = '#A78BFA'
+const DV_ORB_FALLBACK_ACCENT = mp_color_chart_light_series1
+const DV_ORB_FALLBACK_GLOW_C1 = mp_color_light_dv_orbit_gradTo
+const DV_ORB_FALLBACK_GLOW_C2 = mp_color_light_dv_orbit_gradMid
+const DV_ORB_FALLBACK_GLOW_C3 = mp_color_light_dv_orbC3
 
 // Colors must be resolved on an element INSIDE .v-application — the dark-theme
 // --accent override lives on .v-theme--maropostDark, not :root.

@@ -13,7 +13,6 @@ import { nextTick, onMounted, ref } from 'vue'
 import MpRowActionsMenu from '../components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '../components/MpConfirmDialog.vue'
 import MpFormDrawer from '../components/MpFormDrawer.vue'
-import { darkModeGlobals } from './storybookTheme'
 
 const meta: Meta = {
   title: 'Patterns/Layering',
@@ -280,18 +279,4 @@ export const DialogInsideFormDrawer: Story = {
       </div>
     `,
   }),
-}
-
-/** Same proof as MenuOverStickyHeaderTable, pinned to dark mode. */
-export const DarkModeMenuOverStickyHeaderTable: Story = {
-  globals: darkModeGlobals,
-  ...MenuOverStickyHeaderTable,
-}
-
-/** Same proof as DialogInsideFormDrawer, pinned to dark mode — L3/L4 overlay surfaces
- *  collapse to the same white in light mode (audit §4), so contrast regressions between
- *  the drawer and the dialog surface only show up here. */
-export const DarkModeDialogInsideFormDrawer: Story = {
-  globals: darkModeGlobals,
-  ...DialogInsideFormDrawer,
 }

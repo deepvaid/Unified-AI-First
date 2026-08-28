@@ -6,6 +6,9 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import {
   useMerchandisingStore,
   MERCH_CONDITION_ACTION_LABELS,
@@ -108,6 +111,17 @@ function removeCondition(index: number) {
   form.value.conditions.splice(index, 1)
 }
 
+// The preset chips are index-selected, like every other preset row in the system.
+function weightPresetIndex(condition: MerchCondition) {
+  const index = WEIGHT_PRESETS.findIndex((preset) => preset.value === condition.weight)
+  return index === -1 ? undefined : index
+}
+
+function onWeightPreset(condition: MerchCondition, index: number | undefined) {
+  const preset = index == null ? undefined : WEIGHT_PRESETS[index]
+  if (preset) condition.weight = preset.value
+}
+
 function saveRule() {
   if (!formValid.value) return
   const payload = {
@@ -169,6 +183,7 @@ function confirmDelete() {
         fixed-header
         class="flex-grow-1"
       >
+        <!-- Row switch: `hide-details` is deliberate so a table row stays one line tall. -->
         <template #item.status="{ item }">
           <div class="d-flex align-center gap-2">
             <v-switch
@@ -246,156 +261,132 @@ function confirmDelete() {
     <MpFormDrawer
       v-model="drawer"
       :title="editing ? 'Edit rule' : 'New rule'"
-      :subtitle="store.activeStore.domain"
-      :width="560"
+      :subtitle="store.activeStore.domain" size="lg"
     >
-      <div class="d-flex flex-column gap-4">
+      <MpFormSection title="General" />
+      <MpFormGrid>
         <v-text-field
           v-model="form.name"
-          label="Rule name"
+          label="Rule name *"
           placeholder="e.g. Boost denim on jeans searches"
-          variant="outlined"
-          density="comfortable"
-          hide-details="auto"
           :rules="[(v: string) => Boolean(v?.trim()) || 'Rule name is required']"
         />
         <v-combobox
           v-model="form.terms"
-          label="Search terms"
+          label="Search terms *"
           hint="The rule applies when a shopper searches any of these terms — press Enter to add"
           persistent-hint
-          variant="outlined"
-          density="comfortable"
           multiple
           chips
           closable-chips
         />
+      </MpFormGrid>
 
-        <div>
-          <div class="d-flex align-center justify-space-between mb-2">
-            <span class="text-subtitle-2 font-weight-medium">Conditions</span>
-            <v-btn variant="text" size="small" class="text-none" prepend-icon="plus" @click="addCondition">
-              Add condition
-            </v-btn>
-          </div>
-          <v-alert
-            v-if="promoteCount >= 9"
-            type="warning"
-            variant="tonal"
-            density="compact"
-            class="mb-3"
-            text="Rules support a maximum of 9 Promote conditions."
-          />
-          <p v-if="form.conditions.length === 0" class="text-body-2 text-medium-emphasis mb-0">
-            No conditions yet — add one to target products by field.
-          </p>
-          <div v-else class="d-flex flex-column gap-3">
-            <v-card
-              v-for="(condition, index) in form.conditions"
-              :key="condition.id"
-              flat
-              border
-              rounded="lg"
-              class="pa-3"
-            >
-              <div class="d-flex flex-column gap-3">
-                <div class="d-flex gap-3">
-                  <v-select
-                    v-model="condition.action"
-                    :items="actionOptions"
-                    label="Condition type"
-                    variant="outlined"
-                    density="comfortable"
-                    hide-details
-                    class="flex-grow-1"
-                    @update:model-value="onActionChange(condition)"
-                  />
-                  <v-text-field
-                    v-model="condition.field"
-                    label="Field"
-                    placeholder="e.g. Brand"
-                    variant="outlined"
-                    density="comfortable"
-                    hide-details
-                    class="flex-grow-1"
-                  />
-                  <v-btn
-                    icon="trash-2"
-                    variant="text"
-                    size="small"
-                    class="text-medium-emphasis"
-                    :aria-label="`Remove condition ${index + 1}`"
-                    @click="removeCondition(index)"
-                  />
-                </div>
+      <MpFormSection
+        title="Conditions"
+        description="Target products by field when one of the search terms is used."
+      />
+      <MpFormGrid>
+        <v-alert
+          v-if="promoteCount >= 9"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          text="Rules support a maximum of 9 Promote conditions."
+        />
+        <p v-if="form.conditions.length === 0" class="text-body-2 text-medium-emphasis mb-0">
+          No conditions yet — add one to target products by field.
+        </p>
+        <v-card
+          v-for="(condition, index) in form.conditions"
+          :key="condition.id"
+          flat
+          border
+          rounded="lg"
+          class="condition-card"
+        >
+          <MpFormGrid>
+            <div class="mp-form-grid__trailing">
+              <MpFormGrid :cols="2">
+                <v-select
+                  v-model="condition.action"
+                  :items="actionOptions"
+                  label="Condition type"
+                  @update:model-value="onActionChange(condition)"
+                />
+                <v-text-field
+                  v-model="condition.field"
+                  label="Field"
+                  placeholder="e.g. Brand"
+                />
+              </MpFormGrid>
+              <v-btn
+                icon="trash-2"
+                variant="text"
+                size="small"
+                class="text-medium-emphasis"
+                :aria-label="`Remove condition ${index + 1}`"
+                @click="removeCondition(index)"
+              />
+            </div>
 
-                <div class="d-flex align-center gap-3 flex-wrap">
-                  <span class="text-caption text-medium-emphasis">Apply to</span>
-                  <v-btn-toggle
-                    v-model="condition.applyTo"
-                    density="compact"
-                    variant="outlined"
-                    divided
-                    mandatory
-                    rounded="lg"
-                  >
+            <MpFormField label="Apply to">
+              <template #default="{ labelId }">
+                <div>
+                  <v-btn-toggle v-model="condition.applyTo" mandatory :aria-labelledby="labelId">
                     <v-btn
                       v-for="option in applyToOptions"
                       :key="option.value"
                       :value="option.value"
-                      size="x-small"
-                      class="text-none px-3"
+                      class="text-none"
                     >
                       {{ option.title }}
                     </v-btn>
                   </v-btn-toggle>
                 </div>
+              </template>
+            </MpFormField>
 
-                <v-combobox
-                  v-model="condition.values"
-                  label="Values"
-                  variant="outlined"
-                  density="comfortable"
-                  hide-details
-                  multiple
-                  chips
-                  closable-chips
-                />
+            <v-combobox
+              v-model="condition.values"
+              label="Values"
+              multiple
+              chips
+              closable-chips
+            />
 
-                <div v-if="condition.action === 'promote'" class="rule-weight">
-                  <div class="d-flex align-center justify-space-between mb-1">
-                    <span class="text-caption text-medium-emphasis">Boost strength</span>
-                    <span class="text-caption font-weight-bold">{{ condition.weight ?? 0 }}</span>
-                  </div>
+            <template v-if="condition.action === 'promote'">
+              <MpFormField label="Boost strength" :hint="`Currently ${condition.weight ?? 0}`">
+                <template #default="{ labelId, descriptionId }">
                   <v-slider
                     v-model="condition.weight"
                     :min="-99"
                     :max="90"
                     :step="1"
-                    density="compact"
-                    hide-details
-                    color="primary"
-                    aria-label="Boost strength"
+                    :aria-labelledby="labelId"
+                    :aria-describedby="descriptionId"
                   />
-                  <div class="d-flex gap-2 mt-1">
-                    <v-chip
-                      v-for="preset in WEIGHT_PRESETS"
-                      :key="preset.label"
-                      size="x-small"
-                      variant="tonal"
-                      :color="(condition.weight ?? 0) === preset.value ? 'primary' : undefined"
-                      class="cursor-pointer"
-                      @click="condition.weight = preset.value"
-                    >
-                      {{ preset.label }}
-                    </v-chip>
-                  </div>
-                </div>
-              </div>
-            </v-card>
-          </div>
+                </template>
+              </MpFormField>
+              <MpFormField label="Presets" hint="Sets the boost strength above.">
+                <v-chip-group
+                  :model-value="weightPresetIndex(condition)"
+                  @update:model-value="onWeightPreset(condition, $event)"
+                >
+                  <v-chip v-for="preset in WEIGHT_PRESETS" :key="preset.label" filter>
+                    {{ preset.label }}
+                  </v-chip>
+                </v-chip-group>
+              </MpFormField>
+            </template>
+          </MpFormGrid>
+        </v-card>
+        <div>
+          <v-btn variant="text" size="small" class="text-none" prepend-icon="plus" @click="addCondition">
+            Add condition
+          </v-btn>
         </div>
-      </div>
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!formValid" @click="saveRule">
@@ -409,5 +400,9 @@ function confirmDelete() {
 <style scoped>
 .cursor-pointer {
   cursor: pointer;
+}
+
+.condition-card {
+  padding: var(--mp-component-card-paddingCompact);
 }
 </style>

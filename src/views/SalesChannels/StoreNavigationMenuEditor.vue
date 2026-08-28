@@ -20,6 +20,8 @@ import {
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MenuPreviewCard from '@/components/saleschannels/MenuPreviewCard.vue'
 
 const route = useRoute()
@@ -162,21 +164,20 @@ function confirmDiscard() {
     <v-row class="flex-grow-1" dense>
       <v-col cols="12" md="8">
         <v-card variant="flat" border rounded="lg" class="pa-4 mb-4">
-          <div class="text-subtitle-2 font-weight-bold mb-3">Menu details</div>
-          <v-text-field
-            v-model="draft.name"
-            label="Menu name"
-            placeholder="e.g. Main menu"
-            variant="outlined"
-            density="comfortable"
-            hide-details="auto"
-            :rules="[(v: string) => Boolean(v?.trim()) || 'Menu name is required']"
-          />
-          <div class="text-caption text-medium-emphasis mt-2 d-flex align-center gap-1">
-            <v-icon size="12">code</v-icon>
-            Handle: <span class="font-mono">{{ handlePreview || '—' }}</span>
-            <span v-if="isNew">(generated from the name; themes reference it)</span>
-          </div>
+          <MpFormSection title="Menu details" />
+          <MpFormGrid>
+            <v-text-field
+              v-model="draft.name"
+              label="Menu name"
+              placeholder="e.g. Main menu"
+              :rules="[(v: string) => Boolean(v?.trim()) || 'Menu name is required']"
+            />
+            <div class="text-caption text-medium-emphasis d-flex align-center gap-1">
+              <v-icon size="12">code</v-icon>
+              Handle: <span class="font-mono">{{ handlePreview || '—' }}</span>
+              <span v-if="isNew">(generated from the name; themes reference it)</span>
+            </div>
+          </MpFormGrid>
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="pa-4">
@@ -198,61 +199,51 @@ function confirmDiscard() {
             @action="addItem"
           />
 
-          <TransitionGroup v-else name="menu-row" tag="div" class="d-flex flex-column gap-2">
+          <!-- A menu item carries three actions (reorder up, reorder down, remove), so it
+               does not fit `mp-form-grid__trailing`'s single control-height track. The row
+               keeps its own bordered container and grip; only the fields inside it move
+               onto the form grid. -->
+          <TransitionGroup v-else name="menu-row" tag="div" class="d-flex flex-column ga-3">
             <div v-for="(item, index) in draft.items" :key="item.id" class="menu-row">
               <v-icon size="16" class="menu-row__grip" aria-hidden="true">grip-vertical</v-icon>
 
-              <v-text-field
-                v-model="item.title"
-                label="Item name"
-                variant="outlined"
-                density="compact"
-                hide-details
-                class="menu-row__name"
-              />
+              <MpFormGrid :cols="2" class="menu-row__fields">
+                <v-text-field v-model="item.title" label="Item name" />
 
-              <v-select
-                v-model="item.linkType"
-                :items="linkTypeItems"
-                label="Link to"
-                variant="outlined"
-                density="compact"
-                hide-details
-                class="menu-row__type"
-                @update:model-value="onLinkTypeChange(item)"
-              >
-                <template v-slot:selection="{ item: selection }">
-                  <span class="d-flex align-center gap-1 text-body-2">
-                    <v-icon size="14">{{ linkTypeDef(item.linkType).icon }}</v-icon>
-                    {{ selection.title }}
-                  </span>
-                </template>
-              </v-select>
+                <v-select
+                  v-model="item.linkType"
+                  :items="linkTypeItems"
+                  label="Link to"
+                  @update:model-value="onLinkTypeChange(item)"
+                >
+                  <template v-slot:selection="{ item: selection }">
+                    <span class="d-flex align-center gap-1 text-body-2">
+                      <v-icon size="14">{{ linkTypeDef(item.linkType).icon }}</v-icon>
+                      {{ selection.title }}
+                    </span>
+                  </template>
+                </v-select>
 
-              <v-autocomplete
-                v-if="linkTypeDef(item.linkType).requiresResource"
-                v-model="item.target"
-                :items="resourceItems(item.linkType)"
-                :label="`Select ${linkTypeDef(item.linkType).label.toLowerCase()}`"
-                variant="outlined"
-                density="compact"
-                hide-details
-                class="menu-row__target"
-              />
-              <v-text-field
-                v-else-if="item.linkType === 'url'"
-                v-model="item.target"
-                label="https://…"
-                variant="outlined"
-                density="compact"
-                hide-details
-                prepend-inner-icon="link"
-                class="menu-row__target"
-              />
-              <div v-else class="menu-row__target menu-row__fixed text-caption text-medium-emphasis d-flex align-center gap-1">
-                <v-icon size="12">link</v-icon>
-                <span class="font-mono">{{ resolveItemUrl(item) }}</span>
-              </div>
+                <v-autocomplete
+                  v-if="linkTypeDef(item.linkType).requiresResource"
+                  v-model="item.target"
+                  :items="resourceItems(item.linkType)"
+                  :label="`Select ${linkTypeDef(item.linkType).label.toLowerCase()}`"
+                  class="mp-form-grid__full"
+                />
+                <v-text-field
+                  v-else-if="item.linkType === 'url'"
+                  v-model="item.target"
+                  label="URL"
+                  placeholder="https://…"
+                  prepend-inner-icon="link"
+                  class="mp-form-grid__full"
+                />
+                <div v-else class="mp-form-grid__full text-caption text-medium-emphasis d-flex align-center gap-1">
+                  <v-icon size="12">link</v-icon>
+                  <span class="font-mono">{{ resolveItemUrl(item) }}</span>
+                </div>
+              </MpFormGrid>
 
               <div class="menu-row__actions">
                 <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="index === 0" :aria-label="`Move ${item.title || 'item'} up`" @click="moveItem(draft.items, item.id, -1)" />
@@ -267,17 +258,16 @@ function confirmDiscard() {
       <v-col cols="12" md="4">
         <div class="editor-rail">
           <v-card variant="flat" border rounded="lg" class="pa-4 mb-4">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Status</div>
-            <v-select
-              v-model="draft.status"
-              :items="statusOptions"
-              variant="outlined"
-              density="comfortable"
-              hide-details
-            />
-            <div class="text-caption text-medium-emphasis mt-2">
-              Inactive menus stay hidden from your storefront until you activate them.
-            </div>
+            <MpFormGrid>
+              <v-select
+                v-model="draft.status"
+                label="Status"
+                :items="statusOptions"
+              />
+              <div class="text-caption text-medium-emphasis">
+                Inactive menus stay hidden from your storefront until you activate them.
+              </div>
+            </MpFormGrid>
           </v-card>
 
           <MenuPreviewCard :menu="draft" :store-name="channel.name" />
@@ -300,11 +290,11 @@ function confirmDiscard() {
 <style scoped>
 .menu-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  align-items: flex-start;
+  gap: var(--mp-component-listItem-gap);
+  padding: var(--mp-component-card-paddingCompact);
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 8px;
+  border-radius: var(--mp-component-nav-itemRadius);
   background: rgb(var(--v-theme-surface));
   transition: border-color 0.15s ease;
 }
@@ -313,35 +303,31 @@ function confirmDiscard() {
   border-color: rgba(var(--v-theme-primary), 0.4);
 }
 
+/* Grip and actions sit against the first field's box, not the row's full height. */
+.menu-row__grip,
+.menu-row__actions {
+  flex-shrink: 0;
+  block-size: var(--mp-component-control-height);
+  display: flex;
+  align-items: center;
+}
+
 .menu-row__grip {
   opacity: 0.35;
-  flex-shrink: 0;
   cursor: default;
 }
 
-.menu-row__name {
-  flex: 1 1 30%;
-  min-width: 140px;
-}
-
-.menu-row__type {
-  flex: 0 0 190px;
-}
-
-.menu-row__target {
-  flex: 1 1 34%;
-  min-width: 160px;
-}
-
-.menu-row__fixed {
-  align-self: center;
+.menu-row__fields {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .menu-row__actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
+  gap: var(--mp-component-widget-actionGap);
+}
+
+.menu-row-move {
+  transition: transform 0.2s ease;
 }
 
 .editor-rail {
@@ -349,20 +335,7 @@ function confirmDiscard() {
   top: 16px;
 }
 
-.menu-row-move {
-  transition: transform 0.2s ease;
-}
-
 @media (max-width: 960px) {
-  .menu-row {
-    flex-wrap: wrap;
-  }
-
-  .menu-row__type,
-  .menu-row__target {
-    flex: 1 1 45%;
-  }
-
   .editor-rail {
     position: static;
   }

@@ -2,10 +2,9 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import MpSourceCloudChip from './MpSourceCloudChip.vue'
 // The app loads the --cloud-* accent tokens via main.ts; preview.ts doesn't.
 import '@/styles/source-cloud-colors.css'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Data Display/MpSourceCloudChip',
+  title: 'Atoms/MpSourceCloudChip',
   component: MpSourceCloudChip,
   tags: ['autodocs'],
   parameters: {
@@ -50,7 +49,7 @@ It reads label and icon from the canonical \`DASHBOARD_SOURCE_META\` map in the 
       options: ['commerce', 'marketing', 'analytics', 'contacts', 'service', 'neto', 'retail', 'merchandising'],
       description: 'Which source cloud to display. Label + icon resolve from DASHBOARD_SOURCE_META.',
     },
-    size: { control: 'inline-radio', options: ['sm', 'md'], description: 'Pill height: md = 22px (default), sm = 20px.' },
+    size: { control: 'inline-radio', options: ['sm', 'md', 'lg'], description: 'Pill height on the shared chip ramp (component.chip.height.*): sm 20 · md 24 (default) · lg 32.' },
     iconOnly: { control: 'boolean', description: 'Hide the label and render a round icon pill (label moves to title/aria-label).' },
   },
 } satisfies Meta<typeof MpSourceCloudChip>
@@ -58,32 +57,13 @@ It reads label and icon from the canonical \`DASHBOARD_SOURCE_META\` map in the 
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Marketing: Story = {
+export const Default: Story = {
   args: { dataSource: 'marketing', size: 'md' },
 }
 
-export const Commerce: Story = {
-  args: { dataSource: 'commerce', size: 'md' },
-}
-
-export const Service: Story = {
-  args: { dataSource: 'service', size: 'md' },
-}
-
-export const Neto: Story = {
-  args: { dataSource: 'neto', size: 'md' },
-}
-
-export const SmallSize: Story = {
-  args: { dataSource: 'marketing', size: 'sm' },
-}
-
-export const IconOnly: Story = {
-  args: { dataSource: 'commerce', size: 'sm', iconOnly: true },
-}
-
 /** Every source cloud the platform knows about, in one row. */
-export const AllSources: Story = {
+/** Variants — every source cloud. The per-cloud colour is the variant axis here. */
+export const Variants: Story = {
   render: () => ({
     components: { MpSourceCloudChip },
     setup() {
@@ -99,21 +79,17 @@ export const AllSources: Story = {
   args: { dataSource: 'commerce' },
 }
 
-/** Size × icon-only matrix on a single source. */
-export const SizeMatrix: Story = {
+/** Every size on the shared chip ramp — 20 / 24 / 32, from component.chip.height.*. */
+export const Sizes: Story = {
   render: () => ({
     components: { MpSourceCloudChip },
+    setup: () => ({ sizes: ['sm', 'md', 'lg'] }),
     template: `
-      <div class="d-flex flex-column ga-3">
-        <div class="d-flex align-center ga-2">
-          <MpSourceCloudChip data-source="marketing" size="md" />
-          <MpSourceCloudChip data-source="marketing" size="md" icon-only />
-          <span class="text-caption text-medium-emphasis">md</span>
-        </div>
-        <div class="d-flex align-center ga-2">
-          <MpSourceCloudChip data-source="marketing" size="sm" />
-          <MpSourceCloudChip data-source="marketing" size="sm" icon-only />
-          <span class="text-caption text-medium-emphasis">sm</span>
+      <div class="d-flex flex-column ga-4">
+        <div v-for="size in sizes" :key="size" class="d-flex align-center ga-3">
+          <span class="text-caption text-medium-emphasis" style="width: 2rem;">{{ size }}</span>
+          <MpSourceCloudChip data-source="marketing" :size="size" />
+          <MpSourceCloudChip data-source="marketing" :size="size" icon-only />
         </div>
       </div>
     `,
@@ -121,8 +97,36 @@ export const SizeMatrix: Story = {
   args: { dataSource: 'marketing' },
 }
 
-/** Every source cloud on dark — per-cloud colors come from source-cloud-colors.css and must stay legible on dark surfaces. */
-export const DarkMode: Story = {
-  ...AllSources,
-  globals: darkModeGlobals,
+/** States — label vs icon-only, at every size, so the square collapse is verifiable. */
+export const States: Story = {
+  render: () => ({
+    components: { MpSourceCloudChip },
+    template: `
+      <div class="d-flex flex-column ga-4">
+        <div class="d-flex align-center ga-3">
+          <span class="text-caption text-medium-emphasis" style="width: 5rem;">with label</span>
+          <MpSourceCloudChip data-source="commerce" />
+        </div>
+        <div class="d-flex align-center ga-3">
+          <span class="text-caption text-medium-emphasis" style="width: 5rem;">icon only</span>
+          <MpSourceCloudChip data-source="commerce" icon-only />
+        </div>
+      </div>
+    `,
+  }),
+  args: { dataSource: 'commerce' },
+}
+
+// ── Scenarios ───────────────────────────────────────────────────────────────
+
+export const Commerce: Story = {
+  args: { dataSource: 'commerce', size: 'md' },
+}
+
+export const Service: Story = {
+  args: { dataSource: 'service', size: 'md' },
+}
+
+export const Neto: Story = {
+  args: { dataSource: 'neto', size: 'md' },
 }

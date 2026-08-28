@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
 import {
@@ -560,10 +561,14 @@ const usageRows = computed(() => {
 
     <!-- Cancel subscription drawer (exit survey) -->
     <MpFormDrawer v-model="cancelDrawerOpen" title="Cancel subscription" subtitle="We're sorry to see you go.">
-      <v-radio-group v-model="cancelReason" class="cancel-drawer__reasons" label="Why are you cancelling?">
-        <v-radio v-for="r in cancelReasons" :key="r" :label="r" :value="r" />
-      </v-radio-group>
-      <v-textarea v-model="cancelComment" label="Anything else? (optional)" variant="outlined" rows="3" density="comfortable" />
+      <MpFormField label="Why are you cancelling?">
+        <template #default="{ labelId }">
+          <v-radio-group v-model="cancelReason" :aria-labelledby="labelId">
+            <v-radio v-for="r in cancelReasons" :key="r" :label="r" :value="r" />
+          </v-radio-group>
+        </template>
+      </MpFormField>
+      <v-textarea v-model="cancelComment" label="Anything else? (optional)" rows="3" />
       <p class="cancel-drawer__notice">
         <v-icon size="14">info</v-icon>
         You'll keep access until the end of your billing period. Your data is retained for 30 days after.
@@ -847,15 +852,12 @@ const usageRows = computed(() => {
 }
 
 /* ─── Cancel drawer ───────────────────────────────────────── */
-.cancel-drawer__reasons {
-  margin-bottom: 4px;
-}
-
 .cancel-drawer__notice {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  margin: 12px 0 0;
+  /* The drawer body owns the space between its children. */
+  margin: 0;
   font-size: 12px;
   color: var(--muted);
 }

@@ -207,18 +207,18 @@ const barPath = computed(() => heroBars
   border-radius: 999px;
   background: var(--accent-subtle-bg);
   color: var(--accent-default);
-  font-size: var(--mp-typography-fontSize-sm);
-  font-weight: var(--mp-typography-fontWeight-semibold);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 0.02em;
   margin-bottom: 20px;
 }
 
 .commerce-landing__title {
-  font-family: var(--mp-typography-fontFamily-base);
-  font-weight: var(--mp-typography-fontWeight-heavy);
+  font-family: var(--mp-fontFamily-base);
+  font-weight: var(--mp-fontWeight-heavy);
   font-size: clamp(2.4rem, 4.2vw, 3.6rem);
   line-height: 1.08;
-  letter-spacing: var(--mp-typography-letterSpacing-tighter);
+  letter-spacing: var(--mp-letterSpacing-tighter);
   margin: 0 0 20px;
   color: var(--text-primary);
 }
@@ -238,7 +238,7 @@ const barPath = computed(() => heroBars
 
 .commerce-landing__cta {
   padding-inline: 28px !important;
-  font-weight: var(--mp-typography-fontWeight-semibold);
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .commerce-landing__hero-card {
@@ -260,7 +260,7 @@ const barPath = computed(() => heroBars
   gap: 6px;
   padding: 14px 16px;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: var(--surface-primary);
 }
 
@@ -276,22 +276,22 @@ const barPath = computed(() => heroBars
 }
 
 .commerce-landing__hero-metric-label {
-  font-size: var(--mp-typography-fontSize-xs);
+  font-size: var(--mp-fontSize-11);
   text-transform: uppercase;
-  letter-spacing: var(--mp-typography-letterSpacing-eyebrow);
-  font-weight: var(--mp-typography-fontWeight-semibold);
+  letter-spacing: var(--mp-letterSpacing-eyebrow);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-muted);
 }
 
 .commerce-landing__hero-metric-value {
   font-size: 1.5rem;
-  font-weight: var(--mp-typography-fontWeight-bold);
+  font-weight: var(--mp-fontWeight-bold);
   color: var(--text-primary);
-  letter-spacing: var(--mp-typography-letterSpacing-tight);
+  letter-spacing: var(--mp-letterSpacing-tight);
 }
 
 .commerce-landing__hero-chart {
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: var(--surface-primary);
   border: 1px solid var(--border-subtle);
   padding: 16px;
@@ -315,14 +315,14 @@ const barPath = computed(() => heroBars
   flex-direction: column;
   gap: 6px;
   padding: 14px 16px;
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   border: 1px solid var(--border-subtle);
   background: var(--surface-primary);
 }
 
 .commerce-landing__hero-footer-value {
   font-size: 1.25rem;
-  font-weight: var(--mp-typography-fontWeight-bold);
+  font-weight: var(--mp-fontWeight-bold);
   color: var(--text-primary);
 }
 
@@ -330,7 +330,7 @@ const barPath = computed(() => heroBars
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
   color: var(--text-primary);
 }
 
@@ -345,7 +345,7 @@ const barPath = computed(() => heroBars
 .commerce-landing__trust {
   background: var(--accent-subtle-bg);
   padding: 28px 0;
-  margin: 0 calc(-1 * var(--mp-spacing-6));
+  margin: 0 calc(-1 * var(--mp-space-24));
 }
 
 .commerce-landing__trust-inner {
@@ -354,13 +354,13 @@ const barPath = computed(() => heroBars
   gap: 40px;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 0 var(--mp-spacing-6);
+  padding: 0 var(--mp-space-24);
   flex-wrap: wrap;
 }
 
 .commerce-landing__trust-label {
-  font-size: var(--mp-typography-fontSize-sm);
-  font-weight: var(--mp-typography-fontWeight-semibold);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   line-height: 1.2;
   flex-shrink: 0;
@@ -395,7 +395,7 @@ const barPath = computed(() => heroBars
 
   strong {
     color: var(--text-primary);
-    font-weight: var(--mp-typography-fontWeight-bold);
+    font-weight: var(--mp-fontWeight-bold);
   }
 
   p {
@@ -416,8 +416,8 @@ const barPath = computed(() => heroBars
 
 .commerce-landing__section-title {
   font-size: clamp(1.8rem, 3vw, 2.4rem);
-  font-weight: var(--mp-typography-fontWeight-heavy);
-  letter-spacing: var(--mp-typography-letterSpacing-tighter);
+  font-weight: var(--mp-fontWeight-heavy);
+  letter-spacing: var(--mp-letterSpacing-tighter);
   margin: 0 0 8px;
   color: var(--text-primary);
 }
@@ -453,14 +453,14 @@ const barPath = computed(() => heroBars
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: var(--accent-subtle-bg);
   color: var(--accent-default);
 }
 
 .commerce-landing__capability-title {
   font-size: 1.25rem;
-  font-weight: var(--mp-typography-fontWeight-bold);
+  font-weight: var(--mp-fontWeight-bold);
   margin: 0;
   color: var(--text-primary);
 }
@@ -477,7 +477,7 @@ const barPath = computed(() => heroBars
   align-items: center;
   justify-content: center;
   aspect-ratio: 16 / 10;
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: var(--surface-secondary);
   border: 1px dashed var(--border-default);
 }

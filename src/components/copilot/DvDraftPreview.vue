@@ -329,41 +329,48 @@ const activityItems = [
   width: 100%;
 }
 
+/* Chart canvas dimensions (bar/line/pie svg heights and widths below) are
+   deliberately NOT on the spacing scale: they are plotting-area geometry sized to
+   the data, not a spacing decision the design system should own. Everything that
+   IS a spacing or type decision in this file is tokenized. */
+
 /* Eyebrow used inside KPI quad */
 .dv-eyebrow {
-  font-size: 11px;
+  font-size: var(--mp-fontSize-11);
   font-weight: 600;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: rgb(var(--v-theme-on-surface-variant));
-  margin-bottom: 8px;
+  margin-bottom: var(--mp-space-8);
 }
 
 /* ─── KPI quad ─────────────────────────────────────────────────────── */
 .dv-kpi-quad {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  /* 1px hairline, not spacing: the gap shows the container's background through as the
+     cell divider, so this is border geometry and stays off the spacing scale. */
   gap: 1px;
   background: rgb(var(--v-theme-outline-variant));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-sm);
+  border-radius: var(--mp-radius-10);
   overflow: hidden;
 }
 
 .dv-kpi-quad__cell {
   background: rgb(var(--v-theme-surface));
-  padding: 12px 14px;
+  padding: var(--mp-space-12) var(--mp-space-14);
 }
 
 .dv-kpi-quad__row {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: var(--mp-space-6);
   justify-content: space-between;
 }
 
 .dv-kpi-quad__v {
-  font-size: 22px;
+  font-size: var(--mp-fontSize-24);
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.5px;
@@ -371,18 +378,18 @@ const activityItems = [
   color: rgb(var(--v-theme-on-surface));
 }
 
-[data-density='compact'] .dv-kpi-quad__cell { padding: 10px 12px; }
-[data-density='compact'] .dv-kpi-quad__v { font-size: 20px; }
-[data-density='expanded'] .dv-kpi-quad__cell { padding: 18px 20px; }
-[data-density='expanded'] .dv-kpi-quad__v { font-size: 32px; }
+[data-density='compact'] .dv-kpi-quad__cell { padding: var(--mp-space-10) var(--mp-space-12); }
+[data-density='compact'] .dv-kpi-quad__v { font-size: var(--mp-fontSize-20); }
+[data-density='expanded'] .dv-kpi-quad__cell { padding: var(--mp-space-20) var(--mp-space-20); }
+[data-density='expanded'] .dv-kpi-quad__v { font-size: var(--mp-fontSize-32); }
 
 .dv-delta {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 3px 7px 3px 5px;
-  border-radius: 9999px;
-  font-size: 11px;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-4) var(--mp-space-8) var(--mp-space-4) var(--mp-space-6);
+  border-radius: var(--mp-radius-full);
+  font-size: var(--mp-fontSize-11);
   font-weight: 600;
   line-height: 1;
 }
@@ -396,16 +403,16 @@ const activityItems = [
 .dv-line-chart {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-sm);
-  padding: 14px 14px 8px;
+  border-radius: var(--mp-radius-10);
+  padding: var(--mp-space-14) var(--mp-space-14) var(--mp-space-8);
 }
 
 .dv-bar-chart__legend {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 10px;
-  font-size: 11.5px;
+  margin-bottom: var(--mp-space-10);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
@@ -431,8 +438,8 @@ const activityItems = [
 .dv-bar-chart__labels {
   display: flex;
   justify-content: space-between;
-  margin-top: 4px;
-  font-size: 10.5px;
+  margin-top: var(--mp-space-4);
+  font-size: var(--mp-fontSize-11);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -443,11 +450,11 @@ const activityItems = [
 .dv-pie-chart {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-sm);
-  padding: 14px;
+  border-radius: var(--mp-radius-10);
+  padding: var(--mp-space-14);
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--mp-space-16);
 }
 
 .dv-pie-chart__svg {
@@ -460,21 +467,21 @@ const activityItems = [
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-12);
 }
 
 .dv-pie-chart__legend-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
   color: rgb(var(--v-theme-on-surface));
 }
 
 .dv-pie-chart__swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+  width: var(--mp-space-10);
+  height: var(--mp-space-10);
+  border-radius: var(--mp-radius-4);
   flex-shrink: 0;
 }
 
@@ -491,7 +498,7 @@ const activityItems = [
 .dv-mini-tbl {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-sm);
+  border-radius: var(--mp-radius-10);
   overflow: hidden;
 }
 
@@ -502,8 +509,8 @@ const activityItems = [
 
 .dv-mini-tbl th {
   text-align: left;
-  padding: 8px 12px;
-  font-size: 10.5px;
+  padding: var(--mp-space-8) var(--mp-space-12);
+  font-size: var(--mp-fontSize-11);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -513,8 +520,8 @@ const activityItems = [
 }
 
 .dv-mini-tbl td {
-  padding: 10px 12px;
-  font-size: 12.5px;
+  padding: var(--mp-space-10) var(--mp-space-12);
+  font-size: var(--mp-fontSize-13);
   font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
   border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
@@ -525,32 +532,32 @@ const activityItems = [
 .dv-mini-tbl td.muted { color: rgb(var(--v-theme-on-surface-variant)); font-weight: 400; }
 .dv-mini-tbl tr:last-child td { border-bottom: none; }
 
-[data-density='compact'] .dv-mini-tbl td { padding: 8px 12px; }
-[data-density='expanded'] .dv-mini-tbl td { padding: 14px 16px; font-size: 14px; }
-[data-density='expanded'] .dv-mini-tbl th { padding: 12px 16px; }
+[data-density='compact'] .dv-mini-tbl td { padding: var(--mp-space-8) var(--mp-space-12); }
+[data-density='expanded'] .dv-mini-tbl td { padding: var(--mp-space-14) var(--mp-space-16); font-size: var(--mp-fontSize-14); }
+[data-density='expanded'] .dv-mini-tbl th { padding: var(--mp-space-12) var(--mp-space-16); }
 
 /* ─── Activity ─────────────────────────────────────────────────────── */
 .dv-activity {
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-sm);
-  padding: 6px 10px;
+  border-radius: var(--mp-radius-10);
+  padding: var(--mp-space-6) var(--mp-space-10);
 }
 
 .dv-activity__row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 4px;
+  gap: var(--mp-space-10);
+  padding: var(--mp-space-8) var(--mp-space-4);
   border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
 }
 
 .dv-activity__row:last-child { border-bottom: none; }
 
 .dv-activity__icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+  width: var(--mp-space-24);
+  height: var(--mp-space-24);
+  border-radius: var(--mp-component-chip-radius);
   background: rgb(var(--v-theme-surface-variant));
   color: rgb(var(--v-theme-primary));
   display: grid;
@@ -559,14 +566,13 @@ const activityItems = [
 }
 
 .dv-activity__title {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   font-weight: 500;
   color: rgb(var(--v-theme-on-surface));
 }
 
 .dv-activity__meta {
-  font-size: 11px;
+  font-size: var(--mp-fontSize-11);
   color: rgb(var(--v-theme-on-surface-variant));
-  margin-top: 1px;
 }
 </style>

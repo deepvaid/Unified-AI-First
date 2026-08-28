@@ -13,6 +13,8 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 
@@ -248,37 +250,33 @@ function exportInventory() {
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
+        <!-- Filter popover: `hide-details` is deliberate — these selects can never
+             carry a hint or an error, and the popover is a dense surface. -->
         <template #filter-content>
-          <v-select
-            v-model="filters.location"
-            :items="filterOptions.location"
-            label="Location"
-            multiple
-            chips
-            closable-chips
-            density="compact"
-            variant="outlined"
-            rounded="lg"
-            hide-details
-            placeholder="All"
-            persistent-placeholder
-            class="mb-3"
-          />
-          <v-select
-            v-model="filters.status"
-            :items="filterOptions.status"
-            label="Status"
-            multiple
-            chips
-            closable-chips
-            density="compact"
-            variant="outlined"
-            rounded="lg"
-            hide-details
-            placeholder="All"
-            persistent-placeholder
-            class="mb-2"
-          />
+          <MpFormGrid>
+            <v-select
+              v-model="filters.location"
+              :items="filterOptions.location"
+              label="Location"
+              multiple
+              chips
+              closable-chips
+              hide-details
+              placeholder="All"
+              persistent-placeholder
+            />
+            <v-select
+              v-model="filters.status"
+              :items="filterOptions.status"
+              label="Status"
+              multiple
+              chips
+              closable-chips
+              hide-details
+              placeholder="All"
+              persistent-placeholder
+            />
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
 
@@ -417,7 +415,7 @@ function exportInventory() {
           <span class="text-body-2 text-medium-emphasis">{{ formatImportDate(item.at) }}</span>
         </template>
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status === 'completed' ? 'Completed' : item.status === 'partial' ? 'Partial' : 'Failed'" type="general" size="x-small" />
+          <MpStatusChip :status="item.status === 'completed' ? 'Completed' : item.status === 'partial' ? 'Partial' : 'Failed'" type="general" size="sm" />
         </template>
         <template v-slot:no-data>
           <MpEmptyState icon="upload" title="No imports yet" description="Bulk stock updates you run will be listed here." />
@@ -431,20 +429,30 @@ function exportInventory() {
       title="Adjust Stock"
       :subtitle="adjustItem?.name"
     >
-      <v-text-field :model-value="adjustItem ? locationName(adjustItem.locationId) : ''" label="Location" variant="outlined" density="comfortable" readonly class="mb-4" prepend-inner-icon="map-pin" />
-      <v-btn-toggle v-model="adjustMode" mandatory density="comfortable" variant="outlined" divided class="mb-4 w-100">
-        <v-btn value="set" class="text-none flex-grow-1">Set new count</v-btn>
-        <v-btn value="delta" class="text-none flex-grow-1">Adjust by +/−</v-btn>
-      </v-btn-toggle>
-      <v-text-field
-        v-model.number="adjustValue"
-        :label="adjustMode === 'set' ? 'New count' : 'Change (e.g. -5 or 20)'"
-        type="number"
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
-      />
-      <v-select v-model="adjustReason" :items="REASONS" label="Reason" variant="outlined" density="comfortable" class="mb-4" />
+      <MpFormGrid>
+        <v-text-field
+          :model-value="adjustItem ? locationName(adjustItem.locationId) : ''"
+          label="Location"
+          readonly
+          prepend-inner-icon="map-pin"
+        />
+        <MpFormField label="Adjustment mode">
+          <template #default="{ labelId }">
+            <div>
+              <v-btn-toggle v-model="adjustMode" mandatory class="w-100" :aria-labelledby="labelId">
+                <v-btn value="set" class="text-none flex-grow-1">Set new count</v-btn>
+                <v-btn value="delta" class="text-none flex-grow-1">Adjust by +/−</v-btn>
+              </v-btn-toggle>
+            </div>
+          </template>
+        </MpFormField>
+        <v-text-field
+          v-model.number="adjustValue"
+          :label="adjustMode === 'set' ? 'New count' : 'Change (e.g. -5 or 20)'"
+          type="number"
+        />
+        <v-select v-model="adjustReason" :items="REASONS" label="Reason" />
+      </MpFormGrid>
       <v-card variant="tonal" color="primary" rounded="lg" class="pa-4 d-flex align-center justify-space-between">
         <div>
           <div class="text-caption text-medium-emphasis">New available</div>
@@ -465,9 +473,16 @@ function exportInventory() {
       title="Transfer Stock"
       :subtitle="transferItem?.name"
     >
-      <v-text-field :model-value="transferItem ? locationName(transferItem.locationId) : ''" label="From location" variant="outlined" density="comfortable" readonly class="mb-4" prepend-inner-icon="map-pin" />
-      <v-select v-model="transferTo" :items="transferOptions" label="To location" variant="outlined" density="comfortable" class="mb-4" prepend-inner-icon="map-pin" />
-      <v-text-field v-model.number="transferQty" label="Quantity" type="number" min="1" variant="outlined" density="comfortable" />
+      <MpFormGrid>
+        <v-text-field
+          :model-value="transferItem ? locationName(transferItem.locationId) : ''"
+          label="From location"
+          readonly
+          prepend-inner-icon="map-pin"
+        />
+        <v-select v-model="transferTo" :items="transferOptions" label="To location *" prepend-inner-icon="map-pin" />
+        <v-text-field v-model.number="transferQty" label="Quantity" type="number" min="1" />
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="transferDrawer = false">Cancel</v-btn>

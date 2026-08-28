@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
@@ -8,6 +8,7 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpDialog from '@/components/MpDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import { useRbacStore } from '@/stores/useRbac'
 import { useInitialLoad } from '@/composables/useInitialLoad'
@@ -87,7 +88,6 @@ function handleRowClick(event: MouseEvent, payload: { item: unknown }) {
 
 // Custom-role creation — plan-tier gated
 const upsellDialog = ref(false)
-const upsellDialogTitleId = useId()
 const createDrawer = ref(false)
 
 const limitLabel = computed(() => {
@@ -286,7 +286,7 @@ function confirmDelete() {
 
         <template #no-data>
           <MpEmptyState
-            variant="expressive"
+            emphasis="prominent"
             illustration="no-results"
             title="No roles match"
             description="Try a different search or product tab."
@@ -297,7 +297,7 @@ function confirmDelete() {
     </v-card>
 
     <!-- Create custom role -->
-    <MpFormDrawer v-model="createDrawer" title="Create custom role" subtitle="Start blank or duplicate an existing role" :width="480">
+    <MpFormDrawer v-model="createDrawer" title="Create custom role" subtitle="Start blank or duplicate an existing role">
       <v-text-field
         v-model="newRole.name"
         label="Role name *"
@@ -335,40 +335,38 @@ function confirmDelete() {
         You’ll pick permissions on the next screen. Dependencies are applied automatically — granting Edit always includes View.
       </v-alert>
       <template #footer>
-        <div class="w-100 d-flex justify-end gap-3">
-          <v-btn variant="text" class="text-none" @click="createDrawer = false">Cancel</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" :disabled="!newRole.name.trim()" @click="createCustomRole">
-            Create & edit permissions
-          </v-btn>
-        </div>
+        <v-btn variant="text" class="text-none" @click="createDrawer = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!newRole.name.trim()" @click="createCustomRole">
+          Create & edit permissions
+        </v-btn>
       </template>
     </MpFormDrawer>
 
     <!-- Plan-tier upsell -->
-    <v-dialog v-model="upsellDialog" max-width="440" :aria-labelledby="upsellDialogTitleId">
-      <v-card rounded="lg" class="pa-6 text-center">
-        <v-icon size="40" color="primary" class="mx-auto mb-3">lock</v-icon>
-        <div :id="upsellDialogTitleId" class="text-h6 font-weight-bold mb-2">
-          {{ rbac.customRoleLimit === 0 ? 'Custom roles are a plan feature' : 'Custom role limit reached' }}
-        </div>
-        <p class="text-body-2 text-medium-emphasis mb-5">
-          {{ rbac.customRoleLimit === 0
-            ? 'Custom roles are available on Professional and Enterprise plans. System roles remain fully available on every plan.'
-            : `This account has used ${rbac.customRoles.length} of ${rbac.customRoleLimit} custom roles. Upgrade to Enterprise for unlimited custom roles.` }}
-        </p>
-        <div class="d-flex justify-center gap-3">
-          <v-btn variant="text" class="text-none" @click="upsellDialog = false">Close</v-btn>
-          <v-btn
-            color="primary"
-            variant="flat"
-            class="text-none"
-            :to="{ name: 'Billing', params: { accountId } }"
-          >
-            View plans
-          </v-btn>
-        </div>
-      </v-card>
-    </v-dialog>
+    <MpDialog
+      v-model="upsellDialog"
+      size="sm"
+      icon="lock"
+      :title="rbac.customRoleLimit === 0 ? 'Custom roles are a plan feature' : 'Custom role limit reached'"
+    >
+      <p class="text-body-2 text-medium-emphasis">
+        {{ rbac.customRoleLimit === 0
+          ? 'Custom roles are available on Professional and Enterprise plans. System roles remain fully available on every plan.'
+          : `This account has used ${rbac.customRoles.length} of ${rbac.customRoleLimit} custom roles. Upgrade to Enterprise for unlimited custom roles.` }}
+      </p>
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="upsellDialog = false">Close</v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          class="text-none"
+          :to="{ name: 'Billing', params: { accountId } }"
+        >
+          View plans
+        </v-btn>
+      </template>
+    </MpDialog>
 
     <MpConfirmDialog
       v-model="deleteDialog"

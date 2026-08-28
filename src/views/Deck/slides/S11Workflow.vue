@@ -44,7 +44,7 @@ const STEPS = [
 .s11__flow {
   display: flex;
   align-items: stretch;
-  gap: var(--mp-spacing-4);
+  gap: var(--mp-space-16);
 }
 
 .s11__step {
@@ -60,7 +60,7 @@ const STEPS = [
 .s11__icon {
   width: 40px;
   height: 40px;
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -69,14 +69,14 @@ const STEPS = [
 
 .s11__text {
   margin: 0;
-  font-size: var(--mp-typography-fontSize-body);
-  line-height: var(--mp-typography-lineHeight-normal);
+  font-size: var(--mp-fontSize-14);
+  line-height: var(--mp-lineHeight-normal);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .s11__footnote {
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
 }
 
 @media (max-width: 900px) {

@@ -67,7 +67,7 @@ const WIDGETS: DashboardWidget[] = [
 ]
 
 const meta = {
-  title: 'Dashboards/DashboardGrid',
+  title: 'Product/Dashboards/DashboardGrid',
   component: DashboardGrid,
   tags: ['autodocs'],
   parameters: {
@@ -85,8 +85,21 @@ const meta = {
     filters: FILTERS,
   },
   argTypes: {
-    widgets: { control: 'object' },
-    filters: { control: 'object' },
+    accountId: { control: 'text', description: 'Account the dashboard belongs to. Passed down to every widget.' },
+    dashboardId: { control: 'text', description: 'Id of the dashboard being rendered.' },
+    setupTasks: { control: 'object', description: '`SetupGuideTask[]`. When present, the setup guide renders as the first grid item; omit it once setup is done.' },
+    setupCompleted: { control: 'number', description: 'How many setup tasks are done \u2014 the numerator in the guides progress line.' },
+    setupProgress: { control: 'number', description: 'Setup completion percentage (0-100) for the guides progress bar.' },
+    setupTotal: { control: 'number', description: 'Overall setup task count when `setupTasks` is a subset (e.g. the next 5 of 16).' },
+    setupGuideRoute: { control: 'object', description: '`RouteLocationRaw` for the guides View full guide link. Omit it and the link is not rendered.' },
+    widgets: {
+      control: 'object',
+      description: '`DashboardWidget[]` — each carries its own `layout` (`x`, `y`, `w`, `h`, `minW`, `minH`) in grid units, so the array is both the content and the layout. Reordering it does not move anything; changing `layout` does.',
+    },
+    filters: {
+      control: 'object',
+      description: '`DashboardFilterState` — `{ rangePreset, grain, comparison }`, applied to every widget in the grid. One filter state for the whole dashboard, not per widget.',
+    },
   },
   render: (args) => ({
     components: { DashboardGrid },
@@ -106,4 +119,44 @@ export const Populated: Story = {}
 
 export const Empty: Story = {
   args: { widgets: [] },
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * Two structures: a populated grid, and the empty grid that invites the first widget. The grid
+ * itself only places cards — every inset you see inside them belongs to `DashboardWidgetCard`
+ * and the `component.card.*` standard (P4-1).
+ */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { DashboardGrid },
+    setup: () => ({ args }),
+    template: `<DashboardGrid v-bind="args" />`,
+  }),
+  parameters: { canvas: 'full' },
+}
+
+/**
+ * There is no `size` prop. Widget sizes are per-widget (`widgetSizePresets.ts`) and the grid
+ * reflows them; the gap between cells is `component.card.gap` (16), the same token that spaces
+ * a card's own sections, so the rhythm inside a card and the rhythm between cards agree.
+ */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { DashboardGrid },
+    setup: () => ({ args }),
+    template: `<DashboardGrid v-bind="args" />`,
+  }),
+  parameters: { canvas: 'full' },
+}
+
+/** Populated, empty, and edit mode where every card grows a drag grip. */
+export const States: Story = {
+  render: (args) => ({
+    components: { DashboardGrid },
+    setup: () => ({ args }),
+    template: `<DashboardGrid v-bind="args" />`,
+  }),
+  parameters: { canvas: 'full' },
 }

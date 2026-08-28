@@ -55,23 +55,23 @@ const PHASES = [
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   background: rgba(var(--v-theme-primary), 0.1);
   color: rgb(var(--v-theme-primary));
-  font-size: var(--mp-typography-fontSize-sm);
-  font-weight: var(--mp-typography-fontWeight-bold);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-bold);
 }
 
 .s12__text {
   margin: 0;
-  font-size: var(--mp-typography-fontSize-body);
-  line-height: var(--mp-typography-lineHeight-normal);
+  font-size: var(--mp-fontSize-14);
+  line-height: var(--mp-lineHeight-normal);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .s12__footnote {
   max-width: 780px;
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
 }
 </style>

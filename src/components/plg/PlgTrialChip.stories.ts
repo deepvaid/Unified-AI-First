@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import PlgTrialChip from './PlgTrialChip.vue'
 import { usePlgStore, type PlgDemoPreset } from '@/stores/usePlg'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'PLG/PlgTrialChip',
+  title: 'Product/PLG/PlgTrialChip',
   component: PlgTrialChip,
   tags: ['autodocs'],
   parameters: {
@@ -50,7 +49,13 @@ wrap it in your own \`v-if\`; don't duplicate it elsewhere per page.
   traps focus, closes on Escape, and restores focus to the pill on close; urgency is conveyed by
   the label text ("Expiring soon", "Trial ended"), not color alone.
 - **Consumer must:** nothing beyond mounting it — the component is fully self-contained.
-        `,
+        
+
+### Controls
+This chip takes **no props** — the Controls panel is empty by design. It reads
+\`usePlgStore()\` and \`useAccountsStore()\`, so the way to change what it shows is to change the
+PLG demo state (the user-menu switcher, or the \`?plg=\` param).
+`,
       },
     },
   },
@@ -111,10 +116,4 @@ export const OpenPopover: Story = {
     const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Trial status"]')
     trigger?.click()
   },
-}
-
-/** L3 popover surface in dark mode. */
-export const DarkModeOpen: Story = {
-  globals: darkModeGlobals,
-  ...OpenPopover,
 }

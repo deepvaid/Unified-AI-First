@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpStatusChip from './MpStatusChip.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Data Display/MpStatusChip',
+  title: 'Atoms/MpStatusChip',
   component: MpStatusChip,
   tags: ['autodocs'],
   parameters: {
@@ -29,7 +28,7 @@ The \`MpStatusChip\` displays the current state of an entity. It automatically a
 
 ### 🟢 Do's
 - **Do** always provide the specific \`type\` (e.g., 'order', 'fulfillment', 'campaign'). This is crucial because a 'Pending' status might mean different things (and need different colors) across different domains.
-- **Do** use \`size="small"\` when placing chips inside Data Tables to conserve vertical space.
+- **Do** use \`size="sm"\` when placing chips inside Data Tables to conserve vertical space.
 - **Do** use the \`showIcon\` prop explicitly for Fulfillment statuses, where the visual icon adds critical scanning speed for warehouse teams.
 
 ### 🔴 Don'ts
@@ -55,7 +54,7 @@ The \`MpStatusChip\` displays the current state of an entity. It automatically a
       options: ['order', 'fulfillment', 'payment', 'campaign', 'contact', 'ticket', 'coupon', 'priority', 'connection', 'general'],
       description: 'Business domain used to resolve the status → color mapping. Unknown statuses fall back to the general map, then neutral.',
     },
-    size: { control: 'select', options: ['x-small', 'small', 'default'], description: 'Chip size. Use "small" inside data tables.' },
+    size: { control: 'select', options: ['sm', 'md', 'lg'], description: 'Chip size on the shared sm|md|lg ramp (P2-1). Heights come from component.chip.height.* — 20 / 24 / 32. Use "sm" inside data tables.' },
     variant: { control: 'select', options: ['flat', 'tonal', 'outlined'], description: 'Chip fill style. Tonal (default) is the platform standard.' },
     showIcon: { control: 'boolean', description: 'Prepend the mapped status icon (available for fulfillment, campaign, ticket, order, payment, priority, connection).' },
   },
@@ -68,6 +67,78 @@ export const Default: Story = {
   args: { status: 'Processing', type: 'order' },
 }
 
+/** The three fill treatments. `tonal` is the default — a whisper of colour, not a block of it. */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpStatusChip },
+    setup: () => ({ variants: ['tonal', 'flat', 'outlined'] }),
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div v-for="v in variants" :key="v">
+          <div class="text-caption text-medium-emphasis mb-2">{{ v }}</div>
+          <div class="d-flex flex-wrap ga-2 align-center">
+            <MpStatusChip status="Completed" type="order" :variant="v" />
+            <MpStatusChip status="On hold" type="order" :variant="v" />
+            <MpStatusChip status="Cancelled" type="order" :variant="v" />
+            <MpStatusChip status="Archived" type="order" :variant="v" />
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** All three sizes on the shared sm|md|lg ramp. */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpStatusChip },
+    setup: () => ({ sizes: ['sm', 'md', 'lg'] }),
+    template: `
+      <div class="d-flex flex-wrap ga-4 align-center">
+        <div v-for="size in sizes" :key="size">
+          <div class="text-caption text-medium-emphasis mb-2">{{ size }}</div>
+          <MpStatusChip status="Shipped" type="fulfillment" :size="size" show-icon />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as any,
+}
+
+/** Every tone the chip maps to, plus the icon on/off state and an unmapped status falling back to neutral. */
+export const States: Story = {
+  render: () => ({
+    components: { MpStatusChip },
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">all five tones</div>
+          <div class="d-flex flex-wrap ga-2 align-center">
+            <MpStatusChip status="Processing" type="order" />
+            <MpStatusChip status="Completed" type="order" />
+            <MpStatusChip status="On hold" type="order" />
+            <MpStatusChip status="Cancelled" type="order" />
+            <MpStatusChip status="Archived" type="order" />
+          </div>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">show-icon</div>
+          <div class="d-flex flex-wrap ga-2 align-center">
+            <MpStatusChip status="Shipped" type="fulfillment" show-icon />
+            <MpStatusChip status="Cancelled" type="fulfillment" show-icon />
+          </div>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">unmapped status — falls back to the neutral tone rather than throwing</div>
+          <MpStatusChip status="Something we've never seen" type="order" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
 export const WithIcon: Story = {
   args: { status: 'Shipped', type: 'fulfillment', showIcon: true },
 }
@@ -76,7 +147,7 @@ export const OrderStatuses: Story = {
   render: () => ({
     components: { MpStatusChip },
     template: `
-      <div class="d-flex flex-wrap gap-2 align-center">
+      <div class="d-flex flex-wrap ga-2 align-center">
         <MpStatusChip status="Pending" type="order" />
         <MpStatusChip status="Processing" type="order" />
         <MpStatusChip status="Completed" type="order" />
@@ -89,17 +160,11 @@ export const OrderStatuses: Story = {
   args: {} as any,
 }
 
-/** Pinned dark — tonal chips on L1 surfaces. */
-export const DarkModeOrderStatuses: Story = {
-  globals: darkModeGlobals,
-  ...OrderStatuses,
-}
-
 export const PriorityLevels: Story = {
   render: () => ({
     components: { MpStatusChip },
     template: `
-      <div class="d-flex flex-wrap gap-2 align-center">
+      <div class="d-flex flex-wrap ga-2 align-center">
         <MpStatusChip status="Critical" type="priority" showIcon />
         <MpStatusChip status="High" type="priority" showIcon />
         <MpStatusChip status="Medium" type="priority" showIcon />
@@ -114,7 +179,7 @@ export const ConnectionStatuses: Story = {
   render: () => ({
     components: { MpStatusChip },
     template: `
-      <div class="d-flex flex-wrap gap-2 align-center">
+      <div class="d-flex flex-wrap ga-2 align-center">
         <MpStatusChip status="Connected" type="connection" showIcon />
         <MpStatusChip status="Disconnected" type="connection" showIcon />
         <MpStatusChip status="Needs Setup" type="connection" showIcon />
@@ -130,7 +195,7 @@ export const FulfillmentStatuses: Story = {
   render: () => ({
     components: { MpStatusChip },
     template: `
-      <div class="d-flex flex-wrap gap-2 align-center">
+      <div class="d-flex flex-wrap ga-2 align-center">
         <MpStatusChip status="Unapproved" type="fulfillment" showIcon />
         <MpStatusChip status="Not Ready" type="fulfillment" showIcon />
         <MpStatusChip status="Ready For Fulfillment" type="fulfillment" showIcon />
@@ -147,7 +212,7 @@ export const PaymentStatuses: Story = {
   render: () => ({
     components: { MpStatusChip },
     template: `
-      <div class="d-flex flex-wrap gap-2 align-center">
+      <div class="d-flex flex-wrap ga-2 align-center">
         <MpStatusChip status="Not Paid" type="payment" />
         <MpStatusChip status="Paid" type="payment" />
         <MpStatusChip status="Requires Action" type="payment" />
@@ -161,7 +226,7 @@ export const CampaignStatuses: Story = {
   render: () => ({
     components: { MpStatusChip },
     template: `
-      <div class="d-flex flex-wrap gap-2 align-center">
+      <div class="d-flex flex-wrap ga-2 align-center">
         <MpStatusChip status="Draft" type="campaign" />
         <MpStatusChip status="Scheduled" type="campaign" />
         <MpStatusChip status="Sending" type="campaign" />
@@ -253,12 +318,12 @@ export const FullMatrix: Story = {
       <div>
         <div v-for="(statuses, type) in matrix" :key="type" class="mb-4">
           <h4 class="text-subtitle-2 text-capitalize mb-2">{{ type }}</h4>
-          <div class="d-flex flex-wrap gap-2 align-center">
+          <div class="d-flex flex-wrap ga-2 align-center">
             <MpStatusChip v-for="s in statuses" :key="s" :status="s" :type="type" />
           </div>
         </div>
         <h4 class="text-subtitle-2 mb-2">Unknown status → neutral fallback</h4>
-        <div class="d-flex flex-wrap gap-2 align-center">
+        <div class="d-flex flex-wrap ga-2 align-center">
           <MpStatusChip status="Some Custom Status" type="order" />
         </div>
       </div>
@@ -272,7 +337,7 @@ export const SizesAndVariants: Story = {
   render: () => ({
     components: { MpStatusChip },
     setup() {
-      const sizes = ['x-small', 'small', 'default']
+      const sizes = ['sm', 'md', 'lg']
       const variants = ['tonal', 'flat', 'outlined']
       return { sizes, variants }
     },
@@ -280,7 +345,7 @@ export const SizesAndVariants: Story = {
       <div>
         <div v-for="variant in variants" :key="variant" class="mb-4">
           <h4 class="text-subtitle-2 text-capitalize mb-2">{{ variant }}</h4>
-          <div class="d-flex flex-wrap gap-2 align-center">
+          <div class="d-flex flex-wrap ga-2 align-center">
             <MpStatusChip
               v-for="size in sizes"
               :key="size"

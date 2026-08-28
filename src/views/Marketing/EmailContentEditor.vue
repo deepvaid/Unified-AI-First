@@ -6,6 +6,9 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpBuilderPreviewDialog from '@/components/MpBuilderPreviewDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useToast } from '@/composables/useToast'
 
@@ -210,42 +213,47 @@ watch(contentId, () => {
         <template #right>
           <div class="pa-4">
             <template v-if="selected">
-              <div class="text-subtitle-2 font-weight-bold mb-4 text-capitalize">{{ selected.type }} settings</div>
+              <MpFormGrid>
+                <MpFormSection :title="`${selected.type} settings`" />
 
-              <template v-if="selected.type === 'title' || selected.type === 'paragraph'">
-                <v-textarea v-model="selected.text" label="Text" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="3" class="mb-4" hide-details />
-              </template>
-              <template v-else-if="selected.type === 'list'">
-                <v-textarea :model-value="selected ? listText(selected) : ''" @update:model-value="v => selected && setListText(selected, v)" label="Items (one per line)" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="3" class="mb-4" hide-details />
-              </template>
-              <template v-else-if="selected.type === 'image'">
-                <v-text-field v-model="selected.alt" label="Alt text" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
-                <v-btn variant="tonal" block prepend-icon="upload" class="text-none mb-4">Upload image</v-btn>
-              </template>
-              <template v-else-if="selected.type === 'button'">
-                <v-text-field v-model="selected.label" label="Button label" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
-                <v-text-field v-model="selected.url" label="Link URL" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
-              </template>
-              <template v-else-if="selected.type === 'spacer'">
-                <v-slider v-model="selected.height" label="Height" :min="8" :max="96" :step="4" thumb-label class="mb-4" hide-details />
-              </template>
-              <template v-else-if="selected.type === 'html'">
-                <v-textarea v-model="selected.text" label="HTML" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="5" class="mb-4 ece-mono" hide-details />
-              </template>
-              <template v-else>
-                <div class="text-body-2 text-medium-emphasis mb-4">No content options for this block.</div>
-              </template>
+                <template v-if="selected.type === 'title' || selected.type === 'paragraph'">
+                  <v-textarea v-model="selected.text" label="Text" auto-grow rows="3" />
+                </template>
+                <template v-else-if="selected.type === 'list'">
+                  <v-textarea :model-value="selected ? listText(selected) : ''" @update:model-value="v => selected && setListText(selected, v)" label="Items (one per line)" auto-grow rows="3" />
+                </template>
+                <template v-else-if="selected.type === 'image'">
+                  <v-text-field v-model="selected.alt" label="Alt text" />
+                  <v-btn variant="tonal" block prepend-icon="upload" class="text-none">Upload image</v-btn>
+                </template>
+                <template v-else-if="selected.type === 'button'">
+                  <v-text-field v-model="selected.label" label="Button label" />
+                  <v-text-field v-model="selected.url" label="Link URL" />
+                </template>
+                <template v-else-if="selected.type === 'spacer'">
+                  <v-slider v-model="selected.height" label="Height" :min="8" :max="96" :step="4" thumb-label />
+                </template>
+                <template v-else-if="selected.type === 'html'">
+                  <v-textarea v-model="selected.text" label="HTML" auto-grow rows="5" class="ece-mono" />
+                </template>
+                <template v-else>
+                  <div class="text-body-2 text-medium-emphasis">No content options for this block.</div>
+                </template>
 
-              <template v-if="['title', 'paragraph', 'button', 'social'].includes(selected.type)">
-                <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2">Alignment</div>
-                <v-btn-toggle v-model="selected.align" mandatory density="comfortable" variant="outlined" divided class="mb-4">
-                  <v-btn value="left" icon="align-left" size="small" aria-label="Align left" />
-                  <v-btn value="center" icon="align-center" size="small" aria-label="Align center" />
-                  <v-btn value="right" icon="align-right" size="small" aria-label="Align right" />
-                </v-btn-toggle>
-              </template>
+                <MpFormField v-if="['title', 'paragraph', 'button', 'social'].includes(selected.type)" label="Alignment">
+                  <div>
+                    <v-btn-toggle v-model="selected.align" mandatory>
+                      <v-btn value="left" icon="align-left" size="small" aria-label="Align left" />
+                      <v-btn value="center" icon="align-center" size="small" aria-label="Align center" />
+                      <v-btn value="right" icon="align-right" size="small" aria-label="Align right" />
+                    </v-btn-toggle>
+                  </div>
+                </MpFormField>
 
-              <v-btn variant="text" color="error" prepend-icon="trash-2" class="text-none" @click="removeBlock(selected.id)">Delete block</v-btn>
+                <div>
+                  <v-btn variant="text" color="error" prepend-icon="trash-2" class="text-none" @click="removeBlock(selected.id)">Delete block</v-btn>
+                </div>
+              </MpFormGrid>
             </template>
             <div v-else class="text-body-2 text-medium-emphasis pt-4">Select a block to edit it, or add one from the left.</div>
           </div>

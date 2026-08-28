@@ -92,9 +92,9 @@ const CREDITS = [
 .s15__title {
   position: relative;
   font-size: clamp(
-    var(--mp-typography-display-md-fontSize),
+    var(--mp-display-md-fontSize),
     6.5vw,
-    var(--mp-typography-display-xl-fontSize)
+    var(--mp-display-xl-fontSize)
   );
 }
 
@@ -102,8 +102,8 @@ const CREDITS = [
   position: relative;
   margin-inline: auto;
   max-width: 600px;
-  font-size: var(--mp-typography-fontSize-lg);
-  line-height: var(--mp-typography-lineHeight-normal);
+  font-size: var(--mp-fontSize-18);
+  line-height: var(--mp-lineHeight-normal);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
@@ -112,7 +112,7 @@ const CREDITS = [
   position: relative;
   height: 18vh;
   max-width: 460px;
-  margin: var(--mp-spacing-6) auto 0;
+  margin: var(--mp-space-24) auto 0;
   overflow: hidden;
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
   mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
@@ -123,14 +123,14 @@ const CREDITS = [
 }
 
 .s15__credits-roll p {
-  margin: 0 0 var(--mp-spacing-2);
-  font-size: var(--mp-typography-fontSize-sm);
+  margin: 0 0 var(--mp-space-8);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-on-surface-variant));
   font-variant-numeric: tabular-nums;
 }
 
 .s15__credits-head {
-  font-weight: var(--mp-typography-fontWeight-bold);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.08em;
   color: rgb(var(--v-theme-primary)) !important;
 }
@@ -146,11 +146,11 @@ const CREDITS = [
 
 .s15__kbd {
   display: inline-block;
-  padding: 0 var(--mp-spacing-2);
+  padding: 0 var(--mp-space-8);
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-sm);
+  border-radius: var(--mp-radius-4);
   background: rgb(var(--v-theme-surface));
-  font-family: var(--mp-typography-fontFamily-mono);
+  font-family: var(--mp-fontFamily-mono);
 }
 
 @media (prefers-reduced-motion: reduce) {

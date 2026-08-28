@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { Dashboard } from '@/stores/dashboards/types'
 import DashboardFormDialog from './DashboardFormDialog.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 function makeDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
   return {
@@ -23,7 +24,7 @@ function makeDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
 }
 
 const meta = {
-  title: 'Dashboards/DashboardFormDialog',
+  title: 'Product/Dashboards/DashboardFormDialog',
   component: DashboardFormDialog,
   tags: ['autodocs'],
   parameters: {
@@ -81,4 +82,106 @@ export const EditLongContent: Story = {
       accent: 'warning',
     }),
   },
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * Two structures, driven by whether a `dashboard` is passed: **create** and **edit**. The
+ * mode label rides on `MpDialog`'s `eyebrow` and the live name on its `title`, so the header
+ * narrates what is about to happen without a second heading.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { DashboardFormDialog },
+    data: () => ({ which: 'create' as string }),
+    template: `
+      <div class="d-flex ga-2 flex-wrap">
+        <v-btn variant="outlined" class="text-none" @click="which = 'create'">Create</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'edit'">Edit</v-btn>
+
+        <DashboardFormDialog :model-value="which === 'create'" account-id="2000290" @update:model-value="which = ''" />
+        <DashboardFormDialog
+          :model-value="which === 'edit'"
+          account-id="2000290"
+          :dashboard="{ id: 'd1', name: 'Lifecycle Health', description: 'Retention and winback at a glance.', accent: 'violet', icon: 'activity' } as never"
+          @update:model-value="which = ''"
+        />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop — this is `MpDialog`'s `sm` (440px). Two fields do not need a wide
+ * measure, and a name field stretched to 880px reads worse, not better. Phase 4 replaced this
+ * component's own `max-width="560"` plus `pa-5 / pa-5 / pa-4` bands with the shell's ramp and
+ * its one 20px inset.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { DashboardFormDialog },
+    data: () => ({ open: true }),
+    template: `
+      <div>
+        <v-btn variant="outlined" class="text-none" @click="open = true">New dashboard</v-btn>
+        <DashboardFormDialog v-model="open" account-id="2000290" />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * Empty (submit disabled), typed, and the counter/validation states on both fields. The
+ * dialog is `persistent`, so the scrim and Esc will not discard a half-typed name.
+ */
+export const States: Story = {
+  render: () => ({
+    components: { DashboardFormDialog },
+    data: () => ({ which: '' as string }),
+    template: `
+      <div class="d-flex ga-2 flex-wrap">
+        <v-btn variant="outlined" class="text-none" @click="which = 'empty'">Empty — submit disabled</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'filled'">Filled</v-btn>
+
+        <DashboardFormDialog :model-value="which === 'empty'" account-id="2000290" @update:model-value="which = ''" />
+        <DashboardFormDialog
+          :model-value="which === 'filled'"
+          account-id="2000290"
+          :dashboard="{ id: 'd2', name: 'Revenue Watch', description: 'Daily revenue, channel mix and refunds.', accent: 'emerald', icon: 'dollar-sign' } as never"
+          @update:model-value="which = ''"
+        />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** The dialog opening from a dashboard switcher, the way it does in the product
+ * — an empty-state card whose primary action is "New dashboard".
+ */
+export const InContextNewDashboard: Story = {
+  render: () => ({
+    components: { DashboardFormDialog, MpEmptyState },
+    data: () => ({ open: false }),
+    template: `
+      <v-card flat border rounded="lg">
+        <MpEmptyState
+          title="No dashboards yet"
+          icon="layout-dashboard"
+          description="A dashboard is a saved layout of widgets. Start with a blank one and add widgets as you go."
+          action-label="New dashboard"
+          action-icon="plus"
+          @action="open = true"
+        />
+        <DashboardFormDialog v-model="open" account-id="2000290" />
+      </v-card>
+    `,
+  }),
+  args: {} as never,
 }

@@ -1,12 +1,17 @@
+/*
+ * P5.5 exemption — the hex values in these fixtures are a MERCHANT's brand
+ * colours, i.e. the content this component configures and previews, not Marobase
+ * chrome. Same line Phase 4 drew for StorefrontPreview (DESIGN_AUDIT.md P4-8):
+ * forcing the system palette onto them would make the preview less honest.
+ */
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { ref } from 'vue'
 import LandingPageStylePanel from './LandingPageStylePanel.vue'
 import { PAGE_STYLE } from './landingStoryFixtures'
 import type { LandingPageStyle } from '@/stores/useLandingPages'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Marketing/LandingPageStylePanel',
+  title: 'Product/Marketing/Landing Pages/LandingPageStylePanel',
   component: LandingPageStylePanel,
   tags: ['autodocs'],
   parameters: {
@@ -89,9 +94,4 @@ export const Interactive: Story = {
       </div>
     `,
   }),
-}
-
-export const DarkMode: Story = {
-  ...Default,
-  globals: darkModeGlobals,
 }

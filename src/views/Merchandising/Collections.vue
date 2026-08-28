@@ -6,6 +6,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
 import {
@@ -120,12 +121,12 @@ function submitCreate() {
         search-placeholder="Filter collections…"
         :total-count="filteredCollections.length"
       >
+        <!-- Filter popover: `hide-details` is deliberate — this select can never
+             carry a hint or an error, and the popover is a dense surface. -->
         <template #filter-content>
           <v-select
             v-model="filterType"
             label="Filter type"
-            density="comfortable"
-            variant="outlined"
             hide-details
             :items="[
               { title: 'All types', value: 'all' },
@@ -148,7 +149,7 @@ function submitCreate() {
         class="flex-grow-1"
       >
         <template #item.status="{ item }">
-          <MpStatusChip :status="item.status === 'active' ? 'Active' : 'Inactive'" type="general" size="x-small" variant="flat" />
+          <MpStatusChip :status="item.status === 'active' ? 'Active' : 'Inactive'" type="general" size="sm" variant="flat" />
         </template>
 
         <template #item.name="{ item }">
@@ -205,27 +206,24 @@ function submitCreate() {
 
     <!-- Create collection drawer -->
     <MpFormDrawer v-model="createDrawer" title="Create collection" subtitle="Add a smart collection to this store">
-      <v-text-field
-        v-model="newCollection.name"
-        label="Collection name"
-        placeholder="collections/summer-sale"
-        variant="outlined"
-        density="comfortable"
-        class="mb-3"
-        autofocus
-      />
-      <v-select
-        v-model="newCollection.filterType"
-        label="Filter type"
-        :items="[
-          { title: 'Manual — curate products by hand', value: 'manual' },
-          { title: 'Synced — mirrors your store platform', value: 'synced' },
-        ]"
-        variant="outlined"
-        density="comfortable"
-        hint="Manual collections can be pinned and merchandised in Default Merchandising"
-        persistent-hint
-      />
+      <MpFormGrid>
+        <v-text-field
+          v-model="newCollection.name"
+          label="Collection name *"
+          placeholder="collections/summer-sale"
+          autofocus
+        />
+        <v-select
+          v-model="newCollection.filterType"
+          label="Filter type"
+          :items="[
+            { title: 'Manual — curate products by hand', value: 'manual' },
+            { title: 'Synced — mirrors your store platform', value: 'synced' },
+          ]"
+          hint="Manual collections can be pinned and merchandised in Default Merchandising"
+          persistent-hint
+        />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="createDrawer = false">Cancel</v-btn>
         <v-btn

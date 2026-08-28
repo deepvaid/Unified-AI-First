@@ -31,8 +31,8 @@ function onKeyActivate(e: KeyboardEvent) {
     @keydown.enter="onKeyActivate"
     @keydown.space="onKeyActivate"
   >
-    <div class="pa-4 d-flex flex-column flex-grow-1">
-      <div class="d-flex align-center gap-3" :class="{ 'mb-2': description || $slots.default }">
+    <div class="mp-option-card__body d-flex flex-column flex-grow-1">
+      <div class="d-flex align-center ga-3" :class="{ 'mb-2': description || $slots.default }">
         <v-avatar v-if="icon" color="primary" variant="tonal" size="34" rounded="lg" class="flex-shrink-0">
           <v-icon size="18">{{ icon }}</v-icon>
         </v-avatar>
@@ -49,6 +49,10 @@ function onKeyActivate(e: KeyboardEvent) {
 </template>
 
 <style scoped>
+.mp-option-card__body {
+  padding: var(--mp-component-card-padding);
+}
+
 .mp-option-card {
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;

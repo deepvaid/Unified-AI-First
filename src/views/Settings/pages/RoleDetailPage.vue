@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import PermissionMatrix from '@/components/rbac/PermissionMatrix.vue'
 import { useRbacStore } from '@/stores/useRbac'
@@ -171,21 +172,17 @@ function statusLabel(status: string): string {
         title="Role details"
         description="Name and describe the role so admins know when to assign it."
       >
-        <v-text-field
-          v-model="localName"
-          label="Role name *"
-          variant="outlined"
-          density="compact"
-          class="mb-3"
-        />
-        <v-textarea
-          v-model="localDescription"
-          label="Description"
-          variant="outlined"
-          density="compact"
-          rows="2"
-          hide-details
-        />
+        <MpFormGrid>
+          <v-text-field
+            v-model="localName"
+            label="Role name *"
+          />
+          <v-textarea
+            v-model="localDescription"
+            label="Description"
+            rows="3"
+          />
+        </MpFormGrid>
       </SettingsSection>
 
       <SettingsSection
@@ -216,7 +213,7 @@ function statusLabel(status: string): string {
             <v-avatar color="primary" variant="tonal" size="28" class="font-weight-bold text-caption">{{ user.avatar }}</v-avatar>
             <span class="holders__name">{{ user.name }}</span>
             <span class="holders__email">{{ user.email }}</span>
-            <MpStatusChip :status="statusLabel(user.status)" type="general" size="x-small" />
+            <MpStatusChip :status="statusLabel(user.status)" type="general" size="sm" />
           </div>
         </div>
         <v-btn

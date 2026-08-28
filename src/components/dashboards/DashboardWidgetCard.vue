@@ -401,7 +401,7 @@ function handleAttentionCollapse(collapsed: boolean) {
 .dashboard-widget-card {
   position: relative;
   border-color: var(--border-subtle) !important;
-  border-radius: var(--mp-component-card-radius-md) !important;
+  border-radius: var(--mp-radius-12) !important;
   background: var(--surface-primary) !important;
   overflow: hidden;
   min-height: 0;
@@ -417,14 +417,21 @@ function handleAttentionCollapse(collapsed: boolean) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: 12px;
-  min-height: 60px;
-  padding: 20px 20px 8px;
+  gap: var(--mp-space-12);
+  min-height: var(--mp-space-64);
+  /* P4-1: THE widget inset, inherited from `component.card.*` rather than
+     defined as a second widget-only pair (the Phase 3 follow-up asked for
+     exactly this — 20 was chosen there because MpKpiCard and this family
+     already used it). Header and body share one horizontal inset; the header's
+     short bottom edge is `card.gapCompact`, the gap to the body. */
+  padding: var(--mp-component-card-padding) var(--mp-component-card-padding) var(--mp-component-card-gapCompact);
 }
 
+/* Narrow cards drop to the 16 primitive: there is no 16 role stop, and adding
+   one would be the second inset scale P4-1 exists to avoid. */
 @media (max-width: 768px) {
   .dashboard-widget-card__header {
-    padding: 16px 16px 8px;
+    padding: var(--mp-space-16) var(--mp-space-16) var(--mp-component-card-gapCompact);
   }
 }
 
@@ -435,7 +442,7 @@ function handleAttentionCollapse(collapsed: boolean) {
 .dashboard-widget-card__title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-component-card-gapCompact);
   min-width: 0;
 }
 
@@ -444,8 +451,8 @@ function handleAttentionCollapse(collapsed: boolean) {
   overflow: hidden;
   margin: 0;
   color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -454,16 +461,19 @@ function handleAttentionCollapse(collapsed: boolean) {
 .dashboard-widget-card__davinci-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  /* On the shared chip ramp (`component.chip.*`), so this and the copy in
+     DashboardKpiWidget cannot drift — they were 20/10.5px/0 8px here and
+     18/10px/0 7px there. */
+  gap: var(--mp-space-4);
   flex-shrink: 0;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 999px;
+  height: var(--mp-component-chip-height-sm);
+  padding: 0 var(--mp-component-chip-paddingInline);
+  border-radius: var(--mp-radius-full);
   background: var(--dv-accent-soft);
   color: var(--dv-text-primary);
   border: 1px solid var(--dv-border);
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 0.02em;
   white-space: nowrap;
   cursor: default;
@@ -488,8 +498,8 @@ function handleAttentionCollapse(collapsed: boolean) {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 2px;
-  margin-top: -2px;
+  gap: var(--mp-component-widget-actionGap);
+  margin-top: calc(var(--mp-space-2) * -1);
 }
 
 .dashboard-widget-card__orb {
@@ -497,11 +507,11 @@ function handleAttentionCollapse(collapsed: boolean) {
 }
 
 .dashboard-widget-card__view-toggle {
-  height: 28px;
+  height: var(--mp-space-28);
   min-height: 0;
-  margin-right: 6px;
+  margin-right: var(--mp-space-6);
   border-color: var(--border-subtle);
-  border-radius: 8px;
+  border-radius: var(--mp-component-chip-radius);
   overflow: hidden;
 }
 
@@ -514,25 +524,25 @@ function handleAttentionCollapse(collapsed: boolean) {
 .dashboard-widget-card__actions .dashboard-widget-card__view-toggle :deep(.v-btn) {
   width: auto !important;
   min-width: 0;
-  height: 26px !important;
+  height: var(--mp-space-24) !important;
   min-height: 0 !important;
-  padding: 0 10px !important;
+  padding: 0 var(--mp-space-10) !important;
   border-radius: 0 !important;
-  font-size: 12px !important;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12) !important;
+  font-weight: var(--mp-fontWeight-semibold);
   text-transform: none;
   letter-spacing: 0;
   color: var(--muted);
 }
 
 .dashboard-widget-card__actions .dashboard-widget-card__view-toggle :deep(.v-btn:first-child) {
-  border-start-start-radius: 7px !important;
-  border-end-start-radius: 7px !important;
+  border-start-start-radius: var(--mp-radius-8) !important;
+  border-end-start-radius: var(--mp-radius-8) !important;
 }
 
 .dashboard-widget-card__actions .dashboard-widget-card__view-toggle :deep(.v-btn:last-child) {
-  border-start-end-radius: 7px !important;
-  border-end-end-radius: 7px !important;
+  border-start-end-radius: var(--mp-radius-8) !important;
+  border-end-end-radius: var(--mp-radius-8) !important;
 }
 
 .dashboard-widget-card__actions .dashboard-widget-card__view-toggle :deep(.v-btn.v-btn--active) {
@@ -542,9 +552,9 @@ function handleAttentionCollapse(collapsed: boolean) {
 
 .dashboard-widget-card__actions :deep(.v-btn),
 .dashboard-widget-card__kpi-actions :deep(.v-btn) {
-  min-width: 32px;
-  width: 32px !important;
-  height: 32px !important;
+  min-width: var(--mp-component-widget-actionSize);
+  width: var(--mp-component-widget-actionSize) !important;
+  height: var(--mp-component-widget-actionSize) !important;
   padding: 0;
   color: var(--muted);
   border-radius: var(--r-pill);
@@ -558,7 +568,7 @@ function handleAttentionCollapse(collapsed: boolean) {
 
 .dashboard-widget-card__actions :deep(.v-icon),
 .dashboard-widget-card__kpi-actions :deep(.v-icon) {
-  font-size: 18px;
+  font-size: var(--mp-fontSize-18);
 }
 
 .dashboard-widget-card__actions :deep(.v-icon svg),
@@ -566,14 +576,15 @@ function handleAttentionCollapse(collapsed: boolean) {
   stroke-width: 2.25;
 }
 
+/* The overlay geometry the clearances above are derived from. */
 .dashboard-widget-card__kpi-actions {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: var(--mp-component-widget-actionInset);
+  right: var(--mp-component-widget-actionInset);
   z-index: 2;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--mp-component-widget-actionGap);
 }
 
 /* Drag grip is always in-flow (no layout shift) and fades in on card hover. */
@@ -603,12 +614,12 @@ function handleAttentionCollapse(collapsed: boolean) {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-  padding: 0 20px 20px;
+  padding: 0 var(--mp-component-card-padding) var(--mp-component-card-padding);
 }
 
 @media (max-width: 768px) {
   .dashboard-widget-card__body {
-    padding: 0 16px 16px;
+    padding: 0 var(--mp-space-16) var(--mp-space-16);
   }
 }
 
@@ -619,14 +630,28 @@ function handleAttentionCollapse(collapsed: boolean) {
 
 /* Bespoke-header widgets render their own top-right controls ("View all",
    "Show", the last KPI cell) — inset them so the floating actions overlay
-   (drag grip + kebab, ~64px from the right edge) never sits on top of them. */
+   (drag grip + kebab) never sits on top of them.
+   P4-2: these were hand-computed magic numbers (76 / 60). They are now DERIVED
+   from the overlay's own three tokens, so moving the buttons or their gap moves
+   the clearance with them. Two buttons + one gap + the right inset, plus a
+   card-gap of breathing room. */
 .dashboard-widget-card--bespoke.dashboard-widget-card--has-actions :deep(.tabs-widget__bar),
 .dashboard-widget-card--bespoke.dashboard-widget-card--has-actions :deep(.attention-widget__toggle) {
-  padding-right: 76px;
+  padding-right: calc(
+    var(--mp-component-widget-actionInset)
+    + (var(--mp-component-widget-actionSize) * 2)
+    + var(--mp-component-widget-actionGap)
+    + var(--mp-component-card-gapCompact)
+  );
 }
 
+/* The last metric cell needs clearance for one button, not the pair. */
 .dashboard-widget-card--bespoke.dashboard-widget-card--has-actions :deep(.mx__cell:last-child) {
-  padding-right: 60px;
+  padding-right: calc(
+    var(--mp-component-widget-actionInset)
+    + var(--mp-component-widget-actionSize)
+    + var(--mp-component-card-gapCompact)
+  );
 }
 
 /* The attention banner's collapsed toggle row is much shorter than the other
@@ -640,42 +665,45 @@ function handleAttentionCollapse(collapsed: boolean) {
 .dashboard-widget-card__empty {
   display: flex;
   flex: 1 1 auto;
+  /* Keeps an empty widget from collapsing to nothing inside its grid cell —
+     a surface measure, not a spacing step. */
   min-height: 180px;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   text-align: center;
-  padding: 24px;
-  gap: 6px;
+  padding: var(--mp-component-state-padding);
+  gap: var(--mp-component-state-gap);
 }
 
 .dashboard-widget-card__empty-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 9999px;
+  width: var(--mp-space-40);
+  height: var(--mp-space-40);
+  border-radius: var(--mp-radius-full);
   background: var(--surface-secondary);
   color: var(--muted);
-  margin-bottom: 4px;
+  margin-bottom: var(--mp-space-4);
 }
 
 .dashboard-widget-card__empty-title {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
 .dashboard-widget-card__empty-sub {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
+  /* A reading measure, not a spacing step. */
   max-width: 280px;
   line-height: 1.4;
 }
 
 .dashboard-widget-card__empty-cta {
-  margin-top: 8px;
+  margin-top: var(--mp-component-card-gapCompact);
   text-transform: none;
 }
 
@@ -683,22 +711,22 @@ function handleAttentionCollapse(collapsed: boolean) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 10px 16px;
+  gap: var(--mp-component-card-gapCompact);
+  padding: var(--mp-space-10) var(--mp-space-16);
   border-top: 1px solid var(--border-subtle);
   background: var(--surface-primary);
-  min-height: 40px;
+  min-height: var(--mp-component-control-height);
   flex-shrink: 0;
 }
 
 .dashboard-widget-card__updated {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
   /* Keeps "Updated …" right-aligned when the cloud chip is hidden (attention widget). */
   margin-left: auto;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   letter-spacing: 0.02em;
   color: var(--muted);
   white-space: nowrap;

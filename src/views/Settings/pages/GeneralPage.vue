@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import { useUserProfile } from '@/stores/useUserProfile'
 import { useToast } from '@/composables/useToast'
@@ -94,61 +95,30 @@ function onFile(e: Event) {
     </SettingsSection>
 
     <SettingsSection title="Personal Info">
-      <div class="settings-grid">
-        <div class="settings-field">
-          <label class="settings-field__label">First Name</label>
-          <v-text-field v-model="profile.firstName" variant="outlined" density="compact" hide-details />
-        </div>
-        <div class="settings-field">
-          <label class="settings-field__label">Last Name</label>
-          <v-text-field v-model="profile.lastName" variant="outlined" density="compact" hide-details />
-        </div>
-        <div class="settings-field">
-          <label class="settings-field__label">Email</label>
-          <v-text-field v-model="profile.email" variant="outlined" density="compact" hide-details />
-        </div>
-        <div class="settings-field">
-          <label class="settings-field__label">Phone</label>
-          <v-text-field v-model="profile.phone" variant="outlined" density="compact" prepend-inner-icon="phone" hide-details />
-        </div>
-        <div class="settings-field">
-          <label class="settings-field__label">Timezone</label>
-          <v-select
-            v-model="profile.timezone"
-            :items="['America/New_York','UTC','Europe/London','Asia/Tokyo']"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
-        <div class="settings-field">
-          <label class="settings-field__label">Preferred Language</label>
-          <v-select
-            v-model="profile.language"
-            :items="['English (US)','French','Spanish','German']"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
-      </div>
+      <MpFormGrid :cols="2">
+        <v-text-field label="First Name" v-model="profile.firstName" />
+        <v-text-field label="Last Name" v-model="profile.lastName" />
+        <v-text-field label="Email" v-model="profile.email" />
+        <v-text-field label="Phone" v-model="profile.phone" prepend-inner-icon="phone" />
+        <v-select
+          label="Timezone"
+          v-model="profile.timezone"
+          :items="['America/New_York','UTC','Europe/London','Asia/Tokyo']"
+        />
+        <v-select
+          label="Preferred Language"
+          v-model="profile.language"
+          :items="['English (US)','French','Spanish','German']"
+        />
+      </MpFormGrid>
     </SettingsSection>
 
     <SettingsSection title="Change Password" description="Pick a strong password you don't use anywhere else.">
-      <div class="settings-grid settings-grid--thirds">
-        <div class="settings-field">
-          <label class="settings-field__label">Current Password</label>
-          <v-text-field v-model="security.current" type="password" variant="outlined" density="compact" hide-details />
-        </div>
-        <div class="settings-field">
-          <label class="settings-field__label">New Password</label>
-          <v-text-field v-model="security.next" type="password" variant="outlined" density="compact" hide-details />
-        </div>
-        <div class="settings-field">
-          <label class="settings-field__label">Confirm Password</label>
-          <v-text-field v-model="security.confirm" type="password" variant="outlined" density="compact" hide-details />
-        </div>
-      </div>
+      <MpFormGrid :cols="2">
+        <v-text-field label="Current Password" v-model="security.current" type="password" class="mp-form-grid__full" />
+        <v-text-field label="New Password" v-model="security.next" type="password" />
+        <v-text-field label="Confirm Password" v-model="security.confirm" type="password" />
+      </MpFormGrid>
     </SettingsSection>
 
     <div class="settings-save-bar">

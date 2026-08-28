@@ -304,6 +304,7 @@ function saveAndClose() {
     :left-width="264"
   >
     <template #title>
+      <!-- Toolbar chrome, not a form: plain/compact/hide-details are deliberate here. -->
       <v-text-field
         v-model="pageName"
         variant="plain"
@@ -319,11 +320,11 @@ function saveAndClose() {
         :class="{ 'lpe-url-chip--error': !canPublish }"
         @click="settingsOpen = true"
       >{{ pageUrl || 'Set a URL' }}</v-chip>
-      <MpStatusChip :status="page.publishStatus === 'published' ? 'Published' : 'Draft'" type="general" size="x-small" />
+      <MpStatusChip :status="page.publishStatus === 'published' ? 'Published' : 'Draft'" type="general" size="sm" />
     </template>
 
     <template #toolbar-center>
-      <v-btn-toggle v-model="device" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
+      <v-btn-toggle v-model="device" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
         <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop view" />
         <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile view" />
       </v-btn-toggle>
@@ -467,12 +468,12 @@ function saveAndClose() {
 
       <!-- Page settings drawer -->
       <MpFormDrawer v-model="settingsOpen" title="Page Settings" subtitle="SEO, URL, and tracking for this page">
-        <v-text-field v-model="pageUrl" label="Page URL" variant="outlined" density="comfortable" class="mb-4" />
-        <v-text-field v-model="seo.pageTitle" label="Page Title" variant="outlined" density="comfortable" class="mb-4" />
-        <v-textarea v-model="seo.description" label="Description" variant="outlined" density="comfortable" rows="2" class="mb-4" />
-        <v-text-field v-model="seo.redirectAfterExpiry" label="Redirect after expiry" placeholder="https://mystore.com" variant="outlined" density="comfortable" class="mb-4" />
-        <v-text-field v-model="seo.metaKeywords" label="Meta Keywords" variant="outlined" density="comfortable" class="mb-4" />
-        <v-textarea v-model="seo.tracking" label="Page Tracking" placeholder="Paste analytics / pixel tracking code" variant="outlined" density="comfortable" rows="3" />
+        <v-text-field v-model="pageUrl" label="Page URL" />
+        <v-text-field v-model="seo.pageTitle" label="Page Title" />
+        <v-textarea v-model="seo.description" label="Description" rows="3" />
+        <v-text-field v-model="seo.redirectAfterExpiry" label="Redirect after expiry" placeholder="https://mystore.com" />
+        <v-text-field v-model="seo.metaKeywords" label="Meta Keywords" />
+        <v-textarea v-model="seo.tracking" label="Page Tracking" placeholder="Paste analytics / pixel tracking code" rows="3" />
         <template #footer>
           <v-btn variant="text" class="text-none" @click="settingsOpen = false">Cancel</v-btn>
           <v-btn color="primary" variant="flat" class="text-none" @click="settingsOpen = false">Done</v-btn>
@@ -481,7 +482,7 @@ function saveAndClose() {
 
       <MpBuilderPreviewDialog v-model="previewOpen" :title="pageName || 'Preview'">
         <template #toolbar>
-          <v-btn-toggle v-model="previewDevice" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
+          <v-btn-toggle v-model="previewDevice" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
             <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop view" />
             <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile view" />
           </v-btn-toggle>

@@ -1,10 +1,9 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpBuilderPreviewDialog from './MpBuilderPreviewDialog.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Overlays/MpBuilderPreviewDialog',
+  title: 'Patterns/Builder Shell/MpBuilderPreviewDialog',
   component: MpBuilderPreviewDialog,
   tags: ['autodocs'],
   parameters: {
@@ -126,7 +125,127 @@ export const Mobile375: Story = {
   },
 }
 
-export const DarkMode: Story = {
-  render: previewStory(EMAIL_PREVIEW),
-  globals: darkModeGlobals,
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * Two structures: bar + stage, and bar + `#toolbar` controls + stage. Since Phase 4 both are
+ * `MpDialog fullscreen` — the header band, close affordance and body scroll come from the
+ * shell, so a preview and a form modal wear the same chrome.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpBuilderPreviewDialog },
+    data: () => ({ which: 'plain' as string, device: 'desktop' }),
+    template: `
+      <div class="d-flex ga-2 flex-wrap">
+        <v-btn variant="outlined" class="text-none" @click="which = 'plain'">Bar + stage</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'toolbar'">+ #toolbar</v-btn>
+
+        <MpBuilderPreviewDialog :model-value="which === 'plain'" title="Email preview" @update:model-value="which = ''">
+          <v-card flat border rounded="lg" class="pa-8" style="width: 600px">Email canvas</v-card>
+        </MpBuilderPreviewDialog>
+
+        <MpBuilderPreviewDialog :model-value="which === 'toolbar'" title="Landing page preview" @update:model-value="which = ''">
+          <template #toolbar>
+            <v-btn-toggle v-model="device" mandatory density="compact" variant="outlined">
+              <v-btn value="desktop" icon="monitor" aria-label="Desktop" />
+              <v-btn value="tablet" icon="tablet" aria-label="Tablet" />
+              <v-btn value="mobile" icon="smartphone" aria-label="Mobile" />
+            </v-btn-toggle>
+          </template>
+          <v-card flat border rounded="lg" class="pa-8" style="width: 600px">Landing canvas — {{ device }}</v-card>
+        </MpBuilderPreviewDialog>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop — a preview is always full-screen, because the point is to see the
+ * artefact at its real size without the app's chrome competing. The stage inside is what
+ * carries a measure, and that is the caller's canvas.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpBuilderPreviewDialog },
+    data: () => ({ open: true }),
+    template: `
+      <div>
+        <v-btn variant="outlined" class="text-none" @click="open = true">Open preview</v-btn>
+        <MpBuilderPreviewDialog v-model="open" title="Email preview">
+          <v-card flat border rounded="lg" class="pa-8" style="width: 600px">A 600px email canvas on a full-bleed stage.</v-card>
+        </MpBuilderPreviewDialog>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Short content (stage centres it) and content long enough to scroll (the bar stays pinned). */
+export const States: Story = {
+  render: () => ({
+    components: { MpBuilderPreviewDialog },
+    data: () => ({ which: '' as string, blocks: Array.from({ length: 10 }, (_, i) => i + 1) }),
+    template: `
+      <div class="d-flex ga-2 flex-wrap">
+        <v-btn variant="outlined" class="text-none" @click="which = 'short'">Short</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'long'">Scrolling</v-btn>
+
+        <MpBuilderPreviewDialog :model-value="which === 'short'" title="Short preview" @update:model-value="which = ''">
+          <v-card flat border rounded="lg" class="pa-8" style="width: 600px">One block.</v-card>
+        </MpBuilderPreviewDialog>
+        <MpBuilderPreviewDialog :model-value="which === 'long'" title="Long preview" @update:model-value="which = ''">
+          <div style="width: 600px">
+            <v-card v-for="n in blocks" :key="n" flat border rounded="lg" class="pa-8 mb-4">Block {{ n }}</v-card>
+          </div>
+        </MpBuilderPreviewDialog>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** A builder's Preview button opening a real-looking email: device toggle in
+ * `#toolbar`, the rendered email on the stage.
+ */
+export const InContextEmailBuilderPreview: Story = {
+  render: () => ({
+    components: { MpBuilderPreviewDialog },
+    data: () => ({ open: true, device: 'desktop' }),
+    template: `
+      <div class="d-flex align-center ga-3">
+        <div class="text-body-2 text-medium-emphasis">Spring Refresh · Draft</div>
+        <v-spacer />
+        <v-btn variant="outlined" class="text-none" prepend-icon="eye" @click="open = true">Preview</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none">Send test</v-btn>
+
+        <MpBuilderPreviewDialog v-model="open" title="Spring Refresh — preview">
+          <template #toolbar>
+            <v-btn-toggle v-model="device" mandatory density="compact" variant="outlined">
+              <v-btn value="desktop" icon="monitor" aria-label="Desktop" />
+              <v-btn value="mobile" icon="smartphone" aria-label="Mobile" />
+            </v-btn-toggle>
+          </template>
+          <v-card flat border rounded="lg" :style="{ width: device === 'mobile' ? '390px' : '640px' }">
+            <div class="pa-6 text-center" style="background: var(--surface-secondary)">
+              <div class="text-h6 font-weight-bold">Northwind Supply Co.</div>
+            </div>
+            <div class="pa-8 text-center">
+              <div class="text-h5 font-weight-bold mb-2">Spring, refreshed</div>
+              <p class="text-body-2 text-medium-emphasis mb-6">New arrivals for the trail, the town and everything between.</p>
+              <v-btn color="primary" variant="flat" class="text-none">Shop new arrivals</v-btn>
+            </div>
+            <div class="pa-4 text-center text-caption text-medium-emphasis" style="background: var(--surface-secondary)">
+              You are receiving this because you subscribed. Unsubscribe.
+            </div>
+          </v-card>
+        </MpBuilderPreviewDialog>
+      </div>
+    `,
+  }),
+  args: {} as never,
 }

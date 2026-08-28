@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpWizardSteps from './MpWizardSteps.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Navigation/MpWizardSteps',
+  title: 'Atoms/MpWizardSteps',
   component: MpWizardSteps,
   tags: ['autodocs'],
   parameters: {
@@ -58,6 +57,8 @@ or \`v-stepper\`), or the flow has 5+ steps (use a full \`v-stepper\`).
     current: 1,
   },
   argTypes: {
+    clickable: { control: 'boolean', description: 'Makes visited steps (those at or below `maxStep`) clickable, emitting `select`. Off by default \u2014 the indicator is passive unless the wizard supports jumping back.' },
+    maxStep: { control: 'number', description: 'Highest 1-based step reached; everything up to it is jumpable when `clickable` is on. Defaults to `current`, which means no forward jumping.' },
     steps: { control: 'object', description: 'Ordered step labels (keep to 2–4 short labels).' },
     current: {
       control: { type: 'number', min: 1, max: 5, step: 1 },
@@ -69,7 +70,66 @@ or \`v-stepper\`), or the flow has 5+ steps (use a full \`v-stepper\`).
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const TwoSteps: Story = {}
+export const Default: Story = {}
+
+/** Step-count is the only structural axis — the component is a passive indicator. */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpWizardSteps },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">two steps</div>
+          <MpWizardSteps :steps="['Choose a type', 'Configure']" :current="1" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">four steps</div>
+          <MpWizardSteps :steps="['Choose a type', 'Configure', 'Design', 'Review']" :current="2" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Below 700px the labels collapse to dots. Resize the canvas to verify. */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpWizardSteps },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">full width — labels visible</div>
+          <MpWizardSteps :steps="['Choose a type', 'Configure', 'Design', 'Review']" :current="2" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">narrow container — labels collapse to dots</div>
+          <div style="max-width: 320px;">
+            <MpWizardSteps :steps="['Choose a type', 'Configure', 'Design', 'Review']" :current="2" />
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Progress through every position: first, mid, and complete. `aria-current` follows `current`. */
+export const States: Story = {
+  render: () => ({
+    components: { MpWizardSteps },
+    setup: () => ({ steps: ['Choose a type', 'Configure', 'Design', 'Review'] }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div v-for="n in [1, 2, 4]" :key="n">
+          <div class="text-caption text-medium-emphasis mb-2">current={{ n }}</div>
+          <MpWizardSteps :steps="steps" :current="n" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
 
 export const TwoStepsOnSettings: Story = {
   args: { current: 2 },
@@ -102,10 +162,4 @@ export const SmallScreenCollapse: Story = {
   globals: {
     viewport: { value: 'mobile375', isRotated: false },
   },
-}
-
-/** Step rail mid-progress on the dark theme. */
-export const DarkMode: Story = {
-  ...FourStepsMidProgress,
-  globals: darkModeGlobals,
 }

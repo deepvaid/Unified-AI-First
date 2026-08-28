@@ -4,7 +4,7 @@ import MpDateRangeSelect from './MpDateRangeSelect.vue'
 import { dateRangeLabel, type DateRangePreset, type DateRangeValue } from '@/stores/useAnalytics'
 
 const meta = {
-  title: 'Data Display/MpDateRangeSelect',
+  title: 'Molecules/MpDateRangeSelect',
   component: MpDateRangeSelect,
   tags: ['autodocs'],
   parameters: {
@@ -29,7 +29,6 @@ report-scoped (use plain \`v-text-field type="date"\` fields instead).
 import { ref } from 'vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
 const filteredRows = computed(() => rows.filter((r) => isWithinRange(r.date, dateRange.value)))
@@ -172,10 +171,4 @@ export const LiveSelection: Story = {
     `,
   }),
   args: {} as any,
-}
-
-/** Preset list and trigger on the dark theme. */
-export const DarkMode: Story = {
-  ...AllPresets,
-  globals: darkModeGlobals,
 }

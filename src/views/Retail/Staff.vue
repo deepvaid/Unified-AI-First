@@ -5,6 +5,8 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import { useRetailStore } from '@/stores/useRetail'
 import { useCommerceStore } from '@/stores/useCommerce'
@@ -170,8 +172,10 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
         </template>
 
         <template #item.active="{ item }">
+          <!-- Table-cell control: density and detail suppression are deliberate here. -->
           <v-switch
             :model-value="item.active"
+            :aria-label="`${item.name} active`"
             color="primary"
             hide-details
             density="compact"
@@ -205,60 +209,48 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
       :title="selectedStaff?.name ?? 'Staff member'"
       subtitle="Edit role, locations, and access"
     >
-      <v-row dense>
-        <v-col cols="12">
-          <v-text-field v-model="editForm.name" label="Full name" variant="outlined" density="compact" />
-        </v-col>
-        <v-col cols="12">
-          <v-select
-            v-model="editForm.role"
-            label="Role"
-            :items="ROLE_ITEMS"
-            variant="outlined"
-            density="compact"
-          />
-        </v-col>
-        <v-col cols="12">
-          <v-select
-            v-model="editForm.locationIds"
-            label="Locations"
-            :items="store.locationList.map((l) => ({ title: l.name, value: l.id }))"
-            multiple
-            chips
-            closable-chips
-            variant="outlined"
-            density="compact"
-          />
-        </v-col>
+      <MpFormGrid>
+        <v-text-field v-model="editForm.name" label="Full name" />
+        <v-select
+          v-model="editForm.role"
+          label="Role"
+          :items="ROLE_ITEMS"
+        />
+        <v-select
+          v-model="editForm.locationIds"
+          label="Locations"
+          :items="store.locationList.map((l) => ({ title: l.name, value: l.id }))"
+          multiple
+          chips
+          closable-chips
+        />
 
         <!-- Security section -->
-        <v-col cols="12">
-          <div class="text-subtitle-2 font-weight-bold mb-2 mt-2">Security</div>
-          <v-card flat border rounded="lg" class="pa-3 d-flex align-center ga-3">
-            <v-icon size="18" class="text-medium-emphasis">key-round</v-icon>
-            <div class="flex-grow-1">
-              <div class="text-body-2 font-weight-medium">POS PIN</div>
-              <div class="text-caption text-medium-emphasis">
-                {{ selectedStaff?.pinSet ? 'PIN is set. Reset to generate a new one.' : 'No PIN set. This person cannot sign in to POS.' }}
-              </div>
+        <MpFormSection title="Security" />
+        <v-card flat border rounded="lg" class="pa-3 d-flex align-center ga-3">
+          <v-icon size="18" class="text-medium-emphasis">key-round</v-icon>
+          <div class="flex-grow-1">
+            <div class="text-body-2 font-weight-medium">POS PIN</div>
+            <div class="text-caption text-medium-emphasis">
+              {{ selectedStaff?.pinSet ? 'PIN is set. Reset to generate a new one.' : 'No PIN set. This person cannot sign in to POS.' }}
             </div>
-            <v-btn size="small" variant="tonal" class="text-none" @click="showToast('PIN reset link sent — mock only')">
-              {{ selectedStaff?.pinSet ? 'Reset PIN' : 'Set PIN' }}
-            </v-btn>
-          </v-card>
-        </v-col>
+          </div>
+          <v-btn size="small" variant="tonal" class="text-none" @click="showToast('PIN reset link sent — mock only')">
+            {{ selectedStaff?.pinSet ? 'Reset PIN' : 'Set PIN' }}
+          </v-btn>
+        </v-card>
 
         <!-- Activity preview -->
-        <v-col cols="12" class="mt-2">
-          <div class="text-subtitle-2 font-weight-bold mb-2">Recent activity</div>
+        <MpFormSection title="Recent activity" />
+        <div>
           <div class="text-body-2 text-medium-emphasis">
             Last login: {{ selectedStaff ? formatAgo(selectedStaff.lastLoginAt) : '—' }}
           </div>
           <div class="text-body-2 text-medium-emphasis mt-1">
             Transactions today: {{ commerce.posOrders.filter((o) => o.pos?.staffId === selectedStaff?.id).length }}
           </div>
-        </v-col>
-      </v-row>
+        </div>
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="editDrawer = false">Cancel</v-btn>
@@ -268,40 +260,28 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
 
     <!-- Add staff member drawer -->
     <MpFormDrawer v-model="addDrawer" title="Add staff member" subtitle="Grant POS access to a new team member">
-      <v-row dense>
-        <v-col cols="12">
-          <v-text-field v-model="addForm.name" label="Full name" placeholder="e.g. Sam Reid" variant="outlined" density="compact" />
-        </v-col>
-        <v-col cols="12">
-          <v-select
-            v-model="addForm.role"
-            label="Role"
-            :items="ROLE_ITEMS"
-            variant="outlined"
-            density="compact"
-          />
-        </v-col>
-        <v-col cols="12">
-          <v-select
-            v-model="addForm.locationIds"
-            label="Assign to locations"
-            :items="store.locationList.map((l) => ({ title: l.name, value: l.id }))"
-            multiple
-            chips
-            closable-chips
-            variant="outlined"
-            density="compact"
-          />
-        </v-col>
-        <v-col cols="12">
-          <v-card flat border rounded="lg" class="pa-3">
-            <div class="d-flex align-center ga-2">
-              <v-icon size="16" color="info">info</v-icon>
-              <span class="text-body-2">A PIN setup link will be sent to the staff member's email.</span>
-            </div>
-          </v-card>
-        </v-col>
-      </v-row>
+      <MpFormGrid>
+        <v-text-field v-model="addForm.name" label="Full name" placeholder="e.g. Sam Reid" />
+        <v-select
+          v-model="addForm.role"
+          label="Role"
+          :items="ROLE_ITEMS"
+        />
+        <v-select
+          v-model="addForm.locationIds"
+          label="Assign to locations"
+          :items="store.locationList.map((l) => ({ title: l.name, value: l.id }))"
+          multiple
+          chips
+          closable-chips
+        />
+        <v-card flat border rounded="lg" class="pa-3">
+          <div class="d-flex align-center ga-2">
+            <v-icon size="16" color="info">info</v-icon>
+            <span class="text-body-2">A PIN setup link will be sent to the staff member's email.</span>
+          </div>
+        </v-card>
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="addDrawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" @click="saveNewStaffMember">Add staff member</v-btn>

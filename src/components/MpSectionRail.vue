@@ -95,7 +95,7 @@ function isActive(item: MpSectionRailItem): boolean {
     <div v-if="title" class="mp-section-rail__title">{{ title }}</div>
 
     <div v-if="identity" class="mp-section-rail__identity">
-      <v-avatar size="34" rounded="lg" color="primary" variant="tonal">
+      <v-avatar size="32" rounded="lg" color="primary" variant="tonal">
         <v-icon size="18">{{ identity.icon ?? 'globe' }}</v-icon>
       </v-avatar>
       <div class="mp-section-rail__identity-copy">
@@ -159,13 +159,17 @@ function isActive(item: MpSectionRailItem): boolean {
 </template>
 
 <style scoped lang="scss">
+/* Nav-item geometry comes from `component.listItem.*` — the SAME tokens MpListRow,
+   AppSidebar and AppBar's menu rows use, so every nav row in the product sits on
+   one 40px baseline (P4-7/P4-9). This rail used to run at 8px block padding,
+   AppSidebar at 10 and the old SettingsSidebar at 7. */
 .mp-section-rail {
   flex-shrink: 0;
-  width: 260px;
+  width: var(--mp-layout-sectionRailWidth);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 12px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-component-card-paddingCompact);
   border-right: 1px solid var(--border-subtle);
   align-self: stretch;
   min-height: 0;
@@ -175,13 +179,13 @@ function isActive(item: MpSectionRailItem): boolean {
 .mp-section-rail__back {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  font-size: 12.5px;
-  font-weight: 500;
+  gap: var(--mp-space-6);
+  padding: var(--mp-space-4) var(--mp-space-10);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
   text-decoration: none;
-  border-radius: 6px;
+  border-radius: var(--mp-component-nav-itemRadius);
   transition: color 120ms ease, background 120ms ease;
 }
 
@@ -191,9 +195,9 @@ function isActive(item: MpSectionRailItem): boolean {
 }
 
 .mp-section-rail__title {
-  padding: 0 10px;
-  font-size: 13px;
-  font-weight: 700;
+  padding: 0 var(--mp-space-10);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.02em;
   color: var(--text-primary);
 }
@@ -201,11 +205,11 @@ function isActive(item: MpSectionRailItem): boolean {
 .mp-section-rail__identity {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0 4px;
-  padding: 10px;
+  gap: var(--mp-space-10);
+  margin: 0 var(--mp-space-4);
+  padding: var(--mp-space-10);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--mp-component-input-radius);
   background: var(--surface-primary);
 }
 
@@ -215,25 +219,27 @@ function isActive(item: MpSectionRailItem): boolean {
 }
 
 .mp-section-rail__identity-name {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-bold);
   color: var(--text-primary);
 }
 
 .mp-section-rail__identity-caption {
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
 }
 
+/* The rail's search is a control, so it takes the shared 40px control height —
+   the same one the table toolbar's search and every button resolve to. Was 34. */
 .mp-section-rail__search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 4px;
-  padding: 0 10px;
-  height: 34px;
+  gap: var(--mp-space-8);
+  margin: 0 var(--mp-space-4);
+  padding: 0 var(--mp-space-10);
+  height: var(--mp-component-control-height);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--mp-component-input-radius);
   background: var(--surface-primary);
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
@@ -254,7 +260,7 @@ function isActive(item: MpSectionRailItem): boolean {
   border: 0;
   outline: none;
   background: transparent;
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
   font-family: inherit;
   color: var(--text-primary);
 }
@@ -268,21 +274,21 @@ function isActive(item: MpSectionRailItem): boolean {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--mp-component-nav-groupGap);
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: var(--mp-space-4);
 }
 
 .mp-section-rail__group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--mp-space-2);
 }
 
 .mp-section-rail__group-title {
-  padding: 6px 12px 4px;
-  font-size: 11px;
-  font-weight: 700;
+  padding: var(--mp-space-6) var(--mp-component-listItem-paddingInline) var(--mp-space-4);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -292,12 +298,14 @@ function isActive(item: MpSectionRailItem): boolean {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: 6px;
+  gap: var(--mp-component-listItem-gap);
+  min-height: var(--mp-component-listItem-minHeight);
+  padding-block: var(--mp-component-listItem-paddingBlock);
+  padding-inline: var(--mp-component-listItem-paddingInline);
+  border-radius: var(--mp-component-nav-itemRadius);
   color: var(--text-primary);
-  font-size: 13.5px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
   text-decoration: none;
   transition: background 120ms ease, color 120ms ease;
 }
@@ -320,12 +328,12 @@ function isActive(item: MpSectionRailItem): boolean {
 
 .mp-section-rail__item-count {
   flex-shrink: 0;
-  min-width: 20px;
-  padding: 1px 6px;
-  border-radius: 999px;
+  min-width: var(--mp-space-20);
+  padding: var(--mp-space-2) var(--mp-space-6);
+  border-radius: var(--mp-radius-full);
   background: var(--surface-secondary);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   text-align: center;
   color: var(--muted);
 }
@@ -342,18 +350,21 @@ function isActive(item: MpSectionRailItem): boolean {
 .mp-section-rail__item--active {
   background: var(--surface-secondary);
   color: rgb(var(--v-theme-primary));
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .mp-section-rail__item--active .mp-section-rail__item-icon {
   color: rgb(var(--v-theme-primary));
 }
 
+/* The active accent bar. Its 2px width and 2px cap radius are hairline geometry,
+   not spacing (Phase 2 exemption); only the inset it is held off the row's ends
+   by is a token — shared with every other rail so the mark reads identically. */
 .mp-section-rail__item--active::before {
   content: '';
   position: absolute;
-  top: 6px;
-  bottom: 6px;
+  top: var(--mp-component-nav-activeBarInset);
+  bottom: var(--mp-component-nav-activeBarInset);
   left: 0;
   width: 2px;
   border-radius: 0 2px 2px 0;
@@ -361,21 +372,22 @@ function isActive(item: MpSectionRailItem): boolean {
 }
 
 .mp-section-rail__empty {
-  padding: 12px;
-  font-size: 12.5px;
+  padding: var(--mp-component-card-paddingCompact);
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
   text-align: center;
 }
 
 .mp-section-rail__footer {
-  margin: 0 4px;
-  padding-top: 10px;
+  margin: 0 var(--mp-space-4);
+  padding-top: var(--mp-space-10);
   border-top: 1px solid var(--border-subtle);
 }
 
 @media (max-width: 900px) {
   .mp-section-rail {
     width: 100%;
+    /* Scroll measure for the collapsed rail, not a spacing step. */
     max-height: 320px;
     border-right: 0;
     border-bottom: 1px solid var(--border-subtle);
@@ -384,7 +396,7 @@ function isActive(item: MpSectionRailItem): boolean {
 
 @media (max-width: 640px) {
   .mp-section-rail {
-    padding: 12px;
+    padding: var(--mp-component-card-paddingCompact);
   }
 }
 </style>

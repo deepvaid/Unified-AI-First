@@ -7,6 +7,9 @@ import { downloadCsv, type CsvColumn } from '@/utils/exportCsv'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
@@ -273,19 +276,18 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div v-for="(options, key) in filterOptions" :key="key" class="mb-4">
+          <MpFormGrid>
             <v-select
+              v-for="(options, key) in filterOptions"
+              :key="key"
               v-model="filters[key as keyof typeof filters]"
               :label="filterLabels[key]"
               :items="options"
-              variant="outlined"
-              density="compact"
-              hide-details
               clearable
               placeholder="All"
               persistent-placeholder
             />
-          </div>
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
 
@@ -342,7 +344,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="String(item.status ?? '')" type="contact" size="x-small" variant="flat" />
+          <MpStatusChip :status="String(item.status ?? '')" type="contact" size="sm" variant="flat" />
         </template>
 
         <template v-slot:item.score="{ item }">
@@ -368,7 +370,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         <template #no-data>
           <MpEmptyState
             v-if="search || activeFilterEntries.length"
-            variant="expressive"
+            emphasis="prominent"
             illustration="no-results"
             title="No matches for that search"
             description="Try adjusting your filters or spelling."
@@ -376,7 +378,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
           />
           <MpEmptyState
             v-else
-            variant="expressive"
+            emphasis="prominent"
             illustration="empty-contacts"
             title="No contacts yet"
             description="Import a list or connect a store to start building your audience."
@@ -399,35 +401,45 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
     </MpFloatingBulkBar>
 
     <!-- Quick-Add Contact Drawer -->
-    <MpFormDrawer v-model="addDrawer" title="Add Contact" :subtitle="`Step ${addStep} of 2`" :width="460">
+    <MpFormDrawer v-model="addDrawer" title="Add Contact" :subtitle="`Step ${addStep} of 2`" size="sm">
       <!-- Step 1: Basic Info -->
-      <div v-if="addStep===1">
-        <div class="d-flex justify-center mb-5">
+      <template v-if="addStep===1">
+        <div class="d-flex justify-center">
           <v-avatar color="primary" size="72" class="text-h4 font-weight-bold">
             <template v-if="newContact.firstName">{{ newContact.firstName.charAt(0).toUpperCase() }}</template>
             <v-icon v-else size="32">user</v-icon>
           </v-avatar>
         </div>
-        <v-row dense>
-          <v-col cols="6"><v-text-field v-model="newContact.firstName" label="First Name *" variant="outlined" density="comfortable" /></v-col>
-          <v-col cols="6"><v-text-field v-model="newContact.lastName" label="Last Name" variant="outlined" density="comfortable" /></v-col>
-          <v-col cols="12"><v-text-field v-model="newContact.email" label="Email Address *" type="email" variant="outlined" density="comfortable" prepend-inner-icon="mail" /></v-col>
-          <v-col cols="12"><v-text-field v-model="newContact.phone" label="Phone Number" variant="outlined" density="comfortable" prepend-inner-icon="phone" /></v-col>
-          <v-col cols="12"><v-text-field v-model="newContact.company" label="Company" variant="outlined" density="comfortable" prepend-inner-icon="building-2" /></v-col>
-        </v-row>
-      </div>
+        <MpFormGrid :cols="2">
+          <v-text-field v-model="newContact.firstName" label="First Name *" />
+          <v-text-field v-model="newContact.lastName" label="Last Name" />
+          <v-text-field v-model="newContact.email" label="Email Address *" type="email" prepend-inner-icon="mail" class="mp-form-grid__full" />
+          <v-text-field v-model="newContact.phone" label="Phone Number" prepend-inner-icon="phone" class="mp-form-grid__full" />
+          <v-text-field v-model="newContact.company" label="Company" prepend-inner-icon="building-2" class="mp-form-grid__full" />
+        </MpFormGrid>
+      </template>
 
       <!-- Step 2: List, Tags, Status -->
-      <div v-else>
-        <v-select v-model="newContact.list" label="Subscribe to List" :items="listNames" variant="outlined" density="comfortable" class="mb-4" prepend-inner-icon="playlist-check" />
-        <v-select v-model="newContact.status" label="Status" :items="['Subscribed','Unsubscribed']" variant="outlined" density="comfortable" class="mb-4" />
-        <div class="text-subtitle-2 font-weight-bold mb-2">Tags</div>
-        <div class="d-flex flex-wrap gap-2 mb-3">
-          <v-chip v-for="(t,i) in newContact.tags" :key="i" closable size="small" color="secondary" variant="tonal" @click:close="removeTag(i)">{{ t }}</v-chip>
-        </div>
-        <v-text-field v-model="tagInput" label="Add tag..." variant="outlined" density="compact" hide-details
-          @keyup.enter="addTag" append-inner-icon="plus" @click:append-inner="addTag" />
-      </div>
+      <template v-else>
+        <MpFormGrid>
+          <v-select v-model="newContact.list" label="Subscribe to List" :items="listNames" prepend-inner-icon="playlist-check" />
+          <v-select v-model="newContact.status" label="Status" :items="['Subscribed','Unsubscribed']" />
+        </MpFormGrid>
+
+        <MpFormSection title="Tags" />
+        <MpFormGrid>
+          <div v-if="newContact.tags.length" class="d-flex flex-wrap ga-2">
+            <v-chip v-for="(t,i) in newContact.tags" :key="i" closable color="secondary" variant="tonal" @click:close="removeTag(i)">{{ t }}</v-chip>
+          </div>
+          <v-text-field
+            v-model="tagInput"
+            label="Add tag"
+            append-inner-icon="plus"
+            @keyup.enter="addTag"
+            @click:append-inner="addTag"
+          />
+        </MpFormGrid>
+      </template>
 
       <template #footer>
         <v-btn v-if="addStep===2" variant="text" class="text-none" @click="addStep=1">Back</v-btn>
@@ -438,62 +450,76 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
     </MpFormDrawer>
 
     <!-- Import Contacts Drawer (2-step) -->
-    <MpFormDrawer v-model="importDrawer" title="Import Contacts" :subtitle="`Step ${importStep} of 2`" :width="640">
+    <MpFormDrawer v-model="importDrawer" title="Import Contacts" :subtitle="`Step ${importStep} of 2`" size="lg">
       <!-- Step 1: Method, delimiter, list -->
-      <div v-if="importStep === 1">
-        <div class="text-subtitle-2 font-weight-bold mb-2">Import Method</div>
-        <v-radio-group v-model="importMethod" hide-details class="mb-3">
-          <v-radio label="File Import" value="file" />
-          <v-radio label="FTP Import" value="ftp" />
-          <v-radio label="Automated Import" value="automated" />
-        </v-radio-group>
+      <MpFormGrid v-if="importStep === 1">
+        <MpFormField label="Import Method">
+          <template #default="{ labelId }">
+            <v-radio-group v-model="importMethod" :aria-labelledby="labelId">
+              <v-radio label="File Import" value="file" />
+              <v-radio label="FTP Import" value="ftp" />
+              <v-radio label="Automated Import" value="automated" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
 
-        <div v-if="importMethod === 'file'" class="import-dropzone mb-5">
+        <div v-if="importMethod === 'file'" class="import-dropzone">
           <v-icon size="40" color="primary" class="mb-2">cloud-upload</v-icon>
           <div class="text-body-2 font-weight-medium mb-1">Drag & drop file here</div>
           <div class="text-caption text-medium-emphasis mb-3">or click to browse — accepts .csv, .txt, .zip</div>
           <v-btn variant="flat" color="primary" size="small" class="text-none" prepend-icon="folder-open">Browse File</v-btn>
         </div>
-        <div v-else-if="importMethod === 'ftp'" class="mb-5">
-          <v-select label="FTP File" :items="['contacts_export.csv', 'weekly_sync.txt', 'crm_dump.zip']" variant="outlined" density="comfortable" placeholder="Select a file from the FTP directory" />
-        </div>
-        <v-alert v-else type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2 mb-5">
+        <v-select
+          v-else-if="importMethod === 'ftp'"
+          label="FTP File"
+          :items="['contacts_export.csv', 'weekly_sync.txt', 'crm_dump.zip']"
+          placeholder="Select a file from the FTP directory"
+        />
+        <v-alert v-else type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
           Automated imports run on a schedule from your configured source. New files are picked up automatically once the source is connected.
         </v-alert>
 
-        <div class="text-subtitle-2 font-weight-bold mb-2">Delimiter</div>
-        <v-radio-group v-model="importDelimiter" inline hide-details class="mb-5">
-          <v-radio label="Comma" value="Comma" />
-          <v-radio label="Tab" value="Tab" />
-          <v-radio label="Colon" value="Colon" />
-          <v-radio label="Semi-Colon" value="Semi-Colon" />
-        </v-radio-group>
+        <MpFormField label="Delimiter">
+          <template #default="{ labelId }">
+            <v-radio-group v-model="importDelimiter" inline :aria-labelledby="labelId">
+              <v-radio label="Comma" value="Comma" />
+              <v-radio label="Tab" value="Tab" />
+              <v-radio label="Colon" value="Colon" />
+              <v-radio label="Semi-Colon" value="Semi-Colon" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
 
         <v-select
           v-model="importList"
           label="Select List *"
           :items="listNames"
-          variant="outlined"
-          density="comfortable"
           prepend-inner-icon="playlist-check"
         />
-      </div>
+      </MpFormGrid>
 
       <!-- Step 2: Options + mappings -->
-      <div v-else>
-        <div class="text-subtitle-2 font-weight-bold mb-2">Import Options</div>
-        <v-checkbox v-model="importOptions.importNew" label="Import new contacts" hide-details density="compact" />
-        <v-checkbox v-model="importOptions.triggerJourney" label="Trigger journey campaigns" hide-details density="compact" />
-        <v-checkbox v-model="importOptions.updateExisting" label="Update existing contacts" hide-details density="compact" class="mb-4" />
+      <template v-else>
+        <MpFormGrid>
+          <MpFormField label="Import Options">
+            <div>
+              <v-checkbox v-model="importOptions.importNew" label="Import new contacts" />
+              <v-checkbox v-model="importOptions.triggerJourney" label="Trigger journey campaigns" />
+              <v-checkbox v-model="importOptions.updateExisting" label="Update existing contacts" />
+            </div>
+          </MpFormField>
+        </MpFormGrid>
 
-        <div class="text-subtitle-2 font-weight-bold mb-2">Field Mapping</div>
-        <v-table density="compact" class="mb-4">
+        <MpFormSection title="Field Mapping" />
+        <v-table density="compact">
           <thead><tr><th>CSV Column</th><th>Contact Field</th></tr></thead>
           <tbody>
             <tr v-for="(m, i) in importMappings" :key="i">
               <td class="py-2 text-body-2 font-weight-medium">{{ m.csvCol }}</td>
               <td>
-                <v-select v-model="m.field" :items="importFieldOptions" variant="outlined" density="compact" hide-details style="min-width:200px;" />
+                <!-- Table-cell editor: compact and detail-free on purpose, so a
+                     hint or validation line can't grow the row. -->
+                <v-select v-model="m.field" :items="importFieldOptions" :aria-label="`Contact field for ${m.csvCol}`" density="compact" hide-details style="min-width:200px;" />
               </td>
             </tr>
           </tbody>
@@ -502,7 +528,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
           <strong>1,284</strong> rows detected · <strong>1,241</strong> valid · <strong>43</strong> skipped. Importing into <strong>{{ importList }}</strong>.
         </v-alert>
-      </div>
+      </template>
 
       <template #footer>
         <v-btn v-if="importStep === 2" variant="text" class="text-none" @click="importStep = 1">Back</v-btn>

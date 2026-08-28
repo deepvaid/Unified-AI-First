@@ -7,6 +7,9 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useMarketingAssetsStore()
@@ -148,51 +151,42 @@ function notify(text: string) { toast.success(text) }
     <!-- Create / edit drawer -->
     <MpFormDrawer
       v-model="drawer"
-      :title="editingId !== null ? 'Edit Footer' : 'New Footer'"
-      :width="560"
+      :title="editingId !== null ? 'Edit Footer' : 'New Footer'" size="lg"
     >
-      <v-text-field
-        v-model="name"
-        label="Name"
-        placeholder="e.g. Standard Compliance (CAN-SPAM)"
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
-        :rules="[v => !!v || 'Name is required']"
-      />
+      <MpFormGrid :cols="2">
+        <v-text-field
+          v-model="name"
+          class="mp-form-grid__full"
+          label="Name"
+          placeholder="e.g. Standard Compliance (CAN-SPAM)"
+          :rules="[v => !!v || 'Name is required']"
+        />
 
-      <div class="text-subtitle-2 font-weight-bold mb-3">Preference pages</div>
-      <v-row dense class="mb-2">
-        <v-col cols="12" sm="6">
-          <v-select v-model="prefPages.oneClickUnsub" :items="prefPageOptions" label="1-Click Unsubscribe" variant="outlined" density="comfortable" clearable hide-details class="mb-3" />
-        </v-col>
-        <v-col cols="12" sm="6">
-          <v-select v-model="prefPages.reportSpam" :items="prefPageOptions" label="Report Spam" variant="outlined" density="comfortable" clearable hide-details class="mb-3" />
-        </v-col>
-        <v-col cols="12" sm="6">
-          <v-select v-model="prefPages.manageSubscription" :items="prefPageOptions" label="Manage Subscription" variant="outlined" density="comfortable" clearable hide-details class="mb-3" />
-        </v-col>
-        <v-col cols="12" sm="6">
-          <v-select v-model="prefPages.editProfile" :items="prefPageOptions" label="Edit Profile" variant="outlined" density="comfortable" clearable hide-details class="mb-3" />
-        </v-col>
-      </v-row>
+        <MpFormSection title="Preference pages" />
+        <v-select v-model="prefPages.oneClickUnsub" :items="prefPageOptions" label="1-Click Unsubscribe" clearable />
+        <v-select v-model="prefPages.reportSpam" :items="prefPageOptions" label="Report Spam" clearable />
+        <v-select v-model="prefPages.manageSubscription" :items="prefPageOptions" label="Manage Subscription" clearable />
+        <v-select v-model="prefPages.editProfile" :items="prefPageOptions" label="Edit Profile" clearable />
 
-      <div class="text-subtitle-2 font-weight-bold mb-2 mt-2">Editor type</div>
-      <v-radio-group v-model="editorType" inline hide-details class="mb-4">
-        <v-radio label="Drag & Drop" value="Drag & Drop" />
-        <v-radio label="WYSIWYG" value="WYSIWYG" />
-      </v-radio-group>
+        <MpFormField label="Editor type" class="mp-form-grid__full">
+          <template #default="{ labelId }">
+            <v-radio-group v-model="editorType" inline :aria-labelledby="labelId">
+              <v-radio label="Drag & Drop" value="Drag & Drop" />
+              <v-radio label="WYSIWYG" value="WYSIWYG" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
 
-      <div class="text-subtitle-2 font-weight-bold mb-2">Footer content</div>
-      <v-textarea
-        v-model="body"
-        variant="outlined"
-        density="comfortable"
-        rows="5"
-        auto-grow
-        hint="Merge tags like {{campaign.address}} and {{campaign.unsubscribe_link}} render automatically at send time"
-        persistent-hint
-      />
+        <v-textarea
+          v-model="body"
+          class="mp-form-grid__full"
+          label="Footer content"
+          rows="5"
+          auto-grow
+          hint="Merge tags like {{campaign.address}} and {{campaign.unsubscribe_link}} render automatically at send time"
+          persistent-hint
+        />
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>

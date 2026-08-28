@@ -5,6 +5,8 @@ import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import JourneyFlowColumn from '@/components/marketing/JourneyFlowColumn.vue'
 import { categoryColor, categoryLabel } from '@/components/marketing/flowTheme'
 import { useCampaignsStore, type JourneyStatus } from '@/stores/useCampaigns'
@@ -523,10 +525,12 @@ onBeforeUnmount(() => {
         {{ journeyName }}
         <v-icon size="13" class="jb-name__pencil ml-1">pencil</v-icon>
       </button>
-      <v-text-field v-else v-model="nameInput" variant="outlined" density="compact" hide-details autofocus
+      <!-- Toolbar chrome, not a form: the inline rename field and the palette search below
+           keep compact + hide-details deliberately. -->
+      <v-text-field v-else v-model="nameInput" density="compact" hide-details autofocus
         style="width:320px;" aria-label="Journey name"
         @blur="journeyName = nameInput; editingName = false" @keyup.enter="journeyName = nameInput; editingName = false"></v-text-field>
-      <MpStatusChip :status="journeyStatus" type="general" size="x-small" />
+      <MpStatusChip :status="journeyStatus" type="general" size="sm" />
     </template>
 
     <template #actions>
@@ -601,7 +605,7 @@ onBeforeUnmount(() => {
         <div class="pa-3 border-b">
           <div class="mp-meta-label text-medium-emphasis" style="line-height:1.2;">Journey steps</div>
           <div class="text-caption text-medium-emphasis mb-2">Click a step to add it to your flow</div>
-          <v-text-field v-model="paletteQuery" placeholder="Search steps..." variant="outlined" density="compact"
+          <v-text-field v-model="paletteQuery" placeholder="Search steps..." density="compact"
             hide-details clearable prepend-inner-icon="search" aria-label="Search steps" class="jb-search" />
         </div>
         <div class="flex-grow-1 overflow-y-auto pa-2 jb-palette__scroll">
@@ -698,63 +702,63 @@ onBeforeUnmount(() => {
               This step isn't configured yet — review the settings below and apply.
             </v-alert>
 
-            <div class="jb-section-label mp-meta-label">Step details</div>
-            <v-text-field v-model="draft.title" label="Step name" variant="outlined" density="compact" class="mb-3"></v-text-field>
+            <MpFormGrid>
+              <MpFormSection title="Step details" />
+              <v-text-field v-model="draft.title" label="Step name"></v-text-field>
 
-            <template v-if="selectedFields.length">
-              <div class="jb-section-label mp-meta-label">Configuration</div>
-              <!-- Schema-driven fields from the node catalog -->
-              <template v-for="f in selectedFields" :key="f.key">
-                <v-select v-if="f.type === 'select'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="f.options"
-                  variant="outlined" density="compact" class="mb-3"
-                  @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
-                <v-select v-else-if="f.type === 'content-picker'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="contentNames"
-                  variant="outlined" density="compact" class="mb-3" prepend-inner-icon="file-text"
-                  @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
-                <v-select v-else-if="f.type === 'multi-select'" :model-value="(draftConfig[f.key] as string[] ?? [])" :label="f.label" :items="f.options"
-                  variant="outlined" density="compact" class="mb-3" multiple chips closable-chips
-                  @update:model-value="(v: string[]) => draftConfig[f.key] = v"></v-select>
-                <v-text-field v-else-if="f.type === 'number'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" type="number"
-                  variant="outlined" density="compact" class="mb-3"
-                  @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
-                <v-switch v-else-if="f.type === 'switch'" v-model="draftConfig[f.key]" :label="f.label"
-                  color="primary" density="compact" hide-details class="mb-3"></v-switch>
-                <v-text-field v-else :model-value="String(draftConfig[f.key] ?? '')" :label="f.label"
-                  variant="outlined" density="compact" class="mb-3"
-                  @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
+              <template v-if="selectedFields.length">
+                <MpFormSection title="Configuration" />
+                <!-- Schema-driven fields from the node catalog -->
+                <template v-for="f in selectedFields" :key="f.key">
+                  <v-select v-if="f.type === 'select'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="f.options"
+                    @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
+                  <v-select v-else-if="f.type === 'content-picker'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="contentNames"
+                    prepend-inner-icon="file-text"
+                    @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
+                  <v-select v-else-if="f.type === 'multi-select'" :model-value="(draftConfig[f.key] as string[] ?? [])" :label="f.label" :items="f.options"
+                    multiple chips closable-chips
+                    @update:model-value="(v: string[]) => draftConfig[f.key] = v"></v-select>
+                  <v-text-field v-else-if="f.type === 'number'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" type="number"
+                    @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
+                  <v-switch v-else-if="f.type === 'switch'" v-model="draftConfig[f.key]" :label="f.label"></v-switch>
+                  <v-text-field v-else :model-value="String(draftConfig[f.key] ?? '')" :label="f.label"
+                    @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
+                </template>
               </template>
-            </template>
 
-            <v-alert v-if="selectedNode.category === 'delay'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
-              Journey pauses here before moving to the next step.
-            </v-alert>
-            <v-alert v-else-if="selectedNode.category === 'filter'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
-              Contacts are routed into one of the branches: {{ (selectedNode.branchLabels ?? []).join(' · ') }}.
-            </v-alert>
+              <v-alert v-if="selectedNode.category === 'delay'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
+                Journey pauses here before moving to the next step.
+              </v-alert>
+              <v-alert v-else-if="selectedNode.category === 'filter'" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
+                Contacts are routed into one of the branches: {{ (selectedNode.branchLabels ?? []).join(' · ') }}.
+              </v-alert>
 
-            <v-btn
-              variant="text"
-              size="small"
-              class="text-none px-0 mt-2"
-              :append-icon="showStepMore ? 'chevron-up' : 'chevron-down'"
-              @click="showStepMore = !showStepMore"
-            >{{ showStepMore ? 'Less' : 'More' }}</v-btn>
-
-            <template v-if="showStepMore">
-              <v-text-field v-model="draft.subtitle" label="Description" variant="outlined" density="compact" class="mb-4 mt-2"></v-text-field>
-              <div v-if="statsDescription" class="jb-stats d-flex align-center gap-3 pa-3 mb-2 border rounded-lg">
-                <v-icon size="16" class="text-medium-emphasis flex-shrink-0">users</v-icon>
-                <div class="flex-grow-1" style="min-width:0;">
-                  <div class="text-body-2 font-weight-bold" style="line-height:1.2;">{{ nodeStatValue.toLocaleString() }}</div>
-                  <div class="text-caption text-medium-emphasis">{{ statsDescription }}</div>
-                </div>
-                <router-link :to="{ name: 'AllContacts', params: { accountId } }" class="text-caption font-weight-bold text-primary jb-stats__link">
-                  View contacts
-                </router-link>
-                <v-btn icon="refresh-cw" variant="text" size="x-small" aria-label="Refresh contact stats"
-                  @click="refreshStats(selectedNode.id)"></v-btn>
+              <div>
+                <v-btn
+                  variant="text"
+                  size="small"
+                  class="text-none px-0"
+                  :append-icon="showStepMore ? 'chevron-up' : 'chevron-down'"
+                  @click="showStepMore = !showStepMore"
+                >{{ showStepMore ? 'Less' : 'More' }}</v-btn>
               </div>
-            </template>
+
+              <template v-if="showStepMore">
+                <v-text-field v-model="draft.subtitle" label="Description"></v-text-field>
+                <div v-if="statsDescription" class="jb-stats d-flex align-center gap-3 pa-3 border rounded-lg">
+                  <v-icon size="16" class="text-medium-emphasis flex-shrink-0">users</v-icon>
+                  <div class="flex-grow-1" style="min-width:0;">
+                    <div class="text-body-2 font-weight-bold" style="line-height:1.2;">{{ nodeStatValue.toLocaleString() }}</div>
+                    <div class="text-caption text-medium-emphasis">{{ statsDescription }}</div>
+                  </div>
+                  <router-link :to="{ name: 'AllContacts', params: { accountId } }" class="text-caption font-weight-bold text-primary jb-stats__link">
+                    View contacts
+                  </router-link>
+                  <v-btn icon="refresh-cw" variant="text" size="x-small" aria-label="Refresh contact stats"
+                    @click="refreshStats(selectedNode.id)"></v-btn>
+                </div>
+              </template>
+            </MpFormGrid>
           </div>
 
           <div class="pa-4 border-t d-flex align-center gap-2 flex-shrink-0">
@@ -844,7 +848,7 @@ onBeforeUnmount(() => {
 .palette-section__header {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 8px 8px; border: 0; background: transparent; cursor: pointer;
-  border-radius: var(--mp-component-card-radius-sm); text-align: left; color: rgb(var(--v-theme-on-surface));
+  border-radius: var(--mp-radius-10); text-align: left; color: rgb(var(--v-theme-on-surface));
 }
 .palette-section__header:hover { background: rgba(var(--v-theme-on-surface), 0.05); }
 .palette-section__header:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
@@ -862,12 +866,12 @@ onBeforeUnmount(() => {
 
 .palette-tile {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: var(--mp-component-card-radius-sm); flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: var(--mp-radius-10); flex-shrink: 0;
 }
 .palette-item {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 7px 8px; border: 0; background: transparent; cursor: pointer;
-  border-radius: var(--mp-component-card-radius-sm); text-align: left; transition: background var(--dur-fast) var(--ease);
+  border-radius: var(--mp-radius-10); text-align: left; transition: background var(--dur-fast) var(--ease);
 }
 .palette-item:hover { background: rgba(var(--v-theme-on-surface), 0.04); }
 .palette-item:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
@@ -911,10 +915,6 @@ onBeforeUnmount(() => {
 .jb-panel__eyebrow {
   font-size: 0.625rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; line-height: 1.4;
 }
-.jb-section-label {
-  color: rgba(var(--v-theme-on-surface), 0.45); margin-bottom: 10px;
-}
-
 /* ── Detached steps tray ─────────────────────────────────────────────────── */
 .jb-detached { min-height: 40px; }
 

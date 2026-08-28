@@ -1,12 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpKpiCard from './MpKpiCard.vue'
 import { formatMoneyParts } from '@/utils/formatMoneyParts'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 // The app loads the --cloud-* accent tokens via main.ts; preview.ts doesn't.
 import '@/styles/source-cloud-colors.css'
 
 const meta = {
-  title: 'Data Display/MpKpiCard',
+  title: 'Molecules/MpKpiCard',
   component: MpKpiCard,
   tags: ['autodocs'],
   parameters: {
@@ -95,6 +94,46 @@ export const Default: Story = {
     trendPositive: true,
     subStat: 'vs last month',
   },
+}
+
+/** The two emphasis levels. `hero` puts a single headline metric at display scale. */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpKpiCard },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">default</div>
+          <div style="max-width: 320px;">
+            <MpKpiCard label="Total Revenue" value="$12,430" icon="dollar-sign" color="success" trend="+12.5%" trend-positive period="vs last month" />
+          </div>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">hero — one headline metric at display scale</div>
+          <div style="max-width: 320px;">
+            <MpKpiCard variant="hero" label="Total Revenue" value="$12,430" icon="dollar-sign" color="success" trend="+12.5%" trend-positive period="vs last month" />
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Every state a KPI can be in: rising, falling, flat, and with no comparison at all. */
+export const States: Story = {
+  render: () => ({
+    components: { MpKpiCard },
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--mp-space-16);">
+        <MpKpiCard label="Revenue" value="$12,430" icon="dollar-sign" color="success" trend="+12.5%" trend-positive period="vs last month" />
+        <MpKpiCard label="Refunds" value="$1,204" icon="corner-down-left" color="error" trend="-8.1%" period="vs last month" />
+        <MpKpiCard label="Sessions" value="48,120" icon="activity" color="primary" period="vs last month" />
+        <MpKpiCard label="Open rate" value="—" icon="mail-open" color="primary" />
+      </div>
+    `,
+  }),
+  args: {} as never,
 }
 
 export const NegativeTrend: Story = {
@@ -268,10 +307,4 @@ export const DashboardRow: Story = {
     `,
   }),
   args: {} as any, // Fixes TS strict mode error
-}
-
-/** Pinned dark — trend colours resolve through --pos / --neg. */
-export const DarkModeDashboardRow: Story = {
-  globals: darkModeGlobals,
-  ...DashboardRow,
 }

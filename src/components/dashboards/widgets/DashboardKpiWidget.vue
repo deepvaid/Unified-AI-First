@@ -368,15 +368,19 @@ const peakFormatted = computed(() => {
   /* Any slack between the grid cell (h=3, 172px) and the compact content
      splits evenly around the hero instead of pooling above the footer. */
   justify-content: space-between;
-  gap: 10px;
-  padding: 14px 16px 12px;
+  gap: var(--mp-space-10);
+  /* P4-1: the KPI card is the deliberately DENSE member of the widget family —
+     one inset from the scale's compact tier (`card.paddingCompact`), not the
+     20 the rest of the family takes. Was an ad-hoc 14 / 16 / 12, i.e. three
+     different values on one box. */
+  padding: var(--mp-component-card-paddingCompact);
   container-type: inline-size;
 }
 
 /* Narrow cards: the spark drops below the value block instead of squeezing beside it. */
 @container (max-width: 240px) {
   .dashboard-kpi-widget__value {
-    font-size: 22px;
+    font-size: var(--mp-fontSize-24);
   }
 
   .dashboard-kpi-widget__spark {
@@ -391,7 +395,7 @@ const peakFormatted = computed(() => {
 // the card. Full text stays available via the `title` attribute above.
 @container (max-width: 220px) {
   .dashboard-kpi-widget__foot {
-    gap: 6px;
+    gap: var(--mp-space-6);
   }
 
   .dashboard-kpi-widget__view-report {
@@ -410,14 +414,14 @@ const peakFormatted = computed(() => {
 .dashboard-kpi-widget__header-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--mp-space-10);
   min-width: 0;
 }
 
 .dashboard-kpi-widget__header-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--mp-space-2);
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -425,23 +429,26 @@ const peakFormatted = computed(() => {
 .dashboard-kpi-widget__title-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
   min-width: 0;
 }
 
 .dashboard-kpi-widget__davinci-chip {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  /* P4-3: was gap 3 / height 18 / padding 0 7 / font 10 — none on a scale stop,
+     and a second copy of the chip DashboardWidgetCard draws. Both now resolve to
+     the shared chip ramp. */
+  gap: var(--mp-space-4);
   flex-shrink: 0;
-  height: 18px;
-  padding: 0 7px;
-  border-radius: 999px;
+  height: var(--mp-component-chip-height-sm);
+  padding: 0 var(--mp-component-chip-paddingInline);
+  border-radius: var(--mp-radius-full);
   background: var(--dv-accent-soft);
   color: var(--dv-text-primary);
   border: 1px solid var(--dv-border);
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 0.02em;
   white-space: nowrap;
   cursor: default;
@@ -469,7 +476,7 @@ const peakFormatted = computed(() => {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--mp-space-12);
   flex-wrap: wrap;
   flex: 1 1 auto;
   min-width: 0;
@@ -485,7 +492,7 @@ const peakFormatted = computed(() => {
   overflow: visible;
   /* Dashboard-local compact size (design 1c); the DS kpiValue token stays
      32px for hero KPIs elsewhere. */
-  font-size: 26px;
+  font-size: var(--mp-fontSize-28);
   line-height: 1;
   letter-spacing: -0.02em;
   font-weight: 600;
@@ -495,16 +502,16 @@ const peakFormatted = computed(() => {
 }
 
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__value {
-  font-size: 22px;
+  font-size: var(--mp-fontSize-24);
 }
 
 /* Plain-text delta: diagonal arrow + unsigned magnitude, no pill background. */
 .dashboard-kpi-widget__delta {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  margin-top: 6px;
-  font-size: 13px;
+  gap: var(--mp-space-4);
+  margin-top: var(--mp-space-6);
+  font-size: var(--mp-fontSize-13);
   font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
@@ -524,8 +531,8 @@ const peakFormatted = computed(() => {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  padding-top: 9px;
+  gap: var(--mp-space-12);
+  padding-top: var(--mp-component-card-gapCompact);
   border-top: 1px solid var(--border-subtle);
   min-width: 0;
 }
@@ -533,7 +540,7 @@ const peakFormatted = computed(() => {
 .dashboard-kpi-widget__stat {
   display: inline-flex;
   align-items: baseline;
-  gap: 5px;
+  gap: var(--mp-space-6);
   min-width: 0;
   white-space: nowrap;
 }
@@ -543,21 +550,21 @@ const peakFormatted = computed(() => {
 }
 
 .dashboard-kpi-widget__stat-label {
-  font-size: 11px;
+  font-size: var(--mp-fontSize-11);
   font-weight: 500;
   color: var(--muted);
 }
 
 .dashboard-kpi-widget__stat-value {
-  font-size: 11px;
+  font-size: var(--mp-fontSize-11);
   font-weight: 600;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .dashboard-kpi-widget__secondary {
-  margin-top: 4px;
-  font-size: 12px;
+  margin-top: var(--mp-space-4);
+  font-size: var(--mp-fontSize-12);
   font-weight: 500;
   color: var(--muted);
   white-space: nowrap;
@@ -568,14 +575,14 @@ const peakFormatted = computed(() => {
 .dashboard-kpi-widget__location-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
+  gap: var(--mp-space-4);
+  margin-top: var(--mp-space-6);
+  padding: var(--mp-space-2) var(--mp-component-chip-paddingInline);
+  border-radius: var(--mp-radius-full);
   background: color-mix(in oklch, var(--text-primary) 5%, var(--surface-primary));
   border: 1px solid var(--border-subtle);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--mp-fontSize-11);
   font-weight: 500;
   line-height: 1;
   align-self: flex-start;
@@ -597,6 +604,8 @@ const peakFormatted = computed(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  /* Sparkline plot width — chart-canvas geometry, exempt from the spacing
+     scale (Phase 2/3 changelog). Same for the 44px hero-height floor below. */
   width: 108px;
   min-height: 0;
   color: var(--accent);
@@ -632,8 +641,8 @@ const peakFormatted = computed(() => {
 .dashboard-kpi-widget__spark-end-dot {
   position: absolute;
   left: 100%;
-  width: 6px;
-  height: 6px;
+  width: var(--mp-space-6);
+  height: var(--mp-space-6);
   border-radius: 50%;
   transform: translate(-60%, -50%);
   background: currentColor;
@@ -645,7 +654,7 @@ const peakFormatted = computed(() => {
 .dashboard-kpi-widget__spark-guide {
   position: absolute;
   top: 0;
-  bottom: 2px;
+  bottom: var(--mp-space-2);
   width: 1px;
   transform: translateX(-0.5px);
   background: color-mix(in oklch, currentColor 30%, transparent);
@@ -654,8 +663,8 @@ const peakFormatted = computed(() => {
 
 .dashboard-kpi-widget__spark-dot {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   background: currentColor;
@@ -668,13 +677,13 @@ const peakFormatted = computed(() => {
   /* Centered above the fixed spark block (design 1c); floats over the hero
      whitespace, never over the value column. */
   left: 50%;
-  bottom: calc(100% + 4px);
+  bottom: calc(100% + var(--mp-space-4));
   transform: translateX(-50%);
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 7px;
+  gap: var(--mp-space-6);
+  padding: var(--mp-space-4) var(--mp-space-8);
+  border-radius: var(--mp-component-chip-radius);
   border: 1px solid var(--border-subtle);
   background: var(--surface-primary);
   box-shadow: var(--elevation-raised);
@@ -683,13 +692,13 @@ const peakFormatted = computed(() => {
 }
 
 .dashboard-kpi-widget__spark-tip-date {
-  font-size: 10.5px;
+  font-size: var(--mp-fontSize-11);
   font-weight: 500;
   color: var(--muted);
 }
 
 .dashboard-kpi-widget__spark-tip-value {
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   font-weight: 650;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
@@ -697,8 +706,8 @@ const peakFormatted = computed(() => {
 
 @container (max-height: 150px) {
   .dashboard-kpi-widget__sparkline {
-    height: 28px;
-    min-height: 28px;
+    height: var(--mp-space-28);
+    min-height: var(--mp-space-28);
   }
 }
 
@@ -717,20 +726,20 @@ const peakFormatted = computed(() => {
 
 /* Compact variant */
 .dashboard-kpi-widget--compact {
-  padding: 14px 16px;
+  padding: var(--mp-component-card-paddingCompact);
 }
 
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__sparkline {
-  height: 30px;
-  min-height: 30px;
+  height: var(--mp-space-32);
+  min-height: var(--mp-space-32);
 }
 
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__header-row {
-  gap: 8px;
+  gap: var(--mp-space-8);
 }
 
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__title {
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   line-height: 1.2;
 }
 
@@ -738,30 +747,31 @@ const peakFormatted = computed(() => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  margin: 12px -18px -16px;
-  padding: 8px 18px;
+  /* Bleeds the footer to the card's edges by cancelling the compact inset. */
+  gap: var(--mp-space-8);
+  margin: var(--mp-space-12) calc(var(--mp-component-card-paddingCompact) * -1) calc(var(--mp-component-card-paddingCompact) * -1);
+  padding: var(--mp-space-8) var(--mp-component-card-paddingCompact);
   border-top: 1px solid var(--border-subtle);
   background: var(--surface-primary);
-  min-height: 36px;
+  min-height: var(--mp-space-40);
   flex-shrink: 0;
 }
 
 .dashboard-kpi-widget--compact .dashboard-kpi-widget__foot {
-  margin: 10px -16px -14px;
-  padding: 6px 16px;
-  min-height: 32px;
+  margin: var(--mp-space-10) calc(var(--mp-component-card-paddingCompact) * -1) calc(var(--mp-component-card-paddingCompact) * -1);
+  padding: var(--mp-space-6) var(--mp-component-card-paddingCompact);
+  min-height: var(--mp-space-32);
 }
 
 .dashboard-kpi-widget__view-report {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
   background: none;
   border: 0;
   padding: 0;
   font: inherit;
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   font-weight: 600;
   color: var(--cloud-retail-link);
   cursor: pointer;

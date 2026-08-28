@@ -39,7 +39,7 @@ withDefaults(defineProps<{ rows: DtLegendRow[]; gap?: number }>(), { gap: 9 })
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
 }
 
 .dt-legend__swatch {
@@ -64,7 +64,7 @@ withDefaults(defineProps<{ rows: DtLegendRow[]; gap?: number }>(), { gap: 9 })
 }
 
 .dt-legend__delta {
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--pos);

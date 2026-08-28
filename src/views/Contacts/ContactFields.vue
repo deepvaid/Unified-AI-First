@@ -8,6 +8,7 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -154,29 +155,27 @@ function confirmDelete() {
     </v-card>
 
     <!-- Create / edit field -->
-    <MpFormDrawer v-model="drawer" :title="editingId != null ? 'Edit Field' : 'Add Field'" :width="520">
-      <v-text-field v-model="form.name" label="Field Name *" variant="outlined" density="comfortable" class="mb-4" />
-      <v-select
-        v-model="form.type"
-        label="Field Type *"
-        :items="fieldTypes"
-        variant="outlined"
-        density="comfortable"
-        :disabled="editingId != null"
-        :hint="editingId != null ? 'Field type can’t be changed after creation.' : 'Field type can’t be changed once the field is created.'"
-        persistent-hint
-        class="mb-4"
-      />
-      <v-text-field v-model="form.defaultValue" label="Default Value" variant="outlined" density="comfortable" class="mb-4" />
-      <v-text-field v-model="form.displayName" label="Display Name" variant="outlined" density="comfortable" class="mb-4" />
-      <v-textarea v-model="form.description" label="Description" variant="outlined" density="comfortable" rows="2" auto-grow class="mb-2" />
-      <div class="d-flex align-center justify-space-between">
-        <div>
-          <div class="text-body-2 font-weight-medium">Add to Edit Profile Page</div>
-          <div class="text-caption text-medium-emphasis">Show this field on the contact edit form.</div>
-        </div>
-        <v-switch v-model="form.addToEditProfile" hide-details density="compact" color="primary" />
-      </div>
+    <MpFormDrawer v-model="drawer" :title="editingId != null ? 'Edit Field' : 'Add Field'">
+      <MpFormGrid>
+        <v-text-field v-model="form.name" label="Field Name *" />
+        <v-select
+          v-model="form.type"
+          label="Field Type *"
+          :items="fieldTypes"
+          :disabled="editingId != null"
+          :hint="editingId != null ? 'Field type can’t be changed after creation.' : 'Field type can’t be changed once the field is created.'"
+          persistent-hint
+        />
+        <v-text-field v-model="form.defaultValue" label="Default Value" />
+        <v-text-field v-model="form.displayName" label="Display Name" />
+        <v-textarea v-model="form.description" label="Description" rows="3" auto-grow />
+        <v-switch
+          v-model="form.addToEditProfile"
+          label="Add to Edit Profile Page"
+          hint="Show this field on the contact edit form."
+          persistent-hint
+        />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!form.name.trim()" @click="save">Save</v-btn>

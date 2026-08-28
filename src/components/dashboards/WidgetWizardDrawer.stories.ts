@@ -36,7 +36,7 @@ const DAVINCI_DRAFT: DashboardWidgetDraft = {
 }
 
 const meta = {
-  title: 'Dashboards/WidgetWizardDrawer',
+  title: 'Product/Dashboards/WidgetWizardDrawer',
   component: WidgetWizardDrawer,
   tags: ['autodocs'],
   parameters: {
@@ -54,10 +54,22 @@ const meta = {
     initialDraft: null,
   },
   argTypes: {
-    accountId: { control: 'text' },
-    dashboardId: { control: 'text' },
-    dashboardFilters: { control: 'object' },
-    initialDraft: { control: 'object' },
+    accountId: {
+      control: 'text',
+      description: 'Account the new widget belongs to.',
+    },
+    dashboardId: {
+      control: 'text',
+      description: 'Dashboard the wizard will add the finished widget to.',
+    },
+    dashboardFilters: {
+      control: 'object',
+      description: '`DashboardFilterState` inherited from the dashboard, so the wizard preview shows the widget under the filters it will actually run under.',
+    },
+    initialDraft: {
+      control: 'object',
+      description: 'Seed the wizard with an existing draft to edit instead of creating. When it carries a `widgetId` the drawer switches to Edit mode (title, subtitle and the save action all change).',
+    },
   },
   render: (args) => ({
     components: { WidgetWizardDrawer },
@@ -85,4 +97,42 @@ export const EditExistingWidget: Story = {
 
 export const DaVinciDraft: Story = {
   args: { initialDraft: DAVINCI_DRAFT },
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * The wizard's two structures are its two steps: **library** (pick a widget type) and **edit**
+ * (configure the one you picked). Both live in the same `MpFormDrawer` shell, so they share
+ * its header/body/footer rhythm.
+ */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { WidgetWizardDrawer },
+    setup: () => ({ args }),
+    template: `<WidgetWizardDrawer v-bind="args" />`,
+  }),
+}
+
+/**
+ * There is no `size` prop. The drawer is wider than the 480 default because the edit step puts
+ * a live preview beside the form; the width is set once on the `MpFormDrawer` it composes.
+ * Below 640px it goes full-bleed like every other drawer.
+ */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { WidgetWizardDrawer },
+    setup: () => ({ args }),
+    template: `<WidgetWizardDrawer v-bind="args" />`,
+  }),
+}
+
+/** Opening on the library step, opening straight into edit for an existing widget, and the
+ *  Da Vinci draft hand-off where the wizard arrives pre-filled. */
+export const States: Story = {
+  render: (args) => ({
+    components: { WidgetWizardDrawer },
+    setup: () => ({ args }),
+    template: `<WidgetWizardDrawer v-bind="args" />`,
+  }),
 }

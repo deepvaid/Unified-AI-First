@@ -25,7 +25,7 @@ function syntheticSpeakFrame(): OrbAudioFrame {
 }
 
 const meta = {
-  title: 'Copilot/Voice/DvOrbCanvas',
+  title: 'Product/Da Vinci/Voice/DvOrbCanvas',
   component: DvOrbCanvas,
   tags: ['autodocs'],
   args: {
@@ -42,9 +42,18 @@ const meta = {
       description: 'Engine animation state',
     },
     audioSource: { control: false, description: 'Pull-based OrbAudioFrame source (stories inject synthetic frames)' },
-    paused: { control: 'boolean' },
-    maxPixelRatio: { control: { type: 'number', min: 1, max: 3 } },
-    opacity: { control: { type: 'number', min: 0.5, max: 4, step: 0.1 } },
+    paused: {
+      control: 'boolean',
+      description: 'Freezes the animation loop. Use it when the orb is off-screen or the surface is hidden — the canvas keeps its last frame instead of burning a rAF loop.',
+    },
+    maxPixelRatio: {
+      control: { type: 'number', min: 1, max: 3 },
+      description: 'Upper bound on `devicePixelRatio` when sizing the backing canvas. Caps the cost on 3x displays; 2 is the default and is visually indistinguishable from 3 at this size.',
+    },
+    opacity: {
+      control: { type: 'number', min: 0.5, max: 4, step: 0.1 },
+      description: 'Shader opacity multiplier for the orb material (not a CSS opacity). Values above 1 deepen the colour; 2.7 is the tuned default.',
+    },
   },
   parameters: {
     docs: {

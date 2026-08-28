@@ -16,6 +16,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -165,7 +166,7 @@ function confirmDelete() {
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="campaignStatus(item)" type="campaign" size="x-small" />
+          <MpStatusChip :status="campaignStatus(item)" type="campaign" size="sm" />
         </template>
 
         <template v-slot:item.startDate="{ item }">
@@ -211,14 +212,12 @@ function confirmDelete() {
     />
 
     <MpFormDrawer v-model="drawer" :title="editing ? 'Edit campaign' : 'New campaign'" :subtitle="channel.name">
-      <div class="d-flex flex-column gap-4">
+      <MpFormGrid :cols="2">
         <v-text-field
           v-model="form.name"
           label="Campaign name"
           placeholder="e.g. Summer sale"
-          variant="outlined"
-          density="comfortable"
-          hide-details="auto"
+          class="mp-form-grid__full"
           :rules="[(v: string) => Boolean(v?.trim()) || 'Campaign name is required']"
         />
         <v-select
@@ -227,24 +226,19 @@ function confirmDelete() {
           label="Targets"
           hint="Collections this campaign applies to — leave empty for the whole store"
           persistent-hint
-          variant="outlined"
-          density="comfortable"
           multiple
           chips
           closable-chips
+          class="mp-form-grid__full"
         />
-        <div class="d-flex gap-3">
-          <v-text-field v-model="form.startDate" label="Start date" type="date" variant="outlined" density="comfortable" hide-details="auto" class="flex-grow-1" />
-          <v-text-field v-model="form.startTime" label="Start time" type="time" variant="outlined" density="comfortable" hide-details="auto" class="flex-grow-1" />
-        </div>
-        <div class="d-flex gap-3">
-          <v-text-field v-model="form.endDate" label="End date" type="date" variant="outlined" density="comfortable" hide-details="auto" class="flex-grow-1" />
-          <v-text-field v-model="form.endTime" label="End time" type="time" variant="outlined" density="comfortable" hide-details="auto" class="flex-grow-1" />
-        </div>
-        <v-alert v-if="form.startDate && form.endDate" density="compact" variant="tonal" :type="campaignStatus(form) === 'Ended' ? 'warning' : 'info'" class="text-body-2">
+        <v-text-field v-model="form.startDate" label="Start date" type="date" />
+        <v-text-field v-model="form.startTime" label="Start time" type="time" />
+        <v-text-field v-model="form.endDate" label="End date" type="date" />
+        <v-text-field v-model="form.endTime" label="End time" type="time" />
+        <v-alert v-if="form.startDate && form.endDate" density="compact" variant="tonal" :type="campaignStatus(form) === 'Ended' ? 'warning' : 'info'" class="text-body-2 mp-form-grid__full">
           This campaign is {{ campaignStatus(form).toLowerCase() }}{{ campaignStatus(form) === 'Scheduled' ? ' — it starts ' + formatWindow(form.startDate, form.startTime) : '' }}.
         </v-alert>
-      </div>
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!formValid" @click="saveCampaign">{{ editing ? 'Save campaign' : 'Create campaign' }}</v-btn>

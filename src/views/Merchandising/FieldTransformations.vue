@@ -4,6 +4,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
 import { useMerchandisingStore, type FieldTransformation } from '@/stores/useMerchandising'
@@ -154,6 +155,7 @@ function doDelete() {
         fixed-header
         class="flex-grow-1"
       >
+        <!-- Row switch: `hide-details` is deliberate so a table row stays one line tall. -->
         <template #item.status="{ item }">
           <div class="d-flex align-center gap-2">
             <v-switch
@@ -248,60 +250,37 @@ function doDelete() {
 
     <!-- Edit rule drawer -->
     <MpFormDrawer v-model="editDrawer" title="Edit rule" subtitle="Update this field transformation rule">
-      <v-text-field
-        v-model="editDraft.name"
-        label="Rule name"
-        variant="outlined"
-        density="comfortable"
-        class="mb-3"
-        autofocus
-      />
-      <v-text-field
-        v-model="editDraft.inputField"
-        label="Input field"
-        variant="outlined"
-        density="comfortable"
-        class="mb-3"
-      />
-      <v-text-field
-        v-model="editDraft.outputField"
-        label="Output field"
-        placeholder="Leave blank to transform in place"
-        variant="outlined"
-        density="comfortable"
-        class="mb-3"
-      />
-      <v-select
-        v-model="editDraft.ruleType"
-        label="Rule type"
-        :items="ruleTypeOptions"
-        variant="outlined"
-        density="comfortable"
-        class="mb-3"
-      />
-      <label class="text-caption font-weight-medium text-medium-emphasis">Translations</label>
-      <v-text-field
-        v-model="editTranslationInput"
-        placeholder="Type a language code, then press Enter"
-        density="comfortable"
-        variant="outlined"
-        hide-details
-        class="mt-2"
-        @keydown.enter.prevent="addEditTranslation"
-      />
-      <div v-if="editDraft.translations.length > 0" class="d-flex flex-wrap gap-1 mt-2">
-        <v-chip
-          v-for="lang in editDraft.translations"
-          :key="lang"
-          size="small"
-          variant="tonal"
-          color="info"
-          closable
-          @click:close="removeEditTranslation(lang)"
-        >
-          {{ lang }}
-        </v-chip>
-      </div>
+      <MpFormGrid>
+        <v-text-field v-model="editDraft.name" label="Rule name *" autofocus />
+        <v-text-field v-model="editDraft.inputField" label="Input field *" />
+        <v-text-field
+          v-model="editDraft.outputField"
+          label="Output field"
+          hint="Leave blank to transform in place"
+          persistent-hint
+        />
+        <v-select v-model="editDraft.ruleType" label="Rule type" :items="ruleTypeOptions" />
+        <v-text-field
+          v-model="editTranslationInput"
+          label="Translations"
+          hint="Type a language code, then press Enter"
+          persistent-hint
+          @keydown.enter.prevent="addEditTranslation"
+        />
+        <div v-if="editDraft.translations.length > 0" class="d-flex flex-wrap gap-1">
+          <v-chip
+            v-for="lang in editDraft.translations"
+            :key="lang"
+            size="small"
+            variant="tonal"
+            color="info"
+            closable
+            @click:close="removeEditTranslation(lang)"
+          >
+            {{ lang }}
+          </v-chip>
+        </div>
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="editDrawer = false">Cancel</v-btn>
         <v-btn

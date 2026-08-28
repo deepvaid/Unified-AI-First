@@ -73,7 +73,7 @@ function connectChannel() {
               <p class="text-body-2 text-medium-emphasis mb-4">Connect this online channel before managing search, smart collections, or recommendations. Existing Commerce data stays unchanged until the sync is ready.</p>
               <div class="d-flex flex-wrap ga-2 mb-6">
                 <v-chip size="small" variant="tonal">{{ channelDomain(channel) }}</v-chip>
-                <MpStatusChip :status="MERCHANDISING_STATUS_LABELS[status]" type="general" size="small" show-icon />
+                <MpStatusChip :status="MERCHANDISING_STATUS_LABELS[status]" type="general" size="md" show-icon />
               </div>
               <div class="d-flex flex-wrap ga-3">
                 <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plug" @click="connectChannel">Open connection setup</v-btn>

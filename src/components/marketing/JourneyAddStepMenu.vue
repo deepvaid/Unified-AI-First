@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { CatalogItem } from '@/stores/journeyFlowData'
-import { categoryColor, categoryLabel } from './flowTheme'
+import { categoryColor, categoryLabel, categoryOnColor } from './flowTheme'
 
 const props = defineProps<{
   /** Addable catalog items shown in the menu. */
@@ -61,10 +61,11 @@ function pick(item: CatalogItem) {
     <v-card rounded="lg" border flat width="260" class="py-2">
       <div class="px-3 py-1 text-caption text-medium-emphasis font-weight-bold text-uppercase border-b mb-1">Add step</div>
       <div class="px-2 pb-2">
+        <!-- Menu filter, not a form field: compact and detail-free so the popover
+             can't resize under the pointer while it is open. -->
         <v-text-field
           v-model="query"
           density="compact"
-          variant="outlined"
           hide-details
           clearable
           prepend-inner-icon="search"
@@ -80,7 +81,7 @@ function pick(item: CatalogItem) {
             <v-list-item v-for="tmpl in commonItems" :key="`c-${tmpl.kind}`" rounded="lg" @click="pick(tmpl)">
               <template #prepend>
                 <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">
-                  <v-icon color="white" size="13">{{ tmpl.icon }}</v-icon>
+                  <v-icon :color="categoryOnColor[tmpl.category]" size="13">{{ tmpl.icon }}</v-icon>
                 </v-avatar>
               </template>
               <v-list-item-title class="text-caption ml-2">{{ tmpl.title }}</v-list-item-title>
@@ -93,7 +94,7 @@ function pick(item: CatalogItem) {
             <v-list-item v-for="tmpl in group.items" :key="tmpl.kind" rounded="lg" @click="pick(tmpl)">
               <template #prepend>
                 <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">
-                  <v-icon color="white" size="13">{{ tmpl.icon }}</v-icon>
+                  <v-icon :color="categoryOnColor[tmpl.category]" size="13">{{ tmpl.icon }}</v-icon>
                 </v-avatar>
               </template>
               <v-list-item-title class="text-caption ml-2">{{ tmpl.title }}</v-list-item-title>

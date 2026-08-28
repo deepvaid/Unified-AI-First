@@ -109,7 +109,7 @@ function openChannel(channel: SalesChannel) {
           <MpStatusChip
             :status="MERCHANDISING_STATUS_LABELS[merchandisingStatus(item)]"
             type="general"
-            size="x-small"
+            size="sm"
             show-icon
           />
         </template>

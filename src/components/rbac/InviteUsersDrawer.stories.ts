@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import InviteUsersDrawer from './InviteUsersDrawer.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 function wait(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -15,7 +14,7 @@ function commitEmail(input: HTMLInputElement, value: string) {
 }
 
 const meta = {
-  title: 'RBAC/InviteUsersDrawer',
+  title: 'Product/RBAC/InviteUsersDrawer',
   component: InviteUsersDrawer,
   tags: ['autodocs'],
   parameters: {
@@ -135,10 +134,4 @@ export const RoleConflictWarning: Story = {
     await wait(60)
     document.querySelector<HTMLInputElement>('input[aria-label*="Platform Admin"]')?.click()
   },
-}
-
-/** L4 overlay surface in dark mode. */
-export const DarkModeOpen: Story = {
-  globals: darkModeGlobals,
-  ...Open,
 }

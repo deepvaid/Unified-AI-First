@@ -343,7 +343,7 @@ const current = computed(() => SLIDES[index.value]!)
   right: 0;
   display: flex;
   gap: 4px;
-  padding: 0 var(--mp-spacing-4) var(--mp-spacing-2);
+  padding: 0 var(--mp-space-16) var(--mp-space-8);
   z-index: 2;
 }
 
@@ -351,7 +351,7 @@ const current = computed(() => SLIDES[index.value]!)
   position: relative;
   flex: 1;
   height: 3px;
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   background: var(--mp-border-subtle);
   overflow: hidden;
 }
@@ -368,18 +368,18 @@ const current = computed(() => SLIDES[index.value]!)
 
 .deck-nav {
   position: fixed;
-  bottom: var(--mp-spacing-4);
-  left: var(--mp-spacing-4);
+  bottom: var(--mp-space-16);
+  left: var(--mp-space-16);
   display: flex;
-  gap: var(--mp-spacing-1);
+  gap: var(--mp-space-4);
   z-index: 2;
 }
 
 .deck-counter {
   position: fixed;
-  bottom: var(--mp-spacing-4);
-  right: var(--mp-spacing-4);
-  font-size: var(--mp-typography-fontSize-sm);
+  bottom: var(--mp-space-16);
+  right: var(--mp-space-16);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-on-surface-variant));
   font-variant-numeric: tabular-nums;
   z-index: 2;

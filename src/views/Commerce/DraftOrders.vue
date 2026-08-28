@@ -13,6 +13,7 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
@@ -170,8 +171,12 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         <template #filter-content>
           <div class="pa-4 pb-2">
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <div v-for="(options, key) in filterOptions" :key="key" class="mb-3">
+            <!-- Toolbar filters stay compact and suppress details deliberately: this is a
+                 dense popover, not a form, and no select here carries validation. -->
+            <MpFormGrid>
               <v-select
+                v-for="(options, key) in filterOptions"
+                :key="key"
                 v-model="filters[key as keyof typeof filters]"
                 :label="filterLabels[key]"
                 :items="options"
@@ -179,11 +184,10 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
                 chips
                 closable-chips
                 clearable
-                variant="outlined"
                 density="compact"
                 hide-details
               />
-            </div>
+            </MpFormGrid>
           </div>
         </template>
       </MpDataTableToolbar>
@@ -221,7 +225,7 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
           <span class="font-weight-bold">${{ parseFloat(item.total || '0').toFixed(2) }}</span>
         </template>
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="general" size="x-small" />
+          <MpStatusChip :status="item.status" type="general" size="sm" />
         </template>
         <template v-slot:item.actions="{ item }">
           <div @click.stop>

@@ -279,7 +279,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
    mobile list (<1280px) has no library gutter and stays on the page padding. */
 @media (min-width: 1280px) {
   .dashboard-grid {
-    margin-inline: -20px;
+    margin-inline: calc(var(--mp-space-20) * -1);
   }
 }
 
@@ -292,7 +292,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
 .dashboard-grid__mobile-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
+  gap: var(--mp-space-16);
 }
 
 @media (min-width: 640px) {
@@ -360,7 +360,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
       transparent 1px,
       transparent calc(100% / 12)
     );
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
 }
 
 .dashboard-grid :deep(.vgl-item) {
@@ -375,7 +375,7 @@ function handleLayoutUpdate(nextLayout: Array<{ i: string; x: number; y: number;
 .dashboard-grid :deep(.vgl-item--placeholder) {
   background: rgba(var(--v-theme-primary), 0.1) !important;
   border: 2px dashed rgba(var(--v-theme-primary), 0.55) !important;
-  border-radius: 12px !important;
+  border-radius: var(--mp-radius-12) !important;
   opacity: 1 !important;
   transition: transform 120ms ease, width 120ms ease, height 120ms ease;
 }

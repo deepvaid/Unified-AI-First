@@ -6,6 +6,8 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useToast } from '@/composables/useToast'
 import {
   useMerchandisingStore,
@@ -203,49 +205,47 @@ function performDelete() {
       <!-- Editor column -->
       <div class="rule-editor d-flex flex-column gap-4 flex-grow-1">
         <v-card variant="flat" border rounded="lg" class="pa-5">
-          <v-text-field
-            v-model="draft.name"
-            label="Rule name"
-            variant="outlined"
-            density="comfortable"
-            class="mb-3"
-          />
-          <v-select
-            v-model="draft.collectionIds"
-            :items="collectionOptions"
-            label="Collections"
-            variant="outlined"
-            density="comfortable"
-            multiple
-            chips
-            closable-chips
-            hint="The rule applies to every selected collection"
-            persistent-hint
-          />
+          <MpFormGrid>
+            <v-text-field v-model="draft.name" label="Rule name *" />
+            <v-select
+              v-model="draft.collectionIds"
+              :items="collectionOptions"
+              label="Collections"
+              multiple
+              chips
+              closable-chips
+              hint="The rule applies to every selected collection"
+              persistent-hint
+            />
 
-          <button type="button" class="rule-advanced-toggle mt-4" @click="advancedOpen = !advancedOpen">
-            <v-icon size="15">{{ advancedOpen ? 'chevron-down' : 'chevron-right' }}</v-icon>
-            Advanced settings
-          </button>
-          <v-expand-transition>
-            <div v-if="advancedOpen" class="pt-3">
-              <div class="text-subtitle-2 font-weight-bold mb-1">Popularity weight</div>
-              <div class="text-body-2 text-medium-emphasis mb-2">
-                At 0 the popularity boost is disabled. Increase it to weight results toward popular products.
-              </div>
-              <v-slider
-                v-model="weightIndex"
-                :min="0"
-                :max="4"
-                :step="1"
-                show-ticks="always"
-                :ticks="Object.fromEntries(WEIGHT_LABELS.map((l, i) => [i, l]))"
-                color="primary"
-                hide-details
-                class="mx-2"
-              />
+            <div>
+              <button type="button" class="rule-advanced-toggle" @click="advancedOpen = !advancedOpen">
+                <v-icon size="15">{{ advancedOpen ? 'chevron-down' : 'chevron-right' }}</v-icon>
+                Advanced settings
+              </button>
             </div>
-          </v-expand-transition>
+            <v-expand-transition>
+              <MpFormField
+                v-if="advancedOpen"
+                label="Popularity weight"
+                hint="At 0 the popularity boost is disabled. Increase it to weight results toward popular products."
+              >
+                <template #default="{ labelId, descriptionId }">
+                  <v-slider
+                    v-model="weightIndex"
+                    :min="0"
+                    :max="4"
+                    :step="1"
+                    show-ticks="always"
+                    :ticks="Object.fromEntries(WEIGHT_LABELS.map((l, i) => [i, l]))"
+                    :aria-labelledby="labelId"
+                    :aria-describedby="descriptionId"
+                    class="mx-2"
+                  />
+                </template>
+              </MpFormField>
+            </v-expand-transition>
+          </MpFormGrid>
         </v-card>
 
         <!-- Conditions -->
@@ -267,67 +267,60 @@ function performDelete() {
           <v-divider />
 
           <!-- Inline add/edit row -->
-          <div v-if="editingId !== null" class="rule-condition-form px-5 py-4 d-flex flex-column gap-3">
-            <div class="d-flex gap-3 flex-wrap">
+          <div v-if="editingId !== null" class="rule-condition-form px-5 py-4">
+            <MpFormGrid :cols="2">
               <v-select
                 v-model="conditionDraft.action"
                 :items="ACTION_OPTIONS"
                 label="Action"
-                variant="outlined"
-                density="compact"
-                hide-details
-                class="rule-field-action"
               />
               <v-select
                 v-model="conditionDraft.field"
                 :items="fieldOptions"
-                label="Field"
-                variant="outlined"
-                density="compact"
-                hide-details
-                class="rule-field-field"
+                label="Field *"
               />
               <v-select
                 v-model="conditionDraft.values"
                 :items="valueOptions"
-                label="Values"
-                variant="outlined"
-                density="compact"
-                hide-details
+                label="Values *"
                 multiple
                 chips
                 closable-chips
                 :disabled="!conditionDraft.field"
-                class="rule-field-values flex-grow-1"
+                class="mp-form-grid__full"
               />
-            </div>
-            <div v-if="conditionDraft.action === 'promote'" class="px-1">
-              <div class="d-flex justify-space-between text-caption text-medium-emphasis mb-1">
-                <span>Bury</span><span>Boost</span>
-              </div>
-              <v-slider
-                v-model="conditionDraft.weight"
-                :min="-100"
-                :max="100"
-                :step="10"
-                color="primary"
-                thumb-label
-                hide-details
-              />
-            </div>
-            <div class="d-flex justify-end gap-2">
-              <v-btn variant="text" size="small" class="text-none" @click="cancelCondition">Cancel</v-btn>
-              <v-btn
-                color="primary"
-                variant="flat"
-                size="small"
-                class="text-none"
-                :disabled="!conditionValid"
-                @click="confirmCondition"
+              <MpFormField
+                v-if="conditionDraft.action === 'promote'"
+                label="Boost strength"
+                hint="Negative buries the matching products, positive boosts them."
+                class="mp-form-grid__full"
               >
-                {{ editingId === 'new' ? 'Add' : 'Update' }}
-              </v-btn>
-            </div>
+                <template #default="{ labelId, descriptionId }">
+                  <v-slider
+                    v-model="conditionDraft.weight"
+                    :min="-100"
+                    :max="100"
+                    :step="10"
+                    thumb-label
+                    :aria-labelledby="labelId"
+                    :aria-describedby="descriptionId"
+                  />
+                </template>
+              </MpFormField>
+              <div class="mp-form-grid__full d-flex justify-end gap-2">
+                <v-btn variant="text" size="small" class="text-none" @click="cancelCondition">Cancel</v-btn>
+                <v-btn
+                  color="primary"
+                  variant="flat"
+                  size="small"
+                  class="text-none"
+                  :disabled="!conditionValid"
+                  @click="confirmCondition"
+                >
+                  {{ editingId === 'new' ? 'Add' : 'Update' }}
+                </v-btn>
+              </div>
+            </MpFormGrid>
           </div>
           <v-divider v-if="editingId !== null" />
 
@@ -400,11 +393,12 @@ function performDelete() {
         </div>
         <v-divider />
         <div class="pa-4">
+          <!-- Preview chrome, not a form field: `hide-details` keeps the product
+               grid from shifting as the selection changes. -->
           <v-select
             v-model="previewCollectionId"
             :items="collectionOptions.filter((c) => draft.collectionIds.includes(c.value))"
             label="Collection"
-            variant="outlined"
             density="compact"
             hide-details
             class="mb-4"
@@ -495,20 +489,6 @@ function performDelete() {
 
 .rule-condition-form {
   background: rgba(var(--v-theme-surface-variant), 0.18);
-}
-
-.rule-field-action {
-  width: 160px;
-  flex: 0 0 auto;
-}
-
-.rule-field-field {
-  width: 170px;
-  flex: 0 0 auto;
-}
-
-.rule-field-values {
-  min-width: 220px;
 }
 
 @media (max-width: 1100px) {

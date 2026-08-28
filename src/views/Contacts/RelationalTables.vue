@@ -8,6 +8,8 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -120,36 +122,37 @@ function confirmDelete() {
     </v-card>
 
     <!-- Create table -->
-    <MpFormDrawer v-model="drawer" title="New Table" :width="640">
-      <v-text-field v-model="tableName" label="Table Name *" variant="outlined" density="comfortable" class="mb-5" />
+    <MpFormDrawer v-model="drawer" title="New Table" size="lg">
+      <MpFormGrid>
+        <v-text-field v-model="tableName" label="Table Name *" />
+      </MpFormGrid>
 
-      <div class="d-flex align-center justify-space-between mb-3">
-        <div class="text-subtitle-2 font-weight-bold">Columns</div>
+      <div class="d-flex align-center justify-space-between">
+        <MpFormSection title="Columns" />
         <v-btn variant="text" size="small" class="text-none" prepend-icon="plus" @click="addColumn">Add Column</v-btn>
       </div>
 
-      <div v-for="(col, i) in columns" :key="i" class="column-block mb-3">
-        <div class="d-flex align-center justify-space-between mb-2">
-          <span class="text-caption text-medium-emphasis font-weight-medium">Column {{ i + 1 }}</span>
+      <MpFormGrid>
+        <div v-for="(col, i) in columns" :key="i" class="mp-form-grid__trailing">
+          <MpFormGrid :cols="2" class="column-block">
+            <v-text-field v-model="col.name" label="Name *" />
+            <v-select v-model="col.dataType" label="Data Type" :items="dataTypes" />
+            <v-text-field v-model="col.defaultValue" label="Default" />
+            <v-text-field v-model="col.fieldLength" label="Field Length" />
+            <v-select v-model="col.keyType" label="Key Type" :items="keyTypes" />
+            <v-select v-model="col.allowNull" label="Allow Null" :items="allowNullOptions" />
+          </MpFormGrid>
           <v-btn
-            v-if="columns.length > 1"
             icon="trash-2"
             variant="text"
             size="x-small"
             color="error"
-            aria-label="Remove column"
+            :aria-label="`Remove column ${i + 1}`"
+            :disabled="columns.length === 1"
             @click="removeColumn(i)"
           />
         </div>
-        <v-row dense>
-          <v-col cols="6"><v-text-field v-model="col.name" label="Name *" variant="outlined" density="compact" hide-details /></v-col>
-          <v-col cols="6"><v-select v-model="col.dataType" label="Data Type" :items="dataTypes" variant="outlined" density="compact" hide-details /></v-col>
-          <v-col cols="6"><v-text-field v-model="col.defaultValue" label="Default" variant="outlined" density="compact" hide-details /></v-col>
-          <v-col cols="6"><v-text-field v-model="col.fieldLength" label="Field Length" variant="outlined" density="compact" hide-details /></v-col>
-          <v-col cols="6"><v-select v-model="col.keyType" label="Key Type" :items="keyTypes" variant="outlined" density="compact" hide-details /></v-col>
-          <v-col cols="6"><v-select v-model="col.allowNull" label="Allow Null" :items="allowNullOptions" variant="outlined" density="compact" hide-details /></v-col>
-        </v-row>
-      </div>
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>

@@ -3,7 +3,7 @@ import DvIntentCardList from './DvIntentCardList.vue'
 import type { DvCardDescriptor } from '@/composables/useDaVinciIntents'
 
 const meta = {
-  title: 'Copilot/Voice/DvIntentCardList',
+  title: 'Product/Da Vinci/Voice/DvIntentCardList',
   component: DvIntentCardList,
   tags: ['autodocs'],
   parameters: {

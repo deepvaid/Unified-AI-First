@@ -57,7 +57,7 @@ function onAction(card: DvCardDescriptor, action: string) {
 .dv-intent-cards {
   display: flex;
   flex-direction: column;
-  gap: var(--mp-spacing-3);
+  gap: var(--mp-space-12);
   min-width: 0;
 }
 </style>

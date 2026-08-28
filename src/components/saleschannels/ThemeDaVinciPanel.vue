@@ -77,7 +77,7 @@ watch(
         @click="emit('close')"
       ></v-btn>
       <v-avatar color="primary" size="30" rounded="lg" class="flex-shrink-0">
-        <v-icon color="white" size="16">sparkles</v-icon>
+        <v-icon color="on-primary" size="16">sparkles</v-icon>
       </v-avatar>
       <div style="min-width:0;">
         <div class="text-body-2 font-weight-bold text-truncate">Da Vinci</div>
@@ -89,16 +89,18 @@ watch(
     <div ref="scrollEl" class="tdv__scroll flex-grow-1 overflow-y-auto pa-3">
       <!-- Welcome state -->
       <template v-if="!hasMessages">
-        <div class="tdv__welcome">
-          <v-avatar color="primary" variant="tonal" size="48" rounded="lg" class="mb-3">
+        <div class="tdv__welcome d-flex flex-column ga-3">
+          <v-avatar color="primary" variant="tonal" size="48" rounded="lg">
             <v-icon size="24">sparkles</v-icon>
           </v-avatar>
-          <div class="text-body-1 font-weight-bold mb-1">Build sections with AI</div>
-          <p class="text-body-2 text-medium-emphasis mb-4">
-            Describe what you want and Da Vinci builds it — review before it sticks.
-          </p>
+          <div class="d-flex flex-column ga-1">
+            <div class="text-body-1 font-weight-bold">Build sections with AI</div>
+            <p class="text-body-2 text-medium-emphasis">
+              Describe what you want and Da Vinci builds it — review before it sticks.
+            </p>
+          </div>
 
-          <div class="tdv__chips d-flex flex-column gap-2 mb-4">
+          <div class="tdv__chips d-flex flex-column ga-2">
             <v-chip
               v-for="chip in examplePrompts"
               :key="chip.prompt"
@@ -112,8 +114,8 @@ watch(
             </v-chip>
           </div>
 
-          <div class="tdv__tip d-flex align-start gap-2">
-            <v-icon size="14" class="flex-shrink-0 mt-1">lightbulb</v-icon>
+          <div class="tdv__tip d-flex align-start ga-2">
+            <v-icon size="14" class="flex-shrink-0">lightbulb</v-icon>
             <span class="text-caption text-medium-emphasis">
               Tip: add a headline in quotes, like <em>add a hero “Winter Sale”</em>.
             </span>
@@ -132,33 +134,35 @@ watch(
           <!-- Da Vinci turn -->
           <div v-else class="tdv-bot d-flex gap-2">
             <v-avatar color="primary" size="26" rounded="lg" class="flex-shrink-0 tdv-bot__avatar">
-              <v-icon color="white" size="14">sparkles</v-icon>
+              <v-icon color="on-primary" size="14">sparkles</v-icon>
             </v-avatar>
             <div class="tdv-bot__body">
               <!-- Generated a set → compact result card with Undo -->
               <div v-if="msg.addedIds && msg.addedIds.length" class="tdv-result">
-                <div class="d-flex align-center gap-2 mb-1">
+                <div class="d-flex align-center ga-2">
                   <v-icon size="15" color="success">circle-check</v-icon>
                   <span class="text-body-2 font-weight-bold">
                     Added {{ msg.addedTitles?.join(', ') }}
                   </span>
                 </div>
-                <p class="text-caption text-medium-emphasis mb-2">{{ msg.text }}</p>
-                <v-btn
-                  variant="outlined"
-                  size="x-small"
-                  class="text-none"
-                  prepend-icon="undo-2"
-                  @click="emit('undo', msg.addedIds)"
-                >
-                  Undo
-                </v-btn>
+                <p class="text-caption text-medium-emphasis">{{ msg.text }}</p>
+                <div>
+                  <v-btn
+                    variant="outlined"
+                    size="x-small"
+                    class="text-none"
+                    prepend-icon="undo-2"
+                    @click="emit('undo', msg.addedIds)"
+                  >
+                    Undo
+                  </v-btn>
+                </div>
               </div>
 
               <!-- Reply text; unmatched turns (never a result) also re-show chips -->
               <template v-else>
                 <div class="text-body-2 tdv-bot__text">{{ msg.text }}</div>
-                <div v-if="!msg.addedTitles" class="tdv__chips d-flex flex-column gap-2 mt-2">
+                <div v-if="!msg.addedTitles" class="tdv__chips d-flex flex-column ga-2">
                   <v-chip
                     v-for="chip in examplePrompts"
                     :key="chip.prompt"
@@ -180,10 +184,12 @@ watch(
 
     <!-- Input -->
     <div class="tdv__input pa-3 border-t flex-shrink-0">
+      <!-- Chat composer, not a form field: it opens on one row and grows to four,
+           so `rows` is the growth floor rather than a message height, and details
+           are suppressed so the transcript can't jump as you type. -->
       <v-textarea
         v-model="draft"
         placeholder="Ask Da Vinci…"
-        variant="outlined"
         density="compact"
         rows="1"
         max-rows="4"
@@ -218,7 +224,7 @@ watch(
 .tdv__header { height: 48px; }
 .tdv__eyebrow {
   font-size: 0.6875rem;
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgb(var(--v-theme-primary));
@@ -231,7 +237,7 @@ watch(
 /* ── Welcome ─────────────────────────────────────────────────────── */
 .tdv__welcome { padding: 4px 4px 0; }
 .tdv__tip {
-  padding: 10px 12px;
+  padding: var(--mp-space-10) var(--mp-space-12);
   border-radius: var(--r-chip);
   background: var(--accent-soft);
 }
@@ -241,26 +247,38 @@ watch(
 .tdv-user { display: flex; justify-content: flex-end; }
 .tdv-user__bubble {
   max-width: 88%;
-  padding: 8px 12px;
-  border-radius: 14px 14px 4px 14px;
+  padding: var(--mp-space-8) var(--mp-space-12);
+  border-radius: var(--mp-radius-12) var(--mp-radius-12) var(--mp-radius-4) var(--mp-radius-12);
   background: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-on-primary));
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .tdv-bot__avatar { margin-top: 2px; }
-.tdv-bot__body { flex: 1; min-width: 0; }
+/* The turn owns the space between its reply text and any follow-up chips. */
+.tdv-bot__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-8);
+}
 .tdv-bot__text {
   line-height: 1.5;
   color: var(--text-primary);
 }
 
+/* The result card owns the space between its heading, its note and its Undo —
+   those were three separate `mb-*` utilities. */
 .tdv-result {
-  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-8);
+  padding: var(--mp-space-12);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-chip);
   background: var(--surface-primary);

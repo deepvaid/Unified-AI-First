@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRetailStore } from '@/stores/useRetail'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 
 const store = useRetailStore()
 const settings = computed(() => store.paymentsSettings)
@@ -38,90 +39,71 @@ const tipPresetLabel = computed({
 
     <v-card flat border rounded="lg" class="pa-6">
       <MpSectionHeader title="Provider" />
-      <v-select
-        :model-value="settings.provider"
-        :items="PROVIDERS"
-        label="Payment provider"
-        variant="outlined"
-        density="comfortable"
-        class="mt-4"
-        style="max-width: 420px"
-        @update:model-value="(v) => store.updatePaymentsSettings({ provider: v })"
-      />
-      <v-switch
-        :model-value="settings.tapToPayEnabled"
-        label="Accept Tap to Pay on iPhone and Android"
-        color="primary"
-        density="comfortable"
-        hide-details
-        @update:model-value="(v) => store.updatePaymentsSettings({ tapToPayEnabled: !!v })"
-      />
-      <v-switch
-        :model-value="settings.offlinePaymentsEnabled"
-        label="Take card payments while offline"
-        hint="Queued and captured when the register reconnects."
-        persistent-hint
-        color="primary"
-        density="comfortable"
-        @update:model-value="(v) => store.updatePaymentsSettings({ offlinePaymentsEnabled: !!v })"
-      />
+      <MpFormGrid>
+        <v-select
+          :model-value="settings.provider"
+          :items="PROVIDERS"
+          label="Payment provider"
+          style="max-width: 420px"
+          @update:model-value="(v) => store.updatePaymentsSettings({ provider: v })"
+        />
+        <v-switch
+          :model-value="settings.tapToPayEnabled"
+          label="Accept Tap to Pay on iPhone and Android"
+          @update:model-value="(v) => store.updatePaymentsSettings({ tapToPayEnabled: !!v })"
+        />
+        <v-switch
+          :model-value="settings.offlinePaymentsEnabled"
+          label="Take card payments while offline"
+          hint="Queued and captured when the register reconnects."
+          persistent-hint
+          @update:model-value="(v) => store.updatePaymentsSettings({ offlinePaymentsEnabled: !!v })"
+        />
+      </MpFormGrid>
     </v-card>
 
     <v-card flat border rounded="lg" class="pa-6">
       <MpSectionHeader title="Surcharging and rounding" />
-      <v-switch
-        :model-value="settings.surchargeEnabled"
-        label="Pass card surcharge on to the shopper"
-        color="primary"
-        density="comfortable"
-        hide-details
-        class="mt-2"
-        @update:model-value="(v) => store.updatePaymentsSettings({ surchargeEnabled: !!v })"
-      />
-      <v-text-field
-        v-if="settings.surchargeEnabled"
-        :model-value="settings.surchargePct"
-        label="Surcharge"
-        type="number"
-        step="0.1"
-        suffix="%"
-        variant="outlined"
-        density="comfortable"
-        class="mt-4"
-        style="max-width: 220px"
-        @update:model-value="(v) => store.updatePaymentsSettings({ surchargePct: Number(v) })"
-      />
-      <v-switch
-        :model-value="settings.cashRoundingEnabled"
-        label="Round cash totals to the nearest 5c"
-        color="primary"
-        density="comfortable"
-        hide-details
-        @update:model-value="(v) => store.updatePaymentsSettings({ cashRoundingEnabled: !!v })"
-      />
+      <MpFormGrid>
+        <v-switch
+          :model-value="settings.surchargeEnabled"
+          label="Pass card surcharge on to the shopper"
+          @update:model-value="(v) => store.updatePaymentsSettings({ surchargeEnabled: !!v })"
+        />
+        <v-text-field
+          v-if="settings.surchargeEnabled"
+          :model-value="settings.surchargePct"
+          label="Surcharge"
+          type="number"
+          step="0.1"
+          suffix="%"
+          style="max-width: 220px"
+          @update:model-value="(v) => store.updatePaymentsSettings({ surchargePct: Number(v) })"
+        />
+        <v-switch
+          :model-value="settings.cashRoundingEnabled"
+          label="Round cash totals to the nearest 5c"
+          @update:model-value="(v) => store.updatePaymentsSettings({ cashRoundingEnabled: !!v })"
+        />
+      </MpFormGrid>
     </v-card>
 
     <v-card flat border rounded="lg" class="pa-6">
       <MpSectionHeader title="Tipping" />
-      <v-switch
-        :model-value="settings.tippingEnabled"
-        label="Prompt for a tip at checkout"
-        color="primary"
-        density="comfortable"
-        hide-details
-        class="mt-2"
-        @update:model-value="(v) => store.updatePaymentsSettings({ tippingEnabled: !!v })"
-      />
-      <v-select
-        v-if="settings.tippingEnabled"
-        v-model="tipPresetLabel"
-        :items="TIP_PRESETS.map((p) => p.label)"
-        label="Suggested amounts"
-        variant="outlined"
-        density="comfortable"
-        class="mt-4"
-        style="max-width: 320px"
-      />
+      <MpFormGrid>
+        <v-switch
+          :model-value="settings.tippingEnabled"
+          label="Prompt for a tip at checkout"
+          @update:model-value="(v) => store.updatePaymentsSettings({ tippingEnabled: !!v })"
+        />
+        <v-select
+          v-if="settings.tippingEnabled"
+          v-model="tipPresetLabel"
+          :items="TIP_PRESETS.map((p) => p.label)"
+          label="Suggested amounts"
+          style="max-width: 320px"
+        />
+      </MpFormGrid>
     </v-card>
   </div>
 </template>

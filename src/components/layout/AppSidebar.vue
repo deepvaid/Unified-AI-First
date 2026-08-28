@@ -7,6 +7,16 @@ import { useOnboardingStore } from '@/stores/useOnboarding'
 import { Crown } from 'lucide-vue-next'
 import maropostLogo from '@/assets/maropost-logo.svg?raw'
 import { useMobileNav } from '@/composables/useMobileNav'
+import { mp_layout_sidebarWidth, mp_layout_sidebarRailWidth } from '@/design-tokens/generated/tokens'
+
+// P4-7. VNavigationDrawer takes numeric widths, so the shell can't read a CSS
+// custom property here — it reads the generated TS token instead. Before this,
+// tokens.json and CLAUDE.md both documented 248/72 while the component rendered
+// 240/64: the tokens described a layout nothing actually used (P1-4 deferred
+// exactly this adoption to P4-7).
+const SIDEBAR_WIDTH = Number.parseInt(mp_layout_sidebarWidth, 10)
+const RAIL_WIDTH = Number.parseInt(mp_layout_sidebarRailWidth, 10)
+
 const props = defineProps<{
   modelValue: boolean
   rail: boolean
@@ -547,8 +557,8 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   <v-navigation-drawer
     v-model="drawerModel"
     :rail="effectiveRail"
-    :rail-width="64"
-    width="240"
+    :rail-width="RAIL_WIDTH"
+    :width="SIDEBAR_WIDTH"
     :permanent="!props.temporary"
     :temporary="props.temporary"
     :mobile-breakpoint="1024"
@@ -1019,8 +1029,10 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 7%, transparent);
   --sidebar-active-text: var(--sidebar-text);
   --sidebar-focus-ring: color-mix(in oklch, var(--sidebar-text) 22%, transparent);
-  --sidebar-radius: 8px;
-  --sidebar-radius-sm: 10px;
+  /* 8 is the chips-and-menu-items step, 10 the controls step, of the one
+     concentric radius system (P2-6). */
+  --sidebar-radius: var(--mp-component-nav-itemRadius);
+  --sidebar-radius-sm: var(--mp-component-input-radius);
   --sidebar-transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
   background: var(--sidebar-bg) !important;
   border-right: 1px solid var(--sidebar-border) !important;
@@ -1039,11 +1051,12 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  /* Height matches the app bar (56px + 1px divider) so the two header dividers line up. */
+  gap: var(--mp-space-10);
+  /* Height matches the app bar (56px + 1px divider) so the two header dividers
+     line up. A shell-alignment constant, not a spacing step. */
   height: 57px;
-  padding: 0 16px 0 20px;
-  margin-bottom: 6px;
+  padding: 0 var(--mp-space-16) 0 var(--mp-space-20);
+  margin-bottom: var(--mp-space-6);
   border-bottom: 1px solid var(--sidebar-border);
   background: var(--sidebar-bg);
   z-index: 2;
@@ -1051,18 +1064,18 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
 .sidebar-header--rail {
   justify-content: center;
-  padding: 0 8px;
+  padding: 0 var(--mp-space-8);
 }
 
 /* PLG trial onboarding — pinned Get Started entry */
 .sidebar-get-started {
   flex-shrink: 0;
   display: block;
-  width: calc(100% - 16px);
-  margin: 2px 8px 6px;
-  padding: 8px 10px;
+  width: calc(100% - var(--mp-space-16));
+  margin: var(--mp-space-2) var(--mp-space-8) var(--mp-space-6);
+  padding: var(--mp-space-8) var(--mp-space-10);
   border: 1px solid var(--sidebar-border);
-  border-radius: 10px;
+  border-radius: var(--sidebar-radius-sm);
   background: var(--sidebar-hover-bg);
   color: var(--sidebar-text);
   text-align: left;
@@ -1082,33 +1095,33 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .sidebar-get-started__row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
 }
 
 .sidebar-get-started__title {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   line-height: 1;
 }
 
 .sidebar-get-started__count {
   margin-left: auto;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   opacity: 0.7;
 }
 
 .sidebar-get-started__bar {
-  margin-top: 7px;
+  margin-top: var(--mp-space-8);
 }
 
 .sidebar-get-started--rail {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin: 2px auto 6px;
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
+  margin: var(--mp-space-2) auto var(--mp-space-6);
   padding: 0;
 }
 
@@ -1116,10 +1129,10 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: var(--mp-space-24);
+  height: var(--mp-space-24);
   border: 1px solid color-mix(in oklch, var(--sidebar-text) 28%, transparent);
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: var(--sidebar-bg);
   cursor: pointer;
   flex-shrink: 0;
@@ -1153,7 +1166,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .sidebar-toggle-pill--anchored {
   position: absolute;
   top: 50%;
-  right: -12px;
+  right: calc(var(--mp-space-12) * -1);
   transform: translateY(-50%);
   z-index: var(--mp-zIndex-navSidebarTogglePill);
   transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1),
@@ -1170,7 +1183,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .sidebar-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
   appearance: none;
   border: 0;
   background: transparent;
@@ -1189,11 +1202,11 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: var(--mp-space-24);
+  height: var(--mp-space-24);
   color: var(--sidebar-text);
-  font-size: 18px;
-  font-weight: 800;
+  font-size: var(--mp-fontSize-18);
+  font-weight: var(--mp-fontWeight-heavy);
   transition: opacity var(--dur-fast) var(--ease);
 }
 
@@ -1203,16 +1216,16 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .rail-brand-box {
-  width: 32px;
-  height: 32px;
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: var(--mp-radius-4);
   background: var(--sidebar-text);
   color: var(--sidebar-bg);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-15);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: -0.5px;
   transition: opacity var(--dur-fast) var(--ease);
 }
@@ -1229,15 +1242,15 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
 .sidebar-brand__logo :deep(svg) {
   display: block;
-  height: 18px;
+  height: var(--mp-fontSize-18);
   width: auto;
 }
 
 .sidebar-apps-toggle {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
+  width: var(--mp-space-28) !important;
+  height: var(--mp-space-28) !important;
+  min-width: var(--mp-space-28) !important;
+  min-height: var(--mp-space-28) !important;
   color: var(--sidebar-muted) !important;
 }
 
@@ -1252,22 +1265,22 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .sidebar-installed-apps {
-  margin: 0 0 6px;
+  margin: 0 0 var(--mp-space-6);
 }
 
 .sidebar-app-item {
-  --indent-padding: 20px;
+  --indent-padding: var(--mp-space-20);
 }
 
 .sidebar-app-item :deep(.v-list-item__prepend > .v-icon) {
-  margin-inline-end: 8px;
+  margin-inline-end: var(--mp-space-8);
   color: var(--sidebar-muted);
 }
 
 .sidebar-app-item__status {
   color: var(--sidebar-muted);
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -1277,23 +1290,23 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 4px 8px 12px;
+  padding: var(--mp-space-4) var(--mp-space-8) var(--mp-space-12);
   scrollbar-width: thin;
 }
 
 .sidebar-divider {
   border-color: var(--sidebar-border) !important;
   opacity: 1;
-  margin: 6px 0 !important;
+  margin: var(--mp-space-6) 0 !important;
 }
 
 .sidebar-badge {
-  height: 18px !important;
-  padding-inline: 6px;
+  height: var(--mp-component-chip-height-sm) !important;
+  padding-inline: var(--mp-component-chip-paddingInline);
   border-radius: var(--sidebar-radius) !important;
   background: var(--sidebar-active-bg) !important;
   color: var(--sidebar-muted) !important;
-  font-size: 10px !important;
+  font-size: var(--mp-fontSize-10) !important;
   letter-spacing: 0.04em;
 }
 
@@ -1302,7 +1315,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   background: var(--sidebar-active-bg) !important;
   box-shadow: none;
   color: var(--sidebar-active-text) !important;
-  font-weight: 650;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 /* ─── Expanded-mode parent row: hover chevron (HubSpot-style) ─── */
@@ -1311,7 +1324,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .sidebar-parent-row__label {
-  padding-right: 28px !important;
+  padding-right: var(--mp-space-28) !important;
 }
 
 .mp-sidebar :deep(.sidebar-parent-row__chevron) {
@@ -1328,7 +1341,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .mp-sidebar :deep(.sidebar-parent--flyout-open) {
   background: var(--sidebar-active-bg) !important;
   color: var(--sidebar-active-text) !important;
-  font-weight: 650;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .mp-sidebar :deep(.sidebar-parent--flyout-open > .v-list-item__overlay) {
@@ -1338,7 +1351,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .mp-sidebar :deep(.sidebar-parent--flyout-open .v-list-item__prepend > .v-icon),
 .mp-sidebar :deep(.sidebar-parent--flyout-open .v-list-item-title) {
   color: var(--sidebar-active-text) !important;
-  font-weight: 650;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .mp-sidebar :deep(.active-nav-item::before) {
@@ -1356,7 +1369,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 
 .mp-sidebar :deep(.active-nav-item .v-list-item-title),
 .mp-sidebar :deep(.v-list-item--active .v-list-item-title) {
-  font-weight: 650;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .mp-sidebar :deep(.v-list-item__prepend .v-icon),
@@ -1382,12 +1395,30 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .mp-sidebar :deep(.v-list-item) {
-  --v-list-prepend-gap: 16px;
-  min-height: 40px;
-  margin-bottom: 2px;
-  padding: 10px 12px;
+  /* Same `component.listItem.*` height and block rhythm as MpSectionRail and
+     MpListRow, so the global sidebar, an in-content rail and a list row all sit
+     on one 40px baseline (P4-7). Block padding was 10 here and 8 there.
+
+     The INLINE inset is deliberately 16, not listItem.paddingInline (12): this
+     drawer insets its scroller by 8, the section rail insets its own by 12, and
+     what has to line up between them is the label column's distance from the
+     panel edge — 8 + 16 here, 12 + 12 there, both 24. Matching the raw number
+     instead would misalign them by 4px.
+
+     `padding-inline` is stated on a two-class descendant so it beats Vuetify's
+     own `.v-list-item--density-compact…{padding-inline:16px}` (0,3,0) rule
+     deterministically. A plain scoped selector ties it and loses on source
+     order — the same trap global.scss's table-padding comment documents. */
+  --v-list-prepend-gap: var(--mp-space-16);
+  min-height: var(--mp-component-listItem-minHeight);
+  margin-bottom: var(--mp-space-2);
+  padding-block: var(--mp-component-listItem-paddingBlock);
   border-radius: var(--sidebar-radius) !important;
   color: var(--sidebar-text);
+}
+
+.mp-sidebar :deep(.v-list .v-list-item) {
+  padding-inline: var(--mp-space-16);
 }
 
 .mp-sidebar :deep(.v-list-item:hover:not(.v-list-item--active):not(.active-nav-item)) {
@@ -1407,8 +1438,8 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .mp-sidebar :deep(.v-list-item-title) {
-  font-size: 13px;
-  font-weight: 550;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.2;
 }
 
@@ -1420,13 +1451,13 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .mp-sidebar :deep(.v-list-item__prepend > .v-icon ~ .v-list-item__spacer) {
-  width: 16px !important;
-  min-width: 16px !important;
+  width: var(--mp-space-16) !important;
+  min-width: var(--mp-space-16) !important;
   flex-shrink: 0;
 }
 
 .mp-sidebar :deep(.v-list-item__prepend > .v-icon) {
-  font-size: 19px;
+  font-size: var(--mp-fontSize-20);
   margin-inline-end: 0;
 }
 
@@ -1441,7 +1472,7 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 /* Expanded-mode click flyout panel (teleported) */
 .sidebar-expanded-flyout {
   position: fixed;
-  left: 240px;
+  left: var(--mp-layout-sidebarWidth);
   z-index: var(--mp-zIndex-navSidebarFlyout);
 }
 
@@ -1453,24 +1484,25 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   --sidebar-hover-bg: color-mix(in oklch, var(--sidebar-text) 7%, transparent);
   --sidebar-active-bg: color-mix(in oklch, var(--sidebar-text) 11%, transparent);
   --sidebar-active-text: var(--sidebar-text);
-  --sidebar-radius: 8px;
+  --sidebar-radius: var(--mp-component-nav-itemRadius);
   background: var(--surface-primary);
   /* Shared popover chrome (matches .v-menu overlay surfaces in global.scss) */
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   box-shadow: var(--mp-shadow-lg), var(--mp-shadow-md);
-  padding: 6px;
+  padding: var(--mp-space-6);
+  /* Popover measure, not a spacing step. */
   min-width: 200px;
-  max-width: 260px;
+  max-width: var(--mp-layout-sectionRailWidth);
   overflow: visible;
 }
 
 .rail-flyout-card__header {
   z-index: 1;
-  margin: -2px -2px 4px;
-  padding: 8px 10px 7px;
-  font-size: 11px;
-  font-weight: 600;
+  margin: calc(var(--mp-space-2) * -1) calc(var(--mp-space-2) * -1) var(--mp-space-4);
+  padding: var(--mp-space-8) var(--mp-space-10);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   line-height: 1.25;
   color: var(--sidebar-muted);
   text-transform: uppercase;
@@ -1483,12 +1515,14 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 34px;
-  padding: 7px 10px;
+  /* A flyout row is still a nav row — same listItem geometry as the rail rows
+     it stands in for. Was 34px tall at 7px block padding. */
+  gap: var(--mp-space-8);
+  min-height: var(--mp-component-listItem-minHeight);
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-component-listItem-paddingInline);
   border-radius: var(--sidebar-radius);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.35;
   color: var(--sidebar-text);
   cursor: pointer;
@@ -1515,13 +1549,13 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 .rail-flyout-item--active {
   background: var(--sidebar-active-bg);
   color: var(--sidebar-active-text);
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .rail-flyout-item svg {
   flex-shrink: 0;
-  width: 12px;
-  height: 12px;
+  width: var(--mp-space-12);
+  height: var(--mp-space-12);
   opacity: 0.55;
 }
 
@@ -1531,13 +1565,13 @@ function onFlyoutChildPointerDown(item: NavItem, event: PointerEvent) {
 }
 
 .rail-flyout-divider {
-  margin: 4px 6px;
+  margin: var(--mp-space-4) var(--mp-space-6);
   border-top: 1px solid var(--sidebar-border);
 }
 
 .rail-cascade-wrap {
   display: flex;
-  gap: 4px;
+  gap: var(--mp-space-4);
   align-items: flex-start;
 }
 </style>

@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { DashboardSeriesData } from '@/stores/dashboards/types'
 import DashboardChartWidget from './DashboardChartWidget.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const REVENUE_SERIES: DashboardSeriesData = {
   kind: 'series',
@@ -34,7 +33,7 @@ const CHANNEL_MULTI_SERIES: DashboardSeriesData = {
 }
 
 const meta = {
-  title: 'Dashboards/Widgets/DashboardChartWidget',
+  title: 'Product/Dashboards/Widgets/DashboardChartWidget',
   component: DashboardChartWidget,
   tags: ['autodocs'],
   parameters: {
@@ -52,10 +51,22 @@ const meta = {
     height: 260,
   },
   argTypes: {
-    data: { control: 'object' },
-    widgetType: { control: 'select', options: ['timeseries', 'bar'] },
-    chartVariant: { control: 'select', options: ['area', 'line', 'vertical', 'horizontal'] },
-    height: { control: { type: 'number', min: 120, max: 480, step: 20 } },
+    data: {
+      control: 'object',
+      description: '`DashboardSeriesData` — the series to plot, with its own labels and units.',
+    },
+    widgetType: {
+      control: 'select', options: ['timeseries', 'bar'],
+      description: '`timeseries` or `bar`. Selects the base chart family; `chartVariant` then refines it.',
+    },
+    chartVariant: {
+      control: 'select', options: ['area', 'line', 'vertical', 'horizontal'],
+      description: 'Refines the family — e.g. area vs line for a timeseries, grouped vs stacked for bars. Leave undefined to take the widget type\'s default.',
+    },
+    height: {
+      control: { type: 'number', min: 120, max: 480, step: 20 },
+      description: 'Explicit plot height in px; 0 (the default) lets the card size it. Chart canvas geometry, deliberately off the spacing scale.',
+    },
   },
   render: (args) => ({
     components: { DashboardChartWidget },
@@ -72,11 +83,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const TimeseriesArea: Story = {}
-
-export const DarkModeTimeseries: Story = {
-  globals: darkModeGlobals,
-  ...TimeseriesArea,
-}
 
 export const TimeseriesLine: Story = {
   args: { chartVariant: 'line' },
@@ -137,6 +143,70 @@ export const NarrowContainer: Story = {
       <v-card flat border rounded="lg" style="width:200px;height:260px;padding:12px 10px;">
         <DashboardChartWidget v-bind="args" />
       </v-card>
+    `,
+  }),
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/** The chart variants — line, area, bar — over the same series, plus the legend and tooltip that come with them. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { DashboardChartWidget },
+    setup: () => ({ args }),
+    template: `<DashboardChartWidget v-bind="args" />`,
+  }),
+}
+
+/**
+ * There is no `size` prop — a widget fills the grid cell it is placed in. What Phase 4
+ * (P4-1) guarantees is that the **inset** does not change with the cell: the distance from
+ * the card's border to this widget's content is `component.card.padding` at every size,
+ * inherited from the card standard set in Phase 3 rather than a second widget-only pair.
+ *
+ * Rendered below at three cell sizes inside a real `DashboardWidgetCard` — run your eye down
+ * the left edges.
+ */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { DashboardChartWidget },
+    setup: () => ({ args }),
+    template: `
+      <div class="d-flex ga-6 flex-wrap align-start">
+        <div style="width: 280px; height: 220px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardChartWidget v-bind="args" /></v-card></div>
+        <div style="width: 420px; height: 260px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardChartWidget v-bind="args" /></v-card></div>
+        <div style="width: 620px; height: 300px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardChartWidget v-bind="args" /></v-card></div>
+      </div>
+    `,
+  }),
+}
+
+/** Populated, single-series, and empty. */
+export const States: Story = {
+  render: (args) => ({
+    components: { DashboardChartWidget },
+    setup: () => ({ args }),
+    template: `<DashboardChartWidget v-bind="args" />`,
+  }),
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** The widget where it actually lives — inside a `DashboardWidgetCard`, in a
+ * dashboard row beside its siblings. This is the composition P4-1 is judged on: the header
+ * band, the body inset and the footer are the card's, and every widget in the family sits on
+ * the same edge.
+ */
+export const InContextDashboardRow: Story = {
+  render: (args) => ({
+    components: { DashboardChartWidget },
+    setup: () => ({ args }),
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--mp-space-16); align-items: stretch">
+        <v-card flat border rounded="lg" style="height: 280px" class="pa-5"><DashboardChartWidget v-bind="args" /></v-card>
+        <v-card flat border rounded="lg" style="height: 280px" class="pa-5"><DashboardChartWidget v-bind="args" /></v-card>
+      </div>
     `,
   }),
 }

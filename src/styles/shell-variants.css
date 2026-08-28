@@ -20,14 +20,14 @@
      every light shell — this is the Gray (default) axis. Distinctly grayer
      than the near-white canvas so it never reads as white. Classic keeps its
      borders, Studio drops them. */
-  --mp-nav-surface: #eaedf2;
+  --mp-nav-surface: var(--mp-color-light-navSurfaceGray);
 }
 
 /* Head nav shares the side nav surface (light app theme; the dark app
    theme keeps its own chrome). White sidebar axis: white chrome, and the
    content canvas flips to the metal gray (rule further down). */
 html[data-sidebar="white"] {
-  --mp-nav-surface: #ffffff;
+  --mp-nav-surface: var(--mp-color-light-surface);
 }
 
 html[data-theme="light"][data-sidebar="white"] .mp-appbar,
@@ -66,24 +66,24 @@ html[data-theme="light"][data-shell="studio"] .v-main {
    container carries the gray. Wins over the studio canvas bind above
    (declared later at equal specificity). Light theme only. */
 html[data-theme="light"][data-sidebar="white"] .v-main {
-  background: #eaedf2 !important;
+  background: var(--mp-color-light-navSurfaceGray) !important;
 }
 
 /* In Studio/Rail the rounded content frame is white and covers .v-main, so the
    gray canvas wouldn't show. For the White variant, carry the gray onto the
    frame too — the content sits on light gray and the white cards read clearly. */
 html[data-theme="light"][data-sidebar="white"] .mp-content-frame {
-  background: #eaedf2 !important;
+  background: var(--mp-color-light-navSurfaceGray) !important;
 }
 
 html[data-theme="light"][data-shell="studio"][data-sidebar="white"] .mp-appbar {
-  background: #ffffff !important;
+  background: var(--mp-color-light-surface) !important;
 }
 
 /* Classic keeps its appbar hairline; on the all-white chrome give the seam a
    touch more presence so bar and canvas don't fuse. */
 html[data-theme="light"][data-sidebar="white"] .mp-appbar {
-  border-bottom-color: rgba(26, 24, 20, 0.08) !important;
+  border-bottom-color: rgba(var(--mp-rgb-color-light-textPrimary), 0.08) !important;
 }
 
 /* ── Dark app theme: the nav cluster paints from the dark token ramp ─────
@@ -114,13 +114,33 @@ html[data-theme="light"][data-sidebar="dark"] .mp-appbar {
   border-bottom-color: var(--mp-color-dark-borderDividerMuted) !important;
 }
 
+/* P5.5: .appbar-mobile-search-btn was missing from this list. Its scoped style
+   is `color: var(--text-primary)`, which under light theme + dark sidebar skin
+   is the DARK ink — a dark icon on the dark bar. Every control in the bar now
+   takes the dark-theme ink here. */
 html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-action-btn,
 html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-create-btn,
-html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-hamburger-btn {
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-hamburger-btn,
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-mobile-search-btn {
   color: var(--mp-color-dark-textPrimary) !important;
   /* Resting chip must lighten on the dark bar (the light-theme on-surface tint
      the scoped style uses would be invisible here). */
   background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.07) !important;
+}
+
+/* Hover on those controls must also lighten: the scoped rule reaches for
+   --surface-interactive-hover, a near-white light-theme slab. */
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-mobile-search-btn:hover {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.13) !important;
+}
+
+/* The ⌘K chip inside the create button: --surface-secondary / --muted /
+   --border-subtle all resolve to light-theme values here, putting a near-white
+   chip with mid-grey text on the dark bar. */
+html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-create-kbd {
+  background: rgba(var(--mp-rgb-color-dark-textPrimary), 0.12) !important;
+  border-color: rgba(var(--mp-rgb-color-dark-textPrimary), 0.18) !important;
+  color: var(--mp-color-dark-textMuted) !important;
 }
 
 html[data-theme="light"][data-sidebar="dark"] .mp-appbar .appbar-divider {
@@ -184,12 +204,12 @@ html[data-theme="light"][data-sidebar="dark"] .mp-appbar .assistant-pill .dv-orb
 }
 
 /* ── Studio: stronger icons on the light-gray nav ───────────────────────
-   Side-nav icons darken from the muted #5a6573 default for clear contrast
-   on #eaedf2; the quiet "+" is raised to match the other head-nav icons.
+   Side-nav icons darken from the muted textMuted default for clear contrast
+   on var(--mp-color-light-navSurfaceGray); the quiet "+" is raised to match the other head-nav icons.
    Light theme only, and never on the dark sidebar — a dark icon on dark nav
    chrome would be invisible. */
 html[data-theme="light"][data-shell="studio"]:not([data-sidebar="dark"]) .mp-sidebar .v-list-item:not(.v-list-item--active):not(.active-nav-item) .v-icon {
-  color: #3d4757 !important;
+  color: var(--mp-color-light-navIconStudio) !important;
 }
 
 html[data-shell="studio"]:not([data-sidebar="dark"]) .mp-appbar .appbar-create-btn {

@@ -42,21 +42,21 @@ onMounted(() => {
 .stat-card__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(160px, 1fr));
-  gap: var(--mp-spacing-10) var(--mp-spacing-12);
+  gap: var(--mp-space-40) var(--mp-space-48);
   text-align: center;
 }
 
 .stat-card__value {
   font-variant-numeric: tabular-nums;
   font-size: clamp(
-    var(--mp-typography-display-sm-fontSize),
+    var(--mp-display-sm-fontSize),
     5.5vw,
-    var(--mp-typography-display-lg-fontSize)
+    var(--mp-display-lg-fontSize)
   );
 }
 
 .stat-card__label {
-  margin-top: var(--mp-spacing-2);
+  margin-top: var(--mp-space-8);
   animation: stat-label-in 400ms var(--mp-motion-easing-standard) both;
   animation-delay: calc(700ms + var(--i) * 150ms);
 }

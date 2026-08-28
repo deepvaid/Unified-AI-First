@@ -35,7 +35,7 @@ const BOOTS = makeProduct({
 })
 
 const meta = {
-  title: 'Merchandising/MerchProductCard',
+  title: 'Product/Merchandising/MerchProductCard',
   component: MerchProductCard,
   tags: ['autodocs'],
   parameters: {
@@ -63,12 +63,30 @@ the pinned/selected chrome.
     interactive: true,
   },
   argTypes: {
-    product: { control: 'object' },
-    pinned: { control: 'boolean' },
-    rank: { control: 'number' },
-    selected: { control: 'boolean' },
-    selectable: { control: 'boolean' },
-    interactive: { control: 'boolean' },
+    product: {
+      control: 'object',
+      description: '`MerchProduct` — image, title, price and inventory state for the card.',
+    },
+    pinned: {
+      control: 'boolean',
+      description: 'Shows the pinned treatment. Pinning is controlled: the card emits `togglePin` and never flips this itself.',
+    },
+    rank: {
+      control: 'number',
+      description: '1-based position badge, shown only on pinned cards to say where in the manual order this product sits.',
+    },
+    selected: {
+      control: 'boolean',
+      description: 'Selection state for bulk actions. Controlled — the card emits `toggleSelect`.',
+    },
+    selectable: {
+      control: 'boolean',
+      description: 'Whether the selection checkbox is offered at all. On by default.',
+    },
+    interactive: {
+      control: 'boolean',
+      description: 'False renders a read-only card with no pin or select affordances — used for rule previews, where the card is an illustration rather than a control.',
+    },
   },
   render: (args) => ({
     components: { MerchProductCard },
@@ -89,15 +107,98 @@ the pinned/selected chrome.
 export default meta
 type Story = StoryObj<typeof meta>
 
+
 /** Hover the card to reveal the select checkbox and pin button. */
 export const Default: Story = {}
 
 /** `compareAt` renders the sale price in error red with a strikethrough original. */
+/** Pinned, selectable, and read-only — the three structural modes. */
+export const Variants: Story = {
+  render: () => ({
+    components: { MerchProductCard },
+    setup: () => ({ product: DRESS }),
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--mp-space-16);">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">interactive (default)</div>
+          <MerchProductCard :product="product" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">pinned with rank</div>
+          <MerchProductCard :product="product" pinned :rank="1" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">read-only — no pin/select affordances</div>
+          <MerchProductCard :product="product" :interactive="false" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop — the card fills its grid track. This shows it at the
+ * narrowest and widest tracks the merchandising grid actually uses.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MerchProductCard },
+    setup: () => ({ product: DRESS }),
+    template: `
+      <div class="d-flex ga-6 align-start">
+        <div style="width: 160px;">
+          <div class="text-caption text-medium-emphasis mb-2">160px track</div>
+          <MerchProductCard :product="product" />
+        </div>
+        <div style="width: 240px;">
+          <div class="text-caption text-medium-emphasis mb-2">240px track</div>
+          <MerchProductCard :product="product" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Selected, on sale, and out of stock. Hover a card to reveal the pin and checkbox. */
+export const States: Story = {
+  render: () => ({
+    components: { MerchProductCard },
+    setup: () => ({
+      product: DRESS,
+      sale: SALE_JEANS,
+      empty: { ...DRESS, qty: 0 },
+    }),
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--mp-space-16);">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">default — hover to reveal actions</div>
+          <MerchProductCard :product="product" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">selected</div>
+          <MerchProductCard :product="product" selected />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">on sale</div>
+          <MerchProductCard :product="sale" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">out of stock</div>
+          <MerchProductCard :product="empty" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Pinned to position 1 — pin button stays visible, rank badge bottom-left. */
 export const OnSale: Story = {
   args: { product: SALE_JEANS },
 }
 
-/** Pinned to position 1 — pin button stays visible, rank badge bottom-left. */
 export const PinnedWithRank: Story = {
   args: { product: BRACELET, pinned: true, rank: 1 },
 }

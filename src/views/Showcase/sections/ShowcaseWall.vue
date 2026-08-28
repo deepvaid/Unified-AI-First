@@ -65,7 +65,7 @@ const CHIP_ROWS = [
                 :key="status"
                 :status="status"
                 :type="row.type"
-                size="small"
+                size="md"
               />
             </span>
           </div>
@@ -170,7 +170,7 @@ const CHIP_ROWS = [
 .wall {
   max-width: var(--mp-layout-contentMaxWidth);
   margin: 0 auto;
-  padding: var(--mp-spacing-20) var(--mp-spacing-6);
+  padding: var(--mp-space-80) var(--mp-space-24);
 }
 
 .wall__header {
@@ -182,8 +182,8 @@ const CHIP_ROWS = [
 .wall__sub {
   margin: 0 auto;
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-md);
-  line-height: var(--mp-typography-lineHeight-normal);
+  font-size: var(--mp-fontSize-16);
+  line-height: var(--mp-lineHeight-normal);
 }
 
 .wall__tile {
@@ -209,14 +209,14 @@ const CHIP_ROWS = [
 .wall__chip-row {
   display: flex;
   align-items: center;
-  gap: var(--mp-spacing-3);
-  padding: var(--mp-spacing-1) 0;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-4) 0;
 }
 
 .wall__chip-label {
   width: 88px;
   flex-shrink: 0;
-  font-size: var(--mp-typography-fontSize-sm);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
@@ -224,7 +224,7 @@ const CHIP_ROWS = [
   text-align: center;
   max-width: 560px;
   margin-inline: auto;
-  font-size: var(--mp-typography-fontSize-sm);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 

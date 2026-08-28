@@ -1,45 +1,87 @@
 /**
- * Unified Field Style Stories
+ * Unified Field Style Stories — Flowbite-style floating label
  *
  * All outlined Vuetify fields (v-text-field, v-select, v-textarea, v-autocomplete,
  * v-combobox) share a single visual baseline defined in settings-form.scss:
- *   • 10px border radius
+ *   • 10px border radius, transparent fill (no resting tint)
  *   • 40px minimum control height
- *   • Subtle surface-2 fill (color-mix with --surface-secondary token)
- *   • Flat 1px outline using --border-subtle (dark-mode-aware)
- *   • Primary-color border on focus, no ring/glow
- *   • Full-opacity disabled container with muted text
+ *   • 1px --border-strong hairline at rest (dark-mode-aware), darker on hover
+ *   • 2px primary border on focus, 2px error-color border on error — NEITHER has
+ *     a glow ring; the border width itself is the only focus/error cue
+ *   • Floating label (Vuetify's native notch mechanism, restyled): 12px/500,
+ *     muted at rest, primary on focus, error-color on error — see settings-form.scss's
+ *     "specificity trap" comment before adding any new label-color rule
+ *   • Full-opacity disabled container, muted text and label, lighter border
  *
- * Settings pages inherit this baseline unchanged.
- * The AppBar command-search intentionally overrides to a pill shape.
+ * Settings pages inherit this baseline unchanged — as of 2026-08-27 every Settings
+ * field uses the `label` prop (no more separate uppercase `.settings-field__label`
+ * elements above unlabeled fields; there is now exactly one label language).
+ * The AppBar command-search and the MpDataTableToolbar search intentionally override to a
+ * pill shape; the toolbar search also pins its border to --mp-border-subtle so it matches
+ * the outlined buttons beside it (see MpDataTableToolbar).
  */
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { ref } from 'vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
+import { nextTick, onMounted, ref } from 'vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 
 const meta: Meta = {
-  title: 'Forms/Form Fields',
+  title: 'Patterns/Form Fields',
   tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
         component: `
-## Unified Field Baseline
+## Unified Field Baseline — Flowbite-style floating label
 
-Every outlined form control in the app shares a single visual style:
-- **Shape** – 10px border radius
+Every outlined form control in the app shares a single visual style
+(flowbite.com/docs/forms/floating-label — the outlined variant):
+- **Shape** – 10px border radius, **transparent** fill at rest (no tint)
 - **Height** – 40px minimum (all densities)
-- **Fill** – Subtle \`surface-2\` tint, slightly darker on hover
-- **Border** – Flat 1px, \`--border-subtle\` token (light & dark mode)
-- **Focus** – Primary-color border, no box-shadow ring
-- **Disabled** – Full opacity, muted text color
-- **Error** – Error-color border
+- **Border** – Flat 1px \`--border-strong\` at rest (dark-mode-aware), darker on hover
+- **Focus** – Primary-color border, **2px**, no box-shadow ring
+- **Error** – Error-color border, **2px**, no box-shadow ring
+- **Label** – Floats into the border notch (Vuetify's native mechanism via the
+  \`label\` prop); restyled to 12px/500 weight, muted at rest, primary on focus,
+  error-color on error
+- **Disabled** – Full opacity, muted text/label, lighter border
 
 ### Rules
-- Always use \`variant="outlined"\` — it picks up the baseline automatically.
-- Never pass \`rounded="pill"\` on standard form fields (AppBar search is the only exception).
+- \`variant="outlined"\` and \`density="comfortable"\` are the **theme defaults** — don't restate
+  them on the tag. As of Phase 6 the selection controls (\`v-checkbox\`, \`v-radio-group\`,
+  \`v-switch\`, \`v-slider\`, \`v-number-input\`, \`v-btn-toggle\`, \`v-chip-group\`) have the same
+  defaults, so a checkbox group and the fields above it finally sit on one rhythm.
+- **Always pass a \`label\`, not a bare \`placeholder\`** — the floating label is
+  the field's name; a placeholder is example text shown once there's a label to
+  float. A placeholder-only field with no label reads as unlabeled once value
+  text starts sitting in the same spot the label would.
+- **One required mark:** a trailing \` *\` in the label text, or \`required\` on \`MpFormField\` /
+  \`MpFormSection\`. Never an asterisk inside a placeholder.
+- Never pass \`rounded="pill"\` — or any \`rounded\` — on standard form fields. The AppBar search
+  and the \`MpDataTableToolbar\` search are the only two exceptions.
 - Do not add local \`background\` or \`box-shadow\` overrides to fields — let the baseline apply.
-- Use \`density="compact"\` for toolbar filter selects, \`density="comfortable"\` for forms.
+- **Don't set \`hide-details\`** to tidy up spacing. The default is \`"auto"\`, which reserves no
+  height when there is no message; bare \`hide-details\` permanently suppresses validation and
+  hints. Keep it only for a dense toolbar filter, with a comment saying so.
+- **Textarea height comes from \`rows\`** — 3 for a normal message, 5 for long-form. Never a CSS
+  height.
+- \`density="compact"\` is for toolbar filter selects; forms use the default.
+
+### Spacing between fields — not a field's job (Phase 6)
+A field sets **zero external margin**. The container owns the rhythm:
+
+- \`MpFormGrid\` — one or two columns on \`component.field.groupGap\` (16), plus
+  \`mp-form-grid__full\` and \`mp-form-grid__trailing\` for the two row shapes that were being
+  hand-rolled six different ways.
+- \`MpFormSection\` — the one in-form section heading, owning \`component.field.sectionGap\` (24).
+- \`MpFormField\` — label + hint/error + aria for **composite** controls only (chip groups, radio
+  groups, tile pickers). Never around a Vuetify input; those own their own label.
+- Inside \`MpDialog\` / \`MpFormDrawer\` the body is already a 16px flex column, so a bare stack of
+  fields needs no container at all.
+
+An \`mb-4\` on a field inside a shell body used to land *on top of* the shell's 16px gap and
+render 32. 275 of them were deleted in Phase 6; don't add the 276th.
         `,
       },
     },
@@ -59,7 +101,7 @@ export const AllStates: Story = {
       return { text, empty }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Text Field — all states</h3>
         <v-row>
           <v-col cols="12" sm="6" md="4">
@@ -131,6 +173,63 @@ export const AllStates: Story = {
   }),
 }
 
+export const FloatingLabelStates: Story = {
+  name: 'Floating Label States',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    setup() {
+      const emptyComfortable = ref('')
+      const filledComfortable = ref('Scooter Village')
+      const emptyCompact = ref('')
+      const filledCompact = ref('USD')
+      const emptyIcon = ref('')
+      // The native `autofocus` HTML attribute races Vuetify's own focus
+      // listener: the input becomes document.activeElement, but the
+      // `@focus` handler that flips VField's internal `focused` ref (and
+      // therefore the .v-field--focused class this baseline's focus rules
+      // key off) attaches in Vuetify's mounted hook — which can run after
+      // the browser has already fired the autofocus event. Result: the
+      // input is focused but renders as if it isn't. Calling the exposed
+      // .focus() method after nextTick() sidesteps the race entirely.
+      const focusedFieldRef = ref()
+      onMounted(() => nextTick(() => focusedFieldRef.value?.focus()))
+      return { emptyComfortable, filledComfortable, emptyCompact, filledCompact, emptyIcon, focusedFieldRef }
+    },
+    template: `
+      <div>
+        <h3 class="text-subtitle-1 font-weight-bold mb-1">Floating label — empty vs. filled vs. focused</h3>
+        <p class="text-caption text-medium-emphasis mb-4">
+          Every other story in this file interacts with a field to see its focused state.
+          This one pins one open so the notch, label transition, and 2px focus border are
+          visible without clicking anything.
+        </p>
+        <v-row>
+          <v-col cols="12" sm="6" md="3">
+            <div class="text-caption text-medium-emphasis mb-1">Comfortable — empty</div>
+            <v-text-field v-model="emptyComfortable" label="Account Name" variant="outlined" density="comfortable" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="3">
+            <div class="text-caption text-medium-emphasis mb-1">Comfortable — filled</div>
+            <v-text-field v-model="filledComfortable" label="Account Name" variant="outlined" density="comfortable" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="3">
+            <div class="text-caption text-medium-emphasis mb-1">Compact — empty</div>
+            <v-select v-model="emptyCompact" :items="['USD','EUR','GBP']" label="Currency" variant="outlined" density="compact" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="3">
+            <div class="text-caption text-medium-emphasis mb-1">Compact — filled</div>
+            <v-select v-model="filledCompact" :items="['USD','EUR','GBP']" label="Currency" variant="outlined" density="compact" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Focused (autofocus) — label + border go primary, no glow</div>
+            <v-text-field ref="focusedFieldRef" v-model="emptyIcon" label="Email Address" prepend-inner-icon="mail" variant="outlined" density="comfortable" hide-details />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
 export const SearchField: Story = {
   name: 'Search Field',
   parameters: { controls: { disable: true } },
@@ -140,7 +239,7 @@ export const SearchField: Story = {
       return { query }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Search — toolbar / filter variant</h3>
         <v-row>
           <v-col cols="12" sm="6">
@@ -183,7 +282,7 @@ export const SelectAndCombobox: Story = {
       return { single, multi }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Select / Combobox — unified style</h3>
         <v-row>
           <v-col cols="12" sm="6">
@@ -249,7 +348,7 @@ export const TextareaField: Story = {
       return { body }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Textarea — same baseline</h3>
         <v-row>
           <v-col cols="12" sm="6">
@@ -286,7 +385,7 @@ export const WithIcons: Story = {
   parameters: { controls: { disable: true } },
   render: () => ({
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Fields with icons</h3>
         <v-row>
           <v-col cols="12" sm="6">
@@ -337,61 +436,55 @@ export const WithIcons: Story = {
   }),
 }
 
+/**
+ * The layout primitives doing the work together: `MpFormSection` for each heading, `MpFormGrid`
+ * for each group, `MpFormField` for the one composite control. There is no spacing utility in
+ * this markup — every gap is a token, and the fields carry no margins of their own.
+ */
 export const FormLayout: Story = {
   name: 'Form Layout Example',
   parameters: { controls: { disable: true } },
   render: () => ({
+    components: { MpFormGrid, MpFormSection, MpFormField },
     setup() {
-      const form = ref({ name: '', email: '', timezone: '', notes: '' })
+      const form = ref({ name: '', email: '', timezone: '', notes: '', channel: 0 })
       return { form }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Typical form layout</h3>
-        <v-card flat border rounded="lg" class="pa-6" max-width="620">
-          <div class="settings-grid mb-4">
-            <div class="settings-field--full">
-              <v-text-field
-                v-model="form.name"
-                label="Full name"
-                variant="outlined"
-                density="comfortable"
-                prepend-inner-icon="user"
-                hide-details
-              />
-            </div>
-            <div>
-              <v-text-field
-                v-model="form.email"
-                label="Email"
-                variant="outlined"
-                density="comfortable"
-                prepend-inner-icon="mail"
-                hide-details
-              />
-            </div>
-            <div>
-              <v-select
-                v-model="form.timezone"
-                :items="['UTC-8 (PST)', 'UTC-5 (EST)', 'UTC+0 (GMT)', 'UTC+5:30 (IST)']"
-                label="Timezone"
-                variant="outlined"
-                density="comfortable"
-                hide-details
-              />
-            </div>
-            <div class="settings-field--full">
-              <v-textarea
-                v-model="form.notes"
-                label="Notes"
-                variant="outlined"
-                density="comfortable"
-                rows="3"
-                hide-details
-              />
-            </div>
-          </div>
-          <div class="d-flex justify-end gap-2">
+        <v-card flat border rounded="lg" style="max-width: var(--mp-component-dialog-width-md); padding: var(--mp-component-card-padding);">
+          <MpFormSection title="Profile" />
+          <MpFormGrid :cols="2">
+            <v-text-field
+              v-model="form.name"
+              label="Full name *"
+              prepend-inner-icon="user"
+              class="mp-form-grid__full"
+            />
+            <v-text-field v-model="form.email" label="Email" type="email" prepend-inner-icon="mail" />
+            <v-select
+              v-model="form.timezone"
+              :items="['UTC-8 (PST)', 'UTC-5 (EST)', 'UTC+0 (GMT)', 'UTC+5:30 (IST)']"
+              label="Timezone"
+            />
+            <v-textarea v-model="form.notes" label="Notes" rows="3" class="mp-form-grid__full" />
+          </MpFormGrid>
+
+          <MpFormSection title="Contact preference" />
+          <MpFormGrid>
+            <MpFormField label="How we reach you" hint="Used for service notices, never marketing.">
+              <template #default="{ labelId, descriptionId }">
+                <v-chip-group v-model="form.channel" :aria-labelledby="labelId" :aria-describedby="descriptionId">
+                  <v-chip filter>Email</v-chip>
+                  <v-chip filter>SMS</v-chip>
+                  <v-chip filter>In-app only</v-chip>
+                </v-chip-group>
+              </template>
+            </MpFormField>
+          </MpFormGrid>
+
+          <div class="d-flex justify-end ga-2 mt-6">
             <v-btn variant="outlined" class="text-none">Cancel</v-btn>
             <v-btn color="primary" variant="flat" class="text-none">Save changes</v-btn>
           </div>
@@ -399,13 +492,6 @@ export const FormLayout: Story = {
       </div>
     `,
   }),
-}
-
-/** Outlined field baseline in dark mode — borders, focus ring, and disabled text from semantic tokens. */
-export const DarkModeAllStates: Story = {
-  name: 'Dark Mode — All States',
-  globals: darkModeGlobals,
-  ...AllStates,
 }
 
 /**
@@ -460,7 +546,7 @@ export const SelectedWithCheckmark: Story = {
       return { status, menu }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Select — menu open, item selected</h3>
         <v-row>
           <v-col cols="12" sm="6" md="4">
@@ -492,7 +578,7 @@ export const GroupedOptions: Story = {
       return { assignee, menu, groupedAssigneeItems }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Select — grouped with subheaders</h3>
         <v-row>
           <v-col cols="12" sm="6" md="4">
@@ -525,7 +611,7 @@ export const LongLabels: Story = {
       return { closedValue, openValue, menu, longLabelItems }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Select — long option text truncates</h3>
         <v-row>
           <v-col cols="12" sm="6" md="4">
@@ -569,7 +655,7 @@ export const ManyOptionsScroll: Story = {
       return { country, menu, manyCountryItems }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Select — many options, menu scrolls internally</h3>
         <v-row>
           <v-col cols="12" sm="6" md="4">
@@ -602,7 +688,7 @@ export const DisabledItem: Story = {
       return { status, menu, statusItemsWithDisabled }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Select — one option disabled</h3>
         <v-row>
           <v-col cols="12" sm="6" md="4">
@@ -630,7 +716,7 @@ export const LoadingState: Story = {
   parameters: { controls: { disable: true } },
   render: () => ({
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Fields — loading</h3>
         <v-row>
           <v-col cols="12" sm="6" md="4">
@@ -671,7 +757,7 @@ export const EmptyState: Story = {
       return { country, search, menu, manyCountryItems }
     },
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Autocomplete — search matches nothing</h3>
         <v-row>
           <v-col cols="12" sm="6" md="4">
@@ -702,7 +788,7 @@ export const ErrorState: Story = {
   parameters: { controls: { disable: true } },
   render: () => ({
     template: `
-      <div class="mp-story-canvas pa-6">
+      <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Fields — error</h3>
         <v-row>
           <v-col cols="12" sm="6" md="4">

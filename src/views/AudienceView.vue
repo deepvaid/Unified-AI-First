@@ -43,10 +43,11 @@ function saveEdit(contact: any) {
     <!-- Data Table Bento Box -->
     <v-card class="bento-card bg-surface pa-0 pb-2">
       <div class="pa-4 d-flex align-center border-b border-opacity-25" style="border-color: rgba(var(--v-border-color), 0.1) !important;">
+        <!-- Toolbar search and the inline cell editor below suppress details on purpose. -->
         <v-text-field
           density="compact"
-          variant="outlined"
           placeholder="Search contacts by name or email..."
+          aria-label="Search contacts by name or email"
           prepend-inner-icon="search"
           hide-details
           class="max-w-md"
@@ -83,7 +84,7 @@ function saveEdit(contact: any) {
                 <v-text-field
                   v-model="editName"
                   density="compact"
-                  variant="outlined"
+                  aria-label="Contact name"
                   hide-details
                   autofocus
                   @keyup.enter="saveEdit(contact)"

@@ -32,7 +32,7 @@ withDefaults(defineProps<{
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--mp-spacing-4);
+  gap: var(--mp-space-16);
   padding: 6%;
   text-align: center;
 }
@@ -42,16 +42,16 @@ withDefaults(defineProps<{
 }
 
 .wordmark__name {
-  font-size: clamp(var(--mp-typography-fontSize-2xl), 5vw, var(--mp-typography-fontSize-3xl));
-  font-weight: var(--mp-typography-fontWeight-heavy);
+  font-size: clamp(var(--mp-fontSize-32), 5vw, var(--mp-fontSize-40));
+  font-weight: var(--mp-fontWeight-heavy);
   letter-spacing: 0.18em;
   color: rgb(var(--v-theme-on-surface));
   animation: wm-rise 500ms var(--mp-motion-easing-standard) 300ms both;
 }
 
 .wordmark__byline {
-  margin-top: calc(-1 * var(--mp-spacing-2));
-  font-size: var(--mp-typography-fontSize-sm);
+  margin-top: calc(-1 * var(--mp-space-8));
+  font-size: var(--mp-fontSize-12);
   letter-spacing: 0.32em;
   text-transform: uppercase;
   color: rgb(var(--v-theme-on-surface-variant));
@@ -59,15 +59,15 @@ withDefaults(defineProps<{
 }
 
 .wordmark__tag {
-  font-size: var(--mp-typography-fontSize-lg);
+  font-size: var(--mp-fontSize-18);
   color: rgb(var(--v-theme-on-surface-variant));
   animation: wm-rise 500ms var(--mp-motion-easing-standard) 650ms both;
 }
 
 .wordmark__url {
-  margin-top: var(--mp-spacing-4);
-  font-family: var(--mp-typography-fontFamily-mono);
-  font-size: var(--mp-typography-fontSize-sm);
+  margin-top: var(--mp-space-16);
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-primary));
   animation: wm-rise 500ms var(--mp-motion-easing-standard) 1000ms both;
 }

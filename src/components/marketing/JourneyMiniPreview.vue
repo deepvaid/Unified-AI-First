@@ -66,7 +66,7 @@ const pillStyle = (c: NodeCategory) => c === 'end'
 .mini-branches { display: flex; align-items: stretch; }
 .mini-branch {
   position: relative; display: flex; flex-direction: column; align-items: center;
-  padding: 8px 8px 0;
+  padding: var(--mp-space-8) var(--mp-space-8) 0;
 }
 .mini-branch::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px;

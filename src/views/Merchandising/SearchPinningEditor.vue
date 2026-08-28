@@ -182,14 +182,14 @@ function performDelete() {
       </template>
     </MpPageHeader>
 
-    <!-- Controls -->
+    <!-- Controls: a workspace toolbar, not a form — compact density and
+         `hide-details` are deliberate so the row stays one control tall. -->
     <div class="d-flex align-center gap-3 flex-wrap">
       <v-text-field
         v-model="query"
         label="Search query"
         placeholder="e.g. boots"
         prepend-inner-icon="search"
-        variant="outlined"
         density="compact"
         hide-details
         class="spin-query"
@@ -200,7 +200,6 @@ function performDelete() {
         placeholder="Filter results…"
         aria-label="Filter unpinned results"
         prepend-inner-icon="list-filter"
-        variant="outlined"
         density="compact"
         hide-details
         clearable
@@ -210,7 +209,6 @@ function performDelete() {
         v-model="sortKey"
         :items="[...MERCH_SORT_OPTIONS]"
         aria-label="Sort unpinned results"
-        variant="outlined"
         density="compact"
         hide-details
         class="spin-sort"

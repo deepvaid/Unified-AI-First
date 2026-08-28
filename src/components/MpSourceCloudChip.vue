@@ -5,7 +5,7 @@ import type { DashboardDataSource } from '@/stores/dashboards/types'
 
 const props = withDefaults(defineProps<{
   dataSource: DashboardDataSource
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
   iconOnly?: boolean
 }>(), {
   size: 'md',
@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{
 })
 
 const meta = computed(() => DASHBOARD_SOURCE_META[props.dataSource])
-const iconSize = computed(() => (props.size === 'sm' ? 12 : 13))
+const iconSize = computed(() => ({ sm: 12, md: 13, lg: 15 } as const)[props.size])
 </script>
 
 <template>
@@ -37,16 +37,14 @@ const iconSize = computed(() => (props.size === 'sm' ? 12 : 13))
 .mp-source-cloud-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--mp-space-4);
   flex-shrink: 0;
-  padding: 0 9px;
-  height: 22px;
-  border-radius: 999px;
+  padding-inline: var(--mp-component-chip-paddingInline);
+  border-radius: var(--mp-radius-full);
   background: var(--surface-primary);
   border: 1px solid var(--border-subtle);
   color: var(--text-primary);
-  font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 0.01em;
   white-space: nowrap;
   cursor: default;
@@ -60,24 +58,32 @@ const iconSize = computed(() => (props.size === 'sm' ? 12 : 13))
 .mp-source-cloud-chip--neto { color: var(--text-primary); }
 .mp-source-cloud-chip--retail { color: var(--cloud-retail-text); }
 
+/* Shared chip height ramp (P2-4). Was 20/22px on a private two-stop scale;
+   the 10.5px `sm` label went with it (P2-3, no fractional sizes — P1-6). */
 .mp-source-cloud-chip--sm {
-  height: 20px;
-  padding: 0 8px;
-  font-size: 10.5px;
-  gap: 4px;
+  height: var(--mp-component-chip-height-sm);
+  font-size: var(--mp-fontSize-11);
 }
 
+.mp-source-cloud-chip--md {
+  height: var(--mp-component-chip-height-md);
+  font-size: var(--mp-fontSize-12);
+}
+
+.mp-source-cloud-chip--lg {
+  height: var(--mp-component-chip-height-lg);
+  font-size: var(--mp-fontSize-13);
+}
+
+/* Icon-only collapses to a square at the same ramp height. */
 .mp-source-cloud-chip--icon-only {
-  padding: 0;
-  width: 22px;
-  height: 22px;
+  padding-inline: 0;
   justify-content: center;
 }
 
-.mp-source-cloud-chip--icon-only.mp-source-cloud-chip--sm {
-  width: 20px;
-  height: 20px;
-}
+.mp-source-cloud-chip--icon-only.mp-source-cloud-chip--sm { width: var(--mp-component-chip-height-sm); }
+.mp-source-cloud-chip--icon-only.mp-source-cloud-chip--md { width: var(--mp-component-chip-height-md); }
+.mp-source-cloud-chip--icon-only.mp-source-cloud-chip--lg { width: var(--mp-component-chip-height-lg); }
 
 .mp-source-cloud-chip :deep(.v-icon) {
   color: currentColor;

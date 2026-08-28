@@ -35,7 +35,7 @@ const isDark = computed(() => mode.value === 'dark')
 .s04__sub {
   margin: 0 auto;
   max-width: 480px;
-  font-size: var(--mp-typography-fontSize-lg);
+  font-size: var(--mp-fontSize-18);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 </style>

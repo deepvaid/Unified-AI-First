@@ -127,7 +127,7 @@ const details = computed(() => {
     <template v-if="campaign">
       <MpPageHeader :title="campaign.name" :subtitle="`Campaign report · ${campaign.listName}`" :back-to="backTo">
         <template #actions>
-          <MpStatusChip :status="campaign.status" type="campaign" size="small" />
+          <MpStatusChip :status="campaign.status" type="campaign" size="md" />
           <v-btn variant="flat" color="surface" prepend-icon="download" class="text-none">Export</v-btn>
         </template>
         <template #tabs>

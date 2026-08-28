@@ -120,8 +120,6 @@ function actionMeta(event: AuditEvent) {
           <v-btn-toggle
             v-model="previewAs"
             density="compact"
-            variant="outlined"
-            divided
             mandatory
             rounded="lg"
             aria-label="Preview the audit log as a different role"
@@ -168,31 +166,19 @@ function actionMeta(event: AuditEvent) {
               v-model="filters.action"
               label="Action"
               :items="actionItems"
-              variant="outlined"
-              density="compact"
-              hide-details
               clearable
-              class="mb-4"
             />
             <v-select
               v-model="filters.actor"
               label="Actor"
               :items="actorItems"
-              variant="outlined"
-              density="compact"
-              hide-details
               clearable
-              class="mb-4"
             />
             <v-select
               v-model="filters.period"
               label="Period"
               :items="periodItems"
-              variant="outlined"
-              density="compact"
-              hide-details
               clearable
-              class="mb-4"
             />
           </template>
         </MpDataTableToolbar>
@@ -253,7 +239,7 @@ function actionMeta(event: AuditEvent) {
           <template #no-data>
             <MpEmptyState
               v-if="search || activeFilterEntries.length || targetTab !== 'all'"
-              variant="expressive"
+              emphasis="prominent"
               illustration="no-results"
               title="No events match"
               description="Try a different search, filter, or period."

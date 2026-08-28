@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, mergeProps } from 'vue'
 import MpFormDrawer from './MpFormDrawer.vue'
+import MpFormField from './MpFormField.vue'
 
 const search = defineModel<string>('search', { default: '' })
 const filterDrawer = defineModel<boolean>('filterOpen', { default: false })
@@ -56,16 +57,23 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
     <div class="d-flex align-start justify-space-between ga-6 px-6 pt-6 pb-4 mp-toolbar-row">
       <div class="mp-toolbar-heading">
         <div v-if="title" class="text-subtitle-1 font-weight-bold">{{ title }}</div>
-        <div v-if="totalCount != null" class="mp-meta-label text-medium-emphasis mt-1">
+        <div v-if="totalCount != null" class="mp-meta-label text-medium-emphasis">
           {{ totalCount }} records
         </div>
         <slot name="title" />
       </div>
 
       <div class="d-flex align-center ga-2 flex-wrap justify-end">
-        <span class="mp-filter-btn-wrap d-inline-flex align-center">
+        <v-badge
+          v-if="$slots['filter-content']"
+          :model-value="!!activeFilters?.length"
+          :content="activeFilters?.length"
+          color="primary"
+          location="top end"
+          offset-x="8"
+          offset-y="6"
+        >
           <v-btn
-            v-if="$slots['filter-content']"
             variant="outlined"
             class="text-none mp-filter-btn"
             prepend-icon="list-filter"
@@ -74,14 +82,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
           >
             Filter
           </v-btn>
-          <v-badge
-            v-if="activeFilters?.length"
-            :content="activeFilters.length"
-            color="primary"
-            floating
-            class="ml-1"
-          />
-        </span>
+        </v-badge>
 
         <v-menu
           v-if="headers?.length"
@@ -91,37 +92,43 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
           <template #activator="{ props: menuProps }">
             <v-tooltip text="Toggle visible columns" location="bottom">
               <template #activator="{ props: tooltipProps }">
-                <v-btn
-                  v-bind="mergeProps(menuProps, tooltipProps)"
-                  variant="outlined"
-                  icon="columns-3"
-                  class="mp-filter-btn mp-filter-btn--icon"
-                  :aria-label="hiddenColumns.length ? `Toggle visible columns (${hiddenColumns.length} hidden)` : 'Toggle visible columns'"
+                <v-badge
+                  :model-value="!!hiddenColumns.length"
+                  :content="hiddenColumns.length"
+                  color="primary"
+                  location="top end"
+                  offset-x="8"
+                  offset-y="6"
                 >
-                  <v-icon size="18">columns-3</v-icon>
-                  <v-badge
-                    v-if="hiddenColumns.length"
-                    :content="hiddenColumns.length"
-                    color="primary"
-                    floating
-                  />
-                </v-btn>
+                  <v-btn
+                    v-bind="mergeProps(menuProps, tooltipProps)"
+                    variant="outlined"
+                    icon="columns-3"
+                    class="mp-filter-btn mp-filter-btn--icon"
+                    :aria-label="hiddenColumns.length ? `Toggle visible columns (${hiddenColumns.length} hidden)` : 'Toggle visible columns'"
+                  >
+                    <v-icon size="18">columns-3</v-icon>
+                  </v-btn>
+                </v-badge>
               </template>
             </v-tooltip>
           </template>
-          <v-card min-width="220" max-width="280" flat border rounded="lg" class="mt-1 mp-toolbar-panel">
+          <v-card min-width="220" max-width="280" flat border rounded="lg" class="mp-toolbar-panel">
             <div class="pa-3">
-              <div class="text-subtitle-2 font-weight-bold mb-2">Toggle columns</div>
-              <v-checkbox
-                v-for="h in toggleableHeaders"
-                :key="h.key"
-                :label="h.title"
-                :model-value="isColumnVisible(h.key)"
-                density="compact"
-                hide-details
-                class="mp-column-checkbox"
-                @update:model-value="toggleColumn(h.key)"
-              />
+              <MpFormField label="Toggle columns">
+                <!-- Dense menu panel: compact and detail-free on purpose, so the
+                     list of columns can't push the menu past the viewport. -->
+                <v-checkbox
+                  v-for="h in toggleableHeaders"
+                  :key="h.key"
+                  :label="h.title"
+                  :model-value="isColumnVisible(h.key)"
+                  density="compact"
+                  hide-details
+                  class="mp-column-checkbox"
+                  @update:model-value="toggleColumn(h.key)"
+                />
+              </MpFormField>
             </div>
             <v-divider class="mp-divider-muted" />
             <div class="d-flex justify-end pa-3">
@@ -141,12 +148,13 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
         <slot name="actions" />
 
         <div class="mp-toolbar-search">
+          <!-- Toolbar filter, not a form field: the pill search is label-free by
+               design (see .mp-toolbar-search below) and suppresses details so the
+               toolbar row height can never shift. -->
           <v-text-field
             v-model="search"
             :placeholder="searchPlaceholder ?? 'Search...'"
             :aria-label="searchPlaceholder ?? 'Search records'"
-            variant="outlined"
-            density="comfortable"
             hide-details
             prepend-inner-icon="search"
           />
@@ -200,44 +208,46 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
     :subtitle="filterSubtitle ?? 'Changes apply immediately'"
   >
     <slot name="filter-content" />
+    <template #footerStart>
+      <v-btn variant="text" class="text-none" @click="$emit('clearFilters')">
+        Clear all
+      </v-btn>
+    </template>
     <template #footer>
-      <div class="d-flex align-center w-100">
-        <v-btn variant="text" class="text-none" @click="$emit('clearFilters')">
-          Clear all
-        </v-btn>
-        <v-spacer />
-        <v-btn variant="flat" color="primary" class="text-none" @click="filterDrawer = false">
-          Done
-        </v-btn>
-      </div>
+      <v-btn variant="flat" color="primary" class="text-none" @click="filterDrawer = false">
+        Done
+      </v-btn>
     </template>
   </MpFormDrawer>
 </template>
 
-<style scoped lang="scss">
-@use '@/design-tokens/generated/_variables.scss' as *;
-
+<style scoped>
 .mp-toolbar-shell {
   background: rgb(var(--v-theme-surface));
 }
 
+/* P4-5: a table toolbar is not app-shell chrome. This used to borrow
+   $mp-layout-appbarHeight, so changing the app bar resized every table's
+   toolbar. `component.toolbar.minHeight` is its own decision. */
 .mp-toolbar-row {
-  min-height: $mp-layout-appbarHeight;
+  min-height: var(--mp-component-toolbar-minHeight);
 }
 
+/* P4-4: every control in this row is one height — the shared 40px control
+   baseline that buttons, form fields, list rows and table headers sit on. */
 .mp-filter-btn {
-  height: 40px;
+  height: var(--mp-component-control-height);
 }
 
 .mp-filter-btn--icon {
-  min-width: 40px;
-  width: 40px;
+  min-width: var(--mp-component-control-height);
+  width: var(--mp-component-control-height);
   padding-inline: 0;
 }
 
 .mp-toolbar-search {
-  width: 300px;
-  min-width: 240px;
+  width: var(--mp-component-toolbar-searchWidth);
+  min-width: var(--mp-component-toolbar-searchMinWidth);
 }
 
 .mp-divider-muted {
@@ -257,20 +267,65 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
    pattern across the app. White resting fill matches the toolbar's other
    controls (Filter, column-toggle — both `variant="outlined"` on the white
    toolbar shell), not a gray ghost fill. Vuetify's own outline is hidden
-   below (opacity 0) since this draws its own border instead — that border
-   must use the SAME compliant color-mix global.scss's A11Y-001 fix uses
-   (color-mix(in srgb, var(--text-secondary) 75%, transparent), ~3.4-3.6:1
-   both themes), not --border-default (~1.3:1) — a Phase 6 independent audit
-   caught this as a regression: --border-default was visually similar but
-   never re-verified for contrast against this fully-white background. */
+   below (opacity 0) since this draws its own border instead.
+
+   That border reuses --mp-border-subtle: the SAME custom property global.scss
+   (".v-btn--variant-outlined") sets on every outlined button, so this field and
+   the Filter / column-toggle buttons beside it in the same row cannot drift
+   apart in either theme (#e2e8f0 light, #33373D dark).
+
+   Consistency was chosen over contrast here, with eyes open: --mp-border-subtle
+   is ~1.2:1 on white, under the WCAG 1.4.11 3:1 non-text floor, so this reverses
+   the A11Y-001 finding *for this one field* (recorded under A11Y-002 in
+   docs/ui-system-audit/03-accessibility-audit.md). The sibling buttons were always
+   at this value, so matching them makes the row uniformly low-contrast rather than
+   mixed. Focus state below is unchanged and still compliant.
+
+   Still true after P5.5-12 (2026-08-28), which raised --border-strong so every
+   OTHER outlined field is compliant again (3.19:1+ light / 3.17:1+ dark). This row
+   is now the only outlined-control family left under the floor, and it stays that
+   way only because the field is matched to the buttons — so the open question is
+   the BUTTON border, not this line. Raising --mp-border-subtle here alone would
+   re-create exactly the mismatch that caused the earlier revert.
+
+   If the outlined-button border ever changes, change this line with it. */
 .mp-toolbar-search :deep(.v-field) {
   border-radius: var(--r-pill);
   background: var(--surface-primary);
-  border: 1px solid color-mix(in srgb, var(--text-secondary) 75%, transparent);
+  border: 1px solid var(--mp-border-subtle);
 }
 
 .mp-toolbar-search :deep(.v-field__outline) {
   --v-field-border-opacity: 0;
+}
+
+/* P4-4: this field sits on the same control-height token as the buttons beside
+   it. It used to be pinned to a literal 38px, which with the 1px borders landed
+   at 40 by arithmetic — correct by luck, and 2px adrift the moment the token
+   moved. Zeroing the wrapper padding and the field's own border-box sizing keeps
+   the rendered box on the token instead.
+
+   settings-form.scss pins .v-field__input to a 40px min-height and adds 2px of
+   wrapper padding top/bottom, which renders 46px — 6px taller than everything
+   else in this row — so both have to be neutralised here.
+
+   The doubled `.v-field .v-field__input` descendant is deliberate: the global
+   rule is (0,3,0) and a plain :deep(.v-field__input) ties it at (0,3,0), leaving
+   the winner down to stylesheet source order. The extra descendant makes this
+   (0,4,0) so it wins deterministically, without !important — the same
+   "override by selector specificity" contract settings-form.scss documents. */
+.mp-toolbar-search :deep(.v-field) {
+  box-sizing: border-box;
+  min-height: var(--mp-component-control-height);
+}
+
+.mp-toolbar-search :deep(.v-field .v-field__field) {
+  padding-block: 0;
+}
+
+.mp-toolbar-search :deep(.v-field .v-field__input) {
+  min-height: 0;
+  padding-block: 0;
 }
 
 .mp-toolbar-search :deep(.v-field--focused) {
@@ -288,12 +343,17 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   color: var(--muted);
 }
 
+/* The heading block owns the space between its title, its record count and any
+   slotted content — that used to be an `mt-1` the count carried itself. */
 .mp-toolbar-heading {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-4);
 }
 
 .mp-column-checkbox :deep(.v-label) {
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
 }
 
 @media (max-width: 959px) {

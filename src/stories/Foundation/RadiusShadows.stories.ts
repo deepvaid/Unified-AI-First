@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { VContainer } from 'vuetify/components'
 import {
-  mp_borderRadius_lg,
+  mp_radius_12,
   mp_shadow_dark_lg,
   mp_shadow_dark_md,
   mp_shadow_dark_sm,
-  mp_typography_fontFamily_mono,
-  mp_typography_fontSize_xs,
+  mp_fontFamily_mono,
+  mp_fontSize_11,
 } from '@/design-tokens/generated/tokens'
 import { tokensByPrefix } from './foundationTokens'
 
@@ -22,11 +22,14 @@ const meta = {
 Corner radii and elevation, rendered directly from \`src/design-tokens/generated/tokens.ts\`.
 
 ### Radius
-Choose by element type, not aesthetic preference: \`sm\`/\`chip\` for dense controls and chips,
-\`md\`/\`lg\` for list items and secondary cards, \`xl\`/\`2xl\` for primary cards and dialogs,
-\`full\` for pills, buttons and avatars. Component-level tokens (\`component.button.radius.*\`,
-\`component.card.radius.*\`, …) are already wired into the Vuetify global defaults — a plain
-\`v-btn\` or \`v-card\` picks them up automatically.
+One scale, named by pixel value — \`radius.4 · 8 · 10 · 12 · 16 · 20 · full\`. It reads as a
+concentric language: **16** for outer surfaces (cards, dialogs, drawers), **12** for anything
+nested inside one, **10** for controls and inputs, **8** for chips and menu items, **4** for
+micro-marks, \`full\` for pills, buttons and avatars.
+
+Reach for a role token when the system has already made the decision —
+\`component.{button,chip,input,menu,card,dialog}.radius\` alias into the scale and are wired into
+the Vuetify global defaults, so a plain \`v-btn\` or \`v-card\` picks them up automatically.
 
 ### Shadows
 Three softly-tinted levels only. Depth in this system comes from hairline borders + tint, not
@@ -41,20 +44,20 @@ cards, \`md\` for hover/popovers, \`lg\` for modals and drawers. Never stack sha
 export default meta
 type Story = StoryObj<typeof meta>
 
-const radii = tokensByPrefix('mp_borderRadius_')
-const componentRadii = tokensByPrefix('mp_component_').filter((t) => t.name.includes('radius_'))
+const radii = tokensByPrefix('mp_radius_')
+const componentRadii = tokensByPrefix('mp_component_').filter((t) => t.name.endsWith('radius'))
 const shadows = tokensByPrefix('mp_shadow_')
-const transitions = tokensByPrefix('mp_transition_')
+const motion = tokensByPrefix('mp_motion_')
 
 const TileLabel = {
   props: ['entry'],
   setup() {
-    return { mp_typography_fontFamily_mono, mp_typography_fontSize_xs }
+    return { mp_fontFamily_mono, mp_fontSize_11 }
   },
   template: `
     <div
       class="text-medium-emphasis mt-2"
-      :style="{ fontFamily: mp_typography_fontFamily_mono, fontSize: mp_typography_fontSize_xs, wordBreak: 'break-all' }"
+      :style="{ fontFamily: mp_fontFamily_mono, fontSize: mp_fontSize_11, wordBreak: 'break-all' }"
     >{{ entry.name }} · {{ entry.value }}</div>
   `,
 }
@@ -67,7 +70,7 @@ export const RadiusScale: Story = {
     },
     template: `
       <div class="pa-6">
-        <p class="text-overline text-medium-emphasis mb-4">Radius scale — borderRadius.*</p>
+        <p class="text-overline text-medium-emphasis mb-4">Radius scale — radius.* (name = px value)</p>
         <div class="d-flex flex-wrap ga-4">
           <div v-for="r in radii" :key="r.token" style="width: 140px;">
             <div
@@ -123,7 +126,7 @@ export const Shadows: Story = {
         { name: 'dark_md', value: mp_shadow_dark_md, token: 'mp_shadow_dark_md' },
         { name: 'dark_lg', value: mp_shadow_dark_lg, token: 'mp_shadow_dark_lg' },
       ]
-      return { lightShadows, darkShadowTokens, transitions, mp_borderRadius_lg }
+      return { lightShadows, darkShadowTokens, motion, mp_radius_12 }
     },
     template: `
       <div class="pa-6" style="background: rgb(var(--v-theme-background));">
@@ -134,7 +137,7 @@ export const Shadows: Story = {
               :style="{
                 boxShadow: s.value,
                 height: '96px',
-                borderRadius: mp_borderRadius_lg,
+                borderRadius: mp_radius_12,
                 background: 'rgb(var(--v-theme-surface))',
                 border: '1px solid rgb(var(--v-theme-outline-variant))',
               }"
@@ -149,7 +152,7 @@ export const Shadows: Story = {
               :style="{
                 boxShadow: s.value,
                 height: '96px',
-                borderRadius: mp_borderRadius_lg,
+                borderRadius: mp_radius_12,
                 background: 'var(--surface-primary)',
                 border: '1px solid var(--border-subtle)',
               }"
@@ -157,8 +160,8 @@ export const Shadows: Story = {
             <TileLabel :entry="s" />
           </div>
         </div>
-        <p class="text-overline text-medium-emphasis mb-2">Motion — transition.*</p>
-        <TileLabel v-for="t in transitions" :key="t.token" :entry="t" />
+        <p class="text-overline text-medium-emphasis mb-2">Motion — motion.*</p>
+        <TileLabel v-for="t in motion" :key="t.token" :entry="t" />
       </div>
     `,
   }),
@@ -169,7 +172,7 @@ export const ElevationAliases: Story = {
   parameters: { controls: { disable: true } },
   render: () => ({
     setup() {
-      return { mp_borderRadius_lg }
+      return { mp_radius_12 }
     },
     template: `
       <div class="pa-6">
@@ -181,7 +184,7 @@ export const ElevationAliases: Story = {
                 boxShadow: 'var(--elevation-raised)',
                 background: 'var(--surface-raised)',
                 border: '1px solid var(--border-subtle)',
-                borderRadius: mp_borderRadius_lg,
+                borderRadius: mp_radius_12,
                 height: '96px',
               }"
             />
@@ -194,7 +197,7 @@ export const ElevationAliases: Story = {
                 boxShadow: 'var(--elevation-overlay)',
                 background: 'var(--surface-overlay)',
                 border: '1px solid var(--border-default)',
-                borderRadius: mp_borderRadius_lg,
+                borderRadius: mp_radius_12,
                 height: '96px',
               }"
             />
@@ -207,7 +210,7 @@ export const ElevationAliases: Story = {
                 boxShadow: 'var(--elevation-modal)',
                 background: 'var(--surface-overlay)',
                 border: '1px solid var(--border-default)',
-                borderRadius: mp_borderRadius_lg,
+                borderRadius: mp_radius_12,
                 height: '96px',
               }"
             />
@@ -218,9 +221,4 @@ export const ElevationAliases: Story = {
       </div>
     `,
   }),
-}
-
-export const ElevationAliasesDark: Story = {
-  globals: { theme: 'dark' },
-  ...ElevationAliases,
 }

@@ -4,6 +4,8 @@ import { isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import { downloadCsv } from '@/utils/exportCsv'
@@ -89,30 +91,25 @@ function exportCsv() {
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
+          <MpFormSection title="Filter by" />
+          <MpFormGrid>
             <v-select
               v-model="filterLevel"
               label="Log Level"
               :items="['INFO', 'WARNING', 'ERROR']"
-              variant="outlined"
-              density="compact"
-              hide-details
               clearable
               multiple
               chips
               closable-chips
-              rounded="lg"
-              class="mb-3"
             />
-          </div>
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
       <MpTableSkeleton v-if="loading" :rows="7" :columns="3" />
 
       <v-data-table v-else :headers="visibleHeaders" :items="filteredLogs" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
         <template v-slot:item.level="{ item }">
-          <MpStatusChip :status="item.level ?? ''" type="general" size="x-small" />
+          <MpStatusChip :status="item.level ?? ''" type="general" size="sm" />
         </template>
         <template #no-data>
           <MpEmptyState

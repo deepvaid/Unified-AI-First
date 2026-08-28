@@ -5,7 +5,7 @@ import DvOrbitStatusPill from './DvOrbitStatusPill.vue'
 import '@/styles/dv-orbit.css'
 
 const meta = {
-  title: 'Copilot/Voice/DvOrbitStatusPill',
+  title: 'Product/Da Vinci/Voice/DvOrbitStatusPill',
   component: DvOrbitStatusPill,
   tags: ['autodocs'],
   args: {

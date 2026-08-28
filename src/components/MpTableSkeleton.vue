@@ -40,29 +40,40 @@ withDefaults(defineProps<{
   width: 100%;
 }
 
+/* Pinned to the SAME component.table.* tokens as the real v-data-table rows in
+   global.scss, so the skeleton and the table it stands in for cannot drift — a
+   loading table and a loaded table are the same height, column for column. */
 .mp-table-skeleton__row {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 14px 20px;
+  gap: var(--mp-space-24);
+  min-height: var(--mp-component-table-rowMinHeight);
+  padding: var(--mp-component-table-cellPaddingBlock) var(--mp-component-table-cellPaddingInline);
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .mp-table-skeleton__row--header {
-  padding-top: 14px;
-  padding-bottom: 14px;
+  min-height: var(--mp-component-table-headerMinHeight);
+  padding-top: var(--mp-component-table-headerPaddingBlock);
+  padding-bottom: var(--mp-component-table-headerPaddingBlock);
+}
+
+@media (max-width: 599.98px) {
+  .mp-table-skeleton__row {
+    padding-inline: var(--mp-component-table-cellPaddingInlineCompact);
+  }
 }
 
 .mp-table-skeleton__bar {
   flex: 1;
-  height: 12px;
-  border-radius: 4px;
+  height: var(--mp-space-12);
+  border-radius: var(--mp-radius-4);
   background: color-mix(in oklch, var(--text-primary) 8%, transparent);
   animation: mp-skeleton-pulse 1.6s ease-in-out infinite;
 }
 
 .mp-table-skeleton__bar--head {
-  height: 11px;
+  height: var(--mp-fontSize-11);
   background: color-mix(in oklch, var(--text-primary) 12%, transparent);
 }
 

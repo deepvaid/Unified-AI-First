@@ -34,7 +34,6 @@ const selectedName = computed(() => {
       <v-btn
         v-bind="menuProps"
         variant="outlined"
-        height="40"
         class="text-none mp-folder-select__activator"
         prepend-icon="folder"
         append-icon="chevron-down"
@@ -44,7 +43,7 @@ const selectedName = computed(() => {
       </v-btn>
     </template>
 
-    <v-card min-width="240" max-width="320" flat border rounded="lg" class="mt-1">
+    <v-card min-width="240" max-width="320" flat border class="mp-folder-select__panel">
       <v-list density="compact" class="py-1" aria-label="Folders">
         <v-list-item
           rounded="lg"
@@ -97,13 +96,23 @@ const selectedName = computed(() => {
 </template>
 
 <style scoped>
+/* P4-7: the activator is a control, so it takes the shared control height —
+   the same token the toolbar's Filter button and search field resolve to. It
+   was a `height="40"` attribute, i.e. the right number stated the wrong way. */
 .mp-folder-select__activator {
+  height: var(--mp-component-control-height);
   border-color: var(--border-default);
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: var(--mp-fontWeight-medium);
+}
+
+/* A menu panel is 12 on the concentric radius scale (P2-6), not the 16 that
+   `rounded="lg"` resolves to through global.scss's card override. */
+.mp-folder-select__panel {
+  border-radius: var(--mp-component-menu-radius);
 }
 
 .mp-folder-select__child {
-  padding-inline-start: 28px !important;
+  padding-inline-start: var(--mp-space-28) !important;
 }
 </style>

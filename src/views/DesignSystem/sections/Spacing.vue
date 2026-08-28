@@ -2,21 +2,21 @@
 import tokens from '@/design-tokens/tokens.json'
 
 // Spacing
-const spacingEntries = Object.entries(tokens.spacing)
+const spacingEntries = Object.entries(tokens.space)
   .filter(([k]) => k !== '$description')
   .map(([key, val]) => ({
     key,
     value: (val as { $value: string }).$value,
-    token: `spacing.${key}`,
+    token: `space.${key}`,
   }))
 
 // Border radius
-const radiusEntries = Object.entries(tokens.borderRadius)
+const radiusEntries = Object.entries(tokens.radius)
   .filter(([k]) => k !== '$description')
   .map(([key, val]) => ({
     key,
     value: (val as { $value: string }).$value,
-    token: `borderRadius.${key}`,
+    token: `radius.${key}`,
   }))
 
 // Shadows — the token $value is a composite object; compose the CSS string.

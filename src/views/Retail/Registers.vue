@@ -6,6 +6,7 @@ import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import { useRetailStore } from '@/stores/useRetail'
 import type { Register, RegisterStatus } from '@/stores/useRetail'
@@ -209,7 +210,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         </template>
 
         <template #item.status="{ item }">
-          <MpStatusChip :status="STATUS_CHIP_STATUS[item.status]" type="general" size="x-small" />
+          <MpStatusChip :status="STATUS_CHIP_STATUS[item.status]" type="general" size="sm" />
         </template>
 
         <template #item.lastSeenAt="{ item }">
@@ -262,7 +263,6 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
       v-model="detailDrawer"
       :title="selectedRegister?.name ?? 'Register'"
       :subtitle="selectedRegister ? store.locationName(selectedRegister.locationId) : ''"
-      :width="520"
     >
       <template v-if="selectedRegister">
         <!-- Status banner -->
@@ -332,60 +332,41 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
 
     <!-- Pair register drawer -->
     <MpFormDrawer v-model="pairDrawer" title="Pair new register" subtitle="Connect a device to your POS network">
-      <v-row dense>
-        <v-col cols="12">
-          <v-text-field v-model="pairForm.name" label="Register name" placeholder="e.g. Front counter" variant="outlined" density="compact" />
-        </v-col>
-        <v-col cols="12">
-          <v-select
-            v-model="pairForm.location"
-            label="Location"
-            :items="store.locationList.map((l) => ({ title: l.name, value: l.id }))"
-            variant="outlined"
-            density="compact"
-          />
-        </v-col>
-        <v-col cols="12">
-          <v-select
-            v-model="pairForm.deviceType"
-            label="Device type"
-            :items="DEVICE_TYPES"
-            variant="outlined"
-            density="compact"
-          />
-        </v-col>
-        <v-col cols="12">
-          <v-select
-            v-model="pairForm.terminal"
-            label="Payment terminal (optional)"
-            :items="TERMINALS"
-            variant="outlined"
-            density="compact"
-          />
-        </v-col>
-        <v-col cols="12">
-          <v-select
-            v-model="pairForm.printer"
-            label="Receipt printer (optional)"
-            :items="PRINTERS"
-            variant="outlined"
-            density="compact"
-          />
-        </v-col>
-        <v-col cols="12">
-          <v-card flat border rounded="lg" class="pa-3">
-            <div class="d-flex align-center ga-2 mb-1">
-              <v-icon size="16" color="info">info</v-icon>
-              <span class="text-body-2 font-weight-medium">Pairing instructions</span>
-            </div>
-            <div class="text-body-2 text-medium-emphasis">
-              1. Open the Retail app on your device.<br>
-              2. Go to Settings → Pair device.<br>
-              3. Enter the pairing code shown here: <strong>8472-K</strong>
-            </div>
-          </v-card>
-        </v-col>
-      </v-row>
+      <MpFormGrid>
+        <v-text-field v-model="pairForm.name" label="Register name" placeholder="e.g. Front counter" />
+        <v-select
+          v-model="pairForm.location"
+          label="Location"
+          :items="store.locationList.map((l) => ({ title: l.name, value: l.id }))"
+        />
+        <v-select
+          v-model="pairForm.deviceType"
+          label="Device type"
+          :items="DEVICE_TYPES"
+        />
+        <v-select
+          v-model="pairForm.terminal"
+          label="Payment terminal (optional)"
+          :items="TERMINALS"
+        />
+        <v-select
+          v-model="pairForm.printer"
+          label="Receipt printer (optional)"
+          :items="PRINTERS"
+        />
+      </MpFormGrid>
+
+      <v-card flat border rounded="lg" class="pa-3">
+        <div class="d-flex align-center ga-2 mb-1">
+          <v-icon size="16" color="info">info</v-icon>
+          <span class="text-body-2 font-weight-medium">Pairing instructions</span>
+        </div>
+        <div class="text-body-2 text-medium-emphasis">
+          1. Open the Retail app on your device.<br>
+          2. Go to Settings → Pair device.<br>
+          3. Enter the pairing code shown here: <strong>8472-K</strong>
+        </div>
+      </v-card>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="pairDrawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" @click="savePair">Pair device</v-btn>

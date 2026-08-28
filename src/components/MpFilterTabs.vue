@@ -46,7 +46,7 @@ withDefaults(defineProps<{
 <style scoped>
 .mp-filter-tabs__tab {
   min-width: 0;
-  padding-inline: 14px;
+  padding-inline: var(--mp-space-14);
   letter-spacing: 0;
 }
 
@@ -86,6 +86,6 @@ withDefaults(defineProps<{
 }
 
 .mp-filter-tabs :deep(.v-slide-group__content) {
-  gap: 4px;
+  gap: var(--mp-space-4);
 }
 </style>

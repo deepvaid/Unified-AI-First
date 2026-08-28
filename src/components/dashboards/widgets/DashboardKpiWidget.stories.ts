@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import type { DashboardKpiData } from '@/stores/dashboards/types'
 import DashboardKpiWidget from './DashboardKpiWidget.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const REVENUE_KPI: DashboardKpiData = {
   kind: 'kpi',
@@ -28,7 +27,7 @@ function minutesAgo(minutes: number): string {
 }
 
 const meta = {
-  title: 'Dashboards/Widgets/DashboardKpiWidget',
+  title: 'Product/Dashboards/Widgets/DashboardKpiWidget',
   component: DashboardKpiWidget,
   tags: ['autodocs'],
   parameters: {
@@ -52,18 +51,43 @@ const meta = {
     showViewReport: false,
   },
   argTypes: {
-    data: { control: 'object' },
-    title: { control: 'text' },
-    subtitle: { control: 'text' },
-    comparisonLabel: { control: 'text' },
-    icon: { control: 'text' },
+    data: {
+      control: 'object',
+      description: '`DashboardKpiData` — the value, delta and comparison the tile displays.',
+    },
+    title: {
+      control: 'text',
+      description: 'Overrides the metric\'s own label. Leave empty to use what `data` carries.',
+    },
+    subtitle: {
+      control: 'text',
+      description: 'Supporting line under the title, e.g. the metric definition.',
+    },
+    comparisonLabel: {
+      control: 'text',
+      description: 'Wording for the comparison period, e.g. \\"vs previous 30 days\\". Shown beside the delta.',
+    },
+    icon: {
+      control: 'text',
+      description: 'Lucide icon name (kebab-case) for the tile. Empty renders no icon.',
+    },
     dataSource: {
       control: 'select',
       options: ['commerce', 'marketing', 'analytics', 'contacts', 'service', 'retail'],
+      description: '`DashboardDataSource` — which cloud the metric comes from. Renders an `MpSourceCloudChip`, so a KPI always says where its number came from.',
     },
-    compact: { control: 'boolean' },
-    aiGenerated: { control: 'boolean' },
-    showViewReport: { control: 'boolean' },
+    compact: {
+      control: 'boolean',
+      description: 'The dense tier. Takes a uniform `component.card.paddingCompact` (12) instead of the standard 20 — this is the one widget that is deliberately denser than the rest of the family.',
+    },
+    aiGenerated: {
+      control: 'boolean',
+      description: 'Marks the tile as Da Vinci-generated with the shared chip from `component.chip.*` — the same ramp `DashboardWidgetCard` uses, so the two copies cannot drift.',
+    },
+    showViewReport: {
+      control: 'boolean',
+      description: 'Adds a View report action that emits `viewReport`. Off by default; only turn it on where a report actually exists to open.',
+    },
   },
   render: (args) => ({
     components: { DashboardKpiWidget },
@@ -80,11 +104,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
-
-export const DarkMode: Story = {
-  globals: darkModeGlobals,
-  ...Default,
-}
 
 export const NegativeTrend: Story = {
   args: {
@@ -175,4 +194,69 @@ export const WithSparklineData: Story = {
       },
     },
   },
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/** One structure — a hero number with a trend and an optional sparkline. Its variants are whether the sparkline and the secondary stat are present. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { DashboardKpiWidget },
+    setup: () => ({ args }),
+    template: `<DashboardKpiWidget v-bind="args" />`,
+  }),
+}
+
+/**
+ * There is no `size` prop — a widget fills the grid cell it is placed in. The KPI card is the
+ * deliberately **dense** member of the family: Phase 4 (P4-1) gave it one uniform inset from
+ * the scale's compact tier (`component.card.paddingCompact`, 12) rather than the 20 the rest
+ * take. Denser than a card, but from the scale — it used to be an ad-hoc `14px 16px 12px`,
+ * three different values on one box.
+ *
+ * Rendered below at three cell sizes, including the narrow container where the sparkline drops
+ * below the value.
+ */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { DashboardKpiWidget },
+    setup: () => ({ args }),
+    template: `
+      <div class="d-flex ga-6 flex-wrap align-start">
+        <div style="width: 280px; height: 220px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardKpiWidget v-bind="args" /></v-card></div>
+        <div style="width: 420px; height: 260px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardKpiWidget v-bind="args" /></v-card></div>
+        <div style="width: 620px; height: 300px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardKpiWidget v-bind="args" /></v-card></div>
+      </div>
+    `,
+  }),
+}
+
+/** Positive trend, negative trend, no trend, and a narrow container where the spark drops below the value. */
+export const States: Story = {
+  render: (args) => ({
+    components: { DashboardKpiWidget },
+    setup: () => ({ args }),
+    template: `<DashboardKpiWidget v-bind="args" />`,
+  }),
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** The widget where it actually lives — inside a `DashboardWidgetCard`, in a
+ * dashboard row beside its siblings. This is the composition P4-1 is judged on: the header
+ * band, the body inset and the footer are the card's, and every widget in the family sits on
+ * the same edge.
+ */
+export const InContextDashboardRow: Story = {
+  render: (args) => ({
+    components: { DashboardKpiWidget },
+    setup: () => ({ args }),
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--mp-space-16); align-items: stretch">
+        <v-card flat border rounded="lg" style="height: 280px" class="pa-5"><DashboardKpiWidget v-bind="args" /></v-card>
+        <v-card flat border rounded="lg" style="height: 280px" class="pa-5"><DashboardKpiWidget v-bind="args" /></v-card>
+      </div>
+    `,
+  }),
 }

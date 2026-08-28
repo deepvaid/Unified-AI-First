@@ -2,10 +2,9 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import LandingInsertionPoint from './LandingInsertionPoint.vue'
 import LandingBlockView from './LandingBlockView.vue'
 import { PALETTE, PAGE_BLOCKS } from './landingStoryFixtures'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Marketing/LandingInsertionPoint',
+  title: 'Product/Marketing/Landing Pages/LandingInsertionPoint',
   component: LandingInsertionPoint,
   tags: ['autodocs'],
   parameters: {
@@ -82,9 +81,4 @@ export const BetweenBlocks: Story = {
       </div>
     `,
   }),
-}
-
-export const DarkMode: Story = {
-  ...BetweenBlocks,
-  globals: darkModeGlobals,
 }

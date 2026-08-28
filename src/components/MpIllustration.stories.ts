@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpIllustration, { type IllustrationName } from './MpIllustration.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const names: IllustrationName[] = [
   'no-results',
@@ -14,7 +13,7 @@ const names: IllustrationName[] = [
 ]
 
 const meta = {
-  title: 'Feedback/MpIllustration',
+  title: 'Atoms/MpIllustration',
   component: MpIllustration,
   tags: ['autodocs'],
   parameters: {
@@ -59,15 +58,9 @@ export const Gallery: Story = {
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:32px 24px;padding:8px">
         <div v-for="n in names" :key="n" style="display:flex;flex-direction:column;align-items:center;gap:12px">
           <MpIllustration :name="n" :size="140" />
-          <code style="font:12px/1 ui-monospace,monospace;color:#6b7280">{{ n }}</code>
+          <code style="font:12px/1 ui-monospace,monospace;color:var(--text-muted)">{{ n }}</code>
         </div>
       </div>
     `,
   }),
-}
-
-/** The full illustration set on dark — line and fill tones are token-driven, so every spot piece re-tints. */
-export const DarkMode: Story = {
-  ...Gallery,
-  globals: darkModeGlobals,
 }

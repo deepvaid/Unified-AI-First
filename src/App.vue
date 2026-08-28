@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
+import { mp_layout_sidebarWidth, mp_layout_sidebarRailWidth } from '@/design-tokens/generated/tokens'
 import AppBar from '@/components/layout/AppBar.vue'
 import MpDaVinciBot from '@/components/MpDaVinciBot.vue'
 import MpToastStack from '@/components/MpToastStack.vue'
@@ -100,6 +101,12 @@ const drawer = ref(true)
 const manualRailPref = () => localStorage.getItem('app-sidebar-rail')
 const rail = ref(manualRailPref() !== 'expanded')
 const copilot = useCopilotStore()
+// P4-7: the copilot's width reservation reads the same layout tokens the sidebar
+// renders at, instead of a third pair of literals (was 72 / 260 against an actual
+// 64 / 240).
+const SIDEBAR_WIDTH = Number.parseInt(mp_layout_sidebarWidth, 10)
+const RAIL_WIDTH = Number.parseInt(mp_layout_sidebarRailWidth, 10)
+
 const { width, smAndDown } = useDisplay()
 
 watch(width, (w, prevW) => {
@@ -171,7 +178,7 @@ const copilotDrawerWidth = computed(() => {
   // reviewing widget drafts; full takes over the whole content area in place
   // (the app sidebar keeps its reserved band).
   if (copilot.widthMode === 'full') {
-    const sidebarReserved = isFullPage.value || !drawer.value ? 0 : rail.value ? 72 : 260
+    const sidebarReserved = isFullPage.value || !drawer.value ? 0 : rail.value ? RAIL_WIDTH : SIDEBAR_WIDTH
     return Math.max(360, width.value - sidebarReserved - 24)
   }
   const target = copilot.widthMode === 'wide' ? 720 : 400
@@ -276,7 +283,7 @@ const copilotDrawerWidth = computed(() => {
   /* A hair off-white so the white widget cards read against the bed. */
   background: #f9f9f9;
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-component-card-radius-lg);
+  border-radius: var(--mp-component-card-radius);
   overflow: hidden;
 }
 
@@ -332,7 +339,7 @@ html[data-theme='dark'] .mp-content-frame {
   margin-right: 12px;
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-component-card-radius-lg);
+  border-radius: var(--mp-component-card-radius);
   box-shadow: var(--mp-shadow-md);
   overflow: hidden;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);

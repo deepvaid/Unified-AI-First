@@ -1,10 +1,9 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import Plg3dsDialog from './Plg3dsDialog.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'PLG/Plg3dsDialog',
+  title: 'Product/PLG/Plg3dsDialog',
   component: Plg3dsDialog,
   tags: ['autodocs'],
   parameters: {
@@ -112,8 +111,39 @@ export const Verifying: Story = {
   },
 }
 
-/** L4 modal surface in dark mode. */
-export const DarkModeOpen: Story = {
-  globals: darkModeGlobals,
-  ...Default,
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * One structure — a bank verification prompt. It is deliberately the only dialog in the app
+ * with no dismissal other than its own footer: `persistent`, so a stray Esc cannot abandon a
+ * payment mid-authorisation.
+ */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { Plg3dsDialog },
+    setup: () => ({ args }),
+    template: `<Plg3dsDialog v-bind="args" />`,
+  }),
+}
+
+/**
+ * There is no `size` prop — this is `MpDialog`'s `sm` (440px). A six-digit code and one line of
+ * explanation do not need more. Phase 4 replaced this file's own `pa-2` card and three `pa-4`
+ * bands with the shell's single 20px inset.
+ */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { Plg3dsDialog },
+    setup: () => ({ args }),
+    template: `<Plg3dsDialog v-bind="args" />`,
+  }),
+}
+
+/** Empty (Approve disabled), complete, and verifying (button in its loading state, inputs locked). */
+export const States: Story = {
+  render: (args) => ({
+    components: { Plg3dsDialog },
+    setup: () => ({ args }),
+    template: `<Plg3dsDialog v-bind="args" />`,
+  }),
 }

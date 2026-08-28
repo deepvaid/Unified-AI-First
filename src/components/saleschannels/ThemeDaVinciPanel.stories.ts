@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import ThemeDaVinciPanel, { type ThemeChatMessage } from './ThemeDaVinciPanel.vue'
 import { generateSections } from '@/composables/useThemeGenerator'
 import { getSectionDef } from '@/stores/themeBuilderData'
+import { surfaceFrame } from '@/stories/decorators'
 
 // Conversation fixtures mirror what StoreThemeBuilder pushes: user turns are the
 // raw prompt; matched Da Vinci turns carry addedIds/addedTitles so the panel
@@ -29,7 +30,7 @@ const unmatchedMessages: ThemeChatMessage[] = [
 ]
 
 const meta = {
-  title: 'Sales Channels/ThemeDaVinciPanel',
+  title: 'Product/Sales Channels/ThemeDaVinciPanel',
   component: ThemeDaVinciPanel,
   tags: ['autodocs'],
   parameters: {
@@ -55,17 +56,7 @@ const meta = {
     onClose: { table: { category: 'events' }, description: 'Back button clicked — parent returns to the Sections/Styles tabs.' },
   },
   // The panel fills its host — stage it in a builder-panel-sized frame.
-  decorators: [
-    () => ({
-      template: `
-        <div style="width:320px; height:560px; overflow:hidden;
-          border:1px solid rgb(var(--v-theme-outline-variant)); border-radius:12px;
-          background: rgb(var(--v-theme-surface));">
-          <story />
-        </div>
-      `,
-    }),
-  ],
+  decorators: [surfaceFrame({ width: '320px', height: '560px' })],
 } satisfies Meta<typeof ThemeDaVinciPanel>
 
 export default meta
@@ -139,5 +130,34 @@ export const Interactive: Story = {
     template: `
       <ThemeDaVinciPanel :messages="messages" @generate="onGenerate" @undo="onUndo" />
     `,
+  }),
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/** One structure — the Da Vinci panel docked in the theme builder. Its variants are the conversation modes: welcome prompts, an active exchange, and the fallback when nothing matched. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { ThemeDaVinciPanel },
+    setup: () => ({ args }),
+    template: `<ThemeDaVinciPanel v-bind="args" />`,
+  }),
+}
+
+/** There is no `size` prop — the panel fills the builder's side column. Its rows and controls resolve to the shared list-row and control-height tokens. */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { ThemeDaVinciPanel },
+    setup: () => ({ args }),
+    template: `<ThemeDaVinciPanel v-bind="args" />`,
+  }),
+}
+
+/** Welcome, mid-conversation, unmatched fallback, and interactive. */
+export const States: Story = {
+  render: (args) => ({
+    components: { ThemeDaVinciPanel },
+    setup: () => ({ args }),
+    template: `<ThemeDaVinciPanel v-bind="args" />`,
   }),
 }

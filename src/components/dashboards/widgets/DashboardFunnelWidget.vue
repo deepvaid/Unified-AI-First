@@ -65,7 +65,7 @@ const dividers = computed(() =>
 .funnel-widget {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--mp-space-16);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -80,8 +80,8 @@ const dividers = computed(() =>
 .funnel-widget__stage {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 0 12px 4px 16px;
+  gap: var(--mp-space-6);
+  padding: 0 var(--mp-space-12) var(--mp-space-4) var(--mp-space-16);
   border-left: 1px solid var(--border-subtle);
   min-width: 0;
 }
@@ -92,7 +92,7 @@ const dividers = computed(() =>
 }
 
 .funnel-widget__stage-label {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -100,8 +100,8 @@ const dividers = computed(() =>
 }
 
 .funnel-widget__stage-value {
-  font-size: 26px;
-  font-weight: 650;
+  font-size: var(--mp-fontSize-28);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: -0.028em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -109,8 +109,8 @@ const dividers = computed(() =>
 }
 
 .funnel-widget__stage-share {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--muted);
 }
 
@@ -133,29 +133,29 @@ const dividers = computed(() =>
 .funnel-widget__footer {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding-top: 14px;
+  gap: var(--mp-space-24);
+  padding-top: var(--mp-space-14);
   border-top: 1px solid var(--border-subtle);
   flex: none;
   flex-wrap: wrap;
-  row-gap: 12px;
+  row-gap: var(--mp-space-12);
 }
 
 .funnel-widget__stat {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--mp-space-4);
 }
 
 .funnel-widget__stat-label {
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
   white-space: nowrap;
 }
 
 .funnel-widget__stat-value {
   font-size: 17px;
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
@@ -168,19 +168,19 @@ const dividers = computed(() =>
 .funnel-widget__warning {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 10px;
+  gap: var(--mp-space-8);
+  padding: var(--mp-space-8) var(--mp-space-12);
+  border-radius: var(--mp-component-input-radius);
   background: var(--mp-color-light-warningContainer);
   color: var(--mp-color-light-onWarningContainer);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 @container (max-width: 720px) {
   .funnel-widget__stages {
     grid-template-columns: repeat(3, 1fr) !important;
-    row-gap: 12px;
+    row-gap: var(--mp-space-12);
   }
 
   .funnel-widget__stage:nth-child(4) {

@@ -83,7 +83,7 @@ const campaignRows = computed(() => {
               v-if="column.cellType === 'status'"
               :status="String(row[column.key] ?? '')"
               :type="column.statusType ?? 'general'"
-              size="x-small"
+              size="sm"
             />
             <span v-else class="text-body-2">{{ row[column.key] }}</span>
           </td>
@@ -117,16 +117,16 @@ const campaignRows = computed(() => {
 .dashboard-campaign-list__rows {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--mp-component-card-gap);
   flex: 1 1 auto;
   min-height: 0;
-  padding: 4px 2px 8px 0;
+  padding: var(--mp-space-4) var(--mp-space-2) var(--mp-space-8) 0;
   overflow-y: auto;
 }
 
 .dashboard-campaign-list__row {
   display: grid;
-  gap: 7px;
+  gap: var(--mp-space-8);
   min-width: 0;
 }
 
@@ -134,30 +134,30 @@ const campaignRows = computed(() => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  gap: 12px;
+  gap: var(--mp-space-12);
   color: var(--text-primary);
-  font-size: 13.5px;
+  font-size: var(--mp-fontSize-14);
 }
 
 .dashboard-campaign-list__name {
   overflow: hidden;
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .dashboard-campaign-list__value {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-bold);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
 
 .dashboard-campaign-list__meter {
-  height: 6px;
+  height: var(--mp-space-6);
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: var(--accent-soft);
 }
 
@@ -171,26 +171,26 @@ const campaignRows = computed(() => {
 
 .dashboard-campaign-list__meta {
   justify-self: end;
-  margin-top: -3px;
-  font-size: 11px;
+  margin-top: calc(var(--mp-space-4) * -1);
+  font-size: var(--mp-fontSize-11);
   color: var(--muted);
-  font-weight: 500;
+  font-weight: var(--mp-fontWeight-medium);
   font-variant-numeric: tabular-nums;
 }
 
 .dashboard-campaign-list__link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
   flex-shrink: 0;
-  padding: 10px 0 2px;
+  padding: var(--mp-space-10) 0 var(--mp-space-2);
   border: 0;
   background: transparent;
   color: var(--accent-ink);
   cursor: pointer;
   font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   text-align: left;
   transition: opacity 120ms ease;
 }
@@ -215,8 +215,8 @@ const campaignRows = computed(() => {
 }
 
 .dashboard-table-widget :deep(th) {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--muted);
@@ -228,28 +228,30 @@ const campaignRows = computed(() => {
   white-space: nowrap;
   /* !important: Vuetify's .v-table > .v-table__wrapper > table > thead > tr > th
      selector outguns anything :deep() can express. */
-  padding: 0 8px !important;
+  padding: 0 var(--mp-space-8) !important;
 }
 
 .dashboard-table-widget :deep(td) {
-  font-size: 13.5px;
+  font-size: var(--mp-fontSize-14);
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-subtle);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Truncation measure for a cell label — a text measure, not a spacing step
+     (same class of exemption as component.state.measure). */
   max-width: 160px;
-  padding: 12px 8px !important;
+  padding: var(--mp-space-12) var(--mp-space-8) !important;
 }
 
 .dashboard-table-widget :deep(th:first-child),
 .dashboard-table-widget :deep(td:first-child) {
-  padding-left: 2px !important;
+  padding-left: var(--mp-space-2) !important;
 }
 
 .dashboard-table-widget :deep(th:last-child),
 .dashboard-table-widget :deep(td:last-child) {
-  padding-right: 2px !important;
+  padding-right: var(--mp-space-2) !important;
 }
 
 .dashboard-table-widget :deep(tr:last-child td) {

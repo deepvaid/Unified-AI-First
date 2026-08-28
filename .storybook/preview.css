@@ -1,0 +1,50 @@
+/**
+ * Storybook canvas chrome — the one calm surface every story renders on.
+ *
+ * Deliberately NOT in src/styles/app-styles.ts: that manifest is the shared
+ * contract for *app-wide* stylesheets (see .claude/rules/global-styles.md).
+ * This file is Storybook chrome and must never reach the app.
+ *
+ * Two modes, selected per story with `parameters: { canvas: 'padded' | 'full' }`.
+ * `padded` is the default; `full` is for shells and overlays that need the
+ * viewport edge-to-edge (AppBar, AppSidebar, rails, drawers, toast stacks).
+ */
+
+.mp-storybook-root,
+.mp-storybook-root .v-application,
+.mp-storybook-root .v-application__wrap {
+  min-height: 100vh;
+  width: 100%;
+}
+
+.mp-storybook-root .v-application {
+  background: transparent;
+}
+
+/* P5.5: the canvas paints a surface, so it states the paired ink rather than
+   inheriting one. This is the same background/foreground contract the token
+   layer declares (see tokens.json → $contrastPairs) and is what keeps a story
+   readable when the Theme toolbar flips to dark. */
+.mp-story-canvas {
+  background: var(--surface-canvas, rgb(var(--v-theme-background)));
+  color: var(--on-surface, rgb(var(--v-theme-on-background)));
+  min-height: 100vh;
+}
+
+.mp-story-canvas[data-canvas='padded'] {
+  padding: var(--mp-space-32);
+}
+
+.mp-story-canvas[data-canvas='padded'] > .mp-story-canvas__content {
+  max-width: var(--mp-layout-contentMaxWidth);
+  margin-inline: auto;
+}
+
+.mp-story-canvas[data-canvas='full'] {
+  padding: 0;
+}
+
+.mp-story-canvas[data-canvas='full'] > .mp-story-canvas__content {
+  max-width: none;
+  margin-inline: 0;
+}

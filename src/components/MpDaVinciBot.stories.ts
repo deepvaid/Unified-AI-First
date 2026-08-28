@@ -3,7 +3,6 @@ import { provide } from 'vue'
 import { routeLocationKey } from 'vue-router'
 import MpDaVinciBot from './MpDaVinciBot.vue'
 import type { ChatMessage } from '@/stores/useCopilot'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 type StoryMessage = {
   id: string
@@ -118,7 +117,7 @@ const onboardingMessages: ChatMessage[] = [
 ]
 
 const meta = {
-  title: 'AI/MpDaVinciBot',
+  title: 'Product/Da Vinci/MpDaVinciBot',
   component: MpDaVinciBot,
   tags: ['autodocs'],
   parameters: {
@@ -202,7 +201,7 @@ layer directly.
           <div style="background:rgb(var(--v-theme-surface-variant));height:120px;border-radius:8px;margin-bottom:16px;"></div>
           <div style="background:rgb(var(--v-theme-surface-variant));height:300px;border-radius:8px;"></div>
         </div>
-        <div style="width:440px;border-radius:12px;overflow:hidden;box-shadow:0 16px 40px -12px rgba(26,24,20,.18);flex-shrink:0;transition:width .3s ease;" class="copilot-container">
+        <div style="width:440px;border-radius:12px;overflow:hidden;box-shadow:0 16px 40px -12px rgba(var(--mp-rgb-color-light-textPrimary),.18);flex-shrink:0;transition:width .3s ease;" class="copilot-container">
           <MpDaVinciBot v-bind="args" @expand="toggleExpand" />
         </div>
       </div>
@@ -238,7 +237,7 @@ export const CompactDrawer: Story = {
       return { args }
     },
     template: `
-      <div style="height:700px;width:440px;border-radius:12px;overflow:hidden;box-shadow:0 16px 40px -12px rgba(26,24,20,.18);background:rgb(var(--v-theme-background));">
+      <div style="height:700px;width:440px;border-radius:12px;overflow:hidden;box-shadow:0 16px 40px -12px rgba(var(--mp-rgb-color-light-textPrimary),.18);background:rgb(var(--v-theme-background));">
         <MpDaVinciBot v-bind="args" />
       </div>
     `,
@@ -253,7 +252,31 @@ export const CampaignOnboarding: Story = {
   },
 }
 
-export const DarkModeCompactDrawer: Story = {
-  globals: darkModeGlobals,
-  ...CompactDrawer,
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/** Two structures: the full copilot surface with its own header, and `headerless` for hosts that supply their own chrome (the docked drawer does). */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { MpDaVinciBot },
+    setup: () => ({ args }),
+    template: `<MpDaVinciBot v-bind="args" />`,
+  }),
+}
+
+/** There is no `size` prop — the bot fills whatever surface hosts it, from a 400px docked drawer to a full-page studio. Its internal rows and controls resolve to the shared `component.listItem.*` and `component.control.height` tokens, so the copilot does not read as a different product from the page behind it. */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { MpDaVinciBot },
+    setup: () => ({ args }),
+    template: `<MpDaVinciBot v-bind="args" />`,
+  }),
+}
+
+/** The states a session moves through: empty (suggestion chips), mid-conversation, and the onboarding card a first-run user sees. */
+export const States: Story = {
+  render: (args) => ({
+    components: { MpDaVinciBot },
+    setup: () => ({ args }),
+    template: `<MpDaVinciBot v-bind="args" />`,
+  }),
 }

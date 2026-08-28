@@ -121,23 +121,11 @@ function onToggle(engine: RecommendationEngine) {
         search-placeholder="Search engines…"
         :total-count="filteredEngines.length"
       >
+        <!-- Filter popover: `hide-details` is deliberate — these selects can never
+             carry a hint or an error, and the popover is a dense surface. -->
         <template #filter-content>
-          <v-select
-            v-model="filterPage"
-            label="Page"
-            density="comfortable"
-            variant="outlined"
-            hide-details
-            :items="pageOptions"
-          />
-          <v-select
-            v-model="filterType"
-            label="Type"
-            density="comfortable"
-            variant="outlined"
-            hide-details
-            :items="typeOptions"
-          />
+          <v-select v-model="filterPage" label="Page" hide-details :items="pageOptions" />
+          <v-select v-model="filterType" label="Type" hide-details :items="typeOptions" />
         </template>
       </MpDataTableToolbar>
 

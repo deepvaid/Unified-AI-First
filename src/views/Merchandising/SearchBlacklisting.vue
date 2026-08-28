@@ -108,13 +108,13 @@ function addProduct(id: string | null) {
           rounded="lg"
           class="flex-grow-1 d-flex flex-column overflow-hidden"
         >
+          <!-- Inline add bar above the table: `hide-details` is deliberate so the
+               row stays one control tall as terms are typed. -->
           <div class="d-flex align-center gap-3 pa-4">
             <v-select
               v-model="newLogic"
               :items="logicOptions"
               label="Logic"
-              variant="outlined"
-              density="comfortable"
               hide-details
               max-width="200"
             />
@@ -122,8 +122,6 @@ function addProduct(id: string | null) {
               v-model="newTerm"
               label="Term"
               placeholder="e.g. counterfeit"
-              variant="outlined"
-              density="comfortable"
               hide-details
               @keydown.enter="addTerm"
             />
@@ -201,8 +199,6 @@ function addProduct(id: string | null) {
               label="Add a product to the blacklist"
               placeholder="Search products…"
               prepend-inner-icon="search"
-              variant="outlined"
-              density="comfortable"
               hide-details
               clearable
               @update:model-value="addProduct"

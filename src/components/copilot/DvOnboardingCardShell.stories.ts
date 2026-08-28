@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import DvOnboardingCardShell from './DvOnboardingCardShell.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Copilot/DvOnboardingCardShell',
+  title: 'Product/Da Vinci/DvOnboardingCardShell',
   component: DvOnboardingCardShell,
   tags: ['autodocs'],
   parameters: {
@@ -84,7 +83,7 @@ const ROWS = `
     <div v-for="row in ['Authenticate your sending domain', 'Turn on link tracking', 'Create your first list']"
          :key="row"
          class="d-flex align-center ga-3 pa-3"
-         style="border-radius: var(--mp-borderRadius-md); background: rgb(var(--v-theme-surface-variant));">
+         style="border-radius: var(--mp-radius-12); background: rgb(var(--v-theme-surface-variant));">
       <v-icon color="info" size="20">circle-dashed</v-icon>
       <div class="flex-grow-1" style="min-width:0"><span class="text-body-2 font-weight-medium">{{ row }}</span></div>
       <span class="text-caption text-medium-emphasis text-no-wrap">≈ 5 min</span>
@@ -122,5 +121,3 @@ export const NoActions: Story = {
   args: { primaryAction: undefined, secondaryAction: undefined },
   render,
 }
-
-export const DarkMode: Story = { render, globals: darkModeGlobals }

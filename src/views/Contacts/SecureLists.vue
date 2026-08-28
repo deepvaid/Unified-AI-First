@@ -120,8 +120,6 @@ function confirmDelete() {
       <v-text-field
         v-model="listName"
         label="List Name *"
-        variant="outlined"
-        density="comfortable"
         autofocus
         @keyup.enter="save"
       />

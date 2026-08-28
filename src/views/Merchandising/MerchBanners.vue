@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
 import { useMerchandisingStore, type MerchBanner, type MerchPromoScope } from '@/stores/useMerchandising'
@@ -104,6 +105,7 @@ function doDelete() {
             {{ banner.targetUrl }}
           </div>
           <div class="text-caption text-medium-emphasis mt-1">Updated {{ banner.updatedAt }}</div>
+          <!-- Card-row switch: `hide-details` is deliberate so the row stays one line tall. -->
           <div class="d-flex align-center mt-3">
             <v-switch
               :model-value="banner.status === 'active'"
@@ -134,39 +136,29 @@ function doDelete() {
     </div>
 
     <MpFormDrawer v-model="drawer" title="Create banner" :subtitle="`Shown in ${scopeLabel.toLowerCase()}`">
-      <div class="d-flex flex-column gap-4">
+      <MpFormGrid>
         <v-text-field
           v-model="form.title"
-          label="Title"
+          label="Title *"
           placeholder="e.g. Free shipping over $75"
-          variant="outlined"
-          density="comfortable"
-          hide-details
         />
         <v-text-field
           v-model="form.imageLabel"
-          label="Image label"
+          label="Image label *"
           placeholder="Describes the banner artwork"
-          variant="outlined"
-          density="comfortable"
           hint="Stands in for the artwork upload in this prototype"
           persistent-hint
         />
         <v-text-field
           v-model="form.targetUrl"
-          label="Target URL"
+          label="Target URL *"
           placeholder="https://yourstore.com/pages/promo"
-          variant="outlined"
-          density="comfortable"
-          hide-details
         />
         <v-combobox
           v-model="form.terms"
           :label="termsLabel"
           :hint="termsHint"
           persistent-hint
-          variant="outlined"
-          density="comfortable"
           multiple
           chips
           closable-chips
@@ -174,7 +166,7 @@ function doDelete() {
         <div class="text-caption text-medium-emphasis">
           Placement: {{ scopeLabel }} — preset from the current section.
         </div>
-      </div>
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave" @click="save">Save</v-btn>

@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpComingSoonTiles, { type ComingSoonTile } from './MpComingSoonTiles.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const HARDWARE: ComingSoonTile[] = [
   { icon: 'credit-card',  title: 'Payment terminals', desc: 'Stripe Reader M2, S700, Tap to Pay on iPhone & Android.' },
@@ -17,7 +16,7 @@ const SETTINGS: ComingSoonTile[] = [
 ]
 
 const meta = {
-  title: 'Feedback/MpComingSoonTiles',
+  title: 'Molecules/MpComingSoonTiles',
   component: MpComingSoonTiles,
   tags: ['autodocs'],
   parameters: {
@@ -92,6 +91,73 @@ export const Default: Story = {
   },
 }
 
+/** With and without the supporting description line. */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpComingSoonTiles },
+    setup: () => ({
+      tiles: [
+        { icon: 'store', title: 'Store locator', desc: 'Let shoppers find your nearest location.' },
+        { icon: 'gift', title: 'Loyalty tiers', desc: 'Reward repeat buyers automatically.' },
+      ],
+    }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with description</div>
+          <MpComingSoonTiles icon="sparkles" title="Retail is on the way" description="These surfaces are planned for the next release." :tiles="tiles" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">title only</div>
+          <MpComingSoonTiles icon="sparkles" title="Retail is on the way" :tiles="tiles" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** The column ramp — `smCols` / `mdCols` control how tiles wrap. */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpComingSoonTiles },
+    setup: () => ({
+      tiles: [
+        { icon: 'store', title: 'Store locator', desc: 'Find your nearest location.' },
+        { icon: 'gift', title: 'Loyalty tiers', desc: 'Reward repeat buyers.' },
+        { icon: 'scan-barcode', title: 'In-store scan', desc: 'Scan to look up stock.' },
+        { icon: 'receipt', title: 'Digital receipts', desc: 'Email at the register.' },
+      ],
+    }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">mdCols=6 — two across</div>
+          <MpComingSoonTiles icon="sparkles" title="Two across" :tiles="tiles" :md-cols="6" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">mdCols=3 — four across</div>
+          <MpComingSoonTiles icon="sparkles" title="Four across" :tiles="tiles" :md-cols="3" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * This component has one state — "planned, not built yet". If the surface exists but has
+ * no data, that is `MpEmptyState`; if it failed to load, that is `MpErrorState`.
+ */
+export const States: Story = {
+  render: () => ({
+    components: { MpComingSoonTiles },
+    setup: () => ({ tiles: [{ icon: 'store', title: 'Store locator', desc: 'Planned for the next release.' }] }),
+    template: `<MpComingSoonTiles icon="sparkles" title="Retail is on the way" description="These surfaces are planned." :tiles="tiles" />`,
+  }),
+  args: {} as never,
+}
+
 /** The Retail Settings panel — `mdCols: 4` gives three tiles per row on desktop. */
 export const ThreeColumn: Story = {
   args: {
@@ -112,9 +178,4 @@ export const NoDescription: Story = {
 export const Mobile375: Story = {
   args: { ...Default.args },
   globals: { viewport: { value: 'mobile375', isRotated: false } },
-}
-
-export const DarkMode: Story = {
-  args: { ...Default.args },
-  globals: darkModeGlobals,
 }

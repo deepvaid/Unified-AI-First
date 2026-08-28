@@ -55,8 +55,8 @@ const emit = defineEmits<{ suggestion: [text: string] }>()
 }
 
 .dv-hero__hi {
-  margin: 32px 0 0;
-  font-size: 34px;
+  margin: var(--mp-space-32) 0 0;
+  font-size: var(--mp-fontSize-32);
   font-weight: 700;
   line-height: 1.18;
   letter-spacing: -0.5px;
@@ -64,7 +64,7 @@ const emit = defineEmits<{ suggestion: [text: string] }>()
 }
 
 .dv-hero__ask {
-  font-size: 34px;
+  font-size: var(--mp-fontSize-32);
   font-weight: 700;
   line-height: 1.18;
   letter-spacing: -0.5px;
@@ -77,25 +77,25 @@ const emit = defineEmits<{ suggestion: [text: string] }>()
 .dv-hero__rule {
   width: 170px;
   height: 4px;
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   background: var(--dv-hero-grad);
-  margin-top: 18px;
+  margin-top: var(--mp-space-20);
 }
 
 .dv-hero__chips {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 26px;
+  gap: var(--mp-space-10);
+  margin-top: var(--mp-space-28);
   max-width: 340px;
 }
 
 .dv-hero__chip {
   border: 1px solid var(--dv-border);
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   background: rgb(var(--v-theme-surface));
-  padding: 9px 14px;
-  font-size: var(--mp-typography-fontSize-sm);
+  padding: var(--mp-space-10) var(--mp-space-14);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-on-surface));
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;

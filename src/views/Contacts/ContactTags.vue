@@ -118,8 +118,6 @@ function confirmDelete() {
       <v-text-field
         v-model="tagName"
         label="Tag Name *"
-        variant="outlined"
-        density="comfortable"
         autofocus
         @keyup.enter="save"
       />

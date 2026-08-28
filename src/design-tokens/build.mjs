@@ -147,36 +147,27 @@ function generateTs(tokens) {
 
 // ── Tokens Studio JSON (for Figma sync) ───────────────────────────────────
 
-// Remap alias references from tokens.json paths to Tokens Studio paths.
-// In tokens.json the hierarchy is e.g. typography.fontSize.body, but in the
-// Tokens Studio output fontSize sits directly under the "global" set.
-function remapAlias(value) {
-  if (typeof value !== 'string') return value
-  return value.replace(/\{([^}]+)\}/g, (_match, path) => {
-    const rewrite = path
-      .replace(/^typography\./, '')       // {typography.fontSize.X} → {fontSize.X}
-    return `{${rewrite}}`
-  })
-}
+// Token group names in tokens.json and in the Tokens Studio "global" set are kept
+// identical (space, radius, fontSize, …) so `{alias}` references need no rewriting.
 
 function generateTokensStudio(raw) {
   const out = { global: {} }
 
   // Spacing
-  if (raw.spacing) {
-    out.global.spacing = {}
-    for (const [key, val] of Object.entries(raw.spacing)) {
+  if (raw.space) {
+    out.global.space = {}
+    for (const [key, val] of Object.entries(raw.space)) {
       if (key.startsWith('$')) continue
-      out.global.spacing[key] = { value: val.$value, type: 'spacing', description: `spacing.${key}` }
+      out.global.space[key] = { value: val.$value, type: 'spacing', description: `space.${key}` }
     }
   }
 
   // Border radius
-  if (raw.borderRadius) {
-    out.global.borderRadius = {}
-    for (const [key, val] of Object.entries(raw.borderRadius)) {
+  if (raw.radius) {
+    out.global.radius = {}
+    for (const [key, val] of Object.entries(raw.radius)) {
       if (key.startsWith('$')) continue
-      out.global.borderRadius[key] = { value: val.$value, type: 'borderRadius', description: `borderRadius.${key}` }
+      out.global.radius[key] = { value: val.$value, type: 'borderRadius', description: `radius.${key}` }
     }
   }
 
@@ -209,7 +200,7 @@ function generateTokensStudio(raw) {
       const tokenKey = prefix ? `${prefix}.${key}` : key
       if (val && typeof val === 'object' && '$value' in val) {
         targetSet[tokenKey] = {
-          value: remapAlias(val.$value),
+          value: (val.$value),
           type: 'color',
           description: `color.${theme}.${tokenKey}`,
         }
@@ -228,45 +219,44 @@ function generateTokensStudio(raw) {
   }
 
   // Typography — font sizes, weights, line heights
-  if (raw.typography?.fontSize) {
+  if (raw.fontSize) {
     out.global.fontSize = {}
-    for (const [key, val] of Object.entries(raw.typography.fontSize)) {
+    for (const [key, val] of Object.entries(raw.fontSize)) {
       if (key.startsWith('$')) continue
-      out.global.fontSize[key] = { value: val.$value, type: 'fontSizes', description: `typography.fontSize.${key}` }
+      out.global.fontSize[key] = { value: val.$value, type: 'fontSizes', description: `fontSize.${key}` }
     }
   }
-  if (raw.typography?.fontWeight) {
+  if (raw.fontWeight) {
     out.global.fontWeight = {}
-    for (const [key, val] of Object.entries(raw.typography.fontWeight)) {
+    for (const [key, val] of Object.entries(raw.fontWeight)) {
       if (key.startsWith('$')) continue
-      out.global.fontWeight[key] = { value: val.$value, type: 'fontWeights', description: `typography.fontWeight.${key}` }
+      out.global.fontWeight[key] = { value: val.$value, type: 'fontWeights', description: `fontWeight.${key}` }
     }
   }
-  if (raw.typography?.lineHeight) {
+  if (raw.lineHeight) {
     out.global.lineHeight = {}
-    for (const [key, val] of Object.entries(raw.typography.lineHeight)) {
+    for (const [key, val] of Object.entries(raw.lineHeight)) {
       if (key.startsWith('$')) continue
-      out.global.lineHeight[key] = { value: val.$value, type: 'lineHeights', description: `typography.lineHeight.${key}` }
+      out.global.lineHeight[key] = { value: val.$value, type: 'lineHeights', description: `lineHeight.${key}` }
     }
   }
-  if (raw.typography?.fontFamily) {
+  if (raw.fontFamily) {
     out.global.fontFamily = {}
-    for (const [key, val] of Object.entries(raw.typography.fontFamily)) {
+    for (const [key, val] of Object.entries(raw.fontFamily)) {
       if (key.startsWith('$')) continue
-      out.global.fontFamily[key] = { value: val.$value, type: 'fontFamilies', description: `typography.fontFamily.${key}` }
+      out.global.fontFamily[key] = { value: val.$value, type: 'fontFamilies', description: `fontFamily.${key}` }
     }
   }
 
-  // Component tokens — button + card radii
-  if (raw.component?.button?.radius) {
-    out.global['component-button-radius'] = {}
-    for (const [key, val] of Object.entries(raw.component.button.radius)) {
-      if (key.startsWith('$')) continue
-      out.global['component-button-radius'][key] = {
-        value: val.$value,
-        type: 'borderRadius',
-        description: `component.button.radius.${key}`
-      }
+  // Component role tokens — every radius is a single leaf alias into radius.*
+  out.global['component-radius'] = {}
+  for (const name of ['button', 'chip', 'input', 'menu', 'card', 'dialog']) {
+    const val = raw.component?.[name]?.radius
+    if (!val) continue
+    out.global['component-radius'][name] = {
+      value: val.$value,
+      type: 'borderRadius',
+      description: `component.${name}.radius`,
     }
   }
   if (raw.component?.button?.typography) {
@@ -278,31 +268,9 @@ function generateTokensStudio(raw) {
         : key === 'fontWeight' ? 'fontWeights'
         : 'typography'
       out.global['component-button-typography'][key] = {
-        value: remapAlias(val.$value),
+        value: (val.$value),
         type,
         description: `component.button.typography.${key}`
-      }
-    }
-  }
-  if (raw.component?.input?.radius) {
-    out.global['component-input-radius'] = {}
-    for (const [key, val] of Object.entries(raw.component.input.radius)) {
-      if (key.startsWith('$')) continue
-      out.global['component-input-radius'][key] = {
-        value: remapAlias(val.$value),
-        type: 'borderRadius',
-        description: `component.input.radius.${key}`
-      }
-    }
-  }
-  if (raw.component?.card?.radius) {
-    out.global['component-card-radius'] = {}
-    for (const [key, val] of Object.entries(raw.component.card.radius)) {
-      if (key.startsWith('$')) continue
-      out.global['component-card-radius'][key] = {
-        value: val.$value,
-        type: 'borderRadius',
-        description: `component.card.radius.${key}`
       }
     }
   }

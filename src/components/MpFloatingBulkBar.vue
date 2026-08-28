@@ -42,18 +42,20 @@ defineEmits<{
 /* Compact floating ink-panel pill. Positioning is inherited from the global
    .mp-floating-bulk-bar rule; this scoped block restyles the surface. */
 .mp-floating-bulk-bar {
-  height: 48px;
-  padding: 0 20px;
-  margin-bottom: 20px;
-  border-radius: 9999px;
+  height: var(--mp-space-48);
+  padding-inline: var(--mp-component-card-padding);
+  margin-bottom: var(--mp-space-20);
+  border-radius: var(--mp-radius-full);
   background: var(--ink-panel-bg);
   color: var(--ink-panel-fg);
   border: 1px solid var(--ink-panel-border);
-  box-shadow: 0 8px 32px -12px rgba(11, 53, 88, 0.35);
+  /* P5.5: the ink-panel bar's own lift. Tint comes from the shadow ramp's
+     base colour token rather than a repeated literal. */
+  box-shadow: 0 8px 32px -12px rgba(var(--mp-rgb-color-blue-800), 0.35);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-50%) translateY(12px);
+  transform: translateX(-50%) translateY(var(--mp-space-12));
   transition:
     transform var(--dur-base) var(--ease),
     opacity var(--dur-base) var(--ease),
@@ -74,7 +76,7 @@ defineEmits<{
 .mp-fbb__meta {
   display: inline-flex;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--mp-space-6);
   white-space: nowrap;
 }
 

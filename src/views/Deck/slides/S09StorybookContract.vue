@@ -59,20 +59,20 @@ const POINTS = [
 .s09__points {
   display: flex;
   flex-direction: column;
-  gap: var(--mp-spacing-5);
+  gap: var(--mp-space-20);
   max-width: 820px;
 }
 
 .s09__point {
   display: flex;
-  gap: var(--mp-spacing-4);
+  gap: var(--mp-space-16);
 }
 
 .s09__icon {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -81,7 +81,7 @@ const POINTS = [
 
 .s09__text {
   margin: 0;
-  font-size: var(--mp-typography-fontSize-lg);
-  line-height: var(--mp-typography-lineHeight-normal);
+  font-size: var(--mp-fontSize-18);
+  line-height: var(--mp-lineHeight-normal);
 }
 </style>

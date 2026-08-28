@@ -261,21 +261,13 @@ function bulkDeactivate() {
             v-model="filters.role"
             label="Role"
             :items="roleFilterItems"
-            variant="outlined"
-            density="compact"
-            hide-details
             clearable
-            class="mb-4"
           />
           <v-select
             v-model="filters.product"
             label="Product access"
             :items="productFilterItems"
-            variant="outlined"
-            density="compact"
-            hide-details
             clearable
-            class="mb-4"
           />
         </template>
       </MpDataTableToolbar>
@@ -364,7 +356,7 @@ function bulkDeactivate() {
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="statusLabel((item as UserRow).status)" type="general" size="x-small" />
+          <MpStatusChip :status="statusLabel((item as UserRow).status)" type="general" size="sm" />
         </template>
 
         <template v-slot:item.lastActiveAt="{ item }">
@@ -406,7 +398,7 @@ function bulkDeactivate() {
         <template #no-data>
           <MpEmptyState
             v-if="search || activeFilterEntries.length || statusTab !== 'all'"
-            variant="expressive"
+            emphasis="prominent"
             illustration="no-results"
             title="No users match"
             description="Try a different search, status tab, or filter."

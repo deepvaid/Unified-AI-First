@@ -1,10 +1,9 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 import MpOptionCard from './MpOptionCard.vue'
 
 const meta = {
-  title: 'Forms/MpOptionCard',
+  title: 'Molecules/MpOptionCard',
   component: MpOptionCard,
   tags: ['autodocs'],
   parameters: {
@@ -74,6 +73,57 @@ and any extra body content via slots.
 export default meta
 type Story = StoryObj<typeof meta>
 
+export const Default: Story = {
+  args: {
+    selected: false,
+    icon: 'file',
+    title: 'Start from scratch',
+    description: 'A blank canvas — build the layout yourself.',
+  },
+}
+
+/** With and without a media slot — the structural axis. */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpOptionCard },
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--mp-space-16);">
+        <MpOptionCard :selected="false" icon="file" title="Start from scratch" description="A blank canvas." />
+        <MpOptionCard :selected="false" icon="layout-template" title="Use a template" description="Start from a proven layout.">
+          <template #media>
+            <div style="height: 96px; background: var(--surface-secondary);"></div>
+          </template>
+        </MpOptionCard>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Selected, unselected, and focus — tab through to see the focus ring. */
+export const States: Story = {
+  render: () => ({
+    components: { MpOptionCard },
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--mp-space-16);">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">unselected</div>
+          <MpOptionCard :selected="false" icon="file" title="Start from scratch" description="A blank canvas." />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">selected</div>
+          <MpOptionCard :selected="true" icon="layout-template" title="Use a template" description="Start from a proven layout." />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">tab to focus</div>
+          <MpOptionCard :selected="false" icon="sparkles" title="Draft with Da Vinci" description="Let AI propose a first pass." />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
 export const Unselected: Story = {
   render: (args) => ({
     components: { MpOptionCard },
@@ -84,12 +134,6 @@ export const Unselected: Story = {
       </div>
     `,
   }),
-}
-
-export const DarkMode: Story = {
-  globals: darkModeGlobals,
-  ...Unselected,
-  args: { selected: true },
 }
 
 export const Selected: Story = {

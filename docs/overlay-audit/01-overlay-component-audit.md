@@ -5,6 +5,16 @@
 **Method:** Static source inspection (`rg` counts, file reads). Counts are opening tags / file hits in `src/**/*.vue`, not runtime instances.
 **Architecture decision (locked):** **2A — theme + token layer.** Polish all Vuetify selects, menus, dialogs, tooltips, and snackbars via semantic tokens, `maropostDefaults`, and `global.scss`. Thin Mp wrappers only where behaviour already diverges or house rules require them. Do **not** create `MpSelect` / `MpSnackbar` / `MpTooltip` and migrate every consumer.
 
+
+> **⚠ Stale as of 2026-08-28 — read the inventory here as history, not as current state.**
+> This document predates `MpDialog` (added in Phase 4) and the Phase 6 modal/form pass. Its
+> architecture decision (**2A**) still holds and was upheld by Phase 6 — Vuetify inputs are still
+> never wrapped. But the inventory is out of date in specifics: nine components it lists as raw
+> `v-dialog` now compose `MpDialog`, the raw-`v-dialog` count is **0** rather than ~48 (the one
+> recorded exemption is `AppBar`'s mobile search), `component.dialog.*` has grown well past the
+> single `radius` key described in §4, and §11's anti-patterns are closed. For current state see
+> the Phase 4 and Phase 6 sections of `DESIGN_AUDIT.md`.
+
 ---
 
 ## Executive summary
@@ -163,7 +173,7 @@ Three shadow steps only. No separate tooltip/dropdown/drawer shadow tokens beyon
 - `.v-overlay__content > .v-card|.v-sheet|.v-stepper` → `--surface-overlay`
 - `.v-overlay__scrim` → `--scrim-overlay`, `opacity: 1`
 - `.v-overlay.v-tooltip` → transparent root
-- `.v-menu > .v-overlay__content > …` → overlay fill, `--border-default`, `--elevation-overlay`, `border-radius: var(--mp-borderRadius-md)`, list padding `4px`, item radius `8px !important`
+- `.v-menu > .v-overlay__content > …` → overlay fill, `--border-default`, `--elevation-overlay`, `border-radius: var(--mp-radius-12)`, list padding `4px`, item radius `8px !important`
 - `.v-dialog > .v-overlay__content > …` → dialog radius token, overlay fill, `--elevation-modal`
 - Teleported divider colours use theme-class + raw `--mp-color-{light|dark}-borderDividerMuted` (theme-scope workaround)
 

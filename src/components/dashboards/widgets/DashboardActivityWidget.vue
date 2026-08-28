@@ -53,8 +53,8 @@ function getTagStyle(tag: string) {
 .activity-feed__row {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 0;
+  gap: var(--mp-space-10);
+  padding: var(--mp-space-10) 0;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -79,15 +79,15 @@ function getTagStyle(tag: string) {
 
 .activity-feed__eyebrow {
   font-family: ui-monospace, "SF Mono", monospace;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
   margin-bottom: 1px;
 }
 
 .activity-feed__title {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -95,8 +95,8 @@ function getTagStyle(tag: string) {
 }
 
 .activity-feed__meta {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
   margin-top: 1px;
   font-variant-numeric: tabular-nums;

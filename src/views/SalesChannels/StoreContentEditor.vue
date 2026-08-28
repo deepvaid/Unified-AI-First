@@ -13,6 +13,8 @@ import {
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 
 // Shared create/edit view for store editor Pages and Blogs — the legacy
 // sections use one identical form; `kind` comes from the route meta.
@@ -204,9 +206,6 @@ function confirmDiscard() {
             v-model="draft.title"
             label="Title"
             :placeholder="isBlog ? 'e.g. Five trails to break in your new boots' : 'e.g. About us'"
-            variant="outlined"
-            density="comfortable"
-            hide-details="auto"
             :rules="[(v: string) => Boolean(v?.trim()) || 'Title is required']"
           />
         </v-card>
@@ -237,47 +236,55 @@ function confirmDiscard() {
         </v-card>
 
         <v-card variant="flat" border rounded="lg" class="pa-4">
-          <div class="text-subtitle-2 font-weight-bold mb-1">SEO settings</div>
-          <div class="text-caption text-medium-emphasis mb-4">How this {{ isBlog ? 'post' : 'page' }} appears in search results.</div>
-          <div class="d-flex flex-column gap-4">
-            <v-text-field v-model="draft.seoTitle" label="Title" variant="outlined" density="comfortable" hide-details="auto" counter="60" />
-            <v-textarea v-model="draft.seoDescription" label="Meta description" variant="outlined" density="comfortable" rows="3" counter="160" hide-details="auto" />
-          </div>
+          <MpFormGrid>
+            <MpFormSection
+              title="SEO settings"
+              :description="`How this ${isBlog ? 'post' : 'page'} appears in search results.`"
+            />
+            <v-text-field v-model="draft.seoTitle" label="Title" counter="60" />
+            <v-textarea v-model="draft.seoDescription" label="Meta description" rows="3" counter="160" />
+          </MpFormGrid>
         </v-card>
       </v-col>
 
       <v-col cols="12" md="4">
         <div class="editor-rail">
           <v-card variant="flat" border rounded="lg" class="pa-4 mb-4">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Status</div>
-            <v-select v-model="draft.status" :items="statusOptions" variant="outlined" density="comfortable" hide-details />
-            <div class="text-caption text-medium-emphasis mt-2">
-              Inactive {{ isBlog ? 'posts' : 'pages' }} stay hidden from your storefront until you activate them.
-            </div>
+            <MpFormGrid>
+              <v-select v-model="draft.status" label="Status" :items="statusOptions" />
+              <div class="text-caption text-medium-emphasis">
+                Inactive {{ isBlog ? 'posts' : 'pages' }} stay hidden from your storefront until you activate them.
+              </div>
+            </MpFormGrid>
           </v-card>
 
           <v-card variant="flat" border rounded="lg" class="pa-4 mb-4">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Template</div>
-            <v-select v-model="draft.template" :items="CONTENT_TEMPLATES" variant="outlined" density="comfortable" hide-details />
+            <v-select v-model="draft.template" label="Template" :items="CONTENT_TEMPLATES" />
           </v-card>
 
           <v-card variant="flat" border rounded="lg" class="pa-4">
-            <div class="text-subtitle-2 font-weight-bold mb-1">Feature image</div>
-            <div class="text-caption text-medium-emphasis mb-3">Square, high-resolution images work best (min 100×100&nbsp;px).</div>
+            <MpFormGrid>
+              <MpFormSection
+                title="Feature image"
+                description="Square, high-resolution images work best (min 100×100&nbsp;px)."
+              />
 
-            <div v-if="draft.imageName" class="ce-image-chip">
-              <v-icon size="18" color="success">image</v-icon>
-              <span class="text-body-2 text-truncate">{{ draft.imageName }}</span>
-              <v-btn icon="x" variant="text" size="x-small" aria-label="Remove image" @click="draft.imageName = ''" />
-            </div>
-            <div v-else class="ce-image-placeholder">
-              <v-icon size="24" class="text-medium-emphasis">image</v-icon>
-            </div>
+              <div v-if="draft.imageName" class="ce-image-chip">
+                <v-icon size="18" color="success">image</v-icon>
+                <span class="text-body-2 text-truncate">{{ draft.imageName }}</span>
+                <v-btn icon="x" variant="text" size="x-small" aria-label="Remove image" @click="draft.imageName = ''" />
+              </div>
+              <div v-else class="ce-image-placeholder">
+                <v-icon size="24" class="text-medium-emphasis">image</v-icon>
+              </div>
 
-            <v-btn variant="outlined" size="small" prepend-icon="upload" class="text-none mt-3" @click="pickImage">
-              {{ draft.imageName ? 'Replace image' : 'Upload image' }}
-            </v-btn>
-            <input ref="fileInput" type="file" accept="image/*" class="d-none" @change="onImagePicked" />
+              <div>
+                <v-btn variant="outlined" size="small" prepend-icon="upload" class="text-none" @click="pickImage">
+                  {{ draft.imageName ? 'Replace image' : 'Upload image' }}
+                </v-btn>
+                <input ref="fileInput" type="file" accept="image/*" class="d-none" @change="onImagePicked" />
+              </div>
+            </MpFormGrid>
           </v-card>
         </div>
       </v-col>

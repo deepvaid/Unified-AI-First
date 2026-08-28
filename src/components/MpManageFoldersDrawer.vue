@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue'
 import { useFoldersStore, type FolderScope } from '@/stores/useFolders'
 import MpFormDrawer from './MpFormDrawer.vue'
+import MpFormGrid from './MpFormGrid.vue'
+import MpFormSection from './MpFormSection.vue'
 import MpConfirmDialog from './MpConfirmDialog.vue'
 
 const model = defineModel<boolean>({ default: false })
@@ -82,42 +84,37 @@ function confirmDelete() {
     subtitle="Organize items into folders your whole team can use."
   >
     <!-- New folder -->
-    <div class="mb-6">
-      <div class="text-subtitle-2 font-weight-bold mb-3">New folder</div>
+    <MpFormGrid>
+      <MpFormSection title="New folder" />
       <v-text-field
         v-model="newName"
         label="Folder name"
-        variant="outlined"
-        density="comfortable"
-        hide-details
-        class="mb-3"
         @keyup.enter="addFolder"
       />
       <v-select
         v-model="newParentId"
-        label="Nest under (optional)"
+        label="Nest under"
         :items="parentOptions"
-        variant="outlined"
-        density="comfortable"
-        hide-details
-        class="mb-3"
+        hint="Optional — leave at top level to keep it ungrouped."
       />
-      <v-btn
-        color="primary"
-        variant="flat"
-        class="text-none"
-        prepend-icon="folder-plus"
-        :disabled="!newName.trim()"
-        @click="addFolder"
-      >
-        Add Folder
-      </v-btn>
-    </div>
+      <div>
+        <v-btn
+          color="primary"
+          variant="flat"
+          class="text-none"
+          prepend-icon="folder-plus"
+          :disabled="!newName.trim()"
+          @click="addFolder"
+        >
+          Add Folder
+        </v-btn>
+      </div>
+    </MpFormGrid>
 
-    <v-divider class="mb-4" />
+    <v-divider />
 
     <!-- Folder list -->
-    <div class="text-subtitle-2 font-weight-bold mb-2">Folders</div>
+    <MpFormSection title="Folders" />
     <div v-if="!folders.length" class="text-body-2 text-medium-emphasis py-4">
       No folders yet. Create one above to start organizing.
     </div>
@@ -134,9 +131,10 @@ function confirmDelete() {
         </template>
 
         <template v-if="renamingId === folder.id">
+          <!-- Inline edit inside a 44px list row: compact and detail-free on
+               purpose, so committing a rename can't reflow the list. -->
           <v-text-field
             v-model="renameValue"
-            variant="outlined"
             density="compact"
             hide-details
             autofocus

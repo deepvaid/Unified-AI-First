@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import LandingLayersPanel from './LandingLayersPanel.vue'
 import { PALETTE, PAGE_BLOCKS, block } from './landingStoryFixtures'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Marketing/LandingLayersPanel',
+  title: 'Product/Marketing/Landing Pages/LandingLayersPanel',
   component: LandingLayersPanel,
   tags: ['autodocs'],
   parameters: {
@@ -97,11 +96,5 @@ export const PreviewStrings: Story = {
     selectedId: null,
     palette: PALETTE,
   },
-  render,
-}
-
-export const DarkMode: Story = {
-  args: { blocks: PAGE_BLOCKS, selectedId: PAGE_BLOCKS[2]!.id, palette: PALETTE },
-  globals: darkModeGlobals,
   render,
 }

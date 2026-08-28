@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpFolderSelect from './MpFolderSelect.vue'
+import MpDataTableToolbar from './MpDataTableToolbar.vue'
+import MpStatusChip from './MpStatusChip.vue'
+import { CAMPAIGNS, CAMPAIGN_HEADERS, FOLDERS, FOLDER_COUNTS } from '@/stories/fixtures'
 import type { Folder } from '@/stores/useFolders'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const sampleFolders: Folder[] = [
   { id: 'promotions', name: 'Promotions', parentId: null, scope: 'campaigns' },
@@ -14,7 +16,7 @@ const sampleFolders: Folder[] = [
 const sampleCounts = { promotions: 7, seasonal: 5, 'black-friday': 2, automated: 5, newsletter: 1 }
 
 const meta = {
-  title: 'Data Display/MpFolderSelect',
+  title: 'Molecules/MpFolderSelect',
   component: MpFolderSelect,
   tags: ['autodocs'],
   parameters: {
@@ -139,8 +141,122 @@ export const OpenMenu: Story = {
   },
 }
 
-/** Folder menu trigger on the dark theme. */
-export const DarkMode: Story = {
-  ...WithSelection,
-  globals: darkModeGlobals,
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * One structure — an outlined activator opening a folder menu. What varies is the tree it is
+ * given: flat, nested (children render with a `corner-down-right` glyph and a deeper inset),
+ * and empty.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpFolderSelect },
+    setup: () => ({
+      flat: FOLDERS.filter(f => !f.parentId),
+      nested: FOLDERS,
+      counts: FOLDER_COUNTS,
+    }),
+    template: `
+      <div class="d-flex ga-10 flex-wrap">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">flat</div>
+          <MpFolderSelect :folders="flat" :counts="counts" :total-count="102" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">nested</div>
+          <MpFolderSelect :folders="nested" :counts="counts" :total-count="102" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">empty — only "All folders" and Manage</div>
+          <MpFolderSelect :folders="[]" :total-count="0" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop. The activator resolves to `component.control.height` (40) so it
+ * lines up with the Filter button and search field it sits beside in a table toolbar — Phase 4
+ * (P4-7) replaced its `height="40"` attribute with the token, which is the same number stated
+ * as a decision rather than a literal.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpFolderSelect },
+    setup: () => ({ folders: FOLDERS, counts: FOLDER_COUNTS }),
+    template: `
+      <div class="d-flex align-center ga-3 flex-wrap">
+        <MpFolderSelect :folders="folders" :counts="counts" :total-count="102" />
+        <v-btn variant="outlined" class="text-none" prepend-icon="list-filter">Filter</v-btn>
+        <v-text-field variant="outlined" density="comfortable" hide-details placeholder="Search…" style="max-width: 220px" />
+        <div class="text-caption text-medium-emphasis">← all --mp-component-control-height</div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Nothing selected (shows the `label`), a folder selected (shows its name), and a child selected. */
+export const States: Story = {
+  render: () => ({
+    components: { MpFolderSelect },
+    setup: () => ({ folders: FOLDERS, counts: FOLDER_COUNTS }),
+    template: `
+      <div class="d-flex ga-10 flex-wrap">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">no selection</div>
+          <MpFolderSelect :model-value="null" :folders="folders" :counts="counts" :total-count="102" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">parent selected</div>
+          <MpFolderSelect model-value="f-promos" :folders="folders" :counts="counts" :total-count="102" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">child selected</div>
+          <MpFolderSelect model-value="f-winback" :folders="folders" :counts="counts" :total-count="102" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">custom label</div>
+          <MpFolderSelect :model-value="null" :folders="folders" :counts="counts" :total-count="102" label="All campaigns" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** Where this component actually lives: the `#actions` slot of a table toolbar,
+ * filtering the list below it. Its activator and the toolbar's other controls all resolve to
+ * one control height, so the row reads as a single band rather than three sizes.
+ */
+export const InContextCampaignsToolbar: Story = {
+  render: () => ({
+    components: { MpFolderSelect, MpDataTableToolbar, MpStatusChip },
+    setup: () => ({
+      folders: FOLDERS,
+      counts: FOLDER_COUNTS,
+      rows: CAMPAIGNS,
+      headers: CAMPAIGN_HEADERS,
+    }),
+    template: `
+      <v-card flat border rounded="lg">
+        <MpDataTableToolbar title="Campaigns" :total-count="rows.length" search-placeholder="Search campaigns…">
+          <template #actions>
+            <MpFolderSelect :folders="folders" :counts="counts" :total-count="102" />
+          </template>
+        </MpDataTableToolbar>
+        <v-data-table :headers="headers" :items="rows" item-value="id" hide-default-footer>
+          <template #item.status="{ item }">
+            <MpStatusChip :status="item.status" type="campaign" size="sm" />
+          </template>
+        </v-data-table>
+      </v-card>
+    `,
+  }),
+  args: {} as never,
 }

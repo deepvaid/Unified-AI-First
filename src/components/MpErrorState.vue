@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import MpEmptyState from './MpEmptyState.vue'
+
 withDefaults(defineProps<{
   icon?: string
   title?: string
@@ -21,45 +23,21 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="mp-error-state d-flex flex-column align-center justify-center text-center pa-8" role="alert">
-    <div class="mp-error-state__icon mb-4">
-      <v-icon size="56" color="error">{{ icon }}</v-icon>
-    </div>
-    <div class="text-h6 font-weight-bold mb-2" role="heading" :aria-level="headingLevel">{{ title }}</div>
-    <div v-if="description" class="text-body-2 text-medium-emphasis mp-error-state__description">
-      {{ description }}
-    </div>
-    <v-btn
-      v-if="actionLabel"
-      class="text-none mt-5"
-      color="primary"
-      variant="flat"
-      :prepend-icon="actionIcon"
-      @click="$emit('action')"
-    >
-      {{ actionLabel }}
-    </v-btn>
-  </div>
+  <!-- Composes MpEmptyState rather than re-implementing the centred-state shape.
+       What it adds is the semantics: role="alert" (an error must be announced, an
+       empty list must not) plus the error tone and retry-flavoured defaults. -->
+  <MpEmptyState
+    class="mp-error-state"
+    role="alert"
+    tone="error"
+    :icon="icon"
+    :title="title"
+    :description="description"
+    :action-label="actionLabel"
+    :action-icon="actionIcon"
+    :heading-level="headingLevel"
+    @action="$emit('action')"
+  >
+    <template v-if="$slots.illustration" #illustration><slot name="illustration" /></template>
+  </MpEmptyState>
 </template>
-
-<style scoped>
-.mp-error-state {
-  min-height: 240px;
-  width: 100%;
-}
-
-.mp-error-state__icon {
-  width: 80px;
-  height: 80px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--neg-soft);
-}
-
-.mp-error-state__description {
-  max-width: 420px;
-  line-height: 1.5;
-}
-</style>

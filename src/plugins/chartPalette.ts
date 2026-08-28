@@ -109,6 +109,8 @@ import {
   mp_color_chart_light_tooltipBackground,
   mp_color_chart_light_tooltipBorder,
   mp_color_chart_light_tooltipText,
+  mp_color_chart_heatmapInk,
+  mp_color_chart_heatmapInkStrong,
 } from '@/design-tokens/generated/tokens'
 
 /** Selectable chart themes (switchable via the `?chart=` URL param, see App.vue). */
@@ -959,6 +961,28 @@ export function tintHex(hex: string, t: number): string {
   const mix = (c: number) => Math.round(c + (255 - c) * t)
   const to2 = (c: number) => mix(c).toString(16).padStart(2, '0')
   return `#${to2(r)}${to2(g)}${to2(b)}`
+}
+
+/**
+ * Pick the readable ink for text sitting on an arbitrary computed fill.
+ *
+ * P5.5: chart cell fills are generated at runtime (`tintHex` ramps, palette
+ * overrides), so they cannot be enumerated as static token pairs the way the
+ * rest of the system is checked. Choosing the ink from the fill's own WCAG
+ * relative luminance is the runtime equivalent of that guarantee, and it holds
+ * for every palette preset rather than only the default one.
+ *
+ * The 0.5 split is where #1a1814 and #ffffff cross over: both inks clear 4.5:1
+ * against a fill on their own side of it.
+ */
+export function readableInkOn(fillHex: string): string {
+  const clean = fillHex.replace('#', '')
+  const channel = (index: number) => {
+    const s = parseInt(clean.slice(index, index + 2), 16) / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  const luminance = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4)
+  return luminance > 0.5 ? mp_color_chart_heatmapInk : mp_color_chart_heatmapInkStrong
 }
 
 /** Build legend config with explicit marker colours (Apex omits them without fillColors). */

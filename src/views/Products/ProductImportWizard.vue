@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const props = withDefaults(defineProps<{ source?: 'csv' | 'ftp' }>(), { source: 'csv' })
@@ -112,7 +113,7 @@ function finishImport() {
               <v-btn variant="flat" color="primary" size="small" class="text-none" prepend-icon="folder-open">Browse File</v-btn>
             </div>
             <div class="d-flex align-center justify-space-between">
-              <v-select v-model="delimiter" :items="['Comma (,)', 'Semicolon (;)', 'Tab']" label="Delimiter" variant="outlined" density="comfortable" hide-details style="max-width: 260px;" />
+              <v-select v-model="delimiter" :items="['Comma (,)', 'Semicolon (;)', 'Tab']" label="Delimiter" style="max-width: 260px;" />
               <v-btn variant="text" color="primary" class="text-none" prepend-icon="download">Download sample template</v-btn>
             </div>
           </v-card>
@@ -121,12 +122,12 @@ function finishImport() {
           <v-card v-else variant="flat" border rounded="lg" class="pa-6">
             <div class="text-subtitle-1 font-weight-bold mb-1">FTP Source</div>
             <div class="text-body-2 text-medium-emphasis mb-4">Connect to your FTP server and pick the file to import.</div>
-            <v-row dense>
-              <v-col cols="12" md="6"><v-text-field v-model="ftpServer" label="FTP Server" placeholder="ftp.mystore.com" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" md="6"><v-text-field v-model="ftpPath" label="Directory Path" placeholder="/exports/products" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" md="6"><v-select v-model="ftpFile" :items="['products_latest.csv', 'catalog_full.csv', 'stock_update.csv']" label="File" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" md="6"><v-select v-model="delimiter" :items="['Comma (,)', 'Semicolon (;)', 'Tab']" label="Delimiter" variant="outlined" density="comfortable" /></v-col>
-            </v-row>
+            <MpFormGrid :cols="2">
+              <v-text-field v-model="ftpServer" label="FTP Server" placeholder="ftp.mystore.com" />
+              <v-text-field v-model="ftpPath" label="Directory Path" placeholder="/exports/products" />
+              <v-select v-model="ftpFile" :items="['products_latest.csv', 'catalog_full.csv', 'stock_update.csv']" label="File" />
+              <v-select v-model="delimiter" :items="['Comma (,)', 'Semicolon (;)', 'Tab']" label="Delimiter" />
+            </MpFormGrid>
           </v-card>
         </template>
 
@@ -144,7 +145,16 @@ function finishImport() {
                   <td class="text-body-2 font-weight-medium">{{ m.csvCol }}</td>
                   <td class="text-caption text-medium-emphasis">{{ m.sample }}</td>
                   <td>
-                    <v-select v-model="m.field" :items="productFields" variant="outlined" density="compact" hide-details style="min-width: 180px;" />
+                    <!-- Table-cell inline editor: compact + `hide-details` are
+                         deliberate, so a mapping row stays one line tall. -->
+                    <v-select
+                      v-model="m.field"
+                      :items="productFields"
+                      :aria-label="`Maps ${m.csvCol} to`"
+                      density="compact"
+                      hide-details
+                      style="min-width: 180px;"
+                    />
                   </td>
                 </tr>
               </tbody>
@@ -157,8 +167,8 @@ function finishImport() {
           <v-card variant="flat" border rounded="lg" class="pa-6">
             <div class="text-subtitle-1 font-weight-bold mb-1">Update Option</div>
             <div class="text-body-2 text-medium-emphasis mb-4">Choose how rows that match an existing SKU are handled.</div>
-            <v-radio-group v-model="updateOption" hide-details>
-              <v-radio value="new" class="mb-2">
+            <v-radio-group v-model="updateOption" aria-label="Update option">
+              <v-radio value="new">
                 <template #label>
                   <div>
                     <div class="text-body-2 font-weight-medium">Add as new products</div>

@@ -1276,8 +1276,8 @@ onBeforeUnmount(() => {
 .dvx__welcome-eyebrow {
   display: flex;
   align-items: center;
-  gap: var(--mp-spacing-2);
-  margin-bottom: var(--mp-spacing-4);
+  gap: var(--mp-space-8);
+  margin-bottom: var(--mp-space-16);
   color: var(--dv-accent);
   font-weight: 600;
 }
@@ -1302,7 +1302,7 @@ onBeforeUnmount(() => {
 }
 
 .dvx__welcome-copy {
-  margin: var(--mp-spacing-4) 0 var(--mp-spacing-6);
+  margin: var(--mp-space-16) 0 var(--mp-space-24);
   color: var(--dv-text-secondary);
   font-size: 1rem;
   line-height: 1.6;
@@ -1608,7 +1608,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 560px) {
   .dvx__welcome {
-    padding: var(--mp-spacing-5);
+    padding: var(--mp-space-20);
   }
 
   .dvx__welcome-title {

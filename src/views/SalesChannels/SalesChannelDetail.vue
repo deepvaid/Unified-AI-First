@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpDialog from '@/components/MpDialog.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
@@ -131,7 +132,6 @@ const addedAssistantIds = ref<string[]>([])
 const activeTab = ref<DetailTab>('overview')
 const showCompletedSetup = ref(false)
 const previewDialogOpen = ref(false)
-const previewDialogTitleId = useId()
 const previewDevice = ref<'desktop' | 'mobile'>('desktop')
 
 const accountId = computed(() => {
@@ -697,7 +697,7 @@ function locationRoleText(locationId: string) {
             <div class="sc-header__copy">
               <div class="sc-header__title-row">
                 <h1 class="text-h5 font-weight-bold">{{ channel.name }}</h1>
-                <MpStatusChip :status="CHANNEL_STATUS_LABELS[channel.status]" type="general" size="small" show-icon />
+                <MpStatusChip :status="CHANNEL_STATUS_LABELS[channel.status]" type="general" size="md" show-icon />
               </div>
               <div class="sc-header__meta" aria-label="Channel metadata">
                 <span v-for="item in headerMeta" :key="item">{{ item }}</span>
@@ -1046,24 +1046,24 @@ function locationRoleText(locationId: string) {
         </v-card>
       </section>
 
-      <v-dialog v-model="previewDialogOpen" max-width="1040" scrollable :aria-labelledby="previewDialogTitleId">
-        <v-card flat rounded="lg" class="sc-preview-dialog">
-          <div class="sc-preview-dialog__bar">
-            <div class="min-width-0">
-              <strong :id="previewDialogTitleId">Storefront preview</strong>
-              <span v-if="channel.webStore?.domain">{{ channel.webStore.domain }}</span>
-            </div>
-            <v-btn-toggle v-model="previewDevice" mandatory density="compact" rounded="lg" border>
-              <v-btn value="desktop" size="small" prepend-icon="monitor" class="text-none">Desktop</v-btn>
-              <v-btn value="mobile" size="small" prepend-icon="smartphone" class="text-none">Mobile</v-btn>
-            </v-btn-toggle>
-            <v-btn variant="text" icon="x" size="small" aria-label="Close preview" @click="previewDialogOpen = false" />
-          </div>
-          <div class="sc-preview-dialog__body">
-            <StorefrontPreview :sections="previewSections" :styles="previewStyles" :device="previewDevice" />
-          </div>
-        </v-card>
-      </v-dialog>
+      <MpDialog
+        v-model="previewDialogOpen"
+        size="lg"
+        flush
+        title="Storefront preview"
+        :subtitle="channel.webStore?.domain"
+      >
+        <template #headerActions>
+          <v-btn-toggle v-model="previewDevice" mandatory density="compact" rounded="lg" border>
+            <v-btn value="desktop" size="small" prepend-icon="monitor" class="text-none">Desktop</v-btn>
+            <v-btn value="mobile" size="small" prepend-icon="smartphone" class="text-none">Mobile</v-btn>
+          </v-btn-toggle>
+        </template>
+
+        <div class="sc-preview-dialog__body">
+          <StorefrontPreview :sections="previewSections" :styles="previewStyles" :device="previewDevice" />
+        </div>
+      </MpDialog>
     </template>
 
     <template v-else>
@@ -1090,52 +1090,22 @@ function locationRoleText(locationId: string) {
 .sales-channel-detail {
   display: flex;
   flex-direction: column;
-  gap: var(--mp-spacing-6);
+  gap: var(--mp-space-24);
   min-width: 0;
 }
 
 .sc-header {
   display: flex;
   flex-direction: column;
-  gap: var(--mp-spacing-4);
+  gap: var(--mp-space-16);
 }
 
 .sc-back-button {
   width: fit-content;
 }
 
-.sc-preview-dialog__bar {
-  display: flex;
-  align-items: center;
-  gap: var(--mp-spacing-3);
-  padding: var(--mp-spacing-3) var(--mp-spacing-4);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.sc-preview-dialog__bar > div:first-child {
-  flex: 1;
-  min-width: 0;
-}
-
-.sc-preview-dialog__bar strong {
-  display: block;
-  color: var(--text-primary);
-  font-size: var(--mp-typography-fontSize-body);
-  font-weight: 700;
-}
-
-.sc-preview-dialog__bar span {
-  display: block;
-  overflow: hidden;
-  color: var(--muted);
-  font-family: var(--mp-typography-fontFamily-mono, monospace);
-  font-size: var(--mp-typography-fontSize-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .sc-preview-dialog__body {
-  padding: var(--mp-spacing-5);
+  padding: var(--mp-space-20);
   background: var(--surface-secondary);
 }
 
@@ -1143,7 +1113,7 @@ function locationRoleText(locationId: string) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: var(--mp-spacing-5);
+  gap: var(--mp-space-20);
 }
 
 .sc-header__identity {
@@ -1195,7 +1165,7 @@ function locationRoleText(locationId: string) {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--mp-spacing-1) var(--mp-spacing-3);
+  gap: var(--mp-space-4) var(--mp-space-12);
   margin-top: 9px;
   color: var(--muted);
   font-size: 13px;
@@ -1213,7 +1183,7 @@ function locationRoleText(locationId: string) {
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: var(--mp-spacing-2);
+  gap: var(--mp-space-8);
 }
 
 .sc-tabs {
@@ -1236,7 +1206,7 @@ function locationRoleText(locationId: string) {
 .sc-tab-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--mp-spacing-5);
+  gap: var(--mp-space-20);
   min-width: 0;
 }
 
@@ -1244,7 +1214,7 @@ function locationRoleText(locationId: string) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
   align-items: stretch;
-  gap: var(--mp-spacing-5);
+  gap: var(--mp-space-20);
   min-width: 0;
 }
 
@@ -1269,7 +1239,7 @@ function locationRoleText(locationId: string) {
   border-radius: var(--r-section);
   background: var(--surface-secondary);
   color: var(--muted);
-  font-family: var(--mp-typography-fontFamily-mono, monospace);
+  font-family: var(--mp-fontFamily-mono, monospace);
   font-size: 12px;
   font-weight: 700;
 }
@@ -1297,7 +1267,7 @@ function locationRoleText(locationId: string) {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  padding: var(--mp-spacing-3);
+  padding: var(--mp-space-12);
   border: 1px solid color-mix(in oklch, var(--accent) 22%, var(--border-subtle));
   border-radius: var(--r-section);
   background: color-mix(in oklch, var(--accent) 5%, var(--surface-primary));
@@ -1323,7 +1293,7 @@ function locationRoleText(locationId: string) {
 .sc-setup-empty span {
   margin-top: 3px;
   color: var(--muted);
-  font-size: var(--mp-typography-fontSize-sm);
+  font-size: var(--mp-fontSize-12);
   font-weight: 500;
   line-height: 1.35;
 }
@@ -1384,7 +1354,7 @@ function locationRoleText(locationId: string) {
 
 .sc-section-line span {
   color: var(--muted);
-  font-size: var(--mp-typography-fontSize-sm);
+  font-size: var(--mp-fontSize-12);
   font-weight: 600;
   white-space: nowrap;
 }

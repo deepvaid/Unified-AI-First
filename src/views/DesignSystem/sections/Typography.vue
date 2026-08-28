@@ -1,24 +1,25 @@
 <script setup lang="ts">
 import tokens from '@/design-tokens/tokens.json'
 
-const typo = tokens.typography
+const omitMeta = <T,>(group: Record<string, T>) =>
+  Object.entries(group).filter(([k]) => !k.startsWith('$'))
 
-const fontSizes = Object.entries(typo.fontSize).map(([key, val]) => ({
+const fontSizes = omitMeta(tokens.fontSize).map(([key, val]) => ({
   key,
   value: (val as { $value: string }).$value,
-  token: `typography.fontSize.${key}`,
+  token: `fontSize.${key}`,
 }))
 
-const fontWeights = Object.entries(typo.fontWeight).map(([key, val]) => ({
+const fontWeights = omitMeta(tokens.fontWeight).map(([key, val]) => ({
   key,
   value: (val as { $value: string }).$value,
-  token: `typography.fontWeight.${key}`,
+  token: `fontWeight.${key}`,
 }))
 
-const lineHeights = Object.entries(typo.lineHeight).map(([key, val]) => ({
+const lineHeights = omitMeta(tokens.lineHeight).map(([key, val]) => ({
   key,
   value: (val as { $value: string }).$value,
-  token: `typography.lineHeight.${key}`,
+  token: `lineHeight.${key}`,
 }))
 
 const sampleText = 'The quick brown fox jumps over the lazy dog'

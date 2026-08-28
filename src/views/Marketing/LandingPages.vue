@@ -10,6 +10,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -129,34 +130,33 @@ function confirmDelete() {
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
+          <!-- Dense filter popover, not a form: compact + hide-details are deliberate here. -->
           <div class="pa-4 pb-2">
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select
-              v-model="filters.status"
-              label="Domain"
-              :items="['Verified', 'Unverified']"
-              multiple
-              chips
-              closable-chips
-              clearable
-              variant="outlined"
-              density="compact"
-              hide-details
-              class="mb-3"
-            />
-            <v-select
-              v-model="filters.editorType"
-              label="Editor Type"
-              :items="[{ title: 'Drag & Drop', value: 'dnd' }, { title: 'WYSIWYG', value: 'wysiwyg' }]"
-              multiple
-              chips
-              closable-chips
-              clearable
-              variant="outlined"
-              density="compact"
-              hide-details
-              class="mb-3"
-            />
+            <MpFormGrid>
+              <v-select
+                v-model="filters.status"
+                label="Domain"
+                :items="['Verified', 'Unverified']"
+                multiple
+                chips
+                closable-chips
+                clearable
+                density="compact"
+                hide-details
+              />
+              <v-select
+                v-model="filters.editorType"
+                label="Editor Type"
+                :items="[{ title: 'Drag & Drop', value: 'dnd' }, { title: 'WYSIWYG', value: 'wysiwyg' }]"
+                multiple
+                chips
+                closable-chips
+                clearable
+                density="compact"
+                hide-details
+              />
+            </MpFormGrid>
           </div>
         </template>
       </MpDataTableToolbar>
@@ -178,10 +178,10 @@ function confirmDelete() {
           <span class="text-body-2 text-medium-emphasis">{{ item.url }}</span>
         </template>
         <template #item.pageStatus="{ item }">
-          <MpStatusChip :status="pageStatus(item)" type="general" size="x-small" />
+          <MpStatusChip :status="pageStatus(item)" type="general" size="sm" />
         </template>
         <template #item.domainStatus="{ item }">
-          <MpStatusChip :status="item.status" type="general" size="x-small" />
+          <MpStatusChip :status="item.status" type="general" size="sm" />
         </template>
         <template #item.publishAt="{ item }">
           <span class="text-body-2">{{ item.publishAt || '—' }}</span>

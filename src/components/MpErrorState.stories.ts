@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpErrorState from './MpErrorState.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Feedback/MpErrorState',
+  title: 'Molecules/MpErrorState',
   component: MpErrorState,
   tags: ['autodocs'],
   parameters: {
@@ -50,6 +49,7 @@ All props have sensible defaults (\`alert-triangle\` icon, "Something went wrong
     },
   },
   argTypes: {
+    headingLevel: { control: 'number', description: 'Heading level announced to assistive tech (`role="heading"` + `aria-level`). Passed through to MpEmptyState, which this composes.' },
     icon: { control: 'text', description: 'Lucide icon name in the error-tinted circle. Default: alert-triangle.' },
     title: { control: 'text', description: 'Headline. Default: "Something went wrong".' },
     description: { control: 'text', description: 'Supporting copy (max-width 420px, wraps).' },
@@ -69,9 +69,56 @@ export const Default: Story = {
   },
 }
 
-export const DarkMode: Story = {
-  globals: darkModeGlobals,
-  ...Default,
+/**
+ * MpErrorState has no structural variants — it composes MpEmptyState's one centred shape
+ * with `role="alert"`, the error tone and retry defaults. What varies is whether a retry
+ * action is offered, which is the States axis below.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpErrorState },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">recoverable — offers a retry</div>
+          <MpErrorState title="Couldn't load campaigns" description="There was a problem reaching the server." />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">terminal — no retry to offer</div>
+          <MpErrorState title="You don't have access to this report" description="Ask an account admin to grant you the Analytics role." :action-label="undefined" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Every state the component renders. There is no `size` prop — an error state fills its container. */
+export const States: Story = {
+  render: () => ({
+    components: { MpErrorState },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">default — generic failure</div>
+          <MpErrorState />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with description</div>
+          <MpErrorState title="Couldn't load campaigns" description="There was a problem reaching the server. Check your connection and try again." />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">no retry</div>
+          <MpErrorState title="Report unavailable" description="This report was removed." :action-label="undefined" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">custom icon + label</div>
+          <MpErrorState icon="wifi-off" title="You're offline" description="Reconnect to load this page." action-label="Retry now" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
 }
 
 export const NoRetry: Story = {

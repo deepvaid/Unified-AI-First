@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { darkModeGlobals } from '@/stories/storybookTheme'
+import { mp_color_light_moduleTile_violet_accent } from '@/design-tokens/generated/tokens'
 import DtGauge from './DtGauge.vue'
 
 const meta = {
-  title: 'Dashboards/Dotted/DtGauge',
+  title: 'Product/Dashboards/Dotted/DtGauge',
   component: DtGauge,
   tags: ['autodocs'],
   parameters: {
@@ -54,7 +54,7 @@ export const ThreeQuarterSweep: Story = {
 
 /** Flat (Polaris) mode: solid arc in the given colour, no gradient. */
 export const Flat: Story = {
-  args: { pct: 45, centerValue: '45%', centerCaption: 'complete', flat: true, color: '#7E3AF2' },
+  args: { pct: 45, centerValue: '45%', centerCaption: 'complete', flat: true, color: mp_color_light_moduleTile_violet_accent },
 }
 
 /** Embossed mode: the vertical lit-crown ramp shared with the bar marks. */
@@ -73,9 +73,4 @@ export const EdgeValues: Story = {
       </div>
     `,
   }),
-}
-
-export const DarkMode: Story = {
-  ...Default,
-  globals: darkModeGlobals,
 }

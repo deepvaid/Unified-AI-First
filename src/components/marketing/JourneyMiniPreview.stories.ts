@@ -17,7 +17,7 @@ const NESTED_NODES = instantiateTemplate('lapsed-buyer', 0)
 const DATA_NODES = dataJourneyTemplates[0]!.nodes
 
 const meta = {
-  title: 'Marketing/JourneyMiniPreview',
+  title: 'Product/Marketing/Journeys/JourneyMiniPreview',
   component: JourneyMiniPreview,
   tags: ['autodocs'],
   parameters: {
@@ -37,8 +37,14 @@ prop exists for its internal branch recursion only).
     },
   },
   argTypes: {
-    nodes: { control: false },
-    segments: { control: false },
+    nodes: {
+      control: false,
+      description: '`FlowNode[]` — raw journey nodes. The preview groups them into segments itself, so pass this when you have the flat list.',
+    },
+    segments: {
+      control: false,
+      description: '`FlowSegment[]` — pre-grouped segments. Takes precedence over `nodes`; pass this when the caller has already built them.',
+    },
   },
   args: {
     nodes: LINEAR_NODES,
@@ -57,8 +63,61 @@ prop exists for its internal branch recursion only).
 export default meta
 type Story = StoryObj<typeof meta>
 
+
 /** A straight trigger → delay → email → delay run. */
-export const Linear: Story = {}
+export const Default: Story = {}
+
+/** Every journey shape the preview can lay out. */
+export const Variants: Story = {
+  render: () => ({
+    components: { JourneyMiniPreview },
+    setup: () => ({ linear: LINEAR_NODES, branched: BRANCHED_NODES }),
+    template: `
+      <div class="d-flex ga-8 align-start flex-wrap">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">linear</div>
+          <JourneyMiniPreview :nodes="linear" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">branched</div>
+          <JourneyMiniPreview :nodes="branched" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Step count is the size axis — the preview scales its nodes to fit rather than scrolling. */
+export const Sizes: Story = {
+  render: () => ({
+    components: { JourneyMiniPreview },
+    setup: () => ({ linear: LINEAR_NODES, short: LINEAR_NODES.slice(0, 2) }),
+    template: `
+      <div class="d-flex ga-8 align-start flex-wrap">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">first two steps</div>
+          <JourneyMiniPreview :nodes="short" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">full journey</div>
+          <JourneyMiniPreview :nodes="linear" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** The preview is a static thumbnail — it has one state per journey shape. */
+export const States: Story = {
+  render: () => ({
+    components: { JourneyMiniPreview },
+    setup: () => ({ linear: LINEAR_NODES, short: LINEAR_NODES.slice(0, 2) }),
+    template: `<JourneyMiniPreview :nodes="linear" />`,
+  }),
+  args: {} as never,
+}
 
 /** Welcome Series: YES/NO branches that rejoin at a shared tag step. */
 export const Branched: Story = {

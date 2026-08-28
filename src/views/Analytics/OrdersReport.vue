@@ -5,6 +5,8 @@ import { isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
@@ -88,23 +90,18 @@ function exportCsv() {
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
+          <MpFormSection title="Filter by" />
+          <MpFormGrid>
             <v-select
               v-model="filterStatus"
               label="Status"
               :items="['Completed', 'Processing', 'Cancelled', 'Refunded', 'On Hold']"
-              variant="outlined"
-              density="compact"
-              hide-details
               clearable
               multiple
               chips
               closable-chips
-              rounded="lg"
-              class="mb-3"
             />
-          </div>
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
       <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
@@ -113,7 +110,7 @@ function exportCsv() {
         <template v-slot:item.customerName="{ item }">{{ item.customer.name }}</template>
         <template v-slot:item.total="{ item }">${{ item.total }}</template>
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status ?? ''" type="order" size="x-small" />
+          <MpStatusChip :status="item.status ?? ''" type="order" size="sm" />
         </template>
         <template #no-data>
           <MpEmptyState

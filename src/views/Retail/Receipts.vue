@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRetailStore } from '@/stores/useRetail'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 
 const store = useRetailStore()
 const settings = computed(() => store.receiptSettings)
@@ -27,71 +28,55 @@ const DELIVERY_OPTIONS = [
       <v-col cols="12" md="7">
         <v-card flat border rounded="lg" class="pa-6 mb-4">
           <MpSectionHeader title="Template" />
-          <v-text-field
-            :model-value="settings.headerText"
-            label="Header message"
-            variant="outlined"
-            density="comfortable"
-            class="mt-4"
-            @update:model-value="(v) => store.updateReceiptSettings({ headerText: v })"
-          />
-          <v-textarea
-            :model-value="settings.footerText"
-            label="Footer message"
-            variant="outlined"
-            density="comfortable"
-            rows="2"
-            auto-grow
-            @update:model-value="(v) => store.updateReceiptSettings({ footerText: v })"
-          />
-          <v-switch
-            :model-value="settings.showLogo"
-            label="Show store logo"
-            color="primary"
-            density="comfortable"
-            hide-details
-            @update:model-value="(v) => store.updateReceiptSettings({ showLogo: !!v })"
-          />
-          <v-switch
-            :model-value="settings.showTaxNumber"
-            label="Show tax registration number"
-            color="primary"
-            density="comfortable"
-            hide-details
-            @update:model-value="(v) => store.updateReceiptSettings({ showTaxNumber: !!v })"
-          />
+          <MpFormGrid>
+            <v-text-field
+              :model-value="settings.headerText"
+              label="Header message"
+              @update:model-value="(v) => store.updateReceiptSettings({ headerText: v })"
+            />
+            <v-textarea
+              :model-value="settings.footerText"
+              label="Footer message"
+              rows="3"
+              auto-grow
+              @update:model-value="(v) => store.updateReceiptSettings({ footerText: v })"
+            />
+            <v-switch
+              :model-value="settings.showLogo"
+              label="Show store logo"
+              @update:model-value="(v) => store.updateReceiptSettings({ showLogo: !!v })"
+            />
+            <v-switch
+              :model-value="settings.showTaxNumber"
+              label="Show tax registration number"
+              @update:model-value="(v) => store.updateReceiptSettings({ showTaxNumber: !!v })"
+            />
+          </MpFormGrid>
         </v-card>
 
         <v-card flat border rounded="lg" class="pa-6">
           <MpSectionHeader title="Delivery" />
-          <v-select
-            :model-value="settings.defaultDelivery"
-            :items="DELIVERY_OPTIONS"
-            label="Default at checkout"
-            variant="outlined"
-            density="comfortable"
-            class="mt-4"
-            style="max-width: 360px"
-            @update:model-value="(v) => store.updateReceiptSettings({ defaultDelivery: v })"
-          />
-          <v-text-field
-            :model-value="settings.emailSubject"
-            label="Email subject"
-            hint="{{store}} is replaced with the selling location's name."
-            persistent-hint
-            variant="outlined"
-            density="comfortable"
-            @update:model-value="(v) => store.updateReceiptSettings({ emailSubject: v })"
-          />
-          <v-switch
-            :model-value="settings.giftReceiptsEnabled"
-            label="Offer gift receipts (prices hidden)"
-            color="primary"
-            density="comfortable"
-            hide-details
-            class="mt-2"
-            @update:model-value="(v) => store.updateReceiptSettings({ giftReceiptsEnabled: !!v })"
-          />
+          <MpFormGrid>
+            <v-select
+              :model-value="settings.defaultDelivery"
+              :items="DELIVERY_OPTIONS"
+              label="Default at checkout"
+              style="max-width: 360px"
+              @update:model-value="(v) => store.updateReceiptSettings({ defaultDelivery: v })"
+            />
+            <v-text-field
+              :model-value="settings.emailSubject"
+              label="Email subject"
+              hint="{{store}} is replaced with the selling location's name."
+              persistent-hint
+              @update:model-value="(v) => store.updateReceiptSettings({ emailSubject: v })"
+            />
+            <v-switch
+              :model-value="settings.giftReceiptsEnabled"
+              label="Offer gift receipts (prices hidden)"
+              @update:model-value="(v) => store.updateReceiptSettings({ giftReceiptsEnabled: !!v })"
+            />
+          </MpFormGrid>
         </v-card>
       </v-col>
 

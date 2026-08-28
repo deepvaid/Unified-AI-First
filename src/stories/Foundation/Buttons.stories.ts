@@ -207,32 +207,3 @@ export const InteractionStates: Story = {
     `,
   }),
 }
-
-/** Pinned dark — flat button shadow and borders use dark semantic aliases. */
-export const DarkMode: Story = {
-  globals: { theme: 'dark' },
-  render: () => ({
-    template: `
-      <div class="d-flex flex-wrap gap-6 align-end">
-        <v-btn color="primary" variant="flat" class="text-none">Create campaign</v-btn>
-        <v-btn variant="outlined" class="text-none">Export</v-btn>
-        <v-btn color="primary" variant="tonal" class="text-none">Duplicate</v-btn>
-        <v-btn variant="text" class="text-none">Cancel</v-btn>
-        <v-btn color="error" variant="flat" class="text-none">Delete</v-btn>
-      </div>
-    `,
-  }),
-}
-
-/** Default cyan dark primary — must render #2CC4FF (matches app). */
-export const DarkModeCyanAccent: Story = {
-  globals: { theme: 'dark', accent: 'cyan' },
-  render: () => ({
-    template: `
-      <div>
-        <p class="text-caption text-medium-emphasis mb-3">Default cyan — no data-accent attribute</p>
-        <v-btn color="primary" variant="flat" class="text-none">Primary #2CC4FF</v-btn>
-      </div>
-    `,
-  }),
-}

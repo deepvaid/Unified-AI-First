@@ -10,6 +10,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 
 // Shared list view for store editor Pages and Blogs — the legacy sections are
 // identical tables; `kind` comes from the route meta.
@@ -171,7 +172,7 @@ function saveSeo() {
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="general" size="x-small" />
+          <MpStatusChip :status="item.status" type="general" size="sm" />
         </template>
 
         <template v-slot:item.publishedAt="{ item }">
@@ -214,10 +215,10 @@ function saveSeo() {
     />
 
     <MpFormDrawer v-if="isBlog" v-model="seoDrawer" title="Blog SEO settings" subtitle="How your blog index appears in search results">
-      <div class="d-flex flex-column gap-4">
-        <v-text-field v-model="seoForm.title" label="Title" variant="outlined" density="comfortable" hide-details="auto" counter="60" />
-        <v-textarea v-model="seoForm.metaDescription" label="Meta description" variant="outlined" density="comfortable" rows="3" counter="160" hide-details="auto" />
-      </div>
+      <MpFormGrid>
+        <v-text-field v-model="seoForm.title" label="Title" counter="60" />
+        <v-textarea v-model="seoForm.metaDescription" label="Meta description" rows="3" counter="160" />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="seoDrawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" @click="saveSeo">Save</v-btn>

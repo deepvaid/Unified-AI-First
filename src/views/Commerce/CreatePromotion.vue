@@ -12,6 +12,10 @@ import {
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpSectionHeader from '@/components/MpSectionHeader.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
@@ -158,29 +162,26 @@ onMounted(() => {
 
     <!-- Content -->
     <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
-      <div style="max-width: 760px; margin: 0 auto;">
+      <div class="d-flex flex-column ga-5" style="max-width: 760px; margin: 0 auto;">
 
         <!-- General -->
-        <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-          <div class="text-subtitle-1 font-weight-bold mb-1">General</div>
-          <div class="text-body-2 text-medium-emphasis mb-5">Name this promotion so your team can recognise it.</div>
-          <v-text-field
-            v-model="title"
-            label="Title *"
-            variant="outlined"
-            density="comfortable"
-            placeholder="e.g. Summer sale 15% off"
-            :error="submitted && !titleValid"
-            :error-messages="submitted && !titleValid ? ['Title is required'] : []"
-            class="mb-3"
-          />
-          <v-textarea v-model="description" label="Description" variant="outlined" density="comfortable" rows="2" auto-grow hide-details />
+        <v-card variant="flat" border rounded="lg" class="pa-6">
+          <MpSectionHeader title="General" description="Name this promotion so your team can recognise it." />
+          <MpFormGrid>
+            <v-text-field
+              v-model="title"
+              label="Title *"
+              placeholder="e.g. Summer sale 15% off"
+              :error="submitted && !titleValid"
+              :error-messages="submitted && !titleValid ? ['Title is required'] : []"
+            />
+            <v-textarea v-model="description" label="Description" rows="3" auto-grow />
+          </MpFormGrid>
         </v-card>
 
         <!-- Discount method -->
-        <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-          <div class="text-subtitle-1 font-weight-bold mb-1">Discount method</div>
-          <div class="text-body-2 text-medium-emphasis mb-5">What does this promotion discount?</div>
+        <v-card variant="flat" border rounded="lg" class="pa-6">
+          <MpSectionHeader title="Discount method" description="What does this promotion discount?" />
           <v-row dense>
             <v-col cols="12" sm="6">
               <MpOptionCard
@@ -206,99 +207,108 @@ onMounted(() => {
         </v-card>
 
         <!-- Details (always visible — legacy hid this until a method was chosen) -->
-        <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-          <div class="text-subtitle-1 font-weight-bold mb-1">Details</div>
-          <div class="text-body-2 text-medium-emphasis mb-5">How customers get the discount, how big it is, and when it runs.</div>
+        <v-card variant="flat" border rounded="lg" class="pa-6">
+          <MpSectionHeader title="Details" description="How customers get the discount, how big it is, and when it runs." />
 
-          <div class="text-subtitle-2 font-weight-bold mb-2">Mechanism</div>
-          <v-btn-toggle v-model="mechanism" mandatory divided variant="outlined" density="comfortable" class="mb-4">
-            <v-btn value="Code" class="text-none" prepend-icon="ticket">Discount code</v-btn>
-            <v-btn value="Automatic" class="text-none" prepend-icon="zap">Automatic</v-btn>
-          </v-btn-toggle>
+          <MpFormSection title="Mechanism" />
+          <MpFormGrid>
+            <MpFormField label="How the discount is applied">
+              <div>
+                <v-btn-toggle v-model="mechanism" mandatory>
+                  <v-btn value="Code" class="text-none" prepend-icon="ticket">Discount code</v-btn>
+                  <v-btn value="Automatic" class="text-none" prepend-icon="zap">Automatic</v-btn>
+                </v-btn-toggle>
+              </div>
+            </MpFormField>
 
-          <div v-if="mechanism === 'Code'" class="d-flex gap-3 mb-4">
-            <v-text-field
-              v-model="code"
-              label="Discount code *"
-              variant="outlined"
-              density="comfortable"
-              placeholder="e.g. SUMMER15"
-              class="flex-grow-1 font-mono-field"
-              :error="submitted && !codeValid"
-              :error-messages="submitted && !codeValid ? ['A code is required for code promotions'] : []"
-              hint="Customers enter this at checkout"
-              persistent-hint
-            />
-            <v-btn variant="outlined" class="text-none cp-generate-btn" prepend-icon="refresh-cw" @click="generateCode">Generate</v-btn>
-          </div>
-          <v-alert v-else type="info" variant="tonal" density="compact" class="mb-4 text-body-2">
-            Applies automatically at checkout — customers don't need a code.
-          </v-alert>
-
-          <div class="text-subtitle-2 font-weight-bold mb-2">Discount</div>
-          <v-row dense class="mb-1">
-            <v-col cols="6">
-              <v-select
-                v-model="discountType"
-                label="Discount type"
-                :items="['Percentage', 'Fixed']"
-                variant="outlined"
-                density="comfortable"
-              />
-            </v-col>
-            <v-col cols="6">
+            <div v-if="mechanism === 'Code'" class="mp-form-grid__trailing">
               <v-text-field
-                v-model.number="value"
-                :label="discountType === 'Percentage' ? 'Value (%)' : 'Value ($)'"
-                type="number"
-                min="0"
-                variant="outlined"
-                density="comfortable"
-                :prefix="discountType === 'Fixed' ? '$' : undefined"
-                :suffix="discountType === 'Percentage' ? '%' : undefined"
+                v-model="code"
+                label="Discount code *"
+                placeholder="e.g. SUMMER15"
+                class="font-mono-field"
+                :error="submitted && !codeValid"
+                :error-messages="submitted && !codeValid ? ['A code is required for code promotions'] : []"
+                hint="Customers enter this at checkout"
+                persistent-hint
               />
-            </v-col>
-          </v-row>
+              <v-btn
+                icon
+                variant="text"
+                size="small"
+                class="text-medium-emphasis"
+                aria-label="Generate a discount code"
+                @click="generateCode"
+              >
+                <v-icon size="18">refresh-cw</v-icon>
+                <v-tooltip activator="parent" location="top">Generate a code</v-tooltip>
+              </v-btn>
+            </div>
+            <v-alert v-else type="info" variant="tonal" density="compact" class="text-body-2">
+              Applies automatically at checkout — customers don't need a code.
+            </v-alert>
+          </MpFormGrid>
 
-          <!-- Live preview sentence -->
-          <v-card color="primary" variant="tonal" rounded="lg" class="pa-3 mb-5 d-flex align-center gap-2">
-            <v-icon size="18">eye</v-icon>
-            <span class="text-body-2 font-weight-medium">{{ previewSentence }}</span>
-          </v-card>
+          <MpFormSection title="Discount" />
+          <MpFormGrid :cols="2">
+            <v-select
+              v-model="discountType"
+              label="Discount type"
+              :items="['Percentage', 'Fixed']"
+            />
+            <v-text-field
+              v-model.number="value"
+              :label="discountType === 'Percentage' ? 'Value (%)' : 'Value ($)'"
+              type="number"
+              min="0"
+              :prefix="discountType === 'Fixed' ? '$' : undefined"
+              :suffix="discountType === 'Percentage' ? '%' : undefined"
+            />
 
-          <div class="text-subtitle-2 font-weight-bold mb-2">Schedule</div>
-          <v-row dense class="mb-1">
-            <v-col cols="6">
-              <v-text-field v-model="startDate" label="Start date" type="date" variant="outlined" density="comfortable" />
-            </v-col>
-            <v-col cols="6">
-              <v-text-field v-model="endDate" label="End date" type="date" variant="outlined" density="comfortable" hint="Leave blank to run indefinitely" persistent-hint />
-            </v-col>
-          </v-row>
+            <!-- Live preview sentence -->
+            <v-card color="primary" variant="tonal" rounded="lg" class="mp-form-grid__full pa-3 d-flex align-center gap-2">
+              <v-icon size="18">eye</v-icon>
+              <span class="text-body-2 font-weight-medium">{{ previewSentence }}</span>
+            </v-card>
+          </MpFormGrid>
 
-          <div class="text-subtitle-2 font-weight-bold mb-2 mt-3">Status</div>
-          <v-btn-toggle v-model="status" mandatory divided variant="outlined" density="comfortable">
-            <v-btn value="Active" class="text-none" prepend-icon="play">Active</v-btn>
-            <v-btn value="Inactive" class="text-none" prepend-icon="pause">Inactive</v-btn>
-          </v-btn-toggle>
+          <MpFormSection title="Schedule" />
+          <MpFormGrid :cols="2">
+            <v-text-field v-model="startDate" label="Start date" type="date" />
+            <v-text-field v-model="endDate" label="End date" type="date" hint="Leave blank to run indefinitely" persistent-hint />
+          </MpFormGrid>
+
+          <MpFormSection title="Status" />
+          <MpFormGrid>
+            <MpFormField label="Promotion status">
+              <div>
+                <v-btn-toggle v-model="status" mandatory>
+                  <v-btn value="Active" class="text-none" prepend-icon="play">Active</v-btn>
+                  <v-btn value="Inactive" class="text-none" prepend-icon="pause">Inactive</v-btn>
+                </v-btn-toggle>
+              </div>
+            </MpFormField>
+          </MpFormGrid>
         </v-card>
 
         <!-- Sales channels -->
-        <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-          <div class="text-subtitle-1 font-weight-bold mb-1">Sales channels *</div>
-          <div class="text-body-2 text-medium-emphasis mb-5">The discount is applicable only on the sales channels you select.</div>
-          <v-select
-            v-model="salesChannels"
-            label="Sales channels"
-            :items="SALES_CHANNELS"
-            multiple
-            chips
-            closable-chips
-            variant="outlined"
-            density="comfortable"
-            :error="submitted && !channelsValid"
-            :error-messages="submitted && !channelsValid ? ['Select at least one sales channel'] : []"
+        <v-card variant="flat" border rounded="lg" class="pa-6">
+          <MpSectionHeader
+            title="Sales channels *"
+            description="The discount is applicable only on the sales channels you select."
           />
+          <MpFormGrid>
+            <v-select
+              v-model="salesChannels"
+              label="Sales channels *"
+              :items="SALES_CHANNELS"
+              multiple
+              chips
+              closable-chips
+              :error="submitted && !channelsValid"
+              :error-messages="submitted && !channelsValid ? ['Select at least one sales channel'] : []"
+            />
+          </MpFormGrid>
         </v-card>
       </div>
     </div>
@@ -325,5 +335,4 @@ onMounted(() => {
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .font-mono-field :deep(input) { font-family: monospace; text-transform: uppercase; }
-.cp-generate-btn { height: 56px; }
 </style>

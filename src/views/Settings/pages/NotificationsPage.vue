@@ -33,11 +33,12 @@ function save() { toast.success('Preferences saved') }
             <div class="notif-row__title">{{ p.label }}</div>
             <div class="notif-row__sub">{{ p.desc }}</div>
           </div>
+          <!-- `hide-details` is deliberate: each switch sits in a list row that
+               already carries its own title and description. -->
           <v-switch
             v-model="p.value"
             color="primary"
             hide-details
-            density="compact"
             inset
             :aria-label="`Toggle ${p.label}`"
           />

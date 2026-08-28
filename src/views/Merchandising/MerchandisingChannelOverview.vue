@@ -46,7 +46,7 @@ function go(name: string) {
     </v-alert>
 
     <div class="d-flex align-center ga-2">
-      <MpStatusChip :status="MERCHANDISING_STATUS_LABELS[merchandisingStatus(channel)]" type="general" size="small" show-icon />
+      <MpStatusChip :status="MERCHANDISING_STATUS_LABELS[merchandisingStatus(channel)]" type="general" size="md" show-icon />
       <span class="text-body-2 text-medium-emphasis">Channel-scoped workspace</span>
     </div>
 

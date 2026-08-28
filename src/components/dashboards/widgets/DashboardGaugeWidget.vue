@@ -54,7 +54,7 @@ const arcColor = computed(() => (
 .gauge-widget {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--mp-space-16);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -69,27 +69,27 @@ const arcColor = computed(() => (
 
 .gauge-widget__footer {
   margin-top: auto;
-  padding-top: 14px;
+  padding-top: var(--mp-space-14);
   border-top: 1px solid var(--border-subtle);
   display: flex;
-  gap: 24px;
+  gap: var(--mp-space-24);
 }
 
 .gauge-widget__stat {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--mp-space-4);
 }
 
 .gauge-widget__stat-label {
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
   white-space: nowrap;
 }
 
 .gauge-widget__stat-value {
   font-size: 17px;
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);

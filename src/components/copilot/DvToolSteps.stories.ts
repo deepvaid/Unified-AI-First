@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvToolSteps from './DvToolSteps.vue'
 
 const meta = {
-  title: 'Copilot/DvToolSteps',
+  title: 'Product/Da Vinci/DvToolSteps',
   component: DvToolSteps,
   tags: ['autodocs'],
   argTypes: {
@@ -38,6 +38,92 @@ DvToolSteps is the copilot's agent-transparency disclosure: a collapsible "N ste
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Default: Story = {
+  args: {
+    steps: [
+      { label: 'Check store setup', status: 'done' },
+      { label: 'Suggest next steps', status: 'done' },
+    ],
+    defaultOpen: false,
+  },
+}
+
+
+
+/** Collapsed vs expanded — the structural axis, set by `defaultOpen`. */
+export const Variants: Story = {
+  render: () => ({
+    components: { DvToolSteps },
+    setup: () => ({
+      steps: [
+        { label: 'Query revenue · last 7 days', status: 'done' },
+        { label: 'Compare vs prior week', status: 'done' },
+      ],
+    }),
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">collapsed</div>
+          <DvToolSteps :steps="steps" :default-open="false" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">expanded</div>
+          <DvToolSteps :steps="steps" :default-open="true" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Step-count is the size axis. */
+export const Sizes: Story = {
+  render: () => ({
+    components: { DvToolSteps },
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">one step</div>
+          <DvToolSteps :steps="[{ label: 'Check store setup', status: 'done' }]" :default-open="true" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">four steps</div>
+          <DvToolSteps
+            :steps="[
+              { label: 'Check store setup', status: 'done' },
+              { label: 'Query revenue · last 7 days', status: 'done' },
+              { label: 'Compare vs prior week', status: 'done' },
+              { label: 'Draft a summary', status: 'running' },
+            ]"
+            :default-open="true"
+          />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Every step status: done, running, and a mixed run in progress. */
+export const States: Story = {
+  render: () => ({
+    components: { DvToolSteps },
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">all done</div>
+          <DvToolSteps :steps="[{ label: 'Query revenue', status: 'done' }, { label: 'Summarise', status: 'done' }]" :default-open="true" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">running — mid-flight</div>
+          <DvToolSteps :steps="[{ label: 'Query revenue', status: 'done' }, { label: 'Summarise', status: 'running' }]" :default-open="true" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
 
 export const CollapsedDone: Story = {
   args: {

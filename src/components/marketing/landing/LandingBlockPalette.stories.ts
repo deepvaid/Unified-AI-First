@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import LandingBlockPalette from './LandingBlockPalette.vue'
 import { PALETTE } from './landingStoryFixtures'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Marketing/LandingBlockPalette',
+  title: 'Product/Marketing/Landing Pages/LandingBlockPalette',
   component: LandingBlockPalette,
   tags: ['autodocs'],
   parameters: {
@@ -65,9 +64,4 @@ export const Default: Story = {
 export const Reduced: Story = {
   args: { palette: PALETTE.slice(0, 5) },
   render: Default.render,
-}
-
-export const DarkMode: Story = {
-  ...Default,
-  globals: darkModeGlobals,
 }

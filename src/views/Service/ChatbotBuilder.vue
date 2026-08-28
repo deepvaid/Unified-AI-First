@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, useId, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatbotStore } from '@/stores/useChatbot'
 import { useAccountsStore } from '@/stores/useAccounts'
@@ -8,6 +8,7 @@ import type { PreChatFieldType, QuickPromptIntent } from '@/stores/useChatbot'
 import type { SubscriptionKey } from '@/stores/useAccounts'
 import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpDialog from '@/components/MpDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
@@ -231,7 +232,6 @@ function goBack() { router.push({ name: 'ChatbotList', params: { accountId: acco
 
 // Publish modal
 const publishOpen = ref(false)
-const publishDialogTitleId = useId()
 const copied = ref(false)
 const installScript = computed(() =>
   `<!-- ${chatbot.value?.store ?? 'Store'} AI Chatbot Widget -->
@@ -662,7 +662,6 @@ function sendChat() {
                 v-model="kbDrawer"
                 title="Knowledge base questionnaire"
                 subtitle="Answer what you can — we'll turn it into a knowledge source. You can update it later."
-                :width="520"
               >
                 <div v-for="(q, i) in kbQuestions" :key="q.key" :class="{ 'mb-5': i < kbQuestions.length - 1 }">
                   <label class="text-body-2 font-weight-medium d-block mb-2">{{ q.label }}</label>
@@ -846,37 +845,36 @@ function sendChat() {
       </div>
 
       <!-- Publish modal -->
-      <v-dialog v-model="publishOpen" max-width="560" :aria-labelledby="publishDialogTitleId">
-        <v-card flat rounded="lg" class="pa-6">
-          <div class="d-flex align-start justify-space-between mb-1">
-            <div :id="publishDialogTitleId" class="text-h6 font-weight-bold">Publish chatbot</div>
-            <v-btn icon="x" variant="text" size="small" aria-label="Close" @click="publishOpen = false" />
+      <MpDialog
+        v-model="publishOpen"
+        size="md"
+        title="Publish chatbot"
+        subtitle="Copy this snippet into your website to make your chatbot live."
+      >
+        <div class="cb-install">
+          <div class="cb-install__bar d-flex align-center justify-space-between">
+            <span class="text-caption font-weight-bold text-medium-emphasis">Installation script</span>
+            <v-btn size="x-small" variant="tonal" :color="copied ? 'success' : 'primary'" class="text-none" :prepend-icon="copied ? 'check' : 'copy'" @click="copyScript">
+              {{ copied ? 'Copied' : 'Copy' }}
+            </v-btn>
           </div>
-          <div class="text-body-2 text-medium-emphasis mb-4">Copy this snippet into your website to make your chatbot live.</div>
+          <pre class="cb-install__code">{{ installScript }}</pre>
+        </div>
 
-          <div class="cb-install">
-            <div class="cb-install__bar d-flex align-center justify-space-between">
-              <span class="text-caption font-weight-bold text-medium-emphasis">Installation script</span>
-              <v-btn size="x-small" variant="tonal" :color="copied ? 'success' : 'primary'" class="text-none" :prepend-icon="copied ? 'check' : 'copy'" @click="copyScript">
-                {{ copied ? 'Copied' : 'Copy' }}
-              </v-btn>
-            </div>
-            <pre class="cb-install__code">{{ installScript }}</pre>
-          </div>
-
-          <div class="text-subtitle-2 font-weight-bold mt-5 mb-2">How to install</div>
+        <div>
+          <div class="text-subtitle-2 font-weight-bold mb-2">How to install</div>
           <ol class="cb-steps text-body-2 text-medium-emphasis">
             <li>Copy the script above.</li>
             <li>Paste it just before the closing <code>&lt;/body&gt;</code> tag on your site.</li>
             <li>Save and publish your website changes.</li>
             <li>The chatbot appears in the {{ cfg.position === 'left' ? 'bottom-left' : 'bottom-right' }} corner.</li>
           </ol>
+        </div>
 
-          <div class="d-flex justify-end mt-5">
-            <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket" @click="finishPublish">Publish &amp; done</v-btn>
-          </div>
-        </v-card>
-      </v-dialog>
+        <template #footer>
+          <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket" @click="finishPublish">Publish &amp; done</v-btn>
+        </template>
+      </MpDialog>
 
       <MpConfirmDialog
         v-model="confirmLeave"

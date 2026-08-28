@@ -13,6 +13,7 @@ import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -170,8 +171,11 @@ function doCreate() {
         </template>
         <template #item.status="{ item }">
           <div class="d-flex align-center ga-3" @click.stop>
+            <!-- `hide-details` is deliberate: this is a table-cell inline editor,
+                 where a details slot would grow every row. -->
             <v-switch
               :model-value="item.status === 'Active'"
+              :aria-label="`${item.store} active`"
               :disabled="item.status === 'Disabled'"
               color="primary"
               density="compact"
@@ -234,10 +238,12 @@ function doCreate() {
       @confirm="doArchive"
     />
 
-    <MpFormDrawer v-model="createOpen" title="Create new chatbot" :width="420">
-      <div class="text-body-2 text-medium-emphasis mb-5">Each chatbot powers one store. Add the store details to get started.</div>
-      <v-text-field v-model="form.store" label="Store name" placeholder="e.g. Johny Style Store" variant="outlined" density="comfortable" autofocus class="mb-3" />
-      <v-text-field v-model="form.storeUrl" label="Store URL" placeholder="https://mystore.com" variant="outlined" density="comfortable" prepend-inner-icon="link" hide-details />
+    <MpFormDrawer v-model="createOpen" title="Create new chatbot" size="sm">
+      <div class="text-body-2 text-medium-emphasis">Each chatbot powers one store. Add the store details to get started.</div>
+      <MpFormGrid>
+        <v-text-field v-model="form.store" label="Store name *" placeholder="e.g. Johny Style Store" autofocus />
+        <v-text-field v-model="form.storeUrl" label="Store URL" placeholder="https://mystore.com" prepend-inner-icon="link" />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="createOpen = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plus" :disabled="!canCreate" @click="doCreate">Create &amp; customize</v-btn>

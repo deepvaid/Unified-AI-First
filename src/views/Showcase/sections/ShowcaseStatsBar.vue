@@ -38,7 +38,7 @@ watch(revealed, isIn => {
   border-top: 1px solid var(--mp-border-subtle);
   border-bottom: 1px solid var(--mp-border-subtle);
   background: rgb(var(--v-theme-surface));
-  padding: var(--mp-spacing-10) var(--mp-spacing-6);
+  padding: var(--mp-space-40) var(--mp-space-24);
 }
 
 .stats__grid {
@@ -46,7 +46,7 @@ watch(revealed, isIn => {
   margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: var(--mp-spacing-6);
+  gap: var(--mp-space-24);
   text-align: center;
 }
 
@@ -58,7 +58,7 @@ watch(revealed, isIn => {
 @media (max-width: 1100px) {
   .stats__grid {
     grid-template-columns: repeat(3, 1fr);
-    row-gap: var(--mp-spacing-8);
+    row-gap: var(--mp-space-32);
   }
 }
 

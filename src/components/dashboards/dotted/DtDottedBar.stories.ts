@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 import DtDottedBar from './DtDottedBar.vue'
 import { BAR_GRADIENT, BAR_GRADIENT_GREEN } from './dottedChartMath'
 
 const meta = {
-  title: 'Dashboards/Dotted/DtDottedBar',
+  title: 'Product/Dashboards/Dotted/DtDottedBar',
   component: DtDottedBar,
   tags: ['autodocs'],
   parameters: {
@@ -56,9 +55,4 @@ export const ClampedEdges: Story = {
       </div>
     `,
   }),
-}
-
-export const DarkMode: Story = {
-  ...Default,
-  globals: darkModeGlobals,
 }

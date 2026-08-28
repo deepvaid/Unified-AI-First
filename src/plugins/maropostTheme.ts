@@ -79,21 +79,23 @@ import {
   mp_color_dark_outlineVariant,
   mp_color_dark_border,
   mp_color_dark_textPrimary,
-  mp_color_dark_blue50,
-  mp_color_dark_blue100,
-  mp_color_dark_blue200,
-  mp_color_dark_blue700,
-  mp_color_dark_blue900,
-  mp_color_dark_neutral100,
-  mp_color_dark_neutral200,
+  mp_color_dark_blue_50,
+  mp_color_dark_blue_100,
+  mp_color_dark_blue_200,
+  mp_color_dark_blue_700,
+  mp_color_dark_blue_900,
+  mp_color_dark_neutral_100,
+  mp_color_dark_neutral_200,
   mp_color_dark_flowLogic_primary,
   mp_color_dark_flowLogic_onPrimary,
   mp_color_dark_flowLogic_container,
-  mp_typography_fontFamily_base,
+  mp_fontFamily_base,
   mp_component_button_typography_fontSize,
   mp_component_button_typography_fontWeight,
   mp_component_button_typography_letterSpacing,
-  mp_component_button_radius_default,
+  mp_component_button_radius,
+  mp_component_button_paddingInline,
+  mp_component_control_height,
 } from '@/design-tokens/generated/tokens'
 
 export const maropostLight = {
@@ -179,11 +181,11 @@ export const maropostDark = {
     'on-info': mp_color_dark_onInfo,
     'on-surface': mp_color_dark_textPrimary,
     'on-background': mp_color_dark_textPrimary,
-    'blue-50': mp_color_dark_blue50,
-    'blue-100': mp_color_dark_blue100,
-    'blue-200': mp_color_dark_blue200,
-    'blue-700': mp_color_dark_blue700,
-    'blue-900': mp_color_dark_blue900,
+    'blue-50': mp_color_dark_blue_50,
+    'blue-100': mp_color_dark_blue_100,
+    'blue-200': mp_color_dark_blue_200,
+    'blue-700': mp_color_dark_blue_700,
+    'blue-900': mp_color_dark_blue_900,
     'primary-container': mp_color_dark_primaryContainer,
     'on-primary-container': mp_color_dark_onPrimaryContainer,
     'success-container': mp_color_dark_successContainer,
@@ -196,8 +198,8 @@ export const maropostDark = {
     'surface-light': mp_color_dark_surfaceLight,
     outline: mp_color_dark_outline,
     'outline-variant': mp_color_dark_outlineVariant,
-    'neutral-100': mp_color_dark_neutral100,
-    'neutral-200': mp_color_dark_neutral200,
+    'neutral-100': mp_color_dark_neutral_100,
+    'neutral-200': mp_color_dark_neutral_200,
     'flow-logic': mp_color_dark_flowLogic_primary,
     'on-flow-logic': mp_color_dark_flowLogic_onPrimary,
     'flow-logic-container': mp_color_dark_flowLogic_container,
@@ -211,11 +213,11 @@ export const maropostDefaults = {
       letter-spacing: ${mp_component_button_typography_letterSpacing};
       font-weight: ${mp_component_button_typography_fontWeight};
       text-transform: none;
-      font-family: ${mp_typography_fontFamily_base};
+      font-family: ${mp_fontFamily_base};
       font-size: ${mp_component_button_typography_fontSize};
-      border-radius: ${mp_component_button_radius_default};
-      min-height: 40px;
-      padding-inline: 14px;
+      border-radius: ${mp_component_button_radius};
+      min-height: ${mp_component_control_height};
+      padding-inline: ${mp_component_button_paddingInline};
     `,
   },
   VCard: {
@@ -253,6 +255,55 @@ export const maropostDefaults = {
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
+  },
+  // Selection controls (P6-14). These had no defaults at all, so they fell through
+  // to raw Vuetify — `hideDetails: false`, `density: 'default'` — which is why a
+  // checkbox group and the text fields above it sat on different rhythms and why
+  // 417 call sites had each written `hide-details` by hand. Same contract as the
+  // fields above: behaviour only, chrome stays with settings-form.scss.
+  VCheckbox: {
+    density: 'comfortable',
+    hideDetails: 'auto',
+    color: 'primary',
+  },
+  VRadioGroup: {
+    density: 'comfortable',
+    hideDetails: 'auto',
+    color: 'primary',
+  },
+  VRadio: {
+    density: 'comfortable',
+    color: 'primary',
+  },
+  VSwitch: {
+    density: 'comfortable',
+    hideDetails: 'auto',
+    color: 'primary',
+  },
+  VSlider: {
+    density: 'comfortable',
+    hideDetails: 'auto',
+    color: 'primary',
+  },
+  VNumberInput: {
+    variant: 'outlined',
+    density: 'comfortable',
+    hideDetails: 'auto',
+    color: 'primary',
+  },
+  // One toggle-group convention (P6-14). Three were in use — comfortable/outlined/
+  // divided, compact/rounded-lg, and compact/rounded-lg/border — so a segmented
+  // control's height depended on which view you were looking at.
+  VBtnToggle: {
+    density: 'comfortable',
+    variant: 'outlined',
+    divided: true,
+    color: 'primary',
+  },
+  VChipGroup: {
+    color: 'primary',
+    variant: 'outlined',
+    selectedClass: 'v-chip--selected',
   },
   VAlert: {
     variant: 'tonal',

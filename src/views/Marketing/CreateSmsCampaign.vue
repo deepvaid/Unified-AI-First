@@ -5,6 +5,9 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useSmsStore, type SmsCampaign } from '@/stores/useSms'
 import { usePlgStore } from '@/stores/usePlg'
@@ -219,28 +222,30 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
           <div class="text-body-2 text-medium-emphasis mb-6">Write the SMS your audience will receive.</div>
           <v-divider class="mb-6"></v-divider>
 
-          <v-text-field v-model="name" label="Text Campaign Name *" placeholder="e.g. Weekend Flash Sale" variant="outlined" density="comfortable" class="mb-4"></v-text-field>
-          <v-select v-model="fromNumber" label="From Number" :items="FROM_NUMBERS" variant="outlined" density="comfortable" class="mb-4"></v-select>
+          <MpFormGrid>
+            <v-text-field v-model="name" label="Text Campaign Name *" placeholder="e.g. Weekend Flash Sale"></v-text-field>
+            <v-select v-model="fromNumber" label="From Number" :items="FROM_NUMBERS"></v-select>
 
-          <v-textarea v-model="message" label="Message *" placeholder="Type your SMS. Keep it short and add a clear call to action." variant="outlined" density="comfortable" rows="4" auto-grow hide-details class="mb-2"></v-textarea>
-          <div class="d-flex justify-end mb-4">
-            <span class="text-caption sms-count" :class="segments > 1 ? 'text-warning' : 'text-medium-emphasis'">
-              {{ segments || 1 }} SMS {{ charCount }}/{{ segmentCap }}
-            </span>
-          </div>
+            <v-textarea v-model="message" label="Message *" placeholder="Type your SMS. Keep it short and add a clear call to action." rows="4" auto-grow></v-textarea>
+            <div class="d-flex justify-end">
+              <span class="text-caption sms-count" :class="segments > 1 ? 'text-warning' : 'text-medium-emphasis'">
+                {{ segments || 1 }} SMS {{ charCount }}/{{ segmentCap }}
+              </span>
+            </div>
 
-          <div class="d-flex flex-wrap gap-2 mb-6">
-            <v-chip v-for="chip in INSERT_CHIPS" :key="chip.key" size="small" variant="outlined" :prepend-icon="chip.icon" class="text-none" @click="insertHelper(chip)">
-              {{ chip.label }}
-            </v-chip>
-          </div>
+            <div class="d-flex flex-wrap gap-2">
+              <v-chip v-for="chip in INSERT_CHIPS" :key="chip.key" size="small" variant="outlined" :prepend-icon="chip.icon" class="text-none" @click="insertHelper(chip)">
+                {{ chip.label }}
+              </v-chip>
+            </div>
 
-          <v-divider class="mb-4"></v-divider>
-          <div class="text-subtitle-2 font-weight-bold mb-3">Send a test</div>
-          <div class="d-flex gap-3 align-center flex-wrap">
-            <v-text-field v-model="testPhone" label="Test phone number" placeholder="+61…" variant="outlined" density="comfortable" hide-details style="max-width: 260px;"></v-text-field>
-            <v-btn variant="outlined" class="text-none" prepend-icon="send" :disabled="!testPhone.trim()" @click="sendTest">Send test</v-btn>
-          </div>
+            <v-divider></v-divider>
+            <MpFormSection title="Send a test" />
+            <div class="d-flex gap-3 align-center flex-wrap">
+              <v-text-field v-model="testPhone" label="Test phone number" placeholder="+61…" style="max-width: 260px;"></v-text-field>
+              <v-btn variant="outlined" class="text-none" prepend-icon="send" :disabled="!testPhone.trim()" @click="sendTest">Send test</v-btn>
+            </div>
+          </MpFormGrid>
         </v-card>
 
         <!-- Step 2: Compliance -->
@@ -249,42 +254,49 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
           <div class="text-body-2 text-medium-emphasis mb-6">Confirm consent handling and choose your audience and send time.</div>
           <v-divider class="mb-6"></v-divider>
 
-          <v-checkbox v-model="optOutConfirmed" color="primary" hide-details class="mb-4">
-            <template #label>
-              <span class="text-body-2">This message includes a clear opt-out ("Text STOP to opt-out") and complies with local SMS marketing regulations.</span>
-            </template>
-          </v-checkbox>
+          <MpFormGrid :cols="2">
+            <v-checkbox v-model="optOutConfirmed" class="mp-form-grid__full">
+              <template #label>
+                <span class="text-body-2">This message includes a clear opt-out ("Text STOP to opt-out") and complies with local SMS marketing regulations.</span>
+              </template>
+            </v-checkbox>
 
-          <v-select v-model="audience" label="Audience list *" :items="AUDIENCES" variant="outlined" density="comfortable" class="mb-6" style="max-width: 400px;"></v-select>
+            <v-select v-model="audience" label="Audience list *" :items="AUDIENCES"></v-select>
 
-          <v-radio-group v-model="scheduleType" class="mb-4">
-            <v-card variant="outlined" rounded="lg" class="pa-4 mb-3 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
-              <v-radio value="now" color="primary">
-                <template #label>
-                  <div class="ml-2">
-                    <div class="font-weight-bold">Send Immediately</div>
-                    <div class="text-caption text-medium-emphasis">Sends as soon as you click "Send campaign now"</div>
-                  </div>
-                </template>
-              </v-radio>
-            </v-card>
-            <v-card variant="outlined" rounded="lg" class="pa-4 cursor-pointer" @click="scheduleType = 'scheduled'">
-              <v-radio value="scheduled" color="primary">
-                <template #label>
-                  <div class="ml-2">
-                    <div class="font-weight-bold">Schedule for Later</div>
-                    <div class="text-caption text-medium-emphasis">Pick a specific date and time for delivery</div>
-                  </div>
-                </template>
-              </v-radio>
-            </v-card>
-          </v-radio-group>
-          <v-expand-transition>
-            <v-row v-if="scheduleType === 'scheduled'">
-              <v-col cols="12" sm="6"><v-text-field v-model="scheduleDate" label="Date" type="date" variant="outlined" density="comfortable"></v-text-field></v-col>
-              <v-col cols="12" sm="6"><v-text-field v-model="scheduleTime" label="Time" type="time" variant="outlined" density="comfortable"></v-text-field></v-col>
-            </v-row>
-          </v-expand-transition>
+            <MpFormField label="When to send" class="mp-form-grid__full">
+              <template #default="{ labelId }">
+                <v-radio-group v-model="scheduleType" :aria-labelledby="labelId">
+                  <v-card variant="outlined" rounded="lg" class="pa-4 mb-3 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
+                    <v-radio value="now">
+                      <template #label>
+                        <div class="ml-2">
+                          <div class="font-weight-bold">Send Immediately</div>
+                          <div class="text-caption text-medium-emphasis">Sends as soon as you click "Send campaign now"</div>
+                        </div>
+                      </template>
+                    </v-radio>
+                  </v-card>
+                  <v-card variant="outlined" rounded="lg" class="pa-4 cursor-pointer" @click="scheduleType = 'scheduled'">
+                    <v-radio value="scheduled">
+                      <template #label>
+                        <div class="ml-2">
+                          <div class="font-weight-bold">Schedule for Later</div>
+                          <div class="text-caption text-medium-emphasis">Pick a specific date and time for delivery</div>
+                        </div>
+                      </template>
+                    </v-radio>
+                  </v-card>
+                </v-radio-group>
+              </template>
+            </MpFormField>
+
+            <v-expand-transition>
+              <MpFormGrid v-if="scheduleType === 'scheduled'" :cols="2" class="mp-form-grid__full">
+                <v-text-field v-model="scheduleDate" label="Date" type="date"></v-text-field>
+                <v-text-field v-model="scheduleTime" label="Time" type="time"></v-text-field>
+              </MpFormGrid>
+            </v-expand-transition>
+          </MpFormGrid>
         </v-card>
 
         <!-- Live phone preview -->

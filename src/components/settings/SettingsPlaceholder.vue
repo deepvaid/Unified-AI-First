@@ -30,12 +30,12 @@ defineProps<{
 .settings-placeholder {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: var(--mp-space-14);
 }
 
 .settings-placeholder__icon {
   color: rgb(var(--v-theme-primary));
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
   flex-shrink: 0;
 }
 
@@ -44,16 +44,16 @@ defineProps<{
 }
 
 .settings-placeholder__title {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-bold);
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: var(--mp-space-4);
 }
 
 .settings-placeholder__sub {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
   line-height: 1.5;
 }
 </style>

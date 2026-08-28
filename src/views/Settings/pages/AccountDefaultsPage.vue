@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -45,195 +46,125 @@ function discard() {}
       title="Account"
       description="Identity, industry, and where customers find you online."
     >
-      <div class="settings-grid">
-        <div class="settings-field settings-field--full">
-          <label class="settings-field__label">Account Name</label>
-          <v-text-field
-            v-model="company.name"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+      <MpFormGrid :cols="2">
+        <v-text-field
+          label="Account Name"
+          v-model="company.name"
+          class="mp-form-grid__full"
+        />
 
-        <div class="settings-field">
-          <label class="settings-field__label">Account ID</label>
-          <v-text-field
-            :model-value="company.accountId"
-            variant="outlined"
-            density="compact"
-            readonly
-            hide-details
-            bg-color="surface-variant"
-          >
-            <template #append-inner>
-              <v-tooltip text="Copy ID" location="top">
-                <template #activator="{ props: tipProps }">
-                  <v-btn
-                    v-bind="tipProps"
-                    icon="copy"
-                    size="x-small"
-                    variant="text"
-                    aria-label="Copy account ID"
-                    @click="copyId"
-                  />
-                </template>
-              </v-tooltip>
-            </template>
-          </v-text-field>
-        </div>
+        <v-text-field
+          label="Account ID"
+          :model-value="company.accountId"
+          readonly
+          bg-color="surface-variant"
+        >
+          <template #append-inner>
+            <v-tooltip text="Copy ID" location="top">
+              <template #activator="{ props: tipProps }">
+                <v-btn
+                  v-bind="tipProps"
+                  icon="copy"
+                  size="x-small"
+                  variant="text"
+                  aria-label="Copy account ID"
+                  @click="copyId"
+                />
+              </template>
+            </v-tooltip>
+          </template>
+        </v-text-field>
 
-        <div class="settings-field">
-          <label class="settings-field__label">Client / Contact Name</label>
-          <v-text-field
-            v-model="company.clientName"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+        <v-text-field
+          label="Client / Contact Name"
+          v-model="company.clientName"
+        />
 
-        <div class="settings-field">
-          <label class="settings-field__label">Industry</label>
-          <v-select
-            v-model="company.industry"
-            :items="['E-Commerce','SaaS','Retail','Media','Healthcare','Finance','Other']"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+        <v-select
+          label="Industry"
+          v-model="company.industry"
+          :items="['E-Commerce','SaaS','Retail','Media','Healthcare','Finance','Other']"
+        />
 
-        <div class="settings-field">
-          <label class="settings-field__label">Language</label>
-          <v-select
-            v-model="company.language"
-            :items="['English (US)','English (UK)','French','Spanish','German','Portuguese']"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+        <v-select
+          label="Language"
+          v-model="company.language"
+          :items="['English (US)','English (UK)','French','Spanish','German','Portuguese']"
+        />
 
-        <div class="settings-field settings-field--full">
-          <label class="settings-field__label">Website URL</label>
-          <v-text-field
-            v-model="company.website"
-            variant="outlined"
-            density="compact"
-            prepend-inner-icon="globe"
-            hide-details
-          />
-        </div>
-      </div>
+        <v-text-field
+          label="Website URL"
+          v-model="company.website"
+          class="mp-form-grid__full"
+          prepend-inner-icon="globe"
+        />
+      </MpFormGrid>
     </SettingsSection>
 
     <SettingsSection
       title="Locale"
       description="Defaults for dates, times, and currency formatting across reports and storefront."
     >
-      <div class="settings-grid settings-grid--thirds">
-        <div class="settings-field">
-          <label class="settings-field__label">Timezone</label>
-          <v-select
-            v-model="company.timezone"
-            :items="['America/New_York','America/Chicago','America/Los_Angeles','UTC','Europe/London','Asia/Tokyo']"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+      <MpFormGrid :cols="2">
+        <v-select
+          label="Timezone"
+          v-model="company.timezone"
+          :items="['America/New_York','America/Chicago','America/Los_Angeles','UTC','Europe/London','Asia/Tokyo']"
+          class="mp-form-grid__full"
+        />
 
-        <div class="settings-field">
-          <label class="settings-field__label">Currency</label>
-          <v-select
-            v-model="company.currency"
-            :items="['USD','EUR','GBP','CAD','AUD','JPY']"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+        <v-select
+          label="Currency"
+          v-model="company.currency"
+          :items="['USD','EUR','GBP','CAD','AUD','JPY']"
+        />
 
-        <div class="settings-field">
-          <label class="settings-field__label">Date Format</label>
-          <v-select
-            v-model="company.dateFormat"
-            :items="['MM/DD/YYYY','DD/MM/YYYY','YYYY-MM-DD']"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
-      </div>
+        <v-select
+          label="Date Format"
+          v-model="company.dateFormat"
+          :items="['MM/DD/YYYY','DD/MM/YYYY','YYYY-MM-DD']"
+        />
+      </MpFormGrid>
     </SettingsSection>
 
     <SettingsSection
       title="Address"
       description="Used on invoices, tax documents, and transactional emails."
     >
-      <div class="settings-grid">
-        <div class="settings-field settings-field--full">
-          <label class="settings-field__label">Address Line 1</label>
-          <v-text-field
-            v-model="company.address1"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+      <MpFormGrid :cols="2">
+        <v-text-field
+          label="Address Line 1"
+          v-model="company.address1"
+          class="mp-form-grid__full"
+        />
 
-        <div class="settings-field settings-field--full">
-          <label class="settings-field__label">Address Line 2 (optional)</label>
-          <v-text-field
-            v-model="company.address2"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+        <v-text-field
+          label="Address Line 2 (optional)"
+          v-model="company.address2"
+          class="mp-form-grid__full"
+        />
 
-        <div class="settings-field">
-          <label class="settings-field__label">Country</label>
-          <v-select
-            v-model="company.country"
-            :items="['United States','Canada','United Kingdom','Australia','India','Germany']"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+        <v-select
+          label="Country"
+          v-model="company.country"
+          :items="['United States','Canada','United Kingdom','Australia','India','Germany']"
+        />
 
-        <div class="settings-field">
-          <label class="settings-field__label">State / Province</label>
-          <v-text-field
-            v-model="company.state"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+        <v-text-field
+          label="State / Province"
+          v-model="company.state"
+        />
 
-        <div class="settings-field">
-          <label class="settings-field__label">City</label>
-          <v-text-field
-            v-model="company.city"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
+        <v-text-field
+          label="City"
+          v-model="company.city"
+        />
 
-        <div class="settings-field">
-          <label class="settings-field__label">Zip / Postal Code</label>
-          <v-text-field
-            v-model="company.zip"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
-        </div>
-      </div>
+        <v-text-field
+          label="Zip / Postal Code"
+          v-model="company.zip"
+        />
+      </MpFormGrid>
     </SettingsSection>
 
     <div class="settings-save-bar">

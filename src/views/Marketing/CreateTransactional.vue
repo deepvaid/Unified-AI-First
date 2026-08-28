@@ -5,6 +5,7 @@ import { useContentStore } from '@/stores/useContent'
 import { useSmsStore } from '@/stores/useSms'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useToast } from '@/composables/useToast'
 
@@ -126,38 +127,29 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
               <v-icon size="18" class="text-medium-emphasis">info</v-icon>
               <span class="text-subtitle-2 font-weight-bold">Details</span>
             </div>
-            <v-text-field
-              v-model="name"
-              label="Transactional event name"
-              placeholder="e.g. Order Confirmation"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              class="mb-4"
-              :rules="[v => !!v || 'Name is required']"
-            />
-            <v-text-field
-              v-model="subject"
-              label="Subject line"
-              placeholder="Your order is confirmed 🎉"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              class="mb-4"
-              counter
-            />
-            <v-text-field
-              v-model="previewText"
-              label="Preview text"
-              placeholder="Shown after the subject line in the inbox"
-              variant="outlined"
-              density="comfortable"
-              rounded="lg"
-              :counter="100"
-              maxlength="100"
-              hint="The snippet inboxes show right after the subject"
-              persistent-hint
-            />
+            <MpFormGrid>
+              <v-text-field
+                v-model="name"
+                label="Transactional event name"
+                placeholder="e.g. Order Confirmation"
+                :rules="[v => !!v || 'Name is required']"
+              />
+              <v-text-field
+                v-model="subject"
+                label="Subject line"
+                placeholder="Your order is confirmed 🎉"
+                counter
+              />
+              <v-text-field
+                v-model="previewText"
+                label="Preview text"
+                placeholder="Shown after the subject line in the inbox"
+                :counter="100"
+                maxlength="100"
+                hint="The snippet inboxes show right after the subject"
+                persistent-hint
+              />
+            </MpFormGrid>
           </v-card>
 
           <v-card flat border rounded="lg" class="pa-6">
@@ -165,20 +157,12 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
               <v-icon size="18" class="text-medium-emphasis">user</v-icon>
               <span class="text-subtitle-2 font-weight-bold">Sender</span>
             </div>
-            <v-row dense>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="fromName" label="From name" variant="outlined" density="comfortable" rounded="lg" />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="fromEmail" label="From address" variant="outlined" density="comfortable" rounded="lg" />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="replyTo" label="Reply-to address" variant="outlined" density="comfortable" rounded="lg" />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select v-model="language" label="Language" :items="LANGUAGES" variant="outlined" density="comfortable" rounded="lg" hide-details />
-              </v-col>
-            </v-row>
+            <MpFormGrid :cols="2">
+              <v-text-field v-model="fromName" label="From name" />
+              <v-text-field v-model="fromEmail" label="From address" />
+              <v-text-field v-model="replyTo" label="Reply-to address" />
+              <v-select v-model="language" label="Language" :items="LANGUAGES" />
+            </MpFormGrid>
           </v-card>
 
           <v-card flat border rounded="lg" class="pa-6">
@@ -186,33 +170,19 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
               <v-icon size="18" class="text-medium-emphasis">file-text</v-icon>
               <span class="text-subtitle-2 font-weight-bold">Content</span>
             </div>
-            <v-row dense>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="contentId"
-                  label="Content"
-                  :items="contentOptions"
-                  variant="outlined"
-                  density="comfortable"
-                  rounded="lg"
-                  placeholder="Choose a saved template"
-                  hide-details
-                  clearable
-                />
-              </v-col>
-              <v-col cols="12" md="6" class="d-flex align-center">
-                <v-switch v-model="showPreviewLink" color="primary" density="compact" hide-details label="Show email preview link" />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select v-model="brand" label="Brand" :items="BRAND_OPTIONS" variant="outlined" density="comfortable" rounded="lg" hide-details />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-combobox v-model="tag" label="Campaign tag" :items="TAG_OPTIONS" variant="outlined" density="comfortable" rounded="lg" clearable hide-details />
-              </v-col>
-              <v-col cols="12">
-                <v-text-field v-model="address" label="Address" variant="outlined" density="comfortable" rounded="lg" hide-details />
-              </v-col>
-            </v-row>
+            <MpFormGrid :cols="2">
+              <v-select
+                v-model="contentId"
+                label="Content"
+                :items="contentOptions"
+                placeholder="Choose a saved template"
+                clearable
+              />
+              <v-switch v-model="showPreviewLink" label="Show email preview link" />
+              <v-select v-model="brand" label="Brand" :items="BRAND_OPTIONS" />
+              <v-combobox v-model="tag" label="Campaign tag" :items="TAG_OPTIONS" clearable />
+              <v-text-field v-model="address" class="mp-form-grid__full" label="Address" />
+            </MpFormGrid>
           </v-card>
         </div>
 

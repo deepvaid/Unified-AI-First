@@ -3,6 +3,7 @@
 // from the base blue toward a lighter tint along the sweep.
 import { computed, useId } from 'vue'
 import { hyperPitchStops, tintHex } from '@/plugins/chartPalette'
+import { mp_color_chart_light_series1 } from '@/design-tokens/generated/tokens'
 
 const props = withDefaults(defineProps<{
   /** 0–100 */
@@ -19,7 +20,7 @@ const props = withDefaults(defineProps<{
   emboss?: boolean
 }>(), {
   sweep: 360,
-  color: '#0092D4',
+  color: mp_color_chart_light_series1,
   flat: false,
   emboss: false,
 })

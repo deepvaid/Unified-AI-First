@@ -23,7 +23,7 @@ const TABLE_DRAFT: DashboardWidgetDraft = {
 }
 
 const meta = {
-  title: 'Copilot/DvRefineDialog',
+  title: 'Product/Da Vinci/DvRefineDialog',
   component: DvRefineDialog,
   tags: ['autodocs'],
   args: {
@@ -32,8 +32,15 @@ const meta = {
     sourceLabel: 'Marketing → Email Campaigns · Last 30 days',
   },
   argTypes: {
-    draft: { control: 'object' },
-    sourceLabel: { control: 'text' },
+    modelValue: { control: 'boolean', description: 'Open state. `v-model` \u2014 the dialog emits `update:modelValue` and never closes itself.' },
+    draft: {
+      control: 'object',
+      description: '`DashboardWidgetDraft` being refined. The dialog seeds its title field and chart-type tiles from this and emits `apply` with the changed subset.',
+    },
+    sourceLabel: {
+      control: 'text',
+      description: 'Where the draft came from, shown as context in the header, e.g. the originating prompt or dashboard.',
+    },
   },
   parameters: {
     docs: {
@@ -75,4 +82,33 @@ export const Default: Story = {}
 /** Table draft — the Table tile starts selected. */
 export const TableDraft: Story = {
   args: { draft: TABLE_DRAFT },
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/** One structure — a two-column refine panel: the form on the left, a live preview on the right. Its variants are the visualisation tiles, which re-render the preview in place. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { DvRefineDialog },
+    setup: () => ({ args }),
+    template: `<DvRefineDialog v-bind="args" />`,
+  }),
+}
+
+/** There is no `size` prop — this is `MpDialog`'s `md` (640px). Phase 4 replaced its own `max-width="720"` and its `16×20 / 20 / 12×16` bands with the shell; the only inset this file still owns is the gap between its two columns. */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { DvRefineDialog },
+    setup: () => ({ args }),
+    template: `<DvRefineDialog v-bind="args" />`,
+  }),
+}
+
+/** Resting, mid-refresh (the preview shows a spinner while it re-renders), and a table draft where the preview is a grid rather than a chart. */
+export const States: Story = {
+  render: (args) => ({
+    components: { DvRefineDialog },
+    setup: () => ({ args }),
+    template: `<DvRefineDialog v-bind="args" />`,
+  }),
 }

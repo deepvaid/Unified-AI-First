@@ -4,13 +4,14 @@
 // `social`. This page is the base for gradient chart work: retune
 // SOCIAL_GRADIENT_TREATMENT / the socialGradient tokens in chartPalette.ts and
 // only this URL moves. Production /dashboard and ?chart=social stay untouched.
-import { computed, onBeforeUnmount, onErrorCaptured, onMounted, ref, useId, watch } from 'vue'
+import { computed, onBeforeUnmount, onErrorCaptured, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import DashboardGrid from '@/components/dashboards/DashboardGrid.vue'
 import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
 import WidgetWizardDrawer from '@/components/dashboards/WidgetWizardDrawer.vue'
 import DashboardFormDialog from '@/components/dashboards/DashboardFormDialog.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpDialog from '@/components/MpDialog.vue'
 import { accentToVuetifyColor } from '@/components/dashboards/dashboardOptions'
 import type { WidgetSize } from '@/components/dashboards/widgetSizePresets'
 import type {
@@ -155,7 +156,6 @@ const expandedWidgetOpen = computed({
     if (!isOpen) expandedWidgetId.value = null
   },
 })
-const expandedWidgetTitleId = useId()
 const activeWidgetDraft = computed<DashboardWidgetDraft | null>(() => {
   const draft = dashboardsStore.widgetEditorDraft
   if (!draft || draft.dashboardId !== activeDashboardId.value) return null
@@ -764,31 +764,22 @@ function toggleFavoriteActive() {
       :dashboard="editDashboardTarget"
     />
 
-    <v-dialog v-model="expandedWidgetOpen" max-width="1120" width="calc(100vw - 32px)" :aria-labelledby="expandedWidgetTitleId">
-      <v-card v-if="expandedWidget" rounded="lg" flat border color="surface" class="dashboard-widget-expand">
-        <div class="dashboard-widget-expand__header">
-          <div class="dashboard-widget-expand__copy">
-            <div class="dashboard-widget-expand__eyebrow">Expanded widget</div>
-            <div :id="expandedWidgetTitleId" class="dashboard-widget-expand__title">{{ expandedWidget.title }}</div>
-          </div>
-          <v-btn
-            icon="x"
-            variant="text"
-            size="small"
-            :aria-label="`Close ${expandedWidget.title}`"
-            @click="expandedWidgetOpen = false"
-          />
-        </div>
-        <div class="dashboard-widget-expand__body">
-          <DashboardWidgetCard
-            :account-id="accountId"
-            :widget="expandedWidget"
-            :filters="activeDashboard?.filters ?? defaultDashboardFilters"
-            :show-actions="false"
-          />
-        </div>
-      </v-card>
-    </v-dialog>
+    <MpDialog
+      v-model="expandedWidgetOpen"
+      size="lg"
+      flush
+      eyebrow="Expanded widget"
+      :title="expandedWidget?.title ?? ''"
+    >
+      <div v-if="expandedWidget" class="dashboard-widget-expand__body">
+        <DashboardWidgetCard
+          :account-id="accountId"
+          :widget="expandedWidget"
+          :filters="activeDashboard?.filters ?? defaultDashboardFilters"
+          :show-actions="false"
+        />
+      </div>
+    </MpDialog>
 
     <MpConfirmDialog
       :model-value="!!confirmAction"
@@ -810,48 +801,12 @@ function toggleFavoriteActive() {
   gap: 24px;
 }
 
-.dashboard-widget-expand {
-  overflow: hidden;
-  background: var(--surface-primary) !important;
-}
-
-.dashboard-widget-expand__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.dashboard-widget-expand__copy {
-  min-width: 0;
-}
-
-.dashboard-widget-expand__eyebrow {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.dashboard-widget-expand__title {
-  overflow: hidden;
-  margin-top: 3px;
-  color: var(--text-primary);
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
+/* The expanded-widget stage. MpDialog is `flush` here, so this div is the frame:
+   it owns the widget's height and tint, which no dialog shell can decide. */
 .dashboard-widget-expand__body {
   height: min(68vh, 620px);
   min-height: 360px;
-  padding: 16px;
+  padding: var(--mp-space-16);
   background: var(--surface-secondary);
 }
 

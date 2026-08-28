@@ -36,7 +36,7 @@ const TOP_CAMPAIGNS: DashboardTableData = {
 }
 
 const meta = {
-  title: 'Dashboards/Widgets/DashboardTableWidget',
+  title: 'Product/Dashboards/Widgets/DashboardTableWidget',
   component: DashboardTableWidget,
   tags: ['autodocs'],
   parameters: {
@@ -51,7 +51,10 @@ const meta = {
     data: RECENT_ORDERS,
   },
   argTypes: {
-    data: { control: 'object' },
+    data: {
+      control: 'object',
+      description: '`DashboardTableData` — `{ columns, rows }`. A column with `cellType: \'status\'` renders an `MpStatusChip`; a campaign+revenue table with no status column instead renders the meter-list treatment, so the column set changes the layout, not just the content.',
+    },
   },
   render: (args) => ({
     components: { DashboardTableWidget },
@@ -99,4 +102,68 @@ export const StatusChipColumns: Story = {
       },
     },
   },
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/** Two structures, chosen from the data: a real table, and the campaign meter-list a campaign/revenue shape renders as instead. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { DashboardTableWidget },
+    setup: () => ({ args }),
+    template: `<DashboardTableWidget v-bind="args" />`,
+  }),
+}
+
+/**
+ * There is no `size` prop — a widget fills the grid cell it is placed in. What Phase 4
+ * (P4-1) guarantees is that the **inset** does not change with the cell: the distance from
+ * the card's border to this widget's content is `component.card.padding` at every size,
+ * inherited from the card standard set in Phase 3 rather than a second widget-only pair.
+ *
+ * Rendered below at three cell sizes inside a real `DashboardWidgetCard` — run your eye down
+ * the left edges.
+ */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { DashboardTableWidget },
+    setup: () => ({ args }),
+    template: `
+      <div class="d-flex ga-6 flex-wrap align-start">
+        <div style="width: 280px; height: 220px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardTableWidget v-bind="args" /></v-card></div>
+        <div style="width: 420px; height: 260px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardTableWidget v-bind="args" /></v-card></div>
+        <div style="width: 620px; height: 300px"><v-card flat border rounded="lg" class="h-100 pa-5"><DashboardTableWidget v-bind="args" /></v-card></div>
+      </div>
+    `,
+  }),
+}
+
+/** Populated, with status-chip columns, and empty. */
+export const States: Story = {
+  render: (args) => ({
+    components: { DashboardTableWidget },
+    setup: () => ({ args }),
+    template: `<DashboardTableWidget v-bind="args" />`,
+  }),
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** The widget where it actually lives — inside a `DashboardWidgetCard`, in a
+ * dashboard row beside its siblings. This is the composition P4-1 is judged on: the header
+ * band, the body inset and the footer are the card's, and every widget in the family sits on
+ * the same edge.
+ */
+export const InContextDashboardRow: Story = {
+  render: (args) => ({
+    components: { DashboardTableWidget },
+    setup: () => ({ args }),
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--mp-space-16); align-items: stretch">
+        <v-card flat border rounded="lg" style="height: 280px" class="pa-5"><DashboardTableWidget v-bind="args" /></v-card>
+        <v-card flat border rounded="lg" style="height: 280px" class="pa-5"><DashboardTableWidget v-bind="args" /></v-card>
+      </div>
+    `,
+  }),
 }

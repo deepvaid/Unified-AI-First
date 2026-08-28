@@ -8,46 +8,46 @@
 .mp-display-md,
 .mp-display-lg,
 .mp-display-xl {
-  font-family: var(--mp-typography-fontFamily-base);
+  font-family: var(--mp-fontFamily-base);
   color: rgb(var(--v-theme-on-background));
   font-feature-settings: 'ss01', 'cv11';
   margin: 0;
 }
 .mp-display-sm {
-  font-size: var(--mp-typography-display-sm-fontSize);
-  line-height: var(--mp-typography-display-sm-lineHeight);
-  letter-spacing: var(--mp-typography-display-sm-letterSpacing);
-  font-weight: var(--mp-typography-display-sm-fontWeight);
+  font-size: var(--mp-display-sm-fontSize);
+  line-height: var(--mp-display-sm-lineHeight);
+  letter-spacing: var(--mp-display-sm-letterSpacing);
+  font-weight: var(--mp-display-sm-fontWeight);
 }
 .mp-display-md {
-  font-size: var(--mp-typography-display-md-fontSize);
-  line-height: var(--mp-typography-display-md-lineHeight);
-  letter-spacing: var(--mp-typography-display-md-letterSpacing);
-  font-weight: var(--mp-typography-display-md-fontWeight);
+  font-size: var(--mp-display-md-fontSize);
+  line-height: var(--mp-display-md-lineHeight);
+  letter-spacing: var(--mp-display-md-letterSpacing);
+  font-weight: var(--mp-display-md-fontWeight);
 }
 .mp-display-lg {
-  font-size: var(--mp-typography-display-lg-fontSize);
-  line-height: var(--mp-typography-display-lg-lineHeight);
-  letter-spacing: var(--mp-typography-display-lg-letterSpacing);
-  font-weight: var(--mp-typography-display-lg-fontWeight);
+  font-size: var(--mp-display-lg-fontSize);
+  line-height: var(--mp-display-lg-lineHeight);
+  letter-spacing: var(--mp-display-lg-letterSpacing);
+  font-weight: var(--mp-display-lg-fontWeight);
 }
 .mp-display-xl {
-  font-size: var(--mp-typography-display-xl-fontSize);
-  line-height: var(--mp-typography-display-xl-lineHeight);
-  letter-spacing: var(--mp-typography-display-xl-letterSpacing);
-  font-weight: var(--mp-typography-display-xl-fontWeight);
+  font-size: var(--mp-display-xl-fontSize);
+  line-height: var(--mp-display-xl-lineHeight);
+  letter-spacing: var(--mp-display-xl-letterSpacing);
+  font-weight: var(--mp-display-xl-fontWeight);
 }
 
 .mp-eyebrow {
-  font-size: var(--mp-typography-fontSize-xs);
-  font-weight: var(--mp-typography-fontWeight-semibold);
-  letter-spacing: var(--mp-typography-letterSpacing-eyebrow);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
+  letter-spacing: var(--mp-letterSpacing-eyebrow);
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
 /* ─── Semantic type utilities (confident editorial) ────────────
-   Consume --mp-typography-semantic-* tokens. Title-size classes
+   Consume --mp-text-* tokens. Title-size classes
    get the same font-feature-settings as .mp-display-* above. ── */
 .mp-page-title,
 .mp-kpi-value,
@@ -58,59 +58,59 @@
 
 .mp-page-title {
   margin: 0;
-  font-size: var(--mp-typography-semantic-pageTitle-fontSize);
-  font-weight: var(--mp-typography-semantic-pageTitle-fontWeight);
-  letter-spacing: var(--mp-typography-semantic-pageTitle-letterSpacing);
-  line-height: var(--mp-typography-semantic-pageTitle-lineHeight);
+  font-size: var(--mp-text-pageTitle-fontSize);
+  font-weight: var(--mp-text-pageTitle-fontWeight);
+  letter-spacing: var(--mp-text-pageTitle-letterSpacing);
+  line-height: var(--mp-text-pageTitle-lineHeight);
 }
 
 .mp-page-subtitle {
   margin: 0;
-  font-size: var(--mp-typography-semantic-pageSubtitle-fontSize);
-  font-weight: var(--mp-typography-semantic-pageSubtitle-fontWeight);
-  letter-spacing: var(--mp-typography-semantic-pageSubtitle-letterSpacing);
-  line-height: var(--mp-typography-semantic-pageSubtitle-lineHeight);
+  font-size: var(--mp-text-pageSubtitle-fontSize);
+  font-weight: var(--mp-text-pageSubtitle-fontWeight);
+  letter-spacing: var(--mp-text-pageSubtitle-letterSpacing);
+  line-height: var(--mp-text-pageSubtitle-lineHeight);
   color: var(--text-secondary);
 }
 
 .mp-kpi-value {
   margin: 0;
-  font-size: var(--mp-typography-semantic-kpiValue-fontSize);
-  font-weight: var(--mp-typography-semantic-kpiValue-fontWeight);
-  letter-spacing: var(--mp-typography-semantic-kpiValue-letterSpacing);
+  font-size: var(--mp-text-kpiValue-fontSize);
+  font-weight: var(--mp-text-kpiValue-fontWeight);
+  letter-spacing: var(--mp-text-kpiValue-letterSpacing);
   font-variant-numeric: tabular-nums;
 }
 
 .mp-kpi-value--hero {
   margin: 0;
-  font-size: var(--mp-typography-semantic-kpiValueHero-fontSize);
-  font-weight: var(--mp-typography-semantic-kpiValueHero-fontWeight);
-  letter-spacing: var(--mp-typography-semantic-kpiValueHero-letterSpacing);
-  line-height: var(--mp-typography-semantic-kpiValueHero-lineHeight);
+  font-size: var(--mp-text-kpiValueHero-fontSize);
+  font-weight: var(--mp-text-kpiValueHero-fontWeight);
+  letter-spacing: var(--mp-text-kpiValueHero-letterSpacing);
+  line-height: var(--mp-text-kpiValueHero-lineHeight);
   font-variant-numeric: tabular-nums;
 }
 
 .mp-section-title {
   margin: 0;
-  font-size: var(--mp-typography-semantic-sectionTitle-fontSize);
-  font-weight: var(--mp-typography-semantic-sectionTitle-fontWeight);
-  letter-spacing: var(--mp-typography-semantic-sectionTitle-letterSpacing);
+  font-size: var(--mp-text-sectionTitle-fontSize);
+  font-weight: var(--mp-text-sectionTitle-fontWeight);
+  letter-spacing: var(--mp-text-sectionTitle-letterSpacing);
 }
 
 .mp-meta-label,
 .mp-label-value dt {
-  font-size: var(--mp-typography-semantic-metaLabel-fontSize);
-  font-weight: var(--mp-typography-semantic-metaLabel-fontWeight);
-  letter-spacing: var(--mp-typography-semantic-metaLabel-letterSpacing);
-  text-transform: var(--mp-typography-semantic-metaLabel-textTransform);
+  font-size: var(--mp-text-metaLabel-fontSize);
+  font-weight: var(--mp-text-metaLabel-fontWeight);
+  letter-spacing: var(--mp-text-metaLabel-letterSpacing);
+  text-transform: var(--mp-text-metaLabel-textTransform);
 }
 
 .mp-meta-value,
 .mp-label-value dd {
   margin: 0;
-  font-size: var(--mp-typography-semantic-metaValue-fontSize);
-  font-weight: var(--mp-typography-semantic-metaValue-fontWeight);
-  line-height: var(--mp-typography-semantic-metaValue-lineHeight);
+  font-size: var(--mp-text-metaValue-fontSize);
+  font-weight: var(--mp-text-metaValue-fontWeight);
+  line-height: var(--mp-text-metaValue-lineHeight);
 }
 
 /* Two-tone stacked headline — direct children stack; .is-muted keeps the
@@ -159,7 +159,7 @@
   background: var(--ink-panel-bg);
   color: var(--ink-panel-fg);
   border: 1px solid var(--ink-panel-border);
-  border-radius: var(--mp-component-card-radius-lg);
+  border-radius: var(--mp-component-card-radius);
 }
 .mp-ink-panel .mp-meta-label,
 .mp-ink-panel .mp-ink-panel__muted {
@@ -178,7 +178,7 @@ html, body, #app {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: var(--mp-typography-fontFamily-base);
+  font-family: var(--mp-fontFamily-base);
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -208,7 +208,9 @@ a {
 /* Tabular nums for numeric values */
 .num { font-variant-numeric: tabular-nums; }
 
-/* Icon-only button — compact 32×32 ghost circle */
+/* Icon-only button — compact 32×32 ghost circle.
+   !important: VBtn's global default writes border-radius as an inline style
+   (maropostTheme.ts), and inline styles outrank any class (P1-8). */
 .mp-btn--icon {
   width: 32px !important;
   height: 32px !important;
@@ -246,7 +248,7 @@ a {
 }
 
 .v-application {
-  font-family: var(--mp-typography-fontFamily-base);
+  font-family: var(--mp-fontFamily-base);
   color: rgb(var(--v-theme-on-background));
 }
 
@@ -272,6 +274,31 @@ a {
   border-color: var(--mp-border-subtle) !important;
 }
 
+/* Disabled buttons (P6-15). Vuetify styles these with hardcoded alphas rather
+   than theme colours — `opacity: .26` on most variants, and for flat/elevated an
+   `rgba(on-surface, .26)` label over an `.v-btn__overlay` at 46% — so no token
+   could reach them and a disabled primary in a modal footer measured ~2.1:1
+   against the surface it sat on. 1.4.3 exempts disabled controls, but a footer's
+   primary action is the thing a user is looking for, and "invisible" is a worse
+   answer than "clearly unavailable". The pair is declared in tokens.json and
+   machine-checked at 3:1 against both the button fill and --surface-overlay.
+   The fill itself is deliberately NOT raised to 3:1: that would render a disabled
+   action heavier than an enabled secondary one. */
+.v-btn--disabled:is(.v-btn--variant-flat, .v-btn--variant-elevated) {
+  color: var(--on-button-disabled) !important;
+  background: var(--button-disabled) !important;
+  opacity: 1;
+}
+
+.v-btn--disabled:is(.v-btn--variant-flat, .v-btn--variant-elevated) .v-btn__overlay {
+  opacity: 0;
+}
+
+.v-btn--disabled:is(.v-btn--variant-text, .v-btn--variant-outlined, .v-btn--variant-tonal) {
+  color: var(--on-button-disabled) !important;
+  opacity: 1;
+}
+
 .v-field {
   transition:
     box-shadow var(--dur-fast) var(--ease),
@@ -279,29 +306,13 @@ a {
     background-color var(--dur-fast) var(--ease);
 }
 
-/* A11Y-001: settings-form.scss's "Global Outlined Field Baseline" hardcodes
-   the resting outline border to --border-subtle (an opaque #e2e8f0-family token)
-   at full element opacity, which composites to ~1.2:1 against white/canvas —
-   far under the 3:1 non-text contrast floor. Override at higher specificity
-   (sanctioned by that file's own "components may add scoped specificity
-   overrides" note) with a translucent mix of the existing --text-secondary
-   token, which clears 3:1 on both tiers (white 3.56:1, canvas 3.39:1) and
-   inherits correctly into dark via the same semantic var. Hover/focus/error
-   keep their own selectors (higher- or differently-scoped) and are untouched. */
-:is(.v-application, .v-overlay-container, [class*='v-theme--'])
-  .v-field--variant-outlined:not(.v-field--focused):not(:hover):not(.v-field--error)
-  .v-field__outline__start,
-:is(.v-application, .v-overlay-container, [class*='v-theme--'])
-  .v-field--variant-outlined:not(.v-field--focused):not(:hover):not(.v-field--error)
-  .v-field__outline__end,
-:is(.v-application, .v-overlay-container, [class*='v-theme--'])
-  .v-field--variant-outlined:not(.v-field--focused):not(:hover):not(.v-field--error)
-  .v-field__outline__notch::before,
-:is(.v-application, .v-overlay-container, [class*='v-theme--'])
-  .v-field--variant-outlined:not(.v-field--focused):not(:hover):not(.v-field--error)
-  .v-field__outline__notch::after {
-  border-color: color-mix(in srgb, var(--text-secondary) 75%, transparent) !important;
-}
+/* A11Y-001 (resolved in P5.5-12, 2026-08-28): this block used to win the
+   resting outlined-field border by out-specifying settings-form.scss's
+   baseline. It stays removed — settings-form.scss is the single owner of
+   field chrome, per its own header contract — but the accepted-risk record
+   that replaced it is gone: --border-strong now clears the 3:1 non-text
+   floor in both themes, so the baseline is compliant on its own rather than
+   by specificity accident. See settings-form.scss's resting-border comment. */
 
 /* VCard variant="flat" is transparent in Vuetify 3. Force solid surface
    background on all cards/sheets/steppers inside overlays/dialogs.
@@ -324,7 +335,7 @@ a {
   letter-spacing: 0;
   font-size: 13px;
   text-transform: none;
-  font-weight: var(--mp-typography-fontWeight-semibold);
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .mp-toggle-group .v-btn {
@@ -389,9 +400,13 @@ a {
   background: rgba(var(--v-theme-on-surface), 0.04);
 }
 
-/* Storybook / app canvas background (theme-aware) */
+/* Storybook / app canvas background (theme-aware).
+   P5.5: pairs its ink with its fill. The Storybook copy of this rule lives in
+   .storybook/preview.css (which wins there, loading after this manifest); this
+   one serves the in-app design sandbox. Both state the same contract. */
 .mp-story-canvas {
   background: rgb(var(--v-theme-background));
+  color: rgb(var(--v-theme-on-background));
   min-height: 100vh;
   width: 100%;
 }
@@ -447,7 +462,7 @@ tr:focus-within .action-btns {
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);
   box-shadow: none;
-  border-radius: $mp-borderRadius-xl;
+  border-radius: $mp-radius-full;
   padding: 16px 24px;
 }
 
@@ -494,14 +509,33 @@ tr:focus-within .action-btns {
   font-variant-numeric: tabular-nums;
 }
 
-/* Cell padding has to out-specify Vuetify, which sets it with the `padding: 0 16px`
+/* Row geometry (P4-4). Height is a token decision now, not a side effect of
+   padding + line-height — `component.table.rowMinHeight` states the 48px body
+   row outright, so a cell with a chip in it and a cell with plain text render
+   the same height. MpTableSkeleton pins itself to the same three tokens.
+
+   The padding has to out-specify Vuetify, which sets it with the `padding: 0 16px`
    SHORTHAND on `.v-table > .v-table__wrapper > table > tbody > tr > td` — same
    specificity as the rule above but later in source order, so a bare
    `padding-block` there is silently overridden (it computed to 0px for months).
-   Adding `.v-application` wins on specificity without `!important`, matching how
-   the A11Y-001 field-outline fix above scopes itself. */
+   Adding `.v-application` wins on specificity without `!important` — the same
+   technique settings-form.scss's field-border rules use. That same shorthand is
+   why `padding-inline` is restated here rather than inherited: it was Vuetify's
+   implicit 16, now it is `component.table.cellPaddingInline` and moves with the
+   token. */
 .v-application .v-table > .v-table__wrapper > table > tbody > tr > td {
-  padding-block: 14px;
+  height: var(--mp-component-table-rowMinHeight);
+  padding-block: var(--mp-component-table-cellPaddingBlock);
+  padding-inline: var(--mp-component-table-cellPaddingInline);
+}
+
+/* Header columns take the SAME inline inset as the body cells, from the same
+   token, so a column's label can never sit off-axis from its values. Stated in
+   this rule (not the header rule further down) deliberately: both land at the
+   same specificity as the sub-`sm` compact override below, and only being
+   earlier in source order lets that override win. */
+.v-application .v-table > .v-table__wrapper > table > thead > tr > th {
+  padding-inline: var(--mp-component-table-cellPaddingInline);
 }
 
 /* Phone-width table density. Vuetify's 16px inline padding costs 32px per column,
@@ -514,13 +548,15 @@ tr:focus-within .action-btns {
 @media (max-width: 599.98px) {
   .v-application .v-table > .v-table__wrapper > table > tbody > tr > td,
   .v-application .v-table > .v-table__wrapper > table > thead > tr > th {
-    padding-inline: var(--mp-spacing-2);
+    padding-inline: var(--mp-component-table-cellPaddingInlineCompact);
   }
 }
 
-/* First data column reads slightly stronger — the row's "identity" cell. */
+/* First data column reads slightly stronger — the row's "identity" cell.
+   Matched to MpListRow's title weight (`medium`) so a table's identity cell and
+   a list row's title read the same; 550 was on no stop of the 5-step scale. */
 .v-table .v-table__wrapper > table > tbody > tr > td:first-child {
-  font-weight: 550;
+  font-weight: var(--mp-fontWeight-medium);
 }
 
 /* Silent tables — whisper-quiet row hover wash. */
@@ -533,17 +569,26 @@ tr:focus-within .action-btns {
   font-variant-numeric: tabular-nums;
 }
 
+/* Header row (P4-4). It used to be `padding-block: 5px` against the body's 14 —
+   a ~22px header above ~48px rows, with the label collapsed onto the type rather
+   than centred in a row. `component.table.headerMinHeight` puts it on the shared
+   40px control baseline (the same one buttons, form fields and nav items sit on),
+   and `vertical-align: middle` centres the label against that height instead of
+   letting the padding define it. letter-spacing stays a raw value: it is a
+   typographic axis with no scale in tokens.json (Phase 2 exemption). */
 .v-table .v-table__wrapper > table > thead > tr > th,
 .v-data-table .v-table__wrapper > table > thead > tr > th.v-data-table__th {
   background: transparent;
   border-bottom-color: var(--mp-border-table-header);
   color: var(--text-muted) !important;
-  font-size: 11px !important;
+  font-size: var(--mp-fontSize-11) !important;
   line-height: 1.05 !important;
-  font-weight: var(--mp-typography-fontWeight-semibold) !important;
+  font-weight: var(--mp-fontWeight-semibold) !important;
   letter-spacing: 0.25px !important;
   text-transform: uppercase;
-  padding-block: 5px !important;
+  height: var(--mp-component-table-headerMinHeight);
+  padding-block: var(--mp-component-table-headerPaddingBlock) !important;
+  vertical-align: middle;
 }
 
 .v-table .v-table__wrapper > table > thead > tr > th .v-data-table-header__content,
@@ -577,7 +622,7 @@ tr:focus-within .action-btns {
 .v-table__wrapper {
   background-repeat: no-repeat;
   background-position: right top, right top;
-  background-size: var(--mp-spacing-7) 100%, var(--mp-spacing-7) 100%;
+  background-size: var(--mp-space-28) 100%, var(--mp-space-28) 100%;
   background-attachment: local, scroll;
   background-image:
     linear-gradient(to left, rgb(var(--v-theme-surface)), rgb(var(--v-theme-surface))),
@@ -629,7 +674,7 @@ tr:focus-within .action-btns {
      stamps a `.rounded-lg` utility class, and Vuetify's own utility classes
      are always !important, so removing it here would let that win instead. */
   border: 1px solid var(--border-default);
-  border-radius: var(--mp-borderRadius-md) !important;
+  border-radius: var(--mp-radius-12) !important;
   box-shadow: var(--elevation-overlay);
   overflow: hidden;
 }
@@ -637,11 +682,11 @@ tr:focus-within .action-btns {
 /* Menu items float inside the surface (inset + rounded) rather than
    running edge-to-edge. */
 .v-menu > .v-overlay__content > .v-list {
-  padding: var(--mp-spacing-1);
+  padding: var(--mp-space-4);
 }
 /* !important: VListItem stamps a `rounded-0 !important` utility class by default */
 .v-menu > .v-overlay__content .v-list-item {
-  border-radius: var(--mp-borderRadius-chip) !important;
+  border-radius: var(--mp-component-chip-radius) !important;
 }
 
 /* UX-008: trailing checkmark on the selected option inside select/menu
@@ -732,12 +777,17 @@ tr:focus-within .action-btns {
 }
 
 /* ─── Card radius unification ─────────────────────────────────────── */
-/* Every default card resolves to our token (16px) instead of Vuetify's 8px
-   `rounded="lg"`, so cards match dialogs, dashboard widgets, and ink panels
-   product-wide. Scoped to the default `.rounded-lg` so any card that opts into
-   a different radius (rounded="sm"/"md"/"0") is left alone. */
+/* Every default card resolves to component.card.radius (radius.16) instead of
+   Vuetify's 8px `rounded="lg"`, so cards match dialogs, dashboard widgets, and
+   ink panels product-wide. Scoped to the default `.rounded-lg` so any card that
+   opts into a different radius (rounded="sm"/"md"/"0") is left alone.
+
+   !important is load-bearing and stays (DESIGN_AUDIT P1-8): Vuetify emits its own
+   `.rounded-lg` utility with !important, so specificity alone never wins. Retiring
+   it means dropping `rounded="lg"` from 631 template sites across 188 components —
+   that belongs to the Phase 2–4 component passes, not to a foundations pass. */
 .v-card.rounded-lg {
-  border-radius: var(--mp-component-card-radius-lg) !important;
+  border-radius: var(--mp-component-card-radius) !important;
 }
 
 /* ─── Frame-fill shell utility ────────────────────────────────────── */
@@ -768,33 +818,28 @@ tr:focus-within .action-btns {
 }
 
 /* ─── Dialog shell normalization ─────────────────────────────────── */
-/* Ensures v-dialog cards always have consistent radius and surface. */
+/* Ensures v-dialog cards always have consistent radius and surface.
+   Same !important rationale as the card rule above (P1-8). */
 .v-dialog > .v-overlay__content > .v-card,
 .v-dialog > .v-overlay__content > .v-sheet {
-  border-radius: var(--mp-component-dialog-radius-default) !important;
+  border-radius: var(--mp-component-dialog-radius) !important;
   background: var(--surface-overlay) !important;
   border: 1px solid var(--border-default) !important;
   box-shadow: var(--elevation-modal) !important;
 }
 
-/* Normalize dialog card title typography */
-.v-dialog .v-card-title {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: 1.35;
-}
 
-/* Footer actions always right-aligned; gap between buttons */
+/* The two `.v-card-title` size rules that used to follow are gone (P6-7). They set
+   a third overlay title size — 15px, against MpDialog's 16 and MpFormDrawer's 18 —
+   left over from when a dialog was a raw `v-card`. Every overlay composes a shell
+   now, so the shell owns the title; the four `v-card-title` uses left in the app
+   are page cards that set their own size. The radius/surface block above stays as
+   the safety net for AppBar's one exempted raw dialog.
+
+   `.v-card-actions` likewise only reaches a raw `v-card` inside a dialog body —
+   the shells lay out their own footers on `component.dialog.footerGap`. */
 .v-dialog .v-card-actions {
-  gap: 8px;
-}
-
-/* Drawer card titles share same type scale */
-.v-navigation-drawer .v-card-title {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0;
+  gap: var(--mp-component-dialog-footerGap);
 }
 
 /* ─── Snackbar ────────────────────────────────────────────────── */

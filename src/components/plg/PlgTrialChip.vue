@@ -135,14 +135,14 @@ function openTalkToSales() {
 .plg-trial-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 5px 12px;
+  gap: var(--mp-space-6);
+  height: var(--mp-component-chip-height-lg);
+  padding-inline: var(--mp-space-12);
   border: 1px solid transparent;
-  border-radius: var(--r-pill, 999px);
+  border-radius: var(--mp-radius-full);
   font: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   appearance: none;
   cursor: pointer;
   flex-shrink: 0;
@@ -184,8 +184,8 @@ function openTalkToSales() {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  padding: 16px 16px 12px;
+  gap: var(--mp-space-10);
+  padding: var(--mp-space-16) var(--mp-space-16) var(--mp-space-12);
 }
 
 .plg-trial-menu__title {
@@ -193,23 +193,23 @@ function openTalkToSales() {
 }
 
 .plg-trial-menu__section {
-  padding: 0 16px 14px;
+  padding: 0 var(--mp-space-16) var(--mp-space-14);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 
 .plg-trial-progress {
-  height: 6px;
-  border-radius: 999px;
+  height: var(--mp-space-6);
+  border-radius: var(--mp-radius-full);
   background: rgba(var(--v-theme-on-surface), 0.08);
   overflow: hidden;
 }
 
 .plg-trial-progress__fill {
   height: 100%;
-  border-radius: 999px;
-  transition: width 200ms ease;
+  border-radius: var(--mp-radius-full);
+  transition: width var(--mp-motion-duration-base) var(--mp-motion-easing-standard);
 }
 
 .plg-trial-progress__fill--primary {
@@ -228,20 +228,20 @@ function openTalkToSales() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--mp-space-8);
 }
 
 .plg-trial-limits {
   flex-direction: row;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--mp-space-6);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .plg-trial-menu__actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 4px 16px 16px;
+  gap: var(--mp-space-8);
+  padding: var(--mp-space-4) var(--mp-space-16) var(--mp-space-16);
 }
 </style>

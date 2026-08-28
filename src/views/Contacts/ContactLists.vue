@@ -12,6 +12,8 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -167,35 +169,24 @@ function confirmDelete() {
     </v-card>
 
     <!-- Create / edit list -->
-    <MpFormDrawer v-model="drawer" :title="editingId != null ? 'Edit List' : 'Create List'" :width="520">
-      <v-text-field v-model="form.name" label="List Name *" variant="outlined" density="comfortable" counter="150" maxlength="150" class="mb-4" />
-      <v-row dense>
-        <v-col cols="6">
-          <v-select v-model="form.type" label="List Type" :items="listTypes" variant="outlined" density="comfortable" class="mb-4" />
-        </v-col>
-        <v-col cols="6">
-          <v-text-field v-model="form.brand" label="Brand" variant="outlined" density="comfortable" class="mb-4" />
-        </v-col>
-      </v-row>
-      <v-text-field v-model="form.displayName" label="Display Name" variant="outlined" density="comfortable" class="mb-4" />
-      <v-textarea v-model="form.description" label="Description" variant="outlined" density="comfortable" rows="2" auto-grow class="mb-4" />
-      <v-row dense>
-        <v-col cols="6">
-          <v-text-field v-model="form.fromName" label="From Name" variant="outlined" density="comfortable" class="mb-4" />
-        </v-col>
-        <v-col cols="6">
-          <v-text-field v-model="form.fromEmail" label="From Email" type="email" variant="outlined" density="comfortable" class="mb-4" />
-        </v-col>
-      </v-row>
-      <v-row dense>
-        <v-col cols="6">
-          <v-text-field v-model="form.replyTo" label="Reply To" type="email" variant="outlined" density="comfortable" class="mb-4" />
-        </v-col>
-        <v-col cols="6">
-          <v-select v-model="form.language" label="Language" :items="languages" variant="outlined" density="comfortable" class="mb-4" />
-        </v-col>
-      </v-row>
-      <v-text-field v-model="form.address" label="Address *" variant="outlined" density="comfortable" prepend-inner-icon="map-pin" />
+    <MpFormDrawer v-model="drawer" :title="editingId != null ? 'Edit List' : 'Create List'">
+      <MpFormSection title="List details" />
+      <MpFormGrid :cols="2">
+        <v-text-field v-model="form.name" label="List Name *" counter="150" maxlength="150" class="mp-form-grid__full" />
+        <v-select v-model="form.type" label="List Type" :items="listTypes" />
+        <v-text-field v-model="form.brand" label="Brand" />
+        <v-text-field v-model="form.displayName" label="Display Name" class="mp-form-grid__full" />
+        <v-textarea v-model="form.description" label="Description" rows="3" auto-grow class="mp-form-grid__full" />
+      </MpFormGrid>
+
+      <MpFormSection title="Sender" />
+      <MpFormGrid :cols="2">
+        <v-text-field v-model="form.fromName" label="From Name" />
+        <v-text-field v-model="form.fromEmail" label="From Email" type="email" />
+        <v-text-field v-model="form.replyTo" label="Reply To" type="email" />
+        <v-select v-model="form.language" label="Language" :items="languages" />
+        <v-text-field v-model="form.address" label="Address *" prepend-inner-icon="map-pin" class="mp-form-grid__full" />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave()" @click="save">Save</v-btn>

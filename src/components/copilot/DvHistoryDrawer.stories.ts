@@ -53,7 +53,7 @@ function seedHistory(seeds: HistorySeed[]): string | undefined {
 }
 
 const meta = {
-  title: 'Copilot/DvHistoryDrawer',
+  title: 'Product/Da Vinci/DvHistoryDrawer',
   component: DvHistoryDrawer,
   tags: ['autodocs'],
   parameters: {
@@ -88,7 +88,7 @@ conversation; per-row and "Clear all" deletions route through \`MpConfirmDialog\
     },
   },
   parameters: {
-    layout: 'fullscreen',
+    canvas: 'full',
     // The drawer positions absolutely inside its host panel — isolate docs
     // examples in iframes so each story shows its own singleton state.
     docs: { story: { inline: false, height: '640px' } },
@@ -195,5 +195,34 @@ export const Empty: Story = {
         </div>
       </div>
     `,
+  }),
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/** Two structures: the full drawer and the narrow rail mode the copilot uses when it is docked beside a page. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { DvHistoryDrawer },
+    setup: () => ({ args }),
+    template: `<DvHistoryDrawer v-bind="args" />`,
+  }),
+}
+
+/** There is no `size` prop — the drawer takes its width from the copilot surface it lives in. Its rows sit on `component.listItem.*`, the same 40px floor as every other list in the system, so a history entry and a nav row line up. */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { DvHistoryDrawer },
+    setup: () => ({ args }),
+    template: `<DvHistoryDrawer v-bind="args" />`,
+  }),
+}
+
+/** Populated, and empty — a first session with nothing to look back at yet. */
+export const States: Story = {
+  render: (args) => ({
+    components: { DvHistoryDrawer },
+    setup: () => ({ args }),
+    template: `<DvHistoryDrawer v-bind="args" />`,
   }),
 }

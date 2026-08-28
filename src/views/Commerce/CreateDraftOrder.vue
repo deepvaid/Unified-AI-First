@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, useId } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   useCommerceStore,
@@ -15,6 +15,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpDialog from '@/components/MpDialog.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useToast } from '@/composables/useToast'
 
@@ -203,7 +204,6 @@ function markAsPaid() {
 
 // Payment link
 const paymentLinkDialog = ref(false)
-const paymentLinkDialogTitleId = useId()
 const paymentLink = ref('')
 const savedDraftId = ref<number | null>(null)
 function generatePaymentLink() {
@@ -505,7 +505,7 @@ onMounted(() => {
     </div>
 
     <!-- ── Address drawer ──────────────────────────────────────────── -->
-    <MpFormDrawer v-model="addressDrawer" :title="addressKind === 'shipping' ? 'Shipping Address' : 'Billing Address'" :width="420">
+    <MpFormDrawer v-model="addressDrawer" :title="addressKind === 'shipping' ? 'Shipping Address' : 'Billing Address'" size="sm">
       <v-row dense>
         <v-col cols="12"><v-text-field v-model="addressForm.name" label="Full name" /></v-col>
         <v-col cols="12"><v-text-field v-model="addressForm.line1" label="Address" /></v-col>
@@ -521,24 +521,21 @@ onMounted(() => {
     </MpFormDrawer>
 
     <!-- ── Payment link dialog ─────────────────────────────────────── -->
-    <v-dialog v-model="paymentLinkDialog" max-width="480" persistent :aria-labelledby="paymentLinkDialogTitleId">
-      <v-card rounded="lg" border flat class="pa-1">
-        <v-card-title :id="paymentLinkDialogTitleId" class="text-body-1 font-weight-bold d-flex align-center gap-2">
-          <v-icon color="success" size="20">circle-check</v-icon>
-          Payment link generated
-        </v-card-title>
-        <v-card-text class="pt-1">
-          <div class="text-body-2 text-medium-emphasis mb-3">
-            The draft is marked <strong>Invoice Sent</strong>. Share this link with {{ customer || 'the customer' }} to collect payment.
-          </div>
-          <v-text-field :model-value="paymentLink" readonly variant="outlined" density="compact" hide-details append-inner-icon="copy" @click:append-inner="copyPaymentLink" />
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" class="text-none" @click="copyPaymentLink">Copy Link</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" @click="closePaymentLink">Done</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <MpDialog v-model="paymentLinkDialog" size="sm" persistent title="Payment link generated">
+      <template #lead>
+        <v-icon color="success" size="20">circle-check</v-icon>
+      </template>
+
+      <div class="text-body-2 text-medium-emphasis">
+        The draft is marked <strong>Invoice Sent</strong>. Share this link with {{ customer || 'the customer' }} to collect payment.
+      </div>
+      <v-text-field :model-value="paymentLink" readonly variant="outlined" density="compact" hide-details append-inner-icon="copy" @click:append-inner="copyPaymentLink" />
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="copyPaymentLink">Copy Link</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" @click="closePaymentLink">Done</v-btn>
+      </template>
+    </MpDialog>
 
     <!-- ── Leave confirmation ──────────────────────────────────────── -->
     <MpConfirmDialog

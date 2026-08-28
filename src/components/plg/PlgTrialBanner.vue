@@ -77,10 +77,10 @@ function dismiss() {
 .plg-trial-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--mp-space-10);
   min-height: 44px;
   width: 100%;
-  padding: 6px 16px;
+  padding: var(--mp-space-6) var(--mp-space-16);
   color: rgb(var(--v-theme-on-surface));
 }
 
@@ -114,7 +114,7 @@ function dismiss() {
 .plg-trial-banner__actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
   flex-shrink: 0;
 }
 
@@ -124,9 +124,9 @@ function dismiss() {
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin-left: 2px;
+  margin-left: var(--mp-space-2);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: transparent;
   color: rgb(var(--v-theme-on-surface));
   opacity: 0.6;

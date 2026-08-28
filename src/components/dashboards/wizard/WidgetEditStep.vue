@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import { getMetricDescriptor } from '@/stores/dashboards/metricCatalog'
 import type {
   DashboardChartVariant,
@@ -92,30 +95,12 @@ const subtitleModel = computed({
 </script>
 
 <template>
-  <div class="widget-edit d-flex flex-column ga-5">
-    <div class="widget-edit__field">
-      <v-text-field
-        v-model="titleModel"
-        label="Title"
-        density="comfortable"
-        variant="outlined"
-        hide-details
-      />
-    </div>
+  <MpFormGrid class="widget-edit">
+    <v-text-field v-model="titleModel" label="Title" />
 
-    <div class="widget-edit__field">
-      <v-text-field
-        v-model="subtitleModel"
-        label="Subtitle"
-        placeholder="Optional"
-        density="comfortable"
-        variant="outlined"
-        hide-details
-      />
-    </div>
+    <v-text-field v-model="subtitleModel" label="Subtitle" hint="Optional — a line of context under the title." />
 
-    <div v-if="isChartCapable" class="widget-edit__field">
-      <div class="text-subtitle-2 font-weight-bold mb-3">Select chart type</div>
+    <MpFormField v-if="isChartCapable" label="Select chart type">
       <div class="widget-edit__chart-types">
         <button
           v-for="option in CHART_TYPES"
@@ -123,6 +108,7 @@ const subtitleModel = computed({
           type="button"
           class="widget-edit__chart-type"
           :class="{ 'widget-edit__chart-type--active': currentChartType === option.key }"
+          :aria-pressed="currentChartType === option.key"
           @click="selectChartType(option.key)"
         >
           <span class="widget-edit__chart-radio" aria-hidden="true">
@@ -132,24 +118,20 @@ const subtitleModel = computed({
           <span class="widget-edit__chart-label">{{ option.label }}</span>
         </button>
       </div>
-    </div>
+    </MpFormField>
 
-    <div class="widget-edit__preview-section">
-      <div class="widget-edit__preview-header">
-        <div class="text-subtitle-2 font-weight-bold">Preview</div>
-      </div>
-      <div class="widget-edit__preview-body">
-        <DashboardWidgetCard
-          v-if="previewWidget"
-          :account-id="accountId"
-          :widget="previewWidget"
-          :filters="filters"
-          preview
-          :show-actions="false"
-        />
-      </div>
+    <MpFormSection title="Preview" />
+    <div class="widget-edit__preview-body">
+      <DashboardWidgetCard
+        v-if="previewWidget"
+        :account-id="accountId"
+        :widget="previewWidget"
+        :filters="filters"
+        preview
+        :show-actions="false"
+      />
     </div>
-  </div>
+  </MpFormGrid>
 </template>
 
 <style scoped lang="scss">
@@ -160,16 +142,16 @@ const subtitleModel = computed({
 .widget-edit__chart-types {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 10px;
+  gap: var(--mp-space-10);
 }
 
 .widget-edit__chart-type {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: var(--mp-space-10);
+  padding: var(--mp-space-12) var(--mp-space-14);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--mp-component-input-radius);
   background: var(--surface-primary);
   cursor: pointer;
   font: inherit;
@@ -191,7 +173,7 @@ const subtitleModel = computed({
   width: 16px;
   height: 16px;
   border: 1.5px solid var(--border-subtle);
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: var(--surface-primary);
   flex-shrink: 0;
   display: inline-flex;
@@ -206,7 +188,7 @@ const subtitleModel = computed({
 .widget-edit__chart-radio-dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: rgb(var(--v-theme-primary));
 }
 
@@ -220,29 +202,16 @@ const subtitleModel = computed({
 }
 
 .widget-edit__chart-label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
-}
-
-.widget-edit__preview-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.widget-edit__preview-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
 }
 
 .widget-edit__preview-body {
   min-height: 280px;
-  padding: 16px;
+  padding: var(--mp-space-16);
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
   background: var(--surface-secondary);
 }
 

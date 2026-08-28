@@ -30,7 +30,7 @@ const KPI_DRAFT: DashboardWidgetDraft = {
 }
 
 const meta = {
-  title: 'Dashboards/Wizard/WidgetEditStep',
+  title: 'Product/Dashboards/Wizard/WidgetEditStep',
   component: WidgetEditStep,
   tags: ['autodocs'],
   parameters: {
@@ -47,8 +47,15 @@ const meta = {
     filters: FILTERS,
   },
   argTypes: {
-    draft: { control: 'object' },
-    filters: { control: 'object' },
+    accountId: { control: 'text', description: 'Account the widget belongs to, used to resolve the live preview data.' },
+    draft: {
+      control: 'object',
+      description: '`DashboardWidgetDraft` under edit. The step emits `update:draft` on every change, so the host owns the value.',
+    },
+    filters: {
+      control: 'object',
+      description: '`DashboardFilterState` used to render the live preview, so what you configure is what the dashboard will show.',
+    },
   },
   render: (args) => ({
     components: { WidgetEditStep },
@@ -82,4 +89,35 @@ export const ChartWidget: Story = {}
 
 export const KpiWidget: Story = {
   args: { draft: KPI_DRAFT },
+}
+
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/** The step renders a different form per widget type — chart, KPI, table — against the same
+ *  live preview. Those are its variants. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { WidgetEditStep },
+    setup: () => ({ args }),
+    template: `<WidgetEditStep v-bind="args" />`,
+  }),
+}
+
+/** There is no `size` prop — the step fills the wizard drawer's body and inherits its inset.
+ *  Its field rhythm comes from `component.field.groupGap`, the same one settings pages use. */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { WidgetEditStep },
+    setup: () => ({ args }),
+    template: `<WidgetEditStep v-bind="args" />`,
+  }),
+}
+
+/** Editing a chart and editing a KPI — the preview re-renders as the form changes. */
+export const States: Story = {
+  render: (args) => ({
+    components: { WidgetEditStep },
+    setup: () => ({ args }),
+    template: `<WidgetEditStep v-bind="args" />`,
+  }),
 }

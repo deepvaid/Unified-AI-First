@@ -5,7 +5,7 @@ import DvOrbitMicBar from './DvOrbitMicBar.vue'
 import '@/styles/dv-orbit.css'
 
 const meta = {
-  title: 'Copilot/Voice/DvOrbitMicBar',
+  title: 'Product/Da Vinci/Voice/DvOrbitMicBar',
   component: DvOrbitMicBar,
   tags: ['autodocs'],
   args: {
@@ -20,7 +20,10 @@ const meta = {
     ripple: { control: 'boolean', description: 'Twin violet/cyan ripple rings (ready/listening/responding)' },
     muted: { control: 'boolean', description: 'Gray mic with white slash (paused)' },
     ghost: { control: 'select', options: ['keyboard', 'cancel', 'none'], description: 'Right-side 40px ghost action' },
-    micLabel: { control: 'text' },
+    micLabel: {
+      control: 'text',
+      description: 'Caption under the mic button. It is also the button\'s accessible name, so it must describe the action, not the state — \\"Tap to talk\\", not \\"Listening\\".',
+    },
   },
   parameters: {
     docs: {

@@ -8,6 +8,7 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useMarketingAssetsStore()
@@ -134,27 +135,27 @@ function notify(text: string) { toast.success(text) }
         v-model="name"
         label="Name"
         placeholder="e.g. Dynamic Weather Header"
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
         :rules="[v => !!v || 'Name is required']"
       />
 
-      <div class="text-subtitle-2 font-weight-bold mb-2">Images in this group</div>
-      <p class="text-caption text-medium-emphasis mb-3">Pick images from your library to rotate based on open conditions.</p>
-      <v-list density="compact" class="oo-image-list" rounded="lg" border>
-        <v-list-item v-for="img in imagesStore.items" :key="img.id">
-          <template #prepend>
-            <v-checkbox-btn
-              :model-value="selectedImageIds.includes(img.id)"
-              @update:model-value="(v) => { selectedImageIds = v ? [...selectedImageIds, img.id] : selectedImageIds.filter(id => id !== img.id) }"
-            />
-          </template>
-          <v-list-item-title class="text-body-2">{{ img.name }}</v-list-item-title>
-          <v-list-item-subtitle class="text-caption">{{ img.size }}</v-list-item-subtitle>
-        </v-list-item>
-      </v-list>
-      <div v-if="selectedImageIds.length" class="text-caption text-medium-emphasis mt-2">
+      <MpFormField
+        label="Images in this group"
+        hint="Pick images from your library to rotate based on open conditions."
+      >
+        <v-list density="compact" class="oo-image-list" rounded="lg" border>
+          <v-list-item v-for="img in imagesStore.items" :key="img.id">
+            <template #prepend>
+              <v-checkbox-btn
+                :model-value="selectedImageIds.includes(img.id)"
+                @update:model-value="(v) => { selectedImageIds = v ? [...selectedImageIds, img.id] : selectedImageIds.filter(id => id !== img.id) }"
+              />
+            </template>
+            <v-list-item-title class="text-body-2">{{ img.name }}</v-list-item-title>
+            <v-list-item-subtitle class="text-caption">{{ img.size }}</v-list-item-subtitle>
+          </v-list-item>
+        </v-list>
+      </MpFormField>
+      <div v-if="selectedImageIds.length" class="text-caption text-medium-emphasis">
         {{ selectedImageIds.length }} image{{ selectedImageIds.length === 1 ? '' : 's' }} selected
       </div>
 

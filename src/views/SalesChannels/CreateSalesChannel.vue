@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import {
   CHANNEL_TYPE_LABELS,
   CONNECTED_CLOUD_LABELS,
@@ -182,76 +183,55 @@ const reviewRows = computed(() => {
             Keep setup lightweight. Deeper settings can be completed from the channel detail page.
           </div>
 
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="name"
-                label="Sales channel name"
-                variant="outlined"
-                density="comfortable"
-                :error="submitted && !name.trim()"
-                :error-messages="submitted && !name.trim() ? ['Name is required'] : []"
-              />
-            </v-col>
-            <v-col v-if="selectedType === 'web_store'" cols="12" md="6">
-              <v-text-field
-                v-model="domain"
-                label="Storefront domain"
-                placeholder="new-store.maropost.store"
-                variant="outlined"
-                density="comfortable"
-              />
-            </v-col>
-            <v-col cols="12">
-              <v-textarea
-                v-model="description"
-                label="Description"
-                rows="3"
-                variant="outlined"
-                density="comfortable"
-              />
-            </v-col>
+          <MpFormGrid :cols="2">
+            <v-text-field
+              v-model="name"
+              label="Sales channel name"
+              :error="submitted && !name.trim()"
+              :error-messages="submitted && !name.trim() ? ['Name is required'] : []"
+            />
+            <v-text-field
+              v-if="selectedType === 'web_store'"
+              v-model="domain"
+              label="Storefront domain"
+              placeholder="new-store.maropost.store"
+            />
+            <v-textarea
+              v-model="description"
+              label="Description"
+              rows="3"
+              class="mp-form-grid__full"
+            />
 
             <template v-if="selectedType === 'web_store'">
-              <v-col cols="12" md="6">
-                <v-switch
-                  v-model="storeBuilderEnabled"
-                  color="primary"
-                  label="Enable Store Builder"
-                  hide-details
-                />
-                <div class="text-caption text-medium-emphasis mt-1">
-                  Store Builder is managed from this Web Store channel.
-                </div>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-switch
-                  v-model="merchandiseConnected"
-                  color="primary"
-                  label="Connect Merchandise Cloud"
-                  hide-details
-                />
-                <div class="text-caption text-medium-emphasis mt-1">
-                  Merchandise settings apply to this Web Store only.
-                </div>
-              </v-col>
+              <v-switch
+                v-model="storeBuilderEnabled"
+                label="Enable Store Builder"
+                hint="Store Builder is managed from this Web Store channel."
+                persistent-hint
+              />
+              <v-switch
+                v-model="merchandiseConnected"
+                label="Connect Merchandise Cloud"
+                hint="Merchandise settings apply to this Web Store only."
+                persistent-hint
+              />
             </template>
 
-            <v-col v-if="selectedType === 'offline_store'" cols="12">
+            <template v-if="selectedType === 'offline_store'">
               <v-select
                 v-model="selectedLocationIds"
                 :items="locationOptions"
                 label="Initial locations"
-                variant="outlined"
-                density="comfortable"
                 multiple
                 chips
+                class="mp-form-grid__full"
               />
-              <v-alert type="info" variant="tonal" density="compact">
+              <v-alert type="info" variant="tonal" density="compact" class="mp-form-grid__full">
                 Locations are physical places owned by this Offline Store channel. Registers are managed from Location Detail.
               </v-alert>
-            </v-col>
-          </v-row>
+            </template>
+          </MpFormGrid>
         </section>
 
         <section v-else>

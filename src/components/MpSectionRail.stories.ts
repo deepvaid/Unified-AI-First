@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 import MpSectionRail from './MpSectionRail.vue'
+import MpListRow from './MpListRow.vue'
+import MpPageHeader from './MpPageHeader.vue'
+import MpSectionHeader from './MpSectionHeader.vue'
 import type { MpSectionRailGroup, MpSectionRailSwitchOption } from './MpSectionRail.vue'
+import { railFrame } from '@/stories/decorators'
 
 // The Storybook memory router resolves every path to the catch-all route named
 // "StorybookRoute" — items with match: ['StorybookRoute'] render as active.
@@ -51,11 +54,11 @@ const settingsGroups: MpSectionRailGroup[] = [
 ]
 
 const meta: Meta<typeof MpSectionRail> = {
-  title: 'Navigation/MpSectionRail',
+  title: 'Molecules/MpSectionRail',
   component: MpSectionRail,
   tags: ['autodocs'],
   parameters: {
-    layout: 'fullscreen',
+    canvas: 'full',
     docs: {
       description: {
         component: `
@@ -128,11 +131,7 @@ or there's only 2-3 destinations (inline tabs or \`MpFilterTabs\` are lighter).
     switch: { control: false, description: 'Event — emitted with the picked `switcherOptions` id when a switcher menu item is clicked.', table: { category: 'events' } },
     footer: { control: false, description: 'Slot — pinned below the section list, typically a primary action button.', table: { category: 'slots' } },
   },
-  decorators: [
-    () => ({
-      template: '<div style="display: flex; height: 560px; border: 1px solid var(--border-subtle); border-radius: 8px; overflow: hidden;"><story /><div style="flex: 1; background: rgb(var(--v-theme-background));" /></div>',
-    }),
-  ],
+  decorators: [railFrame()],
 }
 
 export default meta
@@ -226,7 +225,194 @@ export const AllElements: Story = {
   }),
 }
 
-export const DarkMode: Story = {
-  globals: darkModeGlobals,
-  ...StoreEditor,
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * The rail's two flavors, side by side. **Module** (a plain `title`, optional `searchable`,
+ * text-only rows) is what Settings uses; **entity** (`identity` + `switcherOptions` + a
+ * `backTo` link, icon rows) is what the store editor and Merchandising use. Same component,
+ * same row geometry — only the head of the rail differs.
+ *
+ * Phase 4 (P4-7) deleted `SettingsSidebar.vue`, which was a near-verbatim copy of this
+ * component at its own item height. The module flavor below is what replaced it.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpSectionRail },
+    setup: () => ({ settings: [
+        { title: 'Your Preferences', items: [
+          { slug: 'general', label: 'General', to: '/general', match: ['General'] },
+          { slug: 'notifications', label: 'Notifications', to: '/notifications', match: ['Notifications'] },
+        ]},
+        { title: 'Account Management', items: [
+          { slug: 'defaults', label: 'Account Defaults', to: '/defaults', match: ['Defaults'] },
+          { slug: 'billing', label: 'Account & Billing', to: '/billing', match: ['Billing'], external: true },
+          { slug: 'users', label: 'Users', to: '/users', match: ['Users'], count: 24 },
+          { slug: 'roles', label: 'Roles & Permissions', to: '/roles', match: ['Roles'] },
+        ]},
+        { title: 'Platform Setup', items: [
+          { slug: 'connections', label: 'Connections', to: '/connections', match: ['Connections'] },
+          { slug: 'dns', label: 'DNS Setup', to: '/dns', match: ['DNS'] },
+          { slug: 'integrations', label: 'Integrations', to: '/integrations', match: ['Integrations'] },
+        ]},
+      ], store: [
+        { items: [{ slug: 'overview', label: 'Overview', icon: 'layout-dashboard', to: '/overview', match: ['Overview'] }] },
+        { title: 'Customize', items: [{ slug: 'theme', label: 'Theme', icon: 'palette', to: '/theme', match: ['Theme'] }] },
+        { title: 'Store content', items: [
+          { slug: 'pages', label: 'Pages', icon: 'file-text', to: '/pages', match: ['Pages'], count: 12 },
+          { slug: 'menus', label: 'Menus', icon: 'menu', to: '/menus', match: ['Menus'] },
+          { slug: 'blogs', label: 'Blogs', icon: 'newspaper', to: '/blogs', match: ['Blogs'], count: 4 },
+          { slug: 'domains', label: 'Domains', icon: 'globe', to: '/domains', match: ['Domains'] },
+        ]},
+      ] }),
+    template: `
+      <div class="d-flex ga-8 align-stretch" style="min-height: 520px">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">module flavor — title + search, text rows</div>
+          <MpSectionRail ariaLabel="Settings navigation" title="Settings" searchable search-placeholder="Search Settings" :groups="settings" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">entity flavor — back link, identity + switcher, icon rows</div>
+          <MpSectionRail
+            ariaLabel="Store editor navigation"
+            back-to="/channels"
+            back-label="All sales channels"
+            :identity="{ name: 'Northwind Supply', caption: 'northwind.example.com', icon: 'globe' }"
+            :switcher-options="[{ id: 'b', label: 'Northwind Outlet', caption: 'outlet.example.com', icon: 'globe' }]"
+            switcher-label="Switch store"
+            :groups="store"
+          />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop — the rail is a fixed 260px column (`layout.sectionRailWidth`) and
+ * stretches to its shell's height. Its rows are `component.listItem.*`: the same 40px floor,
+ * 8px block padding and 12px inline inset that `AppSidebar`, `MpListRow` and the app bar's
+ * menu rows use. Shown here against a plain button and a list row so the shared baseline is
+ * visible.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpSectionRail, MpListRow },
+    setup: () => ({ settings: [
+        { title: 'Your Preferences', items: [
+          { slug: 'general', label: 'General', to: '/general', match: ['General'] },
+          { slug: 'notifications', label: 'Notifications', to: '/notifications', match: ['Notifications'] },
+        ]},
+        { title: 'Account Management', items: [
+          { slug: 'defaults', label: 'Account Defaults', to: '/defaults', match: ['Defaults'] },
+          { slug: 'billing', label: 'Account & Billing', to: '/billing', match: ['Billing'], external: true },
+          { slug: 'users', label: 'Users', to: '/users', match: ['Users'], count: 24 },
+          { slug: 'roles', label: 'Roles & Permissions', to: '/roles', match: ['Roles'] },
+        ]},
+        { title: 'Platform Setup', items: [
+          { slug: 'connections', label: 'Connections', to: '/connections', match: ['Connections'] },
+          { slug: 'dns', label: 'DNS Setup', to: '/dns', match: ['DNS'] },
+          { slug: 'integrations', label: 'Integrations', to: '/integrations', match: ['Integrations'] },
+        ]},
+      ] }),
+    template: `
+      <div class="d-flex ga-8 align-start" style="min-height: 480px">
+        <MpSectionRail ariaLabel="Settings navigation" title="Settings" :groups="settings" />
+        <div class="pt-4" style="min-width: 280px">
+          <div class="text-caption text-medium-emphasis mb-2">the same 40px baseline, outside the rail</div>
+          <div class="d-flex flex-column ga-3">
+            <v-btn variant="outlined" class="text-none" block>A button</v-btn>
+            <v-text-field variant="outlined" density="comfortable" hide-details placeholder="A form field" />
+            <MpListRow variant="boxed" title="A list row" />
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * Row states: resting, active (accent bar + primary label + `aria-current="page"`), a count
+ * chip, an external-link row, and the empty result of a search that matches nothing. Tab
+ * through the rail to see the focus ring.
+ */
+export const States: Story = {
+  render: () => ({
+    components: { MpSectionRail },
+    setup: () => ({
+      groups: [
+        { title: 'Row states', items: [
+          { slug: 'resting', label: 'Resting row', icon: 'circle', to: '/resting', match: ['Nope'] },
+          { slug: 'active', label: 'Active row', icon: 'circle-check', to: '/active', match: ['ActiveRoute'] },
+          { slug: 'count', label: 'With a count', icon: 'inbox', to: '/count', match: ['Nope'], count: 24 },
+          { slug: 'external', label: 'Leaves this shell', icon: 'credit-card', to: '/ext', match: ['Nope'], external: true },
+          { slug: 'long', label: 'A section name long enough to need truncating', icon: 'file-text', to: '/long', match: ['Nope'] },
+        ]},
+      ],
+    }),
+    template: `
+      <div class="d-flex ga-8 align-start" style="min-height: 420px">
+        <MpSectionRail ariaLabel="Row states" title="States" :groups="groups" />
+        <div class="pt-4 text-body-2 text-medium-emphasis" style="max-width: 320px">
+          The active row is decided by <code>route.name ∈ item.match</code>, so it lights up on a
+          section's child routes too. Its accent bar is held off the row's ends by
+          <code>component.nav.activeBarInset</code> — the same mark, at the same inset, in every rail.
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** The Settings workspace as it actually renders: the rail beside a real
+ * settings page. This is the flavor that replaced `SettingsSidebar` in Phase 4 — the rail
+ * already had `title` and `searchable` for exactly this, and Retail and Merchandising were
+ * already using it.
+ */
+export const InContextSettingsWorkspace: Story = {
+  render: () => ({
+    components: { MpSectionRail, MpPageHeader, MpSectionHeader },
+    setup: () => ({ groups: [
+        { title: 'Your Preferences', items: [
+          { slug: 'general', label: 'General', to: '/general', match: ['General'] },
+          { slug: 'notifications', label: 'Notifications', to: '/notifications', match: ['Notifications'] },
+        ]},
+        { title: 'Account Management', items: [
+          { slug: 'defaults', label: 'Account Defaults', to: '/defaults', match: ['Defaults'] },
+          { slug: 'billing', label: 'Account & Billing', to: '/billing', match: ['Billing'], external: true },
+          { slug: 'users', label: 'Users', to: '/users', match: ['Users'], count: 24 },
+          { slug: 'roles', label: 'Roles & Permissions', to: '/roles', match: ['Roles'] },
+        ]},
+        { title: 'Platform Setup', items: [
+          { slug: 'connections', label: 'Connections', to: '/connections', match: ['Connections'] },
+          { slug: 'dns', label: 'DNS Setup', to: '/dns', match: ['DNS'] },
+          { slug: 'integrations', label: 'Integrations', to: '/integrations', match: ['Integrations'] },
+        ]},
+      ] }),
+    template: `
+      <div class="d-flex align-stretch" style="min-height: 560px; border: 1px solid var(--border-subtle); border-radius: var(--mp-component-card-radius); overflow: hidden">
+        <MpSectionRail ariaLabel="Settings navigation" title="Settings" searchable search-placeholder="Search Settings" :groups="groups" />
+        <div class="flex-grow-1 pa-6" style="min-width: 0; background: var(--surface-canvas)">
+          <MpPageHeader eyebrow="Settings · Your Preferences" title="General" subtitle="Personal information and global preferences. These apply only to you." />
+          <v-card flat border rounded="lg" class="mt-6 pa-5">
+            <MpSectionHeader title="Personal Info" />
+            <div class="d-flex ga-4 mt-4">
+              <v-text-field label="First name" model-value="Ross Andrew" variant="outlined" density="comfortable" hide-details />
+              <v-text-field label="Last name" model-value="Paquette" variant="outlined" density="comfortable" hide-details />
+            </div>
+            <div class="d-flex ga-4 mt-4">
+              <v-text-field label="Email" model-value="ross@maropost.com" variant="outlined" density="comfortable" hide-details />
+              <v-select label="Timezone" model-value="America/New_York" :items="['America/New_York','UTC']" variant="outlined" density="comfortable" hide-details />
+            </div>
+          </v-card>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
 }

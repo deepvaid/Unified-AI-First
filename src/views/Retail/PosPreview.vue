@@ -6,6 +6,7 @@ import { useContactsStore, LOYALTY_TIER_LABELS, type Contact, type LoyaltyTier }
 import { useCommerceStore } from '@/stores/useCommerce'
 import type { Order, TenderType } from '@/stores/useCommerce'
 import { useElementSize } from '@/composables/useElementSize'
+import MpDialog from '@/components/MpDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -2308,59 +2309,53 @@ const apkQrUrl = computed(() =>
     </div><!-- pos-stage -->
 
     <!-- Discount dialog (small floating) -->
-    <v-dialog v-model="discountDialogOpen" max-width="340">
-      <v-card rounded="lg" class="pa-5">
-        <div class="text-subtitle-1 font-weight-bold mb-3">Apply discount</div>
-        <v-text-field
-          v-model.number="pendingDiscount"
-          label="Discount %"
-          type="number"
-          :min="0"
-          :max="100"
-          variant="outlined"
-          density="compact"
-          suffix="%"
-        />
-        <div class="d-flex justify-end gap-2 mt-3">
-          <v-btn variant="text" class="text-none" @click="discountDialogOpen = false">Cancel</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" @click="applyDiscount">Apply</v-btn>
-        </div>
-      </v-card>
-    </v-dialog>
+    <MpDialog v-model="discountDialogOpen" size="sm" title="Apply discount">
+      <v-text-field
+        v-model.number="pendingDiscount"
+        label="Discount %"
+        type="number"
+        :min="0"
+        :max="100"
+        variant="outlined"
+        density="compact"
+        suffix="%"
+      />
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="discountDialogOpen = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" @click="applyDiscount">Apply</v-btn>
+      </template>
+    </MpDialog>
 
     <!-- New customer dialog -->
-    <v-dialog v-model="newCustomerOpen" max-width="360">
-      <v-card rounded="lg" class="pa-5">
-        <div class="text-subtitle-1 font-weight-bold mb-3">New customer</div>
-        <v-text-field
-          v-model="newCustomerDraft.name"
-          label="Full name"
-          variant="outlined"
-          density="compact"
-          prepend-inner-icon="user"
-          class="mb-2"
-        />
-        <v-text-field
-          v-model="newCustomerDraft.email"
-          label="Email"
-          variant="outlined"
-          density="compact"
-          prepend-inner-icon="mail"
-          class="mb-2"
-        />
-        <v-text-field
-          v-model="newCustomerDraft.phone"
-          label="Phone"
-          variant="outlined"
-          density="compact"
-          prepend-inner-icon="phone"
-        />
-        <div class="d-flex justify-end gap-2 mt-3">
-          <v-btn variant="text" class="text-none" @click="newCustomerOpen = false">Cancel</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" :disabled="!newCustomerDraft.name.trim()" @click="saveNewCustomer">Save</v-btn>
-        </div>
-      </v-card>
-    </v-dialog>
+    <MpDialog v-model="newCustomerOpen" size="sm" title="New customer">
+      <v-text-field
+        v-model="newCustomerDraft.name"
+        label="Full name"
+        variant="outlined"
+        density="compact"
+        prepend-inner-icon="user"
+      />
+      <v-text-field
+        v-model="newCustomerDraft.email"
+        label="Email"
+        variant="outlined"
+        density="compact"
+        prepend-inner-icon="mail"
+      />
+      <v-text-field
+        v-model="newCustomerDraft.phone"
+        label="Phone"
+        variant="outlined"
+        density="compact"
+        prepend-inner-icon="phone"
+      />
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="newCustomerOpen = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!newCustomerDraft.name.trim()" @click="saveNewCustomer">Save</v-btn>
+      </template>
+    </MpDialog>
 
     <!-- Sale complete toast -->
     <v-snackbar v-model="saleCompleteVisible" :timeout="3000" color="success" location="top right">

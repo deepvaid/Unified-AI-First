@@ -6,6 +6,9 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 import type { JourneyTemplate } from '@/stores/journeyFlowData'
@@ -221,24 +224,24 @@ onMounted(() => {
               <h2 class="text-h6 font-weight-bold mb-1">Journey settings</h2>
               <p class="text-body-2 text-medium-emphasis mb-5">Name it now — everything else can change later.</p>
 
-              <v-text-field v-model="name" label="Journey name" variant="outlined" density="comfortable"
-                autofocus :rules="[(v: string) => !!v.trim() || 'Journey name is required']" class="mb-2" />
+              <MpFormGrid :cols="2">
+                <v-text-field v-model="name" class="mp-form-grid__full" label="Journey name"
+                  autofocus :rules="[(v: string) => !!v.trim() || 'Journey name is required']" />
 
-              <div class="text-caption font-weight-bold text-medium-emphasis text-uppercase mb-2">Schedule (optional)</div>
-              <div class="d-flex gap-3 mb-4">
-                <v-text-field v-model="endDate" label="End date" type="date" variant="outlined" density="comfortable" hide-details />
-                <v-text-field v-model="endTime" label="End time" type="time" variant="outlined" density="comfortable" hide-details />
-              </div>
+                <MpFormSection title="Schedule (optional)" />
+                <v-text-field v-model="endDate" label="End date" type="date" />
+                <v-text-field v-model="endTime" label="End time" type="time" />
 
-              <v-divider class="mb-4" />
+                <v-divider class="mp-form-grid__full" />
 
-              <v-switch v-model="enableOnSave" color="primary" density="compact" hide-details class="mb-2"
-                label="Enable journey on save" />
-              <div class="text-caption text-medium-emphasis mb-4 ml-12">Off = journey is created as a draft you can activate later.</div>
+                <v-switch v-model="enableOnSave" class="mp-form-grid__full"
+                  label="Enable journey on save"
+                  hint="Off = journey is created as a draft you can activate later." persistent-hint />
 
-              <v-switch v-model="retrigger" color="primary" density="compact" hide-details class="mb-2"
-                label="Allow contacts to re-enter (retrigger)" />
-              <div class="text-caption text-medium-emphasis ml-12">Contacts who finish the journey can enter it again.</div>
+                <v-switch v-model="retrigger" class="mp-form-grid__full"
+                  label="Allow contacts to re-enter (retrigger)"
+                  hint="Contacts who finish the journey can enter it again." persistent-hint />
+              </MpFormGrid>
             </v-card>
           </v-col>
 
@@ -268,34 +271,34 @@ onMounted(() => {
               <h2 class="text-h6 font-weight-bold mb-1">Tell Da Vinci the goal</h2>
               <p class="text-body-2 text-medium-emphasis mb-4">One short brief replaces the interview — you can refine after.</p>
 
-              <div class="text-caption font-weight-bold text-medium-emphasis text-uppercase mb-2">Goal</div>
-              <div class="d-flex flex-wrap gap-2 mb-4">
-                <v-chip v-for="g in goalOptions" :key="g.key" :prepend-icon="g.icon" size="small"
-                  :color="brief.goal === g.key ? 'primary' : undefined"
-                  :variant="brief.goal === g.key ? 'flat' : 'outlined'"
-                  class="text-none" @click="brief.goal = g.key">
-                  {{ g.label }}
-                </v-chip>
-              </div>
+              <MpFormGrid>
+                <MpFormField label="Goal">
+                  <template #default="{ labelId }">
+                    <v-chip-group v-model="brief.goal" mandatory :aria-labelledby="labelId">
+                      <v-chip v-for="g in goalOptions" :key="g.key" :value="g.key" :prepend-icon="g.icon" filter>
+                        {{ g.label }}
+                      </v-chip>
+                    </v-chip-group>
+                  </template>
+                </MpFormField>
 
-              <div class="text-caption font-weight-bold text-medium-emphasis text-uppercase mb-2">Audience</div>
-              <div class="d-flex flex-wrap gap-2 mb-4">
-                <v-chip v-for="a in audienceOptions" :key="a" size="small"
-                  :color="brief.audience === a ? 'primary' : undefined"
-                  :variant="brief.audience === a ? 'flat' : 'outlined'"
-                  class="text-none" @click="brief.audience = a">
-                  {{ a }}
-                </v-chip>
-              </div>
+                <MpFormField label="Audience">
+                  <template #default="{ labelId }">
+                    <v-chip-group v-model="brief.audience" mandatory :aria-labelledby="labelId">
+                      <v-chip v-for="a in audienceOptions" :key="a" :value="a" filter>
+                        {{ a }}
+                      </v-chip>
+                    </v-chip-group>
+                  </template>
+                </MpFormField>
 
-              <v-text-field v-model="brief.brand" label="Brand / store name" placeholder="e.g. Acme Coffee"
-                variant="outlined" density="comfortable" class="mb-3" hide-details />
-              <v-text-field v-model="brief.offer" label="Offer or hook (optional)" placeholder="e.g. 15% off your first order"
-                variant="outlined" density="comfortable" class="mb-4" hide-details />
+                <v-text-field v-model="brief.brand" label="Brand / store name" placeholder="e.g. Acme Coffee" />
+                <v-text-field v-model="brief.offer" label="Offer or hook (optional)" placeholder="e.g. 15% off your first order" />
 
-              <v-btn color="primary" variant="flat" block class="text-none" prepend-icon="sparkles" @click="generateDraft">
-                {{ draft ? 'Update draft' : 'Generate draft' }}
-              </v-btn>
+                <v-btn color="primary" variant="flat" block class="text-none" prepend-icon="sparkles" @click="generateDraft">
+                  {{ draft ? 'Update draft' : 'Generate draft' }}
+                </v-btn>
+              </MpFormGrid>
             </v-card>
           </v-col>
 
@@ -343,11 +346,10 @@ onMounted(() => {
                   </tbody>
                 </v-table>
 
-                <div class="d-flex align-center gap-4 mt-auto flex-wrap">
-                  <v-text-field v-model="aiName" label="Journey name" variant="outlined" density="comfortable"
-                    hide-details style="min-width: 240px; flex: 1;" />
-                  <v-switch v-model="aiEnable" color="primary" density="compact" hide-details label="Enable on save" />
-                </div>
+                <MpFormGrid :cols="2" class="mt-auto">
+                  <v-text-field v-model="aiName" label="Journey name" />
+                  <v-switch v-model="aiEnable" label="Enable on save" />
+                </MpFormGrid>
               </template>
 
               <div v-else class="flex-grow-1 d-flex flex-column align-center justify-center text-center pa-8">

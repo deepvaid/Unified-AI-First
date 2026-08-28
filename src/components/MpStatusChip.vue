@@ -6,12 +6,12 @@ type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral'
 const props = withDefaults(defineProps<{
   status: string
   type?: 'order' | 'fulfillment' | 'payment' | 'campaign' | 'contact' | 'ticket' | 'coupon' | 'priority' | 'connection' | 'stock' | 'general'
-  size?: 'x-small' | 'small' | 'default'
+  size?: 'sm' | 'md' | 'lg'
   variant?: 'flat' | 'tonal' | 'outlined'
   showIcon?: boolean
 }>(), {
   type: 'general',
-  size: 'small',
+  size: 'md',
   variant: 'tonal',
   showIcon: false,
 })
@@ -137,15 +137,21 @@ const chipIcon = computed(() => {
   return iconMap[props.type]?.[key]
 })
 
-const iconPx = computed(() => (props.size === 'x-small' ? 11 : props.size === 'small' ? 12 : 13))
+const iconPx = computed(() => ({ sm: 11, md: 12, lg: 13 } as const)[props.size])
+
+/* Vuetify's own size names, mapped from the shared sm|md|lg vocabulary (P2-1).
+   Its rendered heights (20/24/32) already match component.chip.height.*, but the
+   scoped rules below assert the token so the ramp survives a Vuetify default change. */
+const vuetifySize = computed(() => ({ sm: 'x-small', md: 'small', lg: 'default' } as const)[props.size])
 </script>
 
 <template>
   <v-chip
-    :size="size"
+    :size="vuetifySize"
     :variant="variant"
     :color="chipColor"
     class="mp-status-chip"
+    :class="`mp-status-chip--${size}`"
     label
   >
     <v-icon v-if="chipIcon" :size="iconPx" class="me-1 mp-status-chip__icon">{{ chipIcon }}</v-icon>
@@ -157,10 +163,18 @@ const iconPx = computed(() => (props.size === 'x-small' ? 11 : props.size === 's
 /* Quiet, editorial chips: smaller tracked label, on-container text kept at full
    strength for contrast, tonal fill dropped to ~60% of Vuetify's default. */
 .mp-status-chip.v-chip {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 0.01em;
+  padding-inline: var(--mp-component-chip-paddingInline);
+  border-radius: var(--mp-component-chip-radius);
 }
+
+/* One chip height ramp across the system (P2-4) — was 20/22/34px on three
+   unrelated chips. Asserted here rather than inherited from Vuetify's size map. */
+.mp-status-chip--sm.v-chip { height: var(--mp-component-chip-height-sm); }
+.mp-status-chip--md.v-chip { height: var(--mp-component-chip-height-md); }
+.mp-status-chip--lg.v-chip { height: var(--mp-component-chip-height-lg); }
 
 /* Reduce the tonal underlay to ~60% of Vuetify's default (0.12 → 0.072) so the
    container reads as a whisper of colour. Text stays the dark on-container colour,

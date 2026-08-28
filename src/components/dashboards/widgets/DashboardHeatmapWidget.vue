@@ -3,7 +3,8 @@
 // grid rather than ApexCharts' heatmap because that renderer has no cell-gap
 // control and no per-cell labels — both of which this design needs.
 import { computed, inject, ref, unref } from 'vue'
-import { CHART_PALETTE_OVERRIDE, tintHex, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
+import { CHART_PALETTE_OVERRIDE, readableInkOn, tintHex, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
+import { mp_color_chart_light_series1 } from '@/design-tokens/generated/tokens'
 import type { DashboardHeatmapData } from '@/stores/dashboards/types'
 import { formatCompactValue, formatFullValue, formatPercent } from '@/utils/formatNumber'
 
@@ -16,7 +17,7 @@ const themeOverride = inject(CHART_PALETTE_OVERRIDE, undefined)
 const resolvedTheme = computed<ChartTheme>(() => unref(themeOverride) ?? theme.value)
 
 /** Anchor colour for the ramp: the theme's lead series colour. */
-const anchor = computed(() => resolvedTheme.value.series[0] ?? '#0092D4')
+const anchor = computed(() => resolvedTheme.value.series[0] ?? mp_color_chart_light_series1)
 
 const maxCell = computed(() => {
   let max = 0
@@ -34,11 +35,16 @@ const totalValue = computed(() => {
 /**
  * Zero reads as an empty cell (a faint wash), never as a printed "0" — the
  * reference matrix drowned in zeroes. Everything else ramps from a light tint
- * to the full anchor colour; the top of the ramp flips its text to white.
+ * to the full anchor colour.
+ *
+ * The ink comes from `readableInkOn(background)`, not from the theme. `tintHex`
+ * mixes toward white in both themes, so a cell's fill is light regardless of
+ * theme; the previous `var(--text-primary)` followed the theme instead and
+ * rendered near-white on those light tints in dark mode (P5.5).
  */
 function cellStyle(value: number) {
   if (value <= 0) {
-    return { background: 'var(--surface-secondary, rgba(26, 24, 20, 0.03))', color: 'transparent' }
+    return { background: 'var(--surface-secondary)', color: 'transparent' }
   }
   const ratio = maxCell.value > 0 ? value / maxCell.value : 0
   // Perceptual easing: without it, one outlier flattens the whole matrix.
@@ -46,7 +52,7 @@ function cellStyle(value: number) {
   const background = tintHex(anchor.value, 1 - Math.max(0.12, eased))
   return {
     background,
-    color: eased > 0.62 ? '#ffffff' : 'var(--text-primary)',
+    color: readableInkOn(background),
   }
 }
 
@@ -144,7 +150,7 @@ const ariaLabel = computed(() => {
 .heatmap-widget {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--mp-space-12);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -160,7 +166,7 @@ const ariaLabel = computed(() => {
 
 .heatmap-widget__grid {
   display: grid;
-  gap: 4px;
+  gap: var(--mp-space-4);
   align-content: start;
   min-height: 0;
   height: 100%;
@@ -174,7 +180,7 @@ const ariaLabel = computed(() => {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: 2px;
+  padding-bottom: var(--mp-space-2);
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -184,9 +190,9 @@ const ariaLabel = computed(() => {
 .heatmap-widget__row-label {
   display: flex;
   align-items: center;
-  padding-right: 8px;
-  font-size: 12px;
-  font-weight: 500;
+  padding-right: var(--mp-space-8);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -198,9 +204,9 @@ const ariaLabel = computed(() => {
   align-items: center;
   justify-content: center;
   min-height: 30px;
-  padding: 0 4px;
+  padding: 0 var(--mp-space-4);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--mp-component-chip-radius);
   cursor: default;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
@@ -216,8 +222,8 @@ const ariaLabel = computed(() => {
 }
 
 .heatmap-widget__cell-value {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
@@ -236,9 +242,9 @@ const ariaLabel = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--mp-space-12);
   flex-wrap: wrap;
-  padding-top: 10px;
+  padding-top: var(--mp-space-10);
   border-top: 1px solid var(--border-subtle);
   min-height: 34px;
 }
@@ -246,13 +252,13 @@ const ariaLabel = computed(() => {
 .heatmap-widget__readout {
   display: inline-flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--mp-space-8);
   min-width: 0;
 }
 
 .heatmap-widget__readout-label {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -260,15 +266,15 @@ const ariaLabel = computed(() => {
 }
 
 .heatmap-widget__readout-value {
-  font-size: 13px;
-  font-weight: 650;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .heatmap-widget__readout-share {
-  font-size: 11.5px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -276,9 +282,9 @@ const ariaLabel = computed(() => {
 .heatmap-widget__hint {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
-  font-weight: 500;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
   min-width: 0;
   white-space: nowrap;
@@ -289,19 +295,19 @@ const ariaLabel = computed(() => {
 .heatmap-widget__scale {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--mp-space-4);
   flex-shrink: 0;
 }
 
 .heatmap-widget__scale-cap {
-  font-size: 10.5px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
 }
 
 .heatmap-widget__scale-swatch {
   width: 14px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--mp-radius-4);
 }
 </style>

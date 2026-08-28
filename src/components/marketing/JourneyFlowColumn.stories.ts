@@ -22,7 +22,7 @@ const SELECTABLE = buildSegments(instantiateTemplate('abandoned-cart', 1))
 const DATA_FLOW = buildSegments(instantiateFrom(dataJourneyTemplates[0]!, 'sb'))
 
 const meta = {
-  title: 'Marketing/JourneyFlowColumn',
+  title: 'Product/Marketing/Journeys/JourneyFlowColumn',
   component: JourneyFlowColumn,
   tags: ['autodocs'],
   parameters: {
@@ -48,9 +48,19 @@ and \`remove\` are graph edits owned by JourneyBuilder.
     selectedId: null,
   },
   argTypes: {
-    segments: { control: false },
-    selectedId: { control: false },
-    catalog: { control: false },
+    flashId: { control: 'text', description: 'Node to pulse once, for jump-to-issue. The parent clears it on a timer \u2014 the column does not reset it.' },
+    segments: {
+      control: false,
+      description: '`FlowSegment[]` — the journey\'s nodes in order, already grouped into segments. Each node\'s `category` picks the accent that drives its spine, icon tile and eyebrow from one colour.',
+    },
+    selectedId: {
+      control: false,
+      description: 'Id of the currently selected node, or `null` for none. Selection is controlled — the column emits `select` and never changes this itself.',
+    },
+    catalog: {
+      control: false,
+      description: '`CatalogItem[]` offered by the add-step menus. Defaults to the marketing catalog; pass a narrower list to restrict what can be inserted.',
+    },
   },
   render: (args) => ({
     components: { JourneyFlowColumn },

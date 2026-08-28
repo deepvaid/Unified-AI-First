@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvDocsAssistant from './DvDocsAssistant.vue'
 
 const meta = {
-  title: 'Copilot/DvDocsAssistant',
+  title: 'Product/Da Vinci/DvDocsAssistant',
   component: DvDocsAssistant,
   tags: ['autodocs'],
   parameters: {
@@ -31,7 +31,10 @@ FAQ" — try a starter chip to see it.
 ## Don'ts
 - Don't use it for product/commerce questions — that is MpDaVinciBot's job
 - Don't wire it to the global copilot store — its isolation is the point
-        `,
+
+### Controls
+This component takes **no props** — the Controls panel is empty by design. Its answers come from the \`useDesignSystemKnowledge()\` composable (\`retrieve\`, \`bestFaqMatch\`, \`starterChips\`), so what it can answer is changed there, not here.
+`,
       },
     },
   },

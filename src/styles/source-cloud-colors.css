@@ -1,34 +1,52 @@
+/**
+ * Per-cloud identity colors — alias layer only.
+ *
+ * P5.5: the values used to be hardcoded here, which put a whole second semantic
+ * palette outside tokens.json/build.mjs. They now live at
+ * `color.{light,dark}.cloud.*` and this file only maps them onto the public
+ * `--cloud-*` names, the same shape mp-theme-aliases.css uses.
+ *
+ * `accent` is the mark/icon fill (3:1 non-text minimum); `text` is the readable
+ * ink for cloud labels and links (4.5:1). Both are enforced by
+ * `npm run contrast:check`.
+ */
+
 :root {
-  --cloud-commerce-accent: #16a34a;
-  --cloud-commerce-text: #166534;
-  --cloud-marketing-accent: #7c3aed;
-  --cloud-marketing-text: #5b21b6;
-  --cloud-analytics-accent: #2563eb;
-  --cloud-analytics-text: #1d4ed8;
-  --cloud-contacts-accent: #0891b2;
-  --cloud-contacts-text: #155e75;
-  --cloud-service-accent: #4f46e5;
-  --cloud-service-text: #3730a3;
-  --cloud-retail-accent: #0d9488;
-  --cloud-retail-text: #0f766e;
-  --cloud-retail-link: #0f766e;
-  --cloud-retail-link-hover: #0d6260;
+  --cloud-commerce-accent: var(--mp-color-light-cloud-commerce-accent);
+  --cloud-commerce-text: var(--mp-color-light-cloud-commerce-text);
+  --cloud-marketing-accent: var(--mp-color-light-cloud-marketing-accent);
+  --cloud-marketing-text: var(--mp-color-light-cloud-marketing-text);
+  --cloud-analytics-accent: var(--mp-color-light-cloud-analytics-accent);
+  --cloud-analytics-text: var(--mp-color-light-cloud-analytics-text);
+  --cloud-contacts-accent: var(--mp-color-light-cloud-contacts-accent);
+  --cloud-contacts-text: var(--mp-color-light-cloud-contacts-text);
+  --cloud-service-accent: var(--mp-color-light-cloud-service-accent);
+  --cloud-service-text: var(--mp-color-light-cloud-service-text);
+  --cloud-retail-accent: var(--mp-color-light-cloud-retail-accent);
+  --cloud-retail-text: var(--mp-color-light-cloud-retail-text);
+  --cloud-retail-link: var(--mp-color-light-cloud-retail-link);
+  --cloud-retail-link-hover: var(--mp-color-light-cloud-retail-linkHover);
 }
 
+/* P5.5: the dark selector was `.v-application.v-theme--maropostDark`, which can
+   never match in Storybook — there the theme class lands on <body> and on the
+   v-app root, never on a `.v-application` ANCESTOR of these consumers. The bare
+   class is the form the rest of the system uses (see mp-theme-aliases.css), and
+   it also covers teleported drawers/dialogs that render outside .v-application. */
 [data-theme='dark'],
-.v-application.v-theme--maropostDark {
-  --cloud-commerce-accent: #4ade80;
-  --cloud-commerce-text: #86efac;
-  --cloud-marketing-accent: #a78bfa;
-  --cloud-marketing-text: #c4b5fd;
-  --cloud-analytics-accent: #60a5fa;
-  --cloud-analytics-text: #93c5fd;
-  --cloud-contacts-accent: #22d3ee;
-  --cloud-contacts-text: #67e8f9;
-  --cloud-service-accent: #818cf8;
-  --cloud-service-text: #a5b4fc;
-  --cloud-retail-accent: #2dd4bf;
-  --cloud-retail-text: #5eead4;
-  --cloud-retail-link: #5eead4;
-  --cloud-retail-link-hover: #99f6e4;
+.v-theme--maropostDark {
+  --cloud-commerce-accent: var(--mp-color-dark-cloud-commerce-accent);
+  --cloud-commerce-text: var(--mp-color-dark-cloud-commerce-text);
+  --cloud-marketing-accent: var(--mp-color-dark-cloud-marketing-accent);
+  --cloud-marketing-text: var(--mp-color-dark-cloud-marketing-text);
+  --cloud-analytics-accent: var(--mp-color-dark-cloud-analytics-accent);
+  --cloud-analytics-text: var(--mp-color-dark-cloud-analytics-text);
+  --cloud-contacts-accent: var(--mp-color-dark-cloud-contacts-accent);
+  --cloud-contacts-text: var(--mp-color-dark-cloud-contacts-text);
+  --cloud-service-accent: var(--mp-color-dark-cloud-service-accent);
+  --cloud-service-text: var(--mp-color-dark-cloud-service-text);
+  --cloud-retail-accent: var(--mp-color-dark-cloud-retail-accent);
+  --cloud-retail-text: var(--mp-color-dark-cloud-retail-text);
+  --cloud-retail-link: var(--mp-color-dark-cloud-retail-link);
+  --cloud-retail-link-hover: var(--mp-color-dark-cloud-retail-linkHover);
 }

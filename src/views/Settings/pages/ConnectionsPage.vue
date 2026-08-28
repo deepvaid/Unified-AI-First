@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -64,7 +66,7 @@ function generateKey() {
                 <div class="connection-card__sub">User: {{ k.user }}</div>
               </div>
               <div class="connection-card__actions">
-                <MpStatusChip :status="k.status" type="general" size="x-small" />
+                <MpStatusChip :status="k.status" type="general" size="sm" />
                 <v-btn icon="copy" variant="text" size="small" color="primary" aria-label="Copy key" />
                 <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Revoke key" />
               </div>
@@ -86,7 +88,7 @@ function generateKey() {
           <div class="connection-card__header">
             <div class="connection-card__title">{{ w.label }}</div>
             <div class="connection-card__actions">
-              <MpStatusChip :status="w.status" type="general" size="x-small" />
+              <MpStatusChip :status="w.status" type="general" size="sm" />
               <v-btn icon="circle-play" variant="text" size="small" color="primary" aria-label="Test endpoint" />
               <v-btn icon="pencil" variant="text" size="small" aria-label="Edit" />
               <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Delete" />
@@ -103,25 +105,21 @@ function generateKey() {
 
   <!-- Generate Key Drawer -->
   <MpFormDrawer v-model="addKeyDrawer" title="Generate API Key" subtitle="Create a new key for server-to-server access.">
-    <v-row dense class="mt-1">
-      <v-col cols="12">
-        <v-text-field
-          v-model="newKeyLabel"
-          label="Key label"
-          placeholder="e.g. Shopify Integration"
-          variant="outlined"
-          density="comfortable"
-          hide-details
-        />
-      </v-col>
-      <v-col cols="12" class="mt-4">
-        <div class="text-body-2 font-weight-medium mb-2">Environment</div>
-        <v-btn-toggle v-model="newKeyEnv" mandatory density="compact" rounded="lg" class="w-100">
-          <v-btn value="production" class="text-none flex-grow-1">Production</v-btn>
-          <v-btn value="test" class="text-none flex-grow-1">Test / Staging</v-btn>
-        </v-btn-toggle>
-      </v-col>
-    </v-row>
+    <MpFormGrid>
+      <v-text-field
+        v-model="newKeyLabel"
+        label="Key label *"
+        placeholder="e.g. Shopify Integration"
+      />
+      <MpFormField label="Environment">
+        <div>
+          <v-btn-toggle v-model="newKeyEnv" mandatory>
+            <v-btn value="production" class="text-none">Production</v-btn>
+            <v-btn value="test" class="text-none">Test / Staging</v-btn>
+          </v-btn-toggle>
+        </div>
+      </MpFormField>
+    </MpFormGrid>
     <template #footer>
       <v-spacer />
       <v-btn variant="text" class="text-none" @click="addKeyDrawer = false">Cancel</v-btn>

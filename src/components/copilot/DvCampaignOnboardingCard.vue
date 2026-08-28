@@ -86,7 +86,7 @@ const BLOCKER_ICONS: Record<string, string> = { domain: 'shield-check', audience
 
 <style scoped>
 .onboarding-card__item {
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface-variant));
 }
 

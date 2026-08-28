@@ -8,6 +8,8 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
@@ -137,11 +139,15 @@ function exportCollections() {
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
+        <!-- Filter popover: `hide-details` is deliberate — these selects can never
+             carry a hint or an error, and the popover is a dense surface. -->
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select v-model="filters.type" :items="[...TYPES] as string[]" label="Type" multiple chips closable-chips density="compact" variant="outlined" hide-details class="mb-3" />
-            <v-select v-model="filters.status" :items="[...STATUSES] as string[]" label="Status" multiple chips closable-chips density="compact" variant="outlined" hide-details />
+          <div class="pa-4">
+            <MpFormGrid>
+              <MpFormSection title="Filter by" />
+              <v-select v-model="filters.type" :items="[...TYPES] as string[]" label="Type" multiple chips closable-chips hide-details />
+              <v-select v-model="filters.status" :items="[...STATUSES] as string[]" label="Status" multiple chips closable-chips hide-details />
+            </MpFormGrid>
           </div>
         </template>
       </MpDataTableToolbar>
@@ -207,20 +213,19 @@ function exportCollections() {
       :title="editingId !== null ? 'Edit Collection' : 'New Collection'"
       subtitle="Group products for merchandising and navigation"
     >
-      <v-text-field v-model="form.title" label="Title" variant="outlined" density="comfortable" class="mb-4" />
-      <v-text-field
-        v-model="form.handle"
-        label="Handle"
-        prefix="/"
-        variant="outlined"
-        density="comfortable"
-        hint="Auto-generated from the title — edit to override"
-        persistent-hint
-        class="mb-4"
-        @update:model-value="handleEdited = true"
-      />
-      <v-select v-model="form.type" :items="TYPES" label="Type" variant="outlined" density="comfortable" class="mb-4" />
-      <v-select v-model="form.status" :items="[...STATUSES] as string[]" label="Status" variant="outlined" density="comfortable" />
+      <MpFormGrid>
+        <v-text-field v-model="form.title" label="Title" />
+        <v-text-field
+          v-model="form.handle"
+          label="Handle"
+          prefix="/"
+          hint="Auto-generated from the title — edit to override"
+          persistent-hint
+          @update:model-value="handleEdited = true"
+        />
+        <v-select v-model="form.type" :items="TYPES" label="Type" />
+        <v-select v-model="form.status" :items="[...STATUSES] as string[]" label="Status" />
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>

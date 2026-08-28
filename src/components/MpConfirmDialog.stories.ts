@@ -1,10 +1,13 @@
 import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpConfirmDialog from './MpConfirmDialog.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
+import MpRowActionsMenu from './MpRowActionsMenu.vue'
+import MpStatusChip from './MpStatusChip.vue'
+import MpEmptyState from './MpEmptyState.vue'
+import { CAMPAIGNS, CAMPAIGN_HEADERS } from '@/stories/fixtures'
 
 const meta = {
-  title: 'Overlays/MpConfirmDialog',
+  title: 'Molecules/MpConfirmDialog',
   component: MpConfirmDialog,
   tags: ['autodocs'],
   parameters: {
@@ -140,8 +143,155 @@ export const WithConsequences: Story = {
   },
 }
 
-/** L4 modal surface + scrim in dark mode. */
-export const DarkModeDanger: Story = {
-  globals: darkModeGlobals,
-  ...Danger,
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * Two structures, and they are the whole component: a neutral confirmation and a destructive
+ * one. `danger` swaps the header icon to the error tone and the confirm button to `error` —
+ * nothing else changes, which is the point.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpConfirmDialog },
+    data: () => ({ which: 'neutral' as string }),
+    template: `
+      <div class="d-flex ga-2 flex-wrap">
+        <v-btn variant="outlined" class="text-none" @click="which = 'neutral'">Neutral</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'danger'">Danger</v-btn>
+
+        <MpConfirmDialog
+          :model-value="which === 'neutral'"
+          title="Publish this journey?"
+          message="Contacts matching the entry filter will start entering immediately."
+          confirm-label="Publish"
+          @update:model-value="which = ''"
+        />
+        <MpConfirmDialog
+          :model-value="which === 'danger'"
+          danger
+          title="Delete this segment?"
+          message="Deleting “VIP — Repeat Buyers” removes it everywhere it is used."
+          confirm-label="Delete segment"
+          @update:model-value="which = ''"
+        />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop. A confirm prompt is always `MpDialog`'s `sm` (440px) — a prompt the
+ * reader has to take in at a glance should not be a wide measure. If a confirmation needs more
+ * room than this, it is a form, and it belongs in `MpFormDrawer`.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpConfirmDialog },
+    data: () => ({ open: true }),
+    template: `
+      <div>
+        <v-btn variant="outlined" class="text-none" @click="open = true">Open</v-btn>
+        <MpConfirmDialog
+          v-model="open"
+          title="Archive this campaign?"
+          message="Archived campaigns stop reporting and move out of the main list. You can restore them later."
+          confirm-label="Archive"
+        />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * The content states: a one-line message, a long message that wraps, and a consequences list.
+ * All three sit in the same 20px body band — since Phase 4 this component composes `MpDialog`
+ * and no longer sets any inset of its own.
+ */
+export const States: Story = {
+  render: () => ({
+    components: { MpConfirmDialog },
+    data: () => ({ which: '' as string }),
+    template: `
+      <div class="d-flex ga-2 flex-wrap">
+        <v-btn variant="outlined" class="text-none" @click="which = 'short'">Short</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'long'">Long message</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'consequences'">With consequences</v-btn>
+
+        <MpConfirmDialog :model-value="which === 'short'" title="Discard changes?" message="Your edits will be lost." confirm-label="Discard" danger @update:model-value="which = ''" />
+        <MpConfirmDialog
+          :model-value="which === 'long'"
+          title="Remove this sales channel?"
+          message="Removing the channel stops order sync immediately and unlinks every product mapping. Historical orders stay in Commerce, but inventory will no longer reconcile against this storefront until it is reconnected."
+          confirm-label="Remove channel"
+          danger
+          @update:model-value="which = ''"
+        />
+        <MpConfirmDialog
+          :model-value="which === 'consequences'"
+          title="Delete this segment?"
+          message="Deleting “VIP — Repeat Buyers” removes it everywhere it is used."
+          :consequences="['3 active campaigns targeting this segment will lose their audience.', '2 journeys use this segment as an entry filter.', 'This cannot be undone.']"
+          confirm-label="Delete segment"
+          danger
+          @update:model-value="which = ''"
+        />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** The real flow: a row's kebab menu triggers the prompt, and confirming
+ * actually removes the row. This is the pattern every destructive action in the platform
+ * uses — the table never deletes on click, the dialog is the gate.
+ */
+export const InContextDeleteFromTable: Story = {
+  render: () => ({
+    components: { MpConfirmDialog, MpRowActionsMenu, MpStatusChip, MpEmptyState },
+    setup() {
+      const rows = ref([...CAMPAIGNS])
+      const pending = ref<typeof CAMPAIGNS[number] | null>(null)
+      const open = ref(false)
+      return {
+        rows, pending, open,
+        headers: CAMPAIGN_HEADERS.concat([{ title: '', key: 'actions', sortable: false, align: 'end' as const }] as never),
+        ask: (row: typeof CAMPAIGNS[number]) => { pending.value = row; open.value = true },
+        remove: () => { rows.value = rows.value.filter(r => r.id !== pending.value?.id) },
+      }
+    },
+    template: `
+      <v-card flat border rounded="lg">
+        <v-data-table v-if="rows.length" :headers="headers" :items="rows" item-value="id" hide-default-footer>
+          <template #item.status="{ item }">
+            <MpStatusChip :status="item.status" type="campaign" size="sm" />
+          </template>
+          <template #item.actions="{ item }">
+            <MpRowActionsMenu aria-label="Campaign actions" :item-label="item.name">
+              <v-list-item title="Edit" prepend-icon="pencil" />
+              <v-list-item title="Duplicate" prepend-icon="copy" />
+              <v-divider class="my-1" />
+              <v-list-item title="Delete" prepend-icon="trash-2" class="text-error" @click="ask(item)" />
+            </MpRowActionsMenu>
+          </template>
+        </v-data-table>
+        <MpEmptyState v-else title="No campaigns left" icon="megaphone" description="Every campaign in this list was deleted." />
+
+        <MpConfirmDialog
+          v-model="open"
+          danger
+          title="Delete this campaign?"
+          :message="pending ? 'Deleting “' + pending.name + '” removes it and its reporting history.' : ''"
+          :consequences="['Reporting for this campaign will no longer be available.', 'This cannot be undone.']"
+          confirm-label="Delete campaign"
+          @confirm="remove"
+        />
+      </v-card>
+    `,
+  }),
+  args: {} as never,
 }

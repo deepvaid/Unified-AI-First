@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import Plg3dsDialog from '@/components/plg/Plg3dsDialog.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
 import { useDaVinciSetupStore } from '@/stores/useDaVinciSetup'
@@ -158,32 +159,19 @@ async function onApproved() {
         <v-card flat border rounded="lg" class="pa-5 plg-checkout__payment">
           <div class="text-body-1 font-weight-bold mb-4">Payment details</div>
 
-          <v-row dense>
-            <v-col cols="12">
-              <v-text-field v-model="cardholderName" label="Cardholder name" variant="outlined" density="comfortable" />
-            </v-col>
-            <v-col cols="12">
-              <v-text-field
-                v-model="cardNumber"
-                label="Card number"
-                variant="outlined"
-                density="comfortable"
-                prepend-inner-icon="credit-card"
-              />
-            </v-col>
-            <v-col cols="6">
-              <v-text-field v-model="expiry" label="Expiry" variant="outlined" density="comfortable" />
-            </v-col>
-            <v-col cols="6">
-              <v-text-field v-model="cvv" label="CVV" variant="outlined" density="comfortable" />
-            </v-col>
-            <v-col cols="6">
-              <v-select v-model="country" :items="['United States']" label="Country" variant="outlined" density="comfortable" />
-            </v-col>
-            <v-col cols="6">
-              <v-text-field v-model="billingEmail" label="Billing email" variant="outlined" density="comfortable" />
-            </v-col>
-          </v-row>
+          <MpFormGrid :cols="2">
+            <v-text-field v-model="cardholderName" label="Cardholder name" class="mp-form-grid__full" />
+            <v-text-field
+              v-model="cardNumber"
+              label="Card number"
+              prepend-inner-icon="credit-card"
+              class="mp-form-grid__full"
+            />
+            <v-text-field v-model="expiry" label="Expiry" />
+            <v-text-field v-model="cvv" label="CVV" />
+            <v-select v-model="country" :items="['United States']" label="Country" />
+            <v-text-field v-model="billingEmail" label="Billing email" />
+          </MpFormGrid>
 
           <div class="plg-checkout__secure-note text-caption text-medium-emphasis d-flex align-center ga-2">
             <v-icon size="15">shield-check</v-icon>

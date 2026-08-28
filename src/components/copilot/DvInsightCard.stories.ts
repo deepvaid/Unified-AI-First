@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvInsightCard from './DvInsightCard.vue'
 
 const meta = {
-  title: 'Copilot/DvInsightCard',
+  title: 'Product/Da Vinci/DvInsightCard',
   component: DvInsightCard,
   tags: ['autodocs'],
   argTypes: {

@@ -14,6 +14,9 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
@@ -42,6 +45,15 @@ const blankCard = (): GiftCardInput => ({
 })
 const form = ref<GiftCardInput>(blankCard())
 const submitted = ref(false)
+
+const AMOUNT_PRESETS = [25, 50, 100, 200]
+
+// VChipGroup clears its model when the selected chip is clicked again; the amount
+// field keeps whatever it had rather than resetting to nothing.
+function onPresetPick(index: number | undefined) {
+  const amount = index == null ? undefined : AMOUNT_PRESETS[index]
+  if (amount != null) form.value.initialValue = amount
+}
 
 const formValid = computed(() =>
   form.value.initialValue > 0 && (form.value.expiration === 'none' || !!form.value.expiry),
@@ -212,7 +224,6 @@ function notify(text: string) { toast.success(text) }
               v-model="filters.status"
               label="Status"
               :items="filterOptions.status"
-              variant="outlined"
               density="compact"
               hide-details
               clearable
@@ -277,7 +288,7 @@ function notify(text: string) { toast.success(text) }
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="coupon" size="x-small" />
+          <MpStatusChip :status="item.status" type="coupon" size="sm" />
         </template>
 
         <template v-slot:item.issued="{ item }">
@@ -322,13 +333,15 @@ function notify(text: string) { toast.success(text) }
       v-model="issueDrawer"
       title="New custom gift card"
       subtitle="Issue a store-credit card and send it to a recipient"
-      :width="520"
     >
       <!-- Preview -->
-      <v-card color="primary" variant="tonal" rounded="lg" class="pa-5 mb-5 gift-preview">
-        <div class="d-flex align-center justify-space-between mb-4">
+      <v-card color="primary" variant="tonal" rounded="lg" class="gift-preview">
+        <!-- Icon and label read as one mark. They used to sit at opposite ends of
+             a justify-space-between row, which pushed the word "Gift card" away
+             from the icon it names and left a gap that meant nothing (P6-14). -->
+        <div class="d-flex align-center ga-2 mb-4">
           <v-icon size="22">gift</v-icon>
-          <span class="text-caption font-weight-bold text-uppercase" style="letter-spacing: 0.08em">Gift card</span>
+          <span class="gift-preview__kicker">Gift card</span>
         </div>
         <div class="text-h4 font-weight-bold mb-1">{{ money(Number(form.initialValue) || 0) }}</div>
         <div class="text-body-2 text-medium-emphasis">{{ form.email || 'For your recipient' }}</div>
@@ -337,84 +350,93 @@ function notify(text: string) { toast.success(text) }
         </div>
       </v-card>
 
-      <div class="text-subtitle-2 font-weight-bold mb-3 text-uppercase text-medium-emphasis">General</div>
-      <v-text-field
-        v-model.number="form.initialValue"
-        label="Initial value *"
-        type="number"
-        min="1"
-        variant="outlined"
-        density="comfortable"
-        prepend-inner-icon="dollar-sign"
-        :error="submitted && !(form.initialValue > 0)"
-        :error-messages="submitted && !(form.initialValue > 0) ? ['Initial value is required'] : []"
-        class="mb-3"
-      />
-      <div class="d-flex flex-wrap gap-2 mb-4">
-        <v-chip
-          v-for="preset in [25, 50, 100, 200]"
-          :key="preset"
-          size="small"
-          :variant="Number(form.initialValue) === preset ? 'flat' : 'outlined'"
-          :color="Number(form.initialValue) === preset ? 'primary' : undefined"
-          @click="form.initialValue = preset"
-        >
-          {{ money(preset) }}
-        </v-chip>
-      </div>
-      <v-text-field v-model="form.contact" label="Contact (optional)" variant="outlined" density="comfortable" prepend-inner-icon="user" hint="Link to an existing contact" persistent-hint class="mb-3" />
-      <v-text-field v-model="form.email" label="Email" type="email" variant="outlined" density="comfortable" prepend-inner-icon="mail" class="mb-3" />
-      <v-textarea v-model="form.message" label="Gift card message" variant="outlined" density="comfortable" rows="2" auto-grow class="mb-4" />
+      <MpFormSection title="General" />
+      <MpFormGrid>
+        <v-text-field
+          v-model.number="form.initialValue"
+          label="Initial value *"
+          type="number"
+          min="1"
+          prepend-inner-icon="dollar-sign"
+          :error="submitted && !(form.initialValue > 0)"
+          :error-messages="submitted && !(form.initialValue > 0) ? ['Initial value is required'] : []"
+        />
+        <MpFormField label="Common amounts" hint="Sets the initial value above.">
+          <v-chip-group
+            :model-value="AMOUNT_PRESETS.indexOf(Number(form.initialValue))"
+            @update:model-value="onPresetPick"
+          >
+            <v-chip v-for="preset in AMOUNT_PRESETS" :key="preset" filter>
+              {{ money(preset) }}
+            </v-chip>
+          </v-chip-group>
+        </MpFormField>
+        <v-text-field v-model="form.contact" label="Contact" prepend-inner-icon="user" hint="Link to an existing contact" persistent-hint />
+        <v-text-field v-model="form.email" label="Email" type="email" prepend-inner-icon="mail" />
+        <v-textarea v-model="form.message" label="Gift card message" rows="3" />
+      </MpFormGrid>
 
-      <div class="text-subtitle-2 font-weight-bold mb-2 text-uppercase text-medium-emphasis">Expiration date</div>
-      <v-radio-group v-model="form.expiration" hide-details class="mb-2">
-        <v-radio value="none" label="No expiration date" />
-        <v-radio value="date" label="Set expiration date" />
-      </v-radio-group>
-      <v-text-field
-        v-if="form.expiration === 'date'"
-        v-model="form.expiry"
-        label="Expires on"
-        type="date"
-        variant="outlined"
-        density="comfortable"
-        :error="submitted && !form.expiry"
-        :error-messages="submitted && !form.expiry ? ['Choose an expiration date'] : []"
-        class="mb-2"
-      />
-      <div class="text-caption text-medium-emphasis mb-4">
-        Countries have different laws for gift card expiry dates. Check the laws that apply to your store before setting one.
-      </div>
-
-      <div class="text-subtitle-2 font-weight-bold mb-2 text-uppercase text-medium-emphasis">Status</div>
-      <v-select v-model="form.status" label="Status" :items="['Active', 'Disabled']" variant="outlined" density="comfortable" class="mb-4" />
-
-      <div class="text-subtitle-2 font-weight-bold mb-2 text-uppercase text-medium-emphasis">Image</div>
-      <div class="d-flex flex-wrap gap-2 mb-2">
-        <button
-          type="button"
-          class="gift-image-tile d-flex flex-column align-center justify-center"
-          :class="{ selected: !form.image }"
-          aria-label="No image"
-          @click="form.image = undefined"
+      <MpFormSection title="Expiration date" />
+      <MpFormGrid>
+        <MpFormField
+          label="When this card expires"
+          hint="Countries have different laws for gift card expiry dates. Check the laws that apply to your store before setting one."
         >
-          <v-icon size="18" class="text-medium-emphasis">image-off</v-icon>
-          <span class="text-caption text-medium-emphasis">None</span>
-        </button>
-        <button
-          v-for="(name, i) in imageOptions"
-          :key="name"
-          type="button"
-          class="gift-image-tile gift-image-tile--art d-flex flex-column align-center justify-center"
-          :class="[`gift-image-tile--g${i % 3}`, { selected: form.image === name }]"
-          :aria-label="`Use image ${name}`"
-          @click="form.image = name"
-        >
-          <v-icon size="18">gift</v-icon>
-          <span class="text-caption gift-image-name">{{ name }}</span>
-        </button>
-      </div>
-      <div class="text-caption text-medium-emphasis">Shown on the gift card email. Pick from your image library.</div>
+          <template #default="{ labelId, descriptionId }">
+            <v-radio-group
+              v-model="form.expiration"
+              :aria-labelledby="labelId"
+              :aria-describedby="descriptionId"
+            >
+              <v-radio value="none" label="No expiration date" />
+              <v-radio value="date" label="Set expiration date" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
+        <v-text-field
+          v-if="form.expiration === 'date'"
+          v-model="form.expiry"
+          label="Expires on *"
+          type="date"
+          :error="submitted && !form.expiry"
+          :error-messages="submitted && !form.expiry ? ['Choose an expiration date'] : []"
+        />
+      </MpFormGrid>
+
+      <MpFormSection title="Status" />
+      <MpFormGrid>
+        <v-select v-model="form.status" label="Status" :items="['Active', 'Disabled']" />
+      </MpFormGrid>
+
+      <MpFormSection title="Image" />
+      <MpFormGrid>
+        <MpFormField label="Card artwork" hint="Shown on the gift card email. Pick from your image library.">
+          <div class="d-flex flex-wrap ga-2">
+            <button
+              type="button"
+              class="gift-image-tile d-flex flex-column align-center justify-center"
+              :class="{ selected: !form.image }"
+              aria-label="No image"
+              @click="form.image = undefined"
+            >
+              <v-icon size="18" class="text-medium-emphasis">image-off</v-icon>
+              <span class="text-caption text-medium-emphasis">None</span>
+            </button>
+            <button
+              v-for="(name, i) in imageOptions"
+              :key="name"
+              type="button"
+              class="gift-image-tile gift-image-tile--art d-flex flex-column align-center justify-center"
+              :class="[`gift-image-tile--g${i % 3}`, { selected: form.image === name }]"
+              :aria-label="`Use image ${name}`"
+              @click="form.image = name"
+            >
+              <v-icon size="18">gift</v-icon>
+              <span class="text-caption gift-image-name">{{ name }}</span>
+            </button>
+          </div>
+        </MpFormField>
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="issueDrawer = false">Cancel</v-btn>
@@ -429,13 +451,12 @@ function notify(text: string) { toast.success(text) }
       v-model="viewDrawer"
       title="Gift card details"
       :subtitle="viewing?.code"
-      :width="480"
     >
       <template v-if="viewing">
         <v-card color="primary" variant="tonal" rounded="lg" class="pa-5 mb-5">
           <div class="d-flex align-center justify-space-between mb-4">
             <v-icon size="22">gift</v-icon>
-            <MpStatusChip :status="viewing.status" type="coupon" size="x-small" />
+            <MpStatusChip :status="viewing.status" type="coupon" size="sm" />
           </div>
           <div class="text-h4 font-weight-bold mb-1">{{ money(viewing.balance) }}</div>
           <div class="text-body-2 text-medium-emphasis">of {{ money(viewing.initialValue) }} initial value</div>
@@ -482,7 +503,17 @@ function notify(text: string) { toast.success(text) }
 <style scoped>
 .font-mono { font-family: monospace; white-space: nowrap; }
 .min-width-0 { min-width: 0; }
-.gift-preview { overflow: hidden; }
+.gift-preview {
+  overflow: hidden;
+  padding: var(--mp-component-card-padding);
+}
+
+.gift-preview__kicker {
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
+  letter-spacing: var(--mp-letterSpacing-eyebrow);
+  text-transform: uppercase;
+}
 
 .gift-image-tile {
   width: 84px;

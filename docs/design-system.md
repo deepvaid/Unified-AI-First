@@ -46,32 +46,61 @@ Legacy SCSS injection from `src/styles/tokens.scss` was removed in WP-14 — Vit
 | `textPrimary` | `#111928` | Headings, body text |
 | `textMuted` | `#6B7280` | Descriptions, secondary text |
 
-### Spacing Scale
+### Naming convention
+
+**Primitives are named by their value; roles are named by their job.** `var(--mp-space-12)` is
+12px, full stop — no index-to-pixel translation, no "is `md` 12 or 16?". Where the system has
+already made a decision, a role token carries it: `var(--mp-component-card-radius)`.
+
+### Spacing Scale — `space.*`
+
+`4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 64, 80` on the 4px grid, plus **2px half-steps below 16px**
+(`2, 6, 10, 14`). The sub-grid is a recorded decision (DESIGN_AUDIT.md P1-5), not drift: it is
+where dense chrome — chip insets, icon gaps, control padding — actually lives.
 
 | Token | Value | Common Usage |
 |-------|-------|-------------|
-| `spacing-1` | 4px | Tight gaps (icon + text) |
-| `spacing-2` | 8px | Small padding, compact lists |
-| `spacing-3` | 12px | Input padding, chip spacing |
-| `spacing-4` | 16px | Card padding (compact), section gaps |
-| `spacing-6` | 24px | Page padding, card padding (default) |
-| `spacing-8` | 32px | Section separation |
-| `spacing-12` | 48px | Large section gaps |
+| `space-2` | 2px | Hairline gaps inside dense controls |
+| `space-4` | 4px | Tight gaps (icon + text) |
+| `space-6` | 6px | Chip insets, compact icon gaps |
+| `space-8` | 8px | Small padding, compact lists |
+| `space-10` | 10px | Dense control padding |
+| `space-12` | 12px | Input padding, chip spacing |
+| `space-14` | 14px | Button inline padding |
+| `space-16` | 16px | Card padding (compact), section gaps |
+| `space-24` | 24px | Page padding, card padding (default) |
+| `space-32` | 32px | Section separation |
+| `space-48` | 48px | Large section gaps |
 
-### Border Radius
+### Border Radius — `radius.*`
+
+One scale. It reads concentrically: an outer surface at 16, anything nested inside it at 12,
+controls at 10, chips and menu items at 8.
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `borderRadius-sm` | 4px | Chips, small badges |
-| `borderRadius-md` | 8px | Buttons, inputs, chips |
-| `borderRadius-lg` | 12px | Cards, dialogs |
-| `borderRadius-xl` | 16px | Large cards, modals |
-| `borderRadius-full` | 9999px | Avatars, pills |
+| `radius-4` | 4px | Micro-marks, swatches, small badges |
+| `radius-8` | 8px | Chips, menu items |
+| `radius-10` | 10px | Inputs, dense controls, compact cards |
+| `radius-12` | 12px | Menus/popovers, anything nested in a card |
+| `radius-16` | 16px | Cards, dialogs, drawers — the default surface |
+| `radius-20` | 20px | Large / hero panels |
+| `radius-full` | 9999px | Buttons, avatars, pills |
 
-### Typography
+Role aliases into the scale: `component-button-radius` (full), `component-chip-radius` (8),
+`component-input-radius` (10), `component-menu-radius` (12), `component-card-radius` (16),
+`component-dialog-radius` (16). `component-control-height` (40px) is shared by buttons and fields.
+
+### Typography — `fontSize.*` / `text.*` / `display.*`
 
 - **Font:** Inter, system-ui, -apple-system, sans-serif
-- **Heading sizes:** 2xl=28px/700, xl=22px/600, lg=18px/600, body=14px/400, sm=12px/500, xs=11px/400
+- **UI ramp:** `10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 28, 32, 40, 48`. **Body is 14px** — the
+  single canonical body size (DESIGN_AUDIT.md P1-2). No fractional sizes exist in the system.
+- **Named roles** (`text.*`) — `pageTitle`, `pageSubtitle`, `kpiValue`, `kpiValueHero`,
+  `sectionTitle`, `body`, `caption`, `eyebrow`, `metaLabel`, `metaValue`. Every one resolves to a
+  stop on the UI ramp. Prefer these over raw sizes.
+- **Display** (`display.sm/md/lg/xl` = 32/44/60/80) is a deliberately separate hero ramp for
+  marketing and page heroes — never product chrome.
 - **Line heights:** tight=1.2 (headings), normal=1.5 (body), loose=1.75 (relaxed)
 
 ### Shadows
@@ -126,7 +155,7 @@ Use sparingly — flat bordered cards preferred.
 |------|------|---------|-------------|
 | `status` | `string` | required | Status text |
 | `type` | `'order' \| 'fulfillment' \| 'payment' \| 'campaign' \| 'contact' \| 'ticket' \| 'coupon' \| 'general'` | `'general'` | Domain context for color mapping |
-| `size` | `'x-small' \| 'small' \| 'default'` | `'small'` | Chip size |
+| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | Chip size — heights come from `component.chip.height.*` (20 / 24 / 32). Use `sm` in data tables. |
 | `variant` | `'flat' \| 'tonal' \| 'outlined'` | `'tonal'` | Visual style |
 | `showIcon` | `boolean` | `false` | Show status-specific icon |
 
@@ -217,20 +246,27 @@ Use sparingly — flat bordered cards preferred.
 
 ## Vuetify Global Defaults
 
-These are set in `src/plugins/vuetify.ts` and apply everywhere:
+These live in `maropostDefaults` (`src/plugins/maropostTheme.ts`), which `src/plugins/vuetify.ts`
+installs. Verified against the source 2026-08-28 — the previous version of this table was wrong on
+five rows.
 
 | Component | Defaults |
 |-----------|----------|
-| `VBtn` | `rounded="lg"`, no uppercase, font-weight 500, Inter font |
-| `VCard` | `rounded="xl"`, flat variant, bordered |
-| `VTextField` | `rounded="lg"`, outlined variant, auto hide-details |
-| `VSelect` | Same as VTextField |
-| `VChip` | `rounded="md"` |
+| `VBtn` | `variant="flat"`; radius, weight, size, `min-height` (`component.control.height`) and padding come from an inline style built from tokens — **not** a `rounded` prop |
+| `VCard` | `variant="flat"`, `rounded="lg"` |
+| `VTextField` | Outlined variant, comfortable density, auto hide-details. **Visual chrome (border, radius, fill, states, floating label) is owned by `src/styles/settings-form.scss`, not by these defaults** — see its "Global Outlined Field Baseline" header comment; as of 2026-08-27 this is a Flowbite-style floating-label field (flowbite.com/docs/forms/floating-label): transparent fill, 1px `--border-strong` at rest, 2px primary/error border on focus/error with no glow ring. |
+| `VSelect` / `VAutocomplete` / `VCombobox` / `VTextarea` | Same as VTextField |
+| `VChip` | `rounded="pill"`, `size="small"`. Inside a field, `settings-form.scss` pins the height to `component.chip.height.md` so a select with chips matches one without (P6-13) |
 | `VDataTable` | Fixed header, hover, comfortable density, 15 items/page |
 | `VNavigationDrawer` | No elevation |
 | `VAppBar` | No elevation |
-| `VDialog` | `rounded="xl"` |
-| `VDivider` | Full opacity |
+| `VDialog` | **No defaults, deliberately** — `rounded="xl"` would compute to 24px against the 16px `component.dialog.radius`, and `global.scss` already forces the token with `!important`. Compose `MpDialog`; never a raw `v-dialog` |
+| `VDivider` | `opacity: 0.72` |
+| `VCheckbox` / `VRadio` / `VRadioGroup` / `VSwitch` / `VSlider` / `VNumberInput` | Comfortable density, `hide-details="auto"`, primary colour — added in Phase 6, so a selection control and a text field share one rhythm |
+| `VBtnToggle` | Comfortable density, outlined, divided, primary — one convention where there were three |
+| `VChipGroup` | Outlined, primary |
+| `VMenu` | `offset: 4` |
+| `VTooltip` | `location="top"`, 150ms open delay |
 
 ---
 

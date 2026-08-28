@@ -371,11 +371,13 @@ function onSearchKeydown(event: KeyboardEvent) {
 
         <v-menu v-model="searchOpen" location="bottom start" offset="8" :close-on-content-click="false">
           <template #activator="{ props }">
+            <!-- App-shell search, not a form field: the pill is label-free by
+                 design (see .appbar-search) and suppresses details so the app bar
+                 row height can never shift. -->
             <v-text-field
               v-bind="props"
               v-model="searchQuery"
               density="compact"
-              variant="outlined"
               hide-details
               prepend-inner-icon="search"
               placeholder="Find or Ask"
@@ -660,7 +662,7 @@ function onSearchKeydown(event: KeyboardEvent) {
                 <div class="um-header__info">
                   <div class="um-header__name">{{ userName }}</div>
                   <div class="um-header__email">{{ userEmail }}</div>
-                  <v-chip size="x-small" variant="tonal" color="primary" class="mt-1">{{ userRole }}</v-chip>
+                  <v-chip size="x-small" variant="tonal" color="primary">{{ userRole }}</v-chip>
                 </div>
               </div>
 
@@ -746,16 +748,16 @@ function onSearchKeydown(event: KeyboardEvent) {
                   </div>
                 </div>
                 <div class="um-plg-demo">
+                  <!-- Compact menu control: detail-free so the user menu can't
+                       resize under the pointer while it is open. -->
                   <v-select
                     v-model="plgPresetValue"
                     :items="plgPresetItems"
                     item-title="label"
                     item-value="key"
                     density="compact"
-                    variant="outlined"
                     hide-details
-                    placeholder="Apply a subscription state…"
-                    aria-label="PLG demo preset"
+                    label="Subscription state"
                     class="um-plg-demo__select"
                   />
                   <v-btn
@@ -782,16 +784,16 @@ function onSearchKeydown(event: KeyboardEvent) {
     <v-dialog v-model="mobileSearchOpen" fullscreen transition="dialog-bottom-transition" class="appbar-mobile-search-dialog">
       <v-card class="appbar-mobile-search-card">
         <div class="appbar-mobile-search-card__header">
+          <!-- App-shell search, not a form field: label-free by design, and
+               detail-free so the sheet header can't shift as you type. -->
           <v-text-field
             v-model="searchQuery"
             autofocus
             density="compact"
-            variant="outlined"
             hide-details
             prepend-inner-icon="search"
             placeholder="Find or Ask"
             aria-label="Universal AI search"
-            rounded="lg"
             clearable
             class="appbar-mobile-search-field"
             @keydown.enter.prevent="askDaVinciFromSearch"
@@ -835,7 +837,20 @@ function onSearchKeydown(event: KeyboardEvent) {
 </template>
 
 <style scoped lang="scss">
-/* Classic chrome; the studio shell overrides this in shell-variants.css. */
+/* Classic chrome; the studio shell overrides this in shell-variants.css.
+ *
+ * P4-7 migrated this file onto the token scale. Two categories are deliberately
+ * left as raw values, matching the exemptions recorded in the Phase 2/3
+ * changelog:
+ *   · Panel and popover MEASURES (menu card widths 280/360, scroll caps 380/480,
+ *     search flex bases, media-query breakpoints) — these size a surface to its
+ *     content, they are not steps on the spacing rhythm.
+ *   · letter-spacing — a typographic axis with no scale in tokens.json.
+ * Everything that is spacing, sizing, radius or type scale resolves to --mp-*.
+ *
+ * The mobile full-screen search below is intentionally NOT MpDialog: its header
+ * is the search field itself, not a title bar, so the shell's header contract
+ * does not fit it. Every other dialog in the app composes MpDialog. */
 .mp-appbar {
   border-bottom: 1px solid var(--border-subtle);
   background: var(--surface-primary);
@@ -847,7 +862,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .mp-appbar-shell {
   min-width: 0;
-  padding: 0 22px;
+  padding: 0 var(--mp-space-24);
   height: 100%;
   /* Transparent so the header (.mp-appbar) is the single painted surface —
      lets the shell-variant nav color show through instead of a white wrapper. */
@@ -861,28 +876,31 @@ function onSearchKeydown(event: KeyboardEvent) {
 .appbar-search-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
+  /* Search measures, not spacing steps. */
   flex: 1 1 480px;
   max-width: 640px;
-  min-width: 260px;
+  min-width: var(--mp-layout-sectionRailWidth);
 }
 
 .appbar-utilities {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
 }
 
 .appbar-utilities :deep(.appbar-action-btn) {
-  /* maropostDefaults.VBtn ships a blanket inline min-height:40px +
-     padding-inline:14px meant for text buttons; it beats this rule's own
-     height/width unless matched with !important, which made these render as
-     36x40 pills (icon squeezed into an 8px content box) instead of a 36x36
-     circle matching the Quick-create button beside them. */
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
+  /* P4-7: every control in this bar resolves to `component.control.height` —
+     the same 40px baseline as buttons, form fields, table headers and nav rows.
+     They were 36, which is on no scale stop.
+
+     maropostDefaults.VBtn ships a blanket inline min-height + padding-inline
+     meant for text buttons; it beats this rule's own height/width unless
+     matched with !important, which is why these are squared off explicitly. */
+  width: var(--mp-component-control-height) !important;
+  height: var(--mp-component-control-height) !important;
+  min-width: var(--mp-component-control-height) !important;
+  min-height: var(--mp-component-control-height) !important;
   padding-inline: 0 !important;
   border-radius: var(--r-pill);
   color: var(--text-primary);
@@ -901,7 +919,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .appbar-utilities :deep(.appbar-action-btn .v-icon) {
-  font-size: 20px;
+  font-size: var(--mp-fontSize-20);
 }
 
 .appbar-utilities :deep(.appbar-action-btn svg) {
@@ -911,8 +929,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 .appbar-divider {
   display: block;
   width: 1px;
-  height: 22px;
-  margin-inline: 8px;
+  height: var(--mp-space-24);
+  margin-inline: var(--mp-space-8);
   background: var(--border-default);
   flex-shrink: 0;
 }
@@ -921,9 +939,9 @@ function onSearchKeydown(event: KeyboardEvent) {
 .assistant-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 5px 12px;
+  gap: var(--mp-space-6);
+  height: var(--mp-component-control-height);
+  padding-inline: var(--mp-component-listItem-paddingInline);
   /* --border-subtle is tuned for white cards; on the light bar it vanishes (≈1.05:1).
      A stronger on-surface edge + faint lift make the pill read as a control. */
   border: 1px solid var(--border-default);
@@ -968,8 +986,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .assistant-pill__label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   line-height: 1.15;
   white-space: nowrap;
 }
@@ -982,7 +1000,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   width: 280px;
   background: var(--surface-primary);
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border-radius: var(--mp-component-menu-radius);
   box-shadow:
     0 8px 32px color-mix(in oklch, var(--text-primary) 12%, transparent),
     0 2px 8px color-mix(in oklch, var(--text-primary) 6%, transparent);
@@ -1003,11 +1021,11 @@ function onSearchKeydown(event: KeyboardEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: var(--mp-component-control-height);
+  height: var(--mp-component-control-height);
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--mp-radius-full);
   background: transparent;
   /* Resting ring separates the avatar from the bar and signals it's a control. */
   box-shadow: 0 0 0 1px var(--border-default);
@@ -1028,8 +1046,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .user-pill__avatar {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-bold);
   color: var(--accent-fg) !important;
 }
 
@@ -1041,29 +1059,29 @@ function onSearchKeydown(event: KeyboardEvent) {
   justify-content: center;
   background: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-on-primary));
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-bold);
 }
 
 .user-avatar-fallback--sm {
-  font-size: 11px;
+  font-size: var(--mp-fontSize-12);
 }
 
 .user-avatar-fallback--lg {
-  font-size: 20px;
+  font-size: var(--mp-fontSize-20);
 }
 
 /* ── Profile dropdown ───────────────────────────── */
 .um-cascade-wrap {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--mp-space-8);
 }
 
 .um-cascade-card {
   width: 280px;
   background: var(--surface-primary);
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border-radius: var(--mp-component-menu-radius);
   box-shadow:
     0 8px 32px color-mix(in oklch, var(--text-primary) 12%, transparent),
     0 2px 8px color-mix(in oklch, var(--text-primary) 6%, transparent);
@@ -1079,9 +1097,9 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .um-cascade-card__header {
-  padding: 14px 16px 10px;
-  font-size: 11px;
-  font-weight: 700;
+  padding: var(--mp-space-14) var(--mp-space-16) var(--mp-space-10);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
   line-height: 1.25;
   color: rgb(var(--v-theme-primary));
   text-transform: uppercase;
@@ -1092,7 +1110,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   width: 360px;
   background: var(--surface-primary);
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border-radius: var(--mp-component-menu-radius);
   box-shadow:
     0 8px 32px color-mix(in oklch, var(--text-primary) 12%, transparent),
     0 2px 8px color-mix(in oklch, var(--text-primary) 6%, transparent);
@@ -1110,8 +1128,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 .um-header {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 20px;
+  gap: var(--mp-space-14);
+  padding: var(--mp-component-card-padding);
   background: linear-gradient(
     180deg,
     color-mix(in oklch, rgb(var(--v-theme-primary)) 10%, var(--surface-primary)) 0%,
@@ -1123,19 +1141,19 @@ function onSearchKeydown(event: KeyboardEvent) {
 .um-header__info {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--mp-space-4);
   min-width: 0;
 }
 
 .um-header__name {
-  font-size: 17px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-18);
+  font-weight: var(--mp-fontWeight-bold);
   line-height: 1.2;
   color: var(--text-primary);
 }
 
 .um-header__email {
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
 }
 
@@ -1145,18 +1163,20 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .um-section {
-  padding: 6px 8px;
+  padding: var(--mp-space-6) var(--mp-space-8);
 }
 
 .um-section--last {
-  padding-bottom: 10px;
+  padding-bottom: var(--mp-space-10);
 }
 
 .um-plg-demo {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 12px 10px 44px;
+  gap: var(--mp-space-8);
+  /* The 44px start inset aligns this control with the menu rows' label column
+     (icon + listItem gap), so it reads as belonging to the row above it. */
+  padding: 0 var(--mp-component-listItem-paddingInline) var(--mp-space-10) 44px;
 }
 
 .um-plg-demo__select {
@@ -1165,25 +1185,28 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .um-plg-demo__select :deep(.v-field) {
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
 }
 
 .um-subheader {
-  padding: 10px 12px 4px;
-  font-size: 10.5px;
-  font-weight: 700;
+  padding: var(--mp-space-10) var(--mp-component-listItem-paddingInline) var(--mp-space-4);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
   line-height: 1;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1.2px;
 }
 
+/* A menu row is a nav row: same `component.listItem.*` geometry as AppSidebar,
+   MpSectionRail and MpListRow (P4-7). */
 .um-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  gap: var(--mp-component-listItem-gap);
+  min-height: var(--mp-component-listItem-minHeight);
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-component-listItem-paddingInline);
+  border-radius: var(--mp-component-nav-itemRadius);
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease), transform 80ms ease;
   width: 100%;
@@ -1218,7 +1241,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .um-item--active .um-item__title {
   color: rgb(var(--v-theme-primary));
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .um-item__icon {
@@ -1236,8 +1259,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .um-item__avatar {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
 }
 
 .um-item__body {
@@ -1246,17 +1269,17 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .um-item__title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.3;
   color: var(--text-primary);
 }
 
 .um-item__sub {
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   line-height: 1.3;
   color: var(--muted);
-  margin-top: 1px;
+  margin-top: var(--mp-space-2);
 }
 
 .um-item--danger .um-item__title,
@@ -1281,12 +1304,12 @@ function onSearchKeydown(event: KeyboardEvent) {
 .um-switch-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 10px;
-  margin: 0 12px 8px;
-  height: 36px;
+  gap: var(--mp-space-8);
+  padding: 0 var(--mp-space-10);
+  margin: 0 var(--mp-component-listItem-paddingInline) var(--mp-space-8);
+  height: var(--mp-component-control-height);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--mp-component-input-radius);
   background: var(--surface-secondary);
   transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
@@ -1307,8 +1330,8 @@ function onSearchKeydown(event: KeyboardEvent) {
   border: none;
   outline: none;
   background: transparent;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   font-family: inherit;
   color: var(--text-primary);
   line-height: 1.3;
@@ -1319,17 +1342,18 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .um-switch-list {
+  /* Scroll measure, not a spacing step. */
   max-height: 380px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0 8px 12px;
+  padding: 0 var(--mp-space-8) var(--mp-space-12);
 }
 
 .um-account-empty {
-  padding: 16px 12px;
+  padding: var(--mp-space-16) var(--mp-component-listItem-paddingInline);
   text-align: center;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
 }
 
@@ -1337,9 +1361,11 @@ function onSearchKeydown(event: KeyboardEvent) {
   flex-shrink: 0;
   align-self: center;
   align-items: center;
-  min-height: 36px;
+  /* 40 track = 32 thumb + 4 padding either side; every number on a scale stop.
+     Was a 36px track with 3px padding around 30px thumbs. */
+  min-height: var(--mp-component-control-height);
   height: auto !important;
-  padding: 3px;
+  padding: var(--mp-space-4);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-pill);
   background: var(--surface-secondary);
@@ -1348,12 +1374,12 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .theme-segment :deep(.v-btn) {
-  width: 32px !important;
-  min-width: 32px !important;
-  height: 30px !important;
-  min-height: 30px !important;
+  width: var(--mp-space-32) !important;
+  min-width: var(--mp-space-32) !important;
+  height: var(--mp-space-32) !important;
+  min-height: var(--mp-space-32) !important;
   padding: 0 !important;
-  border-radius: 999px !important;
+  border-radius: var(--mp-radius-full) !important;
 }
 
 .theme-segment :deep(.v-btn .v-btn__content) {
@@ -1365,7 +1391,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .theme-segment :deep(.v-btn .v-icon) {
-  font-size: 18px;
+  font-size: var(--mp-fontSize-18);
   line-height: 1;
   block-size: 1em;
   inline-size: 1em;
@@ -1411,18 +1437,25 @@ function onSearchKeydown(event: KeyboardEvent) {
   border-color: var(--accent);
 }
 
+/* P4-7/P4-4: the app bar's search and the data-table toolbar's search are the
+   two search fields in the product — both now resolve to the same control-height
+   token, so they cannot drift. This one was 34 + padding; that one was 38. */
+:deep(.appbar-search .v-field) {
+  box-sizing: border-box;
+  min-height: var(--mp-component-control-height);
+}
+
 :deep(.appbar-search .v-field__input) {
-  font-size: 13.5px;
-  font-weight: 500;
-  min-height: 34px !important;
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
+  min-height: 0 !important;
+  padding-block: 0 !important;
 }
 
 :deep(.appbar-search input::placeholder) {
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   opacity: 1;
 }
 
@@ -1434,14 +1467,14 @@ function onSearchKeydown(event: KeyboardEvent) {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  padding: 1px 6px;
+  padding: var(--mp-space-2) var(--mp-space-6);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-pill);
   background: transparent;
   color: var(--muted);
   font-family: ui-monospace, "SF Mono", monospace;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   white-space: nowrap;
 }
 
@@ -1455,7 +1488,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 .cmd-palette__list {
   max-height: min(60vh, 480px);
   overflow-y: auto;
-  padding: 6px;
+  padding: var(--mp-space-6);
   margin: 0;
   list-style: none;
 }
@@ -1463,21 +1496,21 @@ function onSearchKeydown(event: KeyboardEvent) {
 .cmd-palette__tabs {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 10px;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-8) var(--mp-space-10);
   overflow-x: auto;
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .cmd-palette__tab {
   flex-shrink: 0;
-  padding: 4px 10px;
+  padding: var(--mp-space-4) var(--mp-space-10);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
@@ -1498,29 +1531,30 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .cmd-palette__section-label {
-  padding: 10px 10px 4px;
+  padding: var(--mp-space-10) var(--mp-space-10) var(--mp-space-4);
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 0.6px;
   text-transform: uppercase;
 }
 
 .cmd-row {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto;
+  grid-template-columns: var(--mp-space-32) minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: var(--mp-component-listItem-gap);
   width: 100%;
-  padding: 7px 10px;
+  min-height: var(--mp-component-listItem-minHeight);
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-space-10);
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--mp-component-nav-itemRadius);
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
   font: inherit;
   text-align: left;
-  scroll-margin: 6px;
+  scroll-margin: var(--mp-space-6);
   transition: background var(--dur-fast) var(--ease);
 }
 
@@ -1537,9 +1571,9 @@ function onSearchKeydown(event: KeyboardEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
+  border-radius: var(--mp-component-chip-radius);
   background: var(--surface-interactive);
   color: var(--text-primary);
 }
@@ -1561,8 +1595,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .cmd-row__title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
@@ -1570,12 +1604,12 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .cmd-row--ask .cmd-row__title {
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .cmd-row__sub {
-  margin-top: 1px;
-  font-size: 11.5px;
+  margin-top: var(--mp-space-2);
+  font-size: var(--mp-fontSize-12);
   line-height: 1.3;
   color: var(--muted);
   white-space: nowrap;
@@ -1597,23 +1631,23 @@ function onSearchKeydown(event: KeyboardEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: var(--mp-component-chip-height-sm);
+  height: var(--mp-component-chip-height-sm);
+  padding: 0 var(--mp-space-6);
   border: 1px solid var(--border-default);
-  border-radius: 5px;
+  border-radius: var(--mp-radius-4);
   background: var(--surface-primary);
   color: var(--muted);
   font-family: ui-monospace, "SF Mono", monospace;
-  font-size: 11px;
+  font-size: var(--mp-fontSize-11);
   line-height: 1;
 }
 
 .cmd-palette__footer {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 8px 12px;
+  gap: var(--mp-space-14);
+  padding: var(--mp-space-8) var(--mp-space-12);
   border-top: 1px solid var(--border-subtle);
   background: var(--surface-secondary);
 }
@@ -1621,8 +1655,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 .cmd-hint {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
 }
 
@@ -1630,21 +1664,21 @@ function onSearchKeydown(event: KeyboardEvent) {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  font-weight: 600;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--muted);
 }
 
 .appbar-search-group-results + .appbar-search-group-results {
-  margin-top: 8px;
+  margin-top: var(--mp-space-8);
 }
 
 .appbar-search-group__label {
-  padding: 8px 8px 4px;
+  padding: var(--mp-space-8) var(--mp-space-8) var(--mp-space-4);
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -1653,12 +1687,13 @@ function onSearchKeydown(event: KeyboardEvent) {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: var(--mp-space-10);
   width: 100%;
-  min-height: 58px;
-  padding: 9px 10px;
+  /* Two-line row: the listItem floor plus its second line. */
+  min-height: var(--mp-space-64);
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-space-10);
   border: 0;
-  border-radius: var(--r-chip);
+  border-radius: var(--mp-component-chip-radius);
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -1686,24 +1721,27 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .appbar-search-result strong {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.3;
 }
 
 .appbar-search-result small {
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--mp-fontSize-12);
 }
 
 .notification-badge :deep(.v-badge__badge) {
-  height: 16px;
-  min-width: 16px;
-  padding-inline: 4px;
-  font-size: 10px;
-  line-height: 16px;
+  height: var(--mp-space-16);
+  min-width: var(--mp-space-16);
+  padding-inline: var(--mp-space-4);
+  font-size: var(--mp-fontSize-10);
+  line-height: var(--mp-space-16);
   background: var(--neg) !important;
+  /* P5.5: a solid semantic fill states its ink. The count digits used to
+     inherit, relying on Vuetify's default badge color happening to be white. */
+  color: var(--on-neg) !important;
   box-shadow: 0 0 0 2px var(--surface-primary);
   /* The badge overlaps a few px into the next utility button (4px gap,
      floating badge). Both it and that button are position:relative/absolute
@@ -1754,8 +1792,8 @@ function onSearchKeydown(event: KeyboardEvent) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: var(--mp-component-control-height);
+    height: var(--mp-component-control-height);
     flex-shrink: 0;
     border: 0;
     border-radius: var(--r-pill);
@@ -1786,8 +1824,8 @@ function onSearchKeydown(event: KeyboardEvent) {
 .appbar-mobile-search-card__header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: var(--mp-space-8);
+  padding: var(--mp-component-dialog-paddingCompact);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
@@ -1799,11 +1837,11 @@ function onSearchKeydown(event: KeyboardEvent) {
 .appbar-mobile-search-card__results {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 8px;
+  padding: var(--mp-space-8);
 }
 
 .appbar-mobile-search-card__footer {
-  padding: 12px 16px;
+  padding: var(--mp-component-dialog-paddingCompact);
   border-top: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
@@ -1814,8 +1852,8 @@ function onSearchKeydown(event: KeyboardEvent) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--mp-component-control-height);
+  height: var(--mp-component-control-height);
   border: 0;
   border-radius: var(--r-pill);
   /* Match the sibling action buttons: faint resting surface + dark glyph so the
@@ -1847,15 +1885,15 @@ function onSearchKeydown(event: KeyboardEvent) {
 
 .appbar-create-menu {
   border-color: var(--border-subtle);
-  padding: 8px;
+  padding: var(--mp-space-8);
   overflow: hidden;
 }
 
 .appbar-create-menu__label {
-  padding: 8px 8px 6px;
+  padding: var(--mp-space-8) var(--mp-space-8) var(--mp-space-6);
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -1863,19 +1901,20 @@ function onSearchKeydown(event: KeyboardEvent) {
 .appbar-create-menu__list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--mp-space-2);
 }
 
 .appbar-create-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: var(--mp-component-listItem-gap);
   width: 100%;
-  min-height: 52px;
-  padding: 8px 10px;
+  /* Two-line row: the listItem floor plus its second line. */
+  min-height: var(--mp-space-48);
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-space-10);
   border: 0;
-  border-radius: var(--r-chip);
+  border-radius: var(--mp-component-chip-radius);
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -1908,32 +1947,32 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 .appbar-create-row__body strong {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.3;
   color: var(--text-primary);
 }
 
 .appbar-create-row__body small {
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
 }
 
 .appbar-create-kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
+  min-width: var(--mp-component-chip-height-md);
+  height: var(--mp-component-chip-height-md);
+  padding: 0 var(--mp-component-chip-paddingInline);
   border: 1px solid var(--border-subtle);
-  border-radius: 6px;
+  border-radius: var(--mp-radius-4);
   background: var(--surface-secondary);
   color: var(--muted);
   font-family: ui-monospace, "SF Mono", monospace;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   line-height: 1;
 }
 </style>

@@ -31,10 +31,10 @@ const ASKS = [
 <style scoped>
 .s13__ask {
   display: flex;
-  gap: var(--mp-spacing-4);
-  padding: var(--mp-spacing-4) var(--mp-spacing-5);
+  gap: var(--mp-space-16);
+  padding: var(--mp-space-16) var(--mp-space-20);
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface));
   height: 100%;
 }
@@ -46,20 +46,20 @@ const ASKS = [
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   background: rgba(var(--v-theme-primary), 0.1);
   color: rgb(var(--v-theme-primary));
-  font-size: var(--mp-typography-fontSize-sm);
-  font-weight: var(--mp-typography-fontWeight-bold);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-bold);
 }
 
 .s13__text {
-  font-size: var(--mp-typography-fontSize-md);
-  line-height: var(--mp-typography-lineHeight-normal);
+  font-size: var(--mp-fontSize-16);
+  line-height: var(--mp-lineHeight-normal);
 }
 
 .s13__footnote {
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
 }
 </style>

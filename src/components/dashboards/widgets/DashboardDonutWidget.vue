@@ -6,6 +6,7 @@
 // the same (rounded ends, surface-coloured gaps, centre readout).
 import { computed, defineAsyncComponent, inject, onBeforeUnmount, onMounted, ref, unref } from 'vue'
 import { useTheme } from 'vuetify'
+import { mp_color_chart_light_series1 } from '@/design-tokens/generated/tokens'
 import type { ApexOptions } from 'apexcharts'
 import DtLegendList, { type DtLegendRow } from '../dotted/DtLegendList.vue'
 import { CHART_PALETTE_OVERRIDE, embossDonutStops, useChartTheme, type ChartTheme } from '@/plugins/chartPalette'
@@ -68,7 +69,7 @@ const legendRows = computed<DtLegendRow[]>(() =>
   props.data.segments.map((segment, index) => ({
     label: segment.label,
     value: segment.formattedValue,
-    color: palette.value[index % palette.value.length] ?? '#0092D4',
+    color: palette.value[index % palette.value.length] ?? mp_color_chart_light_series1,
     delta: segment.delta,
     deltaPositive: segment.deltaPositive,
   })),
@@ -212,7 +213,7 @@ const options = computed<ApexOptions>(() => {
 .donut-widget {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--mp-space-16);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -231,7 +232,7 @@ const options = computed<ApexOptions>(() => {
 .donut-widget__pie-block {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: var(--mp-space-20);
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -246,7 +247,7 @@ const options = computed<ApexOptions>(() => {
   .donut-widget__pie-block {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: var(--mp-space-12);
   }
 }
 
@@ -257,28 +258,28 @@ const options = computed<ApexOptions>(() => {
 
 .donut-widget__footer {
   margin-top: auto;
-  padding-top: 14px;
+  padding-top: var(--mp-space-14);
   border-top: 1px solid var(--border-subtle);
   display: flex;
-  gap: 24px;
+  gap: var(--mp-space-24);
 }
 
 .donut-widget__stat {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--mp-space-4);
   min-width: 0;
 }
 
 .donut-widget__stat-label {
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
   white-space: nowrap;
 }
 
 .donut-widget__stat-value {
   font-size: 17px;
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
@@ -296,7 +297,7 @@ const options = computed<ApexOptions>(() => {
   border: 1px solid var(--mp-tip-border, var(--border-subtle));
   border-radius: var(--mp-tip-radius, 8px);
   box-shadow: var(--mp-tip-shadow, var(--elevation-modal));
-  padding: 8px 10px;
+  padding: var(--mp-space-8) var(--mp-space-10);
   min-width: 140px;
   font-family: Inter, system-ui, sans-serif;
 }
@@ -304,15 +305,15 @@ const options = computed<ApexOptions>(() => {
 .donut-widget :deep(.mp-chart-tip__row) {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 2px 0;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-12);
+  padding: var(--mp-space-2) 0;
 }
 
 .donut-widget :deep(.mp-chart-tip__dot) {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--mp-radius-4);
   flex-shrink: 0;
 }
 
@@ -322,8 +323,8 @@ const options = computed<ApexOptions>(() => {
 
 .donut-widget :deep(.mp-chart-tip__value) {
   margin-left: auto;
-  padding-left: 12px;
-  font-weight: 500;
+  padding-left: var(--mp-space-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--mp-tip-text, var(--text-primary));
   font-variant-numeric: tabular-nums;
 }

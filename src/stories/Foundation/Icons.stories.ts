@@ -4,9 +4,9 @@ import { VContainer, VIcon, VTextField } from 'vuetify/components'
 import * as LucideIcons from 'lucide-vue-next'
 import { MDI_TO_LUCIDE } from '@/plugins/lucideIcons'
 import {
-  mp_borderRadius_md,
-  mp_typography_fontFamily_mono,
-  mp_typography_fontSize_xs,
+  mp_radius_12,
+  mp_fontFamily_mono,
+  mp_fontSize_11,
 } from '@/design-tokens/generated/tokens'
 
 const meta = {
@@ -88,9 +88,9 @@ export const Catalog: Story = {
         shown,
         total: allIconNames.length,
         PAGE_SIZE,
-        mp_borderRadius_md,
-        mp_typography_fontFamily_mono,
-        mp_typography_fontSize_xs,
+        mp_radius_12,
+        mp_fontFamily_mono,
+        mp_fontSize_11,
       }
     },
     template: `
@@ -115,13 +115,13 @@ export const Catalog: Story = {
             :style="{
               background: 'rgb(var(--v-theme-surface))',
               border: '1px solid rgb(var(--v-theme-outline-variant))',
-              borderRadius: mp_borderRadius_md,
+              borderRadius: mp_radius_12,
               gap: '8px',
             }"
           >
             <v-icon :icon="name" size="24" color="primary" />
             <span
-              :style="{ fontFamily: mp_typography_fontFamily_mono, fontSize: mp_typography_fontSize_xs, wordBreak: 'break-all' }"
+              :style="{ fontFamily: mp_fontFamily_mono, fontSize: mp_fontSize_11, wordBreak: 'break-all' }"
               class="text-medium-emphasis"
             >{{ name }}</span>
           </div>
@@ -136,7 +136,7 @@ export const MdiAliases: Story = {
     components: { VIcon },
     setup() {
       const aliases = Object.entries(MDI_TO_LUCIDE).map(([mdi, lucide]) => ({ mdi, lucide }))
-      return { aliases, mp_borderRadius_md, mp_typography_fontFamily_mono, mp_typography_fontSize_xs }
+      return { aliases, mp_radius_12, mp_fontFamily_mono, mp_fontSize_11 }
     },
     template: `
       <div class="pa-6">
@@ -152,12 +152,12 @@ export const MdiAliases: Story = {
             :style="{
               background: 'rgb(var(--v-theme-surface))',
               border: '1px solid rgb(var(--v-theme-outline-variant))',
-              borderRadius: mp_borderRadius_md,
+              borderRadius: mp_radius_12,
               gap: '12px',
             }"
           >
             <v-icon :icon="a.mdi" size="22" color="primary" />
-            <span :style="{ fontFamily: mp_typography_fontFamily_mono, fontSize: mp_typography_fontSize_xs }" class="text-medium-emphasis">
+            <span :style="{ fontFamily: mp_fontFamily_mono, fontSize: mp_fontSize_11 }" class="text-medium-emphasis">
               {{ a.mdi }} → {{ a.lucide }}
             </span>
           </div>

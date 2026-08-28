@@ -1,14 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpToastStack from './MpToastStack.vue'
 import { useToast } from '@/composables/useToast'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Feedback/MpToastStack',
+  title: 'Molecules/MpToastStack',
   component: MpToastStack,
   tags: ['autodocs'],
   parameters: {
-    layout: 'fullscreen',
+    canvas: 'full',
     // The stack teleports to <body> and positions fixed at the bottom-right of
     // the viewport — render docs examples in isolated iframes so each story
     // shows its own queue (toast state is a module singleton, same convention
@@ -73,7 +72,7 @@ toast.info('3 contacts were skipped because they already exist in this list.', {
 on the host. Its public API is the \`useToast()\` composable and the \`Toast\` / \`ToastOptions\` /
 \`ToastAction\` types in \`src/composables/useToast.ts\`, all documented inline there. That's why
 the Controls panel below is empty.
-        `,
+`,
       },
     },
   },
@@ -157,12 +156,6 @@ export const MultipleStacked: Story = seededStory((toast) => {
   })
   toast.error('2 items failed to import.')
 })
-
-/** L4 overlay surface in dark mode. */
-export const DarkModeStacked: Story = {
-  globals: darkModeGlobals,
-  ...MultipleStacked,
-}
 
 /** Drives the real API from buttons — demonstrates the actual 4.5s auto-dismiss timing and
  * hover/focus-to-pause behavior (hover a toast, or Tab to its action button, before it times out). */

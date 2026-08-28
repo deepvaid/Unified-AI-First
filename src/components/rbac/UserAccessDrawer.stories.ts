@@ -2,14 +2,13 @@ import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import UserAccessDrawer from './UserAccessDrawer.vue'
 import { SEED_USERS } from '@/stores/rbacData'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 function wait(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
 const meta = {
-  title: 'RBAC/UserAccessDrawer',
+  title: 'Product/RBAC/UserAccessDrawer',
   component: UserAccessDrawer,
   tags: ['autodocs'],
   parameters: {
@@ -142,10 +141,4 @@ export const EffectivePermissionsExpanded: Story = {
       .find(btn => btn.textContent?.includes('Show effective permissions'))
     toggle?.click()
   },
-}
-
-/** L4 overlay surface in dark mode. */
-export const DarkModeOpen: Story = {
-  globals: darkModeGlobals,
-  ...Open,
 }

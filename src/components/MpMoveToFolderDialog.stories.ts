@@ -1,11 +1,13 @@
 import { onBeforeUnmount, ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpMoveToFolderDialog from './MpMoveToFolderDialog.vue'
+import MpRowActionsMenu from './MpRowActionsMenu.vue'
+import MpStatusChip from './MpStatusChip.vue'
+import { CAMPAIGNS } from '@/stories/fixtures'
 import { useFoldersStore } from '@/stores/useFolders'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Forms/MpMoveToFolderDialog',
+  title: 'Molecules/MpMoveToFolderDialog',
   component: MpMoveToFolderDialog,
   tags: ['autodocs'],
   parameters: {
@@ -151,8 +153,123 @@ export const EmptyFolderList: Story = {
   }),
 }
 
-/** The move-to-folder dialog on dark. */
-export const DarkMode: Story = {
-  ...Default,
-  globals: darkModeGlobals,
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * One structure — a folder picker. What varies is the scope it is opened for; each scope has
+ * its own folder tree, and the dialog reads it from `useFoldersStore`.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpMoveToFolderDialog },
+    data: () => ({ which: 'campaigns' as string }),
+    template: `
+      <div class="d-flex ga-2 flex-wrap">
+        <v-btn variant="outlined" class="text-none" @click="which = 'campaigns'">scope="campaigns"</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'images'">scope="images"</v-btn>
+
+        <MpMoveToFolderDialog :model-value="which === 'campaigns'" scope="campaigns" :current-folder-id="null" item-label="Spring Refresh" @update:model-value="which = ''" />
+        <MpMoveToFolderDialog :model-value="which === 'images'" scope="images" :current-folder-id="null" item-label="hero-spring.png" @update:model-value="which = ''" />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop. This is `MpDialog`'s `sm` (440px) — a folder list is a single
+ * column of short labels, and a wider measure would only stretch them.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpMoveToFolderDialog },
+    data: () => ({ open: true }),
+    template: `
+      <div>
+        <v-btn variant="outlined" class="text-none" @click="open = true">Open</v-btn>
+        <MpMoveToFolderDialog v-model="open" scope="campaigns" :current-folder-id="null" item-label="Spring Refresh" />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * The states that matter: nothing selected yet, already in a folder (Move is disabled until the
+ * choice changes), and the inline "New folder" field open.
+ */
+export const States: Story = {
+  render: () => ({
+    components: { MpMoveToFolderDialog },
+    data: () => ({ which: '' as string }),
+    template: `
+      <div class="d-flex ga-2 flex-wrap">
+        <v-btn variant="outlined" class="text-none" @click="which = 'unfiled'">Unfiled</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'current'">Already in a folder</v-btn>
+
+        <MpMoveToFolderDialog :model-value="which === 'unfiled'" scope="campaigns" :current-folder-id="null" item-label="Spring Refresh" @update:model-value="which = ''" />
+        <MpMoveToFolderDialog :model-value="which === 'current'" scope="campaigns" current-folder-id="lifecycle" item-label="Welcome — Day 1" @update:model-value="which = ''" />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** The real flow: a row's kebab opens the picker, and confirming moves the
+ * record. Since Phase 4 this dialog composes `MpDialog` — it used to carry three separate
+ * insets of its own (`pt-4 px-5` · `px-3 py-2` · `px-4 pb-4`) and now carries none.
+ */
+export const InContextMoveACampaign: Story = {
+  render: () => ({
+    components: { MpMoveToFolderDialog, MpRowActionsMenu, MpStatusChip },
+    setup() {
+      const open = ref(false)
+      const pending = ref<string | null>(null)
+      const placed = ref<Record<string, string>>({})
+      return {
+        open, pending, placed,
+        rows: CAMPAIGNS.slice(0, 4),
+        headers: [
+          { title: 'Campaign', key: 'name' },
+          { title: 'Folder', key: 'folder' },
+          { title: 'Status', key: 'status' },
+          { title: '', key: 'actions', sortable: false, align: 'end' as const },
+        ],
+        ask: (name: string) => { pending.value = name; open.value = true },
+        onMove: (folderId: string | null) => {
+          if (pending.value) placed.value = { ...placed.value, [pending.value]: folderId ?? 'Unfiled' }
+        },
+      }
+    },
+    template: `
+      <v-card flat border rounded="lg">
+        <v-data-table :headers="headers" :items="rows" item-value="id" hide-default-footer>
+          <template #item.folder="{ item }">
+            <span class="text-medium-emphasis">{{ placed[item.name] ?? '—' }}</span>
+          </template>
+          <template #item.status="{ item }">
+            <MpStatusChip :status="item.status" type="campaign" size="sm" />
+          </template>
+          <template #item.actions="{ item }">
+            <MpRowActionsMenu aria-label="Campaign actions" :item-label="item.name">
+              <v-list-item title="Move to folder…" prepend-icon="folder-input" @click="ask(item.name)" />
+              <v-list-item title="Duplicate" prepend-icon="copy" />
+            </MpRowActionsMenu>
+          </template>
+        </v-data-table>
+
+        <MpMoveToFolderDialog
+          v-model="open"
+          scope="campaigns"
+          :current-folder-id="null"
+          :item-label="pending ?? undefined"
+          @move="onMove"
+        />
+      </v-card>
+    `,
+  }),
+  args: {} as never,
 }

@@ -8,6 +8,8 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -246,32 +248,36 @@ function confirmDelete() {
     <!-- ── Condition builder drawer ─────────────────────────────────────────── -->
     <MpFormDrawer
       v-model="drawer"
-      :title="editingId != null ? 'Edit Segment' : 'Create Segment'"
-      :width="680"
+      :title="editingId != null ? 'Edit Segment' : 'Create Segment'" size="lg"
       :guarded="drawerDirty"
       @close="requestCloseDrawer"
     >
-      <v-text-field v-model="segName" label="Segment Name *" variant="outlined" density="comfortable" class="mb-5" />
+      <MpFormGrid>
+        <v-text-field v-model="segName" label="Segment Name *" />
 
-      <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="mb-5 text-body-2">
-        <span class="font-weight-medium">Summary: </span>{{ plainLanguageSummary }}
-        <div class="text-caption mt-1">≈ {{ matchEstimate.toLocaleString() }} contacts match</div>
-      </v-alert>
+        <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
+          <span class="font-weight-medium">Summary: </span>{{ plainLanguageSummary }}
+          <div class="text-caption mt-1">≈ {{ matchEstimate.toLocaleString() }} contacts match</div>
+        </v-alert>
 
-      <div class="text-subtitle-2 font-weight-bold mb-2">Match logic</div>
-      <v-radio-group v-model="matchLogic" hide-details class="mb-4">
-        <v-radio label="Match ALL rules" value="all" />
-        <v-radio label="Match ONE OR MORE rules" value="any" />
-        <v-radio label="Include all active contacts" value="active" />
-      </v-radio-group>
+        <MpFormField label="Match logic">
+          <template #default="{ labelId }">
+            <v-radio-group v-model="matchLogic" :aria-labelledby="labelId">
+              <v-radio label="Match ALL rules" value="all" />
+              <v-radio label="Match ONE OR MORE rules" value="any" />
+              <v-radio label="Include all active contacts" value="active" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
+      </MpFormGrid>
 
       <template v-if="matchLogic !== 'active'">
         <div
           v-for="(rule, rIdx) in rules"
           :key="rule.id"
-          class="rule-block mb-4"
+          class="rule-block"
         >
-          <div class="d-flex align-center justify-space-between mb-3">
+          <div class="d-flex align-center justify-space-between">
             <span class="text-caption text-medium-emphasis font-weight-medium">Rule {{ rIdx + 1 }}</span>
             <v-btn
               v-if="rules.length > 1"
@@ -284,33 +290,34 @@ function confirmDelete() {
             />
           </div>
 
-          <div
-            v-for="crit in rule.criteria"
-            :key="crit.id"
-            class="criterion-row mb-2"
-          >
-            <v-select v-model="crit.category" :items="CATEGORIES" label="Category" variant="outlined" density="compact" hide-details />
-            <v-select v-model="crit.field" :items="FIELDS" label="Field" variant="outlined" density="compact" hide-details />
-            <v-select v-model="crit.operator" :items="OPERATORS" label="Operator" variant="outlined" density="compact" hide-details />
-            <v-text-field v-model="crit.value" label="Value" variant="outlined" density="compact" hide-details />
-            <v-btn
-              icon="x"
-              variant="text"
-              size="x-small"
-              class="text-medium-emphasis"
-              aria-label="Remove criteria"
-              :disabled="rule.criteria.length === 1"
-              @click="removeCriterion(rule, crit.id)"
-            />
-          </div>
+          <MpFormGrid>
+            <div
+              v-for="crit in rule.criteria"
+              :key="crit.id"
+              class="mp-form-grid__trailing"
+            >
+              <MpFormGrid :cols="2">
+                <v-select v-model="crit.category" :items="CATEGORIES" label="Category" />
+                <v-select v-model="crit.field" :items="FIELDS" label="Field" />
+                <v-select v-model="crit.operator" :items="OPERATORS" label="Operator" />
+                <v-text-field v-model="crit.value" label="Value" />
+              </MpFormGrid>
+              <v-btn
+                icon="x"
+                variant="text"
+                size="x-small"
+                class="text-medium-emphasis"
+                aria-label="Remove criteria"
+                :disabled="rule.criteria.length === 1"
+                @click="removeCriterion(rule, crit.id)"
+              />
+            </div>
+          </MpFormGrid>
 
-          <div class="d-flex align-center justify-space-between mt-3">
+          <div class="d-flex align-center justify-space-between">
             <v-switch
               v-model="rule.matchAll"
               :label="rule.matchAll ? 'Match all criteria' : 'Match any criteria'"
-              color="primary"
-              density="compact"
-              hide-details
             />
             <v-btn variant="text" size="small" class="text-none" prepend-icon="plus" @click="addCriterion(rule)">Add criteria</v-btn>
           </div>
@@ -354,26 +361,18 @@ function confirmDelete() {
 
 <style scoped>
 .rule-block {
+  /* The block owns the rhythm between its header, its criteria grid and its
+     footer, on the same gap the criteria themselves sit on. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-component-field-groupGap);
   border: 1px solid rgba(var(--v-border-color), 0.14);
   border-radius: 12px;
   padding: 16px;
   background: rgba(var(--v-theme-on-surface), 0.015);
 }
 
-.criterion-row {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr 1fr auto;
-  gap: 8px;
-  align-items: center;
-}
-
 .builder-note {
   border: 1px dashed rgba(var(--v-border-color), 0.3);
-}
-
-@media (max-width: 720px) {
-  .criterion-row {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 </style>

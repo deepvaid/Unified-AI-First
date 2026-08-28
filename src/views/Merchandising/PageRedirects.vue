@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useToast } from '@/composables/useToast'
 import { useMerchandisingStore, type PageRedirect } from '@/stores/useMerchandising'
 
@@ -141,44 +142,35 @@ function submitEdit() {
 
       <v-expand-transition>
         <div v-show="createOpen" class="merch-create__body">
-          <div class="merch-create__grid">
-            <div>
-              <label class="merch-create__label">Queries</label>
-              <v-text-field
-                v-model="draftQueryInput"
-                placeholder="Type a query, then press Enter"
-                density="comfortable"
-                variant="outlined"
-                hide-details
-                prepend-inner-icon="search"
-                @keydown.enter.prevent="addQuery"
-              />
-              <div v-if="draftQueries.length > 0" class="d-flex flex-wrap gap-1 mt-2">
-                <v-chip
-                  v-for="q in draftQueries"
-                  :key="q"
-                  size="small"
-                  variant="tonal"
-                  color="default"
-                  closable
-                  @click:close="removeQuery(q)"
-                >
-                  {{ q }}
-                </v-chip>
-              </div>
+          <MpFormGrid :cols="2">
+            <v-text-field
+              v-model="draftQueryInput"
+              label="Queries *"
+              hint="Type a query, then press Enter"
+              persistent-hint
+              prepend-inner-icon="search"
+              @keydown.enter.prevent="addQuery"
+            />
+            <v-text-field
+              v-model="draftUrl"
+              label="Lead to URL *"
+              placeholder="https://your-store.com/page"
+              prepend-inner-icon="link"
+            />
+            <div v-if="draftQueries.length > 0" class="mp-form-grid__full d-flex flex-wrap gap-1">
+              <v-chip
+                v-for="q in draftQueries"
+                :key="q"
+                size="small"
+                variant="tonal"
+                color="default"
+                closable
+                @click:close="removeQuery(q)"
+              >
+                {{ q }}
+              </v-chip>
             </div>
-            <div>
-              <label class="merch-create__label">Lead to URL</label>
-              <v-text-field
-                v-model="draftUrl"
-                placeholder="https://your-store.com/page"
-                density="comfortable"
-                variant="outlined"
-                hide-details
-                prepend-inner-icon="link"
-              />
-            </div>
-          </div>
+          </MpFormGrid>
 
           <div class="d-flex justify-end gap-2 mt-5">
             <v-btn variant="outlined" class="text-none" @click="resetDraft">Close</v-btn>
@@ -194,11 +186,13 @@ function submitEdit() {
     <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <div class="merch-table__header">
         <div class="text-subtitle-2 font-weight-bold">All page redirects</div>
+        <!-- Toolbar search: `hide-details` is deliberate here — a table filter
+             never carries a hint, and the label lives on `aria-label` so the
+             header row stays one control tall (same contract as MpDataTableToolbar). -->
         <v-text-field
           v-model="search"
           placeholder="Search queries or URLs…"
-          density="comfortable"
-          variant="outlined"
+          aria-label="Search page redirects"
           hide-details
           prepend-inner-icon="search"
           max-width="320"
@@ -279,39 +273,35 @@ function submitEdit() {
 
     <!-- Edit redirect drawer -->
     <MpFormDrawer v-model="editDrawer" title="Edit page redirect" subtitle="Update the queries and destination URL">
-      <label class="merch-create__label">Queries</label>
-      <v-text-field
-        v-model="editQueryInput"
-        placeholder="Type a query, then press Enter"
-        density="comfortable"
-        variant="outlined"
-        hide-details
-        prepend-inner-icon="search"
-        @keydown.enter.prevent="addEditQuery"
-      />
-      <div v-if="editQueries.length > 0" class="d-flex flex-wrap gap-1 mt-2 mb-3">
-        <v-chip
-          v-for="q in editQueries"
-          :key="q"
-          size="small"
-          variant="tonal"
-          color="default"
-          closable
-          @click:close="removeEditQuery(q)"
-        >
-          {{ q }}
-        </v-chip>
-      </div>
-      <label class="merch-create__label">Lead to URL</label>
-      <v-text-field
-        v-model="editUrl"
-        placeholder="https://your-store.com/page"
-        density="comfortable"
-        variant="outlined"
-        hide-details
-        prepend-inner-icon="link"
-        class="mt-2"
-      />
+      <MpFormGrid>
+        <v-text-field
+          v-model="editQueryInput"
+          label="Queries *"
+          hint="Type a query, then press Enter"
+          persistent-hint
+          prepend-inner-icon="search"
+          @keydown.enter.prevent="addEditQuery"
+        />
+        <div v-if="editQueries.length > 0" class="d-flex flex-wrap gap-1">
+          <v-chip
+            v-for="q in editQueries"
+            :key="q"
+            size="small"
+            variant="tonal"
+            color="default"
+            closable
+            @click:close="removeEditQuery(q)"
+          >
+            {{ q }}
+          </v-chip>
+        </div>
+        <v-text-field
+          v-model="editUrl"
+          label="Lead to URL *"
+          placeholder="https://your-store.com/page"
+          prepend-inner-icon="link"
+        />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="editDrawer = false">Cancel</v-btn>
         <v-btn
@@ -340,28 +330,6 @@ function submitEdit() {
 
 .merch-create__body {
   padding: 0 22px 22px 22px;
-}
-
-.merch-create__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-@media (max-width: 720px) {
-  .merch-create__grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.merch-create__label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  margin-bottom: 6px;
 }
 
 .merch-table__header {

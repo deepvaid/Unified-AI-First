@@ -13,6 +13,7 @@ import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -210,7 +211,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
             <div class="min-w-0">
               <div class="text-subtitle-1 font-weight-bold text-truncate">{{ fullName }}</div>
               <div v-if="contact.company" class="text-body-2 text-medium-emphasis text-truncate">{{ contact.company }}</div>
-              <MpStatusChip :status="contact.status ?? ''" type="contact" size="x-small" variant="flat" class="mt-1" />
+              <MpStatusChip :status="contact.status ?? ''" type="contact" size="sm" variant="flat" class="mt-1" />
             </div>
           </div>
 
@@ -305,10 +306,11 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
             >{{ tag }}</v-chip>
           </div>
           <div v-else class="text-body-2 text-medium-emphasis mb-4">No contact tags to show.</div>
+          <!-- Compact, detail-free: this is an inline add control in a summary
+               card, not a form field. -->
           <v-text-field
             v-model="tagInput"
-            label="Add contact tag..."
-            variant="outlined"
+            label="Add contact tag"
             density="compact"
             hide-details
             append-inner-icon="plus"
@@ -341,11 +343,11 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
           <div class="d-flex align-center justify-space-between mb-2">
             <span class="text-body-2">Add to Do Not Email List</span>
-            <v-switch v-model="detail.doNotEmail" hide-details density="compact" color="primary" />
+            <v-switch v-model="detail.doNotEmail" aria-label="Add to Do Not Email List" hide-details density="compact" color="primary" />
           </div>
           <div class="d-flex align-center justify-space-between mb-3">
             <span class="text-body-2">Add to Do Not SMS List</span>
-            <v-switch v-model="detail.doNotSms" hide-details density="compact" color="primary" />
+            <v-switch v-model="detail.doNotSms" aria-label="Add to Do Not SMS List" hide-details density="compact" color="primary" />
           </div>
 
           <div class="d-flex align-center gap-4">
@@ -497,7 +499,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                     <div class="ce-event__body" :class="{ 'ce-event__body--last': idx === visibleTimeline.length - 1 }">
                       <div class="ce-event__title">{{ entry.title }}</div>
                       <div class="d-flex align-center gap-2 mt-1 flex-wrap">
-                        <MpStatusChip v-for="s in entry.statuses" :key="s" :status="s" type="campaign" size="x-small" variant="outlined" />
+                        <MpStatusChip v-for="s in entry.statuses" :key="s" :status="s" type="campaign" size="sm" variant="outlined" />
                         <span class="ce-event__time">{{ entry.date }}</span>
                       </div>
                     </div>
@@ -536,7 +538,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                   <div class="flex-grow-1">
                     <div class="text-body-2 font-weight-medium">{{ c.name }}</div>
                     <div class="d-flex gap-2 mt-1 flex-wrap">
-                      <MpStatusChip v-for="s in c.statuses" :key="s" :status="s" type="campaign" size="x-small" variant="outlined" />
+                      <MpStatusChip v-for="s in c.statuses" :key="s" :status="s" type="campaign" size="sm" variant="outlined" />
                     </div>
                   </div>
                   <div class="text-caption text-medium-emphasis text-no-wrap mr-3">{{ c.sentDate }}</div>
@@ -553,7 +555,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                   <div class="flex-grow-1">
                     <div class="text-body-2 font-weight-medium">{{ c.name }}</div>
                     <div class="d-flex gap-2 mt-1 flex-wrap">
-                      <MpStatusChip v-for="s in c.statuses" :key="s" :status="s" type="campaign" size="x-small" variant="outlined" />
+                      <MpStatusChip v-for="s in c.statuses" :key="s" :status="s" type="campaign" size="sm" variant="outlined" />
                     </div>
                   </div>
                   <div class="text-caption text-medium-emphasis text-no-wrap mr-3">{{ c.sentDate }}</div>
@@ -583,10 +585,10 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                   style="background: transparent;"
                 >
                   <template v-slot:item.status="{ item }">
-                    <MpStatusChip :status="item.status" type="ticket" size="x-small" />
+                    <MpStatusChip :status="item.status" type="ticket" size="sm" />
                   </template>
                   <template v-slot:item.priority="{ item }">
-                    <MpStatusChip :status="item.priority" type="priority" size="x-small" />
+                    <MpStatusChip :status="item.priority" type="priority" size="sm" />
                   </template>
                 </v-data-table>
               </v-card>
@@ -615,13 +617,13 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                     <span class="font-weight-medium">${{ item.total.toFixed(2) }}</span>
                   </template>
                   <template v-slot:item.status="{ item }">
-                    <MpStatusChip :status="item.status" type="order" size="x-small" />
+                    <MpStatusChip :status="item.status" type="order" size="sm" />
                   </template>
                   <template v-slot:item.paymentStatus="{ item }">
-                    <MpStatusChip :status="item.paymentStatus" type="payment" size="x-small" />
+                    <MpStatusChip :status="item.paymentStatus" type="payment" size="sm" />
                   </template>
                   <template v-slot:item.fulfillmentStatus="{ item }">
-                    <MpStatusChip :status="item.fulfillmentStatus" type="fulfillment" size="x-small" />
+                    <MpStatusChip :status="item.fulfillmentStatus" type="fulfillment" size="sm" />
                   </template>
                 </v-data-table>
               </v-card>
@@ -652,7 +654,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                     <span class="font-weight-medium">${{ item.total.toFixed(2) }}</span>
                   </template>
                   <template v-slot:item.recovered="{ item }">
-                    <MpStatusChip :status="item.recovered ? 'Recovered' : 'Not Recovered'" type="general" size="x-small" variant="flat" />
+                    <MpStatusChip :status="item.recovered ? 'Recovered' : 'Not Recovered'" type="general" size="sm" variant="flat" />
                   </template>
                 </v-data-table>
               </v-card>
@@ -671,13 +673,13 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
     <!-- ── Edit Contact Drawer ────────────────────────────────────────────── -->
     <MpFormDrawer v-model="editDrawer" title="Edit Contact" subtitle="Update contact information">
-      <v-row dense>
-        <v-col cols="6"><v-text-field v-model="editForm.firstName" label="First Name" /></v-col>
-        <v-col cols="6"><v-text-field v-model="editForm.lastName" label="Last Name" /></v-col>
-        <v-col cols="12"><v-text-field v-model="editForm.email" label="Email" type="email" /></v-col>
-        <v-col cols="12"><v-text-field v-model="editForm.phone" label="Phone" /></v-col>
-        <v-col cols="12"><v-text-field v-model="editForm.company" label="Company" /></v-col>
-      </v-row>
+      <MpFormGrid :cols="2">
+        <v-text-field v-model="editForm.firstName" label="First Name" />
+        <v-text-field v-model="editForm.lastName" label="Last Name" />
+        <v-text-field v-model="editForm.email" label="Email" type="email" class="mp-form-grid__full" />
+        <v-text-field v-model="editForm.phone" label="Phone" class="mp-form-grid__full" />
+        <v-text-field v-model="editForm.company" label="Company" class="mp-form-grid__full" />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="editDrawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" @click="saveEdit">Save Changes</v-btn>
@@ -766,7 +768,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
 .contact-sidebar::-webkit-scrollbar-thumb {
   background: rgba(var(--v-border-color), 0.3);
-  border-radius: var(--mp-borderRadius-sm);
+  border-radius: var(--mp-radius-4);
 }
 
 .right-content {
@@ -850,7 +852,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
 .right-tab-content::-webkit-scrollbar-thumb {
   background: rgba(var(--v-border-color), 0.3);
-  border-radius: var(--mp-borderRadius-sm);
+  border-radius: var(--mp-radius-4);
 }
 
 /* ── Engagement — quiet stat strip (no colored tiles) ─── */

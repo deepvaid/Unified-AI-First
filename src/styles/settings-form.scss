@@ -1,25 +1,27 @@
 /* ═══════════════════════════════════════════════════════════════
-   Global Outlined Field Baseline
+   Global Outlined Field Baseline — Flowbite-style floating label
    ───────────────────────────────────────────────────────────────
    Applies to ALL variant="outlined" Vuetify controls app-wide
    (v-text-field, v-select, v-textarea, v-autocomplete, v-combobox,
    date inputs, and anything else that renders .v-field--variant-outlined).
+
+   Transparent field, 1px neutral hairline at rest, 2px primary border on
+   focus/error with NO glow ring, floating label styled to sit in the border
+   notch (Flowbite's outlined pattern — flowbite.com/docs/forms/floating-label).
+   Fields already render this notch natively via Vuetify's `label` prop; this
+   file only restyles it, it doesn't introduce it.
 
    Settings pages inherit this unchanged.
    Individual components may add scoped specificity overrides,
    but must NOT introduce a second visual field style.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Field shape + subtle fill ─────────────────────────────── */
+/* ── Field shape — transparent, no resting fill ─────────────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined {
-  border-radius: var(--mp-component-input-radius-default);
-  font-size: 14px;
-  background: color-mix(in srgb, var(--surface-secondary) 55%, transparent);
+  border-radius: var(--mp-component-input-radius);
+  font-size: var(--mp-fontSize-14);
+  background: transparent;
   transition: background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
-}
-
-:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover {
-  background: color-mix(in srgb, var(--surface-secondary) 72%, transparent);
 }
 
 /* Baseline alpha: outline elements render at full opacity — the softness
@@ -33,14 +35,14 @@
 
 /* ── Input area — consistent height across all densities ────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__field {
-  padding-top: 2px;
-  padding-bottom: 2px;
+  padding-top: var(--mp-component-field-boxPadding);
+  padding-bottom: var(--mp-component-field-boxPadding);
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__input {
-  min-height: 40px;
-  padding-top: 8px;
-  padding-bottom: 8px;
+  min-height: var(--mp-component-control-height);
+  padding-top: var(--mp-space-8);
+  padding-bottom: var(--mp-space-8);
 }
 
 /* ── Placeholder ────────────────────────────────────────────── */
@@ -49,12 +51,23 @@
   opacity: 0.65;
 }
 
-/* ── Resting border — dark-mode-aware via --border-subtle alias ──── */
+/* ── Resting border — light neutral hairline, at the 3:1 floor ──
+   --border-strong (#8a8a8a light / #7C848F dark). P5.5-12 raised these from
+   #d4d4d4 / #4D535B, which sat at ~1.4-1.5:1. The old value was recorded as
+   an accepted risk (a trade of contrast for the lighter Flowbite look); that
+   trade was reversed because a field's resting border is the ONLY thing that
+   makes the field perceivable, which is exactly what WCAG 1.4.11 covers — the
+   focus/error affordances that were cited as mitigation only help once the
+   user has already found the field.
+   The new values are the lightest that clear 3:1 on the backgrounds fields
+   actually sit on (canvas and surface in light; surfaceOverlay, i.e. drawers
+   and dialogs, in dark), so the hairline stays as light as compliance allows.
+   Enforced by `npm run contrast:check` — see tokens.json -> $contrastPairs. */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__start,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__end,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__notch::before,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__notch::after {
-  border-color: var(--border-subtle) !important;
+  border-color: var(--border-strong) !important;
 }
 
 /* ── Hover border — one step darker than the resting hairline ── */
@@ -62,14 +75,10 @@
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover:not(.v-field--focused):not(.v-field--error) .v-field__outline__end,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover:not(.v-field--focused):not(.v-field--error) .v-field__outline__notch::before,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:hover:not(.v-field--focused):not(.v-field--error) .v-field__outline__notch::after {
-  border-color: var(--mp-border-subtle-hover, var(--border-subtle)) !important;
+  border-color: color-mix(in srgb, var(--border-strong) 60%, var(--text-secondary)) !important;
 }
 
-/* ── Focused border — primary color, no thickness bump, soft ring */
-:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
-}
-
+/* ── Focused border — primary color, 2px, no glow ring ──────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline__start,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline__end,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline__notch::before,
@@ -78,19 +87,21 @@
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-field__outline {
-  --v-field-border-width: 1px;
+  --v-field-border-width: 2px;
 }
 
-/* ── Error border + soft ring ───────────────────────────────── */
-:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error:not(.v-field--focused) {
-  box-shadow: 0 0 0 3px color-mix(in srgb, rgb(var(--v-theme-error)) 35%, transparent);
-}
-
+/* ── Error border — 2px, no glow ring. Kept AFTER focus: equal
+   specificity, source order lets error win when a field is both
+   focused and invalid. ─────────────────────────────────────────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline__start,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline__end,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline__notch::before,
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline__notch::after {
   border-color: rgb(var(--v-theme-error)) !important;
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-field__outline {
+  --v-field-border-width: 2px;
 }
 
 /* ── Disabled — full opacity, muted text ────────────────────── */
@@ -106,11 +117,34 @@
   color: var(--text-disabled);
 }
 
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--disabled .v-field__outline__start,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--disabled .v-field__outline__end,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--disabled .v-field__outline__notch::before,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--disabled .v-field__outline__notch::after {
+  border-color: var(--border-subtle) !important;
+}
+
 /* ── Details / helper / error text ─────────────────────────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-messages__message {
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   letter-spacing: 0.01em;
 }
+
+/* ── Form-group spacing — stated once, here (P3 / component.field.*) ─────────
+   Vuetify leaves hint/error spacing to its own defaults, which differ between
+   densities and control types. Pinning it to component.field.hintGap means a
+   text field, a select and a textarea all put the same distance between the
+   control and its helper line. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input__details {
+  padding-top: var(--mp-component-field-hintGap);
+  padding-inline: var(--mp-space-12);
+  min-height: 0;
+}
+
+/* The standalone-label class that used to live here is gone (P6-10). It had zero
+   consumers in its whole lifetime, and the job it described — a label above a
+   control that has none of its own — now belongs to MpFormField, which also wires
+   up the aria association a bare class could never provide. */
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input--error .v-messages__message {
   color: rgb(var(--v-theme-error));
@@ -137,11 +171,139 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
-/* ── Prepend / append inner icon ────────────────────────────── */
-:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__prepend-inner,
-:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__append-inner {
-  padding-top: 0;
+/* ── Floating label — Flowbite-style: small, medium weight, muted.
+   Vuetify already renders a notched floating label on any field with a
+   `label` prop (nothing in this codebase suppresses it); these rules only
+   restyle it.
+
+   CAUTION — specificity trap discovered while building this: Vuetify's own
+   `.v-field--error:not(.v-field--disabled) .v-label.v-field-label { color:
+   error }` (VField.css) is (0,4,0), the SAME specificity as the plain base
+   rule below. Because this file loads after Vuetify's component CSS, the
+   base rule was winning the tie and silently flattening the error label to
+   muted gray — caught only by checking computed color per state in the
+   browser, not by reading the CSS. (The pre-existing `.v-field--disabled
+   .v-label` rule above wasn't actually affected: --text-disabled and --muted
+   resolve to the identical token in both themes, so that tie was invisible —
+   but don't rely on that coincidence holding.) Fixed the same way the border
+   rules already do: chain `.v-field--variant-outlined` into the
+   error/disabled/focus selectors to reach (0,5,0), which unconditionally
+   outranks both Vuetify's rule and this file's own base rule. Any new
+   label-color rule added here MUST do the same or it will silently lose to
+   whichever state rule loads last. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-label.v-field-label {
+  color: var(--muted);
+}
+
+/* NEVER set --v-field-label-scale here. It looks like a font-size token, but
+   Vuetify uses it for TWO things: VField.css reads it as the floating label's
+   `font-size`, and VField.js:145 does
+   `parseFloat(getPropertyValue('--v-field-label-scale'))` to build the label's
+   float animation — `transform: scale(<that number>)`. Setting it to `12px`
+   made parseFloat return 12, so every labelled field's label animated to
+   scale(12) — a page-wide flash on every click. It escaped review because the
+   giant label only exists during the ~150ms WAAPI animation (the resting label
+   is `visibility: hidden` once settled), so any getComputedStyle check that
+   runs after the transition sees a perfectly correct field.
+   Set `font-size` directly instead: it pins the rendered size and out-specifies
+   Vuetify's `font-size: var(--v-field-label-scale)` ((0,4,0) vs (0,2,0)), while
+   the untouched `0.75em` default keeps parseFloat at the correct 0.75.
+   12px is also exactly 0.75 x the 16px resting label, so the animation's end
+   state (16 x 0.75) lands precisely on the real floating label — no size pop —
+   and matches Vuetify's hardcoded `targetWidth / 0.75` width math on line 138. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-label.v-field-label--floating {
+  font-size: var(--mp-fontSize-12);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-label.v-field-label {
+  color: rgb(var(--v-theme-primary));
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-label.v-field-label {
+  color: rgb(var(--v-theme-error));
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--disabled .v-label.v-field-label {
+  color: var(--text-disabled);
+}
+
+/* A chip standing in for a selected value sits on the shared chip ramp
+   (`component.chip.height.md`). Vuetify's own `small` chip is 26px, which is 2px
+   over the ramp — enough to push `.v-field__input` past its 40px floor, so a
+   select showing one row of chips rendered 46px tall against a 44px select right
+   beside it. Only chips *inside a field* are pinned here; a chip in a table cell
+   or a toolbar is not field chrome and keeps its own size prop. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field__input .v-chip {
+  /* Vuetify computes chip height from its own custom property, so setting that
+     is what actually moves it — a plain `height` would be overridden per size
+     class. The chip is nested in a `.v-select__selection` wrapper, hence the
+     descendant selector rather than a child combinator. */
+  --v-chip-height: var(--mp-component-chip-height-md);
+}
+
+/* A prefix or suffix ($ , %) is laid out beside the input, but Vuetify pads it
+   from a different variable than `.v-field__input` — 48px against 40 — so any
+   field carrying one rendered 52 while its neighbour rendered 44. Put both on the
+   same ramp so a prefixed field is the same height as a plain one and the affix
+   text sits on the input's own centre line. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--'])
+  .v-field--variant-outlined :is(.v-text-field__prefix, .v-text-field__suffix) {
+  min-height: var(--mp-component-control-height);
+  padding-top: var(--mp-space-8);
+  padding-bottom: var(--mp-space-8);
+}
+
+/* A stacked number-input's +/- buttons are two VBtns in the append-inner, and
+   the theme gives every VBtn a `min-height: control.height` — so the pair stacked
+   to 80px and dragged the whole control to 81, against 44 for every field beside
+   it. Each half takes half the ramp instead, which puts the control back on 44
+   with the stepper still centred and still clear of the text. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--'])
+  .v-number-input--stacked .v-number-input__control .v-btn {
+  /* !important is required, not sloppy: maropostTheme applies the VBtn ramp as an
+     inline `style` attribute, which no stylesheet rule can outrank. */
+  min-height: calc(var(--mp-component-control-height) / 2) !important;
+  height: calc(var(--mp-component-control-height) / 2) !important;
+}
+
+/* ── Prepend / append inner icon ──────────────────────────────
+   The rule that used to sit here (`padding-top: 0; align-items: center` on every
+   outlined field's affixes) was deleted in P6-12. It restated Vuetify's own
+   `.v-field--center-affix` default, which is already applied to every outlined
+   field — so it changed nothing on a normal field, while breaking two cases:
+
+   - `v-number-input control-variant="stacked"` builds its +/- buttons inside the
+     append-inner and needs them to stretch; `align-items: center` collapsed them
+     to intrinsic height.
+   - It gave the illusion that affix alignment was owned here, so the one field
+     that genuinely needed a fix (a plain-variant select) was hand-patched in its
+     own view instead.
+
+   What IS needed is the opposite, and only for one shape: a multi-select showing
+   chips wraps onto several rows, and center-affix then parks the chevron halfway
+   down a ~100px box, detached from the text it belongs to — the "select rendered
+   at 3x height with the chevron floating in empty space" defect. Pin the affixes
+   to the first row instead. The padding is derived, not guessed: (control height −
+   icon box) / 2 is exactly where center-affix puts them on a single-row field, so
+   an unwrapped select is pixel-identical and only a wrapped one changes. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--'])
+  :is(
+    .v-select--multiple.v-select--chips,
+    .v-autocomplete--multiple.v-autocomplete--chips,
+    .v-combobox--multiple.v-combobox--chips
+  )
+  :is(.v-field__prepend-inner, .v-field__append-inner, .v-field__clearable) {
+  /* Pin the affix to a box exactly one input row tall, offset by the field's own
+     outline padding, and centre the icon inside it. That lands the icon on the
+     first chip row's centre by construction — no assumption about the icon's
+     rendered size — and leaves an unwrapped select pixel-identical to before. */
+  align-self: flex-start;
   align-items: center;
+  padding-top: 0;
+  margin-block-start: var(--mp-component-field-boxPadding);
+  block-size: var(--mp-component-control-height);
 }
 
 
@@ -156,13 +318,13 @@
   padding: 20px 32px 96px 0;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--mp-space-28);
 }
 
 .settings-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 14px 16px;
+  gap: var(--mp-space-14) var(--mp-space-16);
 }
 
 .settings-grid--thirds {
@@ -171,16 +333,6 @@
 
 .settings-field--full {
   grid-column: 1 / -1;
-}
-
-.settings-field__label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: var(--mp-typography-semantic-metaLabel-fontSize);
-  font-weight: var(--mp-typography-semantic-metaLabel-fontWeight);
-  letter-spacing: var(--mp-typography-semantic-metaLabel-letterSpacing);
-  text-transform: var(--mp-typography-semantic-metaLabel-textTransform);
-  color: var(--muted);
 }
 
 .settings-page .v-btn {
@@ -201,29 +353,29 @@
 
 .settings-page .v-table th {
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .settings-page .v-table td {
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
 }
 
 .settings-page .section-actions {
   display: flex;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--mp-space-8);
+  margin-bottom: var(--mp-space-12);
 }
 
 .settings-page .stack {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--mp-component-field-groupGap);
 }
 
 .settings-save-bar {
@@ -233,17 +385,17 @@
   justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--mp-space-8);
   padding: 16px 0 2px;
-  margin-top: 4px;
+  margin-top: var(--mp-space-4);
   border-top: 1px solid var(--border-subtle);
-  background: linear-gradient(180deg, transparent 0, rgb(var(--v-theme-surface)) 24px);
+  background: linear-gradient(180deg, transparent 0, rgb(var(--v-theme-surface)) var(--mp-space-24));
   z-index: 2;
 }
 
 @media (max-width: 720px) {
   .settings-page {
-    padding: 16px 0 88px 0;
+    padding: var(--mp-space-16) 0 var(--mp-space-80) 0;
   }
 
   .settings-grid,

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import MpFormField from '@/components/MpFormField.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import type { BaseFont, LandingPageStyle } from '@/stores/useLandingPages'
 
 const props = defineProps<{
@@ -21,82 +24,87 @@ function set<K extends keyof LandingPageStyle>(key: K, value: LandingPageStyle[K
 </script>
 
 <template>
-  <div>
-    <div class="text-subtitle-2 font-weight-bold mb-1">Page style</div>
-    <div class="text-caption text-medium-emphasis mb-4">Applies across every block on this page.</div>
+  <MpFormGrid>
+    <MpFormSection title="Page style" description="Applies across every block on this page." />
 
-    <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2">Background</div>
-    <div class="d-flex align-center ga-2 mb-4">
-      <v-menu :close-on-content-click="false" location="start">
-        <template #activator="{ props: menuProps }">
-          <button v-bind="menuProps" type="button" class="lp-swatch" :style="{ background: props.style.backgroundColor }" aria-label="Background color" />
-        </template>
-        <v-color-picker :model-value="props.style.backgroundColor" mode="hex" :modes="['hex']" @update:model-value="v => set('backgroundColor', v)" />
-      </v-menu>
-      <span class="text-caption font-weight-medium">{{ props.style.backgroundColor }}</span>
-    </div>
+    <MpFormField label="Background">
+      <div class="d-flex align-center ga-2">
+        <v-menu :close-on-content-click="false" location="start">
+          <template #activator="{ props: menuProps }">
+            <button v-bind="menuProps" type="button" class="lp-swatch" :style="{ background: props.style.backgroundColor }" aria-label="Background color" />
+          </template>
+          <v-color-picker :model-value="props.style.backgroundColor" mode="hex" :modes="['hex']" @update:model-value="v => set('backgroundColor', v)" />
+        </v-menu>
+        <span class="text-caption font-weight-medium">{{ props.style.backgroundColor }}</span>
+      </div>
+    </MpFormField>
 
-    <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2">Content width</div>
-    <v-slider
-      :model-value="props.style.contentWidth"
-      :min="480"
-      :max="960"
-      :step="20"
-      thumb-label
-      color="primary"
-      class="mb-4"
-      hide-details
-      @update:model-value="v => set('contentWidth', v)"
-    >
-      <template #append>
-        <span class="text-caption text-medium-emphasis" style="width: 44px;">{{ props.style.contentWidth }}px</span>
+    <MpFormField label="Content width">
+      <template #default="{ labelId }">
+        <v-slider
+          :model-value="props.style.contentWidth"
+          :min="480"
+          :max="960"
+          :step="20"
+          thumb-label
+          :aria-labelledby="labelId"
+          @update:model-value="v => set('contentWidth', v)"
+        >
+          <template #append>
+            <span class="text-caption text-medium-emphasis lp-slider-value">{{ props.style.contentWidth }}px</span>
+          </template>
+        </v-slider>
       </template>
-    </v-slider>
+    </MpFormField>
 
-    <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2">Base font</div>
     <v-select
       :model-value="props.style.baseFont"
       :items="FONTS"
       item-title="label"
       item-value="value"
-      variant="outlined"
-      density="comfortable"
-      rounded="lg"
-      class="mb-4"
-      hide-details
+      label="Base font"
       @update:model-value="v => set('baseFont', v)"
     />
 
-    <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2">Accent / button color</div>
-    <div class="d-flex align-center ga-2 mb-4">
-      <v-menu :close-on-content-click="false" location="start">
-        <template #activator="{ props: menuProps }">
-          <button v-bind="menuProps" type="button" class="lp-swatch" :style="{ background: props.style.accentColor }" aria-label="Accent color" />
-        </template>
-        <v-color-picker :model-value="props.style.accentColor" mode="hex" :modes="['hex']" @update:model-value="v => set('accentColor', v)" />
-      </v-menu>
-      <span class="text-caption font-weight-medium">{{ props.style.accentColor }}</span>
-    </div>
+    <MpFormField label="Accent / button color">
+      <div class="d-flex align-center ga-2">
+        <v-menu :close-on-content-click="false" location="start">
+          <template #activator="{ props: menuProps }">
+            <button v-bind="menuProps" type="button" class="lp-swatch" :style="{ background: props.style.accentColor }" aria-label="Accent color" />
+          </template>
+          <v-color-picker :model-value="props.style.accentColor" mode="hex" :modes="['hex']" @update:model-value="v => set('accentColor', v)" />
+        </v-menu>
+        <span class="text-caption font-weight-medium">{{ props.style.accentColor }}</span>
+      </div>
+    </MpFormField>
 
-    <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2">Button radius</div>
-    <v-slider
-      :model-value="props.style.buttonRadius"
-      :min="0"
-      :max="28"
-      :step="2"
-      thumb-label
-      color="primary"
-      hide-details
-      @update:model-value="v => set('buttonRadius', v)"
-    >
-      <template #append>
-        <span class="text-caption text-medium-emphasis" style="width: 36px;">{{ props.style.buttonRadius }}px</span>
+    <MpFormField label="Button radius">
+      <template #default="{ labelId }">
+        <v-slider
+          :model-value="props.style.buttonRadius"
+          :min="0"
+          :max="28"
+          :step="2"
+          thumb-label
+          :aria-labelledby="labelId"
+          @update:model-value="v => set('buttonRadius', v)"
+        >
+          <template #append>
+            <span class="text-caption text-medium-emphasis lp-slider-value">{{ props.style.buttonRadius }}px</span>
+          </template>
+        </v-slider>
       </template>
-    </v-slider>
-  </div>
+    </MpFormField>
+  </MpFormGrid>
 </template>
 
 <style scoped>
+.lp-slider-value {
+  display: inline-block;
+  inline-size: var(--mp-space-48);
+  text-align: end;
+}
+
 .lp-swatch {
   width: 30px;
   height: 30px;

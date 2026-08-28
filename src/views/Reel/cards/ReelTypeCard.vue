@@ -26,16 +26,16 @@ defineProps<{
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--mp-spacing-3);
+  gap: var(--mp-space-12);
   padding: 6%;
   text-align: center;
 }
 
 .type-card__line {
   font-size: clamp(
-    var(--mp-typography-display-sm-fontSize),
+    var(--mp-display-sm-fontSize),
     7.5vw,
-    var(--mp-typography-display-xl-fontSize)
+    var(--mp-display-xl-fontSize)
   );
   animation: type-rise 500ms var(--mp-motion-easing-standard) both;
   animation-delay: calc(400ms + var(--i) * 450ms);

@@ -13,6 +13,8 @@ import { lucideIconSet } from '../src/plugins/lucideIcons'
 
 // Global styles
 import '../src/styles/app-styles'
+// Storybook-only canvas chrome (see the file header for why it lives here)
+import './preview.css'
 
 import { maropostDark, maropostDefaults, maropostLight } from '../src/plugins/maropostTheme'
 
@@ -47,6 +49,8 @@ void storybookRouter.push('/accounts/2000290/dashboard')
 
 type ThemeMode = 'light' | 'dark'
 type AccentKey = 'cyan' | 'blue' | 'gray' | 'purple'
+/** Story canvas policy — `padded` for everything, `full` for shells/overlays. */
+type CanvasMode = 'padded' | 'full'
 
 // ── Register plugins globally for all stories ──────────────────────────────
 setup((app) => {
@@ -64,15 +68,23 @@ function normalizeAccent(accent: string): AccentKey {
   return 'cyan'
 }
 
+function normalizeCanvas(canvas: unknown): CanvasMode {
+  return canvas === 'full' ? 'full' : 'padded'
+}
+
 /**
  * Mirrors useAppTheme's applyMode (data-theme on <html>), plus stamps the
- * Vuetify theme class on <body>. In the real app, <body> sits inside the
- * v-app root so it inherits --v-theme-background from Vuetify's global
- * theme class; in Storybook the story tree is wrapped in a nested
- * <v-theme-provider> instead, which scopes those CSS variables to its own
- * subtree and never reaches its <body> ancestor. Without this, global.scss's
- * `body { background: rgb(var(--v-theme-background)) }` falls back to the
- * default (light) theme regardless of the selected Storybook theme.
+ * Vuetify theme class on <body>, which global.scss's
+ * `body { background: rgb(var(--v-theme-background)) }` reads.
+ *
+ * P5.5: the decorator used to nest a <v-theme-provider> inside <v-app>, so the
+ * theme class landed on an inner div while <v-app> itself stayed on the default
+ * (light) theme. global.scss sets `.v-application { color: rgb(var(--v-theme-on-background)) }`,
+ * which therefore resolved to light ink and INHERITED down into the dark canvas —
+ * every story text node that didn't set its own color rendered dark-on-dark.
+ * <v-app :theme> puts the theme class on .v-application itself, which fixes that
+ * and also lets `.v-application.v-theme--maropostDark`-qualified selectors
+ * (mp-theme-aliases.css, source-cloud-colors.css) match the way they do in the app.
  */
 function syncDocumentTheme(theme: ThemeMode) {
   if (typeof document === 'undefined') {
@@ -139,6 +151,7 @@ const preview: Preview = {
         const theme = normalizeTheme(String(context.globals.theme ?? 'light'))
         const accent = normalizeAccent(String(context.globals.accent ?? 'cyan'))
         const vuetifyTheme = theme === 'dark' ? 'maropostDark' : 'maropostLight'
+        const canvas = normalizeCanvas(context.parameters.canvas)
 
         syncDocumentTheme(theme)
         syncDocumentAccent(accent)
@@ -147,6 +160,7 @@ const preview: Preview = {
           theme,
           accent,
           vuetifyTheme,
+          canvas,
         }
       },
       template: `
@@ -157,20 +171,43 @@ const preview: Preview = {
           :data-accent="accent === 'cyan' ? undefined : accent"
           data-visual-root
         >
-          <v-app>
-            <v-theme-provider :theme="vuetifyTheme">
-              <div class="pa-6 mp-story-canvas">
+          <v-app :theme="vuetifyTheme">
+            <div class="mp-story-canvas" :data-canvas="canvas">
+              <div class="mp-story-canvas__content">
                 <story />
               </div>
-            </v-theme-provider>
+            </div>
           </v-app>
         </div>
       `,
     }),
   ],
   parameters: {
+    // The decorator owns padding and background (.storybook/preview.css), so
+    // Storybook's own chrome stays out of the way. Per-story escape hatch:
+    // `parameters: { canvas: 'full' }` for shells and overlays.
     layout: 'fullscreen',
+    canvas: 'padded',
     backgrounds: { disable: true },
+    // P5.5 — @storybook/addon-a11y. The addon was installed and registered in
+    // main.ts but never configured, so no rules ran. `test: 'todo'` surfaces
+    // violations in the a11y panel per story without failing anything: the repo
+    // has no test runner, so 'error' would have nothing to run in. Contrast is
+    // the rule this phase exists for, so it is named explicitly rather than left
+    // to the default set.
+    a11y: {
+      test: 'todo',
+      config: {
+        rules: [
+          { id: 'color-contrast', enabled: true },
+          // Story canvases are fragments, not documents — these three always
+          // fire on a Storybook iframe and would bury the real findings.
+          { id: 'region', enabled: false },
+          { id: 'landmark-one-main', enabled: false },
+          { id: 'page-has-heading-one', enabled: false },
+        ],
+      },
+    },
     // Shared viewport presets — select per story via
     // `globals: { viewport: { value: 'mobile375', isRotated: false } }`.
     viewport: {
@@ -183,13 +220,21 @@ const preview: Preview = {
       },
     },
     options: {
+      // Five buckets: the four Marobase design-system tiers, plus Product for
+      // app-specific surfaces. See CLAUDE.md -> Story hierarchy and the Phase 5
+      // changelog in DESIGN_AUDIT.md for why Product exists.
       storySort: {
         order: [
           'Introduction',
-          'Foundations', ['Colors', 'Typography', 'Spacing', 'Radius & Shadows', 'Icons', 'Buttons', 'Tooltips'],
-          'Layout', 'Navigation', 'Forms', 'Data Display', 'Feedback', 'Overlays',
-          'Patterns', 'AI', 'Copilot', 'Dashboards', 'Marketing', 'Merchandising',
-          'PLG', 'RBAC', 'Sales Channels', 'Settings', '*',
+          'Foundations', [
+            'Overview', 'Colors', 'Typography', 'Spacing', 'Radius & Shadows',
+            'Icons', 'Buttons', 'Tooltips',
+          ],
+          'Atoms',
+          'Molecules',
+          'Patterns', ['Data Table', 'Form Fields', 'Layering', 'Module Landing Page', 'App Shell', 'Builder Shell', 'Settings'],
+          'Product', ['Da Vinci', 'Dashboards', 'Marketing', 'Merchandising', 'PLG', 'RBAC', 'Sales Channels'],
+          '*',
         ],
       },
     },
@@ -197,26 +242,3 @@ const preview: Preview = {
 }
 
 export default preview
-
-if (typeof document !== 'undefined' && !document.getElementById('mp-storybook-preview-style')) {
-  const style = document.createElement('style')
-  style.id = 'mp-storybook-preview-style'
-  style.textContent = `
-    .mp-storybook-root,
-    .mp-storybook-root .v-application,
-    .mp-storybook-root .v-application__wrap {
-      min-height: 100vh;
-      width: 100%;
-    }
-
-    .mp-storybook-root .v-application {
-      background: transparent;
-    }
-
-    .mp-storybook-root .mp-story-canvas {
-      background: var(--surface-canvas, rgb(var(--v-theme-background)));
-      min-height: calc(100vh - 48px);
-    }
-  `
-  document.head.appendChild(style)
-}

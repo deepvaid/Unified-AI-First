@@ -8,6 +8,8 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useMarketingAssetsStore()
@@ -162,8 +164,7 @@ function notify(text: string) { toast.success(text) }
     <MpFormDrawer
       v-model="drawer"
       :title="editingId !== null ? 'Edit Dynamic Content' : 'New Dynamic Content'"
-      subtitle="Show different content to different audience segments"
-      :width="640"
+      subtitle="Show different content to different audience segments" size="lg"
     >
       <v-text-field
         v-model="name"
@@ -171,31 +172,24 @@ function notify(text: string) { toast.success(text) }
         placeholder="e.g. vip_header_greeting"
         hint="Lowercase letters, numbers, and underscores only"
         persistent-hint
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
         :error-messages="name ? (nameError ? [nameError] : []) : []"
       />
 
-      <div class="text-subtitle-2 font-weight-bold mb-2">Original content</div>
-      <p class="text-caption text-medium-emphasis mb-2">Shown as a fallback when no rule below matches.</p>
       <v-textarea
         v-model="originalContent"
-        variant="outlined"
-        density="comfortable"
+        label="Original content"
         rows="3"
         auto-grow
         placeholder="Default content shown to everyone else..."
-        class="mb-5"
+        hint="Shown as a fallback when no rule below matches."
+        persistent-hint
       />
 
-      <v-divider class="mb-4" />
+      <v-divider />
 
-      <div class="d-flex align-center justify-space-between mb-3">
-        <div class="text-subtitle-2 font-weight-bold">Rules</div>
-      </div>
+      <MpFormSection title="Rules" />
 
-      <div v-for="(rule, i) in rules" :key="rule.id" class="dc-rule mb-4 pa-4">
+      <div v-for="(rule, i) in rules" :key="rule.id" class="dc-rule pa-4">
         <div class="d-flex align-center justify-space-between mb-3">
           <span class="text-caption font-weight-bold text-uppercase text-medium-emphasis">Rule {{ i + 1 }}</span>
           <v-btn
@@ -208,26 +202,20 @@ function notify(text: string) { toast.success(text) }
             @click="removeRule(rule.id)"
           />
         </div>
-        <v-select
-          v-model="rule.segmentId"
-          :items="segmentOptions"
-          label="Segment"
-          variant="outlined"
-          density="comfortable"
-          class="mb-3"
-          hide-details
-          @update:model-value="onSegmentChange(rule)"
-        />
-        <v-textarea
-          v-model="rule.content"
-          label="Content for this segment"
-          variant="outlined"
-          density="comfortable"
-          rows="3"
-          auto-grow
-          class="mt-3"
-          hide-details
-        />
+        <MpFormGrid>
+          <v-select
+            v-model="rule.segmentId"
+            :items="segmentOptions"
+            label="Segment"
+            @update:model-value="onSegmentChange(rule)"
+          />
+          <v-textarea
+            v-model="rule.content"
+            label="Content for this segment"
+            rows="3"
+            auto-grow
+          />
+        </MpFormGrid>
       </div>
 
       <v-btn variant="outlined" class="text-none" prepend-icon="plus" @click="addRule">Add new rule</v-btn>

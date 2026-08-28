@@ -8,6 +8,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
@@ -101,6 +102,8 @@ function doRelease() {
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
+        <!-- Filter popover: `hide-details` is deliberate — a table filter never
+             carries a hint or an error, and the popover is a dense surface. -->
         <template #filter-content>
           <v-select
             v-model="filters.status"
@@ -109,8 +112,6 @@ function doRelease() {
             multiple
             chips
             closable-chips
-            density="compact"
-            variant="outlined"
             hide-details
           />
         </template>
@@ -182,18 +183,13 @@ function doRelease() {
       title="New Reservation"
       subtitle="Hold inventory against an order"
     >
-      <v-combobox
-        v-model="form.product"
-        :items="productOptions"
-        label="Product"
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
-      />
-      <v-text-field v-model="form.orderNumber" label="Order #" placeholder="e.g. #10231" variant="outlined" density="comfortable" class="mb-4" />
-      <v-select v-model="form.location" :items="LOCATIONS" label="Location" variant="outlined" density="comfortable" prepend-inner-icon="map-pin" class="mb-4" />
-      <v-text-field v-model.number="form.qty" label="Quantity to hold" type="number" min="1" variant="outlined" density="comfortable" class="mb-4" />
-      <v-textarea v-model="form.description" label="Description" rows="2" variant="outlined" density="comfortable" placeholder="Reason for the hold…" />
+      <MpFormGrid>
+        <v-combobox v-model="form.product" :items="productOptions" label="Product" />
+        <v-text-field v-model="form.orderNumber" label="Order #" placeholder="e.g. #10231" />
+        <v-select v-model="form.location" :items="LOCATIONS" label="Location" prepend-inner-icon="map-pin" />
+        <v-text-field v-model.number="form.qty" label="Quantity to hold" type="number" min="1" />
+        <v-textarea v-model="form.description" label="Description" rows="3" placeholder="Reason for the hold…" />
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>

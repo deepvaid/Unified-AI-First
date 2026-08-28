@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import SettingsSection from './SettingsSection.vue'
 
 const meta = {
-  title: 'Settings/SettingsSection',
+  title: 'Patterns/Settings/SettingsSection',
   component: SettingsSection,
   tags: ['autodocs'],
   parameters: {
@@ -24,9 +24,15 @@ padding for short utility sections.
     compact: false,
   },
   argTypes: {
-    title: { control: 'text' },
+    title: {
+      control: 'text',
+      description: 'Section heading. Omit it for an unheaded section that is only a bordered body — the head row is skipped entirely when there is no title, description or `#actions` slot.',
+    },
     description: { control: 'text' },
-    compact: { control: 'boolean' },
+    compact: {
+      control: 'boolean',
+      description: 'Tightens the section\'s vertical rhythm. Use it when several sections stack inside one card and the standard spacing reads as loose.',
+    },
   },
   render: (args) => ({
     components: { SettingsSection },
@@ -51,7 +57,86 @@ padding for short utility sections.
 export default meta
 type Story = StoryObj<typeof meta>
 
+
 export const Default: Story = {}
+
+/** With and without a header — the structural axis. */
+export const Variants: Story = {
+  render: () => ({
+    components: { SettingsSection },
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with title + description</div>
+          <SettingsSection title="Sender identity" description="The name and address your campaigns send from.">
+            <div class="text-body-2">Section body</div>
+          </SettingsSection>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">body only — no header</div>
+          <SettingsSection><div class="text-body-2">Section body</div></SettingsSection>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** The density ramp. */
+export const Sizes: Story = {
+  render: () => ({
+    components: { SettingsSection },
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">default</div>
+          <SettingsSection title="Sender identity" description="The name and address your campaigns send from.">
+            <div class="text-body-2">Section body</div>
+          </SettingsSection>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">compact</div>
+          <SettingsSection compact title="Sender identity" description="The name and address your campaigns send from.">
+            <div class="text-body-2">Section body</div>
+          </SettingsSection>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** With and without header actions, and with a form stack using the field.groupGap token. */
+export const States: Story = {
+  render: () => ({
+    components: { SettingsSection },
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">no actions</div>
+          <SettingsSection title="Sender identity"><div class="text-body-2">Section body</div></SettingsSection>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with actions</div>
+          <SettingsSection title="Sender identity">
+            <template #actions><v-btn size="small" variant="text" class="text-none">Edit</v-btn></template>
+            <div class="text-body-2">Section body</div>
+          </SettingsSection>
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">form stack — spacing from component.field.groupGap</div>
+          <SettingsSection title="Sender identity" description="Fields sit on one shared rhythm.">
+            <div class="stack">
+              <v-text-field variant="outlined" label="From name" model-value="Maropost" hide-details="auto" />
+              <v-text-field variant="outlined" label="From address" model-value="hello@maropost.com" hint="Must be a verified domain." persistent-hint />
+            </div>
+          </SettingsSection>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
 
 export const WithActions: Story = {
   args: {

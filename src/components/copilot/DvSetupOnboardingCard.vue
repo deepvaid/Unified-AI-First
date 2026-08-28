@@ -87,7 +87,7 @@ const progress = computed(() =>
 
 <style scoped>
 .setup-card__item {
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface-variant));
 }
 

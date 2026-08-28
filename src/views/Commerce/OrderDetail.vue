@@ -9,6 +9,7 @@ import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { formatMoneyParts } from '@/utils/formatMoneyParts'
 import { useToast } from '@/composables/useToast'
 
@@ -145,9 +146,9 @@ function timelineIcon(entry: { kind: string; text: string }): string {
       </template>
       <template #tabs>
         <div class="d-flex align-center gap-2 flex-wrap mt-1">
-          <MpStatusChip :status="order.status" type="order" size="x-small" variant="flat" />
-          <MpStatusChip :status="order.paymentStatus" type="payment" size="x-small" />
-          <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="x-small" show-icon />
+          <MpStatusChip :status="order.status" type="order" size="sm" variant="flat" />
+          <MpStatusChip :status="order.paymentStatus" type="payment" size="sm" />
+          <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="sm" show-icon />
           <span class="text-caption text-medium-emphasis">Placed {{ formatDate(order.date) }} · {{ order.salesChannel }}</span>
         </div>
       </template>
@@ -224,7 +225,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
                   <div class="text-body-2 font-weight-medium">{{ li.product }}</div>
                   <div class="text-caption text-medium-emphasis">{{ li.sku }}</div>
                 </td>
-                <td><MpStatusChip :status="li.status" type="fulfillment" size="x-small" /></td>
+                <td><MpStatusChip :status="li.status" type="fulfillment" size="sm" /></td>
                 <td class="text-right text-medium-emphasis text-no-wrap"><span class="mp-money">{{ money(li.price).symbol }}{{ money(li.price).integer }}<span class="mp-money__cents">.{{ money(li.price).cents }}</span></span></td>
                 <td class="text-center text-medium-emphasis">{{ li.qty }}</td>
                 <td class="text-body-2 text-medium-emphasis">{{ li.coupon ?? '—' }}</td>
@@ -247,7 +248,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
         <v-card flat border rounded="lg" class="pa-5">
           <MpSectionHeader icon="credit-card" title="Payment">
             <template #actions>
-              <MpStatusChip :status="order.paymentStatus" type="payment" size="x-small" />
+              <MpStatusChip :status="order.paymentStatus" type="payment" size="sm" />
             </template>
           </MpSectionHeader>
           <dl class="mp-label-value mt-2">
@@ -274,7 +275,7 @@ function timelineIcon(entry: { kind: string; text: string }): string {
         <v-card flat border rounded="lg" class="pa-5">
           <MpSectionHeader icon="package-check" title="Fulfillment">
             <template #actions>
-              <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="x-small" show-icon />
+              <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="sm" show-icon />
             </template>
           </MpSectionHeader>
           <div class="my-5">
@@ -306,15 +307,15 @@ function timelineIcon(entry: { kind: string; text: string }): string {
           <div class="d-flex flex-column gap-3">
             <div class="d-flex align-center justify-space-between">
               <span class="text-body-2 text-medium-emphasis">Order</span>
-              <MpStatusChip :status="order.status" type="order" size="x-small" variant="flat" />
+              <MpStatusChip :status="order.status" type="order" size="sm" variant="flat" />
             </div>
             <div class="d-flex align-center justify-space-between">
               <span class="text-body-2 text-medium-emphasis">Payment</span>
-              <MpStatusChip :status="order.paymentStatus" type="payment" size="x-small" />
+              <MpStatusChip :status="order.paymentStatus" type="payment" size="sm" />
             </div>
             <div class="d-flex align-center justify-space-between">
               <span class="text-body-2 text-medium-emphasis">Fulfillment</span>
-              <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="x-small" />
+              <MpStatusChip :status="order.fulfillmentStatus" type="fulfillment" size="sm" />
             </div>
           </div>
         </v-card>
@@ -325,14 +326,11 @@ function timelineIcon(entry: { kind: string; text: string }): string {
           <v-combobox
             :model-value="order.tags"
             :items="tagSuggestions"
+            label="Tags"
             multiple
             chips
             closable-chips
-            variant="outlined"
-            density="compact"
-            hide-details
-            placeholder="Add tags…"
-            class="mt-2"
+            placeholder="e.g. VIP, gift"
             @update:model-value="onTagsChange"
           />
         </v-card>
@@ -342,15 +340,11 @@ function timelineIcon(entry: { kind: string; text: string }): string {
           <MpSectionHeader icon="history" :title="`Timeline (${order.timeline.length})`" />
           <v-textarea
             v-model="noteText"
-            placeholder="Write internal notes…"
-            variant="outlined"
-            density="compact"
-            rows="2"
+            label="Internal note"
+            rows="3"
             auto-grow
-            hide-details
-            class="mt-2 mb-2"
           />
-          <div class="d-flex justify-end mb-4">
+          <div class="d-flex justify-end mt-3 mb-4">
             <v-btn size="small" color="primary" variant="flat" class="text-none" :disabled="!noteText.trim()" @click="addNote">Add Note</v-btn>
           </div>
           <div class="od-timeline">
@@ -382,12 +376,12 @@ function timelineIcon(entry: { kind: string; text: string }): string {
     />
 
     <!-- ── Refund dialog ────────────────────────────────────────────── -->
-    <MpFormDrawer v-model="refundDialog" :title="`Refund ${order.orderNumber}`" :width="420">
-      <div class="text-body-2 text-medium-emphasis mb-4">Up to ${{ order.total }} captured on {{ order.paymentMethod }}.</div>
-      <v-row dense>
-        <v-col cols="12"><v-text-field v-model="refundAmount" label="Refund amount" prefix="$" type="number" variant="outlined" density="comfortable" hide-details /></v-col>
-        <v-col cols="12"><v-text-field v-model="refundReason" label="Reason (optional)" variant="outlined" density="comfortable" hide-details /></v-col>
-      </v-row>
+    <MpFormDrawer v-model="refundDialog" :title="`Refund ${order.orderNumber}`" size="sm">
+      <div class="text-body-2 text-medium-emphasis">Up to ${{ order.total }} captured on {{ order.paymentMethod }}.</div>
+      <MpFormGrid>
+        <v-text-field v-model="refundAmount" label="Refund amount" prefix="$" type="number" />
+        <v-text-field v-model="refundReason" label="Reason (optional)" />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="refundDialog = false">Cancel</v-btn>
         <v-btn color="error" variant="flat" class="text-none" :disabled="!refundValid" @click="submitRefund">Issue Refund</v-btn>
@@ -395,15 +389,15 @@ function timelineIcon(entry: { kind: string; text: string }): string {
     </MpFormDrawer>
 
     <!-- ── Address drawer ───────────────────────────────────────────── -->
-    <MpFormDrawer v-model="addressDrawer" :title="addressKind === 'shipping' ? 'Edit Shipping Address' : 'Edit Billing Address'" :width="420">
-      <v-row dense>
-        <v-col cols="12"><v-text-field v-model="addressForm.name" label="Full name" /></v-col>
-        <v-col cols="12"><v-text-field v-model="addressForm.line1" label="Address" /></v-col>
-        <v-col cols="7"><v-text-field v-model="addressForm.city" label="City" /></v-col>
-        <v-col cols="5"><v-text-field v-model="addressForm.region" label="State / Region" /></v-col>
-        <v-col cols="5"><v-text-field v-model="addressForm.postalCode" label="Postal code" /></v-col>
-        <v-col cols="7"><v-text-field v-model="addressForm.country" label="Country" /></v-col>
-      </v-row>
+    <MpFormDrawer v-model="addressDrawer" :title="addressKind === 'shipping' ? 'Edit Shipping Address' : 'Edit Billing Address'" size="sm">
+      <MpFormGrid :cols="2">
+        <v-text-field v-model="addressForm.name" label="Full name" class="mp-form-grid__full" />
+        <v-text-field v-model="addressForm.line1" label="Address" class="mp-form-grid__full" />
+        <v-text-field v-model="addressForm.city" label="City" />
+        <v-text-field v-model="addressForm.region" label="State / Region" />
+        <v-text-field v-model="addressForm.postalCode" label="Postal code" />
+        <v-text-field v-model="addressForm.country" label="Country" />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="addressDrawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" @click="saveAddress">Save Address</v-btn>

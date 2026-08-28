@@ -1363,9 +1363,9 @@ function onComposerKeydown(event: KeyboardEvent) {
 .dv-panel__header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 8px 8px 16px;
-  height: 56px;
+  gap: var(--mp-space-10);
+  padding: var(--mp-space-8) var(--mp-space-8) var(--mp-space-8) var(--mp-space-16);
+  height: var(--mp-space-48);
   background: rgb(var(--v-theme-surface));
   border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
   flex-shrink: 0;
@@ -1386,17 +1386,17 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-panel__title-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-15);
+  font-weight: var(--mp-fontWeight-semibold);
   line-height: 1.2;
   color: rgb(var(--v-theme-on-surface));
 }
 
 .dv-panel__title-sub {
-  font-size: 12.5px;
-  font-weight: 400;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-regular);
   color: rgb(var(--v-theme-on-surface-variant));
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1413,7 +1413,7 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 .dv-panel__menu {
   min-width: 220px;
-  border-radius: var(--mp-component-card-radius-md) !important;
+  border-radius: var(--mp-radius-12) !important;
   background: rgb(var(--v-theme-surface)) !important;
   border: 1px solid rgb(var(--v-theme-outline-variant));
 }
@@ -1430,8 +1430,8 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-panel__rail {
-  width: 260px;
-  flex: 0 0 260px;
+  width: var(--mp-layout-sectionRailWidth);
+  flex: 0 0 var(--mp-layout-sectionRailWidth);
   background: rgb(var(--v-theme-surface-variant));
   border-right: 1px solid rgb(var(--v-theme-outline-variant));
   overflow-y: auto;
@@ -1449,39 +1449,39 @@ function onComposerKeydown(event: KeyboardEvent) {
 .dv-panel__body {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 20px 24px;
+  padding: var(--mp-space-20) var(--mp-space-20) var(--mp-space-24);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--mp-space-20);
   min-height: 0;
 }
 
 .dv-panel__body::-webkit-scrollbar {
-  width: 6px;
+  width: var(--mp-space-6);
 }
 
 .dv-panel__body::-webkit-scrollbar-thumb {
   background: rgb(var(--v-theme-outline-variant));
-  border-radius: 9999px;
+  border-radius: var(--mp-radius-full);
 }
 
 /* Landing */
 .dv-landing {
-  padding: 24px 8px 8px;
+  padding: var(--mp-space-24) var(--mp-space-8) var(--mp-space-8);
 }
 
 /* Quick-reply pills (shared with conversation quick replies) */
 .dv-landing__pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 10px 14px;
-  border-radius: var(--mp-borderRadius-full);
+  gap: var(--mp-space-8);
+  min-height: var(--mp-component-control-height);
+  padding: var(--mp-space-10) var(--mp-space-14);
+  border-radius: var(--mp-radius-full);
   border: 1px solid var(--dv-border);
   background: rgb(var(--v-theme-surface));
-  font-size: var(--mp-typography-fontSize-sm);
-  font-weight: 500;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: rgb(var(--v-theme-on-surface));
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
@@ -1501,25 +1501,25 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 .dv-msg-user__bubble {
   max-width: 88%;
-  padding: 10px 14px;
+  padding: var(--mp-space-10) var(--mp-space-14);
   background: var(--dv-accent);
   color: var(--dv-on-accent);
-  border-radius: var(--mp-component-card-radius-lg) var(--mp-component-card-radius-lg)
-    var(--mp-borderRadius-sm) var(--mp-component-card-radius-lg);
-  font-size: var(--mp-typography-fontSize-body);
-  font-weight: 500;
+  border-radius: var(--mp-component-card-radius) var(--mp-component-card-radius)
+    var(--mp-radius-4) var(--mp-component-card-radius);
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.45;
 }
 
 /* Bot reply */
 .dv-msg-bot {
   display: flex;
-  gap: 10px;
+  gap: var(--mp-space-10);
 }
 
 .dv-msg-bot__avatar {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
 }
 
 .dv-msg-bot__body {
@@ -1527,100 +1527,100 @@ function onComposerKeydown(event: KeyboardEvent) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .dv-msg-bot__intro {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.5;
   color: rgb(var(--v-theme-on-surface));
 }
 
 .dv-msg-bot__intro :deep(strong) {
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .dv-msg-bot__rationale {
-  font-size: var(--mp-typography-fontSize-sm);
-  font-weight: 400;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-regular);
   line-height: 1.5;
   color: var(--dv-text-secondary);
-  padding: 10px 12px;
+  padding: var(--mp-space-10) var(--mp-space-12);
   background: var(--dv-accent-soft);
-  border-radius: var(--mp-component-card-radius-md);
+  border-radius: var(--mp-radius-12);
   border-left: 2px solid var(--dv-accent);
 }
 
 .dv-eyebrow {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: rgb(var(--v-theme-on-surface));
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: var(--mp-space-4);
 }
 
 /* Drafts row */
 .dv-drafts {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--mp-space-10);
 }
 
 .dv-drafts__meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .dv-drafts__count {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 
 /* Generating status + skeleton */
 .dv-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-13);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .dv-status__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-full);
   background: rgb(var(--v-theme-primary));
   animation: dvPulse 1.4s ease-in-out infinite;
 }
 
 .dv-skeleton {
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-md);
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface));
-  padding: 14px;
+  padding: var(--mp-space-14);
 }
 
 .dv-skeleton__top {
-  margin-bottom: 12px;
+  margin-bottom: var(--mp-space-12);
 }
 
 .dv-skeleton__bars {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--mp-space-8);
 }
 
 .dv-skeleton__bar {
-  height: 14px;
-  border-radius: 6px;
+  height: var(--mp-space-14);
+  border-radius: var(--mp-component-chip-radius);
   background: rgb(var(--v-theme-surface-variant));
   width: 100%;
   animation: dvShimmer 1.4s ease-in-out infinite;
@@ -1643,8 +1643,8 @@ function onComposerKeydown(event: KeyboardEvent) {
 .dv-quick-replies {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
+  gap: var(--mp-space-8);
+  margin-top: var(--mp-space-8);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1662,7 +1662,7 @@ function onComposerKeydown(event: KeyboardEvent) {
 .dv-panel__composer {
   /* Matches body/header surface — the border-top hairline carries separation */
   flex-shrink: 0;
-  padding: 16px 16px 16px;
+  padding: var(--mp-space-16) var(--mp-space-16) var(--mp-space-16);
   background: rgb(var(--v-theme-surface));
   border-top: 1px solid rgb(var(--v-theme-outline-variant));
 }
@@ -1670,14 +1670,14 @@ function onComposerKeydown(event: KeyboardEvent) {
 .dv-composer__notice {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  padding: 6px 8px 6px 12px;
-  border-radius: 10px;
+  gap: var(--mp-space-8);
+  margin-bottom: var(--mp-space-10);
+  padding: var(--mp-space-6) var(--mp-space-8) var(--mp-space-6) var(--mp-space-12);
+  border-radius: var(--mp-component-input-radius);
   border: 1px solid rgb(var(--v-theme-error), 0.28);
   background: rgb(var(--v-theme-error), 0.06);
   color: rgb(var(--v-theme-error));
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   line-height: 1.45;
 }
 
@@ -1687,21 +1687,21 @@ function onComposerKeydown(event: KeyboardEvent) {
 
 .dv-composer__pills {
   display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: var(--mp-space-6);
+  margin-bottom: var(--mp-space-10);
   flex-wrap: wrap;
 }
 
 .dv-composer__pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: 9999px;
+  gap: var(--mp-space-6);
+  padding: var(--mp-space-6) var(--mp-space-12);
+  border-radius: var(--mp-radius-full);
   border: 1px solid rgb(var(--v-theme-outline-variant));
   background: rgb(var(--v-theme-surface));
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: rgb(var(--v-theme-on-surface-variant));
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
@@ -1718,11 +1718,11 @@ function onComposerKeydown(event: KeyboardEvent) {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
-  padding: 10px 10px 8px 14px;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-10) var(--mp-space-10) var(--mp-space-8) var(--mp-space-14);
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-xl);
+  border-radius: var(--mp-radius-20);
   box-shadow: inset 0 0 0 1px rgb(var(--v-theme-outline-variant));
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
@@ -1737,17 +1737,17 @@ function onComposerKeydown(event: KeyboardEvent) {
   border: none;
   outline: none;
   background: transparent;
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
   line-height: 1.4;
   color: rgb(var(--v-theme-on-surface));
-  padding: 6px 4px 2px;
+  padding: var(--mp-space-6) var(--mp-space-4) var(--mp-space-2);
   font-family: inherit;
 }
 
 .dv-composer__actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--mp-space-2);
 }
 
 .dv-composer__actions .dv-composer__send {
@@ -1755,9 +1755,9 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-composer__note {
-  margin: 8px 0 0;
+  margin: var(--mp-space-8) 0 0;
   text-align: center;
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   line-height: 1.3;
   color: rgb(var(--v-theme-on-surface-variant));
 }
@@ -1767,11 +1767,15 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 .dv-composer__send {
-  width: 32px;
-  height: 32px;
-  border-radius: 9999px;
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
+  border-radius: var(--mp-radius-full);
   border: none;
   background: var(--dv-grad);
+  /* P5.5: the gradient is a fill, so it states its own ink. --dv-on-accent
+     exists for exactly this and was not being applied — the icon inherited
+     the composer's text color instead. */
+  color: var(--dv-on-accent);
   display: grid;
   place-items: center;
   cursor: pointer;

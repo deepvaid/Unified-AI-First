@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvSetupOnboardingCard from './DvSetupOnboardingCard.vue'
 
 const meta = {
-  title: 'Copilot/DvSetupOnboardingCard',
+  title: 'Product/Da Vinci/DvSetupOnboardingCard',
   component: DvSetupOnboardingCard,
   tags: ['autodocs'],
   parameters: {
@@ -50,9 +50,25 @@ Task items render per-status chips distinguishing verified from user-confirmed f
     secondaryAction: { label: 'Change goal', action: 'change-goal', icon: 'refresh-cw' },
   },
   argTypes: {
-    kind: { control: 'select', options: ['goal', 'plan', 'task', 'verification', 'complete', 'unsupported'] },
-    step: { control: { type: 'number', min: 1, max: 8 } },
-    totalSteps: { control: { type: 'number', min: 1, max: 16 } },
+    title: { control: 'text', description: 'Card heading for this stage of guided setup.' },
+    description: { control: 'text', description: 'Supporting line under the title. Defaults to empty.' },
+    taskId: { control: 'text', description: 'Id of the task this card is about, when `kind` is `task` or `verification`.' },
+    status: { control: 'text', description: '`SetupTaskStatus` \u2014 `pending`, `verified` and so on. Selects the status icon, label and colour.' },
+    items: { control: 'object', description: '`SetupTaskCardItem[]` \u2014 the checklist rows, each with its own `status` and optional `minutes` estimate.' },
+    primaryAction: { control: 'object', description: '`CampaignOnboardingAction` for the main button. Emits `action` with its key.' },
+    secondaryAction: { control: 'object', description: 'Optional second action at lower emphasis.' },
+    kind: {
+      control: 'select', options: ['goal', 'plan', 'task', 'verification', 'complete', 'unsupported'],
+      description: 'Which stage of guided setup this card is. Each value selects its own eyebrow and icon: `goal`/`task` (Guided setup), `plan` (Your path), `verification` (Check), `complete`, `unsupported`.',
+    },
+    step: {
+      control: { type: 'number', min: 1, max: 8 },
+      description: 'Current step, 1-based. Drives the progress indicator.',
+    },
+    totalSteps: {
+      control: { type: 'number', min: 1, max: 16 },
+      description: 'Total steps in the guided-setup path. The progress denominator.',
+    },
   },
 } satisfies Meta<typeof DvSetupOnboardingCard>
 

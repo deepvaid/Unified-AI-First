@@ -24,7 +24,7 @@ withDefaults(defineProps<{
         <div v-if="description" class="mp-section-header__description">{{ description }}</div>
       </div>
     </div>
-    <div v-if="$slots.actions" class="d-flex gap-2 flex-shrink-0">
+    <div v-if="$slots.actions" class="d-flex ga-2 flex-shrink-0">
       <slot name="actions" />
     </div>
   </div>
@@ -33,7 +33,7 @@ withDefaults(defineProps<{
 <style scoped>
 .mp-section-header__eyebrow {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: var(--mp-space-4);
   color: var(--text-muted);
 }
 
@@ -43,8 +43,8 @@ withDefaults(defineProps<{
 }
 
 .mp-section-header__description {
-  margin-top: 2px;
-  font-size: 13px;
+  margin-top: var(--mp-space-2);
+  font-size: var(--mp-fontSize-13);
   line-height: 1.4;
   color: var(--text-secondary);
 }

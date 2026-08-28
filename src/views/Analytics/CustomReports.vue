@@ -5,6 +5,9 @@ import { storeToRefs } from 'pinia'
 import type { CustomReport, CustomReportType, CustomReportScheduleMode } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -205,103 +208,74 @@ function runReport(report: CustomReport) {
       :title="editingId != null ? 'Edit Custom Report' : 'Create Custom Report'"
       subtitle="Pick a report type, choose what to measure, and set delivery."
     >
-      <v-form @submit.prevent="saveReport">
-        <v-select
-          v-model="form.reportType"
-          :items="reportTypes"
-          label="Report type"
-          variant="outlined"
-          density="comfortable"
-          class="mb-3"
-        />
-        <v-text-field
-          v-model="form.name"
-          label="Report name"
-          placeholder="e.g. Q4 Revenue by Region"
-          variant="outlined"
-          density="comfortable"
-          autofocus
-          class="mb-3"
-        />
-        <v-select
-          v-model="form.source"
-          :items="sources"
-          label="Data source"
-          variant="outlined"
-          density="comfortable"
-          class="mb-3"
-        />
-        <v-row dense>
-          <v-col cols="12" sm="6">
-            <v-select v-model="form.metric" :items="metrics" label="Metric" variant="outlined" density="comfortable" class="mb-3" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-select v-model="form.dimension" :items="dimensions" label="Group by" variant="outlined" density="comfortable" class="mb-3" />
-          </v-col>
-        </v-row>
+      <v-form class="d-flex flex-column ga-4" @submit.prevent="saveReport">
+        <MpFormSection title="Report" />
+        <MpFormGrid :cols="2">
+          <v-select
+            v-model="form.reportType"
+            :items="reportTypes"
+            label="Report type"
+          />
+          <v-text-field
+            v-model="form.name"
+            label="Report name"
+            placeholder="e.g. Q4 Revenue by Region"
+            autofocus
+          />
+          <v-select
+            v-model="form.source"
+            :items="sources"
+            label="Data source"
+            class="mp-form-grid__full"
+          />
+          <v-select v-model="form.metric" :items="metrics" label="Metric" />
+          <v-select v-model="form.dimension" :items="dimensions" label="Group by" />
+          <MpFormField label="Visualization" class="mp-form-grid__full">
+            <template #default="{ labelId }">
+              <v-chip-group v-model="form.visualization" mandatory :aria-labelledby="labelId">
+                <v-chip
+                  v-for="v in visualizations"
+                  :key="v"
+                  :value="v"
+                  filter
+                  :prepend-icon="vizIcon[v]"
+                >
+                  {{ v }}
+                </v-chip>
+              </v-chip-group>
+            </template>
+          </MpFormField>
+        </MpFormGrid>
 
-        <div class="text-body-2 font-weight-medium mb-2">Visualization</div>
-        <v-chip-group v-model="form.visualization" mandatory selected-class="text-primary" class="mb-3">
-          <v-chip
-            v-for="v in visualizations"
-            :key="v"
-            :value="v"
-            variant="outlined"
-            filter
-            :prepend-icon="vizIcon[v]"
-          >
-            {{ v }}
-          </v-chip>
-        </v-chip-group>
+        <MpFormSection title="Schedule" />
+        <MpFormGrid :cols="2">
+          <MpFormField label="Frequency" class="mp-form-grid__full">
+            <template #default="{ labelId }">
+              <v-radio-group v-model="form.scheduleMode" inline :aria-labelledby="labelId">
+                <v-radio v-for="m in scheduleModes" :key="m" :label="m" :value="m" />
+              </v-radio-group>
+            </template>
+          </MpFormField>
+          <v-select v-model="form.dateRange" :items="dateRanges" label="Date range" />
+          <v-select
+            v-model="form.schedule"
+            :items="schedules"
+            label="Recurring cadence"
+            :disabled="form.scheduleMode === 'Once'"
+          />
+        </MpFormGrid>
 
-        <div class="text-body-2 font-weight-medium mb-2">Schedule</div>
-        <v-radio-group v-model="form.scheduleMode" inline hide-details class="mb-3">
-          <v-radio v-for="m in scheduleModes" :key="m" :label="m" :value="m" />
-        </v-radio-group>
-
-        <v-row dense>
-          <v-col cols="12" sm="6">
-            <v-select v-model="form.dateRange" :items="dateRanges" label="Date range" variant="outlined" density="comfortable" class="mb-3" />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-select
-              v-model="form.schedule"
-              :items="schedules"
-              label="Recurring cadence"
-              variant="outlined"
-              density="comfortable"
-              :disabled="form.scheduleMode === 'Once'"
-              class="mb-3"
-            />
-          </v-col>
-        </v-row>
-
-        <v-divider class="mb-4" />
-        <div class="text-body-2 font-weight-medium mb-2">Delivery details</div>
-        <v-text-field
-          v-model="form.recipientEmail"
-          label="Recipient email"
-          placeholder="reports@yourstore.com"
-          type="email"
-          variant="outlined"
-          density="comfortable"
-          class="mb-3"
-        />
-        <v-text-field
-          v-model="form.subject"
-          label="Subject"
-          variant="outlined"
-          density="comfortable"
-          class="mb-3"
-        />
-        <v-textarea
-          v-model="form.message"
-          label="Message"
-          variant="outlined"
-          density="comfortable"
-          rows="3"
-          auto-grow
-        />
+        <MpFormSection title="Delivery details" />
+        <MpFormGrid>
+          <v-text-field
+            v-model="form.recipientEmail"
+            label="Recipient email"
+            placeholder="reports@yourstore.com"
+            type="email"
+          />
+          <v-text-field v-model="form.subject" label="Subject" />
+          <v-textarea v-model="form.message" label="Message" rows="3" auto-grow />
+        </MpFormGrid>
       </v-form>
 
       <template #footer>

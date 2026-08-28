@@ -223,6 +223,10 @@ function onGhost() {
 </template>
 
 <style scoped>
+/* P4-9. Orb geometry below — the wave-bar widths and heights, the 2.5px stroke,
+   the glyph baseline nudges and the plot measures — is canvas geometry, not
+   Marobase spacing, and stays off the scale on the same grounds the chart
+   canvases did (Phase 2/3 changelog). Layout insets, gaps and type are tokens. */
 .dv-orbit {
   flex: 1;
   min-height: 0;
@@ -240,21 +244,21 @@ function onGhost() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 36px;
+  padding: 0 var(--mp-space-40);
 }
 
 .dv-orbit__pill {
-  margin-top: 26px;
+  margin-top: var(--mp-space-28);
 }
 
 .dv-orbit__pill--think {
-  margin-top: 20px;
+  margin-top: var(--mp-space-20);
 }
 
 .dv-orbit__transcript {
-  margin-top: 26px;
-  font-size: 19px;
-  font-weight: 550;
+  margin-top: var(--mp-space-28);
+  font-size: var(--mp-fontSize-20);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.45;
   letter-spacing: -0.2px;
   color: var(--dv-orbit-ink);
@@ -263,14 +267,14 @@ function onGhost() {
 }
 
 .dv-orbit__hint {
-  margin-top: 18px;
-  font-size: 12px;
+  margin-top: var(--mp-space-20);
+  font-size: var(--mp-fontSize-12);
   color: var(--dv-orbit-mist);
 }
 
 .dv-orbit__message {
-  margin-top: 20px;
-  font-size: 13.5px;
+  margin-top: var(--mp-space-20);
+  font-size: var(--mp-fontSize-14);
   line-height: 1.55;
   color: var(--dv-orbit-slate);
   text-align: center;
@@ -286,15 +290,15 @@ function onGhost() {
 .dv-orbit__caret {
   display: inline-block;
   width: 2.5px;
-  border-radius: 2px;
+  border-radius: var(--mp-radius-4);
   background: var(--dv-orbit-blue);
-  margin-left: 5px;
+  margin-left: var(--mp-space-6);
   vertical-align: -3px;
   animation: dv-orbit-blink 1.05s step-end infinite;
 }
 
 .dv-orbit__caret--lg {
-  height: 20px;
+  height: var(--mp-space-20);
 }
 
 .dv-orbit__caret--sm {
@@ -303,22 +307,22 @@ function onGhost() {
 
 /* ── Chips ── */
 .dv-orbit__chips {
-  margin-top: 22px;
+  margin-top: var(--mp-space-24);
   display: flex;
-  gap: 8px;
+  gap: var(--mp-space-8);
 }
 
 .dv-orbit__chips--row {
   margin-top: 0;
-  padding: 14px 16px 0;
+  padding: var(--mp-space-14) var(--mp-space-16) 0;
 }
 
 .dv-orbit__chip {
-  padding: 7px 13px;
+  padding: var(--mp-space-8) var(--mp-space-14);
   border: 1px solid var(--dv-orbit-line);
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: none;
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   color: var(--dv-orbit-chip);
   cursor: pointer;
   transition: border-color 120ms ease, color 120ms ease;
@@ -342,16 +346,16 @@ function onGhost() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 30px 36px 0;
+  padding: var(--mp-space-32) var(--mp-space-40) 0;
 }
 
 .dv-orbit__echo {
-  margin-top: 18px;
-  font-size: 12.5px;
+  margin-top: var(--mp-space-20);
+  font-size: var(--mp-fontSize-13);
   color: var(--dv-orbit-mist);
   background: var(--dv-orbit-echo-bg);
-  border-radius: 999px;
-  padding: 7px 14px;
+  border-radius: var(--mp-radius-full);
+  padding: var(--mp-space-8) var(--mp-space-14);
   max-width: 280px;
   white-space: nowrap;
   overflow: hidden;
@@ -359,24 +363,24 @@ function onGhost() {
 }
 
 .dv-orbit__skeleton {
-  margin: 22px 16px 0;
+  margin: var(--mp-space-24) var(--mp-space-16) 0;
   border: 1px solid var(--dv-orbit-card-line);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: var(--mp-component-card-radius);
+  padding: var(--mp-space-16);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--mp-space-10);
   flex: none;
 }
 
 .dv-orbit__skeleton-pills {
   display: flex;
-  gap: 10px;
-  margin-top: 4px;
+  gap: var(--mp-space-10);
+  margin-top: var(--mp-space-4);
 }
 
 .dv-orbit__shimmer {
-  border-radius: 6px;
+  border-radius: var(--mp-component-chip-radius);
   background: linear-gradient(
     90deg,
     var(--dv-orbit-muted-bg) 25%,
@@ -393,19 +397,19 @@ function onGhost() {
 
 /* ── Responding strip ── */
 .dv-orbit__strip {
-  margin: 14px 16px 0;
+  margin: var(--mp-space-14) var(--mp-space-16) 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-12) var(--mp-space-14);
+  border-radius: var(--mp-radius-12);
   background: var(--dv-orbit-strip-grad);
   flex: none;
 }
 
 .dv-orbit__strip-caption {
   flex: 1;
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   line-height: 1.5;
   color: var(--dv-orbit-body);
   text-wrap: pretty;
@@ -413,19 +417,19 @@ function onGhost() {
 
 /* ── Success strip (added) ── */
 .dv-orbit__success {
-  margin: 14px 16px 0;
+  margin: var(--mp-space-14) var(--mp-space-16) 0;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-12) var(--mp-space-14);
+  border-radius: var(--mp-radius-12);
   background: var(--dv-orbit-success-bg);
   flex: none;
 }
 
 .dv-orbit__success-check {
-  width: 26px;
-  height: 26px;
+  width: var(--mp-space-28);
+  height: var(--mp-space-28);
   flex: none;
   border-radius: 50%;
   background: var(--dv-orbit-success);
@@ -440,21 +444,21 @@ function onGhost() {
 
 .dv-orbit__success-text {
   flex: 1;
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   line-height: 1.5;
   color: var(--dv-orbit-success-text);
 }
 
 .dv-orbit__success-text strong {
-  font-weight: 650;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .dv-orbit__undo {
   border: none;
   background: none;
   padding: 0;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--dv-orbit-success);
   cursor: pointer;
 }
@@ -465,7 +469,7 @@ function onGhost() {
 
 /* ── Widget card host (Orbit chrome over DvWidgetDraftCard) ── */
 .dv-orbit__card {
-  margin: 12px 16px 0;
+  margin: var(--mp-space-12) var(--mp-space-16) 0;
   flex: none;
 }
 
@@ -481,12 +485,12 @@ function onGhost() {
 
 .dv-orbit-state-enter-from {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(var(--mp-space-8));
 }
 
 .dv-orbit-state-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(calc(var(--mp-space-8) * -1));
 }
 
 @media (prefers-reduced-motion: reduce) {

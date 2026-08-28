@@ -224,7 +224,7 @@ const options = computed<ApexOptions>(() => {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding-top: 4px;
+  padding-top: var(--mp-space-4);
 }
 
 /* Card-style tooltip skin (same .mp-chart-tip markup as the chart widget). */
@@ -239,7 +239,7 @@ const options = computed<ApexOptions>(() => {
   border: 1px solid var(--mp-tip-border, var(--border-subtle));
   border-radius: var(--mp-tip-radius, 8px);
   box-shadow: var(--mp-tip-shadow, var(--elevation-modal));
-  padding: 8px 10px;
+  padding: var(--mp-space-8) var(--mp-space-10);
   min-width: 140px;
   font-family: Inter, system-ui, sans-serif;
 }
@@ -247,15 +247,15 @@ const options = computed<ApexOptions>(() => {
 .dashboard-pie-widget :deep(.mp-chart-tip__row) {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 2px 0;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-12);
+  padding: var(--mp-space-2) 0;
 }
 
 .dashboard-pie-widget :deep(.mp-chart-tip__dot) {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--mp-radius-4);
   flex-shrink: 0;
 }
 
@@ -265,8 +265,8 @@ const options = computed<ApexOptions>(() => {
 
 .dashboard-pie-widget :deep(.mp-chart-tip__value) {
   margin-left: auto;
-  padding-left: 12px;
-  font-weight: 500;
+  padding-left: var(--mp-space-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--mp-tip-text, var(--text-primary));
   font-variant-numeric: tabular-nums;
 }

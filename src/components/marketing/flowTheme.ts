@@ -12,6 +12,21 @@ export const categoryColor: Record<NodeCategory, string> = {
   end: 'grey-darken-1',
 }
 
+/**
+ * The paired ink for each category fill (P5.5 semantic pairing).
+ *
+ * Every fill above has an `on-*` counterpart in the Vuetify theme, so an icon
+ * sitting on a category avatar names its pair instead of a literal "white" —
+ * which was wrong on any theme whose fill is light.
+ */
+export const categoryOnColor: Record<NodeCategory, string> = {
+  trigger: 'on-primary',
+  action: 'on-success',
+  filter: 'on-flow-logic',
+  delay: 'on-warning',
+  end: 'white',
+}
+
 export const categoryLabel: Record<NodeCategory, string> = {
   trigger: 'Trigger',
   action: 'Action',

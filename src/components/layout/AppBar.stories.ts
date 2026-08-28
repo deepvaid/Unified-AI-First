@@ -4,13 +4,15 @@ import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import AppBar from './AppBar.vue'
 import AppSidebar from './AppSidebar.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
+import { sidebarSkin } from '@/stories/decorators'
 
 /**
  * The nav skin lives on `<html data-sidebar>` and paints both navs through the shared
  * `--mp-nav-surface` bind. Applied to every story from the `sidebarSkin` parameter so a skin
  * never leaks into the next story; the light/dark app theme comes from the `theme` global.
  */
-type SidebarSkin = 'gray' | 'white' | 'dark'
 
 /**
  * Story-side workaround (batch C convention): the Storybook preview router only has a
@@ -79,22 +81,12 @@ function navSeamStory() {
 }
 
 const meta = {
-  title: 'Layout/AppBar',
+  title: 'Patterns/App Shell/AppBar',
   component: AppBar,
   tags: ['autodocs'],
-  decorators: [
-    (story, context) => ({
-      components: { story },
-      setup() {
-        const skin = (context.parameters.sidebarSkin ?? 'gray') as SidebarSkin
-        document.documentElement.dataset.sidebar = skin
-        return {}
-      },
-      template: '<story />',
-    }),
-  ],
+  decorators: [sidebarSkin],
   parameters: {
-    layout: 'fullscreen',
+    canvas: 'full',
     sidebarSkin: 'gray',
     docs: {
       description: {
@@ -164,7 +156,10 @@ surfaces (login, builders) omit the bar entirely.
 \`AppBar\` takes **no props, emits, or slots** — it is app chrome that reads everything it needs
 from the router and the accounts / theme / notifications stores, which is why the Controls panel
 is empty. Drive its states in stories and demos by seeding those stores, not by passing config.
-        `,
+
+### Controls
+The app bar takes **no props** — the Controls panel is empty by design. It composes \`useAccountsStore\`, \`useCopilotStore\`, \`useUserProfile\`, \`useAppTheme\`, \`useMobileNav\`, \`useToast\` and \`usePlgStore\` directly. The one story-level knob is \`parameters.sidebarSkin\` (\`gray\` | \`white\` | \`dark\`), which the shared \`sidebarSkin\` decorator stamps onto \`<html data-sidebar>\`.
+`,
       },
     },
   },
@@ -257,8 +252,103 @@ export const SeamDarkSkin: Story = {
   globals: { theme: 'light' },
 }
 
-/** Dark mode — skin axis collapses; bar and sidebar share charcoal chrome. */
-export const SeamDarkMode: Story = {
-  render: navSeamStory(),
-  globals: { theme: 'dark' },
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * The bar's structural variants are its skins ("seams"): the classic white chrome, the gray
+ * shell and the dark shell. The control row is identical in all three — only the painted
+ * surface behind it changes, which is why the controls had to stop being sized by hand.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { AppBar },
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">classic</div>
+          <AppBar />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop. The bar is `layout.appbarHeight` (60px) tall, and **every control
+ * inside it** — the search field, the Quick-create button, the notification/settings buttons,
+ * the assistant pill, the user avatar, the theme segment's track — resolves to
+ * `component.control.height` (40px).
+ *
+ * Phase 4 (P4-7) is where that happened. They were 36px, which is on no scale stop, and the
+ * app bar's search sat at 34 while the data-table toolbar's sat at 38 — the two search fields
+ * in the product, two different heights. Both are the token now.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { AppBar },
+    template: `
+      <div>
+        <AppBar />
+        <div class="pa-6 text-body-2 text-medium-emphasis">
+          Measure any control in the bar above: 40px, the same baseline as a button, a form
+          field, a list row, a nav item and a table header cell.
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * The bar's interactive states live in its overlays: the command palette (⌘K), the Quick-create
+ * menu, and the profile menu with its account cascade. Open each from the bar — every row in
+ * every one of those panels is `component.listItem.*`, so a menu row and a sidebar row are the
+ * same height.
+ */
+export const States: Story = {
+  render: () => ({
+    components: { AppBar },
+    template: `
+      <div>
+        <AppBar />
+        <div class="pa-6 text-body-2 text-medium-emphasis">
+          Click the search field (or press ⌘K) for the palette, <strong>+</strong> for Quick-create,
+          and the avatar for the profile menu.
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** The bar over a real page, with the sidebar beside it — the only way to judge
+ * whether the control row reads as one band. The 57px sidebar header and the 60px bar share a
+ * divider line by design.
+ */
+export const InContextAppShell: Story = {
+  render: () => ({
+    components: { AppBar, AppSidebar, MpPageHeader, MpKpiCard },
+    template: `
+      <div class="d-flex align-stretch" style="min-height: 620px; background: var(--surface-canvas)">
+        <AppSidebar :model-value="true" :rail="false" />
+        <div class="flex-grow-1 d-flex flex-column" style="min-width: 0">
+          <AppBar />
+          <div class="pa-6">
+            <MpPageHeader title="Dashboard" subtitle="Northwind Supply Co. · last 30 days" />
+            <div class="d-flex ga-4 mt-6 flex-wrap">
+              <MpKpiCard label="Revenue" value="$43,565.90" icon="dollar-sign" trend="+12.4%" trend-positive period="vs. prior 30 days" style="flex: 1 1 220px" />
+              <MpKpiCard label="Orders" value="82" icon="shopping-cart" trend="+6" trend-positive period="vs. prior 30 days" style="flex: 1 1 220px" />
+              <MpKpiCard label="Open rate" value="58.2%" icon="mail-open" trend="+2.1pt" trend-positive period="vs. prior 30 days" style="flex: 1 1 220px" />
+              <MpKpiCard label="Tickets" value="14" icon="life-buoy" trend="-3" period="vs. prior 30 days" style="flex: 1 1 220px" />
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
 }

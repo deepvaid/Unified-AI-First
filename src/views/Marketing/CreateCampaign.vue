@@ -6,6 +6,9 @@ import type { ComponentPublicInstance } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useCampaignsStore, type Campaign, type CampaignDraftInput } from '@/stores/useCampaigns'
 import { useContactsStore } from '@/stores/useContacts'
@@ -472,26 +475,56 @@ const enabledOptimizations = computed(() => {
             <div class="text-h6 font-weight-bold mb-1">Campaign Details</div>
             <div class="text-body-2 text-medium-emphasis mb-6">Name your campaign and write the subject line recipients will see.</div>
             <v-divider class="mb-6"></v-divider>
-            <v-row>
-              <v-col cols="12">
-                <v-text-field v-model="name" label="Campaign Name *" placeholder="e.g. Black Friday 2026 — VIP Early Access" variant="outlined" density="comfortable" hint="Internal name, not shown to recipients" persistent-hint class="mb-4"></v-text-field>
-              </v-col>
-              <v-col cols="12" :sm="kind === 'ab_email' ? 6 : 12">
-                <v-text-field v-model="subject" :label="kind === 'ab_email' ? 'Subject Line A *' : 'Subject Line *'" placeholder="e.g. 🔥 40% Off Sitewide — Today Only!" variant="outlined" density="comfortable" class="mb-4"></v-text-field>
-              </v-col>
-              <v-col v-if="kind === 'ab_email'" cols="12" sm="6">
-                <v-text-field v-model="subjectB" label="Subject Line B *" placeholder="e.g. Today only — 40% off everything" variant="outlined" density="comfortable" class="mb-4"></v-text-field>
-              </v-col>
-              <v-col v-if="kind === 'ab_email'" cols="12" sm="6">
-                <v-slider v-model="testSplitPercent" label="Test split %" min="10" max="50" step="5" thumb-label="always" class="mb-2"></v-slider>
-              </v-col>
-              <v-col cols="12">
-                <v-text-field v-model="preheader" label="Preheader" placeholder="e.g. Your favourite brands, now at the lowest prices..." variant="outlined" density="comfortable" :counter="100" maxlength="100" hint="Shown in inbox previews after the subject line" persistent-hint class="mb-4"></v-text-field>
-              </v-col>
-              <v-col cols="12">
-                <v-combobox v-model="tag" label="Campaign Tag" :items="TAG_OPTIONS" variant="outlined" density="comfortable" clearable hint="Pick an existing tag or type a new one" persistent-hint></v-combobox>
-              </v-col>
-            </v-row>
+            <MpFormGrid :cols="2">
+              <v-text-field
+                v-model="name"
+                class="mp-form-grid__full"
+                label="Campaign Name *"
+                placeholder="e.g. Black Friday 2026 — VIP Early Access"
+                hint="Internal name, not shown to recipients"
+                persistent-hint
+              ></v-text-field>
+              <v-text-field
+                v-model="subject"
+                :class="{ 'mp-form-grid__full': kind !== 'ab_email' }"
+                :label="kind === 'ab_email' ? 'Subject Line A *' : 'Subject Line *'"
+                placeholder="e.g. 🔥 40% Off Sitewide — Today Only!"
+              ></v-text-field>
+              <v-text-field
+                v-if="kind === 'ab_email'"
+                v-model="subjectB"
+                label="Subject Line B *"
+                placeholder="e.g. Today only — 40% off everything"
+              ></v-text-field>
+              <v-slider
+                v-if="kind === 'ab_email'"
+                v-model="testSplitPercent"
+                label="Test split %"
+                min="10"
+                max="50"
+                step="5"
+                thumb-label="always"
+              ></v-slider>
+              <v-text-field
+                v-model="preheader"
+                class="mp-form-grid__full"
+                label="Preheader"
+                placeholder="e.g. Your favourite brands, now at the lowest prices..."
+                :counter="100"
+                maxlength="100"
+                hint="Shown in inbox previews after the subject line"
+                persistent-hint
+              ></v-text-field>
+              <v-combobox
+                v-model="tag"
+                class="mp-form-grid__full"
+                label="Campaign Tag"
+                :items="TAG_OPTIONS"
+                clearable
+                hint="Pick an existing tag or type a new one"
+                persistent-hint
+              ></v-combobox>
+            </MpFormGrid>
           </v-card>
 
           <!-- Step 2: Contacts -->
@@ -500,86 +533,71 @@ const enabledOptimizations = computed(() => {
             <div class="text-body-2 text-medium-emphasis mb-6">Choose who receives this campaign and the sender details they'll see.</div>
             <v-divider class="mb-6"></v-divider>
 
-            <v-select v-model="brand" label="Brand" :items="BRAND_OPTIONS" variant="outlined" density="comfortable" class="mb-4"></v-select>
+            <MpFormGrid :cols="2">
+              <v-select v-model="brand" class="mp-form-grid__full" label="Brand" :items="BRAND_OPTIONS"></v-select>
+              <v-select
+                v-model="audienceListIds"
+                :items="listItems"
+                item-title="title" item-value="value"
+                :label="`Select List (${audienceListIds.length})`" multiple chips closable-chips
+                @update:model-value="onAudienceListsChanged"
+              >
+                <template #prepend-item>
+                  <v-list-item title="Select all" @click="toggleAllLists"></v-list-item>
+                  <v-divider class="mt-1"></v-divider>
+                </template>
+              </v-select>
+              <v-select v-model="audienceSegmentIds" :items="segmentItems" item-title="title" item-value="value" :label="`Select Segment (${audienceSegmentIds.length})`" multiple chips closable-chips>
+                <template #prepend-item>
+                  <v-list-item title="Select all" @click="toggleAllSegments"></v-list-item>
+                  <v-divider class="mt-1"></v-divider>
+                </template>
+              </v-select>
+              <v-select v-model="audienceTableIds" class="mp-form-grid__full" :items="tableItems" item-title="title" item-value="value" :label="`Select Table (${audienceTableIds.length})`" multiple chips closable-chips>
+                <template #prepend-item>
+                  <v-list-item title="Select all" @click="toggleAllTables"></v-list-item>
+                  <v-divider class="mt-1"></v-divider>
+                </template>
+              </v-select>
+              <v-alert v-if="audienceCount === 0" type="info" variant="tonal" density="compact" rounded="lg" class="mp-form-grid__full text-body-2">
+                Please select at least one List, Segment, or Table.
+              </v-alert>
+              <v-alert v-else type="success" variant="tonal" density="compact" rounded="lg" class="mp-form-grid__full text-body-2" icon="user-check">
+                {{ audienceCount }} audience source{{ audienceCount > 1 ? 's' : '' }} selected.
+              </v-alert>
 
-            <v-row dense>
-              <v-col cols="12" md="4">
-                <v-select
-                  v-model="audienceListIds"
-                  :items="listItems"
-                  item-title="title" item-value="value"
-                  :label="`Select List (${audienceListIds.length})`" multiple chips closable-chips variant="outlined" density="comfortable"
-                  @update:model-value="onAudienceListsChanged"
-                >
-                  <template #prepend-item>
-                    <v-list-item title="Select all" @click="toggleAllLists"></v-list-item>
-                    <v-divider class="mt-1"></v-divider>
-                  </template>
-                </v-select>
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-select v-model="audienceSegmentIds" :items="segmentItems" item-title="title" item-value="value" :label="`Select Segment (${audienceSegmentIds.length})`" multiple chips closable-chips variant="outlined" density="comfortable">
-                  <template #prepend-item>
-                    <v-list-item title="Select all" @click="toggleAllSegments"></v-list-item>
-                    <v-divider class="mt-1"></v-divider>
-                  </template>
-                </v-select>
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-select v-model="audienceTableIds" :items="tableItems" item-title="title" item-value="value" :label="`Select Table (${audienceTableIds.length})`" multiple chips closable-chips variant="outlined" density="comfortable">
-                  <template #prepend-item>
-                    <v-list-item title="Select all" @click="toggleAllTables"></v-list-item>
-                    <v-divider class="mt-1"></v-divider>
-                  </template>
-                </v-select>
-              </v-col>
-            </v-row>
-            <v-alert v-if="audienceCount === 0" type="info" variant="tonal" density="compact" rounded="lg" class="mb-6 text-body-2">
-              Please select at least one List, Segment, or Table.
-            </v-alert>
-            <v-alert v-else type="success" variant="tonal" density="compact" rounded="lg" class="mb-6 text-body-2" icon="user-check">
-              {{ audienceCount }} audience source{{ audienceCount > 1 ? 's' : '' }} selected.
-            </v-alert>
-
-            <v-expansion-panels variant="accordion" class="mp-suppress-panel">
-              <v-expansion-panel rounded="lg" elevation="0">
-                <v-expansion-panel-title>
-                  <span class="text-body-2 font-weight-bold">Sender</span>
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <v-row dense class="mb-2">
-                    <v-col cols="12" sm="6"><v-text-field v-model="senderName" label="From Name *" variant="outlined" density="comfortable"></v-text-field></v-col>
-                    <v-col cols="12" sm="6"><v-text-field v-model="senderEmail" label="From Email *" variant="outlined" density="comfortable"></v-text-field></v-col>
-                    <v-col cols="12" sm="6"><v-text-field v-model="replyTo" label="Reply To *" variant="outlined" density="comfortable"></v-text-field></v-col>
-                    <v-col cols="12" sm="3"><v-select v-model="language" label="Language *" :items="LANGUAGES" variant="outlined" density="comfortable"></v-select></v-col>
-                    <v-col cols="12" sm="3"><v-text-field v-model="address" label="Address *" variant="outlined" density="comfortable"></v-text-field></v-col>
-                  </v-row>
-                  <div class="text-caption text-medium-emphasis">Selecting a list autofills sender details from that list's saved profile.</div>
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-              <v-expansion-panel rounded="lg" elevation="0">
-                <v-expansion-panel-title>
-                  <span class="text-body-2 font-weight-bold">Suppress contacts (optional)</span>
-                  <v-chip v-if="suppressCount" size="x-small" variant="tonal" color="primary" class="ml-3">{{ suppressCount }}</v-chip>
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <v-row dense>
-                    <v-col cols="12" sm="6">
-                      <v-select v-model="suppressListIds" :items="listItems" item-title="title" item-value="value" label="Suppress List" multiple chips closable-chips variant="outlined" density="comfortable"></v-select>
-                    </v-col>
-                    <v-col cols="12" sm="6">
-                      <v-select v-model="suppressJourneyIds" :items="journeyItems" item-title="title" item-value="value" label="Suppress Journey" multiple chips closable-chips variant="outlined" density="comfortable"></v-select>
-                    </v-col>
-                    <v-col cols="12" sm="6">
-                      <v-select v-model="suppressSegmentIds" :items="segmentItems" item-title="title" item-value="value" label="Suppress Segment" multiple chips closable-chips variant="outlined" density="comfortable"></v-select>
-                    </v-col>
-                    <v-col cols="12" sm="6">
-                      <v-select v-model="suppressSecureListIds" :items="secureListItems" item-title="title" item-value="value" label="Suppress Secure List" multiple chips closable-chips variant="outlined" density="comfortable"></v-select>
-                    </v-col>
-                  </v-row>
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-            </v-expansion-panels>
+              <v-expansion-panels variant="accordion" class="mp-form-grid__full mp-suppress-panel">
+                <v-expansion-panel rounded="lg" elevation="0">
+                  <v-expansion-panel-title>
+                    <span class="text-body-2 font-weight-bold">Sender</span>
+                  </v-expansion-panel-title>
+                  <v-expansion-panel-text>
+                    <MpFormGrid :cols="2">
+                      <v-text-field v-model="senderName" label="From Name *"></v-text-field>
+                      <v-text-field v-model="senderEmail" label="From Email *"></v-text-field>
+                      <v-text-field v-model="replyTo" label="Reply To *"></v-text-field>
+                      <v-select v-model="language" label="Language *" :items="LANGUAGES"></v-select>
+                      <v-text-field v-model="address" class="mp-form-grid__full" label="Address *"></v-text-field>
+                      <div class="mp-form-grid__full text-caption text-medium-emphasis">Selecting a list autofills sender details from that list's saved profile.</div>
+                    </MpFormGrid>
+                  </v-expansion-panel-text>
+                </v-expansion-panel>
+                <v-expansion-panel rounded="lg" elevation="0">
+                  <v-expansion-panel-title>
+                    <span class="text-body-2 font-weight-bold">Suppress contacts (optional)</span>
+                    <v-chip v-if="suppressCount" size="x-small" variant="tonal" color="primary" class="ml-3">{{ suppressCount }}</v-chip>
+                  </v-expansion-panel-title>
+                  <v-expansion-panel-text>
+                    <MpFormGrid :cols="2">
+                      <v-select v-model="suppressListIds" :items="listItems" item-title="title" item-value="value" label="Suppress List" multiple chips closable-chips></v-select>
+                      <v-select v-model="suppressJourneyIds" :items="journeyItems" item-title="title" item-value="value" label="Suppress Journey" multiple chips closable-chips></v-select>
+                      <v-select v-model="suppressSegmentIds" :items="segmentItems" item-title="title" item-value="value" label="Suppress Segment" multiple chips closable-chips></v-select>
+                      <v-select v-model="suppressSecureListIds" :items="secureListItems" item-title="title" item-value="value" label="Suppress Secure List" multiple chips closable-chips></v-select>
+                    </MpFormGrid>
+                  </v-expansion-panel-text>
+                </v-expansion-panel>
+              </v-expansion-panels>
+            </MpFormGrid>
           </v-card>
 
           <!-- Step 3: Content -->
@@ -588,47 +606,50 @@ const enabledOptimizations = computed(() => {
             <div class="text-body-2 text-medium-emphasis mb-6">Pick the email content this campaign will send.</div>
             <v-divider class="mb-6"></v-divider>
 
-            <v-autocomplete
-              v-model="contentId"
-              :items="contentOptions"
-              item-title="title" item-value="value"
-              label="Content Name *"
-              placeholder="Search the content library…"
-              variant="outlined" density="comfortable" clearable
-              prepend-inner-icon="search"
-              class="mb-6"
-            ></v-autocomplete>
+            <MpFormGrid>
+              <v-autocomplete
+                v-model="contentId"
+                :items="contentOptions"
+                item-title="title" item-value="value"
+                label="Content Name *"
+                placeholder="Search the content library…"
+                clearable
+                prepend-inner-icon="search"
+              ></v-autocomplete>
 
-            <v-card v-if="selectedContent" variant="tonal" color="primary" rounded="lg" class="pa-5 mb-6">
-              <div class="d-flex align-center justify-space-between mb-3">
-                <div class="d-flex align-center gap-2">
-                  <v-icon size="18">file-text</v-icon>
-                  <span class="font-weight-bold">{{ selectedContent.name }}</span>
+              <v-card v-if="selectedContent" variant="tonal" color="primary" rounded="lg" class="pa-5">
+                <div class="d-flex align-center justify-space-between mb-3">
+                  <div class="d-flex align-center gap-2">
+                    <v-icon size="18">file-text</v-icon>
+                    <span class="font-weight-bold">{{ selectedContent.name }}</span>
+                  </div>
+                  <v-btn
+                    icon="pencil"
+                    size="small"
+                    variant="text"
+                    aria-label="Edit content"
+                    :to="{ name: 'EmailContentEditor', params: { accountId, id: String(selectedContent.id) } }"
+                  />
                 </div>
-                <v-btn
-                  icon="pencil"
-                  size="small"
-                  variant="text"
-                  aria-label="Edit content"
-                  :to="{ name: 'EmailContentEditor', params: { accountId, id: String(selectedContent.id) } }"
-                />
-              </div>
-              <div class="mp-content-preview rounded-lg pa-4 text-body-2">
-                <div>Hi {{ mergeTagFirstName }},</div>
-                <div class="my-2">Thanks for shopping with {{ mergeTagAddress }}. Here's what's new for you today…</div>
-                <div class="text-caption text-medium-emphasis">{{ mergeTagUnsubscribe }}</div>
-              </div>
-            </v-card>
+                <div class="mp-content-preview rounded-lg pa-4 text-body-2">
+                  <div>Hi {{ mergeTagFirstName }},</div>
+                  <div class="my-2">Thanks for shopping with {{ mergeTagAddress }}. Here's what's new for you today…</div>
+                  <div class="text-caption text-medium-emphasis">{{ mergeTagUnsubscribe }}</div>
+                </div>
+              </v-card>
 
-            <div class="d-flex flex-wrap align-center gap-6 mb-6">
-              <v-switch v-model="showPreviewLink" color="primary" density="compact" hide-details label="Show email preview link"></v-switch>
-              <v-switch v-model="dynamicPreview" color="primary" density="compact" hide-details label="Dynamic content preview"></v-switch>
-            </div>
+              <MpFormField label="Preview options">
+                <div class="d-flex flex-wrap align-center gap-6">
+                  <v-switch v-model="showPreviewLink" label="Show email preview link"></v-switch>
+                  <v-switch v-model="dynamicPreview" label="Dynamic content preview"></v-switch>
+                </div>
+              </MpFormField>
 
-            <div class="d-flex align-center gap-4">
-              <v-btn variant="outlined" class="text-none" prepend-icon="shield-check" :disabled="!selectedContent" @click="runSpamCheck">Run spam check</v-btn>
-              <v-chip v-if="spamCheckResult" color="success" variant="tonal" prepend-icon="check-circle">{{ spamCheckResult }}</v-chip>
-            </div>
+              <div class="d-flex align-center gap-4">
+                <v-btn variant="outlined" class="text-none" prepend-icon="shield-check" :disabled="!selectedContent" @click="runSpamCheck">Run spam check</v-btn>
+                <v-chip v-if="spamCheckResult" color="success" variant="tonal" prepend-icon="check-circle">{{ spamCheckResult }}</v-chip>
+              </div>
+            </MpFormGrid>
           </v-card>
 
           <!-- Step 4: Schedule & Review -->
@@ -637,49 +658,53 @@ const enabledOptimizations = computed(() => {
             <div class="text-body-2 text-medium-emphasis mb-6">Choose when to send, then confirm your setup.</div>
             <v-divider class="mb-6"></v-divider>
 
-            <v-radio-group v-model="scheduleType" class="mb-4">
-              <v-card variant="outlined" rounded="lg" class="pa-4 mb-3 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
-                <v-radio value="now" color="primary">
-                  <template #label>
-                    <div class="ml-2">
-                      <div class="font-weight-bold">Send Immediately</div>
-                      <div class="text-caption text-medium-emphasis">Sends as soon as you click "{{ kind === 'ab_email' ? 'Send test' : 'Schedule campaign' }}"</div>
-                    </div>
-                  </template>
-                </v-radio>
-              </v-card>
-              <v-card variant="outlined" rounded="lg" class="pa-4 cursor-pointer" @click="scheduleType = 'scheduled'">
-                <v-radio value="scheduled" color="primary">
-                  <template #label>
-                    <div class="ml-2">
-                      <div class="font-weight-bold">Schedule for Later</div>
-                      <div class="text-caption text-medium-emphasis">Pick a specific date and time for delivery</div>
-                    </div>
-                  </template>
-                </v-radio>
-              </v-card>
-            </v-radio-group>
-            <v-expand-transition>
-              <v-row v-if="scheduleType === 'scheduled'" class="mb-2">
-                <v-col cols="12" sm="5"><v-text-field v-model="scheduleDate" label="Date" type="date" variant="outlined" density="comfortable"></v-text-field></v-col>
-                <v-col cols="12" sm="4"><v-text-field v-model="scheduleTime" label="Time" type="time" variant="outlined" density="comfortable"></v-text-field></v-col>
-                <v-col cols="12" sm="3"><v-select v-model="timezone" label="Timezone" :items="TIMEZONES" variant="outlined" density="comfortable"></v-select></v-col>
-              </v-row>
-            </v-expand-transition>
+            <MpFormGrid :cols="2">
+              <MpFormField label="When to send" class="mp-form-grid__full">
+                <template #default="{ labelId }">
+                  <v-radio-group v-model="scheduleType" :aria-labelledby="labelId">
+                    <v-card variant="outlined" rounded="lg" class="pa-4 mb-3 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
+                      <v-radio value="now">
+                        <template #label>
+                          <div class="ml-2">
+                            <div class="font-weight-bold">Send Immediately</div>
+                            <div class="text-caption text-medium-emphasis">Sends as soon as you click "{{ kind === 'ab_email' ? 'Send test' : 'Schedule campaign' }}"</div>
+                          </div>
+                        </template>
+                      </v-radio>
+                    </v-card>
+                    <v-card variant="outlined" rounded="lg" class="pa-4 cursor-pointer" @click="scheduleType = 'scheduled'">
+                      <v-radio value="scheduled">
+                        <template #label>
+                          <div class="ml-2">
+                            <div class="font-weight-bold">Schedule for Later</div>
+                            <div class="text-caption text-medium-emphasis">Pick a specific date and time for delivery</div>
+                          </div>
+                        </template>
+                      </v-radio>
+                    </v-card>
+                  </v-radio-group>
+                </template>
+              </MpFormField>
 
-            <div class="text-subtitle-2 font-weight-bold mt-4 mb-3">Send-time optimization</div>
-            <v-row dense class="mb-2">
-              <v-col cols="6" sm="3"><v-switch v-model="optimizations.sto" color="primary" density="compact" hide-details label="STO"></v-switch></v-col>
-              <v-col cols="6" sm="3"><v-switch v-model="optimizations.tzo" color="primary" density="compact" hide-details label="TZO"></v-switch></v-col>
-              <v-col cols="6" sm="3"><v-switch v-model="optimizations.cto" color="primary" density="compact" hide-details label="CTO"></v-switch></v-col>
-              <v-col cols="6" sm="3"><v-switch v-model="optimizations.preSend" color="primary" density="compact" hide-details label="Pre-Send Calc"></v-switch></v-col>
-            </v-row>
+              <v-expand-transition>
+                <MpFormGrid v-if="scheduleType === 'scheduled'" :cols="2" class="mp-form-grid__full">
+                  <v-text-field v-model="scheduleDate" label="Date" type="date"></v-text-field>
+                  <v-text-field v-model="scheduleTime" label="Time" type="time"></v-text-field>
+                  <v-select v-model="timezone" label="Timezone" :items="TIMEZONES"></v-select>
+                </MpFormGrid>
+              </v-expand-transition>
 
-            <template v-if="kind === 'ab_email'">
-              <v-divider class="my-6"></v-divider>
-              <div class="text-subtitle-2 font-weight-bold mb-3">A/B winner criteria</div>
-              <v-select v-model="winnerCriteria" :items="[{title:'Opens', value:'opens'},{title:'Clicks', value:'clicks'},{title:'Revenue', value:'revenue'}]" item-title="title" item-value="value" label="Pick the winner by" variant="outlined" density="comfortable" style="max-width: 320px;"></v-select>
-            </template>
+              <MpFormSection title="Send-time optimization" />
+              <v-switch v-model="optimizations.sto" label="STO"></v-switch>
+              <v-switch v-model="optimizations.tzo" label="TZO"></v-switch>
+              <v-switch v-model="optimizations.cto" label="CTO"></v-switch>
+              <v-switch v-model="optimizations.preSend" label="Pre-Send Calc"></v-switch>
+
+              <template v-if="kind === 'ab_email'">
+                <MpFormSection title="A/B winner criteria" />
+                <v-select v-model="winnerCriteria" :items="[{title:'Opens', value:'opens'},{title:'Clicks', value:'clicks'},{title:'Revenue', value:'revenue'}]" item-title="title" item-value="value" label="Pick the winner by"></v-select>
+              </template>
+            </MpFormGrid>
 
             <v-divider class="my-6"></v-divider>
             <div class="text-subtitle-2 font-weight-bold mb-3">Review</div>

@@ -3,7 +3,7 @@ import DvToastStack from './DvToastStack.vue'
 import { useDaVinciToasts, type DaVinciToastInput } from '@/composables/useDaVinciToasts'
 
 const meta = {
-  title: 'Copilot/DvToastStack',
+  title: 'Product/Da Vinci/DvToastStack',
   component: DvToastStack,
   tags: ['autodocs'],
   parameters: {
@@ -37,7 +37,13 @@ documented inline there.
   auto-dismiss timer pauses on hover and focus and resumes on leave/blur, so a keyboard user
   tabbing to the action button is never cut off (WCAG 2.2.1).
 - **Consumer must:** keep \`title\` meaningful on its own and give \`action\` a verb label.
-        `,
+        
+
+### Controls
+This component takes **no props** — the Controls panel is empty by design. Its queue
+comes from the \`useDaVinciToasts()\` composable (\`toasts\`, \`triggerAction\`, \`pause\`,
+\`resume\`). For the platform-wide toast layer use \`MpToastStack\` instead.
+`,
       },
     },
   },

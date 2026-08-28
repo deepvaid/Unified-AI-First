@@ -37,27 +37,27 @@ const ITEMS = [
 .s02__row {
   display: flex;
   align-items: baseline;
-  gap: var(--mp-spacing-6);
-  padding: var(--mp-spacing-4) 0;
+  gap: var(--mp-space-24);
+  padding: var(--mp-space-16) 0;
   border-bottom: 1px solid var(--mp-border-subtle);
 }
 
 .s02__num {
-  font-family: var(--mp-typography-fontFamily-mono);
-  font-size: var(--mp-typography-fontSize-sm);
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-primary));
   flex-shrink: 0;
 }
 
 .s02__label {
-  font-size: var(--mp-typography-fontSize-xl);
-  font-weight: var(--mp-typography-fontWeight-semibold);
-  letter-spacing: var(--mp-typography-letterSpacing-snug);
+  font-size: var(--mp-fontSize-24);
+  font-weight: var(--mp-fontWeight-semibold);
+  letter-spacing: var(--mp-letterSpacing-snug);
   flex-grow: 1;
 }
 
 .s02__minutes {
-  font-size: var(--mp-typography-fontSize-sm);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-on-surface-variant));
   font-variant-numeric: tabular-nums;
 }

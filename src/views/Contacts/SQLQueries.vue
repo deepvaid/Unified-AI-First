@@ -9,6 +9,8 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -198,58 +200,58 @@ function confirmDelete() {
     <!-- Create / edit query -->
     <MpFormDrawer
       v-model="drawer"
-      :title="editingId != null ? 'Edit Query' : 'New Query'"
-      :width="640"
+      :title="editingId != null ? 'Edit Query' : 'New Query'" size="lg"
       :guarded="drawerDirty"
       @close="requestCloseDrawer"
     >
-      <v-text-field v-model="form.name" label="Query Name *" variant="outlined" density="comfortable" class="mb-4" />
-      <v-select
-        v-model="form.targets"
-        label="Target Tables *"
-        :items="tableOptions"
-        variant="outlined"
-        density="comfortable"
-        multiple
-        chips
-        closable-chips
-        class="mb-4"
-      />
-      <div class="text-body-2 font-weight-medium mb-1">Update Type</div>
-      <v-radio-group v-model="form.updateType" inline hide-details class="mb-4">
-        <v-radio label="Overwrite" value="Overwrite" />
-        <v-radio label="Append" value="Append" />
-      </v-radio-group>
-      <div class="text-caption text-medium-emphasis mb-2">Example queries</div>
-      <div class="d-flex flex-wrap ga-2 mb-3">
-        <v-chip
-          v-for="ex in SQL_EXAMPLES"
-          :key="ex.label"
-          size="small"
-          variant="outlined"
-          class="text-none"
-          @click="applyExample(ex.query)"
-        >{{ ex.label }}</v-chip>
-      </div>
-      <v-textarea
-        v-model="form.query"
-        label="Query *"
-        variant="outlined"
-        auto-grow
-        rows="6"
-        spellcheck="false"
-        class="sql-editor"
-      />
-      <v-alert
-        v-if="form.query.trim()"
-        type="info"
-        variant="tonal"
-        density="compact"
-        rounded="lg"
-        class="mt-3 text-body-2"
-      >
-        What this returns: rows that match your SELECT — loaded into the target table using {{ form.updateType.toLowerCase() }} mode.
-      </v-alert>
+      <MpFormGrid>
+        <v-text-field v-model="form.name" label="Query Name *" />
+        <v-select
+          v-model="form.targets"
+          label="Target Tables *"
+          :items="tableOptions"
+          multiple
+          chips
+          closable-chips
+        />
+        <MpFormField label="Update Type">
+          <template #default="{ labelId }">
+            <v-radio-group v-model="form.updateType" inline :aria-labelledby="labelId">
+              <v-radio label="Overwrite" value="Overwrite" />
+              <v-radio label="Append" value="Append" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
+        <MpFormField label="Example queries" hint="Replaces the query below.">
+          <div class="d-flex flex-wrap ga-2">
+            <v-chip
+              v-for="ex in SQL_EXAMPLES"
+              :key="ex.label"
+              variant="outlined"
+              class="text-none"
+              @click="applyExample(ex.query)"
+            >{{ ex.label }}</v-chip>
+          </div>
+        </MpFormField>
+        <v-textarea
+          v-model="form.query"
+          label="Query *"
+          auto-grow
+          rows="5"
+          spellcheck="false"
+          class="sql-editor"
+        />
+        <v-alert
+          v-if="form.query.trim()"
+          type="info"
+          variant="tonal"
+          density="compact"
+          rounded="lg"
+          class="text-body-2"
+        >
+          What this returns: rows that match your SELECT — loaded into the target table using {{ form.updateType.toLowerCase() }} mode.
+        </v-alert>
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave()" @click="save">Save</v-btn>

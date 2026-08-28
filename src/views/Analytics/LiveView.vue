@@ -427,11 +427,13 @@ const recentActivity = computed(() => [
             />
           </template>
         </v-tooltip>
+        <!-- Toolbar search: compact and detail-free on purpose, labelled the same
+             way MpDataTableToolbar labels its own search. -->
         <v-text-field
           density="compact"
-          variant="outlined"
           hide-details
           placeholder="Search location"
+          aria-label="Search location"
           prepend-inner-icon="search"
           class="live-view__search"
         />
@@ -701,8 +703,8 @@ const recentActivity = computed(() => [
 .funnel__step {
   flex: 1 1 0;
   min-width: 140px;
-  padding: var(--mp-spacing-4) var(--mp-spacing-5);
-  border-radius: var(--mp-borderRadius-lg);
+  padding: var(--mp-space-16) var(--mp-space-20);
+  border-radius: var(--mp-radius-12);
   background: rgba(var(--v-theme-surface-variant), 0.45);
   border: 1px solid rgba(var(--v-theme-border), 0.6);
 }
@@ -725,8 +727,8 @@ const recentActivity = computed(() => [
   justify-content: center;
   background: rgba(var(--v-theme-surface-variant), 0.85);
   border: 1px solid rgba(var(--v-theme-border), 0.7);
-  font-size: var(--mp-typography-fontSize-xs);
-  font-weight: var(--mp-typography-fontWeight-semibold);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   color: rgba(var(--v-theme-on-surface), 0.72);
   flex-shrink: 0;
 }
@@ -735,21 +737,21 @@ const recentActivity = computed(() => [
 .live-rows {
   display: flex;
   flex-direction: column;
-  gap: var(--mp-spacing-2);
+  gap: var(--mp-space-8);
 }
 
 .live-row {
   display: flex;
   align-items: center;
-  gap: var(--mp-spacing-3);
-  padding: var(--mp-spacing-2) 0;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-8) 0;
   min-height: 36px;
 }
 
 // ─── Full screen ───────────────────────────────────────────────
 .live-view:fullscreen {
   background: rgb(var(--v-theme-background));
-  padding: var(--mp-spacing-6);
+  padding: var(--mp-space-24);
   overflow-y: auto;
 }
 
@@ -758,7 +760,7 @@ const recentActivity = computed(() => [
   position: relative;
   width: 100%;
   aspect-ratio: 2 / 1;
-  border-radius: var(--mp-borderRadius-lg);
+  border-radius: var(--mp-radius-12);
   overflow: hidden;
   border: 1px solid rgba(var(--v-theme-border), 0.6);
 }
@@ -825,7 +827,7 @@ const recentActivity = computed(() => [
 
 :deep(.leaflet-control-zoom) {
   border: 1px solid rgba(var(--v-theme-border), 0.6) !important;
-  border-radius: var(--mp-borderRadius-md) !important;
+  border-radius: var(--mp-radius-12) !important;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
 }
@@ -842,7 +844,7 @@ const recentActivity = computed(() => [
 }
 
 :deep(.leaflet-popup-content-wrapper) {
-  border-radius: var(--mp-borderRadius-md) !important;
+  border-radius: var(--mp-radius-12) !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14) !important;
   padding: 2px 4px !important;
   background: rgb(var(--v-theme-surface)) !important;
@@ -850,7 +852,7 @@ const recentActivity = computed(() => [
 
 :deep(.leaflet-popup-content) {
   margin: 8px 10px !important;
-  font-size: var(--mp-typography-fontSize-xs);
+  font-size: var(--mp-fontSize-11);
   line-height: 1.35;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -864,7 +866,7 @@ const recentActivity = computed(() => [
   display: flex;
   align-items: center;
   gap: 6px;
-  font-weight: var(--mp-typography-fontWeight-semibold);
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 :deep(.live-map__popup-flag) {
@@ -880,13 +882,13 @@ const recentActivity = computed(() => [
 .live-map__legend {
   display: flex;
   flex-direction: column;
-  gap: var(--mp-spacing-1);
+  gap: var(--mp-space-4);
 }
 
 .live-map__legend-row {
   display: flex;
   align-items: center;
-  gap: var(--mp-spacing-3);
+  gap: var(--mp-space-12);
   padding: 4px 0;
 }
 </style>

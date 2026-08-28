@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvCampaignOnboardingCard from './DvCampaignOnboardingCard.vue'
 
 const meta = {
-  title: 'Copilot/DvCampaignOnboardingCard',
+  title: 'Product/Da Vinci/DvCampaignOnboardingCard',
   component: DvCampaignOnboardingCard,
   tags: ['autodocs'],
   parameters: {
@@ -80,8 +80,19 @@ domain, list, content).
     },
   },
   argTypes: {
-    step: { control: { type: 'number', min: 1, max: 4 } },
-    totalSteps: { control: { type: 'number', min: 1, max: 6 } },
+    title: { control: 'text', description: 'Card heading \u2014 the thing being set up.' },
+    description: { control: 'text', description: 'Supporting line under the title. Defaults to empty.' },
+    items: { control: 'object', description: '`CampaignReadinessItem[]` \u2014 each with a `status` of `ready`, `needs-setup` or `unknown`, which selects its icon, label and colour. The first item that is not `ready` becomes the highlighted next blocker.' },
+    primaryAction: { control: 'object', description: '`CampaignOnboardingAction` for the main button. Emits `action` with its key when pressed.' },
+    secondaryAction: { control: 'object', description: 'Optional second action, rendered at lower emphasis. Emits `action` the same way.' },
+    step: {
+      control: { type: 'number', min: 1, max: 4 },
+      description: 'Current step, 1-based. Drives the progress bar and the `Campaign setup - Step N of M` eyebrow.',
+    },
+    totalSteps: {
+      control: { type: 'number', min: 1, max: 6 },
+      description: 'Total steps in the flow. Used as the progress denominator, so it must be the real total, not the count of items shown.',
+    },
   },
 } satisfies Meta<typeof DvCampaignOnboardingCard>
 

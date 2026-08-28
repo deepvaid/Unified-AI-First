@@ -164,7 +164,7 @@ const endsRun = computed(() => {
 .flow-node {
   position: relative; width: 320px; background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: var(--mp-component-card-radius-md); overflow: hidden;
+  border-radius: var(--mp-radius-12); overflow: hidden;
   box-shadow: var(--mp-shadow-sm);
   transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
@@ -193,11 +193,11 @@ const endsRun = computed(() => {
   display: block; width: 100%; padding: 0; margin: 0; border: 0;
   background: transparent; text-align: left; cursor: pointer; color: inherit;
 }
-.flow-node__open:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: var(--mp-component-card-radius-md); }
+.flow-node__open:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: var(--mp-radius-12); }
 .flow-node__main { display: flex; align-items: flex-start; gap: 10px; padding: 12px 64px 12px 16px; }
 .flow-node__icon {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; border-radius: var(--mp-component-card-radius-sm); flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: var(--mp-radius-10); flex-shrink: 0;
   background: var(--node-accent-soft); color: var(--node-accent);
 }
 .flow-node__heading { display: flex; flex-direction: column; min-width: 0; }
@@ -321,7 +321,7 @@ const endsRun = computed(() => {
   display: flex; align-items: center; justify-content: center;
   width: 320px; padding: 12px;
   border: 1.5px dashed var(--border-default);
-  border-radius: var(--mp-component-card-radius-md); background: transparent; cursor: pointer;
+  border-radius: var(--mp-radius-12); background: transparent; cursor: pointer;
   color: var(--text-muted); transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 .branch-empty:hover {

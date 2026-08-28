@@ -4,7 +4,7 @@
  */
 
 .apexcharts-tooltip {
-  border-radius: var(--mp-borderRadius-md, 8px) !important;
+  border-radius: var(--mp-radius-12, 8px) !important;
   box-shadow: var(--elevation-overlay) !important;
 }
 

@@ -1,0 +1,142 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+import { tokensByPrefix } from './foundationTokens'
+import {
+  mp_color_light_primary,
+  mp_fontFamily_mono,
+  mp_fontSize_11,
+  mp_radius_4,
+  mp_radius_12,
+} from '@/design-tokens/generated/tokens'
+
+<Meta title="Foundations/Overview" />
+
+export const mono = { fontFamily: mp_fontFamily_mono, fontSize: mp_fontSize_11 }
+
+export const Row = ({ token, name, children }) => (
+  <div style={{ display: 'grid', gridTemplateColumns: '120px 64px 1fr', alignItems: 'center', gap: 'var(--mp-space-16)', padding: 'var(--mp-space-6) 0' }}>
+    <code style={{ ...mono, color: 'var(--text-muted)' }} title={token}>{name}</code>
+    <code style={{ ...mono, color: 'var(--text-muted)', textAlign: 'right' }}>{children.value}</code>
+    <div>{children.specimen}</div>
+  </div>
+)
+
+export const SpacingBars = () => (
+  <div>
+    {tokensByPrefix('mp_space_').map(({ token, name, value }) => (
+      <Row key={token} token={token} name={`space.${name}`}>
+        {{
+          value,
+          specimen: <div style={{ width: value, height: '14px', background: mp_color_light_primary, borderRadius: mp_radius_4 }} />,
+        }}
+      </Row>
+    ))}
+  </div>
+)
+
+export const RadiusSpecimens = () => (
+  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 'var(--mp-space-16)' }}>
+    {tokensByPrefix('mp_radius_').map(({ token, name, value }) => (
+      <div key={token} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--mp-space-8)' }}>
+        <div style={{
+          height: '72px',
+          borderRadius: value,
+          border: `2px solid ${mp_color_light_primary}`,
+          background: `color-mix(in oklch, ${mp_color_light_primary} 8%, transparent)`,
+        }} />
+        <div>
+          <div style={{ ...mono }}>radius.{name}</div>
+          <div style={{ ...mono, color: 'var(--text-muted)' }}>{value}</div>
+        </div>
+      </div>
+    ))}
+  </div>
+)
+
+export const Swatches = ({ prefix, only }) => (
+  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 'var(--mp-space-12)' }}>
+    {tokensByPrefix(prefix)
+      .filter(({ name, value }) => value.startsWith('#') && (!only || only.includes(name)))
+      .map(({ token, name, value }) => (
+        <div key={token} style={{ border: '1px solid var(--border-subtle)', borderRadius: mp_radius_12, overflow: 'hidden' }}>
+          <div style={{ height: '52px', background: value }} />
+          <div style={{ padding: 'var(--mp-space-8)' }}>
+            <div style={{ ...mono }}>{name}</div>
+            <div style={{ ...mono, color: 'var(--text-muted)' }}>{value}</div>
+          </div>
+        </div>
+      ))}
+  </div>
+)
+
+# Foundations at a glance
+
+A docs page renders outside the story canvas, so the specimens below are drawn straight from the
+token module rather than through Vuetify's theme channels — which is also why the ink stays the
+light-theme accent when you flip the toolbar. The **Colors** page shows both palettes properly.
+
+Every specimen on this page is rendered from `src/design-tokens/generated/tokens.ts`, which is
+generated from `src/design-tokens/tokens.json` by `npm run tokens:build`. A bar's width, a corner's
+radius and a swatch's fill **are** the token values — if something looks wrong here, it is wrong in
+`tokens.json`, not in this page.
+
+This is the overview. The deeper pages break each scale down:
+**Colors** · **Typography** · **Spacing** · **Radius & Shadows** · **Icons** · **Buttons** · **Tooltips**.
+
+---
+
+## Spacing
+
+`space.*` is the one spacing scale, and **the token name is the pixel value** — `space.12` *is*
+12px. A 4px grid from 16px up, with 2px half-steps (2 · 6 · 10 · 14) below it. The sub-grid is a
+recorded decision (DESIGN_AUDIT.md P1-5), not drift.
+
+In templates prefer Vuetify utilities (`pa-4`, `ga-3`) — the same 4px grid. In CSS use
+`var(--mp-space-*)`. Never a raw px literal in either.
+
+<SpacingBars />
+
+---
+
+## Radius
+
+One scale, named by pixel value, read as a concentric language: **16** for outer surfaces (cards,
+dialogs, drawers), **12** for anything nested inside one, **10** for controls and inputs, **8** for
+chips and menu items, **4** for micro-marks, `full` for pills, buttons and avatars.
+
+Prefer the role alias where the system has already decided —
+`component.{button,chip,input,menu,card,dialog}.radius` alias into this scale and are wired into the
+Vuetify global defaults, so a plain `v-btn` or `v-card` picks the right corner up on its own.
+
+<RadiusSpecimens />
+
+---
+
+## Colour
+
+The brand and semantic roles below drive light theme. Dark is the same set of roles resolved to
+`color.dark.*` — flip the toolbar **Theme** to see it, and see **Foundations → Colors** for the full
+ramps, chart series and the light/dark comparison.
+
+In components, consume colour through the **Vuetify theme channels**
+(`rgb(var(--v-theme-primary))`, `color="success"`, `bg-surface`) rather than these hex values
+directly, so theming stays automatic.
+
+### Brand and semantic roles
+
+<Swatches prefix="mp_color_light_" only={['primary', 'secondary', 'success', 'warning', 'error', 'info']} />
+
+### Surfaces, text and borders
+
+<Swatches prefix="mp_color_light_" only={['background', 'surface', 'surfaceVariant', 'textPrimary', 'textSecondary', 'textMuted', 'border', 'borderSubtle']} />
+
+---
+
+## Type
+
+**Body is 14px** — the one canonical body size. The ramp is named by pixel value
+(10 · 11 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 24 · 28 · 32 · 40 · 48), so there is no
+`md`-means-16-or-13 guesswork, and no fractional size exists anywhere in the system. Composite
+`text.*` roles (pageTitle, kpiValue, sectionTitle, body, caption, eyebrow) are what product pages
+should actually use; `display.*` is a separate hero ramp for marketing surfaces only.
+
+Full specimens on **Foundations → Typography**.

@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import LandingBlockView from './LandingBlockView.vue'
 import { PALETTE, PAGE_BLOCKS, block } from './landingStoryFixtures'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Marketing/LandingBlockView',
+  title: 'Product/Marketing/Landing Pages/LandingBlockView',
   component: LandingBlockView,
   tags: ['autodocs'],
   parameters: {
@@ -116,9 +115,4 @@ export const TitleSizes: Story = {
       </div>
     `,
   }),
-}
-
-export const DarkMode: Story = {
-  ...BlockTypeMatrix,
-  globals: darkModeGlobals,
 }

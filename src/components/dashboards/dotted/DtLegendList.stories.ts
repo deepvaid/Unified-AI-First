@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 import DtLegendList, { type DtLegendRow } from './DtLegendList.vue'
 import { DOTTED_PIE_BLUES } from './dottedChartMath'
 
@@ -18,7 +17,7 @@ const ROWS_WITH_DELTAS: DtLegendRow[] = [
 ]
 
 const meta = {
-  title: 'Dashboards/Dotted/DtLegendList',
+  title: 'Product/Dashboards/Dotted/DtLegendList',
   component: DtLegendList,
   tags: ['autodocs'],
   parameters: {
@@ -61,9 +60,4 @@ export const WithDeltas: Story = {
 /** Wider row spacing for taller card layouts. */
 export const LooseSpacing: Story = {
   args: { rows: ROWS, gap: 16 },
-}
-
-export const DarkMode: Story = {
-  args: { rows: ROWS_WITH_DELTAS },
-  globals: darkModeGlobals,
 }

@@ -4,6 +4,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
 import {
@@ -173,12 +174,12 @@ function doDelete() {
         search-placeholder="Search synonym…"
         :total-count="filteredSynonyms.length"
       >
+        <!-- Filter popover: `hide-details` is deliberate — these two selects can
+             never carry a hint or an error, and the popover is a dense surface. -->
         <template #filter-content>
           <v-select
             v-model="filterStatus"
             label="Status"
-            density="comfortable"
-            variant="outlined"
             hide-details
             :items="[
               { title: 'All statuses', value: 'all' },
@@ -189,8 +190,6 @@ function doDelete() {
           <v-select
             v-model="filterType"
             label="Type"
-            density="comfortable"
-            variant="outlined"
             hide-details
             :items="[
               { title: 'All types', value: 'all' },
@@ -345,70 +344,63 @@ function doDelete() {
 
     <!-- Edit synonym drawer -->
     <MpFormDrawer v-model="editDrawer" title="Edit synonym" subtitle="Update this synonym mapping">
-      <v-select
-        v-model="editType"
-        label="Type"
-        :items="[
-          { title: 'One way', value: 'one_way' },
-          { title: 'Two way', value: 'two_way' },
-        ]"
-        variant="outlined"
-        density="comfortable"
-        class="mb-3"
-      />
-
-      <label class="text-caption font-weight-medium text-medium-emphasis">Queries</label>
-      <v-text-field
-        v-model="editQueryInput"
-        placeholder="Type a query, then press Enter"
-        density="comfortable"
-        variant="outlined"
-        hide-details
-        class="mt-2"
-        @keydown.enter.prevent="addEditQuery"
-      />
-      <div v-if="editQueries.length > 0" class="d-flex flex-wrap gap-1 mt-2 mb-3">
-        <v-chip
-          v-for="q in editQueries"
-          :key="q"
-          size="small"
-          variant="tonal"
-          color="default"
-          closable
-          @click:close="removeEditQuery(q)"
-        >
-          {{ q }}
-        </v-chip>
-      </div>
-
-      <template v-if="editType === 'one_way'">
-        <label class="text-caption font-weight-medium text-medium-emphasis">Leads to</label>
-        <v-text-field
-          v-model="editLeadsToInput"
-          placeholder="Type a term, then press Enter"
-          density="comfortable"
-          variant="outlined"
-          hide-details
-          class="mt-2"
-          @keydown.enter.prevent="addEditLeadsTo"
+      <MpFormGrid>
+        <v-select
+          v-model="editType"
+          label="Type"
+          :items="[
+            { title: 'One way', value: 'one_way' },
+            { title: 'Two way', value: 'two_way' },
+          ]"
         />
-        <div v-if="editLeadsTo.length > 0" class="d-flex flex-wrap gap-1 mt-2">
+
+        <v-text-field
+          v-model="editQueryInput"
+          label="Queries *"
+          hint="Type a query, then press Enter"
+          persistent-hint
+          @keydown.enter.prevent="addEditQuery"
+        />
+        <div v-if="editQueries.length > 0" class="d-flex flex-wrap gap-1">
           <v-chip
-            v-for="t in editLeadsTo"
-            :key="t"
+            v-for="q in editQueries"
+            :key="q"
             size="small"
             variant="tonal"
             color="default"
             closable
-            @click:close="removeEditLeadsTo(t)"
+            @click:close="removeEditQuery(q)"
           >
-            {{ t }}
+            {{ q }}
           </v-chip>
         </div>
-      </template>
-      <div v-else class="text-caption text-medium-emphasis">
-        Two-way synonyms treat all queries above as equivalent to each other.
-      </div>
+
+        <template v-if="editType === 'one_way'">
+          <v-text-field
+            v-model="editLeadsToInput"
+            label="Leads to"
+            hint="Type a term, then press Enter"
+            persistent-hint
+            @keydown.enter.prevent="addEditLeadsTo"
+          />
+          <div v-if="editLeadsTo.length > 0" class="d-flex flex-wrap gap-1">
+            <v-chip
+              v-for="t in editLeadsTo"
+              :key="t"
+              size="small"
+              variant="tonal"
+              color="default"
+              closable
+              @click:close="removeEditLeadsTo(t)"
+            >
+              {{ t }}
+            </v-chip>
+          </div>
+        </template>
+        <div v-else class="text-caption text-medium-emphasis">
+          Two-way synonyms treat all queries above as equivalent to each other.
+        </div>
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="editDrawer = false">Cancel</v-btn>

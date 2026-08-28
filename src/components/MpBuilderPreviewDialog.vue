@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useId } from 'vue'
+import MpDialog from './MpDialog.vue'
 
 withDefaults(
   defineProps<{
@@ -21,51 +21,45 @@ defineSlots<{
   /** Optional toolbar controls (device toggle, etc.). */
   toolbar?(): unknown
 }>()
-
-function close() {
-  emit('update:modelValue', false)
-}
-
-const titleId = useId()
 </script>
 
 <template>
-  <v-dialog
+  <!-- Composes MpDialog in fullscreen (P4-6): the header band, close affordance
+       and body scroll come from the shell, so a preview and a form modal share
+       one chrome. Only the centred stage is local. -->
+  <MpDialog
     :model-value="modelValue"
     fullscreen
-    transition="dialog-bottom-transition"
-    :aria-labelledby="titleId"
+    flush
+    :title="title"
+    class="mp-builder-preview"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card class="mp-builder-preview d-flex flex-column" rounded="0" flat>
-      <div class="mp-builder-preview__bar d-flex align-center ga-3 px-4">
-        <div :id="titleId" class="text-subtitle-2 font-weight-bold text-truncate">{{ title }}</div>
-        <v-spacer />
-        <slot name="toolbar" />
-        <v-btn icon="x" variant="text" size="small" aria-label="Close preview" @click="close" />
-      </div>
-      <div class="mp-builder-preview__stage flex-grow-1 overflow-y-auto">
-        <slot />
-      </div>
-    </v-card>
-  </v-dialog>
+    <template #headerActions>
+      <slot name="toolbar" />
+    </template>
+
+    <div class="mp-builder-preview__stage">
+      <slot />
+    </div>
+  </MpDialog>
 </template>
 
 <style scoped>
-.mp-builder-preview {
-  height: 100%;
+.mp-builder-preview :deep(.mp-dialog__card) {
   background: rgb(var(--v-theme-background));
 }
-.mp-builder-preview__bar {
-  height: 56px;
-  flex-shrink: 0;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
-  background: rgb(var(--v-theme-surface));
+
+/* The stage is the full-bleed canvas the preview sits on, so it takes the
+   shell's inset off (the `flush` prop, not a :deep() reach into MpDialog's
+   internals — P6-6) and paints its own generous one. */
+.mp-builder-preview :deep(.mp-dialog__body) {
+  background: rgb(var(--v-theme-background));
 }
+
 .mp-builder-preview__stage {
-  padding: 32px 24px;
   display: flex;
   justify-content: center;
-  background: rgb(var(--v-theme-background));
+  padding: var(--mp-component-card-paddingSpacious) var(--mp-space-24);
 }
 </style>

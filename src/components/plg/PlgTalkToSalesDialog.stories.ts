@@ -1,10 +1,9 @@
 import { ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import PlgTalkToSalesDialog from './PlgTalkToSalesDialog.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'PLG/PlgTalkToSalesDialog',
+  title: 'Product/PLG/PlgTalkToSalesDialog',
   component: PlgTalkToSalesDialog,
   tags: ['autodocs'],
   parameters: {
@@ -103,8 +102,35 @@ export const FilledIn: Story = {
   },
 }
 
-/** L4 modal surface in dark mode. */
-export const DarkModeOpen: Story = {
-  globals: darkModeGlobals,
-  ...Default,
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/** One structure — a short contact form. Nothing about it varies by prop. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { PlgTalkToSalesDialog },
+    setup: () => ({ args }),
+    template: `<PlgTalkToSalesDialog v-bind="args" />`,
+  }),
+}
+
+/**
+ * There is no `size` prop — this is `MpDialog`'s `sm` (440px). Phase 4 replaced this file's
+ * `pa-1` card, Vuetify's default card insets and the `gap-2` / `gap-4` global shims with the
+ * shell: one 20px inset, and a body whose field rhythm is `component.dialog.gap`.
+ */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { PlgTalkToSalesDialog },
+    setup: () => ({ args }),
+    template: `<PlgTalkToSalesDialog v-bind="args" />`,
+  }),
+}
+
+/** Empty and filled in — submitting closes the dialog and raises a toast. */
+export const States: Story = {
+  render: (args) => ({
+    components: { PlgTalkToSalesDialog },
+    setup: () => ({ args }),
+    template: `<PlgTalkToSalesDialog v-bind="args" />`,
+  }),
 }

@@ -36,7 +36,7 @@ const trackingDomains = ref([
               <v-chip v-if="d.isDefault" size="x-small" variant="tonal" color="primary">Default</v-chip>
             </div>
             <div class="domain-card__actions">
-              <MpStatusChip :status="d.status" type="general" size="x-small" />
+              <MpStatusChip :status="d.status" type="general" size="sm" />
               <v-btn icon="server" variant="text" size="small" aria-label="View DNS records" />
               <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Remove domain" />
             </div>
@@ -44,7 +44,7 @@ const trackingDomains = ref([
           <div class="domain-card__checks">
             <div v-for="(val, key) in { DKIM: d.dkim, SPF: d.spf, DMARC: d.dmarc }" :key="key" class="domain-check">
               <div class="domain-check__label">{{ key }}</div>
-              <MpStatusChip :status="val" type="general" size="x-small" />
+              <MpStatusChip :status="val" type="general" size="sm" />
             </div>
           </div>
         </div>
@@ -67,8 +67,8 @@ const trackingDomains = ref([
               <v-chip v-if="d.isDefault" size="x-small" variant="tonal" color="primary">Default</v-chip>
             </div>
             <div class="domain-card__actions">
-              <MpStatusChip :status="d.ssl ? 'SSL Active' : 'SSL Pending'" type="general" size="x-small" />
-              <MpStatusChip :status="d.status" type="general" size="x-small" />
+              <MpStatusChip :status="d.ssl ? 'SSL Active' : 'SSL Pending'" type="general" size="sm" />
+              <MpStatusChip :status="d.status" type="general" size="sm" />
               <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Remove" />
             </div>
           </div>

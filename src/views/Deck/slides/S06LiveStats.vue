@@ -36,6 +36,6 @@ const STATS = [
 <style scoped>
 .s06__footnote {
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
 }
 </style>

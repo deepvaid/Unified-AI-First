@@ -73,7 +73,7 @@ const RECIPES = [
 .recipes {
   max-width: var(--mp-layout-contentMaxWidth);
   margin: 0 auto;
-  padding: var(--mp-spacing-12) var(--mp-spacing-6) var(--mp-spacing-20);
+  padding: var(--mp-space-48) var(--mp-space-24) var(--mp-space-80);
 }
 
 .recipes__header {
@@ -84,7 +84,7 @@ const RECIPES = [
 
 .recipes__sub {
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-md);
+  font-size: var(--mp-fontSize-16);
 }
 
 .recipes__tile {
@@ -123,7 +123,7 @@ const RECIPES = [
 .recipes__icon {
   width: 40px;
   height: 40px;
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -132,16 +132,16 @@ const RECIPES = [
 
 .recipes__text {
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-body);
-  line-height: var(--mp-typography-lineHeight-normal);
+  font-size: var(--mp-fontSize-14);
+  line-height: var(--mp-lineHeight-normal);
 }
 
 .recipes__open {
   display: inline-flex;
   align-items: center;
-  gap: var(--mp-spacing-2);
-  font-size: var(--mp-typography-fontSize-body);
-  font-weight: var(--mp-typography-fontWeight-semibold);
+  gap: var(--mp-space-8);
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: rgb(var(--v-theme-primary));
 }
 

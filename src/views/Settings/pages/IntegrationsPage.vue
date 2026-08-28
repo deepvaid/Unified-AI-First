@@ -28,7 +28,7 @@ const integrations = [
         <div v-for="intg in integrations" :key="intg.name" class="integration-card">
           <div class="integration-card__header">
             <v-icon :color="intg.color" size="26">{{ intg.icon }}</v-icon>
-            <MpStatusChip :status="intg.connected ? 'Connected' : 'Disconnected'" type="connection" size="x-small" />
+            <MpStatusChip :status="intg.connected ? 'Connected' : 'Disconnected'" type="connection" size="sm" />
           </div>
           <div class="integration-card__name">{{ intg.name }}</div>
           <div class="integration-card__desc">{{ intg.desc }}</div>

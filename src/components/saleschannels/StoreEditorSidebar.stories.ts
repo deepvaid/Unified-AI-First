@@ -1,12 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import StoreEditorSidebar from './StoreEditorSidebar.vue'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const ACCOUNT_ID = '2000290'
 
 const meta = {
-  title: 'Sales Channels/StoreEditorSidebar',
+  title: 'Product/Sales Channels/StoreEditorSidebar',
   component: StoreEditorSidebar,
   tags: ['autodocs'],
   parameters: {
@@ -92,7 +91,31 @@ export const AlternateStore: Story = channelStory(1)
  */
 export const NoDomainFallback: Story = channelStory(2)
 
-export const DarkMode: Story = {
-  ...channelStory(0),
-  globals: darkModeGlobals,
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/** One structure — the entity flavor of `MpSectionRail`: a back link, the store's identity card with a switcher, then the grouped section links. It adds no geometry of its own. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { StoreEditorSidebar },
+    setup: () => ({ args }),
+    template: `<StoreEditorSidebar v-bind="args" />`,
+  }),
+}
+
+/** There is no `size` prop — it inherits `MpSectionRail`'s 260px column (`layout.sectionRailWidth`) and its `component.listItem.*` rows. Phase 4 (P4-7) tokenized the rail, and this component picked all of it up for free — which is the argument for composing the rail rather than hand-rolling one, as the deleted `SettingsSidebar` did. */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { StoreEditorSidebar },
+    setup: () => ({ args }),
+    template: `<StoreEditorSidebar v-bind="args" />`,
+  }),
+}
+
+/** A store with a domain, a store without one (caption falls back), and the switcher open. */
+export const States: Story = {
+  render: (args) => ({
+    components: { StoreEditorSidebar },
+    setup: () => ({ args }),
+    template: `<StoreEditorSidebar v-bind="args" />`,
+  }),
 }

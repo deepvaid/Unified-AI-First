@@ -29,7 +29,7 @@ defineProps<{
   height: 100dvh;
   display: flex;
   overflow-y: auto;
-  padding: var(--mp-spacing-16) var(--mp-spacing-12) var(--mp-spacing-12);
+  padding: var(--mp-space-64) var(--mp-space-48) var(--mp-space-48);
 }
 
 .deck-slide__body {
@@ -44,15 +44,15 @@ defineProps<{
 
 .deck-slide__title {
   font-size: clamp(
-    var(--mp-typography-display-sm-fontSize),
+    var(--mp-display-sm-fontSize),
     4.5vw,
-    var(--mp-typography-display-lg-fontSize)
+    var(--mp-display-lg-fontSize)
   );
 }
 
 @media (max-width: 900px) {
   .deck-slide {
-    padding: var(--mp-spacing-10) var(--mp-spacing-6);
+    padding: var(--mp-space-40) var(--mp-space-24);
   }
 }
 </style>

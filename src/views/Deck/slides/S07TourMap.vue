@@ -73,7 +73,7 @@ const STOPS = [
 .s07__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--mp-spacing-4);
+  gap: var(--mp-space-16);
 }
 
 .s07__card {
@@ -90,7 +90,7 @@ const STOPS = [
 .s07__icon {
   width: 36px;
   height: 36px;
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -98,13 +98,13 @@ const STOPS = [
 }
 
 .s07__note {
-  font-size: var(--mp-typography-fontSize-sm);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .s07__footnote {
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
 }
 
 @media (prefers-reduced-motion: reduce) {

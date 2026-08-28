@@ -173,8 +173,7 @@ const showFooterPrimary = computed(() => stage.value === 'edit')
   <MpFormDrawer
     v-model="model"
     :title="drawerTitle"
-    :subtitle="drawerSubtitle"
-    :width="600"
+    :subtitle="drawerSubtitle" size="lg"
   >
     <div class="widget-wizard">
       <WidgetLibraryStep
@@ -192,29 +191,28 @@ const showFooterPrimary = computed(() => stage.value === 'edit')
       />
     </div>
 
+    <template v-if="stage === 'edit' && !isEditing" #footerStart>
+      <v-btn
+        variant="text"
+        class="text-none"
+        prepend-icon="arrow-left"
+        @click="goBack"
+      >
+        Back
+      </v-btn>
+    </template>
+
     <template #footer>
-      <div class="d-flex align-center ga-2 w-100">
-        <v-btn
-          v-if="stage === 'edit' && !isEditing"
-          variant="text"
-          class="text-none"
-          prepend-icon="arrow-left"
-          @click="goBack"
-        >
-          Back
-        </v-btn>
-        <v-spacer />
-        <v-btn variant="text" class="text-none" @click="close">Cancel</v-btn>
-        <v-btn
-          v-if="showFooterPrimary"
-          color="primary"
-          variant="flat"
-          class="text-none"
-          @click="handleSave"
-        >
-          {{ editPrimaryLabel }}
-        </v-btn>
-      </div>
+      <v-btn variant="text" class="text-none" @click="close">Cancel</v-btn>
+      <v-btn
+        v-if="showFooterPrimary"
+        color="primary"
+        variant="flat"
+        class="text-none"
+        @click="handleSave"
+      >
+        {{ editPrimaryLabel }}
+      </v-btn>
     </template>
   </MpFormDrawer>
 
@@ -232,6 +230,6 @@ const showFooterPrimary = computed(() => stage.value === 'edit')
 .widget-wizard {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--mp-space-24);
 }
 </style>

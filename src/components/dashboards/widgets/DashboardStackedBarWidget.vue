@@ -145,7 +145,7 @@ const barAriaLabel = computed(() =>
 .stackbar-widget {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--mp-space-12);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -154,16 +154,16 @@ const barAriaLabel = computed(() =>
 .stackbar-widget__plot {
   display: flex;
   align-items: stretch;
-  gap: 14px;
+  gap: var(--mp-space-14);
   flex: 1 1 auto;
   min-height: 0;
-  padding-top: 8px;
+  padding-top: var(--mp-space-8);
 }
 
 .stackbar-widget__col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--mp-space-8);
   flex: 1 1 0;
   min-width: 0;
 }
@@ -172,13 +172,13 @@ const barAriaLabel = computed(() =>
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  gap: 2px;
+  gap: var(--mp-space-2);
   flex: 1 1 auto;
   min-height: 0;
 }
 
 .stackbar-widget__segment {
-  border-radius: 3px;
+  border-radius: var(--mp-radius-4);
 }
 
 .stackbar-widget__segment:first-child {
@@ -187,7 +187,7 @@ const barAriaLabel = computed(() =>
 }
 
 .stackbar-widget__label {
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
   text-align: center;
   overflow: hidden;
@@ -198,16 +198,16 @@ const barAriaLabel = computed(() =>
 .stackbar-widget__legend {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-top: 4px;
-  border-top: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.06));
+  gap: var(--mp-space-6);
+  padding-top: var(--mp-space-4);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .stackbar-widget__legend-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: var(--mp-space-8);
+  font-size: var(--mp-fontSize-12);
   color: var(--text-primary);
 }
 
@@ -220,7 +220,7 @@ const barAriaLabel = computed(() =>
 }
 
 .stackbar-widget__legend-value {
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   font-variant-numeric: tabular-nums;
   flex: none;
 }
@@ -236,7 +236,7 @@ const barAriaLabel = computed(() =>
 .stackbar-widget__swatch {
   width: 10px;
   height: 10px;
-  border-radius: 3px;
+  border-radius: var(--mp-radius-4);
   flex: none;
 }
 
@@ -246,7 +246,7 @@ const barAriaLabel = computed(() =>
    void above the values. */
 .stackbar-widget--single {
   justify-content: flex-start;
-  gap: 24px;
+  gap: var(--mp-space-24);
 }
 
 /* 180px tracks put two pairs per row in a half-width card, which both fits the
@@ -260,16 +260,16 @@ const barAriaLabel = computed(() =>
 .stackbar-widget__pair {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--mp-space-4);
   min-width: 0;
 }
 
 .stackbar-widget__pair-label {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--mp-space-8);
   min-width: 0;
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
 }
 
@@ -281,7 +281,7 @@ const barAriaLabel = computed(() =>
 
 .stackbar-widget__pair-value {
   font-size: 21px;
-  font-weight: 650;
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: -0.02em;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
@@ -290,7 +290,7 @@ const barAriaLabel = computed(() =>
 
 .stackbar-widget__hbar {
   display: flex;
-  gap: 3px;
+  gap: var(--mp-space-4);
   width: 100%;
   height: 26px;
   flex: none;
@@ -299,7 +299,7 @@ const barAriaLabel = computed(() =>
 
 .stackbar-widget__hsegment {
   min-width: 0;
-  border-radius: 4px;
+  border-radius: var(--mp-radius-4);
 }
 
 /* Rounded ends on the bar as a whole. */
@@ -321,14 +321,14 @@ const barAriaLabel = computed(() =>
 .stackbar-widget--gloss .stackbar-widget__segment {
   opacity: 0.95;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -6px 8px -6px rgba(12, 10, 40, 0.3);
+    inset 0 1px 0 rgba(var(--mp-rgb-color-neutral-0), 0.45),
+    inset 0 -6px 8px -6px rgba(var(--mp-rgb-color-light-inkPanel-bg), 0.3);
 }
 
 .stackbar-widget--gloss .stackbar-widget__hsegment {
   opacity: 0.95;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -5px 7px -5px rgba(12, 10, 40, 0.3);
+    inset 0 1px 0 rgba(var(--mp-rgb-color-neutral-0), 0.5),
+    inset 0 -5px 7px -5px rgba(var(--mp-rgb-color-light-inkPanel-bg), 0.3);
 }
 </style>

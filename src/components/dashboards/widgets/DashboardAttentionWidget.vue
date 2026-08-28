@@ -114,6 +114,11 @@ const summary = computed(() => {
 </template>
 
 <style scoped>
+/* P4-1: this widget draws its OWN header/body edges (DashboardWidgetCard zeroes
+   its body inset for bespoke-header widgets), so it states the widget inset
+   directly — `component.card.padding`, the same 20 the rest of the family gets
+   from the card. Stated as the role token, not the 20 primitive, so a change to
+   the standard moves this with it. */
 .attention-widget {
   display: flex;
   flex-direction: column;
@@ -136,9 +141,9 @@ const summary = computed(() => {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--mp-space-12);
   /* Tight — this is the collapsed default state, sized to a single compact row. */
-  padding: 8px 20px;
+  padding: var(--mp-space-8) var(--mp-component-card-padding);
   border: 0;
   background: transparent;
   font-family: inherit;
@@ -155,14 +160,14 @@ const summary = computed(() => {
 }
 
 .attention-widget__count {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   white-space: nowrap;
 }
 
 .attention-widget__summary {
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -176,9 +181,9 @@ const summary = computed(() => {
 .attention-widget__state {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  font-weight: 600;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--muted);
   white-space: nowrap;
 }
@@ -206,8 +211,8 @@ const summary = computed(() => {
 .attention-widget__row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 13px 20px;
+  gap: var(--mp-space-14);
+  padding: var(--mp-space-14) var(--mp-component-card-padding);
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -224,7 +229,7 @@ const summary = computed(() => {
   width: 26px;
   height: 26px;
   flex: none;
-  border-radius: 8px;
+  border-radius: var(--mp-component-chip-radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -251,8 +256,8 @@ const summary = computed(() => {
 }
 
 .attention-widget__title {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -260,8 +265,8 @@ const summary = computed(() => {
 }
 
 .attention-widget__context {
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
   margin-top: 1px;
   overflow: hidden;
@@ -271,8 +276,8 @@ const summary = computed(() => {
 
 .attention-widget__time {
   flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
   white-space: nowrap;
 }
@@ -300,8 +305,8 @@ const summary = computed(() => {
   justify-content: center;
   flex-direction: column;
   text-align: center;
-  padding: 24px;
-  gap: 6px;
+  padding: var(--mp-space-24);
+  gap: var(--mp-space-6);
 }
 
 .attention-widget__empty-icon {
@@ -310,21 +315,21 @@ const summary = computed(() => {
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 9999px;
+  border-radius: var(--mp-radius-full);
   background: var(--pos-soft);
   color: var(--pos-ink);
-  margin-bottom: 4px;
+  margin-bottom: var(--mp-space-4);
 }
 
 .attention-widget__empty-title {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
 .attention-widget__empty-sub {
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
 }
 
@@ -332,14 +337,14 @@ const summary = computed(() => {
 .attention-widget__skeleton {
   display: flex;
   flex-direction: column;
-  padding: 4px 20px;
+  padding: var(--mp-space-4) var(--mp-component-card-padding);
 }
 
 .attention-widget__skeleton-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 0;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-14) 0;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -351,14 +356,14 @@ const summary = computed(() => {
   flex-shrink: 0;
   width: 10px;
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: color-mix(in oklch, var(--text-primary) 12%, transparent);
   animation: mp-skeleton-pulse 1.6s ease-in-out infinite;
 }
 
 .attention-widget__skeleton-bar {
   height: 12px;
-  border-radius: 4px;
+  border-radius: var(--mp-radius-4);
   background: color-mix(in oklch, var(--text-primary) 8%, transparent);
   animation: mp-skeleton-pulse 1.6s ease-in-out infinite;
 }

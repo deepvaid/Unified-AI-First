@@ -1,14 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpBuilderShell from './MpBuilderShell.vue'
 import MpWizardSteps from './MpWizardSteps.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Layout/MpBuilderShell',
+  title: 'Patterns/Builder Shell/MpBuilderShell',
   component: MpBuilderShell,
   tags: ['autodocs'],
   parameters: {
-    layout: 'fullscreen',
+    canvas: 'full',
     docs: {
       description: {
         component: `
@@ -39,9 +38,20 @@ See \`docs/design-system/builder-persistence.md\`.
     },
   },
   argTypes: {
+    title: { control: 'text', description: 'Primary title in the builder toolbar.' },
+    subtitle: { control: 'text', description: 'Supporting line beside the title.' },
+    backTo: { control: 'object', description: 'Back navigation target (a `RouteLocationRaw`). Renders the back link in the toolbar; omit it for a builder with nowhere to return to.' },
+    backLabel: { control: 'text', description: 'Label on the back link. Defaults to `Back`.' },
+    dirty: { control: 'boolean', description: 'Whether there are unsaved changes. Drives which half of `persistenceMode`s copy the status chip shows.' },
+    statusLabel: { control: 'text', description: 'Overrides the status chip copy entirely, ignoring `dirty` and `persistenceMode`. Use it only where neither of the three modes fits.' },
+    hideStatus: { control: 'boolean', description: 'Removes the status chip. For screens where save state is already obvious elsewhere and the chip is redundant.' },
+    standalone: { control: 'boolean', description: 'Fills the parent at height 100% instead of sitting inside the app content frame. Set it when the shell is not mounted in the normal app chrome.' },
+    leftWidth: { control: 'number', description: 'Left panel width in px. Viewports at or below 1024px render it 20px narrower. Defaults to 220.' },
+    rightWidth: { control: 'number', description: 'Right panel width in px. Viewports at or below 1024px render it 40px narrower. Defaults to 300.' },
     persistenceMode: {
       control: 'select',
       options: ['explicit', 'autosave', 'live'],
+      description: 'How the status chip words itself: `explicit` -> Unsaved / Saved, `autosave` -> Unsaved / Autosaved, `live` -> Unpublished changes / Published. Pick the one that matches what the builder actually does; `statusLabel` overrides the copy entirely.',
     },
   },
 } satisfies Meta<typeof MpBuilderShell>
@@ -161,10 +171,4 @@ export const WithCenterToolbar: Story = {
       </div>
     `,
   }),
-}
-
-/** The builder chrome on the dark theme — top bar, canvas frame, and inspector surfaces. */
-export const DarkMode: Story = {
-  ...Default,
-  globals: darkModeGlobals,
 }

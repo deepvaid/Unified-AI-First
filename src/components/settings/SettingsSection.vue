@@ -28,15 +28,15 @@ defineProps<{
   background: var(--surface-primary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
-  padding: 20px 24px;
+  padding: var(--mp-space-20) var(--mp-space-24);
 }
 
 .settings-section__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--mp-space-12);
+  margin-bottom: var(--mp-space-16);
 }
 
 .settings-section__head-left {
@@ -48,21 +48,21 @@ defineProps<{
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
 }
 
 .settings-section--compact {
-  padding: 16px 20px;
+  padding: var(--mp-space-16) var(--mp-space-20);
 }
 
 .settings-section__title {
-  margin: 0 0 3px;
+  margin: 0 0 var(--mp-space-4);
   color: var(--text-primary);
 }
 
 .settings-section__description {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
   line-height: 1.45;
 }
@@ -73,7 +73,7 @@ defineProps<{
 
 @media (max-width: 640px) {
   .settings-section {
-    padding: 16px;
+    padding: var(--mp-space-16);
     border-radius: var(--r-section);
   }
 }

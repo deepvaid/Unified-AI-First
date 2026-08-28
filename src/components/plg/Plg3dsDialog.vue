@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import MpDialog from '@/components/MpDialog.vue'
+import MpFormField from '@/components/MpFormField.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -40,67 +42,59 @@ watch(
   },
 )
 
-const titleId = useId()
 </script>
 
 <template>
-  <v-dialog
+  <!-- Composes MpDialog (P4-6). Was a hand-rolled pa-2 card with pa-4 bands. -->
+  <MpDialog
     :model-value="modelValue"
-    max-width="400"
+    size="sm"
     persistent
-    :aria-labelledby="titleId"
+    title="Verification — Maropost purchase"
+    :subtitle="amountLabel"
     @update:model-value="(v: boolean) => emit('update:modelValue', v)"
   >
-    <v-card flat border rounded="lg" class="plg-3ds pa-2">
-      <div class="d-flex align-center ga-3 pa-4 pb-2">
-        <v-avatar color="primary" variant="tonal" size="40" rounded="lg">
-          <v-icon size="20">landmark</v-icon>
-        </v-avatar>
-        <div class="min-width-0">
-          <div :id="titleId" class="text-body-2 font-weight-bold">Verification — Maropost purchase</div>
-          <div class="text-caption text-medium-emphasis">{{ amountLabel }}</div>
-        </div>
-      </div>
+    <template #lead>
+      <v-avatar color="primary" variant="tonal" size="40" rounded="lg">
+        <v-icon size="20">landmark</v-icon>
+      </v-avatar>
+    </template>
 
-      <v-divider />
+    <p class="plg-3ds__prompt">
+      Your bank has sent a one-time passcode to &bull;&bull;&bull;&bull; 4242's cardholder.
+    </p>
 
-      <div class="pa-4 d-flex flex-column ga-4">
-        <p class="text-body-2 text-medium-emphasis mb-0">
-          Your bank has sent a one-time passcode to &bull;&bull;&bull;&bull; 4242's cardholder.
-        </p>
+    <MpFormField label="One-time passcode" hint="Demo code: 123456">
+      <v-otp-input
+        v-model="code"
+        length="6"
+        type="number"
+        :disabled="verifying"
+        autofocus
+      />
+    </MpFormField>
 
-        <v-otp-input
-          v-model="code"
-          length="6"
-          type="number"
-          :disabled="verifying"
-          autofocus
-        />
-
-        <div class="text-caption text-medium-emphasis">Demo code: 123456</div>
-      </div>
-
-      <v-divider />
-
-      <div class="pa-4 d-flex justify-end ga-2">
-        <v-btn variant="text" class="text-none" :disabled="verifying" @click="close">Cancel</v-btn>
-        <v-btn
-          color="primary"
-          variant="flat"
-          class="text-none"
-          :disabled="!isComplete"
-          :loading="verifying"
-          @click="approve"
-        >
-          Approve
-        </v-btn>
-      </div>
-    </v-card>
-  </v-dialog>
+    <template #footer>
+      <v-btn variant="text" class="text-none" :disabled="verifying" @click="close">Cancel</v-btn>
+      <v-btn
+        color="primary"
+        variant="flat"
+        class="text-none"
+        :disabled="!isComplete"
+        :loading="verifying"
+        @click="approve"
+      >
+        Approve
+      </v-btn>
+    </template>
+  </MpDialog>
 </template>
 
 <style scoped>
-.plg-3ds {
-  background: rgb(var(--v-theme-surface));
+.plg-3ds__prompt {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
+
 </style>

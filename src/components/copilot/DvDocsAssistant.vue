@@ -79,7 +79,7 @@ onBeforeUnmount(() => abort?.abort())
   <v-card flat border rounded="lg" class="dv-docs d-flex flex-column">
     <div class="dv-docs__header d-flex align-center ga-3 pa-4">
       <span class="dv-docs__orb d-flex align-center justify-center">
-        <v-icon size="18" color="white">sparkles</v-icon>
+        <v-icon size="18" class="dv-docs__orb-icon">sparkles</v-icon>
       </span>
       <div>
         <div class="text-subtitle-2 font-weight-bold">Da Vinci · Design System</div>
@@ -89,8 +89,8 @@ onBeforeUnmount(() => abort?.abort())
     <v-divider />
 
     <div ref="transcriptEl" class="dv-docs__transcript flex-grow-1 pa-4">
-      <div v-if="!messages.length" class="dv-docs__empty">
-        <p class="text-body-2 text-medium-emphasis mb-4">
+      <div v-if="!messages.length" class="dv-docs__empty d-flex flex-column ga-4">
+        <p class="text-body-2 text-medium-emphasis">
           Ask me anything about the design system, the sandbox, or the plan — I answer from the FAQ,
           operating model, audit, inventory, and handover docs.
         </p>
@@ -129,12 +129,15 @@ onBeforeUnmount(() => abort?.abort())
 
     <v-divider />
     <form class="pa-3" @submit.prevent="send(draft)">
+      <!-- Chat composer, not a form field: a floating label has nowhere to go in a
+           single-line composer, so the placeholder is the affordance and the name
+           is on aria-label. Detail-free so the transcript can't jump as you type. -->
       <v-text-field
         v-model="draft"
         density="compact"
-        variant="outlined"
         hide-details
         placeholder="Ask about the design system…"
+        aria-label="Ask about the design system"
         :disabled="loading"
         autocomplete="off"
       >
@@ -167,6 +170,13 @@ onBeforeUnmount(() => abort?.abort())
      no fallback needed. */
   background: var(--dv-hero-grad);
   flex: none;
+}
+
+/* P5.5: the orb paints the Da Vinci gradient, so its glyph names the gradient's
+   paired ink rather than a literal `color="white"` — which stayed white on the
+   dark theme's lighter gradient stops. */
+.dv-docs__orb-icon {
+  color: var(--dv-on-accent);
 }
 
 .dv-docs__transcript {

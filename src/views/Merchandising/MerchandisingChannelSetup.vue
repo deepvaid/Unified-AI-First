@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { channelDomain, merchandisingHealth, merchandisingStatus, MERCHANDISING_HEALTH_LABELS, MERCHANDISING_STATUS_LABELS, providerLabel } from '@/utils/merchandisingChannels'
 
@@ -44,7 +45,7 @@ function copyJsTag() {
           <h2 class="text-h6 font-weight-bold mb-2">{{ channel.name }}</h2>
           <p class="text-body-2 text-medium-emphasis mb-0">{{ channelDomain(channel) }}</p>
         </div>
-        <MpStatusChip :status="MERCHANDISING_STATUS_LABELS[merchandisingStatus(channel)]" type="general" size="small" show-icon />
+        <MpStatusChip :status="MERCHANDISING_STATUS_LABELS[merchandisingStatus(channel)]" type="general" size="md" show-icon />
       </div>
       <v-divider class="my-5" />
       <div class="setup-grid">
@@ -60,19 +61,15 @@ function copyJsTag() {
 
     <v-card flat border rounded="lg" class="pa-6">
       <div class="text-subtitle-1 font-weight-bold mb-1">Solutions status</div>
-      <div class="d-flex align-start ga-3">
+      <MpFormGrid>
         <v-switch
           v-model="solutionsEnabled"
           color="success"
-          density="compact"
-          hide-details
           label="Merchandising Cloud solutions"
+          hint="Turning this off pauses search, Smart Collections and recommendations across this channel. Mock control — it has no effect in this prototype."
+          persistent-hint
         />
-      </div>
-      <p class="text-caption text-medium-emphasis mb-0">
-        Turning this off pauses search, Smart Collections and recommendations across this channel.
-        Mock control — it has no effect in this prototype.
-      </p>
+      </MpFormGrid>
     </v-card>
 
     <v-card flat border rounded="lg" class="pa-6">

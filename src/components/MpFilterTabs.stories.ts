@@ -1,6 +1,5 @@
 import { ref, watch } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 import MpFilterTabs from './MpFilterTabs.vue'
 
 const orderTabs = [
@@ -36,7 +35,7 @@ const manyTabs = [
 ]
 
 const meta = {
-  title: 'Navigation/MpFilterTabs',
+  title: 'Atoms/MpFilterTabs',
   component: MpFilterTabs,
   tags: ['autodocs'],
   parameters: {
@@ -121,7 +120,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const OrderTabs: Story = {
+export const Default: Story = {
   args: {
     modelValue: 'all',
     tabs: orderTabs,
@@ -129,9 +128,100 @@ export const OrderTabs: Story = {
   },
 }
 
-export const DarkMode: Story = {
-  globals: darkModeGlobals,
-  ...OrderTabs,
+/** With and without counts — the structural axis. */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpFilterTabs },
+    setup: () => ({
+      withCounts: [
+        { label: 'All', key: 'all', count: 128 },
+        { label: 'Processing', key: 'processing', count: 12 },
+        { label: 'Completed', key: 'completed', count: 104 },
+      ],
+      noCounts: [
+        { label: 'All', key: 'all' },
+        { label: 'Processing', key: 'processing' },
+        { label: 'Completed', key: 'completed' },
+      ],
+    }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with counts</div>
+          <MpFilterTabs :tabs="withCounts" model-value="all" aria-label="Order filters" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">without counts</div>
+          <MpFilterTabs :tabs="noCounts" model-value="all" aria-label="Order filters" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Tab-count is the size axis — a long set scrolls horizontally rather than wrapping. */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpFilterTabs },
+    setup: () => ({
+      few: [{ label: 'All', key: 'all', count: 128 }, { label: 'Draft', key: 'draft', count: 4 }],
+      many: ['All', 'Processing', 'On hold', 'Completed', 'Cancelled', 'Refunded', 'Archived', 'Failed']
+        .map((label, i) => ({ label, key: `k${i}`, count: (i + 1) * 7 })),
+    }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">two tabs</div>
+          <MpFilterTabs :tabs="few" model-value="all" aria-label="Order filters" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">eight tabs — scrolls, never wraps</div>
+          <MpFilterTabs :tabs="many" model-value="k0" aria-label="Order filters" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Active vs inactive, and a zero count. Tab through to see the focus ring. */
+export const States: Story = {
+  render: () => ({
+    components: { MpFilterTabs },
+    setup: () => ({
+      tabs: [
+        { label: 'All', key: 'all', count: 128 },
+        { label: 'Processing', key: 'processing', count: 12 },
+        { label: 'Refunded', key: 'refunded', count: 0 },
+      ],
+    }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">first tab active</div>
+          <MpFilterTabs :tabs="tabs" model-value="all" aria-label="Order filters" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">middle tab active</div>
+          <MpFilterTabs :tabs="tabs" model-value="processing" aria-label="Order filters" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">zero-count tab active</div>
+          <MpFilterTabs :tabs="tabs" model-value="refunded" aria-label="Order filters" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+export const OrderTabs: Story = {
+  args: {
+    modelValue: 'all',
+    tabs: orderTabs,
+    ariaLabel: 'Filter orders',
+  },
 }
 
 export const CampaignTabs: Story = {

@@ -1,0 +1,104 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Introduction" />
+
+# Marobase
+
+**Marobase is Maropost's design system** — the `Mp*` Vue 3 + Vuetify 3 component library behind the
+commerce and marketing platform, built so a merchant-facing screen can be assembled from parts that
+already agree with each other. Every spacing, radius, type and colour value in it resolves to a
+token in `src/design-tokens/tokens.json`, which is the single source of truth; components consume
+those tokens and never hard-code a pixel. This Storybook is the reference for that library: what
+exists, what each part is for, and what it looks like in light and dark.
+
+---
+
+## The sidebar
+
+Five buckets, in the order you should read them:
+
+| Bucket | What lives there |
+|---|---|
+| **Foundations** | The token scales themselves — colour, type, spacing, radius, icons, and the two stock Vuetify controls (buttons, tooltips) the system styles globally rather than wrapping. |
+| **Atoms** | One control or mark, no internal regions: `MpStatusChip`, `MpListRow`, `MpFilterTabs`, `MpTableSkeleton`… |
+| **Molecules** | Has internal regions, or composes an atom: `MpDialog`, `MpFormDrawer`, `MpDataTableToolbar`, `MpEmptyState`, `MpSectionRail`… |
+| **Patterns** | Reusable multi-component compositions and app shells: the Data Table pattern, Form Fields, Layering, the app bar and sidebar, the builder shell. |
+| **Product** | Surfaces specific to one Maropost feature area — Da Vinci, Dashboards, Marketing, Merchandising, PLG, RBAC, Sales Channels. Useful as reference, **not** as a general-purpose API. |
+
+Use the toolbar **Theme** (light / dark) and **Accent** (cyan / blue / gray / purple) globals to
+check a component across themes. There are no per-story dark twins — that is what the toggle is for.
+
+---
+
+## The token scale at a glance
+
+Primitives are named by their **value**; roles are named by their **job**. `--mp-space-12` is 12px;
+`--mp-component-card-radius` is whatever a card should be. Reach for a role token where the system
+has already made the decision, a primitive otherwise.
+
+| Scale | Stops |
+|---|---|
+| `space.*` | 2 · 4 · 6 · 8 · 10 · 12 · 14 · 16 · 20 · 24 · 28 · 32 · 40 · 48 · 64 · 80 — a 4px grid from 16 up, 2px half-steps below it |
+| `radius.*` | 4 · 8 · 10 · 12 · 16 · 20 · `full` — one concentric language: 16 outer surfaces, 12 nested, 10 controls, 8 chips and menu items, 4 micro-marks, `full` for pills |
+| `fontSize.*` | 10 · 11 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 24 · 28 · 32 · 40 · 48. **Body is 14px.** No fractional sizes exist |
+| `component.*` | Role aliases: `control.height` 40 · `card.padding` 20 · `dialog.padding` 20 · `listItem.minHeight` 40 · `table.rowMinHeight` 48 · `chip.height` 20/24/32 |
+| `layout.*` | sidebar 248 · rail 72 · section rail 260 · appbar 60 · drawer 480 · content max 1280 |
+
+**Foundations → Overview** renders all three primitive scales as live specimens; the deeper
+Foundations pages break each one down.
+
+---
+
+## Running it locally
+
+Use **npm**, not pnpm — the repo consolidated on npm and the pnpm workspace config was removed.
+
+```bash
+npm install --legacy-peer-deps
+npm run tokens:build     # regenerate SCSS/CSS/TS from tokens.json
+npm run storybook        # this Storybook, on :6006
+npm run dev              # the prototype app, on :5173
+```
+
+`npm run tokens:watch` regenerates on every save to `tokens.json`, which is what you want while
+working on Foundations.
+
+---
+
+## Figma library
+
+📐 **Maropost Design Kit — _link to be added_**
+
+The Figma library is not yet linked from this page. When it is, it belongs here, and the variables
+in it are generated from the same `tokens.json` via `npm run tokens:push-figma`.
+
+> ⚠️ That push renames existing Figma variables (`spacing.6` → `space.24`, and the rest of the
+> Phase 1 renames) and will orphan the bindings in the current Design Kit file. Treat the first
+> push as a deliberate re-link session, not a routine sync.
+
+---
+
+## Conventions this Storybook assumes
+
+- **Icons are Lucide only** — kebab-case names (`chevron-down`), resolved through the custom Vuetify
+  icon set. No `mdi-*` strings in new code.
+- **Cards are `flat border rounded="lg"`** — depth comes from hairline borders and tint, not shadow.
+- **Never a raw `v-dialog`** — compose `MpDialog` (modals) or `MpFormDrawer` (create/edit forms).
+  Never a hand-rolled rail (`MpSectionRail`) or repeating row (`MpListRow`) either.
+- **One mechanism per layer** — Vuetify utilities in templates (`pa-4`, `ga-3`), `var(--mp-*)` in
+  CSS. Never a raw px literal in either, and never both for the same property on one element.
+- **Global stylesheets go in `src/styles/app-styles.ts`**, the shared manifest loaded by both the app
+  and this Storybook. Bypassing it is what makes Storybook and the app drift apart.
+- **Every table or list has an `MpEmptyState`.** Empty means nothing to show; `MpErrorState` means
+  something failed; `MpComingSoonTiles` means the surface does not exist yet. They are not
+  interchangeable.
+
+---
+
+## Not wired up
+
+The Supernova and Figma token-sync scripts in `package.json` need external credentials this repo
+does not carry. See the *Deferred integrations* section of `ONBOARDING.md` before relying on them.
+
+New to the repo? Read **`ONBOARDING.md`** at the repo root first. Full component API reference:
+`CLAUDE.md` and `docs/design-system/`.

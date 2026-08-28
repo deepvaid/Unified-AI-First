@@ -9,6 +9,7 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpStatusToggle from '@/components/MpStatusToggle.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
 import { useDataJourneysStore, type DataJourney } from '@/stores/useDataJourneys'
 import { dataJourneyTemplates } from '@/stores/journeyFlowData'
@@ -201,26 +202,25 @@ function createDataJourney() {
 
     <!-- Create drawer -->
     <MpFormDrawer v-model="createOpen" title="New data journey" subtitle="Pick a starting point — the builder opens next.">
-      <v-text-field v-model="newName" label="Name" variant="outlined" density="comfortable" class="mb-5"
-        placeholder="e.g. Nightly warehouse export" />
+      <v-text-field v-model="newName" label="Name" placeholder="e.g. Nightly warehouse export" />
 
-      <div class="text-caption font-weight-bold text-medium-emphasis text-uppercase mb-2">Start from</div>
-      <MpOptionCard v-for="tpl in dataJourneyTemplates" :key="tpl.id"
-        :selected="selectedTemplateId === tpl.id" :title="tpl.name" :description="tpl.description" :icon="tpl.icon"
-        class="mb-3" @click="chooseTemplate(tpl.id)">
-        <div class="border rounded-lg bg-background pa-3 d-flex justify-center mt-3">
-          <JourneyMiniPreview :nodes="tpl.nodes" />
+      <MpFormField label="Start from">
+        <div class="d-flex flex-column ga-3">
+          <MpOptionCard v-for="tpl in dataJourneyTemplates" :key="tpl.id"
+            :selected="selectedTemplateId === tpl.id" :title="tpl.name" :description="tpl.description" :icon="tpl.icon"
+            @click="chooseTemplate(tpl.id)">
+            <div class="border rounded-lg bg-background pa-3 d-flex justify-center mt-3">
+              <JourneyMiniPreview :nodes="tpl.nodes" />
+            </div>
+          </MpOptionCard>
         </div>
-      </MpOptionCard>
+      </MpFormField>
 
-      <v-divider class="my-5" />
+      <v-divider />
 
-      <div class="text-caption font-weight-bold text-medium-emphasis text-uppercase mb-2">
-        <v-icon size="13" class="mr-1">sparkles</v-icon> Or describe it
-      </div>
-      <v-textarea v-model="describeText" variant="outlined" density="comfortable" rows="2" auto-grow hide-details
-        placeholder='e.g. "import shopify orders daily then send a campaign"' class="mb-3" />
-      <v-btn variant="tonal" color="primary" class="text-none mb-2" prepend-icon="sparkles" block @click="draftFromDescription">
+      <v-textarea v-model="describeText" label="Or describe it" prepend-inner-icon="sparkles" rows="3" auto-grow
+        placeholder='e.g. "import shopify orders daily then send a campaign"' />
+      <v-btn variant="tonal" color="primary" class="text-none" prepend-icon="sparkles" block @click="draftFromDescription">
         Draft from description
       </v-btn>
       <v-alert v-if="describeMiss" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">

@@ -1,3 +1,5 @@
+import type { MpSectionRailGroup } from '@/components/MpSectionRail.vue'
+
 export interface SettingsItem {
   slug: string
   label: string
@@ -57,3 +59,25 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
     ],
   },
 ]
+
+/**
+ * Adapts SETTINGS_GROUPS to the shape MpSectionRail consumes.
+ *
+ * Phase 4 (P4-7) deleted `SettingsSidebar.vue`, which was a near-verbatim
+ * reimplementation of MpSectionRail at its own item height — the rail already
+ * had the `title` + `searchable` props for exactly this "Settings flavor".
+ * The rail highlights on `match`, so each item's own route name leads its match
+ * set, followed by any detail routes that should keep it lit.
+ */
+export function settingsRailGroups(accountId: string): MpSectionRailGroup[] {
+  return SETTINGS_GROUPS.map((group) => ({
+    title: group.title,
+    items: group.items.map((item) => ({
+      slug: item.slug,
+      label: item.label,
+      to: { name: item.routeName, params: { accountId } },
+      match: [item.routeName, ...(item.match ?? [])],
+      external: item.external,
+    })),
+  }))
+}

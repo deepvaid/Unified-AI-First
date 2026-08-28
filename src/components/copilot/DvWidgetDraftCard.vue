@@ -245,7 +245,7 @@ function handleExpandAdd() {
 <style scoped lang="scss">
 .dv-draft {
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-md);
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface));
   overflow: hidden;
   position: relative;
@@ -266,22 +266,22 @@ function handleExpandAdd() {
 }
 
 .dv-draft__top {
-  padding: 12px 14px 0;
+  padding: var(--mp-space-12) var(--mp-space-14) 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--mp-space-10);
 }
 
 .dv-draft__type {
-  font-size: 11px;
+  font-size: var(--mp-fontSize-11);
   font-weight: 600;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: rgb(var(--v-theme-on-surface-variant));
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 
 .dv-draft__type :deep(.v-icon) {
@@ -291,10 +291,10 @@ function handleExpandAdd() {
 .dv-draft__badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 8px 3px 6px;
-  border-radius: 9999px;
-  font-size: 10.5px;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-4) var(--mp-space-8) var(--mp-space-4) var(--mp-space-6);
+  border-radius: var(--mp-radius-full);
+  font-size: var(--mp-fontSize-11);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -310,44 +310,44 @@ function handleExpandAdd() {
 }
 
 .dv-draft__title-block {
-  padding: 8px 14px 12px;
+  padding: var(--mp-space-8) var(--mp-space-14) var(--mp-space-12);
 }
 
 .dv-draft__title {
-  font-size: 15px;
+  font-size: var(--mp-fontSize-15);
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -0.1px;
   color: rgb(var(--v-theme-on-surface));
-  margin: 0 0 2px;
+  margin: 0 0 var(--mp-space-2);
 }
 
 .dv-draft__sub {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   font-weight: 400;
   color: rgb(var(--v-theme-on-surface-variant));
   line-height: 1.35;
 }
 
 .dv-draft__preview {
-  padding: 0 14px 14px;
+  padding: 0 var(--mp-space-14) var(--mp-space-14);
 }
 
 
 .dv-draft__actions {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 12px;
+  gap: var(--mp-space-6);
+  padding: var(--mp-space-10) var(--mp-space-12);
   background: rgb(var(--v-theme-surface));
   border-top: 1px solid rgb(var(--v-theme-outline-variant));
 }
 
 .dv-draft__btn {
-  height: 32px !important;
-  min-height: 32px !important;
-  border-radius: 9999px !important;
-  font-size: 12.5px !important;
+  height: var(--mp-space-32) !important;
+  min-height: var(--mp-space-32) !important;
+  border-radius: var(--mp-radius-full) !important;
+  font-size: var(--mp-fontSize-13) !important;
   font-weight: 600 !important;
   letter-spacing: 0;
 }

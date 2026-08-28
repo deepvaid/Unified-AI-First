@@ -60,35 +60,35 @@ const LAYERS = [
 .s08__stack {
   display: flex;
   flex-direction: column;
-  gap: var(--mp-spacing-3);
+  gap: var(--mp-space-12);
   max-width: 900px;
 }
 
 .s08__layer {
   display: flex;
   align-items: center;
-  gap: var(--mp-spacing-5);
-  padding: var(--mp-spacing-4) var(--mp-spacing-6);
+  gap: var(--mp-space-20);
+  padding: var(--mp-space-16) var(--mp-space-24);
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-md);
+  border-radius: var(--mp-radius-12);
   background: rgb(var(--v-theme-surface));
-  margin-inline-start: calc(var(--i) * var(--mp-spacing-6));
+  margin-inline-start: calc(var(--i) * var(--mp-space-24));
 }
 
 .s08__num {
-  font-family: var(--mp-typography-fontFamily-mono);
-  font-size: var(--mp-typography-fontSize-sm);
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-primary));
   flex-shrink: 0;
 }
 
 .s08__name {
-  font-size: var(--mp-typography-fontSize-md);
-  font-weight: var(--mp-typography-fontWeight-bold);
+  font-size: var(--mp-fontSize-16);
+  font-weight: var(--mp-fontWeight-bold);
 }
 
 .s08__desc {
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
@@ -99,7 +99,7 @@ const LAYERS = [
 .s08__footnote {
   max-width: 780px;
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
 }
 
 @media (max-width: 900px) {

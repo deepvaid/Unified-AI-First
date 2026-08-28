@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import DashboardWidgetActionMenu from './DashboardWidgetActionMenu.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Dashboards/DashboardWidgetActionMenu',
+  title: 'Product/Dashboards/DashboardWidgetActionMenu',
   component: DashboardWidgetActionMenu,
   tags: ['autodocs'],
   parameters: {
@@ -48,36 +47,57 @@ export const CustomSize: Story = {
   },
 }
 
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
 /**
- * Regression guard for overlay-over-card contrast: a widget card (L1 `--surface-primary`)
- * with its kebab menu opened (L3 `--surface-overlay`) on top. The menu surface must stay
- * visibly distinct from the card behind it — if the two tiers ever collapse to the same
- * brightness in dark mode, it's obvious here.
+ * One structure — a kebab opening the widget's actions. Open it to see the rows; they are
+ * `component.listItem.*` like every other menu row in the system, so a widget menu and a table
+ * row menu are the same height.
  */
-export const DarkModeCardWithOpenMenu: Story = {
-  globals: darkModeGlobals,
+export const Variants: Story = {
+  render: (args) => ({
+    components: { DashboardWidgetActionMenu },
+    setup: () => ({ args }),
+    template: `<div class="d-flex ga-6"><DashboardWidgetActionMenu v-bind="args" /></div>`,
+  }),
+}
+
+/**
+ * The trigger sits in the widget card's floating overlay and is sized by
+ * `component.widget.actionSize` (32) — the same token the overlay's inset and gap come from,
+ * and the same three tokens P4-2 derives a bespoke header's clearance from. It is deliberately
+ * smaller than the 40px control baseline: it floats over content rather than sitting in a
+ * control row.
+ */
+export const Sizes: Story = {
   render: (args) => ({
     components: { DashboardWidgetActionMenu },
     setup: () => ({ args }),
     template: `
-      <div style="max-width:420px;">
-        <v-card flat border rounded="lg" class="pa-4">
-          <div class="d-flex align-center justify-space-between mb-2">
-            <span class="text-subtitle-2">{{ args.widgetTitle }}</span>
-            <DashboardWidgetActionMenu v-bind="args" />
-          </div>
-          <p class="text-body-2 text-medium-emphasis mb-0">
-            Card surface (L1) sits beneath the open menu (L3) — contrast between the two
-            should stay clearly visible.
-          </p>
-        </v-card>
+      <div class="d-flex align-center ga-4">
+        <DashboardWidgetActionMenu v-bind="args" />
+        <div class="text-body-2 text-medium-emphasis">32px — --mp-component-widget-actionSize</div>
       </div>
     `,
   }),
-  args: { widgetTitle: 'Revenue Over Time', currentSize: 'M' },
-  play: async ({ canvasElement }) => {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Actions for Revenue Over Time"]')
-    trigger?.click()
-  },
+}
+
+/** Closed, open, and open with a destructive action separated by a divider. */
+export const States: Story = {
+  render: (args) => ({
+    components: { DashboardWidgetActionMenu },
+    setup: () => ({ args }),
+    template: `
+      <div class="d-flex ga-10">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">resting</div>
+          <DashboardWidgetActionMenu v-bind="args" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">hover / focus — tab to it</div>
+          <DashboardWidgetActionMenu v-bind="args" />
+        </div>
+      </div>
+    `,
+  }),
 }

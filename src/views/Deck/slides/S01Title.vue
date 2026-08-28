@@ -70,9 +70,9 @@ const play = inject<() => void>('deckPlay', () => {})
 
 .s01__title {
   font-size: clamp(
-    var(--mp-typography-display-md-fontSize),
+    var(--mp-display-md-fontSize),
     7vw,
-    var(--mp-typography-display-xl-fontSize)
+    var(--mp-display-xl-fontSize)
   );
 }
 
@@ -83,17 +83,17 @@ const play = inject<() => void>('deckPlay', () => {})
 .s01__sub {
   margin: 0 auto;
   max-width: 540px;
-  font-size: var(--mp-typography-fontSize-lg);
+  font-size: var(--mp-fontSize-18);
   color: rgb(var(--v-theme-on-surface-variant));
-  margin-top: var(--mp-spacing-6);
+  margin-top: var(--mp-space-24);
 }
 
 .s01__kbd {
   display: inline-block;
-  padding: 0 var(--mp-spacing-2);
+  padding: 0 var(--mp-space-8);
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-sm);
+  border-radius: var(--mp-radius-4);
   background: rgb(var(--v-theme-surface));
-  font-family: var(--mp-typography-fontFamily-mono);
+  font-family: var(--mp-fontFamily-mono);
 }
 </style>

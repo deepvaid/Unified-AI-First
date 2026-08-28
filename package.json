@@ -12,6 +12,7 @@
     "tokens:build": "node src/design-tokens/build.mjs",
     "tokens:watch": "node src/design-tokens/build.mjs --watch",
     "type-check": "vue-tsc -b --noEmit",
+    "contrast:check": "node scripts/check-contrast.mjs",
     "audit:ui": "node scripts/ui-visibility-audit.mjs",
     "audit:ui:json": "node scripts/ui-visibility-audit.mjs --json",
     "design-kit:dev": "cd design-kit && npm run dev",

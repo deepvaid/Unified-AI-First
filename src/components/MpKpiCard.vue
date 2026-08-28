@@ -33,7 +33,7 @@ const trendUp = computed(() => props.trendPositive !== false)
 </script>
 
 <template>
-  <v-card flat border rounded="lg" class="mp-kpi-card pa-5 h-100 d-flex flex-column">
+  <v-card flat border rounded="lg" class="mp-kpi-card h-100 d-flex flex-column">
     <div class="d-flex align-center ga-2 mb-3">
       <div v-if="icon" class="mp-kpi-card__icon" :class="`mp-kpi-card__icon--${tone}`">
         <v-icon size="20">{{ icon }}</v-icon>
@@ -82,13 +82,14 @@ const trendUp = computed(() => props.trendPositive !== false)
 
 <style scoped>
 .mp-kpi-card {
+  padding: var(--mp-component-card-padding);
   background: rgb(var(--v-theme-surface));
 }
 
 /* Ghost icon treatment — no tile, just a small tinted glyph. The number is the hero. */
 .mp-kpi-card__icon {
-  width: 28px;
-  height: 28px;
+  width: var(--mp-space-28);
+  height: var(--mp-space-28);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -115,7 +116,7 @@ const trendUp = computed(() => props.trendPositive !== false)
 }
 
 .mp-kpi-card__sparkline {
-  width: 96px;
+  width: var(--mp-space-80);
   flex-shrink: 0;
 }
 

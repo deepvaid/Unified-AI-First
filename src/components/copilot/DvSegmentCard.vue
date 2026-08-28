@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import MpFormSection from '@/components/MpFormSection.vue'
+
 defineProps<{
   name: string
   rules: string[]
@@ -13,8 +15,8 @@ const emit = defineEmits<{
 
 <template>
   <v-card variant="outlined" class="segment-card">
-    <v-card-text class="pa-4">
-      <div class="d-flex align-center ga-2 mb-3">
+    <v-card-text class="pa-4 d-flex flex-column ga-3">
+      <div class="d-flex align-center ga-2">
         <v-avatar size="32" color="primary" variant="tonal">
           <v-icon size="18">user-search</v-icon>
         </v-avatar>
@@ -28,13 +30,15 @@ const emit = defineEmits<{
         </v-chip>
       </div>
 
-      <v-divider class="mb-3" style="opacity: 0.4;" />
+      <v-divider style="opacity: 0.4;" />
 
-      <div class="text-caption font-weight-bold text-uppercase mb-2" style="letter-spacing: 0.5px; font-size: var(--mp-typography-fontSize-xs);">Filter Rules</div>
-      <div class="d-flex flex-column ga-1 mb-3">
-        <div v-for="(rule, i) in rules" :key="i" class="d-flex align-center ga-2 pa-2 rounded bg-surface-variant">
-          <v-icon size="14" color="primary">filter</v-icon>
-          <span class="text-body-2">{{ rule }}</span>
+      <div class="d-flex flex-column ga-2">
+        <MpFormSection title="Filter rules" />
+        <div class="d-flex flex-column ga-1">
+          <div v-for="(rule, i) in rules" :key="i" class="d-flex align-center ga-2 pa-2 rounded bg-surface-variant">
+            <v-icon size="14" color="primary">filter</v-icon>
+            <span class="text-body-2">{{ rule }}</span>
+          </div>
         </div>
       </div>
 
@@ -51,5 +55,5 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.v-card.segment-card { border-radius: var(--mp-component-card-radius-md) !important; }
+.v-card.segment-card { border-radius: var(--mp-radius-12) !important; }
 </style>

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvKpiRow from './DvKpiRow.vue'
 
 const meta = {
-  title: 'Copilot/DvKpiRow',
+  title: 'Product/Da Vinci/DvKpiRow',
   component: DvKpiRow,
   tags: ['autodocs'],
   argTypes: {
@@ -45,6 +45,65 @@ DvKpiRow displays a horizontal row of key performance indicators with values, tr
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+
+export const Default: Story = {
+  args: {
+    kpis: [
+      { label: 'Total Revenue', value: '$287,450', trend: '+18% vs Last Month', trendUp: true, icon: 'banknote' },
+      { label: 'Orders', value: '1,284', trend: '+6% vs Last Month', trendUp: true, icon: 'shopping-cart' },
+      { label: 'Average Order Value', value: '$58.40', trend: '-2% vs Last Month', trendUp: false, icon: 'receipt' },
+    ],
+  },
+}
+
+/** KPI count is the structural axis — the row wraps rather than shrinking cells past legibility. */
+export const Variants: Story = {
+  render: () => ({
+    components: { DvKpiRow },
+    setup: () => ({
+      two: [
+        { label: 'Total Revenue', value: '$287,450', trend: '+18% vs Last Month', trendUp: true, icon: 'banknote' },
+        { label: 'Orders', value: '1,284', trend: '+6% vs Last Month', trendUp: true, icon: 'shopping-cart' },
+      ],
+      four: [
+        { label: 'Total Revenue', value: '$287,450', trend: '+18%', trendUp: true, icon: 'banknote' },
+        { label: 'Orders', value: '1,284', trend: '+6%', trendUp: true, icon: 'shopping-cart' },
+        { label: 'AOV', value: '$58.40', trend: '-2%', trendUp: false, icon: 'receipt' },
+        { label: 'Conversion', value: '3.1%', trend: '+0.4%', trendUp: true, icon: 'target' },
+      ],
+    }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">two KPIs</div>
+          <DvKpiRow :kpis="two" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">four KPIs — wraps at narrow widths</div>
+          <DvKpiRow :kpis="four" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Rising, falling, and no-trend cells side by side. */
+export const States: Story = {
+  render: () => ({
+    components: { DvKpiRow },
+    setup: () => ({
+      kpis: [
+        { label: 'Revenue', value: '$287,450', trend: '+18% vs Last Month', trendUp: true, icon: 'banknote' },
+        { label: 'Refunds', value: '$4,120', trend: '-8% vs Last Month', trendUp: false, icon: 'corner-down-left' },
+        { label: 'Sessions', value: '48,120', icon: 'activity' },
+      ],
+    }),
+    template: `<DvKpiRow :kpis="kpis" />`,
+  }),
+  args: {} as never,
+}
 
 export const RevenueKpis: Story = {
   args: {

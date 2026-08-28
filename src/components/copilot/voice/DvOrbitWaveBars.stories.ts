@@ -5,7 +5,7 @@ import DvOrbitWaveBars from './DvOrbitWaveBars.vue'
 import '@/styles/dv-orbit.css'
 
 const meta = {
-  title: 'Copilot/Voice/DvOrbitWaveBars',
+  title: 'Product/Da Vinci/Voice/DvOrbitWaveBars',
   component: DvOrbitWaveBars,
   tags: ['autodocs'],
   args: {
@@ -15,10 +15,22 @@ const meta = {
     gap: 3,
   },
   argTypes: {
-    count: { control: { type: 'number', min: 1, max: 24 } },
-    maxHeight: { control: { type: 'number', min: 4, max: 48 } },
-    barWidth: { control: { type: 'number', min: 1, max: 8, step: 0.5 } },
-    gap: { control: { type: 'number', min: 1, max: 10, step: 0.5 } },
+    count: {
+      control: { type: 'number', min: 1, max: 24 },
+      description: 'Number of bars. The component draws exactly this many; it does not wrap or scroll.',
+    },
+    maxHeight: {
+      control: { type: 'number', min: 4, max: 48 },
+      description: 'Peak bar height in px at full amplitude. Canvas geometry, deliberately off the spacing scale.',
+    },
+    barWidth: {
+      control: { type: 'number', min: 1, max: 8, step: 0.5 },
+      description: 'Width of a single bar in px.',
+    },
+    gap: {
+      control: { type: 'number', min: 1, max: 10, step: 0.5 },
+      description: 'Gap between bars in px. Total width is `count * barWidth + (count - 1) * gap`, so these four props size the component together.',
+    },
   },
   parameters: {
     docs: {

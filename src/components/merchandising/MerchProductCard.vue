@@ -63,9 +63,9 @@ const emit = defineEmits<{
       />
     </div>
 
-    <div class="merch-card__body pa-3">
+    <div class="merch-card__body">
       <div class="merch-card__title text-body-2 font-weight-medium">{{ product.title }}</div>
-      <div class="d-flex align-center gap-2 mt-1">
+      <div class="d-flex align-center ga-2 mt-1">
         <span class="text-body-2 font-weight-bold" :class="{ 'text-error': product.compareAt }">
           ${{ product.price }}
         </span>
@@ -80,7 +80,7 @@ const emit = defineEmits<{
 .merch-card {
   position: relative;
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px;
+  border-radius: var(--mp-component-card-radius);
   background: rgb(var(--v-theme-surface));
   overflow: hidden;
   transition: border-color 120ms ease, box-shadow 120ms ease;
@@ -109,36 +109,36 @@ const emit = defineEmits<{
 
 .merch-card__rank {
   position: absolute;
-  bottom: 8px;
-  left: 8px;
-  min-width: 22px;
-  height: 22px;
+  bottom: var(--mp-space-8);
+  left: var(--mp-space-8);
+  min-width: var(--mp-component-chip-height-sm);
+  height: var(--mp-component-chip-height-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding-inline: 6px;
-  border-radius: 999px;
+  padding-inline: var(--mp-space-6);
+  border-radius: var(--mp-radius-full);
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  font-size: 11px;
+  font-size: var(--mp-fontSize-11);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .merch-card__check {
   position: absolute;
-  top: 4px;
-  left: 4px;
+  top: var(--mp-space-4);
+  left: var(--mp-space-4);
   background: rgba(var(--v-theme-surface), 0.9);
-  border-radius: 8px;
+  border-radius: var(--mp-component-chip-radius);
   opacity: 0;
   transition: opacity 120ms ease;
 }
 
 .merch-card__pin {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: var(--mp-space-8);
+  right: var(--mp-space-8);
   opacity: 0;
   transition: opacity 120ms ease;
 }
@@ -150,6 +150,10 @@ const emit = defineEmits<{
 .merch-card:focus-within .merch-card__check,
 .merch-card:focus-within .merch-card__pin {
   opacity: 1;
+}
+
+.merch-card__body {
+  padding: var(--mp-component-card-paddingCompact);
 }
 
 .merch-card__title {

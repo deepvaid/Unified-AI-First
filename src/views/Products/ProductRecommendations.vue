@@ -10,6 +10,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
@@ -143,29 +144,29 @@ function exportRules() {
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
       >
+        <!-- Filter popover: `hide-details` is deliberate — these selects can never
+             carry a hint or an error, and the popover is a dense surface. -->
         <template #filter-content>
-          <v-select
-            v-model="filters.status"
-            :items="['Active', 'Paused']"
-            :label="filterLabels.status"
-            multiple
-            chips
-            closable-chips
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-          <v-select
-            v-model="filters.placement"
-            :items="[...PLACEMENTS] as string[]"
-            :label="filterLabels.placement"
-            multiple
-            chips
-            closable-chips
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
+          <MpFormGrid>
+            <v-select
+              v-model="filters.status"
+              :items="['Active', 'Paused']"
+              :label="filterLabels.status"
+              multiple
+              chips
+              closable-chips
+              hide-details
+            />
+            <v-select
+              v-model="filters.placement"
+              :items="[...PLACEMENTS] as string[]"
+              :label="filterLabels.placement"
+              multiple
+              chips
+              closable-chips
+              hide-details
+            />
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
 
@@ -240,39 +241,18 @@ function exportRules() {
       :title="editingId !== null ? 'Edit Recommendation Rule' : 'Configure Recommendation Rule'"
       subtitle="Control what recommendations appear and where"
     >
-      <v-text-field
-        v-model="form.name"
-        label="Rule name"
-        placeholder="e.g. Cart Cross-Sell"
-        variant="outlined"
-        density="comfortable"
-        hint="Leave blank to use the logic type as the name"
-        persistent-hint
-        class="mb-4"
-      />
-      <v-select
-        v-model="form.logicType"
-        :items="LOGIC_TYPES"
-        label="Logic type"
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
-      />
-      <v-select
-        v-model="form.placement"
-        :items="PLACEMENTS"
-        label="Placement"
-        variant="outlined"
-        density="comfortable"
-        class="mb-4"
-      />
-      <v-select
-        v-model="form.status"
-        :items="['Active', 'Paused']"
-        label="Status"
-        variant="outlined"
-        density="comfortable"
-      />
+      <MpFormGrid>
+        <v-text-field
+          v-model="form.name"
+          label="Rule name"
+          placeholder="e.g. Cart Cross-Sell"
+          hint="Leave blank to use the logic type as the name"
+          persistent-hint
+        />
+        <v-select v-model="form.logicType" :items="LOGIC_TYPES" label="Logic type" />
+        <v-select v-model="form.placement" :items="PLACEMENTS" label="Placement" />
+        <v-select v-model="form.status" :items="['Active', 'Paused']" label="Status" />
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>

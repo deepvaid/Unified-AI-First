@@ -1,5 +1,12 @@
 # Token Sync Plan (P5)
 
+> **Superseded in part, 2026-08-28.** Phase 1 of `DESIGN_AUDIT.md` closed §1 (the three drifting
+> values — now `component.control.height`, `component.button.paddingInline`, `shadow.buttonInset`)
+> and settled the §3 scale question (13px stop added; no fractional sizes; 14px body). Token names
+> below are pre-Phase-1 — `spacing.6` is now `space.24`, `borderRadius.md` is `radius.12`,
+> `typography.fontSize.*` is `fontSize.*`. §2 (scrollbar dark mode) and the §3 per-component
+> migration are still open and belong to Phases 2–4.
+
 <!-- Artifact of the Docs & Handoff agent (design-system program, Phase 5). -->
 <!-- Source: audit.md (P1); offender counts re-measured at P5 close. -->
 

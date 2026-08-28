@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, useId } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
@@ -13,6 +13,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpDialog from '@/components/MpDialog.vue'
 
 const store = useCommerceStore()
 const route = useRoute()
@@ -116,7 +117,6 @@ function advanceStage(item: FulfillmentQueueItem) {
 const shipDialog = ref(false)
 const shipIds = ref<number[]>([])
 const shipTracking = ref('')
-const shipDialogTitleId = useId()
 function askShip(ids: number[]) {
   shipIds.value = ids
   shipTracking.value = ''
@@ -245,11 +245,11 @@ function exportFulfillments() {
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="fulfillment" size="small" />
+          <MpStatusChip :status="item.status" type="fulfillment" size="md" />
         </template>
 
         <template v-slot:item.paymentStatus="{ item }">
-          <MpStatusChip :status="item.paymentStatus" type="payment" size="x-small" />
+          <MpStatusChip :status="item.paymentStatus" type="payment" size="sm" />
         </template>
 
         <template v-slot:item.productQty="{ item }">
@@ -257,7 +257,7 @@ function exportFulfillments() {
         </template>
 
         <template v-slot:item.orderStatus="{ item }">
-          <MpStatusChip :status="item.orderStatus" type="order" size="x-small" />
+          <MpStatusChip :status="item.orderStatus" type="order" size="sm" />
         </template>
 
         <template v-slot:item.salesChannel="{ item }">
@@ -306,30 +306,28 @@ function exportFulfillments() {
     </MpFloatingBulkBar>
 
     <!-- ── Mark Shipped dialog (tracking number) ───────────────────── -->
-    <v-dialog v-model="shipDialog" max-width="440" :aria-labelledby="shipDialogTitleId">
-      <v-card rounded="lg" border flat class="pa-1">
-        <v-card-title :id="shipDialogTitleId" class="text-body-1 font-weight-bold">
-          Mark {{ shipIds.length === 1 ? 'fulfillment' : `${shipIds.length} fulfillments` }} shipped?
-        </v-card-title>
-        <v-card-text class="pt-1">
-          <div class="text-body-2 text-medium-emphasis mb-4">
-            The linked order{{ shipIds.length === 1 ? '' : 's' }} will be updated to Shipped and the customer{{ shipIds.length === 1 ? '' : 's' }} notified.
-          </div>
-          <v-text-field
-            v-model="shipTracking"
-            label="Tracking number (optional)"
-            placeholder="e.g. 1Z999AA10123456784"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-          />
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" class="text-none" @click="shipDialog = false">Cancel</v-btn>
-          <v-btn color="success" variant="flat" class="text-none" prepend-icon="truck" @click="confirmShip">Mark Shipped</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <MpDialog
+      v-model="shipDialog"
+      size="sm"
+      :title="`Mark ${shipIds.length === 1 ? 'fulfillment' : `${shipIds.length} fulfillments`} shipped?`"
+    >
+      <div class="text-body-2 text-medium-emphasis">
+        The linked order{{ shipIds.length === 1 ? '' : 's' }} will be updated to Shipped and the customer{{ shipIds.length === 1 ? '' : 's' }} notified.
+      </div>
+      <v-text-field
+        v-model="shipTracking"
+        label="Tracking number (optional)"
+        placeholder="e.g. 1Z999AA10123456784"
+        variant="outlined"
+        density="comfortable"
+        hide-details
+      />
+
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="shipDialog = false">Cancel</v-btn>
+        <v-btn color="success" variant="flat" class="text-none" prepend-icon="truck" @click="confirmShip">Mark Shipped</v-btn>
+      </template>
+    </MpDialog>
   </div>
 </template>
 

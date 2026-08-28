@@ -6,6 +6,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useRetailStore, type RetailLocation } from '@/stores/useRetail'
 import {
   CHANNEL_STATUS_LABELS,
@@ -166,7 +167,7 @@ function linkLocation() {
               <div class="text-caption text-medium-emphasis">Offline Store</div>
               <div class="text-h6 font-weight-bold">{{ channel.name }}</div>
               <div class="mt-3">
-                <MpStatusChip :status="CHANNEL_STATUS_LABELS[channel.status]" type="general" size="x-small" />
+                <MpStatusChip :status="CHANNEL_STATUS_LABELS[channel.status]" type="general" size="sm" />
               </div>
             </v-card-text>
           </v-card>
@@ -233,7 +234,7 @@ function linkLocation() {
           </template>
 
           <template #item.status="{ item }">
-            <MpStatusChip :status="item.status === 'open' ? 'Open' : 'Closed'" type="general" size="x-small" />
+            <MpStatusChip :status="item.status === 'open' ? 'Open' : 'Closed'" type="general" size="sm" />
           </template>
 
           <template #item.actions="{ item }">
@@ -269,23 +270,21 @@ function linkLocation() {
         </v-alert>
 
         <template v-else>
-          <v-select
-            v-model="selectedLocationId"
-            :items="availableLocationOptions"
-            label="Location"
-            variant="outlined"
-            density="comfortable"
-          />
+          <MpFormGrid>
+            <v-select
+              v-model="selectedLocationId"
+              :items="availableLocationOptions"
+              label="Location"
+            />
 
-          <v-select
-            v-model="selectedRoles"
-            :items="roleOptions"
-            label="Location roles"
-            variant="outlined"
-            density="comfortable"
-            multiple
-            chips
-          />
+            <v-select
+              v-model="selectedRoles"
+              :items="roleOptions"
+              label="Location roles"
+              multiple
+              chips
+            />
+          </MpFormGrid>
 
           <v-alert type="info" variant="tonal" density="compact">
             In v1, a physical location belongs to one Offline Store channel. Registers stay managed from Location Detail.

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import RolePicker from './RolePicker.vue'
 
 const meta = {
-  title: 'RBAC/RolePicker',
+  title: 'Product/RBAC/RolePicker',
   component: RolePicker,
   tags: ['autodocs'],
   parameters: {

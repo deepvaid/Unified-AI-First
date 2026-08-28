@@ -71,12 +71,14 @@ const emit = defineEmits<{
 }
 
 .dv-orbit-micbar__ripple--violet {
-  border: 1.5px solid rgba(139, 124, 248, 0.5);
+  /* P5.5: the ripples are the Orbit gradient's own stops (#8B7CF8 / #22D3EE),
+     stated as tokens so they follow the theme instead of staying light-tuned. */
+  border: 1.5px solid rgba(var(--mp-rgb-color-light-dv-orbit-gradFrom), 0.5);
   animation: dv-orbit-ripple 2.6s ease-out infinite;
 }
 
 .dv-orbit-micbar__ripple--cyan {
-  border: 1.5px solid rgba(34, 211, 238, 0.45);
+  border: 1.5px solid rgba(var(--mp-rgb-color-light-dv-orbit-gradTo), 0.45);
   animation: dv-orbit-ripple 2.6s ease-out 1.3s infinite;
 }
 
@@ -96,7 +98,7 @@ const emit = defineEmits<{
 
 .dv-orbit-micbar__mic--muted {
   background: linear-gradient(135deg, var(--dv-orbit-muted), var(--dv-orbit-sep));
-  box-shadow: 0 8px 20px rgba(100, 116, 139, 0.25);
+  box-shadow: 0 8px 20px rgba(var(--mp-rgb-color-dark-dv-orbit-muted), 0.25);
 }
 
 .dv-orbit-micbar__mic-icon {
@@ -111,7 +113,7 @@ const emit = defineEmits<{
   height: 2.5px;
   border-radius: 99px;
   background: var(--dv-orbit-on-fill);
-  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.7);
+  box-shadow: 0 0 0 2px rgba(var(--mp-rgb-color-light-dv-orbit-muted), 0.7);
   transform: rotate(-45deg);
 }
 

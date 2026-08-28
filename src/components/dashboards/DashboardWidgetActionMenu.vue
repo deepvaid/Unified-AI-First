@@ -89,7 +89,7 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .dashboard-widget-action-menu__size-toggle {

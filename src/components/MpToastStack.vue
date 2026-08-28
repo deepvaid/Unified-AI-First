@@ -77,14 +77,14 @@ function handleAction(toast: Toast) {
 <style scoped>
 .mp-toast-stack {
   position: fixed;
-  right: var(--mp-spacing-6);
-  bottom: var(--mp-spacing-6);
+  right: var(--mp-space-24);
+  bottom: var(--mp-space-24);
   z-index: var(--mp-zIndex-toast);
   display: flex;
   flex-direction: column;
-  gap: var(--mp-spacing-3);
+  gap: var(--mp-space-12);
   width: 320px;
-  max-width: calc(100vw - (var(--mp-spacing-6) * 2));
+  max-width: calc(100vw - (var(--mp-space-24) * 2));
   pointer-events: none;
 }
 
@@ -151,7 +151,7 @@ function handleAction(toast: Toast) {
   display: block;
   min-width: 0;
   height: auto;
-  margin-top: var(--mp-spacing-1);
+  margin-top: var(--mp-space-4);
 }
 
 .mp-toast__close {

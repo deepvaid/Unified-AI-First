@@ -116,11 +116,11 @@ function toggle() {
 
 <style scoped lang="scss">
 .setup-guide-widget {
-  padding: 18px 22px 8px;
+  padding: var(--mp-space-20) var(--mp-space-24) var(--mp-space-8);
   background: var(--surface-primary);
   border-color: var(--border-subtle) !important;
   /* Match the widget-card radius so every dashboard card is identical */
-  border-radius: 14px !important;
+  border-radius: var(--mp-radius-12) !important;
   box-shadow: none;
   overflow: hidden;
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -146,14 +146,14 @@ function toggle() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--mp-space-8);
   flex: 0 0 auto;
 }
 
 .setup-guide-widget__title-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
   min-width: 0;
 }
 
@@ -177,8 +177,8 @@ function toggle() {
 
 .setup-guide-widget__title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 650;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   line-height: 1.2;
 }
@@ -193,7 +193,7 @@ function toggle() {
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--mp-component-chip-radius);
   appearance: none;
   transition: background 120ms ease, color 120ms ease;
 }
@@ -209,7 +209,7 @@ function toggle() {
 }
 
 .setup-guide-widget__body {
-  margin-top: 4px;
+  margin-top: var(--mp-space-4);
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -217,15 +217,15 @@ function toggle() {
 }
 
 .setup-guide-widget__desc {
-  margin: 0 0 12px;
-  font-size: 13px;
+  margin: 0 0 var(--mp-space-12);
+  font-size: var(--mp-fontSize-13);
   line-height: 1.45;
   color: var(--muted);
   flex: 0 0 auto;
 }
 
 .setup-guide-widget__progress {
-  padding-bottom: 12px;
+  padding-bottom: var(--mp-space-12);
   border-bottom: 1px solid var(--border-subtle);
   flex: 0 0 auto;
 }
@@ -233,17 +233,17 @@ function toggle() {
 .setup-guide-widget__pill {
   display: inline-block;
   color: var(--muted);
-  margin-bottom: 8px;
+  margin-bottom: var(--mp-space-8);
 }
 
 .setup-guide-widget__pill strong {
   color: var(--text-primary);
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-bold);
 }
 
 .setup-guide-widget__bar {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: color-mix(in oklch, var(--text-primary) 8%, var(--surface-primary));
   overflow: hidden;
 }
@@ -252,7 +252,7 @@ function toggle() {
   display: block;
   height: 100%;
   background: var(--text-primary);
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   transition: width 240ms ease;
 }
 
@@ -277,9 +277,9 @@ function toggle() {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: var(--mp-space-12);
   width: 100%;
-  padding: 10px 0;
+  padding: var(--mp-space-10) 0;
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -297,7 +297,7 @@ function toggle() {
 .setup-guide-task__btn:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
-  border-radius: 6px;
+  border-radius: var(--mp-component-chip-radius);
 }
 
 .setup-guide-task__check {
@@ -322,8 +322,8 @@ function toggle() {
 }
 
 .setup-guide-task__label {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   line-height: 1.3;
   white-space: nowrap;
@@ -344,9 +344,9 @@ function toggle() {
 .setup-guide-widget__all-done {
   display: flex;
   align-items: center;
-  margin: 8px 0;
-  font-size: 13px;
-  font-weight: 600;
+  margin: var(--mp-space-8) 0;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--muted);
   flex: 1 1 auto;
 }
@@ -354,10 +354,10 @@ function toggle() {
 .setup-guide-widget__more {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 10px 0 8px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-10) 0 var(--mp-space-8);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--accent-ink);
   text-decoration: none;
   flex: 0 0 auto;

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import SettingsPlaceholder from './SettingsPlaceholder.vue'
 
 const meta = {
-  title: 'Settings/SettingsPlaceholder',
+  title: 'Patterns/Settings/SettingsPlaceholder',
   component: SettingsPlaceholder,
   tags: ['autodocs'],
   parameters: {
@@ -22,7 +22,10 @@ with a fixed explanation, so future deep links resolve instead of 404ing.
     description: 'Verify sending domains and manage DKIM, SPF, and tracking CNAMEs.',
   },
   argTypes: {
-    title: { control: 'text' },
+    title: {
+      control: 'text',
+      description: 'Name of the settings area that does not exist yet. Used both as the page heading and inside the coming-soon copy, so pass the area name alone (\\"Tax & rounding\\"), not a sentence.',
+    },
     description: { control: 'text' },
   },
   render: (args) => ({
@@ -40,6 +43,40 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
+
+/** With and without the supporting description line. */
+export const Variants: Story = {
+  render: () => ({
+    components: { SettingsPlaceholder },
+    template: `
+      <div class="d-flex flex-column ga-6">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with description</div>
+          <SettingsPlaceholder title="Webhooks" description="Send events to your own endpoints." />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">title only</div>
+          <SettingsPlaceholder title="Webhooks" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * One state — "planned, not built yet". This is deliberately a left-aligned inline notice,
+ * not a centred empty state: the navigation exists so deep links keep working, and the copy
+ * is an aside rather than the page's whole content. If the surface exists but has no data,
+ * that is `MpEmptyState`; if it failed to load, `MpErrorState`.
+ */
+export const States: Story = {
+  render: () => ({
+    components: { SettingsPlaceholder },
+    template: `<SettingsPlaceholder title="Webhooks" description="Send events to your own endpoints." />`,
+  }),
+  args: {} as never,
+}
 
 export const WithoutDescription: Story = {
   args: { title: 'Audit Log', description: undefined },

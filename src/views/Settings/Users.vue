@@ -131,8 +131,6 @@ function removeUser() {
         v-model="editRoleValue"
         label="Role Access"
         :items="ROLES"
-        variant="outlined"
-        density="compact"
       />
       <template #footer>
         <v-btn variant="text" class="text-none" @click="editRoleDrawer = false">Cancel</v-btn>

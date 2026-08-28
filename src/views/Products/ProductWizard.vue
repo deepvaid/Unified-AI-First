@@ -13,6 +13,8 @@ import { useProductExtrasStore } from '@/stores/useProductExtras'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
@@ -323,30 +325,18 @@ onMounted(() => {
           <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
             <div class="text-subtitle-1 font-weight-bold mb-1">General Information</div>
             <div class="text-body-2 text-medium-emphasis mb-5">Give this product a title and describe it for shoppers.</div>
-            <v-row dense>
-              <v-col cols="12" md="8">
-                <v-text-field
-                  v-model="title"
-                  label="Product Title *"
-                  variant="outlined"
-                  density="comfortable"
-                  :error="submitted && !titleValid"
-                  :error-messages="submitted && !titleValid ? ['Title is required'] : []"
-                />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field v-model="sku" label="SKU" placeholder="Auto-generated if blank" variant="outlined" density="comfortable" />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="subtitle" label="Subtitle" variant="outlined" density="comfortable" />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field v-model="url" label="Product URL" placeholder="/products/my-product" prepend-inner-icon="link" variant="outlined" density="comfortable" />
-              </v-col>
-              <v-col cols="12">
-                <v-textarea v-model="description" label="Description" rows="4" auto-grow variant="outlined" density="comfortable" />
-              </v-col>
-            </v-row>
+            <MpFormGrid :cols="2">
+              <v-text-field
+                v-model="title"
+                label="Product Title *"
+                :error="submitted && !titleValid"
+                :error-messages="submitted && !titleValid ? ['Title is required'] : []"
+              />
+              <v-text-field v-model="sku" label="SKU" placeholder="Auto-generated if blank" />
+              <v-text-field v-model="subtitle" label="Subtitle" />
+              <v-text-field v-model="url" label="Product URL" placeholder="/products/my-product" prepend-inner-icon="link" />
+              <v-textarea v-model="description" label="Description" rows="4" auto-grow class="mp-form-grid__full" />
+            </MpFormGrid>
           </v-card>
 
           <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
@@ -361,8 +351,13 @@ onMounted(() => {
           </v-card>
 
           <v-card variant="flat" border rounded="lg" class="pa-6">
-            <v-switch v-model="hasVariants" color="primary" hide-details density="comfortable" label="Yes, this is a product with variants" />
-            <div class="text-caption text-medium-emphasis mt-1">When unchecked we create a default variant for you.</div>
+            <v-switch
+              v-model="hasVariants"
+              color="primary"
+              label="Yes, this is a product with variants"
+              hint="When unchecked we create a default variant for you."
+              persistent-hint
+            />
           </v-card>
         </template>
 
@@ -371,39 +366,40 @@ onMounted(() => {
           <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
             <div class="text-subtitle-1 font-weight-bold mb-1">Organise</div>
             <div class="text-body-2 text-medium-emphasis mb-5">Classify this product so it's easy to find and merchandise.</div>
-            <v-row dense>
-              <v-col cols="12" md="6"><v-select v-model="taxCategory" :items="taxCategoryOptions" label="Tax Category" variant="outlined" density="comfortable" clearable /></v-col>
-              <v-col cols="12" md="6"><v-select v-model="material" :items="MATERIALS" label="Material" variant="outlined" density="comfortable" clearable /></v-col>
-              <v-col cols="12" md="6"><v-select v-model="brand" :items="BRANDS" label="Brand" variant="outlined" density="comfortable" clearable /></v-col>
-              <v-col cols="12" md="6"><v-select v-model="tag" :items="TAGS" label="Tag" variant="outlined" density="comfortable" clearable /></v-col>
-              <v-col cols="12" md="6"><v-select v-model="collection" :items="collectionOptions" label="Collection" variant="outlined" density="comfortable" clearable /></v-col>
-              <v-col cols="12" md="6"><v-select v-model="categories" :items="CATEGORIES" label="Categories" variant="outlined" density="comfortable" multiple chips closable-chips /></v-col>
-            </v-row>
+            <MpFormGrid :cols="2">
+              <v-select v-model="taxCategory" :items="taxCategoryOptions" label="Tax Category" clearable />
+              <v-select v-model="material" :items="MATERIALS" label="Material" clearable />
+              <v-select v-model="brand" :items="BRANDS" label="Brand" clearable />
+              <v-select v-model="tag" :items="TAGS" label="Tag" clearable />
+              <v-select v-model="collection" :items="collectionOptions" label="Collection" clearable />
+              <v-select v-model="categories" :items="CATEGORIES" label="Categories" multiple chips closable-chips />
+            </MpFormGrid>
           </v-card>
 
           <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
             <div class="text-subtitle-1 font-weight-bold mb-4">Attributes</div>
-            <v-row dense>
-              <v-col cols="6" md="3"><v-text-field v-model="width" label="Width" suffix="cm" type="number" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="6" md="3"><v-text-field v-model="length" label="Length" suffix="cm" type="number" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="6" md="3"><v-text-field v-model="height" label="Height" suffix="cm" type="number" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="6" md="3"><v-text-field v-model="weight" label="Weight" suffix="kg" type="number" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" md="4"><v-text-field v-model="midCode" label="MID Code" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" md="4"><v-text-field v-model="hsCode" label="HS Code" variant="outlined" density="comfortable" /></v-col>
-              <v-col cols="12" md="4"><v-select v-model="countryOfOrigin" :items="COUNTRIES" label="Country of Origin" variant="outlined" density="comfortable" clearable /></v-col>
-            </v-row>
+            <MpFormGrid :cols="2">
+              <v-text-field v-model="width" label="Width" suffix="cm" type="number" />
+              <v-text-field v-model="length" label="Length" suffix="cm" type="number" />
+              <v-text-field v-model="height" label="Height" suffix="cm" type="number" />
+              <v-text-field v-model="weight" label="Weight" suffix="kg" type="number" />
+              <v-text-field v-model="midCode" label="MID Code" />
+              <v-text-field v-model="hsCode" label="HS Code" />
+              <v-select v-model="countryOfOrigin" :items="COUNTRIES" label="Country of Origin" clearable class="mp-form-grid__full" />
+            </MpFormGrid>
           </v-card>
 
           <v-card variant="flat" border rounded="lg" class="pa-6">
-            <v-row dense align="center">
-              <v-col cols="12" md="6">
-                <v-switch v-model="discountable" color="primary" hide-details density="comfortable" label="Discountable" />
-                <div class="text-caption text-medium-emphasis mt-1">Allow discounts and promotions on this product.</div>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select v-model="salesChannels" :items="SALES_CHANNELS" label="Sales Channels" variant="outlined" density="comfortable" multiple chips closable-chips />
-              </v-col>
-            </v-row>
+            <MpFormGrid :cols="2">
+              <v-switch
+                v-model="discountable"
+                color="primary"
+                label="Discountable"
+                hint="Allow discounts and promotions on this product."
+                persistent-hint
+              />
+              <v-select v-model="salesChannels" :items="SALES_CHANNELS" label="Sales Channels" multiple chips closable-chips />
+            </MpFormGrid>
           </v-card>
         </template>
 
@@ -417,41 +413,50 @@ onMounted(() => {
                 <v-btn variant="text" color="primary" size="small" class="text-none" prepend-icon="plus" @click="addOption">Add option</v-btn>
               </div>
               <div class="text-body-2 text-medium-emphasis mb-4">Add an option name (e.g. Size) and its values. Variants are generated automatically.</div>
-              <v-row v-for="(opt, i) in options" :key="i" dense align="center" class="mb-1">
-                <v-col cols="12" md="4">
-                  <v-text-field v-model="opt.name" label="Option name" placeholder="Size" variant="outlined" density="comfortable" hide-details />
-                </v-col>
-                <v-col cols="12" md="7">
-                  <v-combobox v-model="opt.values" label="Values" placeholder="Type a value and press Enter" variant="outlined" density="comfortable" multiple chips closable-chips hide-details />
-                </v-col>
-                <v-col cols="12" md="1" class="text-center">
+              <MpFormGrid>
+                <div v-for="(opt, i) in options" :key="i" class="mp-form-grid__trailing">
+                  <MpFormGrid :cols="2">
+                    <v-text-field v-model="opt.name" label="Option name" placeholder="Size" />
+                    <v-combobox
+                      v-model="opt.values"
+                      label="Values"
+                      hint="Type a value and press Enter"
+                      persistent-hint
+                      multiple
+                      chips
+                      closable-chips
+                    />
+                  </MpFormGrid>
                   <v-btn icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove option" :disabled="options.length === 1" @click="removeOption(i)" />
-                </v-col>
-              </v-row>
+                </div>
+              </MpFormGrid>
             </v-card>
 
             <v-card variant="flat" border rounded="lg" class="pa-6">
               <div class="text-subtitle-1 font-weight-bold mb-4">Variants <span class="text-medium-emphasis font-weight-regular">({{ generatedVariants.length }})</span></div>
               <div v-if="!generatedVariants.length" class="text-body-2 text-medium-emphasis py-4">Add at least one option with values above to generate variants.</div>
-              <div v-for="variant in generatedVariants" v-else :key="variant.id" class="pw-variant mb-3">
-                <div class="d-flex align-center justify-space-between mb-3">
-                  <div class="text-body-1 font-weight-bold">{{ variant.title }}</div>
+              <MpFormGrid v-else>
+                <div v-for="variant in generatedVariants" :key="variant.id" class="pw-variant">
+                  <MpFormGrid :cols="2">
+                    <MpFormSection :title="variant.title" />
+                    <v-text-field v-model="variant.sku" label="SKU" class="mp-form-grid__full" />
+                    <v-text-field v-model="variant.costPrice" label="Cost Price" prefix="$" type="number" />
+                    <v-text-field v-model="variant.price" label="Price" prefix="$" type="number" />
+                    <v-switch v-model="variant.manageInventory" color="primary" label="Manage Inventory" />
+                    <v-switch v-model="variant.allowBackorder" color="primary" label="Allow Backorder" />
+                    <template v-if="variant.manageInventory">
+                      <v-text-field
+                        v-for="loc in LOCATIONS"
+                        :key="loc"
+                        v-model.number="variant.stock[loc]"
+                        :label="`In Stock — ${loc}`"
+                        type="number"
+                        min="0"
+                      />
+                    </template>
+                  </MpFormGrid>
                 </div>
-                <v-row dense>
-                  <v-col cols="12" md="6"><v-text-field v-model="variant.sku" label="SKU" variant="outlined" density="compact" hide-details /></v-col>
-                  <v-col cols="6" md="3"><v-text-field v-model="variant.costPrice" label="Cost Price" prefix="$" type="number" variant="outlined" density="compact" hide-details /></v-col>
-                  <v-col cols="6" md="3"><v-text-field v-model="variant.price" label="Price" prefix="$" type="number" variant="outlined" density="compact" hide-details /></v-col>
-                </v-row>
-                <div class="d-flex flex-wrap gap-4 mt-3 mb-2">
-                  <v-switch v-model="variant.manageInventory" color="primary" hide-details density="compact" label="Manage Inventory" />
-                  <v-switch v-model="variant.allowBackorder" color="primary" hide-details density="compact" label="Allow Backorder" />
-                </div>
-                <v-row v-if="variant.manageInventory" dense>
-                  <v-col v-for="loc in LOCATIONS" :key="loc" cols="6" md="3">
-                    <v-text-field v-model.number="variant.stock[loc]" :label="`In Stock — ${loc}`" type="number" min="0" variant="outlined" density="compact" hide-details />
-                  </v-col>
-                </v-row>
-              </div>
+              </MpFormGrid>
             </v-card>
           </template>
 
@@ -459,20 +464,23 @@ onMounted(() => {
           <v-card v-else variant="flat" border rounded="lg" class="pa-6">
             <div class="text-subtitle-1 font-weight-bold mb-1">Default Variant</div>
             <div class="text-body-2 text-medium-emphasis mb-4">This product has no variants, so pricing and stock are set on a single default variant.</div>
-            <v-row dense>
-              <v-col cols="12" md="6"><v-text-field v-model="defaultVariant.sku" label="SKU" variant="outlined" density="comfortable" hide-details /></v-col>
-              <v-col cols="6" md="3"><v-text-field v-model="defaultVariant.costPrice" label="Cost Price" prefix="$" type="number" variant="outlined" density="comfortable" hide-details /></v-col>
-              <v-col cols="6" md="3"><v-text-field v-model="defaultVariant.price" label="Price" prefix="$" type="number" variant="outlined" density="comfortable" hide-details /></v-col>
-            </v-row>
-            <div class="d-flex flex-wrap gap-4 mt-3 mb-2">
-              <v-switch v-model="defaultVariant.manageInventory" color="primary" hide-details density="compact" label="Manage Inventory" />
-              <v-switch v-model="defaultVariant.allowBackorder" color="primary" hide-details density="compact" label="Allow Backorder" />
-            </div>
-            <v-row v-if="defaultVariant.manageInventory" dense>
-              <v-col v-for="loc in LOCATIONS" :key="loc" cols="6" md="3">
-                <v-text-field v-model.number="defaultVariant.stock[loc]" :label="`In Stock — ${loc}`" type="number" min="0" variant="outlined" density="comfortable" hide-details />
-              </v-col>
-            </v-row>
+            <MpFormGrid :cols="2">
+              <v-text-field v-model="defaultVariant.sku" label="SKU" class="mp-form-grid__full" />
+              <v-text-field v-model="defaultVariant.costPrice" label="Cost Price" prefix="$" type="number" />
+              <v-text-field v-model="defaultVariant.price" label="Price" prefix="$" type="number" />
+              <v-switch v-model="defaultVariant.manageInventory" color="primary" label="Manage Inventory" />
+              <v-switch v-model="defaultVariant.allowBackorder" color="primary" label="Allow Backorder" />
+              <template v-if="defaultVariant.manageInventory">
+                <v-text-field
+                  v-for="loc in LOCATIONS"
+                  :key="loc"
+                  v-model.number="defaultVariant.stock[loc]"
+                  :label="`In Stock — ${loc}`"
+                  type="number"
+                  min="0"
+                />
+              </template>
+            </MpFormGrid>
           </v-card>
         </template>
 

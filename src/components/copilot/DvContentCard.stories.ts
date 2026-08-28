@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvContentCard from './DvContentCard.vue'
 
 const meta = {
-  title: 'Copilot/DvContentCard',
+  title: 'Product/Da Vinci/DvContentCard',
   component: DvContentCard,
   tags: ['autodocs'],
   argTypes: {

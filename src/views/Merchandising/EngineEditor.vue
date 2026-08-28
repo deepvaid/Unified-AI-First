@@ -5,6 +5,8 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import { useToast } from '@/composables/useToast'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
@@ -269,11 +271,12 @@ function goToStep(target: number) {
 
     <!-- Persistent name + step indicator -->
     <div class="d-flex align-center gap-4 flex-wrap">
+      <!-- `hide-details` is deliberate here (the only one in this file): this field
+           shares a chrome row with the step indicator, and a details line would
+           shunt the steps down on every keystroke. -->
       <v-text-field
         v-model="draft.name"
-        label="Engine name"
-        variant="outlined"
-        density="comfortable"
+        label="Engine name *"
         hide-details
         class="engine-name-field"
       />
@@ -347,82 +350,68 @@ function goToStep(target: number) {
 
         <!-- Step 3: settings -->
         <v-card v-else-if="step === 3" variant="flat" border rounded="lg" class="pa-5 engine-settings">
-      <div class="text-subtitle-2 font-weight-bold mb-1">Number of products displayed</div>
-      <div class="text-body-2 text-medium-emphasis mb-3">
-        The widget renders between the minimum and maximum, depending on available results.
-      </div>
-      <div class="d-flex gap-3 mb-5">
-        <v-number-input
-          v-model="draft.minProducts"
-          label="Min"
-          :min="1"
-          :max="draft.maxProducts"
-          variant="outlined"
-          density="comfortable"
-          hide-details
-          control-variant="stacked"
-          class="engine-count-field"
-        />
-        <v-number-input
-          v-model="draft.maxProducts"
-          label="Max"
-          :min="draft.minProducts"
-          :max="24"
-          variant="outlined"
-          density="comfortable"
-          hide-details
-          control-variant="stacked"
-          class="engine-count-field"
-        />
-      </div>
-
-      <v-divider class="mb-5" style="opacity: 0.5" />
-
-      <div class="text-subtitle-2 font-weight-bold mb-1">Fallbacks</div>
-      <div class="text-body-2 text-medium-emphasis mb-3">
-        Shown when the engine doesn’t have enough data for a shopper — applied in order.
-      </div>
-      <div class="d-flex align-center gap-2 flex-wrap mb-5">
-        <v-chip
-          v-for="fallback in draft.fallbacks"
-          :key="fallback"
-          size="small"
-          variant="tonal"
-          closable
-          @click:close="draft.fallbacks = draft.fallbacks.filter((f) => f !== fallback)"
-        >
-          {{ fallback }}
-        </v-chip>
-        <v-menu v-if="remainingFallbacks.length" location="bottom start">
-          <template #activator="{ props: menuProps }">
-            <v-btn v-bind="menuProps" variant="flat" color="surface" size="small" class="text-none" prepend-icon="plus">
-              Add fallback
-            </v-btn>
-          </template>
-          <v-list density="compact" rounded="lg" min-width="200" class="py-1">
-            <v-list-item
-              v-for="fallback in remainingFallbacks"
-              :key="fallback"
-              :title="fallback"
-              @click="draft.fallbacks.push(fallback)"
+          <MpFormGrid :cols="2">
+            <MpFormSection
+              title="Number of products displayed"
+              description="The widget renders between the minimum and maximum, depending on available results."
             />
-          </v-list>
-        </v-menu>
-        <span v-if="!draft.fallbacks.length" class="text-caption text-medium-emphasis">No fallbacks selected.</span>
-      </div>
+            <v-number-input
+              v-model="draft.minProducts"
+              label="Min"
+              :min="1"
+              :max="draft.maxProducts"
+              control-variant="stacked"
+            />
+            <v-number-input
+              v-model="draft.maxProducts"
+              label="Max"
+              :min="draft.minProducts"
+              :max="24"
+              control-variant="stacked"
+            />
 
-      <v-divider class="mb-5" style="opacity: 0.5" />
+            <MpFormSection
+              title="Fallbacks"
+              description="Shown when the engine doesn’t have enough data for a shopper — applied in order."
+            />
+            <div class="mp-form-grid__full d-flex align-center gap-2 flex-wrap">
+              <v-chip
+                v-for="fallback in draft.fallbacks"
+                :key="fallback"
+                size="small"
+                variant="tonal"
+                closable
+                @click:close="draft.fallbacks = draft.fallbacks.filter((f) => f !== fallback)"
+              >
+                {{ fallback }}
+              </v-chip>
+              <v-menu v-if="remainingFallbacks.length" location="bottom start">
+                <template #activator="{ props: menuProps }">
+                  <v-btn v-bind="menuProps" variant="flat" color="surface" size="small" class="text-none" prepend-icon="plus">
+                    Add fallback
+                  </v-btn>
+                </template>
+                <v-list density="compact" rounded="lg" min-width="200" class="py-1">
+                  <v-list-item
+                    v-for="fallback in remainingFallbacks"
+                    :key="fallback"
+                    :title="fallback"
+                    @click="draft.fallbacks.push(fallback)"
+                  />
+                </v-list>
+              </v-menu>
+              <span v-if="!draft.fallbacks.length" class="text-caption text-medium-emphasis">No fallbacks selected.</span>
+            </div>
 
-      <v-textarea
-        v-model="draft.notes"
-        label="Notes"
-        placeholder="Internal notes about this engine…"
-        variant="outlined"
-        density="comfortable"
-        rows="3"
-        hide-details
-      />
-    </v-card>
+            <v-textarea
+              v-model="draft.notes"
+              label="Notes"
+              placeholder="Internal notes about this engine…"
+              rows="3"
+              class="mp-form-grid__full"
+            />
+          </MpFormGrid>
+        </v-card>
 
         <!-- Step 4: filters -->
         <v-card v-else variant="flat" border rounded="lg" class="engine-filters">
@@ -445,53 +434,42 @@ function goToStep(target: number) {
         </div>
         <v-divider />
 
-        <div v-if="editingId !== null" class="engine-condition-form px-5 py-4 d-flex flex-column gap-3">
-          <div class="d-flex gap-3 flex-wrap">
+        <div v-if="editingId !== null" class="engine-condition-form px-5 py-4">
+          <MpFormGrid :cols="2">
             <v-select
               v-model="conditionDraft.action"
               :items="[{ title: 'Include', value: 'include' }, { title: 'Exclude', value: 'exclude' }]"
               label="Action"
-              variant="outlined"
-              density="compact"
-              hide-details
-              class="engine-field-action"
             />
             <v-select
               v-model="conditionDraft.field"
               :items="fieldOptions"
-              label="Field"
-              variant="outlined"
-              density="compact"
-              hide-details
-              class="engine-field-field"
+              label="Field *"
             />
             <v-select
               v-model="conditionDraft.values"
               :items="valueOptions"
-              label="Values"
-              variant="outlined"
-              density="compact"
-              hide-details
+              label="Values *"
               multiple
               chips
               closable-chips
               :disabled="!conditionDraft.field"
-              class="flex-grow-1 engine-field-values"
+              class="mp-form-grid__full"
             />
-          </div>
-          <div class="d-flex justify-end gap-2">
-            <v-btn variant="text" size="small" class="text-none" @click="editingId = null">Cancel</v-btn>
-            <v-btn
-              color="primary"
-              variant="flat"
-              size="small"
-              class="text-none"
-              :disabled="!conditionValid"
-              @click="confirmCondition"
-            >
-              {{ editingId === 'new' ? 'Add' : 'Update' }}
-            </v-btn>
-          </div>
+            <div class="mp-form-grid__full d-flex justify-end gap-2">
+              <v-btn variant="text" size="small" class="text-none" @click="editingId = null">Cancel</v-btn>
+              <v-btn
+                color="primary"
+                variant="flat"
+                size="small"
+                class="text-none"
+                :disabled="!conditionValid"
+                @click="confirmCondition"
+              >
+                {{ editingId === 'new' ? 'Add' : 'Update' }}
+              </v-btn>
+            </div>
+          </MpFormGrid>
         </div>
         <v-divider v-if="editingId !== null" />
 
@@ -662,11 +640,6 @@ function goToStep(target: number) {
   max-width: 720px;
 }
 
-.engine-count-field {
-  width: 160px;
-  flex: 0 0 auto;
-}
-
 /* ── Content column + persistent preview ───────────────────────── */
 .engine-main {
   min-width: 0;
@@ -729,20 +702,6 @@ function goToStep(target: number) {
 
 .engine-condition-form {
   background: rgba(var(--v-theme-surface-variant), 0.18);
-}
-
-.engine-field-action {
-  width: 150px;
-  flex: 0 0 auto;
-}
-
-.engine-field-field {
-  width: 170px;
-  flex: 0 0 auto;
-}
-
-.engine-field-values {
-  min-width: 220px;
 }
 
 @media (max-width: 1100px) {

@@ -6,6 +6,8 @@ import MpErrorState from '@/components/MpErrorState.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import { useToast } from '@/composables/useToast'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import {
@@ -89,7 +91,7 @@ function save() {
         <MpStatusChip
           :status="collection.status === 'active' ? 'Active' : 'Inactive'"
           type="general"
-          size="small"
+          size="md"
           variant="flat"
           class="mr-2"
         />
@@ -107,21 +109,20 @@ function save() {
       <p class="text-body-2 text-medium-emphasis mb-4">
         Import this collection's membership rules directly from Shopify. Turn off to configure filters manually below.
       </p>
-      <v-switch
-        v-model="draft.useShopifyFilters"
-        color="success"
-        density="compact"
-        hide-details
-        label="Use Shopify filters for this collection"
-      />
-      <v-alert
-        v-if="draft.useShopifyFilters"
-        type="info"
-        variant="tonal"
-        density="compact"
-        class="mt-4"
-        text="Membership mirrors the Shopify collection. Changes made in Shopify sync automatically."
-      />
+      <MpFormGrid>
+        <v-switch
+          v-model="draft.useShopifyFilters"
+          color="success"
+          label="Use Shopify filters for this collection"
+        />
+        <v-alert
+          v-if="draft.useShopifyFilters"
+          type="info"
+          variant="tonal"
+          density="compact"
+          text="Membership mirrors the Shopify collection. Changes made in Shopify sync automatically."
+        />
+      </MpFormGrid>
     </v-card>
 
     <!-- Tab 2: Activation -->
@@ -130,16 +131,15 @@ function save() {
       <p class="text-body-2 text-medium-emphasis mb-4">
         Map this smart collection to the storefront page where it should appear.
       </p>
-      <v-text-field
-        v-model="draft.pageUrl"
-        label="Page URL"
-        placeholder="collections/summer-sale"
-        prefix="/"
-        variant="outlined"
-        density="comfortable"
-        hide-details="auto"
-        :rules="[(v: string) => Boolean(v?.trim()) || 'Page URL is required']"
-      />
+      <MpFormGrid>
+        <v-text-field
+          v-model="draft.pageUrl"
+          label="Page URL *"
+          placeholder="collections/summer-sale"
+          prefix="/"
+          :rules="[(v: string) => Boolean(v?.trim()) || 'Page URL is required']"
+        />
+      </MpFormGrid>
     </v-card>
 
     <!-- Tab 3: Configured Filters & Sorting -->
@@ -150,35 +150,28 @@ function save() {
       </div>
       <p class="text-body-2 text-medium-emphasis mb-4">Products match <strong>all</strong> of the conditions below.</p>
 
-      <div class="d-flex flex-column gap-3 mb-5">
-        <div v-for="(filter, index) in draft.filters" :key="filter.id" class="d-flex gap-3 align-center">
-          <v-text-field
-            v-model="filter.field"
-            label="Field"
-            placeholder="e.g. Category"
-            variant="outlined"
-            density="compact"
-            hide-details
-            class="flex-grow-1"
-          />
-          <v-select
-            v-model="filter.operator"
-            :items="OPERATOR_OPTIONS"
-            label="Operator"
-            variant="outlined"
-            density="compact"
-            hide-details
-            class="collection-op"
-          />
-          <v-text-field
-            v-model="filter.value"
-            label="Value"
-            placeholder="e.g. Accessories"
-            variant="outlined"
-            density="compact"
-            hide-details
-            class="flex-grow-1"
-          />
+      <MpFormGrid>
+        <div v-for="(filter, index) in draft.filters" :key="filter.id" class="mp-form-grid__trailing">
+          <div class="d-flex gap-3">
+            <v-text-field
+              v-model="filter.field"
+              label="Field"
+              placeholder="e.g. Category"
+              class="flex-grow-1"
+            />
+            <v-select
+              v-model="filter.operator"
+              :items="OPERATOR_OPTIONS"
+              label="Operator"
+              class="collection-op"
+            />
+            <v-text-field
+              v-model="filter.value"
+              label="Value"
+              placeholder="e.g. Accessories"
+              class="flex-grow-1"
+            />
+          </div>
           <v-btn
             icon="trash-2"
             variant="text"
@@ -191,20 +184,15 @@ function save() {
         <div>
           <v-btn variant="text" size="small" class="text-none" prepend-icon="plus" @click="addFilter">Add filter</v-btn>
         </div>
-      </div>
 
-      <v-divider class="mb-5" />
-
-      <div class="text-subtitle-2 font-weight-bold mb-2">Sorting</div>
-      <v-select
-        v-model="draft.sortBy"
-        :items="SORT_OPTIONS"
-        label="Sort by"
-        variant="outlined"
-        density="comfortable"
-        hide-details
-        class="collection-sort"
-      />
+        <MpFormSection title="Sorting" />
+        <v-select
+          v-model="draft.sortBy"
+          :items="SORT_OPTIONS"
+          label="Sort by"
+          class="collection-sort"
+        />
+      </MpFormGrid>
     </v-card>
 
     <MpConfirmDialog

@@ -207,8 +207,8 @@ function buildSub(item: DaVinciHistoryItem): string {
 
 <style scoped lang="scss">
 .dv-eyebrow {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: rgb(var(--v-theme-on-surface-variant));
@@ -239,19 +239,19 @@ function buildSub(item: DaVinciHistoryItem): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px 10px;
+  padding: var(--mp-space-12) var(--mp-space-14) var(--mp-space-10);
   border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
 }
 
 .dv-history__search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 12px 14px 8px;
-  padding: 0 12px;
+  gap: var(--mp-space-8);
+  margin: var(--mp-space-12) var(--mp-space-14) var(--mp-space-8);
+  padding: 0 var(--mp-space-12);
   height: 38px;
   background: rgb(var(--v-theme-surface-variant));
-  border-radius: 9999px;
+  border-radius: var(--mp-radius-full);
 }
 
 .dv-history__search input {
@@ -259,7 +259,7 @@ function buildSub(item: DaVinciHistoryItem): string {
   border: none;
   outline: none;
   background: transparent;
-  font-size: 13.5px;
+  font-size: var(--mp-fontSize-14);
   color: rgb(var(--v-theme-on-surface));
 }
 
@@ -270,28 +270,28 @@ function buildSub(item: DaVinciHistoryItem): string {
 .dv-history__scroll {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 8px;
+  padding-bottom: var(--mp-space-8);
 }
 
 .dv-history__group {
-  padding: 8px 8px;
+  padding: var(--mp-space-8) var(--mp-space-8);
 }
 
 .dv-history__label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: rgb(var(--v-theme-on-surface-variant));
-  padding: 6px 8px 8px;
+  padding: var(--mp-space-6) var(--mp-space-8) var(--mp-space-8);
 }
 
 .dv-history__item {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px;
-  border-radius: var(--mp-component-card-radius-sm);
+  gap: var(--mp-space-10);
+  padding: var(--mp-space-10);
+  border-radius: var(--mp-radius-10);
   border: none;
   background: transparent;
   cursor: pointer;
@@ -305,12 +305,17 @@ function buildSub(item: DaVinciHistoryItem): string {
   background: rgb(var(--v-theme-surface-variant));
 }
 
+/* P5.5: the fill and the ink each carried their own CSS fallback, and CSS
+   resolves them independently — so a theme defining only one of the pair would
+   paint the container fill with on-primary ink, or vice versa. Both themes
+   define primary-container/on-primary-container, so the fallbacks only added
+   a way to desync. */
 .dv-history__item.is-active {
-  background: rgb(var(--v-theme-primary-container, var(--v-theme-primary)));
+  background: rgb(var(--v-theme-primary-container));
 }
 
 .dv-history__item.is-active .dv-history__title {
-  color: rgb(var(--v-theme-on-primary-container, var(--v-theme-on-primary)));
+  color: rgb(var(--v-theme-on-primary-container));
 }
 
 .dv-history__item :deep(.v-icon) {
@@ -329,8 +334,8 @@ function buildSub(item: DaVinciHistoryItem): string {
 }
 
 .dv-history__title {
-  font-size: 13.5px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.3;
   color: rgb(var(--v-theme-on-surface));
   overflow: hidden;
@@ -339,10 +344,10 @@ function buildSub(item: DaVinciHistoryItem): string {
 }
 
 .dv-history__sub {
-  font-size: 12px;
-  font-weight: 400;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-regular);
   color: rgb(var(--v-theme-on-surface-variant));
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
 }
 
 .dv-history__delete {
@@ -354,7 +359,7 @@ function buildSub(item: DaVinciHistoryItem): string {
   flex-shrink: 0;
   border: none;
   background: transparent;
-  border-radius: 6px;
+  border-radius: var(--mp-component-chip-radius);
   color: rgb(var(--v-theme-on-surface-variant));
   cursor: pointer;
   opacity: 0;
@@ -375,31 +380,31 @@ function buildSub(item: DaVinciHistoryItem): string {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 40px 20px;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-40) var(--mp-space-20);
   text-align: center;
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .dv-history__empty :deep(.v-icon) {
-  margin-bottom: 8px;
+  margin-bottom: var(--mp-space-8);
 }
 
 .dv-history__empty-title {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: rgb(var(--v-theme-on-surface));
 }
 
 .dv-history__empty-sub {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   max-width: 240px;
   line-height: 1.4;
 }
 
 .dv-history__menu-danger :deep(.v-list-item-title) {
   color: rgb(var(--v-theme-error));
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
 }
 
 /* ─── Rail mode overrides ───────────────────────────────────────────── */

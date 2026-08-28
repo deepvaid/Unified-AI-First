@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvLandingHero from './DvLandingHero.vue'
 
 const meta = {
-  title: 'Copilot/DvLandingHero',
+  title: 'Product/Da Vinci/DvLandingHero',
   component: DvLandingHero,
   tags: ['autodocs'],
   argTypes: {
@@ -39,4 +39,41 @@ export const Default: Story = {
       'Show ticket volume over time',
     ],
   },
+}
+
+/**
+ * The hero has one structure — eyebrow, headline, and an underline rule. What varies
+ * is the copy it carries.
+ */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { DvLandingHero },
+    setup: () => ({ args }),
+    template: `<DvLandingHero v-bind="args" />`,
+  }),
+}
+
+/** Short vs long headline — the type scale holds and the rule stays put. */
+export const Sizes: Story = {
+  render: () => ({
+    components: { DvLandingHero },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">short headline</div>
+          <DvLandingHero />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** The hero is static — it has one state. */
+export const States: Story = {
+  render: () => ({
+    components: { DvLandingHero },
+    template: `<DvLandingHero />`,
+  }),
+  args: {} as never,
 }

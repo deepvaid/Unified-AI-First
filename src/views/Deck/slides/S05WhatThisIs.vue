@@ -45,10 +45,10 @@ const IS_NOT = [
 <style scoped>
 .s05__row {
   display: flex;
-  gap: var(--mp-spacing-3);
-  padding: var(--mp-spacing-3) 0;
-  font-size: var(--mp-typography-fontSize-md);
-  line-height: var(--mp-typography-lineHeight-normal);
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-12) 0;
+  font-size: var(--mp-fontSize-16);
+  line-height: var(--mp-lineHeight-normal);
 }
 
 .s05__row--muted {
@@ -58,6 +58,6 @@ const IS_NOT = [
 .s05__footnote {
   max-width: 720px;
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
 }
 </style>

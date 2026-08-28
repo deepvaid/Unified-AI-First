@@ -59,19 +59,19 @@ const anyRunning = computed(() => props.steps.some((s) => s.status === 'running'
 .dv-toolsteps {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 
 .dv-toolsteps__toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
   align-self: flex-start;
-  padding: 4px 8px 4px 4px;
+  padding: var(--mp-space-4) var(--mp-space-8) var(--mp-space-4) var(--mp-space-4);
   border: none;
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   background: transparent;
-  font-size: var(--mp-typography-fontSize-sm);
+  font-size: var(--mp-fontSize-12);
   font-weight: 500;
   color: rgb(var(--v-theme-on-surface-variant));
   cursor: pointer;
@@ -99,17 +99,17 @@ const anyRunning = computed(() => props.steps.some((s) => s.status === 'running'
 .dv-toolsteps__list {
   list-style: none;
   margin: 0;
-  padding: 0 0 0 4px;
+  padding: 0 0 0 var(--mp-space-4);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 
 .dv-toolsteps__step {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: var(--mp-typography-fontSize-sm);
+  gap: var(--mp-space-8);
+  font-size: var(--mp-fontSize-12);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
@@ -125,8 +125,8 @@ const anyRunning = computed(() => props.steps.some((s) => s.status === 'running'
 .dv-toolsteps__step-icon {
   display: inline-grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: var(--mp-space-20);
+  height: var(--mp-space-20);
   flex-shrink: 0;
 }
 
@@ -135,9 +135,9 @@ const anyRunning = computed(() => props.steps.some((s) => s.status === 'running'
 }
 
 .dv-toolsteps__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-full);
   background: var(--dv-accent);
   animation: dvToolStepPulse 1.2s ease-in-out infinite;
 }

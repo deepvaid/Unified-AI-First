@@ -106,6 +106,11 @@ const tab = ref<Tab>('orders')
 </template>
 
 <style scoped>
+/* P4-1: this widget draws its OWN header/body edges (DashboardWidgetCard zeroes
+   its body inset for bespoke-header widgets), so it states the widget inset
+   directly — `component.card.padding`, the same 20 the rest of the family gets
+   from the card. Stated as the role token, not the 20 primitive, so a change to
+   the standard moves this with it. */
 .tabs-widget {
   display: flex;
   flex-direction: column;
@@ -119,8 +124,8 @@ const tab = ref<Tab>('orders')
 .tabs-widget__bar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-6) var(--mp-space-12);
   border-bottom: 1px solid var(--border-subtle);
   flex: none;
   position: sticky;
@@ -132,12 +137,12 @@ const tab = ref<Tab>('orders')
 .tabs-widget__tab {
   position: relative;
   height: 42px;
-  padding: 0 12px;
+  padding: 0 var(--mp-space-12);
   border: 0;
   background: transparent;
   font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   cursor: pointer;
   white-space: nowrap;
@@ -149,7 +154,7 @@ const tab = ref<Tab>('orders')
   right: 12px;
   bottom: -7px;
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--mp-radius-4);
   background: var(--text-primary);
 }
 
@@ -158,10 +163,10 @@ const tab = ref<Tab>('orders')
 }
 
 .tabs-widget__view-all {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--muted);
-  padding-right: 8px;
+  padding-right: var(--mp-space-8);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -180,16 +185,16 @@ const tab = ref<Tab>('orders')
 .tabs-widget__orders-row {
   display: grid;
   grid-template-columns: minmax(84px, 104px) minmax(120px, 1fr) 108px 92px;
-  gap: 16px;
-  padding: 12px 20px;
+  gap: var(--mp-space-16);
+  padding: var(--mp-space-12) var(--mp-component-card-padding);
 }
 
 .tabs-widget__orders-head {
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: var(--mp-space-10);
+  padding-bottom: var(--mp-space-10);
   border-bottom: 1px solid var(--border-subtle);
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.08em;
   color: var(--muted);
   text-transform: uppercase;
@@ -197,7 +202,7 @@ const tab = ref<Tab>('orders')
 
 .tabs-widget__orders-row {
   align-items: center;
-  font-size: 13.5px;
+  font-size: var(--mp-fontSize-14);
   color: var(--text-primary);
 }
 
@@ -210,7 +215,7 @@ const tab = ref<Tab>('orders')
 }
 
 .tabs-widget__order-id {
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
@@ -228,7 +233,7 @@ const tab = ref<Tab>('orders')
 }
 
 .tabs-widget__total {
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   font-variant-numeric: tabular-nums;
 }
 
@@ -241,8 +246,8 @@ const tab = ref<Tab>('orders')
 .tabs-widget__activity-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 13px 20px;
+  gap: var(--mp-space-14);
+  padding: var(--mp-space-14) var(--mp-component-card-padding);
 }
 
 .tabs-widget__activity-row:not(:last-child) {
@@ -257,7 +262,7 @@ const tab = ref<Tab>('orders')
   width: 28px;
   height: 28px;
   flex: none;
-  border-radius: 8px;
+  border-radius: var(--mp-component-chip-radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,13 +271,13 @@ const tab = ref<Tab>('orders')
 .tabs-widget__activity-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--mp-space-2);
   min-width: 0;
 }
 
 .tabs-widget__activity-title {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -280,12 +285,12 @@ const tab = ref<Tab>('orders')
 }
 
 .tabs-widget__activity-meta {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
 }
 
 .tabs-widget__ago {
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
   white-space: nowrap;
 }
@@ -294,33 +299,33 @@ const tab = ref<Tab>('orders')
 .tabs-widget__campaigns {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: var(--mp-space-16);
+  padding: var(--mp-space-16) var(--mp-component-card-padding);
 }
 
 .tabs-widget__campaigns-caption {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
 }
 
 .tabs-widget__campaign {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--mp-space-8);
 }
 
 .tabs-widget__campaign-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--mp-space-16);
 }
 
 .tabs-widget__campaign-name,
 .tabs-widget__campaign-revenue {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
@@ -336,7 +341,7 @@ const tab = ref<Tab>('orders')
 }
 
 .tabs-widget__campaign-meta {
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
 }
 
@@ -344,9 +349,9 @@ const tab = ref<Tab>('orders')
   .tabs-widget__orders-head,
   .tabs-widget__orders-row {
     grid-template-columns: minmax(72px, 90px) minmax(90px, 1fr) 92px 72px;
-    gap: 10px;
-    padding-left: 14px;
-    padding-right: 14px;
+    gap: var(--mp-space-10);
+    padding-left: var(--mp-space-14);
+    padding-right: var(--mp-space-14);
   }
 
   .tabs-widget__ago {

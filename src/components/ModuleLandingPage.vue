@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpListRow from '@/components/MpListRow.vue'
 
 export interface PrimaryAction {
   label: string
   icon?: string
   to?: string
   href?: string
-  variant?: 'primary' | 'secondary'
+  emphasis?: 'default' | 'prominent'
 }
 
 export interface QuickAction {
@@ -92,7 +92,7 @@ withDefaults(defineProps<{
 
 <template>
   <div class="module-landing">
-    <MpPageHeader :title="title" :subtitle="description" :eyebrow="eyebrow" variant="display">
+    <MpPageHeader :title="title" :subtitle="description" :eyebrow="eyebrow" emphasis="prominent">
       <template v-if="primaryActions?.length" #actions>
         <v-btn
           v-for="(action, idx) in primaryActions"
@@ -100,8 +100,8 @@ withDefaults(defineProps<{
           :prepend-icon="action.icon"
           :to="action.to"
           :href="action.href"
-          :color="(action.variant ?? (idx === 0 ? 'primary' : undefined))"
-          :variant="action.variant === 'secondary' ? 'outlined' : 'flat'"
+          :color="(action.emphasis ?? (idx === 0 ? 'prominent' : 'default')) === 'prominent' ? 'primary' : undefined"
+          :variant="(action.emphasis ?? (idx === 0 ? 'prominent' : 'default')) === 'prominent' ? 'flat' : 'outlined'"
           rounded="pill"
           density="comfortable"
         >
@@ -112,13 +112,15 @@ withDefaults(defineProps<{
 
     <!-- Quick actions row -->
     <section v-if="quickActions?.length" class="quick-actions mp-enter-stagger" aria-label="Quick actions">
-      <button
+      <v-card
         v-for="qa in quickActions"
         :key="qa.label"
-        type="button"
+        :to="qa.to"
+        flat
+        border
+        rounded="lg"
         class="quick-action"
         :class="qa.color ? `tint-${qa.color}` : ''"
-        @click="$router.push(qa.to)"
       >
         <span class="quick-action__icon">
           <v-icon size="18">{{ qa.icon }}</v-icon>
@@ -127,7 +129,7 @@ withDefaults(defineProps<{
           <span class="quick-action__label">{{ qa.label }}</span>
           <span v-if="qa.description" class="quick-action__desc">{{ qa.description }}</span>
         </span>
-      </button>
+      </v-card>
     </section>
 
     <!-- Two-column main layout -->
@@ -136,10 +138,13 @@ withDefaults(defineProps<{
         <!-- Child page cards -->
         <div class="section-eyebrow" role="heading" aria-level="2">Sections</div>
         <div class="child-grid mp-enter-stagger">
-          <router-link
+          <v-card
             v-for="cp in childPages"
             :key="cp.title"
             :to="cp.to"
+            flat
+            border
+            rounded="lg"
             class="child-card"
             :class="cp.color ? `tint-${cp.color}` : ''"
           >
@@ -155,37 +160,36 @@ withDefaults(defineProps<{
             </div>
             <div class="child-card__title">{{ cp.title }}</div>
             <div class="child-card__desc">{{ cp.description }}</div>
-          </router-link>
+          </v-card>
         </div>
 
         <!-- Recent activity -->
         <div v-if="recentActivity?.length" class="activity-section mt-6 mp-enter">
           <div class="section-eyebrow" role="heading" aria-level="2">Recent activity</div>
-          <div class="activity-card">
-            <component
-              :is="item.to ? RouterLink : 'div'"
+          <v-card flat border rounded="lg" class="activity-card">
+            <MpListRow
               v-for="(item, idx) in recentActivity"
               :key="idx"
               :to="item.to"
+              variant="divided"
+              :eyebrow="item.eyebrow"
+              :title="item.title"
+              :meta="item.meta"
               class="activity-row"
-              :class="{ 'activity-row--last': idx === recentActivity.length - 1, 'activity-row--link': item.to }"
             >
-              <span class="activity-row__chip" :class="`activity-row__chip--${item.tag ?? 'email'}`">
-                <v-icon size="14">{{ item.icon }}</v-icon>
-              </span>
-              <div class="activity-row__body">
-                <div class="activity-row__eyebrow">{{ item.eyebrow }}</div>
-                <div class="activity-row__title">{{ item.title }}</div>
-              </div>
-              <div v-if="item.meta" class="activity-row__meta">{{ item.meta }}</div>
-            </component>
-          </div>
+              <template #lead>
+                <span class="activity-row__chip" :class="`activity-row__chip--${item.tag ?? 'email'}`">
+                  <v-icon size="14">{{ item.icon }}</v-icon>
+                </span>
+              </template>
+            </MpListRow>
+          </v-card>
         </div>
       </v-col>
 
       <v-col cols="12" md="4">
         <!-- Setup / help card -->
-        <div v-if="setupCard" class="side-card setup-card mp-enter">
+        <v-card v-if="setupCard" flat border rounded="lg" class="side-card setup-card mp-enter">
           <div class="side-card__header">
             <span class="side-card__chip side-card__chip--setup">
               <v-icon size="14">list-checks</v-icon>
@@ -202,23 +206,23 @@ withDefaults(defineProps<{
             rounded
             class="mt-3 mb-3"
           />
-          <ul class="setup-list">
-            <li
+          <div class="setup-list">
+            <MpListRow
               v-for="item in setupCard.items"
               :key="item.label"
+              :to="item.to"
+              :title="item.label"
+              density="compact"
               class="setup-list__item"
               :class="{ 'setup-list__item--done': item.complete }"
             >
-              <v-icon size="14" class="setup-list__check">
-                {{ item.complete ? 'circle-check' : 'circle' }}
-              </v-icon>
-              <component
-                :is="item.to ? 'router-link' : 'span'"
-                :to="item.to"
-                class="setup-list__label"
-              >{{ item.label }}</component>
-            </li>
-          </ul>
+              <template #lead>
+                <v-icon size="14" class="setup-list__check">
+                  {{ item.complete ? 'circle-check' : 'circle' }}
+                </v-icon>
+              </template>
+            </MpListRow>
+          </div>
           <v-btn
             v-if="setupCard.ctaLabel"
             :to="setupCard.ctaTo"
@@ -228,7 +232,7 @@ withDefaults(defineProps<{
             class="mt-2"
             append-icon="arrow-right"
           >{{ setupCard.ctaLabel }}</v-btn>
-        </div>
+        </v-card>
 
         <!-- Da Vinci AI — ink-panel branded moment (single message + one action) -->
         <div
@@ -238,19 +242,20 @@ withDefaults(defineProps<{
           <span class="davinci-ink__eyebrow mp-meta-label">{{ daVinciCard.title }}</span>
           <h2 class="davinci-ink__headline">{{ daVinciCard.headline ?? daVinciCard.title }}</h2>
           <p class="davinci-ink__desc mp-ink-panel__muted">{{ daVinciCard.description }}</p>
-          <router-link
+          <v-btn
             v-if="daVinciCard.ctaTo"
             :to="daVinciCard.ctaTo"
-            class="ink-cta ink-cta--ghost"
-          >
-            <v-icon size="15" class="ink-cta__lead">sparkles</v-icon>
-            <span>{{ daVinciCard.ctaLabel ?? 'Open Da Vinci' }}</span>
-            <v-icon size="15" class="ink-cta__arrow">arrow-right</v-icon>
-          </router-link>
+            class="ink-cta"
+            variant="outlined"
+            rounded="pill"
+            density="comfortable"
+            prepend-icon="sparkles"
+            append-icon="arrow-right"
+          >{{ daVinciCard.ctaLabel ?? 'Open Da Vinci' }}</v-btn>
         </div>
 
         <!-- Da Vinci AI card -->
-        <div v-else-if="daVinciCard" class="side-card davinci-card mt-4">
+        <v-card v-else-if="daVinciCard" flat border rounded="lg" class="side-card davinci-card mt-4">
           <div class="side-card__header">
             <span class="side-card__chip side-card__chip--davinci">
               <v-icon size="14">sparkles</v-icon>
@@ -258,30 +263,29 @@ withDefaults(defineProps<{
             <div class="side-card__title">{{ daVinciCard.title }}</div>
           </div>
           <div class="side-card__desc">{{ daVinciCard.description }}</div>
-          <ul class="davinci-list">
-            <li v-for="s in daVinciCard.suggestions" :key="s.label">
-              <!-- Separate branches per link kind — binding an unconditional :href
-                   alongside RouterLink's :to clobbers the href it computes internally
-                   (fallthrough attrs win over the component's own render), so each
-                   kind gets only the attribute it needs. -->
-              <router-link v-if="s.to" :to="s.to" class="davinci-list__item">
+          <div class="davinci-list">
+            <!-- MpListRow resolves the tag from which target prop is set, so the three
+                 link kinds no longer need three hand-written branches here. -->
+            <MpListRow
+              v-for="s in daVinciCard.suggestions"
+              :key="s.label"
+              :to="s.to"
+              :href="s.to ? undefined : s.href"
+              :clickable="!s.to && !s.href"
+              :title="s.label"
+              variant="boxed"
+              density="compact"
+              class="davinci-list__item"
+            >
+              <template #lead>
                 <v-icon size="13" class="davinci-list__icon">sparkles</v-icon>
-                <span>{{ s.label }}</span>
+              </template>
+              <template #trailing>
                 <v-icon size="13" class="davinci-list__arrow">arrow-right</v-icon>
-              </router-link>
-              <a v-else-if="s.href" :href="s.href" class="davinci-list__item">
-                <v-icon size="13" class="davinci-list__icon">sparkles</v-icon>
-                <span>{{ s.label }}</span>
-                <v-icon size="13" class="davinci-list__arrow">arrow-right</v-icon>
-              </a>
-              <button v-else type="button" class="davinci-list__item">
-                <v-icon size="13" class="davinci-list__icon">sparkles</v-icon>
-                <span>{{ s.label }}</span>
-                <v-icon size="13" class="davinci-list__arrow">arrow-right</v-icon>
-              </button>
-            </li>
-          </ul>
-        </div>
+              </template>
+            </MpListRow>
+          </div>
+        </v-card>
       </v-col>
     </v-row>
   </div>
@@ -294,12 +298,12 @@ withDefaults(defineProps<{
 }
 
 .section-eyebrow {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 10px;
+  margin-bottom: var(--mp-space-10);
 }
 
 /* ===== Per-tile accent tints (icon tile, count pill, hover/focus) =====
@@ -328,28 +332,23 @@ withDefaults(defineProps<{
 .quick-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: var(--mp-space-10);
+  margin-bottom: var(--mp-space-20);
 }
 
+/* Border, radius, surface and the link behaviour now come from v-card. What is
+   left here is layout and the per-tile tint. */
 .quick-action {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-card);
-  background: var(--surface-primary);
+  gap: var(--mp-space-10);
+  padding: var(--mp-component-card-paddingCompact);
   color: var(--text-primary);
-  cursor: pointer;
-  font: inherit;
   text-align: left;
-  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
 }
 
 .quick-action:hover {
   border-color: color-mix(in oklch, var(--text-primary) 32%, var(--border-subtle));
-  transform: translateY(-1px);
 }
 
 .quick-action:focus-visible {
@@ -358,14 +357,14 @@ withDefaults(defineProps<{
 }
 
 .quick-action__icon {
-  width: 32px;
-  height: 32px;
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--surface-secondary);
   color: var(--muted);
-  border-radius: 8px;
+  border-radius: var(--mp-component-chip-radius);
   flex-shrink: 0;
 }
 
@@ -376,16 +375,18 @@ withDefaults(defineProps<{
 }
 
 .quick-action__label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
+/* P3-2: the old `margin-top: 1px` optical nudge is gone — the label's 1.4
+   line-height now does the separating, so the pair aligns at any font size. */
 .quick-action__desc {
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
-  margin-top: 1px;
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -395,30 +396,23 @@ withDefaults(defineProps<{
 .child-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .child-card {
   display: flex;
   flex-direction: column;
-  padding: 14px 16px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-card);
-  background: var(--surface-primary);
+  padding: var(--mp-component-card-padding);
   color: var(--text-primary);
-  text-decoration: none;
-  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
-  min-height: 110px;
 }
 
 .child-card:hover {
   border-color: color-mix(in oklch, var(--text-primary) 32%, var(--border-subtle));
-  transform: translateY(-1px);
 }
 
 .child-card:hover .child-card__arrow {
   opacity: 1;
-  transform: translateX(2px);
+  transform: translateX(var(--mp-space-2));
 }
 
 .child-card:focus-visible {
@@ -429,25 +423,25 @@ withDefaults(defineProps<{
 .child-card__top {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: var(--mp-space-8);
+  margin-bottom: var(--mp-space-10);
 }
 
 .child-card__icon {
-  width: 32px;
-  height: 32px;
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--surface-secondary);
   color: var(--muted);
-  border-radius: 8px;
+  border-radius: var(--mp-component-chip-radius);
   flex-shrink: 0;
 }
 
 .child-card__count {
   margin-left: auto;
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   font-weight: 600;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -455,83 +449,52 @@ withDefaults(defineProps<{
 
 .child-card__status {
   margin-left: auto;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-10);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
 .child-card__arrow {
-  margin-left: 4px;
+  margin-left: var(--mp-space-4);
   color: var(--muted);
   opacity: 0.5;
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity var(--mp-motion-duration-fast) var(--mp-motion-easing-standard),
+    transform var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
   display: flex;
   align-items: center;
 }
 
 .child-card__title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   line-height: 1.3;
-  margin-bottom: 4px;
+  margin-bottom: var(--mp-space-4);
 }
 
 .child-card__desc {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
   line-height: 1.45;
 }
 
 /* ===== Activity feed ===== */
+/* Row geometry, hover, focus ring and the between-rows hairline all live in
+   MpListRow now — the card only supplies its own inset and the tinted glyph. */
 .activity-card {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-card);
-  background: var(--surface-primary);
-  padding: 4px 14px;
-}
-
-.activity-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.activity-row--last {
-  border-bottom: none;
-}
-
-.activity-row--link {
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-  margin: 0 -14px;
-  padding-inline: 14px;
-  border-radius: 8px;
-  transition: background 120ms ease;
-}
-
-.activity-row--link:hover,
-.activity-row--link:focus-visible {
-  background: var(--surface-secondary);
-}
-
-.activity-row--link:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  padding-inline: var(--mp-component-card-paddingCompact);
 }
 
 .activity-row__chip {
-  width: 28px;
-  height: 28px;
+  width: var(--mp-space-28);
+  height: var(--mp-space-28);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--mp-component-chip-radius);
   flex-shrink: 0;
 }
 
@@ -555,56 +518,30 @@ withDefaults(defineProps<{
   color: var(--cloud-marketing-text);
 }
 
-.activity-row__body {
-  flex: 1;
-  min-width: 0;
-}
-
-.activity-row__eyebrow {
+/* The activity eyebrow is the one place a monospace face is wanted (IDs, codes). */
+.activity-row :deep(.mp-list-row__eyebrow) {
   font-family: ui-monospace, "SF Mono", monospace;
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 2px;
-}
-
-.activity-row__title {
-  font-size: 13.5px;
-  color: var(--text-primary);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.activity-row__meta {
-  font-size: 12px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
 }
 
 /* ===== Side cards ===== */
 .side-card {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-card);
-  background: var(--surface-primary);
-  padding: 16px 18px;
+  padding: var(--mp-component-card-padding);
 }
 
 .side-card__header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--mp-space-8);
+  margin-bottom: var(--mp-component-card-gapCompact);
 }
 
 .side-card__chip {
-  width: 26px;
-  height: 26px;
+  width: var(--mp-space-28);
+  height: var(--mp-space-28);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--mp-component-chip-radius);
   flex-shrink: 0;
 }
 
@@ -619,33 +556,22 @@ withDefaults(defineProps<{
 }
 
 .side-card__title {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
 .side-card__desc {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-13);
   color: var(--muted);
   line-height: 1.45;
 }
 
 /* ===== Setup list ===== */
 .setup-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.setup-list__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  color: var(--text-primary);
+  gap: var(--mp-space-2);
 }
 
 .setup-list__check {
@@ -657,20 +583,10 @@ withDefaults(defineProps<{
   color: var(--pos);
 }
 
-.setup-list__item--done .setup-list__label {
+.setup-list__item--done :deep(.mp-list-row__title) {
   color: var(--muted);
   text-decoration: line-through;
   text-decoration-color: var(--border-subtle);
-}
-
-.setup-list__label {
-  color: inherit;
-  text-decoration: none;
-}
-
-a.setup-list__label:hover {
-  color: var(--accent-ink);
-  text-decoration: underline;
 }
 
 /* ===== Da Vinci suggestions ===== */
@@ -679,36 +595,10 @@ a.setup-list__label:hover {
 }
 
 .davinci-list {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
+  margin-top: var(--mp-component-card-gapCompact);
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.davinci-list__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: var(--surface-primary);
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
-}
-
-.davinci-list__item:hover {
-  background: var(--surface-secondary);
-  border-color: color-mix(in oklch, var(--tile-accent, var(--accent)) 30%, var(--border-subtle));
+  gap: var(--mp-space-4);
 }
 
 .davinci-list__icon {
@@ -731,71 +621,48 @@ a.setup-list__label:hover {
 .davinci-ink {
   display: flex;
   flex-direction: column;
-  padding: 28px; /* generous — calibration calls for 28–32px inside ink panels */
+  padding: var(--mp-space-28); /* generous — calibration calls for 28–32px inside ink panels */
   border-radius: var(--r-card); /* match the neighbouring setup card (not the ink default lg) */
 }
 
 .davinci-ink__eyebrow {
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: var(--mp-space-14);
 }
 
 .davinci-ink__headline {
-  margin: 0 0 8px;
-  font-size: 19px;
-  font-weight: 700;
+  margin: 0 0 var(--mp-space-8);
+  font-size: var(--mp-fontSize-20);
+  font-weight: var(--mp-fontWeight-bold);
   line-height: 1.3;
   letter-spacing: -0.01em;
   color: var(--ink-panel-fg);
 }
 
 .davinci-ink__desc {
-  margin: 0 0 22px;
-  font-size: 13px;
+  margin: 0 0 var(--mp-space-20);
+  font-size: var(--mp-fontSize-13);
   line-height: 1.5;
 }
 
+/* v-btn supplies shape, height, focus ring and motion. The ink panel inverts the
+   surface, so only the palette is restated here. */
 .ink-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   align-self: flex-start;
-  padding: 9px 16px;
-  border-radius: var(--r-pill);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
-}
-
-.ink-cta--ghost {
-  border: 1px solid var(--ink-panel-fg);
-  background: transparent;
+  border-color: var(--ink-panel-fg);
   color: var(--ink-panel-fg);
 }
 
-.ink-cta--ghost:hover {
+.ink-cta:hover {
   background: color-mix(in oklch, var(--ink-panel-fg) 12%, transparent);
-  transform: translateY(-1px);
 }
 
-.ink-cta:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ink-panel-accent) 45%, transparent);
-}
-
-.ink-cta__lead {
+.ink-cta :deep(.v-btn__prepend) {
   color: var(--ink-panel-accent);
 }
 
-.ink-cta__arrow {
+.ink-cta :deep(.v-btn__append) {
   opacity: 0.7;
-  transition: transform var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
-}
-
-.ink-cta:hover .ink-cta__arrow {
-  transform: translateX(2px);
-  opacity: 1;
 }
 
 /* Cap entrance stagger to the first row so long grids don't cascade for too long. */
@@ -823,7 +690,9 @@ a.setup-list__label:hover {
     grid-template-columns: 1fr;
   }
 
-  .activity-row__meta {
+  /* Timestamps are the first thing to go at phone width — the row title needs
+     the full measure. Targets MpListRow's trailing slot. */
+  .activity-row :deep(.mp-list-row__trailing) {
     display: none;
   }
 }

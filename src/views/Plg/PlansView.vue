@@ -128,7 +128,7 @@ function talkToSales() {
     >
       <template #actions>
         <div class="d-flex align-center ga-3">
-          <v-btn-toggle v-model="cycle" mandatory density="comfortable" color="primary" class="plans-cycle-toggle">
+          <v-btn-toggle v-model="cycle" mandatory class="plans-cycle-toggle">
             <v-btn value="monthly" class="text-none">Monthly</v-btn>
             <v-btn value="annual" class="text-none">Annual</v-btn>
           </v-btn-toggle>

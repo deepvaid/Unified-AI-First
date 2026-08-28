@@ -81,10 +81,10 @@ onBeforeUnmount(clearTimers)
       <v-col cols="12" md="7">
         <v-card flat border rounded="lg" class="pa-5 h-100 cine" :style="{ '--ci': 2 }">
           <div class="d-flex flex-wrap ga-1 mb-4">
-            <MpStatusChip status="Processing" type="order" size="small" />
-            <MpStatusChip status="Paid" type="payment" size="small" />
-            <MpStatusChip status="Active" type="campaign" size="small" />
-            <MpStatusChip status="Open" type="ticket" size="small" />
+            <MpStatusChip status="Processing" type="order" size="md" />
+            <MpStatusChip status="Paid" type="payment" size="md" />
+            <MpStatusChip status="Active" type="campaign" size="md" />
+            <MpStatusChip status="Open" type="ticket" size="md" />
           </div>
           <v-text-field
             v-model="segmentName"
@@ -118,15 +118,15 @@ onBeforeUnmount(clearTimers)
 .s10__footnote {
   max-width: 760px;
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: var(--mp-typography-fontSize-body);
+  font-size: var(--mp-fontSize-14);
 }
 
 .s10__kbd {
   display: inline-block;
-  padding: 0 var(--mp-spacing-2);
+  padding: 0 var(--mp-space-8);
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-sm);
+  border-radius: var(--mp-radius-4);
   background: rgb(var(--v-theme-surface));
-  font-family: var(--mp-typography-fontFamily-mono);
+  font-family: var(--mp-fontFamily-mono);
 }
 </style>

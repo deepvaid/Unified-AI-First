@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpEmptyState from './MpEmptyState.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Feedback/MpEmptyState',
+  title: 'Molecules/MpEmptyState',
   component: MpEmptyState,
   tags: ['autodocs'],
   parameters: {
@@ -53,15 +52,26 @@ The \`MpEmptyState\` component is used when a container (like a table, list, or 
     },
   },
   argTypes: {
+    headingLevel: { control: 'number', description: 'Heading level announced to assistive tech (`role="heading"` + `aria-level`). Set it to whatever keeps the pages outline correct where the state is mounted \u2014 it does not change the visual size.' },
     variant: {
-      control: 'select',
-      options: ['default', 'expressive', 'launcher'],
-      description: "Visual treatment: 'default' (bare icon + text), 'expressive' (illustration-led), 'launcher' (menu of starting points in the default slot).",
+      control: 'inline-radio',
+      options: ['stack', 'launcher'],
+      description: "Structure: 'stack' (centred icon + copy + action) or 'launcher' (adds a vertical menu of starting points in the default slot). Structural alternatives only — visual weight lives on `emphasis` (P2-7).",
+    },
+    emphasis: {
+      control: 'inline-radio',
+      options: ['default', 'prominent'],
+      description: "Visual weight. 'prominent' is the illustration-led treatment with a larger measure and title, for high-visibility first-run moments. Shared system-wide vocabulary (P2-7).",
+    },
+    tone: {
+      control: 'inline-radio',
+      options: ['neutral', 'error'],
+      description: "Leading-glyph tone. 'error' renders it in the error colour on a soft disc — this is what MpErrorState composes.",
     },
     illustration: {
       control: 'select',
       options: ['no-results', 'empty-orders', 'empty-contacts', 'empty-campaigns', 'empty-products', 'empty-generic', 'start-here', 'error'],
-      description: "MpIllustration name rendered in the 'expressive' variant (or override via the #illustration slot in any variant).",
+      description: "MpIllustration name rendered when `emphasis=\"prominent\"` (or override via the #illustration slot in any variant).",
     },
     icon: { control: 'text', description: 'Lucide icon name rendered bare (size 40, medium-emphasis) above the title in the default variant. Omit to hide.' },
     title: { control: 'text', description: 'Required headline. Should make sense read on its own.' },
@@ -85,10 +95,95 @@ export const Default: Story = {
   },
 }
 
-export const DarkMode: Story = {
-  globals: darkModeGlobals,
-  ...Default,
+/** Both structures side by side. `launcher` swaps the single CTA for a menu of starting points. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { MpEmptyState },
+    setup: () => ({ args }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">variant="stack"</div>
+          <MpEmptyState v-bind="args" variant="stack" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">variant="launcher"</div>
+          <MpEmptyState title="How do you want to start?" description="Pick a starting point." variant="launcher">
+            <v-btn variant="outlined" class="text-none justify-start" prepend-icon="file">Start from scratch</v-btn>
+            <v-btn variant="outlined" class="text-none justify-start" prepend-icon="layout-template">Use a template</v-btn>
+          </MpEmptyState>
+        </div>
+      </div>
+    `,
+  }),
+  args: {
+    icon: 'package',
+    title: 'No orders yet',
+    description: 'Once customers start placing orders, they will appear here.',
+    actionLabel: 'Create Draft Order',
+    actionIcon: 'plus',
+  },
 }
+
+/**
+ * The emphasis ramp. There is no `size` prop — an empty state fills its container,
+ * so weight (not width) is the axis that varies.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpEmptyState },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">emphasis="default" — 240px floor, 32px inset</div>
+          <MpEmptyState icon="package" title="No orders yet" description="Once customers start placing orders, they will appear here." />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">emphasis="prominent" — 320px floor, 48px inset</div>
+          <MpEmptyState
+            emphasis="prominent"
+            illustration="empty-campaigns"
+            title="Launch your first campaign"
+            description="Reach your audience with a broadcast email."
+            action-label="Create campaign"
+            action-icon="plus"
+          />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Every state the component renders: with and without a CTA, with a description or bare, and the error tone MpErrorState composes. */
+export const States: Story = {
+  render: () => ({
+    components: { MpEmptyState },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with CTA</div>
+          <MpEmptyState icon="package" title="No orders yet" description="Once customers start placing orders, they will appear here." action-label="Create Draft Order" action-icon="plus" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">no CTA — filtered result, nothing to create</div>
+          <MpEmptyState icon="search" title="No results found" description="Try adjusting your search or filter criteria." />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">title only</div>
+          <MpEmptyState icon="inbox" title="Nothing here yet" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">tone="error" — the shape MpErrorState wraps</div>
+          <MpEmptyState tone="error" icon="alert-triangle" title="Something went wrong" description="We could not load your orders." action-label="Try again" action-icon="refresh-cw" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Scenarios ───────────────────────────────────────────────────────────────
 
 export const Campaigns: Story = {
   args: {
@@ -118,10 +213,10 @@ export const Contacts: Story = {
   },
 }
 
-/** Expressive — illustration-led with a larger, verb-first headline for high-visibility first-run moments. */
-export const Expressive: Story = {
+/** Prominent — illustration-led with a larger, verb-first headline for high-visibility first-run moments. */
+export const Prominent: Story = {
   args: {
-    variant: 'expressive',
+    emphasis: 'prominent',
     illustration: 'empty-campaigns',
     title: 'Launch your first campaign',
     description: 'Reach your audience with a broadcast email. Design it, pick a segment, and send — you can track opens and clicks the moment it goes out.',

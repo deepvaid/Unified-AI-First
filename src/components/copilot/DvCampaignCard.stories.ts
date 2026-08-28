@@ -2,10 +2,12 @@ import type { Meta, StoryObj } from '@storybook/vue3'
 import DvCampaignCard from './DvCampaignCard.vue'
 
 const meta = {
-  title: 'Copilot/DvCampaignCard',
+  title: 'Product/Da Vinci/DvCampaignCard',
   component: DvCampaignCard,
   tags: ['autodocs'],
   argTypes: {
+    draftId: { control: 'number', description: 'Id of the campaign draft this card represents, used to open it in the builder.' },
+    remaining: { control: 'object', description: '`string[]` of what still needs doing before the campaign can send. An empty array reads as ready; each entry renders as its own outstanding-item line.' },
     name: {
       control: 'text',
       description: 'Campaign name'

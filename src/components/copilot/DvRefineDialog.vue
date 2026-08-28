@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import MpDialog from '@/components/MpDialog.vue'
+import MpFormField from '@/components/MpFormField.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import DvDraftPreview from '@/components/copilot/DvDraftPreview.vue'
 import type { DashboardChartVariant, DashboardWidgetDraft, DashboardWidgetType } from '@/stores/dashboards/types'
 
@@ -134,170 +138,95 @@ function close() {
 </script>
 
 <template>
-  <v-dialog v-model="localOpen" max-width="720" scrollable>
-    <v-card flat border rounded="lg" class="dv-refine">
-      <header class="dv-refine__head">
-        <v-icon color="primary" size="18">sparkles</v-icon>
-        <div class="dv-refine__head-text">
-          <div class="dv-refine__title">Refine draft</div>
-          <div class="dv-refine__sub">Adjust the metric, name, or how it&rsquo;s visualised — preview updates live.</div>
-        </div>
-        <v-btn icon size="32" variant="text" aria-label="Close" @click="close">
-          <v-icon size="16">x</v-icon>
-        </v-btn>
-      </header>
+  <!-- Composes MpDialog (P4-6). Was its own head/body/foot at 16x20 / 20 / 12x16. -->
+  <MpDialog
+    v-model="localOpen"
+    size="md"
+    title="Refine draft"
+    subtitle="Adjust the metric, name, or how it&rsquo;s visualised — preview updates live."
+    icon="sparkles"
+  >
+    <div class="dv-refine__cols">
+      <MpFormGrid>
+        <v-text-field
+          id="dv-refine-name"
+          v-model="name"
+          label="Widget name"
+        />
 
-      <div class="dv-refine__cols">
-        <div class="dv-refine__form">
-          <div class="dv-refine__row">
-            <label class="dv-eyebrow" for="dv-refine-name">Widget name</label>
-            <v-text-field
-              id="dv-refine-name"
-              v-model="name"
-              variant="outlined"
-              density="comfortable"
-              hide-details
-              single-line
-            />
+        <MpFormField label="Visualisation">
+          <div class="dv-refine__tiles">
+            <button
+              v-for="tile in TILES"
+              :key="tile.type"
+              type="button"
+              class="dv-refine__tile"
+              :class="{ 'is-selected': selectedTile === tile.type }"
+              :aria-pressed="selectedTile === tile.type"
+              @click="selectedTile = tile.type"
+            >
+              <v-icon size="18">{{ tile.icon }}</v-icon>
+              <span class="dv-refine__tile-label">{{ tile.label }}</span>
+            </button>
           </div>
+        </MpFormField>
 
-          <div class="dv-refine__row">
-            <span class="dv-eyebrow">Visualisation</span>
-            <div class="dv-refine__tiles">
-              <button
-                v-for="tile in TILES"
-                :key="tile.type"
-                type="button"
-                class="dv-refine__tile"
-                :class="{ 'is-selected': selectedTile === tile.type }"
-                @click="selectedTile = tile.type"
-              >
-                <v-icon size="18">{{ tile.icon }}</v-icon>
-                <span class="dv-refine__tile-label">{{ tile.label }}</span>
-              </button>
+        <MpFormField label="Source">
+          <div class="dv-refine__source">
+            <v-icon color="primary" size="16">database</v-icon>
+            <span>{{ sourceLabel }}</span>
+          </div>
+        </MpFormField>
+      </MpFormGrid>
+
+      <div class="dv-refine__preview">
+        <MpFormSection title="Preview" />
+        <div class="dv-refine__preview-frame">
+          <DvDraftPreview :draft="previewDraft" density="compact" />
+          <transition name="dv-refine-fade">
+            <div v-if="loadingPreview" class="dv-refine__preview-loader">
+              <v-progress-circular indeterminate size="28" width="3" color="primary" />
+              <span class="dv-refine__preview-loader-label">Updating preview…</span>
             </div>
-          </div>
-
-          <div class="dv-refine__row">
-            <span class="dv-eyebrow">Source</span>
-            <div class="dv-refine__source">
-              <v-icon color="primary" size="16">database</v-icon>
-              <span>{{ sourceLabel }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="dv-refine__preview">
-          <span class="dv-eyebrow">Preview</span>
-          <div class="dv-refine__preview-frame">
-            <DvDraftPreview :draft="previewDraft" density="compact" />
-            <transition name="dv-refine-fade">
-              <div v-if="loadingPreview" class="dv-refine__preview-loader">
-                <v-progress-circular indeterminate size="28" width="3" color="primary" />
-                <span class="dv-refine__preview-loader-label">Updating preview…</span>
-              </div>
-            </transition>
-          </div>
+          </transition>
         </div>
       </div>
+    </div>
 
-      <v-divider />
-
-      <footer class="dv-refine__foot">
-        <v-btn variant="flat" class="text-none" @click="close" color="surface">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" @click="handleApply">
-          <v-icon size="16" start>plus</v-icon>
-          Add to dashboard
-        </v-btn>
-      </footer>
-    </v-card>
-  </v-dialog>
+    <template #footer>
+      <v-btn variant="flat" class="text-none" @click="close" color="surface">Cancel</v-btn>
+      <v-btn color="primary" variant="flat" class="text-none" @click="handleApply">
+        <v-icon size="16" start>plus</v-icon>
+        Add to dashboard
+      </v-btn>
+    </template>
+  </MpDialog>
 </template>
 
 <style scoped lang="scss">
-.dv-eyebrow {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: rgb(var(--v-theme-on-surface-variant));
-  display: block;
-  margin-bottom: 8px;
-}
-
-.dv-refine {
-  background: rgb(var(--v-theme-surface));
-  border-radius: var(--mp-component-dialog-radius-default) !important;
-  overflow: hidden;
-}
-
-.dv-refine__head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
-}
-
-.dv-refine__head-text {
-  flex: 1;
-}
-
-.dv-refine__title {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.1px;
-  color: rgb(var(--v-theme-on-surface));
-  line-height: 1.2;
-}
-
-.dv-refine__sub {
-  font-size: 12.5px;
-  font-weight: 400;
-  color: rgb(var(--v-theme-on-surface-variant));
-  margin-top: 2px;
-  line-height: 1.3;
-}
-
+/* The two-column body sits inside MpDialog's inset, so it only owns the gap
+   between its own columns. */
 .dv-refine__cols {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-  gap: 20px;
-  padding: 20px;
-}
-
-.dv-refine__form {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.dv-refine__row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 18px;
-}
-
-.dv-refine__row:last-child {
-  margin-bottom: 0;
+  gap: var(--mp-component-card-padding);
 }
 
 .dv-refine__tiles {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 
 .dv-refine__tile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 8px 6px;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-8) var(--mp-space-6);
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-sm);
+  border-radius: var(--mp-radius-10);
   cursor: pointer;
   color: rgb(var(--v-theme-on-surface));
   transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
@@ -313,30 +242,35 @@ function close() {
   border-color: rgb(var(--v-theme-outline));
 }
 
+/* P5.5: the fill and the ink each carried their own CSS fallback, and CSS
+   resolves them independently — so a theme defining only one of the pair would
+   paint the container fill with on-primary ink, or vice versa. Both themes
+   define primary-container/on-primary-container, so the fallbacks only added
+   a way to desync. */
 .dv-refine__tile.is-selected {
   border-color: rgb(var(--v-theme-primary));
-  background: rgb(var(--v-theme-primary-container, var(--v-theme-primary)));
+  background: rgb(var(--v-theme-primary-container));
 }
 
 .dv-refine__tile.is-selected,
 .dv-refine__tile.is-selected :deep(.v-icon) {
-  color: rgb(var(--v-theme-on-primary-container, var(--v-theme-on-primary)));
+  color: rgb(var(--v-theme-on-primary-container));
 }
 
 .dv-refine__tile-label {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
 }
 
 .dv-refine__source {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: var(--mp-component-listItem-gap);
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-component-listItem-paddingInline);
   background: rgb(var(--v-theme-surface-variant));
-  border-radius: var(--mp-component-card-radius-sm);
-  font-size: 12.5px;
-  font-weight: 500;
+  border-radius: var(--mp-radius-10);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.3;
   color: rgb(var(--v-theme-on-surface));
 }
@@ -344,16 +278,19 @@ function close() {
 .dv-refine__preview {
   display: flex;
   flex-direction: column;
+  gap: var(--mp-component-field-labelGap);
   min-width: 0;
 }
 
 .dv-refine__preview-frame {
   position: relative;
   flex: 1;
+  /* Plotting-area size, not a spacing step — same exemption as the other
+     preview canvases (Phase 2/3). */
   min-height: 260px;
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: var(--mp-component-card-radius-sm);
-  padding: 12px;
+  border-radius: var(--mp-radius-10);
+  padding: var(--mp-component-card-paddingCompact);
   background: rgb(var(--v-theme-surface));
   overflow: hidden;
 }
@@ -365,14 +302,14 @@ function close() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--mp-space-10);
   background: rgba(var(--v-theme-surface), 0.78);
   backdrop-filter: blur(2px);
 }
 
 .dv-refine__preview-loader-label {
-  font-size: 11.5px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   letter-spacing: 0.2px;
   color: rgb(var(--v-theme-on-surface-variant));
 }
@@ -385,13 +322,5 @@ function close() {
 .dv-refine-fade-enter-from,
 .dv-refine-fade-leave-to {
   opacity: 0;
-}
-
-.dv-refine__foot {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 16px;
-  background: rgb(var(--v-theme-surface-light));
 }
 </style>

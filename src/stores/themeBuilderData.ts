@@ -4,7 +4,7 @@
 // Mirrors the journeyFlowData + schema-driven-config architecture.
 
 import {
-  mp_borderRadius_md,
+  mp_radius_12,
   mp_color_blue_500,
   mp_color_light_primary,
   mp_color_light_surface,
@@ -110,7 +110,7 @@ export function defaultThemeStyles(): ThemeStyles {
     textColor: mp_color_light_textPrimary,
     headingFont: 'Inter',
     bodyFont: 'Inter',
-    cornerRadius: Number.parseInt(mp_borderRadius_md, 10),
+    cornerRadius: Number.parseInt(mp_radius_12, 10),
     buttonStyle: 'solid',
   }
 }

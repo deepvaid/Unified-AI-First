@@ -1,11 +1,14 @@
 import { onBeforeUnmount, ref } from 'vue'
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpManageFoldersDrawer from './MpManageFoldersDrawer.vue'
+import MpFolderSelect from './MpFolderSelect.vue'
+import MpDataTableToolbar from './MpDataTableToolbar.vue'
+import MpStatusChip from './MpStatusChip.vue'
+import { CAMPAIGNS, CAMPAIGN_HEADERS, FOLDERS, FOLDER_COUNTS } from '@/stories/fixtures'
 import { useFoldersStore } from '@/stores/useFolders'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Forms/MpManageFoldersDrawer',
+  title: 'Molecules/MpManageFoldersDrawer',
   component: MpManageFoldersDrawer,
   tags: ['autodocs'],
   parameters: {
@@ -145,8 +148,96 @@ export const EmptyFolderList: Story = {
   }),
 }
 
-/** The folder CRUD drawer on dark — inherits MpFormDrawer's dark surface. */
-export const DarkMode: Story = {
-  ...Campaigns,
-  globals: darkModeGlobals,
+// ── Template: Variants · Sizes · States ──────────────────────────────────────
+
+/**
+ * One structure — a folder CRUD panel — instantiated per `scope`. Each scope has its own tree,
+ * read from `useFoldersStore`, so the same drawer manages campaigns, images and everything
+ * else that is foldered.
+ */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpManageFoldersDrawer },
+    data: () => ({ which: 'campaigns' as string }),
+    template: `
+      <div class="d-flex ga-2 flex-wrap">
+        <v-btn variant="outlined" class="text-none" @click="which = 'campaigns'">scope="campaigns"</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'images'">scope="images"</v-btn>
+
+        <MpManageFoldersDrawer :model-value="which === 'campaigns'" scope="campaigns" @update:model-value="which = ''" />
+        <MpManageFoldersDrawer :model-value="which === 'images'" scope="images" @update:model-value="which = ''" />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/**
+ * There is no `size` prop. This composes `MpFormDrawer` and inherits its 480px default
+ * (`layout.drawerWidth`), its 20px header/body/footer rhythm and its full-bleed collapse below
+ * 640px. That inheritance is the reason Phase 4 changed nothing in this file: fixing the
+ * drawer fixed this too.
+ */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpManageFoldersDrawer },
+    data: () => ({ open: true }),
+    template: `
+      <div>
+        <v-btn variant="outlined" class="text-none" @click="open = true">Manage folders</v-btn>
+        <MpManageFoldersDrawer v-model="open" scope="campaigns" />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** A populated tree, a nested tree, and an empty scope with only the create affordance. */
+export const States: Story = {
+  render: () => ({
+    components: { MpManageFoldersDrawer },
+    data: () => ({ which: '' as string }),
+    template: `
+      <div class="d-flex ga-2 flex-wrap">
+        <v-btn variant="outlined" class="text-none" @click="which = 'full'">Populated</v-btn>
+        <v-btn variant="outlined" class="text-none" @click="which = 'empty'">Empty scope</v-btn>
+
+        <MpManageFoldersDrawer :model-value="which === 'full'" scope="campaigns" @update:model-value="which = ''" />
+        <MpManageFoldersDrawer :model-value="which === 'empty'" scope="forms" @update:model-value="which = ''" />
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+// ── Composed example ────────────────────────────────────────────────────────
+
+/**
+ * **In context.** The real entry point: `MpFolderSelect` in a table toolbar's `#actions` slot,
+ * whose "Manage folders" row opens this drawer.
+ */
+export const InContextFromTheFolderMenu: Story = {
+  render: () => ({
+    components: { MpManageFoldersDrawer, MpFolderSelect, MpDataTableToolbar, MpStatusChip },
+    setup() {
+      const manage = ref(false)
+      return { manage, folders: FOLDERS, counts: FOLDER_COUNTS, rows: CAMPAIGNS, headers: CAMPAIGN_HEADERS }
+    },
+    template: `
+      <v-card flat border rounded="lg">
+        <MpDataTableToolbar title="Campaigns" :total-count="rows.length" search-placeholder="Search campaigns…">
+          <template #actions>
+            <MpFolderSelect :folders="folders" :counts="counts" :total-count="102" @manage="manage = true" />
+          </template>
+        </MpDataTableToolbar>
+        <v-data-table :headers="headers" :items="rows" item-value="id" hide-default-footer>
+          <template #item.status="{ item }">
+            <MpStatusChip :status="item.status" type="campaign" size="sm" />
+          </template>
+        </v-data-table>
+        <MpManageFoldersDrawer v-model="manage" scope="campaigns" />
+      </v-card>
+    `,
+  }),
+  args: {} as never,
 }

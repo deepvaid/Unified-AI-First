@@ -99,11 +99,13 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
       <v-icon size="16" class="widget-library__ai-chevron">arrow-right</v-icon>
     </button>
 
+    <!-- Picker filter, not a form field: compact and detail-free on purpose so
+         the catalog below keeps its scroll height. -->
     <v-text-field
       v-model="search"
-      placeholder="Search revenue, orders, campaigns..."
+      label="Search widgets"
+      placeholder="revenue, orders, campaigns…"
       density="compact"
-      variant="outlined"
       prepend-inner-icon="search"
       hide-details
       clearable
@@ -130,7 +132,7 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 
     <div v-if="filteredEntries.length === 0" class="widget-library__empty">
       <v-icon size="32" class="text-medium-emphasis">scan-search</v-icon>
-      <div class="text-body-2 text-medium-emphasis mt-2">
+      <div class="text-body-2 text-medium-emphasis">
         No widgets match your search.
       </div>
     </div>
@@ -191,10 +193,10 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-10) var(--mp-space-12);
   border: 1px solid rgba(var(--v-theme-secondary), 0.35);
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
   background: linear-gradient(
     100deg,
     rgba(var(--v-theme-primary), 0.05),
@@ -217,7 +219,7 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--mp-component-input-radius);
   background: rgba(var(--v-theme-secondary), 0.12);
   color: rgb(var(--v-theme-secondary));
   flex-shrink: 0;
@@ -231,21 +233,21 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
 .widget-library__categories {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--mp-space-8);
 }
 
 .widget-library__category {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: var(--mp-space-6);
+  padding: var(--mp-space-6) var(--mp-space-12);
   border: 1px solid var(--border-subtle);
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: var(--surface-primary);
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--text-primary);
   transition: background 120ms ease, border-color 120ms ease;
 }
@@ -268,19 +270,19 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .widget-library__list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--mp-space-16);
 }
 
 .widget-library__group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--mp-space-10);
 }
 
 .widget-library__group-label {
@@ -292,9 +294,10 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 16px;
+  gap: var(--mp-component-state-gap);
+  padding: var(--mp-space-40) var(--mp-space-16);
   border: 1px dashed var(--border-subtle);
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
   text-align: center;
 }
 
@@ -302,10 +305,10 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-10) var(--mp-space-12);
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
   background: var(--surface-primary);
   cursor: pointer;
   font: inherit;
@@ -330,7 +333,7 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--mp-component-input-radius);
   background: var(--accent-soft);
   color: var(--accent-ink);
   flex-shrink: 0;
@@ -345,39 +348,39 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--mp-space-4);
 }
 
 .widget-library__item-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
   flex-wrap: wrap;
 }
 
 .widget-library__item-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
 .widget-library__item-recommended {
   height: 18px;
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 0.02em;
 }
 
 .widget-library__item-description {
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
   line-height: 1.35;
 }
 
 .widget-library__item-type {
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);

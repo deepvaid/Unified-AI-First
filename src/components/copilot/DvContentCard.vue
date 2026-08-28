@@ -32,7 +32,7 @@ const typeConfig: Record<string, { icon: string; color: string; label: string }>
 
       <div class="text-subtitle-2 font-weight-bold mb-2">{{ title }}</div>
 
-      <div class="content-preview pa-3 text-body-2 bg-surface-variant" style="border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); white-space: pre-line; line-height: var(--mp-typography-lineHeight-loose); max-height: 160px; overflow-y: auto;">
+      <div class="content-preview pa-3 text-body-2 bg-surface-variant" style="border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); white-space: pre-line; line-height: var(--mp-lineHeight-loose); max-height: 160px; overflow-y: auto;">
         {{ content }}
       </div>
 
@@ -46,6 +46,6 @@ const typeConfig: Record<string, { icon: string; color: string; label: string }>
 </template>
 
 <style scoped>
-.v-card.content-card { border-radius: var(--mp-component-card-radius-md) !important; }
-.content-preview { border-radius: var(--mp-component-card-radius-sm); }
+.v-card.content-card { border-radius: var(--mp-radius-12) !important; }
+.content-preview { border-radius: var(--mp-radius-10); }
 </style>

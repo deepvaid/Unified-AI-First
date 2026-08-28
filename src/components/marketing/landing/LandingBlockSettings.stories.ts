@@ -1,8 +1,13 @@
+/*
+ * P5.5 exemption — the hex values in these fixtures are a MERCHANT's brand
+ * colours, i.e. the content this component configures and previews, not Marobase
+ * chrome. Same line Phase 4 drew for StorefrontPreview (DESIGN_AUDIT.md P4-8):
+ * forcing the system palette onto them would make the preview less honest.
+ */
 import type { Meta, StoryObj } from '@storybook/vue3'
 import LandingBlockSettings from './LandingBlockSettings.vue'
 import { defaultLandingBlock } from '@/stores/useLandingPages'
 import type { LandingPageBlock } from '@/stores/useLandingPages'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 // `title` is the only block type whose settings branch includes a color-override
 // control — the inline swatch + v-menu + v-color-picker this story exists to document
@@ -18,7 +23,7 @@ function titleBlock(colorOverride = ''): LandingPageBlock {
 }
 
 const meta = {
-  title: 'Marketing/LandingBlockSettings',
+  title: 'Product/Marketing/Landing Pages/LandingBlockSettings',
   component: LandingBlockSettings,
   tags: ['autodocs'],
   parameters: {
@@ -130,10 +135,4 @@ export const ColorPickerOpen: Story = {
     const trigger = canvasElement.querySelector<HTMLElement>('[aria-label="Text color override"]')
     trigger?.click()
   },
-}
-
-/** The color-picker menu (an L3 overlay surface) in dark mode — open via the same play interaction. */
-export const DarkMode: Story = {
-  globals: darkModeGlobals,
-  ...ColorPickerOpen,
 }

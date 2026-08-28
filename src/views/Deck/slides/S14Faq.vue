@@ -33,8 +33,8 @@ const TOPICS = [
 .s14__sub {
   margin: 0 auto;
   max-width: 620px;
-  font-size: var(--mp-typography-fontSize-lg);
-  line-height: var(--mp-typography-lineHeight-normal);
+  font-size: var(--mp-fontSize-18);
+  line-height: var(--mp-lineHeight-normal);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 </style>

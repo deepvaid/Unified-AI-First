@@ -8,7 +8,6 @@ import type {
   SetupCardConfig,
 } from './ModuleLandingPage.vue'
 import ModuleLandingPage from './ModuleLandingPage.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 // Realistic config lifted from MarketingLanding.vue (the component's main consumer).
 const BASE = '/accounts/2000290'
@@ -57,6 +56,9 @@ const SETUP_CARD: SetupCardConfig = {
 const DA_VINCI_CARD: DaVinciCardConfig = {
   title: 'Da Vinci AI · Marketing',
   description: 'Smart suggestions tuned to your audience and recent campaigns.',
+  headline: 'Let Da Vinci draft your next campaign',
+  ctaLabel: 'Open Da Vinci',
+  ctaTo: `${BASE}/da-vinci/dashboard`,
   suggestions: [
     { label: 'Find best send time for VIP segment', to: `${BASE}/da-vinci/dashboard` },
     { label: 'Generate subject line variants', to: `${BASE}/da-vinci/dashboard` },
@@ -65,7 +67,7 @@ const DA_VINCI_CARD: DaVinciCardConfig = {
 }
 
 const meta = {
-  title: 'Patterns/ModuleLandingPage',
+  title: 'Patterns/Module Landing Page',
   component: ModuleLandingPage,
   tags: ['autodocs'],
   parameters: {
@@ -153,6 +155,77 @@ type Story = StoryObj<typeof meta>
 /** The full Marketing hub: every optional section populated. */
 export const Default: Story = {}
 
+/** Both Da Vinci treatments side by side: the suggestion list vs the single ink moment. */
+export const Variants: Story = {
+  render: (args) => ({
+    components: { ModuleLandingPage },
+    setup: () => ({ args }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">default — Da Vinci suggestion list in the side column</div>
+          <ModuleLandingPage v-bind="args" :ink-da-vinci-card="false" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">inkDaVinciCard — the single branded moment</div>
+          <ModuleLandingPage v-bind="args" ink-da-vinci-card />
+        </div>
+      </div>
+    `,
+  }),
+}
+
+/**
+ * Content volume is the size axis for a landing page — there is no `size` prop.
+ * This is the same pattern with a minimal payload and a full one.
+ */
+export const Sizes: Story = {
+  render: (args) => ({
+    components: { ModuleLandingPage },
+    setup: () => ({ args }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">minimal — child pages only</div>
+          <ModuleLandingPage
+            title="Content"
+            description="Templates and reusable blocks."
+            :child-pages="args.childPages.slice(0, 2)"
+          />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">full — quick actions, activity, setup and Da Vinci</div>
+          <ModuleLandingPage v-bind="args" />
+        </div>
+      </div>
+    `,
+  }),
+}
+
+/** Each optional block absent in turn, so a module with no activity or no setup card is verifiable. */
+export const States: Story = {
+  render: (args) => ({
+    components: { ModuleLandingPage },
+    setup: () => ({ args }),
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">no recent activity</div>
+          <ModuleLandingPage v-bind="args" :recent-activity="[]" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">no setup card — onboarding already complete</div>
+          <ModuleLandingPage v-bind="args" :setup-card="null" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">no quick actions</div>
+          <ModuleLandingPage v-bind="args" :quick-actions="[]" />
+        </div>
+      </div>
+    `,
+  }),
+}
+
 /** Only the required props — header plus child-page grid, no side column content. */
 export const Minimal: Story = {
   args: {
@@ -194,7 +267,11 @@ export const EmptyActivity: Story = {
   },
 }
 
-/** The Da Vinci card promoted to the ink panel — the page's single branded moment. */
+/**
+ * The Da Vinci card promoted to the ink panel — the page's single branded moment:
+ * one message, one action. The CTA is a real `v-btn` (outlined, pill) recoloured for
+ * the inverted surface, not a hand-rolled anchor.
+ */
 export const InkDaVinciCard: Story = {
   args: { inkDaVinciCard: true },
 }
@@ -209,8 +286,4 @@ export const Mobile375: Story = {
   globals: {
     viewport: { value: 'mobile375', isRotated: false },
   },
-}
-
-export const DarkMode: Story = {
-  globals: darkModeGlobals,
 }

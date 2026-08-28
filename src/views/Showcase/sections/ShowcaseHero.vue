@@ -36,7 +36,7 @@ const CHIPS: TokenChip[] = [
   { label: 'warning', swatch: 'warning', x: 5, y: 47, hideSm: true },
   { label: 'error', swatch: 'error', x: 90, y: 44, hideSm: true },
   { label: 'secondary', swatch: 'secondary', x: 14, y: 80, hideSm: true },
-  { label: '--mp-spacing-6 · 24px', mono: true, x: 21, y: 7 },
+  { label: '--mp-space-24 · 24px', mono: true, x: 21, y: 7 },
   { label: 'radius-lg · 14px', mono: true, x: 69, y: 5 },
   { label: 'Inter · 100–900', x: 40, y: 3 },
   { label: 'easing-standard', mono: true, x: 87, y: 26, hideSm: true },
@@ -153,7 +153,7 @@ const CHIPS: TokenChip[] = [
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: var(--mp-spacing-16) var(--mp-spacing-6);
+  padding: var(--mp-space-64) var(--mp-space-24);
 }
 
 .hero__center {
@@ -182,9 +182,9 @@ const CHIPS: TokenChip[] = [
 
 .hero__title {
   font-size: clamp(
-    var(--mp-typography-display-md-fontSize),
+    var(--mp-display-md-fontSize),
     7.5vw,
-    var(--mp-typography-display-xl-fontSize)
+    var(--mp-display-xl-fontSize)
   );
 }
 
@@ -195,18 +195,18 @@ const CHIPS: TokenChip[] = [
 .hero__sub {
   margin: 0 auto;
   max-width: 560px;
-  font-size: var(--mp-typography-fontSize-md);
-  line-height: var(--mp-typography-lineHeight-normal);
+  font-size: var(--mp-fontSize-16);
+  line-height: var(--mp-lineHeight-normal);
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
 /* ── Theme flip pill ────────────────────────────────────────── */
 .hero__flip {
   display: inline-flex;
-  gap: var(--mp-spacing-1);
-  padding: var(--mp-spacing-1);
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-4);
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   background: rgb(var(--v-theme-surface));
   box-shadow: var(--mp-shadow-sm);
 }
@@ -215,7 +215,7 @@ const CHIPS: TokenChip[] = [
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--mp-spacing-3);
+  gap: var(--mp-space-12);
 }
 
 /* ── Token cascade chips ────────────────────────────────────── */
@@ -253,14 +253,14 @@ const CHIPS: TokenChip[] = [
 .hero__chip-inner {
   display: inline-flex;
   align-items: center;
-  gap: var(--mp-spacing-2);
-  padding: var(--mp-spacing-1) var(--mp-spacing-3);
+  gap: var(--mp-space-8);
+  padding: var(--mp-space-4) var(--mp-space-12);
   border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   background: rgb(var(--v-theme-surface));
   box-shadow: var(--mp-shadow-sm);
-  font-size: var(--mp-typography-fontSize-sm);
-  font-weight: var(--mp-typography-fontWeight-medium);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: rgb(var(--v-theme-on-surface-variant));
   white-space: nowrap;
   animation: chip-float 7s ease-in-out infinite alternate;
@@ -268,8 +268,8 @@ const CHIPS: TokenChip[] = [
 }
 
 .hero__chip-inner--mono {
-  font-family: var(--mp-typography-fontFamily-mono);
-  font-size: var(--mp-typography-fontSize-xs);
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-11);
 }
 
 @keyframes chip-float {
@@ -284,7 +284,7 @@ const CHIPS: TokenChip[] = [
 .hero__swatch {
   width: 10px;
   height: 10px;
-  border-radius: var(--mp-borderRadius-full);
+  border-radius: var(--mp-radius-full);
   flex-shrink: 0;
 }
 
@@ -297,7 +297,7 @@ const CHIPS: TokenChip[] = [
 /* ── Scroll hint ────────────────────────────────────────────── */
 .hero__scroll-hint {
   position: absolute;
-  bottom: var(--mp-spacing-6);
+  bottom: var(--mp-space-24);
   left: 50%;
   transform: translateX(-50%);
   animation: hint-bounce 2.2s var(--mp-motion-easing-standard) infinite;

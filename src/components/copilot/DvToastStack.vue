@@ -19,7 +19,7 @@ const { toasts, triggerAction, pause, resume } = useDaVinciToasts()
         @focusout="resume(toast.id)"
       >
         <div class="dv-toast__icon">
-          <v-icon size="14" color="white">check</v-icon>
+          <v-icon size="14">check</v-icon>
         </div>
         <div class="dv-toast__body">
           <div class="dv-toast__title">{{ toast.title }}</div>
@@ -57,9 +57,13 @@ const { toasts, triggerAction, pause, resume } = useDaVinciToasts()
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: rgb(var(--v-theme-on-surface));
-  color: rgb(var(--v-theme-surface));
-  border-radius: var(--mp-component-card-radius-sm);
+  /* P5.5: the branded inverted surface, not a hand-rolled one. Composing
+     --ink-panel-* pairs the fill with an ink the token layer guarantees
+     (tokens.json -> $contrastPairs); the previous on-surface/surface swap put
+     the brand-cyan action link on a near-white slab in dark theme at ~2.5:1. */
+  background: var(--ink-panel-bg);
+  color: var(--ink-panel-fg);
+  border-radius: var(--mp-radius-10);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
@@ -96,6 +100,7 @@ const { toasts, triggerAction, pause, resume } = useDaVinciToasts()
   height: 22px;
   border-radius: 9999px;
   background: rgb(var(--v-theme-success));
+  color: rgb(var(--v-theme-on-success));
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -113,14 +118,14 @@ const { toasts, triggerAction, pause, resume } = useDaVinciToasts()
 .dv-toast__sub {
   font-size: 12px;
   font-weight: 400;
-  opacity: 0.75;
+  color: var(--ink-panel-muted-fg);
   margin-top: 1px;
 }
 
 .dv-toast__action {
   background: transparent;
   border: none;
-  color: rgb(var(--v-theme-primary));
+  color: var(--ink-panel-accent);
   font-size: 12.5px;
   font-weight: 600;
   padding: 6px 10px;
@@ -130,6 +135,6 @@ const { toasts, triggerAction, pause, resume } = useDaVinciToasts()
 }
 
 .dv-toast__action:hover {
-  background: color-mix(in oklch, rgb(var(--v-theme-surface)) 14%, transparent);
+  background: color-mix(in oklch, var(--ink-panel-fg) 14%, transparent);
 }
 </style>

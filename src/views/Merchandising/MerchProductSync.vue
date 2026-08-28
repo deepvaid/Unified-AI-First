@@ -43,7 +43,7 @@ const statusTiles = computed(() => [
       </v-col>
       <v-col cols="12" sm="6" md="3">
         <MpKpiCard label="Feed status" value="" icon="rss" color="info">
-          <MpStatusChip :status="feedStatusLabel" type="general" size="small" />
+          <MpStatusChip :status="feedStatusLabel" type="general" size="md" />
         </MpKpiCard>
       </v-col>
       <v-col cols="12" sm="6" md="3">
@@ -65,7 +65,7 @@ const statusTiles = computed(() => [
             <v-icon size="18">{{ tile.icon }}</v-icon>
           </v-avatar>
           <span class="text-body-2 font-weight-medium">{{ tile.label }}</span>
-          <MpStatusChip :status="tile.status" type="general" size="x-small" />
+          <MpStatusChip :status="tile.status" type="general" size="sm" />
         </div>
       </div>
       <div class="d-flex align-center ga-2 text-caption text-medium-emphasis mt-4">

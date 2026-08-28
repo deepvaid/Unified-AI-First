@@ -5,6 +5,9 @@ import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useToast } from '@/composables/useToast'
 import {
@@ -299,39 +302,45 @@ function publishForm() {
           <div class="text-h5 font-weight-bold mb-1">New Form</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Name your form and choose which lists subscribers will be added to.</div>
 
-          <v-text-field v-model="formName" label="Form Name *" placeholder="e.g. Homepage Exit-Intent Popup" variant="outlined" density="comfortable" class="mb-5" />
+          <MpFormGrid>
+            <v-text-field v-model="formName" label="Form Name *" placeholder="e.g. Homepage Exit-Intent Popup" />
 
-          <div class="d-flex align-center justify-space-between mb-2">
-            <span class="text-caption text-medium-emphasis font-weight-bold text-uppercase">Subscription Lists *</span>
-            <v-checkbox v-model="selectAllLists" label="Select All" density="compact" hide-details class="fb-select-all" />
-          </div>
-          <v-card variant="flat" border rounded="lg" class="mb-5">
-            <v-list density="compact" class="py-1">
-              <v-list-item v-for="list in SUBSCRIPTION_LISTS" :key="list.id">
-                <template #prepend>
-                  <v-checkbox
-                    :model-value="selectedListIds.includes(list.id)"
-                    density="compact"
-                    hide-details
-                    @update:model-value="(v) => { if (v) selectedListIds.push(list.id); else selectedListIds = selectedListIds.filter(id => id !== list.id) }"
-                  />
-                </template>
-                <v-list-item-title class="text-body-2">{{ list.name }}</v-list-item-title>
-                <template #append>
-                  <span class="text-caption text-medium-emphasis num">{{ list.count.toLocaleString() }}</span>
-                </template>
-              </v-list-item>
-            </v-list>
-          </v-card>
+            <MpFormField label="Subscription Lists" required>
+              <div class="d-flex justify-end">
+                <v-checkbox v-model="selectAllLists" label="Select All" class="fb-select-all" />
+              </div>
+              <v-card variant="flat" border rounded="lg">
+                <v-list density="compact" class="py-1">
+                  <v-list-item v-for="list in SUBSCRIPTION_LISTS" :key="list.id">
+                    <template #prepend>
+                      <!-- The only deliberate density/hide-details suppression in this file:
+                           these checkboxes belong to compact list rows, not to the form's
+                           own field rhythm. -->
+                      <v-checkbox
+                        :model-value="selectedListIds.includes(list.id)"
+                        :aria-label="list.name"
+                        density="compact"
+                        hide-details
+                        @update:model-value="(v) => { if (v) selectedListIds.push(list.id); else selectedListIds = selectedListIds.filter(id => id !== list.id) }"
+                      />
+                    </template>
+                    <v-list-item-title class="text-body-2">{{ list.name }}</v-list-item-title>
+                    <template #append>
+                      <span class="text-caption text-medium-emphasis num">{{ list.count.toLocaleString() }}</span>
+                    </template>
+                  </v-list-item>
+                </v-list>
+              </v-card>
+            </MpFormField>
 
-          <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Domain Name</div>
-          <div class="d-flex ga-2 mb-2">
-            <v-text-field v-model="newDomain" placeholder="e.g. mystore.com" variant="outlined" density="compact" hide-details @keydown.enter="addDomain" />
-            <v-btn variant="tonal" color="primary" class="text-none" prepend-icon="plus" @click="addDomain">Add Domain</v-btn>
-          </div>
-          <div v-if="domains.length" class="d-flex flex-wrap ga-2 mb-2">
-            <v-chip v-for="d in domains" :key="d" closable size="small" variant="tonal" @click:close="removeDomain(d)">{{ d }}</v-chip>
-          </div>
+            <div class="d-flex align-center ga-2">
+              <v-text-field v-model="newDomain" label="Domain name" placeholder="e.g. mystore.com" @keydown.enter="addDomain" />
+              <v-btn variant="tonal" color="primary" class="text-none" prepend-icon="plus" @click="addDomain">Add Domain</v-btn>
+            </div>
+            <div v-if="domains.length" class="d-flex flex-wrap ga-2">
+              <v-chip v-for="d in domains" :key="d" closable size="small" variant="tonal" @click:close="removeDomain(d)">{{ d }}</v-chip>
+            </div>
+          </MpFormGrid>
 
           <div class="d-flex justify-end mt-6">
             <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!step1Valid" @click="advance(2)">Continue to Content</v-btn>
@@ -345,53 +354,58 @@ function publishForm() {
           <div class="text-h5 font-weight-bold mb-1">Display</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Choose the form type and control when and where it appears.</div>
 
-          <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3">Form Type</div>
-          <v-row dense class="mb-4">
-            <v-col cols="6">
-              <MpOptionCard :selected="formType === 'Popup'" title="Popup" description="Triggered overlay on top of page content" icon="smartphone" @click="formType = 'Popup'" />
-            </v-col>
-            <v-col cols="6">
-              <MpOptionCard :selected="formType === 'Embedded'" title="Embedded" description="Inline form inside your page layout" icon="globe" @click="formType = 'Embedded'" />
-            </v-col>
-          </v-row>
+          <MpFormGrid :cols="2">
+            <MpFormField label="Form Type" class="mp-form-grid__full">
+              <MpFormGrid :cols="2">
+                <MpOptionCard :selected="formType === 'Popup'" title="Popup" description="Triggered overlay on top of page content" icon="smartphone" @click="formType = 'Popup'" />
+                <MpOptionCard :selected="formType === 'Embedded'" title="Embedded" description="Inline form inside your page layout" icon="globe" @click="formType = 'Embedded'" />
+              </MpFormGrid>
+            </MpFormField>
 
-          <v-switch v-model="display.dontShowAgainAfterSubmit" label="Don't show form again after submission" color="primary" density="compact" hide-details class="mb-4" />
+            <v-switch v-model="display.dontShowAgainAfterSubmit" class="mp-form-grid__full" label="Don't show form again after submission" />
 
-          <v-divider class="my-4" />
-          <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3">Display On</div>
-          <v-radio-group v-model="display.displayOn" class="mb-2">
-            <v-radio value="entry" label="Entry (page load)" />
-            <v-radio value="exit" label="Exit intent" />
-            <v-radio value="scroll" label="Percentage scrolled" />
-          </v-radio-group>
-          <div v-if="display.displayOn === 'scroll'" class="mb-4">
-            <v-slider v-model="display.scrollPercent" :min="10" :max="100" :step="10" color="primary" thumb-label="always" label="Scroll depth %" />
-          </div>
+            <v-divider class="mp-form-grid__full" />
+            <MpFormField label="Display On" class="mp-form-grid__full">
+              <template #default="{ labelId }">
+                <v-radio-group v-model="display.displayOn" :aria-labelledby="labelId">
+                  <v-radio value="entry" label="Entry (page load)" />
+                  <v-radio value="exit" label="Exit intent" />
+                  <v-radio value="scroll" label="Percentage scrolled" />
+                </v-radio-group>
+              </template>
+            </MpFormField>
+            <v-slider
+              v-if="display.displayOn === 'scroll'"
+              v-model="display.scrollPercent"
+              class="mp-form-grid__full"
+              :min="10"
+              :max="100"
+              :step="10"
+              thumb-label="always"
+              label="Scroll depth %"
+            />
 
-          <v-divider class="my-4" />
-          <v-checkbox v-model="display.urlTargetingEnabled" label="Only show on these URLs" color="primary" density="compact" hide-details class="mb-2" />
-          <template v-if="display.urlTargetingEnabled">
-            <div class="d-flex ga-2 mb-2">
-              <v-text-field v-model="newUrlTarget" placeholder="/collections/sale" variant="outlined" density="compact" hide-details @keydown.enter="addUrlTarget" />
-              <v-btn variant="tonal" color="primary" class="text-none" prepend-icon="plus" @click="addUrlTarget">Add URL</v-btn>
-            </div>
-            <div v-if="display.urlTargets.length" class="d-flex flex-wrap ga-2 mb-2">
-              <v-chip v-for="u in display.urlTargets" :key="u" closable size="small" variant="tonal" @click:close="removeUrlTarget(u)">{{ u }}</v-chip>
-            </div>
-          </template>
+            <v-divider class="mp-form-grid__full" />
+            <v-checkbox v-model="display.urlTargetingEnabled" class="mp-form-grid__full" label="Only show on these URLs" />
+            <template v-if="display.urlTargetingEnabled">
+              <div class="mp-form-grid__full d-flex align-center ga-2">
+                <v-text-field v-model="newUrlTarget" label="URL path" placeholder="/collections/sale" @keydown.enter="addUrlTarget" />
+                <v-btn variant="tonal" color="primary" class="text-none" prepend-icon="plus" @click="addUrlTarget">Add URL</v-btn>
+              </div>
+              <div v-if="display.urlTargets.length" class="mp-form-grid__full d-flex flex-wrap ga-2">
+                <v-chip v-for="u in display.urlTargets" :key="u" closable size="small" variant="tonal" @click:close="removeUrlTarget(u)">{{ u }}</v-chip>
+              </div>
+            </template>
 
-          <v-divider class="my-4" />
-          <v-checkbox v-model="display.hideForDaysEnabled" label="Don't show pop-up for N days after closing" color="primary" density="compact" hide-details class="mb-2" />
-          <v-text-field
-            v-if="display.hideForDaysEnabled"
-            v-model.number="display.hideForDays"
-            type="number"
-            label="Days"
-            variant="outlined"
-            density="compact"
-            style="max-width:160px;"
-            class="mb-2"
-          />
+            <v-divider class="mp-form-grid__full" />
+            <v-checkbox v-model="display.hideForDaysEnabled" class="mp-form-grid__full" label="Don't show pop-up for N days after closing" />
+            <v-text-field
+              v-if="display.hideForDaysEnabled"
+              v-model.number="display.hideForDays"
+              type="number"
+              label="Days"
+            />
+          </MpFormGrid>
 
           <div class="d-flex justify-space-between mt-6">
             <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="step = 2">Back</v-btn>
@@ -407,15 +421,15 @@ function publishForm() {
             <v-expansion-panels variant="accordion" multiple>
               <v-expansion-panel title="Position">
                 <v-expansion-panel-text>
-                  <v-radio-group v-model="design.position" density="compact" hide-details>
+                  <v-radio-group v-model="design.position" aria-label="Position">
                     <v-radio v-for="p in POPUP_POSITIONS" :key="p.value" :value="p.value" :label="p.label" />
                   </v-radio-group>
                 </v-expansion-panel-text>
               </v-expansion-panel>
             </v-expansion-panels>
 
-            <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mt-4 mb-2 px-1">Theme</div>
-            <div class="d-flex flex-wrap ga-2 mb-3 px-1">
+            <MpFormSection title="Theme" />
+            <div class="d-flex flex-wrap ga-2 mt-2 mb-3">
               <v-btn
                 v-for="t in STYLE_THEMES"
                 :key="t.id"
@@ -432,98 +446,114 @@ function publishForm() {
                   <v-expansion-panels variant="accordion" multiple>
                     <v-expansion-panel title="Dimensions">
                       <v-expansion-panel-text>
-                        <v-text-field v-model.number="design.width" type="number" label="Width (px) *" variant="outlined" density="compact" class="mb-2" />
-                        <v-text-field v-model.number="design.height" type="number" label="Height (px)" variant="outlined" density="compact" :disabled="design.fitHeight" class="mb-2" />
-                        <v-checkbox v-model="design.fitHeight" label="Fit to content height" density="compact" hide-details />
+                        <MpFormGrid>
+                          <v-text-field v-model.number="design.width" type="number" label="Width (px) *" />
+                          <v-text-field v-model.number="design.height" type="number" label="Height (px)" :disabled="design.fitHeight" />
+                          <v-checkbox v-model="design.fitHeight" label="Fit to content height" />
+                        </MpFormGrid>
                       </v-expansion-panel-text>
                     </v-expansion-panel>
 
                     <v-expansion-panel title="Padding">
                       <v-expansion-panel-text>
-                        <v-row dense>
-                          <v-col cols="6"><v-text-field v-model.number="design.paddingTop" type="number" label="Top *" variant="outlined" density="compact" /></v-col>
-                          <v-col cols="6"><v-text-field v-model.number="design.paddingBottom" type="number" label="Bottom *" variant="outlined" density="compact" /></v-col>
-                          <v-col cols="6"><v-text-field v-model.number="design.paddingLeft" type="number" label="Left *" variant="outlined" density="compact" /></v-col>
-                          <v-col cols="6"><v-text-field v-model.number="design.paddingRight" type="number" label="Right *" variant="outlined" density="compact" /></v-col>
-                        </v-row>
+                        <MpFormGrid :cols="2">
+                          <v-text-field v-model.number="design.paddingTop" type="number" label="Top *" />
+                          <v-text-field v-model.number="design.paddingBottom" type="number" label="Bottom *" />
+                          <v-text-field v-model.number="design.paddingLeft" type="number" label="Left *" />
+                          <v-text-field v-model.number="design.paddingRight" type="number" label="Right *" />
+                        </MpFormGrid>
                       </v-expansion-panel-text>
                     </v-expansion-panel>
 
                     <v-expansion-panel title="Border">
                       <v-expansion-panel-text>
-                        <div class="d-flex align-center ga-2 mb-3">
-                          <v-menu :close-on-content-click="false" location="start">
-                            <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.borderColor }" aria-label="Border color" /></template>
-                            <v-color-picker v-model="design.borderColor" mode="hexa" :modes="['hexa']" />
-                          </v-menu>
-                          <span class="text-caption text-medium-emphasis">Color</span>
-                        </div>
-                        <v-text-field v-model.number="design.borderThickness" type="number" label="Thickness (px) *" variant="outlined" density="compact" class="mb-2" />
-                        <v-text-field v-model.number="design.borderRadius" type="number" label="Radius (px) *" variant="outlined" density="compact" />
+                        <MpFormGrid :cols="2">
+                          <MpFormField label="Color" class="mp-form-grid__full">
+                            <v-menu :close-on-content-click="false" location="start">
+                              <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.borderColor }" aria-label="Border color" /></template>
+                              <v-color-picker v-model="design.borderColor" mode="hexa" :modes="['hexa']" />
+                            </v-menu>
+                          </MpFormField>
+                          <v-text-field v-model.number="design.borderThickness" type="number" label="Thickness (px) *" />
+                          <v-text-field v-model.number="design.borderRadius" type="number" label="Radius (px) *" />
+                        </MpFormGrid>
                       </v-expansion-panel-text>
                     </v-expansion-panel>
 
                     <v-expansion-panel title="Drop Shadow">
                       <v-expansion-panel-text>
-                        <div class="d-flex align-center ga-2 mb-3">
-                          <v-menu :close-on-content-click="false" location="start">
-                            <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.shadowColor }" aria-label="Shadow color" /></template>
-                            <v-color-picker v-model="design.shadowColor" mode="hexa" :modes="['hexa']" />
-                          </v-menu>
-                          <span class="text-caption text-medium-emphasis">Color</span>
-                        </div>
-                        <v-text-field v-model.number="design.shadowBlur" type="number" label="Blur (px)" variant="outlined" density="compact" class="mb-2" />
-                        <v-row dense>
-                          <v-col cols="6"><v-text-field v-model.number="design.shadowOffsetH" type="number" label="H offset" variant="outlined" density="compact" /></v-col>
-                          <v-col cols="6"><v-text-field v-model.number="design.shadowOffsetV" type="number" label="V offset" variant="outlined" density="compact" /></v-col>
-                        </v-row>
+                        <MpFormGrid :cols="2">
+                          <MpFormField label="Color" class="mp-form-grid__full">
+                            <v-menu :close-on-content-click="false" location="start">
+                              <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.shadowColor }" aria-label="Shadow color" /></template>
+                              <v-color-picker v-model="design.shadowColor" mode="hexa" :modes="['hexa']" />
+                            </v-menu>
+                          </MpFormField>
+                          <v-text-field v-model.number="design.shadowBlur" class="mp-form-grid__full" type="number" label="Blur (px)" />
+                          <v-text-field v-model.number="design.shadowOffsetH" type="number" label="H offset" />
+                          <v-text-field v-model.number="design.shadowOffsetV" type="number" label="V offset" />
+                        </MpFormGrid>
                       </v-expansion-panel-text>
                     </v-expansion-panel>
 
                     <v-expansion-panel title="Overlay">
                       <v-expansion-panel-text>
-                        <div class="d-flex align-center ga-2 mb-3">
-                          <v-menu :close-on-content-click="false" location="start">
-                            <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.overlayColor }" aria-label="Overlay color" /></template>
-                            <v-color-picker v-model="design.overlayColor" mode="hex" :modes="['hex']" />
-                          </v-menu>
-                          <span class="text-caption text-medium-emphasis">Color</span>
-                        </div>
-                        <div class="text-caption mb-1">Opacity: {{ design.overlayOpacity }}%</div>
-                        <v-slider v-model="design.overlayOpacity" :min="0" :max="90" :step="5" color="primary" hide-details />
+                        <MpFormGrid>
+                          <MpFormField label="Color">
+                            <v-menu :close-on-content-click="false" location="start">
+                              <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.overlayColor }" aria-label="Overlay color" /></template>
+                              <v-color-picker v-model="design.overlayColor" mode="hex" :modes="['hex']" />
+                            </v-menu>
+                          </MpFormField>
+                          <MpFormField :label="`Opacity: ${design.overlayOpacity}%`">
+                            <template #default="{ labelId }">
+                              <v-slider v-model="design.overlayOpacity" :min="0" :max="90" :step="5" :aria-labelledby="labelId" />
+                            </template>
+                          </MpFormField>
+                        </MpFormGrid>
                       </v-expansion-panel-text>
                     </v-expansion-panel>
 
                     <v-expansion-panel title="Background">
                       <v-expansion-panel-text>
-                        <v-radio-group v-model="design.backgroundType" inline class="mb-2">
-                          <v-radio value="color" label="Colour" />
-                          <v-radio value="image" label="Image" />
-                        </v-radio-group>
-                        <div v-if="design.backgroundType === 'color'" class="d-flex align-center ga-2">
-                          <v-menu :close-on-content-click="false" location="start">
-                            <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.backgroundColor }" aria-label="Background color" /></template>
-                            <v-color-picker v-model="design.backgroundColor" mode="hex" :modes="['hex']" />
-                          </v-menu>
-                          <span class="text-caption text-medium-emphasis">{{ design.backgroundColor }}</span>
-                        </div>
-                        <template v-else>
-                          <v-text-field v-model="design.backgroundImage" label="Image URL" placeholder="https://" variant="outlined" density="compact" class="mb-2" />
-                          <v-btn variant="tonal" block prepend-icon="upload" class="text-none">Upload image</v-btn>
-                        </template>
+                        <MpFormGrid>
+                          <MpFormField label="Background type">
+                            <template #default="{ labelId }">
+                              <v-radio-group v-model="design.backgroundType" inline :aria-labelledby="labelId">
+                                <v-radio value="color" label="Colour" />
+                                <v-radio value="image" label="Image" />
+                              </v-radio-group>
+                            </template>
+                          </MpFormField>
+                          <MpFormField v-if="design.backgroundType === 'color'" label="Background colour">
+                            <div class="d-flex align-center ga-2">
+                              <v-menu :close-on-content-click="false" location="start">
+                                <template #activator="{ props }"><button v-bind="props" class="fb-swatch" :style="{ background: design.backgroundColor }" aria-label="Background color" /></template>
+                                <v-color-picker v-model="design.backgroundColor" mode="hex" :modes="['hex']" />
+                              </v-menu>
+                              <span class="text-caption text-medium-emphasis">{{ design.backgroundColor }}</span>
+                            </div>
+                          </MpFormField>
+                          <template v-else>
+                            <v-text-field v-model="design.backgroundImage" label="Image URL" placeholder="https://" />
+                            <v-btn variant="tonal" block prepend-icon="upload" class="text-none">Upload image</v-btn>
+                          </template>
+                        </MpFormGrid>
                       </v-expansion-panel-text>
                     </v-expansion-panel>
 
                     <v-expansion-panel title="Optional functions">
                       <v-expansion-panel-text>
-                        <v-checkbox v-model="optional.redirectEnabled" label="Redirect after submission" density="compact" hide-details class="mb-1" />
-                        <v-text-field v-if="optional.redirectEnabled" v-model="optional.redirectUrl" label="Redirect URL" placeholder="https://mystore.com/thank-you" variant="outlined" density="compact" class="mb-3" />
+                        <MpFormGrid>
+                          <v-checkbox v-model="optional.redirectEnabled" label="Redirect after submission" />
+                          <v-text-field v-if="optional.redirectEnabled" v-model="optional.redirectUrl" label="Redirect URL" placeholder="https://mystore.com/thank-you" />
 
-                        <v-checkbox v-model="optional.notifyEmailEnabled" label="Notify email on subscriber" density="compact" hide-details class="mb-1" />
-                        <v-text-field v-if="optional.notifyEmailEnabled" v-model="optional.notifyEmail" label="Notify email address" placeholder="team@mystore.com" variant="outlined" density="compact" class="mb-3" />
+                          <v-checkbox v-model="optional.notifyEmailEnabled" label="Notify email on subscriber" />
+                          <v-text-field v-if="optional.notifyEmailEnabled" v-model="optional.notifyEmail" label="Notify email address" placeholder="team@mystore.com" />
 
-                        <v-switch v-model="optional.recaptchaEnabled" label="ReCaptcha" color="primary" density="compact" hide-details class="mb-1" />
-                        <v-switch v-model="optional.doubleOptInEnabled" label="Double opt-in" color="primary" density="compact" hide-details />
+                          <v-switch v-model="optional.recaptchaEnabled" label="ReCaptcha" />
+                          <v-switch v-model="optional.doubleOptInEnabled" label="Double opt-in" />
+                        </MpFormGrid>
                       </v-expansion-panel-text>
                     </v-expansion-panel>
                   </v-expansion-panels>
@@ -541,7 +571,7 @@ function publishForm() {
         <!-- Live device preview -->
         <div class="flex-grow-1 bg-background d-flex flex-column align-center overflow-auto pa-6">
           <div class="d-flex align-center gap-2 mb-4">
-            <v-btn-toggle v-model="previewDevice" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
+            <v-btn-toggle v-model="previewDevice" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
               <v-btn value="desktop" class="text-none" size="small" prepend-icon="monitor">Desktop</v-btn>
               <v-btn value="mobile" class="text-none" size="small" prepend-icon="smartphone">Mobile</v-btn>
               <v-btn value="fullscreen" class="text-none" size="small" prepend-icon="maximize">Fullscreen</v-btn>
@@ -600,7 +630,7 @@ function publishForm() {
 
           <!-- canvas -->
           <main class="fb-canvas flex-grow-1 pa-6 d-flex flex-column align-center overflow-y-auto">
-            <v-btn-toggle v-model="contentTab" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
+            <v-btn-toggle v-model="contentTab" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
               <v-btn value="main" class="text-none" size="small">Main Form</v-btn>
               <v-btn value="thankyou" class="text-none" size="small">Thank You</v-btn>
             </v-btn-toggle>
@@ -650,42 +680,47 @@ function publishForm() {
           <!-- settings -->
           <aside class="fb-settings pa-4">
             <template v-if="selectedBlock">
-              <div class="text-subtitle-2 font-weight-bold mb-4 text-capitalize">{{ selectedBlock.type.replace('_', ' ') }} settings</div>
+              <MpFormGrid>
+                <MpFormSection :title="`${selectedBlock.type.replace('_', ' ')} settings`" />
 
-              <template v-if="selectedBlock.type === 'title' || selectedBlock.type === 'paragraph' || selectedBlock.type === 'text'">
-                <v-textarea v-model="selectedBlock.text" label="Text" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="3" class="mb-4" hide-details />
-              </template>
-              <template v-else-if="selectedBlock.type === 'list'">
-                <v-textarea :model-value="listText(selectedBlock)" label="Items (one per line)" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="3" class="mb-4" hide-details @update:model-value="v => setListText(selectedBlock!, v)" />
-              </template>
-              <template v-else-if="selectedBlock.type === 'image' || selectedBlock.type === 'video'">
-                <v-text-field v-model="selectedBlock.alt" label="Alt text / caption" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
-                <v-btn variant="tonal" block prepend-icon="upload" class="text-none mb-4">Upload media</v-btn>
-              </template>
-              <template v-else-if="selectedBlock.type === 'spacer'">
-                <v-slider v-model="selectedBlock.height" label="Height" :min="8" :max="96" :step="4" thumb-label class="mb-4" hide-details />
-              </template>
-              <template v-else-if="selectedBlock.type === 'html'">
-                <v-textarea v-model="selectedBlock.text" label="HTML" variant="outlined" density="comfortable" rounded="lg" auto-grow rows="5" class="mb-4 fb-mono" hide-details />
-              </template>
-              <template v-else-if="selectedBlock.type === 'email_submit'">
-                <v-text-field v-model="selectedBlock.text" label="Submit button label" variant="outlined" density="comfortable" rounded="lg" class="mb-4" hide-details />
-                <div class="text-caption text-medium-emphasis mb-4">The email field and submit button are always collected — this managed block can't be removed.</div>
-              </template>
-              <template v-else>
-                <div class="text-body-2 text-medium-emphasis mb-4">No content options for this block.</div>
-              </template>
+                <template v-if="selectedBlock.type === 'title' || selectedBlock.type === 'paragraph' || selectedBlock.type === 'text'">
+                  <v-textarea v-model="selectedBlock.text" label="Text" auto-grow rows="3" />
+                </template>
+                <template v-else-if="selectedBlock.type === 'list'">
+                  <v-textarea :model-value="listText(selectedBlock)" label="Items (one per line)" auto-grow rows="3" @update:model-value="v => setListText(selectedBlock!, v)" />
+                </template>
+                <template v-else-if="selectedBlock.type === 'image' || selectedBlock.type === 'video'">
+                  <v-text-field v-model="selectedBlock.alt" label="Alt text / caption" />
+                  <v-btn variant="tonal" block prepend-icon="upload" class="text-none">Upload media</v-btn>
+                </template>
+                <template v-else-if="selectedBlock.type === 'spacer'">
+                  <v-slider v-model="selectedBlock.height" label="Height" :min="8" :max="96" :step="4" thumb-label />
+                </template>
+                <template v-else-if="selectedBlock.type === 'html'">
+                  <v-textarea v-model="selectedBlock.text" label="HTML" auto-grow rows="5" class="fb-mono" />
+                </template>
+                <template v-else-if="selectedBlock.type === 'email_submit'">
+                  <v-text-field v-model="selectedBlock.text" label="Submit button label" />
+                  <div class="text-caption text-medium-emphasis">The email field and submit button are always collected — this managed block can't be removed.</div>
+                </template>
+                <template v-else>
+                  <div class="text-body-2 text-medium-emphasis">No content options for this block.</div>
+                </template>
 
-              <template v-if="['title', 'paragraph', 'text', 'social', 'icons'].includes(selectedBlock.type)">
-                <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2">Alignment</div>
-                <v-btn-toggle v-model="selectedBlock.align" mandatory density="comfortable" variant="outlined" divided class="mb-4">
-                  <v-btn value="left" icon="align-left" size="small" aria-label="Align left" />
-                  <v-btn value="center" icon="align-center" size="small" aria-label="Align center" />
-                  <v-btn value="right" icon="align-right" size="small" aria-label="Align right" />
-                </v-btn-toggle>
-              </template>
+                <MpFormField v-if="['title', 'paragraph', 'text', 'social', 'icons'].includes(selectedBlock.type)" label="Alignment">
+                  <div>
+                    <v-btn-toggle v-model="selectedBlock.align" mandatory>
+                      <v-btn value="left" icon="align-left" size="small" aria-label="Align left" />
+                      <v-btn value="center" icon="align-center" size="small" aria-label="Align center" />
+                      <v-btn value="right" icon="align-right" size="small" aria-label="Align right" />
+                    </v-btn-toggle>
+                  </div>
+                </MpFormField>
 
-              <v-btn v-if="selectedBlock.type !== 'email_submit'" variant="text" color="error" prepend-icon="trash-2" class="text-none" @click="removeContentBlock(selectedBlock.id)">Delete block</v-btn>
+                <div v-if="selectedBlock.type !== 'email_submit'">
+                  <v-btn variant="text" color="error" prepend-icon="trash-2" class="text-none" @click="removeContentBlock(selectedBlock.id)">Delete block</v-btn>
+                </div>
+              </MpFormGrid>
             </template>
             <div v-else class="text-body-2 text-medium-emphasis pt-4">Select a block to edit it, or add one from the left.</div>
           </aside>
@@ -700,7 +735,7 @@ function publishForm() {
       <!-- STEP 5: Review & Publish -->
       <div v-else class="fb__scroll d-flex justify-center pt-8 pa-4">
         <div style="max-width:680px;width:100%;">
-          <v-btn-toggle v-model="reviewTab" density="compact" variant="outlined" divided mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
+          <v-btn-toggle v-model="reviewTab" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
             <v-btn value="details" class="text-none" size="small">Details</v-btn>
             <v-btn value="preview" class="text-none" size="small">Preview</v-btn>
           </v-btn-toggle>
@@ -715,29 +750,35 @@ function publishForm() {
 
             <v-card variant="flat" border rounded="lg" class="pa-8 mb-4">
               <div class="text-h6 font-weight-bold mb-4">Form Details</div>
-              <v-text-field v-model="formName" label="Name" variant="outlined" density="compact" class="mb-4" />
-              <v-list density="compact" class="pa-0">
-                <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">smartphone</v-icon></template><v-list-item-title class="text-body-2"><strong>Type:</strong> {{ formType }}</v-list-item-title></v-list-item>
-                <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">list</v-icon></template><v-list-item-title class="text-body-2"><strong>Lists:</strong> {{ listNames }}</v-list-item-title></v-list-item>
-                <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">layout-panel-top</v-icon></template><v-list-item-title class="text-body-2"><strong>Position:</strong> {{ positionLabel }}</v-list-item-title></v-list-item>
-                <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">calendar-plus</v-icon></template><v-list-item-title class="text-body-2"><strong>Created:</strong> {{ persistedForm?.createdAt ?? 'Not yet saved' }}</v-list-item-title></v-list-item>
-                <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">calendar-clock</v-icon></template><v-list-item-title class="text-body-2"><strong>Modified:</strong> {{ persistedForm?.updated ?? '—' }}</v-list-item-title></v-list-item>
-                <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">rocket</v-icon></template><v-list-item-title class="text-body-2"><strong>Published:</strong> {{ persistedForm?.publishedAt ?? 'Not yet published' }}</v-list-item-title></v-list-item>
-              </v-list>
+              <MpFormGrid>
+                <v-text-field v-model="formName" label="Name" />
+                <v-list density="compact" class="pa-0">
+                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">smartphone</v-icon></template><v-list-item-title class="text-body-2"><strong>Type:</strong> {{ formType }}</v-list-item-title></v-list-item>
+                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">list</v-icon></template><v-list-item-title class="text-body-2"><strong>Lists:</strong> {{ listNames }}</v-list-item-title></v-list-item>
+                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">layout-panel-top</v-icon></template><v-list-item-title class="text-body-2"><strong>Position:</strong> {{ positionLabel }}</v-list-item-title></v-list-item>
+                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">calendar-plus</v-icon></template><v-list-item-title class="text-body-2"><strong>Created:</strong> {{ persistedForm?.createdAt ?? 'Not yet saved' }}</v-list-item-title></v-list-item>
+                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">calendar-clock</v-icon></template><v-list-item-title class="text-body-2"><strong>Modified:</strong> {{ persistedForm?.updated ?? '—' }}</v-list-item-title></v-list-item>
+                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">rocket</v-icon></template><v-list-item-title class="text-body-2"><strong>Published:</strong> {{ persistedForm?.publishedAt ?? 'Not yet published' }}</v-list-item-title></v-list-item>
+                </v-list>
+              </MpFormGrid>
             </v-card>
 
             <v-card variant="flat" border rounded="lg" class="pa-8 mb-4">
               <div class="text-h6 font-weight-bold mb-1">Website Embed</div>
               <div class="text-body-2 text-medium-emphasis mb-3">Paste this snippet before the closing <code>&lt;/body&gt;</code> tag.</div>
-              <v-textarea :model-value="embedScript" readonly variant="outlined" density="compact" rows="2" class="fb-mono mb-2" hide-details />
-              <v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedScript)">Copy script</v-btn>
+              <MpFormGrid>
+                <v-textarea :model-value="embedScript" label="Embed script" readonly rows="2" class="fb-mono" />
+                <div><v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedScript)">Copy script</v-btn></div>
+              </MpFormGrid>
             </v-card>
 
             <v-card variant="flat" border rounded="lg" class="pa-8">
               <div class="text-h6 font-weight-bold mb-1">Manual Integration</div>
               <div class="text-body-2 text-medium-emphasis mb-3">For custom placement inside your page markup.</div>
-              <v-textarea :model-value="manualScript" readonly variant="outlined" density="compact" rows="4" class="fb-mono mb-2" hide-details />
-              <v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(manualScript)">Copy snippet</v-btn>
+              <MpFormGrid>
+                <v-textarea :model-value="manualScript" label="Manual snippet" readonly rows="4" class="fb-mono" />
+                <div><v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(manualScript)">Copy snippet</v-btn></div>
+              </MpFormGrid>
             </v-card>
           </template>
 

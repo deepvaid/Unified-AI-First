@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const config: StorybookConfig = {
   stories: [
+    '../src/**/*.mdx',
     '../src/**/*.stories.@(ts|tsx)',
   ],
   addons: [

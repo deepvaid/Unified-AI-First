@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useToast } from '@/composables/useToast'
 
 const script = `<script src="https://track.maropost.com/js/track.js"><\/script>
@@ -33,23 +34,22 @@ async function copyScript() {
         <h3 class="text-subtitle-1 font-weight-bold">Primary Tracking Domain</h3>
         <v-chip color="success" size="small" variant="tonal">Verified</v-chip>
       </div>
-      <!-- aria-label, not `label`: the <h3> above is the visible label, so a Vuetify
-           label would duplicate it on screen. Without either, Vuetify still emits
-           aria-labelledby pointing at a label element it never renders, leaving the
-           field with a dangling reference and no accessible name at all. -->
-      <v-text-field
-        readonly
-        variant="outlined"
-        density="comfortable"
-        model-value="track.maropost.com"
-        aria-label="Primary tracking domain"
-        class="mb-4"
-      />
-      <div class="text-body-2 text-medium-emphasis mb-3">Place the following script snippet in the &lt;head&gt; of your website.</div>
-      <div class="code-block">
-        &lt;script src="https://track.maropost.com/js/track.js"&gt;&lt;/script&gt;<br>
-        &lt;script&gt;mp.init('12345-ABCD');&lt;/script&gt;
-      </div>
+      <MpFormGrid>
+        <!-- aria-label, not `label`: the <h3> above is the visible label, so a Vuetify
+             label would duplicate it on screen. Without either, Vuetify still emits
+             aria-labelledby pointing at a label element it never renders, leaving the
+             field with a dangling reference and no accessible name at all. -->
+        <v-text-field
+          readonly
+          model-value="track.maropost.com"
+          aria-label="Primary tracking domain"
+        />
+        <div class="text-body-2 text-medium-emphasis">Place the following script snippet in the &lt;head&gt; of your website.</div>
+        <div class="code-block">
+          &lt;script src="https://track.maropost.com/js/track.js"&gt;&lt;/script&gt;<br>
+          &lt;script&gt;mp.init('12345-ABCD');&lt;/script&gt;
+        </div>
+      </MpFormGrid>
     </v-card>
   </div>
 </template>

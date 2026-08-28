@@ -2,7 +2,7 @@
  * White Sidebar — applied when [data-sidebar="white"] is on <html>.
  * Rule-for-rule mirror of sidebar-dark.css. White chrome (side nav + head
  * nav) over the metal-gray content canvas; shell-variants.css binds
- * --mp-nav-surface to #ffffff for this axis and repaints the canvas.
+ * --mp-nav-surface to var(--mp-color-light-surface) for this axis and repaints the canvas.
  * Values are pinned (not theme-alias driven) so the sidebar stays white
  * even when the app theme is dark — the account's setting wins by design.
  */
@@ -10,17 +10,17 @@
 [data-sidebar="white"] .mp-sidebar,
 [data-sidebar="white"] .rail-flyout-card {
   /* Bound to the shared nav surface (shell-variants.css) so the side nav and
-     head nav always match; #ffffff on this axis. */
-  --sidebar-bg: var(--mp-nav-surface, #ffffff);
-  --sidebar-border: #e2e8f0;
+     head nav always match; var(--mp-color-light-surface) on this axis. */
+  --sidebar-bg: var(--mp-nav-surface, var(--mp-color-light-surface));
+  --sidebar-border: var(--mp-color-light-borderSubtle);
   /* Group dividers: a whisper, not a rule — grouping should read as rhythm. */
-  --sidebar-line: rgba(26, 24, 20, 0.06);
-  --sidebar-text: #1a1814;
-  --sidebar-muted: #5a6573;
-  --sidebar-hover-bg: rgba(26, 24, 20, 0.06);
-  --sidebar-active-bg: rgba(26, 24, 20, 0.10);
-  --sidebar-active-text: #1a1814;
-  --sidebar-focus-ring: rgba(26, 24, 20, 0.55);
+  --sidebar-line: rgba(var(--mp-rgb-color-light-textPrimary), 0.06);
+  --sidebar-text: var(--mp-color-light-textPrimary);
+  --sidebar-muted: var(--mp-color-light-textMuted);
+  --sidebar-hover-bg: rgba(var(--mp-rgb-color-light-textPrimary), 0.06);
+  --sidebar-active-bg: rgba(var(--mp-rgb-color-light-textPrimary), 0.10);
+  --sidebar-active-text: var(--mp-color-light-textPrimary);
+  --sidebar-focus-ring: rgba(var(--mp-rgb-color-light-textPrimary), 0.55);
 }
 
 [data-sidebar="white"] .mp-sidebar,
@@ -76,7 +76,7 @@
 }
 
 [data-sidebar="white"] .mp-sidebar .sidebar-crown {
-  color: rgba(26, 24, 20, 0.4) !important;
+  color: rgba(var(--mp-rgb-color-light-textPrimary), 0.4) !important;
 }
 
 [data-sidebar="white"] .mp-sidebar .rail-brand-box {
@@ -138,27 +138,27 @@
 }
 
 [data-sidebar="white"] .mp-sidebar .v-switch .v-switch__track {
-  background: rgba(26, 24, 20, 0.2) !important;
+  background: rgba(var(--mp-rgb-color-light-textPrimary), 0.2) !important;
 }
 
 [data-sidebar="white"] .mp-sidebar ::-webkit-scrollbar-thumb {
-  background: rgba(26, 24, 20, 0.18);
+  background: rgba(var(--mp-rgb-color-light-textPrimary), 0.18);
 }
 
 [data-sidebar="white"] .mp-sidebar ::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 24, 20, 0.3);
+  background: rgba(var(--mp-rgb-color-light-textPrimary), 0.3);
 }
 
 [data-sidebar="white"] .rail-flyout-card {
-  --sidebar-border: #e2e8f0 !important;
-  --sidebar-text: #1a1814 !important;
-  --sidebar-muted: #5a6573 !important;
-  --sidebar-hover-bg: rgba(26, 24, 20, 0.06) !important;
-  --sidebar-active-bg: rgba(26, 24, 20, 0.10) !important;
-  --sidebar-active-text: #1a1814 !important;
+  --sidebar-border: var(--mp-color-light-borderSubtle) !important;
+  --sidebar-text: var(--mp-color-light-textPrimary) !important;
+  --sidebar-muted: var(--mp-color-light-textMuted) !important;
+  --sidebar-hover-bg: rgba(var(--mp-rgb-color-light-textPrimary), 0.06) !important;
+  --sidebar-active-bg: rgba(var(--mp-rgb-color-light-textPrimary), 0.10) !important;
+  --sidebar-active-text: var(--mp-color-light-textPrimary) !important;
   background: var(--sidebar-bg) !important;
   border-color: var(--sidebar-border) !important;
-  box-shadow: 0 18px 40px rgba(26, 24, 20, 0.14), 0 2px 8px rgba(26, 24, 20, 0.08) !important;
+  box-shadow: 0 18px 40px rgba(var(--mp-rgb-color-light-textPrimary), 0.14), 0 2px 8px rgba(var(--mp-rgb-color-light-textPrimary), 0.08) !important;
 }
 
 [data-sidebar="white"] .rail-flyout-card__header {
@@ -185,10 +185,10 @@
 }
 
 [data-sidebar="white"] .rail-flyout-card::-webkit-scrollbar-thumb {
-  background: rgba(26, 24, 20, 0.18);
+  background: rgba(var(--mp-rgb-color-light-textPrimary), 0.18);
   border-radius: 999px;
 }
 
 [data-sidebar="white"] .rail-flyout-card::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 24, 20, 0.28);
+  background: rgba(var(--mp-rgb-color-light-textPrimary), 0.28);
 }

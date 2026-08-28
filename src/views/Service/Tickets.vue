@@ -6,6 +6,8 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
@@ -230,7 +232,10 @@ function bulkDelete() {
     <div class="tkt-workspace d-flex gap-4 mt-4">
       <!-- Left pane: Ticket list -->
       <v-card variant="flat" border rounded="lg" class="tkt-list-panel d-flex flex-column overflow-hidden">
-        <!-- In-pane controls: inbox switcher + search -->
+        <!-- In-pane controls: inbox switcher + search. These are dense list-pane
+             controls, not form fields — `density="compact"` and the bare
+             `hide-details` are deliberate suppression so the pane header stays
+             one row tall. -->
         <div class="tkt-list-head px-3 pt-2 pb-3">
           <v-select
             v-model="inboxFilter"
@@ -247,11 +252,9 @@ function bulkDelete() {
             prepend-inner-icon="search"
             placeholder="Search tickets…"
             aria-label="Search tickets"
-            variant="outlined"
             density="compact"
             hide-details
             clearable
-            rounded="lg"
           />
         </div>
         <v-divider />
@@ -300,7 +303,7 @@ function bulkDelete() {
               </div>
               <div class="text-body-2 tkt-row__subject w-100 mb-2">{{ ticket.subject }}</div>
               <div class="d-flex align-center justify-space-between w-100">
-                <MpStatusChip :status="ticket.status" type="ticket" size="x-small" />
+                <MpStatusChip :status="ticket.status" type="ticket" size="sm" />
                 <span v-if="inboxFilter === 'all'" class="tkt-row__origin text-caption text-medium-emphasis">
                   <v-icon size="12">store</v-icon>
                   {{ ticket.inbox }}
@@ -325,7 +328,7 @@ function bulkDelete() {
             <div class="text-subtitle-1 font-weight-semibold tkt-detail__subject mb-1">{{ activeTicket.subject }}</div>
             <div class="d-flex align-center gap-2 flex-wrap">
               <span class="text-caption text-medium-emphasis">{{ activeTicket.number }}</span>
-              <MpStatusChip :status="activeTicket.status" type="ticket" size="x-small" />
+              <MpStatusChip :status="activeTicket.status" type="ticket" size="sm" />
               <v-chip
                 v-for="tag in activeTicket.tags"
                 :key="tag"
@@ -373,7 +376,7 @@ function bulkDelete() {
           </div>
           <div class="tkt-prop">
             <span>Priority</span>
-            <MpStatusChip :status="activeTicket.priority" type="priority" size="x-small" variant="flat" class="mt-1" />
+            <MpStatusChip :status="activeTicket.priority" type="priority" size="sm" variant="flat" class="mt-1" />
           </div>
           <div class="tkt-prop">
             <span>Assignee</span>
@@ -428,7 +431,6 @@ function bulkDelete() {
               v-model="replyBody"
               :placeholder="replyPlaceholder"
               variant="plain"
-              density="comfortable"
               rows="3"
               hide-details
               class="tkt-composer__input px-4 pt-1"
@@ -526,101 +528,78 @@ function bulkDelete() {
     title="Create New Ticket"
     subtitle="Log a support request on behalf of a customer"
   >
-    <!-- Section: Customer -->
-    <div class="tkt-form-section text-overline text-medium-emphasis mb-3">Customer</div>
-    <v-text-field
-      v-model="newTicket.customer"
-      label="Customer Name"
-      variant="outlined"
-      density="comfortable"
-      class="mb-3"
-      prepend-inner-icon="user"
-      :error-messages="formErrors.customer"
-      required
-    />
-    <v-text-field
-      v-model="newTicket.email"
-      label="Customer Email"
-      type="email"
-      variant="outlined"
-      density="comfortable"
-      class="mb-4"
-      prepend-inner-icon="mail"
-      :error-messages="formErrors.email"
-      required
-    />
+    <MpFormSection title="Customer" />
+    <MpFormGrid>
+      <v-text-field
+        v-model="newTicket.customer"
+        label="Customer Name *"
+        prepend-inner-icon="user"
+        :error-messages="formErrors.customer"
+        required
+      />
+      <v-text-field
+        v-model="newTicket.email"
+        label="Customer Email *"
+        type="email"
+        prepend-inner-icon="mail"
+        :error-messages="formErrors.email"
+        required
+      />
+    </MpFormGrid>
 
-    <v-divider class="mb-4" />
-
-    <!-- Section: Ticket Details -->
-    <div class="tkt-form-section text-overline text-medium-emphasis mb-3">Ticket Details</div>
-    <v-text-field
-      v-model="newTicket.subject"
-      label="Subject"
-      variant="outlined"
-      density="comfortable"
-      class="mb-3"
-      placeholder="Brief description of the issue"
-      :error-messages="formErrors.subject"
-      required
-    />
-    <v-row dense class="mb-3">
-      <v-col cols="6">
-        <v-select
-          v-model="newTicket.category"
-          label="Category"
-          :items="['General', 'Order Issue', 'Billing', 'Technical', 'Returns & Refunds', 'Shipping']"
-          variant="outlined"
-          density="comfortable"
-        />
-      </v-col>
-      <v-col cols="6">
-        <v-select
-          v-model="newTicket.priority"
-          label="Priority"
-          :items="[
-            { title: 'Urgent', value: 'Urgent' },
-            { title: 'High', value: 'High' },
-            { title: 'Normal', value: 'Normal' },
-            { title: 'Low', value: 'Low' },
-          ]"
-          variant="outlined"
-          density="comfortable"
-        >
-          <template #selection="{ item }">
-            <MpStatusChip :status="item.value" type="priority" size="x-small" variant="flat" />
-          </template>
-        </v-select>
-      </v-col>
-    </v-row>
-    <v-textarea
-      v-model="newTicket.description"
-      label="Description"
-      variant="outlined"
-      density="comfortable"
-      rows="4"
-      class="mb-3"
-      placeholder="Describe the customer's issue in detail…"
-    />
-    <v-select
-      v-model="newTicket.inbox"
-      label="Inbox"
-      :items="SUPPORT_INBOXES"
-      variant="outlined"
-      density="comfortable"
-      class="mb-3"
-      prepend-inner-icon="store"
-      hint="The store or sales channel this request belongs to"
-      persistent-hint
-    />
-    <v-select
-      v-model="newTicket.assignee"
-      label="Assign To"
-      :items="['Auto-assign', 'Sarah Connor', 'Mike Zhang', 'Priya Sharma']"
-      variant="outlined"
-      density="comfortable"
-      prepend-inner-icon="log-in"
-    />
+    <MpFormSection title="Ticket Details" />
+    <MpFormGrid :cols="2">
+      <v-text-field
+        v-model="newTicket.subject"
+        label="Subject *"
+        class="mp-form-grid__full"
+        placeholder="Brief description of the issue"
+        :error-messages="formErrors.subject"
+        required
+      />
+      <v-select
+        v-model="newTicket.category"
+        label="Category"
+        :items="['General', 'Order Issue', 'Billing', 'Technical', 'Returns & Refunds', 'Shipping']"
+      />
+      <v-select
+        v-model="newTicket.priority"
+        label="Priority"
+        :items="[
+          { title: 'Urgent', value: 'Urgent' },
+          { title: 'High', value: 'High' },
+          { title: 'Normal', value: 'Normal' },
+          { title: 'Low', value: 'Low' },
+        ]"
+      >
+        <template #selection="{ item }">
+          <MpStatusChip :status="item.value" type="priority" size="sm" variant="flat" />
+        </template>
+      </v-select>
+      <v-textarea
+        v-model="newTicket.description"
+        label="Description"
+        rows="5"
+        class="mp-form-grid__full"
+        placeholder="Describe the customer's issue in detail…"
+      />
+      <v-select
+        v-model="newTicket.inbox"
+        label="Inbox"
+        :items="SUPPORT_INBOXES"
+        class="mp-form-grid__full"
+        prepend-inner-icon="store"
+        hint="The store or sales channel this request belongs to"
+        persistent-hint
+      />
+      <v-select
+        v-model="newTicket.assignee"
+        label="Assign To"
+        :items="['Auto-assign', 'Sarah Connor', 'Mike Zhang', 'Priya Sharma']"
+        class="mp-form-grid__full"
+        prepend-inner-icon="log-in"
+      />
+    </MpFormGrid>
 
     <template #footer>
       <v-btn variant="text" class="text-none" @click="newTicketDrawer = false">Cancel</v-btn>
@@ -696,8 +675,14 @@ function bulkDelete() {
   padding-top: 4px;
   padding-bottom: 4px;
 }
+/* P6-12 correction: this stays. It looks like the affix hand-patch that phase set
+   out to delete, but it is not — the app-level affix rules are scoped to the
+   outlined variant, and this control is `variant="plain"`, which Vuetify
+   deliberately top-aligns. Combined with the bespoke 36px input height above, the
+   icon needs its own offset. Not a form field: it is the inbox switcher in the
+   ticket toolbar. */
 .tkt-inbox-switch :deep(.v-field__prepend-inner) {
-  padding-top: 6px;
+  padding-top: var(--mp-space-6);
   color: rgba(var(--v-theme-on-surface), 0.6);
 }
 
@@ -882,12 +867,6 @@ function bulkDelete() {
 .tkt-composer__input :deep(textarea) {
   font-size: 14px;
   line-height: 1.6;
-}
-
-/* ── Form drawer ───────────────────────────────────────────────── */
-.tkt-form-section {
-  font-size: 10px;
-  letter-spacing: 0.08em;
 }
 
 /* ── Responsive ────────────────────────────────────────────────── */

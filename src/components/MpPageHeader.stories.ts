@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
 import MpPageHeader from './MpPageHeader.vue'
-import { darkModeGlobals } from '@/stories/storybookTheme'
 
 const meta = {
-  title: 'Layout/MpPageHeader',
+  title: 'Molecules/MpPageHeader',
   component: MpPageHeader,
   tags: ['autodocs'],
   parameters: {
@@ -62,7 +61,7 @@ The \`MpPageHeader\` sits at the very top of main application views. It provides
     level: { control: 'select', options: [1, 2], description: 'Heading level: 1 = page header (h1, display-scale title), 2 = section-level header (h2, modest title).' },
     density: { control: 'select', options: ['default', 'compact'], description: 'Bottom-margin density of the header block.' },
     eyebrow: { control: 'text', description: 'Optional muted, uppercase, tracked label rendered above the title (e.g. "COMMERCE · ORDERS").' },
-    variant: { control: 'select', options: ['default', 'display'], description: "'display' renders the title as a two-tone display-scale masthead; the subtitle becomes the muted second line at the same size. Used on module landing pages." },
+    emphasis: { control: 'inline-radio', options: ['default', 'prominent'], description: "Visual weight. 'prominent' renders the title as a two-tone display-scale masthead; the subtitle becomes the muted second line at the same size. Used on module landing pages. Shared system-wide vocabulary (P2-7)." },
     actions: { control: false, description: 'Slot — page-level action buttons, right-aligned next to the title.', table: { category: 'slots' } },
     tabs: { control: false, description: 'Slot — rendered below the header block, e.g. `MpFilterTabs`.', table: { category: 'slots' } },
   },
@@ -76,6 +75,87 @@ export const Default: Story = {
     title: 'Sales Orders',
     subtitle: 'Manage and fulfill customer orders',
   },
+}
+
+/** Both emphasis levels side by side. `prominent` stacks title and subtitle as a two-tone display-scale masthead. */
+export const Variants: Story = {
+  render: () => ({
+    components: { MpPageHeader },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">emphasis="default"</div>
+          <MpPageHeader title="Orders" subtitle="Every order across your sales channels" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">emphasis="prominent"</div>
+          <MpPageHeader emphasis="prominent" title="Marketing" subtitle="Campaigns, journeys, and content in one place" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** The `level` ramp — there is no `size` prop; heading level is what scales this component. */
+export const Sizes: Story = {
+  render: () => ({
+    components: { MpPageHeader },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">level=1 — page masthead (h1)</div>
+          <MpPageHeader :level="1" title="Orders" subtitle="Every order across your sales channels" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">level=2 — section / drawer header (h2)</div>
+          <MpPageHeader :level="2" title="Shipping addresses" subtitle="Where this contact receives deliveries" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">level=2, density="compact" — settings pages</div>
+          <MpPageHeader :level="2" density="compact" title="General" subtitle="Account name, timezone, and locale" />
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
+}
+
+/** Every combination of the optional parts, so a missing subtitle or eyebrow is verifiable. */
+export const States: Story = {
+  render: () => ({
+    components: { MpPageHeader },
+    template: `
+      <div class="d-flex flex-column ga-8">
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">title only</div>
+          <MpPageHeader title="Orders" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with subtitle</div>
+          <MpPageHeader title="Orders" subtitle="Every order across your sales channels" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with eyebrow</div>
+          <MpPageHeader eyebrow="COMMERCE · ORDERS" title="Order #10482" subtitle="Placed 12 Apr 2026" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with back link — tab to it to see the focus ring</div>
+          <MpPageHeader title="Order #10482" subtitle="Placed 12 Apr 2026" back-to="/accounts/2000290/orders" />
+        </div>
+        <div>
+          <div class="text-caption text-medium-emphasis mb-2">with actions</div>
+          <MpPageHeader title="Orders" subtitle="Every order across your sales channels">
+            <template #actions>
+              <v-btn variant="outlined" class="text-none">Export</v-btn>
+              <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plus">New order</v-btn>
+            </template>
+          </MpPageHeader>
+        </div>
+      </div>
+    `,
+  }),
+  args: {} as never,
 }
 
 export const WithActions: Story = {
@@ -121,15 +201,6 @@ export const WithEyebrow: Story = {
   },
 }
 
-/** Display variant: title and subtitle stack as a two-tone display-scale masthead. Used on module landing pages. */
-export const DisplayVariant: Story = {
-  args: {
-    title: 'Marketing',
-    subtitle: 'Campaigns, journeys, and content in one place',
-    variant: 'display',
-  },
-}
-
 /** Detail page with the back arrow to the parent list (`backTo`). Tab to it to see the focus ring. */
 export const WithBackLink: Story = {
   args: {
@@ -159,10 +230,4 @@ export const LongTitle: Story = {
     title: 'Springtime Mega Sale — Returning VIP Customers (AU + NZ) Re-Engagement Program 2026',
     subtitle: 'A deliberately long subtitle that explains, in more words than strictly necessary, what this page covers so the wrapping behaviour of the header is visible.',
   },
-}
-
-/** Title, subtitle, and action row on the dark theme. */
-export const DarkMode: Story = {
-  ...WithActions,
-  globals: darkModeGlobals,
 }

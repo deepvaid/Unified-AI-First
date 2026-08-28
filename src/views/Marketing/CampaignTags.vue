@@ -132,15 +132,12 @@ function notify(text: string) { toast.success(text) }
     <!-- Create / edit drawer -->
     <MpFormDrawer
       v-model="drawer"
-      :title="editingId !== null ? 'Edit Tag' : 'New Tag'"
-      :width="420"
+      :title="editingId !== null ? 'Edit Tag' : 'New Tag'" size="sm"
     >
       <v-text-field
         v-model="tagName"
         label="Tag name"
         placeholder="e.g. Promotions"
-        variant="outlined"
-        density="comfortable"
         autofocus
         :rules="[v => !!v || 'Name is required']"
         @keydown.enter="saveTag"
@@ -154,19 +151,17 @@ function notify(text: string) { toast.success(text) }
     </MpFormDrawer>
 
     <!-- Import tags drawer -->
-    <MpFormDrawer v-model="importDialog" title="Import Tags" :width="420">
-      <p class="text-body-2 text-medium-emphasis mb-3">
+    <MpFormDrawer v-model="importDialog" title="Import Tags" size="sm">
+      <p class="text-body-2 text-medium-emphasis">
         Paste tag names separated by commas or new lines. Each one becomes a new tag.
       </p>
       <v-textarea
         v-model="importText"
-        variant="outlined"
-        density="comfortable"
-        rows="6"
+        label="Tag names"
+        rows="5"
         placeholder="Newsletter, Promo_2026, Onboarding"
-        hide-details
       />
-      <div v-if="importPreview.length" class="text-caption text-medium-emphasis mt-2">
+      <div v-if="importPreview.length" class="text-caption text-medium-emphasis">
         {{ importPreview.length }} tag{{ importPreview.length === 1 ? '' : 's' }} ready to import
       </div>
       <template #footer>
