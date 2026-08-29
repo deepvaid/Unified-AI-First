@@ -214,7 +214,7 @@ async function onApproved() {
     </main>
 
     <div v-if="provisioning" class="plg-checkout__provisioning">
-      <v-card flat rounded="lg" class="pa-6 provisioning-card">
+      <v-card flat border rounded="lg" class="pa-6 provisioning-card">
         <div v-for="(step, i) in provisioningSteps" :key="step" class="provisioning-step">
           <v-progress-circular v-if="provisioningDone <= i" indeterminate size="20" width="2" color="primary" />
           <v-icon v-else color="success" size="20">circle-check</v-icon>

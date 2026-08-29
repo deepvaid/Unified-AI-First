@@ -545,14 +545,15 @@ const usageRows = computed(() => {
 
     <!-- Add-on purchase drawer -->
     <MpFormDrawer v-model="addonDrawerOpen" title="Add add-on">
-      <div v-if="selectedAddon" class="addon-drawer">
-        <v-icon size="28" color="primary" class="mb-2">{{ selectedAddon.icon }}</v-icon>
+      <!-- Direct body children: the drawer shell's gap owns the rhythm. -->
+      <template v-if="selectedAddon">
+        <v-icon size="28" color="primary">{{ selectedAddon.icon }}</v-icon>
         <h3 class="addon-drawer__name">{{ selectedAddon.name }}</h3>
         <p class="addon-drawer__desc">{{ selectedAddon.description }}</p>
         <div class="addon-drawer__price">
           {{ selectedAddon.monthly !== null ? `$${selectedAddon.monthly}` : 'Custom' }}<span v-if="selectedAddon.monthly !== null"> / month</span>
         </div>
-      </div>
+      </template>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="addonDrawerOpen = false">Cancel</v-btn>
         <v-btn variant="flat" color="primary" class="text-none" @click="confirmPurchase">Confirm purchase</v-btn>
@@ -733,7 +734,7 @@ const usageRows = computed(() => {
   gap: 12px;
   padding: 14px 16px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--mp-radius-12);
   background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
@@ -830,13 +831,14 @@ const usageRows = computed(() => {
   font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 4px;
+  /* The drawer body owns the space between its children. */
+  margin: 0;
 }
 
 .addon-drawer__desc {
   font-size: 13px;
   color: var(--muted);
-  margin: 0 0 12px;
+  margin: 0;
 }
 
 .addon-drawer__price {
@@ -872,7 +874,7 @@ const usageRows = computed(() => {
 .usage-card {
   padding: 14px 16px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--mp-radius-12);
   background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
@@ -937,7 +939,7 @@ const usageRows = computed(() => {
   gap: 16px;
   padding: 14px 16px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--mp-radius-12);
   background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
@@ -958,7 +960,7 @@ const usageRows = computed(() => {
 
 .invoice-table {
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--mp-radius-12);
   overflow: hidden;
   background: var(--surface-primary);
 }

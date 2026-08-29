@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import MpDialog from '@/components/MpDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { accentToVuetifyColor } from './dashboardOptions'
 import type { Dashboard } from '@/stores/dashboards/types'
 import { useDashboardsStore } from '@/stores/useDashboards'
@@ -103,25 +104,27 @@ function handleNameEnter() {
       </v-avatar>
     </template>
 
-    <v-text-field
-      v-model="name"
-      label="Dashboard name *"
-      placeholder="e.g. Lifecycle Health"
-      :error-messages="nameError ? [nameError] : []"
-      counter="60"
-      :autofocus="!isEditMode"
-      @keydown.enter="handleNameEnter"
-    />
+    <MpFormGrid>
+      <v-text-field
+        v-model="name"
+        label="Dashboard name *"
+        placeholder="e.g. Lifecycle Health"
+        :error-messages="nameError ? [nameError] : []"
+        counter="60"
+        :autofocus="!isEditMode"
+        @keydown.enter="handleNameEnter"
+      />
 
-    <v-textarea
-      v-model="description"
-      label="Description"
-      hint="Optional — what does this dashboard answer?"
-      :error-messages="isEditMode && descriptionError ? [descriptionError] : []"
-      counter="240"
-      rows="3"
-      auto-grow
-    />
+      <v-textarea
+        v-model="description"
+        label="Description"
+        hint="Optional — what does this dashboard answer?"
+        :error-messages="isEditMode && descriptionError ? [descriptionError] : []"
+        counter="240"
+        rows="3"
+        auto-grow
+      />
+    </MpFormGrid>
 
     <template #footer>
       <v-btn variant="text" class="text-none" @click="close">Cancel</v-btn>

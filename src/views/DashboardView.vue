@@ -7,6 +7,7 @@ import WidgetWizardDrawer from '@/components/dashboards/WidgetWizardDrawer.vue'
 import DashboardFormDialog from '@/components/dashboards/DashboardFormDialog.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { accentToVuetifyColor } from '@/components/dashboards/dashboardOptions'
 import type { WidgetSize } from '@/components/dashboards/widgetSizePresets'
 import type {
@@ -576,18 +577,20 @@ function toggleFavoriteActive() {
                 size="small"
                 append-icon="chevron-down"
                 class="text-none"
+                aria-haspopup="menu"
                 :disabled="!activeDashboard"
               >
                 Actions
               </v-btn>
             </template>
-            <v-card width="300" rounded="lg" flat border class="mp-menu">
+            <v-card width="300" rounded="lg" flat border class="mp-menu" role="menu">
               <template v-for="(group, gi) in dashboardActionGroups" :key="gi">
                 <v-divider v-if="gi > 0" class="mp-menu__divider" />
                 <button
                   v-for="item in group"
                   :key="item.title"
                   type="button"
+                  role="menuitem"
                   class="mp-menu-row"
                   :class="{ 'mp-menu-row--danger': item.danger }"
                   :disabled="item.disabled"
@@ -655,15 +658,12 @@ function toggleFavoriteActive() {
                 </template>
               </div>
               <div class="dashboard-date-menu__body">
-                <div class="dashboard-date-menu__fields">
+                <MpFormGrid :cols="2">
                   <v-text-field v-model="dateDraft.startDate" label="Start date" type="date" hide-details />
-                  <v-icon size="18">arrow-right</v-icon>
                   <v-text-field v-model="dateDraft.endDate" label="End date" type="date" hide-details />
-                </div>
-                <div class="dashboard-date-menu__fields mt-3">
                   <v-select v-model="dateDraft.grain" :items="grainOptions" item-title="title" item-value="value" label="Grain" hide-details />
                   <v-select v-model="dateDraft.comparison" :items="comparisonOptions" item-title="title" item-value="value" label="Comparison" hide-details />
-                </div>
+                </MpFormGrid>
                 <v-alert variant="tonal" color="info" class="mt-4 dashboard-date-menu__note" density="compact">
                   Widgets will show {{ datePresetOptions.find((option) => option.value === dateDraft.rangePreset)?.title ?? 'the selected range' }} with {{ grainOptions.find((option) => option.value === dateDraft.grain)?.title.toLowerCase() ?? 'daily' }} grouping.
                 </v-alert>
@@ -1025,8 +1025,11 @@ function toggleFavoriteActive() {
 }
 
 /* ── Rich action menu (Actions) — matches the global Create-new menu ── */
-.mp-menu {
+/* !important because the global .v-card.rounded-lg rule pins 16px with
+   !important; the menu panel sits on the menu radius token instead. */
+.v-card.mp-menu {
   border-color: var(--border-subtle);
+  border-radius: var(--mp-component-menu-radius) !important;
   padding: 8px;
   overflow: hidden;
 }
@@ -1040,10 +1043,10 @@ function toggleFavoriteActive() {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: var(--mp-component-listItem-gap);
   width: 100%;
-  min-height: 46px;
-  padding: 7px 10px;
+  min-height: var(--mp-component-listItem-minHeight);
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-component-listItem-paddingInline);
   border: 0;
   border-radius: var(--r-chip);
   background: transparent;
@@ -1186,17 +1189,6 @@ function toggleFavoriteActive() {
   padding-top: 16px;
 }
 
-.dashboard-date-menu__fields {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-}
-
-.dashboard-date-menu__fields + .dashboard-date-menu__fields {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-
 .dashboard-switcher-card {
   border-color: var(--border-subtle);
 }
@@ -1235,9 +1227,5 @@ function toggleFavoriteActive() {
     overflow: auto;
   }
 
-  .dashboard-date-menu__fields,
-  .dashboard-date-menu__fields + .dashboard-date-menu__fields {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

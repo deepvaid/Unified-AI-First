@@ -10,6 +10,7 @@ import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeade
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import DashboardFormDialog from '@/components/dashboards/DashboardFormDialog.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { accentToVuetifyColor, relativeTime } from '@/components/dashboards/dashboardOptions'
 import type { Dashboard } from '@/stores/dashboards/types'
 import { useAccountsStore } from '@/stores/useAccounts'
@@ -345,49 +346,40 @@ function handleDashboardCreated(dashboardId: string) {
 
         <template #item.actions="{ item }">
           <div class="d-flex align-center justify-end" @click.stop>
-            <v-menu location="bottom end">
-              <template #activator="{ props: menuProps }">
-                <v-btn
-                  v-bind="menuProps"
-                  icon="more-vertical"
-                  variant="text"
-                  size="small"
-                  density="comfortable"
-                  class="text-medium-emphasis"
-                  :aria-label="`More actions for ${item.name}`"
-                />
-              </template>
-              <v-list density="compact" min-width="200" rounded="lg" class="py-1">
-                <v-list-item prepend-icon="arrow-up-right" title="Open" @click="openDashboard(item.id)" />
-                <v-list-item prepend-icon="pencil" title="Edit details" @click="openEdit(item.id)" />
-                <v-list-item prepend-icon="copy" title="Duplicate" @click="handleDuplicate(item.id)" />
-                <v-list-item
-                  :prepend-icon="item.favorite ? 'star-off' : 'star'"
-                  :title="item.favorite ? 'Unfavorite' : 'Favorite'"
-                  @click="handleToggleFavorite(item.id)"
-                />
-                <v-list-item
-                  v-if="!item.isDefault"
-                  prepend-icon="bookmark-check"
-                  title="Set as default"
-                  @click="handleSetDefault(item.id)"
-                />
-                <v-list-item
-                  v-if="item.kind === 'system'"
-                  prepend-icon="rotate-ccw"
-                  title="Reset to defaults"
-                  @click="handleReset(item.id)"
-                />
-                <v-divider v-if="item.kind === 'custom'" class="my-1" style="opacity: 0.4" />
-                <v-list-item
-                  v-if="item.kind === 'custom'"
-                  prepend-icon="trash-2"
-                  title="Delete"
-                  class="text-error"
-                  @click="handleDelete(item.id)"
-                />
-              </v-list>
-            </v-menu>
+            <MpRowActionsMenu ariaLabel="Dashboard actions" :itemLabel="item.name">
+              <v-list-item role="menuitem" prepend-icon="arrow-up-right" title="Open" @click="openDashboard(item.id)" />
+              <v-list-item role="menuitem" prepend-icon="pencil" title="Edit details" @click="openEdit(item.id)" />
+              <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="handleDuplicate(item.id)" />
+              <v-list-item
+                role="menuitem"
+                :prepend-icon="item.favorite ? 'star-off' : 'star'"
+                :title="item.favorite ? 'Unfavorite' : 'Favorite'"
+                @click="handleToggleFavorite(item.id)"
+              />
+              <v-list-item
+                v-if="!item.isDefault"
+                role="menuitem"
+                prepend-icon="bookmark-check"
+                title="Set as default"
+                @click="handleSetDefault(item.id)"
+              />
+              <v-list-item
+                v-if="item.kind === 'system'"
+                role="menuitem"
+                prepend-icon="rotate-ccw"
+                title="Reset to defaults"
+                @click="handleReset(item.id)"
+              />
+              <v-divider v-if="item.kind === 'custom'" class="my-1" />
+              <v-list-item
+                v-if="item.kind === 'custom'"
+                role="menuitem"
+                prepend-icon="trash-2"
+                title="Delete"
+                class="text-error"
+                @click="handleDelete(item.id)"
+              />
+            </MpRowActionsMenu>
           </div>
         </template>
 

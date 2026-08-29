@@ -3,6 +3,7 @@ import { computed, nextTick, ref, useId, watch } from 'vue'
 import { useDaVinciHistory, type DaVinciHistoryItem, type GroupedHistory } from '@/composables/useDaVinciHistory'
 import { useDaVinciToasts } from '@/composables/useDaVinciToasts'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 
 const props = defineProps<{
   open: boolean
@@ -131,19 +132,9 @@ function buildSub(item: DaVinciHistoryItem): string {
       <v-btn v-if="mode !== 'rail'" icon size="32" variant="text" aria-label="Close history" @click="emit('close')">
         <v-icon size="16">x</v-icon>
       </v-btn>
-      <v-menu v-if="mode === 'rail' && hasHistory" offset="6" location="bottom end">
-        <template #activator="{ props: menuProps }">
-          <v-btn icon size="32" variant="text" aria-label="More" v-bind="menuProps">
-            <v-icon size="16">more-vertical</v-icon>
-          </v-btn>
-        </template>
-        <v-list density="compact">
-          <v-list-item class="dv-history__menu-danger" @click="handleClearAll">
-            <template #prepend><v-icon size="18" color="error">trash-2</v-icon></template>
-            <v-list-item-title>Delete all conversations</v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
+      <MpRowActionsMenu v-if="mode === 'rail' && hasHistory" ariaLabel="Conversation history actions">
+        <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete all conversations" class="text-error" @click="handleClearAll" />
+      </MpRowActionsMenu>
     </header>
 
     <div class="dv-history__search">
@@ -400,11 +391,6 @@ function buildSub(item: DaVinciHistoryItem): string {
   font-size: var(--mp-fontSize-13);
   max-width: 240px;
   line-height: 1.4;
-}
-
-.dv-history__menu-danger :deep(.v-list-item-title) {
-  color: rgb(var(--v-theme-error));
-  font-size: var(--mp-fontSize-13);
 }
 
 /* ─── Rail mode overrides ───────────────────────────────────────────── */

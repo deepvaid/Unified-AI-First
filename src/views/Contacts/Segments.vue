@@ -239,10 +239,10 @@ function confirmDelete() {
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Segment actions" :itemLabel="item.name">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-list-item prepend-icon="refresh-cw" title="Recalculate" @click="recalculate(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-list-item role="menuitem" prepend-icon="refresh-cw" title="Recalculate" @click="recalculate(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
@@ -272,7 +272,7 @@ function confirmDelete() {
 
         <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
           <span class="font-weight-medium">Summary: </span>{{ plainLanguageSummary }}
-          <div class="text-caption mt-1">≈ {{ matchEstimate.toLocaleString() }} contacts match</div>
+          <div class="text-caption">≈ {{ matchEstimate.toLocaleString() }} contacts match</div>
         </v-alert>
 
         <MpFormField label="Match logic">

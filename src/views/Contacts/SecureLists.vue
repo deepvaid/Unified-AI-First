@@ -8,6 +8,7 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -95,9 +96,9 @@ function confirmDelete() {
         </template>
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Secure list actions" :itemLabel="item.name">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
@@ -117,12 +118,14 @@ function confirmDelete() {
 
     <!-- Create / edit secure list -->
     <MpFormDrawer v-model="drawer" :title="editingId != null ? 'Edit Secure List' : 'New Secure List'">
-      <v-text-field
-        v-model="listName"
-        label="List Name *"
-        autofocus
-        @keyup.enter="save"
-      />
+      <MpFormGrid>
+        <v-text-field
+          v-model="listName"
+          label="List Name *"
+          autofocus
+          @keyup.enter="save"
+        />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!listName.trim()" @click="save">Save</v-btn>

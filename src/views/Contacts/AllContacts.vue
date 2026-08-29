@@ -436,9 +436,9 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         <template v-slot:item.actions="{ item }">
           <span @click.stop>
             <MpRowActionsMenu ariaLabel="Contact actions" :itemLabel="`${(item as Contact).firstName} ${(item as Contact).lastName ?? ''}`.trim()">
-              <v-list-item prepend-icon="pencil" title="Edit" @click="openContact((item as Contact).id)" />
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDeleteRow(item as Contact)" />
+              <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openContact((item as Contact).id)" />
+              <v-divider class="my-1" />
+              <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDeleteRow(item as Contact)" />
             </MpRowActionsMenu>
           </span>
         </template>

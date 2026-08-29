@@ -73,7 +73,7 @@ const emit = defineEmits<{
       <v-list-item
         prepend-icon="trash-2"
         title="Remove"
-        base-color="error"
+        class="text-error"
         @click="emit('remove')"
       />
     </v-list>

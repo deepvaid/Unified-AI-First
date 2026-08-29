@@ -41,7 +41,7 @@ const filteredApps = computed(() => {
 
     <v-row>
       <v-col cols="12" sm="6" md="4" v-for="app in filteredApps" :key="app.name">
-        <v-card variant="flat" border class="h-100 d-flex flex-column pa-2 transition-swing hover-lift">
+        <v-card variant="flat" border rounded="lg" class="h-100 d-flex flex-column pa-2 transition-swing hover-lift">
           <v-card-text class="d-flex flex-column h-100 pa-6">
              <div class="d-flex align-center justify-space-between mb-6">
                  <v-avatar size="56" :color="app.connected ? 'primary-lighten-1' : 'grey-lighten-4'" class="mr-4 text-primary">

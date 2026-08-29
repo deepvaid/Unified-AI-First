@@ -111,12 +111,12 @@ function confirmDelete() {
         </template>
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="List actions" :itemLabel="item.name">
-            <v-list-item prepend-icon="users" title="View Contacts" @click="viewContacts" />
-            <v-list-item prepend-icon="pencil" title="Edit" :to="editRoute(item)" />
-            <v-list-item prepend-icon="share" title="Export Contacts" @click="exportContacts(item)" />
-            <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <v-list-item role="menuitem" prepend-icon="users" title="View Contacts" @click="viewContacts" />
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" :to="editRoute(item)" />
+            <v-list-item role="menuitem" prepend-icon="share" title="Export Contacts" @click="exportContacts(item)" />
+            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 

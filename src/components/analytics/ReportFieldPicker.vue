@@ -9,6 +9,7 @@
  */
 import { computed, ref, watch } from 'vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const props = withDefaults(defineProps<{
@@ -89,9 +90,7 @@ function apply() {
       />
 
       <div v-if="selectedItems.length">
-        <h3 class="text-caption text-medium-emphasis text-uppercase mb-1">
-          Selected {{ noun }} ({{ draft.length }})
-        </h3>
+        <MpFormSection :title="`Selected ${noun} (${draft.length})`" />
         <v-checkbox
           v-for="item in selectedItems"
           :key="item"
@@ -103,9 +102,7 @@ function apply() {
       </div>
 
       <div v-if="unselectedItems.length">
-        <h3 class="text-caption text-medium-emphasis text-uppercase mb-1">
-          Unselected {{ noun }} ({{ items.length - draft.length }})
-        </h3>
+        <MpFormSection :title="`Unselected ${noun} (${items.length - draft.length})`" />
         <v-checkbox
           v-for="item in unselectedItems"
           :key="item"

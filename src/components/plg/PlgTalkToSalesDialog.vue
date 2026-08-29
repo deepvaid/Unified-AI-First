@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import MpDialog from '@/components/MpDialog.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useToast } from '@/composables/useToast'
 
 withDefaults(defineProps<{
@@ -51,20 +52,22 @@ function submit() {
       Tell us a bit about your goals and our team will reach out within one business day.
     </p>
 
-    <v-select
-      v-model="interest"
-      label="What are you interested in?"
-      :items="INTEREST_OPTIONS"
-    />
+    <MpFormGrid>
+      <v-select
+        v-model="interest"
+        label="What are you interested in?"
+        :items="INTEREST_OPTIONS"
+      />
 
-    <v-textarea
-      v-model="notes"
-      label="Anything we should know?"
-      hint="Optional"
-      persistent-hint
-      rows="3"
-      auto-grow
-    />
+      <v-textarea
+        v-model="notes"
+        label="Anything we should know?"
+        hint="Optional"
+        persistent-hint
+        rows="3"
+        auto-grow
+      />
+    </MpFormGrid>
 
     <a href="mailto:sales@maropost.com" class="sales-mailto-link">
       or email sales@maropost.com

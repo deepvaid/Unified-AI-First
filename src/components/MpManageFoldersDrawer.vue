@@ -124,7 +124,7 @@ function confirmDelete() {
         :key="folder.id"
         rounded="lg"
         class="px-2 mp-manage-folders__row"
-        :class="{ 'ml-6': folder.parentId }"
+        :class="{ 'mp-manage-folders__row--nested': folder.parentId }"
       >
         <template #prepend>
           <v-icon size="18">{{ folder.parentId ? 'corner-down-right' : 'folder' }}</v-icon>
@@ -182,5 +182,12 @@ function confirmDelete() {
 <style scoped>
 .mp-manage-folders__row {
   min-height: 44px;
+}
+
+/* Nested folders indent one step on the spacing scale (inline-start so RTL
+   mirrors for free). Margin rather than padding: the row keeps its own inset
+   (px-2) and hover geometry, the whole row just shifts in. */
+.mp-manage-folders__row--nested {
+  margin-inline-start: var(--mp-space-24);
 }
 </style>

@@ -208,13 +208,14 @@ function clearFilters() {
 
         <template #[`item.actions`]="{ item }">
           <MpRowActionsMenu ariaLabel="Report actions" :item-label="item.name">
-            <v-list-item prepend-icon="copy" title="Duplicate report" @click="duplicateReport(item)" />
-            <v-list-item prepend-icon="download" title="Download report" @click="downloadReport(item)" />
+            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate report" @click="duplicateReport(item)" />
+            <v-list-item role="menuitem" prepend-icon="download" title="Download report" @click="downloadReport(item)" />
             <v-divider class="my-1" />
             <v-list-item
+              role="menuitem"
               prepend-icon="trash-2"
               title="Delete report"
-              base-color="error"
+              class="text-error"
               @click="askDelete(item)"
             />
           </MpRowActionsMenu>

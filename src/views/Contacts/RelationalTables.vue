@@ -103,7 +103,7 @@ function confirmDelete() {
         </template>
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Table actions" :itemLabel="item.name">
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 

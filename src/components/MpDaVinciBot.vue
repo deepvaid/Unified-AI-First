@@ -1074,8 +1074,8 @@ function onComposerKeydown(event: KeyboardEvent) {
             <v-list-item-title>Read replies aloud</v-list-item-title>
             <template #append><v-icon v-if="ttsEnabled" size="16" color="primary">check</v-icon></template>
           </v-list-item>
-          <v-divider />
-          <v-list-item class="dv-panel__menu-danger" @click="handleClearAll">
+          <v-divider class="my-1" />
+          <v-list-item class="text-error" @click="handleClearAll">
             <template #prepend><v-icon size="18" color="error">trash-2</v-icon></template>
             <v-list-item-title>Delete all conversations</v-list-item-title>
           </v-list-item>
@@ -1416,10 +1416,6 @@ function onComposerKeydown(event: KeyboardEvent) {
   border-radius: var(--mp-radius-12) !important;
   background: rgb(var(--v-theme-surface)) !important;
   border: 1px solid rgb(var(--v-theme-outline-variant));
-}
-
-.dv-panel__menu-danger :deep(.v-list-item-title) {
-  color: rgb(var(--v-theme-error));
 }
 
 /* ─── Split: optional history rail (full-width mode) + main column ──── */

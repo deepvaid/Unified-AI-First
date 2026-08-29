@@ -336,13 +336,13 @@ function confirmBulkDelete() {
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Query actions" :itemLabel="item.name">
-            <v-list-item prepend-icon="play-circle" title="Execute query" @click="askExecute(item)" />
-            <v-list-item prepend-icon="upload" title="Export query" @click="exportQuery(item)" />
-            <v-list-item prepend-icon="pencil" title="Edit query" @click="openDialog(item)" />
+            <v-list-item role="menuitem" prepend-icon="play-circle" title="Execute query" @click="askExecute(item)" />
+            <v-list-item role="menuitem" prepend-icon="upload" title="Export query" @click="exportQuery(item)" />
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit query" @click="openDialog(item)" />
             <!-- DEFECT FIX (audit F13): in the source, Delete Query sits directly
                  under Edit Query with no separator and no destructive styling. -->
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete query" class="text-error" @click="askDelete(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete query" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
