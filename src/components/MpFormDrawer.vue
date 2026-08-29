@@ -41,6 +41,7 @@ const DRAWER_WIDTHS = {
 const drawerWidth = computed(() => DRAWER_WIDTHS[props.size])
 
 const titleId = useId()
+const bodyId = useId()
 const panel = ref<HTMLElement | null>(null)
 let lastFocused: HTMLElement | null = null
 
@@ -101,11 +102,15 @@ function onKeydown(e: KeyboardEvent) {
       role="dialog"
       aria-modal="true"
       :aria-labelledby="titleId"
+      :aria-describedby="bodyId"
       @keydown="onKeydown"
     >
       <div ref="panel" tabindex="-1" class="mp-form-drawer__panel d-flex flex-column h-100">
       <div class="mp-form-drawer__header" :class="{ 'mp-form-drawer__header--stuck': !atTop }">
-        <div :id="titleId" class="mp-form-drawer__title">{{ title }}</div>
+        <!-- A real heading, not a styled div — parity with MpDialog and an anchor
+             for the drawer's heading outline. h2: the page's h1 sits behind the
+             overlay; sections inside the body start at h3. -->
+        <h2 :id="titleId" class="mp-form-drawer__title">{{ title }}</h2>
         <div v-if="subtitle" class="mp-form-drawer__subtitle">{{ subtitle }}</div>
         <div class="mp-form-drawer__header-actions">
           <v-btn
@@ -120,7 +125,7 @@ function onKeydown(e: KeyboardEvent) {
       </div>
       <v-divider />
 
-      <div ref="body" class="mp-form-drawer__body">
+      <div ref="body" :id="bodyId" class="mp-form-drawer__body">
         <slot />
       </div>
 
@@ -275,6 +280,7 @@ function onKeydown(e: KeyboardEvent) {
 /* 16, not 18: a drawer title and a modal title are the same object seen from two
    sides, and the system had grown three overlay title sizes (P6-1). */
 .mp-form-drawer__title {
+  margin: 0;
   font-size: var(--mp-fontSize-16);
   font-weight: var(--mp-fontWeight-bold);
   letter-spacing: var(--mp-letterSpacing-snug);

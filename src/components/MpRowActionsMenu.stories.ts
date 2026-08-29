@@ -24,11 +24,11 @@ menu needs headers, filtering, or nested submenus (build a bespoke \`v-menu\`).
 ### Usage
 \`\`\`html
 <template #item.actions="{ item }">
-  <MpRowActionsMenu :ariaLabel="\`\${item.name} actions\`">
-    <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-    <v-list-item prepend-icon="circle-pause" title="Pause" :disabled="item.status !== 'Active'" @click="pause(item)" />
-    <v-divider />
-    <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="confirmDelete(item)" />
+  <MpRowActionsMenu ariaLabel="Journey actions" :itemLabel="item.name">
+    <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+    <v-list-item role="menuitem" prepend-icon="circle-pause" title="Pause" :disabled="item.status !== 'Active'" @click="pause(item)" />
+    <v-divider class="my-1" />
+    <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="confirmDelete(item)" />
   </MpRowActionsMenu>
 </template>
 \`\`\`
@@ -40,9 +40,11 @@ Writing kebab-case \`aria-label="…"\` compiles, but vue-tsc treats it as a pla
 type-checking fails with a missing-prop error (see cleanup-report §6).
 
 ### 🟢 Do's
-- **Do** pass a row-specific \`ariaLabel\` ("Journey actions", "Welcome Series actions") — it is
-  the trigger's only accessible name.
-- **Do** put destructive actions last, behind a \`v-divider\`, with \`class="text-error"\`.
+- **Do** pass a row-specific accessible name — \`ariaLabel\` + \`itemLabel\` ("Contact actions" +
+  "James Anderson") — it is the trigger's only accessible name.
+- **Do** give every \`v-list-item\` \`role="menuitem"\` — the list is \`role="menu"\`, and slotted
+  items must match it.
+- **Do** put destructive actions last, behind a \`<v-divider class="my-1" />\`, with \`class="text-error"\`.
 - **Do** disable (not hide) actions that don't apply to the row's state, so the menu shape stays stable.
 
 ### 🔴 Don'ts
@@ -50,15 +52,18 @@ type-checking fails with a missing-prop error (see cleanup-report §6).
 - **Don't** put forms or inputs inside — the menu closes on click; open a drawer/dialog from the item instead.
 
 ### A11y
-- **Provides:** the icon-only trigger gets its accessible name from \`ariaLabel\` and Vuetify's
-  \`v-menu\` wires \`aria-haspopup\`/\`aria-expanded\` on it; the menu closes on Escape and returns
-  focus to the trigger; \`v-list\` supplies arrow-key navigation between items.
-- **Consumer must:** make the label row-specific (a table of 50 rows each announcing "Row actions"
-  is not distinguishable), give every \`v-list-item\` a \`title\` or text content, and attach real
-  \`@click\` handlers (items without them are still focusable but inert).
-- **Gaps:** the list is not \`role="menu"\`/\`menuitem\` (Vuetify renders a listbox-style list), so
-  screen readers announce it as a list rather than a menu — acceptable, but noted for the Phase 4
-  a11y pass; destructive styling (\`text-error\`) is color-only with no textual warning.
+- **Provides:** the icon-only trigger gets its accessible name from \`ariaLabel\`/\`itemLabel\` and
+  carries an explicit \`aria-haspopup="menu"\` (Vuetify's \`v-menu\` wires \`aria-expanded\`); the
+  list is \`role="menu"\`; the menu opens \`bottom end\`, closes on Escape and returns focus to the
+  trigger; \`v-list\` supplies arrow-key navigation; the trigger's hit area is extended to
+  \`control.height\` (40px) even though the glyph stays compact; the trigger swallows its own click
+  so it never activates a clickable host row.
+- **Consumer must:** make the label row-specific via \`itemLabel\` (a table of 50 rows each
+  announcing "Row actions" is not distinguishable), give every \`v-list-item\` \`role="menuitem"\`
+  and a \`title\` or text content, and attach real \`@click\` handlers (items without them are
+  still focusable but inert).
+- **Gaps:** destructive styling (\`text-error\`) is color-only with no textual warning — pair it
+  with an MpConfirmDialog before the action commits.
         `,
       },
     },
@@ -198,21 +203,21 @@ export const Variants: Story = {
       <div class="d-flex ga-10">
         <div>
           <div class="text-caption text-medium-emphasis mb-2">plain items</div>
-          <MpRowActionsMenu aria-label="Row actions">
+          <MpRowActionsMenu ariaLabel="Row actions">
             <v-list-item title="View" />
             <v-list-item title="Duplicate" />
           </MpRowActionsMenu>
         </div>
         <div>
           <div class="text-caption text-medium-emphasis mb-2">with icons</div>
-          <MpRowActionsMenu aria-label="Row actions">
+          <MpRowActionsMenu ariaLabel="Row actions">
             <v-list-item title="View" prepend-icon="eye" />
             <v-list-item title="Duplicate" prepend-icon="copy" />
           </MpRowActionsMenu>
         </div>
         <div>
           <div class="text-caption text-medium-emphasis mb-2">with a destructive action</div>
-          <MpRowActionsMenu aria-label="Row actions">
+          <MpRowActionsMenu ariaLabel="Row actions">
             <v-list-item title="View" prepend-icon="eye" />
             <v-list-item title="Duplicate" prepend-icon="copy" />
             <v-divider class="my-1" />
@@ -236,7 +241,7 @@ export const Sizes: Story = {
     components: { MpRowActionsMenu },
     template: `
       <div class="d-flex align-center ga-4">
-        <MpRowActionsMenu aria-label="Row actions">
+        <MpRowActionsMenu ariaLabel="Row actions">
           <v-list-item title="View" prepend-icon="eye" />
           <v-list-item title="Duplicate" prepend-icon="copy" />
         </MpRowActionsMenu>
@@ -255,7 +260,7 @@ export const States: Story = {
   render: () => ({
     components: { MpRowActionsMenu },
     template: `
-      <MpRowActionsMenu aria-label="Row actions" item-label="Order #10002">
+      <MpRowActionsMenu ariaLabel="Row actions"> item-label="Order #10002">
         <v-list-item title="View order" prepend-icon="eye" />
         <v-list-item title="Print packing slip" prepend-icon="printer" />
         <v-list-item title="Refund" prepend-icon="undo-2" disabled subtitle="Already refunded" />
@@ -295,7 +300,7 @@ export const InContextOrdersTable: Story = {
             <MpStatusChip :status="item.status" type="order" size="sm" />
           </template>
           <template #item.actions="{ item }">
-            <MpRowActionsMenu aria-label="Order actions" :item-label="item.order">
+            <MpRowActionsMenu ariaLabel="Order actions" :item-label="item.order">
               <v-list-item title="View order" prepend-icon="eye" />
               <v-list-item title="Print packing slip" prepend-icon="printer" />
               <v-list-item title="Send receipt" prepend-icon="mail" />
