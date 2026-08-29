@@ -228,7 +228,7 @@ const copilotDrawerWidth = computed(() => {
       :width="copilotDrawerWidth + 12"
       :aria-hidden="copilotVisible ? undefined : 'true'"
       :inert="!copilotVisible"
-      class="copilot-drawer"
+      class="copilot-drawer mp-float-drawer"
       :style="{
         '--copilot-top': isFullPage ? '4px' : '60px',
         '--copilot-w': copilotDrawerWidth + 'px',
@@ -334,9 +334,9 @@ html[data-theme='dark'] .mp-content-frame {
    right gutter without overlapping the reserved content band. */
 .copilot-drawer {
   top: var(--copilot-top, 60px) !important;
-  height: calc(100% - var(--copilot-top, 60px) - 12px) !important;
+  height: calc(100% - var(--copilot-top, 60px) - var(--mp-space-12)) !important;
   width: var(--copilot-w) !important;
-  margin-right: 12px;
+  margin-right: var(--mp-space-12);
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);
   border-radius: var(--mp-component-card-radius);
@@ -345,12 +345,7 @@ html[data-theme='dark'] .mp-content-frame {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Closed state: Vuetify's inline translateX misses the 12px margin-right
-   (and the shadow), leaving a sliver of the panel visible at the right
-   edge. Push it fully off-screen. */
-.copilot-drawer.v-navigation-drawer:not(.v-navigation-drawer--active) {
-  transform: translateX(calc(100% + 32px)) !important;
-}
+/* Closed state lives in global.scss as .mp-float-drawer (shared with MpFormDrawer). */
 
 .copilot-drawer .v-navigation-drawer__content {
   display: flex;

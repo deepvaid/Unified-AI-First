@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useId, watch } from 'vue'
+import { computed, ref, useId } from 'vue'
+import { useFocusTrap } from '@/composables/useFocusTrap'
 import { useScrollEdges } from '@/composables/useScrollEdges'
 import {
   mp_component_drawer_width_sm,
@@ -43,46 +44,12 @@ const drawerWidth = computed(() => DRAWER_WIDTHS[props.size])
 const titleId = useId()
 const bodyId = useId()
 const panel = ref<HTMLElement | null>(null)
-let lastFocused: HTMLElement | null = null
 
-// Move focus into the panel on open, restore it to the trigger on close.
-watch(model, async (open) => {
-  if (open) {
-    lastFocused = document.activeElement as HTMLElement | null
-    await nextTick()
-    panel.value?.focus()
-  } else if (lastFocused) {
-    lastFocused.focus?.()
-    lastFocused = null
-  }
-})
+// Focus-in on open, restore on close, Tab cycling, Escape → guarded close path.
+const { onKeydown } = useFocusTrap(panel, () => model.value, { onEscape: requestClose })
 
 const body = ref<HTMLElement | null>(null)
 const { atTop, atBottom } = useScrollEdges(body)
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
-    requestClose()
-    return
-  }
-  if (e.key !== 'Tab' || !panel.value) return
-  const focusable = Array.from(
-    panel.value.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    ),
-    // Skip elements hidden inside collapsed sections (display:none ancestors etc.).
-  ).filter(el => el.offsetParent !== null)
-  const first = focusable[0]
-  const last = focusable[focusable.length - 1]
-  if (!first || !last) return
-  if (e.shiftKey && document.activeElement === first) {
-    e.preventDefault()
-    last.focus()
-  } else if (!e.shiftKey && document.activeElement === last) {
-    e.preventDefault()
-    first.focus()
-  }
-}
 </script>
 
 <template>
@@ -98,7 +65,7 @@ function onKeydown(e: KeyboardEvent) {
       temporary
       scrim
       :persistent="guarded"
-      class="mp-form-drawer"
+      class="mp-form-drawer mp-float-drawer"
       role="dialog"
       aria-modal="true"
       :aria-labelledby="titleId"
@@ -170,13 +137,7 @@ function onKeydown(e: KeyboardEvent) {
   transition-timing-function: var(--ease);
 }
 
-/* Closed state: Vuetify slides the drawer out by exactly its own width
-   (inline translateX), but margin-right keeps the box 12px inside the
-   viewport — leaving a 12px sliver of the rounded shell visible at the
-   right edge. Push it past the margin and the shadow bleed. */
-.mp-form-drawer.v-navigation-drawer:not(.v-navigation-drawer--active) {
-  transform: translateX(calc(100% + var(--mp-space-32))) !important;
-}
+/* Closed state lives in global.scss as .mp-float-drawer (shared with the copilot dock). */
 
 /* Clip the panel (and its scrolling body) to the rounded shell. */
 .mp-form-drawer :deep(.v-navigation-drawer__content) {

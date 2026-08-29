@@ -660,6 +660,15 @@ tr:focus-within .action-btns {
   border-top-color: var(--mp-color-dark-borderDividerMuted);
 }
 
+/* Shared closed-state escape for floating right drawers (the copilot dock and
+   MpFormDrawer — GAPS §4). Vuetify's inline translateX slides a drawer out by
+   exactly its own width, but a floating shell keeps a 12px gutter plus shadow
+   bleed inside the viewport, leaving a visible sliver at the right edge. Push
+   past both. Was duplicated verbatim in App.vue and MpFormDrawer.vue. */
+.mp-float-drawer.v-navigation-drawer:not(.v-navigation-drawer--active) {
+  transform: translateX(calc(100% + var(--mp-space-32))) !important;
+}
+
 /* ─── Popover surfaces (menus + select/autocomplete dropdowns) ─ */
 /* Vuetify renders all v-menu content (including inside v-select,
    v-autocomplete, v-combobox) inside `.v-menu > .v-overlay__content`.

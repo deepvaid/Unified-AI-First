@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
@@ -22,6 +23,19 @@ const roleIds = ref<string[]>([])
 const scopeAll = ref(true)
 const scopeLocationIds = ref<string[]>([])
 
+// Snapshot the form on open so close paths can tell edits from noise.
+const openSnapshot = ref('')
+function snapshotState() {
+  return JSON.stringify([emails.value, roleIds.value, scopeAll.value, scopeLocationIds.value])
+}
+const drawerDirty = computed(() => open.value && snapshotState() !== openSnapshot.value)
+
+const confirmDiscard = ref(false)
+function requestCloseDrawer() {
+  if (drawerDirty.value) confirmDiscard.value = true
+  else open.value = false
+}
+
 watch(open, (isOpen) => {
   if (isOpen) {
     step.value = 1
@@ -29,6 +43,7 @@ watch(open, (isOpen) => {
     roleIds.value = []
     scopeAll.value = true
     scopeLocationIds.value = []
+    openSnapshot.value = snapshotState()
   }
 })
 
@@ -88,7 +103,13 @@ function sendInvites() {
 </script>
 
 <template>
-  <MpFormDrawer v-model="open" title="Invite users" :subtitle="`Step ${step} of 2`">
+  <MpFormDrawer
+    v-model="open"
+    title="Invite users"
+    :subtitle="`Step ${step} of 2`"
+    :guarded="drawerDirty"
+    @close="requestCloseDrawer"
+  >
     <!-- Step 1: who + which roles -->
     <MpFormGrid v-if="step === 1">
       <v-combobox
@@ -186,7 +207,7 @@ function sendInvites() {
 
     <template #footer>
       <v-btn v-if="step === 2" variant="text" class="text-none" @click="step = 1">Back</v-btn>
-      <v-btn v-else variant="text" class="text-none" @click="open = false">Cancel</v-btn>
+      <v-btn v-else variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
       <v-btn v-if="step === 1" color="primary" variant="flat" class="text-none" :disabled="!canContinue" @click="step = 2">
         Continue
       </v-btn>
@@ -195,6 +216,15 @@ function sendInvites() {
       </v-btn>
     </template>
   </MpFormDrawer>
+
+  <MpConfirmDialog
+    v-model="confirmDiscard"
+    title="Discard invitation changes?"
+    message="You have unsaved changes to this invitation. Closing now will discard them."
+    confirm-label="Discard changes"
+    danger
+    @confirm="open = false"
+  />
 </template>
 
 <style scoped>

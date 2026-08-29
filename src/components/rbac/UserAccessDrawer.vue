@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
@@ -61,6 +62,16 @@ const canSave = computed(() =>
   !isOwner.value && dirty.value && localRoleIds.value.length > 0 && validation.value.ok && scopeValid.value,
 )
 
+// The existing `dirty` computed already compares local state to the saved user,
+// so the close guard reuses it instead of adding a snapshot.
+const drawerDirty = computed(() => open.value && dirty.value)
+
+const confirmDiscard = ref(false)
+function requestCloseDrawer() {
+  if (drawerDirty.value) confirmDiscard.value = true
+  else open.value = false
+}
+
 /** Live preview — union of the pending role selection, not the saved state. */
 const previewPermissions = computed(() => {
   const out = new Set<string>()
@@ -116,7 +127,14 @@ function askRemove() {
 </script>
 
 <template>
-  <MpFormDrawer v-model="open" title="Manage access" :subtitle="user?.email" size="lg">
+  <MpFormDrawer
+    v-model="open"
+    title="Manage access"
+    :subtitle="user?.email"
+    size="lg"
+    :guarded="drawerDirty"
+    @close="requestCloseDrawer"
+  >
     <template v-if="user">
       <!-- Identity -->
       <div class="access-identity">
@@ -260,10 +278,19 @@ function askRemove() {
     </template>
 
     <template #footer>
-      <v-btn variant="text" class="text-none" @click="open = false">Cancel</v-btn>
+      <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
       <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave" @click="save">Save changes</v-btn>
     </template>
   </MpFormDrawer>
+
+  <MpConfirmDialog
+    v-model="confirmDiscard"
+    title="Discard access changes?"
+    message="You have unsaved changes to this user's access. Closing now will discard them."
+    confirm-label="Discard changes"
+    danger
+    @confirm="open = false"
+  />
 </template>
 
 <style scoped>
