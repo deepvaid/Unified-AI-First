@@ -13,6 +13,8 @@ import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
@@ -283,22 +285,25 @@ async function copyText(text: string) {
                   </div>
                 </div>
                 <MpRowActionsMenu :ariaLabel="`${form.name} actions`">
-                  <v-list-item prepend-icon="eye" rounded="lg" @click="openPreview(form)">Preview</v-list-item>
-                  <v-list-item prepend-icon="copy" rounded="lg" @click="duplicate(form.id)">Duplicate</v-list-item>
-                  <v-list-item prepend-icon="code-2" rounded="lg" @click="openEmbed(form)">Get embed code</v-list-item>
+                  <v-list-item role="menuitem" prepend-icon="eye" rounded="lg" @click="openPreview(form)">Preview</v-list-item>
+                  <v-list-item role="menuitem" prepend-icon="copy" rounded="lg" @click="duplicate(form.id)">Duplicate</v-list-item>
+                  <v-list-item role="menuitem" prepend-icon="code-2" rounded="lg" @click="openEmbed(form)">Get embed code</v-list-item>
                   <v-list-item
                     v-if="form.status !== 'Active'"
+                    role="menuitem"
                     prepend-icon="play"
                     rounded="lg"
                     @click="setStatus([form.id], 'Active')"
                   >Activate</v-list-item>
                   <v-list-item
                     v-else
+                    role="menuitem"
                     prepend-icon="pause"
                     rounded="lg"
                     @click="setStatus([form.id], 'Paused')"
                   >Pause</v-list-item>
-                  <v-list-item prepend-icon="trash-2" rounded="lg" class="text-error mt-1" @click="askDelete([form.id])">Delete</v-list-item>
+                  <v-divider class="my-1" />
+                  <v-list-item role="menuitem" prepend-icon="trash-2" rounded="lg" class="text-error" @click="askDelete([form.id])">Delete</v-list-item>
                 </MpRowActionsMenu>
               </div>
 
@@ -349,8 +354,11 @@ async function copyText(text: string) {
       >
         <template #filter-content>
           <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select v-model="filters.type" label="Type" :items="['', 'Popup', 'Embedded']" hide-details class="mb-3" />
+            <MpFormSection title="Filter by">
+              <MpFormGrid>
+                <v-select v-model="filters.type" label="Type" :items="['', 'Popup', 'Embedded']" hide-details />
+              </MpFormGrid>
+            </MpFormSection>
           </div>
         </template>
       </MpDataTableToolbar>
@@ -376,11 +384,12 @@ async function copyText(text: string) {
         <template #item.status="{ item }"><MpStatusChip :status="item.status" type="general" size="sm" /></template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu :ariaLabel="`${item.name} actions`">
-            <v-list-item prepend-icon="pencil" rounded="lg" @click="editInBuilder(item)">Edit in Builder</v-list-item>
-            <v-list-item prepend-icon="eye" rounded="lg" @click="openPreview(item)">Preview</v-list-item>
-            <v-list-item prepend-icon="copy" rounded="lg" @click="duplicate(item.id)">Duplicate</v-list-item>
-            <v-list-item prepend-icon="code-2" rounded="lg" @click="openEmbed(item)">Get embed code</v-list-item>
-            <v-list-item prepend-icon="trash-2" rounded="lg" class="text-error mt-1" @click="askDelete([item.id])">Delete</v-list-item>
+            <v-list-item role="menuitem" prepend-icon="pencil" rounded="lg" @click="editInBuilder(item)">Edit in Builder</v-list-item>
+            <v-list-item role="menuitem" prepend-icon="eye" rounded="lg" @click="openPreview(item)">Preview</v-list-item>
+            <v-list-item role="menuitem" prepend-icon="copy" rounded="lg" @click="duplicate(item.id)">Duplicate</v-list-item>
+            <v-list-item role="menuitem" prepend-icon="code-2" rounded="lg" @click="openEmbed(item)">Get embed code</v-list-item>
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" rounded="lg" class="text-error" @click="askDelete([item.id])">Delete</v-list-item>
           </MpRowActionsMenu>
         </template>
       </v-data-table>
@@ -414,18 +423,18 @@ async function copyText(text: string) {
             :color="selectedTemplate === tmpl.id ? 'primary' : 'default'"
             rounded="lg"
             border
-            class="pa-4 cursor-pointer template-card h-100"
+            class="pa-4 cursor-pointer template-card h-100 d-flex flex-column ga-2"
             :class="{ selected: selectedTemplate === tmpl.id }"
             @click="selectedTemplate = tmpl.id"
           >
-            <div class="d-flex align-start justify-space-between mb-2">
+            <div class="d-flex align-start justify-space-between">
               <v-icon :color="tmpl.color" size="28">{{ tmpl.icon }}</v-icon>
               <div v-if="tmpl.type" class="d-flex ga-1">
                 <v-chip size="x-small" variant="tonal" rounded="lg">{{ tmpl.type }}</v-chip>
                 <v-chip v-if="tmpl.position" size="x-small" variant="outlined" rounded="lg">Center</v-chip>
               </div>
             </div>
-            <div class="text-body-2 font-weight-bold mb-1">{{ tmpl.name }}</div>
+            <div class="text-body-2 font-weight-bold">{{ tmpl.name }}</div>
             <div class="text-caption text-medium-emphasis">{{ tmpl.desc }}</div>
             <v-icon v-if="selectedTemplate === tmpl.id" color="primary" class="selected-check" size="20">circle-check</v-icon>
           </v-card>
@@ -469,16 +478,14 @@ async function copyText(text: string) {
     <!-- Embed code dialog -->
     <MpDialog v-model="embedDialog" size="md" :title="`Embed “${activeForm?.name ?? ''}”`">
       <template v-if="activeForm">
-        <div>
-          <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Website Embed</div>
-          <v-textarea :model-value="embedSnippets.script" readonly rows="2" class="embed-mono mb-2" hide-details />
-          <v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedSnippets.script)">Copy script</v-btn>
-        </div>
-        <div>
-          <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Manual Integration</div>
-          <v-textarea :model-value="embedSnippets.manual" readonly rows="4" class="embed-mono mb-2" hide-details />
-          <v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedSnippets.manual)">Copy snippet</v-btn>
-        </div>
+        <MpFormSection title="Website Embed">
+          <v-textarea :model-value="embedSnippets.script" readonly rows="2" class="embed-mono" hide-details />
+          <v-btn variant="tonal" size="small" class="text-none align-self-start" prepend-icon="copy" @click="copyText(embedSnippets.script)">Copy script</v-btn>
+        </MpFormSection>
+        <MpFormSection title="Manual Integration">
+          <v-textarea :model-value="embedSnippets.manual" readonly rows="4" class="embed-mono" hide-details />
+          <v-btn variant="tonal" size="small" class="text-none align-self-start" prepend-icon="copy" @click="copyText(embedSnippets.manual)">Copy snippet</v-btn>
+        </MpFormSection>
       </template>
     </MpDialog>
 

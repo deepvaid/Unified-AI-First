@@ -6,6 +6,8 @@ import type { LandingPageBlock, LandingPageBlockType, LandingPageStyle, BaseFont
 import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
@@ -357,9 +359,9 @@ function saveAndClose() {
       <v-btn variant="text" icon="eye" size="small" aria-label="Preview page" @click="openPreview" />
       <v-btn variant="text" icon="settings" size="small" aria-label="Page settings" @click="settingsOpen = true" />
       <MpRowActionsMenu ariaLabel="More page actions">
-        <v-list-item prepend-icon="shield-check" rounded="lg" :disabled="page.status === 'Verified'" @click="verifyDomainAction">Verify Domain</v-list-item>
-        <v-list-item prepend-icon="copy-plus" rounded="lg" @click="saveAsTemplateAction">Save as Template</v-list-item>
-        <v-list-item prepend-icon="copy" rounded="lg" @click="duplicatePageAction">Duplicate Page</v-list-item>
+        <v-list-item role="menuitem" prepend-icon="shield-check" rounded="lg" :disabled="page.status === 'Verified'" @click="verifyDomainAction">Verify Domain</v-list-item>
+        <v-list-item role="menuitem" prepend-icon="copy-plus" rounded="lg" @click="saveAsTemplateAction">Save as Template</v-list-item>
+        <v-list-item role="menuitem" prepend-icon="copy" rounded="lg" @click="duplicatePageAction">Duplicate Page</v-list-item>
       </MpRowActionsMenu>
       <v-btn variant="outlined" class="text-none" prepend-icon="check" @click="saveAndClose">Save and Close</v-btn>
       <v-tooltip
@@ -468,12 +470,24 @@ function saveAndClose() {
 
       <!-- Page settings drawer -->
       <MpFormDrawer v-model="settingsOpen" title="Page Settings" subtitle="SEO, URL, and tracking for this page">
-        <v-text-field v-model="pageUrl" label="Page URL" />
-        <v-text-field v-model="seo.pageTitle" label="Page Title" />
-        <v-textarea v-model="seo.description" label="Description" rows="3" />
-        <v-text-field v-model="seo.redirectAfterExpiry" label="Redirect after expiry" placeholder="https://mystore.com" />
-        <v-text-field v-model="seo.metaKeywords" label="Meta Keywords" />
-        <v-textarea v-model="seo.tracking" label="Page Tracking" placeholder="Paste analytics / pixel tracking code" rows="3" />
+        <MpFormSection title="URL">
+          <MpFormGrid>
+            <v-text-field v-model="pageUrl" label="Page URL" />
+            <v-text-field v-model="seo.redirectAfterExpiry" label="Redirect after expiry" placeholder="https://mystore.com" />
+          </MpFormGrid>
+        </MpFormSection>
+        <MpFormSection title="SEO">
+          <MpFormGrid>
+            <v-text-field v-model="seo.pageTitle" label="Page Title" />
+            <v-textarea v-model="seo.description" label="Description" rows="3" />
+            <v-text-field v-model="seo.metaKeywords" label="Meta Keywords" />
+          </MpFormGrid>
+        </MpFormSection>
+        <MpFormSection title="Tracking">
+          <MpFormGrid>
+            <v-textarea v-model="seo.tracking" label="Page Tracking" placeholder="Paste analytics / pixel tracking code" rows="3" />
+          </MpFormGrid>
+        </MpFormSection>
         <template #footer>
           <v-btn variant="text" class="text-none" @click="settingsOpen = false">Cancel</v-btn>
           <v-btn color="primary" variant="flat" class="text-none" @click="settingsOpen = false">Done</v-btn>

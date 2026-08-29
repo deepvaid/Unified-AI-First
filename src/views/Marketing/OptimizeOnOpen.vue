@@ -5,6 +5,7 @@ import { useImagesStore } from '@/stores/useImages'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -106,10 +107,10 @@ function notify(text: string) { toast.success(text) }
           <span class="font-weight-medium">{{ item.imageCount.toLocaleString() }}</span>
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Image group actions">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          <MpRowActionsMenu ariaLabel="Image group actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template v-slot:no-data>
@@ -131,30 +132,32 @@ function notify(text: string) { toast.success(text) }
       v-model="drawer"
       :title="editingId !== null ? 'Edit Image Group' : 'New Image Group'"
     >
-      <v-text-field
-        v-model="name"
-        label="Name"
-        placeholder="e.g. Dynamic Weather Header"
-        :rules="[v => !!v || 'Name is required']"
-      />
+      <MpFormGrid>
+        <v-text-field
+          v-model="name"
+          label="Name"
+          placeholder="e.g. Dynamic Weather Header"
+          :rules="[v => !!v || 'Name is required']"
+        />
 
-      <MpFormField
-        label="Images in this group"
-        hint="Pick images from your library to rotate based on open conditions."
-      >
-        <v-list density="compact" class="oo-image-list" rounded="lg" border>
-          <v-list-item v-for="img in imagesStore.items" :key="img.id">
-            <template #prepend>
-              <v-checkbox-btn
-                :model-value="selectedImageIds.includes(img.id)"
-                @update:model-value="(v) => { selectedImageIds = v ? [...selectedImageIds, img.id] : selectedImageIds.filter(id => id !== img.id) }"
-              />
-            </template>
-            <v-list-item-title class="text-body-2">{{ img.name }}</v-list-item-title>
-            <v-list-item-subtitle class="text-caption">{{ img.size }}</v-list-item-subtitle>
-          </v-list-item>
-        </v-list>
-      </MpFormField>
+        <MpFormField
+          label="Images in this group"
+          hint="Pick images from your library to rotate based on open conditions."
+        >
+          <v-list density="compact" class="oo-image-list" rounded="lg" border>
+            <v-list-item v-for="img in imagesStore.items" :key="img.id">
+              <template #prepend>
+                <v-checkbox-btn
+                  :model-value="selectedImageIds.includes(img.id)"
+                  @update:model-value="(v) => { selectedImageIds = v ? [...selectedImageIds, img.id] : selectedImageIds.filter(id => id !== img.id) }"
+                />
+              </template>
+              <v-list-item-title class="text-body-2">{{ img.name }}</v-list-item-title>
+              <v-list-item-subtitle class="text-caption">{{ img.size }}</v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+        </MpFormField>
+      </MpFormGrid>
       <div v-if="selectedImageIds.length" class="text-caption text-medium-emphasis">
         {{ selectedImageIds.length }} image{{ selectedImageIds.length === 1 ? '' : 's' }} selected
       </div>

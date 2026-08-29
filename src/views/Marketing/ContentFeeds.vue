@@ -116,10 +116,10 @@ function notify(text: string) { toast.success(text) }
           </div>
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Feed actions">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          <MpRowActionsMenu ariaLabel="Feed actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template v-slot:no-data>

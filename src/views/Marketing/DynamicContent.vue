@@ -139,11 +139,11 @@ function notify(text: string) { toast.success(text) }
           <span class="text-body-2 font-weight-medium font-mono">{{ item.name }}</span>
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Dynamic content actions">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicateItem(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          <MpRowActionsMenu ariaLabel="Dynamic content actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicateItem(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template v-slot:no-data>
@@ -189,9 +189,10 @@ function notify(text: string) { toast.success(text) }
 
       <MpFormSection title="Rules" />
 
-      <div v-for="(rule, i) in rules" :key="rule.id" class="dc-rule pa-4">
-        <div class="d-flex align-center justify-space-between mb-3">
-          <span class="text-caption font-weight-bold text-uppercase text-medium-emphasis">Rule {{ i + 1 }}</span>
+      <div v-for="(rule, i) in rules" :key="rule.id" class="d-flex flex-column ga-4">
+        <v-divider v-if="i > 0" />
+        <div class="d-flex align-center justify-space-between">
+          <MpFormSection :title="`Rule ${i + 1}`" />
           <v-btn
             v-if="rules.length > 1"
             icon="trash-2"
@@ -240,9 +241,5 @@ function notify(text: string) { toast.success(text) }
 </template>
 
 <style scoped>
-.dc-rule {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px;
-}
 .font-mono { font-family: monospace; }
 </style>

@@ -6,6 +6,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpStatusToggle from '@/components/MpStatusToggle.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
@@ -173,14 +174,15 @@ function createDataJourney() {
                   aria-label="Edit in builder" @click="openBuilder(item.id)"></v-btn>
               </template>
             </v-tooltip>
-            <MpRowActionsMenu ariaLabel="Data journey actions">
+            <MpRowActionsMenu ariaLabel="Data journey actions" :itemLabel="item.name">
               <v-list-item
+                role="menuitem"
                 :prepend-icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
                 :title="item.status === 'Active' ? 'Pause' : 'Activate'"
                 @click="toggleStatus(item)"
               ></v-list-item>
-              <v-divider></v-divider>
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error"
+              <v-divider class="my-1" />
+              <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error"
                 @click="store.removeDataJourney(item.id)"></v-list-item>
             </MpRowActionsMenu>
           </div>
@@ -202,24 +204,26 @@ function createDataJourney() {
 
     <!-- Create drawer -->
     <MpFormDrawer v-model="createOpen" title="New data journey" subtitle="Pick a starting point — the builder opens next.">
-      <v-text-field v-model="newName" label="Name" placeholder="e.g. Nightly warehouse export" />
+      <MpFormGrid>
+        <v-text-field v-model="newName" label="Name" placeholder="e.g. Nightly warehouse export" />
 
-      <MpFormField label="Start from">
-        <div class="d-flex flex-column ga-3">
-          <MpOptionCard v-for="tpl in dataJourneyTemplates" :key="tpl.id"
-            :selected="selectedTemplateId === tpl.id" :title="tpl.name" :description="tpl.description" :icon="tpl.icon"
-            @click="chooseTemplate(tpl.id)">
-            <div class="border rounded-lg bg-background pa-3 d-flex justify-center mt-3">
-              <JourneyMiniPreview :nodes="tpl.nodes" />
-            </div>
-          </MpOptionCard>
-        </div>
-      </MpFormField>
+        <MpFormField label="Start from">
+          <div class="d-flex flex-column ga-3">
+            <MpOptionCard v-for="tpl in dataJourneyTemplates" :key="tpl.id"
+              :selected="selectedTemplateId === tpl.id" :title="tpl.name" :description="tpl.description" :icon="tpl.icon"
+              @click="chooseTemplate(tpl.id)">
+              <div class="border rounded-lg bg-background pa-3 d-flex justify-center">
+                <JourneyMiniPreview :nodes="tpl.nodes" />
+              </div>
+            </MpOptionCard>
+          </div>
+        </MpFormField>
 
-      <v-divider />
+        <v-divider />
 
-      <v-textarea v-model="describeText" label="Or describe it" prepend-inner-icon="sparkles" rows="3" auto-grow
-        placeholder='e.g. "import shopify orders daily then send a campaign"' />
+        <v-textarea v-model="describeText" label="Or describe it" prepend-inner-icon="sparkles" rows="3" auto-grow
+          placeholder='e.g. "import shopify orders daily then send a campaign"' />
+      </MpFormGrid>
       <v-btn variant="tonal" color="primary" class="text-none" prepend-icon="sparkles" block @click="draftFromDescription">
         Draft from description
       </v-btn>

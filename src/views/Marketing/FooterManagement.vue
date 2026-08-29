@@ -126,12 +126,12 @@ function notify(text: string) { toast.success(text) }
           <span v-else class="text-medium-emphasis text-body-2">—</span>
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Footer actions">
-            <v-list-item prepend-icon="pencil" title="Edit Design" @click="openEdit(item)" />
-            <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicateFooter(item)" />
-            <v-list-item v-if="!item.isDefault" prepend-icon="star" title="Set as Default" @click="setDefault(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" :disabled="item.isDefault" @click="askDelete(item)" />
+          <MpRowActionsMenu ariaLabel="Footer actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit Design" @click="openEdit(item)" />
+            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicateFooter(item)" />
+            <v-list-item v-if="!item.isDefault" role="menuitem" prepend-icon="star" title="Set as Default" @click="setDefault(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" :disabled="item.isDefault" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template v-slot:no-data>

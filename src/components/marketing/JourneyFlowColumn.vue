@@ -4,6 +4,7 @@ import type { CatalogItem, NodeCategory } from '@/stores/journeyFlowData'
 import { nodeCatalog } from '@/stores/journeyFlowData'
 import type { FlowSegment } from '@/composables/useFlowTree'
 import JourneyAddStepMenu from './JourneyAddStepMenu.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { branchChipColor, categoryColor, categoryLabel } from './flowTheme'
 
 const props = defineProps<{
@@ -83,22 +84,15 @@ const endsRun = computed(() => {
         </button>
 
         <div class="flow-node__tools">
-          <v-menu location="bottom end">
-            <template #activator="{ props: menu }">
-              <v-btn v-bind="menu" icon="more-vertical" variant="text" size="x-small"
-                :aria-label="`Actions for ${seg.node.title}`" @click.stop></v-btn>
-            </template>
-            <v-card rounded="lg" border flat width="180" class="py-1">
-              <v-list density="compact" nav :border="false">
-                <v-list-item prepend-icon="pencil" title="Configure" @click="emit('select', seg.node.id)"></v-list-item>
-                <v-list-item prepend-icon="copy" title="Duplicate"
-                  :disabled="seg.node.category === 'trigger' || seg.node.category === 'filter'"
-                  @click="emit('duplicate', seg.node.id)"></v-list-item>
-                <v-list-item prepend-icon="trash-2" title="Delete" base-color="error"
-                  :disabled="seg.node.category === 'trigger'" @click="emit('remove', seg.node.id)"></v-list-item>
-              </v-list>
-            </v-card>
-          </v-menu>
+          <MpRowActionsMenu ariaLabel="Actions" :itemLabel="seg.node.title">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Configure" @click="emit('select', seg.node.id)"></v-list-item>
+            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate"
+              :disabled="seg.node.category === 'trigger' || seg.node.category === 'filter'"
+              @click="emit('duplicate', seg.node.id)"></v-list-item>
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error"
+              :disabled="seg.node.category === 'trigger'" @click="emit('remove', seg.node.id)"></v-list-item>
+          </MpRowActionsMenu>
         </div>
       </div>
 

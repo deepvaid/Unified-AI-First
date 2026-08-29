@@ -441,7 +441,7 @@ const pageTitle = computed(() => (editingExisting.value ? 'Edit A/B email campai
             </div>
 
             <div class="d-flex flex-column ga-4">
-              <v-card v-for="(group, index) in groups" :key="group.id" variant="outlined" rounded="lg" class="pa-5">
+              <v-card v-for="(group, index) in groups" :key="group.id" variant="flat" border rounded="lg" class="pa-5">
                 <div class="d-flex align-center mb-4">
                   <v-chip size="small" variant="tonal" color="primary" class="font-weight-bold">{{ group.name }}</v-chip>
                   <v-chip v-if="groupComplete(group)" size="small" variant="tonal" color="success" prepend-icon="check" class="ml-2">Complete</v-chip>

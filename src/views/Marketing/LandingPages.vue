@@ -199,11 +199,12 @@ function confirmDelete() {
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu :ariaLabel="`${item.name} actions`">
-            <v-list-item prepend-icon="pencil" rounded="lg" @click="editPage(item)">Edit</v-list-item>
-            <v-list-item prepend-icon="shield-check" rounded="lg" :disabled="item.status === 'Verified'" @click="verifyDomain(item)">Verify Domain</v-list-item>
-            <v-list-item prepend-icon="eye" rounded="lg" @click="previewPage(item)">Preview</v-list-item>
-            <v-list-item prepend-icon="copy" rounded="lg" @click="duplicate(item)">Duplicate</v-list-item>
-            <v-list-item prepend-icon="trash-2" rounded="lg" class="text-error mt-1" @click="askDelete(item)">Delete</v-list-item>
+            <v-list-item role="menuitem" prepend-icon="pencil" rounded="lg" @click="editPage(item)">Edit</v-list-item>
+            <v-list-item role="menuitem" prepend-icon="shield-check" rounded="lg" :disabled="item.status === 'Verified'" @click="verifyDomain(item)">Verify Domain</v-list-item>
+            <v-list-item role="menuitem" prepend-icon="eye" rounded="lg" @click="previewPage(item)">Preview</v-list-item>
+            <v-list-item role="menuitem" prepend-icon="copy" rounded="lg" @click="duplicate(item)">Duplicate</v-list-item>
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" rounded="lg" class="text-error" @click="askDelete(item)">Delete</v-list-item>
           </MpRowActionsMenu>
         </template>
       </v-data-table>

@@ -4,6 +4,7 @@ import { useMarketingAssetsStore, type CampaignTag } from '@/stores/useMarketing
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -109,10 +110,10 @@ function notify(text: string) { toast.success(text) }
           <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Tag actions">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          <MpRowActionsMenu ariaLabel="Tag actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template v-slot:no-data>
@@ -134,14 +135,16 @@ function notify(text: string) { toast.success(text) }
       v-model="drawer"
       :title="editingId !== null ? 'Edit Tag' : 'New Tag'" size="sm"
     >
-      <v-text-field
-        v-model="tagName"
-        label="Tag name"
-        placeholder="e.g. Promotions"
-        autofocus
-        :rules="[v => !!v || 'Name is required']"
-        @keydown.enter="saveTag"
-      />
+      <MpFormGrid>
+        <v-text-field
+          v-model="tagName"
+          label="Tag name"
+          placeholder="e.g. Promotions"
+          autofocus
+          :rules="[v => !!v || 'Name is required']"
+          @keydown.enter="saveTag"
+        />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave" @click="saveTag">
@@ -155,12 +158,14 @@ function notify(text: string) { toast.success(text) }
       <p class="text-body-2 text-medium-emphasis">
         Paste tag names separated by commas or new lines. Each one becomes a new tag.
       </p>
-      <v-textarea
-        v-model="importText"
-        label="Tag names"
-        rows="5"
-        placeholder="Newsletter, Promo_2026, Onboarding"
-      />
+      <MpFormGrid>
+        <v-textarea
+          v-model="importText"
+          label="Tag names"
+          rows="5"
+          placeholder="Newsletter, Promo_2026, Onboarding"
+        />
+      </MpFormGrid>
       <div v-if="importPreview.length" class="text-caption text-medium-emphasis">
         {{ importPreview.length }} tag{{ importPreview.length === 1 ? '' : 's' }} ready to import
       </div>

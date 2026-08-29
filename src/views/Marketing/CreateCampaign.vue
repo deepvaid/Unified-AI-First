@@ -694,8 +694,8 @@ const scheduleSummary = computed(() => {
             <template v-if="scheduleMethod === 'recurring'">
               <MpFormField label="Repeat pattern" class="mp-form-grid__full">
                 <template #default="{ labelId }">
-                  <v-radio-group v-model="recurringMode" :aria-labelledby="labelId" hide-details>
-                    <v-card variant="outlined" rounded="lg" class="pa-4 mb-3">
+                  <v-radio-group v-model="recurringMode" :aria-labelledby="labelId" hide-details class="cc-schedule-options">
+                    <v-card variant="flat" border rounded="lg" class="pa-4">
                       <v-radio value="day-of-week">
                         <template #label>
                           <span class="font-weight-bold ml-2">Selected days of the week</span>
@@ -721,7 +721,7 @@ const scheduleSummary = computed(() => {
                         <v-text-field v-model="recurringTime" label="Select time *" type="time" class="cc-time" />
                       </div>
                     </v-card>
-                    <v-card variant="outlined" rounded="lg" class="pa-4">
+                    <v-card variant="flat" border rounded="lg" class="pa-4">
                       <v-radio value="repeat-every">
                         <template #label>
                           <span class="font-weight-bold ml-2">Repeat every</span>
@@ -892,6 +892,8 @@ const scheduleSummary = computed(() => {
 .num { font-variant-numeric: tabular-nums; }
 .cc-preview { background: var(--surface-sunken); }
 .cc-time { max-width: 220px; }
+/* The radio group owns the rhythm between its schedule option tiles. */
+.cc-schedule-options :deep(.v-selection-control-group) { gap: var(--mp-component-field-groupGap); }
 .cc-review-grid {
   display: grid;
   grid-template-columns: 160px minmax(0, 1fr);

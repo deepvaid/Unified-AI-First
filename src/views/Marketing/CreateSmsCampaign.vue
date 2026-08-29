@@ -265,8 +265,8 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
 
             <MpFormField label="When to send" class="mp-form-grid__full">
               <template #default="{ labelId }">
-                <v-radio-group v-model="scheduleType" :aria-labelledby="labelId">
-                  <v-card variant="outlined" rounded="lg" class="pa-4 mb-3 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
+                <v-radio-group v-model="scheduleType" :aria-labelledby="labelId" class="cs-schedule-options">
+                  <v-card variant="outlined" rounded="lg" class="pa-4 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
                     <v-radio value="now">
                       <template #label>
                         <div class="ml-2">
@@ -345,6 +345,8 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .sms-count { font-variant-numeric: tabular-nums; }
+/* The radio group owns the rhythm between its schedule option tiles. */
+.cs-schedule-options :deep(.v-selection-control-group) { gap: var(--mp-component-field-groupGap); }
 
 .cs-grid {
   display: grid;

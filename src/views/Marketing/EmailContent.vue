@@ -62,12 +62,14 @@ function confirmDelete() {
               <div class="text-subtitle-1 font-weight-bold mb-1">{{ item.name }}</div>
               <MpRowActionsMenu :ariaLabel="`${item.name} actions`">
                 <v-list-item
+                  role="menuitem"
                   prepend-icon="pencil"
                   rounded="lg"
                   :to="{ name: 'EmailContentEditor', params: { accountId, id: item.id } }"
                 >Edit</v-list-item>
-                <v-list-item prepend-icon="copy" rounded="lg" @click="content.cloneContent(item.id)">Clone</v-list-item>
-                <v-list-item prepend-icon="trash-2" rounded="lg" class="text-error mt-1" @click="askDelete(item)">Delete</v-list-item>
+                <v-list-item role="menuitem" prepend-icon="copy" rounded="lg" @click="content.cloneContent(item.id)">Clone</v-list-item>
+                <v-divider class="my-1" />
+                <v-list-item role="menuitem" prepend-icon="trash-2" rounded="lg" class="text-error" @click="askDelete(item)">Delete</v-list-item>
               </MpRowActionsMenu>
             </div>
             <div class="text-body-2 text-medium-emphasis mb-1">{{ item.type }}</div>

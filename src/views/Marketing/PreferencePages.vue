@@ -196,11 +196,11 @@ function notify(text: string) { toast.success(text) }
           <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
         </template>
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Preference page actions">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicatePage(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          <MpRowActionsMenu ariaLabel="Preference page actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicatePage(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template v-slot:no-data>
@@ -222,37 +222,39 @@ function notify(text: string) { toast.success(text) }
       v-model="drawer"
       :title="editingId !== null ? 'Edit Preference Page' : 'New Page'"
     >
-      <v-text-field
-        v-model="name"
-        label="Name"
-        placeholder="e.g. Default Subscription Center"
-        :rules="[v => !!v || 'Name is required']"
-      />
+      <MpFormGrid>
+        <v-text-field
+          v-model="name"
+          label="Name"
+          placeholder="e.g. Default Subscription Center"
+          :rules="[v => !!v || 'Name is required']"
+        />
 
-      <v-select
-        v-model="pageType"
-        :items="PAGE_TYPES"
-        label="Page Type"
-      />
+        <v-select
+          v-model="pageType"
+          :items="PAGE_TYPES"
+          label="Page Type"
+        />
 
-      <v-text-field
-        v-if="pageType === 'Manage Subscriptions'"
-        v-model="redirectUrl"
-        label="Redirect URL"
-        placeholder="https://example.com/thank-you"
-        hint="Where subscribers land after saving their preferences"
-        persistent-hint
-      />
+        <v-text-field
+          v-if="pageType === 'Manage Subscriptions'"
+          v-model="redirectUrl"
+          label="Redirect URL"
+          placeholder="https://example.com/thank-you"
+          hint="Where subscribers land after saving their preferences"
+          persistent-hint
+        />
 
-      <MpFormField label="Editor">
-        <template #default="{ labelId }">
-          <v-radio-group v-model="editorType" inline :aria-labelledby="labelId">
-            <v-radio label="Drag & Drop" value="Drag & Drop" />
-            <v-radio label="WYSIWYG" value="WYSIWYG" />
-            <v-radio label="HTML" value="HTML" />
-          </v-radio-group>
-        </template>
-      </MpFormField>
+        <MpFormField label="Editor">
+          <template #default="{ labelId }">
+            <v-radio-group v-model="editorType" inline :aria-labelledby="labelId">
+              <v-radio label="Drag & Drop" value="Drag & Drop" />
+              <v-radio label="WYSIWYG" value="WYSIWYG" />
+              <v-radio label="HTML" value="HTML" />
+            </v-radio-group>
+          </template>
+        </MpFormField>
+      </MpFormGrid>
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import MpDialog from '@/components/MpDialog.vue'
+import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import CampaignEmailPreview from '@/components/marketing/CampaignEmailPreview.vue'
 
 /**
@@ -109,24 +110,23 @@ watch(model, (open) => {
 
       <!-- Device previews -->
       <div v-else class="cce__devices flex-grow-1">
-        <div class="d-flex align-center ga-3 mb-4">
-          <div>
-            <h3 class="text-body-1 font-weight-bold mb-0">Inbox previews</h3>
-            <p class="text-body-2 text-medium-emphasis mb-0">
-              Rendered by the preview service across common devices and clients.
-            </p>
-          </div>
-          <v-spacer />
-          <v-btn
-            color="primary"
-            class="text-none"
-            :prepend-icon="generated ? 'refresh-cw' : 'sparkles'"
-            :loading="generating"
-            @click="generatePreviews"
-          >
-            {{ generated ? 'Regenerate previews' : 'Generate previews' }}
-          </v-btn>
-        </div>
+        <MpSectionHeader
+          title="Inbox previews"
+          :heading-level="3"
+          description="Rendered by the preview service across common devices and clients."
+        >
+          <template #actions>
+            <v-btn
+              color="primary"
+              class="text-none"
+              :prepend-icon="generated ? 'refresh-cw' : 'sparkles'"
+              :loading="generating"
+              @click="generatePreviews"
+            >
+              {{ generated ? 'Regenerate previews' : 'Generate previews' }}
+            </v-btn>
+          </template>
+        </MpSectionHeader>
 
         <div v-if="!generating && !generated" class="cce__device-empty d-flex flex-column align-center justify-center text-center ga-2">
           <v-icon size="40" class="text-medium-emphasis" aria-hidden="true">monitor-smartphone</v-icon>

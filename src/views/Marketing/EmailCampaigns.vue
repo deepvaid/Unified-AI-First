@@ -260,20 +260,20 @@ const openCreator = () => {
           <div class="action-btns d-flex justify-end pr-2 gap-1">
             <v-btn v-if="item.status === 'Sent'" icon="bar-chart-2" variant="text" size="small" color="primary" aria-label="View report" @click="viewReport(item.id)"></v-btn>
             <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">
-              <v-list-item v-if="item.status === 'Draft'" @click="editCampaign(item.id)">
+              <v-list-item v-if="item.status === 'Draft'" role="menuitem" @click="editCampaign(item.id)">
                 <template #prepend><v-icon size="18">pencil</v-icon></template>
                 <v-list-item-title class="text-body-2">Edit</v-list-item-title>
               </v-list-item>
-              <v-list-item @click="store.duplicateCampaign(item.id)">
+              <v-list-item role="menuitem" @click="store.duplicateCampaign(item.id)">
                 <template #prepend><v-icon size="18">copy</v-icon></template>
                 <v-list-item-title class="text-body-2">Duplicate</v-list-item-title>
               </v-list-item>
-              <v-list-item @click="moveTarget = { id: item.id, name: item.name, folderId: item.folderId }">
+              <v-list-item role="menuitem" @click="moveTarget = { id: item.id, name: item.name, folderId: item.folderId }">
                 <template #prepend><v-icon size="18">folder-input</v-icon></template>
                 <v-list-item-title class="text-body-2">Move to folder…</v-list-item-title>
               </v-list-item>
               <v-divider class="my-1" />
-              <v-list-item class="text-error" @click="deleteTarget = { id: item.id, name: item.name }">
+              <v-list-item role="menuitem" class="text-error" @click="deleteTarget = { id: item.id, name: item.name }">
                 <template #prepend><v-icon size="18">trash-2</v-icon></template>
                 <v-list-item-title class="text-body-2">Delete</v-list-item-title>
               </v-list-item>
