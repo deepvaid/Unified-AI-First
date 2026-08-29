@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import MpMenuItem from './MpMenuItem.vue'
 import MpRowActionsMenu from './MpRowActionsMenu.vue'
 import MpStatusChip from './MpStatusChip.vue'
 import { ORDERS } from '@/stories/fixtures'
@@ -14,7 +15,7 @@ const meta = {
 ### Overview
 \`MpRowActionsMenu\` is the kebab ("more-vertical") actions menu used in the trailing column of
 data-table rows. The component owns the trigger button and the compact list container; the view
-supplies \`v-list-item\`s in the default slot, keeping row-specific actions and handlers local.
+supplies \`MpMenuItem\`s in the default slot, keeping row-specific actions and handlers local.
 
 **Use when:** a table row or card needs 2–6 secondary actions behind a kebab trigger.
 
@@ -25,10 +26,10 @@ menu needs headers, filtering, or nested submenus (build a bespoke \`v-menu\`).
 \`\`\`html
 <template #item.actions="{ item }">
   <MpRowActionsMenu ariaLabel="Journey actions" :itemLabel="item.name">
-    <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-    <v-list-item role="menuitem" prepend-icon="circle-pause" title="Pause" :disabled="item.status !== 'Active'" @click="pause(item)" />
+    <MpMenuItem icon="copy" title="Duplicate" @click="duplicate(item)" />
+    <MpMenuItem icon="circle-pause" title="Pause" :disabled="item.status !== 'Active'" @click="pause(item)" />
     <v-divider class="my-1" />
-    <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="confirmDelete(item)" />
+    <MpMenuItem icon="trash-2" title="Delete" danger @click="confirmDelete(item)" />
   </MpRowActionsMenu>
 </template>
 \`\`\`
@@ -42,9 +43,8 @@ type-checking fails with a missing-prop error (see cleanup-report §6).
 ### 🟢 Do's
 - **Do** pass a row-specific accessible name — \`ariaLabel\` + \`itemLabel\` ("Contact actions" +
   "James Anderson") — it is the trigger's only accessible name.
-- **Do** give every \`v-list-item\` \`role="menuitem"\` — the list is \`role="menu"\`, and slotted
-  items must match it.
-- **Do** put destructive actions last, behind a \`<v-divider class="my-1" />\`, with \`class="text-error"\`.
+- **Do** slot \`MpMenuItem\`s — they carry \`role="menuitem"\` for the \`role="menu"\` list.
+- **Do** put destructive actions last, behind a \`<v-divider class="my-1" />\`, with \`danger\`.
 - **Do** disable (not hide) actions that don't apply to the row's state, so the menu shape stays stable.
 
 ### 🔴 Don'ts
@@ -59,9 +59,8 @@ type-checking fails with a missing-prop error (see cleanup-report §6).
   \`control.height\` (40px) even though the glyph stays compact; the trigger swallows its own click
   so it never activates a clickable host row.
 - **Consumer must:** make the label row-specific via \`itemLabel\` (a table of 50 rows each
-  announcing "Row actions" is not distinguishable), give every \`v-list-item\` \`role="menuitem"\`
-  and a \`title\` or text content, and attach real \`@click\` handlers (items without them are
-  still focusable but inert).
+  announcing "Row actions" is not distinguishable), slot \`MpMenuItem\`s with a \`title\`, and
+  attach real \`@click\` handlers (items without them are still focusable but inert).
 - **Gaps:** destructive styling (\`text-error\`) is color-only with no textual warning — pair it
   with an MpConfirmDialog before the action commits.
         `,
@@ -82,7 +81,7 @@ type-checking fails with a missing-prop error (see cleanup-report §6).
     },
     default: {
       control: false,
-      description: 'Slot — menu content: `v-list-item`s (destructive actions last, behind a `v-divider`, with `class="text-error"`).',
+      description: 'Slot — menu content: `MpMenuItem`s (destructive actions last, behind a `<v-divider class="my-1" />`, with `danger`).',
       table: { category: 'slots' },
     },
   },
@@ -93,16 +92,16 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   render: (args) => ({
-    components: { MpRowActionsMenu },
+    components: { MpMenuItem, MpRowActionsMenu },
     setup: () => ({ args }),
     template: `
       <div class="d-flex justify-center pa-8">
         <MpRowActionsMenu v-bind="args">
-          <v-list-item prepend-icon="bar-chart-2" title="View analytics"></v-list-item>
-          <v-list-item prepend-icon="copy" title="Duplicate"></v-list-item>
-          <v-list-item prepend-icon="circle-pause" title="Pause"></v-list-item>
+          <MpMenuItem icon="bar-chart-2" title="View analytics" />
+          <MpMenuItem icon="copy" title="Duplicate" />
+          <MpMenuItem icon="circle-pause" title="Pause" />
           <v-divider></v-divider>
-          <v-list-item prepend-icon="trash-2" title="Delete" class="text-error"></v-list-item>
+          <MpMenuItem icon="trash-2" title="Delete" danger />
         </MpRowActionsMenu>
       </div>
     `,
@@ -112,15 +111,15 @@ export const Default: Story = {
 /** The menu opened automatically, in a tall canvas so the popover has room. */
 export const OpenMenu: Story = {
   render: (args) => ({
-    components: { MpRowActionsMenu },
+    components: { MpMenuItem, MpRowActionsMenu },
     setup: () => ({ args }),
     template: `
       <div class="d-flex justify-center pt-4" style="min-height: 320px;">
         <MpRowActionsMenu v-bind="args">
-          <v-list-item prepend-icon="bar-chart-2" title="View analytics"></v-list-item>
-          <v-list-item prepend-icon="copy" title="Duplicate"></v-list-item>
+          <MpMenuItem icon="bar-chart-2" title="View analytics" />
+          <MpMenuItem icon="copy" title="Duplicate" />
           <v-divider></v-divider>
-          <v-list-item prepend-icon="trash-2" title="Delete" class="text-error"></v-list-item>
+          <MpMenuItem icon="trash-2" title="Delete" danger />
         </MpRowActionsMenu>
       </div>
     `,
@@ -140,15 +139,15 @@ export const OpenMenu: Story = {
  */
 export const WithItemLabel: Story = {
   render: (args) => ({
-    components: { MpRowActionsMenu },
+    components: { MpMenuItem, MpRowActionsMenu },
     setup: () => ({ args }),
     template: `
       <div class="d-flex justify-center pt-4" style="min-height: 320px;">
         <MpRowActionsMenu v-bind="args">
-          <v-list-item prepend-icon="bar-chart-2" title="View analytics"></v-list-item>
-          <v-list-item prepend-icon="copy" title="Duplicate"></v-list-item>
+          <MpMenuItem icon="bar-chart-2" title="View analytics" />
+          <MpMenuItem icon="copy" title="Duplicate" />
           <v-divider></v-divider>
-          <v-list-item prepend-icon="trash-2" title="Delete" class="text-error"></v-list-item>
+          <MpMenuItem icon="trash-2" title="Delete" danger />
         </MpRowActionsMenu>
       </div>
     `,
@@ -167,16 +166,16 @@ export const WithItemLabel: Story = {
  */
 export const DisabledItems: Story = {
   render: (args) => ({
-    components: { MpRowActionsMenu },
+    components: { MpMenuItem, MpRowActionsMenu },
     setup: () => ({ args }),
     template: `
       <div class="d-flex justify-center pt-4" style="min-height: 320px;">
         <MpRowActionsMenu v-bind="args">
-          <v-list-item prepend-icon="bar-chart-2" title="View analytics"></v-list-item>
-          <v-list-item prepend-icon="circle-pause" title="Pause" disabled></v-list-item>
-          <v-list-item prepend-icon="circle-play" title="Resume" disabled></v-list-item>
+          <MpMenuItem icon="bar-chart-2" title="View analytics" />
+          <MpMenuItem icon="circle-pause" title="Pause" disabled />
+          <MpMenuItem icon="circle-play" title="Resume" disabled />
           <v-divider></v-divider>
-          <v-list-item prepend-icon="trash-2" title="Delete" class="text-error"></v-list-item>
+          <MpMenuItem icon="trash-2" title="Delete" danger />
         </MpRowActionsMenu>
       </div>
     `,
@@ -198,30 +197,30 @@ export const DisabledItems: Story = {
  */
 export const Variants: Story = {
   render: () => ({
-    components: { MpRowActionsMenu },
+    components: { MpMenuItem, MpRowActionsMenu },
     template: `
       <div class="d-flex ga-10">
         <div>
           <div class="text-caption text-medium-emphasis mb-2">plain items</div>
           <MpRowActionsMenu ariaLabel="Row actions">
-            <v-list-item title="View" />
-            <v-list-item title="Duplicate" />
+            <MpMenuItem title="View" />
+            <MpMenuItem title="Duplicate" />
           </MpRowActionsMenu>
         </div>
         <div>
           <div class="text-caption text-medium-emphasis mb-2">with icons</div>
           <MpRowActionsMenu ariaLabel="Row actions">
-            <v-list-item title="View" prepend-icon="eye" />
-            <v-list-item title="Duplicate" prepend-icon="copy" />
+            <MpMenuItem title="View" icon="eye" />
+            <MpMenuItem title="Duplicate" icon="copy" />
           </MpRowActionsMenu>
         </div>
         <div>
           <div class="text-caption text-medium-emphasis mb-2">with a destructive action</div>
           <MpRowActionsMenu ariaLabel="Row actions">
-            <v-list-item title="View" prepend-icon="eye" />
-            <v-list-item title="Duplicate" prepend-icon="copy" />
+            <MpMenuItem title="View" icon="eye" />
+            <MpMenuItem title="Duplicate" icon="copy" />
             <v-divider class="my-1" />
-            <v-list-item title="Delete" prepend-icon="trash-2" class="text-error" />
+            <MpMenuItem title="Delete" icon="trash-2" danger />
           </MpRowActionsMenu>
         </div>
       </div>
@@ -238,12 +237,12 @@ export const Variants: Story = {
  */
 export const Sizes: Story = {
   render: () => ({
-    components: { MpRowActionsMenu },
+    components: { MpMenuItem, MpRowActionsMenu },
     template: `
       <div class="d-flex align-center ga-4">
         <MpRowActionsMenu ariaLabel="Row actions">
-          <v-list-item title="View" prepend-icon="eye" />
-          <v-list-item title="Duplicate" prepend-icon="copy" />
+          <MpMenuItem title="View" icon="eye" />
+          <MpMenuItem title="Duplicate" icon="copy" />
         </MpRowActionsMenu>
         <div class="text-body-2 text-medium-emphasis">Open the menu — its rows are 40px, like every nav row.</div>
       </div>
@@ -258,14 +257,14 @@ export const Sizes: Story = {
  */
 export const States: Story = {
   render: () => ({
-    components: { MpRowActionsMenu },
+    components: { MpMenuItem, MpRowActionsMenu },
     template: `
       <MpRowActionsMenu ariaLabel="Row actions"> item-label="Order #10002">
-        <v-list-item title="View order" prepend-icon="eye" />
-        <v-list-item title="Print packing slip" prepend-icon="printer" />
-        <v-list-item title="Refund" prepend-icon="undo-2" disabled subtitle="Already refunded" />
+        <MpMenuItem title="View order" icon="eye" />
+        <MpMenuItem title="Print packing slip" icon="printer" />
+        <MpMenuItem title="Refund" icon="undo-2" disabled subtitle="Already refunded" />
         <v-divider class="my-1" />
-        <v-list-item title="Cancel order" prepend-icon="ban" class="text-error" />
+        <MpMenuItem title="Cancel order" icon="ban" danger />
       </MpRowActionsMenu>
     `,
   }),
@@ -282,7 +281,7 @@ export const States: Story = {
  */
 export const InContextOrdersTable: Story = {
   render: () => ({
-    components: { MpRowActionsMenu, MpStatusChip },
+    components: { MpMenuItem, MpRowActionsMenu, MpStatusChip },
     setup: () => ({
       rows: ORDERS.slice(0, 5),
       headers: [
@@ -301,11 +300,11 @@ export const InContextOrdersTable: Story = {
           </template>
           <template #item.actions="{ item }">
             <MpRowActionsMenu ariaLabel="Order actions" :item-label="item.order">
-              <v-list-item title="View order" prepend-icon="eye" />
-              <v-list-item title="Print packing slip" prepend-icon="printer" />
-              <v-list-item title="Send receipt" prepend-icon="mail" />
+              <MpMenuItem title="View order" icon="eye" />
+              <MpMenuItem title="Print packing slip" icon="printer" />
+              <MpMenuItem title="Send receipt" icon="mail" />
               <v-divider class="my-1" />
-              <v-list-item title="Cancel order" prepend-icon="ban" class="text-error" />
+              <MpMenuItem title="Cancel order" icon="ban" danger />
             </MpRowActionsMenu>
           </template>
         </v-data-table>
