@@ -130,17 +130,17 @@ function fmtEyebrow(s: string) {
 const recentActivity = computed<ActivityItem[]>(() => {
   const entries: (ActivityItem & { sortKey: number })[] = []
 
-  // ContentItem.lastUpdated is a relative-time string ("2 hours ago", "Last week") rather
-  // than a parseable date — the seed data is already ordered newest-first, so trust that.
-  const recentContent = contentStore.items[0]
+  // The store seeds content newest-first by updatedAt.
+  const recentContent = contentStore.activeItems[0]
   if (recentContent) {
+    const updated = Date.parse(recentContent.updatedAt)
     entries.push({
       icon: 'file-text', tag: 'email',
-      eyebrow: recentContent.lastUpdated,
+      eyebrow: new Date(updated).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       title: `${recentContent.name} updated`,
-      meta: recentContent.type,
+      meta: recentContent.editorType,
       to: `${base.value}/contents/editor/${recentContent.id}`,
-      sortKey: Date.now(),
+      sortKey: updated,
     })
   }
 

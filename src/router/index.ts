@@ -280,6 +280,13 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/data_journeys', name: 'DataJourneys', component: () => import('@/views/Marketing/DataJourneys.vue') },
   { path: '/accounts/:accountId/data_journeys/:id/builder', name: 'DataJourneyBuilder', component: () => import('@/views/Marketing/JourneyBuilder.vue'), meta: { builderShell: true, flowDomain: 'data' } },
   { path: '/accounts/:accountId/contents', name: 'EmailContent', component: () => import('@/views/Marketing/EmailContent.vue') },
+  { path: '/accounts/:accountId/contents/template', name: 'ContentTemplates', component: () => import('@/views/Marketing/ContentTemplates.vue') },
+  // Two near-identical choosers in the source; one component, told apart by meta.
+  { path: '/accounts/:accountId/contents/select', name: 'ContentEditorChooser', component: () => import('@/views/Marketing/ContentEditorChooser.vue'), meta: { chooserMode: 'content' } },
+  { path: '/accounts/:accountId/content_templates/select_editor', name: 'TemplateEditorChooser', component: () => import('@/views/Marketing/ContentEditorChooser.vue'), meta: { chooserMode: 'template' } },
+  { path: '/accounts/:accountId/content_templates/layouts', name: 'TemplateLayouts', component: () => import('@/views/Marketing/TemplateLayouts.vue') },
+  { path: '/accounts/:accountId/contents/:id/preview', name: 'EmailContentPreview', component: () => import('@/views/Marketing/EmailContentPreview.vue') },
+  { path: '/accounts/:accountId/archive', name: 'ContentArchives', component: () => import('@/views/Marketing/ContentArchives.vue') },
   { path: '/accounts/:accountId/contents/editor/:id', name: 'EmailContentEditor', component: () => import('@/views/Marketing/EmailContentEditor.vue'), meta: { builderShell: true } },
   { path: '/accounts/:accountId/dynamic_contents', name: 'DynamicContent', component: () => import('@/views/Marketing/DynamicContent.vue') },
   { path: '/accounts/:accountId/images', name: 'ImageLibrary', component: () => import('@/views/Marketing/ImageLibrary.vue') },
