@@ -83,25 +83,25 @@ function openView(card: CustomGiftCard) {
 }
 
 // ── Filters ──────────────────────────────────────────────────────
-const filters = ref({ status: null as string | null })
-const filterOptions = { status: ['Active', 'Redeemed', 'Expired', 'Disabled'] }
-const filterLabels: Record<string, string> = { status: 'Status' }
+// Status is this table's only filter, so it lives in the toolbar as a pill and
+// there is no drawer at all.
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: ['Active', 'Redeemed', 'Expired', 'Disabled'].map((v) => ({ label: v, value: v })),
+}
+const statusFilter = ref<string[]>([])
 
 const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v !== null)
-    .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` })),
+  statusFilter.value.length ? [{ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` }] : [],
 )
 
-function removeFilter(key: string) {
-  filters.value[key as keyof typeof filters.value] = null
-}
 function clearAllFilters() {
-  filters.value = { status: null }
+  statusFilter.value = []
 }
 
 const filteredCards = computed(() =>
-  store.customGiftCards.filter(c => !filters.value.status || c.status === filters.value.status),
+  store.customGiftCards.filter(c => !statusFilter.value.length || statusFilter.value.includes(c.status)),
 )
 
 function selectAll() {
@@ -209,28 +209,16 @@ function notify(text: string) { toast.success(text) }
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="statusFilter"
+        :quick-filter="statusQuickFilter"
         v-model:search="search"
         title="Issued gift cards"
         search-placeholder="Search by code, contact or recipient…"
         :active-filters="activeFilterEntries"
         :total-count="filteredCards.length"
-        @remove-filter="removeFilter"
+        @remove-filter="clearAllFilters"
         @clear-filters="clearAllFilters"
-      >
-        <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select
-              v-model="filters.status"
-              label="Status"
-              :items="filterOptions.status"
-              density="compact"
-              hide-details
-              clearable
-            />
-          </div>
-        </template>
-      </MpDataTableToolbar>
+      />
 
       <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
 

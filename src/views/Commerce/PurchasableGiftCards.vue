@@ -122,26 +122,51 @@ function saveProduct() {
 }
 
 // ── Filters ──────────────────────────────────────────────────────
-const filters = ref({ status: null as string | null, kind: null as string | null })
-const filterOptions = { status: ['Active', 'Draft', 'Archived'], kind: ['Digital', 'Physical'] }
-const filterLabels: Record<string, string> = { status: 'Status', kind: 'Type' }
+// Status is the promoted filter: a multi-select pill in the toolbar, so the
+// cut people make most often doesn't cost a trip to the drawer.
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: (['Active', 'Draft', 'Archived']).map((v) => ({ label: v, value: v })),
+}
+const statusFilter = ref<string[]>([])
 
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v !== null)
-    .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` })),
-)
+const filters = ref({
+  kind: null as string | null,
+})
+const filterOptions = {
+  kind: ['Digital', 'Physical'],
+}
+const filterLabels: Record<string, string> = {
+  kind: 'Type',
+}
+
+const activeFilterEntries = computed(() => {
+  const entries =
+    Object.entries(filters.value)
+      .filter(([, v]) => v !== null)
+      .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` }))
+  if (statusFilter.value.length) {
+    entries.unshift({ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` })
+  }
+  return entries
+})
 
 function removeFilter(key: string) {
+  if (key === 'status') {
+    statusFilter.value = []
+    return
+  }
   filters.value[key as keyof typeof filters.value] = null
 }
 function clearAllFilters() {
-  filters.value = { status: null, kind: null }
+  statusFilter.value = []
+  filters.value = { kind: null }
 }
 
 const filteredProducts = computed(() =>
   store.purchasableGiftCards.filter(
-    p => (!filters.value.status || p.status === filters.value.status) && (!filters.value.kind || p.kind === filters.value.kind),
+    p => (!statusFilter.value.length || statusFilter.value.includes(p.status)) && (!filters.value.kind || p.kind === filters.value.kind),
   ),
 )
 
@@ -249,6 +274,8 @@ function notify(text: string) { toast.success(text) }
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="statusFilter"
+        :quick-filter="statusQuickFilter"
         v-model:search="search"
         title="Gift card products"
         search-placeholder="Search gift card products…"
@@ -261,9 +288,8 @@ function notify(text: string) { toast.success(text) }
           <div class="pa-4 pb-2">
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
             <!-- Toolbar filters stay compact and suppress details deliberately: this is a
-                 dense popover, not a form, and neither select can carry validation. -->
+                 dense popover, not a form, and the select cannot carry validation. -->
             <MpFormGrid>
-              <v-select v-model="filters.status" label="Status" :items="filterOptions.status" density="compact" hide-details clearable />
               <v-select v-model="filters.kind" label="Type" :items="filterOptions.kind" density="compact" hide-details clearable />
             </MpFormGrid>
           </div>

@@ -42,13 +42,20 @@ const tabbedPromotions = computed(() =>
 )
 
 // ── Filters ──────────────────────────────────────────────────────
+// Discount Method is the promoted filter: a multi-select pill in the toolbar, so the
+// cut people make most often doesn't cost a trip to the drawer.
+const methodQuickFilter = {
+  key: 'method',
+  label: 'Discount Method',
+  options: (['Order', 'Product']).map((v) => ({ label: v, value: v })),
+}
+const methodFilter = ref<string[]>([])
+
 const filters = ref({
-  method: null as string | null,
   mechanism: null as string | null,
 })
 
 const filterOptions = {
-  method: ['Order', 'Product'],
   mechanism: ['Code', 'Automatic'],
 }
 
@@ -57,23 +64,33 @@ const filterLabels: Record<string, string> = {
   mechanism: 'Mechanism',
 }
 
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v !== null)
-    .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` }))
-)
+const activeFilterEntries = computed(() => {
+  const entries =
+    Object.entries(filters.value)
+      .filter(([, v]) => v !== null)
+      .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` }))
+  if (methodFilter.value.length) {
+    entries.unshift({ key: 'method', label: `Discount Method: ${methodFilter.value.join(', ')}` })
+  }
+  return entries
+})
 
 function removeFilter(key: string) {
+  if (key === 'method') {
+    methodFilter.value = []
+    return
+  }
   filters.value[key as keyof typeof filters.value] = null
 }
 
 function clearAllFilters() {
-  filters.value = { method: null, mechanism: null }
+  methodFilter.value = []
+  filters.value = { mechanism: null }
 }
 
 const filteredPromotions = computed(() => {
   let rows = tabbedPromotions.value
-  if (filters.value.method) rows = rows.filter(p => p.method === filters.value.method)
+  if (methodFilter.value.length) rows = rows.filter(p => methodFilter.value.includes(p.method))
   if (filters.value.mechanism) rows = rows.filter(p => p.mechanism === filters.value.mechanism)
   return rows
 })
@@ -212,6 +229,8 @@ onMounted(() => {
     <!-- Table Card -->
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="methodFilter"
+        :quick-filter="methodQuickFilter"
         v-model:search="search"
         title="All Promotions"
         :active-filters="activeFilterEntries"

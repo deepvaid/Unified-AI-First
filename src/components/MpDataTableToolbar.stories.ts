@@ -20,8 +20,8 @@ const meta = {
 The \`MpDataTableToolbar\` is the primary control surface above Data Tables. It handles the table
 title + record count, instant search, a filter drawer (\`#filter-content\` slot rendered inside an
 \`MpFormDrawer\`), active-filter chips with per-chip remove and Clear, a column-visibility menu
-(when \`headers\` is passed), and an \`#actions\` slot for view-specific controls like
-\`MpFolderSelect\`.
+(when \`headers\` is passed), an optional \`quickFilter\` pill dropdown leading the row, and an
+\`#actions\` slot for view-specific controls like \`MpFolderSelect\`.
 
 **Use when:** a \`v-data-table\` or large list needs search/filter/column controls — every table
 page in the platform places this directly above the table inside the same \`v-card\`.
@@ -35,10 +35,12 @@ page in the platform places this directly above the table inside the same \`v-ca
 <MpDataTableToolbar
   v-model:search="search"
   v-model:hidden-columns="hiddenColumns"
+  v-model:quick-filter-value="statusFilter"
   title="All Products"
   :total-count="filtered.length"
   :headers="headers"
   search-placeholder="Search products…"
+  :quick-filter="{ key: 'status', label: 'Status', options: statusOptions }"
   :active-filters="activeFilters"
   @remove-filter="removeFilter"
   @clear-filters="clearFilters"
@@ -59,6 +61,8 @@ page in the platform places this directly above the table inside the same \`v-ca
   the "+N more" overflow, and the Clear button for you.
 - **Do** pass \`totalCount\` with the **filtered** length so the "N records" line matches what the
   table shows.
+- **Do** promote the one highest-traffic filter to \`quickFilter\` and leave the long tail in the
+  drawer — the pill is for the cut users make constantly, not for every field.
 
 ### 🔴 Don'ts
 - **Don't** use this component outside the context of a Data Table or large list view.
@@ -66,6 +70,8 @@ page in the platform places this directly above the table inside the same \`v-ca
   (like "Create New") — put those in the \`MpPageHeader\` instead.
 - **Don't** build bulk-selection actions here — selection UI belongs to \`MpFloatingBulkBar\`.
 - **Don't** build custom active-filter chips below the toolbar.
+- **Don't** put the same field in \`quickFilter\` *and* the drawer — one field, one control, or the
+  two fight over the same slice of data.
 
 ### 💡 Best Practices
 - **Filter drawer:** the \`#filter-content\` slot renders inside an \`MpFormDrawer\` titled by
@@ -75,9 +81,21 @@ page in the platform places this directly above the table inside the same \`v-ca
   your headers computed before passing it to \`v-data-table\`. The icon button badges the hidden count.
 - **Chip overflow:** only the first 3 filter chips render; the rest collapse into a "+N more"
   chip — remove hidden filters via the drawer or Clear.
+- **Quick filter:** \`:quick-filter="{ key, label, icon?, options }"\` plus
+  \`v-model:quick-filter-value\` (a \`string[]\`) renders a checkbox dropdown as a pill at the
+  **head of the control cluster, before the Filter button** — it is the cut people reach for
+  first, so it sits first. The pill reads as the selected option when exactly one is picked and
+  as the group label with a count badge beyond that. The toolbar owns the menu and its Clear button; the
+  **consumer** owns filtering, the matching \`activeFilters\` entry, and clearing the model inside
+  its own \`removeFilter\`/\`clearFilters\` handlers — the same contract \`activeFilters\` already has.
+  The **Filter** button badges \`activeFilters\` *minus* the quick filter's key, so a promoted
+  filter never sends people into a drawer that no longer holds it. When the promoted filter was
+  the table's only one, drop \`#filter-content\` entirely — the Filter button disappears with it
+  (see Commerce → Draft Orders and Custom Gift Cards).
 
 ### Styling
-- All three controls in the row — search field, **Filter** button, **column-toggle** button —
+- All four controls in the row — the **quick-filter** pill, **Filter** button, **column-toggle**
+  button and search field, in that order —
   resolve to **\`--mp-component-control-height\`** (40px): the one baseline shared by buttons,
   form fields, list rows, nav items and table headers. Phase 4 (P4-4) removed the literal
   \`height: 40px\` on the buttons and the \`min-height: 38px\` on the search field — 38 + borders
@@ -110,7 +128,9 @@ page in the platform places this directly above the table inside the same \`v-ca
   filters (2 active)", "Toggle visible columns (1 hidden)") *(counts added in the Phase 4 a11y
   pass)*; filter chips are closable with Vuetify's built-in close-target; the filter drawer
   inherits \`MpFormDrawer\`'s full dialog semantics (focus trap, Escape-close, labelled title);
-  column checkboxes are real labelled \`v-checkbox\`es.
+  column checkboxes are real labelled \`v-checkbox\`es; the quick-filter pill carries the same
+  count-bearing \`aria-label\` pattern ("Filter by Status (2 selected)") and its options are a
+  labelled checkbox group via \`MpFormField\`.
 - **Consumer must:** keep \`activeFilters\` labels human-readable ("Status: Active") — the label
   is the chip's only accessible name — and debounce expensive queries themselves (the search
   model updates on every keystroke).
@@ -129,9 +149,11 @@ page in the platform places this directly above the table inside the same \`v-ca
     filterSubtitle: { control: 'text', description: 'Optional subtitle of the filter drawer.' },
     activeFilters: { control: 'object', description: 'Applied filters as { key, label }[]. First 3 render as closable chips, the rest collapse into "+N more".' },
     headers: { control: 'object', description: 'Table headers ({ title, key }). When passed, the column-visibility menu appears; actions/select/expand keys are excluded automatically.' },
+    quickFilter: { control: 'object', description: 'Promotes one filter to a checkbox pill dropdown left of search: { key, label, icon?, options: { label, value }[] }. Pair with v-model:quick-filter-value.' },
     search: { control: false, description: 'v-model:search — instant search text (updates every keystroke).', table: { category: 'models' } },
     filterOpen: { control: false, description: 'v-model:filter-open — filter drawer visibility (usually left internal).', table: { category: 'models' } },
     hiddenColumns: { control: false, description: 'v-model:hidden-columns — keys of hidden columns; filter your headers with it before v-data-table.', table: { category: 'models' } },
+    quickFilterValue: { control: false, description: 'v-model:quick-filter-value — selected quick-filter option values. Apply it to your rows and clear it in removeFilter/clearFilters.', table: { category: 'models' } },
     removeFilter: { control: false, description: 'Event — a filter chip\'s close was clicked; payload is the filter key.', table: { category: 'events' } },
     clearFilters: { control: false, description: 'Event — "Clear" (chip row) or "Clear all" (drawer footer) was clicked.', table: { category: 'events' } },
     actions: { control: false, description: 'Slot — view-specific controls next to search (e.g. MpFolderSelect, Export).', table: { category: 'slots' } },
@@ -483,6 +505,101 @@ export const WithSingleFilter: Story = {
   },
 }
 
+/**
+ * The promoted filter: a checkbox pill beside search, so the cut users make constantly
+ * costs one click instead of a trip to the drawer. Pick one option and the pill reads as
+ * that option; pick more and it falls back to the group label with a count badge. The
+ * selection round-trips through the same chip row as every other filter.
+ */
+export const WithQuickFilter: Story = {
+  render: (args) => ({
+    components: { MpDataTableToolbar },
+    setup() {
+      const search = ref('')
+      const statusFilter = ref<string[]>(['Subscribed'])
+
+      const activeFilters = computed(() =>
+        statusFilter.value.length
+          ? [{ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` }]
+          : []
+      )
+
+      function removeFilter(_key: string) { statusFilter.value = [] }
+      function clearFilters() { statusFilter.value = [] }
+
+      return { args, search, statusFilter, activeFilters, removeFilter, clearFilters }
+    },
+    template: `
+      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+        <MpDataTableToolbar
+          v-bind="args"
+          v-model:search="search"
+          v-model:quick-filter-value="statusFilter"
+          :active-filters="activeFilters"
+          @remove-filter="removeFilter"
+          @clear-filters="clearFilters"
+        />
+      </v-card>
+    `,
+  }),
+  args: {
+    title: 'All Contacts',
+    totalCount: 41,
+    searchPlaceholder: 'Search contacts…',
+    quickFilter: {
+      key: 'status',
+      label: 'Status',
+      options: ['Subscribed', 'Unsubscribed', 'Bounced', 'Spam'].map(s => ({ label: s, value: s })),
+    },
+  },
+}
+
+/**
+ * When the promoted filter is the table's *only* filter, drop `#filter-content` — the
+ * Filter button goes with it and the row is just the pill and search. Commerce → Draft
+ * Orders and Custom Gift Cards both look like this.
+ */
+export const QuickFilterOnly: Story = {
+  render: (args) => ({
+    components: { MpDataTableToolbar },
+    setup() {
+      const search = ref('')
+      const statusFilter = ref<string[]>([])
+
+      const activeFilters = computed(() =>
+        statusFilter.value.length
+          ? [{ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` }]
+          : []
+      )
+      function clearFilters() { statusFilter.value = [] }
+
+      return { args, search, statusFilter, activeFilters, clearFilters }
+    },
+    template: `
+      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+        <MpDataTableToolbar
+          v-bind="args"
+          v-model:search="search"
+          v-model:quick-filter-value="statusFilter"
+          :active-filters="activeFilters"
+          @remove-filter="clearFilters"
+          @clear-filters="clearFilters"
+        />
+      </v-card>
+    `,
+  }),
+  args: {
+    title: 'All Draft Orders',
+    totalCount: 8,
+    searchPlaceholder: 'Search draft orders…',
+    quickFilter: {
+      key: 'status',
+      label: 'Status',
+      options: ['Open', 'Invoice Sent'].map(v => ({ label: v, value: v })),
+    },
+  },
+}
+
 // ── 5. With Multiple Filters ──────────────────────────────────────────────────
 export const WithMultipleFilters: Story = {
   render: (args) => ({
@@ -788,8 +905,10 @@ export const FullFeatured: Story = {
     setup() {
       const search = ref('mia')
       const hiddenColumns = ref<string[]>(['score'])
-      const filters = ref({ status: ['Active'] as string[], list: [] as string[] })
-      const filterLabels: Record<string, string> = { status: 'Status', list: 'List' }
+      // Status is the promoted filter; the drawer keeps the long tail.
+      const statusFilter = ref<string[]>(['Active'])
+      const filters = ref({ list: [] as string[] })
+      const filterLabels: Record<string, string> = { list: 'List' }
 
       const sampleHeaders = [
         { title: 'Contact', key: 'contact' },
@@ -799,19 +918,29 @@ export const FullFeatured: Story = {
         { title: '', key: 'actions' },
       ]
 
-      const activeFilters = computed(() =>
-        Object.entries(filters.value)
+      const activeFilters = computed(() => {
+        const entries = Object.entries(filters.value)
           .filter(([, v]) => v.length > 0)
           .map(([key, value]) => ({
             key,
             label: `${filterLabels[key]}: ${(value as string[]).join(', ')}`,
           }))
-      )
+        if (statusFilter.value.length) {
+          entries.unshift({ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` })
+        }
+        return entries
+      })
 
-      function removeFilter(key: string) { ;(filters.value as any)[key] = [] }
-      function clearFilters() { filters.value = { status: [], list: [] } }
+      function removeFilter(key: string) {
+        if (key === 'status') { statusFilter.value = []; return }
+        ;(filters.value as any)[key] = []
+      }
+      function clearFilters() {
+        statusFilter.value = []
+        filters.value = { list: [] }
+      }
 
-      return { args, search, hiddenColumns, sampleHeaders, filters, activeFilters, removeFilter, clearFilters }
+      return { args, search, hiddenColumns, sampleHeaders, filters, statusFilter, activeFilters, removeFilter, clearFilters }
     },
     template: `
       <v-card variant="flat" border rounded="xl" class="overflow-hidden">
@@ -819,6 +948,7 @@ export const FullFeatured: Story = {
           v-bind="args"
           v-model:search="search"
           v-model:hidden-columns="hiddenColumns"
+          v-model:quick-filter-value="statusFilter"
           :headers="sampleHeaders"
           :active-filters="activeFilters"
           @remove-filter="removeFilter"
@@ -827,9 +957,6 @@ export const FullFeatured: Story = {
           <template #filter-content>
             <div class="pa-4 pb-2">
               <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-              <v-select v-model="filters.status" label="Status"
-                :items="['Active', 'Unsubscribed', 'Bounced']"
-                multiple chips closable-chips variant="outlined" density="compact" hide-details clearable class="mb-3" />
               <v-select v-model="filters.list" label="List"
                 :items="['Newsletter', 'VIP Circle', 'Win-Back']"
                 multiple chips closable-chips variant="outlined" density="compact" hide-details clearable />
@@ -847,6 +974,11 @@ export const FullFeatured: Story = {
     totalCount: 28,
     searchPlaceholder: 'Search contacts…',
     filterTitle: 'Contact filters',
-    filterSubtitle: 'Narrow the table by status and list',
+    filterSubtitle: 'Narrow the table by list',
+    quickFilter: {
+      key: 'status',
+      label: 'Status',
+      options: ['Active', 'Unsubscribed', 'Bounced'].map(s => ({ label: s, value: s })),
+    },
   },
 }

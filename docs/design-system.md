@@ -170,9 +170,10 @@ Use sparingly — flat bordered cards preferred.
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `searchPlaceholder` | `string` | — | Placeholder for search field |
+| `quickFilter` | `{ key, label, icon?, options }` | — | Promotes one filter to a checkbox pill left of search |
 
-**Model:** `v-model:search` (string)
-**Slots:** `#filters` (dropdowns, date pickers), `#actions` (buttons)
+**Models:** `v-model:search` (string), `v-model:quickFilterValue` (string[])
+**Slots:** `#title`, `#actions` (buttons), `#filter-content` (filter drawer fields)
 
 ---
 

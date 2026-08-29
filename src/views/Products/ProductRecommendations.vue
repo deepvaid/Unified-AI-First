@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   useProductExtrasStore, formatStamp,
   CATALOG_SOURCES, CATALOG_CATEGORIES, FEED_TYPES, FEED_PERIODS, FEED_SORTS, FEED_BRANDS, FEED_STORES,
-  type CatalogProduct, type CatalogSource, type ProductFeed, type FeedTemplate,
+  type CatalogProduct, type ProductFeed, type FeedTemplate,
   type FeedInput, type FeedType,
 } from '@/stores/useProductExtras'
 import { useToast } from '@/composables/useToast'
@@ -62,7 +62,14 @@ watch(activeTab, (tab) => {
 const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(2)}`
 
 // ══ Tab 1 — Product Catalog ═════════════════════════════════════════
-const sourceFilter = ref<'All' | CatalogSource>('All')
+// Source is the promoted filter: a multi-select pill in the toolbar, so the
+// cut merchants make most often doesn't cost a trip to the drawer.
+const sourceQuickFilter = {
+  key: 'source',
+  label: 'Source',
+  options: CATALOG_SOURCES.map((s) => ({ label: s, value: s })),
+}
+const sourceFilter = ref<string[]>([])
 const catalogSearch = ref('')
 
 const catalogHeaders = [
@@ -77,7 +84,7 @@ const catalogHeaders = [
 const filteredCatalog = computed(() => {
   const term = catalogSearch.value.trim().toLowerCase()
   return store.catalog.filter((p) => {
-    const bySource = sourceFilter.value === 'All' || p.source === sourceFilter.value
+    const bySource = !sourceFilter.value.length || sourceFilter.value.includes(p.source)
     const byTerm = !term || p.name.toLowerCase().includes(term) || p.itemId.toLowerCase().includes(term)
     return bySource && byTerm
   })
@@ -90,7 +97,7 @@ function isIncomplete(p: CatalogProduct): boolean {
 const incompleteCount = computed(() => store.catalog.filter(isIncomplete).length)
 
 const catalogFilterEntries = computed(() =>
-  sourceFilter.value === 'All' ? [] : [{ key: 'source', label: `Source: ${sourceFilter.value}` }],
+  sourceFilter.value.length ? [{ key: 'source', label: `Source: ${sourceFilter.value.join(', ')}` }] : [],
 )
 
 // Edit product drawer
@@ -364,22 +371,13 @@ function restore(template: FeedTemplate) {
             v-model:search="catalogSearch"
             title="Product catalog"
             search-placeholder="Search name or item ID"
+            v-model:quick-filter-value="sourceFilter"
             :total-count="filteredCatalog.length"
+            :quick-filter="sourceQuickFilter"
             :active-filters="catalogFilterEntries"
-            @remove-filter="sourceFilter = 'All'"
-            @clear-filters="sourceFilter = 'All'"
-          >
-            <template #actions>
-              <!-- Toolbar filter, not a form field: hide-details keeps the row height stable. -->
-              <v-select
-                v-model="sourceFilter"
-                :items="['All', ...CATALOG_SOURCES]"
-                label="Source"
-                hide-details
-                class="rec-toolbar__select"
-              />
-            </template>
-          </MpDataTableToolbar>
+            @remove-filter="sourceFilter = []"
+            @clear-filters="sourceFilter = []"
+          />
 
           <v-data-table
             :headers="catalogHeaders"
@@ -430,10 +428,10 @@ function restore(template: FeedTemplate) {
             <template #no-data>
               <MpEmptyState
                 icon="package"
-                :title="catalogSearch || sourceFilter !== 'All' ? 'No products match your filters' : 'No catalog products yet'"
-                :description="catalogSearch || sourceFilter !== 'All' ? 'Try a different search term or switch the source back to All.' : 'Import a product catalog to power recommendation blocks.'"
-                :action-label="catalogSearch || sourceFilter !== 'All' ? undefined : 'Import product catalog'"
-                :action-icon="catalogSearch || sourceFilter !== 'All' ? undefined : 'upload'"
+                :title="catalogSearch || sourceFilter.length ? 'No products match your filters' : 'No catalog products yet'"
+                :description="catalogSearch || sourceFilter.length ? 'Try a different search term or clear the source filter.' : 'Import a product catalog to power recommendation blocks.'"
+                :action-label="catalogSearch || sourceFilter.length ? undefined : 'Import product catalog'"
+                :action-icon="catalogSearch || sourceFilter.length ? undefined : 'upload'"
                 class="py-10"
                 @action="openImport"
               />
@@ -843,9 +841,31 @@ function restore(template: FeedTemplate) {
   font-weight: var(--mp-fontWeight-semibold);
 }
 
+/* The Templates "Show" control is a mode toggle (active vs archived), not a
+   filter — there is no "all" state — so it stays a select rather than becoming
+   a `quickFilter` pill. It still has to sit on the row's one control height:
+   settings-form.scss pins .v-field__input to 40 and adds 2px of wrapper padding
+   top and bottom, which paints 44 against 40px buttons. Neutralise both, using
+   the doubled `.v-field .v-field__input` descendant so this wins on specificity
+   without !important — the same contract MpDataTableToolbar's search documents. */
 .rec-toolbar__select {
   max-width: 240px;
   min-width: 180px;
+}
+
+.rec-toolbar__select :deep(.v-field) {
+  box-sizing: border-box;
+  min-height: var(--mp-component-control-height);
+}
+
+.rec-toolbar__select :deep(.v-field .v-field__field) {
+  align-items: center;
+  padding-block: 0;
+}
+
+.rec-toolbar__select :deep(.v-field .v-field__input) {
+  min-height: 0;
+  padding-block: 0;
 }
 
 .rec-thumb-fallback {

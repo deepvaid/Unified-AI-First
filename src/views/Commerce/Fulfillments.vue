@@ -48,28 +48,46 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
 // ─── Filters ──────────────────────────────────────────────────────────────────
 const filters = ref({
   status: null as FulfillmentQueueStatus | null,
-  location: null as string | null,
 })
 
 const locationOptions = computed(() => [...new Set(store.fulfillments.map(f => f.location))])
 
+// Location is the promoted filter: a multi-select pill in the toolbar. Its
+// options come from live data, so the config is a computed, not a literal —
+// the status cut already has its own stage chips above the table.
+const locationQuickFilter = computed(() => ({
+  key: 'location',
+  label: 'Location',
+  options: locationOptions.value.map((v) => ({ label: v, value: v })),
+}))
+const locationFilter = ref<string[]>([])
+
 const filterLabels: Record<string, string> = {
   status: 'Fulfillment Status',
-  location: 'Location',
 }
 
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v !== null)
-    .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` }))
-)
+const activeFilterEntries = computed(() => {
+  const entries =
+    Object.entries(filters.value)
+      .filter(([, v]) => v !== null)
+      .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` }))
+  if (locationFilter.value.length) {
+    entries.unshift({ key: 'location', label: `Location: ${locationFilter.value.join(', ')}` })
+  }
+  return entries
+})
 
 function removeFilter(key: string) {
+  if (key === 'location') {
+    locationFilter.value = []
+    return
+  }
   filters.value[key as keyof typeof filters.value] = null
 }
 
 function clearAllFilters() {
-  filters.value = { status: null, location: null }
+  locationFilter.value = []
+  filters.value = { status: null }
 }
 
 // Status summary chips — colour per fulfillment stage (beats the legacy FILTERS dropdown)
@@ -87,7 +105,7 @@ function toggleStage(s: FulfillmentQueueStatus) {
 const filteredFulfillments = computed(() => {
   let rows = store.fulfillments
   if (filters.value.status) rows = rows.filter(f => f.status === filters.value.status)
-  if (filters.value.location) rows = rows.filter(f => f.location === filters.value.location)
+  if (locationFilter.value.length) rows = rows.filter(f => locationFilter.value.includes(f.location))
   return rows
 })
 
@@ -184,6 +202,8 @@ function exportFulfillments() {
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="locationFilter"
+        :quick-filter="locationQuickFilter"
         v-model:search="search"
         title="Fulfillment Queue"
         :active-filters="activeFilterEntries"
@@ -199,17 +219,6 @@ function exportFulfillments() {
                 v-model="filters.status"
                 label="Fulfillment Status"
                 :items="[...FULFILLMENT_QUEUE_STATUSES]"
-                variant="outlined"
-                density="compact"
-                hide-details
-                clearable
-              />
-            </div>
-            <div class="mb-3">
-              <v-select
-                v-model="filters.location"
-                label="Location"
-                :items="locationOptions"
                 variant="outlined"
                 density="compact"
                 hide-details

@@ -153,7 +153,7 @@ const filteredOrders = computed(() => {
   let orders = baseOrders.value.filter(o => matchesTab(o, activeTab.value))
 
   // Drawer-level filters (aligned to store enum values)
-  if (filters.value.status) orders = orders.filter(o => o.status === filters.value.status)
+  if (statusFilter.value.length) orders = orders.filter(o => statusFilter.value.includes(o.status))
   if (filters.value.fulfillment) orders = orders.filter(o => o.fulfillmentStatus === filters.value.fulfillment)
   if (filters.value.payment) orders = orders.filter(o => o.paymentStatus === filters.value.payment)
   if (filters.value.channel) orders = orders.filter(o => o.salesChannel === filters.value.channel)
@@ -164,16 +164,22 @@ const filteredOrders = computed(() => {
 const tabCount = (key: string) => baseOrders.value.filter(o => matchesTab(o, key)).length
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
+// Order Status is the promoted filter: a multi-select pill in the toolbar, so the
+// cut people make most often doesn't cost a trip to the drawer.
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Order Status',
+  options: (['Processing', 'Completed', 'On Hold', 'Cancelled', 'Refunded']).map((v) => ({ label: v, value: v })),
+}
+const statusFilter = ref<string[]>([])
+
 const filters = ref({
-  status: null as string | null,
   fulfillment: null as string | null,
   payment: null as string | null,
   channel: null as string | null,
 })
 
 const filterOptions = {
-  // Aligned to useCommerce.ts `orderStatuses`
-  status: ['Processing', 'Completed', 'On Hold', 'Cancelled', 'Refunded'],
   // Aligned to useCommerce.ts `fulfillmentStatuses`
   fulfillment: ['Not Ready', 'Ready For Fulfillment', 'Shipped', 'Return Requested', 'Cancelled', 'Unapproved'],
   // Aligned to useCommerce.ts paymentStatus logic
@@ -188,18 +194,28 @@ const filterLabels: Record<string, string> = {
   channel: 'Sales Channel',
 }
 
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v !== null)
-    .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` }))
-)
+const activeFilterEntries = computed(() => {
+  const entries =
+    Object.entries(filters.value)
+      .filter(([, v]) => v !== null)
+      .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` }))
+  if (statusFilter.value.length) {
+    entries.unshift({ key: 'status', label: `Order Status: ${statusFilter.value.join(', ')}` })
+  }
+  return entries
+})
 
 function removeFilter(key: string) {
+  if (key === 'status') {
+    statusFilter.value = []
+    return
+  }
   filters.value[key as keyof typeof filters.value] = null
 }
 
 function clearAllFilters() {
-  filters.value = { status: null, fulfillment: null, payment: null, channel: null }
+  statusFilter.value = []
+  filters.value = { fulfillment: null, payment: null, channel: null }
 }
 
 function selectAll() {
@@ -294,6 +310,8 @@ function exportOrders() {
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden mp-enter">
       <!-- Toolbar -->
       <MpDataTableToolbar
+        v-model:quick-filter-value="statusFilter"
+        :quick-filter="statusQuickFilter"
         v-model:search="search"
         v-model:hidden-columns="hiddenColumns"
         :headers="headers"

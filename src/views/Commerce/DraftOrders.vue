@@ -13,7 +13,6 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
@@ -36,39 +35,27 @@ function goEdit(draft: DraftOrder) {
 }
 
 // ── Filters ──────────────────────────────────────────────────────
-const filters = ref({
-  status: [] as string[],
-})
-
-const filterOptions = {
-  status: ['Open', 'Invoice Sent'],
+// Status is this table's only filter, so it lives in the toolbar as a pill and
+// there is no drawer at all.
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: ['Open', 'Invoice Sent'].map((v) => ({ label: v, value: v })),
 }
-
-const filterLabels: Record<string, string> = {
-  status: 'Status',
-}
+const statusFilter = ref<string[]>([])
 
 const filteredDrafts = computed(() => {
   let drafts = store.draftOrders
-  if (filters.value.status.length) drafts = drafts.filter(d => filters.value.status.includes(d.status))
+  if (statusFilter.value.length) drafts = drafts.filter(d => statusFilter.value.includes(d.status))
   return drafts
 })
 
 const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v.length > 0)
-    .map(([key, value]) => ({
-      key,
-      label: `${filterLabels[key]}: ${value.join(', ')}`,
-    }))
+  statusFilter.value.length ? [{ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` }] : [],
 )
 
-function removeFilter(key: string) {
-  filters.value[key as keyof typeof filters.value] = []
-}
-
 function clearAllFilters() {
-  filters.value.status = []
+  statusFilter.value = []
 }
 
 function selectAll() {
@@ -162,35 +149,14 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
+        v-model:quick-filter-value="statusFilter"
         title="All Draft Orders"
+        :quick-filter="statusQuickFilter"
         :active-filters="activeFilterEntries"
         :total-count="filteredDrafts.length"
-        @remove-filter="removeFilter"
+        @remove-filter="clearAllFilters"
         @clear-filters="clearAllFilters"
-      >
-        <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <!-- Toolbar filters stay compact and suppress details deliberately: this is a
-                 dense popover, not a form, and no select here carries validation. -->
-            <MpFormGrid>
-              <v-select
-                v-for="(options, key) in filterOptions"
-                :key="key"
-                v-model="filters[key as keyof typeof filters]"
-                :label="filterLabels[key]"
-                :items="options"
-                multiple
-                chips
-                closable-chips
-                clearable
-                density="compact"
-                hide-details
-              />
-            </MpFormGrid>
-          </div>
-        </template>
-      </MpDataTableToolbar>
+      />
 
       <MpTableSkeleton v-if="loading" :rows="8" :columns="6" />
 

@@ -57,42 +57,57 @@ const kpis = computed(() => [
 ])
 
 // Multi-select filters
+// Status is the promoted filter: a multi-select pill in the toolbar, so the
+// cut people make most often doesn't cost a trip to the drawer.
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: ['In Stock', 'Low Stock', 'Out of Stock'].map((v) => ({ label: v, value: v })),
+}
+const statusFilter = ref<string[]>([])
+
 const filters = ref({
   location: [] as string[],
-  status: [] as string[],
 })
 
 const filterOptions = computed(() => ({
   location: locationOptions.value.map((l) => l.name),
-  status: ['In Stock', 'Low Stock', 'Out of Stock'],
 }))
 
 const filterLabels: Record<string, string> = {
   location: 'Location',
-  status: 'Status',
 }
 
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
+const activeFilterEntries = computed(() => {
+  const entries = Object.entries(filters.value)
     .filter(([, v]) => v.length > 0)
     .map(([key, value]) => ({
       key,
       label: `${filterLabels[key]}: ${(value as string[]).join(', ')}`,
     }))
-)
+  if (statusFilter.value.length) {
+    entries.unshift({ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` })
+  }
+  return entries
+})
 
 function removeFilter(key: string) {
+  if (key === 'status') {
+    statusFilter.value = []
+    return
+  }
   filters.value[key as keyof typeof filters.value] = []
 }
 
 function clearAllFilters() {
-  filters.value = { location: [], status: [] }
+  statusFilter.value = []
+  filters.value = { location: [] }
 }
 
 const filteredInventory = computed(() => {
   let items = store.inventory
   if (filters.value.location.length) items = items.filter(p => filters.value.location.includes(locationName(p.locationId)))
-  if (filters.value.status.length) items = items.filter(p => filters.value.status.includes(p.status))
+  if (statusFilter.value.length) items = items.filter(p => statusFilter.value.includes(p.status))
   return items
 })
 
@@ -243,6 +258,8 @@ function exportInventory() {
 
     <v-card v-if="view === 'list'" variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="statusFilter"
+        :quick-filter="statusQuickFilter"
         title="Inventory Items"
         v-model:search="search"
         :active-filters="activeFilterEntries"
@@ -258,17 +275,6 @@ function exportInventory() {
               v-model="filters.location"
               :items="filterOptions.location"
               label="Location"
-              multiple
-              chips
-              closable-chips
-              hide-details
-              placeholder="All"
-              persistent-placeholder
-            />
-            <v-select
-              v-model="filters.status"
-              :items="filterOptions.status"
-              label="Status"
               multiple
               chips
               closable-chips

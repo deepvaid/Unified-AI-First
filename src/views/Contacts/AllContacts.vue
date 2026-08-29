@@ -7,6 +7,8 @@ import { downloadCsv, type CsvColumn } from '@/utils/exportCsv'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpDialog from '@/components/MpDialog.vue'
+import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
@@ -23,6 +25,7 @@ import { useToast } from '@/composables/useToast'
 const router = useRouter()
 const route = useRoute()
 const store = useContactsStore()
+const accountId = computed(() => route.params.accountId as string)
 const cdp = useCdpEntitiesStore()
 const toast = useToast()
 const search = ref('')
@@ -71,13 +74,33 @@ function saveContact() {
   toast.success('Contact added')
 }
 
-// Import drawer (2-step, legacy-parity)
-const importDrawer = ref(false)
+// ── Import Contacts ───────────────────────────────────────────────────────────
+// A centred modal in the source, launched from this toolbar. It has no URL of
+// its own. Step 2 (field mapping) was unreachable on UAT without uploading a
+// real file, so its contents are inferred — see docs/rebuild/import-contacts/.
+const importOpen = ref(false)
 const importStep = ref(1)
 const importMethod = ref<'file' | 'ftp' | 'automated'>('file')
 const importDelimiter = ref<'Comma' | 'Tab' | 'Colon' | 'Semi-Colon'>('Comma')
 const importList = ref<string | null>(null)
-const importOptions = ref({ importNew: true, triggerJourney: false, updateExisting: true })
+const importFileName = ref<string | null>(null)
+const importFtpPath = ref<string | null>(null)
+const fileInputEl = ref<HTMLInputElement | null>(null)
+
+/** Files on the account's SFTP drop, mirroring the source's server-path picker. */
+const ftpPaths = [
+  'abhishek/import/tab_work.txt',
+  'nightly/crm_contacts.csv',
+  'partners/loyalty_export.csv',
+  'archive/2026-08-subscribers.txt',
+]
+
+/** Scheduled import jobs. The source account has none — its table renders empty. */
+const automatedJobs = ref<{ id: number; name: string; modifiedAt: string; createdAt: string }[]>([
+  { id: 1, name: 'Nightly CRM sync', modifiedAt: 'Aug 27, 2026', createdAt: 'Mar 02, 2026' },
+  { id: 2, name: 'Weekly loyalty export', modifiedAt: 'Aug 24, 2026', createdAt: 'Jan 18, 2026' },
+])
+
 const importFieldOptions = ['Email', 'Phone', 'First Name', 'Last Name', 'Contact Tags', 'List Subscription', 'Custom: Source', 'Custom: Age Group', '— Skip —']
 const importMappings = ref([
   { csvCol: 'email', field: 'Email' },
@@ -86,16 +109,45 @@ const importMappings = ref([
   { csvCol: 'phone', field: 'Phone' },
   { csvCol: 'tags', field: 'Contact Tags' },
 ])
+
+/** The source drops the .zip allowance and the size cap on the FTP branch. */
+const fileAccept = '.csv,.txt,.zip'
+
+/** In the source, the file is optional in the Automated branch — it only supplies header names. */
+const importFileRequired = computed(() => importMethod.value !== 'automated')
+
+const canContinueImport = computed(() => {
+  if (!importList.value) return false
+  if (importMethod.value === 'file') return importFileName.value != null
+  if (importMethod.value === 'ftp') return importFtpPath.value != null
+  return true
+})
+
+/** Why Continue is disabled — the source explains nothing. */
+const importBlockedReason = computed(() => {
+  if (canContinueImport.value) return ''
+  const missing: string[] = []
+  if (importMethod.value === 'file' && !importFileName.value) missing.push('a file')
+  if (importMethod.value === 'ftp' && !importFtpPath.value) missing.push('a file from the FTP server')
+  if (!importList.value) missing.push('a list')
+  return `Choose ${missing.join(' and ')} to continue.`
+})
+
 function startImport() {
-  importDrawer.value = true
+  importOpen.value = true
   importStep.value = 1
   importMethod.value = 'file'
   importDelimiter.value = 'Comma'
   importList.value = null
-  importOptions.value = { importNew: true, triggerJourney: false, updateExisting: true }
+  importFileName.value = null
+  importFtpPath.value = null
+}
+function onPickFile(e: Event) {
+  const input = e.target as HTMLInputElement
+  importFileName.value = input.files?.[0]?.name ?? null
 }
 function runImport() {
-  importDrawer.value = false
+  importOpen.value = false
   importStep.value = 1
   toast.success('Import started — contacts will appear once processing completes')
 }
@@ -106,16 +158,23 @@ function exportContacts() {
   toast.success('Contacts exported')
 }
 
+// Status is the one promoted filter: a multi-select pill in the toolbar, so the
+// most-used cut of this table doesn't cost a trip to the drawer.
+// Store values: 'Subscribed', 'Unsubscribed', 'Bounced', 'Spam'
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: ['Subscribed', 'Unsubscribed', 'Bounced', 'Spam'].map(s => ({ label: s, value: s })),
+}
+const statusFilter = ref<string[]>([])
+
 // Filters — vocab aligned to store enum values
 const filters = ref({
-  status: null as string | null,
   score: null as string | null,
   activity: null as string | null,
 })
 
 const filterOptions = {
-  // Store values: 'Subscribed', 'Unsubscribed', 'Bounced', 'Spam'
-  status: ['Subscribed', 'Unsubscribed', 'Bounced', 'Spam'],
   score: ['80–100 (Hot)', '50–79 (Warm)', '0–49 (Cold)'],
   activity: ['Last 7 days', 'Last 30 days', 'Last 90 days', 'Over 90 days'],
 }
@@ -127,14 +186,18 @@ const filterLabels: Record<string, string> = {
 }
 
 const activeFilterEntries = computed(() => {
-  return Object.entries(filters.value)
+  const entries = Object.entries(filters.value)
     .filter(([, v]) => v !== null)
     .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` }))
+  if (statusFilter.value.length) {
+    entries.unshift({ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` })
+  }
+  return entries
 })
 
 const filteredContacts = computed(() => {
   return store.contacts.filter(c => {
-    if (filters.value.status && c.status !== filters.value.status) return false
+    if (statusFilter.value.length && !statusFilter.value.includes(c.status)) return false
     if (filters.value.score) {
       const s = c.score
       if (filters.value.score.startsWith('80') && s < 80) return false
@@ -155,11 +218,16 @@ const filteredContacts = computed(() => {
 })
 
 function removeFilter(key: string) {
+  if (key === 'status') {
+    statusFilter.value = []
+    return
+  }
   filters.value[key as keyof typeof filters.value] = null
 }
 
 function clearAllFilters() {
-  filters.value = { status: null, score: null, activity: null }
+  statusFilter.value = []
+  filters.value = { score: null, activity: null }
 }
 
 // Table
@@ -257,7 +325,13 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       <template #actions>
         <v-btn variant="flat" prepend-icon="upload" class="text-none" @click="startImport" color="surface">Import</v-btn>
         <v-btn variant="flat" prepend-icon="share" class="text-none" @click="exportContacts" color="surface">Export</v-btn>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="addDrawer=true;addStep=1">Add Contact</v-btn>
+        <v-btn
+          color="primary"
+          variant="flat"
+          prepend-icon="plus"
+          class="text-none"
+          :to="{ name: 'CreateContact', params: { accountId } }"
+        >Add Contact</v-btn>
       </template>
     </MpPageHeader>
 
@@ -268,7 +342,9 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       <MpDataTableToolbar
         v-model:search="search"
         v-model:hidden-columns="hiddenColumns"
+        v-model:quick-filter-value="statusFilter"
         title="All Contacts"
+        :quick-filter="statusQuickFilter"
         :headers="headers"
         :active-filters="activeFilterEntries"
         :total-count="filteredContacts.length"
@@ -449,39 +525,110 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
       </template>
     </MpFormDrawer>
 
-    <!-- Import Contacts Drawer (2-step) -->
-    <MpFormDrawer v-model="importDrawer" title="Import Contacts" :subtitle="`Step ${importStep} of 2`" size="lg">
-      <!-- Step 1: Method, delimiter, list -->
-      <MpFormGrid v-if="importStep === 1">
-        <MpFormField label="Import Method">
+    <!-- Import Contacts — a centred modal in the source, not a drawer. -->
+    <MpDialog
+      v-model="importOpen"
+      title="Import Contacts"
+      subtitle="Select the import method and upload your list. Download the example file to view the format."
+      size="md"
+    >
+      <!-- The source gives a multi-step flow no progress indication at all. -->
+      <MpWizardSteps :steps="['Source', 'Field mapping']" :current="importStep" />
+
+      <!-- Step 1: method, file, delimiter, list -->
+      <template v-if="importStep === 1">
+        <MpFormField label="Import method">
           <template #default="{ labelId }">
-            <v-radio-group v-model="importMethod" :aria-labelledby="labelId">
-              <v-radio label="File Import" value="file" />
-              <v-radio label="FTP Import" value="ftp" />
-              <v-radio label="Automated Import" value="automated" />
+            <!-- Each radio carries its own label. In the source every option in a
+                 group reports the first option's name to assistive tech. -->
+            <v-radio-group v-model="importMethod" inline :aria-labelledby="labelId" hide-details>
+              <v-radio label="File import" value="file" />
+              <v-radio label="FTP import" value="ftp" />
+              <v-radio label="Automated import" value="automated" />
             </v-radio-group>
           </template>
         </MpFormField>
 
-        <div v-if="importMethod === 'file'" class="import-dropzone">
-          <v-icon size="40" color="primary" class="mb-2">cloud-upload</v-icon>
-          <div class="text-body-2 font-weight-medium mb-1">Drag & drop file here</div>
-          <div class="text-caption text-medium-emphasis mb-3">or click to browse — accepts .csv, .txt, .zip</div>
-          <v-btn variant="flat" color="primary" size="small" class="text-none" prepend-icon="folder-open">Browse File</v-btn>
-        </div>
-        <v-select
-          v-else-if="importMethod === 'ftp'"
-          label="FTP File"
-          :items="['contacts_export.csv', 'weekly_sync.txt', 'crm_dump.zip']"
-          placeholder="Select a file from the FTP directory"
-        />
-        <v-alert v-else type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
-          Automated imports run on a schedule from your configured source. New files are picked up automatically once the source is connected.
-        </v-alert>
+        <!-- Automated import lists the account's scheduled jobs. -->
+        <template v-if="importMethod === 'automated'">
+          <MpFormSection title="Scheduled imports" :heading-level="3" />
+          <v-table v-if="automatedJobs.length" density="compact">
+            <thead>
+              <tr><th scope="col">Name</th><th scope="col">Modified</th><th scope="col">Created</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="job in automatedJobs" :key="job.id">
+                <td class="py-2 text-body-2 font-weight-medium">{{ job.name }}</td>
+                <td class="py-2 text-body-2 text-medium-emphasis">{{ job.modifiedAt }}</td>
+                <td class="py-2 text-body-2 text-medium-emphasis">{{ job.createdAt }}</td>
+              </tr>
+            </tbody>
+          </v-table>
+          <MpEmptyState
+            v-else
+            icon="calendar-clock"
+            title="No scheduled imports yet"
+            description="Connect a source to pick up new files automatically."
+          />
+        </template>
 
-        <MpFormField label="Delimiter">
-          <template #default="{ labelId }">
-            <v-radio-group v-model="importDelimiter" inline :aria-labelledby="labelId">
+        <!-- File source -->
+        <MpFormField
+          :label="importFileRequired ? 'Select file' : 'Select file (optional)'"
+          :required="importFileRequired"
+          :hint="importMethod === 'ftp'
+            ? 'Choose a CSV or TXT file from your FTP server (SFTP access).'
+            : importMethod === 'automated'
+              ? 'A CSV used only to read header names for mapping.'
+              : 'CSV, TXT or ZIP, up to 128 MB. A ZIP must contain exactly one CSV or TXT file.'"
+        >
+          <template #default="{ labelId, descriptionId }">
+            <v-select
+              v-if="importMethod === 'ftp'"
+              v-model="importFtpPath"
+              :items="ftpPaths"
+              :aria-labelledby="labelId"
+              :aria-describedby="descriptionId"
+              placeholder="Choose a file from the FTP server"
+              hide-details
+            />
+            <div v-else class="d-flex align-center ga-3 flex-wrap">
+              <input
+                ref="fileInputEl"
+                type="file"
+                :accept="fileAccept"
+                class="d-none"
+                @change="onPickFile"
+              >
+              <v-btn
+                variant="flat"
+                color="primary"
+                class="text-none"
+                prepend-icon="upload"
+                :aria-describedby="descriptionId"
+                @click="fileInputEl?.click()"
+              >
+                Select file
+              </v-btn>
+              <span v-if="importFileName" class="text-body-2">{{ importFileName }}</span>
+              <span v-else class="text-body-2 text-medium-emphasis">No file chosen</span>
+              <v-spacer />
+              <v-btn variant="text" class="text-none" prepend-icon="download" href="#" @click.prevent>
+                Example file
+              </v-btn>
+            </div>
+          </template>
+        </MpFormField>
+
+        <MpFormField label="Delimiter" hint="How columns are separated in your file.">
+          <template #default="{ labelId, descriptionId }">
+            <v-radio-group
+              v-model="importDelimiter"
+              inline
+              :aria-labelledby="labelId"
+              :aria-describedby="descriptionId"
+              hide-details
+            >
               <v-radio label="Comma" value="Comma" />
               <v-radio label="Tab" value="Tab" />
               <v-radio label="Colon" value="Colon" />
@@ -492,27 +639,26 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
 
         <v-select
           v-model="importList"
-          label="Select List *"
+          label="Select list *"
           :items="listNames"
-          prepend-inner-icon="playlist-check"
+          hint="Imported contacts are subscribed to this list."
+          persistent-hint
         />
-      </MpFormGrid>
+      </template>
 
-      <!-- Step 2: Options + mappings -->
+      <!-- Step 2: field mapping.
+           Unreachable on UAT without a real upload — this step is inferred.
+           See docs/rebuild/import-contacts/AUDIT.md §12. -->
       <template v-else>
-        <MpFormGrid>
-          <MpFormField label="Import Options">
-            <div>
-              <v-checkbox v-model="importOptions.importNew" label="Import new contacts" />
-              <v-checkbox v-model="importOptions.triggerJourney" label="Trigger journey campaigns" />
-              <v-checkbox v-model="importOptions.updateExisting" label="Update existing contacts" />
-            </div>
-          </MpFormField>
-        </MpFormGrid>
-
-        <MpFormSection title="Field Mapping" />
+        <MpFormSection
+          title="Field mapping"
+          description="Match each column in your file to a contact field."
+          :heading-level="3"
+        />
         <v-table density="compact">
-          <thead><tr><th>CSV Column</th><th>Contact Field</th></tr></thead>
+          <thead>
+            <tr><th scope="col">Column in your file</th><th scope="col">Contact field</th></tr>
+          </thead>
           <tbody>
             <tr v-for="(m, i) in importMappings" :key="i">
               <td class="py-2 text-body-2 font-weight-medium">{{ m.csvCol }}</td>
@@ -526,17 +672,32 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         </v-table>
 
         <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
-          <strong>1,284</strong> rows detected · <strong>1,241</strong> valid · <strong>43</strong> skipped. Importing into <strong>{{ importList }}</strong>.
+          <strong>1,284</strong> rows detected · <strong>1,241</strong> valid · <strong>43</strong> skipped.
+          Importing into <strong>{{ importList }}</strong>.
         </v-alert>
       </template>
 
+      <template #footerStart>
+        <p v-if="importStep === 1 && importBlockedReason" class="text-caption text-medium-emphasis mb-0">
+          {{ importBlockedReason }}
+        </p>
+      </template>
       <template #footer>
         <v-btn v-if="importStep === 2" variant="text" class="text-none" @click="importStep = 1">Back</v-btn>
-        <v-btn v-else variant="text" class="text-none" @click="importDrawer = false">Cancel</v-btn>
-        <v-btn v-if="importStep === 1" color="primary" variant="flat" class="text-none" :disabled="!importList" @click="importStep = 2">Continue</v-btn>
-        <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="upload" @click="runImport">Import</v-btn>
+        <v-btn v-else variant="text" class="text-none" @click="importOpen = false">Cancel</v-btn>
+        <v-btn
+          v-if="importStep === 1"
+          color="primary"
+          variant="flat"
+          class="text-none"
+          :disabled="!canContinueImport"
+          @click="importStep = 2"
+        >
+          Continue
+        </v-btn>
+        <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="upload" @click="runImport">Start import</v-btn>
       </template>
-    </MpFormDrawer>
+    </MpDialog>
 
     <!-- Delete confirmation (row + bulk) -->
     <MpConfirmDialog
@@ -556,18 +717,6 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
 }
 
 .contacts-table :deep(tbody tr) {
-  cursor: pointer;
-}
-
-.import-dropzone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 28px;
-  border: 1px dashed rgba(var(--v-border-color), 0.35);
-  border-radius: 12px;
-  background: rgba(var(--v-theme-on-surface), 0.015);
   cursor: pointer;
 }
 

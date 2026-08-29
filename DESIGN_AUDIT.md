@@ -1374,3 +1374,82 @@ Everything else kept its rendered value. These did not:
 - **The 736 non-field margins** are the next spacing pass, and they are concentrated in the Da Vinci
   display cards and `ModuleLandingPage` — the same Product tier the Phase 5 changelog already
   flagged as never having had a tokenization sweep.
+
+---
+
+## Toolbar quick filter — 2026-08-29
+
+### Fixed
+
+- **`MpDataTableToolbar` search text sat ~8px above optical centre.** P4-4 zeroed the input's
+  `min-height` and `padding-block` to land the painted box on the 40px control token, but Vuetify's
+  `.v-field__field` is `align-items: flex-start` — with no padding left to fake centring, the input
+  pinned to the top of the content box while the `center-affix` search icon stayed centred. Fixed by
+  stating `align-items: center` on the existing scoped rule rather than restoring padding that would
+  only be correct by arithmetic. Measured after: input centre, field centre and icon centre all
+  coincide, in both themes.
+
+### API added
+
+- **`MpDataTableToolbar` `quickFilter` + `v-model:quickFilterValue`.** One promoted filter renders
+  as a checkbox-menu pill immediately left of search — the position `MpFolderSelect` already
+  occupies on foldered lists. The pill reads as the selected option at one selection and as the
+  group label with a count badge beyond that. The toolbar owns the menu and its Clear button; the
+  consumer owns filtering, the matching `activeFilters` entry and clearing the model, which is the
+  contract `activeFilters` already had. First consumer: `AllContacts.vue`, where Status moved out of
+  the drawer and became multi-select — one field, one control.
+- The **Filter** button now badges `activeFilters` **minus the quick filter's key**. Badging a
+  promoted filter there would send people into a drawer that no longer holds it.
+
+### Renames
+
+- Scoped `.mp-column-checkbox` → **`.mp-panel-checkbox`** in `MpDataTableToolbar` — it now styles
+  both menus' checkboxes, not just the column list.
+
+### Deliberate visual changes
+
+- **The toolbar menu panels are 12, not 16.** Both panels dropped `rounded="lg"` (which
+  `global.scss` forces to `--mp-component-card-radius` with `!important`) for
+  `border-radius: var(--mp-component-menu-radius)` on `.mp-toolbar-panel` — the P2-6 menu stop, and
+  the same move `MpFolderSelect` already documents. This corrects the existing column menu as well
+  as the new one; leaving it would have made the two siblings disagree.
+
+### Follow-ups this opens
+
+- **Contacts search matches nothing by name or email.** `AllContacts.vue` passes `:search` to
+  `v-data-table`, which matches against header keys, but the name/email column's key is `contact`
+  and no such field exists on `Contact` — so "james" returns no rows. Pre-existing, unrelated to the
+  alignment fix, and worth a `customFilter` or a real key.
+- **The toolbar's `max-width: 959px` rule never took effect.** It sets
+  `justify-content: flex-start` on the control cluster, but the cluster carries Vuetify's
+  `justify-end` utility, which is `!important`. Harmless today (right-aligned controls above a
+  full-width search read fine), but the rule is dead as written.
+### Rollout — 2026-08-29 (same session)
+
+- **The pill leads the control cluster.** It was first placed left of search, where
+  `MpFolderSelect` sits; it now sits *before* the Filter button, because it is the cut people
+  reach for first. Row order is now pill → Filter → columns → `#actions` → search.
+- **Promoted on nine tables.** Contacts → All Contacts (Status) · Commerce → Sales Orders (Order
+  Status), Draft Orders (Status), Fulfillments (Location), Coupons (Discount Method), Custom Gift
+  Cards (Status), Purchasable Gift Cards (Status) · Products → Inventory (Status), Product
+  Recommendations (Source).
+- **Two tables lost their drawer entirely.** Draft Orders and Custom Gift Cards each had exactly
+  one filter; once promoted, `#filter-content` had nothing left, so the slot and the Filter button
+  are gone. This is the intended end state, not an oversight.
+- **Fulfillments promoted Location, not Status** — it already has stage summary chips as its status
+  affordance, and a Status pill would have duplicated them. Its options are derived from live data,
+  so its `quickFilter` is a `computed`, not a literal — the pattern to copy for data-driven options.
+- **Product Recommendations' Templates "Show" control stayed a select.** Active vs archived is a
+  mode toggle with no "all" state, so a multi-select checkbox list would be wrong; it was given the
+  row's control height instead, which is what it was actually missing.
+
+### Follow-ups this opens
+
+- **~24 further tables remain candidates.** Analytics report views, Marketing (Landing Pages,
+  Preference Pages, Acquisition Forms), Settings (Audit Log, Users & Permissions) and several
+  Merchandising lists all have drawer filters that could be promoted; each needs a judgement call
+  about *which* filter earns the pill, so they were not swept mechanically. 42 of the 75 toolbar
+  consumers have no filters at all and correctly get nothing.
+- **The record count never singularises.** `MpDataTableToolbar` renders `{{ totalCount }} records`,
+  so a one-row result reads "1 records". Pre-existing, visible on every table page, and a one-line
+  fix whenever the copy is next touched.

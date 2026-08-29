@@ -6,6 +6,7 @@ import MpFormField from './MpFormField.vue'
 const search = defineModel<string>('search', { default: '' })
 const filterDrawer = defineModel<boolean>('filterOpen', { default: false })
 const hiddenColumns = defineModel<string[]>('hiddenColumns', { default: () => [] })
+const quickFilterValue = defineModel<string[]>('quickFilterValue', { default: () => [] })
 
 const props = defineProps<{
   searchPlaceholder?: string
@@ -15,6 +16,14 @@ const props = defineProps<{
   activeFilters?: Array<{ key: string; label: string }>
   totalCount?: number
   headers?: Array<{ title: string; key: string; [k: string]: any }>
+  /** Promote one high-traffic filter to a pill dropdown beside search. The
+      long tail stays in the drawer — never the same field in both. */
+  quickFilter?: {
+    key: string
+    label: string
+    icon?: string
+    options: Array<{ label: string; value: string }>
+  }
 }>()
 
 defineEmits<{
@@ -44,6 +53,35 @@ function resetColumns() {
   hiddenColumns.value = []
 }
 
+function toggleQuickFilterValue(value: string) {
+  quickFilterValue.value = quickFilterValue.value.includes(value)
+    ? quickFilterValue.value.filter(v => v !== value)
+    : [...quickFilterValue.value, value]
+}
+
+// One selection reads like a folder pill ("Subscribed"); more than one falls
+// back to the group label plus the row's badge count language.
+const quickFilterText = computed(() => {
+  if (!props.quickFilter) return ''
+  if (quickFilterValue.value.length !== 1) return props.quickFilter.label
+  const only = props.quickFilter.options.find(o => o.value === quickFilterValue.value[0])
+  return only?.label ?? props.quickFilter.label
+})
+
+const quickFilterAriaLabel = computed(() => {
+  if (!props.quickFilter) return ''
+  return quickFilterValue.value.length
+    ? `Filter by ${props.quickFilter.label} (${quickFilterValue.value.length} selected)`
+    : `Filter by ${props.quickFilter.label}`
+})
+
+// The Filter button badges what its drawer actually holds. A promoted quick
+// filter still chips below the row, but badging it here would send people into
+// a drawer where that filter no longer lives.
+const drawerFilterCount = computed(
+  () => (props.activeFilters ?? []).filter(f => f.key !== props.quickFilter?.key).length,
+)
+
 function visibleChips(filters: Array<{ key: string; label: string }>) {
   return filters.slice(0, 3)
 }
@@ -64,10 +102,69 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
       </div>
 
       <div class="d-flex align-center ga-2 flex-wrap justify-end">
+        <!-- Quick filter: the one promoted filter, leading the control
+             cluster — it is the cut people reach for before the drawer. -->
+        <v-menu
+          v-if="quickFilter"
+          :close-on-content-click="false"
+          location="bottom start"
+        >
+          <template #activator="{ props: menuProps }">
+            <v-badge
+              :model-value="quickFilterValue.length > 1"
+              :content="quickFilterValue.length"
+              color="primary"
+              location="top end"
+              offset-x="8"
+              offset-y="6"
+            >
+              <v-btn
+                v-bind="menuProps"
+                variant="outlined"
+                class="text-none mp-filter-btn"
+                :prepend-icon="quickFilter.icon"
+                append-icon="chevron-down"
+                :aria-label="quickFilterAriaLabel"
+              >
+                {{ quickFilterText }}
+              </v-btn>
+            </v-badge>
+          </template>
+
+          <v-card min-width="220" max-width="280" flat border class="mp-toolbar-panel">
+            <div class="pa-3">
+              <MpFormField :label="quickFilter.label">
+                <v-checkbox
+                  v-for="opt in quickFilter.options"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :model-value="quickFilterValue.includes(opt.value)"
+                  density="compact"
+                  hide-details
+                  class="mp-panel-checkbox"
+                  @update:model-value="toggleQuickFilterValue(opt.value)"
+                />
+              </MpFormField>
+            </div>
+            <v-divider class="mp-divider-muted" />
+            <div class="d-flex justify-end pa-3">
+              <v-btn
+                variant="text"
+                size="small"
+                class="text-none"
+                :disabled="!quickFilterValue.length"
+                @click="quickFilterValue = []"
+              >
+                Clear
+              </v-btn>
+            </div>
+          </v-card>
+        </v-menu>
+
         <v-badge
           v-if="$slots['filter-content']"
-          :model-value="!!activeFilters?.length"
-          :content="activeFilters?.length"
+          :model-value="!!drawerFilterCount"
+          :content="drawerFilterCount"
           color="primary"
           location="top end"
           offset-x="8"
@@ -77,7 +174,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
             variant="outlined"
             class="text-none mp-filter-btn"
             prepend-icon="list-filter"
-            :aria-label="activeFilters?.length ? `Open table filters (${activeFilters.length} active)` : 'Open table filters'"
+            :aria-label="drawerFilterCount ? `Open table filters (${drawerFilterCount} active)` : 'Open table filters'"
             @click="filterDrawer = true"
           >
             Filter
@@ -113,7 +210,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
               </template>
             </v-tooltip>
           </template>
-          <v-card min-width="220" max-width="280" flat border rounded="lg" class="mp-toolbar-panel">
+          <v-card min-width="220" max-width="280" flat border class="mp-toolbar-panel">
             <div class="pa-3">
               <MpFormField label="Toggle columns">
                 <!-- Dense menu panel: compact and detail-free on purpose, so the
@@ -125,7 +222,7 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
                   :model-value="isColumnVisible(h.key)"
                   density="compact"
                   hide-details
-                  class="mp-column-checkbox"
+                  class="mp-panel-checkbox"
                   @update:model-value="toggleColumn(h.key)"
                 />
               </MpFormField>
@@ -258,8 +355,12 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   opacity: 0.08;
 }
 
+/* A menu panel is 12 on the concentric radius scale (P2-6), not the 16 that
+   `rounded="lg"` resolves to through global.scss's card override — the same
+   reason MpFolderSelect sets its panel radius here rather than as an attr. */
 .mp-toolbar-panel {
   border-color: rgb(var(--v-theme-outline-variant));
+  border-radius: var(--mp-component-menu-radius);
 }
 
 /* Pill search, matching the AppBar universal-search field (src/components/
@@ -313,13 +414,20 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
    rule is (0,3,0) and a plain :deep(.v-field__input) ties it at (0,3,0), leaving
    the winner down to stylesheet source order. The extra descendant makes this
    (0,4,0) so it wins deterministically, without !important — the same
-   "override by selector specificity" contract settings-form.scss documents. */
+   "override by selector specificity" contract settings-form.scss documents.
+
+   Vuetify's .v-field__field is align-items: flex-start. Once the input is
+   collapsed to content height there is no padding left to fake centring, so
+   the text sat ~8px high while the center-affix search icon stayed put. State
+   the alignment outright rather than restoring padding that would only ever be
+   correct by arithmetic. */
 .mp-toolbar-search :deep(.v-field) {
   box-sizing: border-box;
   min-height: var(--mp-component-control-height);
 }
 
 .mp-toolbar-search :deep(.v-field .v-field__field) {
+  align-items: center;
   padding-block: 0;
 }
 
@@ -352,7 +460,8 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
   gap: var(--mp-space-4);
 }
 
-.mp-column-checkbox :deep(.v-label) {
+/* Any checkbox in a toolbar menu panel — column toggles and quick filters. */
+.mp-panel-checkbox :deep(.v-label) {
   font-size: var(--mp-fontSize-13);
 }
 
