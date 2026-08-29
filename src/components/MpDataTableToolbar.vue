@@ -23,6 +23,10 @@ const props = defineProps<{
     label: string
     icon?: string
     options: Array<{ label: string; value: string }>
+    /** Exclusive choice — a mode toggle ("Active" vs "Archived"), where an
+        empty or combined selection would be meaningless. Renders a list
+        instead of checkboxes and always holds exactly one value. */
+    multiple?: boolean
   }
 }>()
 
@@ -53,6 +57,12 @@ function resetColumns() {
   hiddenColumns.value = []
 }
 
+const quickFilterMultiple = computed(() => props.quickFilter?.multiple !== false)
+
+function selectQuickFilterValue(value: string) {
+  quickFilterValue.value = [value]
+}
+
 function toggleQuickFilterValue(value: string) {
   quickFilterValue.value = quickFilterValue.value.includes(value)
     ? quickFilterValue.value.filter(v => v !== value)
@@ -70,6 +80,7 @@ const quickFilterText = computed(() => {
 
 const quickFilterAriaLabel = computed(() => {
   if (!props.quickFilter) return ''
+  if (!quickFilterMultiple.value) return `${props.quickFilter.label}: ${quickFilterText.value}`
   return quickFilterValue.value.length
     ? `Filter by ${props.quickFilter.label} (${quickFilterValue.value.length} selected)`
     : `Filter by ${props.quickFilter.label}`
@@ -106,12 +117,12 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
              cluster — it is the cut people reach for before the drawer. -->
         <v-menu
           v-if="quickFilter"
-          :close-on-content-click="false"
+          :close-on-content-click="quickFilter.multiple === false"
           location="bottom start"
         >
           <template #activator="{ props: menuProps }">
             <v-badge
-              :model-value="quickFilterValue.length > 1"
+              :model-value="quickFilterMultiple && quickFilterValue.length > 1"
               :content="quickFilterValue.length"
               color="primary"
               location="top end"
@@ -132,32 +143,55 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
           </template>
 
           <v-card min-width="220" max-width="280" flat border class="mp-toolbar-panel">
-            <div class="pa-3">
-              <MpFormField :label="quickFilter.label">
-                <v-checkbox
-                  v-for="opt in quickFilter.options"
-                  :key="opt.value"
-                  :label="opt.label"
-                  :model-value="quickFilterValue.includes(opt.value)"
-                  density="compact"
-                  hide-details
-                  class="mp-panel-checkbox"
-                  @update:model-value="toggleQuickFilterValue(opt.value)"
-                />
-              </MpFormField>
-            </div>
-            <v-divider class="mp-divider-muted" />
-            <div class="d-flex justify-end pa-3">
-              <v-btn
-                variant="text"
-                size="small"
-                class="text-none"
-                :disabled="!quickFilterValue.length"
-                @click="quickFilterValue = []"
+            <!-- Exclusive choice: a list, and no Clear — "none selected" is not a
+                 state a mode toggle has. Same panel, same geometry. -->
+            <v-list
+              v-if="!quickFilterMultiple"
+              density="compact"
+              class="py-1"
+              :aria-label="quickFilter.label"
+            >
+              <v-list-item
+                v-for="opt in quickFilter.options"
+                :key="opt.value"
+                rounded="lg"
+                class="mx-1"
+                :active="quickFilterValue.includes(opt.value)"
+                :aria-current="quickFilterValue.includes(opt.value) ? 'true' : undefined"
+                @click="selectQuickFilterValue(opt.value)"
               >
-                Clear
-              </v-btn>
-            </div>
+                <v-list-item-title class="text-body-2">{{ opt.label }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+
+            <template v-else>
+              <div class="pa-3">
+                <MpFormField :label="quickFilter.label">
+                  <v-checkbox
+                    v-for="opt in quickFilter.options"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :model-value="quickFilterValue.includes(opt.value)"
+                    density="compact"
+                    hide-details
+                    class="mp-panel-checkbox"
+                    @update:model-value="toggleQuickFilterValue(opt.value)"
+                  />
+                </MpFormField>
+              </div>
+              <v-divider class="mp-divider-muted" />
+              <div class="d-flex justify-end pa-3">
+                <v-btn
+                  variant="text"
+                  size="small"
+                  class="text-none"
+                  :disabled="!quickFilterValue.length"
+                  @click="quickFilterValue = []"
+                >
+                  Clear
+                </v-btn>
+              </div>
+            </template>
           </v-card>
         </v-menu>
 
@@ -406,9 +440,10 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
    moved. Zeroing the wrapper padding and the field's own border-box sizing keeps
    the rendered box on the token instead.
 
-   settings-form.scss pins .v-field__input to a 40px min-height and adds 2px of
-   wrapper padding top/bottom, which renders 46px — 6px taller than everything
-   else in this row — so both have to be neutralised here.
+   settings-form.scss pins .v-field__input to the 40px ramp floor, but this pill
+   carries a real 1px border on the box itself, so an unneutralised inner input
+   would render 42 — 2px taller than everything else in this row. Collapse the
+   inner input and let the box's own border-box min-height be the 40.
 
    The doubled `.v-field .v-field__input` descendant is deliberate: the global
    rule is (0,3,0) and a plain :deep(.v-field__input) ties it at (0,3,0), leaving
@@ -428,7 +463,6 @@ function hiddenCount(filters: Array<{ key: string; label: string }>) {
 
 .mp-toolbar-search :deep(.v-field .v-field__field) {
   align-items: center;
-  padding-block: 0;
 }
 
 .mp-toolbar-search :deep(.v-field .v-field__input) {

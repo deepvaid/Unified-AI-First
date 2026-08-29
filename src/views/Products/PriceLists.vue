@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useProductExtrasStore, type PricingConfiguration, type PricingStatus } from '@/stores/useProductExtras'
+import { useProductExtrasStore, type PricingConfiguration } from '@/stores/useProductExtras'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useToast } from '@/composables/useToast'
 import MpPageHeader from '@/components/MpPageHeader.vue'
@@ -31,7 +31,14 @@ const accountId = computed(() => String(route.params.accountId))
 const basePath = computed(() => `/commerce/${accountId.value}/price-lists`)
 
 const search = ref('')
-const statusFilter = ref<'All statuses' | PricingStatus>('All statuses')
+// Status is the promoted filter: a multi-select pill in the toolbar rather
+// than a single-value select, so several values can be compared at once.
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: (['Draft', 'Active']).map((v) => ({ label: v, value: v })),
+}
+const statusFilter = ref<string[]>([])
 const channelFilter = ref<'All channels' | string>('All channels')
 
 const headers = [
@@ -54,31 +61,31 @@ const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
   return store.pricingConfigurations.filter((p) => {
     const byTerm = !term || p.title.toLowerCase().includes(term) || p.audienceValue.toLowerCase().includes(term)
-    const byStatus = statusFilter.value === 'All statuses' || p.status === statusFilter.value
+    const byStatus = !statusFilter.value.length || statusFilter.value.includes(p.status)
     const byChannel = channelFilter.value === 'All channels' || p.salesChannel === channelFilter.value
     return byTerm && byStatus && byChannel
   })
 })
 
 const hasFilters = computed(() =>
-  Boolean(search.value) || statusFilter.value !== 'All statuses' || channelFilter.value !== 'All channels',
+  Boolean(search.value) || statusFilter.value.length || channelFilter.value !== 'All channels',
 )
 
 function clearFilters() {
   search.value = ''
-  statusFilter.value = 'All statuses'
+  statusFilter.value = []
   channelFilter.value = 'All channels'
 }
 
 const activeFilterEntries = computed(() => {
   const entries: Array<{ key: string; label: string }> = []
-  if (statusFilter.value !== 'All statuses') entries.push({ key: 'status', label: `Status: ${statusFilter.value}` })
+  if (statusFilter.value.length) entries.push({ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` })
   if (channelFilter.value !== 'All channels') entries.push({ key: 'channel', label: `Channel: ${channelFilter.value}` })
   return entries
 })
 
 function removeFilter(key: string) {
-  if (key === 'status') statusFilter.value = 'All statuses'
+  if (key === 'status') statusFilter.value = []
   if (key === 'channel') channelFilter.value = 'All channels'
 }
 
@@ -135,6 +142,8 @@ function doDelete() {
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="statusFilter"
+        :quick-filter="statusQuickFilter"
         v-model:search="search"
         title="All price lists"
         search-placeholder="Search title or audience"
@@ -149,7 +158,6 @@ function doDelete() {
         <template #filter-content>
           <MpFormSection title="Filter by" />
           <MpFormGrid>
-            <v-select v-model="statusFilter" :items="['All statuses', 'Draft', 'Active']" label="Status" hide-details />
             <v-select v-model="channelFilter" :items="['All channels', ...channels]" label="Sales channel" hide-details />
           </MpFormGrid>
         </template>

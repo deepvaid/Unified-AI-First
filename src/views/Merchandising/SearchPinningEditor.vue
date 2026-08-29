@@ -190,7 +190,6 @@ function performDelete() {
         label="Search query"
         placeholder="e.g. boots"
         prepend-inner-icon="search"
-        density="compact"
         hide-details
         class="spin-query"
       />
@@ -200,7 +199,6 @@ function performDelete() {
         placeholder="Filter results…"
         aria-label="Filter unpinned results"
         prepend-inner-icon="list-filter"
-        density="compact"
         hide-details
         clearable
         class="spin-filter"
@@ -209,7 +207,6 @@ function performDelete() {
         v-model="sortKey"
         :items="[...MERCH_SORT_OPTIONS]"
         aria-label="Sort unpinned results"
-        density="compact"
         hide-details
         class="spin-sort"
       />

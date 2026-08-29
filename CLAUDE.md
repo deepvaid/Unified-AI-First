@@ -99,7 +99,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpStatusChip** — `status`, `type?` ('order'|'fulfillment'|'payment'|'campaign'|'contact'|'ticket'|'coupon'|'general'), `size?` ('sm'|'md'|'lg'), `variant?` ('tonal'|'flat'|'outlined'), `showIcon?`. Workflow states in tables; color maps are automatic per type. Use `size="sm"` in data tables.
 - **MpSourceCloudChip** — `dataSource`, `size?` ('sm'|'md'|'lg'), `iconOnly?`. Identifies a widget/KPI's source cloud.
 - **MpListRow** — `title?`, `eyebrow?`, `meta?`, `variant?` ('plain'|'divided'|'boxed'), `emphasis?`, `density?`, `to?`/`href?`/`clickable?` · slots `#lead`, default, `#trailing`. The one list-row geometry — activity feeds, checklists, suggestion menus. Resolves its own tag from whichever target prop is set. Never hand-roll a repeating row.
-- **MpDataTableToolbar** — `searchPlaceholder?`, `activeFilters?`, `totalCount?`, `headers?`, `quickFilter?` ({ key, label, icon?, options }) · models `v-model:search`, `v-model:quickFilterValue` · slots `#title`, `#actions`, `#filter-content` (filter drawer). Always above `v-data-table`. `quickFilter` promotes one high-traffic filter to a checkbox pill at the **head of the control row, before the Filter button** — the long tail stays in the drawer, and the consumer still owns filtering, its `activeFilters` entry and clearing the model. The Filter button badges `activeFilters` minus the promoted key; when the promoted filter was the table's only one, drop `#filter-content` and the Filter button goes with it. Every control in the row is `component.control.height` (40) — give a new one the token, not a number.
+- **MpDataTableToolbar** — `searchPlaceholder?`, `activeFilters?`, `totalCount?`, `headers?`, `quickFilter?` ({ key, label, icon?, multiple?, options }) · models `v-model:search`, `v-model:quickFilterValue` · slots `#title`, `#actions`, `#filter-content` (filter drawer). Always above `v-data-table`. `quickFilter` promotes one high-traffic filter to a checkbox pill at the **head of the control row, before the Filter button** — the long tail stays in the drawer, and the consumer still owns filtering, its `activeFilters` entry and clearing the model. `multiple: false` makes it an exclusive mode toggle (list panel, no Clear, closes on pick, model holds exactly one value). The Filter button badges `activeFilters` minus the promoted key; when the promoted filter was the table's only one, drop `#filter-content` and the Filter button goes with it. Every control in the row is `component.control.height` (40) — give a new one the token, not a number.
 - **MpFolderSelect** — `folders`, `counts?`, `totalCount?`, `label?` · emits `manage`. Folder filter menu above foldered lists.
 
 ### Feedback
@@ -115,7 +115,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpFormDrawer** — `title`, `subtitle?`, `size?` ('sm'|'md'|'lg' → 440/480/640), `guarded?` · model `v-model` · emits `close` · slots default, `#footer`, `#footerStart`. Right-side drawer for create/edit forms. Never `v-dialog` for forms. Shares MpDialog's header/body/footer contract exactly.
 - **MpFormGrid** — `cols?` (1|2) · slot default. **The one form layout container.** Its gap *is* the field rhythm (`component.field.groupGap`); child classes `mp-form-grid__full` (span both columns) and `mp-form-grid__trailing` (field + trailing icon button in its own fixed `control.height` track, so the input's right edge still lands on the form's right edge). A field never sets its own margin.
 - **MpFormSection** — `title`, `description?`, `required?`, `headingLevel?` (3). **The one in-form section heading** ("GENERAL", "EXPIRATION DATE"). Owns the space above and below itself via `component.field.sectionGap`. Replaced seven hand-rolled patterns.
-- **MpFormField** — `label`, `required?`, `hint?`, `error?` · slot default exposes `{ labelId, descriptionId }`. Label + hint/error + aria for **composite** controls only (chip groups, radio groups, tile pickers). **Never wrap a Vuetify input** — those own their own label, and the floating label is the one label language.
+- **MpFormField** — `label`, `required?`, `hint?`, `error?` · slot default exposes `{ labelId, descriptionId }`. Label + hint/error + aria for **composite** controls only (chip groups, radio groups, tile pickers). **Never wrap a Vuetify input** — those own their own label via the `label` prop, which renders as an identical static top label.
 - **MpOptionCard** — `selected`, `title`, `description?`, `icon?` · slots default, `#media`. Keyboard-operable selectable card for wizard galleries.
 - **MpStatusToggle** — `status` ('Active'|'Paused'|'Draft') · emits `toggle`. Status switch + label cell; disabled on Draft.
 - **MpManageFoldersDrawer** — `scope`, `counts?` · emits `deleted`. Folder CRUD drawer (composes MpFormDrawer).
@@ -217,7 +217,7 @@ MpPageHeader (with breadcrumbs + action button)
 v-btn @click="drawer = true"  → opens MpFormDrawer (or MpDialog for a short centred form)
   └── MpFormSection  title="General"
   └── MpFormGrid :cols="2"
-        ├── bare Vuetify fields — no margins, no variant/density, floating label
+        ├── bare Vuetify fields — no margins, no variant/density, `label` prop (renders as a static top label)
         ├── .mp-form-grid__full      → a field that spans both columns
         ├── .mp-form-grid__trailing  → a field + its delete button
         └── MpFormField              → a chip group / radio group / tile picker
@@ -230,18 +230,29 @@ v-btn @click="drawer = true"  → opens MpFormDrawer (or MpDialog for a short ce
 around a heading. An `mb-4` on a field inside a shell body lands *on top of* the shell's gap and
 renders 32 — 275 of those were deleted in Phase 6.
 
-**One label strategy, zero exceptions.** Vuetify's floating `label` prop names every input.
-Placeholders are example values only and never repeat the label. The required mark is one
-pattern — a trailing ` *` in the label text, or `required` on `MpFormField` / `MpFormSection` —
-and never lives inside a placeholder. A control with no label of its own gets `MpFormField`, which
-also wires `aria-labelledby` / `aria-describedby`; a Vuetify input is never wrapped, because it
-already does both.
+**One label strategy, zero exceptions.** Vuetify's `label` prop names every input; the global
+baseline (settings-form.scss) renders it as a **static top label** — 13px/500 `text.label` in
+`--text-secondary`, `labelGap` (6) above the box, calm on focus *and* error (the 2px border and
+the message carry the state). Placeholders are example values only, always visible while the
+field is empty, and never repeat the label. The required mark is one pattern — a trailing ` *`
+in the label text, or `required` on `MpFormField` / `MpFormSection` — and never lives inside a
+placeholder. A control with no label of its own gets `MpFormField`, which renders the identical
+label and wires `aria-labelledby` / `aria-describedby`; a Vuetify input is never wrapped,
+because it already does both. Chrome (toolbar searches, table-cell editors, chat composers) uses
+`placeholder` + `aria-label` instead — no label means no headroom, so it stays flush in a 40px
+control row.
 
-**Don't restate the theme defaults.** `variant="outlined"` and `density="comfortable"` are
-defaults on every field *and* on the selection controls. `hide-details` defaults to `"auto"`,
-which reserves no height when there is no message — setting it bare permanently suppresses
-validation, so keep it only for a dense toolbar filter and say so in a comment. Textarea height
-comes from `rows` (3 normal, 5 long-form), never CSS.
+**Field sizes are the `density` prop.** One ramp, `component.field.height`:
+`density="compact"` → sm 32 · the default (`comfortable`) → md 40, equal to `control.height` so
+a field and a button align · `density="default"` → lg 48. Forms use md; sm is for genuinely
+dense chrome, lg for spacious marketing-style surfaces.
+
+**Don't restate the theme defaults.** `variant="outlined"`, `density="comfortable"`,
+`color="primary"` and `persistent-placeholder` are defaults on every field *and* (minus variant)
+on the selection controls. `hide-details` defaults to `"auto"`, which reserves no height when
+there is no message — setting it bare permanently suppresses validation, so keep it only for a
+dense toolbar filter and say so in a comment. Textarea height comes from `rows` (3 normal,
+5 long-form), never CSS.
 
 ### Status Chip Usage
 Always use `MpStatusChip` for status columns. Pass the correct `type` prop:
@@ -276,8 +287,10 @@ Reach for a role token when the system has already made the decision, a primitiv
 - **List rows** `component.listItem.*` → `minHeight` = `control.height` (40) · `paddingBlock` 8 ·
   `paddingInline` 12 · `gap` 12. A row, a button and a form field share one baseline
 - **Form groups** `component.field.*` → `labelGap` 6 · `groupGap` 16 · `hintGap` 4 ·
-  `sectionGap` 24. `groupGap` is what `MpFormGrid` gaps on; `sectionGap` is the air
-  `MpFormSection` puts around a heading
+  `sectionGap` 24 · `height.{sm,md,lg}` 32/40/48 (mapped from the `density` prop; md =
+  `control.height`) · `labelHeight` 18 (the static top label's line box — a labelled field
+  reserves `labelHeight + labelGap` of headroom). `groupGap` is what `MpFormGrid` gaps on;
+  `sectionGap` is the air `MpFormSection` puts around a heading
 - **States** `component.state.*` → `padding` 32 · `paddingProminent` 48 · `gap` 8 ·
   `minHeight` 240 · `minHeightProminent` 320 · `measure` 420 · `measureWide` 480 · `iconDisc` 80
 - **Chips** `component.chip.height.{sm,md,lg}` → 20 / 24 / 32 · `paddingInline` 8

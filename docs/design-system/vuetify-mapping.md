@@ -12,7 +12,7 @@ restyles the raw Vuetify primitives, so Mp* wrappers stay thin:
 |---|---|
 | VBtn | `variant="flat"`, pill radius, button typography tokens, no text-transform, min-height 40px + padding-inline 14px (drift — see token-sync-plan.md) |
 | VCard | `variant="flat"`, `rounded="lg"` (14px card token) |
-| VTextField / VSelect / VAutocomplete / VCombobox / VTextarea | `variant="outlined"`, `density="comfortable"`, `hide-details="auto"`, primary color, 16px input radius token |
+| VTextField / VSelect / VAutocomplete / VCombobox / VTextarea | `variant="outlined"`, `density="comfortable"`, `hide-details="auto"`, primary color, `persistent-placeholder` (static top label mechanism), 10px `component.input.radius`; `density` maps to the field size ramp (compact → sm 32 · comfortable → md 40 · default → lg 48) |
 | VAlert | `variant="tonal"`, `rounded="md"` |
 | VChip | `rounded="pill"`, `size="small"` |
 | VDataTable | `fixed-header`, `hover`, `density="comfortable"`, 15 rows/page |

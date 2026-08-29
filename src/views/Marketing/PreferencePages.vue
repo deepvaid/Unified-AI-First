@@ -27,25 +27,49 @@ const headers = [
 ]
 
 // ── Filters ───────────────────────────────────────────────────────────────
-const filters = ref({ editorType: [] as string[], pageType: [] as string[] })
-const filterLabels: Record<string, string> = { editorType: 'Editor Type', pageType: 'Page Type' }
+// Page Type is the promoted filter: a multi-select pill in the toolbar, so the
+// cut people make most often doesn't cost a trip to the drawer.
+const pageTypeQuickFilter = {
+  key: 'pageType',
+  label: 'Page Type',
+  options: ([...PAGE_TYPES] as string[]).map((v) => ({ label: v, value: v })),
+}
+const pageTypeFilter = ref<string[]>([])
 
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v.length > 0)
-    .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value.join(', ')}` }))
-)
+const filters = ref({
+  editorType: [] as string[],
+})
+const filterLabels: Record<string, string> = {
+  editorType: 'Editor Type',
+  pageType: 'Page Type',
+}
+
+const activeFilterEntries = computed(() => {
+  const entries =
+    Object.entries(filters.value)
+      .filter(([, v]) => v.length > 0)
+      .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value.join(', ')}` }))
+  if (pageTypeFilter.value.length) {
+    entries.unshift({ key: 'pageType', label: `Page Type: ${pageTypeFilter.value.join(', ')}` })
+  }
+  return entries
+})
 function removeFilter(key: string) {
+  if (key === 'pageType') {
+    pageTypeFilter.value = []
+    return
+  }
   ;(filters.value as any)[key] = []
 }
 function clearAllFilters() {
-  filters.value = { editorType: [], pageType: [] }
+  pageTypeFilter.value = []
+  filters.value = { editorType: [] }
 }
 
 const filteredPages = computed(() => {
   let rows = store.preferencePages
   if (filters.value.editorType.length) rows = rows.filter(p => filters.value.editorType.includes(p.editorType))
-  if (filters.value.pageType.length) rows = rows.filter(p => filters.value.pageType.includes(p.pageType))
+  if (pageTypeFilter.value.length) rows = rows.filter(p => pageTypeFilter.value.includes(p.pageType))
   return rows
 })
 
@@ -137,6 +161,8 @@ function notify(text: string) { toast.success(text) }
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="pageTypeFilter"
+        :quick-filter="pageTypeQuickFilter"
         v-model:search="search"
         title="Preference Pages"
         search-placeholder="Search pages..."
@@ -158,18 +184,6 @@ function notify(text: string) { toast.success(text) }
                 chips
                 closable-chips
                 clearable
-                density="compact"
-                hide-details
-              />
-              <v-select
-                v-model="filters.pageType"
-                label="Page Type"
-                :items="[...PAGE_TYPES] as string[]"
-                multiple
-                chips
-                closable-chips
-                clearable
-                density="compact"
                 hide-details
               />
             </MpFormGrid>

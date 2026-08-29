@@ -644,7 +644,6 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
       <v-select
         v-model="activeTemplate"
         :items="templateTypeItems"
-        density="compact"
         hide-details
         class="tb-template-select flex-shrink-0"
         aria-label="Template type"

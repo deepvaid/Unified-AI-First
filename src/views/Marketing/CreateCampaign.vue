@@ -1,102 +1,111 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MpOptionCard from '@/components/MpOptionCard.vue'
-import type { ComponentPublicInstance } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import CampaignEmailPreview from '@/components/marketing/CampaignEmailPreview.vue'
+import CampaignContentEditor from '@/components/marketing/CampaignContentEditor.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
-import { useCampaignsStore, type Campaign, type CampaignDraftInput } from '@/stores/useCampaigns'
+import { useToast } from '@/composables/useToast'
+import {
+  useCampaignsStore,
+  type Campaign,
+  type CampaignDraftInput,
+  type CampaignRecurringSchedule,
+  type CampaignScheduleMethod,
+} from '@/stores/useCampaigns'
 import { useContactsStore } from '@/stores/useContacts'
 import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
 import { useContentStore } from '@/stores/useContent'
+import { useMarketingAssetsStore } from '@/stores/useMarketingAssets'
 import { useDaVinciOnboardingStore } from '@/stores/useDaVinciOnboarding'
 import { useDaVinciCampaignOnboarding } from '@/composables/useDaVinciCampaignOnboarding'
 import { trackDaVinciOnboardingEvent } from '@/composables/useDaVinciOnboardingAnalytics'
 
+// UAT-parity Email Campaign wizard (/campaigns/new/email). The source packs six
+// screens behind four stepper dots (spam check hides inside Content, Review inside
+// Schedule); here every screen is an honest step, and the forced spam-check gate
+// is an on-demand check on the Content step — both logged in PARITY.md.
 const router = useRouter()
 const route = useRoute()
 const store = useCampaignsStore()
 const contactsStore = useContactsStore()
 const cdpStore = useCdpEntitiesStore()
 const contentStore = useContentStore()
+const assetsStore = useMarketingAssetsStore()
 const daVinciOnboarding = useDaVinciOnboardingStore()
 const daVinciCampaign = useDaVinciCampaignOnboarding()
+const toast = useToast()
 
 const accountId = computed(() => route.params.accountId as string)
 const campaignsRoute = computed(() => ({ name: 'EmailCampaigns', params: { accountId: accountId.value } }))
 
-// ── Type gate (pre-step, not part of the numbered wizard) ────────────────────
-const typeChosen = ref(false)
-const kind = ref<'email' | 'ab_email'>('email')
-
-function chooseType(next: 'email' | 'ab_email') {
-  kind.value = next
-  typeChosen.value = true
-  captureFormSnapshot()
-}
-
-// Keyboard support: arrow-key navigation between the two type cards, Enter/Space
-// to choose (handled by MpOptionCard itself via its native click fallthrough).
-const emailCardRef = ref<ComponentPublicInstance | null>(null)
-const abCardRef = ref<ComponentPublicInstance | null>(null)
-
-function focusCard(cardRef: typeof emailCardRef) {
-  (cardRef.value?.$el as HTMLElement | undefined)?.focus()
-}
-
-function onTypeGateKeydown(e: KeyboardEvent) {
-  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
-  const active = document.activeElement
-  if (e.key === 'ArrowRight' && active === emailCardRef.value?.$el) {
-    e.preventDefault()
-    focusCard(abCardRef)
-  } else if (e.key === 'ArrowLeft' && active === abCardRef.value?.$el) {
-    e.preventDefault()
-    focusCard(emailCardRef)
-  }
-}
-
 // ── Wizard state ──────────────────────────────────────────────────────────────
-const stepTitles = ['Details', 'Contacts', 'Content', 'Schedule & Review']
+const stepTitles = ['Details', 'Contacts', 'Content', 'Schedule', 'Review']
 const totalSteps = stepTitles.length
 const step = ref(1)
 const maxStepReached = ref(1)
 const draftId = ref<number | null>(null)
 
-// Step 1 — Details
+// ── Step 1 — Campaign details ─────────────────────────────────────────────────
 const name = ref('')
 const subject = ref('')
-const subjectB = ref('')
 const preheader = ref('')
 const tag = ref<string | null>(null)
-const TAG_OPTIONS = ['Newsletter', 'Promo_2026', 'Onboarding', 'Retention']
-const testSplitPercent = ref(50)
+const tagOptions = computed(() => assetsStore.tags.map(t => t.name))
 
-// Step 2 — Contacts: audience
+// ── Step 2 — Contacts ─────────────────────────────────────────────────────────
 const audienceListIds = ref<number[]>([])
 const audienceSegmentIds = ref<number[]>([])
 const audienceTableIds = ref<number[]>([])
 const brand = ref('Maropost')
 const BRAND_OPTIONS = ['Maropost', 'Storefront Co', 'Wholesale Division']
 
-const cdpLists = computed(() => cdpStore.lists)
-const segments = computed(() => contactsStore.segments)
-const tables = computed(() => cdpStore.tables)
-const secureLists = computed(() => cdpStore.secureLists)
-
-const listItems = computed(() => cdpLists.value.map(l => ({ title: `${l.name} (${l.count.toLocaleString()})`, value: l.id })))
-const segmentItems = computed(() => segments.value.map(s => ({ title: `${s.name} (${s.count.toLocaleString()})`, value: s.id })))
-const tableItems = computed(() => tables.value.map(t => ({ title: `${t.name} (${t.rows.toLocaleString()})`, value: t.id })))
+const listItems = computed(() => cdpStore.lists.map(l => ({ title: `${l.name} (${l.count.toLocaleString()})`, value: l.id })))
+const segmentItems = computed(() => contactsStore.segments.map(s => ({ title: `${s.name} (${s.count.toLocaleString()})`, value: s.id })))
+const tableItems = computed(() => cdpStore.tables.map(t => ({ title: `${t.name} (${t.rows.toLocaleString()})`, value: t.id })))
 const journeyItems = computed(() => store.journeys.map(j => ({ title: j.name, value: j.id })))
-const secureListItems = computed(() => secureLists.value.map(l => ({ title: `${l.name} (${l.contacts.toLocaleString()})`, value: l.id })))
+const secureListItems = computed(() => cdpStore.secureLists.map(l => ({ title: `${l.name} (${l.contacts.toLocaleString()})`, value: l.id })))
+
+const audienceCount = computed(() => audienceListIds.value.length + audienceSegmentIds.value.length + audienceTableIds.value.length)
+const audienceContactTotal = computed(() => {
+  const listTotal = audienceListIds.value.reduce((sum, id) => sum + (cdpStore.lists.find(l => l.id === id)?.count ?? 0), 0)
+  const segmentTotal = audienceSegmentIds.value.reduce((sum, id) => sum + (contactsStore.segments.find(s => s.id === id)?.count ?? 0), 0)
+  const tableTotal = audienceTableIds.value.reduce((sum, id) => sum + (cdpStore.tables.find(t => t.id === id)?.rows ?? 0), 0)
+  return listTotal + segmentTotal + tableTotal
+})
+const zeroContactAudience = computed(() => audienceCount.value > 0 && audienceContactTotal.value === 0)
+
+// Sender — UAT autofills these from the selected list's saved profile. The
+// source does it silently; here the fill is announced (autofilledFrom alert)
+// and the fields stay editable.
+const senderName = ref('Maropost Store')
+const senderEmail = ref('hello@maropoststore.com')
+const replyTo = ref('support@maropoststore.com')
+const language = ref('English (US)')
+const address = ref('100 King St, Sydney NSW 2000')
+const LANGUAGES = ['English (US)', 'English (UK)', 'French', 'German', 'Spanish', 'Italian']
+const autofilledFrom = ref<string | null>(null)
+
+function onAudienceListsChanged(ids: number[]) {
+  if (!ids.length) { autofilledFrom.value = null; return }
+  const last = cdpStore.lists.find(l => l.id === ids[ids.length - 1])
+  if (!last) return
+  senderName.value = last.fromName
+  senderEmail.value = last.fromEmail
+  replyTo.value = last.replyTo
+  language.value = last.language
+  address.value = last.address
+  autofilledFrom.value = last.name
+}
 
 function toggleAllLists() {
   audienceListIds.value = audienceListIds.value.length === listItems.value.length ? [] : listItems.value.map(i => i.value)
+  onAudienceListsChanged(audienceListIds.value)
 }
 function toggleAllSegments() {
   audienceSegmentIds.value = audienceSegmentIds.value.length === segmentItems.value.length ? [] : segmentItems.value.map(i => i.value)
@@ -105,27 +114,6 @@ function toggleAllTables() {
   audienceTableIds.value = audienceTableIds.value.length === tableItems.value.length ? [] : tableItems.value.map(i => i.value)
 }
 
-// Sender
-const senderName = ref('Maropost Store')
-const senderEmail = ref('hello@maropoststore.com')
-const replyTo = ref('support@maropoststore.com')
-const language = ref('English (US)')
-const address = ref('100 King St, Sydney NSW 2000')
-const LANGUAGES = ['English (US)', 'English (UK)', 'French', 'German', 'Spanish', 'Italian']
-
-// Autofill sender fields from the last-selected list, per legacy behaviour.
-function onAudienceListsChanged(ids: number[]) {
-  if (!ids.length) return
-  const last = cdpLists.value.find(l => l.id === ids[ids.length - 1])
-  if (!last) return
-  senderName.value = last.fromName
-  senderEmail.value = last.fromEmail
-  replyTo.value = last.replyTo
-  language.value = last.language
-  address.value = last.address
-}
-
-// Suppress contacts (collapsible, optional)
 const suppressListIds = ref<number[]>([])
 const suppressJourneyIds = ref<number[]>([])
 const suppressSegmentIds = ref<number[]>([])
@@ -134,51 +122,104 @@ const suppressCount = computed(() =>
   suppressListIds.value.length + suppressJourneyIds.value.length + suppressSegmentIds.value.length + suppressSecureListIds.value.length,
 )
 
-// Step 3 — Content
+// ── Step 3 — Content ──────────────────────────────────────────────────────────
 const contentId = ref<number | null>(null)
 const contentOptions = computed(() => contentStore.items.map(i => ({ title: i.name, value: i.id })))
 const selectedContent = computed(() => contentStore.items.find(i => i.id === contentId.value) ?? null)
 const showPreviewLink = ref(false)
 const dynamicPreview = ref(false)
-const spamCheckResult = ref<string | null>(null)
+const previewRendered = ref(false)
+const editorOpen = ref(false)
 
+watch(contentId, (next) => { previewRendered.value = next !== null })
+
+// Spam check — UAT forces this as a blocking screen between Content and Schedule.
+// Here it runs on demand inside the Content step (deviation, logged in PARITY.md).
+const spamScore = ref<number | null>(null)
+const spamChecking = ref(false)
+let spamTimer: ReturnType<typeof setTimeout> | null = null
 function runSpamCheck() {
-  spamCheckResult.value = 'Looks good — 0 spam triggers found'
+  spamChecking.value = true
+  spamScore.value = null
+  if (spamTimer) clearTimeout(spamTimer)
+  spamTimer = setTimeout(() => {
+    spamChecking.value = false
+    spamScore.value = 0
+  }, 1200)
 }
+onBeforeUnmount(() => { if (spamTimer) clearTimeout(spamTimer) })
 
-// Merge-tag placeholders shown in the content preview (kept as plain string constants —
-// embedding literal "{{ }}" text directly inside a template interpolation breaks the compiler).
-const mergeTagFirstName = '{{contact.first_name}}'
-const mergeTagAddress = '{{campaign.address}}'
-const mergeTagUnsubscribe = '{{campaign.unsubscribe_link}}'
+// ── Step 4 — Schedule ─────────────────────────────────────────────────────────
+interface MethodOption { title: string; value: CampaignScheduleMethod; description: string }
+// All six production methods (Phase-2 decision) — UAT account 116000 only exposes
+// four; STO/CTO are entitlement-gated there. Descriptions are the UAT tooltip copy.
+const SCHEDULE_METHODS: MethodOption[] = [
+  { value: 'send_now', title: 'Send now', description: 'Send the campaign as soon as you confirm.' },
+  { value: 'priority', title: 'Priority send', description: 'Send to your most engaged contacts first.' },
+  { value: 'tzo', title: 'Time zone optimization', description: 'Send to each contact at the chosen time in their own time zone.' },
+  { value: 'sto', title: 'Send-time optimization', description: 'Send at each contact’s best time or day, based on their email opening habits. Without prior history, the campaign sends at the date and time below.' },
+  { value: 'cto', title: 'Conversion-time optimization', description: 'Send at each contact’s best time or day, based on their purchase habits. Without prior history, the campaign sends at the date and time below.' },
+  { value: 'recurring', title: 'Recurring', description: 'Send on a repeating schedule that you define.' },
+]
+const scheduleMethod = ref<CampaignScheduleMethod | null>(null)
+const methodDescription = computed(() => SCHEDULE_METHODS.find(m => m.value === scheduleMethod.value)?.description ?? 'Choose how this campaign should be sent.')
+const isDated = computed(() => scheduleMethod.value !== null && scheduleMethod.value !== 'send_now' && scheduleMethod.value !== 'recurring')
 
-// Step 4 — Schedule & Review
-const scheduleType = ref<'now' | 'scheduled'>('now')
 const scheduleDate = ref('')
 const scheduleTime = ref('09:00')
-const timezone = ref('America/New_York')
-const TIMEZONES = ['America/New_York', 'America/Chicago', 'America/Los_Angeles', 'UTC', 'Europe/London']
-const optimizations = reactive({ sto: false, tzo: false, cto: false, preSend: false })
-const winnerCriteria = ref<'opens' | 'clicks' | 'revenue'>('opens')
+const preSendCalc = ref(false)
 
-// ── Validity per step ─────────────────────────────────────────────────────────
-const audienceCount = computed(() => audienceListIds.value.length + audienceSegmentIds.value.length + audienceTableIds.value.length)
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const recurringMode = ref<CampaignRecurringSchedule['mode']>('day-of-week')
+const recurringDays = ref<string[]>([])
+const recurringInterval = ref<CampaignRecurringSchedule['interval']>('Day')
+const recurringTime = ref('09:00')
 
-const step1Valid = computed(() => {
-  const base = name.value.trim().length > 0 && subject.value.trim().length > 0
-  return kind.value === 'ab_email' ? base && subjectB.value.trim().length > 0 : base
-})
+// Send test — mock: shows a toast instead of dispatching mail.
+const testSubject = ref('')
+const testEmails = ref<string[]>([])
+const testListIds = ref<number[]>([])
+const testSending = ref(false)
+let testTimer: ReturnType<typeof setTimeout> | null = null
+const canSendTest = computed(() => testEmails.value.length > 0 || testListIds.value.length > 0)
+
+function sendTest() {
+  if (!canSendTest.value) return
+  testSending.value = true
+  if (testTimer) clearTimeout(testTimer)
+  testTimer = setTimeout(() => {
+    testSending.value = false
+    const target = testEmails.value.length
+      ? `${testEmails.value.length} address${testEmails.value.length > 1 ? 'es' : ''}`
+      : `${testListIds.value.length} list${testListIds.value.length > 1 ? 's' : ''}`
+    toast.success(`Test email sent to ${target}`)
+  }, 900)
+}
+onBeforeUnmount(() => { if (testTimer) clearTimeout(testTimer) })
+
+// ── Validity ──────────────────────────────────────────────────────────────────
+const step1Valid = computed(() => name.value.trim().length > 0 && subject.value.trim().length > 0)
 const step2Valid = computed(() =>
   audienceCount.value > 0 && senderName.value.trim().length > 0 && senderEmail.value.trim().length > 0
   && replyTo.value.trim().length > 0 && address.value.trim().length > 0,
 )
 const step3Valid = computed(() => contentId.value !== null)
-const step4Valid = computed(() => scheduleType.value === 'now' || scheduleDate.value.length > 0)
+const step4Valid = computed(() => {
+  if (scheduleMethod.value === null) return false
+  if (scheduleMethod.value === 'send_now') return true
+  if (scheduleMethod.value === 'recurring') {
+    return recurringMode.value === 'day-of-week'
+      ? recurringDays.value.length > 0 && recurringTime.value.length > 0
+      : recurringTime.value.length > 0
+  }
+  return scheduleDate.value.length > 0 && scheduleTime.value.length > 0
+})
 
 const stepValid = computed(() => {
   if (step.value === 1) return step1Valid.value
   if (step.value === 2) return step2Valid.value
   if (step.value === 3) return step3Valid.value
+  if (step.value === 4) return step4Valid.value
   return step4Valid.value
 })
 
@@ -186,22 +227,26 @@ const stepHint = computed(() => {
   if (step.value === 1) return 'Add a campaign name and subject line to continue.'
   if (step.value === 2) return 'Select at least one list, segment, or table, and complete the sender details.'
   if (step.value === 3) return 'Choose content to continue.'
-  if (step.value === 4 && scheduleType.value === 'scheduled') return 'Pick a send date to continue.'
+  if (step.value === 4) {
+    if (scheduleMethod.value === null) return 'Choose a send method to continue.'
+    if (scheduleMethod.value === 'recurring') return 'Pick at least one weekday and a time.'
+    return 'Pick a send date and time to continue.'
+  }
   return ''
 })
 
-// ── Persistence (auto-save on step change) ────────────────────────────────────
+// ── Persistence ───────────────────────────────────────────────────────────────
 function buildInput(): CampaignDraftInput {
   const parts: string[] = []
   if (audienceListIds.value.length) parts.push(`${audienceListIds.value.length} list${audienceListIds.value.length > 1 ? 's' : ''}`)
   if (audienceSegmentIds.value.length) parts.push(`${audienceSegmentIds.value.length} segment${audienceSegmentIds.value.length > 1 ? 's' : ''}`)
   if (audienceTableIds.value.length) parts.push(`${audienceTableIds.value.length} table${audienceTableIds.value.length > 1 ? 's' : ''}`)
+  const method = scheduleMethod.value ?? 'send_now'
 
   return {
-    kind: kind.value,
+    kind: 'email',
     name: name.value,
     subject: subject.value,
-    subjectB: kind.value === 'ab_email' ? subjectB.value : undefined,
     preheader: preheader.value,
     tag: tag.value ?? '',
     audienceSummary: parts.length ? parts.join(' · ') : '',
@@ -221,14 +266,17 @@ function buildInput(): CampaignDraftInput {
     contentId: contentId.value,
     showPreviewLink: showPreviewLink.value,
     dynamicPreview: dynamicPreview.value,
-    spamCheckResult: spamCheckResult.value,
-    scheduleType: scheduleType.value,
+    spamCheckResult: spamScore.value !== null ? `Spam score ${spamScore.value} — all clear` : null,
+    spamScore: spamScore.value,
+    scheduleType: method === 'send_now' ? 'now' : 'scheduled',
+    scheduleMethod: method,
+    recurring: method === 'recurring'
+      ? { mode: recurringMode.value, days: [...recurringDays.value], interval: recurringInterval.value, time: recurringTime.value }
+      : undefined,
     scheduleDate: scheduleDate.value || null,
     scheduleTime: scheduleTime.value || null,
-    timezone: timezone.value,
-    optimizations: { ...optimizations },
-    testSplitPercent: kind.value === 'ab_email' ? testSplitPercent.value : undefined,
-    winnerCriteria: kind.value === 'ab_email' ? winnerCriteria.value : undefined,
+    timezone: 'America/New_York',
+    optimizations: { sto: method === 'sto', tzo: method === 'tzo', cto: method === 'cto', preSend: preSendCalc.value },
   }
 }
 
@@ -238,7 +286,7 @@ function captureFormSnapshot() {
   savedSnapshot.value = JSON.stringify(buildInput())
 }
 const isDirty = computed(() => {
-  if (!typeChosen.value || !savedSnapshot.value) return false
+  if (!savedSnapshot.value) return false
   return JSON.stringify(buildInput()) !== savedSnapshot.value
 })
 const {
@@ -269,34 +317,51 @@ function saveProgress(finalize = false) {
 function goToStep(target: number) {
   if (target === step.value) return
   if (target > step.value && !stepValid.value) return
-  if (step.value >= 1) saveProgress()
+  saveProgress()
+  if (target === 4 && !testSubject.value) testSubject.value = `Test — ${subject.value}`
   step.value = target
   maxStepReached.value = Math.max(maxStepReached.value, target)
 }
-
-function nextStep() {
-  goToStep(Math.min(step.value + 1, totalSteps))
-}
-function prevStep() {
-  goToStep(Math.max(step.value - 1, 1))
-}
+function nextStep() { goToStep(Math.min(step.value + 1, totalSteps)) }
+function prevStep() { goToStep(Math.max(step.value - 1, 1)) }
 
 function saveDraft() {
   saveProgress(false)
   allowNextLeave()
+  toast.success('Draft saved')
   router.push(campaignsRoute.value)
 }
 
-function scheduleCampaign() {
+// ── Finalize (Send now / Schedule) ────────────────────────────────────────────
+const confirmFinalize = ref(false)
+const finalizeLabel = computed(() => {
+  if (scheduleMethod.value === 'send_now') return 'Send now'
+  if (scheduleMethod.value === 'recurring') return 'Start schedule'
+  return 'Schedule campaign'
+})
+const finalizeMessage = computed(() => {
+  const audience = audienceContactTotal.value.toLocaleString()
+  if (scheduleMethod.value === 'send_now') return `"${name.value}" will start sending to ${audience} contacts immediately.`
+  if (scheduleMethod.value === 'recurring') return `"${name.value}" will send on its recurring schedule to ${audience} contacts.`
+  return `"${name.value}" will be scheduled for ${scheduleDate.value} at ${scheduleTime.value} to ${audience} contacts.`
+})
+const finalizeConsequences = computed(() => {
+  const items = [`Audience: ${audienceContactTotal.value.toLocaleString()} contacts across ${audienceCount.value} source${audienceCount.value === 1 ? '' : 's'}`]
+  if (scheduleMethod.value === 'send_now') items.push('A send cannot be recalled once it starts')
+  else items.push('You can pause or edit it from Email Campaigns until it starts sending')
+  return items
+})
+
+function requestFinalize() {
   if (!step4Valid.value) return
+  confirmFinalize.value = true
+}
+function finalizeCampaign() {
   saveProgress(true)
   allowNextLeave()
-  router.push(campaignsRoute.value)
-}
-
-function exitWizard() {
-  saveProgress(false)
-  allowNextLeave()
+  toast.success(scheduleMethod.value === 'send_now'
+    ? 'Campaign is sending'
+    : scheduleMethod.value === 'recurring' ? 'Recurring schedule started' : 'Campaign scheduled')
   router.push(campaignsRoute.value)
 }
 
@@ -304,14 +369,9 @@ function exitWizard() {
 function hydrateFrom(campaign: Campaign) {
   draftId.value = campaign.id
   const c = campaign.config
-  if (!c) {
-    name.value = campaign.name
-    return
-  }
-  kind.value = c.kind
+  if (!c) { name.value = campaign.name; return }
   name.value = c.name
   subject.value = c.subject
-  subjectB.value = c.subjectB ?? ''
   preheader.value = c.preheader
   tag.value = c.tag || null
   audienceListIds.value = [...c.audienceListIds]
@@ -330,18 +390,20 @@ function hydrateFrom(campaign: Campaign) {
   contentId.value = c.contentId
   showPreviewLink.value = c.showPreviewLink
   dynamicPreview.value = c.dynamicPreview
-  spamCheckResult.value = c.spamCheckResult
-  scheduleType.value = c.scheduleType
+  spamScore.value = c.spamScore ?? null
+  scheduleMethod.value = c.scheduleMethod ?? (c.scheduleType === 'now' ? 'send_now' : 'tzo')
   scheduleDate.value = c.scheduleDate ?? ''
   scheduleTime.value = c.scheduleTime ?? '09:00'
-  timezone.value = c.timezone
-  optimizations.sto = c.optimizations.sto
-  optimizations.tzo = c.optimizations.tzo
-  optimizations.cto = c.optimizations.cto
-  optimizations.preSend = c.optimizations.preSend
-  testSplitPercent.value = c.testSplitPercent ?? 50
-  winnerCriteria.value = c.winnerCriteria ?? 'opens'
+  preSendCalc.value = c.optimizations.preSend
+  if (c.recurring) {
+    recurringMode.value = c.recurring.mode
+    recurringDays.value = [...c.recurring.days]
+    recurringInterval.value = c.recurring.interval
+    recurringTime.value = c.recurring.time
+  }
 }
+
+const editingExisting = ref(false)
 
 onMounted(() => {
   let idParam = route.query.id ?? route.params.id
@@ -356,8 +418,12 @@ onMounted(() => {
   }
   const existing = idParam ? store.getCampaign(Number(idParam)) : undefined
   if (existing) {
+    if (existing.config?.kind === 'ab_email') {
+      void router.replace({ name: 'CreateAbCampaign', params: { accountId: accountId.value }, query: route.query })
+      return
+    }
     hydrateFrom(existing)
-    typeChosen.value = true
+    editingExisting.value = true
     step.value = 1
     maxStepReached.value = totalSteps
     captureFormSnapshot()
@@ -368,399 +434,474 @@ onMounted(() => {
       }
     }
   } else {
-    focusCard(emailCardRef)
+    captureFormSnapshot()
   }
 })
 
-const pageTitle = computed(() => (draftId.value != null ? `Edit ${kind.value === 'ab_email' ? 'A/B ' : ''}Campaign` : `New ${kind.value === 'ab_email' ? 'A/B ' : ''}Email Campaign`))
+// "New" for the whole creation session — autosaving a draft mid-wizard must not
+// flip the header to "Edit" (that only happens when re-entering from the index).
+const pageTitle = computed(() => (editingExisting.value ? 'Edit email campaign' : 'New email campaign'))
 
-// Review summary (Step 4)
-const reviewItems = computed(() => {
-  const items: { label: string; value: string; icon: string }[] = [
-    { label: 'Campaign Name', value: name.value || '—', icon: 'pencil' },
-    { label: 'Subject Line', value: kind.value === 'ab_email' ? `A: ${subject.value || '—'}  ·  B: ${subjectB.value || '—'}` : (subject.value || '—'), icon: 'mail' },
-    { label: 'Campaign Tag', value: tag.value || 'None', icon: 'tag' },
-    { label: 'Audience', value: audienceCount.value ? `${audienceCount.value} source${audienceCount.value > 1 ? 's' : ''} selected` : 'None selected', icon: 'users' },
-    { label: 'Suppressed', value: suppressCount.value ? `${suppressCount.value} suppression${suppressCount.value > 1 ? 's' : ''}` : 'None', icon: 'user-x' },
-    { label: 'Sender', value: `${senderName.value} <${senderEmail.value}>`, icon: 'user' },
-    { label: 'Content', value: selectedContent.value?.name ?? 'Not selected', icon: 'file-text' },
-    { label: 'Send Time', value: scheduleType.value === 'now' ? 'Immediately after launch' : `${scheduleDate.value} at ${scheduleTime.value} (${timezone.value})`, icon: 'clock' },
-  ]
-  if (kind.value === 'ab_email') {
-    items.push({ label: 'Test Split', value: `${testSplitPercent.value}% · winner by ${winnerCriteria.value}`, icon: 'split' })
+// ── Review helpers ────────────────────────────────────────────────────────────
+const selectedListNames = computed(() => audienceListIds.value.map(id => cdpStore.lists.find(l => l.id === id)?.name ?? `List ${id}`))
+const selectedSegmentNames = computed(() => audienceSegmentIds.value.map(id => contactsStore.segments.find(s => s.id === id)?.name ?? `Segment ${id}`))
+const selectedTableNames = computed(() => audienceTableIds.value.map(id => cdpStore.tables.find(t => t.id === id)?.name ?? `Table ${id}`))
+
+const scheduleSummary = computed(() => {
+  if (scheduleMethod.value === null) return 'Not chosen yet'
+  const method = SCHEDULE_METHODS.find(m => m.value === scheduleMethod.value)?.title ?? ''
+  if (scheduleMethod.value === 'send_now') return `${method} — immediately on launch`
+  if (scheduleMethod.value === 'recurring') {
+    return recurringMode.value === 'day-of-week'
+      ? `${method} — every ${recurringDays.value.join(', ')} at ${recurringTime.value}`
+      : `${method} — every ${recurringInterval.value.toLowerCase()} at ${recurringTime.value}`
   }
-  return items
-})
-
-const enabledOptimizations = computed(() => {
-  const labels: string[] = []
-  if (optimizations.sto) labels.push('Send Time Optimization')
-  if (optimizations.tzo) labels.push('Time Zone Optimization')
-  if (optimizations.cto) labels.push('Conversion Time Optimization')
-  if (optimizations.preSend) labels.push('Pre-Send Calculation')
-  return labels.length ? labels.join(', ') : 'None enabled'
+  return `${method} — ${scheduleDate.value} at ${scheduleTime.value}`
 })
 </script>
 
 <template>
   <div class="mp-frame-fill d-flex flex-column">
-    <!-- Type gate -->
-    <template v-if="!typeChosen">
-      <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">
-        <MpPageHeader title="New Email Campaign" subtitle="Choose a campaign type to get started" :back-to="campaignsRoute" />
-      </div>
-      <div class="flex-grow-1 overflow-y-auto pa-8 bg-background" @keydown="onTypeGateKeydown">
-        <div style="max-width: 640px; width: 100%; margin: 0 auto;">
-          <v-row dense>
-            <v-col cols="12" sm="6">
-              <MpOptionCard
-                ref="emailCardRef"
-                :selected="false"
-                title="Email Campaign"
-                description="A single email sent to your chosen audience."
-                icon="mail"
-                class="h-100"
-                @click="chooseType('email')"
-              />
-            </v-col>
-            <v-col cols="12" sm="6">
-              <MpOptionCard
-                ref="abCardRef"
-                :selected="false"
-                title="A/B Email Campaign"
-                description="Test two subject lines and automatically send the winner."
-                icon="split"
-                class="h-100"
-                @click="chooseType('ab_email')"
-              />
-            </v-col>
-          </v-row>
-          <div class="d-flex justify-end mt-6">
-            <v-btn variant="text" class="text-none" :to="campaignsRoute">Cancel</v-btn>
-          </div>
-        </div>
-      </div>
-    </template>
+    <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">
+      <MpPageHeader
+        :title="pageTitle"
+        :subtitle="`Step ${step} of ${totalSteps} — ${stepTitles[step - 1]}`"
+        :back-to="campaignsRoute"
+      >
+        <template #actions>
+          <v-chip v-if="draftSavedChip" size="small" variant="tonal" color="success" class="font-weight-medium">Draft saved</v-chip>
+          <v-btn variant="text" class="text-none text-medium-emphasis" @click="saveDraft">Save &amp; exit</v-btn>
+        </template>
+        <template #tabs>
+          <MpWizardSteps
+            :steps="stepTitles"
+            :current="step"
+            :clickable="maxStepReached > 1"
+            :max-step="maxStepReached"
+            class="mt-3"
+            @select="goToStep"
+          />
+        </template>
+      </MpPageHeader>
+    </div>
 
-    <!-- Wizard -->
-    <template v-else>
-      <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">
-        <MpPageHeader
-          :title="pageTitle"
-          :subtitle="`Step ${step} of ${totalSteps} — ${stepTitles[step - 1]}`"
-          :back-to="campaignsRoute"
-        >
-          <template #actions>
-            <v-chip v-if="draftSavedChip" size="small" variant="tonal" color="success" class="font-weight-medium">Draft saved</v-chip>
-            <v-btn variant="text" class="text-none text-medium-emphasis" @click="exitWizard">Save &amp; exit</v-btn>
-          </template>
-          <template #tabs>
-            <MpWizardSteps
-              :steps="stepTitles"
-              :current="step"
-              :clickable="maxStepReached > 1"
-              :max-step="maxStepReached"
-              class="mt-3"
-              @select="goToStep"
+    <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
+      <div class="cc-measure">
+
+        <!-- Step 1: Campaign details -->
+        <v-card v-if="step === 1" variant="flat" border rounded="lg" class="pa-8">
+          <h2 class="text-h6 font-weight-bold mb-1">Campaign details</h2>
+          <p class="text-body-2 text-medium-emphasis mb-6">Name your campaign and write the subject line recipients will see.</p>
+          <v-divider class="mb-6" />
+          <MpFormGrid>
+            <v-text-field
+              v-model="name"
+              label="Campaign name *"
+              placeholder="e.g. Black Friday 2026 — VIP Early Access"
+              hint="Internal name, not shown to recipients. Emojis are not supported."
+              persistent-hint
             />
-          </template>
-        </MpPageHeader>
-      </div>
+            <v-text-field
+              v-model="subject"
+              label="Subject *"
+              placeholder="e.g. 40% off sitewide — today only"
+            />
+            <v-text-field
+              v-model="preheader"
+              label="Preheader"
+              placeholder="e.g. Your favourite brands, now at their lowest prices"
+              :counter="100"
+              maxlength="100"
+              hint="Short summary shown after the subject line in the inbox"
+              persistent-hint
+            />
+            <v-combobox
+              v-model="tag"
+              label="Campaign tags"
+              :items="tagOptions"
+              clearable
+              hint="Tags are useful for custom reporting. Pick one or type a new one."
+              persistent-hint
+            />
+          </MpFormGrid>
+        </v-card>
 
-      <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
-        <div style="max-width: 780px; margin: 0 auto;">
+        <!-- Step 2: Contacts -->
+        <v-card v-if="step === 2" variant="flat" border rounded="lg" class="pa-8">
+          <h2 class="text-h6 font-weight-bold mb-1">Contacts</h2>
+          <p class="text-body-2 text-medium-emphasis mb-6">Choose who receives this campaign — at least one list, segment, or table.</p>
+          <v-divider class="mb-6" />
 
-          <!-- Step 1: Details -->
-          <v-card v-if="step === 1" variant="flat" border rounded="lg" class="pa-8">
-            <div class="text-h6 font-weight-bold mb-1">Campaign Details</div>
-            <div class="text-body-2 text-medium-emphasis mb-6">Name your campaign and write the subject line recipients will see.</div>
-            <v-divider class="mb-6"></v-divider>
-            <MpFormGrid :cols="2">
-              <v-text-field
-                v-model="name"
-                class="mp-form-grid__full"
-                label="Campaign Name *"
-                placeholder="e.g. Black Friday 2026 — VIP Early Access"
-                hint="Internal name, not shown to recipients"
-                persistent-hint
-              ></v-text-field>
-              <v-text-field
-                v-model="subject"
-                :class="{ 'mp-form-grid__full': kind !== 'ab_email' }"
-                :label="kind === 'ab_email' ? 'Subject Line A *' : 'Subject Line *'"
-                placeholder="e.g. 🔥 40% Off Sitewide — Today Only!"
-              ></v-text-field>
-              <v-text-field
-                v-if="kind === 'ab_email'"
-                v-model="subjectB"
-                label="Subject Line B *"
-                placeholder="e.g. Today only — 40% off everything"
-              ></v-text-field>
-              <v-slider
-                v-if="kind === 'ab_email'"
-                v-model="testSplitPercent"
-                label="Test split %"
-                min="10"
-                max="50"
-                step="5"
-                thumb-label="always"
-              ></v-slider>
-              <v-text-field
-                v-model="preheader"
-                class="mp-form-grid__full"
-                label="Preheader"
-                placeholder="e.g. Your favourite brands, now at the lowest prices..."
-                :counter="100"
-                maxlength="100"
-                hint="Shown in inbox previews after the subject line"
-                persistent-hint
-              ></v-text-field>
-              <v-combobox
-                v-model="tag"
-                class="mp-form-grid__full"
-                label="Campaign Tag"
-                :items="TAG_OPTIONS"
-                clearable
-                hint="Pick an existing tag or type a new one"
-                persistent-hint
-              ></v-combobox>
-            </MpFormGrid>
-          </v-card>
+          <MpFormGrid :cols="2">
+            <v-select v-model="brand" class="mp-form-grid__full" label="Brand" :items="BRAND_OPTIONS" />
+            <v-select
+              v-model="audienceListIds"
+              :items="listItems"
+              :label="`Select list (${audienceListIds.length})`"
+              multiple chips closable-chips
+              @update:model-value="onAudienceListsChanged"
+            >
+              <template #prepend-item>
+                <v-list-item title="Select all" @click="toggleAllLists" />
+                <v-divider class="mt-1" />
+              </template>
+            </v-select>
+            <v-select v-model="audienceSegmentIds" :items="segmentItems" :label="`Select segment (${audienceSegmentIds.length})`" multiple chips closable-chips>
+              <template #prepend-item>
+                <v-list-item title="Select all" @click="toggleAllSegments" />
+                <v-divider class="mt-1" />
+              </template>
+            </v-select>
+            <v-select v-model="audienceTableIds" class="mp-form-grid__full" :items="tableItems" :label="`Select table (${audienceTableIds.length})`" multiple chips closable-chips>
+              <template #prepend-item>
+                <v-list-item title="Select all" @click="toggleAllTables" />
+                <v-divider class="mt-1" />
+              </template>
+            </v-select>
 
-          <!-- Step 2: Contacts -->
-          <v-card v-if="step === 2" variant="flat" border rounded="lg" class="pa-8">
-            <div class="text-h6 font-weight-bold mb-1">Contacts</div>
-            <div class="text-body-2 text-medium-emphasis mb-6">Choose who receives this campaign and the sender details they'll see.</div>
-            <v-divider class="mb-6"></v-divider>
+            <v-alert v-if="audienceCount === 0" type="info" variant="tonal" density="compact" rounded="lg" class="mp-form-grid__full text-body-2">
+              Select at least one list, segment, or table.
+            </v-alert>
+            <v-alert v-else-if="zeroContactAudience" type="warning" variant="tonal" density="compact" rounded="lg" class="mp-form-grid__full text-body-2">
+              The selected sources have 0 contacts. The campaign cannot send until the audience includes at least 1 contact.
+            </v-alert>
+            <v-alert v-else type="success" variant="tonal" density="compact" rounded="lg" class="mp-form-grid__full text-body-2" icon="user-check">
+              {{ audienceContactTotal.toLocaleString() }} contacts across {{ audienceCount }} source{{ audienceCount > 1 ? 's' : '' }}.
+            </v-alert>
+          </MpFormGrid>
 
-            <MpFormGrid :cols="2">
-              <v-select v-model="brand" class="mp-form-grid__full" label="Brand" :items="BRAND_OPTIONS"></v-select>
-              <v-select
-                v-model="audienceListIds"
-                :items="listItems"
-                item-title="title" item-value="value"
-                :label="`Select List (${audienceListIds.length})`" multiple chips closable-chips
-                @update:model-value="onAudienceListsChanged"
-              >
-                <template #prepend-item>
-                  <v-list-item title="Select all" @click="toggleAllLists"></v-list-item>
-                  <v-divider class="mt-1"></v-divider>
-                </template>
-              </v-select>
-              <v-select v-model="audienceSegmentIds" :items="segmentItems" item-title="title" item-value="value" :label="`Select Segment (${audienceSegmentIds.length})`" multiple chips closable-chips>
-                <template #prepend-item>
-                  <v-list-item title="Select all" @click="toggleAllSegments"></v-list-item>
-                  <v-divider class="mt-1"></v-divider>
-                </template>
-              </v-select>
-              <v-select v-model="audienceTableIds" class="mp-form-grid__full" :items="tableItems" item-title="title" item-value="value" :label="`Select Table (${audienceTableIds.length})`" multiple chips closable-chips>
-                <template #prepend-item>
-                  <v-list-item title="Select all" @click="toggleAllTables"></v-list-item>
-                  <v-divider class="mt-1"></v-divider>
-                </template>
-              </v-select>
-              <v-alert v-if="audienceCount === 0" type="info" variant="tonal" density="compact" rounded="lg" class="mp-form-grid__full text-body-2">
-                Please select at least one List, Segment, or Table.
-              </v-alert>
-              <v-alert v-else type="success" variant="tonal" density="compact" rounded="lg" class="mp-form-grid__full text-body-2" icon="user-check">
-                {{ audienceCount }} audience source{{ audienceCount > 1 ? 's' : '' }} selected.
-              </v-alert>
+          <MpFormSection title="Sender" description="What recipients see in the From line. Selecting a list fills these from that list's saved profile — edit them any time." />
+          <MpFormGrid :cols="2">
+            <v-alert
+              v-if="autofilledFrom"
+              type="info"
+              variant="tonal"
+              density="compact"
+              rounded="lg"
+              class="mp-form-grid__full text-body-2"
+              closable
+              @click:close="autofilledFrom = null"
+            >
+              Sender details filled from "{{ autofilledFrom }}".
+            </v-alert>
+            <v-text-field v-model="senderName" label="From name *" hint="Special characters and emojis are not supported." />
+            <v-text-field v-model="senderEmail" label="From email *" type="email" />
+            <v-text-field v-model="replyTo" label="Reply to *" type="email" />
+            <v-select v-model="language" label="Language *" :items="LANGUAGES" />
+            <v-text-field v-model="address" class="mp-form-grid__full" label="Address *" />
+          </MpFormGrid>
 
-              <v-expansion-panels variant="accordion" class="mp-form-grid__full mp-suppress-panel">
-                <v-expansion-panel rounded="lg" elevation="0">
-                  <v-expansion-panel-title>
-                    <span class="text-body-2 font-weight-bold">Sender</span>
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <MpFormGrid :cols="2">
-                      <v-text-field v-model="senderName" label="From Name *"></v-text-field>
-                      <v-text-field v-model="senderEmail" label="From Email *"></v-text-field>
-                      <v-text-field v-model="replyTo" label="Reply To *"></v-text-field>
-                      <v-select v-model="language" label="Language *" :items="LANGUAGES"></v-select>
-                      <v-text-field v-model="address" class="mp-form-grid__full" label="Address *"></v-text-field>
-                      <div class="mp-form-grid__full text-caption text-medium-emphasis">Selecting a list autofills sender details from that list's saved profile.</div>
-                    </MpFormGrid>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-                <v-expansion-panel rounded="lg" elevation="0">
-                  <v-expansion-panel-title>
-                    <span class="text-body-2 font-weight-bold">Suppress contacts (optional)</span>
-                    <v-chip v-if="suppressCount" size="x-small" variant="tonal" color="primary" class="ml-3">{{ suppressCount }}</v-chip>
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <MpFormGrid :cols="2">
-                      <v-select v-model="suppressListIds" :items="listItems" item-title="title" item-value="value" label="Suppress List" multiple chips closable-chips></v-select>
-                      <v-select v-model="suppressJourneyIds" :items="journeyItems" item-title="title" item-value="value" label="Suppress Journey" multiple chips closable-chips></v-select>
-                      <v-select v-model="suppressSegmentIds" :items="segmentItems" item-title="title" item-value="value" label="Suppress Segment" multiple chips closable-chips></v-select>
-                      <v-select v-model="suppressSecureListIds" :items="secureListItems" item-title="title" item-value="value" label="Suppress Secure List" multiple chips closable-chips></v-select>
-                    </MpFormGrid>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-            </MpFormGrid>
-          </v-card>
+          <MpFormSection title="Suppress contacts" description="Contacts in these sources will not receive the campaign, even if they are in the audience above." />
+          <MpFormGrid :cols="2">
+            <v-select v-model="suppressListIds" :items="listItems" :label="`Suppress list (${suppressListIds.length})`" multiple chips closable-chips />
+            <v-select v-model="suppressJourneyIds" :items="journeyItems" :label="`Suppress journey (${suppressJourneyIds.length})`" multiple chips closable-chips />
+            <v-select v-model="suppressSegmentIds" :items="segmentItems" :label="`Suppress segment (${suppressSegmentIds.length})`" multiple chips closable-chips />
+            <v-select v-model="suppressSecureListIds" :items="secureListItems" :label="`Suppress secure list (${suppressSecureListIds.length})`" multiple chips closable-chips />
+          </MpFormGrid>
+        </v-card>
 
-          <!-- Step 3: Content -->
-          <v-card v-if="step === 3" variant="flat" border rounded="lg" class="pa-8">
-            <div class="text-h6 font-weight-bold mb-1">Content</div>
-            <div class="text-body-2 text-medium-emphasis mb-6">Pick the email content this campaign will send.</div>
-            <v-divider class="mb-6"></v-divider>
+        <!-- Step 3: Content -->
+        <v-card v-if="step === 3" variant="flat" border rounded="lg" class="pa-8">
+          <h2 class="text-h6 font-weight-bold mb-1">Content</h2>
+          <p class="text-body-2 text-medium-emphasis mb-6">Pick the email content this campaign will send.</p>
+          <v-divider class="mb-6" />
 
-            <MpFormGrid>
-              <v-autocomplete
-                v-model="contentId"
-                :items="contentOptions"
-                item-title="title" item-value="value"
-                label="Content Name *"
-                placeholder="Search the content library…"
-                clearable
-                prepend-inner-icon="search"
-              ></v-autocomplete>
+          <MpFormGrid>
+            <v-autocomplete
+              v-model="contentId"
+              :items="contentOptions"
+              label="Content name *"
+              placeholder="Search the content library…"
+              clearable
+              prepend-inner-icon="search"
+              hint="Content is created under Marketing → Content → Email Content."
+              persistent-hint
+            />
 
-              <v-card v-if="selectedContent" variant="tonal" color="primary" rounded="lg" class="pa-5">
-                <div class="d-flex align-center justify-space-between mb-3">
-                  <div class="d-flex align-center gap-2">
-                    <v-icon size="18">file-text</v-icon>
-                    <span class="font-weight-bold">{{ selectedContent.name }}</span>
-                  </div>
-                  <v-btn
-                    icon="pencil"
-                    size="small"
-                    variant="text"
-                    aria-label="Edit content"
-                    :to="{ name: 'EmailContentEditor', params: { accountId, id: String(selectedContent.id) } }"
-                  />
-                </div>
-                <div class="mp-content-preview rounded-lg pa-4 text-body-2">
-                  <div>Hi {{ mergeTagFirstName }},</div>
-                  <div class="my-2">Thanks for shopping with {{ mergeTagAddress }}. Here's what's new for you today…</div>
-                  <div class="text-caption text-medium-emphasis">{{ mergeTagUnsubscribe }}</div>
-                </div>
-              </v-card>
-
-              <MpFormField label="Preview options">
-                <div class="d-flex flex-wrap align-center gap-6">
-                  <v-switch v-model="showPreviewLink" label="Show email preview link"></v-switch>
-                  <v-switch v-model="dynamicPreview" label="Dynamic content preview"></v-switch>
-                </div>
-              </MpFormField>
-
-              <div class="d-flex align-center gap-4">
-                <v-btn variant="outlined" class="text-none" prepend-icon="shield-check" :disabled="!selectedContent" @click="runSpamCheck">Run spam check</v-btn>
-                <v-chip v-if="spamCheckResult" color="success" variant="tonal" prepend-icon="check-circle">{{ spamCheckResult }}</v-chip>
+            <MpFormField label="Preview options">
+              <div class="d-flex flex-wrap align-center ga-6">
+                <v-switch v-model="showPreviewLink" label="Show email preview link" hide-details />
+                <v-switch v-model="dynamicPreview" label="Dynamic content preview" hide-details />
               </div>
-            </MpFormGrid>
-          </v-card>
+            </MpFormField>
+            <p class="text-caption text-medium-emphasis mt-n2">
+              The preview link adds "Having trouble viewing this email?" to the top of the email.
+              Dynamic preview renders merge tags with a real contact from your audience.
+            </p>
 
-          <!-- Step 4: Schedule & Review -->
-          <v-card v-if="step === 4" variant="flat" border rounded="lg" class="pa-8">
-            <div class="text-h6 font-weight-bold mb-1">Schedule &amp; Review</div>
-            <div class="text-body-2 text-medium-emphasis mb-6">Choose when to send, then confirm your setup.</div>
-            <v-divider class="mb-6"></v-divider>
+            <div v-if="selectedContent" class="d-flex align-center ga-3">
+              <v-btn variant="outlined" class="text-none" prepend-icon="pencil" @click="editorOpen = true">Edit content</v-btn>
+              <v-btn variant="text" class="text-none" prepend-icon="refresh-cw" @click="previewRendered = true">Render preview</v-btn>
+            </div>
 
-            <MpFormGrid :cols="2">
-              <MpFormField label="When to send" class="mp-form-grid__full">
+            <v-card v-if="selectedContent && previewRendered" variant="flat" border rounded="lg" class="cc-preview pa-6">
+              <CampaignEmailPreview :content-name="selectedContent.name" :show-preview-link="showPreviewLink" />
+            </v-card>
+
+            <MpFormSection title="Spam check" description="Identify deliverability issues that could impact campaign performance. Optional, but recommended before sending." />
+            <div class="d-flex align-center ga-4 flex-wrap">
+              <v-btn
+                variant="outlined"
+                class="text-none"
+                prepend-icon="shield-check"
+                :disabled="!selectedContent"
+                :loading="spamChecking"
+                @click="runSpamCheck"
+              >
+                Run spam check
+              </v-btn>
+              <div v-if="spamScore !== null" class="d-flex align-center ga-3">
+                <v-progress-circular :model-value="100" :size="44" :width="5" color="success">
+                  <span class="text-caption font-weight-bold">{{ spamScore }}</span>
+                </v-progress-circular>
+                <div>
+                  <p class="text-body-2 font-weight-medium mb-0">Spam score {{ spamScore }} — all clear</p>
+                  <p class="text-caption text-medium-emphasis mb-0">No deliverability issues found in this content.</p>
+                </div>
+              </div>
+            </div>
+          </MpFormGrid>
+        </v-card>
+
+        <!-- Step 4: Schedule -->
+        <v-card v-if="step === 4" variant="flat" border rounded="lg" class="pa-8">
+          <h2 class="text-h6 font-weight-bold mb-1">Schedule</h2>
+          <p class="text-body-2 text-medium-emphasis mb-6">Select a method for scheduling your campaign.</p>
+          <v-divider class="mb-6" />
+
+          <MpFormGrid :cols="2">
+            <v-select
+              v-model="scheduleMethod"
+              class="mp-form-grid__full"
+              label="Schedule with *"
+              :items="SCHEDULE_METHODS"
+              :hint="methodDescription"
+              persistent-hint
+            />
+
+            <template v-if="isDated">
+              <v-text-field v-model="scheduleDate" label="Select date *" type="date" />
+              <v-text-field v-model="scheduleTime" label="Select time *" type="time" />
+              <v-switch
+                v-model="preSendCalc"
+                class="mp-form-grid__full"
+                label="Pre-send calculation"
+                hint="Starts calculating the audience 3 hours ahead of the send time so large campaigns are not delayed."
+                persistent-hint
+              />
+            </template>
+
+            <template v-if="scheduleMethod === 'recurring'">
+              <MpFormField label="Repeat pattern" class="mp-form-grid__full">
                 <template #default="{ labelId }">
-                  <v-radio-group v-model="scheduleType" :aria-labelledby="labelId">
-                    <v-card variant="outlined" rounded="lg" class="pa-4 mb-3 cursor-pointer" :color="scheduleType === 'now' ? 'primary' : ''" @click="scheduleType = 'now'">
-                      <v-radio value="now">
+                  <v-radio-group v-model="recurringMode" :aria-labelledby="labelId" hide-details>
+                    <v-card variant="outlined" rounded="lg" class="pa-4 mb-3">
+                      <v-radio value="day-of-week">
                         <template #label>
-                          <div class="ml-2">
-                            <div class="font-weight-bold">Send Immediately</div>
-                            <div class="text-caption text-medium-emphasis">Sends as soon as you click "{{ kind === 'ab_email' ? 'Send test' : 'Schedule campaign' }}"</div>
-                          </div>
+                          <span class="font-weight-bold ml-2">Selected days of the week</span>
                         </template>
                       </v-radio>
+                      <div v-if="recurringMode === 'day-of-week'" class="pl-8 pt-2 d-flex flex-column ga-3">
+                        <v-chip-group
+                          v-model="recurringDays"
+                          multiple
+                          column
+                          aria-label="Days of the week"
+                        >
+                          <v-chip
+                            v-for="day in WEEKDAYS"
+                            :key="day"
+                            :value="day"
+                            variant="outlined"
+                            filter
+                          >
+                            {{ day }}
+                          </v-chip>
+                        </v-chip-group>
+                        <v-text-field v-model="recurringTime" label="Select time *" type="time" class="cc-time" />
+                      </div>
                     </v-card>
-                    <v-card variant="outlined" rounded="lg" class="pa-4 cursor-pointer" @click="scheduleType = 'scheduled'">
-                      <v-radio value="scheduled">
+                    <v-card variant="outlined" rounded="lg" class="pa-4">
+                      <v-radio value="repeat-every">
                         <template #label>
-                          <div class="ml-2">
-                            <div class="font-weight-bold">Schedule for Later</div>
-                            <div class="text-caption text-medium-emphasis">Pick a specific date and time for delivery</div>
-                          </div>
+                          <span class="font-weight-bold ml-2">Repeat every</span>
                         </template>
                       </v-radio>
+                      <div v-if="recurringMode === 'repeat-every'" class="pl-8 pt-2 d-flex ga-4 flex-wrap">
+                        <v-select v-model="recurringInterval" :items="['Day', 'Week', 'Month', 'Year']" label="Interval *" class="cc-time" />
+                        <v-text-field v-model="recurringTime" label="Select time *" type="time" class="cc-time" />
+                      </div>
                     </v-card>
                   </v-radio-group>
                 </template>
               </MpFormField>
+            </template>
+          </MpFormGrid>
 
-              <v-expand-transition>
-                <MpFormGrid v-if="scheduleType === 'scheduled'" :cols="2" class="mp-form-grid__full">
-                  <v-text-field v-model="scheduleDate" label="Date" type="date"></v-text-field>
-                  <v-text-field v-model="scheduleTime" label="Time" type="time"></v-text-field>
-                  <v-select v-model="timezone" label="Timezone" :items="TIMEZONES"></v-select>
-                </MpFormGrid>
-              </v-expand-transition>
+          <MpFormSection title="Send test email" description="Send a test to yourself or teammates first — up to 10 addresses, or lists totalling 20 contacts." />
+          <MpFormGrid :cols="2">
+            <v-text-field v-model="testSubject" class="mp-form-grid__full" label="Test subject *" />
+            <v-combobox
+              v-model="testEmails"
+              label="Enter email"
+              multiple chips closable-chips
+              hint="Press Enter after each address"
+              persistent-hint
+            />
+            <v-select v-model="testListIds" :items="listItems" :label="`Select list (${testListIds.length})`" multiple chips closable-chips />
+            <div class="mp-form-grid__full">
+              <v-btn
+                variant="outlined"
+                class="text-none"
+                prepend-icon="send"
+                :disabled="!canSendTest"
+                :loading="testSending"
+                @click="sendTest"
+              >
+                Send test
+              </v-btn>
+            </div>
+          </MpFormGrid>
+        </v-card>
 
-              <MpFormSection title="Send-time optimization" />
-              <v-switch v-model="optimizations.sto" label="STO"></v-switch>
-              <v-switch v-model="optimizations.tzo" label="TZO"></v-switch>
-              <v-switch v-model="optimizations.cto" label="CTO"></v-switch>
-              <v-switch v-model="optimizations.preSend" label="Pre-Send Calc"></v-switch>
+        <!-- Step 5: Review -->
+        <v-card v-if="step === 5" variant="flat" border rounded="lg" class="pa-8">
+          <h2 class="text-h6 font-weight-bold mb-1">Review</h2>
+          <p class="text-body-2 text-medium-emphasis mb-6">Final review of your campaign before it goes out.</p>
+          <v-divider class="mb-6" />
 
-              <template v-if="kind === 'ab_email'">
-                <MpFormSection title="A/B winner criteria" />
-                <v-select v-model="winnerCriteria" :items="[{title:'Opens', value:'opens'},{title:'Clicks', value:'clicks'},{title:'Revenue', value:'revenue'}]" item-title="title" item-value="value" label="Pick the winner by"></v-select>
-              </template>
-            </MpFormGrid>
+          <v-alert v-if="zeroContactAudience" type="warning" variant="tonal" density="compact" rounded="lg" class="text-body-2 mb-6">
+            The selected audience has 0 contacts — the campaign cannot send until at least 1 contact is included.
+          </v-alert>
 
-            <v-divider class="my-6"></v-divider>
-            <div class="text-subtitle-2 font-weight-bold mb-3">Review</div>
-            <v-list lines="two" density="compact" class="mb-4 rounded-xl border pa-0 overflow-hidden">
-              <template v-for="(item, idx) in reviewItems" :key="idx">
-                <v-list-item class="px-5 py-3" :class="{ 'border-b': idx < reviewItems.length - 1 }">
-                  <template #prepend>
-                    <v-avatar size="36" color="primary" variant="tonal" class="mr-3"><v-icon color="primary" size="18">{{ item.icon }}</v-icon></v-avatar>
-                  </template>
-                  <v-list-item-title class="text-caption text-medium-emphasis font-weight-bold text-uppercase">{{ item.label }}</v-list-item-title>
-                  <v-list-item-subtitle class="text-body-2 font-weight-medium mt-1" style="opacity: 1;">{{ item.value }}</v-list-item-subtitle>
-                </v-list-item>
-              </template>
-            </v-list>
-            <div class="text-caption text-medium-emphasis">Optimizations: {{ enabledOptimizations }}</div>
-          </v-card>
+          <section class="d-flex flex-column ga-6">
+            <div>
+              <div class="d-flex align-center ga-2 mb-3">
+                <h3 class="text-subtitle-1 font-weight-bold mb-0">Campaign details</h3>
+                <v-btn icon="pencil" size="x-small" variant="text" aria-label="Edit campaign details" @click="goToStep(1)" />
+              </div>
+              <dl class="cc-review-grid">
+                <dt>Campaign name</dt><dd>{{ name || '—' }}</dd>
+                <dt>Subject</dt><dd>{{ subject || '—' }}</dd>
+                <dt>Preheader</dt><dd>{{ preheader || '—' }}</dd>
+                <dt>Tags</dt><dd>{{ tag || 'None' }}</dd>
+              </dl>
+            </div>
+            <v-divider />
+            <div>
+              <div class="d-flex align-center ga-2 mb-3">
+                <h3 class="text-subtitle-1 font-weight-bold mb-0">Contacts</h3>
+                <v-btn icon="pencil" size="x-small" variant="text" aria-label="Edit contacts" @click="goToStep(2)" />
+              </div>
+              <dl class="cc-review-grid">
+                <dt>Audience</dt>
+                <dd>
+                  <div class="d-flex flex-wrap ga-1">
+                    <v-chip v-for="n in selectedListNames" :key="`l-${n}`" size="small" variant="tonal">{{ n }}</v-chip>
+                    <v-chip v-for="n in selectedSegmentNames" :key="`s-${n}`" size="small" variant="tonal">{{ n }}</v-chip>
+                    <v-chip v-for="n in selectedTableNames" :key="`t-${n}`" size="small" variant="tonal">{{ n }}</v-chip>
+                    <span v-if="!audienceCount" class="text-medium-emphasis">None selected</span>
+                  </div>
+                </dd>
+                <dt>Suppressed</dt><dd>{{ suppressCount ? `${suppressCount} source${suppressCount > 1 ? 's' : ''}` : 'None' }}</dd>
+                <dt>From</dt><dd>{{ senderName }} &lt;{{ senderEmail }}&gt;</dd>
+                <dt>Reply to</dt><dd>{{ replyTo }}</dd>
+                <dt>Language</dt><dd>{{ language }}</dd>
+                <dt>Address</dt><dd>{{ address }}</dd>
+              </dl>
+            </div>
+            <v-divider />
+            <div>
+              <div class="d-flex align-center ga-2 mb-3">
+                <h3 class="text-subtitle-1 font-weight-bold mb-0">Content</h3>
+                <v-btn icon="pencil" size="x-small" variant="text" aria-label="Edit content" @click="goToStep(3)" />
+              </div>
+              <dl class="cc-review-grid mb-4">
+                <dt>Content name</dt><dd>{{ selectedContent?.name ?? 'Not selected' }}</dd>
+                <dt>Email preview link</dt><dd>{{ showPreviewLink ? 'Yes' : 'No' }}</dd>
+                <dt>Spam check</dt>
+                <dd>{{ spamScore !== null ? `Score ${spamScore} — all clear` : 'Not run' }}</dd>
+              </dl>
+              <v-card v-if="selectedContent" variant="flat" border rounded="lg" class="cc-preview pa-6">
+                <CampaignEmailPreview :content-name="selectedContent.name" :show-preview-link="showPreviewLink" />
+              </v-card>
+            </div>
+            <v-divider />
+            <div>
+              <div class="d-flex align-center ga-2 mb-3">
+                <h3 class="text-subtitle-1 font-weight-bold mb-0">Schedule</h3>
+                <v-btn icon="pencil" size="x-small" variant="text" aria-label="Edit schedule" @click="goToStep(4)" />
+              </div>
+              <dl class="cc-review-grid">
+                <dt>Send method</dt><dd>{{ scheduleSummary }}</dd>
+                <dt v-if="isDated">Pre-send calculation</dt><dd v-if="isDated">{{ preSendCalc ? 'On' : 'Off' }}</dd>
+              </dl>
+            </div>
+          </section>
+        </v-card>
 
-        </div>
       </div>
+    </div>
 
-      <!-- Unified footer -->
-      <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
-        <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
-        <div v-else></div>
-        <div class="d-flex align-center gap-3">
-          <span v-if="!stepValid && stepHint" class="text-caption text-medium-emphasis">{{ stepHint }}</span>
-          <span class="text-caption text-medium-emphasis num">{{ step }} / {{ totalSteps }}</span>
-          <v-btn v-if="step < totalSteps" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">
-            Continue
+    <!-- Unified footer -->
+    <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
+      <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
+      <div v-else></div>
+      <div class="d-flex align-center ga-3">
+        <span v-if="!stepValid && stepHint" class="text-caption text-medium-emphasis">{{ stepHint }}</span>
+        <span class="text-caption text-medium-emphasis num">{{ step }} / {{ totalSteps }}</span>
+        <v-btn v-if="step < totalSteps" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">
+          Continue
+        </v-btn>
+        <template v-else>
+          <v-btn variant="outlined" class="text-none" @click="saveDraft">Save draft</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket" :disabled="!step4Valid" @click="requestFinalize">
+            {{ finalizeLabel }}
           </v-btn>
-          <template v-else>
-            <v-btn variant="outlined" class="text-none" @click="saveDraft">Save draft</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket" :disabled="!step4Valid" @click="scheduleCampaign">
-              {{ scheduleType === 'now' ? 'Send campaign now' : 'Schedule campaign' }}
-            </v-btn>
-          </template>
-        </div>
+        </template>
       </div>
+    </div>
 
-      <MpConfirmDialog
-        v-model="confirmLeave"
-        danger
-        :title="leaveTitle"
-        :message="leaveMessage"
-        :confirm-label="leaveConfirmLabel"
-        @confirm="discardAndLeave"
-      />
-    </template>
+    <CampaignContentEditor v-model="editorOpen" :content-name="selectedContent?.name ?? 'Untitled content'" />
+
+    <MpConfirmDialog
+      v-model="confirmFinalize"
+      :title="finalizeLabel"
+      :message="finalizeMessage"
+      :confirm-label="finalizeLabel"
+      :consequences="finalizeConsequences"
+      @confirm="finalizeCampaign"
+    />
+
+    <MpConfirmDialog
+      v-model="confirmLeave"
+      danger
+      :title="leaveTitle"
+      :message="leaveMessage"
+      :confirm-label="leaveConfirmLabel"
+      @confirm="discardAndLeave"
+    />
   </div>
 </template>
 
 <style scoped>
 .cc-head .mp-page-header { margin-bottom: 0; }
+.cc-measure { max-width: 780px; margin: 0 auto; }
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .num { font-variant-numeric: tabular-nums; }
-.mp-content-preview { background: rgba(var(--v-theme-on-surface), 0.03); }
-.mp-suppress-panel :deep(.v-expansion-panel) { border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+.cc-preview { background: var(--surface-sunken); }
+.cc-time { max-width: 220px; }
+.cc-review-grid {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  row-gap: var(--mp-space-8);
+  column-gap: var(--mp-space-16);
+}
+.cc-review-grid dt {
+  font-size: var(--mp-fontSize-12);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.cc-review-grid dd { font-size: var(--mp-fontSize-13); margin: 0; overflow-wrap: anywhere; }
 </style>

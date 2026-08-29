@@ -53,8 +53,6 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
         <div class="chaos__layer chaos__layer--after">
           <v-text-field
             model-value="Search orders"
-            variant="outlined"
-            density="compact"
             prepend-inner-icon="search"
             hide-details
             readonly
@@ -82,7 +80,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
           </label>
         </div>
         <div class="chaos__layer chaos__layer--after">
-          <v-switch :model-value="true" color="primary" label="Notify me" density="compact" hide-details tabindex="-1" />
+          <v-switch :model-value="true" label="Notify me" density="compact" hide-details tabindex="-1" />
         </div>
       </div>
 

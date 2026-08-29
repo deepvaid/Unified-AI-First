@@ -40,23 +40,41 @@ const tabs = computed(() => [
 ])
 
 // Filters
-const filters = ref({ role: null as string | null, product: null as ProductKey | null })
+const filters = ref({ product: null as ProductKey | null })
 const roleFilterItems = computed(() => rbac.roles.map(r => ({ title: r.name, value: r.id })))
+
+// Role is the promoted filter: a multi-select pill in the toolbar, so the cut
+// people make most often doesn't cost a trip to the drawer. Roles are store
+// data, so the config is a computed rather than a literal.
+const roleQuickFilter = computed(() => ({
+  key: 'role',
+  label: 'Role',
+  options: roleFilterItems.value.map((r) => ({ label: r.title, value: r.value })),
+}))
+const roleFilter = ref<string[]>([])
 const productFilterItems = (Object.keys(PRODUCT_META) as ProductKey[]).map(p => ({ title: PRODUCT_META[p].label, value: p }))
 
 const activeFilterEntries = computed(() => {
   const entries: { key: string; label: string }[] = []
-  if (filters.value.role) entries.push({ key: 'role', label: `Role: ${rbac.roleById(filters.value.role)?.name ?? ''}` })
+  if (roleFilter.value.length) {
+    const names = roleFilter.value.map(id => rbac.roleById(id)?.name ?? '').filter(Boolean)
+    entries.push({ key: 'role', label: `Role: ${names.join(', ')}` })
+  }
   if (filters.value.product) entries.push({ key: 'product', label: `Product: ${PRODUCT_META[filters.value.product].short}` })
   return entries
 })
 
 function removeFilter(key: string) {
+  if (key === 'role') {
+    roleFilter.value = []
+    return
+  }
   filters.value[key as keyof typeof filters.value] = null
 }
 
 function clearAllFilters() {
-  filters.value = { role: null, product: null }
+  roleFilter.value = []
+  filters.value = { product: null }
 }
 
 interface UserRow extends UserAccount {
@@ -68,7 +86,7 @@ const filteredUsers = computed<UserRow[]>(() =>
   rbac.users
     .filter((u) => {
       if (statusTab.value !== 'all' && u.status !== statusTab.value) return false
-      if (filters.value.role && !u.roleIds.includes(filters.value.role)) return false
+      if (roleFilter.value.length && !u.roleIds.some(id => roleFilter.value.includes(id))) return false
       if (filters.value.product && !rbac.productAccessSummary(u.id).some(a => a.product === filters.value.product)) return false
       return true
     })
@@ -247,6 +265,8 @@ function bulkDeactivate() {
 
     <v-card id="users-table" variant="flat" border rounded="lg" class="d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="roleFilter"
+        :quick-filter="roleQuickFilter"
         v-model:search="search"
         v-model:hidden-columns="hiddenColumns"
         search-placeholder="Search name, email, or role"
@@ -257,12 +277,6 @@ function bulkDeactivate() {
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <v-select
-            v-model="filters.role"
-            label="Role"
-            :items="roleFilterItems"
-            clearable
-          />
           <v-select
             v-model="filters.product"
             label="Product access"

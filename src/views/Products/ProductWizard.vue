@@ -353,7 +353,6 @@ onMounted(() => {
           <v-card variant="flat" border rounded="lg" class="pa-6">
             <v-switch
               v-model="hasVariants"
-              color="primary"
               label="Yes, this is a product with variants"
               hint="When unchecked we create a default variant for you."
               persistent-hint
@@ -393,7 +392,6 @@ onMounted(() => {
             <MpFormGrid :cols="2">
               <v-switch
                 v-model="discountable"
-                color="primary"
                 label="Discountable"
                 hint="Allow discounts and promotions on this product."
                 persistent-hint
@@ -442,8 +440,8 @@ onMounted(() => {
                     <v-text-field v-model="variant.sku" label="SKU" class="mp-form-grid__full" />
                     <v-text-field v-model="variant.costPrice" label="Cost Price" prefix="$" type="number" />
                     <v-text-field v-model="variant.price" label="Price" prefix="$" type="number" />
-                    <v-switch v-model="variant.manageInventory" color="primary" label="Manage Inventory" />
-                    <v-switch v-model="variant.allowBackorder" color="primary" label="Allow Backorder" />
+                    <v-switch v-model="variant.manageInventory" label="Manage Inventory" />
+                    <v-switch v-model="variant.allowBackorder" label="Allow Backorder" />
                     <template v-if="variant.manageInventory">
                       <v-text-field
                         v-for="loc in LOCATIONS"
@@ -468,8 +466,8 @@ onMounted(() => {
               <v-text-field v-model="defaultVariant.sku" label="SKU" class="mp-form-grid__full" />
               <v-text-field v-model="defaultVariant.costPrice" label="Cost Price" prefix="$" type="number" />
               <v-text-field v-model="defaultVariant.price" label="Price" prefix="$" type="number" />
-              <v-switch v-model="defaultVariant.manageInventory" color="primary" label="Manage Inventory" />
-              <v-switch v-model="defaultVariant.allowBackorder" color="primary" label="Allow Backorder" />
+              <v-switch v-model="defaultVariant.manageInventory" label="Manage Inventory" />
+              <v-switch v-model="defaultVariant.allowBackorder" label="Allow Backorder" />
               <template v-if="defaultVariant.manageInventory">
                 <v-text-field
                   v-for="loc in LOCATIONS"

@@ -280,7 +280,6 @@ function exportInventory() {
               closable-chips
               hide-details
               placeholder="All"
-              persistent-placeholder
             />
           </MpFormGrid>
         </template>

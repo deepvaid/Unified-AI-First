@@ -151,7 +151,6 @@ function finishImport() {
                       v-model="m.field"
                       :items="productFields"
                       :aria-label="`Maps ${m.csvCol} to`"
-                      density="compact"
                       hide-details
                       style="min-width: 180px;"
                     />

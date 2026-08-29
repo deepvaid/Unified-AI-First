@@ -65,7 +65,6 @@ function bulkDelete() {
               <div class="image-card__check">
                 <v-checkbox-btn
                   :model-value="selected.includes(img.id)"
-                  density="comfortable"
                   :aria-label="`Select ${img.name}`"
                   @click.stop="toggleSelect(img.id)"
                 />

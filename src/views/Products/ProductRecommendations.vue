@@ -280,6 +280,23 @@ function saveFeed() {
 
 // ══ Tab 3 — Product Feed Templates ══════════════════════════════════
 const templateScope = ref<'active' | 'archived'>('active')
+
+// Active vs archived is an exclusive mode, not a filter — there is no "all",
+// because the table has no column that would tell the two sets apart. It rides
+// the toolbar's single-select pill so it matches the row it sits in.
+const templateScopeQuickFilter = {
+  key: 'scope',
+  label: 'Show',
+  multiple: false,
+  options: [
+    { label: 'Active templates', value: 'active' },
+    { label: 'Archived templates', value: 'archived' },
+  ],
+}
+const templateScopeFilter = computed({
+  get: () => [templateScope.value],
+  set: (v: string[]) => { templateScope.value = (v[0] as 'active' | 'archived') ?? 'active' },
+})
 const templateSearch = ref('')
 
 const templateHeaders = [
@@ -510,21 +527,12 @@ function restore(template: FeedTemplate) {
         <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
           <MpDataTableToolbar
             v-model:search="templateSearch"
+            v-model:quick-filter-value="templateScopeFilter"
             title="Feed templates"
             search-placeholder="Search template name"
+            :quick-filter="templateScopeQuickFilter"
             :total-count="filteredTemplates.length"
-          >
-            <template #actions>
-              <!-- Toolbar filter, not a form field: hide-details keeps the row height stable. -->
-              <v-select
-                v-model="templateScope"
-                :items="[{ title: 'Active templates', value: 'active' }, { title: 'Archived templates', value: 'archived' }]"
-                label="Show"
-                hide-details
-                class="rec-toolbar__select"
-              />
-            </template>
-          </MpDataTableToolbar>
+          />
 
           <v-data-table
             :headers="templateHeaders"
@@ -733,9 +741,9 @@ function restore(template: FeedTemplate) {
         <MpFormField label="Include only">
           <template #default="{ labelId }">
             <div class="d-flex flex-column ga-2" :aria-labelledby="labelId">
-              <v-switch v-model="feedForm.activeOnly" label="Active products only" color="primary" hide-details density="compact" />
-              <v-switch v-model="feedForm.inStockOnly" label="In-stock products only" color="primary" hide-details density="compact" />
-              <v-switch v-model="feedForm.webstoreApprovedOnly" label="Webstore-approved products only" color="primary" hide-details density="compact" />
+              <v-switch v-model="feedForm.activeOnly" label="Active products only" hide-details density="compact" />
+              <v-switch v-model="feedForm.inStockOnly" label="In-stock products only" hide-details density="compact" />
+              <v-switch v-model="feedForm.webstoreApprovedOnly" label="Webstore-approved products only" hide-details density="compact" />
             </div>
           </template>
         </MpFormField>
@@ -839,33 +847,6 @@ function restore(template: FeedTemplate) {
 .rec-alert__link {
   color: inherit;
   font-weight: var(--mp-fontWeight-semibold);
-}
-
-/* The Templates "Show" control is a mode toggle (active vs archived), not a
-   filter — there is no "all" state — so it stays a select rather than becoming
-   a `quickFilter` pill. It still has to sit on the row's one control height:
-   settings-form.scss pins .v-field__input to 40 and adds 2px of wrapper padding
-   top and bottom, which paints 44 against 40px buttons. Neutralise both, using
-   the doubled `.v-field .v-field__input` descendant so this wins on specificity
-   without !important — the same contract MpDataTableToolbar's search documents. */
-.rec-toolbar__select {
-  max-width: 240px;
-  min-width: 180px;
-}
-
-.rec-toolbar__select :deep(.v-field) {
-  box-sizing: border-box;
-  min-height: var(--mp-component-control-height);
-}
-
-.rec-toolbar__select :deep(.v-field .v-field__field) {
-  align-items: center;
-  padding-block: 0;
-}
-
-.rec-toolbar__select :deep(.v-field .v-field__input) {
-  min-height: 0;
-  padding-block: 0;
 }
 
 .rec-thumb-fallback {

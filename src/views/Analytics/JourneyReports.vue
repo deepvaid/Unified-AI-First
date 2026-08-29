@@ -4,8 +4,6 @@ import { useCampaignsStore } from '@/stores/useCampaigns'
 import { dateRangeLabel, type DateRangeValue } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpFormSection from '@/components/MpFormSection.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
@@ -19,6 +17,14 @@ const store = useCampaignsStore()
 const toast = useToast()
 const search = ref('')
 const filterStatus = ref<string[]>([])
+
+// The one filter this report has, so it lives in the toolbar as a pill rather
+// than behind a drawer.
+const filterStatusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: (['Active', 'Paused', 'Draft']).map((v) => ({ label: v, value: v })),
+}
 const dateRange = ref<DateRangeValue>({ preset: 'This year' })
 
 const headers = [
@@ -79,28 +85,15 @@ function exportCsv() {
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="filterStatus"
+        :quick-filter="filterStatusQuickFilter"
         v-model:search="search"
         :title="`All Journeys · ${dateRangeLabel(dateRange)}`"
         :active-filters="activeFilterEntries"
         :total-count="filteredJourneys.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-      >
-        <template #filter-content>
-          <MpFormSection title="Filter by" />
-          <MpFormGrid>
-            <v-select
-              v-model="filterStatus"
-              label="Status"
-              :items="['Active', 'Paused', 'Draft']"
-              clearable
-              multiple
-              chips
-              closable-chips
-            />
-          </MpFormGrid>
-        </template>
-      </MpDataTableToolbar>
+      />
       <MpTableSkeleton v-if="loading" :rows="7" :columns="3" />
 
       <v-data-table v-else :headers="visibleHeaders" :items="filteredJourneys" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">

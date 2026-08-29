@@ -216,7 +216,6 @@ function save() {
                   :aria-labelledby="labelId"
                   :aria-describedby="descriptionId"
                   :label="addToManageSubscription ? 'Yes' : 'No'"
-                  color="primary"
                   hide-details
                 />
               </template>
@@ -294,7 +293,6 @@ function save() {
               <v-checkbox
                 v-model="cart.enabled"
                 :label="cart.name"
-                color="primary"
                 hide-details
               />
               <!-- The source leaves this field enabled while its cart is unchecked,

@@ -1,27 +1,59 @@
 /* ═══════════════════════════════════════════════════════════════
-   Global Outlined Field Baseline — Flowbite-style floating label
+   Global Outlined Field Baseline — static top label
    ───────────────────────────────────────────────────────────────
    Applies to ALL variant="outlined" Vuetify controls app-wide
    (v-text-field, v-select, v-textarea, v-autocomplete, v-combobox,
    date inputs, and anything else that renders .v-field--variant-outlined).
 
    Transparent field, 1px neutral hairline at rest, 2px primary border on
-   focus/error with NO glow ring, floating label styled to sit in the border
-   notch (Flowbite's outlined pattern — flowbite.com/docs/forms/floating-label).
-   Fields already render this notch natively via Vuetify's `label` prop; this
-   file only restyles it, it doesn't introduce it.
+   focus/error with NO glow ring, and a STATIC LABEL ABOVE the field box
+   (the Stripe / Shopify Polaris pattern — replaced the Flowbite floating
+   notch label, see DESIGN_AUDIT.md "Field rework — static top labels").
+
+   How the top label works: maropostTheme.ts sets `persistentPlaceholder:
+   true` (`active: true` for VFileInput) on every VField-based input, which
+   locks Vuetify's label into its permanently-floated state — the resting
+   in-box label stays hidden, the floating label stays visible and carries
+   the real `for`/`aria` wiring, and the float animation never runs because
+   the active state never transitions. The rules below then lift that
+   floating label out of the border notch to sit above the box. Call sites
+   keep using the plain `label` prop; a field with no label reserves no
+   headroom (`.v-field--no-label`).
+
+   Field size ramp (mapped from the `density` prop):
+     compact → sm 32px · comfortable → md 40px (theme default) · default → lg 48px
+   md is component.control.height, so a field, a button and a list row share
+   one 40px baseline.
 
    Settings pages inherit this unchanged.
    Individual components may add scoped specificity overrides,
    but must NOT introduce a second visual field style.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Field shape — transparent, no resting fill ─────────────── */
+/* ── Field shape — transparent, no resting fill ───────────────
+   The two private custom props are the size ramp's single source inside this
+   file: every height-dependent rule below (input floor, prefix/suffix, chip
+   affixes, number-input steppers) reads them, so a density change moves the
+   whole anatomy together. */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined {
+  --mp-field-height: var(--mp-component-field-height-md);
+  --mp-field-pad-block: var(--mp-space-8);
   border-radius: var(--mp-component-input-radius);
   font-size: var(--mp-fontSize-14);
   background: transparent;
   transition: background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+/* Size ramp — keyed off Vuetify's density class on the .v-input root.
+   compact = sm (32), comfortable = md (40, the theme default), default = lg (48). */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input--density-compact .v-field--variant-outlined {
+  --mp-field-height: var(--mp-component-field-height-sm);
+  --mp-field-pad-block: var(--mp-space-6);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input--density-default .v-field--variant-outlined {
+  --mp-field-height: var(--mp-component-field-height-lg);
+  --mp-field-pad-block: var(--mp-space-12);
 }
 
 /* Baseline alpha: outline elements render at full opacity — the softness
@@ -33,22 +65,24 @@
   --v-field-border-opacity: 1;
 }
 
-/* ── Input area — consistent height across all densities ────── */
-:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__field {
-  padding-top: var(--mp-component-field-boxPadding);
-  padding-bottom: var(--mp-component-field-boxPadding);
-}
-
+/* ── Input area — the painted box IS the ramp value ───────────
+   No wrapper padding (the old 2px boxPadding is retired), so the field's
+   painted box equals --mp-field-height exactly: 32 / 40 / 48.
+   The explicit line-height is load-bearing for sm: the inherited 1.5
+   (21px at 14px text) plus 2×6px padding would beat a 32px floor. */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__input {
-  min-height: var(--mp-component-control-height);
-  padding-top: var(--mp-space-8);
-  padding-bottom: var(--mp-space-8);
+  min-height: var(--mp-field-height);
+  padding-top: var(--mp-field-pad-block);
+  padding-bottom: var(--mp-field-pad-block);
+  line-height: var(--mp-lineHeight-compact);
 }
 
-/* ── Placeholder ────────────────────────────────────────────── */
+/* ── Placeholder — always visible on an empty field now that labels are
+   permanently floated. Solid muted ink (the old 0.65 alpha multiplier put
+   it below 4.5:1); example values only, never a restated label. ───── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__input::placeholder {
-  color: var(--muted);
-  opacity: 0.65;
+  color: var(--text-muted);
+  opacity: 1;
 }
 
 /* ── Resting border — light neutral hairline, at the 3:1 floor ──
@@ -137,7 +171,9 @@
    control and its helper line. */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input__details {
   padding-top: var(--mp-component-field-hintGap);
-  padding-inline: var(--mp-space-12);
+  /* Flush with the label and the field's border edge (the old 12px indent
+     aligned with the in-box floating label, which no longer exists). */
+  padding-inline: 0;
   min-height: 0;
 }
 
@@ -157,6 +193,9 @@
 /* ── Selection controls — checkbox, radio, switch ───────────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-selection-control .v-label {
   color: var(--text-primary);
+  /* Pin to body size — unpinned, these inherit VInput's 1rem (16px) and sat
+     visibly larger than every other form text. */
+  font-size: var(--mp-fontSize-14);
 }
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-selection-control--disabled .v-label {
@@ -171,61 +210,74 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
 }
 
-/* ── Floating label — Flowbite-style: small, medium weight, muted.
-   Vuetify already renders a notched floating label on any field with a
-   `label` prop (nothing in this codebase suppresses it); these rules only
-   restyle it.
-
-   CAUTION — specificity trap discovered while building this: Vuetify's own
-   `.v-field--error:not(.v-field--disabled) .v-label.v-field-label { color:
-   error }` (VField.css) is (0,4,0), the SAME specificity as the plain base
-   rule below. Because this file loads after Vuetify's component CSS, the
-   base rule was winning the tie and silently flattening the error label to
-   muted gray — caught only by checking computed color per state in the
-   browser, not by reading the CSS. (The pre-existing `.v-field--disabled
-   .v-label` rule above wasn't actually affected: --text-disabled and --muted
-   resolve to the identical token in both themes, so that tie was invisible —
-   but don't rely on that coincidence holding.) Fixed the same way the border
-   rules already do: chain `.v-field--variant-outlined` into the
-   error/disabled/focus selectors to reach (0,5,0), which unconditionally
-   outranks both Vuetify's rule and this file's own base rule. Any new
-   label-color rule added here MUST do the same or it will silently lose to
-   whichever state rule loads last. */
-:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-label.v-field-label {
-  color: var(--muted);
+/* ── Static top label ─────────────────────────────────────────
+   The label is Vuetify's own floating-label element (permanently floated —
+   see the header), lifted out of the border notch to sit above the box. With
+   the notch made static, the absolutely-positioned label's containing block
+   becomes .v-field__outline (inset 0 = the field box), so
+   `inset-inline-start: 0` is the border's left edge and `bottom: 100% +
+   labelGap` anchors it height-independently above any box on the size ramp.
+   The notch pseudos are hidden because a static notch spans the full outline
+   width and its pseudos would paint a stray square-cornered border segment;
+   with the label out of flow the notch collapses to zero width, so
+   __start + __end stay contiguous and the top border is continuous. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__notch {
+  position: static;
 }
 
-/* NEVER set --v-field-label-scale here. It looks like a font-size token, but
-   Vuetify uses it for TWO things: VField.css reads it as the floating label's
-   `font-size`, and VField.js:145 does
-   `parseFloat(getPropertyValue('--v-field-label-scale'))` to build the label's
-   float animation — `transform: scale(<that number>)`. Setting it to `12px`
-   made parseFloat return 12, so every labelled field's label animated to
-   scale(12) — a page-wide flash on every click. It escaped review because the
-   giant label only exists during the ~150ms WAAPI animation (the resting label
-   is `visibility: hidden` once settled), so any getComputedStyle check that
-   runs after the transition sees a perfectly correct field.
-   Set `font-size` directly instead: it pins the rendered size and out-specifies
-   Vuetify's `font-size: var(--v-field-label-scale)` ((0,4,0) vs (0,2,0)), while
-   the untouched `0.75em` default keeps parseFloat at the correct 0.75.
-   12px is also exactly 0.75 x the 16px resting label, so the animation's end
-   state (16 x 0.75) lands precisely on the real floating label — no size pop —
-   and matches Vuetify's hardcoded `targetWidth / 0.75` width math on line 138. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__notch::before,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-field__outline__notch::after {
+  display: none;
+}
+
+/* Headroom for the label — labelled fields only. Margin (not padding) keeps
+   the outline hugging the box; the label paints in the margin zone, which is
+   still inside .v-input's border box, so scroll/overflow ancestors don't clip
+   it. A placeholder+aria-label field (.v-field--no-label — toolbar searches,
+   table-cell editors) reserves nothing. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined:not(.v-field--no-label) {
+  margin-block-start: calc(var(--mp-component-field-labelHeight) + var(--mp-component-field-labelGap));
+}
+
+/* CAUTION — specificity contract (kept from the floating-label era): Vuetify's
+   own `.v-field--error:not(.v-field--disabled) .v-label.v-field-label { color:
+   error }` (VField.css) is (0,4,0), the SAME specificity as the base rule
+   below. This file loads after Vuetify's component CSS, so the base rule wins
+   the tie — and that is now DELIBERATE: the label stays calm on focus and on
+   error; the 2px border and the message carry the state (Stripe/Polaris
+   behavior). The disabled rule chains `.v-field--variant-outlined` +
+   `.v-field--disabled` to reach (0,5,0) and outrank both. Any future
+   label-color state rule MUST chain the same way or it will silently lose to
+   whichever rule loads last.
+
+   NEVER set --v-field-label-scale. It looks like a font-size token, but
+   VField.js parseFloats it to build the float animation's `scale()` — setting
+   `12px` once animated every label to scale(12) page-wide. The animation is
+   dormant today only because persistentPlaceholder keeps every field
+   permanently active (the watch never fires); it re-arms on any field that
+   opts out. Set `font-size` directly, as below. */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined .v-label.v-field-label--floating {
-  font-size: var(--mp-fontSize-12);
-  font-weight: 500;
-  color: var(--muted);
+  position: absolute;
+  inset-inline-start: 0;
+  /* top: auto is load-bearing — Vuetify sets its own `top` on the floating
+     label; with both top and bottom set, the absolute box resolves to a
+     negative height and collapses to 0. */
+  top: auto;
+  bottom: calc(100% + var(--mp-component-field-labelGap));
+  margin: 0;
+  max-width: 100%;
+  transform: none;
+  transition: none;
+  pointer-events: auto; /* restore native label-click-to-focus */
+  font-size: var(--mp-text-label-fontSize);
+  font-weight: var(--mp-text-label-fontWeight);
+  line-height: var(--mp-component-field-labelHeight);
+  letter-spacing: 0;
+  color: var(--text-secondary);
+  opacity: 1;
 }
 
-:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--focused .v-label.v-field-label {
-  color: rgb(var(--v-theme-primary));
-}
-
-:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--error .v-label.v-field-label {
-  color: rgb(var(--v-theme-error));
-}
-
-:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--disabled .v-label.v-field-label {
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-field--variant-outlined.v-field--disabled .v-label.v-field-label--floating {
   color: var(--text-disabled);
 }
 
@@ -250,22 +302,22 @@
    text sits on the input's own centre line. */
 :is(.v-application, .v-overlay-container, [class*='v-theme--'])
   .v-field--variant-outlined :is(.v-text-field__prefix, .v-text-field__suffix) {
-  min-height: var(--mp-component-control-height);
-  padding-top: var(--mp-space-8);
-  padding-bottom: var(--mp-space-8);
+  min-height: var(--mp-field-height);
+  padding-top: var(--mp-field-pad-block);
+  padding-bottom: var(--mp-field-pad-block);
 }
 
 /* A stacked number-input's +/- buttons are two VBtns in the append-inner, and
-   the theme gives every VBtn a `min-height: control.height` — so the pair stacked
-   to 80px and dragged the whole control to 81, against 44 for every field beside
-   it. Each half takes half the ramp instead, which puts the control back on 44
-   with the stepper still centred and still clear of the text. */
+   the theme gives every VBtn a `min-height: control.height` — so the pair
+   stacked to 80px and dragged the whole control past every field beside it.
+   Each half takes half the field's own ramp value instead, which keeps the
+   control exactly on the size ramp with the stepper still centred. */
 :is(.v-application, .v-overlay-container, [class*='v-theme--'])
   .v-number-input--stacked .v-number-input__control .v-btn {
   /* !important is required, not sloppy: maropostTheme applies the VBtn ramp as an
      inline `style` attribute, which no stylesheet rule can outrank. */
-  min-height: calc(var(--mp-component-control-height) / 2) !important;
-  height: calc(var(--mp-component-control-height) / 2) !important;
+  min-height: calc(var(--mp-field-height, var(--mp-component-field-height-md)) / 2) !important;
+  height: calc(var(--mp-field-height, var(--mp-component-field-height-md)) / 2) !important;
 }
 
 /* ── Prepend / append inner icon ──────────────────────────────
@@ -295,15 +347,15 @@
     .v-combobox--multiple.v-combobox--chips
   )
   :is(.v-field__prepend-inner, .v-field__append-inner, .v-field__clearable) {
-  /* Pin the affix to a box exactly one input row tall, offset by the field's own
-     outline padding, and centre the icon inside it. That lands the icon on the
-     first chip row's centre by construction — no assumption about the icon's
-     rendered size — and leaves an unwrapped select pixel-identical to before. */
+  /* Pin the affix to a box exactly one input row tall and centre the icon
+     inside it. That lands the icon on the first chip row's centre by
+     construction — no assumption about the icon's rendered size — and leaves
+     an unwrapped select pixel-identical to before. (The old boxPadding offset
+     is gone: the field box now equals the ramp value exactly.) */
   align-self: flex-start;
   align-items: center;
   padding-top: 0;
-  margin-block-start: var(--mp-component-field-boxPadding);
-  block-size: var(--mp-component-control-height);
+  block-size: var(--mp-field-height, var(--mp-component-field-height-md));
 }
 
 

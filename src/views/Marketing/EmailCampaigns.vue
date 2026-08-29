@@ -81,7 +81,8 @@ function viewReport(id: number) {
 }
 
 function editCampaign(id: number) {
-  router.push({ name: 'CreateCampaign', params: { accountId: route.params.accountId }, query: { id } })
+  const target = store.getCampaign(id)?.config?.kind === 'ab_email' ? 'CreateAbCampaign' : 'CreateEmailCampaign'
+  router.push({ name: target, params: { accountId: route.params.accountId }, query: { id } })
 }
 
 // Delete (row + bulk) — always behind a confirm dialog

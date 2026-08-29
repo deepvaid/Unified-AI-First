@@ -301,35 +301,23 @@ function confirmDelete() {
       <v-text-field
         v-model="newRole.name"
         label="Role name *"
-        variant="outlined"
-        density="compact"
-        class="mb-3"
         placeholder="e.g. Weekend Campaign Editor"
       />
       <v-textarea
         v-model="newRole.description"
         label="Description"
-        variant="outlined"
-        density="compact"
         rows="2"
-        class="mb-3"
         placeholder="What is this role for?"
       />
       <v-select
         v-model="newRole.product"
         label="Product"
         :items="productItems"
-        variant="outlined"
-        density="compact"
-        class="mb-3"
       />
       <v-select
         v-model="newRole.startFrom"
         label="Start from"
         :items="startFromItems"
-        variant="outlined"
-        density="compact"
-        class="mb-3"
       />
       <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
         You’ll pick permissions on the next screen. Dependencies are applied automatically — granting Edit always includes View.

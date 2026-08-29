@@ -311,7 +311,6 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
           <v-text-field
             v-model="tagInput"
             label="Add contact tag"
-            density="compact"
             hide-details
             append-inner-icon="plus"
             @keyup.enter="addContactTag"
@@ -343,11 +342,11 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
           <div class="d-flex align-center justify-space-between mb-2">
             <span class="text-body-2">Add to Do Not Email List</span>
-            <v-switch v-model="detail.doNotEmail" aria-label="Add to Do Not Email List" hide-details density="compact" color="primary" />
+            <v-switch v-model="detail.doNotEmail" aria-label="Add to Do Not Email List" hide-details density="compact" />
           </div>
           <div class="d-flex align-center justify-space-between mb-3">
             <span class="text-body-2">Add to Do Not SMS List</span>
-            <v-switch v-model="detail.doNotSms" aria-label="Add to Do Not SMS List" hide-details density="compact" color="primary" />
+            <v-switch v-model="detail.doNotSms" aria-label="Add to Do Not SMS List" hide-details density="compact" />
           </div>
 
           <div class="d-flex align-center gap-4">

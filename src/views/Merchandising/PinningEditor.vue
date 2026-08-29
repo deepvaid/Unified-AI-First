@@ -187,7 +187,6 @@ function performDelete() {
         v-model="collectionId"
         :items="collectionOptions"
         label="Collection"
-        density="compact"
         hide-details
         :disabled="!isNew"
         class="pin-collection-select"
@@ -198,7 +197,6 @@ function performDelete() {
         placeholder="Search unpinned products…"
         aria-label="Search unpinned products"
         prepend-inner-icon="search"
-        density="compact"
         hide-details
         clearable
         class="pin-search"
@@ -207,7 +205,6 @@ function performDelete() {
         v-model="sortKey"
         :items="[...MERCH_SORT_OPTIONS]"
         aria-label="Sort unpinned products"
-        density="compact"
         hide-details
         class="pin-sort"
       />

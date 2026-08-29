@@ -177,7 +177,6 @@ function doCreate() {
               :model-value="item.status === 'Active'"
               :aria-label="`${item.store} active`"
               :disabled="item.status === 'Disabled'"
-              color="primary"
               density="compact"
               hide-details
               @update:model-value="(v: boolean | null) => toggleActive(item, !!v)"

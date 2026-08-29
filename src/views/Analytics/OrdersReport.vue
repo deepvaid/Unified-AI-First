@@ -5,8 +5,6 @@ import { isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpFormSection from '@/components/MpFormSection.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
@@ -19,6 +17,14 @@ const store = useCommerceStore()
 const toast = useToast()
 const search = ref('')
 const filterStatus = ref<string[]>([])
+
+// The one filter this report has, so it lives in the toolbar as a pill rather
+// than behind a drawer.
+const filterStatusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: (['Completed', 'Processing', 'Cancelled', 'Refunded', 'On Hold']).map((v) => ({ label: v, value: v })),
+}
 const dateRange = ref<DateRangeValue>({ preset: 'Last 30 days' })
 const { loading } = useInitialLoad()
 
@@ -82,28 +88,15 @@ function exportCsv() {
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="filterStatus"
+        :quick-filter="filterStatusQuickFilter"
         v-model:search="search"
         title="Order Analytics"
         :active-filters="activeFilterEntries"
         :total-count="filteredOrders.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-      >
-        <template #filter-content>
-          <MpFormSection title="Filter by" />
-          <MpFormGrid>
-            <v-select
-              v-model="filterStatus"
-              label="Status"
-              :items="['Completed', 'Processing', 'Cancelled', 'Refunded', 'On Hold']"
-              clearable
-              multiple
-              chips
-              closable-chips
-            />
-          </MpFormGrid>
-        </template>
-      </MpDataTableToolbar>
+      />
       <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
 
       <v-data-table v-else :headers="visibleHeaders" :items="filteredOrders" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">

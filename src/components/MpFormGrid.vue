@@ -40,9 +40,9 @@ defineSlots<{
   /* Items keep their own height and hang from a shared top edge. Grid's default
      `stretch` made a field as tall as the tallest thing in its row, so a
      persistent hint under one column silently grew the control beside it — two
-     neighbours rendering 52 and 62 where both should be 44. Aligning to the start
-     is what makes a two-column row share one baseline whether or not one of the
-     pair carries a hint, an error, or a floating label. */
+     neighbours rendering at different heights where both should sit on the ramp.
+     Aligning to the start is what makes a two-column row share one baseline
+     whether or not one of the pair carries a hint or an error. */
   align-items: start;
   /* The container owns the rhythm; it does not own the space around itself. Its
      host — a dialog body, a drawer body, a settings card — already places it. */
@@ -81,17 +81,21 @@ defineSlots<{
    button — and it is a full 40px target rather than the 28px Vuetify gives an
    icon button by default.
 
-   `boxPadding` is the vertical offset: a field paints a 44px box (control.height
-   plus its own outline padding, top and bottom), so a 40px action sitting flush
-   with the row top is 2px above the input's centre. Offsetting by exactly that
-   padding puts the two on one centre line, and it stays right if either token
-   moves. Centring on the *row* instead would drift the moment an error message
-   grew it. */
+   A field now paints control.height exactly (the old 2px boxPadding is retired),
+   so a flush action already shares the field's centre line. The one offset left
+   is the static top label: a labelled field reserves labelHeight + labelGap of
+   headroom above its box, so the action beside it drops by the same amount to
+   stay on the input's centre. (`:has()` — first use in the repo; fine for this
+   modern-browser prototype.) Centring on the *row* instead would drift the
+   moment an error message grew it. */
 .mp-form-grid > :deep(.mp-form-grid__trailing) > :last-child {
   justify-self: end;
   inline-size: var(--mp-component-control-height);
   block-size: var(--mp-component-control-height);
-  margin-block-start: var(--mp-component-field-boxPadding);
+}
+
+.mp-form-grid > :deep(.mp-form-grid__trailing:has(.v-field--variant-outlined:not(.v-field--no-label))) > :last-child {
+  margin-block-start: calc(var(--mp-component-field-labelHeight) + var(--mp-component-field-labelGap));
 }
 
 @media (max-width: $mp-layout-breakpointCompact) {

@@ -130,7 +130,6 @@ function grantedInProduct(key: ProductKey): number {
             :indeterminate="moduleState(mod).some && !moduleState(mod).all"
             :aria-label="`Grant all ${mod.label} permissions`"
             density="compact"
-            color="primary"
             class="matrix-module__toggle"
             @update:model-value="toggleModule(mod)"
           />
@@ -154,7 +153,6 @@ function grantedInProduct(key: ProductKey): number {
                 :disabled="Boolean(lockedBy(perm.id))"
                 :aria-label="`${perm.label ?? ACTION_LABELS[perm.action]} — ${mod.label}`"
                 density="compact"
-                color="primary"
                 class="matrix-row__checkbox"
                 @update:model-value="toggle(perm)"
               />

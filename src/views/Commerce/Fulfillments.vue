@@ -219,8 +219,6 @@ function exportFulfillments() {
                 v-model="filters.status"
                 label="Fulfillment Status"
                 :items="[...FULFILLMENT_QUEUE_STATUSES]"
-                variant="outlined"
-                density="compact"
                 hide-details
                 clearable
               />
@@ -327,8 +325,6 @@ function exportFulfillments() {
         v-model="shipTracking"
         label="Tracking number (optional)"
         placeholder="e.g. 1Z999AA10123456784"
-        variant="outlined"
-        density="comfortable"
         hide-details
       />
 

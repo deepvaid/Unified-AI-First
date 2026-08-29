@@ -45,7 +45,6 @@ function saveEdit(contact: any) {
       <div class="pa-4 d-flex align-center border-b border-opacity-25" style="border-color: rgba(var(--v-border-color), 0.1) !important;">
         <!-- Toolbar search and the inline cell editor below suppress details on purpose. -->
         <v-text-field
-          density="compact"
           placeholder="Search contacts by name or email..."
           aria-label="Search contacts by name or email"
           prepend-inner-icon="search"
@@ -83,7 +82,6 @@ function saveEdit(contact: any) {
               <div v-if="editingId === contact.id" class="d-flex align-center max-w-sm" style="max-width: 250px;">
                 <v-text-field
                   v-model="editName"
-                  density="compact"
                   aria-label="Contact name"
                   hide-details
                   autofocus

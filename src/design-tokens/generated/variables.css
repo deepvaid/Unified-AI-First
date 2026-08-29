@@ -1301,6 +1301,8 @@
   --mp-text-metaValue-fontSize: var(--mp-fontSize-14);
   --mp-text-metaValue-fontWeight: 550;
   --mp-text-metaValue-lineHeight: 1.4;
+  --mp-text-label-fontSize: var(--mp-fontSize-13);
+  --mp-text-label-fontWeight: var(--mp-fontWeight-medium);
   --mp-component-control-height: 40px;
   --mp-component-button-typography-fontSize: var(--mp-fontSize-14);
   --mp-component-button-typography-fontWeight: var(--mp-fontWeight-semibold);
@@ -1341,7 +1343,10 @@
   --mp-component-field-groupGap: var(--mp-space-16);
   --mp-component-field-sectionGap: var(--mp-space-24);
   --mp-component-field-hintGap: var(--mp-space-4);
-  --mp-component-field-boxPadding: var(--mp-space-2);
+  --mp-component-field-height-sm: 32px;
+  --mp-component-field-height-md: var(--mp-component-control-height);
+  --mp-component-field-height-lg: 48px;
+  --mp-component-field-labelHeight: 18px;
   --mp-component-state-padding: var(--mp-space-32);
   --mp-component-state-paddingProminent: var(--mp-space-48);
   --mp-component-state-gap: var(--mp-space-8);

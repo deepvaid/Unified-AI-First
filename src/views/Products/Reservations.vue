@@ -27,7 +27,14 @@ const toast = useToast()
 const accountId = computed(() => String(route.params.accountId))
 const ordersPath = computed(() => `/commerce/${accountId.value}/orders`)
 
-const locationFilter = ref<'All locations' | InventoryLocation>('All locations')
+// Location is the promoted filter: a multi-select pill in the toolbar rather
+// than a single-value select, so several values can be compared at once.
+const locationQuickFilter = {
+  key: 'location',
+  label: 'Location',
+  options: ([...INVENTORY_LOCATIONS]).map((v) => ({ label: v, value: v })),
+}
+const locationFilter = ref<string[]>([])
 const search = ref('')
 
 const headers = [
@@ -43,7 +50,7 @@ const headers = [
 const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
   return store.reservations.filter((r) => {
-    const byLocation = locationFilter.value === 'All locations' || r.location === locationFilter.value
+    const byLocation = !locationFilter.value.length || locationFilter.value.includes(r.location)
     const byTerm = !term
       || r.item.toLowerCase().includes(term)
       || r.sku.toLowerCase().includes(term)
@@ -55,7 +62,7 @@ const filtered = computed(() => {
 const totalHeld = computed(() => filtered.value.reduce((sum, r) => sum + r.qty, 0))
 
 const locationFilterEntries = computed(() =>
-  locationFilter.value === 'All locations' ? [] : [{ key: 'location', label: `Location: ${locationFilter.value}` }],
+  !locationFilter.value.length ? [] : [{ key: 'location', label: `Location: ${locationFilter.value.join(', ')}` }],
 )
 
 // ── Create / edit dialog ────────────────────────────────────────────
@@ -176,23 +183,18 @@ function doDelete() {
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="locationFilter"
+        :quick-filter="locationQuickFilter"
         v-model:search="search"
         title="All reservations"
         search-placeholder="Search item, SKU or description"
         :total-count="filtered.length"
         :active-filters="locationFilterEntries"
-        @remove-filter="locationFilter = 'All locations'"
-        @clear-filters="locationFilter = 'All locations'"
+        @remove-filter="locationFilter = []"
+        @clear-filters="locationFilter = []"
       >
         <template #actions>
           <!-- Toolbar filter, not a form field: hide-details keeps the row height stable. -->
-          <v-select
-            v-model="locationFilter"
-            :items="['All locations', ...INVENTORY_LOCATIONS]"
-            label="Location"
-            hide-details
-            class="res-toolbar__select"
-          />
         </template>
       </MpDataTableToolbar>
 
@@ -237,10 +239,10 @@ function doDelete() {
         <template #no-data>
           <MpEmptyState
             icon="bookmark"
-            :title="search || locationFilter !== 'All locations' ? 'No reservations match your filters' : 'No reservations'"
-            :description="search || locationFilter !== 'All locations' ? 'Try a different search term, or switch the location back to All locations.' : 'Reservations hold stock back from available inventory — orders create them automatically, and you can add manual holds.'"
-            :action-label="search || locationFilter !== 'All locations' ? undefined : 'New reservation'"
-            :action-icon="search || locationFilter !== 'All locations' ? undefined : 'plus'"
+            :title="search || locationFilter.length ? 'No reservations match your filters' : 'No reservations'"
+            :description="search || locationFilter.length ? 'Try a different search term, or switch the location back to All locations.' : 'Reservations hold stock back from available inventory — orders create them automatically, and you can add manual holds.'"
+            :action-label="search || locationFilter.length ? undefined : 'New reservation'"
+            :action-icon="search || locationFilter.length ? undefined : 'plus'"
             class="py-10"
             @action="openCreate"
           />
@@ -329,11 +331,6 @@ function doDelete() {
 </template>
 
 <style scoped>
-.res-toolbar__select {
-  max-width: 240px;
-  min-width: 180px;
-}
-
 .res-mono {
   font-family: var(--mp-fontFamily-mono);
 }

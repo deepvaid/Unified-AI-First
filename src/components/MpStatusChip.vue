@@ -34,7 +34,7 @@ const toneMap: Record<string, Record<string, Tone>> = {
   campaign: {
     sent: 'success', scheduled: 'brand', draft: 'neutral', sending: 'warning',
     active: 'success', paused: 'warning', completed: 'success', failed: 'danger',
-    archived: 'neutral', aborted: 'danger',
+    archived: 'neutral', aborted: 'danger', recurring: 'brand',
   },
   contact: {
     active: 'success', subscribed: 'success', unsubscribed: 'neutral', bounced: 'danger',
@@ -87,6 +87,7 @@ const iconMap: Record<string, Record<string, string>> = {
     draft: 'pencil', sending: 'send',
     active: 'play-circle', paused: 'pause-circle',
     failed: 'alert-circle', archived: 'archive',
+    recurring: 'repeat',
   },
   fulfillment: {
     unapproved: 'alert-circle', 'not ready': 'package',

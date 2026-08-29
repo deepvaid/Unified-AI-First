@@ -406,7 +406,7 @@ function goToStep(target: number) {
             <v-textarea
               v-model="draft.notes"
               label="Notes"
-              placeholder="Internal notes about this engine…"
+              placeholder="e.g. Boost margin on summer lines before the July sale"
               rows="3"
               class="mp-form-grid__full"
             />

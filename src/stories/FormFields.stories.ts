@@ -1,24 +1,28 @@
 /**
- * Unified Field Style Stories — Flowbite-style floating label
+ * Unified Field Style Stories — static top label
  *
  * All outlined Vuetify fields (v-text-field, v-select, v-textarea, v-autocomplete,
  * v-combobox) share a single visual baseline defined in settings-form.scss:
+ *   • Static top label (the `label` prop, rendered above the box — Stripe/Polaris
+ *     pattern): 13px/500 `text.label`, --text-secondary, calm on focus AND error;
+ *     see settings-form.scss's specificity-contract comment before adding any
+ *     new label-color rule
+ *   • Size ramp from the `density` prop: compact → sm 32 · comfortable → md 40
+ *     (the theme default, = control.height so fields align with buttons) ·
+ *     default → lg 48
  *   • 10px border radius, transparent fill (no resting tint)
- *   • 40px minimum control height
  *   • 1px --border-strong hairline at rest (dark-mode-aware), darker on hover
  *   • 2px primary border on focus, 2px error-color border on error — NEITHER has
  *     a glow ring; the border width itself is the only focus/error cue
- *   • Floating label (Vuetify's native notch mechanism, restyled): 12px/500,
- *     muted at rest, primary on focus, error-color on error — see settings-form.scss's
- *     "specificity trap" comment before adding any new label-color rule
+ *   • Placeholder: solid --text-muted, always visible on an empty field —
+ *     example values only, never a restated label
  *   • Full-opacity disabled container, muted text and label, lighter border
  *
- * Settings pages inherit this baseline unchanged — as of 2026-08-27 every Settings
- * field uses the `label` prop (no more separate uppercase `.settings-field__label`
- * elements above unlabeled fields; there is now exactly one label language).
- * The AppBar command-search and the MpDataTableToolbar search intentionally override to a
- * pill shape; the toolbar search also pins its border to --mp-border-subtle so it matches
- * the outlined buttons beside it (see MpDataTableToolbar).
+ * Settings pages inherit this baseline unchanged; every field uses the `label`
+ * prop (one label language — MpFormField renders the identical label for
+ * composite controls). The AppBar command-search and the MpDataTableToolbar
+ * search intentionally override to a pill shape (placeholder + aria-label, no
+ * label, no headroom).
  */
 import type { Meta, StoryObj } from '@storybook/vue3'
 import { nextTick, onMounted, ref } from 'vue'
@@ -33,29 +37,37 @@ const meta: Meta = {
     docs: {
       description: {
         component: `
-## Unified Field Baseline — Flowbite-style floating label
+## Unified Field Baseline — static top label
 
-Every outlined form control in the app shares a single visual style
-(flowbite.com/docs/forms/floating-label — the outlined variant):
+Every outlined form control in the app shares a single visual style — a **static
+label above the field box** (the Stripe / Shopify Polaris pattern; it replaced the
+Flowbite floating-notch label, see DESIGN_AUDIT.md "Field rework"):
+- **Label** – the \`label\` prop, rendered above the box: 13px/500 (\`text.label\`),
+  \`--text-secondary\`, 6px (\`field.labelGap\`) above the border, flush with its left
+  edge. The label stays **calm on focus and on error** — the 2px border and the
+  message carry the state. A labelled field reserves \`labelHeight + labelGap\`
+  (24px) of headroom; a placeholder+aria-label field reserves nothing.
+- **Sizes** – one ramp from the \`density\` prop:
+  \`compact\` → **sm 32** · \`comfortable\` → **md 40** (the theme default — equal to
+  \`control.height\`, so a field, a button and a toolbar control share one baseline) ·
+  \`default\` → **lg 48**
 - **Shape** – 10px border radius, **transparent** fill at rest (no tint)
-- **Height** – 40px minimum (all densities)
 - **Border** – Flat 1px \`--border-strong\` at rest (dark-mode-aware), darker on hover
 - **Focus** – Primary-color border, **2px**, no box-shadow ring
 - **Error** – Error-color border, **2px**, no box-shadow ring
-- **Label** – Floats into the border notch (Vuetify's native mechanism via the
-  \`label\` prop); restyled to 12px/500 weight, muted at rest, primary on focus,
-  error-color on error
+- **Placeholder** – solid \`--text-muted\`, always visible while the field is empty.
+  Example values only; it never restates the label
 - **Disabled** – Full opacity, muted text/label, lighter border
 
 ### Rules
 - \`variant="outlined"\` and \`density="comfortable"\` are the **theme defaults** — don't restate
-  them on the tag. As of Phase 6 the selection controls (\`v-checkbox\`, \`v-radio-group\`,
+  them on the tag. The selection controls (\`v-checkbox\`, \`v-radio-group\`,
   \`v-switch\`, \`v-slider\`, \`v-number-input\`, \`v-btn-toggle\`, \`v-chip-group\`) have the same
-  defaults, so a checkbox group and the fields above it finally sit on one rhythm.
-- **Always pass a \`label\`, not a bare \`placeholder\`** — the floating label is
-  the field's name; a placeholder is example text shown once there's a label to
-  float. A placeholder-only field with no label reads as unlabeled once value
-  text starts sitting in the same spot the label would.
+  defaults, so a checkbox group and the fields above it sit on one rhythm.
+- **Always pass a \`label\`, not a bare \`placeholder\`** — the top label is the field's
+  name; a placeholder is example text inside the box. The two exceptions are chrome:
+  toolbar searches and table-cell inline editors use \`placeholder\` + \`aria-label\`
+  (no label → no headroom, so they stay flush in a 40px control row).
 - **One required mark:** a trailing \` *\` in the label text, or \`required\` on \`MpFormField\` /
   \`MpFormSection\`. Never an asterisk inside a placeholder.
 - Never pass \`rounded="pill"\` — or any \`rounded\` — on standard form fields. The AppBar search
@@ -66,7 +78,8 @@ Every outlined form control in the app shares a single visual style
   hints. Keep it only for a dense toolbar filter, with a comment saying so.
 - **Textarea height comes from \`rows\`** — 3 for a normal message, 5 for long-form. Never a CSS
   height.
-- \`density="compact"\` is for toolbar filter selects; forms use the default.
+- \`density="compact"\` (sm) is for genuinely dense chrome — table-cell editors, tight
+  side panels; forms use the default md.
 
 ### Spacing between fields — not a field's job (Phase 6)
 A field sets **zero external margin**. The container owns the rhythm:
@@ -109,8 +122,6 @@ export const AllStates: Story = {
             <v-text-field
               v-model="empty"
               label="Company name"
-              variant="outlined"
-              density="comfortable"
               hide-details
             />
           </v-col>
@@ -119,8 +130,6 @@ export const AllStates: Story = {
             <v-text-field
               v-model="text"
               label="Company name"
-              variant="outlined"
-              density="comfortable"
               hide-details
             />
           </v-col>
@@ -129,8 +138,6 @@ export const AllStates: Story = {
             <v-text-field
               model-value="Locked value"
               label="Company name"
-              variant="outlined"
-              density="comfortable"
               disabled
               hide-details
             />
@@ -140,8 +147,6 @@ export const AllStates: Story = {
             <v-text-field
               model-value="Read-only value"
               label="Company name"
-              variant="outlined"
-              density="comfortable"
               readonly
               hide-details
             />
@@ -151,8 +156,6 @@ export const AllStates: Story = {
             <v-text-field
               model-value=""
               label="Company name"
-              variant="outlined"
-              density="comfortable"
               error-messages="This field is required"
             />
           </v-col>
@@ -161,8 +164,6 @@ export const AllStates: Story = {
             <v-text-field
               model-value=""
               label="Subdomain"
-              variant="outlined"
-              density="comfortable"
               hint="This will be part of your store URL"
               persistent-hint
             />
@@ -173,15 +174,13 @@ export const AllStates: Story = {
   }),
 }
 
-export const FloatingLabelStates: Story = {
-  name: 'Floating Label States',
+export const LabelStates: Story = {
+  name: 'Label States',
   parameters: { controls: { disable: true } },
   render: () => ({
     setup() {
-      const emptyComfortable = ref('')
-      const filledComfortable = ref('Scooter Village')
-      const emptyCompact = ref('')
-      const filledCompact = ref('USD')
+      const empty = ref('')
+      const filled = ref('Scooter Village')
       const emptyIcon = ref('')
       // The native `autofocus` HTML attribute races Vuetify's own focus
       // listener: the input becomes document.activeElement, but the
@@ -193,36 +192,93 @@ export const FloatingLabelStates: Story = {
       // .focus() method after nextTick() sidesteps the race entirely.
       const focusedFieldRef = ref()
       onMounted(() => nextTick(() => focusedFieldRef.value?.focus()))
-      return { emptyComfortable, filledComfortable, emptyCompact, filledCompact, emptyIcon, focusedFieldRef }
+      return { empty, filled, emptyIcon, focusedFieldRef }
     },
     template: `
       <div>
-        <h3 class="text-subtitle-1 font-weight-bold mb-1">Floating label — empty vs. filled vs. focused</h3>
+        <h3 class="text-subtitle-1 font-weight-bold mb-1">Static top label — one spec across every state</h3>
         <p class="text-caption text-medium-emphasis mb-4">
-          Every other story in this file interacts with a field to see its focused state.
-          This one pins one open so the notch, label transition, and 2px focus border are
-          visible without clicking anything.
+          The label is 13px/500 --text-secondary in every state except disabled — focus and
+          error are carried by the 2px border and the message, never by recoloring the label.
+          The focused specimen is pinned open so the calm label and no-glow border are visible
+          without clicking anything.
         </p>
         <v-row>
-          <v-col cols="12" sm="6" md="3">
-            <div class="text-caption text-medium-emphasis mb-1">Comfortable — empty</div>
-            <v-text-field v-model="emptyComfortable" label="Account Name" variant="outlined" density="comfortable" hide-details />
-          </v-col>
-          <v-col cols="12" sm="6" md="3">
-            <div class="text-caption text-medium-emphasis mb-1">Comfortable — filled</div>
-            <v-text-field v-model="filledComfortable" label="Account Name" variant="outlined" density="comfortable" hide-details />
-          </v-col>
-          <v-col cols="12" sm="6" md="3">
-            <div class="text-caption text-medium-emphasis mb-1">Compact — empty</div>
-            <v-select v-model="emptyCompact" :items="['USD','EUR','GBP']" label="Currency" variant="outlined" density="compact" hide-details />
-          </v-col>
-          <v-col cols="12" sm="6" md="3">
-            <div class="text-caption text-medium-emphasis mb-1">Compact — filled</div>
-            <v-select v-model="filledCompact" :items="['USD','EUR','GBP']" label="Currency" variant="outlined" density="compact" hide-details />
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Empty — placeholder visible</div>
+            <v-text-field v-model="empty" label="Account name" placeholder="e.g. Scooter Village" hide-details />
           </v-col>
           <v-col cols="12" sm="6" md="4">
-            <div class="text-caption text-medium-emphasis mb-1">Focused (autofocus) — label + border go primary, no glow</div>
-            <v-text-field ref="focusedFieldRef" v-model="emptyIcon" label="Email Address" prepend-inner-icon="mail" variant="outlined" density="comfortable" hide-details />
+            <div class="text-caption text-medium-emphasis mb-1">Filled</div>
+            <v-text-field v-model="filled" label="Account name" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Focused (autofocus) — border 2px primary, label calm</div>
+            <v-text-field ref="focusedFieldRef" v-model="emptyIcon" label="Email address" prepend-inner-icon="mail" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Required — trailing * in the label text</div>
+            <v-text-field model-value="" label="Company name *" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Error — border + message carry it, label calm</div>
+            <v-text-field model-value="" label="Company name *" error-messages="This field is required" />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">Disabled — label joins the muted ink</div>
+            <v-text-field model-value="Locked value" label="Company name" disabled hide-details />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+export const Sizes: Story = {
+  name: 'Sizes',
+  parameters: { controls: { disable: true } },
+  render: () => ({
+    setup() {
+      const values = ref({ sm: '', md: '', lg: '', ssm: 'Active', smd: 'Active', slg: 'Active' })
+      return { values }
+    },
+    template: `
+      <div>
+        <h3 class="text-subtitle-1 font-weight-bold mb-1">Size ramp — component.field.height</h3>
+        <p class="text-caption text-medium-emphasis mb-4">
+          One ramp, mapped from Vuetify's density prop: compact → sm 32 · comfortable → md 40
+          (the theme default — equal to control.height, so a field and a button share one
+          baseline) · default → lg 48. The label spec never changes with size. A field with no
+          label (last row) reserves no headroom, so its box top aligns with a button's.
+        </p>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">sm — density="compact" (32px)</div>
+            <v-text-field v-model="values.sm" label="Label" density="compact" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">md — theme default (40px)</div>
+            <v-text-field v-model="values.md" label="Label" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <div class="text-caption text-medium-emphasis mb-1">lg — density="default" (48px)</div>
+            <v-text-field v-model="values.lg" label="Label" density="default" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-select v-model="values.ssm" :items="['Active','Paused']" label="Status" density="compact" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-select v-model="values.smd" :items="['Active','Paused']" label="Status" hide-details />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-select v-model="values.slg" :items="['Active','Paused']" label="Status" density="default" hide-details />
+          </v-col>
+          <v-col cols="12">
+            <div class="text-caption text-medium-emphasis mb-1">Unlabelled chrome field beside a button — both boxes 40px, tops flush</div>
+            <div class="d-flex ga-3 align-start" style="max-width: 480px">
+              <v-text-field placeholder="Search records…" aria-label="Search records" prepend-inner-icon="search" hide-details />
+              <v-btn color="primary" variant="flat" class="text-none">Search</v-btn>
+            </div>
           </v-col>
         </v-row>
       </div>
@@ -243,24 +299,23 @@ export const SearchField: Story = {
         <h3 class="text-subtitle-1 font-weight-bold mb-4">Search — toolbar / filter variant</h3>
         <v-row>
           <v-col cols="12" sm="6">
-            <div class="text-caption text-medium-emphasis mb-1">Comfortable density (forms)</div>
+            <div class="text-caption text-medium-emphasis mb-1">md (default, 40px) — control rows and toolbars</div>
             <v-text-field
               v-model="query"
-              variant="outlined"
-              density="comfortable"
               placeholder="Search…"
+              aria-label="Search"
               prepend-inner-icon="search"
               clearable
               hide-details
             />
           </v-col>
           <v-col cols="12" sm="6">
-            <div class="text-caption text-medium-emphasis mb-1">Compact density (toolbar)</div>
+            <div class="text-caption text-medium-emphasis mb-1">sm (density="compact", 32px) — dense side panels</div>
             <v-text-field
               v-model="query"
-              variant="outlined"
               density="compact"
               placeholder="Search records…"
+              aria-label="Search records"
               prepend-inner-icon="search"
               clearable
               hide-details
@@ -291,8 +346,6 @@ export const SelectAndCombobox: Story = {
               v-model="single"
               :items="['Active', 'Inactive', 'Pending', 'Archived']"
               label="Status"
-              variant="outlined"
-              density="comfortable"
               hide-details
             />
           </v-col>
@@ -302,8 +355,6 @@ export const SelectAndCombobox: Story = {
               v-model="multi"
               :items="['Email', 'SMS', 'Push', 'In-app']"
               label="Channels"
-              variant="outlined"
-              density="comfortable"
               multiple
               chips
               closable-chips
@@ -316,19 +367,16 @@ export const SelectAndCombobox: Story = {
               model-value="Active"
               :items="['Active']"
               label="Status"
-              variant="outlined"
-              density="comfortable"
               disabled
               hide-details
             />
           </v-col>
           <v-col cols="12" sm="6">
-            <div class="text-caption text-medium-emphasis mb-1">Compact (toolbar filter)</div>
+            <div class="text-caption text-medium-emphasis mb-1">sm (density="compact") — dense chrome; aria-label, no top label</div>
             <v-select
               v-model="single"
               :items="['All statuses', 'Active', 'Inactive', 'Pending']"
-              label="Status filter"
-              variant="outlined"
+              aria-label="Status filter"
               density="compact"
               hide-details
             />
@@ -355,8 +403,6 @@ export const TextareaField: Story = {
             <v-textarea
               v-model="body"
               label="Message body"
-              variant="outlined"
-              density="comfortable"
               rows="4"
               placeholder="Type your message here…"
               hint="Markdown is supported"
@@ -367,8 +413,6 @@ export const TextareaField: Story = {
             <v-textarea
               model-value="This field is disabled."
               label="Internal notes"
-              variant="outlined"
-              density="comfortable"
               rows="4"
               disabled
               hide-details
@@ -391,8 +435,6 @@ export const WithIcons: Story = {
           <v-col cols="12" sm="6">
             <v-text-field
               label="Email"
-              variant="outlined"
-              density="comfortable"
               prepend-inner-icon="mail"
               placeholder="hello@example.com"
               hide-details
@@ -401,8 +443,6 @@ export const WithIcons: Story = {
           <v-col cols="12" sm="6">
             <v-text-field
               label="Website"
-              variant="outlined"
-              density="comfortable"
               prepend-inner-icon="globe"
               append-inner-icon="external-link"
               placeholder="https://example.com"
@@ -413,8 +453,6 @@ export const WithIcons: Story = {
             <v-text-field
               label="Password"
               type="password"
-              variant="outlined"
-              density="comfortable"
               prepend-inner-icon="lock"
               append-inner-icon="eye-off"
               hide-details
@@ -423,8 +461,6 @@ export const WithIcons: Story = {
           <v-col cols="12" sm="6">
             <v-text-field
               label="Revenue"
-              variant="outlined"
-              density="comfortable"
               prefix="$"
               placeholder="0.00"
               hide-details
@@ -485,7 +521,7 @@ export const FormLayout: Story = {
           </MpFormGrid>
 
           <div class="d-flex justify-end ga-2 mt-6">
-            <v-btn variant="outlined" class="text-none">Cancel</v-btn>
+            <v-btn class="text-none">Cancel</v-btn>
             <v-btn color="primary" variant="flat" class="text-none">Save changes</v-btn>
           </div>
         </v-card>
@@ -555,8 +591,6 @@ export const SelectedWithCheckmark: Story = {
               v-model:menu="menu"
               :items="['Active', 'Inactive', 'Pending', 'Archived']"
               label="Status"
-              variant="outlined"
-              density="comfortable"
               hide-details
             />
           </v-col>
@@ -587,8 +621,6 @@ export const GroupedOptions: Story = {
               v-model:menu="menu"
               :items="groupedAssigneeItems"
               label="Assign to"
-              variant="outlined"
-              density="comfortable"
               hide-details
             />
           </v-col>
@@ -620,8 +652,6 @@ export const LongLabels: Story = {
               v-model="closedValue"
               :items="longLabelItems"
               label="Product"
-              variant="outlined"
-              density="comfortable"
               hide-details
             />
           </v-col>
@@ -632,8 +662,6 @@ export const LongLabels: Story = {
               v-model:menu="menu"
               :items="longLabelItems"
               label="Product"
-              variant="outlined"
-              density="comfortable"
               hide-details
             />
           </v-col>
@@ -664,8 +692,6 @@ export const ManyOptionsScroll: Story = {
               v-model:menu="menu"
               :items="manyCountryItems"
               label="Country"
-              variant="outlined"
-              density="comfortable"
               hide-details
             />
           </v-col>
@@ -698,8 +724,6 @@ export const DisabledItem: Story = {
               :items="statusItemsWithDisabled"
               item-props
               label="Status"
-              variant="outlined"
-              density="comfortable"
               hide-details
             />
           </v-col>
@@ -722,8 +746,6 @@ export const LoadingState: Story = {
           <v-col cols="12" sm="6" md="4">
             <v-text-field
               label="Company name"
-              variant="outlined"
-              density="comfortable"
               loading
               hide-details
             />
@@ -732,8 +754,6 @@ export const LoadingState: Story = {
             <v-select
               :items="['Active', 'Inactive', 'Pending']"
               label="Status"
-              variant="outlined"
-              density="comfortable"
               loading="primary"
               hide-details
             />
@@ -769,8 +789,6 @@ export const EmptyState: Story = {
               label="Country"
               placeholder="Search countries…"
               prepend-inner-icon="search"
-              variant="outlined"
-              density="comfortable"
               clearable
               hide-details
             />
@@ -795,16 +813,12 @@ export const ErrorState: Story = {
             <v-select
               :items="['Active', 'Inactive', 'Pending']"
               label="Status"
-              variant="outlined"
-              density="comfortable"
               error-messages="Select a status"
             />
           </v-col>
           <v-col cols="12" sm="6" md="4">
             <v-textarea
               label="Notes"
-              variant="outlined"
-              density="comfortable"
               rows="3"
               error-messages="Notes cannot be empty"
             />

@@ -255,8 +255,9 @@ five rows.
 |-----------|----------|
 | `VBtn` | `variant="flat"`; radius, weight, size, `min-height` (`component.control.height`) and padding come from an inline style built from tokens — **not** a `rounded` prop |
 | `VCard` | `variant="flat"`, `rounded="lg"` |
-| `VTextField` | Outlined variant, comfortable density, auto hide-details. **Visual chrome (border, radius, fill, states, floating label) is owned by `src/styles/settings-form.scss`, not by these defaults** — see its "Global Outlined Field Baseline" header comment; as of 2026-08-27 this is a Flowbite-style floating-label field (flowbite.com/docs/forms/floating-label): transparent fill, 1px `--border-strong` at rest, 2px primary/error border on focus/error with no glow ring. |
-| `VSelect` / `VAutocomplete` / `VCombobox` / `VTextarea` | Same as VTextField |
+| `VTextField` | Outlined variant, comfortable density, auto hide-details, `persistent-placeholder` (locks the label into its floated state — the mechanism behind the static top label). **Visual chrome (border, radius, fill, states, label) is owned by `src/styles/settings-form.scss`, not by these defaults** — see its "Global Outlined Field Baseline" header comment: a **static top label** (Stripe/Polaris pattern; 13px/500 `text.label`, calm on focus and error), transparent fill, 1px `--border-strong` at rest, 2px primary/error border on focus/error with no glow ring, and a size ramp from the `density` prop (compact → sm 32 · comfortable → md 40, the default · default → lg 48). |
+| `VSelect` / `VAutocomplete` / `VCombobox` / `VTextarea` / `VNumberInput` | Same as VTextField |
+| `VFileInput` | Same, except `active: true` stands in for `persistent-placeholder` (VFileInput has no such prop) |
 | `VChip` | `rounded="pill"`, `size="small"`. Inside a field, `settings-form.scss` pins the height to `component.chip.height.md` so a select with chips matches one without (P6-13) |
 | `VDataTable` | Fixed header, hover, comfortable density, 15 items/page |
 | `VNavigationDrawer` | No elevation |

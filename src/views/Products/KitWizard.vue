@@ -289,9 +289,10 @@ function save(publishStatus: PublishStatus) {
               <template #item.inStock="{ item }">{{ item.inStock }}</template>
               <template #item.price="{ item }">
                 <div class="d-flex align-center justify-end gap-2">
-                  <!-- Table-cell inline editor: compact + `hide-details` are
-                       deliberate, so a component row stays one line tall. -->
-                  <v-text-field v-model.number="item.qty" label="Qty" type="number" min="1" density="compact" hide-details style="max-width: 90px;" />
+                  <!-- Table-cell inline editor (chrome, not a form field): aria-label +
+                       `hide-details` + sm density are deliberate, so a component row
+                       stays one line tall with no top-label headroom. -->
+                  <v-text-field v-model.number="item.qty" aria-label="Qty" type="number" min="1" density="compact" hide-details style="max-width: 90px;" />
                   <span class="font-weight-medium" style="min-width: 70px; text-align: right;">${{ (Number(item.price) * item.qty).toFixed(2) }}</span>
                 </div>
               </template>

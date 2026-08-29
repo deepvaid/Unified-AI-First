@@ -377,7 +377,6 @@ function onSearchKeydown(event: KeyboardEvent) {
             <v-text-field
               v-bind="props"
               v-model="searchQuery"
-              density="compact"
               hide-details
               prepend-inner-icon="search"
               placeholder="Find or Ask"
@@ -755,7 +754,6 @@ function onSearchKeydown(event: KeyboardEvent) {
                     :items="plgPresetItems"
                     item-title="label"
                     item-value="key"
-                    density="compact"
                     hide-details
                     label="Subscription state"
                     class="um-plg-demo__select"
@@ -789,7 +787,6 @@ function onSearchKeydown(event: KeyboardEvent) {
           <v-text-field
             v-model="searchQuery"
             autofocus
-            density="compact"
             hide-details
             prepend-inner-icon="search"
             placeholder="Find or Ask"
@@ -1184,10 +1181,6 @@ function onSearchKeydown(event: KeyboardEvent) {
   min-width: 0;
 }
 
-.um-plg-demo__select :deep(.v-field) {
-  font-size: var(--mp-fontSize-13);
-}
-
 .um-subheader {
   padding: var(--mp-space-10) var(--mp-component-listItem-paddingInline) var(--mp-space-4);
   font-size: var(--mp-fontSize-11);
@@ -1453,8 +1446,9 @@ function onSearchKeydown(event: KeyboardEvent) {
 }
 
 :deep(.appbar-search input::placeholder) {
+  /* Same 14px as the input text — a smaller placeholder read as a second type
+     size in the one control (field-rework sweep). */
   color: var(--muted);
-  font-size: var(--mp-fontSize-13);
   font-weight: var(--mp-fontWeight-medium);
   opacity: 1;
 }

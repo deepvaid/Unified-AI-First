@@ -34,7 +34,14 @@ const REPORT_TYPES: CustomReportType[] = [
 ]
 
 const search = ref('')
-const typeFilter = ref<CustomReportType | 'All'>('All')
+// Report type is the promoted filter: a multi-select pill in the toolbar rather
+// than a single-value select, so several values can be compared at once.
+const typeQuickFilter = {
+  key: 'type',
+  label: 'Report type',
+  options: ([...REPORT_TYPES]).map((v) => ({ label: v, value: v })),
+}
+const typeFilter = ref<string[]>([])
 
 const headers = [
   { title: 'Name', key: 'name', sortable: true },
@@ -47,14 +54,14 @@ const headers = [
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
   return customReports.value.filter(r => {
-    if (typeFilter.value !== 'All' && r.reportType !== typeFilter.value) return false
+    if (typeFilter.value.length && !typeFilter.value.includes(r.reportType)) return false
     if (q && !r.name.toLowerCase().includes(q)) return false
     return true
   })
 })
 
 const activeFilters = computed(() =>
-  typeFilter.value === 'All' ? [] : [{ key: 'type', label: `Type: ${typeFilter.value}` }],
+  !typeFilter.value.length ? [] : [{ key: 'type', label: `Type: ${typeFilter.value.join(', ')}` }],
 )
 
 /** UAT labels a one-off report "Scheduled" and a repeating one "Recurring". */
@@ -135,7 +142,7 @@ watch([sortBy, loading], () => { void nextTick(syncAriaSort) }, { deep: true, im
 
 function clearFilters() {
   search.value = ''
-  typeFilter.value = 'All'
+  typeFilter.value = []
 }
 </script>
 
@@ -160,21 +167,16 @@ function clearFilters() {
 
     <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="typeFilter"
+        :quick-filter="typeQuickFilter"
         v-model:search="search"
         search-placeholder="Search reports by name"
         :active-filters="activeFilters"
         :total-count="filtered.length"
-        @remove-filter="typeFilter = 'All'"
+        @remove-filter="typeFilter = []"
         @clear-filters="clearFilters"
       >
         <template #actions>
-          <v-select
-            v-model="typeFilter"
-            label="Report type"
-            :items="['All', ...REPORT_TYPES]"
-            hide-details
-            class="crl-type-filter"
-          />
         </template>
       </MpDataTableToolbar>
 

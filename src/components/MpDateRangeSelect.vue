@@ -84,14 +84,12 @@ function applyCustom() {
             v-model="customFrom"
             type="date"
             label="From"
-            density="compact"
             hide-details
           />
           <v-text-field
             v-model="customTo"
             type="date"
             label="To"
-            density="compact"
             hide-details
           />
         </MpFormGrid>

@@ -218,7 +218,6 @@ function stepColumns(delta: number) {
           <div class="d-flex flex-wrap align-center ga-4">
             <v-switch
               v-model="previewProducts"
-              color="primary"
               hide-details
               density="compact"
               label="Preview with real products"
@@ -378,10 +377,10 @@ function stepColumns(delta: number) {
           <MpFormField label="Elements to include">
             <template #default="{ labelId }">
               <div class="d-flex flex-column" :aria-labelledby="labelId">
-                <v-checkbox v-model="form.includeImage" label="Product image" color="primary" hide-details density="compact" />
-                <v-checkbox v-model="form.includeName" label="Product name" color="primary" hide-details density="compact" />
-                <v-checkbox v-model="form.includePrice" label="Product price" color="primary" hide-details density="compact" />
-                <v-checkbox v-model="form.includeButton" label="Button" color="primary" hide-details density="compact" />
+                <v-checkbox v-model="form.includeImage" label="Product image" hide-details density="compact" />
+                <v-checkbox v-model="form.includeName" label="Product name" hide-details density="compact" />
+                <v-checkbox v-model="form.includePrice" label="Product price" hide-details density="compact" />
+                <v-checkbox v-model="form.includeButton" label="Button" hide-details density="compact" />
               </div>
             </template>
           </MpFormField>
@@ -450,7 +449,6 @@ function stepColumns(delta: number) {
             <v-checkbox-btn
               v-model="pickerSelection"
               :value="product.itemId"
-              color="primary"
               :aria-label="`Select ${product.name || product.itemId}`"
             />
           </template>

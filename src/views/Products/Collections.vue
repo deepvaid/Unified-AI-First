@@ -30,7 +30,14 @@ const basePath = computed(() => `/commerce/${accountId.value}/products/collectio
 
 const search = ref('')
 const typeFilter = ref<'All types' | CollectionType>('All types')
-const statusFilter = ref<'All statuses' | CollectionStatus>('All statuses')
+// Status is the promoted filter: a multi-select pill in the toolbar rather
+// than a single-value select, so several values can be compared at once.
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: (['Active', 'Inactive']).map((v) => ({ label: v, value: v })),
+}
+const statusFilter = ref<string[]>([])
 const parentFilter = ref<'All parents' | string>('All parents')
 const selected = ref<number[]>([])
 
@@ -51,7 +58,7 @@ const filtered = computed(() => {
   return store.collections.filter((c) => {
     const byTerm = !term || c.title.toLowerCase().includes(term) || c.handle.toLowerCase().includes(term)
     const byType = typeFilter.value === 'All types' || c.type === typeFilter.value
-    const byStatus = statusFilter.value === 'All statuses' || c.status === statusFilter.value
+    const byStatus = !statusFilter.value.length || statusFilter.value.includes(c.status)
     const byParent = parentFilter.value === 'All parents' || c.parent === parentFilter.value
     return byTerm && byType && byStatus && byParent
   })
@@ -59,27 +66,27 @@ const filtered = computed(() => {
 
 const hasFilters = computed(() =>
   Boolean(search.value) || typeFilter.value !== 'All types'
-  || statusFilter.value !== 'All statuses' || parentFilter.value !== 'All parents',
+  || statusFilter.value.length || parentFilter.value !== 'All parents',
 )
 
 function clearFilters() {
   search.value = ''
   typeFilter.value = 'All types'
-  statusFilter.value = 'All statuses'
+  statusFilter.value = []
   parentFilter.value = 'All parents'
 }
 
 const activeFilterEntries = computed(() => {
   const entries: Array<{ key: string; label: string }> = []
   if (typeFilter.value !== 'All types') entries.push({ key: 'type', label: `Type: ${typeFilter.value}` })
-  if (statusFilter.value !== 'All statuses') entries.push({ key: 'status', label: `Status: ${statusFilter.value}` })
+  if (statusFilter.value.length) entries.push({ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` })
   if (parentFilter.value !== 'All parents') entries.push({ key: 'parent', label: `Parent: ${parentFilter.value}` })
   return entries
 })
 
 function removeFilter(key: string) {
   if (key === 'type') typeFilter.value = 'All types'
-  if (key === 'status') statusFilter.value = 'All statuses'
+  if (key === 'status') statusFilter.value = []
   if (key === 'parent') parentFilter.value = 'All parents'
 }
 
@@ -167,6 +174,8 @@ function doBulkDelete() {
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="statusFilter"
+        :quick-filter="statusQuickFilter"
         v-model:search="search"
         title="All collections"
         search-placeholder="Search title or handle"
@@ -182,7 +191,6 @@ function doBulkDelete() {
           <MpFormSection title="Filter by" />
           <MpFormGrid>
             <v-select v-model="typeFilter" :items="['All types', 'Automated', 'Manual']" label="Type" hide-details />
-            <v-select v-model="statusFilter" :items="['All statuses', 'Active', 'Inactive']" label="Status" hide-details />
             <v-select v-model="parentFilter" :items="['All parents', ...parents]" label="Parent collection" hide-details />
           </MpFormGrid>
         </template>

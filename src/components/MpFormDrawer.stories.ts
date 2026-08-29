@@ -597,9 +597,9 @@ export const States: Story = {
  * and finish on the same right edge, because the delete button sits in its own fixed
  * `component.control.height` track rather than eating into the input's width.
  *
- * The composite control (`MpFormField` + `v-chip-group`) and the plain floating-label fields share
- * a baseline in the same row — the case that used to leave neighbouring controls misaligned
- * because one had a floating label and the other did not.
+ * The composite control (`MpFormField` + `v-chip-group`) and the plain labelled fields share
+ * a baseline in the same row — both render the identical static top label, the case that used
+ * to leave neighbouring controls misaligned when one had a floating label and the other did not.
  */
 export const TwoColumnWithTrailingRow: Story = {
   args: {

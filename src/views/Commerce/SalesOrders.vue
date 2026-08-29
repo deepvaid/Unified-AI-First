@@ -330,11 +330,9 @@ function exportOrders() {
               v-model="filters[key as keyof typeof filters]"
               :label="filterLabels[key]"
               :items="options"
-              density="compact"
               hide-details
               clearable
               placeholder="All"
-              persistent-placeholder
             />
           </MpFormGrid>
         </template>

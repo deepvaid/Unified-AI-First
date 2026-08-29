@@ -190,7 +190,6 @@ watch(
       <v-textarea
         v-model="draft"
         placeholder="Ask Da Vinci…"
-        density="compact"
         rows="1"
         max-rows="4"
         auto-grow

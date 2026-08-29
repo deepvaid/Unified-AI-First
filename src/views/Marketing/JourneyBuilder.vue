@@ -527,7 +527,7 @@ onBeforeUnmount(() => {
       </button>
       <!-- Toolbar chrome, not a form: the inline rename field and the palette search below
            keep compact + hide-details deliberately. -->
-      <v-text-field v-else v-model="nameInput" density="compact" hide-details autofocus
+      <v-text-field v-else v-model="nameInput" hide-details autofocus
         style="width:320px;" aria-label="Journey name"
         @blur="journeyName = nameInput; editingName = false" @keyup.enter="journeyName = nameInput; editingName = false"></v-text-field>
       <MpStatusChip :status="journeyStatus" type="general" size="sm" />
@@ -605,7 +605,7 @@ onBeforeUnmount(() => {
         <div class="pa-3 border-b">
           <div class="mp-meta-label text-medium-emphasis" style="line-height:1.2;">Journey steps</div>
           <div class="text-caption text-medium-emphasis mb-2">Click a step to add it to your flow</div>
-          <v-text-field v-model="paletteQuery" placeholder="Search steps..." density="compact"
+          <v-text-field v-model="paletteQuery" placeholder="Search steps..."
             hide-details clearable prepend-inner-icon="search" aria-label="Search steps" class="jb-search" />
         </div>
         <div class="flex-grow-1 overflow-y-auto pa-2 jb-palette__scroll">
@@ -810,11 +810,9 @@ onBeforeUnmount(() => {
 .jb-davinci:hover :deep(.v-icon) { opacity: 0.9; }
 
 /* Ghost search — soft on-surface fill, hairline border that recedes. */
-.jb-search :deep(.v-field) { background: rgba(var(--v-theme-on-surface), 0.04); }
-.jb-search :deep(.v-field__outline__start),
-.jb-search :deep(.v-field__outline__notch)::before,
-.jb-search :deep(.v-field__outline__notch)::after,
-.jb-search :deep(.v-field__outline__end) { opacity: 0.5; }
+/* The tinted fill and half-opacity outline this class used to carry were a
+   fifth bespoke search treatment (and the faded border undid the P5.5-12 3:1
+   boundary fix) — the palette search is now a standard baseline field. */
 .jb-name:hover .jb-name__pencil, .jb-name:focus-visible .jb-name__pencil { opacity: 1; }
 
 .border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }

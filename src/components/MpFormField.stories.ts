@@ -18,9 +18,9 @@ has none of its own.
 
 **Read this before reaching for it.** A plain \`v-text-field\` / \`v-select\` / \`v-textarea\` /
 \`v-autocomplete\` / \`v-combobox\` must **not** be wrapped. Those already own their label, hint,
-error and aria association; Vuetify's floating label is the system's one label language
-(see \`Patterns/Form Fields\`); and the overlay audit's locked architecture decision is to polish
-Vuetify's primitives rather than wrap them.
+error and aria association via the \`label\` prop, which the global baseline renders as a static
+top label pixel-identical to this wrapper's (see \`Patterns/Form Fields\`); and the overlay
+audit's locked architecture decision is to polish Vuetify's primitives rather than wrap them.
 
 **Use when:** the control is a *composite* with no label of its own — a row of preset chips, a
 grid of image tiles, a radio group, a checkbox group. Those were each hand-rolling a
@@ -159,10 +159,11 @@ export const Variants: Story = {
 }
 
 /**
- * There is no size axis: this wrapper inherits the measure of the form container it sits in, and
- * the control inside it sits on the shared `component.control.height` (40) ramp like every other
- * control. The one dimension it does decide — label-to-control and control-to-hint distance —
- * is a token pair (`field.labelGap` 6, `field.hintGap` 4), stated once for every field type.
+ * There is no size axis: this wrapper inherits the measure of the form container it sits in
+ * (a field's own box sizes via the `density` prop — `component.field.height` sm 32 / md 40 /
+ * lg 48 — but the wrapper's label spec never changes). The one dimension it does decide —
+ * label-to-control and control-to-hint distance — is a token pair (`field.labelGap` 6,
+ * `field.hintGap` 4), stated once for every field type.
  */
 export const Sizes: Story = {
   render: () => ({

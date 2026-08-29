@@ -36,7 +36,20 @@ function editPins(collection: SmartCollection) {
     query: existing ? undefined : { collection: collection.id },
   })
 }
-const filterType = ref<'all' | 'manual' | 'synced'>('all')
+// Type is the promoted filter: a multi-select pill in the toolbar rather
+// than a single-value select, so several values can be compared at once.
+const filterTypeQuickFilter = computed(() => ({
+  key: 'type',
+  label: 'Type',
+  options: ([
+              { title: 'All types', value: 'all' },
+              { title: 'Manual', value: 'manual' },
+              { title: 'Synced', value: 'synced' },
+            ])
+    .filter((o) => o.value !== 'all')
+    .map((o) => ({ label: o.title, value: o.value })),
+}))
+const filterType = ref<string[]>([])
 
 const headers = [
   { title: 'Status', key: 'status', sortable: false, width: 150 },
@@ -48,7 +61,7 @@ const headers = [
 
 const filteredCollections = computed(() => {
   let rows = store.collectionList
-  if (filterType.value !== 'all') rows = rows.filter((c) => c.filterType === filterType.value)
+  if (filterType.value.length) rows = rows.filter((c) => filterType.value.includes(c.filterType))
   return rows
 })
 
@@ -117,25 +130,12 @@ function submitCreate() {
 
     <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="filterType"
+        :quick-filter="filterTypeQuickFilter"
         v-model:search="search"
         search-placeholder="Filter collections…"
         :total-count="filteredCollections.length"
-      >
-        <!-- Filter popover: `hide-details` is deliberate — this select can never
-             carry a hint or an error, and the popover is a dense surface. -->
-        <template #filter-content>
-          <v-select
-            v-model="filterType"
-            label="Filter type"
-            hide-details
-            :items="[
-              { title: 'All types', value: 'all' },
-              { title: 'Manual', value: 'manual' },
-              { title: 'Synced', value: 'synced' },
-            ]"
-          />
-        </template>
-      </MpDataTableToolbar>
+      />
 
       <v-data-table
         :headers="headers"

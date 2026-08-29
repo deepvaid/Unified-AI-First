@@ -250,7 +250,6 @@ onMounted(() => {
                 v-model="filters[key as keyof typeof filters]"
                 :label="filterLabels[key]"
                 :items="options"
-                density="compact"
                 hide-details
                 clearable
               />

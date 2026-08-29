@@ -41,7 +41,6 @@ function duplicate(engine: RecommendationEngine) {
   if (copy) toast.info(`Engine duplicated as “${copy.name}”`)
 }
 const filterPage = ref<'all' | EnginePage>('all')
-const filterType = ref<'all' | EngineType>('all')
 
 const headers = [
   { title: 'State', key: 'status', sortable: false, width: 150 },
@@ -64,10 +63,21 @@ const typeOptions = computed(() => [
   ...Object.entries(ENGINE_TYPE_LABELS).map(([value, title]) => ({ title, value })),
 ])
 
+// Type is the promoted filter: a multi-select pill in the toolbar rather
+// than a single-value select, so several values can be compared at once.
+const filterTypeQuickFilter = computed(() => ({
+  key: 'type',
+  label: 'Type',
+  options: typeOptions.value
+    .filter((o) => o.value !== 'all')
+    .map((o) => ({ label: o.title, value: o.value })),
+}))
+const filterType = ref<string[]>([])
+
 const filteredEngines = computed(() => {
   let rows = store.engineList
   if (filterPage.value !== 'all') rows = rows.filter((e) => e.page === filterPage.value)
-  if (filterType.value !== 'all') rows = rows.filter((e) => e.type === filterType.value)
+  if (filterType.value.length) rows = rows.filter((e) => filterType.value.includes(e.type))
   return rows
 })
 
@@ -116,6 +126,8 @@ function onToggle(engine: RecommendationEngine) {
 
     <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="filterType"
+        :quick-filter="filterTypeQuickFilter"
         v-model:search="search"
         title="All engines"
         search-placeholder="Search engines…"
@@ -125,7 +137,6 @@ function onToggle(engine: RecommendationEngine) {
              carry a hint or an error, and the popover is a dense surface. -->
         <template #filter-content>
           <v-select v-model="filterPage" label="Page" hide-details :items="pageOptions" />
-          <v-select v-model="filterType" label="Type" hide-details :items="typeOptions" />
         </template>
       </MpDataTableToolbar>
 

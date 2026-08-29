@@ -65,7 +65,6 @@ function pick(item: CatalogItem) {
              can't resize under the pointer while it is open. -->
         <v-text-field
           v-model="query"
-          density="compact"
           hide-details
           clearable
           prepend-inner-icon="search"

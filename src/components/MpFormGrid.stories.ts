@@ -168,7 +168,8 @@ export const Sizes: Story = {
 /**
  * The states that change the layout: a full-span child, a trailing-action row, a row whose field
  * has an error message (the neighbouring column must not move), and the mixed case — a
- * floating-label field beside a composite `MpFormField` in the same row.
+ * plain labelled field beside a composite `MpFormField` in the same row (both render the
+ * identical static top label, so the row shares one baseline).
  */
 export const States: Story = {
   render: () => ({

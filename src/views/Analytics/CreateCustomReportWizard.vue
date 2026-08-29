@@ -357,7 +357,6 @@ function submit() {
                     :aria-labelledby="labelId"
                     :aria-describedby="descriptionId"
                     :label="breakupByDays ? 'On' : 'Off'"
-                    color="primary"
                     hide-details
                   />
                 </template>

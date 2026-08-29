@@ -37,7 +37,6 @@ function save() { toast.success('Preferences saved') }
                already carries its own title and description. -->
           <v-switch
             v-model="p.value"
-            color="primary"
             hide-details
             inset
             :aria-label="`Toggle ${p.label}`"

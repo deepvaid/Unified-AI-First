@@ -53,7 +53,6 @@ function save() { toast.success('Service settings saved') }
                add empty height. -->
           <v-switch
             v-model="serviceSettings.autoAssign"
-            color="primary"
             hide-details
             inset
             aria-label="Toggle automatic ticket assignment"

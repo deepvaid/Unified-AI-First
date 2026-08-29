@@ -107,7 +107,6 @@ const recommendationHeaders = [
         <v-select
           v-model="dateRange"
           :items="DATE_RANGES"
-          density="compact"
           hide-details
           prepend-inner-icon="calendar-range"
           class="merch-date-range"

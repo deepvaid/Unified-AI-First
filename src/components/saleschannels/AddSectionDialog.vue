@@ -126,7 +126,6 @@ watch(open, (value) => {
               v-model="search"
               label="Search sections"
               prepend-inner-icon="search"
-              density="compact"
               hide-details
               clearable
             ></v-text-field>

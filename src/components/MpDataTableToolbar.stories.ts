@@ -85,7 +85,11 @@ page in the platform places this directly above the table inside the same \`v-ca
   \`v-model:quick-filter-value\` (a \`string[]\`) renders a checkbox dropdown as a pill at the
   **head of the control cluster, before the Filter button** — it is the cut people reach for
   first, so it sits first. The pill reads as the selected option when exactly one is picked and
-  as the group label with a count badge beyond that. The toolbar owns the menu and its Clear button; the
+  as the group label with a count badge beyond that. Set \`multiple: false\` for an **exclusive
+  mode toggle** ("Active" vs "Archived"): the panel becomes a list, there is no Clear — "none
+  selected" is not a state a mode has — the menu closes on pick, and the pill always names the
+  current choice. The model stays a \`string[]\` holding exactly one value, so a consumer whose
+  state is a plain string bridges it with a writable computed. The toolbar owns the menu and its Clear button; the
   **consumer** owns filtering, the matching \`activeFilters\` entry, and clearing the model inside
   its own \`removeFilter\`/\`clearFilters\` handlers — the same contract \`activeFilters\` already has.
   The **Filter** button badges \`activeFilters\` *minus* the quick filter's key, so a promoted
@@ -149,7 +153,7 @@ page in the platform places this directly above the table inside the same \`v-ca
     filterSubtitle: { control: 'text', description: 'Optional subtitle of the filter drawer.' },
     activeFilters: { control: 'object', description: 'Applied filters as { key, label }[]. First 3 render as closable chips, the rest collapse into "+N more".' },
     headers: { control: 'object', description: 'Table headers ({ title, key }). When passed, the column-visibility menu appears; actions/select/expand keys are excluded automatically.' },
-    quickFilter: { control: 'object', description: 'Promotes one filter to a checkbox pill dropdown left of search: { key, label, icon?, options: { label, value }[] }. Pair with v-model:quick-filter-value.' },
+    quickFilter: { control: 'object', description: 'Promotes one filter to a pill dropdown at the head of the row: { key, label, icon?, multiple?, options: { label, value }[] }. Pair with v-model:quick-filter-value. `multiple: false` makes it an exclusive mode toggle (list, no Clear, closes on pick).' },
     search: { control: false, description: 'v-model:search — instant search text (updates every keystroke).', table: { category: 'models' } },
     filterOpen: { control: false, description: 'v-model:filter-open — filter drawer visibility (usually left internal).', table: { category: 'models' } },
     hiddenColumns: { control: false, description: 'v-model:hidden-columns — keys of hidden columns; filter your headers with it before v-data-table.', table: { category: 'models' } },
@@ -596,6 +600,51 @@ export const QuickFilterOnly: Story = {
       key: 'status',
       label: 'Status',
       options: ['Open', 'Invoice Sent'].map(v => ({ label: v, value: v })),
+    },
+  },
+}
+
+/**
+ * `multiple: false` — an exclusive mode toggle. Active vs archived is not a filter:
+ * there is no "all", because the table has no column that would tell the two sets
+ * apart. The panel is a list, there is no Clear, and picking closes the menu.
+ * Products → Product Recommendations (Feed templates) looks like this.
+ */
+export const QuickFilterSingleSelect: Story = {
+  render: (args) => ({
+    components: { MpDataTableToolbar },
+    setup() {
+      const search = ref('')
+      // The page's own state is a plain string; a writable computed bridges it.
+      const scope = ref<'active' | 'archived'>('active')
+      const scopeFilter = computed({
+        get: () => [scope.value],
+        set: (v: string[]) => { scope.value = (v[0] as 'active' | 'archived') ?? 'active' },
+      })
+      return { args, search, scope, scopeFilter }
+    },
+    template: `
+      <v-card variant="flat" border rounded="xl" class="overflow-hidden">
+        <MpDataTableToolbar
+          v-bind="args"
+          v-model:search="search"
+          v-model:quick-filter-value="scopeFilter"
+        />
+      </v-card>
+    `,
+  }),
+  args: {
+    title: 'Feed templates',
+    totalCount: 10,
+    searchPlaceholder: 'Search template name',
+    quickFilter: {
+      key: 'scope',
+      label: 'Show',
+      multiple: false,
+      options: [
+        { label: 'Active templates', value: 'active' },
+        { label: 'Archived templates', value: 'archived' },
+      ],
     },
   },
 }

@@ -252,7 +252,6 @@ function bulkDelete() {
             prepend-inner-icon="search"
             placeholder="Search tickets…"
             aria-label="Search tickets"
-            density="compact"
             hide-details
             clearable
           />

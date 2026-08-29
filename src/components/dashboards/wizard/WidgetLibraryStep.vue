@@ -105,7 +105,6 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
       v-model="search"
       label="Search widgets"
       placeholder="revenue, orders, campaigns…"
-      density="compact"
       prepend-inner-icon="search"
       hide-details
       clearable

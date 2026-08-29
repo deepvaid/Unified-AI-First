@@ -67,7 +67,6 @@ function usage(id: string): number {
             :disabled="disabled"
             :aria-label="`${role.name} — ${group.label}`"
             density="compact"
-            color="primary"
             class="picker-role__checkbox"
             @update:model-value="toggle(role, false)"
           />

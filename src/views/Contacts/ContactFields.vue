@@ -267,7 +267,6 @@ function confirmDelete() {
               <v-text-field
                 :model-value="field.defaultValue"
                 :aria-label="`Default value for ${field.name}`"
-                density="compact"
                 hide-details
                 placeholder="No default"
                 style="max-width: 280px;"
@@ -349,7 +348,6 @@ function confirmDelete() {
               :aria-labelledby="labelId"
               :aria-describedby="descriptionId"
               :label="form.addToEditProfile ? 'Visible to contacts' : 'Hidden from contacts'"
-              color="primary"
               hide-details
             />
           </template>

@@ -174,7 +174,6 @@ function openVariantsWizard() {
           </MpFormGrid>
           <v-switch
             v-model="form.detail.discountable"
-            color="primary"
             hide-details
             density="compact"
             label="Discountable — when off, discounts are never applied to this product"

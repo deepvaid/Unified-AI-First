@@ -21,6 +21,39 @@ export interface CampaignOptimizations {
 
 export type CampaignScheduleType = 'now' | 'scheduled'
 
+/** UAT send methods. STO/CTO are entitlement-gated in production but modeled fully here. */
+export type CampaignScheduleMethod = 'send_now' | 'priority' | 'tzo' | 'sto' | 'cto' | 'recurring'
+
+export interface CampaignRecurringSchedule {
+  mode: 'day-of-week' | 'repeat-every'
+  /** Weekday codes for 'day-of-week' mode, e.g. ['Mon', 'Thu']. */
+  days: string[]
+  /** Interval unit for 'repeat-every' mode. */
+  interval: 'Day' | 'Week' | 'Month' | 'Year'
+  time: string
+}
+
+export type AbWinningCriteria =
+  | 'top_choices'
+  | 'open_rate'
+  | 'click_rate'
+  | 'manual'
+  | 'click_to_open'
+  | 'conversion_rate'
+
+/** One variant of an A/B split test. Every field is required before send (UAT rule). */
+export interface AbSplitGroup {
+  id: number
+  name: string
+  contentId: number | null
+  subject: string
+  preheader: string
+  fromName: string
+  sizePercent: number | null
+  date: string
+  time: string
+}
+
 /** Full wizard configuration for an email (or A/B email) campaign — persisted as `Campaign.config`. */
 export interface CampaignDraftInput {
   kind: 'email' | 'ab_email'
@@ -55,6 +88,14 @@ export interface CampaignDraftInput {
   optimizations: CampaignOptimizations
   testSplitPercent?: number
   winnerCriteria?: 'opens' | 'clicks' | 'revenue'
+  /** UAT-parity send method; when present it wins over the legacy `scheduleType`. */
+  scheduleMethod?: CampaignScheduleMethod
+  recurring?: CampaignRecurringSchedule
+  /** 0–100 once a spam check has run; null = not checked yet. */
+  spamScore?: number | null
+  /** A/B campaigns only. */
+  winningCriteria?: AbWinningCriteria
+  splitGroups?: AbSplitGroup[]
 }
 
 export interface Campaign {
@@ -129,9 +170,13 @@ export const useCampaignsStore = defineStore('campaigns', () => {
 
 /** Applies the terminal status once the wizard's final action ("finalize") runs. */
   function applyFinalizeStatus(campaign: Campaign, input: CampaignDraftInput) {
-    if (input.scheduleType === 'now') {
+    const method = input.scheduleMethod ?? (input.scheduleType === 'now' ? 'send_now' : 'tzo')
+    if (method === 'send_now') {
       campaign.status = 'Sending'
       campaign.sentDate = new Date().toISOString().slice(0, 10)
+    } else if (method === 'recurring') {
+      campaign.status = 'Recurring'
+      campaign.sentDate = null
     } else {
       campaign.status = 'Scheduled'
       campaign.sentDate = input.scheduleDate

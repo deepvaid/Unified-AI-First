@@ -4,8 +4,6 @@ import { useCommerceStore } from '@/stores/useCommerce'
 import { isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpFormSection from '@/components/MpFormSection.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
@@ -34,6 +32,14 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
 const { loading } = useInitialLoad()
 
 const couriers = ['UPS', 'FedEx', 'USPS', 'DHL']
+// The one filter this report has, so it lives in the toolbar as a pill rather
+// than behind a drawer.
+const filterCourierQuickFilter = {
+  key: 'courier',
+  label: 'Courier',
+  options: (couriers).map((v) => ({ label: v, value: v })),
+}
+
 
 // Dispatched = fulfillmentStatus "Shipped" (order.status carries the sales state, not dispatch).
 const dispatchedOrders = computed(() =>
@@ -85,28 +91,15 @@ function exportCsv() {
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="filterCourier"
+        :quick-filter="filterCourierQuickFilter"
         v-model:search="search"
         title="Dispatched Orders"
         :active-filters="activeFilterEntries"
         :total-count="dispatchedOrders.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-      >
-        <template #filter-content>
-          <MpFormSection title="Filter by" />
-          <MpFormGrid>
-            <v-select
-              v-model="filterCourier"
-              label="Courier"
-              :items="couriers"
-              clearable
-              multiple
-              chips
-              closable-chips
-            />
-          </MpFormGrid>
-        </template>
-      </MpDataTableToolbar>
+      />
       <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
 
       <v-data-table v-else :headers="visibleHeaders" :items="dispatchedOrders" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">

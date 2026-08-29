@@ -509,8 +509,6 @@ function toggleFavoriteActive() {
                   v-model="switcherSearch"
                   prepend-inner-icon="search"
                   placeholder="Search dashboards"
-                  density="compact"
-                  variant="outlined"
                   hide-details
                   clearable
                 />
@@ -658,13 +656,13 @@ function toggleFavoriteActive() {
               </div>
               <div class="dashboard-date-menu__body">
                 <div class="dashboard-date-menu__fields">
-                  <v-text-field v-model="dateDraft.startDate" label="Start date" type="date" density="comfortable" variant="outlined" hide-details />
+                  <v-text-field v-model="dateDraft.startDate" label="Start date" type="date" hide-details />
                   <v-icon size="18">arrow-right</v-icon>
-                  <v-text-field v-model="dateDraft.endDate" label="End date" type="date" density="comfortable" variant="outlined" hide-details />
+                  <v-text-field v-model="dateDraft.endDate" label="End date" type="date" hide-details />
                 </div>
                 <div class="dashboard-date-menu__fields mt-3">
-                  <v-select v-model="dateDraft.grain" :items="grainOptions" item-title="title" item-value="value" label="Grain" density="comfortable" variant="outlined" hide-details />
-                  <v-select v-model="dateDraft.comparison" :items="comparisonOptions" item-title="title" item-value="value" label="Comparison" density="comfortable" variant="outlined" hide-details />
+                  <v-select v-model="dateDraft.grain" :items="grainOptions" item-title="title" item-value="value" label="Grain" hide-details />
+                  <v-select v-model="dateDraft.comparison" :items="comparisonOptions" item-title="title" item-value="value" label="Comparison" hide-details />
                 </div>
                 <v-alert variant="tonal" color="info" class="mt-4 dashboard-date-menu__note" density="compact">
                   Widgets will show {{ datePresetOptions.find((option) => option.value === dateDraft.rangePreset)?.title ?? 'the selected range' }} with {{ grainOptions.find((option) => option.value === dateDraft.grain)?.title.toLowerCase() ?? 'daily' }} grouping.

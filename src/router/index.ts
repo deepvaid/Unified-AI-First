@@ -249,7 +249,9 @@ const routes: RouteRecordRaw[] = [
   // 6. Marketing
   { path: '/accounts/:accountId/marketing', name: 'MarketingHome', component: () => import('@/views/Marketing/MarketingLanding.vue') },
   { path: '/accounts/:accountId/content', name: 'ContentLanding', component: () => import('@/views/Marketing/ContentLanding.vue') },
-  { path: '/accounts/:accountId/campaigns/new', name: 'CreateCampaign', component: () => import('@/views/Marketing/CreateCampaign.vue'), meta: { builderShell: true } },
+  { path: '/accounts/:accountId/campaigns/new', name: 'CreateCampaign', component: () => import('@/views/Marketing/CampaignTypeChooser.vue') },
+  { path: '/accounts/:accountId/campaigns/new/email', name: 'CreateEmailCampaign', component: () => import('@/views/Marketing/CreateCampaign.vue'), meta: { builderShell: true } },
+  { path: '/accounts/:accountId/campaigns/new_ab_test', name: 'CreateAbCampaign', component: () => import('@/views/Marketing/CreateAbCampaign.vue'), meta: { builderShell: true } },
   { path: '/accounts/:accountId/campaigns', name: 'EmailCampaigns', component: () => import('@/views/Marketing/EmailCampaigns.vue') },
   { path: '/accounts/:accountId/campaigns/:id/report', name: 'CampaignReport', component: () => import('@/views/Marketing/CampaignReportDetail.vue') },
   { path: '/accounts/:accountId/journeys/new', name: 'CreateJourney', component: () => import('@/views/Marketing/CreateJourney.vue'), meta: { builderShell: true } },

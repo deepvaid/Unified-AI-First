@@ -5,9 +5,11 @@ import { useId } from 'vue'
 //
 // Read this before reaching for it: a plain `v-text-field` / `v-select` /
 // `v-textarea` / `v-autocomplete` / `v-combobox` must NOT be wrapped. Those own
-// their own label, hint, error and aria wiring, the floating label is the system's
-// one label language (Patterns/Form Fields), and the overlay audit's locked
-// architecture decision is to polish Vuetify's primitives rather than wrap them.
+// their own label, hint, error and aria wiring via the `label` prop, which the
+// global baseline renders as a static top label (settings-form.scss) — visually
+// identical to this wrapper's label, both resolve the shared `text.label` spec.
+// The locked architecture decision stands: polish Vuetify's primitives rather
+// than wrap them.
 //
 // This exists for the composite controls that have no label of their own: a row of
 // preset chips, a grid of image tiles, a radio or checkbox group. Those were each
@@ -76,10 +78,13 @@ const describedBy = () => (props.error || props.hint ? rawDescriptionId : undefi
   min-width: 0;
 }
 
+/* The one label spec (text.label + field.labelHeight) — the same values the
+   global baseline gives a field's own top label, so a wrapped chip group and a
+   plain text field are labelled pixel-identically. */
 .mp-form-field__label {
-  font-size: var(--mp-fontSize-13);
-  font-weight: var(--mp-fontWeight-medium);
-  line-height: var(--mp-lineHeight-compact);
+  font-size: var(--mp-text-label-fontSize);
+  font-weight: var(--mp-text-label-fontWeight);
+  line-height: var(--mp-component-field-labelHeight);
   color: var(--text-secondary);
 }
 

@@ -219,9 +219,9 @@ function createPage() {
       <template v-if="galleryView === 'library'">
         <!-- Gallery filter bar, not a form: compact + hide-details are deliberate here. -->
         <div class="d-flex ga-3 flex-wrap align-center">
-          <v-select v-model="usageFilter" :items="USAGE_OPTIONS" label="Usage" multiple chips closable-chips clearable density="compact" hide-details class="lpt-filter" />
-          <v-select v-model="industryFilter" :items="INDUSTRY_OPTIONS" label="Industry" multiple chips closable-chips clearable density="compact" hide-details class="lpt-filter" />
-          <v-select v-model="seasonalFilter" :items="SEASONAL_OPTIONS" label="Seasonal" multiple chips closable-chips clearable density="compact" hide-details class="lpt-filter" />
+          <v-select v-model="usageFilter" :items="USAGE_OPTIONS" label="Usage" multiple chips closable-chips clearable hide-details class="lpt-filter" />
+          <v-select v-model="industryFilter" :items="INDUSTRY_OPTIONS" label="Industry" multiple chips closable-chips clearable hide-details class="lpt-filter" />
+          <v-select v-model="seasonalFilter" :items="SEASONAL_OPTIONS" label="Seasonal" multiple chips closable-chips clearable hide-details class="lpt-filter" />
           <v-btn v-if="hasActiveFilters" variant="text" size="small" class="text-none" @click="clearAllFilters">Clear All</v-btn>
         </div>
 

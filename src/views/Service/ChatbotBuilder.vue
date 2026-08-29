@@ -381,15 +381,15 @@ function sendChat() {
               <v-card flat border rounded="lg" class="pa-6 mb-5">
                 <div class="text-subtitle-1 font-weight-bold mb-1">General</div>
                 <div class="text-body-2 text-medium-emphasis mb-5">Configure your store details shown in the chat widget.</div>
-                <v-text-field v-model="cfg.storeName" label="Store name" variant="outlined" density="comfortable" class="mb-4" />
-                <v-text-field v-model="cfg.address1" label="Address 1" variant="outlined" density="comfortable" class="mb-4" />
-                <v-text-field v-model="cfg.address2" label="Address 2" variant="outlined" density="comfortable" class="mb-4" />
-                <v-text-field v-model="cfg.instagram" label="Instagram link" variant="outlined" density="comfortable" prepend-inner-icon="instagram" hide-details />
+                <v-text-field v-model="cfg.storeName" label="Store name" class="mb-4" />
+                <v-text-field v-model="cfg.address1" label="Address 1" class="mb-4" />
+                <v-text-field v-model="cfg.address2" label="Address 2" class="mb-4" />
+                <v-text-field v-model="cfg.instagram" label="Instagram link" prepend-inner-icon="instagram" hide-details />
               </v-card>
               <v-card flat border rounded="lg" class="pa-6">
                 <div class="text-subtitle-1 font-weight-bold mb-4">Storefront</div>
-                <v-select v-model="cfg.storeType" label="Store type" :items="storeTypes" variant="outlined" density="comfortable" placeholder="Select store type" class="mb-4" />
-                <v-text-field v-model="cfg.storeUrl" label="Store URL" variant="outlined" density="comfortable" placeholder="https://mystore.com" prepend-inner-icon="link" hide-details />
+                <v-select v-model="cfg.storeType" label="Store type" :items="storeTypes" class="mb-4" />
+                <v-text-field v-model="cfg.storeUrl" label="Store URL" placeholder="https://mystore.com" prepend-inner-icon="link" hide-details />
               </v-card>
             </template>
 
@@ -429,7 +429,7 @@ function sendChat() {
                     </template>
                     <v-color-picker v-model="cfg.primaryColor" mode="hex" :modes="['hex']" />
                   </v-menu>
-                  <v-text-field v-model="cfg.primaryColor" variant="outlined" density="compact" hide-details style="max-width:160px;" />
+                  <v-text-field v-model="cfg.primaryColor" hide-details style="max-width:160px;" />
                 </div>
               </v-card>
 
@@ -450,7 +450,7 @@ function sendChat() {
                     </v-card>
                   </v-col>
                 </v-row>
-                <v-text-field v-model="cfg.welcomeMessage" label="Welcome message *" variant="outlined" density="comfortable" hide-details />
+                <v-text-field v-model="cfg.welcomeMessage" label="Welcome message *" hide-details />
               </v-card>
             </template>
 
@@ -460,12 +460,12 @@ function sendChat() {
                 <div class="text-subtitle-1 font-weight-bold mb-1">Business hours</div>
                 <div class="text-body-2 text-medium-emphasis mb-5">Set when live support is available. Outside these hours the bot handles chats.</div>
                 <div v-for="h in cfg.businessHours" :key="h.day" class="cb-hour d-flex align-center ga-3">
-                  <v-switch v-model="h.enabled" color="primary" density="compact" hide-details class="flex-shrink-0" />
+                  <v-switch v-model="h.enabled" density="compact" hide-details class="flex-shrink-0" />
                   <span class="cb-hour__day font-weight-medium">{{ h.day }}</span>
                   <template v-if="h.enabled">
-                    <v-text-field v-model="h.open" type="time" variant="outlined" density="compact" hide-details class="cb-hour__time" />
+                    <v-text-field v-model="h.open" type="time" hide-details class="cb-hour__time" />
                     <span class="text-medium-emphasis">to</span>
-                    <v-text-field v-model="h.close" type="time" variant="outlined" density="compact" hide-details class="cb-hour__time" />
+                    <v-text-field v-model="h.close" type="time" hide-details class="cb-hour__time" />
                   </template>
                   <span v-else class="text-body-2 text-medium-emphasis">Closed</span>
                 </div>
@@ -482,11 +482,11 @@ function sendChat() {
                 <div class="text-body-2 text-medium-emphasis mb-5">Predefined options shown when a customer starts a chat. The <strong>intent</strong> routes the reply to shopping, order tracking, support, or FAQ.</div>
                 <div v-for="(p, i) in cfg.quickPrompts" :key="p.id" class="cb-prompt mb-2">
                   <div class="d-flex align-center ga-2">
-                    <v-text-field v-model="p.text" variant="outlined" density="compact" hide-details class="flex-grow-1" />
-                    <v-select v-model="p.intent" :items="INTENTS" variant="outlined" density="compact" hide-details class="cb-prompt__intent" />
+                    <v-text-field v-model="p.text" hide-details class="flex-grow-1" />
+                    <v-select v-model="p.intent" :items="INTENTS" hide-details class="cb-prompt__intent" />
                     <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0" aria-label="Move up" @click="movePrompt(i, -1)" />
                     <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === cfg.quickPrompts.length - 1" aria-label="Move down" @click="movePrompt(i, 1)" />
-                    <v-switch v-model="p.enabled" color="primary" density="compact" hide-details class="flex-shrink-0" />
+                    <v-switch v-model="p.enabled" density="compact" hide-details class="flex-shrink-0" />
                     <v-btn icon="trash-2" variant="text" size="x-small" color="error" aria-label="Delete prompt" @click="removePrompt(p.id)" />
                   </div>
                 </div>
@@ -501,16 +501,16 @@ function sendChat() {
                     <div class="text-subtitle-1 font-weight-bold mb-1">Shopping assistant</div>
                     <div class="text-body-2 text-medium-emphasis">Let the bot recommend products, answer product questions, and add items to cart inside the chat.</div>
                   </div>
-                  <v-switch v-model="cfg.shopping.enabled" color="primary" density="compact" hide-details inset class="flex-shrink-0 mt-n1" />
+                  <v-switch v-model="cfg.shopping.enabled" density="compact" hide-details inset class="flex-shrink-0 mt-n1" />
                 </div>
               </v-card>
               <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.shopping.enabled }">
                 <div class="text-subtitle-2 font-weight-bold mb-4">Assistant behaviour</div>
-                <v-textarea v-model="cfg.shopping.greeting" label="Shopping greeting" variant="outlined" density="comfortable" rows="2" auto-grow :disabled="!cfg.shopping.enabled" class="mb-4" />
-                <v-select v-model="cfg.shopping.source" :items="catalogSources" label="Product source" variant="outlined" density="comfortable" :disabled="!cfg.shopping.enabled" class="mb-4" />
-                <v-switch v-model="cfg.shopping.showPrices" color="primary" density="comfortable" hide-details label="Show prices on product cards" :disabled="!cfg.shopping.enabled" class="mb-1" />
-                <v-switch v-model="cfg.shopping.allowAddToCart" color="primary" density="comfortable" hide-details label="Allow add to cart from the chat" :disabled="!cfg.shopping.enabled" class="mb-4" />
-                <v-text-field v-model="cfg.shopping.checkoutUrl" label="Checkout URL" placeholder="https://mystore.com/checkout" variant="outlined" density="comfortable" prepend-inner-icon="link" hide-details :disabled="!cfg.shopping.enabled" />
+                <v-textarea v-model="cfg.shopping.greeting" label="Shopping greeting" rows="2" auto-grow :disabled="!cfg.shopping.enabled" class="mb-4" />
+                <v-select v-model="cfg.shopping.source" :items="catalogSources" label="Product source" :disabled="!cfg.shopping.enabled" class="mb-4" />
+                <v-switch v-model="cfg.shopping.showPrices" hide-details label="Show prices on product cards" :disabled="!cfg.shopping.enabled" class="mb-1" />
+                <v-switch v-model="cfg.shopping.allowAddToCart" hide-details label="Allow add to cart from the chat" :disabled="!cfg.shopping.enabled" class="mb-4" />
+                <v-text-field v-model="cfg.shopping.checkoutUrl" label="Checkout URL" placeholder="https://mystore.com/checkout" prepend-inner-icon="link" hide-details :disabled="!cfg.shopping.enabled" />
               </v-card>
             </template>
 
@@ -522,15 +522,15 @@ function sendChat() {
                     <div class="text-subtitle-1 font-weight-bold mb-1">Order tracking</div>
                     <div class="text-body-2 text-medium-emphasis">Let customers check order status in chat — with an account or as a guest.</div>
                   </div>
-                  <v-switch v-model="cfg.orderTracking.enabled" color="primary" density="compact" hide-details inset class="flex-shrink-0 mt-n1" />
+                  <v-switch v-model="cfg.orderTracking.enabled" density="compact" hide-details inset class="flex-shrink-0 mt-n1" />
                 </div>
               </v-card>
               <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.orderTracking.enabled }">
                 <div class="text-subtitle-2 font-weight-bold mb-4">Tracking options</div>
-                <v-switch v-model="cfg.orderTracking.allowGuest" color="primary" density="comfortable" hide-details label="Allow guest order tracking (no account required)" :disabled="!cfg.orderTracking.enabled" class="mb-1" />
-                <v-text-field v-model="cfg.orderTracking.guestPortal" label="Guest tracking portal URL" placeholder="https://mystore.com/track" variant="outlined" density="comfortable" prepend-inner-icon="link" :disabled="!cfg.orderTracking.enabled || !cfg.orderTracking.allowGuest" class="my-4" />
-                <v-switch v-model="cfg.orderTracking.resendEmail" color="primary" density="comfortable" hide-details label="Offer to resend the confirmation email" :disabled="!cfg.orderTracking.enabled" class="mb-1" />
-                <v-switch v-model="cfg.orderTracking.accountSync" color="primary" density="comfortable" hide-details label="Sync live order status for logged-in customers" :disabled="!cfg.orderTracking.enabled" />
+                <v-switch v-model="cfg.orderTracking.allowGuest" hide-details label="Allow guest order tracking (no account required)" :disabled="!cfg.orderTracking.enabled" class="mb-1" />
+                <v-text-field v-model="cfg.orderTracking.guestPortal" label="Guest tracking portal URL" placeholder="https://mystore.com/track" prepend-inner-icon="link" :disabled="!cfg.orderTracking.enabled || !cfg.orderTracking.allowGuest" class="my-4" />
+                <v-switch v-model="cfg.orderTracking.resendEmail" hide-details label="Offer to resend the confirmation email" :disabled="!cfg.orderTracking.enabled" class="mb-1" />
+                <v-switch v-model="cfg.orderTracking.accountSync" hide-details label="Sync live order status for logged-in customers" :disabled="!cfg.orderTracking.enabled" />
               </v-card>
             </template>
 
@@ -572,7 +572,6 @@ function sendChat() {
                   </div>
                   <v-switch
                     v-model="s.enabled"
-                    color="primary"
                     density="compact"
                     hide-details
                     inset
@@ -613,8 +612,6 @@ function sendChat() {
                     <v-text-field
                       v-model="newUrl"
                       placeholder="https://mystore.com/faq"
-                      variant="outlined"
-                      density="comfortable"
                       prepend-inner-icon="globe"
                       hide-details
                       class="flex-grow-1"
@@ -664,12 +661,10 @@ function sendChat() {
                 subtitle="Answer what you can — we'll turn it into a knowledge source. You can update it later."
               >
                 <div v-for="(q, i) in kbQuestions" :key="q.key" :class="{ 'mb-5': i < kbQuestions.length - 1 }">
-                  <label class="text-body-2 font-weight-medium d-block mb-2">{{ q.label }}</label>
                   <v-textarea
                     v-model="kbAnswers[q.key]"
+                    :label="q.label"
                     :placeholder="q.placeholder"
-                    variant="outlined"
-                    density="comfortable"
                     rows="2"
                     auto-grow
                     hide-details
@@ -694,8 +689,8 @@ function sendChat() {
             <template v-else>
               <v-card flat border rounded="lg" class="pa-6 mb-5">
                 <div class="text-subtitle-1 font-weight-bold mb-4">Form settings</div>
-                <v-switch v-model="cfg.preChatEnabled" color="primary" density="comfortable" hide-details label="Show a pre-chat form before starting a conversation" class="mb-1" />
-                <v-switch v-model="cfg.skipForLoggedIn" color="primary" density="comfortable" hide-details label="Skip the form for logged-in users" :disabled="!cfg.preChatEnabled" />
+                <v-switch v-model="cfg.preChatEnabled" hide-details label="Show a pre-chat form before starting a conversation" class="mb-1" />
+                <v-switch v-model="cfg.skipForLoggedIn" hide-details label="Skip the form for logged-in users" :disabled="!cfg.preChatEnabled" />
               </v-card>
 
               <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.preChatEnabled }">
@@ -709,14 +704,14 @@ function sendChat() {
                     <v-spacer />
                     <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0 || !cfg.preChatEnabled" aria-label="Move up" @click="moveField(i, -1)" />
                     <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === cfg.preChatFields.length - 1 || !cfg.preChatEnabled" aria-label="Move down" @click="moveField(i, 1)" />
-                    <v-switch v-model="f.required" color="primary" density="compact" hide-details :disabled="!cfg.preChatEnabled" class="flex-shrink-0" />
+                    <v-switch v-model="f.required" density="compact" hide-details :disabled="!cfg.preChatEnabled" class="flex-shrink-0" />
                     <span class="text-caption text-medium-emphasis">Required</span>
                     <v-btn icon="trash-2" variant="text" size="x-small" color="error" :disabled="!cfg.preChatEnabled" aria-label="Delete field" @click="removeField(f.id)" />
                   </div>
                   <v-row dense>
-                    <v-col cols="12" sm="6"><v-text-field v-model="f.label" label="Label" variant="outlined" density="compact" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
-                    <v-col cols="12" sm="6"><v-select v-model="f.type" label="Type" :items="FIELD_TYPES" variant="outlined" density="compact" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
-                    <v-col cols="12"><v-text-field v-model="f.placeholder" label="Placeholder" variant="outlined" density="compact" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
+                    <v-col cols="12" sm="6"><v-text-field v-model="f.label" label="Label" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
+                    <v-col cols="12" sm="6"><v-select v-model="f.type" label="Type" :items="FIELD_TYPES" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
+                    <v-col cols="12"><v-text-field v-model="f.placeholder" label="Placeholder" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
                   </v-row>
                 </div>
               </v-card>

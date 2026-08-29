@@ -92,8 +92,6 @@ const CHIP_ROWS = [
           <v-text-field
             v-model="storeName"
             label="Store name"
-            variant="outlined"
-            density="comfortable"
             prepend-inner-icon="store"
             hide-details
           />
@@ -101,15 +99,12 @@ const CHIP_ROWS = [
             v-model="plan"
             label="Plan"
             :items="['Growth', 'Professional', 'Enterprise']"
-            variant="outlined"
-            density="comfortable"
             hide-details
             class="mt-3"
           />
           <v-switch
             v-model="autoPublish"
             label="Auto-publish new products"
-            color="primary"
             density="compact"
             hide-details
             class="mt-2"
@@ -117,7 +112,6 @@ const CHIP_ROWS = [
           <v-checkbox
             v-model="emailReceipts"
             label="Email receipts to customers"
-            color="primary"
             density="compact"
             hide-details
           />

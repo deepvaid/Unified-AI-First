@@ -135,7 +135,6 @@ function confirmDelete() {
                purpose, so committing a rename can't reflow the list. -->
           <v-text-field
             v-model="renameValue"
-            density="compact"
             hide-details
             autofocus
             :aria-label="`New name for ${folder.name}`"

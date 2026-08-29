@@ -361,7 +361,6 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
               :items="options"
               clearable
               placeholder="All"
-              persistent-placeholder
             />
           </MpFormGrid>
         </template>
@@ -665,7 +664,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
               <td>
                 <!-- Table-cell editor: compact and detail-free on purpose, so a
                      hint or validation line can't grow the row. -->
-                <v-select v-model="m.field" :items="importFieldOptions" :aria-label="`Contact field for ${m.csvCol}`" density="compact" hide-details style="min-width:200px;" />
+                <v-select v-model="m.field" :items="importFieldOptions" :aria-label="`Contact field for ${m.csvCol}`" hide-details style="min-width:200px;" />
               </td>
             </tr>
           </tbody>

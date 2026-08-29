@@ -4,8 +4,6 @@ import { useAnalyticsStore, isWithinRange, type DateRangeValue } from '@/stores/
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpFormSection from '@/components/MpFormSection.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import { downloadCsv } from '@/utils/exportCsv'
@@ -35,6 +33,14 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
 const { loading } = useInitialLoad()
 
 const providers = ['Gmail', 'Outlook', 'Yahoo', 'Apple Mail']
+// The one filter this report has, so it lives in the toolbar as a pill rather
+// than behind a drawer.
+const filterProviderQuickFilter = {
+  key: 'provider',
+  label: 'Provider',
+  options: (providers).map((v) => ({ label: v, value: v })),
+}
+
 
 const activeFilterEntries = computed(() => {
   const filters: Array<{ key: string; label: string }> = []
@@ -84,28 +90,15 @@ function exportCsv() {
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="filterProvider"
+        :quick-filter="filterProviderQuickFilter"
         v-model:search="search"
         title="Test Reports"
         :active-filters="activeFilterEntries"
         :total-count="filteredReports.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-      >
-        <template #filter-content>
-          <MpFormSection title="Filter by" />
-          <MpFormGrid>
-            <v-select
-              v-model="filterProvider"
-              label="Provider"
-              :items="providers"
-              clearable
-              multiple
-              chips
-              closable-chips
-            />
-          </MpFormGrid>
-        </template>
-      </MpDataTableToolbar>
+      />
       <MpTableSkeleton v-if="loading" :rows="7" :columns="5" />
 
       <v-data-table v-else :headers="visibleHeaders" :items="filteredReports" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">

@@ -1628,8 +1628,6 @@ const apkQrUrl = computed(() =>
                     <div class="pos-setting-row__label">Footer message</div>
                     <v-text-field
                       v-model="posSettings.receiptFooter"
-                      variant="outlined"
-                      density="compact"
                       hide-details
                       style="font-size: 13px;"
                     />
@@ -2072,8 +2070,6 @@ const apkQrUrl = computed(() =>
                     <v-text-field
                       v-model="newCustomerDraft.name"
                       label="Full name"
-                      variant="outlined"
-                      density="compact"
                       prepend-inner-icon="user"
                       hide-details
                       class="mb-2"
@@ -2082,8 +2078,6 @@ const apkQrUrl = computed(() =>
                     <v-text-field
                       v-model="newCustomerDraft.email"
                       label="Email"
-                      variant="outlined"
-                      density="compact"
                       prepend-inner-icon="mail"
                       hide-details
                       class="mb-2"
@@ -2092,8 +2086,6 @@ const apkQrUrl = computed(() =>
                     <v-text-field
                       v-model="newCustomerDraft.phone"
                       label="Phone"
-                      variant="outlined"
-                      density="compact"
                       prepend-inner-icon="phone"
                       hide-details
                       @keydown.enter="createAndAttachCustomer"
@@ -2316,8 +2308,6 @@ const apkQrUrl = computed(() =>
         type="number"
         :min="0"
         :max="100"
-        variant="outlined"
-        density="compact"
         suffix="%"
       />
 
@@ -2332,22 +2322,16 @@ const apkQrUrl = computed(() =>
       <v-text-field
         v-model="newCustomerDraft.name"
         label="Full name"
-        variant="outlined"
-        density="compact"
         prepend-inner-icon="user"
       />
       <v-text-field
         v-model="newCustomerDraft.email"
         label="Email"
-        variant="outlined"
-        density="compact"
         prepend-inner-icon="mail"
       />
       <v-text-field
         v-model="newCustomerDraft.phone"
         label="Phone"
-        variant="outlined"
-        density="compact"
         prepend-inner-icon="phone"
       />
 

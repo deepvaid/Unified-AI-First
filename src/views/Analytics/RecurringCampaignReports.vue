@@ -5,8 +5,6 @@ import { isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpFormSection from '@/components/MpFormSection.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import { downloadCsv } from '@/utils/exportCsv'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
@@ -18,6 +16,14 @@ const store = useCampaignsStore()
 const toast = useToast()
 const search = ref('')
 const filterFrequency = ref<string[]>([])
+
+// The one filter this report has, so it lives in the toolbar as a pill rather
+// than behind a drawer.
+const filterFrequencyQuickFilter = {
+  key: 'frequency',
+  label: 'Frequency',
+  options: (['Daily', 'Weekly', 'Monthly']).map((v) => ({ label: v, value: v })),
+}
 const dateRange = ref<DateRangeValue>({ preset: 'This year' })
 
 const headers = [
@@ -85,28 +91,15 @@ function exportCsv() {
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="filterFrequency"
+        :quick-filter="filterFrequencyQuickFilter"
         v-model:search="search"
         title="Recurring Campaigns"
         :active-filters="activeFilterEntries"
         :total-count="filteredItems.length"
         @remove-filter="removeFilter"
         @clear-filters="clearAllFilters"
-      >
-        <template #filter-content>
-          <MpFormSection title="Filter by" />
-          <MpFormGrid>
-            <v-select
-              v-model="filterFrequency"
-              label="Frequency"
-              :items="['Daily', 'Weekly', 'Monthly']"
-              clearable
-              multiple
-              chips
-              closable-chips
-            />
-          </MpFormGrid>
-        </template>
-      </MpDataTableToolbar>
+      />
       <MpTableSkeleton v-if="loading" :rows="7" :columns="4" />
 
       <v-data-table v-else :headers="visibleHeaders" :items="filteredItems" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">

@@ -373,7 +373,6 @@ function save() {
                   :aria-labelledby="labelId"
                   :aria-describedby="descriptionId"
                   :label="matchAll ? 'Match ALL rules (AND)' : 'Match ANY rule (OR)'"
-                  color="primary"
                   hide-details
                 />
               </template>
@@ -389,7 +388,6 @@ function save() {
                   :aria-labelledby="labelId"
                   :aria-describedby="descriptionId"
                   :label="includeAllActive ? 'Included' : 'Not included'"
-                  color="primary"
                   hide-details
                 />
               </template>

@@ -8,7 +8,6 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpFormSection from '@/components/MpFormSection.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
@@ -32,16 +31,23 @@ const headers = [
 ]
 
 // ── Filters ────────────────────────────────────────────────────────
-const filters = ref({ type: [] as string[] })
+// Type is this table's only filter, so it lives in the toolbar as a pill and
+// there is no drawer at all.
+const typeQuickFilter = {
+  key: 'type',
+  label: 'Type',
+  options: ([...TYPES] as string[]).map((v) => ({ label: v, value: v })),
+}
+const typeFilter = ref<string[]>([])
+
 const activeFilterEntries = computed(() =>
-  filters.value.type.length > 0
-    ? [{ key: 'type', label: `Type: ${filters.value.type.join(', ')}` }]
+  typeFilter.value.length > 0
+    ? [{ key: 'type', label: `Type: ${typeFilter.value.join(', ')}` }]
     : []
 )
-function removeFilter(_key: string) { filters.value.type = [] }
-function clearAllFilters() { filters.value.type = [] }
+function clearAllFilters() { typeFilter.value = [] }
 const filteredCategories = computed(() =>
-  filters.value.type.length ? store.taxCategories.filter(c => filters.value.type.includes(c.type)) : store.taxCategories
+  typeFilter.value.length ? store.taxCategories.filter(c => typeFilter.value.includes(c.type)) : store.taxCategories
 )
 
 // ── Add / Edit drawer ───────────────────────────────────────────────
@@ -114,31 +120,14 @@ function exportCategories() {
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="typeFilter"
         v-model:search="search"
         title="All Categories"
+        :quick-filter="typeQuickFilter"
         :active-filters="activeFilterEntries"
-        @remove-filter="removeFilter"
+        @remove-filter="clearAllFilters"
         @clear-filters="clearAllFilters"
-      >
-        <!-- Filter popover: `hide-details` is deliberate — this select can never
-             carry a hint or an error, and the popover is a dense surface. -->
-        <template #filter-content>
-          <div class="pa-4">
-            <MpFormGrid>
-              <MpFormSection title="Filter by" />
-              <v-select
-                v-model="filters.type"
-                :items="[...TYPES] as string[]"
-                label="Type"
-                multiple
-                chips
-                closable-chips
-                hide-details
-              />
-            </MpFormGrid>
-          </div>
-        </template>
-      </MpDataTableToolbar>
+      />
 
       <v-data-table
         :headers="headers"
@@ -175,10 +164,10 @@ function exportCategories() {
         <template v-slot:no-data>
           <MpEmptyState
             icon="receipt"
-            :title="search || filters.type.length ? 'No categories match your filters' : 'No tax categories'"
-            :description="search || filters.type.length ? 'Try a different search term or clear your filters.' : 'Create a tax category to control how products are taxed at checkout.'"
-            :action-label="search || filters.type.length ? undefined : 'New Tax Category'"
-            :action-icon="search || filters.type.length ? undefined : 'plus'"
+            :title="search || typeFilter.length ? 'No categories match your filters' : 'No tax categories'"
+            :description="search || typeFilter.length ? 'Try a different search term or clear your filters.' : 'Create a tax category to control how products are taxed at checkout.'"
+            :action-label="search || typeFilter.length ? undefined : 'New Tax Category'"
+            :action-icon="search || typeFilter.length ? undefined : 'plus'"
             class="py-10"
             @action="openCreate"
           />

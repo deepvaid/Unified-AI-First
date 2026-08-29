@@ -44,8 +44,16 @@ function pageStatus(page: LandingPage): 'Draft' | 'Published' | 'Expired' {
   return 'Published'
 }
 
+// Domain is the promoted filter: a multi-select pill in the toolbar, so the
+// cut people make most often doesn't cost a trip to the drawer.
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Domain',
+  options: (['Verified', 'Unverified']).map((v) => ({ label: v, value: v })),
+}
+const statusFilter = ref<string[]>([])
+
 const filters = ref({
-  status: [] as string[],
   editorType: [] as string[],
 })
 
@@ -54,20 +62,30 @@ const filterLabels: Record<string, string> = {
   editorType: 'Editor Type',
 }
 
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
-    .filter(([, v]) => v.length > 0)
-    .map(([key, value]) => ({
-      key,
-      label: `${filterLabels[key]}: ${value.join(', ')}`,
-    })),
-)
+const activeFilterEntries = computed(() => {
+  const entries =
+    Object.entries(filters.value)
+      .filter(([, v]) => v.length > 0)
+      .map(([key, value]) => ({
+        key,
+        label: `${filterLabels[key]}: ${value.join(', ')}`,
+      }))
+  if (statusFilter.value.length) {
+    entries.unshift({ key: 'status', label: `Domain: ${statusFilter.value.join(', ')}` })
+  }
+  return entries
+})
 
 function removeFilter(key: string) {
+  if (key === 'status') {
+    statusFilter.value = []
+    return
+  }
   (filters.value as any)[key] = []
 }
 function clearAllFilters() {
-  filters.value.status = []
+  statusFilter.value = []
+  statusFilter.value = []
   filters.value.editorType = []
 }
 
@@ -75,7 +93,7 @@ const editorTypeLabel: Record<LandingPage['editorType'], string> = { dnd: 'Drag 
 
 const items = computed(() =>
   pages.value.filter(p =>
-    (filters.value.status.length === 0 || filters.value.status.includes(p.status)) &&
+    (statusFilter.value.length === 0 || statusFilter.value.includes(p.status)) &&
     (filters.value.editorType.length === 0 || filters.value.editorType.includes(p.editorType)),
   ),
 )
@@ -121,6 +139,8 @@ function confirmDelete() {
 
     <v-card v-else variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="statusFilter"
+        :quick-filter="statusQuickFilter"
         v-model:search="search"
         title="Pages"
         search-placeholder="Search pages..."
@@ -135,17 +155,6 @@ function confirmDelete() {
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
             <MpFormGrid>
               <v-select
-                v-model="filters.status"
-                label="Domain"
-                :items="['Verified', 'Unverified']"
-                multiple
-                chips
-                closable-chips
-                clearable
-                density="compact"
-                hide-details
-              />
-              <v-select
                 v-model="filters.editorType"
                 label="Editor Type"
                 :items="[{ title: 'Drag & Drop', value: 'dnd' }, { title: 'WYSIWYG', value: 'wysiwyg' }]"
@@ -153,7 +162,6 @@ function confirmDelete() {
                 chips
                 closable-chips
                 clearable
-                density="compact"
                 hide-details
               />
             </MpFormGrid>

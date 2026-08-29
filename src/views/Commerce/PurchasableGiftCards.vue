@@ -290,7 +290,7 @@ function notify(text: string) { toast.success(text) }
             <!-- Toolbar filters stay compact and suppress details deliberately: this is a
                  dense popover, not a form, and the select cannot carry validation. -->
             <MpFormGrid>
-              <v-select v-model="filters.kind" label="Type" :items="filterOptions.kind" density="compact" hide-details clearable />
+              <v-select v-model="filters.kind" label="Type" :items="filterOptions.kind" hide-details clearable />
             </MpFormGrid>
           </div>
         </template>

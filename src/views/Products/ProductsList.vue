@@ -53,6 +53,19 @@ const emptyFilters = (): Filters => ({
 
 const filters = ref<Filters>(emptyFilters())
 
+// Product status is the promoted filter. It stays inside `filters` because saved
+// views persist and restore that whole object; the pill reads and writes it
+// through this computed rather than owning a second copy of the state.
+const publishStatusQuickFilter = {
+  key: 'publishStatus',
+  label: 'Product status',
+  options: ['Draft', 'Published'].map((v) => ({ label: v, value: v })),
+}
+const publishStatusFilter = computed({
+  get: () => filters.value.publishStatus,
+  set: (v: string[]) => { filters.value.publishStatus = v; page.value = 1 },
+})
+
 const collectionOptions = computed(() => extras.collections.map((c) => c.title))
 const vendorOptions = computed(() => Array.from(new Set(store.products.map((p) => p.vendor))).sort())
 const channelOptions = computed(() => {
@@ -389,7 +402,9 @@ onMounted(() => {
     <v-card id="products-table" variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
+        v-model:quick-filter-value="publishStatusFilter"
         title="All products"
+        :quick-filter="publishStatusQuickFilter"
         search-placeholder="Search name or SKU"
         :total-count="filteredProducts.length"
         :active-filters="activeFilterEntries"
@@ -402,7 +417,6 @@ onMounted(() => {
         <template #filter-content>
           <MpFormSection title="Product" />
           <MpFormGrid>
-            <v-select v-model="filters.publishStatus" :items="['Draft', 'Published']" label="Product status" multiple chips closable-chips hide-details />
             <v-select v-model="filters.collections" :items="collectionOptions" label="Product collection" multiple chips closable-chips hide-details />
             <v-select v-model="filters.productTypes" :items="PRODUCT_TYPES" label="Product type" multiple chips closable-chips hide-details />
             <v-select v-model="filters.vendors" :items="vendorOptions" label="Brand" multiple chips closable-chips hide-details />

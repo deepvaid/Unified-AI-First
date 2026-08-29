@@ -89,14 +89,11 @@ onBeforeUnmount(clearTimers)
           <v-text-field
             v-model="segmentName"
             label="Segment name"
-            variant="outlined"
-            density="comfortable"
             hide-details
           />
           <v-switch
             v-model="autoRestock"
             label="Tell me when stock runs low"
-            color="primary"
             density="compact"
             hide-details
             class="mt-3"

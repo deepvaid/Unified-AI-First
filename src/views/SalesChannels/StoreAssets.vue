@@ -110,7 +110,6 @@ function onFilesPicked(event: Event) {
         <v-select
           v-model="sortBy"
           :items="sortOptions"
-          density="compact"
           hide-details
           prepend-inner-icon="arrow-down-narrow-wide"
           class="assets-sort"

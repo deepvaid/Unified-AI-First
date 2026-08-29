@@ -134,7 +134,6 @@ onBeforeUnmount(() => abort?.abort())
            is on aria-label. Detail-free so the transcript can't jump as you type. -->
       <v-text-field
         v-model="draft"
-        density="compact"
         hide-details
         placeholder="Ask about the design system…"
         aria-label="Ask about the design system"

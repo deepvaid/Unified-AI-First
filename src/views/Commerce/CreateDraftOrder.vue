@@ -311,8 +311,6 @@ onMounted(() => {
               return-object
               label="Search existing contact"
               prepend-inner-icon="search"
-              variant="outlined"
-              density="comfortable"
               clearable
               hide-details
               class="mt-2 mb-4"
@@ -324,17 +322,15 @@ onMounted(() => {
             </v-autocomplete>
 
             <v-row v-else dense class="mt-2 mb-2">
-              <v-col cols="12" md="4"><v-text-field v-model="customer" label="Full name *" density="comfortable" hide-details /></v-col>
-              <v-col cols="12" md="4"><v-text-field v-model="email" label="Email" type="email" density="comfortable" hide-details /></v-col>
-              <v-col cols="12" md="4"><v-text-field v-model="phone" label="Phone" density="comfortable" hide-details /></v-col>
+              <v-col cols="12" md="4"><v-text-field v-model="customer" label="Full name *" hide-details /></v-col>
+              <v-col cols="12" md="4"><v-text-field v-model="email" label="Email" type="email" hide-details /></v-col>
+              <v-col cols="12" md="4"><v-text-field v-model="phone" label="Phone" hide-details /></v-col>
             </v-row>
 
             <v-select
               v-model="salesChannel"
               :items="SALES_CHANNELS"
               label="Sales channel *"
-              variant="outlined"
-              density="comfortable"
               hide-details
               class="mb-4"
               style="max-width: 320px"
@@ -390,8 +386,6 @@ onMounted(() => {
               return-object
               label="Search existing products by name or SKU"
               prepend-inner-icon="search"
-              variant="outlined"
-              density="comfortable"
               clearable
               hide-details
               class="mt-2 mb-4"
@@ -413,8 +407,8 @@ onMounted(() => {
                 </v-avatar>
 
                 <template v-if="li.custom">
-                  <v-text-field v-model="li.name" label="Item name *" density="compact" hide-details class="flex-grow-1" />
-                  <v-text-field v-model.number="li.price" label="Price" prefix="$" type="number" density="compact" hide-details style="max-width: 120px" />
+                  <v-text-field v-model="li.name" label="Item name *" hide-details class="flex-grow-1" />
+                  <v-text-field v-model.number="li.price" label="Price" prefix="$" type="number" hide-details style="max-width: 120px" />
                 </template>
                 <template v-else>
                   <div class="flex-grow-1 min-width-0">
@@ -437,7 +431,7 @@ onMounted(() => {
           <!-- Notes -->
           <v-card flat border rounded="lg" class="pa-6">
             <MpSectionHeader title="Notes" />
-            <v-textarea v-model="notes" placeholder="Add an internal note for your team…" variant="outlined" density="comfortable" rows="2" auto-grow hide-details class="mt-2" />
+            <v-textarea v-model="notes" placeholder="Add an internal note for your team…" rows="2" auto-grow hide-details class="mt-2" />
           </v-card>
         </div>
 
@@ -453,13 +447,12 @@ onMounted(() => {
               </div>
 
               <div class="d-flex gap-2 align-center my-1">
-                <v-select v-model="discount.type" :items="['None', 'Percentage', 'Fixed']" label="Discount" density="compact" hide-details style="max-width: 130px" />
+                <v-select v-model="discount.type" :items="['None', 'Percentage', 'Fixed']" label="Discount" hide-details style="max-width: 130px" />
                 <v-text-field
                   v-if="discount.type !== 'None'"
                   v-model.number="discount.value"
                   :label="discount.type === 'Percentage' ? '%' : '$'"
                   type="number"
-                  density="compact"
                   hide-details
                 />
               </div>
@@ -467,7 +460,7 @@ onMounted(() => {
                 <span>Discount</span><span>−${{ discountAmt.toFixed(2) }}</span>
               </div>
 
-              <v-select v-model="shippingMethod" :items="shippingOptions" label="Shipping method" density="compact" hide-details class="my-1" />
+              <v-select v-model="shippingMethod" :items="shippingOptions" label="Shipping method" hide-details class="my-1" />
               <div class="d-flex justify-space-between text-body-2">
                 <span class="text-medium-emphasis">Shipping</span>
                 <span>{{ shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}` }}</span>
@@ -529,7 +522,7 @@ onMounted(() => {
       <div class="text-body-2 text-medium-emphasis">
         The draft is marked <strong>Invoice Sent</strong>. Share this link with {{ customer || 'the customer' }} to collect payment.
       </div>
-      <v-text-field :model-value="paymentLink" readonly variant="outlined" density="compact" hide-details append-inner-icon="copy" @click:append-inner="copyPaymentLink" />
+      <v-text-field :model-value="paymentLink" readonly hide-details append-inner-icon="copy" @click:append-inner="copyPaymentLink" />
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="copyPaymentLink">Copy Link</v-btn>

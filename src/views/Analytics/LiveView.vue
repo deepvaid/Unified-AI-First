@@ -430,7 +430,6 @@ const recentActivity = computed(() => [
         <!-- Toolbar search: compact and detail-free on purpose, labelled the same
              way MpDataTableToolbar labels its own search. -->
         <v-text-field
-          density="compact"
           hide-details
           placeholder="Search location"
           aria-label="Search location"

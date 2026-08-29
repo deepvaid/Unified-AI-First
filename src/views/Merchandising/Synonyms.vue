@@ -17,7 +17,20 @@ import {
 const store = useMerchandisingStore()
 const toast = useToast()
 const search = ref('')
-const filterStatus = ref<'all' | 'active' | 'inactive'>('all')
+// Status is the promoted filter: a multi-select pill in the toolbar rather
+// than a single-value select, so several values can be compared at once.
+const filterStatusQuickFilter = computed(() => ({
+  key: 'status',
+  label: 'Status',
+  options: ([
+              { title: 'All statuses', value: 'all' },
+              { title: 'Enabled', value: 'active' },
+              { title: 'Disabled', value: 'inactive' },
+            ])
+    .filter((o) => o.value !== 'all')
+    .map((o) => ({ label: o.title, value: o.value })),
+}))
+const filterStatus = ref<string[]>([])
 const filterType = ref<'all' | 'one_way' | 'two_way'>('all')
 const selected = ref<string[]>([])
 
@@ -32,7 +45,7 @@ const headers = [
 
 const filteredSynonyms = computed(() => {
   let rows = store.synonymList
-  if (filterStatus.value !== 'all') rows = rows.filter((s) => s.status === filterStatus.value)
+  if (filterStatus.value.length) rows = rows.filter((s) => filterStatus.value.includes(s.status))
   if (filterType.value !== 'all') rows = rows.filter((s) => s.type === filterType.value)
   return rows
 })
@@ -169,6 +182,8 @@ function doDelete() {
 
     <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
+        v-model:quick-filter-value="filterStatus"
+        :quick-filter="filterStatusQuickFilter"
         v-model:search="search"
         title="Synonyms"
         search-placeholder="Search synonym…"
@@ -177,16 +192,6 @@ function doDelete() {
         <!-- Filter popover: `hide-details` is deliberate — these two selects can
              never carry a hint or an error, and the popover is a dense surface. -->
         <template #filter-content>
-          <v-select
-            v-model="filterStatus"
-            label="Status"
-            hide-details
-            :items="[
-              { title: 'All statuses', value: 'all' },
-              { title: 'Enabled', value: 'active' },
-              { title: 'Disabled', value: 'inactive' },
-            ]"
-          />
           <v-select
             v-model="filterType"
             label="Type"

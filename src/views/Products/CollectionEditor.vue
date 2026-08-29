@@ -406,7 +406,6 @@ async function save() {
             <v-checkbox-btn
               v-model="pickerSelection"
               :value="product.itemId"
-              color="primary"
               :aria-label="`Select ${product.name || product.itemId}`"
             />
           </template>

@@ -842,7 +842,6 @@ function publishForm() {
 .border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 
-.fb-select-all :deep(.v-label) { font-size: 0.75rem; }
 .num { font-variant-numeric: tabular-nums; }
 
 .fb-swatch {

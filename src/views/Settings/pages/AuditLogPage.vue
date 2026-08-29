@@ -33,7 +33,6 @@ const tabs = computed(() => [
 
 // Filters
 const filters = ref({
-  action: null as AuditAction | null,
   actor: null as string | null,
   period: null as string | null,
 })
@@ -42,32 +41,48 @@ const actionItems = (Object.keys(AUDIT_ACTION_META) as AuditAction[]).map(a => (
   title: AUDIT_ACTION_META[a].label,
   value: a,
 }))
+
+// Action is the promoted filter: a multi-select pill in the toolbar, so the cut
+// people make most often doesn't cost a trip to the drawer.
+const actionQuickFilter = {
+  key: 'action',
+  label: 'Action',
+  options: actionItems.map((a) => ({ label: a.title, value: a.value })),
+}
+const actionFilter = ref<string[]>([])
 const actorItems = computed(() => [...new Set(rbac.events.map(e => e.actorName))])
 const periodItems = ['Last 7 days', 'Last 30 days', 'Last 90 days']
 
 const filterLabels: Record<string, string> = { action: 'Action', actor: 'Actor', period: 'Period' }
 
-const activeFilterEntries = computed(() =>
-  Object.entries(filters.value)
+const activeFilterEntries = computed(() => {
+  const entries = Object.entries(filters.value)
     .filter(([, v]) => v !== null)
-    .map(([key, value]) => ({
-      key,
-      label: `${filterLabels[key]}: ${key === 'action' ? AUDIT_ACTION_META[value as AuditAction].label : value}`,
-    })),
-)
+    .map(([key, value]) => ({ key, label: `${filterLabels[key]}: ${value}` }))
+  if (actionFilter.value.length) {
+    const names = actionFilter.value.map(a => AUDIT_ACTION_META[a as AuditAction].label)
+    entries.unshift({ key: 'action', label: `Action: ${names.join(', ')}` })
+  }
+  return entries
+})
 
 function removeFilter(key: string) {
+  if (key === 'action') {
+    actionFilter.value = []
+    return
+  }
   filters.value[key as keyof typeof filters.value] = null
 }
 
 function clearAllFilters() {
-  filters.value = { action: null, actor: null, period: null }
+  actionFilter.value = []
+  filters.value = { actor: null, period: null }
 }
 
 const filteredEvents = computed(() =>
   rbac.sortedEvents.filter((e) => {
     if (targetTab.value !== 'all' && e.targetType !== targetTab.value) return false
-    if (filters.value.action && e.action !== filters.value.action) return false
+    if (actionFilter.value.length && !actionFilter.value.includes(e.action)) return false
     if (filters.value.actor && e.actorName !== filters.value.actor) return false
     if (filters.value.period) {
       const days = (Date.now() - new Date(e.at).getTime()) / 86400000
@@ -152,6 +167,8 @@ function actionMeta(event: AuditEvent) {
 
       <v-card id="audit-table" variant="flat" border rounded="lg" class="d-flex flex-column overflow-hidden">
         <MpDataTableToolbar
+        v-model:quick-filter-value="actionFilter"
+        :quick-filter="actionQuickFilter"
           v-model:search="search"
           v-model:hidden-columns="hiddenColumns"
           search-placeholder="Search events, targets, or people"
@@ -162,12 +179,6 @@ function actionMeta(event: AuditEvent) {
           @clear-filters="clearAllFilters"
         >
           <template #filter-content>
-            <v-select
-              v-model="filters.action"
-              label="Action"
-              :items="actionItems"
-              clearable
-            />
             <v-select
               v-model="filters.actor"
               label="Actor"

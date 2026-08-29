@@ -176,7 +176,6 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
           <v-switch
             :model-value="item.active"
             :aria-label="`${item.name} active`"
-            color="primary"
             hide-details
             density="compact"
             @click.stop

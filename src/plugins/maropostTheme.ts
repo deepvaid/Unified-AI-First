@@ -225,36 +225,57 @@ export const maropostDefaults = {
     rounded: 'lg',
   },
   // Field chrome (borders, radius, states) is owned by settings-form.scss —
-  // keep these defaults behavioral only.
+  // keep these defaults behavioral only. The one deliberate exception is
+  // `persistentPlaceholder: true`: it selects the label MECHANISM, not the look.
+  // It locks Vuetify's label into the permanently-floated state, which is what
+  // lets settings-form.scss reposition it as a static top label (the float
+  // animation never runs because the active state never transitions). It must
+  // be set per component name — VSelect/VAutocomplete/VCombobox/VNumberInput
+  // resolve the prop themselves and pass the boolean explicitly to their inner
+  // VTextField, so a default on VTextField alone would be overridden.
   VTextField: {
     variant: 'outlined',
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
+    persistentPlaceholder: true,
   },
   VSelect: {
     variant: 'outlined',
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
+    persistentPlaceholder: true,
   },
   VAutocomplete: {
     variant: 'outlined',
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
+    persistentPlaceholder: true,
   },
   VCombobox: {
     variant: 'outlined',
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
+    persistentPlaceholder: true,
   },
   VTextarea: {
     variant: 'outlined',
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
+    persistentPlaceholder: true,
+  },
+  // VFileInput has no persistentPlaceholder prop — it renders VField directly.
+  // `active: true` pulls the same lever (permanent v-field--active).
+  VFileInput: {
+    variant: 'outlined',
+    density: 'comfortable',
+    hideDetails: 'auto',
+    color: 'primary',
+    active: true,
   },
   // Selection controls (P6-14). These had no defaults at all, so they fell through
   // to raw Vuetify — `hideDetails: false`, `density: 'default'` — which is why a
@@ -290,6 +311,7 @@ export const maropostDefaults = {
     density: 'comfortable',
     hideDetails: 'auto',
     color: 'primary',
+    persistentPlaceholder: true,
   },
   // One toggle-group convention (P6-14). Three were in use — comfortable/outlined/
   // divided, compact/rounded-lg, and compact/rounded-lg/border — so a segmented

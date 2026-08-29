@@ -1445,11 +1445,140 @@ Everything else kept its rendered value. These did not:
 
 ### Follow-ups this opens
 
-- **~24 further tables remain candidates.** Analytics report views, Marketing (Landing Pages,
-  Preference Pages, Acquisition Forms), Settings (Audit Log, Users & Permissions) and several
-  Merchandising lists all have drawer filters that could be promoted; each needs a judgement call
-  about *which* filter earns the pill, so they were not swept mechanically. 42 of the 75 toolbar
-  consumers have no filters at all and correctly get nothing.
+- ~~**~24 further tables remain candidates.**~~ **Done — see the second rollout below.**
 - **The record count never singularises.** `MpDataTableToolbar` renders `{{ totalCount }} records`,
   so a one-row result reads "1 records". Pre-existing, visible on every table page, and a one-line
   fix whenever the copy is next touched.
+
+### Rollout part 2 — 2026-08-29 (same session)
+
+The remaining 24 candidates now carry a quick filter, so **all 33 tables with a promotable filter
+have one**. The other 42 toolbar consumers have no filters at all and correctly get nothing.
+
+- **Analytics reports (11)** — Campaign, A/B Campaign, Recurring Campaign, Test Campaign,
+  Transactional, Journey, Orders, Dispatched Orders, Website, Log Inspector and Custom Reports.
+  Each had exactly one drawer filter, so all eleven **lost their drawer** along with the Filter
+  button: Status, Winning Variant, Frequency, Provider, Type, Status, Status, Courier, Category,
+  Log Level and Report type respectively.
+- **Products (5)** — Products List (Product status), Collections (Status), Price Lists (Status),
+  Tax Categories (Type, drawer removed), Reservations (Location, replacing the 44px inline select).
+- **Marketing (3)** — Landing Pages (Domain), Preference Pages (Page Type), Acquisition Forms
+  (Status; its toolbar only renders in list view).
+- **Merchandising (3)** — Synonyms (Status), Smart Collections (Type, drawer removed),
+  Recommendation Engines (Type).
+- **Settings (2)** — Audit Log (Action), Users & Permissions (Role).
+
+Three things worth recording, because they are the traps in this shape of change:
+
+- **Products List keeps `publishStatus` inside its `filters` object** and bridges it to the toolbar
+  with a *writable computed*. Saved views persist and restore that whole object
+  (`ProductsList.vue`), so lifting the key out would have silently stopped saved views from
+  restoring a status filter. Any page with persisted filter state should copy this bridge rather
+  than owning a second ref.
+- **A config whose options come from a `computed` must itself be a `computed`, declared after its
+  source.** A plain object literal reads `.value` once at setup and then never updates; placing it
+  above the source is a temporal-dead-zone crash. Hit on Fulfillments, four Analytics reports and
+  Recommendation Engines.
+- **Deleting a promoted drawer select can leave the drawer empty**, which renders a Filter button
+  that opens nothing. Merchandising → Smart Collections needed its now-empty `#filter-content`
+  removed by hand after the sweep.
+
+### Deliberate exemptions (recorded so they are not ambiguous)
+
+- **Fulfillments promoted Location, not Status** — stage summary chips already do the status job.
+- **Product Recommendations' Templates "Show" is an exclusive mode toggle** — active vs archived
+  has no "all" state, because the table has no column that would tell the two sets apart. It was
+  briefly left as a raw `v-select` (given only the control height), which read as a different
+  control family beside the pill-shaped search. It now uses `quickFilter` with `multiple: false`
+  — see the API note below.
+- **Merchandising Synonyms and Recommendation Engines each kept a second single-value select in the
+  drawer** (Type / Page). Only the highest-traffic filter is promoted; the long tail stays put.
+
+### API added — `quickFilter.multiple: false` (2026-08-29)
+
+The pill gained an **exclusive mode** for controls that pick exactly one of N, where an empty or
+combined selection is meaningless: the panel renders a `v-list` instead of checkboxes, there is no
+Clear row, the menu closes on pick, the pill always names the current choice, and the badge never
+appears. The model stays `string[]` holding exactly one value, so a consumer whose own state is a
+plain string bridges it with a writable computed (`ProductRecommendations.vue`,
+`templateScopeFilter`).
+
+This closes the last raw `v-select` in any toolbar row. Both bespoke width classes that propped
+those selects up — `.rec-toolbar__select` and `.res-toolbar__select` — are deleted; every control
+in every table toolbar is now a pill on `component.control.height`.
+
+## Field rework — static top labels + height ramp — 2026-08-29
+
+**This deliberately reverses two recorded Phase-6 decisions.** P6-10's "the floating label is
+the one label language" and P6-13's "every control renders a 44px box" are superseded; their
+changelog entries above stand as history, unedited. What stays true from both: the `label` prop
+is still the one label *API* (zero call-site changes were needed), and one control ramp still
+governs every height — the ramp just moved to an honest place.
+
+**Why.** The floating-notch label carried three latent inconsistencies that read as "not clean":
+the resting label was 14px but the floated one 12px (with an animation whose scale math was tuned
+for a 16px label — a visible size pop on every focus), `MpFormField`'s wrapper label was a third
+size (13px) in a second color, and the 44px painted box (`control.height` 40 + 2px `boxPadding`)
+sat 4px proud of every 40px button, which `MpDataTableToolbar` and `AppBar` each neutralised with
+`!important`. The `density` prop was inert — `settings-form.scss` pinned one height for all
+densities — so 80 call sites said `density="compact"` and got nothing. Every major B2B system
+(Polaris, Stripe, Carbon, Primer, Lightning) uses a static top label; floating labels are a
+Material signature the product no longer follows.
+
+**Mechanism.** `maropostDefaults` sets `persistentPlaceholder: true` on every VField-based input
+(`active: true` on VFileInput, which lacks the prop). That locks Vuetify's label into its
+permanently-floated state — the resting in-box label stays hidden, the floated element keeps the
+real `for`/aria wiring, and the float animation never runs because the active state never
+transitions. `settings-form.scss` then lifts the floated label out of the border notch
+(`notch { position: static }`, pseudos hidden, label absolutely anchored `bottom: 100% + labelGap`
+— `top: auto` is load-bearing, Vuetify sets its own `top`) and reserves
+`labelHeight + labelGap` (24px) of margin headroom on `.v-field:not(.v-field--no-label)` only.
+A placeholder+aria-label chrome field reserves nothing.
+
+### Deliberate visual changes
+
+| Where | Change | Why |
+|---|---|---|
+| Every labelled field | Label moves from the border notch to a static 13px/500 `--text-secondary` line above the box | One label spec (`text.label` + `field.labelHeight`), shared verbatim with `MpFormField`; no float animation, no size pop |
+| Label on focus / error | Stays calm (was primary / error) | The 2px border and the message carry the state — Stripe/Polaris behavior; the base label rule now *deliberately* wins the (0,4,0) tie against Vuetify's error-label rule (see the specificity-contract comment in settings-form.scss) |
+| Field box | 44 → 40 (`boxPadding` token deleted; box = ramp value exactly) | Fields, buttons, toolbar controls and list rows share `control.height`; the AppBar/toolbar `!important` neutralisations shrank accordingly |
+| Field sizes | `density` now real: compact → sm 32 · comfortable → md 40 (default) · default → lg 48 (`component.field.height`) | The ramp the system never had; input padding 6/8/12, 14px text at every stop |
+| Selection-control labels | 16 → 14px | They were the only unsized form text, inheriting VInput's 1rem |
+| Placeholder | `--muted` at 0.65 alpha → solid `--text-muted`, always visible when empty | The alpha put it under 4.5:1; persistent labels make placeholders permanently visible, so dupes were swept (they must be example values, never the label restated) |
+| Hint/error messages | 12px indent → flush with the label and border edge | The indent aligned with the in-box label, which no longer exists |
+| Form rhythm | A labelled md field's unit is 64px (24 headroom + 40 box); grid gap stays 16 | Intended Polaris-style rhythm |
+
+### Sweep (same pass)
+
+- `density="compact"` removed from 74 outlined field call sites (it was inert; leaving it would
+  have silently shrunk them to 32). The 6 non-outlined ones (PosPreview solo ×4, Tickets +
+  LandingPageEditor plain) keep theirs — density was always live for those variants.
+- Restated defaults removed app-wide: `variant="outlined"`, `density="comfortable"`,
+  `color="primary"`, and the 3 now-global `persistent-placeholder`.
+- `rounded="lg"` off the two AcquisitionForms searches; JourneyBuilder's tinted, half-opacity
+  search skin deleted (it undid the P5.5-12 3:1 border fix); AppBar's 13px placeholder and 13px
+  PLG-demo select, and FormBuilder's 0.75rem label rule, all deleted — 14px everywhere.
+- Placeholder-restates-label fixed (ChatbotBuilder store type, EngineEditor notes);
+  ChatbotBuilder's external `<label>` (no `for`) became the textarea's own `label` prop;
+  KitWizard's table-cell Qty editor moved to the chrome pattern (aria-label + sm density).
+- RolesPermissionsPage's four `mb-3` inside a drawer deleted (the shell owns the gap).
+
+### Deliberate exemptions (carried over + new)
+
+- Toolbar searches, table-cell editors and chat composers keep `placeholder` + `aria-label` —
+  no label, no headroom, flush in a 40px control row.
+- PosPreview wholesale (embedded POS product mock with its own aesthetic — its fields are
+  label-less, so the new baseline changes nothing structurally); Tickets inbox switcher +
+  composer; LandingPageEditor name field; AccountDefaultsPage readonly `bg-color` field.
+- Standalone field margins in bespoke builder/demo pages (CreateDraftOrder, ChatbotBuilder
+  card stacks, etc.) stay: they are the only spacing mechanism there (no container gap to
+  double), and a 16px margin now renders the same rhythm a grid gap would.
+
+### Follow-ups this opens
+
+- The 201 bare `hide-details` — each needs a validation-suppression judgment; not swept here.
+- An sm multi-chip select exceeds 32px by construction (chips are 24px) — a chip `sm` stop for
+  in-field chips would close it.
+- Dense chrome that *wants* sm can now opt in deliberately with `density="compact"`.
+- `MpFormGrid`'s labelled-trailing offset is the repo's first `:has()` — fine for this
+  modern-browser prototype; an explicit modifier class is the fallback if ever needed.

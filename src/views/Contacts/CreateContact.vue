@@ -367,7 +367,6 @@ function save() {
                 :aria-labelledby="labelId"
                 :aria-describedby="descriptionId"
                 :label="triggerJourneys ? 'On' : 'Off'"
-                color="primary"
                 hide-details
               />
             </template>
@@ -436,7 +435,6 @@ function save() {
               :aria-labelledby="labelId"
               :aria-describedby="descriptionId"
               :label="nfEditProfile ? 'Visible to contacts' : 'Hidden from contacts'"
-              color="primary"
               hide-details
             />
           </template>

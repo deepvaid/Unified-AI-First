@@ -63,22 +63,31 @@ function confirmDelete() {
 }
 
 // Filters (list mode)
-const filters = ref({ status: '', type: '' })
+// Status is the promoted filter: a multi-select pill in the toolbar, so the
+// cut people make most often doesn't cost a trip to the drawer.
+const statusQuickFilter = {
+  key: 'status',
+  label: 'Status',
+  options: ['Active', 'Draft', 'Published', 'Paused'].map((v) => ({ label: v, value: v })),
+}
+const statusFilter = ref<string[]>([])
+
+const filters = ref({ type: '' })
 const activeFilterEntries = computed(() => {
   const entries: Array<{ key: string; label: string }> = []
-  if (filters.value.status) entries.push({ key: 'status', label: `Status: ${filters.value.status}` })
+  if (statusFilter.value.length) entries.push({ key: 'status', label: `Status: ${statusFilter.value.join(', ')}` })
   if (filters.value.type) entries.push({ key: 'type', label: `Type: ${filters.value.type}` })
   return entries
 })
 function removeFilter(key: string) {
-  if (key === 'status') filters.value.status = ''
+  if (key === 'status') statusFilter.value = []
   if (key === 'type') filters.value.type = ''
 }
-function clearAllFilters() { filters.value.status = ''; filters.value.type = '' }
+function clearAllFilters() { statusFilter.value = []; filters.value.type = '' }
 
 const listItems = computed(() =>
   forms.value.filter(f =>
-    (!filters.value.status || f.status === filters.value.status) &&
+    (!statusFilter.value.length || statusFilter.value.includes(f.status)) &&
     (!filters.value.type || f.type === filters.value.type),
   ),
 )
@@ -204,10 +213,7 @@ async function copyText(text: string) {
         v-model="search"
         prepend-inner-icon="search"
         placeholder="Search forms…"
-        variant="outlined"
-        density="compact"
         hide-details
-        rounded="lg"
         class="acq-search"
       />
     </div>
@@ -331,6 +337,8 @@ async function copyText(text: string) {
     <!-- List -->
     <v-card v-else variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden list-card">
       <MpDataTableToolbar
+        v-model:quick-filter-value="statusFilter"
+        :quick-filter="statusQuickFilter"
         v-model:search="search"
         title="Forms"
         search-placeholder="Search forms..."
@@ -342,8 +350,7 @@ async function copyText(text: string) {
         <template #filter-content>
           <div class="pa-4 pb-2">
             <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <v-select v-model="filters.status" label="Status" :items="['', 'Active', 'Draft', 'Published', 'Paused']" variant="outlined" density="compact" hide-details class="mb-3" />
-            <v-select v-model="filters.type" label="Type" :items="['', 'Popup', 'Embedded']" variant="outlined" density="compact" hide-details class="mb-3" />
+            <v-select v-model="filters.type" label="Type" :items="['', 'Popup', 'Embedded']" hide-details class="mb-3" />
           </div>
         </template>
       </MpDataTableToolbar>
@@ -398,7 +405,7 @@ async function copyText(text: string) {
         <v-btn-toggle v-model="filterType" density="compact" variant="outlined" divided rounded="lg" mandatory class="mp-toggle-group mp-toggle-group--segmented">
           <v-btn v-for="t in ['All', 'Popup', 'Embedded']" :key="t" :value="t" size="small" class="text-none px-4">{{ t }}</v-btn>
         </v-btn-toggle>
-        <v-text-field v-model="templateSearch" prepend-inner-icon="search" placeholder="Search templates…" variant="outlined" density="compact" hide-details rounded="lg" class="flex-grow-1" />
+        <v-text-field v-model="templateSearch" prepend-inner-icon="search" placeholder="Search templates…" hide-details class="flex-grow-1" />
       </div>
       <v-row dense class="template-grid">
         <v-col v-for="tmpl in filteredTemplates" :key="tmpl.id" cols="12" sm="6" md="4">
@@ -464,12 +471,12 @@ async function copyText(text: string) {
       <template v-if="activeForm">
         <div>
           <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Website Embed</div>
-          <v-textarea :model-value="embedSnippets.script" readonly variant="outlined" density="compact" rows="2" class="embed-mono mb-2" hide-details />
+          <v-textarea :model-value="embedSnippets.script" readonly rows="2" class="embed-mono mb-2" hide-details />
           <v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedSnippets.script)">Copy script</v-btn>
         </div>
         <div>
           <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Manual Integration</div>
-          <v-textarea :model-value="embedSnippets.manual" readonly variant="outlined" density="compact" rows="4" class="embed-mono mb-2" hide-details />
+          <v-textarea :model-value="embedSnippets.manual" readonly rows="4" class="embed-mono mb-2" hide-details />
           <v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedSnippets.manual)">Copy snippet</v-btn>
         </div>
       </template>
