@@ -13,6 +13,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useInitialLoad } from '@/composables/useInitialLoad'
@@ -431,11 +432,11 @@ function exportOrders() {
         <template v-slot:item.actions="{ item }">
           <div @click.stop>
             <MpRowActionsMenu ariaLabel="Order actions" :itemLabel="item.orderNumber">
-              <v-list-item role="menuitem" prepend-icon="eye" title="View order" @click="goToOrder(item.id)"></v-list-item>
-              <v-list-item role="menuitem" prepend-icon="package-check" title="Mark fulfilled" :disabled="item.fulfillmentStatus === 'Shipped' || item.status === 'Cancelled'" @click="markFulfilled(item)"></v-list-item>
-              <v-list-item role="menuitem" prepend-icon="printer" title="Print invoice" @click="printInvoice(item)"></v-list-item>
+              <MpMenuItem icon="eye" title="View order" @click="goToOrder(item.id)"></MpMenuItem>
+              <MpMenuItem icon="package-check" title="Mark fulfilled" :disabled="item.fulfillmentStatus === 'Shipped' || item.status === 'Cancelled'" @click="markFulfilled(item)"></MpMenuItem>
+              <MpMenuItem icon="printer" title="Print invoice" @click="printInvoice(item)"></MpMenuItem>
               <v-divider class="my-1" />
-              <v-list-item role="menuitem" prepend-icon="ban" title="Cancel order" class="text-error" :disabled="item.status === 'Cancelled'" @click="askCancelRow(item)"></v-list-item>
+              <MpMenuItem icon="ban" title="Cancel order" danger :disabled="item.status === 'Cancelled'" @click="askCancelRow(item)"></MpMenuItem>
             </MpRowActionsMenu>
           </div>
         </template>

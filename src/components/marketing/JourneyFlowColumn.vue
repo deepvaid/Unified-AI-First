@@ -4,6 +4,7 @@ import type { CatalogItem, NodeCategory } from '@/stores/journeyFlowData'
 import { nodeCatalog } from '@/stores/journeyFlowData'
 import type { FlowSegment } from '@/composables/useFlowTree'
 import JourneyAddStepMenu from './JourneyAddStepMenu.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { branchChipColor, categoryColor, categoryLabel } from './flowTheme'
 
@@ -85,13 +86,13 @@ const endsRun = computed(() => {
 
         <div class="flow-node__tools">
           <MpRowActionsMenu ariaLabel="Actions" :itemLabel="seg.node.title">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Configure" @click="emit('select', seg.node.id)"></v-list-item>
-            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate"
+            <MpMenuItem icon="pencil" title="Configure" @click="emit('select', seg.node.id)" />
+            <MpMenuItem icon="copy" title="Duplicate"
               :disabled="seg.node.category === 'trigger' || seg.node.category === 'filter'"
-              @click="emit('duplicate', seg.node.id)"></v-list-item>
+              @click="emit('duplicate', seg.node.id)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error"
-              :disabled="seg.node.category === 'trigger'" @click="emit('remove', seg.node.id)"></v-list-item>
+            <MpMenuItem icon="trash-2" title="Delete" danger
+              :disabled="seg.node.category === 'trigger'" @click="emit('remove', seg.node.id)" />
           </MpRowActionsMenu>
         </div>
       </div>

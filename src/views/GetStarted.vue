@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useOnboardingStore, type OnboardingPhase, type SetupGoal } from '@/stores/useOnboarding'
 import { usePlgStore } from '@/stores/usePlg'
@@ -97,7 +98,7 @@ function doReset() {
     >
       <template #actions>
         <MpRowActionsMenu ariaLabel="Guide options">
-          <v-list-item role="menuitem" prepend-icon="rotate-ccw" title="Reset progress" @click="confirmReset = true" />
+          <MpMenuItem icon="rotate-ccw" title="Reset progress" @click="confirmReset = true" />
         </MpRowActionsMenu>
       </template>
     </MpPageHeader>

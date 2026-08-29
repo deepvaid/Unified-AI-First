@@ -14,6 +14,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -176,9 +177,9 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
       <template #actions>
         <v-btn variant="flat" prepend-icon="pencil" @click="openEditDrawer" color="surface">Edit Contact</v-btn>
         <MpRowActionsMenu ariaLabel="Contact actions" :itemLabel="fullName">
-          <v-list-item role="menuitem" prepend-icon="share" title="Export" @click="exportContact" />
+          <MpMenuItem icon="share" title="Export" @click="exportContact" />
           <v-divider class="my-1" />
-          <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="deleteDialog = true" />
+          <MpMenuItem icon="trash-2" title="Delete" danger @click="deleteDialog = true" />
         </MpRowActionsMenu>
       </template>
     </MpPageHeader>

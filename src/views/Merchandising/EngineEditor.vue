@@ -7,6 +7,7 @@ import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import { useToast } from '@/composables/useToast'
@@ -488,9 +489,9 @@ function goToStep(target: number) {
               </td>
               <td class="text-end" style="width: 56px">
                 <MpRowActionsMenu ariaLabel="Filter actions" :item-label="condition.field">
-                  <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="startEditCondition(condition)" />
+                  <MpMenuItem icon="pencil" title="Edit" @click="startEditCondition(condition)" />
                   <v-divider class="my-1" />
-                  <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="removeCondition(condition.id)" />
+                  <MpMenuItem icon="trash-2" title="Delete" danger @click="removeCondition(condition.id)" />
                 </MpRowActionsMenu>
               </td>
             </tr>

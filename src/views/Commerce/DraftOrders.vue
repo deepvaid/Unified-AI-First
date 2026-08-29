@@ -12,6 +12,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -196,10 +197,10 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         <template v-slot:item.actions="{ item }">
           <div @click.stop>
             <MpRowActionsMenu ariaLabel="Draft order actions" :itemLabel="item.draftNumber">
-              <v-list-item role="menuitem" prepend-icon="pencil" title="Edit draft" @click="goEdit(item)"></v-list-item>
-              <v-list-item role="menuitem" prepend-icon="send" title="Send invoice" :disabled="item.status === 'Invoice Sent'" @click="sendInvoice(item)"></v-list-item>
+              <MpMenuItem icon="pencil" title="Edit draft" @click="goEdit(item)"></MpMenuItem>
+              <MpMenuItem icon="send" title="Send invoice" :disabled="item.status === 'Invoice Sent'" @click="sendInvoice(item)"></MpMenuItem>
               <v-divider class="my-1" />
-              <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDeleteRow(item)"></v-list-item>
+              <MpMenuItem icon="trash-2" title="Delete" danger @click="askDeleteRow(item)"></MpMenuItem>
             </MpRowActionsMenu>
           </div>
         </template>

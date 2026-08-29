@@ -10,6 +10,7 @@ import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeade
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import DashboardFormDialog from '@/components/dashboards/DashboardFormDialog.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { accentToVuetifyColor, relativeTime } from '@/components/dashboards/dashboardOptions'
 import type { Dashboard } from '@/stores/dashboards/types'
@@ -347,36 +348,32 @@ function handleDashboardCreated(dashboardId: string) {
         <template #item.actions="{ item }">
           <div class="d-flex align-center justify-end" @click.stop>
             <MpRowActionsMenu ariaLabel="Dashboard actions" :itemLabel="item.name">
-              <v-list-item role="menuitem" prepend-icon="arrow-up-right" title="Open" @click="openDashboard(item.id)" />
-              <v-list-item role="menuitem" prepend-icon="pencil" title="Edit details" @click="openEdit(item.id)" />
-              <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="handleDuplicate(item.id)" />
-              <v-list-item
-                role="menuitem"
-                :prepend-icon="item.favorite ? 'star-off' : 'star'"
+              <MpMenuItem icon="arrow-up-right" title="Open" @click="openDashboard(item.id)" />
+              <MpMenuItem icon="pencil" title="Edit details" @click="openEdit(item.id)" />
+              <MpMenuItem icon="copy" title="Duplicate" @click="handleDuplicate(item.id)" />
+              <MpMenuItem
+                :icon="item.favorite ? 'star-off' : 'star'"
                 :title="item.favorite ? 'Unfavorite' : 'Favorite'"
                 @click="handleToggleFavorite(item.id)"
               />
-              <v-list-item
+              <MpMenuItem
                 v-if="!item.isDefault"
-                role="menuitem"
-                prepend-icon="bookmark-check"
+                icon="bookmark-check"
                 title="Set as default"
                 @click="handleSetDefault(item.id)"
               />
-              <v-list-item
+              <MpMenuItem
                 v-if="item.kind === 'system'"
-                role="menuitem"
-                prepend-icon="rotate-ccw"
+                icon="rotate-ccw"
                 title="Reset to defaults"
                 @click="handleReset(item.id)"
               />
               <v-divider v-if="item.kind === 'custom'" class="my-1" />
-              <v-list-item
+              <MpMenuItem
                 v-if="item.kind === 'custom'"
-                role="menuitem"
-                prepend-icon="trash-2"
+                icon="trash-2"
                 title="Delete"
-                class="text-error"
+                danger
                 @click="handleDelete(item.id)"
               />
             </MpRowActionsMenu>

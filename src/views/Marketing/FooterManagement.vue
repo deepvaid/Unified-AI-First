@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
@@ -127,11 +128,11 @@ function notify(text: string) { toast.success(text) }
         </template>
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Footer actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit Design" @click="openEdit(item)" />
-            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicateFooter(item)" />
-            <v-list-item v-if="!item.isDefault" role="menuitem" prepend-icon="star" title="Set as Default" @click="setDefault(item)" />
+            <MpMenuItem icon="pencil" title="Edit Design" @click="openEdit(item)" />
+            <MpMenuItem icon="copy" title="Duplicate" @click="duplicateFooter(item)" />
+            <MpMenuItem v-if="!item.isDefault" icon="star" title="Set as Default" @click="setDefault(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" :disabled="item.isDefault" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger :disabled="item.isDefault" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template v-slot:no-data>

@@ -12,6 +12,7 @@ import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
@@ -65,12 +66,26 @@ watch(() => form.value.name, (name) => {
 const validDenominations = computed(() => form.value.denominations.filter(d => Number(d) > 0))
 const formValid = computed(() => form.value.name.trim().length > 0 && validDenominations.value.length > 0)
 
+// Snapshot the form on open so close paths can tell edits from noise.
+const openSnapshot = ref('')
+function snapshotState() {
+  return JSON.stringify(form.value)
+}
+const drawerDirty = computed(() => drawer.value && snapshotState() !== openSnapshot.value)
+
+const confirmDiscard = ref(false)
+function requestCloseDrawer() {
+  if (drawerDirty.value) confirmDiscard.value = true
+  else drawer.value = false
+}
+
 function openCreate() {
   editingId.value = null
   form.value = blankProduct()
   submitted.value = false
   slugTouched.value = false
   organiseOpen.value = []
+  openSnapshot.value = snapshotState()
   drawer.value = true
 }
 
@@ -91,6 +106,7 @@ function openEdit(product: PurchasableGiftCard) {
   submitted.value = false
   slugTouched.value = true
   organiseOpen.value = product.taxCategory || product.brand || product.tags.length || product.collections.length ? [0] : []
+  openSnapshot.value = snapshotState()
   drawer.value = true
 }
 
@@ -349,10 +365,10 @@ function notify(text: string) { toast.success(text) }
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Gift card product actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem icon="copy" title="Duplicate" @click="duplicate(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
@@ -386,6 +402,8 @@ function notify(text: string) { toast.success(text) }
       v-model="drawer"
       :title="isEdit ? 'Edit purchasable gift card' : 'New purchasable gift card'"
       subtitle="Sell a gift card that customers can buy from your storefront" size="lg"
+      :guarded="drawerDirty"
+      @close="requestCloseDrawer"
     >
       <MpFormSection title="General" />
       <MpFormGrid>
@@ -473,12 +491,21 @@ function notify(text: string) { toast.success(text) }
       </v-expansion-panels>
 
       <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
+        <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
         <v-btn color="primary" variant="elevated" class="text-none" prepend-icon="check" @click="saveProduct">
           {{ isEdit ? 'Save changes' : 'Save gift card' }}
         </v-btn>
       </template>
     </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="confirmDiscard"
+      title="Discard gift card product changes?"
+      message="You have unsaved changes to this gift card product. Closing now will discard them."
+      confirm-label="Discard changes"
+      danger
+      @confirm="drawer = false"
+    />
 
     <MpConfirmDialog
       v-model="confirmDelete"

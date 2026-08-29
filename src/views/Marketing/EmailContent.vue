@@ -5,6 +5,7 @@ import { useContentStore } from '@/stores/useContent'
 import type { ContentItem } from '@/stores/useContent'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
@@ -61,15 +62,14 @@ function confirmDelete() {
             <div class="d-flex align-start justify-space-between ga-2">
               <div class="text-subtitle-1 font-weight-bold mb-1">{{ item.name }}</div>
               <MpRowActionsMenu :ariaLabel="`${item.name} actions`">
-                <v-list-item
-                  role="menuitem"
-                  prepend-icon="pencil"
-                  rounded="lg"
+                <MpMenuItem
+                  title="Edit"
+                  icon="pencil"
                   :to="{ name: 'EmailContentEditor', params: { accountId, id: item.id } }"
-                >Edit</v-list-item>
-                <v-list-item role="menuitem" prepend-icon="copy" rounded="lg" @click="content.cloneContent(item.id)">Clone</v-list-item>
+                />
+                <MpMenuItem title="Clone" icon="copy" @click="content.cloneContent(item.id)" />
                 <v-divider class="my-1" />
-                <v-list-item role="menuitem" prepend-icon="trash-2" rounded="lg" class="text-error" @click="askDelete(item)">Delete</v-list-item>
+                <MpMenuItem title="Delete" icon="trash-2" danger @click="askDelete(item)" />
               </MpRowActionsMenu>
             </div>
             <div class="text-body-2 text-medium-emphasis mb-1">{{ item.type }}</div>

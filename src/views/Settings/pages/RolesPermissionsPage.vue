@@ -6,6 +6,7 @@ import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
@@ -254,10 +255,9 @@ function confirmDelete() {
         <template v-slot:item.actions="{ item }">
           <span @click.stop>
             <MpRowActionsMenu ariaLabel="Role actions" :itemLabel="(item as RoleRow).name">
-              <v-list-item role="menuitem" prepend-icon="eye" :title="(item as RoleRow).system ? 'View' : 'Edit'" @click="openRole((item as RoleRow).id)" />
-              <v-list-item
-                role="menuitem"
-                prepend-icon="copy"
+              <MpMenuItem icon="eye" :title="(item as RoleRow).system ? 'View' : 'Edit'" @click="openRole((item as RoleRow).id)" />
+              <MpMenuItem
+                icon="copy"
                 title="Duplicate"
                 :disabled="!rbac.canCreateCustomRole"
                 @click="duplicate(item as RoleRow)"
@@ -271,11 +271,10 @@ function confirmDelete() {
                 >
                   <template #activator="{ props: tipProps }">
                     <div v-bind="tipProps">
-                      <v-list-item
-                        role="menuitem"
-                        prepend-icon="trash-2"
+                      <MpMenuItem
+                        icon="trash-2"
                         title="Delete"
-                        class="text-error"
+                        danger
                         :disabled="(item as RoleRow).usage > 0"
                         @click="askDelete(item as RoleRow)"
                       />

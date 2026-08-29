@@ -7,6 +7,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormField from '@/components/MpFormField.vue'
@@ -108,9 +109,9 @@ function notify(text: string) { toast.success(text) }
         </template>
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Image group actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template v-slot:no-data>

@@ -12,6 +12,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpDialog from '@/components/MpDialog.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
@@ -285,15 +286,14 @@ function exportFulfillments() {
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Fulfillment actions" :itemLabel="item.orderNumber">
-            <v-list-item role="menuitem" prepend-icon="eye" title="View order" @click="goToOrder(item)"></v-list-item>
-            <v-list-item
+            <MpMenuItem icon="eye" title="View order" @click="goToOrder(item)"></MpMenuItem>
+            <MpMenuItem
               v-if="NEXT_STAGE[item.status] && NEXT_STAGE[item.status] !== 'Shipped'"
-              role="menuitem"
-              prepend-icon="arrow-right"
+              icon="arrow-right"
               :title="`Advance to ${NEXT_STAGE[item.status]}`"
               @click="advanceStage(item)"
-            ></v-list-item>
-            <v-list-item role="menuitem" prepend-icon="truck" title="Mark shipped" :disabled="item.status === 'Shipped'" @click="askShip([item.id])"></v-list-item>
+            ></MpMenuItem>
+            <MpMenuItem icon="truck" title="Mark shipped" :disabled="item.status === 'Shipped'" @click="askShip([item.id])"></MpMenuItem>
           </MpRowActionsMenu>
         </template>
 

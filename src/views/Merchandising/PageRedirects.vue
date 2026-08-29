@@ -4,6 +4,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useToast } from '@/composables/useToast'
 import { useMerchandisingStore, type PageRedirect } from '@/stores/useMerchandising'
@@ -243,10 +244,10 @@ function submitEdit() {
 
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Page redirect actions">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem icon="copy" title="Duplicate" @click="duplicate(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="deleteRow(item.id)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="deleteRow(item.id)" />
           </MpRowActionsMenu>
         </template>
 

@@ -10,6 +10,7 @@ import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeade
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -103,7 +104,7 @@ function confirmDelete() {
         </template>
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Table actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 

@@ -10,6 +10,7 @@ import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpBuilderPreviewDialog from '@/components/MpBuilderPreviewDialog.vue'
 import LandingBlockPalette, { type PaletteItem } from '@/components/marketing/landing/LandingBlockPalette.vue'
@@ -359,9 +360,9 @@ function saveAndClose() {
       <v-btn variant="text" icon="eye" size="small" aria-label="Preview page" @click="openPreview" />
       <v-btn variant="text" icon="settings" size="small" aria-label="Page settings" @click="settingsOpen = true" />
       <MpRowActionsMenu ariaLabel="More page actions">
-        <v-list-item role="menuitem" prepend-icon="shield-check" rounded="lg" :disabled="page.status === 'Verified'" @click="verifyDomainAction">Verify Domain</v-list-item>
-        <v-list-item role="menuitem" prepend-icon="copy-plus" rounded="lg" @click="saveAsTemplateAction">Save as Template</v-list-item>
-        <v-list-item role="menuitem" prepend-icon="copy" rounded="lg" @click="duplicatePageAction">Duplicate Page</v-list-item>
+        <MpMenuItem title="Verify Domain" icon="shield-check" :disabled="page.status === 'Verified'" @click="verifyDomainAction" />
+        <MpMenuItem title="Save as Template" icon="copy-plus" @click="saveAsTemplateAction" />
+        <MpMenuItem title="Duplicate Page" icon="copy" @click="duplicatePageAction" />
       </MpRowActionsMenu>
       <v-btn variant="outlined" class="text-none" prepend-icon="check" @click="saveAndClose">Save and Close</v-btn>
       <v-tooltip

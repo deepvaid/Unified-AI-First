@@ -9,6 +9,7 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useRetailStore } from '@/stores/useRetail'
 import type { Register, RegisterStatus } from '@/stores/useRetail'
@@ -233,9 +234,11 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
 
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Register actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" title="Force resync" prepend-icon="refresh-cw" @click="store.forceResync([item.id]); showToast(`Resync sent to ${item.name}`)" />
-            <v-list-item role="menuitem" title="Reprint last receipt" prepend-icon="printer" @click="showToast(`Receipt sent to ${item.name}`)" />
-            <v-list-item role="menuitem" title="Deactivate" prepend-icon="power" @click="store.deactivateRegisters([item.id]); showToast(`${item.name} deactivated`)" />
+            <MpMenuItem title="Force resync" icon="refresh-cw" @click="store.forceResync([item.id]); showToast(`Resync sent to ${item.name}`)" />
+            <MpMenuItem title="Reprint last receipt" icon="printer" @click="showToast(`Receipt sent to ${item.name}`)" />
+            <v-divider class="my-1" />
+            <!-- Severity aligned with the detail drawer's error-tonal Deactivate (GAPS §5 closed). -->
+            <MpMenuItem title="Deactivate" icon="power" danger @click="store.deactivateRegisters([item.id]); showToast(`${item.name} deactivated`)" />
           </MpRowActionsMenu>
         </template>
 

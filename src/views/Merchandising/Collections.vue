@@ -8,6 +8,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useToast } from '@/composables/useToast'
 import {
@@ -167,17 +168,16 @@ function submitCreate() {
 
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Collection actions" :item-label="item.name">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit collection" @click="editCollection(item)" />
-            <v-list-item role="menuitem" prepend-icon="pin" title="Edit pins" @click="editPins(item)" />
-            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-            <v-list-item
-              role="menuitem"
-              :prepend-icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
+            <MpMenuItem icon="pencil" title="Edit collection" @click="editCollection(item)" />
+            <MpMenuItem icon="pin" title="Edit pins" @click="editPins(item)" />
+            <MpMenuItem icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <MpMenuItem
+              :icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
               :title="item.status === 'active' ? 'Disable' : 'Enable'"
               @click="onToggle(item)"
             />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 

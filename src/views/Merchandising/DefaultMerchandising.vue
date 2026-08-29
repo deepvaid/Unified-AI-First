@@ -6,6 +6,7 @@ import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useMerchandisingStore, type MerchRule } from '@/stores/useMerchandising'
 
@@ -157,9 +158,9 @@ function performConfirm() {
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Pinning rule actions" :item-label="item.collection">
-            <v-list-item role="menuitem" prepend-icon="pin" title="Edit pins" @click="openPinning(item.id)" />
+            <MpMenuItem icon="pin" title="Edit pins" @click="openPinning(item.id)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="deletePinning(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="deletePinning(item)" />
           </MpRowActionsMenu>
         </template>
         <template #no-data>
@@ -202,15 +203,14 @@ function performConfirm() {
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Merchandising rule actions" :item-label="item.name">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openRule(item.id)" />
-            <v-list-item
-              role="menuitem"
-              :prepend-icon="item.active ? 'circle-pause' : 'circle-play'"
+            <MpMenuItem icon="pencil" title="Edit" @click="openRule(item.id)" />
+            <MpMenuItem
+              :icon="item.active ? 'circle-pause' : 'circle-play'"
               :title="item.active ? 'Disable' : 'Enable'"
               @click="store.toggleMerchRuleActive(item.id)"
             />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="deleteRule(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="deleteRule(item)" />
           </MpRowActionsMenu>
         </template>
         <template #no-data>

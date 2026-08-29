@@ -13,6 +13,7 @@ import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
@@ -60,9 +61,23 @@ const formValid = computed(() =>
   form.value.initialValue > 0 && (form.value.expiration === 'none' || !!form.value.expiry),
 )
 
+// Snapshot the form on open so close paths can tell edits from noise.
+const openSnapshot = ref('')
+function snapshotState() {
+  return JSON.stringify(form.value)
+}
+const drawerDirty = computed(() => issueDrawer.value && snapshotState() !== openSnapshot.value)
+
+const confirmDiscard = ref(false)
+function requestCloseDrawer() {
+  if (drawerDirty.value) confirmDiscard.value = true
+  else issueDrawer.value = false
+}
+
 function openIssue() {
   form.value = blankCard()
   submitted.value = false
+  openSnapshot.value = snapshotState()
   issueDrawer.value = true
 }
 
@@ -286,10 +301,10 @@ function notify(text: string) { toast.success(text) }
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Gift card actions" :itemLabel="item.code">
-            <v-list-item role="menuitem" prepend-icon="eye" title="View" @click="openView(item)" />
-            <v-list-item role="menuitem" prepend-icon="ban" title="Disable" :disabled="item.status === 'Disabled'" @click="disableCard(item)" />
+            <MpMenuItem icon="eye" title="View" @click="openView(item)" />
+            <MpMenuItem icon="ban" title="Disable" :disabled="item.status === 'Disabled'" @click="disableCard(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
@@ -322,6 +337,8 @@ function notify(text: string) { toast.success(text) }
       v-model="issueDrawer"
       title="New custom gift card"
       subtitle="Issue a store-credit card and send it to a recipient"
+      :guarded="drawerDirty"
+      @close="requestCloseDrawer"
     >
       <!-- Preview -->
       <v-card color="primary" variant="tonal" rounded="lg" class="gift-preview">
@@ -430,7 +447,7 @@ function notify(text: string) { toast.success(text) }
       </MpFormGrid>
 
       <template #footer>
-        <v-btn variant="text" class="text-none" @click="issueDrawer = false">Cancel</v-btn>
+        <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
         <v-btn color="primary" variant="elevated" class="text-none" prepend-icon="gift" @click="issueGiftCard">
           Save gift card
         </v-btn>
@@ -482,6 +499,15 @@ function notify(text: string) { toast.success(text) }
         </v-btn>
       </template>
     </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="confirmDiscard"
+      title="Discard gift card changes?"
+      message="You have unsaved changes to this gift card. Closing now will discard them."
+      confirm-label="Discard changes"
+      danger
+      @confirm="issueDrawer = false"
+    />
 
     <MpConfirmDialog
       v-model="confirmDelete"

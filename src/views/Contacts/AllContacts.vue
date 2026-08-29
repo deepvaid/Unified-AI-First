@@ -16,6 +16,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
@@ -436,9 +437,9 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         <template v-slot:item.actions="{ item }">
           <span @click.stop>
             <MpRowActionsMenu ariaLabel="Contact actions" :itemLabel="`${(item as Contact).firstName} ${(item as Contact).lastName ?? ''}`.trim()">
-              <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openContact((item as Contact).id)" />
+              <MpMenuItem icon="pencil" title="Edit" @click="openContact((item as Contact).id)" />
               <v-divider class="my-1" />
-              <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDeleteRow(item as Contact)" />
+              <MpMenuItem icon="trash-2" title="Delete" danger @click="askDeleteRow(item as Contact)" />
             </MpRowActionsMenu>
           </span>
         </template>

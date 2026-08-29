@@ -12,6 +12,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
@@ -439,7 +440,7 @@ function restore(template: FeedTemplate) {
             </template>
             <template #item.actions="{ item }">
               <MpRowActionsMenu ariaLabel="Product actions" :item-label="item.name || item.itemId">
-                <v-list-item role="menuitem" prepend-icon="pencil" title="Edit product" @click="openEditProduct(item)" />
+                <MpMenuItem icon="pencil" title="Edit product" @click="openEditProduct(item)" />
               </MpRowActionsMenu>
             </template>
             <template #no-data>
@@ -504,7 +505,7 @@ function restore(template: FeedTemplate) {
             </template>
             <template #item.actions="{ item }">
               <MpRowActionsMenu ariaLabel="Feed actions" :item-label="item.name">
-                <v-list-item role="menuitem" prepend-icon="pencil" title="Edit product feed" @click="openEditFeed(item)" />
+                <MpMenuItem icon="pencil" title="Edit product feed" @click="openEditFeed(item)" />
               </MpRowActionsMenu>
             </template>
             <template #no-data>
@@ -560,13 +561,13 @@ function restore(template: FeedTemplate) {
             </template>
             <template #item.actions="{ item }">
               <MpRowActionsMenu ariaLabel="Template actions" :item-label="item.name">
-                <v-list-item role="menuitem" prepend-icon="pencil" title="Edit feed template" @click="openEditTemplate(item)" />
+                <MpMenuItem icon="pencil" title="Edit feed template" @click="openEditTemplate(item)" />
                 <template v-if="item.archived">
-                  <v-list-item role="menuitem" prepend-icon="archive-restore" title="Restore feed template" @click="restore(item)" />
+                  <MpMenuItem icon="archive-restore" title="Restore feed template" @click="restore(item)" />
                 </template>
                 <template v-else>
                   <v-divider class="my-1" />
-                  <v-list-item role="menuitem" prepend-icon="archive" title="Archive feed template" @click="askArchive(item)" />
+                  <MpMenuItem icon="archive" title="Archive feed template" @click="askArchive(item)" />
                 </template>
               </MpRowActionsMenu>
             </template>

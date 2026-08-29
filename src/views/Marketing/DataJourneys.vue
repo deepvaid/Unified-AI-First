@@ -9,6 +9,7 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpStatusToggle from '@/components/MpStatusToggle.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
@@ -175,15 +176,14 @@ function createDataJourney() {
               </template>
             </v-tooltip>
             <MpRowActionsMenu ariaLabel="Data journey actions" :itemLabel="item.name">
-              <v-list-item
-                role="menuitem"
-                :prepend-icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
+              <MpMenuItem
+                :icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
                 :title="item.status === 'Active' ? 'Pause' : 'Activate'"
                 @click="toggleStatus(item)"
-              ></v-list-item>
+              />
               <v-divider class="my-1" />
-              <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error"
-                @click="store.removeDataJourney(item.id)"></v-list-item>
+              <MpMenuItem icon="trash-2" title="Delete" danger
+                @click="store.removeDataJourney(item.id)" />
             </MpRowActionsMenu>
           </div>
         </template>

@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
@@ -76,19 +77,10 @@ function confirmDelete() {
         <template v-slot:item.actions="{ item }">
           <div class="d-flex justify-end pr-2">
             <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">
-              <v-list-item role="menuitem" @click="editFlow(item.id)">
-                <template #prepend><v-icon size="18">pencil</v-icon></template>
-                <v-list-item-title class="text-body-2">Edit</v-list-item-title>
-              </v-list-item>
-              <v-list-item role="menuitem" @click="store.duplicateTransactionalEmail(item.id)">
-                <template #prepend><v-icon size="18">copy</v-icon></template>
-                <v-list-item-title class="text-body-2">Duplicate</v-list-item-title>
-              </v-list-item>
+              <MpMenuItem title="Edit" icon="pencil" @click="editFlow(item.id)" />
+              <MpMenuItem title="Duplicate" icon="copy" @click="store.duplicateTransactionalEmail(item.id)" />
               <v-divider class="my-1" />
-              <v-list-item role="menuitem" class="text-error" @click="deleteTarget = { id: item.id, name: item.name }">
-                <template #prepend><v-icon size="18">trash-2</v-icon></template>
-                <v-list-item-title class="text-body-2">Delete</v-list-item-title>
-              </v-list-item>
+              <MpMenuItem title="Delete" icon="trash-2" danger @click="deleteTarget = { id: item.id, name: item.name }" />
             </MpRowActionsMenu>
           </div>
         </template>

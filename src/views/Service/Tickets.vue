@@ -12,6 +12,7 @@ import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 
 const store = useTicketsStore()
 const replyBody = ref('')
@@ -73,9 +74,23 @@ const formValid = computed(() =>
   newTicket.value.customer.trim() && newTicket.value.email.trim() && newTicket.value.subject.trim()
 )
 
+// Snapshot the form on open so close paths can tell edits from noise.
+const openSnapshot = ref('')
+function snapshotState() {
+  return JSON.stringify(newTicket.value)
+}
+const drawerDirty = computed(() => newTicketDrawer.value && snapshotState() !== openSnapshot.value)
+
+const confirmDiscard = ref(false)
+function requestCloseDrawer() {
+  if (drawerDirty.value) confirmDiscard.value = true
+  else newTicketDrawer.value = false
+}
+
 function openNewTicket() {
   newTicket.value = emptyForm()
   formTouched.value = false
+  openSnapshot.value = snapshotState()
   newTicketDrawer.value = true
 }
 
@@ -349,9 +364,9 @@ function bulkDelete() {
               @click="markResolved"
             >Resolve</v-btn>
             <MpRowActionsMenu ariaLabel="Ticket actions">
-              <v-list-item role="menuitem" prepend-icon="x-circle" title="Close Ticket" @click="closeActiveTicket" />
+              <MpMenuItem icon="x-circle" title="Close Ticket" @click="closeActiveTicket" />
               <v-divider class="my-1" />
-              <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete Ticket" class="text-error" @click="confirmDelete = true" />
+              <MpMenuItem icon="trash-2" title="Delete Ticket" danger @click="confirmDelete = true" />
             </MpRowActionsMenu>
           </div>
         </div>
@@ -516,6 +531,8 @@ function bulkDelete() {
     v-model="newTicketDrawer"
     title="Create New Ticket"
     subtitle="Log a support request on behalf of a customer"
+    :guarded="drawerDirty"
+    @close="requestCloseDrawer"
   >
     <MpFormSection title="Customer" />
     <MpFormGrid>
@@ -591,7 +608,7 @@ function bulkDelete() {
     </MpFormGrid>
 
     <template #footer>
-      <v-btn variant="text" class="text-none" @click="newTicketDrawer = false">Cancel</v-btn>
+      <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
       <v-btn
         color="primary"
         variant="flat"
@@ -601,6 +618,15 @@ function bulkDelete() {
       >Create Ticket</v-btn>
     </template>
   </MpFormDrawer>
+
+  <MpConfirmDialog
+    v-model="confirmDiscard"
+    title="Discard ticket changes?"
+    message="You have unsaved changes to this ticket. Closing now will discard them."
+    confirm-label="Discard changes"
+    danger
+    @confirm="newTicketDrawer = false"
+  />
 
   <!-- Delete confirmation -->
   <MpConfirmDialog

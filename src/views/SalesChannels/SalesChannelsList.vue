@@ -6,6 +6,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import {
   CHANNEL_HEALTH_LABELS,
@@ -226,9 +227,9 @@ function mergedStatus(channel: SalesChannel): MergedStatus {
 
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Sales channel actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" prepend-icon="eye" title="View details" @click="openChannel(item)" />
-            <v-list-item role="menuitem" prepend-icon="activity" title="View health" @click="openChannel(item)" />
-            <v-list-item role="menuitem" prepend-icon="settings" title="Channel settings" @click="openChannel(item)" />
+            <MpMenuItem icon="eye" title="View details" @click="openChannel(item)" />
+            <MpMenuItem icon="activity" title="View health" @click="openChannel(item)" />
+            <MpMenuItem icon="settings" title="Channel settings" @click="openChannel(item)" />
           </MpRowActionsMenu>
         </template>
 

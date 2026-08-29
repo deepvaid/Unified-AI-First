@@ -13,6 +13,7 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -62,10 +63,24 @@ const form = ref<Omit<CdpField, 'id'>>({
 /** The name this field had when the drawer opened, to warn about renames. */
 const originalName = ref('')
 
+// Snapshot the form on open so close paths can tell edits from noise.
+const openSnapshot = ref('')
+function snapshotState() {
+  return JSON.stringify(form.value)
+}
+const drawerDirty = computed(() => drawer.value && snapshotState() !== openSnapshot.value)
+
+const confirmDiscard = ref(false)
+function requestCloseDrawer() {
+  if (drawerDirty.value) confirmDiscard.value = true
+  else drawer.value = false
+}
+
 function openCreate() {
   editingId.value = null
   originalName.value = ''
   form.value = { name: '', type: 'String', defaultValue: '', displayName: '', description: '', addToEditProfile: false }
+  openSnapshot.value = snapshotState()
   drawer.value = true
 }
 function openEdit(field: CdpField) {
@@ -75,6 +90,7 @@ function openEdit(field: CdpField) {
     name: field.name, type: field.type, defaultValue: field.defaultValue,
     displayName: field.displayName, description: field.description, addToEditProfile: field.addToEditProfile,
   }
+  openSnapshot.value = snapshotState()
   drawer.value = true
 }
 
@@ -206,9 +222,9 @@ function confirmDelete() {
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Field actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
@@ -279,7 +295,12 @@ function confirmDelete() {
     </v-card>
 
     <!-- Create / edit field -->
-    <MpFormDrawer v-model="drawer" :title="editingId != null ? 'Edit field' : 'Add field'">
+    <MpFormDrawer
+      v-model="drawer"
+      :title="editingId != null ? 'Edit field' : 'Add field'"
+      :guarded="drawerDirty"
+      @close="requestCloseDrawer"
+    >
       <MpFormGrid>
         <v-text-field
           v-model="form.name"
@@ -354,7 +375,7 @@ function confirmDelete() {
         </MpFormField>
       </MpFormGrid>
       <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
+        <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
         <v-btn
           color="primary"
           variant="flat"
@@ -366,6 +387,15 @@ function confirmDelete() {
         </v-btn>
       </template>
     </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="confirmDiscard"
+      title="Discard field changes?"
+      message="You have unsaved changes to this field. Closing now will discard them."
+      confirm-label="Discard changes"
+      danger
+      @confirm="drawer = false"
+    />
 
     <MpConfirmDialog
       v-model="deleteDialog"

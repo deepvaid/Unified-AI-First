@@ -12,6 +12,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
@@ -317,16 +318,15 @@ onMounted(() => {
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Promotion actions" :itemLabel="item.title">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEditPromotion(item)" />
-            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-            <v-list-item
-              role="menuitem"
-              :prepend-icon="item.status === 'Active' ? 'pause' : 'play'"
+            <MpMenuItem icon="pencil" title="Edit" @click="openEditPromotion(item)" />
+            <MpMenuItem icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <MpMenuItem
+              :icon="item.status === 'Active' ? 'pause' : 'play'"
               :title="item.status === 'Active' ? 'Deactivate' : 'Activate'"
               @click="toggleActive(item)"
             />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 

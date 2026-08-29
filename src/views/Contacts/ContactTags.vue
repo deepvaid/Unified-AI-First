@@ -9,6 +9,7 @@ import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -94,9 +95,9 @@ function confirmDelete() {
         </template>
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Tag actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 

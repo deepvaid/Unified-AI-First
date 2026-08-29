@@ -9,6 +9,7 @@ import type { Chatbot, ChatbotStatus } from '@/stores/useChatbot'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -190,23 +191,21 @@ function doCreate() {
         <template #item.actions="{ item }">
           <div @click.stop>
             <MpRowActionsMenu ariaLabel="Chatbot actions" :itemLabel="item.store">
-              <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openBuilder(item)" />
-              <v-list-item
+              <MpMenuItem icon="pencil" title="Edit" @click="openBuilder(item)" />
+              <MpMenuItem
                 v-if="item.status === 'Active'"
-                role="menuitem"
-                prepend-icon="pause"
+                icon="pause"
                 title="Deactivate"
                 @click="cb.setStatus(item.id, 'Inactive')"
               />
-              <v-list-item
+              <MpMenuItem
                 v-else
-                role="menuitem"
-                prepend-icon="play"
+                icon="play"
                 title="Activate"
                 @click="cb.setStatus(item.id, 'Active')"
               />
               <v-divider class="my-1" />
-              <v-list-item role="menuitem" prepend-icon="archive" title="Archive" class="text-error" @click="askArchive(item)" />
+              <MpMenuItem icon="archive" title="Archive" danger @click="askArchive(item)" />
             </MpRowActionsMenu>
           </div>
         </template>

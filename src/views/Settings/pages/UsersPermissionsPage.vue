@@ -6,6 +6,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
@@ -384,28 +385,26 @@ function bulkDeactivate() {
         <template v-slot:item.actions="{ item }">
           <span @click.stop>
             <MpRowActionsMenu ariaLabel="User actions" :itemLabel="(item as UserRow).name">
-              <v-list-item role="menuitem" prepend-icon="user-cog" title="Manage access" @click="openAccess((item as UserRow).id)" />
+              <MpMenuItem icon="user-cog" title="Manage access" @click="openAccess((item as UserRow).id)" />
               <template v-if="!(item as UserRow).isOwner">
                 <template v-if="(item as UserRow).status === 'invited'">
-                  <v-list-item role="menuitem" prepend-icon="send" title="Resend invite" @click="resend((item as UserRow).id)" />
-                  <v-list-item role="menuitem" prepend-icon="mail-x" title="Revoke invite" @click="askRevoke(item as UserRow)" />
+                  <MpMenuItem icon="send" title="Resend invite" @click="resend((item as UserRow).id)" />
+                  <MpMenuItem icon="mail-x" title="Revoke invite" @click="askRevoke(item as UserRow)" />
                 </template>
-                <v-list-item
+                <MpMenuItem
                   v-else-if="(item as UserRow).status === 'active'"
-                  role="menuitem"
-                  prepend-icon="pause"
+                  icon="pause"
                   title="Deactivate"
                   @click="setStatus(item as UserRow, 'deactivated')"
                 />
-                <v-list-item
+                <MpMenuItem
                   v-else
-                  role="menuitem"
-                  prepend-icon="play"
+                  icon="play"
                   title="Reactivate"
                   @click="setStatus(item as UserRow, 'active')"
                 />
                 <v-divider class="my-1" />
-                <v-list-item role="menuitem" prepend-icon="trash-2" title="Remove" class="text-error" @click="askRemoveRow(item as UserRow)" />
+                <MpMenuItem icon="trash-2" title="Remove" danger @click="askRemoveRow(item as UserRow)" />
               </template>
             </MpRowActionsMenu>
           </span>

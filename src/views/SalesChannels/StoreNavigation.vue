@@ -7,6 +7,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
@@ -169,10 +170,10 @@ const deleteMessage = computed(() => {
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Menu actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" :title="item.status === 'Active' ? 'Set inactive' : 'Set active'" :prepend-icon="item.status === 'Active' ? 'eye-off' : 'eye'" @click="toggleStatus(item)" />
-            <v-list-item role="menuitem" title="Edit" prepend-icon="pencil" @click="openEditor(item)" />
+            <MpMenuItem :title="item.status === 'Active' ? 'Set inactive' : 'Set active'" :icon="item.status === 'Active' ? 'eye-off' : 'eye'" @click="toggleStatus(item)" />
+            <MpMenuItem title="Edit" icon="pencil" @click="openEditor(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" title="Delete" prepend-icon="trash-2" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem title="Delete" icon="trash-2" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 

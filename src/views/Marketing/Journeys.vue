@@ -7,6 +7,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusToggle from '@/components/MpStatusToggle.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -229,17 +230,16 @@ function confirmDelete() {
               </template>
             </v-tooltip>
             <MpRowActionsMenu ariaLabel="Journey actions" :itemLabel="item.name">
-              <v-list-item role="menuitem" prepend-icon="bar-chart-2" title="View analytics" value="analytics" @click="viewAnalytics()"></v-list-item>
-              <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" value="duplicate" @click="duplicateJourney(item)"></v-list-item>
-              <v-list-item
-                role="menuitem"
-                :prepend-icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
+              <MpMenuItem icon="bar-chart-2" title="View analytics" value="analytics" @click="viewAnalytics()" />
+              <MpMenuItem icon="copy" title="Duplicate" value="duplicate" @click="duplicateJourney(item)" />
+              <MpMenuItem
+                :icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
                 :title="item.status === 'Active' ? 'Pause journey' : 'Activate journey'"
                 value="toggle"
                 @click="toggleStatus(item)"
-              ></v-list-item>
+              />
               <v-divider class="my-1" />
-              <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" value="delete" class="text-error" @click="requestDelete(item)"></v-list-item>
+              <MpMenuItem icon="trash-2" title="Delete" value="delete" danger @click="requestDelete(item)" />
             </MpRowActionsMenu>
           </div>
         </template>

@@ -8,6 +8,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
@@ -130,19 +131,10 @@ function confirmDelete() {
               </template>
             </v-tooltip>
             <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">
-              <v-list-item v-if="item.status === 'Draft'" role="menuitem" @click="editCampaign(item.id)">
-                <template #prepend><v-icon size="18">pencil</v-icon></template>
-                <v-list-item-title class="text-body-2">Edit</v-list-item-title>
-              </v-list-item>
-              <v-list-item role="menuitem" @click="store.duplicateSmsCampaign(item.id)">
-                <template #prepend><v-icon size="18">copy</v-icon></template>
-                <v-list-item-title class="text-body-2">Duplicate</v-list-item-title>
-              </v-list-item>
+              <MpMenuItem v-if="item.status === 'Draft'" title="Edit" icon="pencil" @click="editCampaign(item.id)" />
+              <MpMenuItem title="Duplicate" icon="copy" @click="store.duplicateSmsCampaign(item.id)" />
               <v-divider class="my-1" />
-              <v-list-item role="menuitem" class="text-error" @click="deleteTarget = { id: item.id, name: item.name }">
-                <template #prepend><v-icon size="18">trash-2</v-icon></template>
-                <v-list-item-title class="text-body-2">Delete</v-list-item-title>
-              </v-list-item>
+              <MpMenuItem title="Delete" icon="trash-2" danger @click="deleteTarget = { id: item.id, name: item.name }" />
             </MpRowActionsMenu>
           </div>
         </template>

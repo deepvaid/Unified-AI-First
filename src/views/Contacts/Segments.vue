@@ -11,6 +11,7 @@ import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeade
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -239,10 +240,10 @@ function confirmDelete() {
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Segment actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-list-item role="menuitem" prepend-icon="refresh-cw" title="Recalculate" @click="recalculate(item)" />
+            <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem icon="refresh-cw" title="Recalculate" @click="recalculate(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 

@@ -17,6 +17,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
@@ -382,13 +383,12 @@ onMounted(() => {
           <MpRowActionsMenu v-if="store.productViews.length" ariaLabel="Saved view actions">
             <v-list-subheader>Saved views</v-list-subheader>
             <v-divider class="my-1" />
-            <v-list-item
+            <MpMenuItem
               v-for="view in store.productViews"
               :key="view.id"
-              role="menuitem"
               :title="view.name"
-              prepend-icon="trash-2"
-              class="text-error"
+              icon="trash-2"
+              danger
               @click="deleteView(view)"
             />
           </MpRowActionsMenu>
@@ -522,9 +522,9 @@ onMounted(() => {
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Product actions" :item-label="item.name">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template #no-data>

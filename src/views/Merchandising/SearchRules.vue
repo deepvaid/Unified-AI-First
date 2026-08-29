@@ -4,6 +4,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
@@ -70,10 +71,24 @@ const form = ref<{ name: string; terms: string[]; conditions: MerchCondition[] }
 
 const formValid = computed(() => Boolean(form.value.name.trim()) && form.value.terms.length > 0)
 
+// Snapshot the form on open so close paths can tell edits from noise.
+const openSnapshot = ref('')
+function snapshotState() {
+  return JSON.stringify(form.value)
+}
+const drawerDirty = computed(() => drawer.value && snapshotState() !== openSnapshot.value)
+
+const confirmDiscard = ref(false)
+function requestCloseDrawer() {
+  if (drawerDirty.value) confirmDiscard.value = true
+  else drawer.value = false
+}
+
 function openCreate() {
   form.value = { name: '', terms: [], conditions: [] }
   editing.value = false
   editingId.value = ''
+  openSnapshot.value = snapshotState()
   drawer.value = true
 }
 
@@ -85,6 +100,7 @@ function openEdit(rule: SearchRule) {
   }
   editing.value = true
   editingId.value = rule.id
+  openSnapshot.value = snapshotState()
   drawer.value = true
 }
 
@@ -230,9 +246,9 @@ function confirmDelete() {
 
         <template #item.actions="{ item }">
           <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">
-            <v-list-item title="Edit" prepend-icon="pencil" @click="openEdit(item)" />
+            <MpMenuItem title="Edit" icon="pencil" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item title="Delete" prepend-icon="trash-2" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem title="Delete" icon="trash-2" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
@@ -262,6 +278,8 @@ function confirmDelete() {
       v-model="drawer"
       :title="editing ? 'Edit rule' : 'New rule'"
       :subtitle="store.activeStore.domain" size="lg"
+      :guarded="drawerDirty"
+      @close="requestCloseDrawer"
     >
       <MpFormSection title="General" />
       <MpFormGrid>
@@ -388,12 +406,21 @@ function confirmDelete() {
         </div>
       </MpFormGrid>
       <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
+        <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" :disabled="!formValid" @click="saveRule">
           {{ editing ? 'Save rule' : 'Create rule' }}
         </v-btn>
       </template>
     </MpFormDrawer>
+
+    <MpConfirmDialog
+      v-model="confirmDiscard"
+      title="Discard rule changes?"
+      message="You have unsaved changes to this rule. Closing now will discard them."
+      confirm-label="Discard changes"
+      danger
+      @confirm="drawer = false"
+    />
   </div>
 </template>
 

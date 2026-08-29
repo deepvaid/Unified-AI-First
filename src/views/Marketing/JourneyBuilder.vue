@@ -839,7 +839,7 @@ onBeforeUnmount(() => {
   }
   .jb-palette--open { transform: translateX(0); }
   .jb-palette--hidden { transform: translateX(-100%); }
-  .jb-panel { width: min(380px, 100vw) !important; max-width: 100%; }
+  .jb-panel { width: min(var(--mp-component-builder-panelWidth), 100vw) !important; max-width: 100%; }
 }
 .jb-palette__scroll { scrollbar-width: thin; scrollbar-color: rgba(var(--v-theme-on-surface), 0.2) transparent; }
 .palette-section { margin-bottom: 4px; }
@@ -905,7 +905,7 @@ onBeforeUnmount(() => {
 /* ── Config panel ────────────────────────────────────────────────────────── */
 /* No entrance animation: hidden/backgrounded renderers freeze animation frames,
    which would leave the panel stuck invisible at 0%. Instant + elevated is safe. */
-.jb-panel { width: 380px; flex-shrink: 0; overflow: hidden; box-shadow: var(--mp-shadow-lg); }
+.jb-panel { width: var(--mp-component-builder-panelWidth); flex-shrink: 0; overflow: hidden; box-shadow: var(--mp-shadow-lg); }
 .jb-panel__tile {
   display: inline-flex; align-items: center; justify-content: center;
   width: 34px; height: 34px; border-radius: 10px;

@@ -12,6 +12,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
@@ -251,9 +252,9 @@ function doBulkDelete() {
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Collection actions" :item-label="item.title">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template #no-data>

@@ -6,6 +6,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useToast } from '@/composables/useToast'
 import {
@@ -306,20 +307,18 @@ function doDelete() {
 
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Synonym actions" :item-label="item.queries.join(', ')">
-            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-            <v-list-item
-              role="menuitem"
-              :prepend-icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
+            <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <MpMenuItem
+              :icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
               :title="item.status === 'active' ? 'Disable' : 'Enable'"
               @click="onToggle(item)"
             />
             <v-divider class="my-1" />
-            <v-list-item
-              role="menuitem"
-              prepend-icon="trash-2"
+            <MpMenuItem
+              icon="trash-2"
               title="Delete"
-              class="text-error"
+              danger
               @click="askDelete(item)"
             />
           </MpRowActionsMenu>

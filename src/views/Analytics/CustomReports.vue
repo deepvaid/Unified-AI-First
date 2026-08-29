@@ -15,6 +15,7 @@ import { useAnalyticsStore, type CustomReport, type CustomReportType } from '@/s
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
@@ -208,14 +209,13 @@ function clearFilters() {
 
         <template #[`item.actions`]="{ item }">
           <MpRowActionsMenu ariaLabel="Report actions" :item-label="item.name">
-            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate report" @click="duplicateReport(item)" />
-            <v-list-item role="menuitem" prepend-icon="download" title="Download report" @click="downloadReport(item)" />
+            <MpMenuItem icon="copy" title="Duplicate report" @click="duplicateReport(item)" />
+            <MpMenuItem icon="download" title="Download report" @click="downloadReport(item)" />
             <v-divider class="my-1" />
-            <v-list-item
-              role="menuitem"
-              prepend-icon="trash-2"
+            <MpMenuItem
+              icon="trash-2"
               title="Delete report"
-              class="text-error"
+              danger
               @click="askDelete(item)"
             />
           </MpRowActionsMenu>

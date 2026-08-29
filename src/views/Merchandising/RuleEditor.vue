@@ -8,6 +8,7 @@ import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useToast } from '@/composables/useToast'
 import {
@@ -345,9 +346,9 @@ function performDelete() {
                 </td>
                 <td class="text-end">
                   <MpRowActionsMenu ariaLabel="Condition actions" :item-label="condition.field">
-                    <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="startEditCondition(condition)" />
+                    <MpMenuItem icon="pencil" title="Edit" @click="startEditCondition(condition)" />
                     <v-divider class="my-1" />
-                    <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="removeCondition(condition.id)" />
+                    <MpMenuItem icon="trash-2" title="Delete" danger @click="removeCondition(condition.id)" />
                   </MpRowActionsMenu>
                 </td>
               </tr>

@@ -8,6 +8,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
@@ -199,12 +200,12 @@ function confirmDelete() {
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu :ariaLabel="`${item.name} actions`">
-            <v-list-item role="menuitem" prepend-icon="pencil" rounded="lg" @click="editPage(item)">Edit</v-list-item>
-            <v-list-item role="menuitem" prepend-icon="shield-check" rounded="lg" :disabled="item.status === 'Verified'" @click="verifyDomain(item)">Verify Domain</v-list-item>
-            <v-list-item role="menuitem" prepend-icon="eye" rounded="lg" @click="previewPage(item)">Preview</v-list-item>
-            <v-list-item role="menuitem" prepend-icon="copy" rounded="lg" @click="duplicate(item)">Duplicate</v-list-item>
+            <MpMenuItem title="Edit" icon="pencil" @click="editPage(item)" />
+            <MpMenuItem title="Verify Domain" icon="shield-check" :disabled="item.status === 'Verified'" @click="verifyDomain(item)" />
+            <MpMenuItem title="Preview" icon="eye" @click="previewPage(item)" />
+            <MpMenuItem title="Duplicate" icon="copy" @click="duplicate(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" rounded="lg" class="text-error" @click="askDelete(item)">Delete</v-list-item>
+            <MpMenuItem title="Delete" icon="trash-2" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
       </v-data-table>

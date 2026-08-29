@@ -10,6 +10,7 @@ import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
@@ -285,25 +286,23 @@ async function copyText(text: string) {
                   </div>
                 </div>
                 <MpRowActionsMenu :ariaLabel="`${form.name} actions`">
-                  <v-list-item role="menuitem" prepend-icon="eye" rounded="lg" @click="openPreview(form)">Preview</v-list-item>
-                  <v-list-item role="menuitem" prepend-icon="copy" rounded="lg" @click="duplicate(form.id)">Duplicate</v-list-item>
-                  <v-list-item role="menuitem" prepend-icon="code-2" rounded="lg" @click="openEmbed(form)">Get embed code</v-list-item>
-                  <v-list-item
+                  <MpMenuItem title="Preview" icon="eye" @click="openPreview(form)" />
+                  <MpMenuItem title="Duplicate" icon="copy" @click="duplicate(form.id)" />
+                  <MpMenuItem title="Get embed code" icon="code-2" @click="openEmbed(form)" />
+                  <MpMenuItem
                     v-if="form.status !== 'Active'"
-                    role="menuitem"
-                    prepend-icon="play"
-                    rounded="lg"
+                    title="Activate"
+                    icon="play"
                     @click="setStatus([form.id], 'Active')"
-                  >Activate</v-list-item>
-                  <v-list-item
+                  />
+                  <MpMenuItem
                     v-else
-                    role="menuitem"
-                    prepend-icon="pause"
-                    rounded="lg"
+                    title="Pause"
+                    icon="pause"
                     @click="setStatus([form.id], 'Paused')"
-                  >Pause</v-list-item>
+                  />
                   <v-divider class="my-1" />
-                  <v-list-item role="menuitem" prepend-icon="trash-2" rounded="lg" class="text-error" @click="askDelete([form.id])">Delete</v-list-item>
+                  <MpMenuItem title="Delete" icon="trash-2" danger @click="askDelete([form.id])" />
                 </MpRowActionsMenu>
               </div>
 
@@ -384,12 +383,12 @@ async function copyText(text: string) {
         <template #item.status="{ item }"><MpStatusChip :status="item.status" type="general" size="sm" /></template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu :ariaLabel="`${item.name} actions`">
-            <v-list-item role="menuitem" prepend-icon="pencil" rounded="lg" @click="editInBuilder(item)">Edit in Builder</v-list-item>
-            <v-list-item role="menuitem" prepend-icon="eye" rounded="lg" @click="openPreview(item)">Preview</v-list-item>
-            <v-list-item role="menuitem" prepend-icon="copy" rounded="lg" @click="duplicate(item.id)">Duplicate</v-list-item>
-            <v-list-item role="menuitem" prepend-icon="code-2" rounded="lg" @click="openEmbed(item)">Get embed code</v-list-item>
+            <MpMenuItem title="Edit in Builder" icon="pencil" @click="editInBuilder(item)" />
+            <MpMenuItem title="Preview" icon="eye" @click="openPreview(item)" />
+            <MpMenuItem title="Duplicate" icon="copy" @click="duplicate(item.id)" />
+            <MpMenuItem title="Get embed code" icon="code-2" @click="openEmbed(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" prepend-icon="trash-2" rounded="lg" class="text-error" @click="askDelete([item.id])">Delete</v-list-item>
+            <MpMenuItem title="Delete" icon="trash-2" danger @click="askDelete([item.id])" />
           </MpRowActionsMenu>
         </template>
       </v-data-table>

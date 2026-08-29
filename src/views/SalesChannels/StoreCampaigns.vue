@@ -13,6 +13,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
@@ -183,9 +184,9 @@ function confirmDelete() {
 
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Campaign actions" :itemLabel="item.name">
-            <v-list-item role="menuitem" title="Edit" prepend-icon="pencil" @click="openEdit(item)" />
+            <MpMenuItem title="Edit" icon="pencil" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item role="menuitem" title="Delete" prepend-icon="trash-2" class="text-error" @click="askDelete(item)" />
+            <MpMenuItem title="Delete" icon="trash-2" danger @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
