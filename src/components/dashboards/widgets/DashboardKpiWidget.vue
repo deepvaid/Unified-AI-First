@@ -242,7 +242,7 @@ const peakFormatted = computed(() => {
     <div class="dashboard-kpi-widget__header-row">
       <div class="dashboard-kpi-widget__header-text">
         <div v-if="title" class="dashboard-kpi-widget__title-row">
-          <h3 class="dashboard-kpi-widget__title mp-meta-label" :title="title">{{ title }}</h3>
+          <h2 class="dashboard-kpi-widget__title mp-meta-label" :title="title">{{ title }}</h2>
           <v-tooltip v-if="aiGenerated" location="top" text="Made by Da Vinci">
             <template #activator="{ props: tipProps }">
               <span v-bind="tipProps" class="dashboard-kpi-widget__davinci-chip">

@@ -227,7 +227,7 @@ function handleAttentionCollapse(collapsed: boolean) {
       <div class="dashboard-widget-card__header-copy">
         <div class="dashboard-widget-card__title-row">
           <DvOrbitOrb v-if="widget.type === 'insights'" :size="14" :speed="1" class="dashboard-widget-card__orb" />
-          <h3 class="dashboard-widget-card__title">{{ widget.title }}</h3>
+          <h2 class="dashboard-widget-card__title">{{ widget.title }}</h2>
           <v-tooltip
             v-if="widget.aiProvenance"
             location="top"

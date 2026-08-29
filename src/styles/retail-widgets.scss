@@ -6,17 +6,18 @@
   background: var(--surface-primary) !important;
   border-color: color-mix(in oklch, var(--text-primary) 7%, transparent) !important;
   border-radius: var(--r-section) !important;
-  /* Polish pass 2026-08: resting elevation removed — cards are border-only per the
-     containment rule (`flat border rounded="lg"`, no resting shadows). The hover
-     lift below stays as an interactive affordance. */
+  /* Polish pass 2026-08: elevation removed — cards are border-only per the
+     containment rule (`flat border rounded="lg"`, no shadows); hover affordance
+     is the border step. */
   box-shadow: none !important;
   overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
 .retail-widget-card:hover {
+  /* Hover affordance is the border step alone — no elevation anywhere on cards
+     (GAPS §8 closed 2026-08-30). */
   border-color: color-mix(in oklch, var(--text-primary) 18%, transparent) !important;
-  box-shadow: var(--elevation-overlay) !important;
 }
 
 /* ── Widget header ────────────────────────────────────────────── */
@@ -64,13 +65,12 @@
   border-radius: var(--r-section);
   background: var(--surface-primary);
   cursor: pointer;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  transition: border-color 120ms ease;
   height: 100%;
 }
 
 .retail-action-tile:hover {
   border-color: color-mix(in oklch, var(--cloud-retail-accent) 35%, transparent);
-  box-shadow: var(--elevation-raised);
 }
 
 .retail-action-tile:focus-visible {

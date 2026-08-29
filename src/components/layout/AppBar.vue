@@ -778,8 +778,18 @@ function onSearchKeydown(event: KeyboardEvent) {
       </v-menu>
     </div>
 
-    <!-- Mobile search overlay — icon-only trigger above expands into this full-screen search -->
-    <v-dialog v-model="mobileSearchOpen" fullscreen transition="dialog-bottom-transition" class="appbar-mobile-search-dialog">
+    <!-- Mobile search overlay — icon-only trigger above expands into this full-screen search.
+         Recorded raw-v-dialog exemption (P6-7): MpDialog's title-led header cannot host an
+         input-led sheet whose field must stay fixed while results scroll — evaluated and kept
+         2026-08-30 (GAPS §7). Vuetify supplies role="dialog"/aria-modal; the accessible name
+         is the aria-label below. -->
+    <v-dialog
+      v-model="mobileSearchOpen"
+      fullscreen
+      transition="dialog-bottom-transition"
+      aria-label="Universal AI search"
+      class="appbar-mobile-search-dialog"
+    >
       <v-card class="appbar-mobile-search-card">
         <div class="appbar-mobile-search-card__header">
           <!-- App-shell search, not a form field: label-free by design, and

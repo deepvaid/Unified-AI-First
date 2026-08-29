@@ -792,6 +792,7 @@ export const mp_component_toolbar_searchMinWidth = `240px`
 export const mp_component_nav_itemRadius = `8px`
 export const mp_component_nav_groupGap = `16px`
 export const mp_component_nav_activeBarInset = `6px`
+export const mp_component_builder_panelWidth = `380px`
 export const mp_component_widget_actionSize = `32px`
 export const mp_component_widget_actionGap = `2px`
 export const mp_component_widget_actionInset = `12px`

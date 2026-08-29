@@ -1367,6 +1367,7 @@
   --mp-component-nav-itemRadius: var(--mp-radius-8);
   --mp-component-nav-groupGap: var(--mp-space-16);
   --mp-component-nav-activeBarInset: var(--mp-space-6);
+  --mp-component-builder-panelWidth: 380px;
   --mp-component-widget-actionSize: var(--mp-space-32);
   --mp-component-widget-actionGap: var(--mp-space-2);
   --mp-component-widget-actionInset: var(--mp-space-12);

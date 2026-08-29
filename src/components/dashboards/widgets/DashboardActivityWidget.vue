@@ -21,7 +21,9 @@ function getTagStyle(tag: string) {
 </script>
 
 <template>
-  <div class="activity-feed">
+  <!-- A scrollable region must be keyboard-reachable so its content can be
+       scrolled without a pointer (axe: scrollable-region-focusable). -->
+  <div class="activity-feed" tabindex="0" role="region" aria-label="Recent activity">
     <div
       v-for="(item, index) in data.items"
       :key="item.id"
