@@ -114,13 +114,13 @@ function addProduct(id: string | null) {
             <v-select
               v-model="newLogic"
               :items="logicOptions"
-              label="Logic"
+              aria-label="Logic"
               hide-details
               max-width="200"
             />
             <v-text-field
               v-model="newTerm"
-              label="Term"
+              aria-label="Term"
               placeholder="e.g. counterfeit"
               hide-details
               @keydown.enter="addTerm"

@@ -8,6 +8,7 @@ import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useToast } from '@/composables/useToast'
 import {
   useMerchandisingStore,
@@ -343,24 +344,11 @@ function performDelete() {
                   </div>
                 </td>
                 <td class="text-end">
-                  <v-menu location="bottom end">
-                    <template #activator="{ props: menuProps }">
-                      <v-btn
-                        v-bind="menuProps"
-                        icon="more-vertical"
-                        variant="text"
-                        size="small"
-                        density="comfortable"
-                        class="text-medium-emphasis"
-                        :aria-label="`Condition actions for ${condition.field}`"
-                      />
-                    </template>
-                    <v-list density="compact" rounded="lg" min-width="160" class="py-1">
-                      <v-list-item prepend-icon="pencil" title="Edit" @click="startEditCondition(condition)" />
-                      <v-divider class="my-1" style="opacity: 0.4" />
-                      <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="removeCondition(condition.id)" />
-                    </v-list>
-                  </v-menu>
+                  <MpRowActionsMenu ariaLabel="Condition actions" :item-label="condition.field">
+                    <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="startEditCondition(condition)" />
+                    <v-divider class="my-1" />
+                    <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="removeCondition(condition.id)" />
+                  </MpRowActionsMenu>
                 </td>
               </tr>
             </tbody>

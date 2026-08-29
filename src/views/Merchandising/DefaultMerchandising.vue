@@ -6,6 +6,7 @@ import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useMerchandisingStore, type MerchRule } from '@/stores/useMerchandising'
 
 const route = useRoute()
@@ -126,7 +127,7 @@ function performConfirm() {
           <v-list density="compact" rounded="lg" min-width="230" class="py-1">
             <v-list-item prepend-icon="pin" title="Pinning rule" @click="router.push(pinningRoute('new'))" />
             <v-list-item prepend-icon="sliders-horizontal" title="Merchandising rule" @click="router.push(ruleRoute('new'))" />
-            <v-divider class="my-1" style="opacity: 0.4" />
+            <v-divider class="my-1" />
             <v-list-item prepend-icon="tags" title="Promo card" subtitle="Coming soon" disabled />
           </v-list>
         </v-menu>
@@ -155,24 +156,11 @@ function performConfirm() {
           <span class="text-body-2 font-weight-semibold">{{ item.count }}</span>
         </template>
         <template #item.actions="{ item }">
-          <v-menu location="bottom end">
-            <template #activator="{ props: menuProps }">
-              <v-btn
-                v-bind="menuProps"
-                icon="more-vertical"
-                variant="text"
-                size="small"
-                density="comfortable"
-                class="text-medium-emphasis"
-                :aria-label="`Actions for ${item.collection}`"
-              />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" class="py-1">
-              <v-list-item prepend-icon="pin" title="Edit pins" @click="openPinning(item.id)" />
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="deletePinning(item)" />
-            </v-list>
-          </v-menu>
+          <MpRowActionsMenu ariaLabel="Pinning rule actions" :item-label="item.collection">
+            <v-list-item role="menuitem" prepend-icon="pin" title="Edit pins" @click="openPinning(item.id)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="deletePinning(item)" />
+          </MpRowActionsMenu>
         </template>
         <template #no-data>
           <MpEmptyState
@@ -213,29 +201,17 @@ function performConfirm() {
           <span class="text-body-2 text-medium-emphasis text-no-wrap">{{ item.updatedAt }}</span>
         </template>
         <template #item.actions="{ item }">
-          <v-menu location="bottom end">
-            <template #activator="{ props: menuProps }">
-              <v-btn
-                v-bind="menuProps"
-                icon="more-vertical"
-                variant="text"
-                size="small"
-                density="comfortable"
-                class="text-medium-emphasis"
-                :aria-label="`Actions for ${item.name}`"
-              />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="170" class="py-1">
-              <v-list-item prepend-icon="pencil" title="Edit" @click="openRule(item.id)" />
-              <v-list-item
-                :prepend-icon="item.active ? 'circle-pause' : 'circle-play'"
-                :title="item.active ? 'Disable' : 'Enable'"
-                @click="store.toggleMerchRuleActive(item.id)"
-              />
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="deleteRule(item)" />
-            </v-list>
-          </v-menu>
+          <MpRowActionsMenu ariaLabel="Merchandising rule actions" :item-label="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openRule(item.id)" />
+            <v-list-item
+              role="menuitem"
+              :prepend-icon="item.active ? 'circle-pause' : 'circle-play'"
+              :title="item.active ? 'Disable' : 'Enable'"
+              @click="store.toggleMerchRuleActive(item.id)"
+            />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="deleteRule(item)" />
+          </MpRowActionsMenu>
         </template>
         <template #no-data>
           <MpEmptyState

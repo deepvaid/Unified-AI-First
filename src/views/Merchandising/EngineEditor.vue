@@ -7,6 +7,7 @@ import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import { useToast } from '@/composables/useToast'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
@@ -486,24 +487,11 @@ function goToStep(target: number) {
                 </div>
               </td>
               <td class="text-end" style="width: 56px">
-                <v-menu location="bottom end">
-                  <template #activator="{ props: menuProps }">
-                    <v-btn
-                      v-bind="menuProps"
-                      icon="more-vertical"
-                      variant="text"
-                      size="small"
-                      density="comfortable"
-                      class="text-medium-emphasis"
-                      :aria-label="`Filter actions for ${condition.field}`"
-                    />
-                  </template>
-                  <v-list density="compact" rounded="lg" min-width="160" class="py-1">
-                    <v-list-item prepend-icon="pencil" title="Edit" @click="startEditCondition(condition)" />
-                    <v-divider class="my-1" style="opacity: 0.4" />
-                    <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="removeCondition(condition.id)" />
-                  </v-list>
-                </v-menu>
+                <MpRowActionsMenu ariaLabel="Filter actions" :item-label="condition.field">
+                  <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="startEditCondition(condition)" />
+                  <v-divider class="my-1" />
+                  <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="removeCondition(condition.id)" />
+                </MpRowActionsMenu>
               </td>
             </tr>
           </tbody>

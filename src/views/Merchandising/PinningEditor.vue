@@ -186,7 +186,8 @@ function performDelete() {
       <v-select
         v-model="collectionId"
         :items="collectionOptions"
-        label="Collection"
+        aria-label="Collection"
+        placeholder="Collection"
         hide-details
         :disabled="!isNew"
         class="pin-collection-select"

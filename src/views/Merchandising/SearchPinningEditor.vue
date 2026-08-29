@@ -187,7 +187,7 @@ function performDelete() {
     <div class="d-flex align-center gap-3 flex-wrap">
       <v-text-field
         v-model="query"
-        label="Search query"
+        aria-label="Search query"
         placeholder="e.g. boots"
         prepend-inner-icon="search"
         hide-details

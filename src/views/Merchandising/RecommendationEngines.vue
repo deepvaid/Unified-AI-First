@@ -5,6 +5,7 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useToast } from '@/composables/useToast'
 import {
   useMerchandisingStore,
@@ -204,29 +205,18 @@ function onToggle(engine: RecommendationEngine) {
         </template>
 
         <template #item.actions="{ item }">
-          <v-menu>
-            <template #activator="{ props: activator }">
-              <v-btn
-                v-bind="activator"
-                icon="more-vertical"
-                variant="text"
-                size="x-small"
-                class="text-medium-emphasis"
-                aria-label="Row actions"
-              />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="200" class="py-1">
-              <v-list-item prepend-icon="pencil" title="Edit engine" @click="openEngine(item.id)" />
-              <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-              <v-list-item
-                :prepend-icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
-                :title="item.status === 'active' ? 'Disable' : 'Enable'"
-                @click="onToggle(item)"
-              />
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="confirmDelete = item" />
-            </v-list>
-          </v-menu>
+          <MpRowActionsMenu ariaLabel="Engine actions" :item-label="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit engine" @click="openEngine(item.id)" />
+            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <v-list-item
+              role="menuitem"
+              :prepend-icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
+              :title="item.status === 'active' ? 'Disable' : 'Enable'"
+              @click="onToggle(item)"
+            />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="confirmDelete = item" />
+          </MpRowActionsMenu>
         </template>
 
         <template #no-data>

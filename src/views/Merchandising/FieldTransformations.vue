@@ -6,6 +6,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useToast } from '@/composables/useToast'
 import { useMerchandisingStore, type FieldTransformation } from '@/stores/useMerchandising'
 
@@ -210,29 +211,18 @@ function doDelete() {
         </template>
 
         <template #item.actions="{ item }">
-          <v-menu>
-            <template #activator="{ props: activator }">
-              <v-btn
-                v-bind="activator"
-                icon="more-vertical"
-                variant="text"
-                size="x-small"
-                class="text-medium-emphasis"
-                aria-label="Row actions"
-              />
-            </template>
-            <v-list density="compact" min-width="180">
-              <v-list-item prepend-icon="pencil" title="Edit rule" @click="openEdit(item)" />
-              <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-              <v-list-item
-                :prepend-icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
-                :title="item.status === 'active' ? 'Disable' : 'Enable'"
-                @click="onToggle(item)"
-              />
-              <v-divider />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
-            </v-list>
-          </v-menu>
+          <MpRowActionsMenu ariaLabel="Rule actions" :item-label="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit rule" @click="openEdit(item)" />
+            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <v-list-item
+              role="menuitem"
+              :prepend-icon="item.status === 'active' ? 'circle-pause' : 'circle-play'"
+              :title="item.status === 'active' ? 'Disable' : 'Enable'"
+              @click="onToggle(item)"
+            />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          </MpRowActionsMenu>
         </template>
 
         <template #no-data>
