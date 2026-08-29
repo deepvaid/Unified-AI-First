@@ -131,7 +131,8 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 - **MpDialog** — `title`, `subtitle?`, `eyebrow?`, `icon?`, `tone?` ('neutral'|'error'), `size?` ('sm'|'md'|'lg'), `fullscreen?`, `persistent?`, `flush?`, `guarded?` · model `v-model` · emits `close` · slots default, `#lead`, `#headerActions`, `#footer`, `#footerStart`. **The one modal shell.** Header / body / footer all on `component.dialog.padding`; the body is a flex column on `component.dialog.gap`, so form fields are spaced by the shell. This is what "never raw `v-dialog`" means — compose this. The header has a `headerMinHeight` floor so the band does not jump when the subtitle is absent, and it is a grid so the close button sits on the *title's* optical centre. `flush` is the supported way to drop the body inset — never `:deep(.mp-dialog__body)`.
 - **MpConfirmDialog** — model `v-model`, `title`, `message`, `confirmLabel?`, `danger?`, `consequences?` · emits `confirm`. Composes `MpDialog` at `size="sm"`. All confirm prompts (destructive → `danger`).
-- **MpRowActionsMenu** — `ariaLabel` (required), `itemLabel?` · default slot (`v-list-item`s). Kebab row-actions menu for list views.
+- **MpRowActionsMenu** — `ariaLabel` (required), `itemLabel?` · default slot (`MpMenuItem`s). Kebab row-actions menu for list views: `role="menu"` panel opening `bottom end`, 40px trigger hit-area, click-swallowing trigger.
+- **MpMenuItem** — `title`, `icon?`, `danger?`. The one action-menu item (`v-list-item` with `role="menuitem"` baked in; attrs/slots pass through). Destructive = `danger`, last, behind `<v-divider class="my-1" />`. Never a raw `v-list-item` in an action menu.
 
 ### AI
 

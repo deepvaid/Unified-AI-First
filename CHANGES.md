@@ -116,3 +116,31 @@ menus · **D** drawers/dialogs.
 - Retail widget cards lost their resting shadow (rule compliance) — hover lift kept.
 - Menu accessible names converged to the component's "<Thing> actions for <name>" pattern (aria copy only).
 - `Settings/Users.vue`, `Settings/Profile.vue`, `Settings/Billing.vue` appear unrouted (legacy views) — edited for consistency but only reachable via type-check; candidates for the same cleanup as `AudienceView.vue` (GAPS §6).
+
+---
+
+# Follow-up slice (2026-08-30) — GAPS backlog worked to closure
+
+Every deferred item from the first pass was actioned; per-item outcomes live in `GAPS.md`
+(each entry now carries ✅/◐/⚠). Summary:
+
+- **MpMenuItem** shipped and adopted by every action menu in the app (~185 items, ~68 files) —
+  `role="menuitem"` is a component guarantee now, not a convention; the eight slot-label
+  Marketing menus converged onto the same anatomy.
+- **`guarded`** rolled out to the seven dirty-state drawers (CustomGiftCards, PurchasableGiftCards,
+  ContactFields, SearchRules, Tickets, InviteUsersDrawer, UserAccessDrawer) with the
+  "Discard changes?" confirm; verified live (dirty Escape → confirm; clean Escape → closes).
+- **useFocusTrap** composable extracted (MpFormDrawer + DvHistoryDrawer); the float-drawer
+  closed-state hack deduplicated into `global.scss` `.mp-float-drawer`; copilot gutters tokenized.
+- **Toast API** finding was stale — `useToast` + `MpToastStack` already serve ~100 files.
+- **Retail**: menu "Deactivate" now carries the danger recipe (matches the drawer footer);
+  all remaining widget/tile hover shadows removed.
+- **`component.builder.panelWidth`** token added; `.jb-panel` consumes it.
+- **AppBar mobile search**: MpDialog rebuild evaluated and rejected (title-led header can't host
+  an input-led sheet) — exemption documented in-code, dialog `aria-label` added.
+- **axe app-level**: dashboard widget titles h3→h2, activity feed focusable + named region.
+  Remaining findings are Vuetify-internal (GAPS §10).
+- **Dead views** (AudienceView + legacy Settings Users/Profile/Billing): verified unreferenced;
+  deletion is permission-gated here — `git rm` one-liner in GAPS §6.
+
+Gates: type-check ✓ · contrast 244/244 ✓ · app build ✓ · Storybook build ✓.

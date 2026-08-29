@@ -306,10 +306,18 @@ only for short related pairs; long inputs get `mp-form-grid__full`.
 ### Action menu
 One pattern, `MpRowActionsMenu`: kebab trigger (accessible name from `ariaLabel` + `itemLabel`,
 40px hit target, `aria-haspopup`), `role="menu"` panel opening `bottom end`. Items are
-`v-list-item role="menuitem"` with verb-first titles and optional leading icons — no
-descriptions. Destructive actions last, behind `<v-divider class="my-1" />`, with
-`class="text-error"`. Labeled-button dropdowns keep their trigger but share the compact panel
-chrome; pickers/palettes are not menus.
+`MpMenuItem` (`title`, `icon?`, `danger?` — `role="menuitem"` baked in) with verb-first titles
+and optional leading icons — no descriptions. Destructive actions last, behind
+`<v-divider class="my-1" />`, with `danger`. Labeled-button dropdowns keep their trigger but
+share the compact panel chrome; pickers/palettes are not menus.
+
+```html
+<MpRowActionsMenu ariaLabel="Order actions" :itemLabel="item.order">
+  <MpMenuItem title="View order" icon="eye" @click="view(item)" />
+  <v-divider class="my-1" />
+  <MpMenuItem title="Cancel order" icon="ban" danger @click="confirmCancel(item)" />
+</MpRowActionsMenu>
+```
 
 ### Dashboard Section
 MpSectionHeader → content (chart, table, or card grid) inside v-card.
