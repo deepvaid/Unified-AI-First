@@ -7,7 +7,9 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useRetailStore } from '@/stores/useRetail'
 import type { Register, RegisterStatus } from '@/stores/useRetail'
 import { formatAgo } from '@/composables/useRelativeTime'
@@ -230,16 +232,11 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         </template>
 
         <template #item.actions="{ item }">
-          <v-menu location="bottom end">
-            <template #activator="{ props }">
-              <v-btn icon="more-horizontal" variant="text" size="x-small" v-bind="props" :aria-label="`Actions for ${item.name}`" @click.stop />
-            </template>
-            <v-list density="compact">
-              <v-list-item title="Force resync" prepend-icon="refresh-cw" @click="store.forceResync([item.id]); showToast(`Resync sent to ${item.name}`)" />
-              <v-list-item title="Reprint last receipt" prepend-icon="printer" @click="showToast(`Receipt sent to ${item.name}`)" />
-              <v-list-item title="Deactivate" prepend-icon="power" @click="store.deactivateRegisters([item.id]); showToast(`${item.name} deactivated`)" />
-            </v-list>
-          </v-menu>
+          <MpRowActionsMenu ariaLabel="Register actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" title="Force resync" prepend-icon="refresh-cw" @click="store.forceResync([item.id]); showToast(`Resync sent to ${item.name}`)" />
+            <v-list-item role="menuitem" title="Reprint last receipt" prepend-icon="printer" @click="showToast(`Receipt sent to ${item.name}`)" />
+            <v-list-item role="menuitem" title="Deactivate" prepend-icon="power" @click="store.deactivateRegisters([item.id]); showToast(`${item.name} deactivated`)" />
+          </MpRowActionsMenu>
         </template>
 
         <template #no-data>
@@ -266,7 +263,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
     >
       <template v-if="selectedRegister">
         <!-- Status banner -->
-        <div class="register-detail-status mb-5" :class="`register-detail-status--${selectedRegister.status}`">
+        <div class="register-detail-status" :class="`register-detail-status--${selectedRegister.status}`">
           <div :class="['retail-status-dot', `retail-status-dot--${selectedRegister.status}`]" />
           <span class="font-weight-medium text-capitalize">{{ selectedRegister.status }}</span>
           <span class="text-medium-emphasis" style="margin-left: auto; font-size: 12px;">
@@ -275,41 +272,47 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         </div>
 
         <!-- Device info -->
-        <div class="text-subtitle-2 font-weight-bold mb-2">Device</div>
-        <v-list density="compact" class="retail-detail-list mb-4">
-          <v-list-item title="Model" :subtitle="selectedRegister.deviceModel" />
-          <v-list-item title="Type" :subtitle="selectedRegister.deviceType" />
-          <v-list-item title="App version" :subtitle="`v${selectedRegister.appVersion}`" />
-        </v-list>
+        <MpFormSection title="Device">
+          <v-list density="compact" :border="false" rounded="0" class="pa-0 bg-transparent">
+            <v-list-item title="Model" :subtitle="selectedRegister.deviceModel" />
+            <v-divider />
+            <v-list-item title="Type" :subtitle="selectedRegister.deviceType" />
+            <v-divider />
+            <v-list-item title="App version" :subtitle="`v${selectedRegister.appVersion}`" />
+          </v-list>
+        </MpFormSection>
 
         <!-- Hardware pairing -->
-        <div class="text-subtitle-2 font-weight-bold mb-2">Paired hardware</div>
-        <v-list density="compact" class="retail-detail-list mb-4">
-          <v-list-item title="Payment terminal">
-            <template #append>
-              <span v-if="selectedRegister.pairedTerminal" class="text-body-2 font-weight-medium">{{ selectedRegister.pairedTerminal }}</span>
-              <v-btn v-else size="x-small" variant="tonal" class="text-none" @click="showToast('Pair terminal — mock only')">Pair</v-btn>
-            </template>
-          </v-list-item>
-          <v-list-item title="Receipt printer">
-            <template #append>
-              <span v-if="selectedRegister.pairedPrinter" class="text-body-2 font-weight-medium">{{ selectedRegister.pairedPrinter }}</span>
-              <v-btn v-else size="x-small" variant="tonal" class="text-none" @click="showToast('Pair printer — mock only')">Pair</v-btn>
-            </template>
-          </v-list-item>
-        </v-list>
+        <MpFormSection title="Paired hardware">
+          <v-list density="compact" :border="false" rounded="0" class="pa-0 bg-transparent">
+            <v-list-item title="Payment terminal">
+              <template #append>
+                <span v-if="selectedRegister.pairedTerminal" class="text-body-2 font-weight-medium">{{ selectedRegister.pairedTerminal }}</span>
+                <v-btn v-else size="x-small" variant="tonal" class="text-none" @click="showToast('Pair terminal — mock only')">Pair</v-btn>
+              </template>
+            </v-list-item>
+            <v-divider />
+            <v-list-item title="Receipt printer">
+              <template #append>
+                <span v-if="selectedRegister.pairedPrinter" class="text-body-2 font-weight-medium">{{ selectedRegister.pairedPrinter }}</span>
+                <v-btn v-else size="x-small" variant="tonal" class="text-none" @click="showToast('Pair printer — mock only')">Pair</v-btn>
+              </template>
+            </v-list-item>
+          </v-list>
+        </MpFormSection>
 
         <!-- Offline queue -->
-        <div class="text-subtitle-2 font-weight-bold mb-2">Offline queue</div>
-        <div v-if="selectedRegister.pendingOfflineTxns > 0" class="register-offline-warning mb-4">
-          <v-icon size="18" color="warning">alert-triangle</v-icon>
-          <div>
-            <div class="font-weight-medium" style="font-size: 13px;">{{ selectedRegister.pendingOfflineTxns }} transactions pending sync</div>
-            <div style="font-size: 12px; color: var(--muted);">These will upload automatically when the device reconnects.</div>
+        <MpFormSection title="Offline queue">
+          <div v-if="selectedRegister.pendingOfflineTxns > 0" class="register-offline-warning">
+            <v-icon size="18" color="warning">alert-triangle</v-icon>
+            <div>
+              <div class="font-weight-medium" style="font-size: 13px;">{{ selectedRegister.pendingOfflineTxns }} transactions pending sync</div>
+              <div style="font-size: 12px; color: var(--muted);">These will upload automatically when the device reconnects.</div>
+            </div>
+            <v-btn size="x-small" variant="tonal" color="warning" class="text-none ml-auto" @click="showToast('Sync triggered — mock only')">Sync now</v-btn>
           </div>
-          <v-btn size="x-small" variant="tonal" color="warning" class="text-none ml-auto" @click="showToast('Sync triggered — mock only')">Sync now</v-btn>
-        </div>
-        <div v-else class="text-body-2 text-medium-emphasis mb-4">No pending transactions. Device is fully synced.</div>
+          <div v-else class="text-body-2 text-medium-emphasis">No pending transactions. Device is fully synced.</div>
+        </MpFormSection>
 
         <!-- Actions -->
         <div class="d-flex flex-column gap-2">
@@ -356,17 +359,13 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         />
       </MpFormGrid>
 
-      <v-card flat border rounded="lg" class="pa-3">
-        <div class="d-flex align-center ga-2 mb-1">
-          <v-icon size="16" color="info">info</v-icon>
-          <span class="text-body-2 font-weight-medium">Pairing instructions</span>
-        </div>
+      <MpFormSection title="Pairing instructions">
         <div class="text-body-2 text-medium-emphasis">
           1. Open the Retail app on your device.<br>
           2. Go to Settings → Pair device.<br>
           3. Enter the pairing code shown here: <strong>8472-K</strong>
         </div>
-      </v-card>
+      </MpFormSection>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="pairDrawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" @click="savePair">Pair device</v-btn>
@@ -424,12 +423,6 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
   border: 1px solid color-mix(in oklch, rgb(var(--v-theme-warning)) 30%, transparent);
   border-radius: var(--r-section);
   background: color-mix(in oklch, rgb(var(--v-theme-warning)) 8%, transparent);
-}
-
-.retail-detail-list {
-  background: color-mix(in oklch, var(--text-primary) 2%, var(--surface-primary));
-  border: 1px solid color-mix(in oklch, var(--text-primary) 7%, transparent);
-  border-radius: var(--r-section);
 }
 
 .text-mono {

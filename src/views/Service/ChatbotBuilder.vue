@@ -10,6 +10,9 @@ import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormField from '@/components/MpFormField.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
@@ -379,96 +382,105 @@ function sendChat() {
             <!-- GENERAL -->
             <template v-else-if="section === 'general'">
               <v-card flat border rounded="lg" class="pa-6 mb-5">
-                <div class="text-subtitle-1 font-weight-bold mb-1">General</div>
-                <div class="text-body-2 text-medium-emphasis mb-5">Configure your store details shown in the chat widget.</div>
-                <v-text-field v-model="cfg.storeName" label="Store name" class="mb-4" />
-                <v-text-field v-model="cfg.address1" label="Address 1" class="mb-4" />
-                <v-text-field v-model="cfg.address2" label="Address 2" class="mb-4" />
-                <v-text-field v-model="cfg.instagram" label="Instagram link" prepend-inner-icon="instagram" hide-details />
+                <MpFormSection title="General" description="Configure your store details shown in the chat widget.">
+                  <MpFormGrid>
+                    <v-text-field v-model="cfg.storeName" label="Store name" />
+                    <v-text-field v-model="cfg.address1" label="Address 1" />
+                    <v-text-field v-model="cfg.address2" label="Address 2" />
+                    <v-text-field v-model="cfg.instagram" label="Instagram link" prepend-inner-icon="instagram" />
+                  </MpFormGrid>
+                </MpFormSection>
               </v-card>
               <v-card flat border rounded="lg" class="pa-6">
-                <div class="text-subtitle-1 font-weight-bold mb-4">Storefront</div>
-                <v-select v-model="cfg.storeType" label="Store type" :items="storeTypes" class="mb-4" />
-                <v-text-field v-model="cfg.storeUrl" label="Store URL" placeholder="https://mystore.com" prepend-inner-icon="link" hide-details />
+                <MpFormSection title="Storefront">
+                  <MpFormGrid>
+                    <v-select v-model="cfg.storeType" label="Store type" :items="storeTypes" />
+                    <v-text-field v-model="cfg.storeUrl" label="Store URL" placeholder="https://mystore.com" prepend-inner-icon="link" />
+                  </MpFormGrid>
+                </MpFormSection>
               </v-card>
             </template>
 
             <!-- APPEARANCE -->
             <template v-else-if="section === 'appearance'">
               <v-card flat border rounded="lg" class="pa-6 mb-5">
-                <div class="text-subtitle-1 font-weight-bold mb-1">Brand logo</div>
-                <div class="text-body-2 text-medium-emphasis mb-4">Upload your logo and set your brand colors.</div>
-                <div class="cb-upload d-flex align-center justify-center ga-3 mb-2" @click="cfg.logoName = 'logo.png'">
-                  <v-icon size="20">upload</v-icon>
-                  <span class="text-body-2 font-weight-medium">{{ cfg.logoName || 'Upload logo' }}</span>
-                </div>
-                <div class="text-caption text-medium-emphasis">Recommended 160×160px · PNG or SVG</div>
+                <MpFormSection title="Brand logo" description="Upload your logo and set your brand colors.">
+                  <div>
+                    <div class="cb-upload d-flex align-center justify-center ga-3 mb-2" @click="cfg.logoName = 'logo.png'">
+                      <v-icon size="20">upload</v-icon>
+                      <span class="text-body-2 font-weight-medium">{{ cfg.logoName || 'Upload logo' }}</span>
+                    </div>
+                    <div class="text-caption text-medium-emphasis">Recommended 160×160px · PNG or SVG</div>
+                  </div>
+                </MpFormSection>
 
                 <v-divider class="my-5" />
-                <div class="text-subtitle-2 font-weight-bold mb-1">Primary color</div>
-                <div class="text-body-2 text-medium-emphasis mb-3">Set your brand color.</div>
-                <div class="d-flex flex-wrap ga-2 mb-4">
-                  <button
-                    v-for="c in swatches"
-                    :key="c"
-                    type="button"
-                    class="cb-swatch"
-                    :class="{ 'cb-swatch--on': cfg.primaryColor.toLowerCase() === c.toLowerCase() }"
-                    :style="{ background: c }"
-                    :aria-label="`Use ${c}`"
-                    @click="cfg.primaryColor = c"
-                  >
-                    <v-icon v-if="cfg.primaryColor.toLowerCase() === c.toLowerCase()" size="14" color="white">check</v-icon>
-                  </button>
-                </div>
-                <div class="text-caption text-medium-emphasis mb-1">Custom color</div>
-                <div class="d-flex align-center ga-2">
-                  <v-menu :close-on-content-click="false" location="bottom start">
-                    <template #activator="{ props }">
-                      <button v-bind="props" class="cb-swatch cb-swatch--sm" :style="{ background: cfg.primaryColor }" aria-label="Pick custom color" />
-                    </template>
-                    <v-color-picker v-model="cfg.primaryColor" mode="hex" :modes="['hex']" />
-                  </v-menu>
-                  <v-text-field v-model="cfg.primaryColor" hide-details style="max-width:160px;" />
-                </div>
+
+                <MpFormSection title="Primary color" description="Set your brand color.">
+                  <div class="d-flex flex-wrap ga-2">
+                    <button
+                      v-for="c in swatches"
+                      :key="c"
+                      type="button"
+                      class="cb-swatch"
+                      :class="{ 'cb-swatch--on': cfg.primaryColor.toLowerCase() === c.toLowerCase() }"
+                      :style="{ background: c }"
+                      :aria-label="`Use ${c}`"
+                      @click="cfg.primaryColor = c"
+                    >
+                      <v-icon v-if="cfg.primaryColor.toLowerCase() === c.toLowerCase()" size="14" color="white">check</v-icon>
+                    </button>
+                  </div>
+                  <MpFormField label="Custom color">
+                    <div class="d-flex align-center ga-2">
+                      <v-menu :close-on-content-click="false" location="bottom start">
+                        <template #activator="{ props }">
+                          <button v-bind="props" class="cb-swatch cb-swatch--sm" :style="{ background: cfg.primaryColor }" aria-label="Pick custom color" />
+                        </template>
+                        <v-color-picker v-model="cfg.primaryColor" mode="hex" :modes="['hex']" />
+                      </v-menu>
+                      <v-text-field v-model="cfg.primaryColor" aria-label="Custom color hex value" style="max-width:160px;" />
+                    </div>
+                  </MpFormField>
+                </MpFormSection>
               </v-card>
 
               <v-card flat border rounded="lg" class="pa-6">
-                <div class="text-subtitle-1 font-weight-bold mb-4">Widget configuration</div>
-                <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Launcher position</div>
-                <v-row dense class="mb-4">
-                  <v-col cols="6">
-                    <v-card flat border rounded="lg" class="pa-4 text-center cursor-pointer cb-pos" :class="{ 'cb-pos--on': cfg.position === 'left' }" @click="cfg.position = 'left'">
-                      <v-icon size="24" class="mb-1">panel-bottom-dashed</v-icon>
-                      <div class="text-body-2 font-weight-medium">Bottom left</div>
-                    </v-card>
-                  </v-col>
-                  <v-col cols="6">
-                    <v-card flat border rounded="lg" class="pa-4 text-center cursor-pointer cb-pos" :class="{ 'cb-pos--on': cfg.position === 'right' }" @click="cfg.position = 'right'">
-                      <v-icon size="24" class="mb-1">panel-bottom-dashed</v-icon>
-                      <div class="text-body-2 font-weight-medium">Bottom right</div>
-                    </v-card>
-                  </v-col>
-                </v-row>
-                <v-text-field v-model="cfg.welcomeMessage" label="Welcome message *" hide-details />
+                <MpFormSection title="Widget configuration">
+                  <MpFormField label="Launcher position">
+                    <MpFormGrid :cols="2">
+                      <v-card flat border rounded="lg" class="pa-4 text-center cursor-pointer cb-pos" :class="{ 'cb-pos--on': cfg.position === 'left' }" @click="cfg.position = 'left'">
+                        <v-icon size="24" class="mb-1">panel-bottom-dashed</v-icon>
+                        <div class="text-body-2 font-weight-medium">Bottom left</div>
+                      </v-card>
+                      <v-card flat border rounded="lg" class="pa-4 text-center cursor-pointer cb-pos" :class="{ 'cb-pos--on': cfg.position === 'right' }" @click="cfg.position = 'right'">
+                        <v-icon size="24" class="mb-1">panel-bottom-dashed</v-icon>
+                        <div class="text-body-2 font-weight-medium">Bottom right</div>
+                      </v-card>
+                    </MpFormGrid>
+                  </MpFormField>
+                  <v-text-field v-model="cfg.welcomeMessage" label="Welcome message *" />
+                </MpFormSection>
               </v-card>
             </template>
 
             <!-- BUSINESS HOURS -->
             <template v-else-if="section === 'hours'">
               <v-card flat border rounded="lg" class="pa-6">
-                <div class="text-subtitle-1 font-weight-bold mb-1">Business hours</div>
-                <div class="text-body-2 text-medium-emphasis mb-5">Set when live support is available. Outside these hours the bot handles chats.</div>
-                <div v-for="h in cfg.businessHours" :key="h.day" class="cb-hour d-flex align-center ga-3">
-                  <v-switch v-model="h.enabled" density="compact" hide-details class="flex-shrink-0" />
-                  <span class="cb-hour__day font-weight-medium">{{ h.day }}</span>
-                  <template v-if="h.enabled">
-                    <v-text-field v-model="h.open" type="time" hide-details class="cb-hour__time" />
-                    <span class="text-medium-emphasis">to</span>
-                    <v-text-field v-model="h.close" type="time" hide-details class="cb-hour__time" />
-                  </template>
-                  <span v-else class="text-body-2 text-medium-emphasis">Closed</span>
-                </div>
+                <MpFormSection title="Business hours" description="Set when live support is available. Outside these hours the bot handles chats.">
+                  <div>
+                    <div v-for="h in cfg.businessHours" :key="h.day" class="cb-hour d-flex align-center ga-3">
+                      <v-switch v-model="h.enabled" density="compact" hide-details class="flex-shrink-0" />
+                      <span class="cb-hour__day font-weight-medium">{{ h.day }}</span>
+                      <template v-if="h.enabled">
+                        <v-text-field v-model="h.open" type="time" hide-details class="cb-hour__time" />
+                        <span class="text-medium-emphasis">to</span>
+                        <v-text-field v-model="h.close" type="time" hide-details class="cb-hour__time" />
+                      </template>
+                      <span v-else class="text-body-2 text-medium-emphasis">Closed</span>
+                    </div>
+                  </div>
+                </MpFormSection>
               </v-card>
             </template>
 
@@ -480,14 +492,16 @@ function sendChat() {
                   <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" @click="addPrompt">Add prompt</v-btn>
                 </div>
                 <div class="text-body-2 text-medium-emphasis mb-5">Predefined options shown when a customer starts a chat. The <strong>intent</strong> routes the reply to shopping, order tracking, support, or FAQ.</div>
-                <div v-for="(p, i) in cfg.quickPrompts" :key="p.id" class="cb-prompt mb-2">
-                  <div class="d-flex align-center ga-2">
-                    <v-text-field v-model="p.text" hide-details class="flex-grow-1" />
-                    <v-select v-model="p.intent" :items="INTENTS" hide-details class="cb-prompt__intent" />
-                    <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0" aria-label="Move up" @click="movePrompt(i, -1)" />
-                    <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === cfg.quickPrompts.length - 1" aria-label="Move down" @click="movePrompt(i, 1)" />
-                    <v-switch v-model="p.enabled" density="compact" hide-details class="flex-shrink-0" />
-                    <v-btn icon="trash-2" variant="text" size="x-small" color="error" aria-label="Delete prompt" @click="removePrompt(p.id)" />
+                <div class="d-flex flex-column ga-2">
+                  <div v-for="(p, i) in cfg.quickPrompts" :key="p.id" class="cb-prompt">
+                    <div class="d-flex align-center ga-2">
+                      <v-text-field v-model="p.text" hide-details class="flex-grow-1" />
+                      <v-select v-model="p.intent" :items="INTENTS" hide-details class="cb-prompt__intent" />
+                      <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0" aria-label="Move up" @click="movePrompt(i, -1)" />
+                      <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === cfg.quickPrompts.length - 1" aria-label="Move down" @click="movePrompt(i, 1)" />
+                      <v-switch v-model="p.enabled" density="compact" hide-details class="flex-shrink-0" />
+                      <v-btn icon="trash-2" variant="text" size="x-small" color="error" aria-label="Delete prompt" @click="removePrompt(p.id)" />
+                    </div>
                   </div>
                 </div>
               </v-card>
@@ -505,12 +519,15 @@ function sendChat() {
                 </div>
               </v-card>
               <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.shopping.enabled }">
-                <div class="text-subtitle-2 font-weight-bold mb-4">Assistant behaviour</div>
-                <v-textarea v-model="cfg.shopping.greeting" label="Shopping greeting" rows="2" auto-grow :disabled="!cfg.shopping.enabled" class="mb-4" />
-                <v-select v-model="cfg.shopping.source" :items="catalogSources" label="Product source" :disabled="!cfg.shopping.enabled" class="mb-4" />
-                <v-switch v-model="cfg.shopping.showPrices" hide-details label="Show prices on product cards" :disabled="!cfg.shopping.enabled" class="mb-1" />
-                <v-switch v-model="cfg.shopping.allowAddToCart" hide-details label="Allow add to cart from the chat" :disabled="!cfg.shopping.enabled" class="mb-4" />
-                <v-text-field v-model="cfg.shopping.checkoutUrl" label="Checkout URL" placeholder="https://mystore.com/checkout" prepend-inner-icon="link" hide-details :disabled="!cfg.shopping.enabled" />
+                <MpFormSection title="Assistant behaviour">
+                  <MpFormGrid>
+                    <v-textarea v-model="cfg.shopping.greeting" label="Shopping greeting" rows="2" auto-grow :disabled="!cfg.shopping.enabled" />
+                    <v-select v-model="cfg.shopping.source" :items="catalogSources" label="Product source" :disabled="!cfg.shopping.enabled" />
+                    <v-switch v-model="cfg.shopping.showPrices" label="Show prices on product cards" :disabled="!cfg.shopping.enabled" />
+                    <v-switch v-model="cfg.shopping.allowAddToCart" label="Allow add to cart from the chat" :disabled="!cfg.shopping.enabled" />
+                    <v-text-field v-model="cfg.shopping.checkoutUrl" label="Checkout URL" placeholder="https://mystore.com/checkout" prepend-inner-icon="link" :disabled="!cfg.shopping.enabled" />
+                  </MpFormGrid>
+                </MpFormSection>
               </v-card>
             </template>
 
@@ -526,11 +543,14 @@ function sendChat() {
                 </div>
               </v-card>
               <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.orderTracking.enabled }">
-                <div class="text-subtitle-2 font-weight-bold mb-4">Tracking options</div>
-                <v-switch v-model="cfg.orderTracking.allowGuest" hide-details label="Allow guest order tracking (no account required)" :disabled="!cfg.orderTracking.enabled" class="mb-1" />
-                <v-text-field v-model="cfg.orderTracking.guestPortal" label="Guest tracking portal URL" placeholder="https://mystore.com/track" prepend-inner-icon="link" :disabled="!cfg.orderTracking.enabled || !cfg.orderTracking.allowGuest" class="my-4" />
-                <v-switch v-model="cfg.orderTracking.resendEmail" hide-details label="Offer to resend the confirmation email" :disabled="!cfg.orderTracking.enabled" class="mb-1" />
-                <v-switch v-model="cfg.orderTracking.accountSync" hide-details label="Sync live order status for logged-in customers" :disabled="!cfg.orderTracking.enabled" />
+                <MpFormSection title="Tracking options">
+                  <MpFormGrid>
+                    <v-switch v-model="cfg.orderTracking.allowGuest" label="Allow guest order tracking (no account required)" :disabled="!cfg.orderTracking.enabled" />
+                    <v-text-field v-model="cfg.orderTracking.guestPortal" label="Guest tracking portal URL" placeholder="https://mystore.com/track" prepend-inner-icon="link" :disabled="!cfg.orderTracking.enabled || !cfg.orderTracking.allowGuest" />
+                    <v-switch v-model="cfg.orderTracking.resendEmail" label="Offer to resend the confirmation email" :disabled="!cfg.orderTracking.enabled" />
+                    <v-switch v-model="cfg.orderTracking.accountSync" label="Sync live order status for logged-in customers" :disabled="!cfg.orderTracking.enabled" />
+                  </MpFormGrid>
+                </MpFormSection>
               </v-card>
             </template>
 
@@ -600,50 +620,53 @@ function sendChat() {
               </v-card>
 
               <v-card flat border rounded="lg" class="pa-6">
-                <div class="text-subtitle-1 font-weight-bold mb-4">Add a source</div>
-                <v-btn-toggle v-model="addSourceTab" mandatory density="comfortable" variant="outlined" divided rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
-                  <v-btn value="url" size="small" class="text-none px-4" prepend-icon="link">Website URL</v-btn>
-                  <v-btn value="questionnaire" size="small" class="text-none px-4" prepend-icon="clipboard-list">Questionnaire</v-btn>
-                  <v-btn value="upload" size="small" class="text-none px-4" prepend-icon="upload">Upload files</v-btn>
-                </v-btn-toggle>
+                <MpFormSection title="Add a source">
+                  <v-btn-toggle v-model="addSourceTab" mandatory density="comfortable" variant="outlined" divided rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
+                    <v-btn value="url" size="small" class="text-none px-4" prepend-icon="link">Website URL</v-btn>
+                    <v-btn value="questionnaire" size="small" class="text-none px-4" prepend-icon="clipboard-list">Questionnaire</v-btn>
+                    <v-btn value="upload" size="small" class="text-none px-4" prepend-icon="upload">Upload files</v-btn>
+                  </v-btn-toggle>
 
-                <template v-if="addSourceTab === 'url'">
-                  <div class="d-flex align-start ga-2">
-                    <v-text-field
-                      v-model="newUrl"
-                      placeholder="https://mystore.com/faq"
-                      prepend-inner-icon="globe"
-                      hide-details
-                      class="flex-grow-1"
-                      aria-label="Website URL"
-                      @keyup.enter="addUrlSource"
-                    />
-                    <v-btn
-                      color="primary"
-                      variant="flat"
-                      class="text-none cb-add-btn"
-                      prepend-icon="plus"
-                      :disabled="!newUrl.trim()"
-                      @click="addUrlSource"
-                    >Add source</v-btn>
+                  <div v-if="addSourceTab === 'url'">
+                    <div class="d-flex align-start ga-2">
+                      <v-text-field
+                        v-model="newUrl"
+                        placeholder="https://mystore.com/faq"
+                        prepend-inner-icon="globe"
+                        hide-details
+                        class="flex-grow-1"
+                        aria-label="Website URL"
+                        @keyup.enter="addUrlSource"
+                      />
+                      <v-btn
+                        color="primary"
+                        variant="flat"
+                        class="text-none cb-add-btn"
+                        prepend-icon="plus"
+                        :disabled="!newUrl.trim()"
+                        @click="addUrlSource"
+                      >Add source</v-btn>
+                    </div>
+                    <div class="text-caption text-medium-emphasis mt-2">We'll crawl the page and index its text — this can take a minute.</div>
                   </div>
-                  <div class="text-caption text-medium-emphasis mt-2">We'll crawl the page and index its text — this can take a minute.</div>
-                </template>
 
-                <template v-else-if="addSourceTab === 'questionnaire'">
-                  <div class="text-body-2 text-medium-emphasis mb-4">
-                    Answer a few questions about your business and we'll turn them into a knowledge source. No website or files needed — you can update your answers any time.
+                  <template v-else-if="addSourceTab === 'questionnaire'">
+                    <div class="text-body-2 text-medium-emphasis">
+                      Answer a few questions about your business and we'll turn them into a knowledge source. No website or files needed — you can update your answers any time.
+                    </div>
+                    <div>
+                      <v-btn color="primary" variant="flat" class="text-none" prepend-icon="clipboard-list" @click="kbDrawer = true">
+                        Fill questionnaire
+                      </v-btn>
+                    </div>
+                  </template>
+
+                  <div v-else class="cb-drop d-flex flex-column align-center justify-center text-center">
+                    <v-icon size="28" class="mb-2 text-medium-emphasis">upload-cloud</v-icon>
+                    <div class="text-body-2 font-weight-medium">Drag &amp; drop, or click to upload</div>
+                    <div class="text-caption text-medium-emphasis">Max 5 MB · MD (preferred), TXT, or PDF</div>
                   </div>
-                  <v-btn color="primary" variant="flat" class="text-none" prepend-icon="clipboard-list" @click="kbDrawer = true">
-                    Fill questionnaire
-                  </v-btn>
-                </template>
-
-                <div v-else class="cb-drop d-flex flex-column align-center justify-center text-center">
-                  <v-icon size="28" class="mb-2 text-medium-emphasis">upload-cloud</v-icon>
-                  <div class="text-body-2 font-weight-medium">Drag &amp; drop, or click to upload</div>
-                  <div class="text-caption text-medium-emphasis">Max 5 MB · MD (preferred), TXT, or PDF</div>
-                </div>
+                </MpFormSection>
               </v-card>
 
               <MpConfirmDialog
@@ -660,16 +683,17 @@ function sendChat() {
                 title="Knowledge base questionnaire"
                 subtitle="Answer what you can — we'll turn it into a knowledge source. You can update it later."
               >
-                <div v-for="(q, i) in kbQuestions" :key="q.key" :class="{ 'mb-5': i < kbQuestions.length - 1 }">
+                <MpFormGrid>
                   <v-textarea
+                    v-for="q in kbQuestions"
+                    :key="q.key"
                     v-model="kbAnswers[q.key]"
                     :label="q.label"
                     :placeholder="q.placeholder"
                     rows="2"
                     auto-grow
-                    hide-details
                   />
-                </div>
+                </MpFormGrid>
                 <template #footer>
                   <span class="text-caption text-medium-emphasis me-auto">{{ kbAnsweredCount }} of {{ kbQuestions.length }} answered</span>
                   <v-btn variant="text" class="text-none" @click="kbDrawer = false">Cancel</v-btn>
@@ -688,9 +712,12 @@ function sendChat() {
             <!-- PRE-CHAT FORM -->
             <template v-else>
               <v-card flat border rounded="lg" class="pa-6 mb-5">
-                <div class="text-subtitle-1 font-weight-bold mb-4">Form settings</div>
-                <v-switch v-model="cfg.preChatEnabled" hide-details label="Show a pre-chat form before starting a conversation" class="mb-1" />
-                <v-switch v-model="cfg.skipForLoggedIn" hide-details label="Skip the form for logged-in users" :disabled="!cfg.preChatEnabled" />
+                <MpFormSection title="Form settings">
+                  <MpFormGrid>
+                    <v-switch v-model="cfg.preChatEnabled" label="Show a pre-chat form before starting a conversation" />
+                    <v-switch v-model="cfg.skipForLoggedIn" label="Skip the form for logged-in users" :disabled="!cfg.preChatEnabled" />
+                  </MpFormGrid>
+                </MpFormSection>
               </v-card>
 
               <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.preChatEnabled }">
@@ -698,21 +725,23 @@ function sendChat() {
                   <div class="text-subtitle-1 font-weight-bold">Form fields</div>
                   <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" :disabled="!cfg.preChatEnabled" @click="addField">Add field</v-btn>
                 </div>
-                <div v-for="(f, i) in cfg.preChatFields" :key="f.id" class="cb-field mb-3">
-                  <div class="d-flex align-center ga-2 mb-2">
-                    <span class="text-caption font-weight-bold text-medium-emphasis">#{{ i + 1 }}</span>
-                    <v-spacer />
-                    <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0 || !cfg.preChatEnabled" aria-label="Move up" @click="moveField(i, -1)" />
-                    <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === cfg.preChatFields.length - 1 || !cfg.preChatEnabled" aria-label="Move down" @click="moveField(i, 1)" />
-                    <v-switch v-model="f.required" density="compact" hide-details :disabled="!cfg.preChatEnabled" class="flex-shrink-0" />
-                    <span class="text-caption text-medium-emphasis">Required</span>
-                    <v-btn icon="trash-2" variant="text" size="x-small" color="error" :disabled="!cfg.preChatEnabled" aria-label="Delete field" @click="removeField(f.id)" />
+                <div class="d-flex flex-column ga-3">
+                  <div v-for="(f, i) in cfg.preChatFields" :key="f.id" class="cb-field">
+                    <div class="d-flex align-center ga-2 mb-2">
+                      <span class="text-caption font-weight-bold text-medium-emphasis">#{{ i + 1 }}</span>
+                      <v-spacer />
+                      <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0 || !cfg.preChatEnabled" aria-label="Move up" @click="moveField(i, -1)" />
+                      <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === cfg.preChatFields.length - 1 || !cfg.preChatEnabled" aria-label="Move down" @click="moveField(i, 1)" />
+                      <v-switch v-model="f.required" density="compact" hide-details :disabled="!cfg.preChatEnabled" class="flex-shrink-0" />
+                      <span class="text-caption text-medium-emphasis">Required</span>
+                      <v-btn icon="trash-2" variant="text" size="x-small" color="error" :disabled="!cfg.preChatEnabled" aria-label="Delete field" @click="removeField(f.id)" />
+                    </div>
+                    <MpFormGrid :cols="2">
+                      <v-text-field v-model="f.label" label="Label" :disabled="!cfg.preChatEnabled" />
+                      <v-select v-model="f.type" label="Type" :items="FIELD_TYPES" :disabled="!cfg.preChatEnabled" />
+                      <v-text-field v-model="f.placeholder" label="Placeholder" class="mp-form-grid__full" :disabled="!cfg.preChatEnabled" />
+                    </MpFormGrid>
                   </div>
-                  <v-row dense>
-                    <v-col cols="12" sm="6"><v-text-field v-model="f.label" label="Label" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
-                    <v-col cols="12" sm="6"><v-select v-model="f.type" label="Type" :items="FIELD_TYPES" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
-                    <v-col cols="12"><v-text-field v-model="f.placeholder" label="Placeholder" hide-details :disabled="!cfg.preChatEnabled" /></v-col>
-                  </v-row>
                 </div>
               </v-card>
             </template>
@@ -856,15 +885,14 @@ function sendChat() {
           <pre class="cb-install__code">{{ installScript }}</pre>
         </div>
 
-        <div>
-          <div class="text-subtitle-2 font-weight-bold mb-2">How to install</div>
+        <MpFormSection title="How to install">
           <ol class="cb-steps text-body-2 text-medium-emphasis">
             <li>Copy the script above.</li>
             <li>Paste it just before the closing <code>&lt;/body&gt;</code> tag on your site.</li>
             <li>Save and publish your website changes.</li>
             <li>The chatbot appears in the {{ cfg.position === 'left' ? 'bottom-left' : 'bottom-right' }} corner.</li>
           </ol>
-        </div>
+        </MpFormSection>
 
         <template #footer>
           <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket" @click="finishPublish">Publish &amp; done</v-btn>

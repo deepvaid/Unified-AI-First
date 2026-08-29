@@ -5,6 +5,7 @@ import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useRbacStore } from '@/stores/useRbac'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
@@ -179,18 +180,20 @@ function actionMeta(event: AuditEvent) {
           @clear-filters="clearAllFilters"
         >
           <template #filter-content>
-            <v-select
-              v-model="filters.actor"
-              label="Actor"
-              :items="actorItems"
-              clearable
-            />
-            <v-select
-              v-model="filters.period"
-              label="Period"
-              :items="periodItems"
-              clearable
-            />
+            <MpFormGrid>
+              <v-select
+                v-model="filters.actor"
+                label="Actor"
+                :items="actorItems"
+                clearable
+              />
+              <v-select
+                v-model="filters.period"
+                label="Period"
+                :items="periodItems"
+                clearable
+              />
+            </MpFormGrid>
           </template>
         </MpDataTableToolbar>
 

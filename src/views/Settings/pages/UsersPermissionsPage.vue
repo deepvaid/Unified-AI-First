@@ -383,27 +383,29 @@ function bulkDeactivate() {
 
         <template v-slot:item.actions="{ item }">
           <span @click.stop>
-            <MpRowActionsMenu :ariaLabel="`Actions for ${(item as UserRow).name}`">
-              <v-list-item prepend-icon="user-cog" title="Manage access" @click="openAccess((item as UserRow).id)" />
+            <MpRowActionsMenu ariaLabel="User actions" :itemLabel="(item as UserRow).name">
+              <v-list-item role="menuitem" prepend-icon="user-cog" title="Manage access" @click="openAccess((item as UserRow).id)" />
               <template v-if="!(item as UserRow).isOwner">
                 <template v-if="(item as UserRow).status === 'invited'">
-                  <v-list-item prepend-icon="send" title="Resend invite" @click="resend((item as UserRow).id)" />
-                  <v-list-item prepend-icon="mail-x" title="Revoke invite" @click="askRevoke(item as UserRow)" />
+                  <v-list-item role="menuitem" prepend-icon="send" title="Resend invite" @click="resend((item as UserRow).id)" />
+                  <v-list-item role="menuitem" prepend-icon="mail-x" title="Revoke invite" @click="askRevoke(item as UserRow)" />
                 </template>
                 <v-list-item
                   v-else-if="(item as UserRow).status === 'active'"
+                  role="menuitem"
                   prepend-icon="pause"
                   title="Deactivate"
                   @click="setStatus(item as UserRow, 'deactivated')"
                 />
                 <v-list-item
                   v-else
+                  role="menuitem"
                   prepend-icon="play"
                   title="Reactivate"
                   @click="setStatus(item as UserRow, 'active')"
                 />
-                <v-divider class="my-1" style="opacity: 0.4" />
-                <v-list-item prepend-icon="trash-2" title="Remove" class="text-error" @click="askRemoveRow(item as UserRow)" />
+                <v-divider class="my-1" />
+                <v-list-item role="menuitem" prepend-icon="trash-2" title="Remove" class="text-error" @click="askRemoveRow(item as UserRow)" />
               </template>
             </MpRowActionsMenu>
           </span>

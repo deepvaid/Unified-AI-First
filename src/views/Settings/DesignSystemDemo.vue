@@ -117,21 +117,19 @@ function toggleSelect(id: string) {
       </template>
     </MpPageHeader>
 
-    <!-- Design-system Da Vinci: slide-in panel, launched from the header. -->
-    <v-navigation-drawer
+    <!-- Design-system Da Vinci: slide-in panel, launched from the header.
+         MpFormDrawer supplies the dialog semantics (focus trap, Escape, labelled
+         header + close) the previous raw v-navigation-drawer lacked. -->
+    <MpFormDrawer
       v-model="assistantOpen"
-      location="right"
-      temporary
-      :width="420"
-      class="ds-assistant-drawer"
+      title="Ask Da Vinci"
+      subtitle="Answers from the design-system docs"
+      size="sm"
     >
-      <div class="d-flex flex-column h-100 pa-3 ga-2">
-        <div class="d-flex justify-end">
-          <v-btn icon="x" size="x-small" variant="text" aria-label="Close assistant" @click="assistantOpen = false" />
-        </div>
-        <DvDocsAssistant class="flex-grow-1" style="min-height: 0" />
-      </div>
-    </v-navigation-drawer>
+      <!-- A chat panel scrolls internally: undo the shell's flex-shrink:0 so the
+           assistant fills the body instead of pushing it into scroll. -->
+      <DvDocsAssistant style="flex: 1 1 auto; min-height: 0" />
+    </MpFormDrawer>
 
     <div id="ds-section">
       <!-- ── Overview ─────────────────────────────────────────── -->

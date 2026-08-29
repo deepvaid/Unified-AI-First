@@ -226,7 +226,7 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
 
         <!-- Security section -->
         <MpFormSection title="Security" />
-        <v-card flat border rounded="lg" class="pa-3 d-flex align-center ga-3">
+        <div class="d-flex align-center ga-3">
           <v-icon size="18" class="text-medium-emphasis">key-round</v-icon>
           <div class="flex-grow-1">
             <div class="text-body-2 font-weight-medium">POS PIN</div>
@@ -237,15 +237,15 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
           <v-btn size="small" variant="tonal" class="text-none" @click="showToast('PIN reset link sent — mock only')">
             {{ selectedStaff?.pinSet ? 'Reset PIN' : 'Set PIN' }}
           </v-btn>
-        </v-card>
+        </div>
 
         <!-- Activity preview -->
         <MpFormSection title="Recent activity" />
-        <div>
+        <div class="d-flex flex-column ga-1">
           <div class="text-body-2 text-medium-emphasis">
             Last login: {{ selectedStaff ? formatAgo(selectedStaff.lastLoginAt) : '—' }}
           </div>
-          <div class="text-body-2 text-medium-emphasis mt-1">
+          <div class="text-body-2 text-medium-emphasis">
             Transactions today: {{ commerce.posOrders.filter((o) => o.pos?.staffId === selectedStaff?.id).length }}
           </div>
         </div>
@@ -274,12 +274,10 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
           chips
           closable-chips
         />
-        <v-card flat border rounded="lg" class="pa-3">
-          <div class="d-flex align-center ga-2">
-            <v-icon size="16" color="info">info</v-icon>
-            <span class="text-body-2">A PIN setup link will be sent to the staff member's email.</span>
-          </div>
-        </v-card>
+        <div class="d-flex align-center ga-2">
+          <v-icon size="16" color="info">info</v-icon>
+          <span class="text-body-2 text-medium-emphasis">A PIN setup link will be sent to the staff member's email.</span>
+        </div>
       </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="addDrawer = false">Cancel</v-btn>

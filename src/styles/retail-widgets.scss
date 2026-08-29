@@ -6,9 +6,10 @@
   background: var(--surface-primary) !important;
   border-color: color-mix(in oklch, var(--text-primary) 7%, transparent) !important;
   border-radius: var(--r-section) !important;
-  /* P5.5: hand-rolled slate elevation replaced by the system's own aliases,
-     which are theme-aware (shadow.dark.* under the dark theme). */
-  box-shadow: var(--elevation-raised) !important;
+  /* Polish pass 2026-08: resting elevation removed — cards are border-only per the
+     containment rule (`flat border rounded="lg"`, no resting shadows). The hover
+     lift below stays as an interactive affordance. */
+  box-shadow: none !important;
   overflow: hidden;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }

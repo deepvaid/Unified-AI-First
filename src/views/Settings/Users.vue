@@ -4,7 +4,9 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { formatAgo } from '@/composables/useRelativeTime'
 import { useToast } from '@/composables/useToast'
 
@@ -111,27 +113,25 @@ function removeUser() {
           <MpStatusChip :status="item.status" type="general" />
         </template>
         <template v-slot:item.actions="{ item }">
-          <v-menu>
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" icon="more-horizontal" variant="text" size="small" :aria-label="`Actions for ${item.name}`" />
-            </template>
-            <v-list density="compact" rounded="lg" min-width="160" elevation="3" class="py-1">
-              <v-list-item prepend-icon="pencil" @click="openEditRole(item)">Edit Role</v-list-item>
-              <v-list-item prepend-icon="mail" @click="resendInvite(item)">Resend Invite</v-list-item>
-              <v-list-item prepend-icon="user-minus" class="text-error" @click="openRemove(item)">Remove User</v-list-item>
-            </v-list>
-          </v-menu>
+          <MpRowActionsMenu ariaLabel="User actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" title="Edit Role" prepend-icon="pencil" @click="openEditRole(item)" />
+            <v-list-item role="menuitem" title="Resend Invite" prepend-icon="mail" @click="resendInvite(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" title="Remove User" prepend-icon="user-minus" class="text-error" @click="openRemove(item)" />
+          </MpRowActionsMenu>
         </template>
       </v-data-table>
     </v-card>
 
     <!-- Edit role -->
     <MpFormDrawer v-model="editRoleDrawer" title="Edit role" :subtitle="editRoleUser?.name">
-      <v-select
-        v-model="editRoleValue"
-        label="Role Access"
-        :items="ROLES"
-      />
+      <MpFormGrid>
+        <v-select
+          v-model="editRoleValue"
+          label="Role Access"
+          :items="ROLES"
+        />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="editRoleDrawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" @click="saveRole">Save</v-btn>

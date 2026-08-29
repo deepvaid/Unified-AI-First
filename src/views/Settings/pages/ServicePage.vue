@@ -66,16 +66,19 @@ function save() { toast.success('Service settings saved') }
         <v-btn size="small" variant="flat" color="primary" prepend-icon="plus" class="text-none">Add Template</v-btn>
       </div>
       <div class="stack">
-        <div v-for="t in replyTemplates" :key="t.id" class="template-card">
-          <div class="template-card__copy">
-            <div class="template-card__name">{{ t.name }}</div>
-            <div class="template-card__preview">{{ t.preview }}</div>
+        <template v-for="(t, i) in replyTemplates" :key="t.id">
+          <v-divider v-if="i > 0" />
+          <div class="template-card">
+            <div class="template-card__copy">
+              <div class="template-card__name">{{ t.name }}</div>
+              <div class="template-card__preview">{{ t.preview }}</div>
+            </div>
+            <div class="template-card__actions">
+              <v-btn icon="pencil" variant="text" size="small" aria-label="Edit template" />
+              <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Delete template" />
+            </div>
           </div>
-          <div class="template-card__actions">
-            <v-btn icon="pencil" variant="text" size="small" aria-label="Edit template" />
-            <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Delete template" />
-          </div>
-        </div>
+        </template>
       </div>
     </SettingsSection>
 
@@ -91,10 +94,6 @@ function save() { toast.success('Service settings saved') }
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .toggle-row__title {
@@ -126,10 +125,6 @@ function save() { toast.success('Service settings saved') }
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
 }
 
 .template-card__name {

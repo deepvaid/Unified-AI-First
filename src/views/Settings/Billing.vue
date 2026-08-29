@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 
 const search = ref('')
@@ -29,7 +30,7 @@ const invoices = [
     <v-row class="flex-shrink-0">
       <v-col cols="12" md="4">
         <v-card variant="flat" border rounded="lg" class="pa-5">
-          <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-2">Current Plan</div>
+          <MpSectionHeader title="Current Plan" />
           <div class="text-h5 text-primary font-weight-bold mb-1">Enterprise Plus</div>
           <div class="text-medium-emphasis mb-4">$5,400 / month</div>
           <v-btn variant="flat" class="text-none" block color="surface">Change Plan</v-btn>
@@ -38,7 +39,7 @@ const invoices = [
 
       <v-col cols="12" md="8">
         <v-card variant="flat" border rounded="lg" class="pa-5 h-100">
-          <div class="text-subtitle-1 font-weight-bold mb-4">Monthly Usage Data</div>
+          <MpSectionHeader title="Monthly Usage Data" />
           <div class="mb-4">
             <div class="d-flex justify-space-between mb-1">
               <span class="text-body-2">Email Sends (1.45M / 2.00M)</span>

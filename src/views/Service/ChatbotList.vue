@@ -189,22 +189,24 @@ function doCreate() {
         </template>
         <template #item.actions="{ item }">
           <div @click.stop>
-            <MpRowActionsMenu ariaLabel="Chatbot actions">
-              <v-list-item prepend-icon="pencil" title="Edit" @click="openBuilder(item)" />
+            <MpRowActionsMenu ariaLabel="Chatbot actions" :itemLabel="item.store">
+              <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openBuilder(item)" />
               <v-list-item
                 v-if="item.status === 'Active'"
+                role="menuitem"
                 prepend-icon="pause"
                 title="Deactivate"
                 @click="cb.setStatus(item.id, 'Inactive')"
               />
               <v-list-item
                 v-else
+                role="menuitem"
                 prepend-icon="play"
                 title="Activate"
                 @click="cb.setStatus(item.id, 'Active')"
               />
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="archive" title="Archive" class="text-error" @click="askArchive(item)" />
+              <v-divider class="my-1" />
+              <v-list-item role="menuitem" prepend-icon="archive" title="Archive" class="text-error" @click="askArchive(item)" />
             </MpRowActionsMenu>
           </div>
         </template>

@@ -10,6 +10,7 @@ import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useRbacStore } from '@/stores/useRbac'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
@@ -252,16 +253,17 @@ function confirmDelete() {
 
         <template v-slot:item.actions="{ item }">
           <span @click.stop>
-            <MpRowActionsMenu :ariaLabel="`Actions for ${(item as RoleRow).name}`">
-              <v-list-item prepend-icon="eye" :title="(item as RoleRow).system ? 'View' : 'Edit'" @click="openRole((item as RoleRow).id)" />
+            <MpRowActionsMenu ariaLabel="Role actions" :itemLabel="(item as RoleRow).name">
+              <v-list-item role="menuitem" prepend-icon="eye" :title="(item as RoleRow).system ? 'View' : 'Edit'" @click="openRole((item as RoleRow).id)" />
               <v-list-item
+                role="menuitem"
                 prepend-icon="copy"
                 title="Duplicate"
                 :disabled="!rbac.canCreateCustomRole"
                 @click="duplicate(item as RoleRow)"
               />
               <template v-if="!(item as RoleRow).system">
-                <v-divider class="my-1" style="opacity: 0.4" />
+                <v-divider class="my-1" />
                 <v-tooltip
                   :disabled="(item as RoleRow).usage === 0"
                   location="left"
@@ -270,6 +272,7 @@ function confirmDelete() {
                   <template #activator="{ props: tipProps }">
                     <div v-bind="tipProps">
                       <v-list-item
+                        role="menuitem"
                         prepend-icon="trash-2"
                         title="Delete"
                         class="text-error"
@@ -298,27 +301,29 @@ function confirmDelete() {
 
     <!-- Create custom role -->
     <MpFormDrawer v-model="createDrawer" title="Create custom role" subtitle="Start blank or duplicate an existing role">
-      <v-text-field
-        v-model="newRole.name"
-        label="Role name *"
-        placeholder="e.g. Weekend Campaign Editor"
-      />
-      <v-textarea
-        v-model="newRole.description"
-        label="Description"
-        rows="2"
-        placeholder="What is this role for?"
-      />
-      <v-select
-        v-model="newRole.product"
-        label="Product"
-        :items="productItems"
-      />
-      <v-select
-        v-model="newRole.startFrom"
-        label="Start from"
-        :items="startFromItems"
-      />
+      <MpFormGrid>
+        <v-text-field
+          v-model="newRole.name"
+          label="Role name *"
+          placeholder="e.g. Weekend Campaign Editor"
+        />
+        <v-textarea
+          v-model="newRole.description"
+          label="Description"
+          rows="2"
+          placeholder="What is this role for?"
+        />
+        <v-select
+          v-model="newRole.product"
+          label="Product"
+          :items="productItems"
+        />
+        <v-select
+          v-model="newRole.startFrom"
+          label="Start from"
+          :items="startFromItems"
+        />
+      </MpFormGrid>
       <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
         You’ll pick permissions on the next screen. Dependencies are applied automatically — granting Edit always includes View.
       </v-alert>

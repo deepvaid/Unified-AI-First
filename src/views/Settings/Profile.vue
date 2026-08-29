@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
 
 const userName = 'Ross Andrew Paquette'
 const userEmail = 'Ross@maropost.com'
@@ -34,12 +35,13 @@ const userAvatarUrl = 'https://maropost.com/hubfs/Maropost%20website/leadership/
       <v-col cols="12" md="8">
         <v-card variant="flat" border rounded="lg">
           <v-card-text class="pa-5">
-            <div class="text-subtitle-1 font-weight-bold mb-4">Personal Information</div>
-            <MpFormGrid>
-              <v-text-field label="Full Name" :model-value="userName" />
-              <v-text-field label="Email Address" :model-value="userEmail" />
-              <v-text-field label="Phone Number" />
-            </MpFormGrid>
+            <MpFormSection title="Personal Information">
+              <MpFormGrid>
+                <v-text-field label="Full Name" :model-value="userName" />
+                <v-text-field label="Email Address" :model-value="userEmail" />
+                <v-text-field label="Phone Number" />
+              </MpFormGrid>
+            </MpFormSection>
           </v-card-text>
           <v-card-actions class="px-5 pb-5 pt-0">
             <v-btn color="primary" variant="flat" class="text-none">Update Profile</v-btn>

@@ -11,6 +11,7 @@ import MpFormSection from '@/components/MpFormSection.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 
 const store = useTicketsStore()
 const replyBody = ref('')
@@ -347,22 +348,11 @@ function bulkDelete() {
               :disabled="activeTicket.status === 'Resolved' || activeTicket.status === 'Closed'"
               @click="markResolved"
             >Resolve</v-btn>
-            <v-menu location="bottom end">
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  icon="more-vertical"
-                  variant="text"
-                  size="small"
-                  aria-label="More ticket options"
-                />
-              </template>
-              <v-list density="compact" rounded="lg" nav min-width="180">
-                <v-list-item prepend-icon="x-circle" title="Close Ticket" @click="closeActiveTicket" />
-                <v-divider class="my-1" />
-                <v-list-item prepend-icon="trash-2" title="Delete Ticket" class="text-error" @click="confirmDelete = true" />
-              </v-list>
-            </v-menu>
+            <MpRowActionsMenu ariaLabel="Ticket actions">
+              <v-list-item role="menuitem" prepend-icon="x-circle" title="Close Ticket" @click="closeActiveTicket" />
+              <v-divider class="my-1" />
+              <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete Ticket" class="text-error" @click="confirmDelete = true" />
+            </MpRowActionsMenu>
           </div>
         </div>
 
