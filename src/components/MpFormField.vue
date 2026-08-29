@@ -22,7 +22,12 @@ import { useId } from 'vue'
 
 const props = withDefaults(defineProps<{
   label: string
-  /** Adds the required mark and `aria-required`. Validation itself stays on the control. */
+  /**
+   * Adds the required mark, and says "required" in the group's accessible name.
+   * `aria-required` is deliberately NOT set: ARIA does not allow it on
+   * `role="group"`, and setting it there is a WCAG 4.1.2 failure. Required-ness
+   * on the control itself stays the control's own business.
+   */
   required?: boolean
   /** Supporting text under the control. */
   hint?: string
@@ -53,11 +58,11 @@ const describedBy = () => (props.error || props.hint ? rawDescriptionId : undefi
     role="group"
     :aria-labelledby="labelId"
     :aria-describedby="describedBy()"
-    :aria-required="required || undefined"
     :aria-invalid="!!error || undefined"
   >
     <span :id="labelId" class="mp-form-field__label">
       {{ label }}<span v-if="required" class="mp-form-field__required" aria-hidden="true">*</span>
+      <span v-if="required" class="d-sr-only"> (required)</span>
     </span>
 
     <slot :label-id="labelId" :description-id="describedBy()" />

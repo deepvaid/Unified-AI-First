@@ -264,7 +264,10 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/transactional_sms/new', name: 'CreateTransactionalSms', component: () => import('@/views/Marketing/CreateTransactionalSms.vue'), meta: { builderShell: true } },
   { path: '/accounts/:accountId/transactional_sms', name: 'TransactionalSms', component: () => import('@/views/Marketing/TransactionalSms.vue') },
   { path: '/accounts/:accountId/campaign_tags', name: 'CampaignTags', component: () => import('@/views/Marketing/CampaignTags.vue') },
-  { path: '/accounts/:accountId/acquisition', name: 'AcquisitionForms', component: () => import('@/views/Marketing/AcquisitionForms.vue') },
+  // Aligned to UAT's paths; the old sandbox path keeps working.
+  { path: '/accounts/:accountId/acquisition', redirect: to => `/accounts/${to.params.accountId}/acquisition/forms` },
+  { path: '/accounts/:accountId/acquisition/forms', name: 'AcquisitionForms', component: () => import('@/views/Marketing/AcquisitionForms.vue') },
+  { path: '/accounts/:accountId/acquisition/forms/select', name: 'FormSelection', component: () => import('@/views/Marketing/FormSelection.vue') },
   { path: '/accounts/:accountId/landing_pages', name: 'LandingPages', component: () => import('@/views/Marketing/LandingPages.vue') },
   { path: '/accounts/:accountId/landing_pages/templates', name: 'LandingPageTemplates', component: () => import('@/views/Marketing/LandingPageTemplates.vue') },
   { path: '/accounts/:accountId/landing_pages/editor/:id/edit', name: 'LandingPageEditor', component: () => import('@/views/Marketing/LandingPageEditor.vue'), meta: { builderShell: true } },

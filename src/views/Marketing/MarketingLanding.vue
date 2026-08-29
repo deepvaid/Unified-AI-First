@@ -102,6 +102,13 @@ function looseDateValue(s: string): number {
   return Number.isNaN(t) ? 0 : t
 }
 
+/** Stores mix ISO timestamps with already-formatted strings; render either readably. */
+function formatLooseDate(s: string): string {
+  const t = Date.parse(s)
+  if (Number.isNaN(t)) return s
+  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 const recentActivity = computed<ActivityItem[]>(() => {
   const entries: (ActivityItem & { sortKey: number })[] = []
 
@@ -140,10 +147,10 @@ const recentActivity = computed<ActivityItem[]>(() => {
   if (recentForm) {
     entries.push({
       icon: 'clipboard-list', tag: 'audience',
-      eyebrow: recentForm.createdAt,
+      eyebrow: formatLooseDate(recentForm.createdAt),
       title: `${recentForm.name} — ${recentForm.status.toLowerCase()}`,
-      meta: `${recentForm.views.toLocaleString()} views`,
-      to: `${base.value}/acquisition`,
+      meta: `${recentForm.type} form`,
+      to: `${base.value}/acquisition/forms`,
       sortKey: looseDateValue(recentForm.createdAt),
     })
   }

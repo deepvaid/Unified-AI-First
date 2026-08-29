@@ -25,9 +25,12 @@ const formsStore = useFormsStore()
 // Edit hydration: /acquisition/forms/create?formId=123 (query param — see final report re: path param)
 const editId = computed(() => (route.query.formId ? Number(route.query.formId) : null))
 const persistedId = ref<number | null>(null)
+const isEditing = computed(() => editId.value !== null)
 
 // ─── Wizard shell ───────────────────────────────────────────────────────
-const stepTitles = ['Setup', 'Content', 'Display', 'Style', 'Review & Publish']
+// UAT's step order: Details → Settings → Design → Content → Finished.
+// Unlike the source, every step is labelled and completed steps stay clickable.
+const stepTitles = ['Details', 'Settings', 'Design', 'Content', 'Finished']
 const step = ref(1)
 const totalSteps = stepTitles.length
 const maxStep = ref(1)
@@ -161,11 +164,23 @@ const positionStyle = computed(() => {
   return { alignItems: p.align, justifyContent: p.justify }
 })
 
-// ─── Step 5: Review & Publish ────────────────────────────────────────────
+// ─── Step 5: Finished (review + embed script) ────────────────────────────────────────────
 const reviewTab = ref<'details' | 'preview'>('details')
 const embedId = computed(() => persistedId.value ?? 'draft')
-const embedScript = computed(() => `<script src="https://forms.maropost.com/embed/${embedId.value}.js" async><\/script>`)
-const manualScript = computed(() => `<div id="mp-form-${embedId.value}"></div>\n<script>\n  window.MaropostForms = window.MaropostForms || [];\n  window.MaropostForms.push({ formId: "${embedId.value}", target: "#mp-form-${embedId.value}" });\n<\/script>`)
+// Same helper the list's Show script link dialog uses, so the two never drift.
+const embedScript = computed(() =>
+  `<script type="text/javascript" async src="https://optin.maropost.com/uploads/${accountId.value}/acquisition/builder_${embedId.value}/script.js"><\/script>`)
+const manualScript = computed(() => [
+  `<div id="mp-form-${embedId.value}"></div>`,
+  `<script type="text/javascript">`,
+  `  window.MaropostForms = window.MaropostForms || [];`,
+  `  window.MaropostForms.push({`,
+  `    accountId: "${accountId.value}",`,
+  `    formId: "${embedId.value}",`,
+  `    target: "#mp-form-${embedId.value}"`,
+  `  });`,
+  `<\/script>`,
+].join('\n'))
 const toast = useToast()
 async function copyText(text: string) {
   try {
@@ -178,10 +193,19 @@ async function copyText(text: string) {
 const listNames = computed(() => selectedListIds.value.map(id => SUBSCRIPTION_LISTS.find(l => l.id === id)?.name).filter(Boolean).join(', ') || '—')
 const positionLabel = computed(() => POPUP_POSITIONS.find(p => p.value === design.value.position)?.label ?? '—')
 const persistedForm = computed(() => (persistedId.value ? formsStore.forms.find(f => f.id === persistedId.value) : null))
+/** Store timestamps are ISO; the review panel shows them the way the list does. */
+function formatStamp(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const t = Date.parse(iso)
+  if (Number.isNaN(t)) return iso
+  return new Date(t).toLocaleString('en-US', {
+    month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+}
 
 // ─── Validation ───────────────────────────────────────────────────────
 const step1Valid = computed(() => formName.value.trim().length > 0 && selectedListIds.value.length > 0)
-const step4Valid = computed(() => design.value.width > 0)
+const designValid = computed(() => design.value.width > 0)
 
 // ─── Persistence ─────────────────────────────────────────────────────
 function buildInput(): FormBuilderInput {
@@ -216,6 +240,10 @@ onMounted(() => {
   if (editId.value) {
     const f = formsStore.forms.find(x => x.id === editId.value)
     if (f) {
+      // An existing form has already been through every step, so all of them stay
+      // reachable. The source marks them complete too, but then quietly un-completes
+      // steps 4 and 5 as soon as you touch step 3.
+      maxStep.value = totalSteps
       persistedId.value = f.id
       formName.value = f.name
       formType.value = f.type
@@ -299,7 +327,7 @@ function publishForm() {
       <!-- STEP 1: Setup -->
       <div v-if="step === 1" class="fb__scroll d-flex justify-center pt-8 pa-4">
         <v-card variant="flat" border rounded="lg" style="max-width:620px;width:100%;" class="pa-8">
-          <div class="text-h5 font-weight-bold mb-1">New Form</div>
+          <h2 class="text-h5 font-weight-bold mb-1">{{ isEditing ? 'Edit form' : 'New form' }}</h2>
           <div class="text-body-2 text-medium-emphasis mb-6">Name your form and choose which lists subscribers will be added to.</div>
 
           <MpFormGrid>
@@ -343,13 +371,13 @@ function publishForm() {
           </MpFormGrid>
 
           <div class="d-flex justify-end mt-6">
-            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!step1Valid" @click="advance(2)">Continue to Content</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!step1Valid" @click="advance(2)">Continue to settings</v-btn>
           </div>
         </v-card>
       </div>
 
       <!-- STEP 3: Display (formerly Settings & Display) -->
-      <div v-else-if="step === 3" class="fb__scroll d-flex justify-center pt-8 pa-4">
+      <div v-else-if="step === 2" class="fb__scroll d-flex justify-center pt-8 pa-4">
         <v-card variant="flat" border rounded="lg" style="max-width:620px;width:100%;" class="pa-8">
           <div class="text-h5 font-weight-bold mb-1">Display</div>
           <div class="text-body-2 text-medium-emphasis mb-6">Choose the form type and control when and where it appears.</div>
@@ -409,13 +437,13 @@ function publishForm() {
 
           <div class="d-flex justify-space-between mt-6">
             <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="step = 2">Back</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(4)">Continue to Style</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(3)">Continue to design</v-btn>
           </div>
         </v-card>
       </div>
 
       <!-- STEP 4: Style (formerly Design) -->
-      <div v-else-if="step === 4" class="d-flex h-100 overflow-hidden">
+      <div v-else-if="step === 3" class="d-flex h-100 overflow-hidden">
         <div class="fb__panel border-r bg-surface d-flex flex-column overflow-hidden">
           <div class="pa-3 flex-grow-1 overflow-y-auto">
             <v-expansion-panels variant="accordion" multiple>
@@ -564,7 +592,7 @@ function publishForm() {
 
           <div class="pa-3 border-t d-flex gap-2">
             <v-btn variant="text" class="text-none flex-grow-1" size="small" prepend-icon="arrow-left" @click="step = 3">Back</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none flex-grow-1" size="small" append-icon="arrow-right" :disabled="!step4Valid" @click="advance(5)">Continue to Review</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none flex-grow-1" size="small" append-icon="arrow-right" :disabled="!designValid" @click="advance(4)">Continue to content</v-btn>
           </div>
         </div>
 
@@ -616,7 +644,7 @@ function publishForm() {
       </div>
 
       <!-- STEP 2: Content -->
-      <div v-else-if="step === 2" class="d-flex flex-column h-100 overflow-hidden">
+      <div v-else-if="step === 4" class="d-flex flex-column h-100 overflow-hidden">
         <div class="d-flex flex-grow-1 overflow-hidden fb__split">
           <!-- palette -->
           <aside class="fb-palette pa-3">
@@ -728,11 +756,11 @@ function publishForm() {
 
         <div class="pa-3 border-t bg-surface d-flex justify-space-between">
           <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="step = 1">Back</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(3)">Continue to Display</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(5)">Review and publish</v-btn>
         </div>
       </div>
 
-      <!-- STEP 5: Review & Publish -->
+      <!-- STEP 5: Finished — review, embed script, publish -->
       <div v-else class="fb__scroll d-flex justify-center pt-8 pa-4">
         <div style="max-width:680px;width:100%;">
           <v-btn-toggle v-model="reviewTab" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
@@ -756,9 +784,9 @@ function publishForm() {
                   <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">smartphone</v-icon></template><v-list-item-title class="text-body-2"><strong>Type:</strong> {{ formType }}</v-list-item-title></v-list-item>
                   <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">list</v-icon></template><v-list-item-title class="text-body-2"><strong>Lists:</strong> {{ listNames }}</v-list-item-title></v-list-item>
                   <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">layout-panel-top</v-icon></template><v-list-item-title class="text-body-2"><strong>Position:</strong> {{ positionLabel }}</v-list-item-title></v-list-item>
-                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">calendar-plus</v-icon></template><v-list-item-title class="text-body-2"><strong>Created:</strong> {{ persistedForm?.createdAt ?? 'Not yet saved' }}</v-list-item-title></v-list-item>
-                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">calendar-clock</v-icon></template><v-list-item-title class="text-body-2"><strong>Modified:</strong> {{ persistedForm?.updated ?? '—' }}</v-list-item-title></v-list-item>
-                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">rocket</v-icon></template><v-list-item-title class="text-body-2"><strong>Published:</strong> {{ persistedForm?.publishedAt ?? 'Not yet published' }}</v-list-item-title></v-list-item>
+                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">calendar-plus</v-icon></template><v-list-item-title class="text-body-2"><strong>Created:</strong> {{ formatStamp(persistedForm?.createdAt) ?? 'Not yet saved' }}</v-list-item-title></v-list-item>
+                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">calendar-clock</v-icon></template><v-list-item-title class="text-body-2"><strong>Modified:</strong> {{ formatStamp(persistedForm?.updated) ?? '—' }}</v-list-item-title></v-list-item>
+                  <v-list-item class="px-0"><template #prepend><v-icon size="18" color="primary">rocket</v-icon></template><v-list-item-title class="text-body-2"><strong>Published:</strong> {{ formatStamp(persistedForm?.publishedAt) ?? 'Not yet published' }}</v-list-item-title></v-list-item>
                 </v-list>
               </MpFormGrid>
             </v-card>

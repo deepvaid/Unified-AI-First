@@ -3,6 +3,12 @@ import { ref } from 'vue'
 
 export type FormType = 'Popup' | 'Embedded'
 export type FormStatus = 'Draft' | 'Active' | 'Published' | 'Paused'
+
+/**
+ * Which builder authored the form. The source shows this as the list's "Form Type"
+ * column; older records were made in a builder that is no longer offered.
+ */
+export type FormBuilderType = 'Drag and Drop' | 'Legacy'
 export type DisplayOn = 'entry' | 'exit' | 'scroll'
 export type PopupPosition =
   | 'classic-center' | 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
@@ -66,10 +72,12 @@ export interface AcquisitionForm {
   id: number
   name: string
   type: FormType
+  /** The list's Form Type column. */
+  builderType: FormBuilderType
   status: FormStatus
-  views: number
-  conversions: number
-  rate: number
+  /** The list's Status switch — whether the form is live on the merchant's site. */
+  enabled: boolean
+  folderId: string | null
   updated: string
   createdAt: string
   publishedAt: string | null
@@ -224,71 +232,154 @@ export function newFormDefaults(overrides: Partial<FormBuilderInput> = {}): Form
   }
 }
 
-export function embedScriptFor(form: AcquisitionForm) {
-  const script = `<script src="https://forms.maropost.com/embed/${form.id}.js" async><\/script>`
-  const manual = `<div id="mp-form-${form.id}"></div>\n<script>\n  window.MaropostForms = window.MaropostForms || [];\n  window.MaropostForms.push({ formId: "${form.id}", target: "#mp-form-${form.id}" });\n<\/script>`
+/**
+ * The two embed snippets shown on the builder's final step and in the
+ * Show script link dialog. The source leaves the manual variant permanently
+ * empty; here it is populated, which is the whole point of offering it.
+ */
+export function embedScriptFor(form: AcquisitionForm, accountId: string) {
+  const script =
+    `<script type="text/javascript" async src="https://optin.maropost.com/uploads/${accountId}/acquisition/builder_${form.id}/script.js"><\/script>`
+  const manual = [
+    `<div id="mp-form-${form.id}"></div>`,
+    `<script type="text/javascript">`,
+    `  window.MaropostForms = window.MaropostForms || [];`,
+    `  window.MaropostForms.push({`,
+    `    accountId: "${accountId}",`,
+    `    formId: "${form.id}",`,
+    `    target: "#mp-form-${form.id}"`,
+    `  });`,
+    `<\/script>`,
+  ].join('\n')
   return { script, manual }
+}
+
+/** Seed helper: fills the builder config so each record only states what differs. */
+type FormSeed =
+  Pick<AcquisitionForm, 'id' | 'name' | 'type' | 'builderType' | 'status' | 'enabled' | 'folderId'
+    | 'updated' | 'createdAt' | 'publishedAt' | 'headline' | 'buttonLabel'
+    | 'subscriptionListIds' | 'domains'>
+  & Partial<Pick<AcquisitionForm, 'collectName' | 'accent' | 'display' | 'design' | 'optional'
+    | 'mainFormBlocks' | 'thankYouBlocks'>>
+
+function mkForm(seed: FormSeed): AcquisitionForm {
+  return {
+    collectName: false,
+    accent: 'primary',
+    display: defaultDisplay(),
+    design: defaultDesign(),
+    optional: defaultOptional(),
+    mainFormBlocks: defaultMainBlocks(),
+    thankYouBlocks: defaultThankYouBlocks(),
+    ...seed,
+  }
 }
 
 export const useFormsStore = defineStore('forms', () => {
   const forms = ref<AcquisitionForm[]>([
-    {
-      id: 1, name: 'Main Website Pop-up', type: 'Popup', status: 'Active', views: 45000, conversions: 1200, rate: 2.7,
-      updated: 'Mar 5, 2026', createdAt: 'Feb 1, 2026', publishedAt: 'Feb 3, 2026',
-      headline: 'Get 10% off your first order', buttonLabel: 'Claim my discount', collectName: false, accent: 'primary',
+    mkForm({
+      id: 82, name: 'Remove contact from DNM using AQ form', type: 'Popup', builderType: 'Drag and Drop',
+      status: 'Published', enabled: true, folderId: null,
+      updated: '2026-08-04T02:45:00Z', createdAt: '2026-08-04T02:45:00Z', publishedAt: '2026-08-04T02:45:00Z',
+      headline: 'Rejoin our mailing list', buttonLabel: 'Resubscribe',
       subscriptionListIds: ['newsletter'], domains: ['mystore.com'],
-      display: defaultDisplay(), design: defaultDesign(), optional: defaultOptional(),
-      mainFormBlocks: defaultMainBlocks(), thankYouBlocks: defaultThankYouBlocks(),
-    },
-    {
-      id: 2, name: 'Blog Sidebar Form', type: 'Embedded', status: 'Active', views: 85000, conversions: 350, rate: 0.4,
-      updated: 'Feb 28, 2026', createdAt: 'Jan 10, 2026', publishedAt: 'Jan 12, 2026',
-      headline: 'Subscribe to our newsletter', buttonLabel: 'Subscribe', collectName: false, accent: 'info',
-      subscriptionListIds: ['newsletter', 'master'], domains: ['blog.mystore.com'],
-      display: defaultDisplay(), design: defaultDesign(), optional: defaultOptional(),
-      mainFormBlocks: defaultMainBlocks(), thankYouBlocks: defaultThankYouBlocks(),
-    },
-    {
-      id: 3, name: 'Exit Intent 2026', type: 'Popup', status: 'Draft', views: 12000, conversions: 45, rate: 0.4,
-      updated: 'Mar 1, 2026', createdAt: 'Mar 1, 2026', publishedAt: null,
-      headline: "Wait — don't leave empty-handed", buttonLabel: 'Reveal my offer', collectName: false, accent: 'warning',
+    }),
+    mkForm({
+      id: 81, name: 'Spring sample sale', type: 'Popup', builderType: 'Drag and Drop',
+      status: 'Draft', enabled: false, folderId: null,
+      updated: '2026-07-12T01:31:00Z', createdAt: '2026-07-12T01:31:00Z', publishedAt: null,
+      headline: 'Make your summer days feeling good', buttonLabel: 'Submit',
       subscriptionListIds: ['promo'], domains: [],
-      display: { ...defaultDisplay(), displayOn: 'exit' }, design: defaultDesign(), optional: defaultOptional(),
-      mainFormBlocks: defaultMainBlocks(), thankYouBlocks: defaultThankYouBlocks(),
-    },
-    {
-      id: 4, name: 'Holiday VIP Sign-up', type: 'Popup', status: 'Draft', views: 0, conversions: 0, rate: 0,
-      updated: 'Mar 7, 2026', createdAt: 'Mar 7, 2026', publishedAt: null,
-      headline: 'Join the VIP list', buttonLabel: 'Count me in', collectName: true, accent: 'secondary',
-      subscriptionListIds: ['vip'], domains: [],
-      display: defaultDisplay(), design: defaultDesign(), optional: defaultOptional(),
-      mainFormBlocks: defaultMainBlocks(), thankYouBlocks: defaultThankYouBlocks(),
-    },
-    {
-      id: 5, name: 'Footer Newsletter', type: 'Embedded', status: 'Paused', views: 32000, conversions: 880, rate: 2.8,
-      updated: 'Jan 15, 2026', createdAt: 'Dec 1, 2025', publishedAt: 'Dec 3, 2025',
-      headline: 'Stay in the loop', buttonLabel: 'Sign up', collectName: false, accent: 'success',
+    }),
+    mkForm({
+      id: 79, name: 'Main website pop-up', type: 'Popup', builderType: 'Drag and Drop',
+      status: 'Published', enabled: true, folderId: 'frm-welcome',
+      updated: '2026-06-19T15:49:00Z', createdAt: '2026-04-08T06:56:00Z', publishedAt: '2026-04-10T09:12:00Z',
+      headline: 'Get 10% off your first order', buttonLabel: 'Claim my discount',
       subscriptionListIds: ['newsletter'], domains: ['mystore.com'],
-      display: defaultDisplay(), design: defaultDesign(), optional: defaultOptional(),
-      mainFormBlocks: defaultMainBlocks(), thankYouBlocks: defaultThankYouBlocks(),
-    },
+    }),
+    mkForm({
+      id: 78, name: 'First order discount', type: 'Popup', builderType: 'Drag and Drop',
+      status: 'Published', enabled: true, folderId: 'frm-promotions',
+      updated: '2026-03-16T02:24:00Z', createdAt: '2026-01-23T01:45:00Z', publishedAt: '2026-01-25T11:02:00Z',
+      headline: 'Get 20% off on your first order.', buttonLabel: 'Subscribe now',
+      subscriptionListIds: ['promo', 'newsletter'], domains: ['mystore.com'],
+    }),
+    mkForm({
+      id: 77, name: 'Logged-in opt-in test', type: 'Embedded', builderType: 'Drag and Drop',
+      status: 'Published', enabled: true, folderId: null,
+      updated: '2025-12-19T04:16:00Z', createdAt: '2025-12-19T04:14:00Z', publishedAt: '2025-12-19T04:20:00Z',
+      headline: 'Stay in the loop', buttonLabel: 'Sign up',
+      subscriptionListIds: ['master'], domains: ['mystore.com'],
+    }),
+    mkForm({
+      id: 76, name: 'Blog sidebar form', type: 'Embedded', builderType: 'Drag and Drop',
+      status: 'Published', enabled: true, folderId: null,
+      updated: '2025-11-25T02:05:00Z', createdAt: '2025-11-25T02:00:00Z', publishedAt: '2025-11-26T08:00:00Z',
+      headline: 'Subscribe to our newsletter', buttonLabel: 'Subscribe',
+      subscriptionListIds: ['newsletter', 'master'], domains: ['blog.mystore.com'],
+    }),
+    mkForm({
+      id: 75, name: 'Exit intent 2026', type: 'Popup', builderType: 'Drag and Drop',
+      status: 'Draft', enabled: false, folderId: 'frm-archive',
+      updated: '2025-11-24T01:16:00Z', createdAt: '2025-11-18T10:04:00Z', publishedAt: null,
+      headline: "Wait — don't leave empty-handed", buttonLabel: 'Reveal my offer',
+      subscriptionListIds: ['promo'], domains: [],
+      display: { ...defaultDisplay(), displayOn: 'exit' },
+    }),
+    mkForm({
+      id: 74, name: 'Holiday VIP sign-up', type: 'Popup', builderType: 'Drag and Drop',
+      status: 'Published', enabled: true, folderId: 'frm-promotions',
+      updated: '2025-11-24T01:07:00Z', createdAt: '2025-05-27T08:38:00Z', publishedAt: '2025-06-01T09:00:00Z',
+      headline: 'Join the VIP list', buttonLabel: 'Count me in', collectName: true,
+      subscriptionListIds: ['vip'], domains: ['mystore.com'],
+    }),
+    mkForm({
+      id: 73, name: 'Footer newsletter', type: 'Embedded', builderType: 'Drag and Drop',
+      status: 'Paused', enabled: false, folderId: null,
+      updated: '2025-09-23T09:05:00Z', createdAt: '2025-09-23T09:05:00Z', publishedAt: '2025-09-25T10:00:00Z',
+      headline: 'Stay in the loop', buttonLabel: 'Sign up',
+      subscriptionListIds: ['newsletter'], domains: ['mystore.com'],
+    }),
+    mkForm({
+      id: 52, name: 'Acquisition form demo', type: 'Popup', builderType: 'Drag and Drop',
+      status: 'Published', enabled: true, folderId: 'frm-welcome',
+      updated: '2025-08-28T08:38:00Z', createdAt: '2025-08-28T07:12:00Z', publishedAt: '2025-08-29T09:30:00Z',
+      headline: 'Be the first to know', buttonLabel: 'Notify me',
+      subscriptionListIds: ['newsletter'], domains: [],
+    }),
+    // Legacy-builder records: read-only in the new builder, kept for the Form Type column.
+    mkForm({
+      id: 31, name: 'Harpreet acq_builder 001', type: 'Popup', builderType: 'Legacy',
+      status: 'Published', enabled: true, folderId: 'frm-harpreet',
+      updated: '2022-05-10T04:00:00Z', createdAt: '2022-05-09T08:41:00Z', publishedAt: '2022-05-10T04:00:00Z',
+      headline: 'Join the club', buttonLabel: 'Join now',
+      subscriptionListIds: ['master'], domains: [],
+    }),
+    mkForm({
+      id: 24, name: 'BN acq builder', type: 'Embedded', builderType: 'Legacy',
+      status: 'Draft', enabled: false, folderId: 'frm-manny',
+      updated: '2022-11-25T00:44:00Z', createdAt: '2022-11-25T00:44:00Z', publishedAt: null,
+      headline: 'Welcome coupon', buttonLabel: 'Get my coupon',
+      subscriptionListIds: [], domains: [],
+    }),
   ])
 
   function nextId() {
     return Math.max(0, ...forms.value.map(f => f.id)) + 1
   }
 
-  function createForm(input: FormBuilderInput): number {
+  function createForm(input: FormBuilderInput, folderId: string | null = null): number {
     const id = nextId()
-    const now = 'Just now'
+    const now = new Date().toISOString()
     forms.value.unshift({
       id,
       name: input.name,
       type: input.type,
+      builderType: 'Drag and Drop',
       status: 'Draft',
-      views: 0,
-      conversions: 0,
-      rate: 0,
+      enabled: false,
+      folderId,
       updated: now,
       createdAt: now,
       publishedAt: null,
@@ -311,21 +402,37 @@ export const useFormsStore = defineStore('forms', () => {
     const f = forms.value.find(x => x.id === id)
     if (!f) return
     Object.assign(f, input)
-    f.updated = 'Just now'
+    f.updated = new Date().toISOString()
+  }
+
+  function getForm(id: number): AcquisitionForm | undefined {
+    return forms.value.find(f => f.id === id)
   }
 
   function publish(id: number) {
     const f = forms.value.find(x => x.id === id)
     if (!f) return
+    const now = new Date().toISOString()
     f.status = 'Published'
-    f.publishedAt = 'Just now'
-    f.updated = 'Just now'
+    f.enabled = true
+    f.publishedAt = now
+    f.updated = now
   }
 
   function duplicate(id: number) {
     const f = forms.value.find(x => x.id === id)
     if (!f) return
-    forms.value.unshift({ ...f, id: nextId(), name: `${f.name} (Copy)`, status: 'Draft', views: 0, conversions: 0, rate: 0, updated: 'Just now', publishedAt: null })
+    const now = new Date().toISOString()
+    forms.value.unshift({
+      ...f,
+      id: nextId(),
+      name: `${f.name} (Copy)`,
+      status: 'Draft',
+      enabled: false,
+      updated: now,
+      createdAt: now,
+      publishedAt: null,
+    })
   }
 
   function remove(ids: number[]) {
@@ -336,5 +443,23 @@ export const useFormsStore = defineStore('forms', () => {
     for (const f of forms.value) if (ids.includes(f.id)) f.status = status
   }
 
-  return { forms, createForm, updateForm, publish, duplicate, remove, setStatus }
+  /** The list's Status switch: takes the form live on the merchant's site, or pauses it. */
+  function setEnabled(ids: number[], enabled: boolean) {
+    const now = new Date().toISOString()
+    for (const f of forms.value) {
+      if (!ids.includes(f.id)) continue
+      f.enabled = enabled
+      f.status = enabled ? 'Published' : 'Paused'
+      f.updated = now
+    }
+  }
+
+  function moveToFolder(ids: number[], folderId: string | null) {
+    for (const f of forms.value) if (ids.includes(f.id)) f.folderId = folderId
+  }
+
+  return {
+    forms, getForm, createForm, updateForm, publish, duplicate, remove,
+    setStatus, setEnabled, moveToFolder,
+  }
 })
