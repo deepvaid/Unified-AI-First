@@ -105,23 +105,28 @@ export interface RfmSegment {
   tone: 'success' | 'info' | 'warning' | 'error' | 'neutral'
 }
 
-export type CustomReportType = 'SMS Message' | 'Deliverability' | 'Campaign Based' | 'SMS Report'
+/** The five report types, named as the Custom Reports list surfaces them. */
+export type CustomReportType =
+  | 'Campaign Based'
+  | 'SMS Report'
+  | 'SMS Message'
+  | 'Deliverability'
+  | 'Growth & Attrition'
+
 export type CustomReportScheduleMode = 'Once' | 'Recurring'
 
 export interface CustomReport {
   id: number
   name: string
-  source: 'Commerce' | 'Marketing' | 'Contacts' | 'Service'
-  visualization: 'Bar' | 'Line' | 'Area' | 'Table' | 'Pie' | 'Funnel'
-  metric: string
-  dimension: string
-  schedule: 'None' | 'Daily' | 'Weekly' | 'Monthly'
-  owner: string
-  lastRun: string
-  status: 'Ready' | 'Running' | 'Scheduled'
-  // --- Wizard parity fields (legacy Custom Reports create flow) ---
-  reportType?: CustomReportType
-  scheduleMode?: CustomReportScheduleMode
+  reportType: CustomReportType
+  /**
+   * Surfaced in the list's Status column. It is the schedule mode, not an execution
+   * state — a 'Once' report displays as "Scheduled". See docs/rebuild/custom-reports-list.
+   */
+  scheduleMode: CustomReportScheduleMode
+  /** ISO datetime; the list renders it as "MMM DD, YYYY at HH:MM AM/PM". */
+  updatedAt: string
+  // Delivery details captured by the create wizard.
   recipientEmail?: string
   subject?: string
   message?: string
@@ -204,12 +209,48 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   // --- Custom Reports: saved report definitions ---
   const customReports = ref<CustomReport[]>([
-    { id: 1, name: 'Q3 Revenue by Region',        source: 'Commerce',  visualization: 'Bar',    metric: 'Revenue',            dimension: 'Region',              schedule: 'Weekly',  owner: 'Priya Shah',   lastRun: '2026-07-06', status: 'Ready' },
-    { id: 2, name: 'Email Engagement Cohorts',    source: 'Marketing', visualization: 'Line',   metric: 'Open Rate',          dimension: 'Signup Month',        schedule: 'Monthly', owner: 'Dan Rivera',   lastRun: '2026-07-01', status: 'Ready' },
-    { id: 3, name: 'Abandoned Cart Funnel',       source: 'Commerce',  visualization: 'Funnel', metric: 'Sessions',           dimension: 'Checkout Step',       schedule: 'Daily',   owner: 'Priya Shah',   lastRun: '2026-07-08', status: 'Scheduled' },
-    { id: 4, name: 'LTV by Acquisition Channel',  source: 'Contacts',  visualization: 'Table',  metric: 'Lifetime Value',     dimension: 'Acquisition Channel', schedule: 'None',    owner: 'Mia Chen',     lastRun: '2026-06-28', status: 'Ready' },
-    { id: 5, name: 'Subscriber Growth MoM',       source: 'Contacts',  visualization: 'Area',   metric: 'Active Subscribers', dimension: 'Month',               schedule: 'Monthly', owner: 'Dan Rivera',   lastRun: '2026-07-01', status: 'Ready' },
-    { id: 6, name: 'Support Volume by Channel',   source: 'Service',   visualization: 'Pie',    metric: 'Tickets',            dimension: 'Channel',             schedule: 'Weekly',  owner: 'Sam Okoye',    lastRun: '2026-07-05', status: 'Ready' },
+    { id: 1, name: 'Q3 revenue by region', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2026-08-15T11:21:00' },
+    { id: 2, name: 'Email engagement cohorts', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2026-08-06T06:17:00' },
+    { id: 3, name: 'Abandoned cart funnel', reportType: 'Campaign Based', scheduleMode: 'Recurring', updatedAt: '2026-07-28T14:42:00' },
+    { id: 4, name: 'LTV by acquisition channel', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2026-07-19T18:40:00' },
+    { id: 5, name: 'Subscriber growth MoM', reportType: 'Growth & Attrition', scheduleMode: 'Once', updatedAt: '2026-07-10T07:01:00' },
+    { id: 6, name: 'Support volume by channel', reportType: 'Campaign Based', scheduleMode: 'Recurring', updatedAt: '2026-07-01T15:17:00' },
+    { id: 7, name: '116000 Recurring email campaign report - 7 Nov 2025', reportType: 'Campaign Based', scheduleMode: 'Recurring', updatedAt: '2026-06-22T12:23:00' },
+    { id: 8, name: '116000 Recurring deliverability report - 7 Nov 2025', reportType: 'Deliverability', scheduleMode: 'Recurring', updatedAt: '2026-06-13T18:07:00' },
+    { id: 9, name: '116000 Recurring growth & attrition report - 7 Nov 2025', reportType: 'Growth & Attrition', scheduleMode: 'Recurring', updatedAt: '2026-06-04T18:34:00' },
+    { id: 10, name: '116000 Recurring SMS campaign report - 7 Nov 2025', reportType: 'SMS Report', scheduleMode: 'Recurring', updatedAt: '2026-05-26T02:48:00' },
+    { id: 11, name: '116000 Recurring SMS message report - 7 Jan 2026', reportType: 'SMS Message', scheduleMode: 'Recurring', updatedAt: '2026-05-17T18:13:00' },
+    { id: 12, name: '116000 Feb 4 custom report', reportType: 'Campaign Based', scheduleMode: 'Recurring', updatedAt: '2026-05-08T18:43:00' },
+    { id: 13, name: 'Black Friday 2025 performance', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2026-04-29T03:39:00' },
+    { id: 14, name: 'Black Friday 2025 performance copy', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2026-04-20T13:50:00' },
+    { id: 15, name: 'Weekly newsletter deliverability', reportType: 'Deliverability', scheduleMode: 'Recurring', updatedAt: '2026-04-11T11:15:00' },
+    { id: 16, name: 'Gmail inbox placement - rolling 30d', reportType: 'Deliverability', scheduleMode: 'Once', updatedAt: '2026-04-02T21:16:00' },
+    { id: 17, name: 'Yahoo & AOL bounce watch', reportType: 'Deliverability', scheduleMode: 'Once', updatedAt: '2026-03-24T09:45:00' },
+    { id: 18, name: 'Welcome series engagement', reportType: 'Campaign Based', scheduleMode: 'Recurring', updatedAt: '2026-03-15T23:42:00' },
+    { id: 19, name: 'Win-back journey performance', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2026-03-06T05:43:00' },
+    { id: 20, name: 'Transactional email health', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2026-02-25T21:06:00' },
+    { id: 21, name: 'Master list growth - monthly', reportType: 'Growth & Attrition', scheduleMode: 'Recurring', updatedAt: '2026-02-16T00:50:00' },
+    { id: 22, name: 'VIP list attrition', reportType: 'Growth & Attrition', scheduleMode: 'Once', updatedAt: '2026-02-07T20:56:00' },
+    { id: 23, name: 'Newsletter unsubscribe trend', reportType: 'Growth & Attrition', scheduleMode: 'Once', updatedAt: '2026-01-29T15:20:00' },
+    { id: 24, name: 'First-time contacts by list', reportType: 'Growth & Attrition', scheduleMode: 'Recurring', updatedAt: '2026-01-20T09:39:00' },
+    { id: 25, name: 'Resubscribers - quarterly', reportType: 'Growth & Attrition', scheduleMode: 'Once', updatedAt: '2026-01-11T23:01:00' },
+    { id: 26, name: 'SMS flash sale results', reportType: 'SMS Report', scheduleMode: 'Once', updatedAt: '2026-01-02T02:39:00' },
+    { id: 27, name: 'SMS click-through by campaign', reportType: 'SMS Report', scheduleMode: 'Recurring', updatedAt: '2025-12-24T18:11:00' },
+    { id: 28, name: 'SMS opt-out rate - weekly', reportType: 'SMS Report', scheduleMode: 'Once', updatedAt: '2025-12-15T01:01:00' },
+    { id: 29, name: 'Inbound SMS keyword log', reportType: 'SMS Message', scheduleMode: 'Once', updatedAt: '2025-12-06T01:56:00' },
+    { id: 30, name: 'Outbound SMS delivery failures', reportType: 'SMS Message', scheduleMode: 'Recurring', updatedAt: '2025-11-27T21:07:00' },
+    { id: 31, name: 'Order confirmation open rate', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2025-11-18T20:56:00' },
+    { id: 32, name: 'Shipping notification engagement', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2025-11-09T23:35:00' },
+    { id: 33, name: 'Cart recovery revenue', reportType: 'Campaign Based', scheduleMode: 'Recurring', updatedAt: '2025-10-31T07:53:00' },
+    { id: 34, name: 'Loyalty tier campaign results', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2025-10-22T18:53:00' },
+    { id: 35, name: 'Wholesale segment engagement', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2025-10-13T14:23:00' },
+    { id: 36, name: 'Store pickup reminder performance', reportType: 'SMS Report', scheduleMode: 'Recurring', updatedAt: '2025-10-04T10:48:00' },
+    { id: 37, name: 'Birthday club campaign report', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2025-09-25T04:49:00' },
+    { id: 38, name: 'Post-purchase survey sends', reportType: 'Campaign Based', scheduleMode: 'Once', updatedAt: '2025-09-16T09:35:00' },
+    { id: 39, name: 'Press list deliverability check', reportType: 'Deliverability', scheduleMode: 'Recurring', updatedAt: '2025-09-07T14:29:00' },
+    { id: 40, name: 'Trade account growth', reportType: 'Growth & Attrition', scheduleMode: 'Once', updatedAt: '2025-08-29T21:03:00' },
+    { id: 41, name: 'At-risk segment attrition', reportType: 'Growth & Attrition', scheduleMode: 'Once', updatedAt: '2025-08-20T22:56:00' },
+    { id: 42, name: 'Q4 planning - all channels', reportType: 'Campaign Based', scheduleMode: 'Recurring', updatedAt: '2025-08-11T17:41:00' },
   ])
 
   // --- Transactional email reports (stable seed; was Math.random() inline) ---

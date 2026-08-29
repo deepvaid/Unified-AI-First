@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCdpEntitiesStore, type CdpList } from '@/stores/useCdpEntities'
 import { useContactsStore } from '@/stores/useContacts'
@@ -11,9 +11,6 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpFormSection from '@/components/MpFormSection.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useToast } from '@/composables/useToast'
@@ -24,9 +21,6 @@ const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const search = ref('')
-
-const listTypes = ['Normal', 'Premium', 'Transactional', 'Automation']
-const languages = ['English', 'Spanish', 'French', 'German']
 
 const headers = [
   { title: 'List Name', key: 'name', sortable: true },
@@ -52,38 +46,10 @@ const contactCsvColumns: CsvColumn<Contact>[] = [
 ]
 
 
-// Create / edit drawer
-const drawer = ref(false)
-const editingId = ref<number | null>(null)
-type ListForm = Omit<CdpList, 'id' | 'count' | 'created'>
-function blankForm(): ListForm {
-  return { name: '', type: 'Normal', brand: '', displayName: '', description: '', fromName: '', fromEmail: '', replyTo: '', language: 'English', address: '' }
-}
-const form = ref<ListForm>(blankForm())
-
-function openCreate() { editingId.value = null; form.value = blankForm(); drawer.value = true }
-function openEdit(list: CdpList) {
-  editingId.value = list.id
-  form.value = {
-    name: list.name, type: list.type, brand: list.brand, displayName: list.displayName,
-    description: list.description, fromName: list.fromName, fromEmail: list.fromEmail,
-    replyTo: list.replyTo, language: list.language, address: list.address,
-  }
-  drawer.value = true
-}
-
-const canSave = () => form.value.name.trim().length > 0 && form.value.address.trim().length > 0
-
-function save() {
-  if (!canSave()) return
-  if (editingId.value != null) {
-    store.updateList(editingId.value, { ...form.value })
-    toast.success('List updated')
-  } else {
-    store.addList({ ...form.value })
-    toast.success('List created')
-  }
-  drawer.value = false
+// Create and edit are a full page (CreateList.vue), matching the source.
+const createRoute = computed(() => ({ name: 'CreateList', params: { accountId: route.params.accountId } }))
+function editRoute(list: CdpList) {
+  return { name: 'EditList', params: { accountId: route.params.accountId, id: String(list.id) } }
 }
 
 function viewContacts() {
@@ -117,7 +83,7 @@ function confirmDelete() {
       :subtitle="`${store.lists.length} lists`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">Create List</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" :to="createRoute">Create list</v-btn>
       </template>
     </MpPageHeader>
 
@@ -146,7 +112,7 @@ function confirmDelete() {
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="List actions" :itemLabel="item.name">
             <v-list-item prepend-icon="users" title="View Contacts" @click="viewContacts" />
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-list-item prepend-icon="pencil" title="Edit" :to="editRoute(item)" />
             <v-list-item prepend-icon="share" title="Export Contacts" @click="exportContacts(item)" />
             <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
             <v-divider class="my-1" style="opacity: 0.4" />
@@ -159,39 +125,14 @@ function confirmDelete() {
             icon="list"
             :title="search ? 'No lists match your search' : 'No contact lists yet'"
             :description="search ? 'Try a different search term.' : 'Create a list to organize your contacts and send targeted campaigns.'"
-            action-label="Create List"
+            action-label="Create list"
             action-icon="plus"
             class="py-10"
-            @action="openCreate"
+            @action="router.push(createRoute)"
           />
         </template>
       </v-data-table>
     </v-card>
-
-    <!-- Create / edit list -->
-    <MpFormDrawer v-model="drawer" :title="editingId != null ? 'Edit List' : 'Create List'">
-      <MpFormSection title="List details" />
-      <MpFormGrid :cols="2">
-        <v-text-field v-model="form.name" label="List Name *" counter="150" maxlength="150" class="mp-form-grid__full" />
-        <v-select v-model="form.type" label="List Type" :items="listTypes" />
-        <v-text-field v-model="form.brand" label="Brand" />
-        <v-text-field v-model="form.displayName" label="Display Name" class="mp-form-grid__full" />
-        <v-textarea v-model="form.description" label="Description" rows="3" auto-grow class="mp-form-grid__full" />
-      </MpFormGrid>
-
-      <MpFormSection title="Sender" />
-      <MpFormGrid :cols="2">
-        <v-text-field v-model="form.fromName" label="From Name" />
-        <v-text-field v-model="form.fromEmail" label="From Email" type="email" />
-        <v-text-field v-model="form.replyTo" label="Reply To" type="email" />
-        <v-select v-model="form.language" label="Language" :items="languages" />
-        <v-text-field v-model="form.address" label="Address *" prepend-inner-icon="map-pin" class="mp-form-grid__full" />
-      </MpFormGrid>
-      <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave()" @click="save">Save</v-btn>
-      </template>
-    </MpFormDrawer>
 
     <MpConfirmDialog
       v-model="deleteDialog"

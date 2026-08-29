@@ -85,6 +85,12 @@ export interface Contact {
   createdAt: string
   avatarUrl: string
   loyalty?: ContactLoyalty
+  // Set by the New Contact form; absent on seeded contacts.
+  listId?: number
+  optedInEmail?: boolean
+  optedInSms?: boolean
+  customFields?: Record<string, string | boolean>
+  triggerJourneys?: boolean
 }
 
 // ── Segment condition builder ─────────────────────────────────────────────────
@@ -494,21 +500,26 @@ export const useContactsStore = defineStore('contacts', () => {
 
   // ── Contact mutations ────────────────────────────────────────────────────────
   function addContact(input: {
-    firstName: string
+    firstName?: string
     lastName?: string
-    email: string
+    email?: string
     phone?: string
     company?: string
     tags?: string[]
     status?: string
+    listId?: number
+    optedInEmail?: boolean
+    optedInSms?: boolean
+    customFields?: Record<string, string | boolean>
+    triggerJourneys?: boolean
   }): Contact {
     const id = contacts.value.reduce((max, c) => Math.max(max, c.id), 0) + 1
     const today = new Date().toISOString().slice(0, 10)
     const contact: Contact = {
       id,
-      firstName: input.firstName,
+      firstName: input.firstName ?? '',
       lastName: input.lastName ?? '',
-      email: input.email,
+      email: input.email ?? '',
       phone: input.phone ?? '',
       company: input.company || null,
       location: '—',
@@ -520,6 +531,11 @@ export const useContactsStore = defineStore('contacts', () => {
       lastActive: today,
       createdAt: today,
       avatarUrl: `https://i.pravatar.cc/96?u=contact-${id}`,
+      listId: input.listId,
+      optedInEmail: input.optedInEmail,
+      optedInSms: input.optedInSms,
+      customFields: input.customFields,
+      triggerJourneys: input.triggerJourneys,
     }
     contacts.value.unshift(contact)
     useOnboardingStore().complete('add-contacts')

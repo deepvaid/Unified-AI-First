@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useContactsStore, type Segment, type SegmentRule, type SegmentMatchLogic } from '@/stores/useContacts'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -16,7 +17,14 @@ import { useToast } from '@/composables/useToast'
 
 const store = useContactsStore()
 const toast = useToast()
+const route = useRoute()
 const search = ref('')
+
+// Creating a segment starts at the builder chooser (/segments/types).
+const chooserRoute = computed(() => ({
+  name: 'SegmentBuilderChooser',
+  params: { accountId: route.params.accountId },
+}))
 
 const CATEGORIES = [
   'Contact Information', 'In List', 'Not In List', 'Opened', 'Clicked',
@@ -83,6 +91,13 @@ function openCreate() {
   openSnapshot.value = snapshotState()
   drawer.value = true
 }
+
+// The chooser sends the Legacy builder here with ?create=legacy.
+// GAP: the real legacy builder is an inaccessible cross-origin iframe on the
+// source, so it could not be crawled. This drawer stands in — see GAPS.md.
+onMounted(() => {
+  if (route.query.create === 'legacy') openCreate()
+})
 
 function openEdit(segment: Segment) {
   editingId.value = segment.id
@@ -195,7 +210,7 @@ function confirmDelete() {
       :subtitle="`${store.segments.length} segments`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">Create Segment</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" :to="chooserRoute">Create segment</v-btn>
       </template>
     </MpPageHeader>
 
@@ -236,7 +251,7 @@ function confirmDelete() {
             icon="filter"
             :title="search ? 'No segments match your search' : 'No segments yet'"
             :description="search ? 'Try a different search term.' : 'Build dynamic segments to group contacts by behaviour, attributes, or lifecycle stage.'"
-            action-label="Create Segment"
+            action-label="Create segment"
             action-icon="plus"
             class="py-10"
             @action="openCreate"

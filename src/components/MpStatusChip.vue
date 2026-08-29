@@ -5,7 +5,7 @@ type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral'
 
 const props = withDefaults(defineProps<{
   status: string
-  type?: 'order' | 'fulfillment' | 'payment' | 'campaign' | 'contact' | 'ticket' | 'coupon' | 'priority' | 'connection' | 'stock' | 'general'
+  type?: 'order' | 'fulfillment' | 'payment' | 'campaign' | 'contact' | 'ticket' | 'coupon' | 'priority' | 'connection' | 'stock' | 'report' | 'general'
   size?: 'sm' | 'md' | 'lg'
   variant?: 'flat' | 'tonal' | 'outlined'
   showIcon?: boolean
@@ -62,6 +62,10 @@ const toneMap: Record<string, Record<string, Tone>> = {
   stock: {
     'in stock': 'success', 'low stock': 'warning', 'out of stock': 'danger',
     backordered: 'warning', discontinued: 'neutral',
+  },
+  report: {
+    // A saved report's Status column shows its schedule mode, not an execution state.
+    scheduled: 'warning', recurring: 'brand',
   },
   general: {
     active: 'success', inactive: 'neutral', pending: 'warning', error: 'danger',
