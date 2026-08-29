@@ -254,7 +254,7 @@ five rows.
 | Component | Defaults |
 |-----------|----------|
 | `VBtn` | `variant="flat"`; radius, weight, size, `min-height` (`component.control.height`) and padding come from an inline style built from tokens — **not** a `rounded` prop |
-| `VCard` | `variant="flat"`, `rounded="lg"` |
+| `VCard` | `variant="flat"`, `rounded="lg"`. `border` is **not** defaulted — the containment recipe (`v-card variant="flat" border rounded="lg"` per logical section) requires writing `border` on each card |
 | `VTextField` | Outlined variant, comfortable density, auto hide-details, `persistent-placeholder` (locks the label into its floated state — the mechanism behind the static top label). **Visual chrome (border, radius, fill, states, label) is owned by `src/styles/settings-form.scss`, not by these defaults** — see its "Global Outlined Field Baseline" header comment: a **static top label** (Stripe/Polaris pattern; 13px/500 `text.label`, calm on focus and error), transparent fill, 1px `--border-strong` at rest, 2px primary/error border on focus/error with no glow ring, and a size ramp from the `density` prop (compact → sm 32 · comfortable → md 40, the default · default → lg 48). |
 | `VSelect` / `VAutocomplete` / `VCombobox` / `VTextarea` / `VNumberInput` | Same as VTextField |
 | `VFileInput` | Same, except `active: true` stands in for `persistent-placeholder` (VFileInput has no such prop) |
@@ -264,6 +264,7 @@ five rows.
 | `VAppBar` | No elevation |
 | `VDialog` | **No defaults, deliberately** — `rounded="xl"` would compute to 24px against the 16px `component.dialog.radius`, and `global.scss` already forces the token with `!important`. Compose `MpDialog`; never a raw `v-dialog` |
 | `VDivider` | `opacity: 0.72` |
+| `VList` | `elevation: 0`, **`border: true`, `rounded="lg"`** — a bare `v-list` paints as a bordered card. Inside a drawer/dialog/card body that's a nested box: opt out with `:border="false" rounded="0"` (the polish pass does this in MpFormDrawer bodies) |
 | `VCheckbox` / `VRadio` / `VRadioGroup` / `VSwitch` / `VSlider` / `VNumberInput` | Comfortable density, `hide-details="auto"`, primary colour — added in Phase 6, so a selection control and a text field share one rhythm |
 | `VBtnToggle` | Comfortable density, outlined, divided, primary — one convention where there were three |
 | `VChipGroup` | Outlined, primary |
@@ -278,7 +279,37 @@ five rows.
 Every list page: MpPageHeader → MpFilterTabs → v-card(MpDataTableToolbar + v-data-table + MpEmptyState) → MpFloatingBulkBar
 
 ### Form Drawer
-For create/edit: MpFormDrawer with form fields + footer slot (Cancel + Save).
+For create/edit: MpFormDrawer with form fields + footer slot (Cancel + Save). The body relies on
+the shell's 16px gap — no margins on body children. Anatomy is owned by the shell: h2 title +
+labelled close, body-only scroll, sticky footer, focus trap, Escape, focus restore.
+
+### Form grouping (the trio)
+`MpFormSection` + `MpFormGrid` (+ `MpFormField` for composite controls only — never around a
+plain Vuetify input):
+
+```html
+<MpFormSection title="Shipping address" description="Where the order ships.">
+  <MpFormGrid :cols="2">
+    <v-text-field label="Address line 1" class="mp-form-grid__full" />
+    <v-text-field label="City" />
+    <v-text-field label="Postal code" />
+  </MpFormGrid>
+</MpFormSection>
+```
+
+Grouped mode (slot content present) renders `<section role="group" aria-labelledby>` so the
+fields are programmatically associated with the heading; heading-only mode (no slot) stays a
+plain heading for interleaved grids. Rhythm is the container's job: `field.groupGap` (16) within
+a group, `field.sectionGap` (24) between groups — a field never sets its own margin. Two columns
+only for short related pairs; long inputs get `mp-form-grid__full`.
+
+### Action menu
+One pattern, `MpRowActionsMenu`: kebab trigger (accessible name from `ariaLabel` + `itemLabel`,
+40px hit target, `aria-haspopup`), `role="menu"` panel opening `bottom end`. Items are
+`v-list-item role="menuitem"` with verb-first titles and optional leading icons — no
+descriptions. Destructive actions last, behind `<v-divider class="my-1" />`, with
+`class="text-error"`. Labeled-button dropdowns keep their trigger but share the compact panel
+chrome; pickers/palettes are not menus.
 
 ### Dashboard Section
 MpSectionHeader → content (chart, table, or card grid) inside v-card.
