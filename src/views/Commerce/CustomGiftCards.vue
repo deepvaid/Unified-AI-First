@@ -17,6 +17,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpListRow from '@/components/MpListRow.vue'
 import { useToast } from '@/composables/useToast'
 
 const store = useCommerceStore()
@@ -284,11 +285,11 @@ function notify(text: string) { toast.success(text) }
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Gift card actions">
-            <v-list-item prepend-icon="eye" title="View" @click="openView(item)" />
-            <v-list-item prepend-icon="ban" title="Disable" :disabled="item.status === 'Disabled'" @click="disableCard(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          <MpRowActionsMenu ariaLabel="Gift card actions" :itemLabel="item.code">
+            <v-list-item role="menuitem" prepend-icon="eye" title="View" @click="openView(item)" />
+            <v-list-item role="menuitem" prepend-icon="ban" title="Disable" :disabled="item.status === 'Disabled'" @click="disableCard(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
@@ -327,13 +328,15 @@ function notify(text: string) { toast.success(text) }
         <!-- Icon and label read as one mark. They used to sit at opposite ends of
              a justify-space-between row, which pushed the word "Gift card" away
              from the icon it names and left a gap that meant nothing (P6-14). -->
-        <div class="d-flex align-center ga-2 mb-4">
+        <div class="d-flex align-center ga-2">
           <v-icon size="22">gift</v-icon>
           <span class="gift-preview__kicker">Gift card</span>
         </div>
-        <div class="text-h4 font-weight-bold mb-1">{{ money(Number(form.initialValue) || 0) }}</div>
-        <div class="text-body-2 text-medium-emphasis">{{ form.email || 'For your recipient' }}</div>
-        <div class="text-caption text-medium-emphasis mt-2">
+        <div>
+          <div class="text-h4 font-weight-bold">{{ money(Number(form.initialValue) || 0) }}</div>
+          <div class="text-body-2 text-medium-emphasis">{{ form.email || 'For your recipient' }}</div>
+        </div>
+        <div class="text-caption text-medium-emphasis">
           {{ form.expiration === 'none' ? 'No expiration date' : form.expiry ? `Expires ${form.expiry}` : 'Expiration date not set' }}
         </div>
       </v-card>
@@ -441,25 +444,28 @@ function notify(text: string) { toast.success(text) }
       :subtitle="viewing?.code"
     >
       <template v-if="viewing">
-        <v-card color="primary" variant="tonal" rounded="lg" class="pa-5 mb-5">
-          <div class="d-flex align-center justify-space-between mb-4">
+        <v-card color="primary" variant="tonal" rounded="lg" class="gift-preview">
+          <div class="d-flex align-center justify-space-between">
             <v-icon size="22">gift</v-icon>
             <MpStatusChip :status="viewing.status" type="coupon" size="sm" />
           </div>
-          <div class="text-h4 font-weight-bold mb-1">{{ money(viewing.balance) }}</div>
-          <div class="text-body-2 text-medium-emphasis">of {{ money(viewing.initialValue) }} initial value</div>
+          <div>
+            <div class="text-h4 font-weight-bold">{{ money(viewing.balance) }}</div>
+            <div class="text-body-2 text-medium-emphasis">of {{ money(viewing.initialValue) }} initial value</div>
+          </div>
         </v-card>
 
-        <v-list density="compact" class="bg-transparent">
-          <v-list-item title="Code" :subtitle="viewing.code" />
-          <v-list-item title="Contact" :subtitle="viewing.contact" />
-          <v-list-item title="Recipient email" :subtitle="viewing.recipient.email" />
-          <v-list-item title="Message" :subtitle="viewing.message || '—'" />
-          <v-list-item title="Date added" :subtitle="viewing.issued" />
-          <v-list-item title="Expiration" :subtitle="viewing.expiry || 'No expiration date'" />
-          <v-list-item title="Last used" :subtitle="viewing.lastUsed || 'Never used'" />
-          <v-list-item title="Image" :subtitle="viewing.image || 'None'" />
-        </v-list>
+        <MpFormSection title="Details" />
+        <div class="d-flex flex-column">
+          <MpListRow variant="divided" eyebrow="Code" :title="viewing.code" />
+          <MpListRow variant="divided" eyebrow="Contact" :title="viewing.contact" />
+          <MpListRow variant="divided" eyebrow="Recipient email" :title="viewing.recipient.email" />
+          <MpListRow variant="divided" eyebrow="Message" :title="viewing.message || '—'" />
+          <MpListRow variant="divided" eyebrow="Date added" :title="viewing.issued" />
+          <MpListRow variant="divided" eyebrow="Expiration" :title="viewing.expiry || 'No expiration date'" />
+          <MpListRow variant="divided" eyebrow="Last used" :title="viewing.lastUsed || 'Never used'" />
+          <MpListRow variant="divided" eyebrow="Image" :title="viewing.image || 'None'" />
+        </div>
       </template>
 
       <template #footer>
@@ -494,6 +500,10 @@ function notify(text: string) { toast.success(text) }
 .gift-preview {
   overflow: hidden;
   padding: var(--mp-component-card-padding);
+  /* The card owns its internal rhythm — children carry no margins. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-component-card-gapCompact);
 }
 
 .gift-preview__kicker {

@@ -379,22 +379,19 @@ onMounted(() => {
             controls-id="products-table"
             @update:model-value="onViewChange"
           />
-          <v-menu v-if="store.productViews.length" location="bottom end">
-            <template #activator="{ props: menu }">
-              <v-btn v-bind="menu" icon="ellipsis" size="small" variant="text" aria-label="Manage saved views" />
-            </template>
-            <v-list density="compact">
-              <v-list-subheader>Saved views</v-list-subheader>
-              <v-list-item
-                v-for="view in store.productViews"
-                :key="view.id"
-                :title="view.name"
-                prepend-icon="trash-2"
-                class="text-error"
-                @click="deleteView(view)"
-              />
-            </v-list>
-          </v-menu>
+          <MpRowActionsMenu v-if="store.productViews.length" ariaLabel="Saved view actions">
+            <v-list-subheader>Saved views</v-list-subheader>
+            <v-divider class="my-1" />
+            <v-list-item
+              v-for="view in store.productViews"
+              :key="view.id"
+              role="menuitem"
+              :title="view.name"
+              prepend-icon="trash-2"
+              class="text-error"
+              @click="deleteView(view)"
+            />
+          </MpRowActionsMenu>
         </div>
       </template>
     </MpPageHeader>
@@ -525,9 +522,9 @@ onMounted(() => {
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Product actions" :item-label="item.name">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template #no-data>

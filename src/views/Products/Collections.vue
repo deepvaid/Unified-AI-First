@@ -154,7 +154,7 @@ function doBulkDelete() {
               New collection
             </v-btn>
           </template>
-          <v-list>
+          <v-list density="compact">
             <v-list-item
               prepend-icon="wand-sparkles"
               title="Automated collection"
@@ -251,9 +251,9 @@ function doBulkDelete() {
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Collection actions" :item-label="item.title">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template #no-data>

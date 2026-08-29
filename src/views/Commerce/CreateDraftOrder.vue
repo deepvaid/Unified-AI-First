@@ -14,6 +14,7 @@ import {
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
@@ -321,11 +322,11 @@ onMounted(() => {
               </template>
             </v-autocomplete>
 
-            <v-row v-else dense class="mt-2 mb-2">
-              <v-col cols="12" md="4"><v-text-field v-model="customer" label="Full name *" hide-details /></v-col>
-              <v-col cols="12" md="4"><v-text-field v-model="email" label="Email" type="email" hide-details /></v-col>
-              <v-col cols="12" md="4"><v-text-field v-model="phone" label="Phone" hide-details /></v-col>
-            </v-row>
+            <MpFormGrid v-else :cols="2" class="mt-2 mb-4">
+              <v-text-field v-model="customer" label="Full name *" hide-details class="mp-form-grid__full" />
+              <v-text-field v-model="email" label="Email" type="email" hide-details />
+              <v-text-field v-model="phone" label="Phone" hide-details />
+            </MpFormGrid>
 
             <v-select
               v-model="salesChannel"
@@ -499,14 +500,14 @@ onMounted(() => {
 
     <!-- ── Address drawer ──────────────────────────────────────────── -->
     <MpFormDrawer v-model="addressDrawer" :title="addressKind === 'shipping' ? 'Shipping Address' : 'Billing Address'" size="sm">
-      <v-row dense>
-        <v-col cols="12"><v-text-field v-model="addressForm.name" label="Full name" /></v-col>
-        <v-col cols="12"><v-text-field v-model="addressForm.line1" label="Address" /></v-col>
-        <v-col cols="7"><v-text-field v-model="addressForm.city" label="City" /></v-col>
-        <v-col cols="5"><v-text-field v-model="addressForm.region" label="State / Region" /></v-col>
-        <v-col cols="5"><v-text-field v-model="addressForm.postalCode" label="Postal code" /></v-col>
-        <v-col cols="7"><v-text-field v-model="addressForm.country" label="Country" /></v-col>
-      </v-row>
+      <MpFormGrid :cols="2">
+        <v-text-field v-model="addressForm.name" label="Full name" class="mp-form-grid__full" />
+        <v-text-field v-model="addressForm.line1" label="Address" class="mp-form-grid__full" />
+        <v-text-field v-model="addressForm.city" label="City" />
+        <v-text-field v-model="addressForm.region" label="State / Region" />
+        <v-text-field v-model="addressForm.postalCode" label="Postal code" />
+        <v-text-field v-model="addressForm.country" label="Country" />
+      </MpFormGrid>
       <template #footer>
         <v-btn variant="text" class="text-none" @click="addressDrawer = false">Cancel</v-btn>
         <v-btn color="primary" variant="flat" class="text-none" @click="saveAddress">Save Address</v-btn>

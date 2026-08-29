@@ -439,7 +439,7 @@ function restore(template: FeedTemplate) {
             </template>
             <template #item.actions="{ item }">
               <MpRowActionsMenu ariaLabel="Product actions" :item-label="item.name || item.itemId">
-                <v-list-item prepend-icon="pencil" title="Edit product" @click="openEditProduct(item)" />
+                <v-list-item role="menuitem" prepend-icon="pencil" title="Edit product" @click="openEditProduct(item)" />
               </MpRowActionsMenu>
             </template>
             <template #no-data>
@@ -504,7 +504,7 @@ function restore(template: FeedTemplate) {
             </template>
             <template #item.actions="{ item }">
               <MpRowActionsMenu ariaLabel="Feed actions" :item-label="item.name">
-                <v-list-item prepend-icon="pencil" title="Edit product feed" @click="openEditFeed(item)" />
+                <v-list-item role="menuitem" prepend-icon="pencil" title="Edit product feed" @click="openEditFeed(item)" />
               </MpRowActionsMenu>
             </template>
             <template #no-data>
@@ -560,13 +560,13 @@ function restore(template: FeedTemplate) {
             </template>
             <template #item.actions="{ item }">
               <MpRowActionsMenu ariaLabel="Template actions" :item-label="item.name">
-                <v-list-item prepend-icon="pencil" title="Edit feed template" @click="openEditTemplate(item)" />
+                <v-list-item role="menuitem" prepend-icon="pencil" title="Edit feed template" @click="openEditTemplate(item)" />
                 <template v-if="item.archived">
-                  <v-list-item prepend-icon="archive-restore" title="Restore feed template" @click="restore(item)" />
+                  <v-list-item role="menuitem" prepend-icon="archive-restore" title="Restore feed template" @click="restore(item)" />
                 </template>
                 <template v-else>
                   <v-divider class="my-1" />
-                  <v-list-item prepend-icon="archive" title="Archive feed template" @click="askArchive(item)" />
+                  <v-list-item role="menuitem" prepend-icon="archive" title="Archive feed template" @click="askArchive(item)" />
                 </template>
               </MpRowActionsMenu>
             </template>

@@ -316,16 +316,17 @@ onMounted(() => {
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Promotion actions">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEditPromotion(item)" />
-            <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+          <MpRowActionsMenu ariaLabel="Promotion actions" :itemLabel="item.title">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEditPromotion(item)" />
+            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
             <v-list-item
+              role="menuitem"
               :prepend-icon="item.status === 'Active' ? 'pause' : 'play'"
               :title="item.status === 'Active' ? 'Deactivate' : 'Activate'"
               @click="toggleActive(item)"
             />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 

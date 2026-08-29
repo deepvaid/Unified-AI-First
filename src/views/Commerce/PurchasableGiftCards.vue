@@ -286,12 +286,13 @@ function notify(text: string) { toast.success(text) }
       >
         <template #filter-content>
           <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
             <!-- Toolbar filters stay compact and suppress details deliberately: this is a
                  dense popover, not a form, and the select cannot carry validation. -->
-            <MpFormGrid>
-              <v-select v-model="filters.kind" label="Type" :items="filterOptions.kind" hide-details clearable />
-            </MpFormGrid>
+            <MpFormSection title="Filter by">
+              <MpFormGrid>
+                <v-select v-model="filters.kind" label="Type" :items="filterOptions.kind" hide-details clearable />
+              </MpFormGrid>
+            </MpFormSection>
           </div>
         </template>
       </MpDataTableToolbar>
@@ -347,11 +348,11 @@ function notify(text: string) { toast.success(text) }
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Gift card product actions">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
-            <v-list-item prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
-            <v-divider class="my-1" style="opacity: 0.4" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+          <MpRowActionsMenu ariaLabel="Gift card product actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-list-item role="menuitem" prepend-icon="copy" title="Duplicate" @click="duplicate(item)" />
+            <v-divider class="my-1" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
@@ -459,7 +460,7 @@ function notify(text: string) { toast.success(text) }
 
       <v-expansion-panels v-model="organiseOpen" variant="accordion" class="organise-panels" multiple>
         <v-expansion-panel elevation="0" rounded="lg">
-          <v-expansion-panel-title class="text-subtitle-2 font-weight-bold">Organise</v-expansion-panel-title>
+          <v-expansion-panel-title class="organise-panels__title">Organise</v-expansion-panel-title>
           <v-expansion-panel-text>
             <MpFormGrid>
               <v-select v-model="form.taxCategory" label="Tax Category" :items="TAX_CATEGORIES" clearable />
@@ -495,4 +496,13 @@ function notify(text: string) { toast.success(text) }
 .font-mono-field :deep(input) { font-family: monospace; }
 .media-placeholder { border-style: dashed !important; cursor: pointer; }
 .organise-panels :deep(.v-expansion-panel) { border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+/* The panel title reads as an in-form section heading (MpFormSection's type spec),
+   so the accordion doesn't introduce a second heading style into the drawer. */
+.organise-panels__title {
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-semibold);
+  letter-spacing: var(--mp-letterSpacing-eyebrow);
+  text-transform: uppercase;
+  color: var(--muted);
+}
 </style>

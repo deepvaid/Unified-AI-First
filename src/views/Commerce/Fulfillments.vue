@@ -14,6 +14,8 @@ import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpDialog from '@/components/MpDialog.vue'
+import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 
 const store = useCommerceStore()
 const route = useRoute()
@@ -213,16 +215,18 @@ function exportFulfillments() {
       >
         <template #filter-content>
           <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <div class="mb-3">
-              <v-select
-                v-model="filters.status"
-                label="Fulfillment Status"
-                :items="[...FULFILLMENT_QUEUE_STATUSES]"
-                hide-details
-                clearable
-              />
-            </div>
+            <MpFormSection title="Filter by">
+              <MpFormGrid>
+                <!-- hide-details: dense toolbar filter, no validation to reserve room for. -->
+                <v-select
+                  v-model="filters.status"
+                  label="Fulfillment Status"
+                  :items="[...FULFILLMENT_QUEUE_STATUSES]"
+                  hide-details
+                  clearable
+                />
+              </MpFormGrid>
+            </MpFormSection>
           </div>
         </template>
       </MpDataTableToolbar>
@@ -280,15 +284,16 @@ function exportFulfillments() {
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Fulfillment actions">
-            <v-list-item prepend-icon="eye" title="View order" @click="goToOrder(item)"></v-list-item>
+          <MpRowActionsMenu ariaLabel="Fulfillment actions" :itemLabel="item.orderNumber">
+            <v-list-item role="menuitem" prepend-icon="eye" title="View order" @click="goToOrder(item)"></v-list-item>
             <v-list-item
               v-if="NEXT_STAGE[item.status] && NEXT_STAGE[item.status] !== 'Shipped'"
+              role="menuitem"
               prepend-icon="arrow-right"
               :title="`Advance to ${NEXT_STAGE[item.status]}`"
               @click="advanceStage(item)"
             ></v-list-item>
-            <v-list-item prepend-icon="truck" title="Mark shipped" :disabled="item.status === 'Shipped'" @click="askShip([item.id])"></v-list-item>
+            <v-list-item role="menuitem" prepend-icon="truck" title="Mark shipped" :disabled="item.status === 'Shipped'" @click="askShip([item.id])"></v-list-item>
           </MpRowActionsMenu>
         </template>
 

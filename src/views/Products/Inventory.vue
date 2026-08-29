@@ -344,9 +344,9 @@ function exportInventory() {
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu ariaLabel="Inventory item actions">
-            <v-list-item prepend-icon="pencil" title="Adjust Stock" @click="openAdjust(item)" />
-            <v-list-item prepend-icon="arrow-left-right" title="Transfer" @click="openTransfer(item)" />
+          <MpRowActionsMenu ariaLabel="Inventory item actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Adjust Stock" @click="openAdjust(item)" />
+            <v-list-item role="menuitem" prepend-icon="arrow-left-right" title="Transfer" @click="openTransfer(item)" />
           </MpRowActionsMenu>
         </template>
 
@@ -458,7 +458,8 @@ function exportInventory() {
         />
         <v-select v-model="adjustReason" :items="REASONS" label="Reason" />
       </MpFormGrid>
-      <v-card variant="tonal" color="primary" rounded="lg" class="pa-4 d-flex align-center justify-space-between">
+      <!-- Genuine status preview tile — stays tonal; inset from the card token, not a pa-* utility. -->
+      <v-card variant="tonal" color="primary" rounded="lg" class="inventory-adjust-preview d-flex align-center justify-space-between">
         <div>
           <div class="text-caption text-medium-emphasis">New available</div>
           <div class="text-h5 font-weight-bold">{{ adjustPreview }}</div>
@@ -503,5 +504,9 @@ function exportInventory() {
   width: 32px !important;
   height: 32px !important;
   aspect-ratio: 1 / 1;
+}
+
+.inventory-adjust-preview {
+  padding: var(--mp-component-card-padding);
 }
 </style>

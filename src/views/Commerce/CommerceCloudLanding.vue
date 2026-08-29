@@ -71,7 +71,7 @@ const barPath = computed(() => heroBars
           </v-btn>
         </div>
 
-        <v-card flat border rounded="xl" class="pa-8 commerce-landing__hero-card">
+        <v-card flat border rounded="lg" class="pa-8 commerce-landing__hero-card">
           <div class="commerce-landing__hero-metrics">
             <div
               v-for="metric in heroMetrics"
@@ -158,7 +158,7 @@ const barPath = computed(() => heroBars
           :key="capability.title"
           flat
           border
-          rounded="xl"
+          rounded="lg"
           class="pa-8 commerce-landing__capability"
         >
           <div class="commerce-landing__capability-inner">

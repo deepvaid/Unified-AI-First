@@ -200,9 +200,9 @@ function doDelete() {
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Price list actions" :item-label="item.title">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template #no-data>

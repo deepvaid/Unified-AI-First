@@ -195,11 +195,11 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
         </template>
         <template v-slot:item.actions="{ item }">
           <div @click.stop>
-            <MpRowActionsMenu ariaLabel="Draft order actions">
-              <v-list-item prepend-icon="pencil" title="Edit draft" @click="goEdit(item)"></v-list-item>
-              <v-list-item prepend-icon="send" title="Send invoice" :disabled="item.status === 'Invoice Sent'" @click="sendInvoice(item)"></v-list-item>
-              <v-divider class="my-1" style="opacity: 0.4" />
-              <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDeleteRow(item)"></v-list-item>
+            <MpRowActionsMenu ariaLabel="Draft order actions" :itemLabel="item.draftNumber">
+              <v-list-item role="menuitem" prepend-icon="pencil" title="Edit draft" @click="goEdit(item)"></v-list-item>
+              <v-list-item role="menuitem" prepend-icon="send" title="Send invoice" :disabled="item.status === 'Invoice Sent'" @click="sendInvoice(item)"></v-list-item>
+              <v-divider class="my-1" />
+              <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDeleteRow(item)"></v-list-item>
             </MpRowActionsMenu>
           </div>
         </template>

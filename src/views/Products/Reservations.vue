@@ -12,6 +12,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpDialog from '@/components/MpDialog.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
+import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 
@@ -231,9 +232,9 @@ function doDelete() {
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Reservation actions" :item-label="item.item">
-            <v-list-item prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
+            <v-list-item role="menuitem" prepend-icon="pencil" title="Edit" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
+            <v-list-item role="menuitem" prepend-icon="trash-2" title="Delete" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
         <template #no-data>
@@ -259,40 +260,46 @@ function doDelete() {
       guarded
       @close="requestClose"
     >
-      <MpFormSection title="What to hold" required />
-      <v-autocomplete
-        v-model="form.sku"
-        :items="variantOptions"
-        label="Item to reserve *"
-        placeholder="Search by product or SKU"
-        hint="Only products with inventory tracking turned on can be reserved."
-        persistent-hint
-        no-data-text="No inventory-tracked product matches that search."
-      />
-      <v-select
-        v-model="form.location"
-        :items="[...INVENTORY_LOCATIONS]"
-        label="Location *"
-        :disabled="!form.sku"
-      />
+      <MpFormSection title="What to hold" required>
+        <MpFormGrid>
+          <v-autocomplete
+            v-model="form.sku"
+            :items="variantOptions"
+            label="Item to reserve *"
+            placeholder="Search by product or SKU"
+            hint="Only products with inventory tracking turned on can be reserved."
+            persistent-hint
+            no-data-text="No inventory-tracked product matches that search."
+          />
+          <v-select
+            v-model="form.location"
+            :items="[...INVENTORY_LOCATIONS]"
+            label="Location *"
+            :disabled="!form.sku"
+          />
+        </MpFormGrid>
+      </MpFormSection>
 
       <template v-if="showSummary">
-        <MpFormSection title="Stock at this location" />
-        <div class="res-summary">
-          <div class="res-summary__row"><span>Item</span><span>{{ selectedVariant?.label }}</span></div>
-          <div class="res-summary__row"><span>SKU</span><span class="res-mono">{{ selectedVariant?.sku }}</span></div>
-          <div class="res-summary__row"><span>In stock</span><span>{{ selectedVariant?.inStock ?? 0 }}</span></div>
-          <div class="res-summary__row"><span>Available</span><span>{{ selectedVariant?.available ?? 0 }}</span></div>
-        </div>
+        <MpFormSection title="Stock at this location">
+          <div class="res-summary">
+            <div class="res-summary__row"><span>Item</span><span>{{ selectedVariant?.label }}</span></div>
+            <div class="res-summary__row"><span>SKU</span><span class="res-mono">{{ selectedVariant?.sku }}</span></div>
+            <div class="res-summary__row"><span>In stock</span><span>{{ selectedVariant?.inStock ?? 0 }}</span></div>
+            <div class="res-summary__row"><span>Available</span><span>{{ selectedVariant?.available ?? 0 }}</span></div>
+          </div>
 
-        <v-text-field
-          v-model="form.qty"
-          label="Reserve quantity *"
-          type="number"
-          min="1"
-          :error-messages="qtyError"
-        />
-        <v-textarea v-model="form.description" label="Description" rows="3" placeholder="Why this stock is held" />
+          <MpFormGrid>
+            <v-text-field
+              v-model="form.qty"
+              label="Reserve quantity *"
+              type="number"
+              min="1"
+              :error-messages="qtyError"
+            />
+            <v-textarea v-model="form.description" label="Description" rows="3" placeholder="Why this stock is held" />
+          </MpFormGrid>
+        </MpFormSection>
       </template>
       <MpFormField v-else label="Quantity and description">
         <template #default="{ labelId }">
