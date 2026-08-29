@@ -19,7 +19,38 @@ Crawled from `uat.maropost.com` account 116000 on 2026-08-28.
 | Collections | `/commerce/:id/products/collections` | [`Collections.vue`](../../src/views/Products/Collections.vue) + [`CollectionEditor.vue`](../../src/views/Products/CollectionEditor.vue) | [AUDIT](collections/AUDIT.md) · [FLOWS](collections/FLOWS.md) · [PARITY](collections/PARITY.md) |
 | Reservations | `/commerce/:id/inventory/reservations` | [`Reservations.vue`](../../src/views/Products/Reservations.vue) | [AUDIT](inventory-reservations/AUDIT.md) · [FLOWS](inventory-reservations/FLOWS.md) · [PARITY](inventory-reservations/PARITY.md) |
 
-Shared: [IMPROVEMENTS.md](IMPROVEMENTS.md) · [GAPS.md](GAPS.md)
+### Marketing Acquisition + Content slice (2026-08-30)
+
+Crawled from `uat.maropost.com` account 116000. Overview and the locked decisions:
+[marketing-acquisition/CRAWL-SUMMARY.md](marketing-acquisition/CRAWL-SUMMARY.md).
+
+| Page | Source | Rebuild | Docs |
+|---|---|---|---|
+| Acquisition Forms | `/acquisition/forms` (+ `/select`, `/create`, `/:id/modify`) | [`AcquisitionForms.vue`](../../src/views/Marketing/AcquisitionForms.vue) + [`FormSelection.vue`](../../src/views/Marketing/FormSelection.vue) + [`FormBuilder.vue`](../../src/views/Marketing/FormBuilder.vue) | [AUDIT](acquisition-forms/AUDIT.md) · [FLOWS](acquisition-forms/FLOWS.md) · [PARITY](acquisition-forms/PARITY.md) |
+| Landing Pages | `/landing_pages` (+ `/template`, `/create`) | [`LandingPages.vue`](../../src/views/Marketing/LandingPages.vue) + [`LandingPageTemplates.vue`](../../src/views/Marketing/LandingPageTemplates.vue) + [`LandingPageBuilderChooser.vue`](../../src/views/Marketing/LandingPageBuilderChooser.vue) | [AUDIT](landing-pages/AUDIT.md) · [FLOWS](landing-pages/FLOWS.md) · [PARITY](landing-pages/PARITY.md) |
+| Lead Ads | `/social_leads` (+ `/new`, `/:id/edit`) | [`LeadAds.vue`](../../src/views/Marketing/LeadAds.vue) + [`LeadAdForm.vue`](../../src/views/Marketing/LeadAdForm.vue) | [AUDIT](social-leads/AUDIT.md) · [FLOWS](social-leads/FLOWS.md) |
+| Email Content | `/contents` (+ 8 more) | [`EmailContent.vue`](../../src/views/Marketing/EmailContent.vue) + [`ContentTemplates.vue`](../../src/views/Marketing/ContentTemplates.vue) + [`ContentEditorChooser.vue`](../../src/views/Marketing/ContentEditorChooser.vue) + [`TemplateLayouts.vue`](../../src/views/Marketing/TemplateLayouts.vue) + [`ContentArchives.vue`](../../src/views/Marketing/ContentArchives.vue) + [`EmailContentPreview.vue`](../../src/views/Marketing/EmailContentPreview.vue) | [AUDIT](email-content/AUDIT.md) · [FLOWS](email-content/FLOWS.md) · [PARITY](email-content/PARITY.md) |
+
+Slice-shared: [marketing-acquisition/IMPROVEMENTS.md](marketing-acquisition/IMPROVEMENTS.md) ·
+[marketing-acquisition/GAPS.md](marketing-acquisition/GAPS.md)
+
+```
+/accounts/:accountId/acquisition/forms                    AcquisitionForms   (/acquisition redirects here)
+/accounts/:accountId/acquisition/forms/select             FormSelection
+/accounts/:accountId/landing_pages/template               LandingPageTemplates  (/templates redirects here)
+/accounts/:accountId/landing_pages/create                 LandingPageBuilderChooser
+/accounts/:accountId/lead_ads (+ /new, /:id/edit)         LeadAds / LeadAdForm
+/accounts/:accountId/contents/template                    ContentTemplates
+/accounts/:accountId/contents/select                      ContentEditorChooser   (4 options)
+/accounts/:accountId/content_templates/select_editor      ContentEditorChooser   (2 options)
+/accounts/:accountId/content_templates/layouts            TemplateLayouts
+/accounts/:accountId/contents/:id/preview                 EmailContentPreview
+/accounts/:accountId/archive                              ContentArchives
+```
+
+---
+
+Shared (CDP + Products slices): [IMPROVEMENTS.md](IMPROVEMENTS.md) · [GAPS.md](GAPS.md)
 
 ## Routes added
 
