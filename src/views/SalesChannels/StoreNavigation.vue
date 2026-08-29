@@ -168,11 +168,11 @@ const deleteMessage = computed(() => {
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">
-            <v-list-item :title="item.status === 'Active' ? 'Set inactive' : 'Set active'" :prepend-icon="item.status === 'Active' ? 'eye-off' : 'eye'" @click="toggleStatus(item)" />
-            <v-list-item title="Edit" prepend-icon="pencil" @click="openEditor(item)" />
+          <MpRowActionsMenu ariaLabel="Menu actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" :title="item.status === 'Active' ? 'Set inactive' : 'Set active'" :prepend-icon="item.status === 'Active' ? 'eye-off' : 'eye'" @click="toggleStatus(item)" />
+            <v-list-item role="menuitem" title="Edit" prepend-icon="pencil" @click="openEditor(item)" />
             <v-divider class="my-1" />
-            <v-list-item title="Delete" prepend-icon="trash-2" class="text-error" @click="askDelete(item)" />
+            <v-list-item role="menuitem" title="Delete" prepend-icon="trash-2" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 

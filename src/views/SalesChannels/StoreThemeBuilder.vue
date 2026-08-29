@@ -5,6 +5,7 @@ import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
@@ -619,24 +620,14 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
       ></v-btn>
       <div class="font-weight-bold text-body-1 text-truncate">{{ theme.name }}</div>
       <MpStatusChip :status="theme.status" type="general" size="sm" />
-      <v-menu location="bottom start">
-        <template #activator="{ props }">
-          <v-btn
-            v-bind="props"
-            icon="more-vertical"
-            variant="text"
-            size="small"
-            aria-label="Theme actions"
-          ></v-btn>
-        </template>
-        <v-list density="compact" class="py-1">
-          <v-list-item
-            prepend-icon="code"
-            title="Edit Code"
-            @click="router.push({ name: 'StoreThemeCode', params: { accountId, channelId } })"
-          ></v-list-item>
-        </v-list>
-      </v-menu>
+      <MpRowActionsMenu ariaLabel="Theme actions">
+        <v-list-item
+          role="menuitem"
+          prepend-icon="code"
+          title="Edit Code"
+          @click="router.push({ name: 'StoreThemeCode', params: { accountId, channelId } })"
+        ></v-list-item>
+      </MpRowActionsMenu>
     </template>
 
     <template #toolbar-center>

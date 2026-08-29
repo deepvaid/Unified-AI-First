@@ -999,26 +999,29 @@ function locationRoleText(locationId: string) {
               </div>
             </div>
             <div class="sc-feature-list" aria-label="Cross-sell features">
-              <div v-for="feature in crossSellFeatures" :key="feature.id" class="sc-feature-row">
-                <div class="retail-row-icon" :class="`retail-row-icon--${feature.color}`">
-                  <v-icon size="15">{{ feature.icon }}</v-icon>
-                </div>
-                <div class="min-width-0">
-                  <div class="sc-feature-row__title">
-                    <strong>{{ feature.title }}</strong>
-                    <span>{{ feature.status }}</span>
+              <template v-for="(feature, index) in crossSellFeatures" :key="feature.id">
+                <v-divider v-if="index > 0" />
+                <div class="sc-feature-row">
+                  <div class="retail-row-icon" :class="`retail-row-icon--${feature.color}`">
+                    <v-icon size="15">{{ feature.icon }}</v-icon>
                   </div>
-                  <p>{{ feature.description }}</p>
+                  <div class="min-width-0">
+                    <div class="sc-feature-row__title">
+                      <strong>{{ feature.title }}</strong>
+                      <span>{{ feature.status }}</span>
+                    </div>
+                    <p>{{ feature.description }}</p>
+                  </div>
+                  <div class="sc-feature-row__actions">
+                    <v-btn variant="text" size="small" class="text-none" @click="runAction(feature.target)">
+                      Learn more
+                    </v-btn>
+                    <v-btn variant="outlined" size="small" class="text-none" @click="runAction(feature.target)">
+                      {{ feature.actionLabel }}
+                    </v-btn>
+                  </div>
                 </div>
-                <div class="sc-feature-row__actions">
-                  <v-btn variant="text" size="small" class="text-none" @click="runAction(feature.target)">
-                    Learn more
-                  </v-btn>
-                  <v-btn variant="outlined" size="small" class="text-none" @click="runAction(feature.target)">
-                    {{ feature.actionLabel }}
-                  </v-btn>
-                </div>
-              </div>
+              </template>
             </div>
           </div>
         </v-card>
@@ -1480,8 +1483,7 @@ function locationRoleText(locationId: string) {
 
 .sc-favicon-row,
 .sc-cross-sell-banner,
-.sc-assistant-card,
-.sc-feature-row {
+.sc-assistant-card {
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
   background: var(--surface-primary);
@@ -1613,7 +1615,6 @@ function locationRoleText(locationId: string) {
 
 .sc-feature-list {
   display: grid;
-  gap: 10px;
   margin-top: 14px;
 }
 
@@ -1622,7 +1623,7 @@ function locationRoleText(locationId: string) {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 12px 0;
 }
 
 .sc-feature-row__title {

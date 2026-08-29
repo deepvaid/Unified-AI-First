@@ -182,10 +182,10 @@ function confirmDelete() {
         </template>
 
         <template v-slot:item.actions="{ item }">
-          <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">
-            <v-list-item title="Edit" prepend-icon="pencil" @click="openEdit(item)" />
+          <MpRowActionsMenu ariaLabel="Campaign actions" :itemLabel="item.name">
+            <v-list-item role="menuitem" title="Edit" prepend-icon="pencil" @click="openEdit(item)" />
             <v-divider class="my-1" />
-            <v-list-item title="Delete" prepend-icon="trash-2" class="text-error" @click="askDelete(item)" />
+            <v-list-item role="menuitem" title="Delete" prepend-icon="trash-2" class="text-error" @click="askDelete(item)" />
           </MpRowActionsMenu>
         </template>
 
