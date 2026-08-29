@@ -269,7 +269,10 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/acquisition/forms', name: 'AcquisitionForms', component: () => import('@/views/Marketing/AcquisitionForms.vue') },
   { path: '/accounts/:accountId/acquisition/forms/select', name: 'FormSelection', component: () => import('@/views/Marketing/FormSelection.vue') },
   { path: '/accounts/:accountId/landing_pages', name: 'LandingPages', component: () => import('@/views/Marketing/LandingPages.vue') },
-  { path: '/accounts/:accountId/landing_pages/templates', name: 'LandingPageTemplates', component: () => import('@/views/Marketing/LandingPageTemplates.vue') },
+  // Aligned to UAT's singular path; the old plural one keeps working.
+  { path: '/accounts/:accountId/landing_pages/template', name: 'LandingPageTemplates', component: () => import('@/views/Marketing/LandingPageTemplates.vue') },
+  { path: '/accounts/:accountId/landing_pages/templates', redirect: to => `/accounts/${to.params.accountId}/landing_pages/template` },
+  { path: '/accounts/:accountId/landing_pages/create', name: 'LandingPageBuilderChooser', component: () => import('@/views/Marketing/LandingPageBuilderChooser.vue') },
   { path: '/accounts/:accountId/landing_pages/editor/:id/edit', name: 'LandingPageEditor', component: () => import('@/views/Marketing/LandingPageEditor.vue'), meta: { builderShell: true } },
   { path: '/accounts/:accountId/lead_ads', name: 'LeadAds', component: () => import('@/views/Marketing/LeadAds.vue') },
   { path: '/accounts/:accountId/lead_ads/new', name: 'CreateLeadAd', component: () => import('@/views/Marketing/LeadAdForm.vue') },
