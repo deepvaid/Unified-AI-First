@@ -88,14 +88,14 @@ Copy and UX rationale: `docs/rebuild/marketing-acquisition/IMPROVEMENTS.md` §La
 | Category tags on cards | ✅ | Up to three chips per card; the rest are searchable. |
 | Fixed aspect ratio | ✅ | 16:10 token-drawn preview. Fixes D20 (300px–1660px cards) and D22 (re-downloading thumbnails). |
 | Cards keyboard-operable | ✅ | `MpOptionCard`: `role="button"`, `tabindex=0`, Enter/Space, focus ring. Verified Enter activates. |
-| `Categories` facets: `USAGE`, `INDUSTRY`, `SEASONAL`, `AUTOMATED` | ✅ | All four, in `MpDataTableToolbar`'s `#filter-content` drawer, each option with a count. |
+| `Categories` facets: `USAGE`, `INDUSTRY`, `SEASONAL` | ✅ | All three, in `MpDataTableToolbar`'s `#filter-content` drawer, each option with a count. An earlier revision of this checklist listed a fourth `AUTOMATED` group — the 2026-08-30 re-crawl confirmed it does not exist in UAT (`AUDIT.md` records three), and the rebuild's invented group was removed. |
 | Facet counts / badge | ✅ | Per-option counts, plus the Filter button's own active badge. |
 | Facets combine with OR | ✅ | Behaviour kept, and stated in the drawer. |
 | Accordions mutually exclusive | ❌ | All four groups are visible at once — the exclusivity is friction 6, not a feature. |
 | `Clear All` | ✅ | A real button (`Clear all`), in the drawer footer and on the chip row. |
 | Zero-result state | ✅ | `MpEmptyState` + `Clear filters`. Not reachable in the source. |
 | Library search | ✅ | Added — name, description and category labels. |
-| `SEASONAL` / `AUTOMATED` option lists | ♻️ | Never expanded during the crawl. Plausible values seeded (`Black Friday`, `Christmas`, `New Year`, `Easter`, `Mother's Day`, `Father's Day`; `Welcome`, `Abandoned cart`, `Win-back`, `Post-purchase`). **Needs confirming against UAT.** |
+| `SEASONAL` option list | ✅ | **Confirmed against UAT 2026-08-30** and the seeds corrected: Fashion Week · Christmas · Father's Day · Seasonal promotion · Spring · Labor Day · Fall · Cyber Monday · Mother's Day · Valentine's Day · Memorial Day (UAT's order, labels humanised per the D19 fix). The previously inferred `AUTOMATED` group and its options were removed; `INDUSTRY` gained UAT's `Manufacturing`, `Music` and `Luxury`, which the first build had dropped. |
 | `MY TEMPLATES` table: `Name` · `Updated At` · `Created At` · Actions | ✅ | All four, all three date columns sortable. |
 | `MY TEMPLATES` first cell renders two blank rectangles (D17) | ✅ | Not reproduced — no selection column on this table. |
 | Row kebab `Create New Page` | ✅ | Renamed `Create new page`, keyboard-reachable. |
@@ -170,8 +170,17 @@ Copy and UX rationale: `docs/rebuild/marketing-acquisition/IMPROVEMENTS.md` §La
 
 ## 6. Known deltas to confirm with the product team
 
-1. **`SEASONAL` and `AUTOMATED` facet options are inferred** — the crawl never expanded either
-   accordion (the source's exclusive accordions kept closing them).
+> **Re-verified against live UAT (account 116000) on 2026-08-30.** All three pages were
+> re-crawled read-only. Structure, copy, flows and every documented source defect (D1 preview
+> href, D2 leaked i18n key, D3 unclosable filter menu, hover-only template names, keyboard-
+> unreachable row-menu items, PNG-only builder tiles) were confirmed unchanged. Item 1 below is
+> resolved; items 2–4 stand as written.
+
+1. ~~**`SEASONAL` and `AUTOMATED` facet options are inferred**~~ **Resolved 2026-08-30.** The
+   re-crawl opened each accordion alone: `SEASONAL` has 11 options (now in `AUDIT.md` and seeded
+   verbatim), and **`AUTOMATED` does not exist** — the group set is `USAGE` / `INDUSTRY` /
+   `SEASONAL`. The rebuild's invented `Automated` group was removed and the three Industry
+   options it had dropped (`Manufacturing`, `Music`, `Luxury`) were restored.
 2. **No `Details` step** between template and builder: the page is created with the template's name
    and an empty URL, both editable in the editor, which already blocks publishing until the URL is
    valid. UAT collects nothing before the editor either.

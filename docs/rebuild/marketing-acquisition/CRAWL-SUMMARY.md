@@ -164,7 +164,7 @@ Existing infrastructure that fits: `useFolders.ts` (scopes `campaigns`/`contents
 | **Folder tree panel** | UAT's collapsible tree with per-folder ownership, privacy, rename, delete and drag-to-move | `MpSectionRail` is route-driven and has no per-item menu; `MpFolderSelect` is a dropdown and loses the tree. Neither fits as-is |
 | **Template gallery card** | Thumbnail-led card with a hover/persistent name and category tags | `MpOptionCard` has a `#media` slot — probably sufficient |
 | **Block palette** | The drag-and-drop editor's 11-block palette (TITLE/PARAGRAPH/LIST/IMAGE/DIVIDER/SPACER/SOCIAL/HTML/VIDEO/+2) | `EmailContentEditor.vue` already hand-rolls one; no shared component |
-| **Faceted filter rail** | LIBRARY tab's `INDUSTRY` / `AUTOMATED` / `SEASONAL` / `USAGE` checkbox facets with counts and `Clear All` | `MpDataTableToolbar` `#filter-content` drawer, or a new rail |
+| **Faceted filter rail** | LIBRARY tab's `USAGE` / `INDUSTRY` / `SEASONAL` checkbox facets with counts and `Clear All` (an `AUTOMATED` group was listed here in error — the 2026-08-30 re-crawl confirmed only three groups exist) | `MpDataTableToolbar` `#filter-content` drawer, or a new rail |
 
 ---
 

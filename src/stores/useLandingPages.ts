@@ -245,9 +245,10 @@ export interface LandingTemplateRecord {
 
 // ─── Template library ──────────────────────────────────────────────────────
 // Shared by the Select Template gallery and the Select Builder step, so the
-// two surfaces cannot drift apart. Facet groups mirror UAT's four accordions.
+// two surfaces cannot drift apart. Facet groups mirror UAT's three accordions
+// (verified against account 116000, 2026-08-30).
 
-export type LandingFacetGroup = 'usage' | 'industry' | 'seasonal' | 'automated'
+export type LandingFacetGroup = 'usage' | 'industry' | 'seasonal'
 
 export interface LandingFacet {
   value: string
@@ -259,7 +260,6 @@ export const LANDING_FACET_GROUPS: Array<{ key: LandingFacetGroup; label: string
   { key: 'usage', label: 'Usage' },
   { key: 'industry', label: 'Industry' },
   { key: 'seasonal', label: 'Seasonal' },
-  { key: 'automated', label: 'Automated' },
 ]
 
 /**
@@ -276,22 +276,26 @@ export const LANDING_FACETS: LandingFacet[] = [
   { value: 'e-commerce', label: 'E-commerce', group: 'industry' },
   { value: 'fashion', label: 'Fashion', group: 'industry' },
   { value: 'beauty-cosmetics', label: 'Beauty & cosmetics', group: 'industry' },
+  { value: 'manufacturing', label: 'Manufacturing', group: 'industry' },
   { value: 'computer-internet', label: 'Computer & internet', group: 'industry' },
   { value: 'business-services', label: 'Business services', group: 'industry' },
+  { value: 'music', label: 'Music', group: 'industry' },
+  { value: 'luxury', label: 'Luxury', group: 'industry' },
   { value: 'home-garden', label: 'Home & garden', group: 'industry' },
   { value: 'financial-money', label: 'Financial services', group: 'industry' },
   { value: 'pets-animal-care', label: 'Pets & animal care', group: 'industry' },
   { value: 'small-business', label: 'Small business', group: 'industry' },
-  { value: 'black-friday', label: 'Black Friday', group: 'seasonal' },
+  { value: 'fashion-week', label: 'Fashion Week', group: 'seasonal' },
   { value: 'christmas', label: 'Christmas', group: 'seasonal' },
-  { value: 'new-year', label: 'New Year', group: 'seasonal' },
-  { value: 'easter', label: 'Easter', group: 'seasonal' },
-  { value: 'mothers-day', label: "Mother's Day", group: 'seasonal' },
   { value: 'fathers-day', label: "Father's Day", group: 'seasonal' },
-  { value: 'welcome', label: 'Welcome', group: 'automated' },
-  { value: 'abandoned-cart', label: 'Abandoned cart', group: 'automated' },
-  { value: 'win-back', label: 'Win-back', group: 'automated' },
-  { value: 'post-purchase', label: 'Post-purchase', group: 'automated' },
+  { value: 'seasonal-promotion', label: 'Seasonal promotion', group: 'seasonal' },
+  { value: 'spring', label: 'Spring', group: 'seasonal' },
+  { value: 'labor-day', label: 'Labor Day', group: 'seasonal' },
+  { value: 'fall', label: 'Fall', group: 'seasonal' },
+  { value: 'cyber-monday', label: 'Cyber Monday', group: 'seasonal' },
+  { value: 'mothers-day', label: "Mother's Day", group: 'seasonal' },
+  { value: 'valentines-day', label: "Valentine's Day", group: 'seasonal' },
+  { value: 'memorial-day', label: 'Memorial Day', group: 'seasonal' },
 ]
 
 export interface LandingTemplate {
@@ -349,16 +353,16 @@ export const LANDING_TEMPLATES: LandingTemplate[] = [
   { id: 'boutique-storefront', name: 'Boutique Storefront', description: 'Product grid with a limited-time offer.', accent: 'success', facets: ['e-commerce', 'fashion', 'product-promotion'], blocks: () => promoPreset('This week’s edit', 'Limited-time picks from our boutique collection — while stocks last.', 'Shop the edit') },
   { id: 'neighborhood-spotlight', name: 'Neighbourhood Spotlight', description: 'Local story with a contact form.', accent: 'success', facets: ['small-business', 'service-promotion'], blocks: () => capturePreset('A local favourite, now online', 'Our story, our neighbourhood, and how to reach us.', 'Get in touch') },
   { id: 'holiday-wishlist', name: 'Holiday Wishlist', description: 'Gift guide built around curated picks.', accent: 'error', facets: ['christmas', 'e-commerce', 'product-promotion'], blocks: () => listPreset('The holiday gift guide', ['Gifts under $50', 'Best sellers of the season', 'Free gift wrapping'], 'Browse the guide'), style: { accentColor: '#C0392B' } },
-  { id: 'countdown-new-year', name: 'Countdown to New Year', description: 'Sitewide sale with an expiry-driven countdown.', accent: 'warning', facets: ['new-year', 'e-commerce', 'product-promotion'], blocks: () => promoPreset('New year, new savings', 'Sitewide savings end at midnight — don’t miss out.', 'Shop the sale'), style: { accentColor: '#F59E0B' } },
-  { id: 'cyber-monday-shop', name: 'Cyber Monday Shop', description: 'One-day doorbuster grid with deal badges.', accent: 'warning', facets: ['black-friday', 'e-commerce'], blocks: () => promoPreset('Cyber Monday, one day only', 'Every deal ends at midnight. No codes, no waiting lists.', 'Shop all deals'), style: { accentColor: '#111827' } },
-  { id: 'easter-home-decor', name: 'Easter Home Decor Sale', description: 'Seasonal decor collection with a soft palette.', accent: 'success', facets: ['easter', 'home-garden', 'e-commerce'], blocks: () => promoPreset('Bring spring indoors', 'Fresh pieces for the table, the mantel and the front door.', 'Shop the collection') },
+  { id: 'countdown-new-year', name: 'Countdown to New Year', description: 'Sitewide sale with an expiry-driven countdown.', accent: 'warning', facets: ['seasonal-promotion', 'e-commerce', 'product-promotion'], blocks: () => promoPreset('New year, new savings', 'Sitewide savings end at midnight — don’t miss out.', 'Shop the sale'), style: { accentColor: '#F59E0B' } },
+  { id: 'cyber-monday-shop', name: 'Cyber Monday Shop', description: 'One-day doorbuster grid with deal badges.', accent: 'warning', facets: ['cyber-monday', 'e-commerce'], blocks: () => promoPreset('Cyber Monday, one day only', 'Every deal ends at midnight. No codes, no waiting lists.', 'Shop all deals'), style: { accentColor: '#111827' } },
+  { id: 'easter-home-decor', name: 'Easter Home Decor Sale', description: 'Seasonal decor collection with a soft palette.', accent: 'success', facets: ['spring', 'home-garden', 'e-commerce'], blocks: () => promoPreset('Bring spring indoors', 'Fresh pieces for the table, the mantel and the front door.', 'Shop the collection') },
   { id: 'love-your-mother', name: 'Love Your Mother', description: 'Mother’s Day gifting page with a gift-finder list.', accent: 'error', facets: ['mothers-day', 'fashion', 'beauty-cosmetics'], blocks: () => listPreset('Gifts she’ll actually use', ['Under $40', 'Made locally', 'Gift-wrapped free'], 'Find her gift') },
   { id: 'fathers-day-photography', name: 'Fathers Day Photography', description: 'Photo-led gifting page for a service business.', accent: 'info', facets: ['fathers-day', 'service-promotion', 'small-business'], blocks: () => promoPreset('A gift he won’t re-gift', 'Book a family session and give him something worth framing.', 'Book a session') },
   { id: 'brand-awareness-page', name: 'Brand Awareness Page', description: 'Story-first page for a first-touch audience.', accent: 'primary', facets: ['business-services', 'service-promotion'], blocks: () => capturePreset('Why we exist', 'The short version of a long story — and how to follow along.', 'Keep me posted') },
-  { id: 'welcome-new-subscriber', name: 'Welcome New Subscriber', description: 'Post-signup landing page for a welcome journey.', accent: 'primary', facets: ['welcome', 'newsletter', 'e-commerce'], blocks: () => listPreset('Welcome aboard', ['Your 10% code is on its way', 'Pick your interests any time', 'One email a fortnight, no more'], 'Start shopping') },
-  { id: 'cart-recovery', name: 'Cart Recovery Offer', description: 'Abandoned-cart landing page with a single offer.', accent: 'warning', facets: ['abandoned-cart', 'e-commerce', 'product-promotion'], blocks: () => promoPreset('Still thinking it over?', 'Your basket is saved. Here’s free shipping to help you decide.', 'Return to my basket') },
-  { id: 'win-back-lapsed', name: 'Win-Back Lapsed Customers', description: 'Re-engagement page with a returning-customer offer.', accent: 'error', facets: ['win-back', 'e-commerce', 'financial-money'], blocks: () => promoPreset('It’s been a while', 'Here’s 15% off your next order — and what you’ve missed.', 'See what’s new') },
-  { id: 'post-purchase-care', name: 'Post-Purchase Care Guide', description: 'Care instructions and a review prompt after delivery.', accent: 'info', facets: ['post-purchase', 'pets-animal-care', 'home-garden'], blocks: () => eventPreset('Looking after your order', 'A two-minute read that makes it last twice as long.', ['Cleaning and storage', 'What the warranty covers', 'How to reach us'], 'Leave a review') },
+  { id: 'welcome-new-subscriber', name: 'Welcome New Subscriber', description: 'Post-signup landing page for a welcome journey.', accent: 'primary', facets: ['newsletter', 'e-commerce'], blocks: () => listPreset('Welcome aboard', ['Your 10% code is on its way', 'Pick your interests any time', 'One email a fortnight, no more'], 'Start shopping') },
+  { id: 'cart-recovery', name: 'Cart Recovery Offer', description: 'Abandoned-cart landing page with a single offer.', accent: 'warning', facets: ['e-commerce', 'product-promotion'], blocks: () => promoPreset('Still thinking it over?', 'Your basket is saved. Here’s free shipping to help you decide.', 'Return to my basket') },
+  { id: 'win-back-lapsed', name: 'Win-Back Lapsed Customers', description: 'Re-engagement page with a returning-customer offer.', accent: 'error', facets: ['e-commerce', 'financial-money'], blocks: () => promoPreset('It’s been a while', 'Here’s 15% off your next order — and what you’ve missed.', 'See what’s new') },
+  { id: 'post-purchase-care', name: 'Post-Purchase Care Guide', description: 'Care instructions and a review prompt after delivery.', accent: 'info', facets: ['pets-animal-care', 'home-garden'], blocks: () => eventPreset('Looking after your order', 'A two-minute read that makes it last twice as long.', ['Cleaning and storage', 'What the warranty covers', 'How to reach us'], 'Leave a review') },
 ]
 
 export function getLandingTemplate(id: string | null | undefined): LandingTemplate | undefined {

@@ -313,7 +313,7 @@ The global left sidebar is already collapsed to the 52px icon rail on this route
 |---|---|
 | `USAGE` | `Newsletter` · `Events` · `Product-Promotion` · `Service-Promotion` · `Dark-Mode-Optimized` |
 | `INDUSTRY` | `E-Commerce` · `Fashion` · `Beauty-Cosmetics` · `Manufacturing` · `Computer-Internet` · `Business-Services` · `Music` · `Luxury` · `Home_garden` · `Financial-Money` · `Pets-And-Animal-Care` · `Small-Business` |
-| `SEASONAL` | not expanded — see Unverified |
+| `SEASONAL` | `Fashion-Week` · `Christmas` · `Fathers-Day` · `Seasonal-Promotion` · `Spring` · `Labor-Day` · `Fall` · `Cyber-Monday` · `Mothers-Day` · `Valentines-Day` · `Memorial-Day` *(verified 2026-08-30 — opened alone via DOM click; slugs raw, same D19 treatment as the other groups)* |
 
 The underlying DOM values are raw lowercase slugs (`newsletter`, `product-promotion`,
 `dark-mode-optimized`) that CSS `text-transform: capitalize` turns into the labels above; the
@@ -435,8 +435,10 @@ Footer: `Rows per page: 10` · `1-1 of 1` · prev/next.
 - **`START DESIGNING` / `START FROM SCRATCH`** — not clicked, same reason. Both are `<button>`
   elements with a `click` listener and no `href`.
 - **`Create New Page`** in the MY TEMPLATES kebab — not clicked; it creates a record.
-- **`SEASONAL` accordion contents** — never expanded (the exclusive accordion kept closing it as
-  I opened the others, and I stopped rather than click repeatedly).
+- ~~**`SEASONAL` accordion contents** — never expanded~~ **Resolved 2026-08-30:** opened each
+  accordion alone on a re-crawl and read the panel from the DOM. The 11 options are now in the
+  facet table above. The re-crawl also confirmed the group set is exactly `USAGE` / `INDUSTRY` /
+  `SEASONAL` — there is **no fourth (`AUTOMATED`) group** on account 116000.
 - **`BACK` button destination** — not clicked; inferred to be the landing-pages list.
 - **Template-library empty state** — no facet combination was tried that returns zero templates.
 - **Whether the `MY TEMPLATES` table supports selection / bulk actions** — the header cell is
