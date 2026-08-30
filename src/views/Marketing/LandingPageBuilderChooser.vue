@@ -87,54 +87,81 @@ function createPage() {
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column ga-5">
-    <MpPageHeader
-      eyebrow="Marketing · Acquisition"
-      title="Create new landing page"
-      subtitle="Choose the builder for this page. You can't switch builders afterwards, so pick the one that fits how you work."
-      :back-to="{ name: 'LandingPageTemplates', params: { accountId } }"
-    />
+  <div class="mp-frame-fill d-flex flex-column">
+    <!-- Header + step indicator — the same shell anatomy as ProductWizard / CreateCampaign. -->
+    <div class="lpb-head px-8 pt-6 pb-4 bg-surface border-b">
+      <MpPageHeader
+        eyebrow="Marketing · Acquisition"
+        title="Create new landing page"
+        subtitle="Step 2 of 2 — Select builder"
+        :back-to="{ name: 'LandingPageTemplates', params: { accountId } }"
+      >
+        <template #tabs>
+          <!-- The source has three breadcrumb levels and no step indicator. -->
+          <MpWizardSteps
+            :steps="['Select template', 'Select builder']"
+            :current="2"
+            clickable
+            :max-step="2"
+            class="mt-3"
+            @select="(s: number) => s === 1 && router.push({ name: 'LandingPageTemplates', params: { accountId } })"
+          />
+        </template>
+      </MpPageHeader>
+    </div>
 
-    <div class="lpb-body d-flex flex-column ga-6 align-self-center">
-      <!-- The source has three breadcrumb levels and no step indicator. -->
-      <MpWizardSteps :steps="['Select template', 'Select builder']" :current="2" class="align-self-center" />
+    <!-- Step content -->
+    <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
+      <div class="lpb-measure">
+        <v-card variant="flat" border rounded="lg" class="pa-8">
+          <h2 class="text-h6 font-weight-bold mb-1">Select builder</h2>
+          <p class="text-body-2 text-medium-emphasis mb-6">
+            {{ startingLabel }} You can't switch builders after the page is created, so pick the one
+            that fits how you work.
+          </p>
+          <v-divider class="mb-6" />
 
-      <p class="text-body-2 text-medium-emphasis text-center ma-0">{{ startingLabel }}</p>
+          <MpFormField label="Builder" required>
+            <v-row dense>
+              <v-col v-for="option in BUILDERS" :key="option.value" cols="12" sm="6">
+                <MpOptionCard
+                  :selected="builder === option.value"
+                  :title="option.title"
+                  :description="option.description"
+                  :icon="option.icon"
+                  class="h-100"
+                  @click="builder = option.value"
+                />
+              </v-col>
+            </v-row>
+          </MpFormField>
 
-      <MpFormField label="Builder" required>
-        <v-row dense>
-          <v-col v-for="option in BUILDERS" :key="option.value" cols="12" sm="6">
-            <MpOptionCard
-              :selected="builder === option.value"
-              :title="option.title"
-              :description="option.description"
-              :icon="option.icon"
-              class="h-100"
-              @click="builder = option.value"
-            />
-          </v-col>
-        </v-row>
-      </MpFormField>
+          <!-- A third of the pages in the list use `Drag & Drop (Legacy)`, and the
+               source's picker never mentions it exists or that it is going away. -->
+          <p class="text-caption text-medium-emphasis d-flex align-start ga-2 ma-0 mt-6">
+            <v-icon size="16" class="flex-shrink-0" aria-hidden="true">info</v-icon>
+            <span>
+              Older pages in your account show <strong>{{ EDITOR_TYPE_LABEL.dnd_legacy }}</strong>. That builder is
+              being retired and can't be chosen for a new page — recreate those pages in Drag &amp; Drop when you next
+              edit them.
+            </span>
+          </p>
+        </v-card>
+      </div>
+    </div>
 
-      <!-- A third of the pages in the list use `Drag & Drop (Legacy)`, and the
-           source's picker never mentions it exists or that it is going away. -->
-      <p class="text-caption text-medium-emphasis d-flex align-start ga-2 ma-0">
-        <v-icon size="16" class="flex-shrink-0" aria-hidden="true">info</v-icon>
-        <span>
-          Older pages in your account show <strong>{{ EDITOR_TYPE_LABEL.dnd_legacy }}</strong>. That builder is
-          being retired and can't be chosen for a new page — recreate those pages in Drag &amp; Drop when you next
-          edit them.
-        </span>
-      </p>
-
-      <div class="d-flex justify-end ga-3">
-        <v-btn
-          variant="text"
-          class="text-none"
-          :to="{ name: 'LandingPageTemplates', params: { accountId } }"
-        >
-          Back
-        </v-btn>
+    <!-- Unified footer -->
+    <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
+      <v-btn
+        variant="text"
+        class="text-none"
+        prepend-icon="arrow-left"
+        :to="{ name: 'LandingPageTemplates', params: { accountId } }"
+      >
+        Back
+      </v-btn>
+      <div class="d-flex align-center ga-3">
+        <span v-if="!builder" class="text-caption text-medium-emphasis">Choose a builder to continue</span>
         <v-btn
           color="primary"
           variant="flat"
@@ -151,8 +178,8 @@ function createPage() {
 </template>
 
 <style scoped>
-.lpb-body {
-  width: 100%;
-  max-width: var(--mp-component-dialog-width-lg);
-}
+.lpb-head :deep(.mp-page-header) { margin-bottom: 0; }
+.lpb-measure { max-width: 780px; margin: 0 auto; }
+.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
+.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 </style>
