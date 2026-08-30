@@ -1335,6 +1335,9 @@
   --mp-component-drawer-width-sm: 440px;
   --mp-component-drawer-width-md: 480px;
   --mp-component-drawer-width-lg: 640px;
+  --mp-component-wizard-measure-sm: 780px;
+  --mp-component-wizard-measure-md: 920px;
+  --mp-component-wizard-measure-lg: 1040px;
   --mp-component-listItem-minHeight: var(--mp-component-control-height);
   --mp-component-listItem-paddingBlock: var(--mp-space-8);
   --mp-component-listItem-paddingInline: var(--mp-space-12);
