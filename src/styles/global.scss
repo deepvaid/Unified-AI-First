@@ -693,9 +693,26 @@ tr:focus-within .action-btns {
 .v-menu > .v-overlay__content > .v-list {
   padding: var(--mp-space-4);
 }
-/* !important: VListItem stamps a `rounded-0 !important` utility class by default */
+/* Vuetify 3.12 wraps select/autocomplete/combobox lists in a VSheet, so the
+   list is no longer a direct child of the overlay content. The panel chrome
+   lands on the sheet (rule above); the inner list must shed the global VList
+   defaults (border + rounded-lg) and carry the popover inset instead. */
+.v-menu > .v-overlay__content > .v-sheet > .v-list {
+  padding: var(--mp-space-4);
+  background: transparent; /* the sheet is the surface, in both themes */
+  border: none;
+  /* !important: VList's rounded="lg" default stamps a .rounded-lg utility,
+     and Vuetify utilities are always !important */
+  border-radius: 0 !important;
+}
+/* !important: VListItem stamps a `rounded-0 !important` utility class by default.
+   Sizing sits on component.listItem.* — the same tokens MpRowActionsMenu uses —
+   so a select's options and a hand-built menu's items read the same. */
 .v-menu > .v-overlay__content .v-list-item {
   border-radius: var(--mp-component-chip-radius) !important;
+  min-height: var(--mp-component-listItem-minHeight);
+  padding-block: var(--mp-component-listItem-paddingBlock);
+  padding-inline: var(--mp-component-listItem-paddingInline);
 }
 
 /* UX-008: trailing checkmark on the selected option inside select/menu
