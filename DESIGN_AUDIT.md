@@ -1582,3 +1582,43 @@ A placeholder+aria-label chrome field reserves nothing.
 - Dense chrome that *wants* sm can now opt in deliberately with `density="compact"`.
 - `MpFormGrid`'s labelled-trailing offset is the repo's first `:has()` — fine for this
   modern-browser prototype; an explicit modifier class is the fallback if ever needed.
+
+---
+
+## Wizard pass changelog — 2026-08-30
+
+A platform-wide consistency pass over the stepped create flows and choosers. Canonical anatomy =
+CreateCampaign: builderShell route → header band (MpPageHeader + MpWizardSteps in `#tabs`) →
+scrollable measure → step cards → footer band (Back · hint · N / M · primary) → page-owned guard.
+
+### Tier 0 — extraction (done)
+
+- **`component.wizard.measure.{sm,md,lg}`** = 780/920/1040 — replaces six free-form widths
+  (780/820/880/920/1040/1160) across the wizards.
+- **`useWizardSteps`** — step/maxStep high-water/goTo/next/prev/unlockAll with
+  `canAdvance(from)` + `onNavigate(from,to)`. Extracted from CreateCampaign; makes the
+  EngineEditor `:max-step="step"` bug unwritable.
+- **`MpWizardShell`** (Patterns/Wizard Shell) — owns the bands, measure, composed
+  `Step N of M — <label>` subtitle (kills the `—` vs `·` drift), hint caption and tabular
+  counter. Bands border on `--mp-border-subtle`, so pages delete their local
+  `.border-b/.border-t` clones (13 files, 3 divergent colors) as they adopt it.
+  **Deliberate non-features:** no leave guard (pages own dirty state — MpBuilderShell
+  precedent) and no step state (pair with `useWizardSteps`).
+- **`MpWizardStepCard`** (Molecules) — semantic h2/h3 + description + divider on
+  `card.paddingSpacious`. MpFormSection considered and rejected (in-form overline ≠ step
+  preamble). Galleries and canvas steps stay bare in the measure.
+- **CreateCampaign** migrated as the API proof — net −45 lines on the reference wizard.
+
+### Pending tiers (per approved plan)
+
+- Tier 1 major drift: CreateCustomReportWizard, CreateSalesChannel (+ missing leave guard),
+  CreateTransactionalSms (tabs → steps), CreateJourney, EngineEditor (max-step bug, nested
+  layout via `standalone`).
+- Tier 2 minor drift: ProductWizard, KitWizard (cancel semantics), ProductImportWizard
+  (gating + hardcoded count), CreateSmsCampaign, CreateAbCampaign, FormBuilder nav clusters,
+  WidgetWizardDrawer separator + MpWizardSteps passive-display contract docs.
+- Tier 3 choosers: MpOptionCard navigation mode (`to`, optional `selected`), CampaignTypeChooser
+  + SegmentBuilderChooser onto it, false `:selected="false"` removed from the prominent-header
+  trio, CreateCustomReport chooser onto the shell.
+- Out-of-scope single-step create flows noted as future shell adopters: CreateContact,
+  CreateList, CreateSegmentNextGen, CreateDraftOrder, CreatePromotion.
