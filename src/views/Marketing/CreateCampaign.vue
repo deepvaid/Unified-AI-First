@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpWizardShell from '@/components/MpWizardShell.vue'
+import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
@@ -10,6 +10,7 @@ import MpFormField from '@/components/MpFormField.vue'
 import CampaignEmailPreview from '@/components/marketing/CampaignEmailPreview.vue'
 import CampaignContentEditor from '@/components/marketing/CampaignContentEditor.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useToast } from '@/composables/useToast'
 import {
   useCampaignsStore,
@@ -47,8 +48,6 @@ const campaignsRoute = computed(() => ({ name: 'EmailCampaigns', params: { accou
 // ── Wizard state ──────────────────────────────────────────────────────────────
 const stepTitles = ['Details', 'Contacts', 'Content', 'Schedule', 'Review']
 const totalSteps = stepTitles.length
-const step = ref(1)
-const maxStepReached = ref(1)
 const draftId = ref<number | null>(null)
 
 // ── Step 1 — Campaign details ─────────────────────────────────────────────────
@@ -314,16 +313,13 @@ function saveProgress(finalize = false) {
   draftSavedChip.value = true
 }
 
-function goToStep(target: number) {
-  if (target === step.value) return
-  if (target > step.value && !stepValid.value) return
-  saveProgress()
-  if (target === 4 && !testSubject.value) testSubject.value = `Test — ${subject.value}`
-  step.value = target
-  maxStepReached.value = Math.max(maxStepReached.value, target)
-}
-function nextStep() { goToStep(Math.min(step.value + 1, totalSteps)) }
-function prevStep() { goToStep(Math.max(step.value - 1, 1)) }
+const { step, maxStep, goTo: goToStep, next: nextStep, prev: prevStep, unlockAll } = useWizardSteps(totalSteps, {
+  canAdvance: () => stepValid.value,
+  onNavigate: (_from, to) => {
+    saveProgress()
+    if (to === 4 && !testSubject.value) testSubject.value = `Test — ${subject.value}`
+  },
+})
 
 function saveDraft() {
   saveProgress(false)
@@ -425,7 +421,7 @@ onMounted(() => {
     hydrateFrom(existing)
     editingExisting.value = true
     step.value = 1
-    maxStepReached.value = totalSteps
+    unlockAll()
     captureFormSnapshot()
     if (route.query.source === 'davinci' && daVinciOnboarding.activeSession) {
       if (daVinciOnboarding.activeSession.stage !== 'complete') {
@@ -461,39 +457,25 @@ const scheduleSummary = computed(() => {
 </script>
 
 <template>
-  <div class="mp-frame-fill d-flex flex-column">
-    <div class="cc-head px-8 pt-6 pb-4 bg-surface border-b">
-      <MpPageHeader
-        :title="pageTitle"
-        :subtitle="`Step ${step} of ${totalSteps} — ${stepTitles[step - 1]}`"
-        :back-to="campaignsRoute"
-      >
-        <template #actions>
-          <v-chip v-if="draftSavedChip" size="small" variant="tonal" color="success" class="font-weight-medium">Draft saved</v-chip>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="saveDraft">Save &amp; exit</v-btn>
-        </template>
-        <template #tabs>
-          <MpWizardSteps
-            :steps="stepTitles"
-            :current="step"
-            :clickable="maxStepReached > 1"
-            :max-step="maxStepReached"
-            class="mt-3"
-            @select="goToStep"
-          />
-        </template>
-      </MpPageHeader>
-    </div>
+  <MpWizardShell
+    :title="pageTitle"
+    :steps="stepTitles"
+    :current="step"
+    :max-step="maxStep"
+    :clickable="maxStep > 1"
+    :back-to="campaignsRoute"
+    :hint="stepValid ? undefined : stepHint"
+    @select="goToStep"
+    @back="prevStep"
+  >
+    <template #actions>
+      <v-chip v-if="draftSavedChip" size="small" variant="tonal" color="success" class="font-weight-medium">Draft saved</v-chip>
+      <v-btn variant="text" class="text-none text-medium-emphasis" @click="saveDraft">Save &amp; exit</v-btn>
+    </template>
 
-    <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
-      <div class="cc-measure">
-
-        <!-- Step 1: Campaign details -->
-        <v-card v-if="step === 1" variant="flat" border rounded="lg" class="pa-8">
-          <h2 class="text-h6 font-weight-bold mb-1">Campaign details</h2>
-          <p class="text-body-2 text-medium-emphasis mb-6">Name your campaign and write the subject line recipients will see.</p>
-          <v-divider class="mb-6" />
-          <MpFormGrid>
+    <!-- Step 1: Campaign details -->
+    <MpWizardStepCard v-if="step === 1" title="Campaign details" description="Name your campaign and write the subject line recipients will see.">
+      <MpFormGrid>
             <v-text-field
               v-model="name"
               label="Campaign name *"
@@ -524,13 +506,10 @@ const scheduleSummary = computed(() => {
               persistent-hint
             />
           </MpFormGrid>
-        </v-card>
+    </MpWizardStepCard>
 
-        <!-- Step 2: Contacts -->
-        <v-card v-if="step === 2" variant="flat" border rounded="lg" class="pa-8">
-          <h2 class="text-h6 font-weight-bold mb-1">Contacts</h2>
-          <p class="text-body-2 text-medium-emphasis mb-6">Choose who receives this campaign — at least one list, segment, or table.</p>
-          <v-divider class="mb-6" />
+    <!-- Step 2: Contacts -->
+    <MpWizardStepCard v-if="step === 2" title="Contacts" description="Choose who receives this campaign — at least one list, segment, or table.">
 
           <MpFormGrid :cols="2">
             <v-select v-model="brand" class="mp-form-grid__full" label="Brand" :items="BRAND_OPTIONS" />
@@ -598,13 +577,10 @@ const scheduleSummary = computed(() => {
             <v-select v-model="suppressSegmentIds" :items="segmentItems" :label="`Suppress segment (${suppressSegmentIds.length})`" multiple chips closable-chips />
             <v-select v-model="suppressSecureListIds" :items="secureListItems" :label="`Suppress secure list (${suppressSecureListIds.length})`" multiple chips closable-chips />
           </MpFormGrid>
-        </v-card>
+    </MpWizardStepCard>
 
-        <!-- Step 3: Content -->
-        <v-card v-if="step === 3" variant="flat" border rounded="lg" class="pa-8">
-          <h2 class="text-h6 font-weight-bold mb-1">Content</h2>
-          <p class="text-body-2 text-medium-emphasis mb-6">Pick the email content this campaign will send.</p>
-          <v-divider class="mb-6" />
+    <!-- Step 3: Content -->
+    <MpWizardStepCard v-if="step === 3" title="Content" description="Pick the email content this campaign will send.">
 
           <MpFormGrid>
             <v-autocomplete
@@ -661,13 +637,10 @@ const scheduleSummary = computed(() => {
               </div>
             </div>
           </MpFormGrid>
-        </v-card>
+    </MpWizardStepCard>
 
-        <!-- Step 4: Schedule -->
-        <v-card v-if="step === 4" variant="flat" border rounded="lg" class="pa-8">
-          <h2 class="text-h6 font-weight-bold mb-1">Schedule</h2>
-          <p class="text-body-2 text-medium-emphasis mb-6">Select a method for scheduling your campaign.</p>
-          <v-divider class="mb-6" />
+    <!-- Step 4: Schedule -->
+    <MpWizardStepCard v-if="step === 4" title="Schedule" description="Select a method for scheduling your campaign.">
 
           <MpFormGrid :cols="2">
             <v-select
@@ -762,13 +735,10 @@ const scheduleSummary = computed(() => {
               </v-btn>
             </div>
           </MpFormGrid>
-        </v-card>
+    </MpWizardStepCard>
 
-        <!-- Step 5: Review -->
-        <v-card v-if="step === 5" variant="flat" border rounded="lg" class="pa-8">
-          <h2 class="text-h6 font-weight-bold mb-1">Review</h2>
-          <p class="text-body-2 text-medium-emphasis mb-6">Final review of your campaign before it goes out.</p>
-          <v-divider class="mb-6" />
+    <!-- Step 5: Review -->
+    <MpWizardStepCard v-if="step === 5" title="Review" description="Final review of your campaign before it goes out.">
 
           <v-alert v-if="zeroContactAudience" type="warning" variant="tonal" density="compact" rounded="lg" class="text-body-2 mb-6">
             The selected audience has 0 contacts — the campaign cannot send until at least 1 contact is included.
@@ -838,58 +808,43 @@ const scheduleSummary = computed(() => {
               </dl>
             </div>
           </section>
-        </v-card>
+    </MpWizardStepCard>
 
-      </div>
-    </div>
-
-    <!-- Unified footer -->
-    <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
-      <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
-      <div v-else></div>
-      <div class="d-flex align-center ga-3">
-        <span v-if="!stepValid && stepHint" class="text-caption text-medium-emphasis">{{ stepHint }}</span>
-        <span class="text-caption text-medium-emphasis num">{{ step }} / {{ totalSteps }}</span>
-        <v-btn v-if="step < totalSteps" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">
-          Continue
+    <template #footer>
+      <v-btn v-if="step < totalSteps" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">
+        Continue
+      </v-btn>
+      <template v-else>
+        <v-btn variant="outlined" class="text-none" @click="saveDraft">Save draft</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket" :disabled="!step4Valid" @click="requestFinalize">
+          {{ finalizeLabel }}
         </v-btn>
-        <template v-else>
-          <v-btn variant="outlined" class="text-none" @click="saveDraft">Save draft</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" prepend-icon="rocket" :disabled="!step4Valid" @click="requestFinalize">
-            {{ finalizeLabel }}
-          </v-btn>
-        </template>
-      </div>
-    </div>
+      </template>
+    </template>
+  </MpWizardShell>
 
-    <CampaignContentEditor v-model="editorOpen" :content-name="selectedContent?.name ?? 'Untitled content'" />
+  <CampaignContentEditor v-model="editorOpen" :content-name="selectedContent?.name ?? 'Untitled content'" />
 
-    <MpConfirmDialog
-      v-model="confirmFinalize"
-      :title="finalizeLabel"
-      :message="finalizeMessage"
-      :confirm-label="finalizeLabel"
-      :consequences="finalizeConsequences"
-      @confirm="finalizeCampaign"
-    />
+  <MpConfirmDialog
+    v-model="confirmFinalize"
+    :title="finalizeLabel"
+    :message="finalizeMessage"
+    :confirm-label="finalizeLabel"
+    :consequences="finalizeConsequences"
+    @confirm="finalizeCampaign"
+  />
 
-    <MpConfirmDialog
-      v-model="confirmLeave"
-      danger
-      :title="leaveTitle"
-      :message="leaveMessage"
-      :confirm-label="leaveConfirmLabel"
-      @confirm="discardAndLeave"
-    />
-  </div>
+  <MpConfirmDialog
+    v-model="confirmLeave"
+    danger
+    :title="leaveTitle"
+    :message="leaveMessage"
+    :confirm-label="leaveConfirmLabel"
+    @confirm="discardAndLeave"
+  />
 </template>
 
 <style scoped>
-.cc-head .mp-page-header { margin-bottom: 0; }
-.cc-measure { max-width: 780px; margin: 0 auto; }
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.num { font-variant-numeric: tabular-nums; }
 .cc-preview { background: var(--surface-sunken); }
 .cc-time { max-width: 220px; }
 /* The radio group owns the rhythm between its schedule option tiles. */
