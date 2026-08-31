@@ -357,6 +357,9 @@ const routes: RouteRecordRaw[] = [
   // Account & Billing — standalone area, separate from app Settings
   { path: '/accounts/:accountId/billing', name: 'Billing', component: () => import('@/views/Billing/BillingView.vue') },
 
+  // Notifications — the bell's "See all" page (mirrors the real product's URL shape)
+  { path: '/accounts/:accountId/notifications', name: 'Notifications', component: () => import('@/views/Notifications/NotificationsView.vue') },
+
   // PLG — trial signup, plan selection, mock hosted checkout
   { path: '/signup', name: 'Signup', component: () => import('@/views/Plg/SignupView.vue'), meta: { fullPage: true } },
   { path: '/accounts/:accountId/plans', name: 'Plans', component: () => import('@/views/Plg/PlansView.vue') },

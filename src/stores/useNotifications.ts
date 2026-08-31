@@ -1,97 +1,83 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-/** Mirrors DashboardAttentionSeverity (stores/dashboards/types.ts) — one severity vocabulary. */
-export type NotificationSeverity = 'critical' | 'warning' | 'info'
-
+/**
+ * Mirrors the real UAT notification centre: plain messages with absolute
+ * timestamps and an optional download action (reports/exports). There is
+ * deliberately NO severity/classification field — the real system carries
+ * none, so the UI renders one generic icon (decided 2026-08-31; the
+ * dashboard attention widget keeps its own severity ramp — different data).
+ */
 export interface AppNotification {
   id: string
-  severity: NotificationSeverity
-  /** Lucide icon name — domain-specific (shopping-cart, send, ticket…). */
-  icon: string
-  /** The message, e.g. "Payment failed on order #10012". */
+  /** The message, e.g. "Custom report allfin generated for 206 campaigns". */
   title: string
-  /** Domain detail line, e.g. "Sales Orders". */
-  context: string
-  /** Relative time label — mock data, no live clock. */
+  /** Absolute timestamp label, UAT format: "Aug 26, 2026 at 02:40 AM". */
   time: string
   read: boolean
-  /** Optional route target the notification links to. */
-  to?: string
+  /** Report/export rows carry a download action. */
+  downloadable?: boolean
 }
 
 const SEED: AppNotification[] = [
   {
     id: 'n-1',
-    severity: 'critical',
-    icon: 'credit-card',
-    title: 'Payment failed on order #10012',
-    context: 'Sales Orders',
-    time: '12m ago',
+    title: "Import 10000 contacts to 'HB list 1' started. Emails imported: 9,988",
+    time: 'Aug 31, 2026 at 02:54 AM',
     read: false,
-    to: '/commerce/2000290/orders',
   },
   {
     id: 'n-2',
-    severity: 'warning',
-    icon: 'package',
-    title: 'Trail Shell Jacket is low on stock — 4 left',
-    context: 'Inventory',
-    time: '38m ago',
+    title: 'Custom report 116000 — Recurring SMS Message generated for 14 campaigns',
+    time: 'Aug 26, 2026 at 11:46 AM',
     read: false,
+    downloadable: true,
   },
   {
     id: 'n-3',
-    severity: 'info',
-    icon: 'send',
-    title: 'Campaign "Spring Refresh" finished sending',
-    context: 'Email Campaigns',
-    time: '1h ago',
-    read: false,
+    title: 'Store 116000-9.uat.maropost.store has been provisioned — welcome aboard',
+    time: 'Aug 26, 2026 at 04:19 AM',
+    read: true,
   },
   {
     id: 'n-4',
-    severity: 'warning',
-    icon: 'ticket',
-    title: 'Urgent ticket assigned to you: "Order never arrived"',
-    context: 'Service',
-    time: '2h ago',
+    title: 'Custom report hbt test generated for 22 campaigns',
+    time: 'Aug 26, 2026 at 02:40 AM',
     read: false,
+    downloadable: true,
   },
   {
     id: 'n-5',
-    severity: 'critical',
-    icon: 'upload',
-    title: 'Contact import failed — 214 rows rejected',
-    context: 'Imports',
-    time: '3h ago',
-    read: true,
+    title: "Export report from Aug 26, 2026 to Aug 26, 2026 for 'dfv__2026' campaigns",
+    time: 'Aug 26, 2026 at 02:40 AM',
+    read: false,
+    downloadable: true,
   },
   {
     id: 'n-6',
-    severity: 'info',
-    icon: 'users',
-    title: 'Segment "Lapsed VIPs" finished refreshing',
-    context: 'Segments',
-    time: '5h ago',
-    read: true,
+    title: 'Custom report allfin generated for 206 campaigns',
+    time: 'Aug 26, 2026 at 02:33 AM',
+    read: false,
+    downloadable: true,
   },
   {
     id: 'n-7',
-    severity: 'warning',
-    icon: 'badge-percent',
-    title: 'Coupon SPRING25 is at 92% of its redemption cap',
-    context: 'Coupons',
-    time: 'Yesterday',
-    read: true,
+    title: "Export report from Aug 26, 2026 to Aug 26, 2026 for 'Uday Bhoutik' campaigns",
+    time: 'Aug 26, 2026 at 02:32 AM',
+    read: false,
+    downloadable: true,
   },
   {
     id: 'n-8',
-    severity: 'info',
-    icon: 'server',
-    title: 'Scheduled maintenance on Sep 6, 02:00–03:00 UTC',
-    context: 'System',
-    time: '2d ago',
+    title: "Export report from Aug 26, 2026 to Aug 26, 2026 for 'transab' campaigns",
+    time: 'Aug 26, 2026 at 02:31 AM',
+    read: true,
+    downloadable: true,
+  },
+  {
+    id: 'n-9',
+    title: "Import 2,400 contacts to 'POS walk-ins' completed. Emails imported: 2,377",
+    time: 'Aug 25, 2026 at 09:12 PM',
     read: true,
   },
 ]

@@ -12,10 +12,14 @@ const meta = {
       description: {
         component: `
 ### Overview
-\`MpNotificationsMenu\` is the app bar's notification centre: a bell trigger whose unread badge
-**wraps** the button (the app's \`v-badge\` convention — no z-index games against sibling
-controls), opening a \`role="dialog"\` panel of severity-tinted \`MpListRow\`s with a
-"Mark all read" header action and an \`MpEmptyState\` when the feed is empty.
+\`MpNotificationsMenu\` is the app bar's notification centre, aligned with the real product's
+feed: a bell trigger whose unread badge **wraps** the button (the app's \`v-badge\` convention,
+capped at 99+), opening a \`role="dialog"\` panel of notification rows — **one generic icon**
+(the real system carries no classification, so severity iconography would be invented), the
+message with an **absolute timestamp** ("Aug 26, 2026 at 02:40 AM"), a **download action** on
+report/export rows — with "See all" (→ the /notifications page) and "Mark all read" in the
+header, and an \`MpEmptyState\` when the feed is empty. The row itself is the shared
+\`notifications/NotificationRow\`, used by the panel and the page.
 
 It is **store-driven and has no props** — it reads \`useNotifications\` (items, unread count)
 and calls \`markRead\`/\`markAllRead\` on it, exactly like the app bar reads the accounts and
@@ -34,10 +38,10 @@ see the ActivityFeed story on MpListRow) or a transient confirmation (that's \`u
 \`\`\`
 
 ### 🟢 Do's
-- **Do** keep severities on the shared vocabulary — \`'critical' | 'warning' | 'info'\`,
-  the same ramp as the dashboard attention widget.
-- **Do** give each notification a domain icon (Lucide) and a \`context\` line — the severity
-  tint alone shouldn't carry the meaning.
+- **Do** keep timestamps absolute ("Aug 26, 2026 at 02:40 AM") — this feed mirrors the real
+  centre, which never shows relative times.
+- **Do** set \`downloadable\` only on rows that genuinely produce a file (reports, exports) —
+  the trailing action is a promise.
 
 ### 🔴 Don'ts
 - **Don't** render a second bell anywhere — one notification centre per frame.
@@ -49,12 +53,12 @@ see the ActivityFeed story on MpListRow) or a transient confirmation (that's \`u
   ("Notifications, 3 unread"), \`aria-haspopup="dialog"\` (the panel has a header and a
   button — it is a dialog, not a \`role="menu"\`), and Vuetify wires \`aria-expanded\`; the
   panel is \`role="dialog"\` with an accessible name; every row is a real button
-  (\`MpListRow clickable\`) with an sr-only "Unread — {severity}:" prefix; the badge is
+  (\`MpListRow clickable\`) with an sr-only "Unread — " prefix; the download button carries a
+  per-row \`aria-label\` and swallows its click (it never marks the row read); the badge is
   decorative (the label already announces the count).
 - **Consumer must:** nothing — the component is self-contained.
 - **Gaps:** no \`aria-live\` region announces count changes while the panel is closed (the
-  pre-existing app-bar gap, carried over); rows mark-as-read on click but don't yet navigate
-  to their \`to\` target.
+  pre-existing app-bar gap, carried over); the download action is a prototype stub (toast).
 
 ### Controls
 The component has no props — state comes from \`useNotifications\`. Stories seed the store in
@@ -100,7 +104,8 @@ function seededStory(seed: AppNotification[], open = false): Story {
 /** The resting trigger: bell + wrapping unread badge. Click it to open the panel. */
 export const Default: Story = seededStory(NOTIFICATIONS as AppNotification[])
 
-/** The open panel: header with "Mark all read", severity-tinted rows, unread dots. */
+/** The open panel: See all + Mark all read in the header, generic-icon rows with absolute
+ * times, download actions on report/export rows, unread dots. */
 export const OpenPanel: Story = seededStory(NOTIFICATIONS as AppNotification[], true)
 
 /** All caught up — the badge hides at zero unread and "Mark all read" disables. */
@@ -114,12 +119,13 @@ export const Empty: Story = seededStory([], true)
 
 // ── Scenarios ────────────────────────────────────────────────────────────────
 
-/** One row per severity — the tints mirror the dashboard attention widget exactly. */
-export const Severities: Story = seededStory(
+/** Download rows — reports and exports carry the trailing download action; it swallows its
+ * click, so downloading never marks the row read or closes the panel. */
+export const WithDownloads: Story = seededStory(
   [
-    { id: 's-1', severity: 'critical', icon: 'credit-card', title: 'Payment failed on order #10012', context: 'Sales Orders', time: '12m ago', read: false },
-    { id: 's-2', severity: 'warning', icon: 'package', title: 'Trail Shell Jacket is low on stock — 4 left', context: 'Inventory', time: '38m ago', read: false },
-    { id: 's-3', severity: 'info', icon: 'send', title: 'Campaign "Spring Refresh" finished sending', context: 'Email Campaigns', time: '1h ago', read: false },
+    { id: 'd-1', title: 'Custom report allfin generated for 206 campaigns', time: 'Aug 26, 2026 at 02:33 AM', read: false, downloadable: true },
+    { id: 'd-2', title: "Export report from Aug 26, 2026 to Aug 26, 2026 for 'transab' campaigns", time: 'Aug 26, 2026 at 02:31 AM', read: false, downloadable: true },
+    { id: 'd-3', title: "Import 10000 contacts to 'HB list 1' started. Emails imported: 9,988", time: 'Aug 31, 2026 at 02:54 AM', read: true },
   ],
   true
 )

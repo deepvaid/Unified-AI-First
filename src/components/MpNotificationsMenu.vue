@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { mergeProps } from 'vue'
+import { computed, mergeProps, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import MpEmptyState from '@/components/MpEmptyState.vue'
-import MpListRow from '@/components/MpListRow.vue'
-import { useNotifications, type NotificationSeverity } from '@/stores/useNotifications'
+import NotificationRow from '@/components/notifications/NotificationRow.vue'
+import { useAccountsStore } from '@/stores/useAccounts'
+import { useNotifications, type AppNotification } from '@/stores/useNotifications'
+import { useToast } from '@/composables/useToast'
 
 // The trigger lives inside a v-menu activator, so attrs (e.g. the app bar's
 // `appbar-action-btn` class) are forwarded to the bell button explicitly.
@@ -11,16 +14,30 @@ defineOptions({ inheritAttrs: false })
 
 const store = useNotifications()
 const { items, unreadCount } = storeToRefs(store)
+const accounts = useAccountsStore()
+const router = useRouter()
+const toast = useToast()
 
-const SEVERITY_LABELS: Record<NotificationSeverity, string> = {
-  critical: 'Critical',
-  warning: 'Warning',
-  info: 'Info',
+const open = ref(false)
+
+const allNotificationsRoute = computed(() => ({
+  name: 'Notifications' as const,
+  params: { accountId: accounts.activeId },
+}))
+
+function seeAll() {
+  open.value = false
+  router.push(allNotificationsRoute.value)
+}
+
+// Prototype stub — the mock feed has no real files behind its report rows.
+function download(n: AppNotification) {
+  toast.success('Download started.', { title: n.title })
 }
 </script>
 
 <template>
-  <v-menu location="bottom end" :close-on-content-click="false">
+  <v-menu v-model="open" location="bottom end" :close-on-content-click="false">
     <template #activator="{ props: menuProps }">
       <v-tooltip text="Notifications" location="bottom">
         <template #activator="{ props: tipProps }">
@@ -29,6 +46,7 @@ const SEVERITY_LABELS: Record<NotificationSeverity, string> = {
           <v-badge
             :model-value="unreadCount > 0"
             :content="unreadCount"
+            max="99"
             color="error"
             location="top end"
             offset-x="8"
@@ -52,45 +70,30 @@ const SEVERITY_LABELS: Record<NotificationSeverity, string> = {
     <v-card role="dialog" aria-label="Notifications" width="360" class="mp-notifications__panel">
       <header class="mp-notifications__header">
         <span class="mp-notifications__heading" role="heading" aria-level="2">Notifications</span>
-        <v-btn
-          variant="text"
-          size="small"
-          class="text-none"
-          :disabled="unreadCount === 0"
-          @click="store.markAllRead()"
-        >
-          Mark all read
-        </v-btn>
+        <div class="mp-notifications__header-actions">
+          <v-btn variant="text" size="small" class="text-none" @click="seeAll">
+            See all
+          </v-btn>
+          <v-btn
+            variant="text"
+            size="small"
+            class="text-none"
+            :disabled="unreadCount === 0"
+            @click="store.markAllRead()"
+          >
+            Mark all read
+          </v-btn>
+        </div>
       </header>
 
       <div v-if="items.length" class="mp-notifications__list">
-        <MpListRow
+        <NotificationRow
           v-for="n in items"
           :key="n.id"
-          variant="divided"
-          clickable
-          @click="store.markRead(n.id)"
-        >
-          <template #lead>
-            <span
-              class="mp-notifications__disc"
-              :class="`mp-notifications__disc--${n.severity}`"
-              aria-hidden="true"
-            >
-              <v-icon size="14">{{ n.icon }}</v-icon>
-            </span>
-          </template>
-          <div class="mp-notifications__body">
-            <div class="mp-notifications__title" :class="{ 'mp-notifications__title--unread': !n.read }">
-              <span class="d-sr-only">{{ n.read ? '' : 'Unread — ' }}{{ SEVERITY_LABELS[n.severity] }}: </span>
-              {{ n.title }}
-            </div>
-            <div class="mp-notifications__sub">{{ n.context }} · {{ n.time }}</div>
-          </div>
-          <template #trailing>
-            <span v-if="!n.read" class="mp-notifications__dot" aria-hidden="true" />
-          </template>
-        </MpListRow>
+          :notification="n"
+          @select="store.markRead(n.id)"
+          @download="download(n)"
+        />
       </div>
 
       <MpEmptyState
@@ -139,66 +142,16 @@ const SEVERITY_LABELS: Record<NotificationSeverity, string> = {
   color: var(--text-primary);
 }
 
+.mp-notifications__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mp-space-2);
+  flex-shrink: 0;
+}
+
 .mp-notifications__list {
   padding: var(--mp-space-4);
   max-height: 420px;
   overflow-y: auto;
-}
-
-.mp-notifications__disc {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--mp-space-28);
-  height: var(--mp-space-28);
-  border-radius: var(--mp-radius-full);
-  flex-shrink: 0;
-}
-
-/* Severity tints mirror DashboardAttentionWidget — one severity vocabulary,
-   one color treatment. */
-.mp-notifications__disc--critical {
-  background: color-mix(in oklch, rgb(var(--v-theme-error)) 10%, transparent);
-  color: rgb(var(--v-theme-error));
-}
-
-.mp-notifications__disc--warning {
-  background: color-mix(in oklch, rgb(var(--v-theme-warning)) 14%, transparent);
-  color: rgb(var(--v-theme-warning));
-}
-
-.mp-notifications__disc--info {
-  background: color-mix(in oklch, var(--accent) 10%, transparent);
-  color: var(--accent);
-}
-
-.mp-notifications__body {
-  min-width: 0;
-}
-
-.mp-notifications__title {
-  font-size: var(--mp-fontSize-13);
-  font-weight: var(--mp-fontWeight-medium);
-  line-height: 1.35;
-  color: var(--text-primary);
-}
-
-.mp-notifications__title--unread {
-  font-weight: var(--mp-fontWeight-semibold);
-}
-
-.mp-notifications__sub {
-  margin-top: var(--mp-space-2);
-  font-size: var(--mp-fontSize-12);
-  color: var(--muted);
-}
-
-.mp-notifications__dot {
-  display: inline-block;
-  width: var(--mp-space-8);
-  height: var(--mp-space-8);
-  border-radius: var(--mp-radius-full);
-  background: var(--accent);
-  flex-shrink: 0;
 }
 </style>

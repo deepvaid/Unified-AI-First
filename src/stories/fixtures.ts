@@ -105,14 +105,16 @@ export const MESSAGES = [
   { id: 'm-3', side: 'start' as const, tone: 'neutral' as const, author: 'Sofia Thompson', time: 'Aug 28, 09:41', avatar: 'ST', body: 'Amazing, thank you! Got the label already.' },
 ]
 
-/** Rows for MpNotificationsMenu stories — same shape as the useNotifications store seed. */
+/** Rows for MpNotificationsMenu stories — same shape as the useNotifications store seed
+ * (mirrors the real UAT centre: plain messages, absolute times, download rows — no
+ * classification field exists in the real system). */
 export const NOTIFICATIONS = [
-  { id: 'n-1', severity: 'critical' as const, icon: 'credit-card', title: 'Payment failed on order #10012', context: 'Sales Orders', time: '12m ago', read: false },
-  { id: 'n-2', severity: 'warning' as const, icon: 'package', title: 'Trail Shell Jacket is low on stock — 4 left', context: 'Inventory', time: '38m ago', read: false },
-  { id: 'n-3', severity: 'info' as const, icon: 'send', title: 'Campaign "Spring Refresh" finished sending', context: 'Email Campaigns', time: '1h ago', read: false },
-  { id: 'n-4', severity: 'warning' as const, icon: 'ticket', title: 'Urgent ticket assigned to you: "Order never arrived"', context: 'Service', time: '2h ago', read: false },
-  { id: 'n-5', severity: 'critical' as const, icon: 'upload', title: 'Contact import failed — 214 rows rejected', context: 'Imports', time: '3h ago', read: true },
-  { id: 'n-6', severity: 'info' as const, icon: 'users', title: 'Segment "Lapsed VIPs" finished refreshing', context: 'Segments', time: '5h ago', read: true },
+  { id: 'n-1', title: "Import 10000 contacts to 'HB list 1' started. Emails imported: 9,988", time: 'Aug 31, 2026 at 02:54 AM', read: false },
+  { id: 'n-2', title: 'Custom report 116000 — Recurring SMS Message generated for 14 campaigns', time: 'Aug 26, 2026 at 11:46 AM', read: false, downloadable: true },
+  { id: 'n-3', title: 'Store 116000-9.uat.maropost.store has been provisioned — welcome aboard', time: 'Aug 26, 2026 at 04:19 AM', read: true },
+  { id: 'n-4', title: 'Custom report hbt test generated for 22 campaigns', time: 'Aug 26, 2026 at 02:40 AM', read: false, downloadable: true },
+  { id: 'n-5', title: "Export report from Aug 26, 2026 to Aug 26, 2026 for 'dfv__2026' campaigns", time: 'Aug 26, 2026 at 02:40 AM', read: false, downloadable: true },
+  { id: 'n-6', title: 'Custom report allfin generated for 206 campaigns', time: 'Aug 26, 2026 at 02:33 AM', read: true, downloadable: true },
 ]
 
 /** Folder tree for MpFolderSelect / MpMoveToFolderDialog examples. */
