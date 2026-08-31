@@ -2,19 +2,18 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpOptionCard from '@/components/MpOptionCard.vue'
 
 const route = useRoute()
 const accountId = computed(() => route.params.accountId as string)
 const backTo = computed(() => ({ name: 'Segments', params: { accountId: accountId.value } }))
 
 /**
- * GAP: MpOptionCard is a *selection* control — it sets role="button" and
- * aria-pressed, which would announce these navigation tiles as unpressed
- * toggles. These are links, so they compose v-card with `to` instead, which
- * renders a real anchor and is keyboard operable natively. See GAPS.md.
- *
- * The source's tiles are focusable but NOT operable by keyboard (Enter does
- * nothing), and their titles are dead `<a href="#">` links.
+ * Navigation chooser: the tiles compose MpOptionCard's navigation mode
+ * (`to`, no `selected`) — real anchors, keyboard operable natively, h2
+ * landmark titles. GAPS.md §8 (closed in the wizard pass) records why the
+ * selection mode was wrong here; the source's tiles are focusable but NOT
+ * operable by keyboard, and their titles are dead `<a href="#">` links.
  */
 const builders = computed(() => [
   {
@@ -46,37 +45,31 @@ const builders = computed(() => [
     <MpPageHeader
       title="Create a segment"
       subtitle="Choose how you want to build it."
+      emphasis="prominent"
       :back-to="backTo"
     />
 
     <div class="sbc-grid">
-      <v-card
+      <!-- Real h2 headings via heading-level, so the two choices appear in a
+           screen reader's heading list; the source's "New!" is an image that
+           never reaches assistive tech — the chip carries it as text. -->
+      <MpOptionCard
         v-for="b in builders"
         :key="b.id"
-        flat
-        border
-        rounded="lg"
         :to="b.to"
-        class="sbc-tile pa-6 d-flex flex-column ga-3"
+        :title="b.title"
+        :description="b.description"
+        :icon="b.icon"
+        :heading-level="2"
+        class="h-100"
       >
-        <div class="d-flex align-center ga-3">
-          <v-avatar color="primary" variant="tonal" size="34" rounded="lg" class="flex-shrink-0">
-            <v-icon size="18">{{ b.icon }}</v-icon>
-          </v-avatar>
-          <!-- Real headings, so the two choices appear in a screen reader's
-               heading list. The source renders both titles as dead links. -->
-          <h2 class="text-body-1 font-weight-bold mb-0">{{ b.title }}</h2>
-          <!-- The source renders "New!" as an image, so the status never
-               reaches assistive tech. A chip carries it as text. -->
-          <v-chip v-if="b.badge" size="small" color="primary" variant="tonal" class="ml-auto">
-            {{ b.badge }}
-          </v-chip>
-        </div>
-        <p class="text-body-2 text-medium-emphasis mb-0">{{ b.description }}</p>
-        <p v-if="b.recommended" class="text-caption font-weight-medium text-primary mb-0">
+        <template v-if="b.badge" #title-append>
+          <v-chip size="small" color="primary" variant="tonal" class="ml-auto">{{ b.badge }}</v-chip>
+        </template>
+        <p v-if="b.recommended" class="text-caption font-weight-medium text-primary mb-0 mt-2">
           Recommended for new segments
         </p>
-      </v-card>
+      </MpOptionCard>
     </div>
   </div>
 </template>
@@ -89,16 +82,6 @@ const builders = computed(() => [
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--mp-space-20);
   max-width: var(--mp-layout-contentMaxWidth);
-}
-
-.sbc-tile {
-  height: 100%;
-  transition: border-color 0.15s ease;
-}
-
-.sbc-tile:hover,
-.sbc-tile:focus-visible {
-  border-color: rgb(var(--v-theme-primary));
 }
 
 @media (max-width: $mp-layout-breakpointCompact) {
