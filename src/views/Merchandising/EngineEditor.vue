@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
-import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpWizardShell from '@/components/MpWizardShell.vue'
+import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
+import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
@@ -12,6 +13,7 @@ import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import { useToast } from '@/composables/useToast'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useCopilotStore } from '@/stores/useCopilot'
 import {
   useMerchandisingStore,
@@ -72,8 +74,6 @@ const {
 })
 
 /* ── Wizard: Page type → Recommendation type → Settings → Filters ── */
-const step = ref(1)
-
 const PAGES = Object.keys(ENGINE_PAGE_LABELS) as EnginePage[]
 const availableTypes = computed(() => (draft.value.page ? engineTypesForPage(draft.value.page) : []))
 
@@ -102,6 +102,23 @@ const canSave = computed(() =>
 )
 
 const STEP_TITLES = ['Page type', 'Recommendation type', 'Settings', 'Filters']
+
+// The old hand-rolled version bound :max-step to the *current* step, which
+// killed forward jumps the moment the user stepped back — the composable's
+// high-water maxStep is the fix.
+const { step, maxStep, goTo: goToStep, next: nextStep, prev: prevStep, unlockAll } = useWizardSteps(STEP_TITLES.length, {
+  canAdvance: () => stepValid.value,
+})
+// Editing an existing engine: every step is already configured, so all are jumpable.
+if (!isNew.value && sourceEngine.value) unlockAll()
+
+const stepHint = computed(() => {
+  if (step.value === 1 && !draft.value.page) return 'Choose a page type to continue'
+  if (step.value === 2 && !draft.value.type) return 'Choose a recommendation type to continue'
+  if (step.value === 3 && !countsValid.value) return 'Set a valid product range to continue'
+  if (step.value === 4 && !canSave.value && !draft.value.name.trim()) return 'Name the engine to save it'
+  return undefined
+})
 
 /* ── Filters (include/exclude) ────────────────────────────────── */
 const editingId = ref<string | null>(null)
@@ -207,107 +224,60 @@ function performDelete() {
   router.push(listRoute.value)
 }
 
-function goToStep(target: number) {
-  if (target === step.value) return
-  if (target < step.value) {
-    step.value = target
-    return
-  }
-  if (stepValid.value) step.value = target
-}
 </script>
 
 <template>
-  <div v-if="!notFound" class="d-flex flex-column gap-4">
-    <MpPageHeader
-      :title="isNew ? 'New recommendation engine' : (draft.name || 'Edit engine')"
-      :subtitle="`Step ${step} of 4 · ${STEP_TITLES[step - 1]}`"
-      :back-to="listRoute"
-    >
-      <template #actions>
-        <v-btn variant="text" class="text-none text-medium-emphasis" @click="router.push(listRoute)">Cancel</v-btn>
-        <v-btn
-          v-if="!isNew"
-          variant="flat"
-          color="surface"
-          class="text-none"
-          prepend-icon="trash-2"
-          @click="confirmDelete = true"
-        >
-          Delete
-        </v-btn>
-        <v-btn
-          v-if="step > 1"
-          variant="flat"
-          color="surface"
-          class="text-none"
-          prepend-icon="arrow-left"
-          @click="step -= 1"
-        >
-          Back
-        </v-btn>
-        <v-btn
-          v-if="step < 4"
-          color="primary"
-          variant="flat"
-          class="text-none"
-          append-icon="arrow-right"
-          :disabled="!stepValid"
-          @click="step += 1"
-        >
-          Next
-        </v-btn>
-        <v-btn
-          v-else
-          color="primary"
-          variant="flat"
-          class="text-none"
-          prepend-icon="check"
-          :disabled="!canSave"
-          @click="save"
-        >
-          {{ isNew ? 'Create engine' : 'Save' }}
-        </v-btn>
-      </template>
-    </MpPageHeader>
+  <MpWizardShell
+    v-if="!notFound"
+    :title="isNew ? 'New recommendation engine' : (draft.name || 'Edit engine')"
+    :steps="STEP_TITLES"
+    :current="step"
+    :max-step="maxStep"
+    :back-to="listRoute"
+    measure="lg"
+    :hint="stepHint"
+    standalone
+    @select="goToStep"
+    @back="prevStep"
+  >
+    <template #actions>
+      <v-btn variant="text" class="text-none text-medium-emphasis" @click="router.push(listRoute)">Cancel</v-btn>
+      <v-btn
+        v-if="!isNew"
+        variant="flat"
+        color="surface"
+        class="text-none"
+        prepend-icon="trash-2"
+        @click="confirmDelete = true"
+      >
+        Delete
+      </v-btn>
+    </template>
 
-    <!-- Persistent name + step indicator -->
-    <div class="d-flex align-center gap-4 flex-wrap">
-      <!-- `hide-details` is deliberate here (the only one in this file): this field
-           shares a chrome row with the step indicator, and a details line would
-           shunt the steps down on every keystroke. -->
-      <v-text-field
-        v-model="draft.name"
-        label="Engine name *"
-        hide-details
-        class="engine-name-field"
-      />
-      <MpWizardSteps
-        :steps="STEP_TITLES"
-        :current="step"
-        clickable
-        :max-step="step"
-        class="engine-steps"
-        @select="goToStep"
-      />
-    </div>
+    <div class="d-flex flex-column gap-4">
+    <!-- Persistent name — editable on every step, so a rename never needs a jump back. -->
+    <!-- `hide-details` is deliberate here (the only one in this file): the field sits
+         alone on a chrome row, and a details line would shunt the content down on
+         every keystroke. -->
+    <v-text-field
+      v-model="draft.name"
+      label="Engine name *"
+      hide-details
+      class="engine-name-field"
+    />
 
     <!-- Step 1: page type -->
     <div v-if="step === 1" class="engine-type-grid">
-      <button
+      <MpOptionCard
         v-for="page in PAGES"
         :key="page"
-        type="button"
-        class="engine-type-card text-left"
-        :class="{ 'engine-type-card--selected': draft.page === page }"
+        :selected="draft.page === page"
+        :title="`${ENGINE_PAGE_LABELS[page]} Page`"
+        :description="ENGINE_PAGE_DESCRIPTIONS[page]"
+        :icon="ENGINE_PAGE_ICONS[page]"
+        class="h-100"
         @click="draft.page = page"
-      >
-        <v-avatar size="40" variant="tonal" color="primary" class="mb-3">
-          <v-icon size="20">{{ ENGINE_PAGE_ICONS[page] }}</v-icon>
-        </v-avatar>
-        <div class="text-body-2 font-weight-bold mb-1">{{ ENGINE_PAGE_LABELS[page] }} Page</div>
-        <div class="text-caption text-medium-emphasis">{{ ENGINE_PAGE_DESCRIPTIONS[page] }}</div>
-      </button>
+      />
     </div>
 
     <!-- Steps 2–4: content column + persistent preview -->
@@ -330,28 +300,25 @@ function goToStep(target: number) {
           </button>
 
           <div class="engine-type-grid">
-            <button
+            <MpOptionCard
               v-for="type in availableTypes"
               :key="type"
-              type="button"
-              class="engine-type-card text-left"
-              :class="{ 'engine-type-card--selected': draft.type === type }"
+              :selected="draft.type === type"
+              :title="ENGINE_TYPE_LABELS[type]"
+              :description="ENGINE_TYPE_DESCRIPTIONS[type]"
+              :icon="ENGINE_TYPE_ICONS[type]"
+              class="h-100"
               @click="draft.type = type"
             >
-              <div class="d-flex align-center justify-space-between mb-3">
-                <v-avatar size="40" variant="tonal" color="primary">
-                  <v-icon size="20">{{ ENGINE_TYPE_ICONS[type] }}</v-icon>
-                </v-avatar>
-                <v-chip v-if="type === 'personalized'" size="x-small" color="primary" variant="flat">AI powered</v-chip>
+              <div v-if="type === 'personalized'" class="mt-2">
+                <v-chip size="x-small" color="primary" variant="flat">AI powered</v-chip>
               </div>
-              <div class="text-body-2 font-weight-bold mb-1">{{ ENGINE_TYPE_LABELS[type] }}</div>
-              <div class="text-caption text-medium-emphasis">{{ ENGINE_TYPE_DESCRIPTIONS[type] }}</div>
-            </button>
+            </MpOptionCard>
           </div>
         </template>
 
         <!-- Step 3: settings -->
-        <v-card v-else-if="step === 3" variant="flat" border rounded="lg" class="pa-5 engine-settings">
+        <MpWizardStepCard v-else-if="step === 3" title="Settings" class="engine-settings">
           <MpFormGrid :cols="2">
             <MpFormSection
               title="Number of products displayed"
@@ -413,7 +380,7 @@ function goToStep(target: number) {
               class="mp-form-grid__full"
             />
           </MpFormGrid>
-        </v-card>
+        </MpWizardStepCard>
 
         <!-- Step 4: filters -->
         <v-card v-else variant="flat" border rounded="lg" class="engine-filters">
@@ -547,7 +514,35 @@ function goToStep(target: number) {
         </div>
       </v-card>
     </div>
+    </div>
 
+    <template #footer>
+      <v-btn
+        v-if="step < 4"
+        color="primary"
+        variant="flat"
+        class="text-none"
+        append-icon="arrow-right"
+        :disabled="!stepValid"
+        @click="nextStep"
+      >
+        Next
+      </v-btn>
+      <v-btn
+        v-else
+        color="primary"
+        variant="flat"
+        class="text-none"
+        prepend-icon="check"
+        :disabled="!canSave"
+        @click="save"
+      >
+        {{ isNew ? 'Create engine' : 'Save' }}
+      </v-btn>
+    </template>
+  </MpWizardShell>
+
+  <template v-if="!notFound">
     <!-- Delete confirm -->
     <MpConfirmDialog
       v-model="confirmDelete"
@@ -566,10 +561,9 @@ function goToStep(target: number) {
       :confirm-label="leaveConfirmLabel"
       @confirm="discardAndLeave"
     />
+  </template>
 
-  </div>
-
-  <div v-else class="pa-10">
+  <div v-if="notFound" class="pa-10">
     <MpErrorState
       icon="sparkles"
       title="Engine not found"
@@ -583,45 +577,14 @@ function goToStep(target: number) {
 
 <style scoped>
 .engine-name-field {
-  width: 360px;
-  flex: 0 0 auto;
+  max-width: 360px;
 }
 
-.engine-steps {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-/* ── Type/page cards ───────────────────────────────────────────── */
+/* ── Type/page card grid (chrome lives in MpOptionCard) ───────────── */
 .engine-type-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
-}
-
-.engine-type-card {
-  padding: 20px;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px;
-  background: rgb(var(--v-theme-surface));
-  cursor: pointer;
-  font: inherit;
-  transition: border-color 120ms ease, background 120ms ease;
-}
-
-.engine-type-card:hover {
-  border-color: rgba(var(--v-theme-primary), 0.45);
-  background: rgba(var(--v-theme-primary), 0.03);
-}
-
-.engine-type-card--selected {
-  border-color: rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 1px rgb(var(--v-theme-primary));
-}
-
-.engine-type-card:focus-visible {
-  outline: 2px solid rgb(var(--v-theme-primary));
-  outline-offset: 2px;
+  gap: var(--mp-space-12);
 }
 
 /* ── Settings ──────────────────────────────────────────────────── */
@@ -641,10 +604,10 @@ function goToStep(target: number) {
 .engine-davinci {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-14) var(--mp-space-16);
   border: 1px dashed rgba(var(--v-theme-primary), 0.4);
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
   background: rgba(var(--v-theme-primary), 0.03);
   cursor: pointer;
   font: inherit;
@@ -664,7 +627,7 @@ function goToStep(target: number) {
 .engine-preview {
   width: 380px;
   position: sticky;
-  top: 16px;
+  top: 0;
 }
 
 .engine-device-toggle {
@@ -675,7 +638,7 @@ function goToStep(target: number) {
 .engine-preview-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: var(--mp-space-10);
   max-height: 64vh;
   overflow-y: auto;
 }

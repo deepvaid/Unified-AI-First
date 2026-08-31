@@ -20,6 +20,9 @@ const status = computed(() => channel.value ? merchandisingStatus(channel.value)
 const health = computed(() => channel.value ? merchandisingHealth(channel.value) : 'error')
 const needsSetup = computed(() => status.value === 'setup_required')
 const hasHealthIssue = computed(() => health.value === 'warning' || health.value === 'error')
+// Wizard routes (route meta `wizardFlush`) bring their own MpWizardShell bands,
+// so the content pane hands them its full box: no padding, no scroll of its own.
+const flushChild = computed(() => !!route.meta.wizardFlush && !needsSetup.value)
 
 function backToSelector() {
   router.push({ name: 'MerchandisingHome', params: { accountId: accountId.value } })
@@ -46,7 +49,7 @@ function connectChannel() {
 
   <div v-else class="merch-shell d-flex">
     <MerchandisingSidebar :account-id="accountId" :channel="channel" />
-    <main class="merch-shell__content">
+    <main class="merch-shell__content" :class="{ 'merch-shell__content--flush': flushChild }">
       <v-alert
         v-if="hasHealthIssue && !needsSetup"
         type="warning"
@@ -103,6 +106,12 @@ function connectChannel() {
   min-height: 0;
   overflow-y: auto;
   padding: 24px 36px 32px 32px;
+}
+
+/* Wizard child (MpWizardShell standalone) owns its bands and scroll. */
+.merch-shell__content--flush {
+  padding: 0;
+  overflow: hidden;
 }
 
 .merch-shell__setup {

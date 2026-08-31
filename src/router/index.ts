@@ -156,7 +156,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'smart-collections/promo-cards', name: 'MerchandisingChannelCollectionPromos', component: () => import('@/views/Merchandising/MerchPromoCards.vue'), meta: { merchScope: 'collections' } },
       { path: 'smart-collections/banners', name: 'MerchandisingChannelCollectionBanners', component: () => import('@/views/Merchandising/MerchBanners.vue'), meta: { merchScope: 'collections' } },
       // Recommendations
-      { path: 'recommendations/:engineId', name: 'MerchandisingChannelEngineEdit', component: () => import('@/views/Merchandising/EngineEditor.vue') },
+      { path: 'recommendations/:engineId', name: 'MerchandisingChannelEngineEdit', component: () => import('@/views/Merchandising/EngineEditor.vue'), meta: { wizardFlush: true } },
       { path: 'recommendations', name: 'MerchandisingChannelRecommendations', component: () => import('@/views/Merchandising/RecommendationEngines.vue') },
       // Analytics (one shared view, four reports)
       { path: 'analytics', name: 'MerchandisingChannelAnalytics', component: () => import('@/views/Merchandising/MerchandisingAnalytics.vue'), meta: { reportKind: 'snapshot' } },
