@@ -98,6 +98,13 @@ export const ACTIVITY = [
   { id: 'a-4', time: '1h ago', title: 'Order #10002 refunded', meta: '−$1,120.00', icon: 'receipt' },
 ]
 
+/** A support-thread exchange for MpChatBubble stories (mirrors the useTickets thread shape). */
+export const MESSAGES = [
+  { id: 'm-1', side: 'start' as const, tone: 'neutral' as const, author: 'Sofia Thompson', time: 'Aug 28, 09:12', avatar: 'ST', body: "Hi — my order #10002 arrived but the Trail Shell Jacket is the wrong size. I ordered an M and got an S. Can I exchange it?" },
+  { id: 'm-2', side: 'start' as const, tone: 'accent' as const, author: 'Maya (Support)', time: 'Aug 28, 09:30', avatar: 'M', body: "Sorry about the mix-up, Sofia! I've set up a free exchange — you'll get a prepaid return label by email in the next few minutes, and the M ships out today." },
+  { id: 'm-3', side: 'start' as const, tone: 'neutral' as const, author: 'Sofia Thompson', time: 'Aug 28, 09:41', avatar: 'ST', body: 'Amazing, thank you! Got the label already.' },
+]
+
 /** Rows for MpNotificationsMenu stories — same shape as the useNotifications store seed. */
 export const NOTIFICATIONS = [
   { id: 'n-1', severity: 'critical' as const, icon: 'credit-card', title: 'Payment failed on order #10012', context: 'Sales Orders', time: '12m ago', read: false },

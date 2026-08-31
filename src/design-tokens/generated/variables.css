@@ -1319,6 +1319,12 @@
   --mp-component-menu-minWidth: 180px;
   --mp-component-menu-itemHeight: 36px;
   --mp-component-menu-itemPaddingBlock: var(--mp-space-6);
+  --mp-component-bubble-maxWidth: 88%;
+  --mp-component-bubble-paddingBlock: var(--mp-space-10);
+  --mp-component-bubble-paddingInline: var(--mp-space-14);
+  --mp-component-bubble-radius: var(--mp-radius-12);
+  --mp-component-bubble-tailRadius: var(--mp-radius-4);
+  --mp-component-bubble-gap: var(--mp-space-6);
   --mp-component-banner-minHeight: 44px;
   --mp-component-segmented-radius: var(--mp-radius-full);
   --mp-component-segmented-padding: var(--mp-space-4);
