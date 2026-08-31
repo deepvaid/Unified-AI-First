@@ -8,6 +8,7 @@ import { useAppTheme, type ThemeMode } from '@/composables/useAppTheme'
 import { useMobileNav } from '@/composables/useMobileNav'
 import { useToast } from '@/composables/useToast'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
+import MpNotificationsMenu from '@/components/MpNotificationsMenu.vue'
 import PlgTrialChip from '@/components/plg/PlgTrialChip.vue'
 import { usePlgStore, PLG_DEMO_PRESETS, type PlgDemoPreset } from '@/stores/usePlg'
 
@@ -26,7 +27,6 @@ const themeToggleValue = computed({
 })
 
 const assistantPillHover = ref(false)
-const notificationCount = ref(18)
 const userName = ref('Ross Andrew Paquette')
 const userInitials = ref('RP')
 const userEmail = ref('Ross@maropost.com')
@@ -512,20 +512,7 @@ function onSearchKeydown(event: KeyboardEvent) {
           </v-card>
         </v-menu>
 
-        <v-tooltip text="Notifications" location="bottom">
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              variant="text"
-              icon
-              class="appbar-action-btn position-relative"
-              :aria-label="notificationCount > 0 ? `Notifications, ${notificationCount} unread` : 'Notifications'"
-            >
-              <v-icon>bell</v-icon>
-              <v-badge v-if="notificationCount > 0" :content="notificationCount" color="error" floating class="notification-badge" />
-            </v-btn>
-          </template>
-        </v-tooltip>
+        <MpNotificationsMenu class="appbar-action-btn" />
 
         <v-tooltip text="Settings" location="bottom">
           <template #activator="{ props }">
@@ -1734,25 +1721,6 @@ function onSearchKeydown(event: KeyboardEvent) {
   margin-top: var(--mp-space-2);
   color: var(--muted);
   font-size: var(--mp-fontSize-12);
-}
-
-.notification-badge :deep(.v-badge__badge) {
-  height: var(--mp-space-16);
-  min-width: var(--mp-space-16);
-  padding-inline: var(--mp-space-4);
-  font-size: var(--mp-fontSize-10);
-  line-height: var(--mp-space-16);
-  background: var(--neg) !important;
-  /* P5.5: a solid semantic fill states its ink. The count digits used to
-     inherit, relying on Vuetify's default badge color happening to be white. */
-  color: var(--on-neg) !important;
-  box-shadow: 0 0 0 2px var(--surface-primary);
-  /* The badge overlaps a few px into the next utility button (4px gap,
-     floating badge). Both it and that button are position:relative/absolute
-     with z-index:auto, so DOM order decides paint order — the later Settings
-     button was covering the badge's edge. Explicit z-index wins regardless
-     of sibling order. */
-  z-index: 1;
 }
 
 @media (max-width: 1180px) {

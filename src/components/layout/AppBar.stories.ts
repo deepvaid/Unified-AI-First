@@ -94,7 +94,7 @@ const meta = {
 ### Overview
 \`AppBar\` is the main top navigation bar of the Maropost platform (56px). It provides the
 universal AI search menu, the quick-create menu (with single-key shortcuts while open), the
-notification bell, Galaxy and Settings shortcuts, the Da Vinci assistant menu, and the user
+notification centre (\`MpNotificationsMenu\`), Galaxy and Settings shortcuts, the Da Vinci assistant menu, and the user
 profile menu (account switcher, theme toggle, sign-out). It takes **no props** — everything is
 wired to global state.
 
@@ -154,8 +154,9 @@ surfaces (login, builders) omit the bar entirely.
 
 ### API
 \`AppBar\` takes **no props, emits, or slots** — it is app chrome that reads everything it needs
-from the router and the accounts / theme / notifications stores, which is why the Controls panel
-is empty. Drive its states in stories and demos by seeding those stores, not by passing config.
+from the router and the accounts / theme / notifications stores (\`useNotifications\` backs the
+bell via \`MpNotificationsMenu\`), which is why the Controls panel is empty. Drive its states in
+stories and demos by seeding those stores, not by passing config.
 
 ### Controls
 The app bar takes **no props** — the Controls panel is empty by design. It composes \`useAccountsStore\`, \`useCopilotStore\`, \`useUserProfile\`, \`useAppTheme\`, \`useMobileNav\`, \`useToast\` and \`usePlgStore\` directly. The one story-level knob is \`parameters.sidebarSkin\` (\`gray\` | \`white\` | \`dark\`), which the shared \`sidebarSkin\` decorator stamps onto \`<html data-sidebar>\`.
