@@ -58,6 +58,13 @@ Flowbite floating-notch label, see DESIGN_AUDIT.md "Field rework"):
 - **Placeholder** – solid \`--text-muted\`, always visible while the field is empty.
   Example values only; it never restates the label
 - **Disabled** – Full opacity, muted text/label, lighter border
+- **Readonly** – opt-in: \`class="mp-field-readonly"\` beside the \`readonly\` prop
+  (Vuetify has no readonly root class). Secondary fill, subtle hairline that never
+  promotes to the 2px focus border, value stays \`--text-primary\` — filled and calm,
+  clearly not editable, clearly not disabled
+- **Success** – opt-in: \`class="mp-field-success"\` paints a 2px success border and a
+  green message; add \`append-inner-icon="circle-check"\` for the trailing check.
+  Error always wins when both apply. The label stays calm on success, like on error
 
 ### Rules
 - \`variant="outlined"\` and \`density="comfortable"\` are the **theme defaults** — don't restate
@@ -80,6 +87,12 @@ Flowbite floating-notch label, see DESIGN_AUDIT.md "Field rework"):
   height.
 - \`density="compact"\` (sm) is for genuinely dense chrome — table-cell editors, tight
   side panels; forms use the default md.
+- **Hints:** a transient \`hint\` shows on focus — use it for input-format guidance ("YYYY-MM-DD").
+  Anything the user needs *before* focusing (consequences, defaults, scope) is \`persistent-hint\`.
+- **Counters** (\`counter="60"\`) only turn red when a validation rule actually invalidates the
+  field — Vuetify's counter doesn't self-invalidate, so always pair it with a max-length rule.
+- **Prefix/suffix** (\`prefix="$"\`, \`suffix="cm"\`) render muted — they're chrome, not content.
+  There is deliberately no boxed-addon segment style.
 
 ### Spacing between fields — not a field's job (Phase 6)
 A field sets **zero external margin**. The container owns the rhythm:
@@ -822,6 +835,169 @@ export const ErrorState: Story = {
               rows="3"
               error-messages="Notes cannot be empty"
             />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/**
+ * Transient vs persistent helper text. A transient `hint` shows on focus — input-format
+ * guidance. Anything the user needs before focusing (consequences, defaults, scope) is
+ * `persistent-hint`.
+ */
+export const HelperText: Story = {
+  name: 'Helper Text',
+  render: () => ({
+    template: `
+      <div>
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Helper text — transient vs persistent</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field
+              label="Send date"
+              placeholder="2026-09-15"
+              hint="YYYY-MM-DD"
+            />
+            <div class="text-caption text-medium-emphasis mt-2">Transient — focus the field to see the format hint.</div>
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field
+              label="Reply-to address"
+              placeholder="support@atlas.com"
+              hint="Replies from contacts land here, not in the sending inbox."
+              persistent-hint
+            />
+            <div class="text-caption text-medium-emphasis mt-2">Persistent — a consequence the user needs before focusing.</div>
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/**
+ * Editable / readonly / disabled must read as three distinct states. Readonly is the
+ * opt-in `mp-field-readonly` class beside the `readonly` prop: secondary fill, subtle
+ * hairline (never promotes to the focus border), value stays `--text-primary` — the
+ * content is real, only editing is off. Disabled mutes the value too.
+ */
+export const Readonly: Story = {
+  name: 'Readonly',
+  render: () => ({
+    template: `
+      <div>
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Editable vs readonly vs disabled</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field label="Editable" model-value="Atlas Outfitters" />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field label="Readonly" model-value="ACC-2000290" readonly class="mp-field-readonly" />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field label="Disabled" model-value="Inherited from plan" disabled />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/**
+ * Success validation is the opt-in `mp-field-success` class: 2px success border + green
+ * message, with `append-inner-icon="circle-check"` as the trailing-check convention.
+ * The label stays calm (like on error), and error always wins when both classes apply.
+ */
+export const SuccessValidation: Story = {
+  name: 'Success Validation',
+  render: () => ({
+    template: `
+      <div>
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Fields — success</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field
+              label="Sending domain"
+              model-value="mail.atlas.com"
+              class="mp-field-success"
+              append-inner-icon="circle-check"
+              messages="Domain verified."
+            />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field
+              label="Error beats success"
+              model-value="not-a-domain"
+              class="mp-field-success"
+              error-messages="Enter a valid domain."
+            />
+            <div class="text-caption text-medium-emphasis mt-2">Both classes applied — the error treatment wins.</div>
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/**
+ * The counter joins the messages voice (12px, muted). It only turns red when a validation
+ * rule actually invalidates the field — Vuetify's counter doesn't self-invalidate, so a
+ * `counter="N"` is always paired with a max-length rule.
+ */
+export const Counter: Story = {
+  name: 'Counter',
+  render: () => ({
+    setup() {
+      const maxRule = (v: string) => (v?.length ?? 0) <= 60 || 'Keep the subject under 60 characters.'
+      return { maxRule }
+    },
+    template: `
+      <div>
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Character counter</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field
+              label="Subject line"
+              model-value="Fall drop 02 — early access"
+              counter="60"
+              :rules="[maxRule]"
+            />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field
+              label="Subject line (over the limit)"
+              model-value="Fall drop 02 — early access for VIP members plus free shipping this weekend only"
+              counter="60"
+              :rules="[maxRule]"
+            />
+          </v-col>
+        </v-row>
+      </div>
+    `,
+  }),
+}
+
+/**
+ * Prefixes and suffixes are inline affixes — muted chrome beside the value, height-aligned
+ * to the field ramp. There is deliberately no boxed-addon segment style.
+ */
+export const PrefixSuffix: Story = {
+  name: 'Prefix & Suffix',
+  render: () => ({
+    template: `
+      <div>
+        <h3 class="text-subtitle-1 font-weight-bold mb-4">Inline affixes</h3>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field label="Price" model-value="49.00" prefix="$" />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field label="URL handle" model-value="trail-shell-jacket" prefix="/" />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-text-field label="Discount" model-value="15" suffix="%" />
           </v-col>
         </v-row>
       </div>
