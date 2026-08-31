@@ -307,7 +307,7 @@ function publishForm() {
 <template>
   <MpBuilderShell
     :title="formName || 'New Acquisition Form'"
-    :subtitle="`Step ${step} of ${totalSteps} · ${stepTitles[step - 1]}`"
+    :subtitle="`Step ${step} of ${totalSteps} — ${stepTitles[step - 1]}`"
     back-label="Back to Forms"
     :dirty="dirty"
     persistence-mode="explicit"
@@ -371,12 +371,12 @@ function publishForm() {
           </MpFormGrid>
 
           <div class="d-flex justify-end mt-6">
-            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!step1Valid" @click="advance(2)">Continue to settings</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!step1Valid" @click="advance(2)">Continue</v-btn>
           </div>
         </v-card>
       </div>
 
-      <!-- STEP 3: Display (formerly Settings & Display) -->
+      <!-- STEP 2: Settings (display rules) -->
       <div v-else-if="step === 2" class="fb__scroll d-flex justify-center pt-8 pa-4">
         <v-card variant="flat" border rounded="lg" style="max-width:620px;width:100%;" class="pa-8">
           <div class="text-h5 font-weight-bold mb-1">Display</div>
@@ -436,13 +436,13 @@ function publishForm() {
           </MpFormGrid>
 
           <div class="d-flex justify-space-between mt-6">
-            <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="step = 2">Back</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(3)">Continue to design</v-btn>
+            <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="step = 1">Back</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(3)">Continue</v-btn>
           </div>
         </v-card>
       </div>
 
-      <!-- STEP 4: Style (formerly Design) -->
+      <!-- STEP 3: Design (style panel + live preview) -->
       <div v-else-if="step === 3" class="d-flex h-100 overflow-hidden">
         <div class="fb__panel border-r bg-surface d-flex flex-column overflow-hidden">
           <div class="pa-3 flex-grow-1 overflow-y-auto">
@@ -591,8 +591,8 @@ function publishForm() {
           </div>
 
           <div class="pa-3 border-t d-flex gap-2">
-            <v-btn variant="text" class="text-none flex-grow-1" size="small" prepend-icon="arrow-left" @click="step = 3">Back</v-btn>
-            <v-btn color="primary" variant="flat" class="text-none flex-grow-1" size="small" append-icon="arrow-right" :disabled="!designValid" @click="advance(4)">Continue to content</v-btn>
+            <v-btn variant="text" class="text-none flex-grow-1" size="small" prepend-icon="arrow-left" @click="step = 2">Back</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none flex-grow-1" size="small" append-icon="arrow-right" :disabled="!designValid" @click="advance(4)">Continue</v-btn>
           </div>
         </div>
 
@@ -643,7 +643,7 @@ function publishForm() {
         </div>
       </div>
 
-      <!-- STEP 2: Content -->
+      <!-- STEP 4: Content -->
       <div v-else-if="step === 4" class="d-flex flex-column h-100 overflow-hidden">
         <div class="d-flex flex-grow-1 overflow-hidden fb__split">
           <!-- palette -->
@@ -755,8 +755,8 @@ function publishForm() {
         </div>
 
         <div class="pa-3 border-t bg-surface d-flex justify-space-between">
-          <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="step = 1">Back</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(5)">Review and publish</v-btn>
+          <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="step = 3">Back</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" append-icon="arrow-right" @click="advance(5)">Continue</v-btn>
         </div>
       </div>
 
