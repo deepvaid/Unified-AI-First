@@ -2,14 +2,15 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
-import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpWizardShell from '@/components/MpWizardShell.vue'
+import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
-import MpWizardSteps from '@/components/MpWizardSteps.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 import type { JourneyTemplate } from '@/stores/journeyFlowData'
 import { journeyTemplates } from '@/stores/journeyFlowData'
@@ -24,7 +25,6 @@ const accountId = computed(() => route.params.accountId as string)
 
 const mode = ref<'template' | 'ai'>('template')
 
-const step = ref(1)
 const selectedTemplateId = ref<string | null>(null)
 const selectedTemplate = computed(() => journeyTemplates.find(t => t.id === selectedTemplateId.value) ?? null)
 
@@ -44,8 +44,14 @@ function chooseTemplate(id: string) {
   if (tpl && tpl.id !== 'scratch' && !name.value.trim()) name.value = tpl.name
 }
 
+// Template mode is a real 2-step wizard; AI mode's position is derived from
+// whether a draft exists, so its steps are display-only (not clickable).
+const { step, maxStep, goTo, next, prev } = useWizardSteps(2, {
+  canAdvance: () => !!selectedTemplateId.value,
+})
+
 function continueToSettings() {
-  if (selectedTemplateId.value) step.value = 2
+  if (selectedTemplateId.value) next()
 }
 
 const canCreate = computed(() => !!selectedTemplateId.value && name.value.trim().length > 0)
@@ -112,6 +118,18 @@ const wizardCurrent = computed(() => {
   if (mode.value === 'ai') return draft.value ? 2 : 1
   return step.value
 })
+const wizardMaxStep = computed(() => (mode.value === 'ai' ? wizardCurrent.value : maxStep.value))
+
+const stepHint = computed(() => {
+  if (mode.value === 'ai') {
+    if (!draft.value) return 'Generate a draft to continue'
+    if (!canCreateFromDraft.value) return 'Name the journey to create it'
+    return undefined
+  }
+  if (step.value === 1 && !selectedTemplateId.value) return 'Choose a template to continue'
+  if (step.value === 2 && !canCreate.value) return 'Name the journey to create it'
+  return undefined
+})
 
 function createJourney() {
   if (!canCreate.value || !selectedTemplateId.value) return
@@ -153,25 +171,27 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mp-frame-fill d-flex flex-column">
-    <!-- Header band — the standard create-flow recipe (see CreateSmsCampaign) -->
-    <div class="cj-head px-8 pt-6 pb-4 bg-surface border-b">
-      <MpPageHeader title="New Journey" :back-to="{ name: 'Journeys', params: { accountId } }">
-        <template #actions>
-          <v-chip v-if="mode === 'ai'" color="primary" variant="tonal" size="small" class="font-weight-bold">
-            <v-icon size="14" class="mr-1">sparkles</v-icon> Build with Da Vinci
-          </v-chip>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="cancel">Cancel</v-btn>
-        </template>
-        <template #tabs>
-          <MpWizardSteps :steps="wizardSteps" :current="wizardCurrent" class="mt-3" />
-        </template>
-      </MpPageHeader>
-    </div>
+  <MpWizardShell
+    title="New Journey"
+    :steps="wizardSteps"
+    :current="wizardCurrent"
+    :max-step="wizardMaxStep"
+    :clickable="mode === 'template'"
+    :back-to="{ name: 'Journeys', params: { accountId } }"
+    measure="lg"
+    :hint="stepHint"
+    @select="goTo"
+    @back="prev"
+  >
+    <template #actions>
+      <v-chip v-if="mode === 'ai'" color="primary" variant="tonal" size="small" class="font-weight-bold">
+        <v-icon size="14" class="mr-1">sparkles</v-icon> Build with Da Vinci
+      </v-chip>
+      <v-btn variant="text" class="text-none text-medium-emphasis" @click="cancel">Cancel</v-btn>
+    </template>
 
-    <!-- Step 1 — template gallery -->
-    <div v-if="mode === 'template' && step === 1" class="flex-grow-1 overflow-y-auto bg-background">
-      <div class="cj-content mx-auto px-6 py-8">
+    <!-- Step 1 — template gallery (bare in the measure: the gallery is the content) -->
+    <div v-if="mode === 'template' && step === 1">
         <h2 class="text-h6 font-weight-bold mb-1">Start with a template</h2>
         <p class="text-body-2 text-medium-emphasis mb-6">
           Every template is a working flow you can preview before committing — pick one and make it yours, or start from scratch.
@@ -212,18 +232,13 @@ onMounted(() => {
             </MpOptionCard>
           </v-col>
         </v-row>
-      </div>
     </div>
 
     <!-- Step 2 — settings + persistent preview -->
-    <div v-else-if="mode === 'template'" class="flex-grow-1 overflow-y-auto bg-background">
-      <div class="cj-content mx-auto px-6 py-8">
+    <div v-else-if="mode === 'template'">
         <v-row>
           <v-col cols="12" md="6">
-            <v-card flat border rounded="lg" class="pa-5">
-              <h2 class="text-h6 font-weight-bold mb-1">Journey settings</h2>
-              <p class="text-body-2 text-medium-emphasis mb-5">Name it now — everything else can change later.</p>
-
+            <MpWizardStepCard title="Journey settings" description="Name it now — everything else can change later.">
               <MpFormGrid :cols="2">
                 <v-text-field v-model="name" class="mp-form-grid__full" label="Journey name"
                   autofocus :rules="[(v: string) => !!v.trim() || 'Journey name is required']" />
@@ -242,7 +257,7 @@ onMounted(() => {
                   label="Allow contacts to re-enter (retrigger)"
                   hint="Contacts who finish the journey can enter it again." persistent-hint />
               </MpFormGrid>
-            </v-card>
+            </MpWizardStepCard>
           </v-col>
 
           <v-col cols="12" md="6">
@@ -258,19 +273,14 @@ onMounted(() => {
             </v-card>
           </v-col>
         </v-row>
-      </div>
     </div>
 
     <!-- Build with Da Vinci — brief + live draft -->
-    <div v-else class="flex-grow-1 overflow-y-auto bg-background">
-      <div class="cj-content mx-auto px-6 py-8">
+    <div v-else>
         <v-row>
           <!-- Brief -->
           <v-col cols="12" md="5">
-            <v-card flat border rounded="lg" class="pa-5">
-              <h2 class="text-h6 font-weight-bold mb-1">Tell Da Vinci the goal</h2>
-              <p class="text-body-2 text-medium-emphasis mb-4">One short brief replaces the interview — you can refine after.</p>
-
+            <MpWizardStepCard title="Tell Da Vinci the goal" description="One short brief replaces the interview — you can refine after.">
               <MpFormGrid>
                 <MpFormField label="Goal">
                   <template #default="{ labelId }">
@@ -299,7 +309,7 @@ onMounted(() => {
                   {{ draft ? 'Update draft' : 'Generate draft' }}
                 </v-btn>
               </MpFormGrid>
-            </v-card>
+            </MpWizardStepCard>
           </v-col>
 
           <!-- Draft preview -->
@@ -364,43 +374,36 @@ onMounted(() => {
             </v-card>
           </v-col>
         </v-row>
-      </div>
     </div>
 
-    <!-- Footer -->
-    <div class="cj-footer d-flex align-center justify-space-between px-5 border-t bg-surface">
-      <v-btn v-if="mode === 'template'" variant="text" class="text-none" :disabled="step === 1" prepend-icon="arrow-left" @click="step = 1">Back</v-btn>
-      <v-btn v-else variant="text" class="text-none" prepend-icon="arrow-left" @click="mode = 'template'">Templates</v-btn>
-      <div class="d-flex gap-2">
-        <template v-if="mode === 'template'">
-          <v-btn v-if="step === 1" color="primary" variant="flat" class="text-none" append-icon="arrow-right"
-            :disabled="!selectedTemplateId" @click="continueToSettings">Continue</v-btn>
-          <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="workflow"
-            :disabled="!canCreate" @click="createJourney">Create journey</v-btn>
-        </template>
+    <template #footerStart>
+      <v-btn v-if="mode === 'template' && step === 2" variant="text" class="text-none" prepend-icon="arrow-left" @click="prev">Back</v-btn>
+      <v-btn v-else-if="mode === 'ai'" variant="text" class="text-none" prepend-icon="arrow-left" @click="mode = 'template'">Templates</v-btn>
+      <div v-else></div>
+    </template>
+    <template #footer>
+      <template v-if="mode === 'template'">
+        <v-btn v-if="step === 1" color="primary" variant="flat" class="text-none" append-icon="arrow-right"
+          :disabled="!selectedTemplateId" @click="continueToSettings">Continue</v-btn>
         <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="workflow"
-          :disabled="!canCreateFromDraft" @click="createFromDraft">Create journey</v-btn>
-      </div>
-    </div>
+          :disabled="!canCreate" @click="createJourney">Create journey</v-btn>
+      </template>
+      <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="workflow"
+        :disabled="!canCreateFromDraft" @click="createFromDraft">Create journey</v-btn>
+    </template>
+  </MpWizardShell>
 
-    <MpConfirmDialog
-      v-model="confirmLeave"
-      danger
-      :title="leaveTitle"
-      :message="leaveMessage"
-      :confirm-label="leaveConfirmLabel"
-      @confirm="discardAndLeave"
-    />
-  </div>
+  <MpConfirmDialog
+    v-model="confirmLeave"
+    danger
+    :title="leaveTitle"
+    :message="leaveMessage"
+    :confirm-label="leaveConfirmLabel"
+    @confirm="discardAndLeave"
+  />
 </template>
 
 <style scoped>
-.cj-footer { height: 64px; flex-shrink: 0; }
-.cj-content { max-width: 1160px; }
-
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-
 /* Build with Da Vinci hero */
 .cj-hero {
   cursor: pointer;
@@ -411,12 +414,13 @@ onMounted(() => {
 .cj-hero:hover { border-color: rgb(var(--v-theme-primary)); box-shadow: 0 0 0 1px rgba(var(--v-theme-primary), 0.4); }
 .cj-hero:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
 
-/* Template cards (chrome lives in MpOptionCard) */
-.cj-card__desc { min-height: 44px; }
+/* Template cards (chrome lives in MpOptionCard). The desc floor equalizes
+   card heights across the gallery row (two lines of caption text). */
+.cj-card__desc { min-height: calc(2 * 1.45em); }
 .cj-card__preview {
-  padding: 14px 10px; max-height: 240px; overflow: hidden;
+  padding: var(--mp-space-14) var(--mp-space-10); max-height: 240px; overflow: hidden;
   display: flex; justify-content: center;
 }
 
-.cj-preview-panel { padding: 20px 12px; overflow: auto; min-height: 320px; display: flex; justify-content: center; }
+.cj-preview-panel { padding: var(--mp-space-20) var(--mp-space-12); overflow: auto; min-height: 320px; display: flex; justify-content: center; }
 </style>
