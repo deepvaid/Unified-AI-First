@@ -1653,8 +1653,24 @@ scrollable measure → step cards → footer band (Back · hint · N / M · prim
   drawer. MpWizardSteps' docblock + story now name its two contracts (wizard navigation vs
   passive progress display) and warn against `:max-step` bound to the current step. Noted, not
   unified: AllContacts' import dialog vs ProductImportWizard = same task, two shells.
-- Tier 3 choosers: MpOptionCard navigation mode (`to`, optional `selected`), CampaignTypeChooser
-  + SegmentBuilderChooser onto it, false `:selected="false"` removed from the prominent-header
-  trio, CreateCustomReport chooser onto the shell.
+### Tier 3 — choosers (done)
+
+**The one chooser convention:** a chooser is a full-page gallery under a prominent header.
+Pure-navigation choosers compose `MpOptionCard` with `to` (real links); side-effectful
+click-to-go choosers compose it as a plain button (no `selected`); select-then-commit choosers
+inside flows compose `MpWizardShell` (steps omitted for single-step shapes). Parity-locked
+gallery-in-table-card pages (LandingPageTemplates, ContentTemplates) stay as they are.
+
+- **`MpOptionCard` API** (GAPS.md §8 adopted verbatim, entry closed): `selected` optional,
+  `to`/`href` render a real anchor (no `aria-pressed` — a link is not a toggle), `#title-append`
+  slot, `headingLevel` for landmark tiles. Refined for the trio: a non-link card is *always* a
+  keyboard-operable `role="button"`; `aria-pressed` only when `selected` is actually passed.
+- **CampaignTypeChooser / SegmentBuilderChooser** — hand-rolled tiles (~20 duplicated CSS lines
+  each) → MpOptionCard navigation mode with h2 landmarks + prominent headers.
+- **ContentEditorChooser / FormSelection / TemplateLayouts** — the false `:selected="false"`
+  (links announced as unpressed toggles) dropped; cards stay keyboard-operable buttons.
+- **CreateCustomReport chooser** — keeps select-then-commit (parity), adopts the shell's
+  single-step shape (commit bar in the footer band, builderShell route).
+  **LandingPageBuilderChooser** swapped from inline anatomy to composing the shell.
 - Out-of-scope single-step create flows noted as future shell adopters: CreateContact,
   CreateList, CreateSegmentNextGen, CreateDraftOrder, CreatePromotion.
