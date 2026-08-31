@@ -149,7 +149,7 @@ function doBulkDelete() {
       :subtitle="`${store.collections.length} collections across ${parents.length} parent${parents.length === 1 ? '' : 's'}`"
     >
       <template #actions>
-        <v-menu>
+        <v-menu location="bottom end">
           <template #activator="{ props: menu }">
             <v-btn v-bind="menu" color="primary" variant="flat" prepend-icon="plus" append-icon="chevron-down" class="text-none">
               New collection

@@ -439,7 +439,9 @@ function bulkDeactivate() {
       @clear="selected = []"
       @select-all="selectAll"
     >
-      <v-menu>
+      <!-- The trigger sits in the floating bottom bulk bar — open upward, away
+           from the viewport edge. -->
+      <v-menu location="top">
         <template #activator="{ props: menuProps }">
           <v-btn v-bind="menuProps" variant="flat" size="small" class="text-none" prepend-icon="user-cog" rounded="lg" color="surface">
             Assign role

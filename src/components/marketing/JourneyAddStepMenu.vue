@@ -76,7 +76,7 @@ function pick(item: CatalogItem) {
       <div class="jas-scroll">
         <template v-if="commonItems.length">
           <div class="px-3 py-1 text-caption text-medium-emphasis font-weight-bold">Common</div>
-          <v-list density="compact" nav :border="false" class="py-0">
+          <v-list density="compact" nav>
             <v-list-item v-for="tmpl in commonItems" :key="`c-${tmpl.kind}`" rounded="lg" @click="pick(tmpl)">
               <template #prepend>
                 <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">
@@ -89,7 +89,7 @@ function pick(item: CatalogItem) {
         </template>
         <template v-for="group in grouped" :key="group.key">
           <div class="px-3 py-1 text-caption text-medium-emphasis font-weight-bold">{{ group.label }}</div>
-          <v-list density="compact" nav :border="false" class="py-0">
+          <v-list density="compact" nav>
             <v-list-item v-for="tmpl in group.items" :key="tmpl.kind" rounded="lg" @click="pick(tmpl)">
               <template #prepend>
                 <v-avatar :color="categoryColor[tmpl.category]" size="22" rounded="md">

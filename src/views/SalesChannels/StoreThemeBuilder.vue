@@ -879,7 +879,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                     <span class="tb-block-row__label">Add block</span>
                   </button>
                 </template>
-                <v-list density="compact" class="py-1">
+                <v-list density="compact">
                   <v-list-item
                     v-for="def in blockCatalog"
                     :key="def.kind"
