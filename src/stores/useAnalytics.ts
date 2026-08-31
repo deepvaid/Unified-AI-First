@@ -105,6 +105,80 @@ export interface RfmSegment {
   tone: 'success' | 'info' | 'warning' | 'error' | 'neutral'
 }
 
+// --- eRFM report (Engagement, Recency, Frequency, Monetary) ------------------
+//
+// Modelled on the real report at /accounts/:id/erfm_report. Two dates are
+// compared: a base date and a later comparison date. Every section reads the
+// same five groups and five engagement levels, which is why the aliases live in
+// one mutable ref (the GROUPS drawer renames them and all five sections follow).
+
+/** Stable API keys for the five groups. Order is the report's display order. */
+export const ERFM_GROUP_KEYS = ['champions', 'loyal', 'recent', 'need_attention', 'inactive'] as const
+export type ErfmGroupKey = (typeof ERFM_GROUP_KEYS)[number]
+
+/** Maropost's shipped group names. The GROUPS drawer's Restore-defaults resets to these. */
+export const ERFM_GROUP_DEFAULT_LABELS: Record<ErfmGroupKey, string> = {
+  champions: 'Champions',
+  loyal: 'Loyal',
+  recent: 'Recent',
+  need_attention: 'Need Attention',
+  inactive: 'Inactive',
+}
+
+/** The engagement axis, most to least engaged. `Total` is a roll-up, not a level. */
+export const ERFM_ENGAGEMENT_LEVELS = [
+  'Most Engaged',
+  'Highly Engaged',
+  'Engaged',
+  'Lightly Engaged',
+  'Not Engaged',
+] as const
+export type ErfmEngagement = (typeof ERFM_ENGAGEMENT_LEVELS)[number]
+
+/** Per-group average revenue, used to derive the matrix's revenue view from its contact counts. */
+export const ERFM_REVENUE_PER_CONTACT: Record<ErfmGroupKey, number> = {
+  champions: 420,
+  loyal: 260,
+  recent: 145,
+  need_attention: 68,
+  inactive: 12,
+}
+
+/** A contacts grid: one row per group, one column per engagement level. */
+export type ErfmMatrix = Record<ErfmGroupKey, number[]>
+
+export interface ErfmDistributionRow {
+  group: ErfmGroupKey
+  baseTotal: number
+  comparisonTotal: number
+}
+
+/** One base-date group's outflow to each comparison-date group. */
+export type ErfmTransitionMatrix = Record<ErfmGroupKey, Record<ErfmGroupKey, number>>
+
+export interface ErfmPerformanceRow {
+  group: ErfmGroupKey
+  /** `'180+'` upstream — the column is deliberately `number | string`, see PARITY. */
+  daysSincePurchase: number | string
+  totalOrders: number
+  placedOrderRevenue: number
+  abandonedCarts: number
+  siteVisits: number
+  clickRate: number
+}
+
+export interface ErfmSettings {
+  recency: { highestScoreDays: number | null; averageScoreDays: number | null; lowestScoreDays: number | null }
+  frequency: { mostFrequent: number | null; averagelyFrequent: number | null }
+  monetary: { highestSpender: number | null; averageSpender: number | null }
+}
+
+/** Upstream caps recency at 1000 days (`Recency days cannot exceed 1000`). */
+export const ERFM_MAX_RECENCY_DAYS = 1000
+
+/** Upstream allows a base date no earlier than 13 months before the comparison date. */
+export const ERFM_MAX_HISTORY_MONTHS = 13
+
 /** The five report types, named as the Custom Reports list surfaces them. */
 export type CustomReportType =
   | 'Campaign Based'
@@ -305,6 +379,90 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     { id: 10, scenario: 'Plain-Text Fallback',        provider: 'Outlook',    scheduledDate: '2026-05-28', placement: 93, spamScore: 0.5 },
   ])
 
+  // --- eRFM report ----------------------------------------------------------
+  //
+  // The three matrices below are internally consistent, which is what makes the
+  // report's four sections agree with each other:
+  //   · every `erfmTransitions` row sums to that group's BASE total
+  //   · every column sums to that group's COMPARISON total, except `inactive`,
+  //     which falls short by exactly the 2,130 contacts acquired between the two
+  //     dates — new contacts enter as Inactive, so the surplus lands there
+  // Change one number and all three have to be re-balanced together.
+
+  const erfmBaseDate = ref('2026-06-02')
+  const erfmComparisonDate = ref('2026-08-30')
+
+  /** Contacts per group × engagement level at the base date. Total 46,120. */
+  const erfmBaseMatrix = ref<ErfmMatrix>({
+    //                Most  Highly Engaged Lightly    Not
+    champions:      [1180,   900,    460,    140,     40],
+    loyal:          [1060,  1520,   1040,    420,    110],
+    recent:         [ 520,   980,   1880,   1240,    460],
+    need_attention: [ 160,   480,   1280,   3120,   3010],
+    inactive:       [  80,   220,    700,   3880,  21240],
+  })
+
+  /** Contacts per group × engagement level at the comparison date. Total 48,250. */
+  const erfmComparisonMatrix = ref<ErfmMatrix>({
+    //                Most  Highly Engaged Lightly    Not
+    champions:      [1240,   860,    410,    120,     30],
+    loyal:          [ 980,  1640,   1120,    380,     90],
+    recent:         [ 620,  1180,   2240,   1460,    520],
+    need_attention: [ 140,   420,   1180,   2980,   3240],
+    inactive:       [  60,   180,    640,   4120,  22400],
+  })
+
+  /** Base-date group (row) → comparison-date group (column) movement. */
+  const erfmTransitions = ref<ErfmTransitionMatrix>({
+    champions:      { champions: 1980, loyal:  460, recent:  120, need_attention:  120, inactive:    40 },
+    loyal:          { champions:  520, loyal: 2840, recent:  480, need_attention:  240, inactive:    70 },
+    recent:         { champions:  140, loyal:  640, recent: 3720, need_attention:  480, inactive:   100 },
+    need_attention: { champions:   20, loyal:  210, recent: 1240, need_attention: 5320, inactive:  1260 },
+    inactive:       { champions:    0, loyal:   60, recent:  460, need_attention: 1800, inactive: 23800 },
+  })
+
+  const erfmPerformanceBase = ref<ErfmPerformanceRow[]>([
+    { group: 'champions',      daysSincePurchase:  12.4, totalOrders: 8.6, placedOrderRevenue: 1842.5, abandonedCarts: 0.42, siteVisits: 14.2, clickRate: 38.4 },
+    { group: 'loyal',          daysSincePurchase:  28.7, totalOrders: 4.9, placedOrderRevenue:  968.2, abandonedCarts: 0.61, siteVisits:  8.7, clickRate: 26.1 },
+    { group: 'recent',         daysSincePurchase:  41.3, totalOrders: 1.8, placedOrderRevenue:  342.75, abandonedCarts: 0.38, siteVisits:  5.4, clickRate: 18.9 },
+    { group: 'need_attention', daysSincePurchase:  96.5, totalOrders: 1.4, placedOrderRevenue:  214.6, abandonedCarts: 0.74, siteVisits:  2.1, clickRate:  9.2 },
+    { group: 'inactive',       daysSincePurchase: '180+', totalOrders: 0.3, placedOrderRevenue:   48.9, abandonedCarts: 0.19, siteVisits:  0.4, clickRate:  2.6 },
+  ])
+
+  const erfmPerformanceComparison = ref<ErfmPerformanceRow[]>([
+    { group: 'champions',      daysSincePurchase:   9.8, totalOrders: 9.4, placedOrderRevenue: 2104.8, abandonedCarts: 0.39, siteVisits: 16.1, clickRate: 41.2 },
+    { group: 'loyal',          daysSincePurchase:  24.2, totalOrders: 5.4, placedOrderRevenue: 1086.4, abandonedCarts: 0.58, siteVisits:  9.8, clickRate: 28.6 },
+    { group: 'recent',         daysSincePurchase:  36.9, totalOrders: 2.1, placedOrderRevenue:  388.3, abandonedCarts: 0.41, siteVisits:  6.2, clickRate: 20.4 },
+    { group: 'need_attention', daysSincePurchase: 102.8, totalOrders: 1.2, placedOrderRevenue:  196.4, abandonedCarts: 0.79, siteVisits:  1.8, clickRate:  8.1 },
+    { group: 'inactive',       daysSincePurchase: '180+', totalOrders: 0.2, placedOrderRevenue:   41.2, abandonedCarts: 0.16, siteVisits:  0.3, clickRate:  2.2 },
+  ])
+
+  /** Renameable group labels. Seeded with the shipped defaults. */
+  const erfmGroupAliases = ref<Record<ErfmGroupKey, string>>({ ...ERFM_GROUP_DEFAULT_LABELS })
+
+  const erfmSettings = ref<ErfmSettings>({
+    recency: { highestScoreDays: 30, averageScoreDays: 90, lowestScoreDays: 180 },
+    frequency: { mostFrequent: 6, averagelyFrequent: 3 },
+    monetary: { highestSpender: 1000, averageSpender: 250 },
+  })
+
+  function saveErfmGroupAliases(next: Record<ErfmGroupKey, string>) {
+    erfmGroupAliases.value = { ...next }
+  }
+
+  function saveErfmSettings(next: ErfmSettings) {
+    erfmSettings.value = {
+      recency: { ...next.recency },
+      frequency: { ...next.frequency },
+      monetary: { ...next.monetary },
+    }
+  }
+
+  function setErfmDates(base: string, comparison: string) {
+    erfmBaseDate.value = base
+    erfmComparisonDate.value = comparison
+  }
+
   return {
     accountMetrics,
     chartData,
@@ -315,5 +473,17 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     transactionalReports,
     websiteReports,
     testCampaignReports,
+    erfmBaseDate,
+    erfmComparisonDate,
+    erfmBaseMatrix,
+    erfmComparisonMatrix,
+    erfmTransitions,
+    erfmPerformanceBase,
+    erfmPerformanceComparison,
+    erfmGroupAliases,
+    erfmSettings,
+    saveErfmGroupAliases,
+    saveErfmSettings,
+    setErfmDates,
   }
 })

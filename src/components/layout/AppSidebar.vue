@@ -84,7 +84,7 @@ function buildNavGroups(accountId: string): NavGroup[] {
         { title: 'Sales by Order', route: `/accounts/${accountId}/analytics/orders` },
         { title: 'Dispatched Orders', route: `/accounts/${accountId}/analytics/dispatched_orders` },
         { title: 'Sales Summary', route: `/accounts/${accountId}/analytics/sales_summary` },
-        { title: 'eRFM Report', route: `/accounts/${accountId}/analytics/erfm_report` },
+        { title: 'eRFM Report', route: `/accounts/${accountId}/erfm_report` },
         { title: 'Campaign Reports', route: `/accounts/${accountId}/reports` },
         { title: 'Recurring Campaign Reports', route: `/accounts/${accountId}/analytics/recurring_campaign_reports` },
         { title: 'A/B Campaign Reports', route: `/accounts/${accountId}/analytics/ab_campaign_reports` },
