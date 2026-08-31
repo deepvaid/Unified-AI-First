@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
+import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import { WIDGET_SIZES, type WidgetSize } from './widgetSizePresets'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   widgetTitle: string
   currentSize?: WidgetSize | null
 }>(), {
@@ -15,84 +19,44 @@ const emit = defineEmits<{
   resize: [size: WidgetSize]
   remove: []
 }>()
+
+const sizeItems = computed(() => WIDGET_SIZES.map(size => ({ value: size, label: size })))
+
+function onResize(size: string | null) {
+  if (size) emit('resize', size as WidgetSize)
+}
 </script>
 
 <template>
-  <v-menu location="bottom end">
-    <template #activator="{ props: menuProps }">
-      <v-btn
-        v-bind="menuProps"
-        icon="more-vertical"
-        variant="text"
-        size="small"
-        :aria-label="`Actions for ${widgetTitle}`"
-        @click.stop
+  <MpRowActionsMenu ariaLabel="Actions" :itemLabel="widgetTitle">
+    <MpMenuItem icon="maximize-2" title="Expand" @click="emit('expand')" />
+    <MpMenuItem icon="pencil" title="Edit" @click="emit('edit')" />
+    <MpMenuItem icon="arrow-up-right" title="View report" @click="emit('viewReport')" />
+    <v-divider class="my-1" />
+    <!-- currentSize is null when the widget was dragged to a custom size — no preset
+         highlighted. The row is role="none": it is not a menuitem, and the segmented
+         control carries its own group label. -->
+    <div class="dashboard-widget-action-menu__sizes px-3 py-1" role="none">
+      <span class="text-caption text-medium-emphasis">Size</span>
+      <MpSegmentedControl
+        size="sm"
+        :mandatory="false"
+        ariaLabel="Widget size"
+        :model-value="props.currentSize"
+        :items="sizeItems"
+        @update:model-value="onResize"
       />
-    </template>
-
-    <v-list density="compact" min-width="200" class="dashboard-widget-action-menu">
-      <v-list-item
-        prepend-icon="maximize-2"
-        title="Expand"
-        @click="emit('expand')"
-      />
-      <v-list-item
-        prepend-icon="pencil"
-        title="Edit"
-        @click="emit('edit')"
-      />
-      <v-list-item
-        prepend-icon="arrow-up-right"
-        title="View report"
-        @click="emit('viewReport')"
-      />
-      <v-divider class="my-1" />
-      <!-- currentSize is null when the widget was dragged to a custom size — no preset highlighted. -->
-      <div class="dashboard-widget-action-menu__sizes px-3 py-1">
-        <span class="text-caption text-medium-emphasis">Size</span>
-        <v-btn-toggle
-          :model-value="currentSize ?? undefined"
-          density="compact"
-          variant="outlined"
-          divided
-          class="dashboard-widget-action-menu__size-toggle"
-          @update:model-value="(size: unknown) => size && emit('resize', size as WidgetSize)"
-        >
-          <v-btn
-            v-for="size in WIDGET_SIZES"
-            :key="size"
-            :value="size"
-            size="x-small"
-            class="text-none"
-          >
-            {{ size }}
-          </v-btn>
-        </v-btn-toggle>
-      </div>
-      <v-divider class="my-1" />
-      <v-list-item
-        prepend-icon="trash-2"
-        title="Remove"
-        class="text-error"
-        @click="emit('remove')"
-      />
-    </v-list>
-  </v-menu>
+    </div>
+    <v-divider class="my-1" />
+    <MpMenuItem icon="trash-2" title="Remove" danger @click="emit('remove')" />
+  </MpRowActionsMenu>
 </template>
 
 <style scoped lang="scss">
-.dashboard-widget-action-menu {
-  border-radius: var(--r-card);
-}
-
 .dashboard-widget-action-menu__sizes {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--mp-space-12);
-}
-
-.dashboard-widget-action-menu__size-toggle {
-  height: 28px;
 }
 </style>
