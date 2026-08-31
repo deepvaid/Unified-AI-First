@@ -41,6 +41,7 @@ async function copyScript() {
              field with a dangling reference and no accessible name at all. -->
         <v-text-field
           readonly
+          class="mp-field-readonly"
           model-value="track.maropost.com"
           aria-label="Primary tracking domain"
         />

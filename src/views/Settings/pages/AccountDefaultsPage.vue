@@ -57,7 +57,7 @@ function discard() {}
           label="Account ID"
           :model-value="company.accountId"
           readonly
-          bg-color="surface-variant"
+          class="mp-field-readonly"
         >
           <template #append-inner>
             <v-tooltip text="Copy ID" location="top">

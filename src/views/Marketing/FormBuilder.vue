@@ -795,7 +795,7 @@ function publishForm() {
               <div class="text-h6 font-weight-bold mb-1">Website Embed</div>
               <div class="text-body-2 text-medium-emphasis mb-3">Paste this snippet before the closing <code>&lt;/body&gt;</code> tag.</div>
               <MpFormGrid>
-                <v-textarea :model-value="embedScript" label="Embed script" readonly rows="2" class="fb-mono" />
+                <v-textarea :model-value="embedScript" label="Embed script" readonly rows="2" class="fb-mono mp-field-readonly" />
                 <div><v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(embedScript)">Copy script</v-btn></div>
               </MpFormGrid>
             </v-card>
@@ -804,7 +804,7 @@ function publishForm() {
               <div class="text-h6 font-weight-bold mb-1">Manual Integration</div>
               <div class="text-body-2 text-medium-emphasis mb-3">For custom placement inside your page markup.</div>
               <MpFormGrid>
-                <v-textarea :model-value="manualScript" label="Manual snippet" readonly rows="4" class="fb-mono" />
+                <v-textarea :model-value="manualScript" label="Manual snippet" readonly rows="4" class="fb-mono mp-field-readonly" />
                 <div><v-btn variant="tonal" size="small" class="text-none" prepend-icon="copy" @click="copyText(manualScript)">Copy snippet</v-btn></div>
               </MpFormGrid>
             </v-card>

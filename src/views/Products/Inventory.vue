@@ -440,6 +440,7 @@ function exportInventory() {
           :model-value="adjustItem ? locationName(adjustItem.locationId) : ''"
           label="Location"
           readonly
+          class="mp-field-readonly"
           prepend-inner-icon="map-pin"
         />
         <MpFormField label="Adjustment mode">
@@ -485,6 +486,7 @@ function exportInventory() {
           :model-value="transferItem ? locationName(transferItem.locationId) : ''"
           label="From location"
           readonly
+          class="mp-field-readonly"
           prepend-inner-icon="map-pin"
         />
         <v-select v-model="transferTo" :items="transferOptions" label="To location *" prepend-inner-icon="map-pin" />

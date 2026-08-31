@@ -523,7 +523,7 @@ onMounted(() => {
       <div class="text-body-2 text-medium-emphasis">
         The draft is marked <strong>Invoice Sent</strong>. Share this link with {{ customer || 'the customer' }} to collect payment.
       </div>
-      <v-text-field :model-value="paymentLink" readonly hide-details append-inner-icon="copy" @click:append-inner="copyPaymentLink" />
+      <v-text-field :model-value="paymentLink" readonly class="mp-field-readonly" hide-details append-inner-icon="copy" @click:append-inner="copyPaymentLink" />
 
       <template #footer>
         <v-btn variant="text" class="text-none" @click="copyPaymentLink">Copy Link</v-btn>
