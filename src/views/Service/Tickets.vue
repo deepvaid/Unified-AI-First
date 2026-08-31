@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useTicketsStore, SUPPORT_INBOXES } from '@/stores/useTickets'
 import { useToast } from '@/composables/useToast'
+import MpChatBubble from '@/components/MpChatBubble.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
@@ -403,28 +404,28 @@ function bulkDelete() {
         <!-- Thread -->
         <div class="flex-grow-1 overflow-y-auto tkt-thread pa-5">
           <div class="tkt-conversation">
-            <article
+            <!-- Both roles sit side="start" — the agent is distinguished by tint. -->
+            <MpChatBubble
               v-for="(msg, idx) in activeTicket.thread"
               :key="idx"
-              class="tkt-message"
-              :class="`tkt-message--${msg.role}`"
+              side="start"
+              :tone="msg.role === 'agent' ? 'accent' : 'neutral'"
+              :author="msg.author"
+              :time="msg.time"
             >
-              <v-avatar
-                :color="msg.role === 'agent' ? 'primary' : 'surface-variant'"
-                :variant="msg.role === 'agent' ? 'flat' : 'tonal'"
-                size="34"
-                class="text-caption font-weight-bold tkt-message__avatar"
-              >
-                {{ msg.avatar }}
-              </v-avatar>
-              <div class="tkt-message__content min-w-0">
-                <div class="tkt-message__meta">
-                  <span>{{ msg.author }}</span>
-                  <time>{{ msg.time }}</time>
-                </div>
-                <div class="tkt-message__bubble">{{ msg.body }}</div>
-              </div>
-            </article>
+              <template #avatar>
+                <v-avatar
+                  :color="msg.role === 'agent' ? 'primary' : 'surface-variant'"
+                  :variant="msg.role === 'agent' ? 'flat' : 'tonal'"
+                  size="34"
+                  class="text-caption font-weight-bold"
+                  aria-hidden="true"
+                >
+                  {{ msg.avatar }}
+                </v-avatar>
+              </template>
+              {{ msg.body }}
+            </MpChatBubble>
           </div>
         </div>
 
@@ -814,54 +815,15 @@ function bulkDelete() {
 .tkt-conversation {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  max-width: 880px;
+  gap: var(--mp-space-16);
+  /* The system's widest reading measure (= dialog lg). */
+  max-width: var(--mp-component-dialog-width-lg);
   margin-inline: auto;
 }
-.tkt-message {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-}
-.tkt-message__avatar {
-  margin-top: 22px;
-}
-.tkt-message__content {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.tkt-message__meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  min-width: 0;
-  color: rgba(var(--v-theme-on-surface), 0.58);
-  font-size: 12px;
-}
-.tkt-message__meta span {
-  color: rgb(var(--v-theme-on-surface));
-  font-weight: 700;
-}
-.tkt-message__meta time {
-  margin-left: auto;
-  white-space: nowrap;
-}
-.tkt-message__bubble {
-  padding: 12px 16px;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px;
-  background: rgb(var(--v-theme-surface));
-  color: rgba(var(--v-theme-on-surface), 0.82);
-  font-size: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-.tkt-message--agent .tkt-message__bubble {
-  border-color: rgba(var(--v-theme-primary), 0.22);
-  background: rgba(var(--v-theme-primary), 0.06);
+/* Message anatomy lives in MpChatBubble; the avatar drops to the bubble's
+   first line (below the meta row: 12px line + bubble gap). */
+.tkt-conversation :deep(.mp-chat-bubble__avatar) {
+  margin-top: var(--mp-space-24);
 }
 
 /* ── Composer ──────────────────────────────────────────────────── */
