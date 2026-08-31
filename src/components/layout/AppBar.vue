@@ -1008,18 +1008,15 @@ function onSearchKeydown(event: KeyboardEvent) {
   background: var(--surface-primary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--mp-component-menu-radius);
-  box-shadow:
-    0 8px 32px color-mix(in oklch, var(--text-primary) 12%, transparent),
-    0 2px 8px color-mix(in oklch, var(--text-primary) 6%, transparent);
+  box-shadow: var(--elevation-overlay);
   overflow: hidden;
 }
 
-/* Dark mode: --surface-primary matches the surface these menus float over, and the
-   --ink-derived shadow inverts to a white glow — give them a real elevation
-   step instead. Light mode keeps the hand-tuned two-layer shadow above. */
+/* Dark mode: --surface-primary matches the surface these menus float over —
+   lift the panel onto the overlay surface instead. The shadow is already
+   --elevation-overlay in both themes. */
 .v-theme--maropostDark .assistant-menu-card {
   background: var(--surface-overlay);
-  box-shadow: var(--elevation-overlay);
 }
 
 /* ── User pill ──────────────────────────────────── */
@@ -1089,9 +1086,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   background: var(--surface-primary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--mp-component-menu-radius);
-  box-shadow:
-    0 8px 32px color-mix(in oklch, var(--text-primary) 12%, transparent),
-    0 2px 8px color-mix(in oklch, var(--text-primary) 6%, transparent);
+  box-shadow: var(--elevation-overlay);
   overflow: hidden;
   max-height: 90vh;
   overflow-y: auto;
@@ -1100,7 +1095,6 @@ function onSearchKeydown(event: KeyboardEvent) {
 /* Dark mode: see .assistant-menu-card override above for context. */
 .v-theme--maropostDark .um-cascade-card {
   background: var(--surface-overlay);
-  box-shadow: var(--elevation-overlay);
 }
 
 .um-cascade-card__header {
@@ -1118,9 +1112,7 @@ function onSearchKeydown(event: KeyboardEvent) {
   background: var(--surface-primary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--mp-component-menu-radius);
-  box-shadow:
-    0 8px 32px color-mix(in oklch, var(--text-primary) 12%, transparent),
-    0 2px 8px color-mix(in oklch, var(--text-primary) 6%, transparent);
+  box-shadow: var(--elevation-overlay);
   overflow: hidden;
   max-height: 90vh;
   overflow-y: auto;
@@ -1129,7 +1121,6 @@ function onSearchKeydown(event: KeyboardEvent) {
 /* Dark mode: see .assistant-menu-card override above for context. */
 .v-theme--maropostDark .user-menu-card {
   background: var(--surface-overlay);
-  box-shadow: var(--elevation-overlay);
 }
 
 .um-header {
@@ -1923,9 +1914,9 @@ function onSearchKeydown(event: KeyboardEvent) {
   align-items: center;
   gap: var(--mp-component-listItem-gap);
   width: 100%;
-  /* Two-line row: the listItem floor plus its second line. */
+  /* Two-line row: a deliberate 48 floor above the 36 menu-item floor. */
   min-height: var(--mp-space-48);
-  padding: var(--mp-component-listItem-paddingBlock) var(--mp-space-10);
+  padding: var(--mp-component-menu-itemPaddingBlock) var(--mp-component-listItem-paddingInline);
   border: 0;
   border-radius: var(--mp-component-chip-radius);
   background: transparent;
