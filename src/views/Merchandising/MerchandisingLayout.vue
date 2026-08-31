@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpBanner from '@/components/MpBanner.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import { useMerchandisingStore } from '@/stores/useMerchandising'
@@ -20,6 +21,7 @@ const status = computed(() => channel.value ? merchandisingStatus(channel.value)
 const health = computed(() => channel.value ? merchandisingHealth(channel.value) : 'error')
 const needsSetup = computed(() => status.value === 'setup_required')
 const hasHealthIssue = computed(() => health.value === 'warning' || health.value === 'error')
+const syncBannerDismissed = ref(false)
 // Wizard routes (route meta `wizardFlush`) bring their own MpWizardShell bands,
 // so the content pane hands them its full box: no padding, no scroll of its own.
 const flushChild = computed(() => !!route.meta.wizardFlush && !needsSetup.value)
@@ -50,21 +52,18 @@ function connectChannel() {
   <div v-else class="merch-shell d-flex">
     <MerchandisingSidebar :account-id="accountId" :channel="channel" />
     <main class="merch-shell__content" :class="{ 'merch-shell__content--flush': flushChild }">
-      <v-alert
-        v-if="hasHealthIssue && !needsSetup"
-        type="warning"
-        variant="tonal"
-        border="start"
-        icon="triangle-alert"
+      <MpBanner
+        v-if="hasHealthIssue && !needsSetup && !syncBannerDismissed"
+        tone="warning"
         class="mb-5"
-        closable
+        dismissible
+        @dismiss="syncBannerDismissed = true"
       >
-        <div class="font-weight-bold">Merchandising sync needs attention</div>
-        <div class="text-body-2">{{ channel.name }} is available, but its catalog sync is not healthy. Review connection and sync settings before publishing changes.</div>
-        <template #append>
+        <strong>Merchandising sync needs attention.</strong>&nbsp;{{ channel.name }} is available, but its catalog sync is not healthy. Review connection and sync settings before publishing changes.
+        <template #actions>
           <v-btn variant="outlined" color="warning" size="small" class="text-none" @click="connectChannel">Review sync</v-btn>
         </template>
-      </v-alert>
+      </MpBanner>
 
       <div v-if="needsSetup" class="merch-shell__setup d-flex align-center justify-center">
         <v-card flat border rounded="lg" class="pa-8" max-width="620">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import MpBanner from '@/components/MpBanner.vue'
 import { usePlgStore } from '@/stores/usePlg'
 import { useAccountsStore } from '@/stores/useAccounts'
 import PlgTalkToSalesDialog from './PlgTalkToSalesDialog.vue'
@@ -37,108 +38,24 @@ function dismiss() {
 </script>
 
 <template>
-  <div v-if="visible" class="plg-trial-banner" :class="plg.isExpired ? 'plg-trial-banner--error' : 'plg-trial-banner--warning'">
-    <v-icon size="18" class="plg-trial-banner__icon">{{ icon }}</v-icon>
-    <span class="plg-trial-banner__message text-body-2">{{ message }}</span>
-    <div class="plg-trial-banner__actions">
-      <v-btn
-        size="small"
-        color="primary"
-        variant="flat"
-        class="text-none"
-        @click="goToUpgrade"
-      >
+  <MpBanner
+    v-if="visible"
+    :tone="plg.isExpired ? 'error' : 'warning'"
+    :icon="icon"
+    :message="message"
+    :dismissible="plg.isExpiring"
+    dismiss-label="Dismiss for this session"
+    @dismiss="dismiss"
+  >
+    <template #actions>
+      <v-btn size="small" color="primary" variant="flat" class="text-none" @click="goToUpgrade">
         Upgrade
       </v-btn>
-      <v-btn
-        size="small"
-        variant="text"
-        class="text-none"
-        @click="salesDialogOpen = true"
-      >
+      <v-btn size="small" variant="text" class="text-none" @click="salesDialogOpen = true">
         Talk to sales
       </v-btn>
-      <button
-        v-if="plg.isExpiring"
-        type="button"
-        class="plg-trial-banner__dismiss"
-        aria-label="Dismiss for this session"
-        @click="dismiss"
-      >
-        <v-icon size="16">x</v-icon>
-      </button>
-    </div>
-  </div>
+    </template>
+  </MpBanner>
 
   <PlgTalkToSalesDialog v-model="salesDialogOpen" />
 </template>
-
-<style scoped>
-.plg-trial-banner {
-  display: flex;
-  align-items: center;
-  gap: var(--mp-space-10);
-  min-height: 44px;
-  width: 100%;
-  padding: var(--mp-space-6) var(--mp-space-16);
-  color: rgb(var(--v-theme-on-surface));
-}
-
-.plg-trial-banner--warning {
-  background: rgba(var(--v-theme-warning), 0.12);
-  border-bottom: 1px solid rgba(var(--v-theme-warning), 0.28);
-}
-
-.plg-trial-banner--warning .plg-trial-banner__icon {
-  color: rgb(var(--v-theme-warning));
-}
-
-.plg-trial-banner--error {
-  background: rgba(var(--v-theme-error), 0.12);
-  border-bottom: 1px solid rgba(var(--v-theme-error), 0.28);
-}
-
-.plg-trial-banner--error .plg-trial-banner__icon {
-  color: rgb(var(--v-theme-error));
-}
-
-.plg-trial-banner__icon {
-  flex-shrink: 0;
-}
-
-.plg-trial-banner__message {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.plg-trial-banner__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--mp-space-4);
-  flex-shrink: 0;
-}
-
-.plg-trial-banner__dismiss {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-left: var(--mp-space-2);
-  border: 0;
-  border-radius: var(--mp-radius-full);
-  background: transparent;
-  color: rgb(var(--v-theme-on-surface));
-  opacity: 0.6;
-  appearance: none;
-  cursor: pointer;
-  transition: opacity 120ms ease, background 120ms ease;
-}
-
-.plg-trial-banner__dismiss:hover,
-.plg-trial-banner__dismiss:focus-visible {
-  opacity: 1;
-  background: rgba(var(--v-theme-on-surface), 0.08);
-  outline: none;
-}
-</style>
