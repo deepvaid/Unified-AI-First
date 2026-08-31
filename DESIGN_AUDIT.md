@@ -1609,11 +1609,25 @@ scrollable measure → step cards → footer band (Back · hint · N / M · prim
   preamble). Galleries and canvas steps stay bare in the measure.
 - **CreateCampaign** migrated as the API proof — net −45 lines on the reference wizard.
 
-### Pending tiers (per approved plan)
+### Tier 1 — major drift (done)
 
-- Tier 1 major drift: CreateCustomReportWizard, CreateSalesChannel (+ missing leave guard),
-  CreateTransactionalSms (tabs → steps), CreateJourney, EngineEditor (max-step bug, nested
-  layout via `standalone`).
+- **CreateCustomReportWizard** — builderShell route; steps/footer out of the content card into
+  the shell; report-type description becomes step 1's card description; in-card MpFormSections
+  demote h2 → h3 (the step card owns the h2). Validate-on-click `submitted` pattern preserved.
+- **CreateSalesChannel** — builderShell route; steps become clickable/gated; `.create-type-card`
+  (~70 raw-px lines) → MpOptionCard; **behavior fix: the missing `useDirtyLeaveGuard` +
+  MpConfirmDialog added** (it held dirty state with no guard).
+- **CreateTransactionalSms** — the gated v-tabs pair becomes real wizard steps (same gating,
+  local state only); bespoke `.page-head/.page-foot` deleted; footer gains Back; edit mode
+  unlocks both steps. Phone-preview CSS extraction deferred to tier 2 (with CreateSmsCampaign).
+- **CreateJourney** — shell with per-mode steps: template mode clickable via useWizardSteps,
+  AI mode display-only (position derives from draft existence); Step-N-of-M subtitle added
+  (was missing); 1160px measure → lg (1040); bespoke 64px footer deleted.
+- **EngineEditor** — MpWizardShell `standalone` inside MerchandisingLayout via a new
+  `merch-shell__content--flush` modifier (route meta `wizardFlush`); **behavior fix:
+  `:max-step="step"` bound to current killed forward jumps after stepping back — useWizardSteps'
+  high-water maxStep fixes it (regression-tested)**; nav moves from header #actions to the
+  footer band; `.engine-type-card` → MpOptionCard; edit mode unlocks all steps.
 - Tier 2 minor drift: ProductWizard, KitWizard (cancel semantics), ProductImportWizard
   (gating + hardcoded count), CreateSmsCampaign, CreateAbCampaign, FormBuilder nav clusters,
   WidgetWizardDrawer separator + MpWizardSteps passive-display contract docs.
