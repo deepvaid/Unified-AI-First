@@ -6,6 +6,7 @@ import { useAccountsStore } from '@/stores/useAccounts'
 import { usePlgStore } from '@/stores/usePlg'
 import { storeToRefs } from 'pinia'
 import type { Chatbot, ChatbotStatus } from '@/stores/useChatbot'
+import MpAlert from '@/components/MpAlert.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -121,10 +122,12 @@ function doCreate() {
 
     <MpFilterTabs v-if="hasChatbotAccess" v-model="tab" :tabs="filterTabs" aria-label="Filter chatbots by status" />
 
-    <div v-if="hasChatbotAccess && limitReached" class="cbl-limit-strip d-flex align-center justify-space-between px-4 py-2">
-      <span class="text-body-2">{{ chatbotUsage.used }} of {{ chatbotLimit }} chatbots used on your plan.</span>
-      <v-btn variant="text" size="small" class="text-none" @click="viewPlans">Upgrade</v-btn>
-    </div>
+    <MpAlert v-if="hasChatbotAccess && limitReached" tone="warning">
+      {{ chatbotUsage.used }} of {{ chatbotLimit }} chatbots used on your plan.
+      <template #actions>
+        <v-btn variant="text" size="small" class="text-none" @click="viewPlans">Upgrade</v-btn>
+      </template>
+    </MpAlert>
     <div v-else-if="hasChatbotAccess && hasFiniteLimit" class="text-caption text-medium-emphasis px-1">
       {{ chatbotUsage.used }} of {{ chatbotLimit }} chatbots used
     </div>
@@ -255,9 +258,4 @@ function doCreate() {
 <style scoped>
 .num { font-variant-numeric: tabular-nums; }
 .cbl-table :deep(tbody tr) { cursor: pointer; }
-.cbl-limit-strip {
-  background: rgba(var(--v-theme-warning), 0.1);
-  border: 1px solid rgba(var(--v-theme-warning), 0.3);
-  border-radius: 8px;
-}
 </style>

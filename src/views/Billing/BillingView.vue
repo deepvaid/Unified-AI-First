@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpAlert from '@/components/MpAlert.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormField from '@/components/MpFormField.vue'
@@ -108,7 +109,7 @@ const statusStrip = computed(() => {
     const daysLeft = Math.max(0, GRACE_PERIOD_DAYS - (s.gracePaymentFailedAt ? daysSince(s.gracePaymentFailedAt) : 0))
     return {
       tone: 'error' as const,
-      icon: 'alert-circle',
+      icon: 'circle-alert',
       text: `Your last payment failed. Update your payment method within ${daysLeft} days to keep access.`,
       actionLabel: 'Update payment',
       action: updatePayment,
@@ -117,7 +118,7 @@ const statusStrip = computed(() => {
   if (s.status === 'cancelled_pending') {
     return {
       tone: 'warning' as const,
-      icon: 'alert-triangle',
+      icon: 'triangle-alert',
       text: `Your subscription is cancelled. You keep full access until ${formatDate(s.cancelAt ?? s.renewsAt ?? s.trialEndsAt)}.`,
       actionLabel: 'Resume subscription',
       action: resumeSubscription,
@@ -125,7 +126,7 @@ const statusStrip = computed(() => {
   }
   if (s.status === 'trialing') {
     return {
-      tone: 'primary' as const,
+      tone: 'info' as const,
       icon: 'sparkles',
       text: `You're on a free trial — ${plg.daysLeft} days left.`,
       actionLabel: 'Upgrade',
@@ -344,19 +345,20 @@ const usageRows = computed(() => {
 
     <!-- Overview -->
     <section v-if="activeTab === 'overview'" class="billing-panel">
-      <div v-if="statusStrip" class="status-strip" :class="`status-strip--${statusStrip.tone}`">
-        <v-icon size="18">{{ statusStrip.icon }}</v-icon>
-        <span class="status-strip__text">{{ statusStrip.text }}</span>
-        <v-btn
-          variant="flat"
-          size="small"
-          class="text-none"
-          :color="statusStrip.tone"
-          @click="statusStrip.action"
-        >
-          {{ statusStrip.actionLabel }}
-        </v-btn>
-      </div>
+      <MpAlert v-if="statusStrip" :tone="statusStrip.tone" :icon="statusStrip.icon">
+        {{ statusStrip.text }}
+        <template #actions>
+          <v-btn
+            variant="flat"
+            size="small"
+            class="text-none"
+            :color="statusStrip.tone === 'info' ? 'primary' : statusStrip.tone"
+            @click="statusStrip.action"
+          >
+            {{ statusStrip.actionLabel }}
+          </v-btn>
+        </template>
+      </MpAlert>
 
       <div class="plan-banner">
         <div>
@@ -631,40 +633,6 @@ const usageRows = computed(() => {
 
 .billing-card__title--danger {
   color: rgb(var(--v-theme-error));
-}
-
-/* ─── Status strip ────────────────────────────────────────── */
-.status-strip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-}
-
-.status-strip__text {
-  flex: 1 1 auto;
-  font-size: 13px;
-  min-width: 0;
-}
-
-.status-strip--error {
-  background: rgba(var(--v-theme-error), 0.12);
-  border-color: rgba(var(--v-theme-error), 0.28);
-  color: rgb(var(--v-theme-error));
-}
-
-.status-strip--warning {
-  background: rgba(var(--v-theme-warning), 0.12);
-  border-color: rgba(var(--v-theme-warning), 0.28);
-  color: rgb(var(--v-theme-warning));
-}
-
-.status-strip--primary {
-  background: rgba(var(--v-theme-primary), 0.1);
-  border-color: rgba(var(--v-theme-primary), 0.24);
-  color: rgb(var(--v-theme-primary));
 }
 
 /* ─── Plan banner ─────────────────────────────────────────── */

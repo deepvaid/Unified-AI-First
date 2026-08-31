@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpAlert from '@/components/MpAlert.vue'
 import MpBuilderShell from '@/components/MpBuilderShell.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -1090,10 +1091,9 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               ></v-text-field>
             </template>
 
-            <div class="tb-note d-flex align-start gap-2">
-              <v-icon size="15" class="flex-shrink-0 mt-1">info</v-icon>
-              <span class="text-caption">Changes apply to the preview as you type. Publish the theme to make them live.</span>
-            </div>
+            <MpAlert tone="info" live="off">
+              Changes apply to the preview as you type. Publish the theme to make them live.
+            </MpAlert>
           </MpFormGrid>
         </div>
       </aside>
@@ -1162,16 +1162,6 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 .border-t { border-top: 1px solid var(--mp-border-subtle); }
 .border-r { border-right: 1px solid var(--mp-border-subtle); }
 .border-l { border-left: 1px solid var(--mp-border-subtle); }
-
-/* Settings-panel note — token-based so it reads in light + dark (the old
-   tonal info alert fell below AA on the dark surface). */
-.tb-note {
-  padding: 10px 12px;
-  border-radius: var(--r-section);
-  background: var(--accent-soft);
-  color: var(--text-primary);
-}
-.tb-note .v-icon { color: var(--accent); }
 
 /* ── Sections panel ──────────────────────────────────────────────── */
 .tb-panel-left {

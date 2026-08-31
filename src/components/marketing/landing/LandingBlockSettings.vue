@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MpAlert from '@/components/MpAlert.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
@@ -188,10 +189,9 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
     <!-- html -->
     <template v-else-if="block.type === 'html'">
       <v-textarea v-model="block.code" label="HTML" auto-grow rows="5" class="lbs-mono" />
-      <div class="lbs-note d-flex ga-2 pa-2">
-        <v-icon size="15" class="flex-shrink-0">info</v-icon>
-        <span class="text-caption text-medium-emphasis">Rendered in a sandboxed preview — scripts and styles are isolated from the rest of the page.</span>
-      </div>
+      <MpAlert tone="info" live="off">
+        Rendered in a sandboxed preview — scripts and styles are isolated from the rest of the page.
+      </MpAlert>
     </template>
 
     <!-- spacer -->
@@ -292,10 +292,6 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
   display: inline-block;
   inline-size: var(--mp-space-40);
   text-align: end;
-}
-.lbs-note {
-  background: rgba(var(--v-theme-on-surface), 0.04);
-  border-radius: 8px;
 }
 :deep(.lbs-mono textarea) {
   font-family: monospace;
