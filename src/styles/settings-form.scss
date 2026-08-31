@@ -25,6 +25,18 @@
    md is component.control.height, so a field, a button and a list row share
    one 40px baseline.
 
+   Opt-in state classes (2026-08-31 — no Vuetify root class exists for either):
+     .mp-field-readonly  — pair with the `readonly` prop: secondary fill,
+                           subtle hairline that never promotes to the 2px
+                           focus border (a hover-mix :focus-within cue keeps
+                           WCAG 2.4.7), value stays --text-primary.
+     .mp-field-success   — 2px success border + green message; error always
+                           wins; add append-inner-icon="circle-check" at the
+                           call site for the trailing check.
+   Ordering contract: these blocks sit AFTER the hover/focus/error blocks and
+   rely on the extra class + source order to win — rules added below them can
+   silently flip the states, so append with care.
+
    Settings pages inherit this unchanged.
    Individual components may add scoped specificity overrides,
    but must NOT introduce a second visual field style.
@@ -158,6 +170,66 @@
   border-color: var(--border-subtle) !important;
 }
 
+/* ── Readonly — opt-in class, paired with the `readonly` prop ──────────────
+   `class="mp-field-readonly" readonly` on the input component. An opt-in class
+   because Vuetify 3.12 exposes no readonly root class, and `v-select` renders a
+   native `readonly` input while fully interactive — an attribute/:has() hook
+   would false-positive every select. Visual: filled, calm and clearly not
+   editable (secondary fill, subtle hairline that never promotes to the 2px
+   focus border) yet distinct from disabled — the value stays `--text-primary`
+   because readonly content is real content. The extra class outranks the
+   hover/focus rules above; source order seals it. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined {
+  background: var(--surface-secondary);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined .v-field__input {
+  cursor: default;
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined .v-field__outline__start,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined .v-field__outline__end,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined .v-field__outline__notch::before,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined .v-field__outline__notch::after {
+  border-color: var(--border-subtle) !important;
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined .v-field__outline {
+  --v-field-border-width: 1px;
+}
+
+/* A readonly field is still focusable — never remove its focus indicator
+   (WCAG 2.4.7). The hover-mix border is the cue; the width stays 1px. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined.v-field--focused .v-field__outline__start,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined.v-field--focused .v-field__outline__end,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined.v-field--focused .v-field__outline__notch::before,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-readonly .v-field--variant-outlined.v-field--focused .v-field__outline__notch::after {
+  border-color: color-mix(in srgb, var(--border-strong) 60%, var(--text-secondary)) !important;
+}
+
+/* ── Success — opt-in class, error always wins ─────────────────────────────
+   `class="mp-field-success"` paints the 2px success border and turns the
+   message green; add `append-inner-icon="circle-check"` at the call site for
+   the trailing check (a convention, not CSS). Chained :not(.v-input--error) so
+   a field that is somehow both keeps the error treatment. The label stays calm
+   by design — no label rule here (see the specificity contract above).
+   Rejected alternatives: `color="success"` only paints while focused;
+   `base-color` can't produce the 2px width or the message color. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-success:not(.v-input--error) .v-field--variant-outlined .v-field__outline__start,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-success:not(.v-input--error) .v-field--variant-outlined .v-field__outline__end,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-success:not(.v-input--error) .v-field--variant-outlined .v-field__outline__notch::before,
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-success:not(.v-input--error) .v-field--variant-outlined .v-field__outline__notch::after {
+  border-color: rgb(var(--v-theme-success)) !important;
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-success:not(.v-input--error) .v-field--variant-outlined .v-field__outline {
+  --v-field-border-width: 2px;
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-success:not(.v-input--error) .v-field--variant-outlined .v-icon {
+  color: rgb(var(--v-theme-success));
+}
+
 /* ── Details / helper / error text ─────────────────────────── */
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-messages__message {
   font-size: var(--mp-fontSize-12);
@@ -188,6 +260,25 @@
 
 :is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input:not(.v-input--error) .v-messages__message {
   color: var(--text-muted);
+}
+
+/* Success message — the extra class outranks the muted rule above. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .mp-field-success:not(.v-input--error) .v-messages__message {
+  color: rgb(var(--v-theme-success));
+}
+
+/* ── Character counter ───────────────────────────────────────
+   Same voice as the messages row. It only turns red when a validation rule
+   actually invalidates the field — Vuetify's counter doesn't self-invalidate,
+   so pair `counter="60"` with a max-length rule. */
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input__details .v-counter {
+  font-size: var(--mp-fontSize-12);
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+}
+
+:is(.v-application, .v-overlay-container, [class*='v-theme--']) .v-input--error .v-input__details .v-counter {
+  color: rgb(var(--v-theme-error));
 }
 
 /* ── Selection controls — checkbox, radio, switch ───────────── */
@@ -305,6 +396,10 @@
   min-height: var(--mp-field-height);
   padding-top: var(--mp-field-pad-block);
   padding-bottom: var(--mp-field-pad-block);
+  /* An affix ($, %, /, cm) is a unit of chrome, not content — muted so the
+     value stays the emphasis. Boxed addon segments are deliberately out of
+     scope; an affix is inline. */
+  color: var(--text-muted);
 }
 
 /* A stacked number-input's +/- buttons are two VBtns in the append-inner, and
