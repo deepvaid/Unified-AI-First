@@ -1628,9 +1628,31 @@ scrollable measure → step cards → footer band (Back · hint · N / M · prim
   `:max-step="step"` bound to current killed forward jumps after stepping back — useWizardSteps'
   high-water maxStep fixes it (regression-tested)**; nav moves from header #actions to the
   footer band; `.engine-type-card` → MpOptionCard; edit mode unlocks all steps.
-- Tier 2 minor drift: ProductWizard, KitWizard (cancel semantics), ProductImportWizard
-  (gating + hardcoded count), CreateSmsCampaign, CreateAbCampaign, FormBuilder nav clusters,
-  WidgetWizardDrawer separator + MpWizardSteps passive-display contract docs.
+### Tier 2 — minor drift (done)
+
+- **ProductWizard** / **KitWizard** — measure=md, MpWizardStepCard preambles (first card h2,
+  siblings h3), footer hint + counter, useWizardSteps; dropzone/variant raw px → tokens.
+  KitWizard's Cancel re-checked: it already routes through the dirty leave guard (same confirm
+  as ProductWizard's), so no behavior change was needed.
+- **ProductImportWizard** — measure=sm; **behavior fixes: step 1 now gates (FTP mode requires a
+  server + file; CSV's upload is a mock with no file state, nothing honest to gate), and the
+  review tiles + final CTA read one derived rowsDetected/skippedRows/validRows source instead
+  of the CTA hardcoding "Import 312 Products"**.
+- **CreateSmsCampaign** — measure=lg keeping the split + sticky preview; the entitlement-gated
+  branch renders inside the same shell (subtitle override); edit mode unlocks both steps.
+  **`SmsPhonePreview` extracted** (components/marketing/, Product story) from ~20 declarations
+  duplicated verbatim with CreateTransactionalSms — both composers now render it; its bezel
+  geometry is a documented raw-px exemption (PosPreview class).
+- **CreateAbCampaign** — measure=md; step 2's second card gains its missing preamble.
+- **FormBuilder** — **behavior fixes: the per-step Back targets carried stale pre-reorder step
+  numbers — step 2's and step 3's Backs were no-ops (`step = 2` / `step = 3` on themselves) and
+  step 4's jumped to step 1**; all now go to the previous step. Nav labels normalize to bare
+  Back/Continue (not parity-locked); subtitle `·` → `—`; stale STEP comments renumbered.
+  MpBuilderShell kept (canvas family); a shell-owned footer band logged as a future consideration.
+- **WidgetWizardDrawer** — subtitle joins `Step N of M —`; deliberately no steps rail in a
+  drawer. MpWizardSteps' docblock + story now name its two contracts (wizard navigation vs
+  passive progress display) and warn against `:max-step` bound to the current step. Noted, not
+  unified: AllContacts' import dialog vs ProductImportWizard = same task, two shells.
 - Tier 3 choosers: MpOptionCard navigation mode (`to`, optional `selected`), CampaignTypeChooser
   + SegmentBuilderChooser onto it, false `:selected="false"` removed from the prominent-header
   trio, CreateCustomReport chooser onto the shell.
