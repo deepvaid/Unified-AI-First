@@ -744,6 +744,7 @@ export const mp_component_menu_radius = `12px`
 export const mp_component_menu_minWidth = `180px`
 export const mp_component_menu_itemHeight = `36px`
 export const mp_component_menu_itemPaddingBlock = `6px`
+export const mp_component_banner_minHeight = `44px`
 export const mp_component_segmented_radius = `9999px`
 export const mp_component_segmented_padding = `4px`
 export const mp_component_segmented_height_sm = `32px`
