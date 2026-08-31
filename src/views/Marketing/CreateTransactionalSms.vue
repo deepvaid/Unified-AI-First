@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpWizardShell from '@/components/MpWizardShell.vue'
+import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useSmsStore } from '@/stores/useSms'
 import { useToast } from '@/composables/useToast'
 
@@ -16,7 +18,6 @@ const accountId = computed(() => route.params.accountId as string)
 const backTo = computed(() => ({ name: 'TransactionalSms', params: { accountId: accountId.value } }))
 
 const editId = ref<number | null>(null)
-const tab = ref<'message' | 'compliance'>('message')
 
 const name = ref('')
 const message = ref('')
@@ -60,6 +61,17 @@ function applyTemplate(val: string | null) {
 const messageValid = computed(() => name.value.trim() !== '' && message.value.trim() !== '')
 const canSave = computed(() => messageValid.value && optOutConfirmed.value)
 
+// This was a gated v-tabs pair — a wizard wearing tabs. Same gating, honest steps.
+const STEPS = ['Message', 'Compliance']
+const { step, maxStep, goTo, next, prev, unlockAll } = useWizardSteps(STEPS.length, {
+  canAdvance: () => messageValid.value,
+})
+const stepHint = computed(() => {
+  if (step.value === 1 && !messageValid.value) return 'Name the event and write the message to continue'
+  if (step.value === 2 && !optOutConfirmed.value) return 'Confirm compliance to save'
+  return undefined
+})
+
 // ── Unsaved-changes guard ─────────────────────────────────────────────────────
 function serializeForm() {
   return JSON.stringify([name.value, message.value, senderId.value, optOutConfirmed.value])
@@ -77,10 +89,6 @@ const {
   title: 'Leave transactional SMS?',
   message: 'You have unsaved changes. Leaving now will discard them.',
 })
-
-function goToCompliance() {
-  if (messageValid.value) tab.value = 'compliance'
-}
 
 function save() {
   if (!canSave.value) return
@@ -113,6 +121,7 @@ onMounted(() => {
   message.value = existing.message ?? existing.messagePreview
   senderId.value = existing.senderId
   optOutConfirmed.value = existing.optOutConfirmed ?? false
+  unlockAll()
   savedSnapshot.value = serializeForm()
 })
 
@@ -120,32 +129,25 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS
 </script>
 
 <template>
-  <div class="mp-frame-fill d-flex flex-column">
-    <div class="px-8 pt-6 pb-4 bg-surface page-head">
-      <MpPageHeader
-        :title="pageTitle"
-        subtitle="Triggered text messages like order confirmations, OTPs, and shipping updates"
-        :back-to="backTo"
+  <MpWizardShell
+    :title="pageTitle"
+    :steps="STEPS"
+    :current="step"
+    :max-step="maxStep"
+    :back-to="backTo"
+    measure="lg"
+    :hint="stepHint"
+    @select="goTo"
+    @back="prev"
+  >
+    <div class="cts-grid">
+      <!-- Step 1 · Message -->
+      <MpWizardStepCard
+        v-if="step === 1"
+        title="Message"
+        description="Triggered text messages like order confirmations, OTPs, and shipping updates."
       >
-        <template #tabs>
-          <v-tabs v-model="tab" density="comfortable" color="primary" class="mt-3">
-            <v-tab value="message" class="text-none">Message</v-tab>
-            <v-tab value="compliance" class="text-none" :disabled="!messageValid">Compliance</v-tab>
-          </v-tabs>
-        </template>
-      </MpPageHeader>
-    </div>
-
-    <div class="flex-grow-1 overflow-y-auto px-8 py-6 bg-background">
-      <div class="cts-grid mx-auto">
-        <!-- Message tab -->
-        <div v-if="tab === 'message'" class="d-flex flex-column gap-5">
-          <v-card flat border rounded="lg" class="pa-6">
-            <div class="d-flex align-center ga-2 mb-4">
-              <v-icon size="18" class="text-medium-emphasis">message-square</v-icon>
-              <span class="text-subtitle-2 font-weight-bold">Message</span>
-            </div>
-            <MpFormGrid>
+        <MpFormGrid>
               <v-text-field
                 v-model="name"
                 label="Transactional event name"
@@ -189,25 +191,22 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS
                 </v-chip>
               </div>
             </MpFormGrid>
-          </v-card>
-        </div>
+      </MpWizardStepCard>
 
-        <!-- Compliance tab -->
-        <div v-else class="d-flex flex-column gap-5">
-          <v-card flat border rounded="lg" class="pa-6">
-            <div class="d-flex align-center ga-2 mb-4">
-              <v-icon size="18" class="text-medium-emphasis">shield-check</v-icon>
-              <span class="text-subtitle-2 font-weight-bold">Compliance</span>
-            </div>
-            <v-checkbox v-model="optOutConfirmed">
-              <template #label>
-                <span class="text-body-2">This message includes a clear opt-out and complies with local SMS marketing regulations.</span>
-              </template>
-            </v-checkbox>
-          </v-card>
-        </div>
+      <!-- Step 2 · Compliance -->
+      <MpWizardStepCard
+        v-else
+        title="Compliance"
+        description="Confirm the message meets SMS marketing requirements before saving."
+      >
+        <v-checkbox v-model="optOutConfirmed">
+          <template #label>
+            <span class="text-body-2">This message includes a clear opt-out and complies with local SMS marketing regulations.</span>
+          </template>
+        </v-checkbox>
+      </MpWizardStepCard>
 
-        <!-- Live phone preview -->
+      <!-- Live phone preview -->
         <aside class="cts-preview">
           <div class="cts-preview__sticky">
             <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3">Message preview</div>
@@ -226,40 +225,35 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS
             </div>
           </div>
         </aside>
-      </div>
     </div>
 
-    <div class="px-8 py-4 bg-surface page-foot d-flex justify-space-between ga-3">
-      <v-btn v-if="tab === 'compliance'" variant="text" class="text-none" prepend-icon="arrow-left" @click="tab = 'message'">Back</v-btn>
-      <div v-else></div>
-      <div class="d-flex ga-3">
-        <v-btn variant="text" class="text-none" :to="backTo">Cancel</v-btn>
-        <v-btn v-if="tab === 'message'" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!messageValid" @click="goToCompliance">
-          Continue
-        </v-btn>
-        <v-btn v-else color="primary" variant="flat" class="text-none" :disabled="!canSave" prepend-icon="check" @click="save">
-          {{ editId != null ? 'Save changes' : 'Save' }}
-        </v-btn>
-      </div>
-    </div>
+    <template #footer>
+      <v-btn variant="text" class="text-none" :to="backTo">Cancel</v-btn>
+      <v-btn v-if="step === 1" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!messageValid" @click="next">
+        Continue
+      </v-btn>
+      <v-btn v-else color="primary" variant="flat" class="text-none" :disabled="!canSave" prepend-icon="check" @click="save">
+        {{ editId != null ? 'Save changes' : 'Save' }}
+      </v-btn>
+    </template>
+  </MpWizardShell>
 
-    <MpConfirmDialog
-      v-model="confirmLeave"
-      danger
-      :title="leaveTitle"
-      :message="leaveMessage"
-      :confirm-label="leaveConfirmLabel"
-      @confirm="discardAndLeave"
-    />
-  </div>
+  <MpConfirmDialog
+    v-model="confirmLeave"
+    danger
+    :title="leaveTitle"
+    :message="leaveMessage"
+    :confirm-label="leaveConfirmLabel"
+    @confirm="discardAndLeave"
+  />
 </template>
 
 <style scoped>
+/* The shell's lg measure caps the width; this grid only splits it. */
 .cts-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 24px;
-  max-width: 1040px;
+  gap: var(--mp-space-24);
   align-items: start;
 }
 @media (max-width: 900px) {
@@ -267,9 +261,6 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS
   .cts-preview { display: none; }
 }
 .cts-preview__sticky { position: sticky; top: 0; }
-.page-head { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.page-head :deep(.mp-page-header) { margin-bottom: 0; }
-.page-foot { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 .sms-count { font-variant-numeric: tabular-nums; }
 code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
