@@ -1319,6 +1319,12 @@
   --mp-component-menu-minWidth: 180px;
   --mp-component-menu-itemHeight: 36px;
   --mp-component-menu-itemPaddingBlock: var(--mp-space-6);
+  --mp-component-segmented-radius: var(--mp-radius-full);
+  --mp-component-segmented-padding: var(--mp-space-4);
+  --mp-component-segmented-height-sm: var(--mp-space-32);
+  --mp-component-segmented-height-md: var(--mp-space-40);
+  --mp-component-segmented-itemHeight-sm: var(--mp-space-24);
+  --mp-component-segmented-itemHeight-md: var(--mp-space-32);
   --mp-component-card-radius: var(--mp-radius-16);
   --mp-component-card-padding: var(--mp-space-20);
   --mp-component-card-paddingCompact: var(--mp-space-12);
