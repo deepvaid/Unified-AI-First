@@ -19,8 +19,8 @@ const meta = {
 ### Overview
 \`MpToastStack\` is the single shared toast host for the app (WP-C1 — the one approved
 exception to the "no new wrapper components" rule). It renders the queue produced by the
-\`useToast()\` composable: call \`toast.success()\` / \`toast.error()\` / \`toast.info()\` (or
-\`toast.show()\` with an explicit \`type\`) from anywhere, and the toast appears bottom-right,
+\`useToast()\` composable: call \`toast.success()\` / \`toast.error()\` / \`toast.warning()\` /
+\`toast.info()\` (or \`toast.show()\` with an explicit \`type\`) from anywhere, and the toast appears bottom-right,
 stacking upward as more arrive. \`MpToastStack\` itself is mounted once, in \`App.vue\` — components
 never render it directly.
 
@@ -47,8 +47,10 @@ toast.info('3 contacts were skipped because they already exist in this list.', {
 - **Do** keep the message to one short sentence; use \`title\` only when a label above it adds
   real clarity.
 - **Do** pass at most one \`action\` — a second action means this should be a dialog instead.
-- **Do** let success/info auto-dismiss (4500ms default); only override \`durationMs\` when a
-  call site has a specific, documented reason.
+- **Do** let success/info auto-dismiss (4500ms default) and warnings at 7000ms; only override
+  \`durationMs\` when a call site has a specific, documented reason.
+- **Do** use \`warning\` for degraded-but-continuing outcomes ("3 rows skipped") — a failure the
+  user must act on is an \`error\` (persistent), a blocking condition is an inline \`MpAlert\`.
 
 ### 🔴 Don'ts
 - **Don't** use \`type: 'error'\` for anything the user doesn't need to act on — errors persist
@@ -59,8 +61,9 @@ toast.info('3 contacts were skipped because they already exist in this list.', {
 ### A11y
 - **Provides:** one persistent \`aria-live="polite"\` container, mounted for the app's whole
   lifetime — only the toast cards inside it mount/unmount, never the region itself. Each card
-  is \`role="status"\` (success/info) or \`role="alert"\` (error, which nested-overrides to an
-  assertive announcement). Type is always icon + text, never color-only. The auto-dismiss timer
+  is \`role="status"\` (success/warning/info) or \`role="alert"\` (error, which nested-overrides to an
+  assertive announcement — reserved for errors per the a11y audit; an auto-dismissing warning
+  announces politely). Type is always icon + text, never color-only. The auto-dismiss timer
   pauses on \`:hover\`/\`:focus-within\` and resumes on leave/blur, so a keyboard user tabbing to
   the action button is never cut off. Entrance/exit are CSS animations, so the app's global
   \`prefers-reduced-motion\` rule zeroes them automatically.
@@ -114,6 +117,12 @@ export const Success: Story = seededStory((toast) => {
 /** Errors never auto-dismiss — the user must close them (or use the action, if any). */
 export const PersistentError: Story = seededStory((toast) => {
   toast.error('Could not save changes. Check your connection and try again.')
+})
+
+/** A degraded-but-continuing outcome. Auto-dismisses after 7s in real usage (longer read
+ * time than success/info); announces politely — assertive announcements stay error-only. */
+export const Warning: Story = seededStory((toast) => {
+  toast.warning('Send rate is throttled — this campaign will take about 40 minutes longer.', { durationMs: STABLE_MS })
 })
 
 /** An informational, non-urgent update. */
@@ -171,6 +180,7 @@ export const Interactive: Story = {
       <div style="min-height: 260px; padding: 24px; display: flex; gap: 8px; flex-wrap: wrap; align-content: flex-start;">
         <v-btn variant="tonal" color="success" class="text-none" @click="toast.success('Segment saved.')">Push success</v-btn>
         <v-btn variant="tonal" color="error" class="text-none" @click="toast.error('Could not save changes.')">Push error</v-btn>
+        <v-btn variant="tonal" color="warning" class="text-none" @click="toast.warning('Send rate is throttled.')">Push warning</v-btn>
         <v-btn variant="tonal" color="info" class="text-none" @click="toast.info('3 contacts were skipped.')">Push info</v-btn>
         <v-btn variant="tonal" class="text-none" @click="toast.success('Widget added.', { action: { label: 'View', onClick: () => {} } })">Push with action</v-btn>
         <MpToastStack />

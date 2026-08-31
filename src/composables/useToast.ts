@@ -1,8 +1,12 @@
 import { ref } from 'vue'
 import { useToastStackTimers } from './useToastStackTimers'
 
-/** Drives the toast's icon and ARIA role — `error` renders `role="alert"`, others `role="status"`. */
-export type ToastType = 'success' | 'error' | 'info'
+/**
+ * Drives the toast's icon and ARIA role — `error` renders `role="alert"`, others
+ * `role="status"` (a11y audit §3: reserve alert/assertive for interrupting errors;
+ * a warning toast auto-dismisses, so it announces politely).
+ */
+export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
 /** Optional single action button rendered at the end of the toast. */
 export interface ToastAction {
@@ -16,11 +20,11 @@ export interface ToastAction {
 export interface ToastOptions {
   /** Optional bold line above the message. */
   title?: string
-  /** Severity. Defaults to `success`. */
+  /** Severity. Defaults to `info`. */
   type?: ToastType
   /** Optional action button. */
   action?: ToastAction
-  /** Explicit override. If omitted: success/info auto-dismiss after 4500ms, error persists. */
+  /** Explicit override. If omitted: success/info auto-dismiss after 4500ms, warning after 7000ms, error persists. */
   durationMs?: number
 }
 
@@ -45,6 +49,8 @@ export interface Toast {
 /** Must match the host component's exit-animation duration (MpToastStack.vue). */
 const LEAVE_MS = 200
 const DEFAULT_DURATION_MS = 4500
+/** Warnings carry more weight than confirmations but still auto-dismiss — longer read time. */
+const WARNING_DURATION_MS = 7000
 
 // Module-level state: every useToast() call shares one stack.
 const toasts = ref<Toast[]>([])
@@ -79,7 +85,9 @@ function show(message: string, opts: ToastOptions = {}): string {
   const type = opts.type ?? 'info'
   const durationMs = opts.durationMs !== undefined
     ? opts.durationMs
-    : type === 'error' ? null : DEFAULT_DURATION_MS
+    : type === 'error' ? null
+    : type === 'warning' ? WARNING_DURATION_MS
+    : DEFAULT_DURATION_MS
 
   toasts.value = [
     ...toasts.value,
@@ -106,6 +114,10 @@ function error(message: string, opts?: Omit<ToastOptions, 'type'>): string {
   return show(message, { ...opts, type: 'error' })
 }
 
+function warning(message: string, opts?: Omit<ToastOptions, 'type'>): string {
+  return show(message, { ...opts, type: 'warning' })
+}
+
 function info(message: string, opts?: Omit<ToastOptions, 'type'>): string {
   return show(message, { ...opts, type: 'info' })
 }
@@ -121,6 +133,7 @@ export function useToast() {
     show,
     success,
     error,
+    warning,
     info,
     dismiss,
     pause: timers.pause,

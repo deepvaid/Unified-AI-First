@@ -9,9 +9,12 @@ import { useToast, type Toast, type ToastType } from '@/composables/useToast'
 
 const { toasts, dismiss, pause, resume } = useToast()
 
+// Severity icon vocabulary (shared app-wide): success check · error circle-alert ·
+// warning triangle-alert · info info.
 const ICON_BY_TYPE: Record<ToastType, string> = {
   success: 'check',
-  error: 'triangle-alert',
+  error: 'circle-alert',
+  warning: 'triangle-alert',
   info: 'info',
 }
 
