@@ -1316,6 +1316,9 @@
   --mp-component-chip-paddingInline: var(--mp-space-8);
   --mp-component-input-radius: var(--mp-radius-10);
   --mp-component-menu-radius: var(--mp-radius-12);
+  --mp-component-menu-minWidth: 180px;
+  --mp-component-menu-itemHeight: 36px;
+  --mp-component-menu-itemPaddingBlock: var(--mp-space-6);
   --mp-component-card-radius: var(--mp-radius-16);
   --mp-component-card-padding: var(--mp-space-20);
   --mp-component-card-paddingCompact: var(--mp-space-12);

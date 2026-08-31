@@ -37,7 +37,7 @@ const computedAriaLabel = computed(() =>
         @click.stop
       ></v-btn>
     </template>
-    <v-list density="compact" min-width="180" role="menu" class="mp-row-actions__list">
+    <v-list density="compact" role="menu" class="mp-row-actions__list">
       <slot />
     </v-list>
   </v-menu>
@@ -63,15 +63,11 @@ const computedAriaLabel = computed(() =>
 
 /* A menu is 12 on the concentric radius scale (P2-6) — stated here so a row
    menu, the folder-select panel and the app-bar menus all read the same.
-   180px is a popover measure, not a spacing step. */
+   Item sizing deliberately has no rule here: the global popover rule in
+   global.scss (component.menu.itemHeight/itemPaddingBlock) is the single
+   source of menu-item geometry. */
 .mp-row-actions__list {
   border-radius: var(--mp-component-menu-radius);
-}
-
-.mp-row-actions__list :deep(.v-list-item) {
-  min-height: var(--mp-component-listItem-minHeight);
-  padding-block: var(--mp-component-listItem-paddingBlock);
-  padding-inline: var(--mp-component-listItem-paddingInline);
-  border-radius: var(--mp-component-nav-itemRadius);
+  min-width: var(--mp-component-menu-minWidth);
 }
 </style>

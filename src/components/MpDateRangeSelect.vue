@@ -54,7 +54,7 @@ function applyCustom() {
     </template>
 
     <v-card variant="flat" border rounded="lg" min-width="240" class="mp-range-menu">
-      <v-list density="compact" nav class="py-1">
+      <v-list density="compact" nav>
         <v-list-item
           v-for="preset in dateRangePresets"
           :key="preset"

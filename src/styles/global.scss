@@ -705,13 +705,29 @@ tr:focus-within .action-btns {
      and Vuetify utilities are always !important */
   border-radius: 0 !important;
 }
+/* Panels built as v-card-in-menu (MpFolderSelect, MpDateRangeSelect, the
+   MpDataTableToolbar filter/columns panels, JourneyAddStepMenu): the card is
+   the surface (panel rule above), but a v-list nested inside it still carries
+   the global VList defaults (border: true, rounded="lg") and misses the
+   popover inset. Descendant selector, not `>` — some panels wrap the list in
+   a div. */
+.v-menu > .v-overlay__content > .v-card .v-list {
+  padding: var(--mp-space-4);
+  background: transparent;
+  border: none;
+  border-radius: 0 !important; /* VList's rounded="lg" utility is !important */
+}
 /* !important: VListItem stamps a `rounded-0 !important` utility class by default.
-   Sizing sits on component.listItem.* — the same tokens MpRowActionsMenu uses —
-   so a select's options and a hand-built menu's items read the same. */
+   Sizing sits on component.menu.* — deliberately denser than in-page rows
+   (itemHeight 36 vs listItem.minHeight 40): a menu is transient chrome, not
+   content. The rule reaches v-select/v-autocomplete option lists too (they
+   render via v-menu), by design — a select's options and a hand-built menu's
+   items read the same. Inline padding stays on listItem so text in a menu and
+   text in an in-page row share one gutter. */
 .v-menu > .v-overlay__content .v-list-item {
   border-radius: var(--mp-component-chip-radius) !important;
-  min-height: var(--mp-component-listItem-minHeight);
-  padding-block: var(--mp-component-listItem-paddingBlock);
+  min-height: var(--mp-component-menu-itemHeight);
+  padding-block: var(--mp-component-menu-itemPaddingBlock);
   padding-inline: var(--mp-component-listItem-paddingInline);
 }
 

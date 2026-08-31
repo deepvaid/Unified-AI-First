@@ -44,7 +44,7 @@ const selectedName = computed(() => {
     </template>
 
     <v-card min-width="240" max-width="320" flat border class="mp-folder-select__panel">
-      <v-list density="compact" class="py-1" aria-label="Folders">
+      <v-list density="compact" aria-label="Folders">
         <v-list-item
           rounded="lg"
           class="mx-1"

@@ -85,7 +85,7 @@ export const Variants: Story = {
   args: {} as never,
 }
 
-/** Sizing comes from the menu panel (`component.listItem.*`) — there is no size prop. */
+/** Sizing comes from the menu panel (`component.menu.itemHeight`/`itemPaddingBlock`) — there is no size prop. */
 export const States: Story = {
   render: () => ({
     components: { MpMenuItem },

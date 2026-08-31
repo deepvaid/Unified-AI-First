@@ -231,8 +231,10 @@ export const Variants: Story = {
 
 /**
  * There is no `size` prop. The trigger is a small icon button sized to sit inside a table row
- * without stretching it, and the panel's rows are `component.listItem.*` — the same 40px floor
- * and 12px inline inset as every other nav row in the system (P4-7). The panel's corner is
+ * without stretching it, and the panel's rows are `component.menu.itemHeight` (36) with
+ * `component.menu.itemPaddingBlock` (6) — deliberately denser than the 40px in-page row floor,
+ * because a menu is transient chrome, not content. Inline inset stays `component.listItem.paddingInline`
+ * (12). The panel is `component.menu.minWidth` (180) wide at minimum and its corner is
  * `component.menu.radius` (12), the menu step of the concentric radius scale.
  */
 export const Sizes: Story = {
@@ -244,7 +246,7 @@ export const Sizes: Story = {
           <MpMenuItem title="View" icon="eye" />
           <MpMenuItem title="Duplicate" icon="copy" />
         </MpRowActionsMenu>
-        <div class="text-body-2 text-medium-emphasis">Open the menu — its rows are 40px, like every nav row.</div>
+        <div class="text-body-2 text-medium-emphasis">Open the menu — its rows sit on the 36px menu floor, denser than in-page rows.</div>
       </div>
     `,
   }),
@@ -259,7 +261,7 @@ export const States: Story = {
   render: () => ({
     components: { MpMenuItem, MpRowActionsMenu },
     template: `
-      <MpRowActionsMenu ariaLabel="Row actions"> item-label="Order #10002">
+      <MpRowActionsMenu ariaLabel="Row actions" item-label="Order #10002">
         <MpMenuItem title="View order" icon="eye" />
         <MpMenuItem title="Print packing slip" icon="printer" />
         <MpMenuItem title="Refund" icon="undo-2" disabled subtitle="Already refunded" />
