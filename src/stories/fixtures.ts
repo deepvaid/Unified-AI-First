@@ -98,6 +98,16 @@ export const ACTIVITY = [
   { id: 'a-4', time: '1h ago', title: 'Order #10002 refunded', meta: '−$1,120.00', icon: 'receipt' },
 ]
 
+/** Rows for MpNotificationsMenu stories — same shape as the useNotifications store seed. */
+export const NOTIFICATIONS = [
+  { id: 'n-1', severity: 'critical' as const, icon: 'credit-card', title: 'Payment failed on order #10012', context: 'Sales Orders', time: '12m ago', read: false },
+  { id: 'n-2', severity: 'warning' as const, icon: 'package', title: 'Trail Shell Jacket is low on stock — 4 left', context: 'Inventory', time: '38m ago', read: false },
+  { id: 'n-3', severity: 'info' as const, icon: 'send', title: 'Campaign "Spring Refresh" finished sending', context: 'Email Campaigns', time: '1h ago', read: false },
+  { id: 'n-4', severity: 'warning' as const, icon: 'ticket', title: 'Urgent ticket assigned to you: "Order never arrived"', context: 'Service', time: '2h ago', read: false },
+  { id: 'n-5', severity: 'critical' as const, icon: 'upload', title: 'Contact import failed — 214 rows rejected', context: 'Imports', time: '3h ago', read: true },
+  { id: 'n-6', severity: 'info' as const, icon: 'users', title: 'Segment "Lapsed VIPs" finished refreshing', context: 'Segments', time: '5h ago', read: true },
+]
+
 /** Folder tree for MpFolderSelect / MpMoveToFolderDialog examples. */
 export const FOLDERS = [
   { id: 'f-lifecycle', name: 'Lifecycle', parentId: null },
