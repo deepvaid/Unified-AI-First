@@ -6,6 +6,7 @@
 // 'design-system' mode with retrieved doc excerpts as grounding. With no
 // GEMINI_API_KEY it degrades to the best-matching written FAQ answer.
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import MpChatBubble from '@/components/MpChatBubble.vue'
 import { askGemini, type GeminiTurn } from '@/services/geminiClient'
 import { useDesignSystemKnowledge } from '@/composables/useDesignSystemKnowledge'
 
@@ -107,24 +108,16 @@ onBeforeUnmount(() => abort?.abort())
         </div>
       </div>
 
-      <div
+      <MpChatBubble
         v-for="message in messages"
         :key="message.id"
-        class="dv-docs__row"
-        :class="message.role === 'user' ? 'dv-docs__row--user' : ''"
-      >
-        <div class="dv-docs__bubble" :class="`dv-docs__bubble--${message.role}`">
-          <div v-if="message.fromFaq" class="dv-docs__faq-tag">From the FAQ</div>
-          {{ message.text }}
-        </div>
-      </div>
+        :side="message.role === 'user' ? 'end' : 'start'"
+        :tone="message.role === 'user' ? 'accent' : 'neutral'"
+        class="dv-docs__msg"
+        :class="{ 'dv-docs__msg--skin': message.role === 'user' }"
+      ><div v-if="message.fromFaq" class="dv-docs__faq-tag">From the FAQ</div>{{ message.text }}</MpChatBubble>
 
-      <div v-if="loading" class="dv-docs__row">
-        <div class="dv-docs__bubble dv-docs__bubble--assistant dv-docs__bubble--thinking">
-          <v-progress-circular indeterminate size="14" width="2" class="mr-2" />
-          Reading the docs…
-        </div>
-      </div>
+      <MpChatBubble v-if="loading" side="start" tone="neutral" loading class="dv-docs__msg">Reading the docs…</MpChatBubble>
     </div>
 
     <v-divider />
@@ -201,40 +194,15 @@ onBeforeUnmount(() => abort?.abort())
   background: var(--dv-accent-soft);
 }
 
-.dv-docs__row {
-  display: flex;
-  margin-bottom: 10px;
+.dv-docs__msg {
+  margin-bottom: var(--mp-space-10);
 }
 
-.dv-docs__row--user {
-  justify-content: flex-end;
-}
-
-.dv-docs__bubble {
-  max-width: 88%;
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-
-.dv-docs__bubble--user {
-  background: var(--dv-accent-soft);
-  border: 1px solid var(--dv-border);
-  border-bottom-right-radius: 4px;
-}
-
-.dv-docs__bubble--assistant {
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgb(var(--v-theme-outline-variant, var(--v-border-color)));
-  border-bottom-left-radius: 4px;
-}
-
-.dv-docs__bubble--thinking {
-  display: flex;
-  align-items: center;
-  color: rgb(var(--v-theme-on-surface-variant));
+/* Da Vinci keeps its own accent: re-skin through MpChatBubble's documented
+   custom-prop seam (never :deep). */
+.dv-docs__msg--skin {
+  --mp-bubble-bg: var(--dv-accent-soft);
+  --mp-bubble-border: var(--dv-border);
 }
 
 .dv-docs__faq-tag {

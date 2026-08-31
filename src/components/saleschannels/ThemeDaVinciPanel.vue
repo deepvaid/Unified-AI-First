@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import MpChatBubble from '@/components/MpChatBubble.vue'
 import { examplePrompts } from '@/composables/useThemeGenerator'
 import type { TemplateType } from '@/stores/themeBuilderData'
 
@@ -127,9 +128,7 @@ watch(
       <div v-else class="d-flex flex-column gap-3">
         <template v-for="msg in messages" :key="msg.id">
           <!-- User turn -->
-          <div v-if="msg.role === 'user'" class="tdv-user">
-            <div class="tdv-user__bubble">{{ msg.text }}</div>
-          </div>
+          <MpChatBubble v-if="msg.role === 'user'" side="end" tone="solid">{{ msg.text }}</MpChatBubble>
 
           <!-- Da Vinci turn -->
           <div v-else class="tdv-bot d-flex gap-2">
@@ -243,20 +242,6 @@ watch(
 .tdv__tip em { font-style: italic; }
 
 /* ── Conversation ────────────────────────────────────────────────── */
-.tdv-user { display: flex; justify-content: flex-end; }
-.tdv-user__bubble {
-  max-width: 88%;
-  padding: var(--mp-space-8) var(--mp-space-12);
-  border-radius: var(--mp-radius-12) var(--mp-radius-12) var(--mp-radius-4) var(--mp-radius-12);
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-  font-size: 0.8125rem;
-  font-weight: var(--mp-fontWeight-medium);
-  line-height: 1.45;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
 .tdv-bot__avatar { margin-top: 2px; }
 /* The turn owns the space between its reply text and any follow-up chips. */
 .tdv-bot__body {
