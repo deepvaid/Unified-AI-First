@@ -9,7 +9,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAnalyticsStore, type CustomReport } from '@/stores/useAnalytics'
 import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
 import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpWizardShell from '@/components/MpWizardShell.vue'
+import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
@@ -17,6 +18,7 @@ import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpErrorState from '@/components/MpErrorState.vue'
 import ReportFieldPicker from '@/components/analytics/ReportFieldPicker.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useToast } from '@/composables/useToast'
 import {
   reportTypeBySlug, FILE_FORMATS, DATE_FORMATS, RECUR_INTERVALS,
@@ -39,8 +41,6 @@ const chooserTo = computed(() => ({ name: 'CreateCustomReport', params: { accoun
 const reportType = computed(() => reportTypeBySlug(route.params.type as string))
 const stepCount = computed(() => reportType.value?.steps.length ?? 0)
 
-const step = ref(1)
-const maxStep = ref(1)
 const submitted = ref(false)
 
 // ── Step 1 · Schedule & delivery ──────────────────────────────────────────────
@@ -197,32 +197,34 @@ const optionalCatalogue = computed(() => (isSms.value ? SMS_OPTIONAL_METRICS : C
 const fieldNoun = computed(() => (isSms.value ? 'metrics' : 'fields'))
 
 // ── Navigation ────────────────────────────────────────────────────────────────
+const { step, maxStep, isLast: isLastStep, goTo, next: advance, prev } = useWizardSteps(() => stepCount.value)
+
+const currentStepTitle = computed(() => reportType.value?.steps[step.value - 1] ?? '')
+
 const currentStepValid = computed(() => {
   if (step.value === 1) return step1Valid.value
-  if (step.value === 2) return stepCount.value === 2 ? step2Valid.value : step2Valid.value
+  if (step.value === 2) return step2Valid.value
   return true
 })
-const isLastStep = computed(() => step.value === stepCount.value)
 
+// The submitted flag drives validate-on-click: Continue stays enabled, a failed
+// click surfaces the field errors instead of a disabled button.
 function next() {
   submitted.value = true
   if (!currentStepValid.value) return
   submitted.value = false
-  step.value += 1
-  maxStep.value = Math.max(maxStep.value, step.value)
+  advance()
 }
 
 function back() {
   submitted.value = false
   if (step.value === 1) router.push(chooserTo.value)
-  else step.value -= 1
+  else prev()
 }
 
 function goToStep(n: number) {
-  if (n <= maxStep.value) {
-    submitted.value = false
-    step.value = n
-  }
+  submitted.value = false
+  goTo(n)
 }
 
 // ── Unsaved-changes guard ─────────────────────────────────────────────────────
@@ -284,34 +286,23 @@ function submit() {
     />
   </div>
 
-  <div v-else class="d-flex flex-column ga-5">
-    <MpPageHeader
-      :title="reportType.label"
-      :subtitle="reportType.description"
-      :back-to="chooserTo"
-    />
-
-    <v-card flat border rounded="lg">
-      <div class="ccr-steps">
-        <MpWizardSteps
-          :steps="reportType.steps"
-          :current="step"
-          clickable
-          :max-step="maxStep"
-          @select="goToStep"
-        />
-      </div>
-
-      <v-divider />
-
-      <div class="pa-6 ccr-body">
-        <!-- ── Step 1 · Schedule & delivery ─────────────────────────────── -->
-        <section v-if="step === 1" class="d-flex flex-column ga-2">
+  <MpWizardShell
+    v-else
+    :title="reportType.label"
+    :steps="reportType.steps"
+    :current="step"
+    :max-step="maxStep"
+    :back-to="chooserTo"
+    @select="goToStep"
+    @back="back"
+  >
+    <!-- ── Step 1 · Schedule & delivery ─────────────────────────────── -->
+    <MpWizardStepCard v-if="step === 1" :title="currentStepTitle" :description="reportType.description">
+        <section class="d-flex flex-column ga-2">
           <MpFormGrid :cols="2">
             <MpFormSection
               title="Report name"
               description="Used to identify this report in the reports list and in the delivery email."
-              :heading-level="2"
               required
             />
             <v-text-field
@@ -335,7 +326,7 @@ function submit() {
               />
             </template>
 
-            <MpFormSection title="Schedule" :heading-level="2" />
+            <MpFormSection title="Schedule" />
             <MpFormField label="How often should this report run?" class="mp-form-grid__full">
               <template #default="{ labelId }">
                 <v-radio-group v-model="scheduleMode" inline :aria-labelledby="labelId" hide-details>
@@ -370,7 +361,6 @@ function submit() {
                 :description="reportType.slug === 'campaign' || reportType.slug === 'sms'
                   ? 'Only campaigns sent inside this range are available to select on the next step.'
                   : 'The report covers activity inside this range.'"
-                :heading-level="2"
               />
               <v-text-field
                 v-model="fromDate"
@@ -382,7 +372,7 @@ function submit() {
             </template>
 
             <template v-else>
-              <MpFormSection title="Recurrence" :heading-level="2" required />
+              <MpFormSection title="Recurrence" required />
               <v-select
                 v-model="recurEvery"
                 label="Recur every *"
@@ -408,7 +398,6 @@ function submit() {
               :description="recipientRequired
                 ? 'A recurring report has to be emailed to someone.'
                 : 'Optional. Leave blank to download the report from the reports list instead.'"
-              :heading-level="2"
               :required="recipientRequired"
             />
             <v-text-field
@@ -424,14 +413,15 @@ function submit() {
             <v-textarea v-model="message" label="Message" rows="3" class="mp-form-grid__full" />
           </MpFormGrid>
         </section>
+    </MpWizardStepCard>
 
-        <!-- ── Step 2 · Report details ──────────────────────────────────── -->
-        <section v-else-if="step === 2" class="d-flex flex-column ga-2">
+    <!-- ── Step 2 · Report details ──────────────────────────────────── -->
+    <MpWizardStepCard v-else-if="step === 2" :title="currentStepTitle">
+        <section class="d-flex flex-column ga-2">
           <MpFormGrid :cols="2">
             <MpFormSection
               title="Output format"
               description="How the finished report is delivered."
-              :heading-level="2"
             />
             <v-select v-model="fileFormat" label="File format" :items="FILE_FORMATS" />
             <v-select v-model="dateFormat" label="Date format" :items="DATE_FORMATS" />
@@ -441,7 +431,6 @@ function submit() {
               <MpFormSection
                 title="Campaigns to include"
                 description="Pick at least one campaign type, tag, brand or campaign name. Changing any of these refreshes the options below it."
-                :heading-level="2"
                 required
               />
               <v-select
@@ -510,7 +499,6 @@ function submit() {
               <MpFormSection
                 title="Messages to include"
                 description="Choose where the messages came from, then which campaigns to report on."
-                :heading-level="2"
                 required
               />
               <MpFormField
@@ -569,7 +557,6 @@ function submit() {
               <MpFormSection
                 title="Inbox providers"
                 description="Deliverability is measured separately for each provider you choose."
-                :heading-level="2"
                 required
               />
               <MpFormField
@@ -600,7 +587,6 @@ function submit() {
               <MpFormSection
                 title="Performance metrics"
                 description="Optional. Adds engagement columns alongside the deliverability figures."
-                :heading-level="2"
               />
               <MpFormField label="Metrics" class="mp-form-grid__full">
                 <template #default="{ labelId }">
@@ -634,7 +620,6 @@ function submit() {
               <MpFormSection
                 title="Lists to measure"
                 description="Growth and attrition are reported per list."
-                :heading-level="2"
                 required
               />
               <v-select
@@ -651,7 +636,6 @@ function submit() {
               <MpFormSection
                 title="Performance metrics"
                 description="Optional. Choose which growth and attrition figures to include."
-                :heading-level="2"
               />
               <MpFormField label="Metrics" class="mp-form-grid__full">
                 <template #default="{ labelId }">
@@ -717,13 +701,14 @@ function submit() {
             </v-alert>
           </template>
         </section>
+    </MpWizardStepCard>
 
-        <!-- ── Step 3 · Fields / metrics ────────────────────────────────── -->
-        <section v-else class="d-flex flex-column ga-2">
+    <!-- ── Step 3 · Fields / metrics ────────────────────────────────── -->
+    <MpWizardStepCard v-else :title="currentStepTitle">
+        <section class="d-flex flex-column ga-2">
           <MpFormSection
             :title="isSms ? 'Always included' : 'Always included'"
             :description="`These ${fieldNoun} are always in the report and cannot be removed.`"
-            :heading-level="2"
           />
           <div class="d-flex flex-wrap ga-2 mb-2">
             <v-chip v-for="f in mandatoryFields" :key="f" size="small" variant="tonal">{{ f }}</v-chip>
@@ -734,7 +719,6 @@ function submit() {
           <MpFormSection
             title="Optional"
             :description="`Add extra ${fieldNoun} for more detail. Everything here is optional.`"
-            :heading-level="2"
           />
           <div v-if="optionalFields.length" class="d-flex flex-wrap ga-2 mb-3">
             <v-chip
@@ -758,38 +742,39 @@ function submit() {
             </v-btn>
           </div>
         </section>
+    </MpWizardStepCard>
 
-        <v-divider class="my-6" />
+    <template #footerStart>
+      <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="back">
+        {{ step === 1 ? 'Change report type' : 'Back' }}
+      </v-btn>
+    </template>
+    <template #footer>
+      <v-btn
+        v-if="!isLastStep"
+        color="primary"
+        variant="flat"
+        class="text-none"
+        append-icon="arrow-right"
+        @click="next"
+      >
+        Continue
+      </v-btn>
+      <v-btn
+        v-else
+        color="primary"
+        variant="flat"
+        class="text-none"
+        prepend-icon="check"
+        :loading="saving"
+        @click="submit"
+      >
+        Create report
+      </v-btn>
+    </template>
+  </MpWizardShell>
 
-        <div class="d-flex flex-wrap justify-space-between align-center ga-3 ccr-foot">
-          <v-btn variant="text" class="text-none" prepend-icon="arrow-left" @click="back">
-            {{ step === 1 ? 'Change report type' : 'Back' }}
-          </v-btn>
-          <v-btn
-            v-if="!isLastStep"
-            color="primary"
-            variant="flat"
-            class="text-none"
-            append-icon="arrow-right"
-            @click="next"
-          >
-            Continue
-          </v-btn>
-          <v-btn
-            v-else
-            color="primary"
-            variant="flat"
-            class="text-none"
-            prepend-icon="check"
-            :loading="saving"
-            @click="submit"
-          >
-            Create report
-          </v-btn>
-        </div>
-      </div>
-    </v-card>
-
+  <template v-if="reportType">
     <!-- Pickers -->
     <ReportFieldPicker
       v-model="optionalPickerOpen"
@@ -832,27 +817,5 @@ function submit() {
       :confirm-label="leaveConfirmLabel"
       @confirm="discardAndLeave"
     />
-  </div>
+  </template>
 </template>
-
-<style scoped lang="scss">
-.ccr-steps {
-  padding: $mp-space-16 $mp-space-20;
-}
-
-/* Below the compact breakpoint the step body loses its wide inset and the
-   Back/Continue pair wraps rather than overflowing the card. */
-@media (max-width: $mp-layout-breakpointCompact) {
-  .ccr-steps {
-    padding: $mp-space-12 $mp-space-16;
-  }
-
-  .ccr-body {
-    padding: $mp-space-16 !important;
-  }
-
-  .ccr-foot > * {
-    flex: 1 1 auto;
-  }
-}
-</style>
