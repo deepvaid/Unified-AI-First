@@ -84,7 +84,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ## Component Inventory
 
-32 top-level components (counts refreshed 2026-08-31). **Full reference:**
+35 top-level components (counts refreshed 2026-08-31). **Full reference:**
 `docs/design-system/` (structure, Vuetify mapping, token plan, handoff) + Storybook autodocs (`npm run storybook`).
 
 ### Layout & structure
@@ -104,6 +104,9 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ### Feedback
 
+- **MpAlert** — `tone?` ('info'|'success'|'warning'|'error'), `title?`, `live?` ('off'|'polite'|'assertive', auto by tone), `dismissible?`, `icon?` (string|false) · emits `dismiss` · slots default (body), `#actions`. **The one in-page feedback block** — rounded, borderless soft fill on the semantic container pairs, enforced role/aria-live. **Never a raw `v-alert` in new code.** Transient = `useToast`; frame-wide = `MpBanner`; whole-surface failure = `MpErrorState`.
+- **MpBanner** — `tone?` (same 4), `message?` (or default slot), `icon?` (string|false), `dismissible?`, `dismissLabel?` · emits `dismiss` · slot `#actions`. **The full-width edge strip** (square, bottom hairline, `component.banner.minHeight` 44) — mounts at the top of `<v-main>` or a page region. PlgTrialBanner composes it. Alert = in-page block · banner = edge strip; don't swap.
+- **MpChatBubble** — `side?` ('start'|'end'), `tone?` ('neutral'|'accent'|'solid'), `author?`, `time?`, `loading?` · slots `#avatar`, default (pre-wrap body), `#footer`. **The one transcript message** on `component.bubble.*`; side and tone are independent axes (the Tickets thread left-aligns both roles, tint carries the role). Re-skin via the `--mp-bubble-*` custom-prop seam, never `:deep`. Merchant-chrome simulations (chatbot widget preview, SMS phone mock) and the flagship Da Vinci bot stay bespoke.
 - **MpEmptyState** — `title`, `icon?`, `description?`, `actionLabel?`, `actionIcon?`, `headingLevel?`, `variant?` ('stack'|'launcher'), `emphasis?` ('default'|'prominent'), `illustration?`, `tone?` ('neutral'|'error') · emits `action`. Every table/list MUST have one (empty = nothing to show).
 - **MpErrorState** — composes `MpEmptyState` with `role="alert"`, the error tone and retry defaults. Error = something failed; don't merge with empty states.
 - **MpFloatingBulkBar** — `count`, `total?` · emits `clear` · default slot (actions). Shows on row selection; auto-hides at 0.
@@ -163,6 +166,10 @@ This is NOT a production app — it uses mock data and has no backend API.
   `'plain' | 'divided' | 'boxed'`). If the only difference is weight, it is `emphasis`, not
   a variant.
 - **`density`** — `'default' | 'compact'` for vertical rhythm.
+- **`tone`** — two vocabularies, **deliberately not reconciled** (2026-08-31): surface-state
+  tone `'neutral' | 'error'` on `MpDialog`/`MpEmptyState` (is this surface in an error state)
+  vs feedback-severity tone `'info' | 'success' | 'warning' | 'error'` on `MpAlert`/`MpBanner`.
+  They answer different questions — don't "unify" them.
 
 ### Composition
 
@@ -245,6 +252,14 @@ because it already does both. Chrome (toolbar searches, table-cell editors, chat
 `placeholder` + `aria-label` instead — no label means no headroom, so it stays flush in a 40px
 control row.
 
+**Readonly and success are opt-in classes** (no Vuetify root class exists for either):
+`class="mp-field-readonly"` beside the `readonly` prop (secondary fill, subtle hairline, value
+stays primary — distinct from disabled), and `class="mp-field-success"` for validated-good
+fields (2px success border + green message; pair with `append-inner-icon="circle-check"`;
+error always wins). A `counter="N"` is always paired with a max-length rule — the counter only
+reddens when a rule invalidates the field. Prefix/suffix affixes render muted; there is
+deliberately no boxed-addon segment style.
+
 **Field sizes are the `density` prop.** One ramp, `component.field.height`:
 `density="compact"` → sm 32 · the default (`comfortable`) → md 40, equal to `control.height` so
 a field and a button align · `density="default"` → lg 48. Forms use md; sm is for genuinely
@@ -291,6 +306,10 @@ Reach for a role token when the system has already made the decision, a primitiv
   Don't "unify" this back to 40 — the split is the design
 - **Segmented** `component.segmented.*` → `height` sm 32 / md 40 (= `control.height`) ·
   `itemHeight` sm 24 / md 32 · `padding` 4 · `radius` full. Consumed by `MpSegmentedControl` only
+- **Banners** `component.banner.minHeight` → 44 (between `control.height` 40 and the 48 table
+  row floor). Consumed by `MpBanner`
+- **Chat bubbles** `component.bubble.*` → `maxWidth` 88% · `paddingBlock` 10 · `paddingInline` 14 ·
+  `radius` 12 · `tailRadius` 4 · `gap` 6. Consumed by `MpChatBubble`
 - **Card insets** `component.card.*` → `padding` 20 (the standard) · `paddingCompact` 12 ·
   `paddingSpacious` 32 · `gap` 16 · `gapCompact` 8. **Use these, not a `pa-*` utility, on a
   card root.** A card needing a fourth value is a design bug, not a token gap

@@ -1741,3 +1741,71 @@ notification bell, and broken multi-button groups.
   widget size row (above). **Deliberately not migrated**: DashboardWidgetCard's Trend/Compare
   view-toggle — its 28px header row sits below the sm stop (32); candidate once that header
   can take 32.
+
+## Alerts, banner, chat bubble, warning toast, field states changelog — 2026-08-31
+
+Flowbite-coverage pass: three new molecules, a toast type, and the form baseline's missing
+states. Decision records:
+
+### MpAlert (closes docs/rebuild/GAPS.md §2, né MpInlineAlert)
+- **Tint = borderless soft fill** on the semantic container pairs (`--pos/warn/neg-soft` +
+  `-ink`); radius 12. **Info tints from the accent container** — info === primary and there is
+  deliberately no separate info container pair. The `.28`-alpha-border look was NOT adopted
+  here: it stays MpBanner's edge-strip signature (an in-page block is bounded by its fill; a
+  strip needs a boundary against chrome).
+- Built on a **plain div**, not `v-alert` — sidesteps the global
+  `.v-alert--variant-tonal { border:none }` rule and retires all three
+  `:deep(.v-alert__content)` hacks (ProductRecommendations, FeedTemplateEditor,
+  PriceListEditor). Migrated: Billing status strip, ChatbotList limit strip, theme-builder +
+  landing-block notes, the report wizard's hand-wired live-region alerts. **Stays:**
+  Segments.vue's dashed `.builder-note` (instructional affordance, not feedback),
+  MpDaVinciBot's composer notice (Product tier), and the ~40 clean legacy `v-alert` sites
+  (grandfathered; new code composes MpAlert).
+- **Two `tone` vocabularies are deliberate**: MpDialog/MpEmptyState = surface-state
+  (`neutral|error`), MpAlert/MpBanner = feedback-severity (4-value). Recorded in CLAUDE.md;
+  do not unify.
+- **Severity icon vocabulary** (modern lucide names): info `info` · success `circle-check` ·
+  warning `triangle-alert` · error `circle-alert`. Legacy `alert-circle`/`check-circle`
+  spellings elsewhere keep working via lucide aliases — known drift, not migrated this pass.
+
+### MpBanner
+- Generalized from PlgTrialBanner's proven geometry (`component.banner.minHeight` 44,
+  space-6/16 inset, bottom hairline = `color-mix(<tone>-ink 25%)`). PlgTrialBanner now
+  composes it (zero props, store reads and the session-dismiss module ref stay).
+  **Accepted visual delta:** its rgba(.12/.28) tints moved to the contrast-checked soft/ink
+  pairs. MerchandisingLayout's sync v-alert became a dismissible warning MpBanner.
+
+### MpChatBubble
+- `side` (start/end) and `tone` (neutral/accent/solid) are **independent axes** — the Tickets
+  thread left-aligns both roles and separates them by tint. Body = 14px (system body size;
+  the 13px/0.875rem adopters converged). Geometry on new `component.bubble.*` (88% / 10 / 14 /
+  r12 / tail r4 / gap 6).
+- Tones resolve through `--mp-bubble-bg/fg/border` custom props — **the documented re-skin
+  seam**: DvDocsAssistant keeps the Da Vinci accent by setting them from a host class, no
+  `:deep`. Adopted by Tickets (reference anatomy; ~45 lines of raw-px CSS deleted; the
+  conversation measure moved onto dialog width lg = 880), ThemeDaVinciPanel (user turn only —
+  bot turns are result-card composites), DvDocsAssistant (both roles + `loading`). **Stays
+  bespoke:** MpDaVinciBot, DaVinciExperience, orbit voice HUD, ChatbotBuilder's
+  merchant-branded widget preview, SmsPhonePreview (device-illustration exemption).
+
+### Warning toast
+- `useToast` gains `warning()`: auto-dismisses at **7000ms** (longer read time; errors stay
+  persistent) and keeps **`role="status"`** — the a11y audit (§3.2) reserves alert/assertive
+  for interrupting errors, so the plan's original warning-as-alert was corrected to polite.
+  Toast error icon realigned `triangle-alert` → `circle-alert` so the triangle is warning's.
+
+### Field states (settings-form.scss)
+- **Readonly + success are opt-in classes** (`mp-field-readonly`, `mp-field-success`):
+  Vuetify 3.12 exposes no readonly root class and `v-select` renders a native `readonly`
+  input while fully interactive, so an attribute/`:has()` hook would false-positive every
+  select. Rejected for success: `color="success"` (paints only while focused) and
+  `base-color` (can't produce the 2px width or the message color).
+- **Readonly keeps a focus cue** (WCAG 2.4.7): the hover-mix border on focus, width stays 1px.
+  Value stays `--text-primary` — readonly content is real content; disabled mutes it.
+- Applied at the genuine readonly sites (draft-order payment link, account ID — replacing a
+  `bg-color` hack —, inventory locations, tracking domain, form-builder script textareas).
+- Counters styled into the messages voice (red only when a rule invalidates — documented
+  pairing rule); prefix/suffix affixes muted. **Boxed addon segments deliberately out of
+  scope.**
+- Ordering contract extended in the file header: the state blocks sit after hover/focus/error
+  and win by extra-class + source order — rules appended below them can silently flip states.
