@@ -44,30 +44,34 @@ function onUpdate(value: unknown) {
     :divided="false"
     @update:model-value="onUpdate"
   >
+    <!-- `icon` stays a boolean here: passing an icon NAME plus a default slot
+         makes Vuetify render the (empty) slot instead of the icon. -->
     <template v-for="item in props.items" :key="item.value">
       <v-tooltip v-if="item.tooltip" :text="item.tooltip" location="bottom">
         <template #activator="{ props: tip }">
           <v-btn
             v-bind="tip"
             :value="item.value"
-            :icon="item.icon"
+            :icon="Boolean(item.icon)"
             :disabled="item.disabled"
             :aria-label="item.icon ? item.label : undefined"
             variant="text"
           >
-            <template v-if="!item.icon">{{ item.label }}</template>
+            <v-icon v-if="item.icon">{{ item.icon }}</v-icon>
+            <template v-else>{{ item.label }}</template>
           </v-btn>
         </template>
       </v-tooltip>
       <v-btn
         v-else
         :value="item.value"
-        :icon="item.icon"
+        :icon="Boolean(item.icon)"
         :disabled="item.disabled"
         :aria-label="item.icon ? item.label : undefined"
         variant="text"
       >
-        <template v-if="!item.icon">{{ item.label }}</template>
+        <v-icon v-if="item.icon">{{ item.icon }}</v-icon>
+        <template v-else>{{ item.label }}</template>
       </v-btn>
     </template>
   </v-btn-toggle>

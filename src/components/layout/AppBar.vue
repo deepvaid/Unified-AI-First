@@ -9,6 +9,7 @@ import { useMobileNav } from '@/composables/useMobileNav'
 import { useToast } from '@/composables/useToast'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import MpNotificationsMenu from '@/components/MpNotificationsMenu.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import PlgTrialChip from '@/components/plg/PlgTrialChip.vue'
 import { usePlgStore, PLG_DEMO_PRESETS, type PlgDemoPreset } from '@/stores/usePlg'
 
@@ -710,21 +711,22 @@ function onSearchKeydown(event: KeyboardEvent) {
               <div class="um-divider" />
 
               <div class="um-section um-section--last">
-                <div class="um-item" role="group" aria-label="Theme">
+                <div class="um-item">
                   <v-icon class="um-item__icon" size="20">sun-moon</v-icon>
                   <div class="um-item__body">
                     <div class="um-item__title">Theme</div>
                     <div class="um-item__sub">Toggle light or dark mode</div>
                   </div>
-                  <v-btn-toggle
-                    v-model="themeToggleValue"
-                    density="comfortable"
-                    mandatory
-                    class="theme-segment ml-auto"
-                  >
-                    <v-btn value="light" icon="sun" variant="text" aria-label="Light theme" />
-                    <v-btn value="dark" icon="moon" variant="text" aria-label="Dark theme" />
-                  </v-btn-toggle>
+                  <MpSegmentedControl
+                    :model-value="themeToggleValue"
+                    ariaLabel="Theme"
+                    class="ml-auto"
+                    :items="[
+                      { value: 'light', icon: 'sun', label: 'Light theme' },
+                      { value: 'dark', icon: 'moon', label: 'Dark theme' },
+                    ]"
+                    @update:model-value="(v) => { if (v) themeToggleValue = v as ThemeMode }"
+                  />
                 </div>
                 <div class="um-item" role="group" aria-label="PLG demo state">
                   <v-icon class="um-item__icon" size="20">flask-conical</v-icon>
@@ -1336,60 +1338,6 @@ function onSearchKeydown(event: KeyboardEvent) {
   font-size: var(--mp-fontSize-13);
   font-weight: var(--mp-fontWeight-medium);
   color: var(--muted);
-}
-
-.theme-segment.v-btn-group {
-  flex-shrink: 0;
-  align-self: center;
-  align-items: center;
-  /* 40 track = 32 thumb + 4 padding either side; every number on a scale stop.
-     Was a 36px track with 3px padding around 30px thumbs. */
-  min-height: var(--mp-component-control-height);
-  height: auto !important;
-  padding: var(--mp-space-4);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-pill);
-  background: var(--surface-secondary);
-  overflow-x: auto;
-  overflow-y: visible;
-}
-
-.theme-segment :deep(.v-btn) {
-  width: var(--mp-space-32) !important;
-  min-width: var(--mp-space-32) !important;
-  height: var(--mp-space-32) !important;
-  min-height: var(--mp-space-32) !important;
-  padding: 0 !important;
-  border-radius: var(--mp-radius-full) !important;
-}
-
-.theme-segment :deep(.v-btn .v-btn__content) {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  block-size: 100%;
-  inline-size: 100%;
-}
-
-.theme-segment :deep(.v-btn .v-icon) {
-  font-size: var(--mp-fontSize-18);
-  line-height: 1;
-  block-size: 1em;
-  inline-size: 1em;
-}
-
-.theme-segment :deep(.v-btn--active) {
-  background: var(--surface-primary);
-  box-shadow: 0 1px 3px color-mix(in oklch, var(--text-primary) 8%, transparent);
-}
-
-/* Dark mode: --surface-primary matches the track and the --ink-derived shadow
-   inverts to a glow, so the active pill reads as inset rather than raised.
-   --surface-overlay is lighter than the track's --surface-secondary in dark, so this
-   keeps the raised look; light mode keeps the original shadow above. */
-.v-theme--maropostDark .theme-segment :deep(.v-btn--active) {
-  background: var(--surface-overlay);
-  box-shadow: var(--elevation-raised);
 }
 
 .appbar-search {

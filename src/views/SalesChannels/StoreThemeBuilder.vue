@@ -7,6 +7,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormField from '@/components/MpFormField.vue'
@@ -642,19 +643,13 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
     </template>
 
     <template #actions>
-      <v-btn-toggle v-model="device" mandatory density="compact" rounded="lg" border aria-label="Preview device">
-        <v-tooltip v-for="option in deviceOptions" :key="option.value" :text="option.label" location="bottom">
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              :value="option.value"
-              :icon="option.icon"
-              size="small"
-              :aria-label="option.label"
-            ></v-btn>
-          </template>
-        </v-tooltip>
-      </v-btn-toggle>
+      <MpSegmentedControl
+        :model-value="device"
+        size="sm"
+        ariaLabel="Preview device"
+        :items="deviceOptions.map(o => ({ value: o.value, icon: o.icon, label: o.label, tooltip: o.label }))"
+        @update:model-value="(v) => { if (v) device = v as Device }"
+      />
       <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
       <v-tooltip text="Ask Da Vinci to review this theme" location="bottom">
         <template #activator="{ props }">
