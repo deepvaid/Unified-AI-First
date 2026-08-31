@@ -19,6 +19,21 @@ Crawled from `uat.maropost.com` account 116000 on 2026-08-28.
 | Collections | `/commerce/:id/products/collections` | [`Collections.vue`](../../src/views/Products/Collections.vue) + [`CollectionEditor.vue`](../../src/views/Products/CollectionEditor.vue) | [AUDIT](collections/AUDIT.md) · [FLOWS](collections/FLOWS.md) · [PARITY](collections/PARITY.md) |
 | Reservations | `/commerce/:id/inventory/reservations` | [`Reservations.vue`](../../src/views/Products/Reservations.vue) | [AUDIT](inventory-reservations/AUDIT.md) · [FLOWS](inventory-reservations/FLOWS.md) · [PARITY](inventory-reservations/PARITY.md) |
 
+### eRFM Report (2026-08-31)
+
+Crawled from `uat.maropost.com` account 116000. Screenshots were impossible for the whole session
+(the page never reaches `document_idle`), so the crawl was taken from the live DOM **and the live
+Vue component tree** — component names, `setupState`, chart option objects, and validation-rule
+return values. The pre-existing sandbox page turned out to be an invented design built from a
+URL-only tracker row and was replaced.
+
+| Page | Source | Rebuild | Docs |
+|---|---|---|---|
+| eRFM Report | `/erfm_report` (+ Groups & Settings drawers) | [`ERFMReport.vue`](../../src/views/Analytics/ERFMReport.vue) + [`ErfmMatrix.vue`](../../src/components/analytics/ErfmMatrix.vue) + [`ErfmGroupDrawer.vue`](../../src/components/analytics/ErfmGroupDrawer.vue) + [`ErfmSettingsDrawer.vue`](../../src/components/analytics/ErfmSettingsDrawer.vue) | [AUDIT](erfm-report/AUDIT.md) · [FLOWS](erfm-report/FLOWS.md) · [PARITY](erfm-report/PARITY.md) · [IMPROVEMENTS](erfm-report/IMPROVEMENTS.md) · [GAPS](erfm-report/GAPS.md) |
+
+Route corrected from `/accounts/:accountId/analytics/erfm_report` to `/accounts/:accountId/erfm_report`
+to match production; `AppSidebar` nav item updated to match.
+
 ### Marketing Acquisition + Content slice (2026-08-30)
 
 Crawled from `uat.maropost.com` account 116000. Overview and the locked decisions:

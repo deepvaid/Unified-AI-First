@@ -60,7 +60,7 @@ Part A has been seeded with the top-level modules observed in the initial read-o
 | 2 | Sales by Order | /commerce/2000290/reports/sales-by-order | page | — | crawled |
 | 3 | Dispatched Orders | /commerce/2000290/reports/dispatched-orders | page | — | crawled |
 | 4 | Sales Summary | /commerce/2000290/reports/sales-summary | page | — | crawled |
-| 5 | eRFM Report | /accounts/2000290/erfm_report | page | — | crawled |
+| 5 | eRFM Report | /accounts/2000290/erfm_report | page | — (no screenshots possible; DOM + Vue-tree crawl) | deep-crawled 2026-08-31 |
 | 6 | Campaign Reports | /accounts/2000290/reports | page | — | crawled |
 | 7 | Recurring Campaign Reports | /accounts/2000290/reports/recurring_campaign_report | page | — | crawled |
 | 8 | A/B Campaign Reports | /accounts/2000290/ab_reports | page | — | crawled |
@@ -410,7 +410,7 @@ Built 2026-07-07 from Part A (all 11 modules) diffed against `src/router/index.t
 | 2 | Sales by Order | OrdersReport | exists | | | Titled "Sales by Order" + status filter |
 | 3 | Dispatched Orders | DispatchedOrders | exists | | | Shipped/Delivered table |
 | 4 | Sales Summary | SalesSummary | partial→built | done | 81c0d0f | KPI row + revenue-by-channel bar chart + channel table (edit-in-place, user exception) |
-| 5 | eRFM Report | ERFMReport | partial→built | done | 1f448ef | RFM summary KPIs + distribution bar + 9 segment cards w/ actions (edit-in-place, user exception) |
+| 5 | eRFM Report | ERFMReport | **rebuilt** | done | — | ⚠️ The July build was an **invented design** (9 generic RFM segments, an Export button, no engagement axis) produced from this URL-only row — the real page was never seen. Deep-crawled and fully rebuilt 2026-08-31: 5 groups × 5 engagement levels, selectable matrix, create-segment handoff, transition matrix, performance tables, GROUPS + SETTINGS drawers. Route corrected to `/erfm_report`. Docs: `docs/rebuild/erfm-report/` |
 | 6 | Campaign Reports | CampaignReports | exists | | | Sent/opens/clicks table |
 | 7 | Recurring Campaign Reports | RecurringCampaignReports | exists | | | Frequency filter |
 | 8 | A/B Campaign Reports | ABCampaignReports | exists | | | Winning variant, lift |
