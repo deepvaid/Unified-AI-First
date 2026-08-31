@@ -2,13 +2,14 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCommerceStore, type KitComponent, type ProductDraftInput, type PublishStatus } from '@/stores/useCommerce'
-import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpWizardShell from '@/components/MpWizardShell.vue'
+import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useWizardSteps } from '@/composables/useWizardSteps'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,9 +24,12 @@ const accountId = computed(() => {
 const productsRoute = computed(() => ({ name: 'Products', params: { accountId: accountId.value } }))
 
 const steps = ['Add Product', 'Kit Setup', 'Settings']
-const step = ref(1)
-const maxStep = ref(1)
+const { step, maxStep, goTo: goStep, next, prev: prevStep } = useWizardSteps(steps.length, {
+  canAdvance: (from) => from !== 1 || titleValid.value,
+})
 const submitted = ref(false)
+
+const stepHint = computed(() => (!titleValid.value ? 'Add a kit title to continue' : undefined))
 
 // ── Step 1 — Add Product ────────────────────────────────────────────────
 const title = ref('')
@@ -106,20 +110,11 @@ const kitHeaders = [
   { title: '', key: 'actions', sortable: false, width: 64 },
 ]
 
-function goStep(target: number) {
-  if (target <= maxStep.value) step.value = target
-}
 function nextStep() {
   submitted.value = true
   if (step.value === 1 && !titleValid.value) return
-  if (step.value < 3) {
-    step.value += 1
-    maxStep.value = Math.max(maxStep.value, step.value)
-    submitted.value = false
-  }
-}
-function prevStep() {
-  if (step.value > 1) step.value -= 1
+  submitted.value = false
+  next()
 }
 
 function save(publishStatus: PublishStatus) {
@@ -165,30 +160,25 @@ function save(publishStatus: PublishStatus) {
 </script>
 
 <template>
-  <div class="mp-frame-fill d-flex flex-column">
-    <div class="kw-head px-8 pt-6 pb-4 bg-surface border-b">
-      <MpPageHeader
-        title="New Kit"
-        :subtitle="`Step ${step} of 3 — ${steps[step - 1]}`"
-        :back-to="productsRoute"
-      >
-        <template #actions>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="router.push(productsRoute)">Cancel</v-btn>
-        </template>
-        <template #tabs>
-          <MpWizardSteps :steps="steps" :current="step" clickable :max-step="maxStep" class="mt-3" @select="goStep" />
-        </template>
-      </MpPageHeader>
-    </div>
+  <MpWizardShell
+    title="New Kit"
+    :steps="steps"
+    :current="step"
+    :max-step="maxStep"
+    :back-to="productsRoute"
+    measure="md"
+    :hint="stepHint"
+    @select="goStep"
+    @back="prevStep"
+  >
+    <template #actions>
+      <v-btn variant="text" class="text-none text-medium-emphasis" @click="router.push(productsRoute)">Cancel</v-btn>
+    </template>
 
-    <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
-      <div style="max-width: 920px; margin: 0 auto;">
-
+    <div class="d-flex flex-column ga-5">
         <!-- Step 1 — Add Product -->
         <template v-if="step === 1">
-          <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-            <div class="text-subtitle-1 font-weight-bold mb-1">Kit Details</div>
-            <div class="text-body-2 text-medium-emphasis mb-5">A kit bundles existing products together into one purchasable item.</div>
+          <MpWizardStepCard title="Kit Details" description="A kit bundles existing products together into one purchasable item.">
             <MpFormGrid :cols="2">
               <v-text-field
                 v-model="title"
@@ -201,11 +191,9 @@ function save(publishStatus: PublishStatus) {
               <v-text-field v-model="url" label="Product URL" placeholder="/products/my-kit" prepend-inner-icon="link" />
               <v-textarea v-model="description" label="Description" rows="3" auto-grow class="mp-form-grid__full" />
             </MpFormGrid>
-          </v-card>
+          </MpWizardStepCard>
 
-          <v-card variant="flat" border rounded="lg" class="pa-6">
-            <div class="text-subtitle-1 font-weight-bold mb-1">Kit Components</div>
-            <div class="text-body-2 text-medium-emphasis mb-4">Search your catalogue and add products to this kit.</div>
+          <MpWizardStepCard title="Kit Components" description="Search your catalogue and add products to this kit." :heading-level="3">
             <MpFormGrid>
               <v-text-field
                 v-model="componentSearch"
@@ -260,14 +248,12 @@ function save(publishStatus: PublishStatus) {
                 </div>
               </template>
             </MpFormGrid>
-          </v-card>
+          </MpWizardStepCard>
         </template>
 
         <!-- Step 2 — Kit Setup -->
         <template v-else-if="step === 2">
-          <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-            <div class="text-subtitle-1 font-weight-bold mb-1">Kit Setup</div>
-            <div class="text-body-2 text-medium-emphasis mb-4">Set how many of each component belong in one kit.</div>
+          <MpWizardStepCard title="Kit Setup" description="Set how many of each component belong in one kit.">
             <MpEmptyState
               v-if="!components.length"
               icon="package"
@@ -300,58 +286,47 @@ function save(publishStatus: PublishStatus) {
                 <v-btn icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove component" @click="removeComponent(item.productId)" />
               </template>
             </v-data-table>
-          </v-card>
+          </MpWizardStepCard>
 
-          <v-card variant="flat" border rounded="lg" class="pa-6">
-            <div class="text-subtitle-1 font-weight-bold mb-4">Pricing Summary</div>
+          <MpWizardStepCard title="Pricing Summary" :heading-level="3">
             <div class="d-flex justify-space-between py-2 border-b"><span class="text-body-2 text-medium-emphasis">Components</span><span class="font-weight-medium">{{ components.length }}</span></div>
             <div class="d-flex justify-space-between py-2 border-b"><span class="text-body-2 text-medium-emphasis">Buildable units (from stock)</span><span class="font-weight-medium">{{ buildableUnits }}</span></div>
             <div class="d-flex justify-space-between py-2"><span class="text-body-2 font-weight-bold">Kit price</span><span class="text-h6 font-weight-bold">${{ kitPrice.toFixed(2) }}</span></div>
-          </v-card>
+          </MpWizardStepCard>
         </template>
 
         <!-- Step 3 — Settings -->
         <template v-else>
-          <v-card variant="flat" border rounded="lg" class="pa-6">
-            <div class="text-subtitle-1 font-weight-bold mb-1">Settings</div>
-            <div class="text-body-2 text-medium-emphasis mb-5">Choose where this kit is available. Status is set by the action you take below.</div>
+          <MpWizardStepCard title="Settings" description="Choose where this kit is available. Status is set by the action you take below.">
             <MpFormGrid>
               <v-select v-model="salesChannels" :items="SALES_CHANNELS" label="Sales Channels" multiple chips closable-chips />
               <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
                 Save as Draft keeps this kit hidden; Publish makes it available on the selected channels.
               </v-alert>
             </MpFormGrid>
-          </v-card>
+          </MpWizardStepCard>
         </template>
-
-      </div>
     </div>
 
-    <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
+    <template #footerStart>
       <div class="d-flex align-center gap-2">
         <v-btn variant="text" class="text-none" @click="router.push(productsRoute)">Cancel</v-btn>
         <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
       </div>
-      <div class="d-flex align-center gap-2">
-        <v-btn variant="outlined" class="text-none" :disabled="!titleValid" @click="save('Draft')">Save as Draft</v-btn>
-        <v-btn v-if="step < 3" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="step === 1 && !titleValid" @click="nextStep">Continue</v-btn>
-        <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="check" :disabled="!titleValid" @click="save('Published')">Publish</v-btn>
-      </div>
-    </div>
+    </template>
+    <template #footer>
+      <v-btn variant="outlined" class="text-none" :disabled="!titleValid" @click="save('Draft')">Save as Draft</v-btn>
+      <v-btn v-if="step < 3" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="step === 1 && !titleValid" @click="nextStep">Continue</v-btn>
+      <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="check" :disabled="!titleValid" @click="save('Published')">Publish</v-btn>
+    </template>
+  </MpWizardShell>
 
-    <MpConfirmDialog
-      v-model="confirmLeave"
-      danger
-      :title="leaveTitle"
-      :message="leaveMessage"
-      :confirm-label="leaveConfirmLabel"
-      @confirm="discardAndLeave"
-    />
-  </div>
+  <MpConfirmDialog
+    v-model="confirmLeave"
+    danger
+    :title="leaveTitle"
+    :message="leaveMessage"
+    :confirm-label="leaveConfirmLabel"
+    @confirm="discardAndLeave"
+  />
 </template>
-
-<style scoped>
-.kw-head :deep(.mp-page-header) { margin-bottom: 0; }
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-</style>
