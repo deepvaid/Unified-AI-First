@@ -1,16 +1,43 @@
 <script setup lang="ts">
-defineProps<{
-  /** Whether this option is currently selected (renders the primary ring + check). */
-  selected: boolean
+import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+
+/**
+ * MpOptionCard — the keyboard-operable card of a chooser gallery, in two modes
+ * derived from its props (the MpListRow "resolve your own tag" rule):
+ *
+ * - **Selection** (`selected` given, no target): `role="button"` +
+ *   `aria-pressed` + Enter/Space, with the primary ring and check when
+ *   selected. Wizard galleries that select-then-commit.
+ * - **Navigation** (`to`/`href` given): a real anchor via v-card's own link
+ *   rendering — natively keyboard operable, no `aria-pressed` (a link is not
+ *   a toggle). Click-to-go choosers (campaign type, segment builder).
+ */
+const props = withDefaults(defineProps<{
+  /** Selection mode: whether this option is selected (ring + check). Omit entirely for plain/navigation cards. */
+  selected?: boolean
   title: string
   description?: string
   /** Lucide icon name rendered in a tonal primary avatar before the title. */
   icon?: string
-}>()
+  /** Navigation mode: render the card as a router link. */
+  to?: RouteLocationRaw
+  /** Navigation mode: render the card as a plain anchor. */
+  href?: string
+  /** Render the title as a real heading — chooser tiles are page landmarks. Omit for a plain div. */
+  headingLevel?: 2 | 3
+}>(), {
+  selected: undefined,
+})
+
+const isLink = computed(() => props.to !== undefined || props.href !== undefined)
+const isSelectable = computed(() => !isLink.value && props.selected !== undefined)
+const titleTag = computed(() => (props.headingLevel ? `h${props.headingLevel}` : 'div'))
 
 // Click/dblclick are native events that fall through to the root v-card.
 // Enter/Space re-dispatch a native click on the root so those fallthrough
-// listeners fire for keyboard users too.
+// listeners fire for keyboard users too. (Selection mode only — a link
+// handles its own keys.)
 function onKeyActivate(e: KeyboardEvent) {
   if (e.target !== e.currentTarget) return
   e.preventDefault()
@@ -25,18 +52,21 @@ function onKeyActivate(e: KeyboardEvent) {
     rounded="lg"
     class="mp-option-card d-flex flex-column"
     :class="{ 'mp-option-card--selected': selected }"
-    role="button"
-    tabindex="0"
-    :aria-pressed="selected"
-    @keydown.enter="onKeyActivate"
-    @keydown.space="onKeyActivate"
+    :to="to"
+    :href="href"
+    :role="isSelectable ? 'button' : undefined"
+    :tabindex="isSelectable ? 0 : undefined"
+    :aria-pressed="isSelectable ? selected : undefined"
+    @keydown.enter="isSelectable && onKeyActivate($event)"
+    @keydown.space="isSelectable && onKeyActivate($event)"
   >
     <div class="mp-option-card__body d-flex flex-column flex-grow-1">
       <div class="d-flex align-center ga-3" :class="{ 'mb-2': description || $slots.default }">
         <v-avatar v-if="icon" color="primary" variant="tonal" size="34" rounded="lg" class="flex-shrink-0">
           <v-icon size="18">{{ icon }}</v-icon>
         </v-avatar>
-        <div class="text-body-2 font-weight-bold">{{ title }}</div>
+        <component :is="titleTag" class="mp-option-card__title text-body-2 font-weight-bold">{{ title }}</component>
+        <slot name="title-append" />
         <v-icon v-if="selected" color="primary" size="18" class="ml-auto flex-shrink-0">circle-check</v-icon>
       </div>
       <div v-if="description" class="text-caption text-medium-emphasis">{{ description }}</div>
@@ -55,6 +85,7 @@ function onKeyActivate(e: KeyboardEvent) {
 
 .mp-option-card {
   cursor: pointer;
+  color: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .mp-option-card:hover {
@@ -67,6 +98,9 @@ function onKeyActivate(e: KeyboardEvent) {
 .mp-option-card--selected {
   border-color: var(--accent-default);
   box-shadow: 0 0 0 1px var(--accent-default);
+}
+.mp-option-card__title {
+  margin: 0;
 }
 .mp-option-card__media {
   border-top: 1px solid var(--border-subtle);

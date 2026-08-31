@@ -195,7 +195,10 @@ an extension rather than an invention — noted here only so the change is not i
 
 ## 8. `MpOptionCard` has no navigational variant
 
-**Status:** used `v-card` with `to` instead.
+**Status:** ✅ **CLOSED (wizard pass, 2026-08-30)** — the proposed spec below was adopted verbatim:
+`selected` became optional, `to`/`href` render the card as a real anchor with no `aria-pressed`,
+plus a `#title-append` slot and `headingLevel` for landmark tiles. `SegmentBuilderChooser` and
+`CampaignTypeChooser` now compose it.
 
 **Use case.** The segment builder chooser (`/segments/types`) offers two tiles that **navigate**.
 `MpOptionCard` is a *selection* control: it hardcodes `role="button"` and `aria-pressed`, so using
