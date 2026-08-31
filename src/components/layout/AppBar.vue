@@ -1448,6 +1448,15 @@ function onSearchKeydown(event: KeyboardEvent) {
   min-height: var(--mp-component-control-height);
 }
 
+/* Vuetify's field wrapper top-aligns its content (align-items: flex-start,
+   for the floating label this pill doesn't have). With the input flattened to
+   its line box below, that pinned the text to the top of the 40px pill while
+   the prepend icon and ⌘K chip stayed centred — so centre the wrapper, as the
+   toolbar search already does. */
+:deep(.appbar-search .v-field__field) {
+  align-items: center;
+}
+
 :deep(.appbar-search .v-field__input) {
   font-size: var(--mp-fontSize-14);
   font-weight: var(--mp-fontWeight-medium);
