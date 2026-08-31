@@ -1809,3 +1809,21 @@ states. Decision records:
   scope.**
 - Ordering contract extended in the file header: the state blocks sit after hover/focus/error
   and win by extra-class + source order — rules appended below them can silently flip states.
+
+## Notification centre — UAT alignment — 2026-08-31
+
+The morning pass invented a severity classification for notifications; the real UAT centre
+(uat.maropost.com /notifications) carries none. Aligned:
+
+- **Severity removed from notifications** — `AppNotification` is now
+  `{ id, title, time, read, downloadable? }`; rows render **one generic bell disc**
+  (neutral tint). This supersedes the "one severity vocabulary" decision *for notifications
+  only* — the dashboard attention widget keeps its ramp (its data actually has severity).
+- **Absolute timestamps** ("Aug 26, 2026 at 02:40 AM") — the real feed never shows relative
+  times.
+- **Download action** on report/export rows (`downloadable`) — trailing icon button with a
+  per-row aria-label; swallows its click (never marks the row read); prototype stub = toast.
+- **See all** → new `/accounts/:accountId/notifications` page (the UAT URL shape), sharing
+  the row via `src/components/notifications/NotificationRow.vue` (internal subfolder
+  component, not a top-level Mp* — same convention as layout/ and copilot/).
+- Badge caps at **99+** (`max="99"`), matching the real bell.
