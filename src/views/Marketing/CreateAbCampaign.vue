@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpWizardShell from '@/components/MpWizardShell.vue'
+import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useToast } from '@/composables/useToast'
 import {
   useCampaignsStore,
@@ -38,8 +39,6 @@ const campaignsRoute = computed(() => ({ name: 'EmailCampaigns', params: { accou
 
 const stepTitles = ['Campaign information', 'Split groups']
 const totalSteps = stepTitles.length
-const step = ref(1)
-const maxStepReached = ref(1)
 const draftId = ref<number | null>(null)
 
 // ── Step 1 — Campaign information + Contacts ─────────────────────────────────
@@ -227,14 +226,10 @@ function saveProgress(finalize: 'send_now' | 'scheduled' | null = null) {
   draftSavedChip.value = true
 }
 
-function goToStep(target: number) {
-  if (target === step.value) return
-  if (target > step.value && !stepValid.value) return
-  saveProgress()
-  step.value = target
-  maxStepReached.value = Math.max(maxStepReached.value, target)
-}
-function prevStep() { goToStep(1) }
+const { step, maxStep, goTo: goToStep, prev: prevStep, unlockAll } = useWizardSteps(totalSteps, {
+  canAdvance: () => stepValid.value,
+  onNavigate: () => saveProgress(),
+})
 
 function saveDraft() {
   saveProgress(null)
@@ -313,7 +308,7 @@ onMounted(() => {
     }
     hydrateFrom(existing)
     editingExisting.value = true
-    maxStepReached.value = totalSteps
+    unlockAll()
   }
   captureFormSnapshot()
 })
@@ -324,38 +319,26 @@ const pageTitle = computed(() => (editingExisting.value ? 'Edit A/B email campai
 </script>
 
 <template>
-  <div class="mp-frame-fill d-flex flex-column">
-    <div class="cab-head px-8 pt-6 pb-4 bg-surface border-b">
-      <MpPageHeader
-        :title="pageTitle"
-        :subtitle="`Step ${step} of ${totalSteps} — ${stepTitles[step - 1]}`"
-        :back-to="campaignsRoute"
-      >
-        <template #actions>
-          <v-chip v-if="draftSavedChip" size="small" variant="tonal" color="success" class="font-weight-medium">Draft saved</v-chip>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="saveDraft">Save &amp; exit</v-btn>
-        </template>
-        <template #tabs>
-          <MpWizardSteps
-            :steps="stepTitles"
-            :current="step"
-            :clickable="maxStepReached > 1"
-            :max-step="maxStepReached"
-            class="mt-3"
-            @select="goToStep"
-          />
-        </template>
-      </MpPageHeader>
-    </div>
+  <MpWizardShell
+    :title="pageTitle"
+    :steps="stepTitles"
+    :current="step"
+    :max-step="maxStep"
+    :clickable="maxStep > 1"
+    :back-to="campaignsRoute"
+    measure="md"
+    :hint="stepValid ? undefined : stepHint"
+    @select="goToStep"
+    @back="prevStep"
+  >
+    <template #actions>
+      <v-chip v-if="draftSavedChip" size="small" variant="tonal" color="success" class="font-weight-medium">Draft saved</v-chip>
+      <v-btn variant="text" class="text-none text-medium-emphasis" @click="saveDraft">Save &amp; exit</v-btn>
+    </template>
 
-    <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
-      <div class="cab-measure">
-
+    <div class="d-flex flex-column ga-6">
         <!-- Step 1: Campaign information + Contacts -->
-        <v-card v-if="step === 1" variant="flat" border rounded="lg" class="pa-8">
-          <h2 class="text-h6 font-weight-bold mb-1">Campaign information</h2>
-          <p class="text-body-2 text-medium-emphasis mb-6">Name the test and set the sender emails shared by every split group.</p>
-          <v-divider class="mb-6" />
+        <MpWizardStepCard v-if="step === 1" title="Campaign information" description="Name the test and set the sender emails shared by every split group.">
           <MpFormGrid :cols="2">
             <v-text-field
               v-model="name"
@@ -406,16 +389,11 @@ const pageTitle = computed(() => (editingExisting.value ? 'Edit A/B email campai
               persistent-hint
             />
           </MpFormGrid>
-        </v-card>
+        </MpWizardStepCard>
 
         <!-- Step 2: Split groups -->
         <template v-if="step === 2">
-          <v-card variant="flat" border rounded="lg" class="pa-8 mb-6">
-            <h2 class="text-h6 font-weight-bold mb-1">Split groups</h2>
-            <p class="text-body-2 text-medium-emphasis mb-6">
-              Define two or more variants. The percentage you don't allocate goes to the winner group automatically.
-            </p>
-            <v-divider class="mb-6" />
+          <MpWizardStepCard title="Split groups" description="Define two or more variants. The percentage you don't allocate goes to the winner group automatically.">
             <MpFormGrid>
               <v-select
                 v-model="winningCriteria"
@@ -483,10 +461,9 @@ const pageTitle = computed(() => (editingExisting.value ? 'Edit A/B email campai
                 {{ allocatedPercent }}% allocated across {{ groups.length }} groups · the remaining {{ winnerPercent }}% receives the winning variant.
               </template>
             </v-alert>
-          </v-card>
+          </MpWizardStepCard>
 
-          <v-card variant="flat" border rounded="lg" class="pa-8">
-            <MpFormSection title="Send test email" description="Send every variant to yourself or teammates first — up to 10 addresses, or lists totalling 20 contacts." class="mt-0" />
+          <MpWizardStepCard title="Send test email" description="Send every variant to yourself or teammates first — up to 10 addresses, or lists totalling 20 contacts." :heading-level="3">
             <MpFormGrid :cols="2">
               <v-combobox v-model="testEmails" label="Enter email" multiple chips closable-chips hint="Press Enter after each address" persistent-hint />
               <v-select v-model="testListIds" :items="listItems" :label="`Select list (${testListIds.length})`" multiple chips closable-chips />
@@ -502,56 +479,39 @@ const pageTitle = computed(() => (editingExisting.value ? 'Edit A/B email campai
               hint="Starts calculating the audience 3 hours ahead of the send time so large campaigns are not delayed."
               persistent-hint
             />
-          </v-card>
+          </MpWizardStepCard>
         </template>
-
-      </div>
     </div>
 
-    <!-- Unified footer -->
-    <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
-      <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
-      <div v-else></div>
-      <div class="d-flex align-center ga-3">
-        <span v-if="!stepValid && stepHint" class="text-caption text-medium-emphasis">{{ stepHint }}</span>
-        <span class="text-caption text-medium-emphasis num">{{ step }} / {{ totalSteps }}</span>
-        <v-btn v-if="step < totalSteps" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="goToStep(2)">
-          Continue
+    <template #footer>
+      <v-btn v-if="step < totalSteps" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="goToStep(2)">
+        Continue
+      </v-btn>
+      <template v-else>
+        <v-btn variant="outlined" class="text-none" @click="saveDraft">Save draft</v-btn>
+        <v-btn variant="outlined" class="text-none" :disabled="!step2Valid" @click="requestFinalize('send_now')">Send now</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="calendar-clock" :disabled="!step2Valid" @click="requestFinalize('scheduled')">
+          Schedule campaign
         </v-btn>
-        <template v-else>
-          <v-btn variant="outlined" class="text-none" @click="saveDraft">Save draft</v-btn>
-          <v-btn variant="outlined" class="text-none" :disabled="!step2Valid" @click="requestFinalize('send_now')">Send now</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" prepend-icon="calendar-clock" :disabled="!step2Valid" @click="requestFinalize('scheduled')">
-            Schedule campaign
-          </v-btn>
-        </template>
-      </div>
-    </div>
+      </template>
+    </template>
+  </MpWizardShell>
 
-    <MpConfirmDialog
-      v-model="confirmOpen"
-      :title="confirmTitle"
-      :message="confirmMessage"
-      :confirm-label="confirmAction === 'send_now' ? 'Send now' : 'Schedule'"
-      :consequences="confirmConsequences"
-      @confirm="finalizeCampaign"
-    />
+  <MpConfirmDialog
+    v-model="confirmOpen"
+    :title="confirmTitle"
+    :message="confirmMessage"
+    :confirm-label="confirmAction === 'send_now' ? 'Send now' : 'Schedule'"
+    :consequences="confirmConsequences"
+    @confirm="finalizeCampaign"
+  />
 
-    <MpConfirmDialog
-      v-model="confirmLeave"
-      danger
-      :title="leaveTitle"
-      :message="leaveMessage"
-      :confirm-label="leaveConfirmLabel"
-      @confirm="discardAndLeave"
-    />
-  </div>
+  <MpConfirmDialog
+    v-model="confirmLeave"
+    danger
+    :title="leaveTitle"
+    :message="leaveMessage"
+    :confirm-label="leaveConfirmLabel"
+    @confirm="discardAndLeave"
+  />
 </template>
-
-<style scoped>
-.cab-head .mp-page-header { margin-bottom: 0; }
-.cab-measure { max-width: 920px; margin: 0 auto; }
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.num { font-variant-numeric: tabular-nums; }
-</style>
