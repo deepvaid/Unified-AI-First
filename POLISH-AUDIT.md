@@ -121,10 +121,10 @@ The rule (`CLAUDE.md`): every logical section in `v-card variant="flat" border r
 `Contacts/ContactDetail.vue:177` (default size) · `GetStarted.vue:98` · `Service/Tickets.vue:350` · `SalesChannels/StoreThemeBuilder.vue:622` · `components/marketing/JourneyFlowColumn.vue:86` (`@click.stop`, extra v-card wrapper, `base-color="error"` no divider) · `components/copilot/DvHistoryDrawer.vue:134` (bespoke `.dv-history__menu-danger`)
 
 **Mixed-content kebabs — migrate chrome, keep bespoke body:**
-`components/dashboards/DashboardWidgetActionMenu.vue:21` (embedded v-btn-toggle row) · `components/MpDaVinciBot.vue:1053` (trailing check icons) · `Products/ProductsList.vue:382` (**`ellipsis`** glyph, v-list-subheader, all-destructive list)
+~~`components/dashboards/DashboardWidgetActionMenu.vue:21` (embedded v-btn-toggle row)~~ ✓ done 2026-08-31 (recomposed on MpRowActionsMenu + MpSegmentedControl) · `components/MpDaVinciBot.vue:1053` (trailing check icons) · `Products/ProductsList.vue:382` (**`ellipsis`** glyph, v-list-subheader, all-destructive list)
 
 **Fully hand-rolled (no v-list at all):**
-`DashboardView.vue:571` — `Actions ▾` → raw `v-card.mp-menu` with `<button class="mp-menu-row">` rows + `.mp-menu-row--danger`. ⚠ page-tracker records this grouped menu as a *deliberate module-01 redesign* — align panel chrome/danger recipe, keep the grouping and labeled trigger. (`DashboardGradientView.vue:598` is a byte-for-byte twin — out of scope, flag only.)
+`DashboardView.vue:571` — `Actions ▾` → raw `v-card.mp-menu` with `<button class="mp-menu-row">` rows + `.mp-menu-row--danger`. ⚠ page-tracker records this grouped menu as a *deliberate module-01 redesign* — align panel chrome/danger recipe, keep the grouping and labeled trigger. ✓ chrome aligned 2026-08-31: both twins retokenized onto `component.menu.*` (36 floor / 6 block / 14-12 type) and the Gradient copy's `role="menu"`/`menuitem`/`aria-haspopup` restored; grouping + labeled trigger kept as designed.
 
 ### 3c. Labeled-button dropdowns (grey zone — standardize panel chrome only, keep triggers)
 

@@ -1674,3 +1674,70 @@ gallery-in-table-card pages (LandingPageTemplates, ContentTemplates) stay as the
   **LandingPageBuilderChooser** swapped from inline anatomy to composing the shell.
 - Out-of-scope single-step create flows noted as future shell adopters: CreateContact,
   CreateList, CreateSegmentNextGen, CreateDraftOrder, CreatePromotion.
+
+## Menu density + notifications + segmented control changelog — 2026-08-31
+
+Three user-reported defects, one pass: inconsistent/oversized action popovers, a dead
+notification bell, and broken multi-button groups.
+
+### Menu density (Atlassian-calibrated)
+
+- **`component.menu.*` extended** — `minWidth` 180 · `itemHeight` 36 · `itemPaddingBlock` 6
+  alongside the existing `radius` 12. **Decision: menus are deliberately denser than in-page
+  rows** (36 vs `listItem.minHeight` 40) — a menu is transient chrome, not content. The global
+  popover rule applies it to **every** v-menu overlay, *including select/autocomplete option
+  lists* — accepted by design so a select's options and a menu's items read the same. Two
+  densities now coexist on purpose; the token `$description`s and CLAUDE.md carry the warning
+  so a future pass doesn't "unify" them.
+- **MpRowActionsMenu** reads `menu.minWidth` and dropped its scoped item-sizing block — the
+  global popover rule is the single source of menu-item geometry. Fixed a broken States story
+  template while in the file.
+- **New global rule for card-wrapped panels** (`.v-menu > … > .v-card .v-list`): strips the
+  VList border/rounded defaults and applies the 4px popover inset — MpFolderSelect,
+  MpDateRangeSelect, JourneyAddStepMenu and the toolbar panels stop drifting; their local
+  `py-1`/`py-0`/`:border="false"` utilities deleted.
+- **DashboardWidgetActionMenu recomposed** on MpRowActionsMenu + MpMenuItem (roles restored,
+  x-small trigger with the 40px hit-area, dead 16px-radius CSS deleted) — its S/M/L/XL row is
+  an `MpSegmentedControl size="sm"`, killing the 28px track that clipped 40px pill children.
+- **DashboardView + DashboardGradientView Actions menus** retokenized onto the menu spec
+  (36 floor / 6 block / 14-12 two-line type, matching the app-bar rich rows); the Gradient
+  twin — drifted to 46px/7px/10px/13.5px/11.5px literals — also got its
+  `role="menu"`/`menuitem`/`aria-haspopup` back. Blocks are rule-identical again.
+- **AppBar panels** (assistant / cascade / user) dropped their bespoke two-layer shadow for
+  `--elevation-overlay`; create-menu rows moved onto the menu inset tokens. Panel widths stay
+  (rich panels, not action menus).
+- **Prop hygiene**: Collections' New-collection menu opens `bottom end`; the bulk-bar
+  Assign-role menu opens `top` (away from the viewport edge).
+
+### Notifications (was: a dead button)
+
+- **New `useNotifications` store** (items across Maropost domains, `unreadCount`,
+  `markRead`/`markAllRead`) and **new `MpNotificationsMenu`** Molecule: badge **wraps** the
+  bell per the app's v-badge convention (the old floating-sibling badge and its z-index hack
+  are gone), severity rows reuse the dashboard-attention ramp (`critical|warning|info`) on
+  MpListRow, header carries Mark-all-read, empty composes MpEmptyState.
+- **Decision: `aria-haspopup="dialog"`**, not `menu` — the panel has a header, a button and
+  rich rows; it is a dialog. The label carries the live count ("Notifications, 4 unread").
+  Known gap carried over: no `aria-live` announcement while the panel is closed.
+- NOTIFICATIONS fixture + seeded stories (store reset in `setup()`, MpToastStack idiom).
+
+### Segmented control (root cause fixed at the right layer)
+
+- **Root cause named**: `maropostDefaults.VBtn` writes *inline* styles (9999px radius, 40px
+  min-height, 14px padding-inline) that beat Vuetify's layered `.v-btn-group` CSS — every raw
+  `v-btn-toggle` rendered as overlapping clipped pills. The durable fix (moving those inline
+  defaults to a class rule) is **deliberately out of scope** — logged here as the follow-up.
+- **Global `.v-btn-group` normalization** (excludes `.mp-segmented`): resets the inline
+  min-height/padding with `!important`, end corners `inherit` the group's own radius, plus a
+  single-segment case — all ~30 unmigrated raw sites render presentable without migration.
+- **New `component.segmented.*`** (height sm 32/md 40 = control.height · itemHeight 24/32 ·
+  padding 4 · radius full) and **new `MpSegmentedControl`** Atom — the app-bar theme
+  switcher's proven padded-track + pill-thumb geometry, extracted and tokenized
+  (items/v-model/size/mandatory/ariaLabel, icon-only + tooltip support). Gotcha fixed during
+  extraction: Vuetify renders an empty default slot INSTEAD of a named `icon` prop — segments
+  use boolean `icon` + explicit `v-icon`.
+- **Migrated**: theme-builder device switcher (sm, icon-only + tooltips), app-bar theme
+  segment (md — pixel-identical to the `.theme-segment` block it replaces, now deleted),
+  widget size row (above). **Deliberately not migrated**: DashboardWidgetCard's Trend/Compare
+  view-toggle — its 28px header row sits below the sm stop (32); candidate once that header
+  can take 32.

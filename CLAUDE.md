@@ -84,7 +84,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 
 ## Component Inventory
 
-30 top-level components (counts refreshed 2026-08-17). **Full reference:**
+32 top-level components (counts refreshed 2026-08-31). **Full reference:**
 `docs/design-system/` (structure, Vuetify mapping, token plan, handoff) + Storybook autodocs (`npm run storybook`).
 
 ### Layout & structure
@@ -117,6 +117,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpFormSection** — `title`, `description?`, `required?`, `headingLevel?` (3). **The one in-form section heading** ("GENERAL", "EXPIRATION DATE"). Owns the space above and below itself via `component.field.sectionGap`. Replaced seven hand-rolled patterns.
 - **MpFormField** — `label`, `required?`, `hint?`, `error?` · slot default exposes `{ labelId, descriptionId }`. Label + hint/error + aria for **composite** controls only (chip groups, radio groups, tile pickers). **Never wrap a Vuetify input** — those own their own label via the `label` prop, which renders as an identical static top label.
 - **MpOptionCard** — `selected?`, `title`, `description?`, `icon?`, `to?`/`href?`, `headingLevel?` · slots default, `#title-append`, `#media`. The chooser-gallery card in two modes (resolve-your-own-tag): pass `selected` for a keyboard-operable toggle (wizard select-then-commit galleries); pass `to`/`href` for a real link (click-to-go choosers) — never `:selected="false"` to fake a plain card.
+- **MpSegmentedControl** — `modelValue` (v-model, `string | null`), `items` ({ value, label?, icon?, disabled?, tooltip? }[]), `size?` ('sm'|'md', md = `control.height`), `mandatory?` (default true), `ariaLabel` (required). **The one segmented toggle** — padded track + pill segments on `component.segmented.*`. An `icon` makes a segment icon-only (square) and its `label` becomes the `aria-label`. **Never a raw `v-btn-toggle` for a new switcher** — the global normalization only keeps legacy sites presentable.
 - **MpStatusToggle** — `status` ('Active'|'Paused'|'Draft') · emits `toggle`. Status switch + label cell; disabled on Draft.
 - **MpManageFoldersDrawer** — `scope`, `counts?` · emits `deleted`. Folder CRUD drawer (composes MpFormDrawer).
 - **MpMoveToFolderDialog** — `scope`, `currentFolderId`, `itemLabel?` · emits `move`. Move-to-folder form dialog.
@@ -133,6 +134,7 @@ This is NOT a production app — it uses mock data and has no backend API.
 - **MpConfirmDialog** — model `v-model`, `title`, `message`, `confirmLabel?`, `danger?`, `consequences?` · emits `confirm`. Composes `MpDialog` at `size="sm"`. All confirm prompts (destructive → `danger`).
 - **MpRowActionsMenu** — `ariaLabel` (required), `itemLabel?` · default slot (`MpMenuItem`s). Kebab row-actions menu for list views: `role="menu"` panel opening `bottom end`, 40px trigger hit-area, click-swallowing trigger.
 - **MpMenuItem** — `title`, `icon?`, `danger?`. The one action-menu item (`v-list-item` with `role="menuitem"` baked in; attrs/slots pass through). Destructive = `danger`, last, behind `<v-divider class="my-1" />`. Never a raw `v-list-item` in an action menu.
+- **MpNotificationsMenu** — no props, store-driven (`useNotifications`): bell trigger whose unread badge **wraps** the button (the app's v-badge convention), `aria-haspopup="dialog"` panel of severity-tinted `MpListRow`s (critical/warning/info — the dashboard attention ramp) with Mark-all-read and an `MpEmptyState` when caught up. One per app frame; attrs fall through to the bell (`class="appbar-action-btn"`). Transient confirmations stay `useToast`'s job.
 
 ### AI
 
@@ -282,6 +284,13 @@ Reach for a role token when the system has already made the decision, a primitiv
   **Body is 14px.** Hero sizes live in `display.*`; named roles in `text.*`
 - Roles `component.*` → `control.height` 40px · `button.radius` full ·
   `chip.radius` 8 · `input.radius` 10 · `menu.radius` 12 · `card.radius` 16 · `dialog.radius` 16
+- **Menus** `component.menu.*` → `radius` 12 · `minWidth` 180 · `itemHeight` 36 · `itemPaddingBlock` 6.
+  **Menus are deliberately denser than in-page rows** (36 vs `listItem.minHeight` 40 — transient
+  chrome, not content; decided 2026-08-31). The global popover rule applies it to every v-menu
+  overlay including select/autocomplete option lists; heights are floors, two-line rows grow.
+  Don't "unify" this back to 40 — the split is the design
+- **Segmented** `component.segmented.*` → `height` sm 32 / md 40 (= `control.height`) ·
+  `itemHeight` sm 24 / md 32 · `padding` 4 · `radius` full. Consumed by `MpSegmentedControl` only
 - **Card insets** `component.card.*` → `padding` 20 (the standard) · `paddingCompact` 12 ·
   `paddingSpacious` 32 · `gap` 16 · `gapCompact` 8. **Use these, not a `pa-*` utility, on a
   card root.** A card needing a fourth value is a design bug, not a token gap
