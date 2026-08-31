@@ -6,12 +6,13 @@ import type { RouteLocationRaw } from 'vue-router'
  * MpOptionCard — the keyboard-operable card of a chooser gallery, in two modes
  * derived from its props (the MpListRow "resolve your own tag" rule):
  *
- * - **Selection** (`selected` given, no target): `role="button"` +
- *   `aria-pressed` + Enter/Space, with the primary ring and check when
- *   selected. Wizard galleries that select-then-commit.
+ * - **Button** (no target): `role="button"` + Enter/Space. With `selected` it
+ *   is a toggle (`aria-pressed`, primary ring + check) for select-then-commit
+ *   wizard galleries; without it, a plain action card (`choose()`-style
+ *   click-to-go with side effects) — no pressed state announced.
  * - **Navigation** (`to`/`href` given): a real anchor via v-card's own link
  *   rendering — natively keyboard operable, no `aria-pressed` (a link is not
- *   a toggle). Click-to-go choosers (campaign type, segment builder).
+ *   a toggle). Pure-navigation choosers (campaign type, segment builder).
  */
 const props = withDefaults(defineProps<{
   /** Selection mode: whether this option is selected (ring + check). Omit entirely for plain/navigation cards. */
@@ -31,7 +32,7 @@ const props = withDefaults(defineProps<{
 })
 
 const isLink = computed(() => props.to !== undefined || props.href !== undefined)
-const isSelectable = computed(() => !isLink.value && props.selected !== undefined)
+const isButton = computed(() => !isLink.value)
 const titleTag = computed(() => (props.headingLevel ? `h${props.headingLevel}` : 'div'))
 
 // Click/dblclick are native events that fall through to the root v-card.
@@ -54,11 +55,11 @@ function onKeyActivate(e: KeyboardEvent) {
     :class="{ 'mp-option-card--selected': selected }"
     :to="to"
     :href="href"
-    :role="isSelectable ? 'button' : undefined"
-    :tabindex="isSelectable ? 0 : undefined"
-    :aria-pressed="isSelectable ? selected : undefined"
-    @keydown.enter="isSelectable && onKeyActivate($event)"
-    @keydown.space="isSelectable && onKeyActivate($event)"
+    :role="isButton ? 'button' : undefined"
+    :tabindex="isButton ? 0 : undefined"
+    :aria-pressed="isButton && selected !== undefined ? selected : undefined"
+    @keydown.enter="isButton && onKeyActivate($event)"
+    @keydown.space="isButton && onKeyActivate($event)"
   >
     <div class="mp-option-card__body d-flex flex-column flex-grow-1">
       <div class="d-flex align-center ga-3" :class="{ 'mb-2': description || $slots.default }">

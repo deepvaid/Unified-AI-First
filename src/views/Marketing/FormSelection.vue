@@ -102,7 +102,6 @@ function choose(template: FormTemplate) {
       <MpOptionCard
         v-for="template in TEMPLATES"
         :key="template.id"
-        :selected="false"
         :title="template.name"
         :description="template.description"
         @click="choose(template)"

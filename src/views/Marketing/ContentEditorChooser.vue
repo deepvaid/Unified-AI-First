@@ -86,7 +86,6 @@ function choose(choice: EditorChoice) {
       <MpOptionCard
         v-for="choice in choices"
         :key="choice.type"
-        :selected="false"
         :title="choice.type"
         :description="choice.description"
         :icon="choice.icon"

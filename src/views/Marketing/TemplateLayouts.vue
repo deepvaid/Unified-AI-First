@@ -39,7 +39,6 @@ function choose(layout: TemplateLayout) {
       <MpOptionCard
         v-for="layout in TEMPLATE_LAYOUTS"
         :key="layout.id"
-        :selected="false"
         :title="layout.name"
         :description="layout.description"
         @click="choose(layout)"
