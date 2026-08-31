@@ -603,18 +603,20 @@ function toggleFavoriteActive() {
                 size="small"
                 append-icon="chevron-down"
                 class="text-none"
+                aria-haspopup="menu"
                 :disabled="!activeDashboard"
               >
                 Actions
               </v-btn>
             </template>
-            <v-card width="300" rounded="lg" flat border class="mp-menu">
+            <v-card width="300" rounded="lg" flat border class="mp-menu" role="menu">
               <template v-for="(group, gi) in dashboardActionGroups" :key="gi">
                 <v-divider v-if="gi > 0" class="mp-menu__divider" />
                 <button
                   v-for="item in group"
                   :key="item.title"
                   type="button"
+                  role="menuitem"
                   class="mp-menu-row"
                   :class="{ 'mp-menu-row--danger': item.danger }"
                   :disabled="item.disabled"
@@ -1051,15 +1053,19 @@ function toggleFavoriteActive() {
   font-size: 13px;
 }
 
-/* ── Rich action menu (Actions) — matches the global Create-new menu ── */
-.mp-menu {
+/* ── Rich action menu (Actions) — matches the global Create-new menu.
+   Kept textually identical to DashboardView's block. ── */
+.v-card.mp-menu {
   border-color: var(--border-subtle);
-  padding: 8px;
+  border-radius: var(--mp-component-menu-radius) !important;
+  /* A rich two-line menu keeps a slightly deeper inset than the 4px plain-list
+     popover inset. */
+  padding: var(--mp-space-8);
   overflow: hidden;
 }
 
 .mp-menu__divider {
-  margin: 6px 6px;
+  margin: var(--mp-space-6);
   opacity: 0.6;
 }
 
@@ -1067,10 +1073,11 @@ function toggleFavoriteActive() {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: var(--mp-component-listItem-gap);
   width: 100%;
-  min-height: 46px;
-  padding: 7px 10px;
+  /* Menu density: floors, not caps — these two-line rows grow past 36. */
+  min-height: var(--mp-component-menu-itemHeight);
+  padding: var(--mp-component-menu-itemPaddingBlock) var(--mp-component-listItem-paddingInline);
   border: 0;
   border-radius: var(--r-chip);
   background: transparent;
@@ -1113,16 +1120,17 @@ function toggleFavoriteActive() {
 }
 
 .mp-menu-row__body strong {
-  font-size: 13.5px;
-  font-weight: 600;
+  /* 14/12 — same two-line rhythm as the app bar's rich menu rows. */
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   line-height: 1.3;
   color: var(--text-primary);
 }
 
 .mp-menu-row__body small {
-  margin-top: 1px;
+  margin-top: var(--mp-space-2);
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
 }
 
 .mp-menu-row--danger .mp-menu-row__icon,

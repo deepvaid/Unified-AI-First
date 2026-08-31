@@ -1030,12 +1030,14 @@ function toggleFavoriteActive() {
 .v-card.mp-menu {
   border-color: var(--border-subtle);
   border-radius: var(--mp-component-menu-radius) !important;
-  padding: 8px;
+  /* A rich two-line menu keeps a slightly deeper inset than the 4px plain-list
+     popover inset. */
+  padding: var(--mp-space-8);
   overflow: hidden;
 }
 
 .mp-menu__divider {
-  margin: 6px 6px;
+  margin: var(--mp-space-6);
   opacity: 0.6;
 }
 
@@ -1045,8 +1047,9 @@ function toggleFavoriteActive() {
   align-items: center;
   gap: var(--mp-component-listItem-gap);
   width: 100%;
-  min-height: var(--mp-component-listItem-minHeight);
-  padding: var(--mp-component-listItem-paddingBlock) var(--mp-component-listItem-paddingInline);
+  /* Menu density: floors, not caps — these two-line rows grow past 36. */
+  min-height: var(--mp-component-menu-itemHeight);
+  padding: var(--mp-component-menu-itemPaddingBlock) var(--mp-component-listItem-paddingInline);
   border: 0;
   border-radius: var(--r-chip);
   background: transparent;
@@ -1089,16 +1092,17 @@ function toggleFavoriteActive() {
 }
 
 .mp-menu-row__body strong {
-  font-size: 13.5px;
-  font-weight: 600;
+  /* 14/12 — same two-line rhythm as the app bar's rich menu rows. */
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   line-height: 1.3;
   color: var(--text-primary);
 }
 
 .mp-menu-row__body small {
-  margin-top: 1px;
+  margin-top: var(--mp-space-2);
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: var(--mp-fontSize-12);
 }
 
 .mp-menu-row--danger .mp-menu-row__icon,
