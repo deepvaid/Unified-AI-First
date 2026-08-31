@@ -10,12 +10,13 @@ import {
   type PublishStatus,
 } from '@/stores/useCommerce'
 import { useProductExtrasStore } from '@/stores/useProductExtras'
-import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpWizardShell from '@/components/MpWizardShell.vue'
+import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useWizardSteps } from '@/composables/useWizardSteps'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,8 +50,9 @@ const editingId = computed(() => {
 const isEdit = computed(() => editingId.value !== null)
 
 const steps = ['Details', 'Organise', 'Variants']
-const step = ref(1)
-const maxStep = ref(1)
+const { step, maxStep, goTo: goStep, next, prev: prevStep, unlockAll } = useWizardSteps(steps.length, {
+  canAdvance: (from) => from !== 1 || titleValid.value,
+})
 const confirmCancel = ref(false)
 
 // ── Step 1 — Details ────────────────────────────────────────────────────
@@ -135,22 +137,13 @@ const activeVariants = computed<ProductVariant[]>(() =>
 const titleValid = computed(() => title.value.trim().length > 0)
 const submitted = ref(false)
 
-function goStep(target: number) {
-  if (target <= maxStep.value) step.value = target
-}
+const stepHint = computed(() => (!titleValid.value ? 'Add a product title to continue' : undefined))
 
 function nextStep() {
   submitted.value = true
   if (step.value === 1 && !titleValid.value) return
-  if (step.value < 3) {
-    step.value += 1
-    maxStep.value = Math.max(maxStep.value, step.value)
-    submitted.value = false
-  }
-}
-
-function prevStep() {
-  if (step.value > 1) step.value -= 1
+  submitted.value = false
+  next()
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────
@@ -291,7 +284,7 @@ onMounted(() => {
           stock: { [LOCATIONS[0]!]: product.inventory },
         })
       }
-      maxStep.value = 3
+      unlockAll()
     }
   }
   savedSnapshot.value = formSnapshot()
@@ -299,32 +292,25 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mp-frame-fill d-flex flex-column">
-    <!-- Header + step indicator -->
-    <div class="pw-head px-8 pt-6 pb-4 bg-surface border-b">
-      <MpPageHeader
-        :title="isEdit ? 'Edit Product' : 'New Product'"
-        :subtitle="`Step ${step} of 3 — ${steps[step - 1]}`"
-        :back-to="productsRoute"
-      >
-        <template #actions>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="isDirty ? (confirmCancel = true) : discardProduct()">Cancel</v-btn>
-        </template>
-        <template #tabs>
-          <MpWizardSteps :steps="steps" :current="step" clickable :max-step="maxStep" class="mt-3" @select="goStep" />
-        </template>
-      </MpPageHeader>
-    </div>
+  <MpWizardShell
+    :title="isEdit ? 'Edit Product' : 'New Product'"
+    :steps="steps"
+    :current="step"
+    :max-step="maxStep"
+    :back-to="productsRoute"
+    measure="md"
+    :hint="stepHint"
+    @select="goStep"
+    @back="prevStep"
+  >
+    <template #actions>
+      <v-btn variant="text" class="text-none text-medium-emphasis" @click="isDirty ? (confirmCancel = true) : discardProduct()">Cancel</v-btn>
+    </template>
 
-    <!-- Step content -->
-    <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
-      <div style="max-width: 880px; margin: 0 auto;">
-
+    <div class="d-flex flex-column ga-5">
         <!-- Step 1 — Details -->
         <template v-if="step === 1">
-          <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-            <div class="text-subtitle-1 font-weight-bold mb-1">General Information</div>
-            <div class="text-body-2 text-medium-emphasis mb-5">Give this product a title and describe it for shoppers.</div>
+          <MpWizardStepCard title="General Information" description="Give this product a title and describe it for shoppers.">
             <MpFormGrid :cols="2">
               <v-text-field
                 v-model="title"
@@ -337,18 +323,16 @@ onMounted(() => {
               <v-text-field v-model="url" label="Product URL" placeholder="/products/my-product" prepend-inner-icon="link" />
               <v-textarea v-model="description" label="Description" rows="4" auto-grow class="mp-form-grid__full" />
             </MpFormGrid>
-          </v-card>
+          </MpWizardStepCard>
 
-          <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-            <div class="text-subtitle-1 font-weight-bold mb-1">Media</div>
-            <div class="text-body-2 text-medium-emphasis mb-4">Add images that show off this product.</div>
+          <MpWizardStepCard title="Media" description="Add images that show off this product." :heading-level="3">
             <div class="pw-dropzone">
               <v-icon size="40" color="primary" class="mb-2">image-plus</v-icon>
               <div class="text-body-1 font-weight-medium mb-1">Drag and Drop</div>
               <div class="text-caption text-medium-emphasis mb-3">up to 20MB — PNG, JPG, GIF, JPEG, WEBP</div>
               <v-btn variant="flat" color="primary" size="small" class="text-none" prepend-icon="upload">Add Media</v-btn>
             </div>
-          </v-card>
+          </MpWizardStepCard>
 
           <v-card variant="flat" border rounded="lg" class="pa-6">
             <v-switch
@@ -362,9 +346,7 @@ onMounted(() => {
 
         <!-- Step 2 — Organise -->
         <template v-else-if="step === 2">
-          <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-            <div class="text-subtitle-1 font-weight-bold mb-1">Organise</div>
-            <div class="text-body-2 text-medium-emphasis mb-5">Classify this product so it's easy to find and merchandise.</div>
+          <MpWizardStepCard title="Organise" description="Classify this product so it's easy to find and merchandise.">
             <MpFormGrid :cols="2">
               <v-select v-model="taxCategory" :items="taxCategoryOptions" label="Tax Category" clearable />
               <v-select v-model="material" :items="MATERIALS" label="Material" clearable />
@@ -373,10 +355,9 @@ onMounted(() => {
               <v-select v-model="collection" :items="collectionOptions" label="Collection" clearable />
               <v-select v-model="categories" :items="CATEGORIES" label="Categories" multiple chips closable-chips />
             </MpFormGrid>
-          </v-card>
+          </MpWizardStepCard>
 
-          <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-            <div class="text-subtitle-1 font-weight-bold mb-4">Attributes</div>
+          <MpWizardStepCard title="Attributes" :heading-level="3">
             <MpFormGrid :cols="2">
               <v-text-field v-model="width" label="Width" suffix="cm" type="number" />
               <v-text-field v-model="length" label="Length" suffix="cm" type="number" />
@@ -386,7 +367,7 @@ onMounted(() => {
               <v-text-field v-model="hsCode" label="HS Code" />
               <v-select v-model="countryOfOrigin" :items="COUNTRIES" label="Country of Origin" clearable class="mp-form-grid__full" />
             </MpFormGrid>
-          </v-card>
+          </MpWizardStepCard>
 
           <v-card variant="flat" border rounded="lg" class="pa-6">
             <MpFormGrid :cols="2">
@@ -405,12 +386,10 @@ onMounted(() => {
         <template v-else>
           <!-- With variants: options builder -->
           <template v-if="hasVariants">
-            <v-card variant="flat" border rounded="lg" class="pa-6 mb-5">
-              <div class="d-flex align-center justify-space-between mb-1">
-                <div class="text-subtitle-1 font-weight-bold">Options</div>
-                <v-btn variant="text" color="primary" size="small" class="text-none" prepend-icon="plus" @click="addOption">Add option</v-btn>
-              </div>
-              <div class="text-body-2 text-medium-emphasis mb-4">Add an option name (e.g. Size) and its values. Variants are generated automatically.</div>
+            <MpWizardStepCard title="Options" description="Add an option name (e.g. Size) and its values. Variants are generated automatically.">
+              <template #title-append>
+                <v-btn variant="text" color="primary" size="small" class="text-none ml-auto" prepend-icon="plus" @click="addOption">Add option</v-btn>
+              </template>
               <MpFormGrid>
                 <div v-for="(opt, i) in options" :key="i" class="mp-form-grid__trailing">
                   <MpFormGrid :cols="2">
@@ -428,10 +407,12 @@ onMounted(() => {
                   <v-btn icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove option" :disabled="options.length === 1" @click="removeOption(i)" />
                 </div>
               </MpFormGrid>
-            </v-card>
+            </MpWizardStepCard>
 
-            <v-card variant="flat" border rounded="lg" class="pa-6">
-              <div class="text-subtitle-1 font-weight-bold mb-4">Variants <span class="text-medium-emphasis font-weight-regular">({{ generatedVariants.length }})</span></div>
+            <MpWizardStepCard title="Variants" :heading-level="3">
+              <template #title-append>
+                <span class="text-body-2 text-medium-emphasis">({{ generatedVariants.length }})</span>
+              </template>
               <div v-if="!generatedVariants.length" class="text-body-2 text-medium-emphasis py-4">Add at least one option with values above to generate variants.</div>
               <MpFormGrid v-else>
                 <div v-for="variant in generatedVariants" :key="variant.id" class="pw-variant">
@@ -455,13 +436,11 @@ onMounted(() => {
                   </MpFormGrid>
                 </div>
               </MpFormGrid>
-            </v-card>
+            </MpWizardStepCard>
           </template>
 
           <!-- Without variants: default variant -->
-          <v-card v-else variant="flat" border rounded="lg" class="pa-6">
-            <div class="text-subtitle-1 font-weight-bold mb-1">Default Variant</div>
-            <div class="text-body-2 text-medium-emphasis mb-4">This product has no variants, so pricing and stock are set on a single default variant.</div>
+          <MpWizardStepCard v-else title="Default Variant" description="This product has no variants, so pricing and stock are set on a single default variant.">
             <MpFormGrid :cols="2">
               <v-text-field v-model="defaultVariant.sku" label="SKU" class="mp-form-grid__full" />
               <v-text-field v-model="defaultVariant.costPrice" label="Cost Price" prefix="$" type="number" />
@@ -479,64 +458,57 @@ onMounted(() => {
                 />
               </template>
             </MpFormGrid>
-          </v-card>
+          </MpWizardStepCard>
         </template>
-
-      </div>
     </div>
 
-    <!-- Bottom navigation bar -->
-    <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
+    <template #footerStart>
       <div class="d-flex align-center gap-2">
         <v-btn variant="text" class="text-none" @click="isDirty ? (confirmCancel = true) : discardProduct()">Cancel</v-btn>
         <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
       </div>
-      <div class="d-flex align-center gap-2">
-        <v-btn variant="outlined" class="text-none" :disabled="!titleValid" @click="save('Draft')">Save as Draft</v-btn>
-        <v-btn v-if="step < 3" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="step === 1 && !titleValid" @click="nextStep">Continue</v-btn>
-        <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="check" :disabled="!titleValid" @click="save('Published')">Publish</v-btn>
-      </div>
-    </div>
+    </template>
+    <template #footer>
+      <v-btn variant="outlined" class="text-none" :disabled="!titleValid" @click="save('Draft')">Save as Draft</v-btn>
+      <v-btn v-if="step < 3" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="step === 1 && !titleValid" @click="nextStep">Continue</v-btn>
+      <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="check" :disabled="!titleValid" @click="save('Published')">Publish</v-btn>
+    </template>
+  </MpWizardShell>
 
-    <MpConfirmDialog
-      v-model="confirmCancel"
-      title="Discard this product?"
-      message="Your changes won't be saved. This can't be undone."
-      confirm-label="Discard"
-      danger
-      @confirm="discardProduct"
-    />
-    <MpConfirmDialog
-      v-model="confirmLeave"
-      danger
-      :title="leaveTitle"
-      :message="leaveMessage"
-      :confirm-label="leaveConfirmLabel"
-      @confirm="discardAndLeave"
-    />
-  </div>
+  <MpConfirmDialog
+    v-model="confirmCancel"
+    title="Discard this product?"
+    message="Your changes won't be saved. This can't be undone."
+    confirm-label="Discard"
+    danger
+    @confirm="discardProduct"
+  />
+  <MpConfirmDialog
+    v-model="confirmLeave"
+    danger
+    :title="leaveTitle"
+    :message="leaveMessage"
+    :confirm-label="leaveConfirmLabel"
+    @confirm="discardAndLeave"
+  />
 </template>
 
 <style scoped>
-.pw-head :deep(.mp-page-header) { margin-bottom: 0; }
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-
 .pw-dropzone {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 32px 16px;
+  padding: var(--mp-space-32) var(--mp-space-16);
   border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.25);
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
   background: rgba(var(--v-theme-on-surface), 0.02);
 }
 
 .pw-variant {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px;
-  padding: 16px;
+  border: 1px solid var(--mp-border-subtle);
+  border-radius: var(--mp-radius-12);
+  padding: var(--mp-space-16);
 }
 </style>
