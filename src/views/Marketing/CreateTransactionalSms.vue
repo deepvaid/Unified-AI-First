@@ -5,6 +5,7 @@ import MpWizardShell from '@/components/MpWizardShell.vue'
 import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import SmsPhonePreview from '@/components/marketing/SmsPhonePreview.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useSmsStore } from '@/stores/useSms'
@@ -210,14 +211,10 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS
         <aside class="cts-preview">
           <div class="cts-preview__sticky">
             <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3">Message preview</div>
-            <div class="phone">
-              <div class="phone__notch" />
-              <div class="phone__sender">{{ senderId.trim() || 'SENDER' }}</div>
-              <div class="phone__thread">
-                <div class="phone__bubble">{{ message.trim() || 'Your message preview appears here as the customer will see it.' }}</div>
-                <div class="phone__stamp">Delivered · now</div>
-              </div>
-            </div>
+            <SmsPhonePreview
+              :sender="senderId.trim() || 'SENDER'"
+              :message="message.trim() || 'Your message preview appears here as the customer will see it.'"
+            />
             <div class="cts-preview__meta">
               <span :class="segments > 1 ? 'text-warning' : 'text-medium-emphasis'">
                 {{ charCount }} / {{ segmentCap }} · {{ segments }} segment{{ segments === 1 ? '' : 's' }}
@@ -270,46 +267,6 @@ code {
   border-radius: 4px;
 }
 
-/* Phone SMS preview */
-.phone {
-  background: linear-gradient(180deg, rgba(var(--v-theme-on-surface), 0.04), rgba(var(--v-theme-on-surface), 0.02));
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: 22px;
-  padding: 18px 14px 20px;
-}
-.phone__notch {
-  width: 42px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(var(--v-theme-on-surface), 0.18);
-  margin: 0 auto 14px;
-}
-.phone__sender {
-  text-align: center;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  margin-bottom: 12px;
-}
-.phone__thread { display: flex; flex-direction: column; align-items: flex-start; }
-.phone__bubble {
-  max-width: 100%;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: 16px 16px 16px 4px;
-  padding: 10px 13px;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.phone__stamp {
-  font-size: 0.625rem;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-  margin-top: 4px;
-  padding-left: 4px;
-}
 .cts-preview__meta {
   text-align: right;
   font-size: 0.6875rem;

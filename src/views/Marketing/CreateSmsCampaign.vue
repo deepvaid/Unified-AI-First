@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpWizardSteps from '@/components/MpWizardSteps.vue'
+import MpWizardShell from '@/components/MpWizardShell.vue'
+import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import SmsPhonePreview from '@/components/marketing/SmsPhonePreview.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
+import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useSmsStore, type SmsCampaign } from '@/stores/useSms'
 import { usePlgStore } from '@/stores/usePlg'
 import { useToast } from '@/composables/useToast'
@@ -24,8 +26,6 @@ const hasSmsAccess = computed(() => plg.entitlements.sms)
 function viewPlans() { router.push({ name: 'Billing', params: { accountId: accountId.value } }) }
 
 const stepTitles = ['Message', 'Compliance']
-const step = ref(1)
-const maxStepReached = ref(1)
 const draftId = ref<number | null>(null)
 
 // ── Message ───────────────────────────────────────────────────────────────────
@@ -133,15 +133,10 @@ function saveProgress(finalize = false) {
   savedSnapshot.value = JSON.stringify(buildInput())
 }
 
-function goToStep(target: number) {
-  if (target === step.value) return
-  if (target > step.value && !stepValid.value) return
-  saveProgress()
-  step.value = target
-  maxStepReached.value = Math.max(maxStepReached.value, target)
-}
-function nextStep() { goToStep(Math.min(step.value + 1, 2)) }
-function prevStep() { goToStep(Math.max(step.value - 1, 1)) }
+const { step, maxStep, goTo: goToStep, next: nextStep, prev: prevStep, unlockAll } = useWizardSteps(stepTitles.length, {
+  canAdvance: () => stepValid.value,
+  onNavigate: () => saveProgress(),
+})
 
 function exitWizard() {
   saveProgress(false)
@@ -171,7 +166,7 @@ onMounted(() => {
   scheduleType.value = existing.scheduleType ?? 'now'
   scheduleDate.value = existing.scheduleDate ?? ''
   scheduleTime.value = existing.scheduleTime ?? '09:00'
-  maxStepReached.value = 2
+  unlockAll()
   savedSnapshot.value = JSON.stringify(buildInput())
 })
 
@@ -179,49 +174,41 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
 </script>
 
 <template>
-  <div class="mp-frame-fill d-flex flex-column">
+  <MpWizardShell
+    :title="hasSmsAccess ? pageTitle : 'New SMS Campaign'"
+    :steps="hasSmsAccess ? stepTitles : undefined"
+    :current="hasSmsAccess ? step : undefined"
+    :max-step="maxStep"
+    :clickable="maxStep > 1"
+    :back-to="backTo"
+    :subtitle="hasSmsAccess ? undefined : 'SMS is not included in your current plan.'"
+    measure="lg"
+    :hint="hasSmsAccess && !stepValid ? stepHint : undefined"
+    @select="goToStep"
+    @back="prevStep"
+  >
+    <!-- Entitlement-gated state: same shell, no steps -->
     <template v-if="!hasSmsAccess">
-      <div class="cs-head px-8 pt-6 pb-4 bg-surface border-b">
-        <MpPageHeader title="New SMS Campaign" :back-to="backTo" />
-      </div>
-      <div class="flex-grow-1 d-flex flex-column pa-8 bg-background">
-        <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column justify-center">
-          <MpEmptyState
-            icon="message-square"
-            title="Not included in your plan"
-            description="SMS campaigns aren't part of your current plan. Upgrade to reach customers by text."
-            action-label="View plans"
-            action-icon="arrow-right"
-            class="py-10"
-            @action="viewPlans"
-          />
-          <div class="d-flex justify-center pb-8">
-            <v-btn variant="text" class="text-none" href="mailto:sales@maropost.com?subject=SMS%20Campaigns%20%E2%80%94%20plan%20upgrade">Talk to sales</v-btn>
-          </div>
-        </v-card>
-      </div>
+      <v-card variant="flat" border rounded="lg">
+        <MpEmptyState
+          icon="message-square"
+          title="Not included in your plan"
+          description="SMS campaigns aren't part of your current plan. Upgrade to reach customers by text."
+          action-label="View plans"
+          action-icon="arrow-right"
+          class="py-10"
+          @action="viewPlans"
+        />
+        <div class="d-flex justify-center pb-8">
+          <v-btn variant="text" class="text-none" href="mailto:sales@maropost.com?subject=SMS%20Campaigns%20%E2%80%94%20plan%20upgrade">Talk to sales</v-btn>
+        </div>
+      </v-card>
     </template>
 
     <template v-else>
-    <div class="cs-head px-8 pt-6 pb-4 bg-surface border-b">
-      <MpPageHeader :title="pageTitle" :subtitle="`Step ${step} of 2 — ${stepTitles[step - 1]}`" :back-to="backTo">
-        <template #actions>
-          <v-btn variant="text" class="text-none text-medium-emphasis" @click="exitWizard">Save &amp; exit</v-btn>
-        </template>
-        <template #tabs>
-          <MpWizardSteps :steps="stepTitles" :current="step" :clickable="maxStepReached > 1" :max-step="maxStepReached" class="mt-3" @select="goToStep" />
-        </template>
-      </MpPageHeader>
-    </div>
-
-    <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
-      <div class="cs-grid mx-auto">
+      <div class="cs-grid">
         <!-- Step 1: Message -->
-        <v-card v-if="step === 1" flat border rounded="lg" class="pa-8">
-          <div class="text-h6 font-weight-bold mb-1">Message</div>
-          <div class="text-body-2 text-medium-emphasis mb-6">Write the SMS your audience will receive.</div>
-          <v-divider class="mb-6"></v-divider>
-
+        <MpWizardStepCard v-if="step === 1" title="Message" description="Write the SMS your audience will receive.">
           <MpFormGrid>
             <v-text-field v-model="name" label="Text Campaign Name *" placeholder="e.g. Weekend Flash Sale"></v-text-field>
             <v-select v-model="fromNumber" label="From Number" :items="FROM_NUMBERS"></v-select>
@@ -246,14 +233,10 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
               <v-btn variant="outlined" class="text-none" prepend-icon="send" :disabled="!testPhone.trim()" @click="sendTest">Send test</v-btn>
             </div>
           </MpFormGrid>
-        </v-card>
+        </MpWizardStepCard>
 
         <!-- Step 2: Compliance -->
-        <v-card v-if="step === 2" flat border rounded="lg" class="pa-8">
-          <div class="text-h6 font-weight-bold mb-1">Compliance</div>
-          <div class="text-body-2 text-medium-emphasis mb-6">Confirm consent handling and choose your audience and send time.</div>
-          <v-divider class="mb-6"></v-divider>
-
+        <MpWizardStepCard v-if="step === 2" title="Compliance" description="Confirm consent handling and choose your audience and send time.">
           <MpFormGrid :cols="2">
             <v-checkbox v-model="optOutConfirmed" class="mp-form-grid__full">
               <template #label>
@@ -297,62 +280,49 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
               </MpFormGrid>
             </v-expand-transition>
           </MpFormGrid>
-        </v-card>
+        </MpWizardStepCard>
 
         <!-- Live phone preview -->
         <aside class="cs-preview">
           <div class="cs-preview__sticky">
             <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase mb-3">Message preview</div>
-            <div class="phone">
-              <div class="phone__notch"></div>
-              <div class="phone__sender">{{ fromNumber }}</div>
-              <div class="phone__thread">
-                <div class="phone__bubble">{{ previewText }}</div>
-                <div class="phone__stamp">Delivered · now</div>
-              </div>
-            </div>
+            <SmsPhonePreview :sender="fromNumber" :message="previewText" />
           </div>
         </aside>
       </div>
-    </div>
-
-    <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
-      <v-btn v-if="step > 1" variant="text" class="text-none" prepend-icon="arrow-left" @click="prevStep">Back</v-btn>
-      <div v-else></div>
-      <div class="d-flex align-center gap-3">
-        <span v-if="!stepValid" class="text-caption text-medium-emphasis">{{ stepHint }}</span>
-        <v-btn v-if="step === 1" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">Continue</v-btn>
-        <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="rocket" :disabled="!stepValid" @click="finalizeCampaign">
-          {{ scheduleType === 'now' ? 'Send campaign now' : 'Schedule campaign' }}
-        </v-btn>
-      </div>
-    </div>
-
     </template>
-    <MpConfirmDialog
-      v-model="confirmLeave"
-      danger
-      :title="leaveTitle"
-      :message="leaveMessage"
-      :confirm-label="leaveConfirmLabel"
-      @confirm="discardAndLeave"
-    />
-  </div>
+
+    <template v-if="hasSmsAccess" #actions>
+      <v-btn variant="text" class="text-none text-medium-emphasis" @click="exitWizard">Save &amp; exit</v-btn>
+    </template>
+    <template v-if="hasSmsAccess" #footer>
+      <v-btn v-if="step === 1" color="primary" variant="flat" class="text-none" append-icon="arrow-right" :disabled="!stepValid" @click="nextStep">Continue</v-btn>
+      <v-btn v-else color="primary" variant="flat" class="text-none" prepend-icon="rocket" :disabled="!stepValid" @click="finalizeCampaign">
+        {{ scheduleType === 'now' ? 'Send campaign now' : 'Schedule campaign' }}
+      </v-btn>
+    </template>
+  </MpWizardShell>
+
+  <MpConfirmDialog
+    v-model="confirmLeave"
+    danger
+    :title="leaveTitle"
+    :message="leaveMessage"
+    :confirm-label="leaveConfirmLabel"
+    @confirm="discardAndLeave"
+  />
 </template>
 
 <style scoped>
-.cs-head .mp-page-header { margin-bottom: 0; }
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
 .sms-count { font-variant-numeric: tabular-nums; }
 /* The radio group owns the rhythm between its schedule option tiles. */
 .cs-schedule-options :deep(.v-selection-control-group) { gap: var(--mp-component-field-groupGap); }
 
+/* The shell's lg measure caps the width; this grid only splits it. */
 .cs-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 24px;
-  max-width: 1040px;
+  gap: var(--mp-space-24);
   align-items: start;
 }
 @media (max-width: 900px) {
@@ -360,26 +330,4 @@ const pageTitle = computed(() => (draftId.value != null ? 'Edit SMS Campaign' : 
   .cs-preview { display: none; }
 }
 .cs-preview__sticky { position: sticky; top: 0; }
-
-.phone {
-  background: linear-gradient(180deg, rgba(var(--v-theme-on-surface), 0.04), rgba(var(--v-theme-on-surface), 0.02));
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: 22px;
-  padding: 18px 14px 20px;
-}
-.phone__notch { width: 42px; height: 5px; border-radius: 999px; background: rgba(var(--v-theme-on-surface), 0.18); margin: 0 auto 14px; }
-.phone__sender { text-align: center; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.03em; color: rgba(var(--v-theme-on-surface), 0.55); margin-bottom: 12px; }
-.phone__thread { display: flex; flex-direction: column; align-items: flex-start; }
-.phone__bubble {
-  max-width: 100%;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: 16px 16px 16px 4px;
-  padding: 10px 13px;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.phone__stamp { font-size: 0.625rem; color: rgba(var(--v-theme-on-surface), 0.45); margin-top: 4px; padding-left: 4px; }
 </style>
