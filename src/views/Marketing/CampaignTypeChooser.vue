@@ -2,11 +2,12 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpOptionCard from '@/components/MpOptionCard.vue'
 import { useCampaignsStore } from '@/stores/useCampaigns'
 
 // UAT: /accounts/:id/campaigns/new — "Create New Campaign / Select your campaign type."
-// Same navigation-tile pattern as SegmentBuilderChooser: tiles are real links
-// (v-card :to), not MpOptionCard selection controls.
+// Navigation chooser: tiles are real links via MpOptionCard's navigation mode
+// (`to`, no `selected`), per the one chooser convention (wizard pass, 2026-08-30).
 const route = useRoute()
 const router = useRouter()
 const store = useCampaignsStore()
@@ -49,26 +50,20 @@ onMounted(() => {
     <MpPageHeader
       title="Create a campaign"
       subtitle="Choose the campaign type."
+      emphasis="prominent"
       :back-to="backTo"
     />
     <div class="ctc-grid">
-      <v-card
+      <MpOptionCard
         v-for="tile in tiles"
         :key="tile.id"
-        flat
-        border
-        rounded="lg"
         :to="tile.to"
-        class="ctc-tile pa-6 d-flex flex-column ga-3"
-      >
-        <div class="d-flex align-center ga-3">
-          <v-avatar color="primary" variant="tonal" size="34" rounded="lg" class="flex-shrink-0">
-            <v-icon size="18">{{ tile.icon }}</v-icon>
-          </v-avatar>
-          <h2 class="text-body-1 font-weight-bold mb-0">{{ tile.title }}</h2>
-        </div>
-        <p class="text-body-2 text-medium-emphasis mb-0">{{ tile.description }}</p>
-      </v-card>
+        :title="tile.title"
+        :description="tile.description"
+        :icon="tile.icon"
+        :heading-level="2"
+        class="h-100"
+      />
     </div>
   </div>
 </template>
@@ -79,16 +74,6 @@ onMounted(() => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--mp-space-20);
   max-width: var(--mp-layout-contentMaxWidth);
-}
-
-.ctc-tile {
-  height: 100%;
-  transition: border-color 0.15s ease;
-}
-
-.ctc-tile:hover,
-.ctc-tile:focus-visible {
-  border-color: rgb(var(--v-theme-primary));
 }
 
 @media (max-width: $mp-layout-breakpointCompact) {
