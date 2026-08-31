@@ -218,7 +218,7 @@ const routes: RouteRecordRaw[] = [
 
   // 5.7 Sales Channels
   { path: '/accounts/:accountId/sales_channels', name: 'SalesChannels', component: () => import('@/views/SalesChannels/SalesChannelsList.vue'), meta: sharedCommerceGate },
-  { path: '/accounts/:accountId/sales_channels/new', name: 'CreateSalesChannel', component: () => import('@/views/SalesChannels/CreateSalesChannel.vue'), meta: sharedCommerceGate },
+  { path: '/accounts/:accountId/sales_channels/new', name: 'CreateSalesChannel', component: () => import('@/views/SalesChannels/CreateSalesChannel.vue'), meta: { ...sharedCommerceGate, builderShell: true } },
   { path: '/accounts/:accountId/sales_channels/:channelId/locations', name: 'SalesChannelLocations', component: () => import('@/views/SalesChannels/SalesChannelLocations.vue'), meta: sharedCommerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/locations/:locationId', name: 'SalesChannelLocationDetail', component: () => import('@/views/SalesChannels/SalesChannelLocationDetail.vue'), meta: sharedCommerceGate },
   { path: '/accounts/:accountId/sales_channels/:channelId/theme', name: 'StoreThemeBuilder', component: () => import('@/views/SalesChannels/StoreThemeBuilder.vue'), meta: { ...commerceGate, builderShell: true } },
