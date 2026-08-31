@@ -14,11 +14,12 @@ const meta = {
 check icon for completed steps, rail separators). \`current\` is 1-based. Below 700px viewport
 width the labels collapse and only the numbered circles remain, so the toolbar still fits.
 
-**Use when:** a 2–4 step create flow needs a passive progress indicator in its toolbar
-(campaign/journey create wizards).
-
-**Don't use when:** steps must be clickable navigation (use a pill navigator like EngineEditor's,
-or \`v-stepper\`), or the flow has 5+ steps (use a full \`v-stepper\`).
+**Two supported contracts:**
+1. **Wizard navigation** — inside \`MpWizardShell\`'s header: pass \`clickable\` and \`:max-step\`
+   (\`useWizardSteps\`' high-water ref — never the current step, or forward jumps die after
+   stepping back). Visited steps become jumpable buttons emitting \`select\`.
+2. **Passive progress display** — omit \`clickable\` for a read-only position tracker
+   (OrderDetail's fulfillment stages, AllContacts' import dialog).
 
 ### Usage
 \`\`\`html
@@ -30,8 +31,9 @@ or \`v-stepper\`), or the flow has 5+ steps (use a full \`v-stepper\`).
 - **Do** drive \`current\` from the wizard's step state.
 
 ### 🔴 Don'ts
-- **Don't** use it for click-to-navigate steppers — it is a passive indicator.
-- **Don't** exceed ~4 steps; use a full \`v-stepper\` for longer flows.
+- **Don't** bind \`:max-step\` to the current step — that kills forward jumps the moment the
+  user steps back. It wants the high-water mark (\`useWizardSteps().maxStep\`).
+- **Don't** exceed ~5 steps; use a full \`v-stepper\` for longer flows.
 
 ### 💡 Best Practices
 - **Done state:** a \`current\` greater than \`steps.length\` marks every step complete — useful

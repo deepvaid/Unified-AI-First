@@ -1,4 +1,14 @@
 <script setup lang="ts">
+/**
+ * MpWizardSteps — the compact step chips, with two supported contracts:
+ *
+ * 1. **Wizard navigation** — inside `MpWizardShell`'s header: pass `clickable`
+ *    and `:max-step` (useWizardSteps' high-water ref, never the current step),
+ *    and visited steps become jumpable buttons emitting `select`.
+ * 2. **Passive progress display** — no `clickable`: a read-only position
+ *    tracker. References: OrderDetail's fulfillment stages and AllContacts'
+ *    import dialog.
+ */
 const props = defineProps<{
   /** Ordered step labels. */
   steps: string[]

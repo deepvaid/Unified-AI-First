@@ -40,8 +40,12 @@ const drawerTitle = computed(() => {
 
 const drawerSubtitle = computed(() => {
   if (isEditing.value) return 'Update your widget and save the changes.'
-  if (stage.value === 'edit') return 'Step 2 of 2 · Refine and add to dashboard'
-  return 'Step 1 of 2 · Choose what to monitor'
+  // A 2-step drawer's subtitle carries the position — a steps rail would
+  // collapse to bare numbers at drawer width and add noise (wizard-pass
+  // decision, 2026-08-30). Same "Step N of M — <label>" wording the
+  // full-page MpWizardShell composes.
+  if (stage.value === 'edit') return 'Step 2 of 2 — Refine and add to dashboard'
+  return 'Step 1 of 2 — Choose what to monitor'
 })
 
 function libraryEntryToDraft(entry: DashboardWidgetLibraryEntry): DashboardWidgetDraft {
