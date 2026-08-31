@@ -8,6 +8,7 @@ import {
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
 import { useContactsStore } from '@/stores/useContacts'
 import { useToast } from '@/composables/useToast'
+import MpAlert from '@/components/MpAlert.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
@@ -250,9 +251,9 @@ async function save(status: 'Draft' | 'Active') {
               :error-messages="percentageError"
             />
           </MpFormGrid>
-          <v-alert type="info" variant="tonal" density="comfortable" class="pe-example">
+          <MpAlert tone="info" live="polite">
             {{ example }} on this channel for the audience above.
-          </v-alert>
+          </MpAlert>
         </v-card>
       </v-col>
 
@@ -303,10 +304,6 @@ async function save(status: 'Draft' | 'Active') {
   .pe-rule {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-
-.pe-example :deep(.v-alert__content) {
-  font-size: var(--mp-fontSize-13);
 }
 
 .pe-summary {

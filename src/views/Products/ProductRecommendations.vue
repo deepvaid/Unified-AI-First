@@ -8,6 +8,7 @@ import {
   type FeedInput, type FeedType,
 } from '@/stores/useProductExtras'
 import { useToast } from '@/composables/useToast'
+import MpAlert from '@/components/MpAlert.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -372,7 +373,7 @@ function restore(template: FeedTemplate) {
     <div id="rec-panel" class="flex-grow-1 d-flex flex-column ga-4">
       <!-- ══ Product Catalog ══════════════════════════════════════════ -->
       <template v-if="activeTab === 'catalog'">
-        <v-alert type="info" variant="tonal" density="comfortable" class="rec-alert">
+        <MpAlert tone="info" live="off">
           Importing a catalog creates or updates products. Products missing an Item ID, name, price,
           image URL or store URL are left out of recommendations.
           <a class="rec-alert__link" href="https://galaxy.maropost.com/s/article/Product-Catalog" target="_blank" rel="noopener">
@@ -382,7 +383,7 @@ function restore(template: FeedTemplate) {
             <br>
             <strong>{{ incompleteCount }}</strong> {{ incompleteCount === 1 ? 'product is' : 'products are' }} incomplete right now.
           </template>
-        </v-alert>
+        </MpAlert>
 
         <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
           <MpDataTableToolbar
@@ -460,9 +461,9 @@ function restore(template: FeedTemplate) {
 
       <!-- ══ Product Feeds ════════════════════════════════════════════ -->
       <template v-else-if="activeTab === 'feeds'">
-        <v-alert type="info" variant="tonal" density="comfortable" class="rec-alert">
+        <MpAlert tone="info" live="off">
           Product recommendations are only generated once a product catalog has been imported.
-        </v-alert>
+        </MpAlert>
 
         <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
           <MpDataTableToolbar
@@ -596,10 +597,10 @@ function restore(template: FeedTemplate) {
       guarded
       @close="requestCloseEdit"
     >
-      <v-alert type="warning" variant="tonal" density="comfortable">
+      <MpAlert tone="warning" live="off">
         Edits here are overwritten at the next catalog sync from
         <strong>{{ editSource }}</strong>.
-      </v-alert>
+      </MpAlert>
 
       <MpFormSection title="Identity" />
       <MpFormGrid :cols="2">
@@ -841,10 +842,6 @@ function restore(template: FeedTemplate) {
 </template>
 
 <style scoped>
-.rec-alert :deep(.v-alert__content) {
-  font-size: var(--mp-fontSize-13);
-}
-
 .rec-alert__link {
   color: inherit;
   font-weight: var(--mp-fontWeight-semibold);

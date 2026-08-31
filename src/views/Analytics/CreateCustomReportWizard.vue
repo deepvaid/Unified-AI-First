@@ -8,6 +8,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAnalyticsStore, type CustomReport } from '@/stores/useAnalytics'
 import { useCdpEntitiesStore } from '@/stores/useCdpEntities'
+import MpAlert from '@/components/MpAlert.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpWizardShell from '@/components/MpWizardShell.vue'
 import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
@@ -665,28 +666,18 @@ function submit() {
             </template>
           </MpFormGrid>
 
-          <!--
-            Live selection summary (email campaign only).
-            GAP: no MpInlineAlert exists, so these use raw v-alert and wire role/aria-live
-            by hand — see docs/rebuild/GAPS.md §2.
-          -->
+          <!-- Live selection summary (email campaign only). -->
           <template v-if="reportType.slug === 'campaign'">
-            <v-alert
-              v-if="overCap"
-              type="error"
-              variant="tonal"
-              density="comfortable"
-              class="mt-4"
-              :text="`${matchedCampaigns.length} campaigns match — a report can cover at most ${CAMPAIGN_SELECTION_CAP}. Narrow the date range or the filters above.`"
-            />
-            <v-alert
+            <MpAlert v-if="overCap" tone="error" class="mt-4">
+              {{ matchedCampaigns.length }} campaigns match — a report can cover at most
+              {{ CAMPAIGN_SELECTION_CAP }}. Narrow the date range or the filters above.
+            </MpAlert>
+            <!-- The summary re-renders on every filter keystroke — explicitly polite. -->
+            <MpAlert
               v-else
-              :type="hasCampaignScope && !matchedCampaigns.length ? 'warning' : 'info'"
-              variant="tonal"
-              density="comfortable"
+              :tone="hasCampaignScope && !matchedCampaigns.length ? 'warning' : 'info'"
+              live="polite"
               class="mt-4"
-              role="status"
-              aria-live="polite"
             >
               <template v-if="!hasCampaignScope">{{ selectionSummary }}</template>
               <template v-else-if="!matchedCampaigns.length">
@@ -698,7 +689,7 @@ function submit() {
                 campaign{{ matchedCampaigns.length === 1 ? '' : 's' }} match:
                 {{ selectionSummary }}
               </template>
-            </v-alert>
+            </MpAlert>
           </template>
         </section>
     </MpWizardStepCard>

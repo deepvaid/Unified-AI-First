@@ -6,6 +6,7 @@ import {
   type TemplateInput, type TemplateMethod, type CatalogProduct,
 } from '@/stores/useProductExtras'
 import { useToast } from '@/composables/useToast'
+import MpAlert from '@/components/MpAlert.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
@@ -324,10 +325,10 @@ function stepColumns(delta: number) {
           </template>
 
           <template v-else>
-            <v-alert type="info" variant="tonal" density="comfortable" class="tpl-note">
+            <MpAlert tone="info" live="off">
               Manually selected products stay fixed when the email sends, whatever changes to their
               availability or attributes.
-            </v-alert>
+            </MpAlert>
             <v-btn variant="outlined" prepend-icon="plus" class="text-none" block @click="openPicker">
               Add products
             </v-btn>
@@ -578,10 +579,6 @@ function stepColumns(delta: number) {
   margin: var(--mp-space-4) 0 0;
   font-size: var(--mp-fontSize-13);
   color: rgb(var(--v-theme-on-surface-variant));
-}
-
-.tpl-note :deep(.v-alert__content) {
-  font-size: var(--mp-fontSize-13);
 }
 
 .tpl-picked {

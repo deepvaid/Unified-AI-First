@@ -52,9 +52,13 @@ column pickers, permission pickers and segment-field pickers elsewhere in the pr
 
 ---
 
-## 2. `MpInlineAlert` — in-page status / error / warning banner
+## 2. `MpAlert` (né `MpInlineAlert`) — in-page status / error / warning banner
 
-**Status:** used raw `v-alert`.
+**Status:** ✅ **built (2026-08-31 pass) as `src/components/MpAlert.vue`.** Shipped with the
+spec below, plus deltas: plain-div base (not `v-alert` — sidesteps the global tonal rule and
+`:deep(.v-alert__content)` hacks), `icon: string | false` (false hides), dismiss visibility is
+consumer-owned (`v-if` + `@dismiss`), tint = semantic soft/ink container pairs, and a
+`d-sr-only` tone prefix. The stand-ins in CreateCustomReportWizard are migrated.
 
 **Use case.** Both pages need in-page banners that are not toasts and not empty states:
 - the 500-campaign cap error, which blocks Continue,
