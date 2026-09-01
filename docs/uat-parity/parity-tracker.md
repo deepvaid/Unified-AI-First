@@ -62,8 +62,8 @@ Part A has been seeded with the top-level modules observed in the initial read-o
 | 4 | Sales Summary | /commerce/2000290/reports/sales-summary | page | — | crawled |
 | 5 | eRFM Report | /accounts/2000290/erfm_report | page | — (no screenshots possible; DOM + Vue-tree crawl) | deep-crawled 2026-08-31 |
 | 6 | Campaign Reports | /accounts/2000290/reports | page | — | crawled |
-| 7 | Recurring Campaign Reports | /accounts/2000290/reports/recurring_campaign_report | page | — | crawled |
-| 8 | A/B Campaign Reports | /accounts/2000290/ab_reports | page | — | crawled |
+| 7 | Recurring Campaign Reports | /accounts/2000290/reports/recurring_campaign_report | page | — | deep-crawled 2026-09-01 |
+| 8 | A/B Campaign Reports (+ /campaigns/:id/ab_report detail) | /accounts/2000290/ab_reports | page | — | deep-crawled 2026-09-01 |
 | 9 | Test Campaign Reports | /accounts/2000290/reports/test_reports | page | — | crawled |
 | 10 | Website Reports | /accounts/2000290/website_reports | page | — | crawled |
 | 11 | Journey Reports | /accounts/2000290/reports/journeys | page | — | crawled |
@@ -133,6 +133,14 @@ Part A has been seeded with the top-level modules observed in the initial read-o
 | 31 | Landing Pages — template library | /accounts/2000290/landing_pages/template | wizard | — | crawled |
 | 32 | Email Content — drag & drop editor | /accounts/2000290/contents/drag_and_drop_beta/3660 | detail | — | crawled |
 | 33 | Data Journeys — builder canvas (8 triggers / 6 actions) | /accounts/2000290/data_journeys/3/builder | detail | — | crawled |
+
+Deep crawl 2026-09-01 (account 116000): rows 10–17's content surfaces (Dynamic Content + editor,
+Image Library `/folders` + upload/rename/preview/picker, Footer Management + detail/preview/new
+wizard step 1, Optimise on Open + group editor, Content Feeds + single/merge modals, Preference
+Management + New Page modal) and A02 rows 7–8 were audited into
+`docs/rebuild/content-reporting/` (AUDIT + FLOWS per page, CRAWL-SUMMARY). The pre-existing
+sandbox views for all 8 are pre-crawl builds — RecurringCampaignReports.vue and
+ABCampaignReports.vue confirmed invented (eRFM family); 3 sandbox routes differ from production.
 
 ## A06 — Commerce   [crawl-status: crawled]
 

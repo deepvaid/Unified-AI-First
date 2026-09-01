@@ -63,6 +63,17 @@ Slice-shared: [marketing-acquisition/IMPROVEMENTS.md](marketing-acquisition/IMPR
 /accounts/:accountId/archive                              ContentArchives
 ```
 
+### Content & Reporting slice (2026-09-01 — crawl done, build pending)
+
+Crawled from `uat.maropost.com` account 116000. Overview, cross-cutting facts, and defect
+families: [content-reporting/CRAWL-SUMMARY.md](content-reporting/CRAWL-SUMMARY.md). Eight
+surfaces audited (AUDIT + FLOWS each): Recurring Campaign Reports, A/B Campaign Reports
+(+ comparison detail), Dynamic Content, Image Library (`/folders`), Footer Management,
+Optimize on Open (`/image_groups`), Content Feeds, Preference Management. `/contents` and
+`/contents/template` were already covered by the Marketing Acquisition slice. All eight have
+pre-crawl sandbox views; the two Analytics reports are confirmed invented designs, and three
+routes differ from production. Build phase not started — awaiting Phase-2 answers.
+
 ---
 
 Shared (CDP + Products slices): [IMPROVEMENTS.md](IMPROVEMENTS.md) · [GAPS.md](GAPS.md)
