@@ -42,7 +42,7 @@ const headers = [
   { title: 'Instances', key: 'instances', align: 'end' as const, sortable: false, width: 110 },
   { title: 'Updated at', key: 'updatedAt', sortable: true },
   { title: 'Created at', key: 'createdAt', sortable: true },
-  { title: '', key: 'actions', sortable: false, width: 64, align: 'end' as const },
+  { title: 'Actions', key: 'actions', sortable: false, width: 84, align: 'end' as const },
 ]
 
 function formatAt(iso: string): string {
@@ -166,6 +166,23 @@ function confirmBulkDelete() {
         show-select
         :items-per-page="10"
       >
+        <!-- Labelled select checkboxes (the default show-select inputs have no accessible name) -->
+        <template v-slot:header.data-table-select="{ allSelected, selectAll, someSelected }">
+          <v-checkbox-btn
+            :model-value="allSelected"
+            :indeterminate="someSelected && !allSelected"
+            aria-label="Select all data journeys"
+            @update:model-value="selectAll(!allSelected)"
+          ></v-checkbox-btn>
+        </template>
+        <template v-slot:item.data-table-select="{ internalItem, isSelected, toggleSelect }">
+          <v-checkbox-btn
+            :model-value="isSelected(internalItem)"
+            :aria-label="`Select ${internalItem.raw.name}`"
+            @update:model-value="toggleSelect(internalItem)"
+          ></v-checkbox-btn>
+        </template>
+
         <template v-slot:item.name="{ item }">
           <a
             href="#"
