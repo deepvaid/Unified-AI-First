@@ -1,190 +1,195 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useMarketingAssetsStore, type ImageGroup } from '@/stores/useMarketingAssets'
-import { useImagesStore } from '@/stores/useImages'
+import { useFoldersStore } from '@/stores/useFolders'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
-import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFolderSelect from '@/components/MpFolderSelect.vue'
+import MpManageFoldersDrawer from '@/components/MpManageFoldersDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
-import MpFormField from '@/components/MpFormField.vue'
 import { useToast } from '@/composables/useToast'
 
+// UAT parity: /accounts/:id/image_groups — "Optimize On Open" image groups
+// (open-time image swaps). List with folders + bulk select; groups are built
+// in the full-page editor at /image_groups/new and /:id/edit.
+// UAT mixes "Optimise"/"Optimize"/"My Image Groups"; one spelling is used
+// here (IMPROVEMENTS.md).
+
 const store = useMarketingAssetsStore()
-const imagesStore = useImagesStore()
+const foldersStore = useFoldersStore()
+const router = useRouter()
+const route = useRoute()
+const toast = useToast()
+
+const accountId = computed(() => route.params.accountId as string)
 const search = ref('')
+const selected = ref<number[]>([])
+
+// ── Folders ───────────────────────────────────────────────────────────────
+const groupFolders = computed(() => foldersStore.foldersByScope('image_groups'))
+const selectedFolderId = ref<string | null>(null)
+const manageFoldersOpen = ref(false)
+
+const folderCounts = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const folder of groupFolders.value) {
+    const ids = [folder.id, ...foldersStore.childrenOf(folder.id).map(f => f.id)]
+    counts[folder.id] = store.imageGroups.filter(g => g.folderId && ids.includes(g.folderId)).length
+  }
+  return counts
+})
+
+const visibleGroups = computed(() => {
+  if (!selectedFolderId.value) return store.imageGroups
+  const ids = [selectedFolderId.value, ...foldersStore.childrenOf(selectedFolderId.value).map(f => f.id)]
+  return store.imageGroups.filter(g => g.folderId && ids.includes(g.folderId))
+})
+
+const activeFilterEntries = computed(() => {
+  const folder = foldersStore.getFolder(selectedFolderId.value)
+  return folder ? [{ key: 'folder', label: `Folder: ${folder.name}` }] : []
+})
 
 const headers = [
-  { title: 'Group Name', key: 'name', sortable: true },
-  { title: 'Images', key: 'imageCount', align: 'end' as const },
-  { title: 'Updated', key: 'updatedAt', sortable: true },
-  { title: 'Created', key: 'createdAt', sortable: true },
-  { title: '', key: 'actions', sortable: false, align: 'end' as const },
+  { title: 'Name', key: 'name', sortable: true },
+  { title: 'Created At', key: 'createdAt', sortable: true },
+  { title: 'Updated At', key: 'updatedAt', sortable: true },
+  { title: 'Actions', key: 'actions', sortable: false, align: 'end' as const },
 ]
 
-// ── Create / edit drawer ─────────────────────────────────────────────────
-const drawer = ref(false)
-const editingId = ref<number | null>(null)
-const name = ref('')
-const selectedImageIds = ref<number[]>([])
-
-const canSave = computed(() => name.value.trim() !== '' && selectedImageIds.value.length > 0)
-
-function openCreate() {
-  editingId.value = null
-  name.value = ''
-  selectedImageIds.value = []
-  drawer.value = true
-}
-
-function openEdit(group: ImageGroup) {
-  editingId.value = group.id
-  name.value = group.name
-  selectedImageIds.value = []
-  drawer.value = true
-}
-
-function saveGroup() {
-  if (!canSave.value) return
-  const payload = { name: name.value.trim(), imageCount: selectedImageIds.value.length }
-  if (editingId.value !== null) {
-    store.updateImageGroup(editingId.value, payload)
-    notify('Image group updated')
-  } else {
-    store.addImageGroup(payload)
-    notify('Image group created')
-  }
-  drawer.value = false
+function openEditor(group?: ImageGroup) {
+  router.push(group
+    ? { name: 'ImageGroupEdit', params: { accountId: accountId.value, id: group.id } }
+    : { name: 'ImageGroupCreate', params: { accountId: accountId.value } })
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────
 const confirmDelete = ref(false)
-const pendingDelete = ref<ImageGroup | null>(null)
-function askDelete(group: ImageGroup) {
-  pendingDelete.value = group
+const pendingDelete = ref<number[]>([])
+function askDelete(ids: number[]) {
+  pendingDelete.value = ids
   confirmDelete.value = true
 }
 function doDelete() {
-  if (pendingDelete.value) {
-    store.deleteImageGroup(pendingDelete.value.id)
-    notify('Image group deleted')
-  }
-  pendingDelete.value = null
+  for (const id of pendingDelete.value) store.deleteImageGroup(id)
+  selected.value = selected.value.filter(id => !pendingDelete.value.includes(id))
+  toast.success(pendingDelete.value.length === 1 ? 'Image group deleted' : `${pendingDelete.value.length} image groups deleted`)
+  pendingDelete.value = []
 }
-
-// ── Toast ─────────────────────────────────────────────────────────────────
-const toast = useToast()
-function notify(text: string) { toast.success(text) }
 </script>
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
-      title="Optimise on Open"
+      title="Optimize On Open"
       :subtitle="`${store.imageGroups.length} image groups`"
     >
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">Create Image Group</v-btn>
+        <v-btn variant="flat" prepend-icon="folder" class="text-none" color="surface" @click="manageFoldersOpen = true">Manage Folders</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openEditor()">New Group</v-btn>
       </template>
     </MpPageHeader>
-
-    <v-alert type="info" variant="tonal" rounded="xl">
-      Deliver dynamic images that change based on when, where, and how your subscribers open your emails.
-    </v-alert>
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
         v-model:search="search"
-        title="Image Groups"
-        search-placeholder="Search groups..."
-        :total-count="store.imageGroups.length"
-      />
+        title="Image groups"
+        search-placeholder="Search image groups"
+        :total-count="visibleGroups.length"
+        :active-filters="activeFilterEntries"
+        @remove-filter="selectedFolderId = null"
+        @clear-filters="selectedFolderId = null"
+      >
+        <template #actions>
+          <MpFolderSelect
+            v-model="selectedFolderId"
+            :folders="groupFolders"
+            :counts="folderCounts"
+            :total-count="store.imageGroups.length"
+            @manage="manageFoldersOpen = true"
+          />
+        </template>
+      </MpDataTableToolbar>
 
-      <v-data-table :headers="headers" :items="store.imageGroups" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
-        <template v-slot:item.imageCount="{ item }">
-          <span class="font-weight-medium">{{ item.imageCount.toLocaleString() }}</span>
+      <v-data-table
+        v-model="selected"
+        :headers="headers"
+        :items="visibleGroups"
+        :search="search"
+        item-value="id"
+        show-select
+        hover
+        density="comfortable"
+        :items-per-page="10"
+        fixed-header
+        class="flex-grow-1"
+      >
+        <template v-slot:item.name="{ item }">
+          <button type="button" class="group-name" @click="openEditor(item)">{{ item.name }}</button>
+          <div v-if="item.folderId" class="text-caption text-medium-emphasis">
+            {{ foldersStore.getFolder(item.folderId)?.name }}
+          </div>
         </template>
         <template v-slot:item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Image group actions" :itemLabel="item.name">
-            <MpMenuItem icon="pencil" title="Edit" @click="openEdit(item)" />
+            <MpMenuItem icon="pencil" title="Edit Image Group" @click="openEditor(item)" />
             <v-divider class="my-1" />
-            <MpMenuItem icon="trash-2" title="Delete" danger @click="askDelete(item)" />
+            <MpMenuItem icon="trash-2" title="Delete Image Group" danger @click="askDelete([item.id])" />
           </MpRowActionsMenu>
         </template>
-        <template v-slot:no-data>
+        <template #no-data>
           <MpEmptyState
-            icon="sparkles"
-            :title="search ? 'No image groups match your search' : 'No image groups yet'"
-            :description="search ? 'Try a different search term.' : 'Create a group of images to personalize when an email is opened.'"
-            :action-label="!search ? 'Create Image Group' : undefined"
+            icon="images"
+            :title="search || selectedFolderId ? 'No image groups match your filters' : 'No image groups yet'"
+            :description="search || selectedFolderId ? 'Try a different search or clear the folder filter.' : 'Swap an email image at open time — a default image until it expires, then the expiry image.'"
+            :action-label="!search && !selectedFolderId ? 'New Group' : undefined"
             action-icon="plus"
             class="py-10"
-            @action="openCreate"
+            @action="openEditor()"
           />
         </template>
       </v-data-table>
     </v-card>
 
-    <!-- Create / edit drawer -->
-    <MpFormDrawer
-      v-model="drawer"
-      :title="editingId !== null ? 'Edit Image Group' : 'New Image Group'"
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="visibleGroups.length"
+      @clear="selected = []"
     >
-      <MpFormGrid>
-        <v-text-field
-          v-model="name"
-          label="Name"
-          placeholder="e.g. Dynamic Weather Header"
-          :rules="[v => !!v || 'Name is required']"
-        />
-
-        <MpFormField
-          label="Images in this group"
-          hint="Pick images from your library to rotate based on open conditions."
-        >
-          <v-list density="compact" class="oo-image-list" rounded="lg" border>
-            <v-list-item v-for="img in imagesStore.items" :key="img.id">
-              <template #prepend>
-                <v-checkbox-btn
-                  :model-value="selectedImageIds.includes(img.id)"
-                  @update:model-value="(v) => { selectedImageIds = v ? [...selectedImageIds, img.id] : selectedImageIds.filter(id => id !== img.id) }"
-                />
-              </template>
-              <v-list-item-title class="text-body-2">{{ img.name }}</v-list-item-title>
-              <v-list-item-subtitle class="text-caption">{{ img.size }}</v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
-        </MpFormField>
-      </MpFormGrid>
-      <div v-if="selectedImageIds.length" class="text-caption text-medium-emphasis">
-        {{ selectedImageIds.length }} image{{ selectedImageIds.length === 1 ? '' : 's' }} selected
-      </div>
-
-      <template #footer>
-        <v-btn variant="text" class="text-none" @click="drawer = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSave" @click="saveGroup">
-          {{ editingId !== null ? 'Save Changes' : 'Create' }}
-        </v-btn>
-      </template>
-    </MpFormDrawer>
+      <v-btn size="small" variant="text" class="text-none text-error" prepend-icon="trash-2" @click="askDelete([...selected])">Delete</v-btn>
+    </MpFloatingBulkBar>
 
     <MpConfirmDialog
       v-model="confirmDelete"
-      title="Delete image group?"
-      :message="`“${pendingDelete?.name}” will be permanently deleted.`"
+      :title="pendingDelete.length === 1 ? 'Delete image group?' : `Delete ${pendingDelete.length} image groups?`"
+      message="Emails referencing a deleted group show its last rendered image."
       confirm-label="Delete"
       danger
       @confirm="doDelete"
+    />
+
+    <MpManageFoldersDrawer
+      v-model="manageFoldersOpen"
+      scope="image_groups"
+      :counts="folderCounts"
     />
   </div>
 </template>
 
 <style scoped>
-.oo-image-list {
-  max-height: 260px;
-  overflow-y: auto;
+.group-name {
+  color: rgb(var(--v-theme-primary));
+  font-weight: 500;
+  text-align: left;
+}
+
+.group-name:hover,
+.group-name:focus-visible {
+  text-decoration: underline;
 }
 </style>

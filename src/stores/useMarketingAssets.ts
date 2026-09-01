@@ -116,10 +116,28 @@ export interface PreferencePage {
 }
 
 // ── Optimise on Open (image groups) ─────────────────────────────────────────
+
+/**
+ * One image slot of an Optimize-on-Open group. The default image shows until
+ * its expiration; optional timed slots follow; the expiry image has no
+ * expiration of its own — it is what renders after everything else lapses.
+ */
+export interface ImageGroupSlot {
+  id: number
+  kind: 'default' | 'timed' | 'expiry'
+  imageName: string
+  imageUrl: string
+  clickThroughUrl: string
+  /** Required on default/timed slots; always null on the expiry slot. */
+  expiresAtDate: string | null
+  expiresAtTime: string | null
+}
+
 export interface ImageGroup {
   id: number
   name: string
-  imageCount: number
+  folderId: string | null
+  slots: ImageGroupSlot[]
   createdAt: string
   updatedAt: string
 }
@@ -401,18 +419,31 @@ export const useMarketingAssetsStore = defineStore('marketingAssets', () => {
 
   // ── Optimise on Open (image groups) ─────────────────────────────────────
   const imageGroups = ref<ImageGroup[]>([
-    { id: 1, name: 'Dynamic Weather Header', imageCount: 3, createdAt: '2025-11-01', updatedAt: '2026-03-01' },
-    { id: 2, name: 'Live Inventory Banner', imageCount: 2, createdAt: '2025-12-15', updatedAt: '2026-02-15' },
+    {
+      id: 1, name: 'Dynamic Weather Header', folderId: 'iog-seasonal', createdAt: '2025-11-01', updatedAt: '2026-03-01',
+      slots: [
+        { id: 1, kind: 'default', imageName: 'hero_summer_sale.jpg', imageUrl: 'https://picsum.photos/seed/mp-image-1/600/400', clickThroughUrl: 'https://shop.example.com/summer', expiresAtDate: '2026-09-27', expiresAtTime: '13:20' },
+        { id: 2, kind: 'timed', imageName: 'banner_new_arrivals.jpg', imageUrl: 'https://picsum.photos/seed/mp-image-3/600/400', clickThroughUrl: 'https://shop.example.com/new', expiresAtDate: '2026-10-15', expiresAtTime: '09:00' },
+        { id: 3, kind: 'expiry', imageName: 'banner_free_shipping.png', imageUrl: 'https://picsum.photos/seed/mp-image-2/600/400', clickThroughUrl: 'https://shop.example.com', expiresAtDate: null, expiresAtTime: null },
+      ],
+    },
+    {
+      id: 2, name: 'Live Inventory Banner', folderId: null, createdAt: '2025-12-15', updatedAt: '2026-02-15',
+      slots: [
+        { id: 1, kind: 'default', imageName: 'sneaker_airmax_white.jpg', imageUrl: 'https://picsum.photos/seed/mp-image-4/600/400', clickThroughUrl: 'https://shop.example.com/sneakers', expiresAtDate: '2026-11-01', expiresAtTime: '00:00' },
+        { id: 2, kind: 'expiry', imageName: 'lifestyle_morning_run.jpg', imageUrl: 'https://picsum.photos/seed/mp-image-7/600/400', clickThroughUrl: 'https://shop.example.com', expiresAtDate: null, expiresAtTime: null },
+      ],
+    },
   ])
 
-  function addImageGroup(input: { name: string; imageCount: number }): ImageGroup {
+  function addImageGroup(input: Omit<ImageGroup, 'id' | 'createdAt' | 'updatedAt'>): ImageGroup {
     const now = new Date().toISOString().slice(0, 10)
     const group: ImageGroup = { ...input, id: nextId(imageGroups.value), createdAt: now, updatedAt: now }
     imageGroups.value.unshift(group)
     return group
   }
 
-  function updateImageGroup(id: number, patch: Partial<Pick<ImageGroup, 'name' | 'imageCount'>>) {
+  function updateImageGroup(id: number, patch: Partial<Omit<ImageGroup, 'id' | 'createdAt'>>) {
     const group = imageGroups.value.find(g => g.id === id)
     if (!group) return
     Object.assign(group, patch, { updatedAt: new Date().toISOString().slice(0, 10) })
