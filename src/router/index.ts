@@ -47,8 +47,13 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/analytics/sales_summary', name: 'SalesSummary', component: () => import('@/views/Analytics/SalesSummary.vue') },
   { path: '/accounts/:accountId/erfm_report', name: 'ERFMReport', component: () => import('@/views/Analytics/ERFMReport.vue') },
   { path: '/accounts/:accountId/reports', name: 'CampaignReports', component: () => import('@/views/Analytics/CampaignReports.vue') },
-  { path: '/accounts/:accountId/analytics/recurring_campaign_reports', name: 'RecurringCampaignReports', component: () => import('@/views/Analytics/RecurringCampaignReports.vue') },
-  { path: '/accounts/:accountId/analytics/ab_campaign_reports', name: 'ABCampaignReports', component: () => import('@/views/Analytics/ABCampaignReports.vue') },
+  // Production paths (UAT parity — docs/rebuild/content-reporting); the old
+  // /analytics/* paths redirect so existing links keep working.
+  { path: '/accounts/:accountId/reports/recurring_campaign_report', name: 'RecurringCampaignReports', component: () => import('@/views/Analytics/RecurringCampaignReports.vue') },
+  { path: '/accounts/:accountId/analytics/recurring_campaign_reports', redirect: (to) => ({ name: 'RecurringCampaignReports', params: to.params }) },
+  { path: '/accounts/:accountId/ab_reports', name: 'ABCampaignReports', component: () => import('@/views/Analytics/ABCampaignReports.vue') },
+  { path: '/accounts/:accountId/analytics/ab_campaign_reports', redirect: (to) => ({ name: 'ABCampaignReports', params: to.params }) },
+  { path: '/accounts/:accountId/campaigns/:id/ab_report', name: 'ABCampaignReportDetail', component: () => import('@/views/Analytics/ABCampaignReportDetail.vue') },
   { path: '/accounts/:accountId/analytics/test_campaign_reports', name: 'TestCampaignReports', component: () => import('@/views/Analytics/TestCampaignReports.vue') },
   { path: '/accounts/:accountId/analytics/website_reports', name: 'WebsiteReports', component: () => import('@/views/Analytics/WebsiteReports.vue') },
   { path: '/accounts/:accountId/analytics/journey_reports', name: 'JourneyReports', component: () => import('@/views/Analytics/JourneyReports.vue') },

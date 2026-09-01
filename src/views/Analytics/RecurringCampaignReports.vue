@@ -1,79 +1,74 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useCampaignsStore } from '@/stores/useCampaigns'
-import { isWithinRange, type DateRangeValue } from '@/stores/useAnalytics'
-import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAnalyticsStore } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
-import { downloadCsv } from '@/utils/exportCsv'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
-import { useToast } from '@/composables/useToast'
 import { useInitialLoad } from '@/composables/useInitialLoad'
-import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
+import { formatCurrency } from '@/utils/formatCurrency'
 
-const store = useCampaignsStore()
-const toast = useToast()
-const search = ref('')
-const filterFrequency = ref<string[]>([])
+// UAT parity: /accounts/:id/reports/recurring_campaign_report — a flat report
+// table of recurring campaigns whose rows expand into one child row per
+// occurrence (each actual send). See docs/rebuild/content-reporting.
 
-// The one filter this report has, so it lives in the toolbar as a pill rather
-// than behind a drawer.
-const filterFrequencyQuickFilter = {
-  key: 'frequency',
-  label: 'Frequency',
-  options: (['Daily', 'Weekly', 'Monthly']).map((v) => ({ label: v, value: v })),
-}
-const dateRange = ref<DateRangeValue>({ preset: 'This year' })
-
-const headers = [
-  { title: 'Recurring Campaign Name', key: 'name', sortable: true },
-  { title: 'Frequency', key: 'frequency' },
-  { title: 'Next Run', key: 'nextRun', hideBelow: 'md' as const },
-  { title: 'Avg Opens', key: 'metrics.opens', align: 'end' as const, hideBelow: 'sm' as const },
-]
-
-// Identity + headline metric always show; supporting columns drop out
-// progressively so the table never side-scrolls on a phone.
-const { visibleHeaders } = useResponsiveTableHeaders(headers)
+const route = useRoute()
+const store = useAnalyticsStore()
+const accountId = computed(() => route.params.accountId as string)
 const { loading } = useInitialLoad()
 
-const recurringItems = store.campaigns.slice(0, 10).map(c => ({
-  ...c,
-  frequency: ['Daily', 'Weekly', 'Monthly'][Math.floor(Math.random() * 3)],
-  nextRun: new Date(Date.now() + Math.floor(Math.random() * 1000000000)).toISOString().split('T')[0]
-}))
+const search = ref('')
+const expanded = ref<string[]>([])
 
-const activeFilterEntries = computed(() => {
-  const filters: Array<{ key: string; label: string }> = []
-  if (filterFrequency.value.length > 0) filters.push({ key: 'frequency', label: `Frequency: ${filterFrequency.value.join(', ')}` })
-  return filters
-})
+const METRIC_KEYS = ['sent', 'delivered', 'opens', 'clicks', 'bounces', 'revenue'] as const
 
-function removeFilter(_key: string) {
-  filterFrequency.value = []
-}
-
-function clearAllFilters() {
-  filterFrequency.value = []
-}
-
-const filteredItems = computed(() =>
-  recurringItems.filter(
-    (r) =>
-      isWithinRange(r.sentDate, dateRange.value) &&
-      (filterFrequency.value.length === 0 || (r.frequency != null && filterFrequency.value.includes(r.frequency))),
-  ),
+const rows = computed(() =>
+  store.recurringReports.map((r) => {
+    const totals = { sent: 0, delivered: 0, opens: 0, clicks: 0, bounces: 0, revenue: 0 }
+    for (const o of r.occurrences) for (const k of METRIC_KEYS) totals[k] += o[k]
+    return { id: r.id, campaignId: r.campaignId, name: r.name, occurrences: r.occurrences, ...totals }
+  }),
 )
 
-function exportCsv() {
-  downloadCsv('recurring-campaign-reports', filteredItems.value, [
-    { title: 'Recurring Campaign Name', value: 'name' },
-    { title: 'Frequency', value: (r) => r.frequency ?? '' },
-    { title: 'Next Run', value: 'nextRun' },
-    { title: 'Avg Opens', value: (r) => r.metrics.opens },
-  ])
-  toast.success(`Exported ${filteredItems.value.length} rows`)
+const headers = [
+  { title: '', key: 'data-table-expand', sortable: false, width: 48 },
+  { title: 'Name', key: 'name', sortable: true },
+  { title: 'Sent', key: 'sent', align: 'end' as const },
+  { title: 'Delivered', key: 'delivered', align: 'end' as const },
+  { title: 'Opens', key: 'opens', align: 'end' as const },
+  { title: 'Clicks', key: 'clicks', align: 'end' as const },
+  { title: 'Bounces', key: 'bounces', align: 'end' as const },
+  { title: 'Total Revenue', key: 'revenue', align: 'end' as const },
+]
+
+// UAT lazy-loads occurrences on expand (spinner in the expander cell); the
+// mock keeps that loading state visible for a beat so the flow is walkable.
+const loadingIds = ref(new Set<number>())
+const loadedIds = ref(new Set<number>())
+watch(expanded, (ids) => {
+  for (const id of ids.map(Number)) {
+    if (loadedIds.value.has(id) || loadingIds.value.has(id)) continue
+    loadingIds.value = new Set(loadingIds.value).add(id)
+    setTimeout(() => {
+      loadingIds.value = new Set([...loadingIds.value].filter(i => i !== id))
+      loadedIds.value = new Set(loadedIds.value).add(id)
+    }, 450)
+  }
+})
+
+const DATE_FMT = new Intl.DateTimeFormat('en-US', {
+  month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
+})
+
+function occurrenceLabel(iso: string): string {
+  const parts = DATE_FMT.formatToParts(new Date(iso))
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? ''
+  return `${get('month')} ${get('day')}, ${get('year')} at ${get('hour')}:${get('minute')} ${get('dayPeriod')}`
+}
+
+function reportLink(campaignId: number) {
+  return { name: 'CampaignReport', params: { accountId: accountId.value, id: campaignId } }
 }
 </script>
 
@@ -81,33 +76,81 @@ function exportCsv() {
   <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Recurring Campaign Reports"
-      :subtitle="`${recurringItems.length} recurring campaigns`"
-    >
-      <template #actions>
-        <MpDateRangeSelect v-model="dateRange" />
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export CSV</v-btn>
-      </template>
-    </MpPageHeader>
+      :subtitle="`${rows.length} recurring campaigns`"
+    />
 
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
       <MpDataTableToolbar
-        v-model:quick-filter-value="filterFrequency"
-        :quick-filter="filterFrequencyQuickFilter"
         v-model:search="search"
-        title="Recurring Campaigns"
-        :active-filters="activeFilterEntries"
-        :total-count="filteredItems.length"
-        @remove-filter="removeFilter"
-        @clear-filters="clearAllFilters"
+        title="Recurring campaigns"
+        search-placeholder="Search recurring campaigns"
+        :total-count="rows.length"
       />
-      <MpTableSkeleton v-if="loading" :rows="7" :columns="4" />
+      <MpTableSkeleton v-if="loading" :rows="7" :columns="7" />
 
-      <v-data-table v-else :headers="visibleHeaders" :items="filteredItems" :search="search" hover density="comfortable" :items-per-page="15" fixed-header class="flex-grow-1">
+      <v-data-table
+        v-else
+        v-model:expanded="expanded"
+        :headers="headers"
+        :items="rows"
+        :search="search"
+        item-value="id"
+        show-expand
+        hover
+        density="comfortable"
+        :items-per-page="10"
+        fixed-header
+        class="flex-grow-1"
+      >
+        <template #item.data-table-expand="{ item, isExpanded, toggleExpand, internalItem }">
+          <v-btn
+            :icon="isExpanded(internalItem) ? 'chevron-down' : 'chevron-right'"
+            variant="text"
+            size="small"
+            :aria-label="isExpanded(internalItem) ? `Collapse occurrences of ${item.name}` : `Expand occurrences of ${item.name}`"
+            :aria-expanded="isExpanded(internalItem) ? 'true' : 'false'"
+            @click="toggleExpand(internalItem)"
+          />
+        </template>
+
+        <template #item.name="{ item }">
+          <router-link :to="reportLink(item.campaignId)" class="report-link">{{ item.name }}</router-link>
+        </template>
+        <template #item.sent="{ item }">{{ item.sent.toLocaleString() }}</template>
+        <template #item.delivered="{ item }">{{ item.delivered.toLocaleString() }}</template>
+        <template #item.opens="{ item }">{{ item.opens.toLocaleString() }}</template>
+        <template #item.clicks="{ item }">{{ item.clicks.toLocaleString() }}</template>
+        <template #item.bounces="{ item }">{{ item.bounces.toLocaleString() }}</template>
+        <template #item.revenue="{ item }">{{ formatCurrency(item.revenue) }}</template>
+
+        <template #expanded-row="{ columns, item }">
+          <tr v-if="!loadedIds.has(item.id)">
+            <td :colspan="columns.length" class="text-center py-3">
+              <v-progress-circular indeterminate size="20" width="2" color="primary" aria-label="Loading occurrences" />
+            </td>
+          </tr>
+          <tr v-for="occ in loadedIds.has(item.id) ? item.occurrences : []" :key="occ.id" class="occurrence-row">
+            <td />
+            <td>
+              <span class="occurrence-marker" aria-hidden="true">↳</span>
+              <router-link :to="reportLink(occ.campaignId)" class="report-link">
+                {{ occurrenceLabel(occ.sentAt) }}
+              </router-link>
+            </td>
+            <td class="text-end">{{ occ.sent.toLocaleString() }}</td>
+            <td class="text-end">{{ occ.delivered.toLocaleString() }}</td>
+            <td class="text-end">{{ occ.opens.toLocaleString() }}</td>
+            <td class="text-end">{{ occ.clicks.toLocaleString() }}</td>
+            <td class="text-end">{{ occ.bounces.toLocaleString() }}</td>
+            <td class="text-end">{{ formatCurrency(occ.revenue) }}</td>
+          </tr>
+        </template>
+
         <template #no-data>
           <MpEmptyState
             icon="repeat"
-            :title="search || filterFrequency.length ? 'No recurring campaigns match your filters' : 'No recurring campaigns in this range'"
-            :description="search || filterFrequency.length ? 'Try a different search or clear filters.' : 'Try a wider date range.'"
+            :title="search ? 'No recurring campaigns match your search' : 'No recurring campaign reports yet'"
+            :description="search ? 'Try a different search.' : 'Reports appear here after a recurring campaign has sent.'"
             class="py-10"
           />
         </template>
@@ -115,3 +158,24 @@ function exportCsv() {
     </v-card>
   </div>
 </template>
+
+<style scoped>
+.report-link {
+  color: rgb(var(--v-theme-primary));
+  text-decoration: none;
+}
+
+.report-link:hover,
+.report-link:focus-visible {
+  text-decoration: underline;
+}
+
+.occurrence-row td {
+  background: rgb(var(--v-theme-surface));
+}
+
+.occurrence-marker {
+  color: var(--text-secondary, rgba(var(--v-theme-on-surface), 0.6));
+  margin-inline-end: var(--mp-space-6);
+}
+</style>

@@ -233,6 +233,109 @@ export interface TestCampaignReport {
   spamScore: number
 }
 
+// --- Recurring Campaign Reports (/reports/recurring_campaign_report parity) ---
+
+/** Shared count columns of the legacy campaign report tables. */
+export interface ReportMetricCounts {
+  sent: number
+  delivered: number
+  opens: number
+  clicks: number
+  bounces: number
+  revenue: number
+}
+
+/** One actual send of a recurring campaign; the child row under a parent report. */
+export interface RecurringOccurrence extends ReportMetricCounts {
+  id: number
+  campaignId: number
+  /** ISO datetime of the send. */
+  sentAt: string
+}
+
+export interface RecurringCampaignReport {
+  id: number
+  campaignId: number
+  name: string
+  occurrences: RecurringOccurrence[]
+}
+
+// --- A/B Campaign Reports (/ab_reports + /campaigns/:id/ab_report parity) ---
+
+/** A percentage + raw count pair, the "<pct>% (<count>)" cells of the comparison table. */
+export interface AbMetricCell {
+  pct: number
+  count: number
+}
+
+export interface AbVariantMetrics {
+  delivered: AbMetricCell
+  totalOpens: AbMetricCell
+  uniqueOpens: AbMetricCell
+  totalClicks: AbMetricCell
+  uniqueClicks: AbMetricCell
+  bounced: AbMetricCell
+  softBounced: AbMetricCell
+  hardBounced: AbMetricCell
+  unsubscribed: AbMetricCell
+  complaints: AbMetricCell
+}
+
+export interface AbVariantOverview {
+  sendTime: string | null
+  subject: string
+  preHeader: string
+  /** Name of the content record the variant points at (null while undecided). */
+  contentName: string | null
+  fromName: string
+  /** Audience split share, e.g. 65 for the final remainder. */
+  sizePct: number
+  contactsCount: number
+  conversions: number
+  totalRevenue: number
+  totalOrders: number
+  totalItemsPurchased: number
+  totalUniqueItemsPurchased: number
+  conversionRate: number
+  averageOrderValue: number
+}
+
+export interface AbReportVariant {
+  id: number
+  name: string
+  kind: 'final' | 'A' | 'B'
+  /** UAT caption under the final column: "Decided by TopChoice". */
+  decidedBy?: string
+  totalSent: number
+  sentAt: string | null
+  metrics: AbVariantMetrics
+  overview: AbVariantOverview
+}
+
+export interface AbCampaignReport extends ReportMetricCounts {
+  id: number
+  campaignId: number
+  name: string
+  contacts: number
+  sentAt: string | null
+  updatedAt: string
+  /** Rendered final-first, matching the UAT comparison layout. */
+  variants: AbReportVariant[]
+  details: {
+    fromEmail: string
+    replyTo: string
+    language: string
+    brand: string
+    lists: string[]
+    segments: string[]
+    suppressLists: string[]
+    suppressSecureLists: string[]
+    suppressSegments: string[]
+    suppressJourneys: string[]
+    campaignTags: string[]
+  }
+}
+
 export const useAnalyticsStore = defineStore('analytics', () => {
   const accountMetrics = ref({
     deliverability: 99.4,
@@ -458,6 +561,176 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
+  // --- Recurring Campaign Reports ---
+
+  const recurringReports = ref<RecurringCampaignReport[]>([
+    {
+      id: 1, campaignId: 2, name: 'Weekly Digest — New Arrivals', occurrences: [
+        { id: 1, campaignId: 1, sentAt: '2026-08-28T09:00:00', sent: 4231, delivered: 4198, opens: 1543, clicks: 512, bounces: 33, revenue: 4120.5 },
+        { id: 2, campaignId: 2, sentAt: '2026-08-21T09:00:00', sent: 4188, delivered: 4150, opens: 1489, clicks: 476, bounces: 38, revenue: 3890.0 },
+        { id: 3, campaignId: 3, sentAt: '2026-08-14T09:00:00', sent: 4102, delivered: 4079, opens: 1502, clicks: 495, bounces: 23, revenue: 4310.25 },
+        { id: 4, campaignId: 4, sentAt: '2026-08-07T09:00:00', sent: 4055, delivered: 4021, opens: 1390, clicks: 421, bounces: 34, revenue: 3654.0 },
+      ],
+    },
+    {
+      id: 2, campaignId: 3, name: 'Daily Deals — Flash Offers', occurrences: [
+        { id: 1, campaignId: 3, sentAt: '2026-08-31T06:00:00', sent: 18231, delivered: 18102, opens: 5231, clicks: 1876, bounces: 129, revenue: 12873.0 },
+        { id: 2, campaignId: 5, sentAt: '2026-08-30T06:00:00', sent: 18194, delivered: 18001, opens: 4987, clicks: 1745, bounces: 193, revenue: 11240.5 },
+        { id: 3, campaignId: 7, sentAt: '2026-08-29T06:00:00', sent: 18150, delivered: 18033, opens: 5102, clicks: 1811, bounces: 117, revenue: 11986.75 },
+      ],
+    },
+    {
+      id: 3, campaignId: 6, name: 'Monthly Loyalty Statement', occurrences: [
+        { id: 1, campaignId: 6, sentAt: '2026-08-01T10:30:00', sent: 9821, delivered: 9754, opens: 4123, clicks: 987, bounces: 67, revenue: 0 },
+        { id: 2, campaignId: 2, sentAt: '2026-07-01T10:30:00', sent: 9640, delivered: 9581, opens: 3980, clicks: 921, bounces: 59, revenue: 0 },
+      ],
+    },
+    {
+      id: 4, campaignId: 4, name: 'Back-in-Stock Alerts — Sneakers', occurrences: [
+        { id: 1, campaignId: 4, sentAt: '2026-08-26T13:20:00', sent: 1245, delivered: 1238, opens: 812, clicks: 402, bounces: 7, revenue: 8231.0 },
+        { id: 2, campaignId: 8, sentAt: '2026-08-19T13:20:00', sent: 1198, delivered: 1190, opens: 764, clicks: 371, bounces: 8, revenue: 7455.5 },
+        { id: 3, campaignId: 9, sentAt: '2026-08-12T13:20:00', sent: 1152, delivered: 1149, opens: 745, clicks: 350, bounces: 3, revenue: 6980.0 },
+      ],
+    },
+    {
+      id: 5, campaignId: 9, name: 'Weekend Wine Club Reminder', occurrences: [
+        { id: 1, campaignId: 1, sentAt: '2026-08-29T17:00:00', sent: 2310, delivered: 2287, opens: 934, clicks: 287, bounces: 23, revenue: 3120.0 },
+      ],
+    },
+  ])
+
+  // --- A/B Campaign Reports ---
+
+  /** Builds the % + count pairs for a variant from a compact spec. */
+  function abCells(base: number, spec: Record<keyof AbVariantMetrics, number>): AbVariantMetrics {
+    const cell = (count: number): AbMetricCell => ({ count, pct: base === 0 ? 0 : Math.round((count / base) * 1000) / 10 })
+    return {
+      delivered: cell(spec.delivered), totalOpens: cell(spec.totalOpens), uniqueOpens: cell(spec.uniqueOpens),
+      totalClicks: cell(spec.totalClicks), uniqueClicks: cell(spec.uniqueClicks), bounced: cell(spec.bounced),
+      softBounced: cell(spec.softBounced), hardBounced: cell(spec.hardBounced), unsubscribed: cell(spec.unsubscribed),
+      complaints: cell(spec.complaints),
+    }
+  }
+
+  const abReports = ref<AbCampaignReport[]>([
+    {
+      id: 1, campaignId: 201, name: 'Spring Launch — Subject Line Test',
+      contacts: 24800, sent: 24800, delivered: 24544, opens: 9812, clicks: 3120, bounces: 256, revenue: 41230.5,
+      sentAt: '2026-08-26T20:35:00', updatedAt: '2026-08-26T02:23:00',
+      variants: [
+        {
+          id: 1, name: 'Spring Launch | Final Campaign', kind: 'final', decidedBy: 'TopChoice',
+          totalSent: 16120, sentAt: '2026-08-28T20:00:00',
+          metrics: abCells(16120, { delivered: 15980, totalOpens: 6420, uniqueOpens: 5810, totalClicks: 2110, uniqueClicks: 1890, bounced: 140, softBounced: 96, hardBounced: 44, unsubscribed: 31, complaints: 2 }),
+          overview: { sendTime: '2026-08-28T20:00:00', subject: 'The Spring drop is here 🌱', preHeader: 'First look inside', contentName: null, fromName: 'Maison Fleur', sizePct: 65, contactsCount: 16120, conversions: 812, totalRevenue: 27110.5, totalOrders: 812, totalItemsPurchased: 1420, totalUniqueItemsPurchased: 1180, conversionRate: 5.0, averageOrderValue: 33.4 },
+        },
+        {
+          id: 2, name: 'Spring Launch - A', kind: 'A',
+          totalSent: 4340, sentAt: '2026-08-26T20:30:00',
+          metrics: abCells(4340, { delivered: 4297, totalOpens: 1810, uniqueOpens: 1622, totalClicks: 540, uniqueClicks: 488, bounced: 43, softBounced: 30, hardBounced: 13, unsubscribed: 9, complaints: 1 }),
+          overview: { sendTime: '2026-08-26T20:30:00', subject: 'The Spring drop is here 🌱', preHeader: 'First look inside', contentName: 'Spring Launch Hero (Aug 2026)', fromName: 'Maison Fleur', sizePct: 17.5, contactsCount: 4340, conversions: 201, totalRevenue: 6890.0, totalOrders: 201, totalItemsPurchased: 350, totalUniqueItemsPurchased: 300, conversionRate: 4.6, averageOrderValue: 34.3 },
+        },
+        {
+          id: 3, name: 'Spring Launch - B', kind: 'B',
+          totalSent: 4340, sentAt: '2026-08-27T20:45:00',
+          metrics: abCells(4340, { delivered: 4267, totalOpens: 1582, uniqueOpens: 1420, totalClicks: 470, uniqueClicks: 430, bounced: 73, softBounced: 51, hardBounced: 22, unsubscribed: 12, complaints: 0 }),
+          overview: { sendTime: '2026-08-27T20:45:00', subject: 'Your spring wardrobe called', preHeader: 'New season, new arrivals', contentName: 'Spring Launch Hero (Aug 2026)', fromName: 'Maison Fleur', sizePct: 17.5, contactsCount: 4340, conversions: 188, totalRevenue: 7230.0, totalOrders: 188, totalItemsPurchased: 322, totalUniqueItemsPurchased: 280, conversionRate: 4.3, averageOrderValue: 38.5 },
+        },
+      ],
+      details: {
+        fromEmail: 'hello@maisonfleur.com', replyTo: 'care@maisonfleur.com', language: 'English', brand: 'Maison Fleur',
+        lists: ['Newsletter Opt-in (24,800)'], segments: [], suppressLists: [], suppressSecureLists: [], suppressSegments: [], suppressJourneys: [], campaignTags: ['Promo_2026'],
+      },
+    },
+    {
+      id: 2, campaignId: 202, name: 'Loyalty Upgrade — CTA Copy Test',
+      contacts: 8600, sent: 8600, delivered: 8531, opens: 3910, clicks: 1422, bounces: 69, revenue: 18740.0,
+      sentAt: '2026-08-07T03:16:00', updatedAt: '2026-08-07T01:33:00',
+      variants: [
+        {
+          id: 1, name: 'Loyalty Upgrade | Final Campaign', kind: 'final', decidedBy: 'TopChoice',
+          totalSent: 5160, sentAt: '2026-08-07T03:16:00',
+          metrics: abCells(5160, { delivered: 5122, totalOpens: 2410, uniqueOpens: 2189, totalClicks: 902, uniqueClicks: 816, bounced: 38, softBounced: 27, hardBounced: 11, unsubscribed: 14, complaints: 1 }),
+          overview: { sendTime: '2026-08-07T03:16:00', subject: 'You unlocked Gold status', preHeader: 'Here is what changes', contentName: null, fromName: 'Peak Supply Co.', sizePct: 60, contactsCount: 5160, conversions: 402, totalRevenue: 11780.0, totalOrders: 402, totalItemsPurchased: 610, totalUniqueItemsPurchased: 555, conversionRate: 7.8, averageOrderValue: 29.3 },
+        },
+        {
+          id: 2, name: 'Loyalty Upgrade - A', kind: 'A',
+          totalSent: 1720, sentAt: '2026-08-05T03:00:00',
+          metrics: abCells(1720, { delivered: 1706, totalOpens: 780, uniqueOpens: 702, totalClicks: 268, uniqueClicks: 241, bounced: 14, softBounced: 10, hardBounced: 4, unsubscribed: 4, complaints: 0 }),
+          overview: { sendTime: '2026-08-05T03:00:00', subject: 'You unlocked Gold status', preHeader: 'Here is what changes', contentName: 'Loyalty Tier Announcement', fromName: 'Peak Supply Co.', sizePct: 20, contactsCount: 1720, conversions: 121, totalRevenue: 3480.0, totalOrders: 121, totalItemsPurchased: 180, totalUniqueItemsPurchased: 166, conversionRate: 7.0, averageOrderValue: 28.8 },
+        },
+        {
+          id: 3, name: 'Loyalty Upgrade - B', kind: 'B',
+          totalSent: 1720, sentAt: '2026-08-06T03:10:00',
+          metrics: abCells(1720, { delivered: 1703, totalOpens: 720, uniqueOpens: 651, totalClicks: 252, uniqueClicks: 227, bounced: 17, softBounced: 12, hardBounced: 5, unsubscribed: 5, complaints: 0 }),
+          overview: { sendTime: '2026-08-06T03:10:00', subject: 'Gold status: claim your perks', preHeader: 'Members-only pricing inside', contentName: 'Loyalty Tier Announcement', fromName: 'Peak Supply Co.', sizePct: 20, contactsCount: 1720, conversions: 108, totalRevenue: 3480.0, totalOrders: 108, totalItemsPurchased: 161, totalUniqueItemsPurchased: 149, conversionRate: 6.3, averageOrderValue: 32.2 },
+        },
+      ],
+      details: {
+        fromEmail: 'club@peaksupply.co', replyTo: 'support@peaksupply.co', language: 'English', brand: 'Peak Supply Co.',
+        lists: ['Loyalty Members (8,600)'], segments: ['Gold Tier Candidates'], suppressLists: [], suppressSecureLists: [], suppressSegments: [], suppressJourneys: ['Win-back 90d'], campaignTags: ['Retention'],
+      },
+    },
+    {
+      id: 3, campaignId: 203, name: 'Holiday Preview — Hero Image Test',
+      contacts: 45200, sent: 12040, delivered: 11907, opens: 4310, clicks: 1287, bounces: 133, revenue: 9840.25,
+      sentAt: null, updatedAt: '2026-07-27T07:05:00',
+      variants: [
+        {
+          id: 1, name: 'Holiday Preview | Final Campaign', kind: 'final', decidedBy: 'TopChoice',
+          totalSent: 0, sentAt: null,
+          metrics: abCells(0, { delivered: 0, totalOpens: 0, uniqueOpens: 0, totalClicks: 0, uniqueClicks: 0, bounced: 0, softBounced: 0, hardBounced: 0, unsubscribed: 0, complaints: 0 }),
+          overview: { sendTime: null, subject: 'A first look at the holiday edit', preHeader: 'Before anyone else', contentName: null, fromName: 'North & Main', sizePct: 73.4, contactsCount: 33160, conversions: 0, totalRevenue: 0, totalOrders: 0, totalItemsPurchased: 0, totalUniqueItemsPurchased: 0, conversionRate: 0, averageOrderValue: 0 },
+        },
+        {
+          id: 2, name: 'Holiday Preview - A', kind: 'A',
+          totalSent: 6020, sentAt: '2026-07-25T09:00:00',
+          metrics: abCells(6020, { delivered: 5961, totalOpens: 2210, uniqueOpens: 1998, totalClicks: 671, uniqueClicks: 602, bounced: 59, softBounced: 41, hardBounced: 18, unsubscribed: 11, complaints: 1 }),
+          overview: { sendTime: '2026-07-25T09:00:00', subject: 'A first look at the holiday edit', preHeader: 'Before anyone else', contentName: 'Holiday Hero — Lifestyle', fromName: 'North & Main', sizePct: 13.3, contactsCount: 6020, conversions: 210, totalRevenue: 5120.25, totalOrders: 210, totalItemsPurchased: 340, totalUniqueItemsPurchased: 302, conversionRate: 3.5, averageOrderValue: 24.4 },
+        },
+        {
+          id: 3, name: 'Holiday Preview - B', kind: 'B',
+          totalSent: 6020, sentAt: '2026-07-26T09:00:00',
+          metrics: abCells(6020, { delivered: 5946, totalOpens: 2100, uniqueOpens: 1876, totalClicks: 616, uniqueClicks: 549, bounced: 74, softBounced: 50, hardBounced: 24, unsubscribed: 13, complaints: 0 }),
+          overview: { sendTime: '2026-07-26T09:00:00', subject: 'A first look at the holiday edit', preHeader: 'Before anyone else', contentName: 'Holiday Hero — Product Grid', fromName: 'North & Main', sizePct: 13.3, contactsCount: 6020, conversions: 195, totalRevenue: 4720.0, totalOrders: 195, totalItemsPurchased: 311, totalUniqueItemsPurchased: 270, conversionRate: 3.2, averageOrderValue: 24.2 },
+        },
+      ],
+      details: {
+        fromEmail: 'news@northandmain.com', replyTo: 'news@northandmain.com', language: 'English', brand: 'North & Main',
+        lists: ['Master Subscriber List (45,200)'], segments: [], suppressLists: ['Do Not Contact'], suppressSecureLists: [], suppressSegments: [], suppressJourneys: [], campaignTags: ['Newsletter'],
+      },
+    },
+    {
+      id: 4, campaignId: 204, name: 'Re-Engagement — Incentive Test',
+      contacts: 4200, sent: 4200, delivered: 4098, opens: 921, clicks: 240, bounces: 102, revenue: 2210.0,
+      sentAt: '2026-06-30T08:50:00', updatedAt: '2026-06-30T08:50:00',
+      variants: [
+        {
+          id: 1, name: 'Re-Engagement | Final Campaign', kind: 'final', decidedBy: 'TopChoice',
+          totalSent: 2520, sentAt: '2026-06-30T08:50:00',
+          metrics: abCells(2520, { delivered: 2451, totalOpens: 540, uniqueOpens: 489, totalClicks: 141, uniqueClicks: 128, bounced: 69, softBounced: 47, hardBounced: 22, unsubscribed: 30, complaints: 3 }),
+          overview: { sendTime: '2026-06-30T08:50:00', subject: 'We saved you 15% — come back', preHeader: 'Your code inside', contentName: null, fromName: 'Bloom & Bee', sizePct: 60, contactsCount: 2520, conversions: 66, totalRevenue: 1390.0, totalOrders: 66, totalItemsPurchased: 92, totalUniqueItemsPurchased: 88, conversionRate: 2.6, averageOrderValue: 21.1 },
+        },
+        {
+          id: 2, name: 'Re-Engagement - A', kind: 'A',
+          totalSent: 840, sentAt: '2026-06-28T08:30:00',
+          metrics: abCells(840, { delivered: 824, totalOpens: 201, uniqueOpens: 182, totalClicks: 52, uniqueClicks: 47, bounced: 16, softBounced: 11, hardBounced: 5, unsubscribed: 9, complaints: 1 }),
+          overview: { sendTime: '2026-06-28T08:30:00', subject: 'We saved you 15% — come back', preHeader: 'Your code inside', contentName: 'Win-back — Discount', fromName: 'Bloom & Bee', sizePct: 20, contactsCount: 840, conversions: 21, totalRevenue: 410.0, totalOrders: 21, totalItemsPurchased: 30, totalUniqueItemsPurchased: 28, conversionRate: 2.5, averageOrderValue: 19.5 },
+        },
+        {
+          id: 3, name: 'Re-Engagement - B', kind: 'B',
+          totalSent: 840, sentAt: '2026-06-29T08:40:00',
+          metrics: abCells(840, { delivered: 823, totalOpens: 180, uniqueOpens: 160, totalClicks: 47, uniqueClicks: 42, bounced: 17, softBounced: 12, hardBounced: 5, unsubscribed: 11, complaints: 1 }),
+          overview: { sendTime: '2026-06-29T08:40:00', subject: 'Free shipping on your next order', preHeader: 'No code needed', contentName: 'Win-back — Free Shipping', fromName: 'Bloom & Bee', sizePct: 20, contactsCount: 840, conversions: 18, totalRevenue: 410.0, totalOrders: 18, totalItemsPurchased: 26, totalUniqueItemsPurchased: 25, conversionRate: 2.1, averageOrderValue: 22.8 },
+        },
+      ],
+      details: {
+        fromEmail: 'hello@bloomandbee.shop', replyTo: 'hello@bloomandbee.shop', language: 'English', brand: 'Bloom & Bee',
+        lists: ['Lapsed 90 Days (4,200)'], segments: [], suppressLists: [], suppressSecureLists: [], suppressSegments: ['Recent Purchasers'], suppressJourneys: [], campaignTags: [],
+      },
+    },
+  ])
+
   function setErfmDates(base: string, comparison: string) {
     erfmBaseDate.value = base
     erfmComparisonDate.value = comparison
@@ -466,6 +739,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   return {
     accountMetrics,
     chartData,
+    recurringReports,
+    abReports,
     salesChannels,
     rfmAnalyzed,
     rfmSegments,
