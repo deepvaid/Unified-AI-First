@@ -95,6 +95,25 @@ Routes corrected to production paths (old paths redirect):
 /accounts/:accountId/dynamic_contents/new | /:id/edit    DynamicContentEditor (new)
 ```
 
+### Data Journeys + Service Tickets slice (2026-09-01)
+
+Crawled from `uat.maropost.com` account 116000. `/contents/template` from the brief was already
+at parity (email-content slice) and was verified, not re-crawled. Both pre-existing sandbox
+views were invented designs and were replaced.
+
+| Page | Source | Rebuild | Docs |
+|---|---|---|---|
+| Data Journeys | `/data_journeys` (+ New/Edit modals) | [`DataJourneys.vue`](../../src/views/Marketing/DataJourneys.vue) | [AUDIT](data-journeys/AUDIT.md) · [FLOWS](data-journeys/FLOWS.md) · [PARITY](data-journeys/PARITY.md) · [IMPROVEMENTS](data-journeys/IMPROVEMENTS.md) · [GAPS](data-journeys/GAPS.md) |
+| Data Journey Builder | `/data_journeys/:id/builder` (legacy iframe) | [`JourneyBuilder.vue`](../../src/views/Marketing/JourneyBuilder.vue) (`flowDomain: 'data'`) | same slice docs |
+| Journey Instances | `/data_journeys/:id/instances` (legacy iframe) | [`DataJourneyInstances.vue`](../../src/views/Marketing/DataJourneyInstances.vue) — new route | same slice docs |
+| Tickets inbox | `/service/:id/tickets` | [`Tickets.vue`](../../src/views/Service/Tickets.vue) + [`TicketWorkspace.vue`](../../src/components/service/TicketWorkspace.vue) | [AUDIT](service-tickets/AUDIT.md) · [FLOWS](service-tickets/FLOWS.md) · [PARITY](service-tickets/PARITY.md) · [IMPROVEMENTS](service-tickets/IMPROVEMENTS.md) · [GAPS](service-tickets/GAPS.md) |
+| Ticket Details | `/service/:id/tickets/:ticketId` | [`TicketDetail.vue`](../../src/views/Service/TicketDetail.vue) — new route | same slice docs |
+| New Ticket | `/service/:id/tickets/create-new` | [`TicketCreate.vue`](../../src/views/Service/TicketCreate.vue) — new route | same slice docs |
+
+Tickets routes moved from `/accounts/:accountId/service` to the production `/service/:accountId/tickets`
+family (old path redirects; `AppSidebar` updated). Ticket vocabulary is now the production set
+(new/open/pending/on hold/closed · low/medium/high · email/webstore/inbound call/walk in).
+
 ---
 
 Shared (CDP + Products slices): [IMPROVEMENTS.md](IMPROVEMENTS.md) · [GAPS.md](GAPS.md)
