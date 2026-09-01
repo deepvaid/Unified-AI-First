@@ -287,6 +287,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/journeys', name: 'Journeys', component: () => import('@/views/Marketing/Journeys.vue') },
   { path: '/accounts/:accountId/data_journeys', name: 'DataJourneys', component: () => import('@/views/Marketing/DataJourneys.vue') },
   { path: '/accounts/:accountId/data_journeys/:id/builder', name: 'DataJourneyBuilder', component: () => import('@/views/Marketing/JourneyBuilder.vue'), meta: { builderShell: true, flowDomain: 'data' } },
+  { path: '/accounts/:accountId/data_journeys/:id/instances', name: 'DataJourneyInstances', component: () => import('@/views/Marketing/DataJourneyInstances.vue') },
   { path: '/accounts/:accountId/contents', name: 'EmailContent', component: () => import('@/views/Marketing/EmailContent.vue') },
   { path: '/accounts/:accountId/contents/template', name: 'ContentTemplates', component: () => import('@/views/Marketing/ContentTemplates.vue') },
   // Two near-identical choosers in the source; one component, told apart by meta.

@@ -5,6 +5,8 @@
 export type NodeCategory = 'trigger' | 'action' | 'filter' | 'delay' | 'end'
 
 export interface ConfigField {
+  /** Optional group heading — fields sharing a section render under one sub-heading. */
+  section?: string
   key: string
   label: string
   type: 'text' | 'number' | 'select' | 'switch' | 'content-picker' | 'multi-select'
@@ -236,8 +238,28 @@ export const dataNodeCatalog: CatalogItem[] = [
     { key: 'host', label: 'Host', type: 'text' },
     { key: 'path', label: 'Remote path', type: 'text' },
   ] },
+  // Mirrors the production Send Campaign step: the legacy 3-tab modal
+  // (Create Campaign / Select Recipients / Select Campaign Tags) flattened
+  // into the builder's one config panel, grouped by section.
   { kind: 'dj-send-campaign', category: 'action', title: 'Send Campaign', subtitle: 'Trigger a campaign send', icon: 'send', fields: [
-    { key: 'campaign', label: 'Campaign', type: 'select', options: dataCampaigns },
+    { section: 'Campaign', key: 'subject', label: 'Subject', type: 'text' },
+    { section: 'Campaign', key: 'preheader', label: 'Preheader', type: 'text' },
+    { section: 'Campaign', key: 'fromName', label: 'From name', type: 'text' },
+    { section: 'Campaign', key: 'fromEmail', label: 'From email', type: 'text' },
+    { section: 'Campaign', key: 'replyTo', label: 'Reply to', type: 'text' },
+    { section: 'Campaign', key: 'brand', label: 'Brand', type: 'select', options: ['Maropost', 'Atlas Outfitters'] },
+    { section: 'Campaign', key: 'content', label: 'Content', type: 'content-picker' },
+    { section: 'Campaign', key: 'previewLink', label: 'Preview link', type: 'switch' },
+    { section: 'Campaign', key: 'address', label: 'Address', type: 'text' },
+    { section: 'Campaign', key: 'language', label: 'Language', type: 'select', options: ['English', 'French', 'Spanish'], default: 'English' },
+    { section: 'Recipients', key: 'lists', label: 'Lists', type: 'multi-select', options: ['Newsletter Subscribers', 'VIP Customers', 'Webstore Buyers', 'Lapsed 90 Days'] },
+    { section: 'Recipients', key: 'segments', label: 'Segments', type: 'multi-select', options: ['High Spenders', 'Recent Openers', 'Cart Abandoners'] },
+    { section: 'Recipients', key: 'suppressLists', label: 'Suppress lists', type: 'multi-select', options: ['Newsletter Subscribers', 'VIP Customers', 'Webstore Buyers', 'Lapsed 90 Days'] },
+    { section: 'Recipients', key: 'suppressSecureLists', label: 'Suppress secure lists', type: 'multi-select', options: ['Hashed Purchasers'] },
+    { section: 'Recipients', key: 'suppressSegments', label: 'Suppress segments', type: 'multi-select', options: ['High Spenders', 'Recent Openers', 'Cart Abandoners'] },
+    { section: 'Recipients', key: 'suppressJourneys', label: 'Suppress journeys', type: 'multi-select', options: ['Welcome Series', 'Win-back'] },
+    { section: 'Recipients', key: 'tables', label: 'Tables', type: 'multi-select', options: ['orders', 'loyalty_points'] },
+    { section: 'Campaign tags', key: 'campaignTags', label: 'Campaign tags', type: 'multi-select', options: ['Promo', 'Lifecycle', 'Transactional'] },
   ] },
   { kind: 'dj-start-import', category: 'action', title: 'Start Import', subtitle: 'Pull data into Maropost', icon: 'download', fields: [
     { key: 'source', label: 'Source', type: 'select', options: importSources },
@@ -250,6 +272,10 @@ export const dataNodeCatalog: CatalogItem[] = [
   ] },
   { kind: 'dj-secure-list-import', category: 'action', title: 'Secure List Import', subtitle: 'Import a hashed list', icon: 'shield', fields: [
     { key: 'list', label: 'List name', type: 'text' },
+  ] },
+  { kind: 'dj-generate-report', category: 'action', title: 'Generate Report', subtitle: 'Build and deliver a report', icon: 'file-text', fields: [
+    { key: 'report', label: 'Report', type: 'select', options: ['Campaign report', 'Journey report', 'Sales summary'] },
+    { key: 'recipients', label: 'Send to', type: 'text' },
   ] },
 ]
 

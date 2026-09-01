@@ -14,7 +14,7 @@ import { useDataJourneysStore } from '@/stores/useDataJourneys'
 import { useCopilotStore } from '@/stores/useCopilot'
 import { useContentStore } from '@/stores/useContent'
 import type { CatalogItem, FlowNode } from '@/stores/journeyFlowData'
-import { catalogByKind, dataNodeCatalog, nodeCatalog } from '@/stores/journeyFlowData'
+import { catalogByKind, dataNodeCatalog, makeNode, nodeCatalog, type ConfigField } from '@/stores/journeyFlowData'
 import { addNodeAfter as insertNodeAfter, buildSegments, detachNode, flowValidation, removeNode, type FlowSegment } from '@/composables/useFlowTree'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useToast } from '@/composables/useToast'
@@ -44,9 +44,16 @@ const nodes = computed<FlowNode[]>(() =>
 )
 const domainCatalog = computed(() => (isData.value ? dataNodeCatalog : nodeCatalog))
 
+// Marketing journeys speak Active/Paused; data journeys speak Enabled/Disabled.
 function setStatus(status: JourneyStatus) {
-  if (isData.value) dataStore.setDataJourneyStatus(journeyId.value, status)
-  else store.setJourneyStatus(journeyId.value, status)
+  if (isData.value) {
+    dataStore.setDataJourneyStatus(
+      journeyId.value,
+      status === 'Active' ? 'Enabled' : status === 'Paused' ? 'Disabled' : 'Draft',
+    )
+  } else {
+    store.setJourneyStatus(journeyId.value, status)
+  }
 }
 
 // ── Save persistence + dirty indicator ───────────────────────────────────────
@@ -234,6 +241,19 @@ const draft = reactive({ title: '', subtitle: '' })
 const draftConfig = ref<Record<string, string | number | boolean | string[]>>({})
 const selectedFields = computed(() => catalogByKind[selectedNode.value?.kind ?? '']?.fields ?? [])
 
+// Adjacent fields sharing a `section` render under one sub-heading (used by
+// steps whose legacy config was tabbed, e.g. the data-journey Send Campaign).
+const selectedFieldGroups = computed(() => {
+  const groups: { section: string | null; fields: ConfigField[] }[] = []
+  for (const f of selectedFields.value) {
+    const section = f.section ?? null
+    const last = groups[groups.length - 1]
+    if (last && last.section === section) last.fields.push(f)
+    else groups.push({ section, fields: [f] })
+  }
+  return groups
+})
+
 watch(selectedNodeId, () => {
   const n = selectedNode.value
   if (!n) return
@@ -302,11 +322,13 @@ const issues = computed(() => flowValidation(nodes.value))
 const issueErrors = computed(() => issues.value.filter(i => i.level === 'error'))
 const issuesOpen = ref(false)
 
+const isLive = computed(() => journeyStatus.value === (isData.value ? 'Enabled' : 'Active'))
+
 function tryActivate() {
-  if (journeyStatus.value === 'Active') {
+  if (isLive.value) {
     setStatus('Paused')
     persistFlow()
-    toast.success('Journey paused')
+    toast.success(isData.value ? 'Data journey disabled' : 'Journey paused')
     void nextTick(() => { issuesOpen.value = false })
     return
   }
@@ -316,8 +338,22 @@ function tryActivate() {
   }
   setStatus('Active')
   persistFlow()
-  toast.success('Journey activated')
+  toast.success(isData.value ? 'Data journey enabled' : 'Journey activated')
   void nextTick(() => { issuesOpen.value = false })
+}
+
+// ── Clear canvas (data journeys only — mirrors the legacy builder's Clear) ───
+const clearDialog = ref(false)
+function clearCanvas() {
+  dataStore.flows[journeyId.value] = [makeNode({
+    id: `d${journeyId.value}-t1`,
+    kind: 'dj-api-event',
+    title: 'Choose a trigger',
+    subtitle: 'Click to configure when this journey runs',
+    configured: false,
+  })]
+  selectedNodeId.value = null
+  toast.success('Canvas cleared')
 }
 
 // Jump-to-issue: select, scroll to, and pulse the offending node once.
@@ -545,12 +581,13 @@ onBeforeUnmount(() => {
         {{ issues.length }} {{ issues.length === 1 ? 'issue' : 'issues' }}
       </v-btn>
       <v-divider vertical class="mx-1" style="height:24px;"></v-divider>
+      <v-btn v-if="isData" variant="outlined" size="small" class="text-none" prepend-icon="eraser" @click="clearDialog = true">Clear</v-btn>
       <v-btn variant="outlined" size="small" class="text-none" prepend-icon="save" @click="saveDraftJourney">Save</v-btn>
       <v-menu v-model="issuesOpen" :close-on-content-click="false" :open-on-click="false" location="bottom end">
         <template #activator="{ props: menu }">
           <v-btn v-bind="menu" color="primary" variant="flat" size="small" class="text-none"
-            :prepend-icon="journeyStatus === 'Active' ? 'pause' : 'play'" @click.stop="tryActivate">
-            {{ journeyStatus === 'Active' ? 'Pause' : 'Activate' }}
+            :prepend-icon="isLive ? 'pause' : 'play'" @click.stop="tryActivate">
+            {{ isLive ? (isData ? 'Disable' : 'Pause') : (isData ? 'Enable' : 'Activate') }}
           </v-btn>
         </template>
         <v-card rounded="lg" border flat width="360" class="py-1">
@@ -707,9 +744,11 @@ onBeforeUnmount(() => {
               <v-text-field v-model="draft.title" label="Step name"></v-text-field>
 
               <template v-if="selectedFields.length">
-                <MpFormSection title="Configuration" />
-                <!-- Schema-driven fields from the node catalog -->
-                <template v-for="f in selectedFields" :key="f.key">
+                <MpFormSection v-if="!selectedFieldGroups[0]?.section" title="Configuration" />
+                <!-- Schema-driven fields from the node catalog, grouped by section -->
+                <template v-for="(g, gi) in selectedFieldGroups" :key="g.section ?? gi">
+                <MpFormSection v-if="g.section" :title="g.section" />
+                <template v-for="f in g.fields" :key="f.key">
                   <v-select v-if="f.type === 'select'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="f.options"
                     @update:model-value="(v: string) => draftConfig[f.key] = v"></v-select>
                   <v-select v-else-if="f.type === 'content-picker'" :model-value="String(draftConfig[f.key] ?? '')" :label="f.label" :items="contentNames"
@@ -723,6 +762,7 @@ onBeforeUnmount(() => {
                   <v-switch v-else-if="f.type === 'switch'" v-model="draftConfig[f.key]" :label="f.label"></v-switch>
                   <v-text-field v-else :model-value="String(draftConfig[f.key] ?? '')" :label="f.label"
                     @update:model-value="(v: string) => draftConfig[f.key] = v"></v-text-field>
+                </template>
                 </template>
               </template>
 
@@ -786,6 +826,14 @@ onBeforeUnmount(() => {
       :message="leaveMessage"
       :confirm-label="leaveConfirmLabel"
       @confirm="discardAndLeave"
+    />
+    <MpConfirmDialog
+      v-model="clearDialog"
+      danger
+      title="Clear the canvas?"
+      message="Every step on this canvas will be removed and replaced with an empty trigger. This can't be undone."
+      confirm-label="Clear canvas"
+      @confirm="clearCanvas"
     />
   </MpBuilderShell>
 </template>

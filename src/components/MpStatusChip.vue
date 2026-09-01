@@ -80,6 +80,8 @@ const toneMap: Record<string, Record<string, Tone>> = {
     syncing: 'warning', invited: 'warning', deactivated: 'neutral',
     // Domain verification (landing pages): unverified is a to-do, not a failure.
     verified: 'success', unverified: 'warning',
+    // Data journey runs.
+    finished: 'success',
   },
 }
 

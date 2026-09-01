@@ -1,242 +1,280 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
-import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
-import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
-import MpFormDrawer from '@/components/MpFormDrawer.vue'
+import MpDialog from '@/components/MpDialog.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpOptionCard from '@/components/MpOptionCard.vue'
-import MpStatusToggle from '@/components/MpStatusToggle.vue'
-import MpMenuItem from '@/components/MpMenuItem.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
-import MpFormField from '@/components/MpFormField.vue'
-import JourneyMiniPreview from '@/components/marketing/JourneyMiniPreview.vue'
+import MpMenuItem from '@/components/MpMenuItem.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import { useDataJourneysStore, type DataJourney } from '@/stores/useDataJourneys'
-import { dataJourneyTemplates } from '@/stores/journeyFlowData'
-import { parseDataJourneyDescription } from '@/composables/useJourneyGenerator'
+import { useToast } from '@/composables/useToast'
 
 const store = useDataJourneysStore()
 const router = useRouter()
 const route = useRoute()
+const toast = useToast()
 const accountId = computed(() => route.params.accountId as string)
+
+// ── Filter (mirrors the production select: one list, statuses + a recency sort) ──
+const filter = ref('all')
+const filterOptions = [
+  { title: 'All', value: 'all' },
+  { title: 'Recently Modified', value: 'recent' },
+  { title: 'Draft', value: 'Draft' },
+  { title: 'Enabled', value: 'Enabled' },
+  { title: 'Disabled', value: 'Disabled' },
+]
+
+const rows = computed<DataJourney[]>(() => {
+  const list = [...store.dataJourneys]
+  if (filter.value === 'recent') return list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  if (filter.value === 'all') return list
+  return list.filter(j => j.status === filter.value)
+})
+
+const headers = [
+  { title: 'Name', key: 'name', sortable: true },
+  { title: 'Journey status', key: 'status', sortable: false, width: 140 },
+  { title: 'Instances', key: 'instances', align: 'end' as const, sortable: false, width: 110 },
+  { title: 'Updated at', key: 'updatedAt', sortable: true },
+  { title: 'Created at', key: 'createdAt', sortable: true },
+  { title: '', key: 'actions', sortable: false, width: 64, align: 'end' as const },
+]
+
+function formatAt(iso: string): string {
+  const d = new Date(iso)
+  const date = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+  return `${date} at ${time}`
+}
 
 function openBuilder(id: number) {
   router.push({ name: 'DataJourneyBuilder', params: { accountId: accountId.value, id: String(id) } })
 }
 
-const search = ref('')
-const activeTab = ref('all')
-
-const headers = [
-  { title: 'Name', key: 'name', sortable: true },
-  { title: 'Status', key: 'status', sortable: false, width: 140 },
-  { title: 'Instances', key: 'instances', align: 'end' as const, sortable: true },
-  { title: 'Updated', key: 'updated', sortable: true },
-  { title: 'Created', key: 'created', sortable: true },
-  { title: '', key: 'actions', sortable: false, width: 72 },
-]
-
-const tabs = [
-  { label: 'All', key: 'all' },
-  { label: 'Active', key: 'active' },
-  { label: 'Paused', key: 'paused' },
-  { label: 'Draft', key: 'draft' },
-]
-
-const tabCount = (key: string) => {
-  if (key === 'all') return store.dataJourneys.length
-  return store.dataJourneys.filter(j => j.status.toLowerCase() === key).length
-}
-
-const tabsWithCounts = computed(() => tabs.map(t => ({ ...t, count: tabCount(t.key) })))
-
-const filteredJourneys = computed(() => {
-  if (activeTab.value === 'all') return store.dataJourneys
-  return store.dataJourneys.filter(j => j.status.toLowerCase() === activeTab.value)
-})
-
 function toggleStatus(journey: DataJourney) {
-  journey.status = journey.status === 'Active' ? 'Paused' : 'Active'
+  store.toggleDataJourney(journey.id)
+  const now = store.dataJourneys.find(j => j.id === journey.id)?.status
+  toast.success(`"${journey.name}" ${now === 'Enabled' ? 'enabled' : 'disabled'}`)
 }
 
-// ── Create drawer (template picker + describe-to-draft) ─────────────────────
+// ── New / Edit dialog (one form, two modes — mirrors the production modals) ──
+const journeyDialog = ref(false)
+const editing = ref<DataJourney | null>(null)
+const form = reactive({ name: '', endDate: '', endTime: '', enabled: false, allowMultiple: false })
+const nameTouched = ref(false)
+const nameError = computed(() => (nameTouched.value && !form.name.trim() ? 'Name is required' : ''))
 
-const createOpen = ref(false)
-const newName = ref('')
-const selectedTemplateId = ref<string | null>(null)
-const describeText = ref('')
-const describeMiss = ref(false)
-const frequencyHint = ref<string | undefined>()
-
-function openCreate() {
-  newName.value = ''
-  selectedTemplateId.value = null
-  describeText.value = ''
-  describeMiss.value = false
-  frequencyHint.value = undefined
-  createOpen.value = true
+function openNew() {
+  editing.value = null
+  Object.assign(form, { name: '', endDate: '', endTime: '', enabled: false, allowMultiple: false })
+  nameTouched.value = false
+  journeyDialog.value = true
 }
 
-function chooseTemplate(id: string) {
-  selectedTemplateId.value = id
-  const tpl = dataJourneyTemplates.find(t => t.id === id)
-  if (tpl && !newName.value.trim()) newName.value = tpl.name
-}
-
-function draftFromDescription() {
-  const hint = parseDataJourneyDescription(describeText.value)
-  if (!hint) {
-    describeMiss.value = true
-    return
-  }
-  describeMiss.value = false
-  selectedTemplateId.value = hint.templateId
-  newName.value = hint.name
-  frequencyHint.value = hint.frequency
-}
-
-const canCreate = computed(() => !!selectedTemplateId.value && newName.value.trim().length > 0)
-
-function createDataJourney() {
-  if (!canCreate.value || !selectedTemplateId.value) return
-  const id = store.createDataJourney({
-    name: newName.value.trim(),
-    templateId: selectedTemplateId.value,
-    frequency: frequencyHint.value,
+function openEdit(journey: DataJourney) {
+  editing.value = journey
+  Object.assign(form, {
+    name: journey.name,
+    endDate: journey.endDate,
+    endTime: journey.endTime,
+    enabled: journey.status === 'Enabled',
+    allowMultiple: journey.allowMultiple,
   })
-  createOpen.value = false
-  openBuilder(id)
+  nameTouched.value = false
+  journeyDialog.value = true
+}
+
+function confirmJourney() {
+  nameTouched.value = true
+  if (!form.name.trim()) return
+  const payload = {
+    name: form.name.trim(),
+    endDate: form.endDate,
+    endTime: form.endTime,
+    enabled: form.enabled,
+    allowMultiple: form.allowMultiple,
+  }
+  if (editing.value) {
+    store.updateDataJourney(editing.value.id, payload)
+    toast.success(`"${payload.name}" updated`)
+    journeyDialog.value = false
+  } else {
+    const id = store.createDataJourney(payload)
+    toast.success(`"${payload.name}" created`)
+    journeyDialog.value = false
+    openBuilder(id)
+  }
+}
+
+function duplicate(journey: DataJourney) {
+  const id = store.duplicateDataJourney(journey.id)
+  if (id) toast.success(`"${journey.name}" duplicated as a draft`)
+}
+
+// ── Delete (single row + bulk) ──
+const deleteTarget = ref<DataJourney | null>(null)
+const deleteDialog = ref(false)
+function askDelete(journey: DataJourney) {
+  deleteTarget.value = journey
+  deleteDialog.value = true
+}
+function confirmDelete() {
+  if (!deleteTarget.value) return
+  store.removeDataJourney(deleteTarget.value.id)
+  toast.success(`"${deleteTarget.value.name}" deleted`)
+  deleteTarget.value = null
+}
+
+const selected = ref<number[]>([])
+const bulkDeleteDialog = ref(false)
+function confirmBulkDelete() {
+  const count = selected.value.length
+  store.removeMany(selected.value)
+  selected.value = []
+  toast.success(`${count} data journey${count === 1 ? '' : 's'} deleted`)
 }
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column gap-5">
-    <MpPageHeader
-      title="Data Journeys"
-      :subtitle="`${store.dataJourneys.filter(j => j.status === 'Active').length} active · ${store.dataJourneys.reduce((a, j) => a + j.instances, 0).toLocaleString()} total runs`"
-    >
+  <div class="pa-6">
+    <MpPageHeader eyebrow="My Journeys" title="Data Journeys">
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New Data Journey</v-btn>
-      </template>
-      <template #tabs>
-        <MpFilterTabs v-model="activeTab" :tabs="tabsWithCounts" aria-label="Filter data journeys by status" />
+        <v-select
+          v-model="filter"
+          :items="filterOptions"
+          aria-label="Filter data journeys"
+          hide-details
+          style="width: 200px;"
+        ></v-select>
+        <v-btn color="primary" variant="flat" class="text-none" prepend-icon="plus" @click="openNew">
+          New data journey
+        </v-btn>
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-      <MpDataTableToolbar
-        v-model:search="search"
-        title="Data Journeys"
-        search-placeholder="Search data journeys..."
-        :total-count="filteredJourneys.length"
-      />
-
+    <v-card flat border rounded="lg" class="mt-4">
       <v-data-table
+        v-model="selected"
         :headers="headers"
-        :items="filteredJourneys"
-        :search="search"
+        :items="rows"
         item-value="id"
-        hover
-        density="comfortable"
-        :items-per-page="15"
-        fixed-header
-        class="flex-grow-1"
+        show-select
+        :items-per-page="10"
       >
         <template v-slot:item.name="{ item }">
-          <div class="font-weight-medium text-body-2 cursor-pointer text-primary-hover" style="max-width: 320px;"
-            @click="openBuilder(item.id)">
-            {{ item.name }}
-          </div>
+          <a
+            href="#"
+            class="text-primary font-weight-medium text-decoration-none"
+            @click.prevent="openBuilder(item.id)"
+          >{{ item.name }}</a>
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusToggle :status="item.status" @toggle="toggleStatus(item)" />
+          <v-switch
+            :model-value="item.status === 'Enabled'"
+            :aria-label="`Journey status for ${item.name}: ${item.status}`"
+            color="primary"
+            density="compact"
+            hide-details
+            inset
+            @update:model-value="toggleStatus(item)"
+          ></v-switch>
         </template>
 
         <template v-slot:item.instances="{ item }">
-          <span class="font-weight-medium">{{ item.instances.toLocaleString() }}</span>
+          <RouterLink
+            v-if="store.instanceCount(item.id) > 0"
+            :to="{ name: 'DataJourneyInstances', params: { accountId, id: String(item.id) } }"
+            class="text-primary font-weight-medium text-decoration-none"
+          >{{ store.instanceCount(item.id) }}</RouterLink>
+          <span v-else class="text-medium-emphasis">0</span>
         </template>
 
-        <template v-slot:item.updated="{ item }">
-          <span class="text-medium-emphasis text-body-2">{{ item.updated }}</span>
-        </template>
-
-        <template v-slot:item.created="{ item }">
-          <span class="text-medium-emphasis text-body-2">{{ item.created }}</span>
-        </template>
+        <template v-slot:item.updatedAt="{ item }">{{ formatAt(item.updatedAt) }}</template>
+        <template v-slot:item.createdAt="{ item }">{{ formatAt(item.createdAt) }}</template>
 
         <template v-slot:item.actions="{ item }">
-          <div class="action-btns d-flex align-center">
-            <v-tooltip text="Edit in builder" location="top">
-              <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" icon="pencil" variant="text" size="x-small" class="text-medium-emphasis"
-                  aria-label="Edit in builder" @click="openBuilder(item.id)"></v-btn>
-              </template>
-            </v-tooltip>
-            <MpRowActionsMenu ariaLabel="Data journey actions" :itemLabel="item.name">
-              <MpMenuItem
-                :icon="item.status === 'Active' ? 'circle-pause' : 'circle-play'"
-                :title="item.status === 'Active' ? 'Pause' : 'Activate'"
-                @click="toggleStatus(item)"
-              />
-              <v-divider class="my-1" />
-              <MpMenuItem icon="trash-2" title="Delete" danger
-                @click="store.removeDataJourney(item.id)" />
-            </MpRowActionsMenu>
-          </div>
+          <MpRowActionsMenu :ariaLabel="`Actions for ${item.name}`">
+            <MpMenuItem title="Edit data journey" icon="pencil" @click="openEdit(item)" />
+            <MpMenuItem title="Duplicate data journey" icon="copy" @click="duplicate(item)" />
+            <v-divider class="my-1" />
+            <MpMenuItem title="Delete data journey" icon="trash-2" danger @click="askDelete(item)" />
+          </MpRowActionsMenu>
         </template>
 
-        <template v-slot:no-data>
+        <template #no-data>
           <MpEmptyState
             icon="workflow"
-            :title="search ? 'No data journeys match your search' : 'No data journeys yet'"
-            :description="search ? 'Try a different search term.' : 'Automate imports, exports, and syncs on a schedule.'"
-            action-label="New Data Journey"
-            action-icon="plus"
-            class="py-10"
-            @action="openCreate"
+            title="No data journeys match this filter"
+            description="Change the filter, or create a new data journey to automate imports, exports and sends."
+            actionLabel="New data journey"
+            @action="openNew"
           />
         </template>
       </v-data-table>
     </v-card>
 
-    <!-- Create drawer -->
-    <MpFormDrawer v-model="createOpen" title="New data journey" subtitle="Pick a starting point — the builder opens next.">
-      <MpFormGrid>
-        <v-text-field v-model="newName" label="Name" placeholder="e.g. Nightly warehouse export" />
-
-        <MpFormField label="Start from">
-          <div class="d-flex flex-column ga-3">
-            <MpOptionCard v-for="tpl in dataJourneyTemplates" :key="tpl.id"
-              :selected="selectedTemplateId === tpl.id" :title="tpl.name" :description="tpl.description" :icon="tpl.icon"
-              @click="chooseTemplate(tpl.id)">
-              <div class="border rounded-lg bg-background pa-3 d-flex justify-center">
-                <JourneyMiniPreview :nodes="tpl.nodes" />
-              </div>
-            </MpOptionCard>
-          </div>
-        </MpFormField>
-
-        <v-divider />
-
-        <v-textarea v-model="describeText" label="Or describe it" prepend-inner-icon="sparkles" rows="3" auto-grow
-          placeholder='e.g. "import shopify orders daily then send a campaign"' />
-      </MpFormGrid>
-      <v-btn variant="tonal" color="primary" class="text-none" prepend-icon="sparkles" block @click="draftFromDescription">
-        Draft from description
+    <MpFloatingBulkBar :count="selected.length" :total="rows.length" @clear="selected = []">
+      <v-btn variant="text" class="text-none" prepend-icon="trash-2" @click="bulkDeleteDialog = true">
+        Delete
       </v-btn>
-      <v-alert v-if="describeMiss" type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
-        Couldn't match that yet — try mentioning Salesforce leads, Shopify orders, or a warehouse export.
-      </v-alert>
+    </MpFloatingBulkBar>
 
+    <!-- New / Edit — same fields as production (name, optional end date/time, two flags) -->
+    <MpDialog
+      v-model="journeyDialog"
+      :title="editing ? 'Edit data journey' : 'New data journey'"
+      size="sm"
+    >
+      <MpFormGrid :cols="2">
+        <v-text-field
+          v-model="form.name"
+          label="Data journey name *"
+          class="mp-form-grid__full"
+          :error-messages="nameError"
+          @blur="nameTouched = true"
+        ></v-text-field>
+        <v-text-field v-model="form.endDate" label="End date" type="date"></v-text-field>
+        <v-text-field v-model="form.endTime" label="End time" type="time"></v-text-field>
+        <v-checkbox v-model="form.enabled" label="Enabled data journey" hide-details></v-checkbox>
+        <v-checkbox v-model="form.allowMultiple" label="Allow multiple instances" hide-details></v-checkbox>
+        <MpAlert
+          v-if="editing?.lastDisabledAt"
+          tone="info"
+          class="mp-form-grid__full"
+        >
+          This data journey was last disabled at {{ formatAt(editing.lastDisabledAt) }}.
+        </MpAlert>
+      </MpFormGrid>
       <template #footer>
-        <v-btn variant="outlined" class="text-none flex-grow-1" @click="createOpen = false">Cancel</v-btn>
-        <v-btn color="primary" variant="flat" class="text-none flex-grow-1" prepend-icon="workflow"
-          :disabled="!canCreate" @click="createDataJourney">Create</v-btn>
+        <v-btn variant="text" class="text-none" @click="journeyDialog = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" @click="confirmJourney">
+          {{ editing ? 'Confirm' : 'Create' }}
+        </v-btn>
       </template>
-    </MpFormDrawer>
+    </MpDialog>
+
+    <MpConfirmDialog
+      v-model="deleteDialog"
+      danger
+      title="Delete this data journey?"
+      :message="`&quot;${deleteTarget?.name}&quot; and its run history will be permanently deleted.`"
+      confirm-label="Delete"
+      @confirm="confirmDelete"
+    />
+
+    <MpConfirmDialog
+      v-model="bulkDeleteDialog"
+      danger
+      :title="`Delete ${selected.length} data journey${selected.length === 1 ? '' : 's'}?`"
+      message="The selected data journeys and their run history will be permanently deleted."
+      confirm-label="Delete"
+      @confirm="confirmBulkDelete"
+    />
   </div>
 </template>
-
