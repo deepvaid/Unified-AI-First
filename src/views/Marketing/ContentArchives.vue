@@ -32,7 +32,9 @@ const listPath = computed(() => `/accounts/${accountId.value}/contents`)
 
 // The source's archive is shared across five record types, selected by a filter.
 const TYPE_OPTIONS = ['Content', 'Dynamic Content', 'Campaign Tag', 'Contact List', 'Segment']
-const recordType = ref('Content')
+// Deep links pre-select the record type (e.g. Dynamic Content's VIEW ARCHIVES
+// arrives as ?filter=dynamic_contents — the source's own query shape).
+const recordType = ref(route.query.filter === 'dynamic_contents' ? 'Dynamic Content' : 'Content')
 const search = ref('')
 const selected = ref<number[]>([])
 

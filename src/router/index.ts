@@ -297,6 +297,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/archive', name: 'ContentArchives', component: () => import('@/views/Marketing/ContentArchives.vue') },
   { path: '/accounts/:accountId/contents/editor/:id', name: 'EmailContentEditor', component: () => import('@/views/Marketing/EmailContentEditor.vue'), meta: { builderShell: true } },
   { path: '/accounts/:accountId/dynamic_contents', name: 'DynamicContent', component: () => import('@/views/Marketing/DynamicContent.vue') },
+  { path: '/accounts/:accountId/dynamic_contents/new', name: 'DynamicContentCreate', component: () => import('@/views/Marketing/DynamicContentEditor.vue') },
+  { path: '/accounts/:accountId/dynamic_contents/:id/edit', name: 'DynamicContentEdit', component: () => import('@/views/Marketing/DynamicContentEditor.vue') },
   // Production path for the Image Library is literally /folders (UAT parity).
   { path: '/accounts/:accountId/folders', name: 'ImageLibrary', component: () => import('@/views/Marketing/ImageLibrary.vue') },
   { path: '/accounts/:accountId/images', redirect: (to) => ({ name: 'ImageLibrary', params: to.params }) },

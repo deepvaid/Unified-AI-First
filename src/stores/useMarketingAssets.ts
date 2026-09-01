@@ -23,14 +23,19 @@ export interface DynamicContentRule {
   id: number
   segmentId: number | null
   segmentName: string
+  /** Optional content feed merged into this rule's body. */
+  contentFeedId: number | null
   content: string
 }
 
 export interface DynamicContentItem {
   id: number
   name: string
+  /** Optional content feed merged into the original body. */
+  contentFeedId: number | null
   originalContent: string
   rules: DynamicContentRule[]
+  archived: boolean
   createdAt: string
   updatedAt: string
 }
@@ -183,31 +188,37 @@ export const useMarketingAssetsStore = defineStore('marketingAssets', () => {
     {
       id: 1,
       name: 'vip_header_greeting',
+      contentFeedId: null,
       originalContent: 'Welcome back! Enjoy your regular member perks.',
       rules: [
-        { id: 1, segmentId: 1, segmentName: 'VIP Customers', content: 'Welcome back, VIP! Here are your exclusive perks.' },
+        { id: 1, segmentId: 1, segmentName: 'VIP Customers', contentFeedId: null, content: 'Welcome back, VIP! Here are your exclusive perks.' },
       ],
+      archived: false,
       createdAt: '2026-01-10',
       updatedAt: '2026-03-01',
     },
     {
       id: 2,
       name: 'product_recommendation_block',
+      contentFeedId: 3,
       originalContent: 'Check out our best sellers this week.',
       rules: [
-        { id: 1, segmentId: 2, segmentName: 'Recent Purchasers', content: 'You might also like these related products.' },
-        { id: 2, segmentId: 3, segmentName: 'Cart Abandoners', content: 'Still thinking it over? Here is 10% off your cart.' },
+        { id: 1, segmentId: 2, segmentName: 'Recent Purchasers', contentFeedId: null, content: 'You might also like these related products.' },
+        { id: 2, segmentId: 3, segmentName: 'Cart Abandoners', contentFeedId: null, content: 'Still thinking it over? Here is 10% off your cart.' },
       ],
+      archived: false,
       createdAt: '2025-12-20',
       updatedAt: '2026-02-15',
     },
     {
       id: 3,
       name: 'abandoned_cart_items',
+      contentFeedId: null,
       originalContent: 'You left something in your cart.',
       rules: [
-        { id: 1, segmentId: 3, segmentName: 'Cart Abandoners', content: 'Your cart is waiting — complete your order now.' },
+        { id: 1, segmentId: 3, segmentName: 'Cart Abandoners', contentFeedId: null, content: 'Your cart is waiting — complete your order now.' },
       ],
+      archived: false,
       createdAt: '2025-11-05',
       updatedAt: '2026-01-10',
     },
@@ -238,6 +249,13 @@ export const useMarketingAssetsStore = defineStore('marketingAssets', () => {
       createdAt: now,
       updatedAt: now,
     })
+  }
+
+  function setDynamicContentArchived(id: number, archived: boolean) {
+    const item = dynamicContents.value.find(d => d.id === id)
+    if (!item) return
+    item.archived = archived
+    item.updatedAt = new Date().toISOString().slice(0, 10)
   }
 
   function deleteDynamicContent(id: number) {
@@ -463,6 +481,7 @@ export const useMarketingAssetsStore = defineStore('marketingAssets', () => {
     dynamicContents,
     addDynamicContent,
     updateDynamicContent,
+    setDynamicContentArchived,
     duplicateDynamicContent,
     deleteDynamicContent,
 
