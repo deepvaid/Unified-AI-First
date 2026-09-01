@@ -297,7 +297,9 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/archive', name: 'ContentArchives', component: () => import('@/views/Marketing/ContentArchives.vue') },
   { path: '/accounts/:accountId/contents/editor/:id', name: 'EmailContentEditor', component: () => import('@/views/Marketing/EmailContentEditor.vue'), meta: { builderShell: true } },
   { path: '/accounts/:accountId/dynamic_contents', name: 'DynamicContent', component: () => import('@/views/Marketing/DynamicContent.vue') },
-  { path: '/accounts/:accountId/images', name: 'ImageLibrary', component: () => import('@/views/Marketing/ImageLibrary.vue') },
+  // Production path for the Image Library is literally /folders (UAT parity).
+  { path: '/accounts/:accountId/folders', name: 'ImageLibrary', component: () => import('@/views/Marketing/ImageLibrary.vue') },
+  { path: '/accounts/:accountId/images', redirect: (to) => ({ name: 'ImageLibrary', params: to.params }) },
   { path: '/accounts/:accountId/footers', name: 'FooterManagement', component: () => import('@/views/Marketing/FooterManagement.vue') },
   { path: '/accounts/:accountId/footers/new', name: 'FooterCreate', component: () => import('@/views/Marketing/FooterCreate.vue') },
   { path: '/accounts/:accountId/footers/:id', name: 'FooterDetail', component: () => import('@/views/Marketing/FooterDetail.vue') },
