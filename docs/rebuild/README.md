@@ -63,16 +63,37 @@ Slice-shared: [marketing-acquisition/IMPROVEMENTS.md](marketing-acquisition/IMPR
 /accounts/:accountId/archive                              ContentArchives
 ```
 
-### Content & Reporting slice (2026-09-01 — crawl done, build pending)
+### Content & Reporting slice (2026-09-01)
 
-Crawled from `uat.maropost.com` account 116000. Overview, cross-cutting facts, and defect
-families: [content-reporting/CRAWL-SUMMARY.md](content-reporting/CRAWL-SUMMARY.md). Eight
-surfaces audited (AUDIT + FLOWS each): Recurring Campaign Reports, A/B Campaign Reports
-(+ comparison detail), Dynamic Content, Image Library (`/folders`), Footer Management,
-Optimize on Open (`/image_groups`), Content Feeds, Preference Management. `/contents` and
-`/contents/template` were already covered by the Marketing Acquisition slice. All eight have
-pre-crawl sandbox views; the two Analytics reports are confirmed invented designs, and three
-routes differ from production. Build phase not started — awaiting Phase-2 answers.
+Crawled and rebuilt from `uat.maropost.com` account 116000. Overview, cross-cutting facts, and
+defect families: [content-reporting/CRAWL-SUMMARY.md](content-reporting/CRAWL-SUMMARY.md).
+`/contents` and `/contents/template` were already covered by the Marketing Acquisition slice.
+
+| Page | Source | Rebuild | Docs |
+|---|---|---|---|
+| Recurring Campaign Reports | `/reports/recurring_campaign_report` | [`RecurringCampaignReports.vue`](../../src/views/Analytics/RecurringCampaignReports.vue) | [AUDIT](content-reporting/recurring-campaign-report/AUDIT.md) · [FLOWS](content-reporting/recurring-campaign-report/FLOWS.md) · [PARITY](content-reporting/recurring-campaign-report/PARITY.md) |
+| A/B Campaign Reports | `/ab_reports` (+ `/campaigns/:id/ab_report`) | [`ABCampaignReports.vue`](../../src/views/Analytics/ABCampaignReports.vue) + [`ABCampaignReportDetail.vue`](../../src/views/Analytics/ABCampaignReportDetail.vue) | [AUDIT](content-reporting/ab-reports/AUDIT.md) · [FLOWS](content-reporting/ab-reports/FLOWS.md) · [PARITY](content-reporting/ab-reports/PARITY.md) |
+| Dynamic Content | `/dynamic_contents` (+ `/new`, `/:id/edit`) | [`DynamicContent.vue`](../../src/views/Marketing/DynamicContent.vue) + [`DynamicContentEditor.vue`](../../src/views/Marketing/DynamicContentEditor.vue) | [AUDIT](content-reporting/dynamic-content/AUDIT.md) · [FLOWS](content-reporting/dynamic-content/FLOWS.md) · [PARITY](content-reporting/dynamic-content/PARITY.md) |
+| Image Library | `/folders` | [`ImageLibrary.vue`](../../src/views/Marketing/ImageLibrary.vue) | [AUDIT](content-reporting/image-library/AUDIT.md) · [FLOWS](content-reporting/image-library/FLOWS.md) · [PARITY](content-reporting/image-library/PARITY.md) |
+| Footer Management | `/footers` (+ `/:id`, `/:id/preview`, `/new`) | [`FooterManagement.vue`](../../src/views/Marketing/FooterManagement.vue) + [`FooterDetail.vue`](../../src/views/Marketing/FooterDetail.vue) + [`FooterPreview.vue`](../../src/views/Marketing/FooterPreview.vue) + [`FooterCreate.vue`](../../src/views/Marketing/FooterCreate.vue) | [AUDIT](content-reporting/footer-management/AUDIT.md) · [FLOWS](content-reporting/footer-management/FLOWS.md) · [PARITY](content-reporting/footer-management/PARITY.md) |
+| Optimize On Open | `/image_groups` (+ `/new`, `/:id/edit`) | [`OptimizeOnOpen.vue`](../../src/views/Marketing/OptimizeOnOpen.vue) + [`ImageGroupEditor.vue`](../../src/views/Marketing/ImageGroupEditor.vue) | [AUDIT](content-reporting/optimize-on-open/AUDIT.md) · [FLOWS](content-reporting/optimize-on-open/FLOWS.md) · [PARITY](content-reporting/optimize-on-open/PARITY.md) |
+| Content Feeds | `/content_feeds` | [`ContentFeeds.vue`](../../src/views/Marketing/ContentFeeds.vue) | [AUDIT](content-reporting/content-feeds/AUDIT.md) · [FLOWS](content-reporting/content-feeds/FLOWS.md) · [PARITY](content-reporting/content-feeds/PARITY.md) |
+| Preference Management | `/preference_pages` | [`PreferencePages.vue`](../../src/views/Marketing/PreferencePages.vue) | [AUDIT](content-reporting/preference-pages/AUDIT.md) · [FLOWS](content-reporting/preference-pages/FLOWS.md) · [PARITY](content-reporting/preference-pages/PARITY.md) |
+
+Slice-shared: [content-reporting/IMPROVEMENTS.md](content-reporting/IMPROVEMENTS.md) ·
+[content-reporting/GAPS.md](content-reporting/GAPS.md)
+
+Routes corrected to production paths (old paths redirect):
+
+```
+/accounts/:accountId/reports/recurring_campaign_report   (was /analytics/recurring_campaign_reports)
+/accounts/:accountId/ab_reports                          (was /analytics/ab_campaign_reports)
+/accounts/:accountId/campaigns/:id/ab_report             ABCampaignReportDetail (new)
+/accounts/:accountId/folders                             ImageLibrary (was /images)
+/accounts/:accountId/footers/new | /:id | /:id/preview   FooterCreate / FooterDetail / FooterPreview (new)
+/accounts/:accountId/image_groups/new | /:id/edit        ImageGroupEditor (new)
+/accounts/:accountId/dynamic_contents/new | /:id/edit    DynamicContentEditor (new)
+```
 
 ---
 

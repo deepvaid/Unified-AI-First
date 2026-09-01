@@ -141,6 +141,9 @@ Management + New Page modal) and A02 rows 7–8 were audited into
 `docs/rebuild/content-reporting/` (AUDIT + FLOWS per page, CRAWL-SUMMARY). The pre-existing
 sandbox views for all 8 are pre-crawl builds — RecurringCampaignReports.vue and
 ABCampaignReports.vue confirmed invented (eRFM family); 3 sandbox routes differ from production.
+BUILT 2026-09-01 (8 commits, 660bd71…80c3c02): all 8 surfaces rebuilt to the crawl, the 3
+routes corrected to production paths with redirects, PARITY/IMPROVEMENTS/GAPS in
+docs/rebuild/content-reporting/.
 
 ## A06 — Commerce   [crawl-status: crawled]
 
