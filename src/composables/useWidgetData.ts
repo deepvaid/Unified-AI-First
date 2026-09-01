@@ -545,13 +545,13 @@ export function useWidgetData(
         )
       }
       case 'service_open_tickets': {
-        const openTickets = tickets.tickets.filter((ticket) => ticket.status !== 'Resolved').length
+        const openTickets = tickets.tickets.filter((ticket) => ticket.status !== 'Closed').length
         return buildKpiData(openTickets, openTickets * 1.08, 'count', 'Tickets still requiring action')
       }
       case 'service_resolution_rate': {
-        const resolved = tickets.tickets.filter((ticket) => ticket.status === 'Resolved').length
+        const resolved = tickets.tickets.filter((ticket) => ticket.status === 'Closed').length
         const rate = tickets.tickets.length ? (resolved / tickets.tickets.length) * 100 : 0
-        return buildKpiData(rate, rate - 2.5, 'percent', 'Resolved tickets as a share of total tickets')
+        return buildKpiData(rate, rate - 2.5, 'percent', 'Closed tickets as a share of total tickets')
       }
       case 'service_ticket_volume': {
         const sorted = [...tickets.tickets].sort((left, right) => (left.createdAt ?? '').localeCompare(right.createdAt ?? '')).slice(-7)
@@ -587,16 +587,16 @@ export function useWidgetData(
         return buildKpiData(ranges.current.length, pickPreviousValue(filters, ranges.current.length, ranges.previous.length), 'count', 'Tickets created in the selected period')
       }
       case 'service_pending_tickets': {
-        const pending = tickets.tickets.filter((t) => t.status === 'Awaiting Reply' || t.status === 'In Progress').length
+        const pending = tickets.tickets.filter((t) => t.status === 'Pending' || t.status === 'On Hold').length
         return buildKpiData(pending, pending * 1.1, 'count', 'Tickets waiting or on hold')
       }
       case 'service_unresolved_tickets': {
-        const unresolved = tickets.tickets.filter((t) => t.status !== 'Resolved').length
+        const unresolved = tickets.tickets.filter((t) => t.status !== 'Closed').length
         return buildKpiData(unresolved, unresolved * 1.05, 'count', 'All unresolved tickets')
       }
       case 'service_support_health': {
         const open = tickets.tickets.filter((t) => t.status === 'Open').length
-        const unresolved = tickets.tickets.filter((t) => t.status !== 'Resolved' && t.status !== 'Closed')
+        const unresolved = tickets.tickets.filter((t) => t.status !== 'Closed')
         const kpi = buildKpiData(open, open * 1.08, 'count', 'Open tickets requiring action')
         if (!unresolved.length) return kpi
         const oldestMs = Math.min(...unresolved.map((t) => new Date(t.createdAt ?? '').getTime()).filter((ms) => !Number.isNaN(ms)))
@@ -617,7 +617,7 @@ export function useWidgetData(
       case 'service_tickets_by_type': {
         const typeCounts = new Map<string, number>()
         tickets.tickets.forEach((t) => {
-          typeCounts.set(t.category, (typeCounts.get(t.category) ?? 0) + 1)
+          typeCounts.set(t.type || 'Untyped', (typeCounts.get(t.type || 'Untyped') ?? 0) + 1)
         })
         const labels = Array.from(typeCounts.keys())
         return buildSeriesData(labels, labels.map((l) => typeCounts.get(l) ?? 0), 'count', 'Tickets')
@@ -1349,11 +1349,11 @@ export function useWidgetData(
         }
       }
       case 'service_tickets_breakdown': {
-        const open = tickets.tickets.filter((t) => t.status !== 'Resolved' && t.status !== 'Closed')
-        const awaiting = tickets.tickets.filter((t) => t.status === 'Awaiting Reply').length
+        const open = tickets.tickets.filter((t) => t.status !== 'Closed')
+        const awaiting = tickets.tickets.filter((t) => t.status === 'Pending').length
         const slaCutoff = Date.now() - 48 * 60 * 60 * 1000
         const breaching = open.filter((t) => new Date(t.createdAt ?? '').getTime() < slaCutoff).length
-        const resolved = tickets.tickets.filter((t) => t.status === 'Resolved').length
+        const resolved = tickets.tickets.filter((t) => t.status === 'Closed').length
         return {
           kind: 'breakdown',
           headline: { value: formatNumber(open.length, 'count'), caption: 'open tickets' },

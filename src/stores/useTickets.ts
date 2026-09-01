@@ -1,6 +1,45 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { useOnboardingStore } from '@/stores/useOnboarding'
+import { computed, ref } from 'vue'
+
+// ── Vocabulary (mirrors the production service desk) ─────────────────────────
+export type TicketStatus = 'New' | 'Open' | 'Pending' | 'On Hold' | 'Closed'
+export type TicketPriority = 'Low' | 'Medium' | 'High'
+export type TicketChannel = 'Email' | 'Webstore' | 'Inbound Call' | 'Walk In'
+
+export const TICKET_STATUSES: TicketStatus[] = ['New', 'Open', 'Pending', 'On Hold', 'Closed']
+export const TICKET_PRIORITIES: TicketPriority[] = ['Low', 'Medium', 'High']
+export const TICKET_CHANNELS: TicketChannel[] = ['Email', 'Webstore', 'Inbound Call', 'Walk In']
+export const TICKET_TYPES = ['Customer Request', 'Bug', 'Technical Support', 'Service Request', 'Pricing', 'Payment', 'Product Enquiry', 'Incident']
+export const TICKET_GROUPS = ['General']
+export const TICKET_AGENTS = ['Chris Parker', 'Sushant Rana', 'Deepak Vaidya', 'Priya Shah']
+export const TICKET_TAGS = ['500 Error', 'VIP', 'Refund', 'Order Issue', 'Loyalty', 'Escalated']
+
+// One support inbox per intake mailbox (the views menu groups by these).
+export const SUPPORT_INBOXES = ['New inbox', 'Webstore Support']
+
+export interface TicketMessage {
+  id: number
+  author: string
+  role: 'customer' | 'agent' | 'bot' | 'note'
+  /** Verb phrase after the author name: "reported via Email", "replied", … */
+  action: string
+  to?: string
+  time: string
+  body: string
+}
+
+export interface TicketActivity {
+  id: number
+  actor: string
+  time: string
+  text: string
+}
+
+export interface CustomerOrder {
+  id: string
+  store: string
+  date: string
+}
 
 export interface Ticket {
   id: number
@@ -8,286 +47,414 @@ export interface Ticket {
   subject: string
   customer: string
   customerEmail: string
-  avatar: string
-  status: 'Open' | 'In Progress' | 'Awaiting Reply' | 'Resolved' | 'Closed'
-  priority: 'Low' | 'Normal' | 'High' | 'Urgent'
-  category: string
+  customerPhone: string
+  status: TicketStatus
+  priority: TicketPriority
+  channel: TicketChannel | ''
+  type: string
   assignee: string
+  group: string
   inbox: string
+  tags: string[]
+  unread: boolean
+  trashed: boolean
   createdAt: string
   updatedAt: string
-  tags: string[]
   thread: TicketMessage[]
+  activities: TicketActivity[]
+  orders: CustomerOrder[]
 }
 
-// One support inbox per store/sales channel (names mirror useSalesChannels)
-export const SUPPORT_INBOXES = ['Atlas Outfitters', 'POS Store', 'Mall Kiosk POS']
+export interface TicketFilters {
+  status: TicketStatus[]
+  priority: TicketPriority[]
+  channel: TicketChannel[]
+  type: string[]
+  group: string[]
+  agent: string
+  contact: string
+  tags: string[]
+  createdFrom: string
+  createdTo: string
+  readStatus: '' | 'Read' | 'Unread'
+}
 
-export interface TicketMessage {
-  author: string
-  avatar: string
-  role: 'customer' | 'agent'
-  body: string
-  time: string
+export const emptyTicketFilters = (): TicketFilters => ({
+  status: [],
+  priority: [],
+  channel: [],
+  type: [],
+  group: [],
+  agent: '',
+  contact: '',
+  tags: [],
+  createdFrom: '',
+  createdTo: '',
+  readStatus: '',
+})
+
+/** A custom view is a named, saved filter set (created via "Save as View"). */
+export interface SavedTicketView {
+  name: string
+  filters: TicketFilters
 }
 
 export interface NewTicketPayload {
+  inbox: string
+  customer: string
+  customerEmail: string
+  type: string
+  channel: TicketChannel | ''
+  status: TicketStatus
+  priority: TicketPriority
+  assignee: string
+  tags: string[]
+  subject: string
+  description: string
+}
+
+const AUTO_REPLY = (name: string, subject: string) =>
+  `Hi ${name},\n\nThank you for getting in touch with us. We have received your request titled '${subject}' and our team will promptly investigate it. You can expect to hear back from us soon.\n\nBest regards,\nSupport Team`
+
+let messageSeq = 1000
+let activitySeq = 5000
+
+interface TicketSeed {
+  id: number
+  subject: string
   customer: string
   email: string
-  subject: string
-  category: string
-  priority: Ticket['priority']
-  description: string
-  assignee: string
-  inbox: string
+  phone?: string
+  status: TicketStatus
+  priority: TicketPriority
+  channel: TicketChannel
+  type?: string
+  assignee?: string
+  inbox?: string
+  tags?: string[]
+  unread?: boolean
+  createdAt: string
+  body: string
+  replies?: { author: string; body: string; note?: boolean }[]
+  orders?: CustomerOrder[]
 }
 
-const customerNames = ['James Anderson', 'Sofia Thompson', 'Liam Martinez', 'Emma Johnson', 'Noah Williams', 'Olivia Brown', 'Ethan Davis', 'Ava Miller', 'Mason Wilson', 'Isabella Moore']
-const subjects = [
-  'Order #10002 — Where is my shipment?',
-  'Refund request for damaged item',
-  'Cannot login to my account',
-  'Product size exchange request',
-  'Billing charged twice this month',
-  'Coupon code WELCOME20 not working',
-  'Missing item from order #10008',
-  'Request to update shipping address',
-  'Product quality complaint — Nike Air Max',
-  'How do I cancel my subscription?',
-  'Wrong item delivered in my order',
-  'Loyalty points not showing in account',
-  'Request for bulk order discount',
-  'Account email change request',
-  'Return label not received via email',
-  'Patagonia Vest arrived with a defect',
-  'Payment failed but amount deducted',
-  'Asking about international shipping',
-  'Tracking link is not updating',
-  'Website checkout keeps crashing',
-]
-const categories = ['Shipping', 'Returns & Refunds', 'Account', 'Product', 'Billing', 'Technical']
-const assignees = ['Sarah Connor', 'Mike Zhang', 'Priya Sharma', 'Tom Brady', 'Unassigned']
-
-let nextId = subjects.length + 1
-
-function initials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map(part => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
-}
-
-function messageTime(offsetMs: number): string {
-  return new Date(Date.now() - offsetMs).toLocaleString()
-}
-
-function buildSeedThread(params: {
-  subject: string
-  customer: string
-  avatar: string
-  assignee: string
-  status: Ticket['status']
-  orderNumber: number
-  latestOffsetMs: number
-}): TicketMessage[] {
-  const agentAvatar = initials(params.assignee)
-  const latest = Math.max(params.latestOffsetMs, 5 * 60_000)
-  const resolutionCopy =
-    params.status === 'Resolved'
-      ? 'I have marked this as resolved after confirming the correction on the order. The customer record has been updated for future reference.'
-      : params.status === 'Awaiting Reply'
-        ? 'I can finish this as soon as you confirm the preferred shipping address and whether you want a replacement or refund.'
-        : 'I checked the order record and queued the next action with our operations team. I will keep this ticket updated as soon as the change posts.'
-
-  return [
+function seedTicket(seed: TicketSeed): Ticket {
+  const created = new Date(seed.createdAt)
+  const thread: TicketMessage[] = [
     {
-      author: params.customer,
-      avatar: params.avatar,
+      id: messageSeq++,
+      author: seed.customer,
       role: 'customer',
-      body: `Hi, I need help with ${params.subject.toLowerCase()}. My order number is #${params.orderNumber}.`,
-      time: messageTime(latest + 6 * 60 * 60_000),
+      action: `reported via ${seed.channel}`,
+      to: 'support@maropost.com',
+      time: created.toISOString(),
+      body: seed.body,
     },
     {
-      author: params.assignee,
-      avatar: agentAvatar,
-      role: 'agent',
-      body: 'Thanks for reaching out. I found your order and I am reviewing the shipment, payment, and account notes now.',
-      time: messageTime(latest + 4 * 60 * 60_000),
-    },
-    {
-      author: params.customer,
-      avatar: params.avatar,
-      role: 'customer',
-      body: 'Thanks. I can share any extra details you need. The issue is blocking me from completing the order as expected.',
-      time: messageTime(latest + 2 * 60 * 60_000),
-    },
-    {
-      author: params.assignee,
-      avatar: agentAvatar,
-      role: 'agent',
-      body: resolutionCopy,
-      time: messageTime(latest),
+      id: messageSeq++,
+      author: 'Automated Bot',
+      role: 'bot',
+      action: 'replied',
+      to: seed.email,
+      time: new Date(created.getTime() + 60_000).toISOString(),
+      body: AUTO_REPLY(seed.customer.split(' ')[0] ?? seed.customer, seed.subject),
     },
   ]
-}
-
-function buildNewTicketThread(payload: NewTicketPayload, avatar: string, assignee: string): TicketMessage[] {
-  const customerMessage = payload.description || `I need help with ${payload.subject}.`
-  return [
-    {
-      author: payload.customer,
-      avatar,
-      role: 'customer',
-      body: customerMessage,
-      time: messageTime(42 * 60_000),
-    },
-    {
-      author: assignee,
-      avatar: initials(assignee),
-      role: 'agent',
-      body: 'Thanks for the details. I am checking the customer profile and recent order history before taking action.',
-      time: messageTime(28 * 60_000),
-    },
-    {
-      author: payload.customer,
-      avatar,
-      role: 'customer',
-      body: 'That works. Please let me know if you need any more information from my side.',
-      time: messageTime(16 * 60_000),
-    },
-    {
-      author: assignee,
-      avatar: initials(assignee),
-      role: 'agent',
-      body: 'I have the ticket queued and will follow up here with the next update.',
-      time: messageTime(5 * 60_000),
-    },
+  const activities: TicketActivity[] = [
+    { id: activitySeq++, actor: 'System', time: new Date(created.getTime() + 61_000).toISOString(), text: 'Status updated to Open' },
   ]
+  let last = created.getTime() + 61_000
+  for (const [i, reply] of (seed.replies ?? []).entries()) {
+    last += (i + 1) * 3_600_000
+    thread.push({
+      id: messageSeq++,
+      author: reply.author,
+      role: reply.note ? 'note' : 'agent',
+      action: reply.note ? 'left an internal note' : 'replied',
+      to: reply.note ? undefined : seed.email,
+      time: new Date(last).toISOString(),
+      body: reply.body,
+    })
+  }
+  return {
+    id: seed.id,
+    number: `#${seed.id}`,
+    subject: seed.subject,
+    customer: seed.customer,
+    customerEmail: seed.email,
+    customerPhone: seed.phone ?? '',
+    status: seed.status,
+    priority: seed.priority,
+    channel: seed.channel,
+    type: seed.type ?? '',
+    assignee: seed.assignee ?? '',
+    group: 'General',
+    inbox: seed.inbox ?? 'New inbox',
+    tags: seed.tags ?? [],
+    unread: seed.unread ?? false,
+    trashed: false,
+    createdAt: created.toISOString(),
+    updatedAt: new Date(last).toISOString(),
+    thread,
+    activities,
+    orders: seed.orders ?? [],
+  }
 }
 
 export const useTicketsStore = defineStore('tickets', () => {
-  const tickets = ref<Ticket[]>(subjects.map((subject, i): Ticket => {
-    const cust = customerNames[i % customerNames.length]!
-    const parts = cust.split(' ')
-    const first = parts[0] ?? 'User'
-    const last = parts[1] ?? first
-    const statuses: Ticket['status'][] = ['Open', 'In Progress', 'Awaiting Reply', 'Resolved']
-    const priorities: Ticket['priority'][] = ['Urgent', 'High', 'Normal', 'Low', 'Normal', 'High']
-    const status = statuses[i % statuses.length]!
-    const assignee = assignees[i % assignees.length]!
-    const avatar = `${first[0]}${last[0]}`
-    return {
-      id: i + 1,
-      number: `TKT-${String(10000 + i).padStart(5, '0')}`,
-      subject,
-      customer: cust,
-      customerEmail: `${first.toLowerCase()}@example.com`,
-      avatar,
-      status,
-      priority: priorities[i % priorities.length]!,
-      category: categories[i % categories.length]!,
-      assignee,
-      inbox: SUPPORT_INBOXES[i % SUPPORT_INBOXES.length]!,
-      createdAt: new Date(Date.now() - ((i + 1) * 7200000)).toISOString(),
-      updatedAt: new Date(Date.now() - (i * 1800000)).toISOString(),
-      tags: i % 3 === 0 ? ['VIP'] : i % 5 === 0 ? ['Flagged'] : [],
-      thread: buildSeedThread({
-        subject,
-        customer: cust,
-        avatar,
-        assignee,
-        status,
-        orderNumber: 10000 + i,
-        latestOffsetMs: i * 1800000,
-      }),
-    }
-  }) as Ticket[])
+  const tickets = ref<Ticket[]>([
+    seedTicket({
+      id: 1524, subject: 'Need help cancelling my order', customer: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com',
+      status: 'Open', priority: 'Low', channel: 'Email', assignee: 'Chris Parker', createdAt: '2026-08-31T08:25:00Z',
+      body: 'need help to cancel order',
+      orders: [{ id: 'ORD-10241', store: 'Atlas Outfitters', date: '2026-08-28' }, { id: 'ORD-10198', store: 'Atlas Outfitters', date: '2026-08-11' }],
+    }),
+    seedTicket({
+      id: 1523, subject: 'Where is my refund?', customer: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com',
+      status: 'Open', priority: 'Medium', channel: 'Email', type: 'Payment', assignee: 'Chris Parker', tags: ['Refund'],
+      createdAt: '2026-08-31T07:02:00Z', body: 'I returned my order ten days ago and still have no refund on my card.',
+      replies: [{ author: 'Chris Parker', body: 'Hi Rajan — your refund was issued today and should appear within 3–5 business days.' }],
+    }),
+    seedTicket({
+      id: 1522, subject: 'Help with cancellation', customer: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com',
+      status: 'New', priority: 'Low', channel: 'Email', unread: true, createdAt: '2026-08-31T06:44:00Z',
+      body: 'need help of cancellation',
+    }),
+    seedTicket({
+      id: 1521, subject: 'Need help with order cancellation', customer: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com',
+      status: 'New', priority: 'Medium', channel: 'Webstore', type: 'Customer Request', unread: true,
+      createdAt: '2026-08-31T05:12:00Z', body: 'Need help with order cancellation — I ordered the wrong size.',
+    }),
+    seedTicket({
+      id: 1520, subject: 'Hello from Google Workspace', customer: 'Lorem Anderson', email: 'lorem@example.com',
+      status: 'New', priority: 'Low', channel: 'Email', unread: true, createdAt: '2026-08-30T10:31:00Z',
+      body: 'Hello From Google — verifying our new support address works.',
+    }),
+    seedTicket({
+      id: 1519, subject: 'Give me an offer', customer: 'Abhinav Marla', email: 'abhinav.marla@example.com',
+      status: 'New', priority: 'Low', channel: 'Email', type: 'Pricing', createdAt: '2026-08-30T08:15:00Z',
+      body: 'Please — Thanks & Regards, Abhinav Marla, Senior Buyer. Looking for a bulk order discount on 200 units.',
+    }),
+    seedTicket({
+      id: 1518, subject: 'Updates to our terms of use', customer: 'Microsoft', email: 'noreply@microsoft.com',
+      status: 'New', priority: 'Low', channel: 'Email', createdAt: '2026-08-28T02:00:00Z',
+      body: 'Updates to our terms of use — Hello, you\'re receiving this email because we are updating the Microsoft Services Agreement.',
+    }),
+    seedTicket({
+      id: 1517, subject: 'Request regarding refund of product', customer: 'Lorem Anderson', email: 'lorem@example.com',
+      status: 'New', priority: 'Medium', channel: 'Email', type: 'Payment', tags: ['Refund'],
+      createdAt: '2026-08-28T11:20:00Z', body: 'Request Regarding Refund Of Product — description attached.',
+    }),
+    seedTicket({
+      id: 1516, subject: 'Attachment test for shop account', customer: 'Lorem Anderson', email: 'lorem@example.com',
+      status: 'New', priority: 'Low', channel: 'Webstore', createdAt: '2026-08-27T16:41:00Z',
+      body: 'Attachment test — please confirm you can open the file.',
+    }),
+    seedTicket({
+      id: 1515, subject: 'New mail', customer: 'Rajan Bhanot', email: 'rjbhanot38@gmail.com',
+      status: 'New', priority: 'Low', channel: 'Email', unread: true, createdAt: '2026-08-27T09:05:00Z',
+      body: 'New mail',
+    }),
+    seedTicket({
+      id: 1514, subject: 'Ticket count is wrong on dashboard', customer: 'Abhinav Marla', email: 'abhinav.marla@example.com',
+      status: 'Pending', priority: 'High', channel: 'Inbound Call', type: 'Bug', assignee: 'Sushant Rana', tags: ['500 Error', 'Escalated'],
+      createdAt: '2026-06-16T13:12:00Z', body: 'The open-ticket count on my dashboard does not match the list. Started after the June update.',
+      replies: [
+        { author: 'Sushant Rana', body: 'Thanks for flagging — we can reproduce this and have raised it with engineering.' },
+        { author: 'Sushant Rana', body: 'Engineering ticket SD-2136 opened. Sev 3, targeting next patch.', note: true },
+      ],
+    }),
+    seedTicket({
+      id: 1513, subject: 'POS terminal not syncing loyalty points', customer: 'Emma Johnson', email: 'emma.johnson@example.com', phone: '+1 416 555 0132',
+      status: 'On Hold', priority: 'High', channel: 'Walk In', type: 'Incident', assignee: 'Priya Shah', tags: ['Loyalty'],
+      createdAt: '2026-06-02T16:20:00Z', body: 'Loyalty points from in-store purchases are not appearing in customer accounts.',
+      replies: [{ author: 'Priya Shah', body: 'We\'ve paused the sync while the vendor investigates — I\'ll update you as soon as it resumes.' }],
+    }),
+    seedTicket({
+      id: 1512, subject: 'Exchange for a different size', customer: 'Sofia Thompson', email: 'sofia.thompson@example.com',
+      status: 'Closed', priority: 'Low', channel: 'Webstore', type: 'Customer Request', assignee: 'Chris Parker', tags: ['Order Issue'],
+      createdAt: '2026-05-21T10:00:00Z', body: 'I\'d like to exchange my jacket for a size M.',
+      replies: [{ author: 'Chris Parker', body: 'Exchange label sent — drop the parcel at any post office and the M ships on receipt.' }],
+      orders: [{ id: 'ORD-9911', store: 'Atlas Outfitters', date: '2026-05-18' }],
+    }),
+    seedTicket({
+      id: 1511, subject: 'Billing charged twice this month', customer: 'Liam Martinez', email: 'liam.martinez@example.com',
+      status: 'Closed', priority: 'Medium', channel: 'Email', type: 'Payment', assignee: 'Deepak Vaidya',
+      createdAt: '2026-05-04T08:47:00Z', body: 'My card was charged twice for the same invoice this month.',
+      replies: [{ author: 'Deepak Vaidya', body: 'The duplicate charge was voided — apologies for the trouble.' }],
+    }),
+  ])
 
-  const activeTicketId = ref<number>(1)
+  const activeTicketId = ref(0)
+
+  // Saved views created from the filter drawer ("Save as View").
+  const customViews = ref<SavedTicketView[]>([
+    { name: 'High Value Orders', filters: { ...emptyTicketFilters(), tags: ['VIP'] } },
+    { name: 'Walk-in Follow-ups', filters: { ...emptyTicketFilters(), channel: ['Walk In'] } },
+    { name: 'Payment Escalations', filters: { ...emptyTicketFilters(), type: ['Payment'], priority: ['High', 'Medium'] } },
+  ])
+
+  const visibleTickets = computed(() => tickets.value.filter(t => !t.trashed))
+  const trashedTickets = computed(() => tickets.value.filter(t => t.trashed))
+
+  function find(id: number): Ticket | undefined {
+    return tickets.value.find(t => t.id === id)
+  }
 
   function setActive(id: number) {
     activeTicketId.value = id
   }
 
-  function replyToTicket(ticketId: number, body: string) {
-    const ticket = tickets.value.find(t => t.id === ticketId)
-    if (ticket) {
-      ticket.thread.push({
-        author: 'Sarah Connor',
-        avatar: 'SC',
-        role: 'agent',
-        body,
-        time: new Date().toLocaleString(),
-      })
-      ticket.status = 'Awaiting Reply'
-      ticket.updatedAt = new Date().toISOString()
-    }
+  function touch(ticket: Ticket) {
+    ticket.updatedAt = new Date().toISOString()
   }
 
-  function createTicket(payload: NewTicketPayload): Ticket {
-    const parts = payload.customer.trim().split(' ')
-    const first = parts[0] ?? 'U'
-    const last = parts[1] ?? first
-    const id = nextId++
-    const avatar = `${first[0]?.toUpperCase() ?? '?'}${last[0]?.toUpperCase() ?? '?'}`
-    const assignee = payload.assignee === 'Auto-assign' ? assignees[0]! : payload.assignee
+  function pushActivity(ticket: Ticket, actor: string, text: string) {
+    ticket.activities.push({ id: activitySeq++, actor, time: new Date().toISOString(), text })
+  }
+
+  function markRead(id: number) {
+    const t = find(id)
+    if (t) t.unread = false
+  }
+
+  function markUnread(ids: number[]) {
+    ids.forEach(id => {
+      const t = find(id)
+      if (t) t.unread = true
+    })
+  }
+
+  /** Inline property edits (status / priority / type / assignee / subject / tags…). */
+  function updateTicket(id: number, patch: Partial<Ticket>, actor = 'Deepak Vaidya') {
+    const t = find(id)
+    if (!t) return
+    if (patch.status && patch.status !== t.status) pushActivity(t, actor, `Status updated to ${patch.status}`)
+    if (patch.priority && patch.priority !== t.priority) pushActivity(t, actor, `Priority updated to ${patch.priority}`)
+    if (patch.type && patch.type !== t.type) pushActivity(t, actor, `Type updated to ${patch.type}`)
+    if (patch.assignee && patch.assignee !== t.assignee) pushActivity(t, actor, `Assigned to ${patch.assignee}`)
+    Object.assign(t, patch)
+    touch(t)
+  }
+
+  function sendMessage(
+    id: number,
+    message: { mode: 'Reply' | 'Forward' | 'Note'; to: string; body: string; setStatus?: TicketStatus },
+    author = 'Deepak Vaidya',
+  ) {
+    const t = find(id)
+    if (!t) return
+    t.thread.push({
+      id: messageSeq++,
+      author,
+      role: message.mode === 'Note' ? 'note' : 'agent',
+      action: message.mode === 'Note' ? 'left an internal note' : message.mode === 'Forward' ? 'forwarded' : 'replied',
+      to: message.mode === 'Note' ? undefined : message.to,
+      time: new Date().toISOString(),
+      body: message.body,
+    })
+    if (message.setStatus && message.setStatus !== t.status) {
+      t.status = message.setStatus
+      pushActivity(t, author, `Status updated to ${message.setStatus}`)
+    }
+    touch(t)
+  }
+
+  function assignMany(ids: number[], agent: string, actor = 'Deepak Vaidya') {
+    ids.forEach(id => updateTicket(id, { assignee: agent }, actor))
+  }
+
+  function closeMany(ids: number[], actor = 'Deepak Vaidya') {
+    ids.forEach(id => updateTicket(id, { status: 'Closed' }, actor))
+  }
+
+  /** Soft delete — tickets land in the Trash view and can be restored. */
+  function trashMany(ids: number[]) {
+    ids.forEach(id => {
+      const t = find(id)
+      if (t) t.trashed = true
+    })
+  }
+
+  function restoreMany(ids: number[]) {
+    ids.forEach(id => {
+      const t = find(id)
+      if (t) t.trashed = false
+    })
+  }
+
+  function updateContact(id: number, contact: { name: string; email: string; phone: string }) {
+    const t = find(id)
+    if (!t) return
+    t.customer = contact.name
+    t.customerEmail = contact.email
+    t.customerPhone = contact.phone
+    touch(t)
+  }
+
+  function saveView(name: string, filters: TicketFilters) {
+    const existing = customViews.value.find(v => v.name === name)
+    if (existing) existing.filters = { ...filters }
+    else customViews.value.push({ name, filters: { ...filters } })
+  }
+
+  function createTicket(payload: NewTicketPayload): number {
+    const id = Math.max(1500, ...tickets.value.map(t => t.id)) + 1
+    const now = new Date().toISOString()
     const ticket: Ticket = {
       id,
-      number: `TKT-${String(10000 + id - 1).padStart(5, '0')}`,
+      number: `#${id}`,
       subject: payload.subject,
       customer: payload.customer,
-      customerEmail: payload.email,
-      avatar,
-      status: 'Open',
+      customerEmail: payload.customerEmail,
+      customerPhone: '',
+      status: payload.status,
       priority: payload.priority,
-      category: payload.category,
-      assignee,
+      channel: payload.channel,
+      type: payload.type,
+      assignee: payload.assignee,
+      group: 'General',
       inbox: payload.inbox,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      tags: [],
-      thread: buildNewTicketThread(payload, avatar, assignee),
+      tags: payload.tags,
+      unread: false,
+      trashed: false,
+      createdAt: now,
+      updatedAt: now,
+      thread: [{
+        id: messageSeq++,
+        author: payload.customer,
+        role: 'customer',
+        action: payload.channel ? `reported via ${payload.channel}` : 'reported',
+        to: 'support@maropost.com',
+        time: now,
+        body: payload.description,
+      }],
+      activities: [{ id: activitySeq++, actor: 'Deepak Vaidya', time: now, text: 'Ticket created' }],
+      orders: [],
     }
     tickets.value.unshift(ticket)
-    activeTicketId.value = id
-    useOnboardingStore().complete('first-ticket')
-    return ticket
+    return id
   }
 
-  function resolveTicket(ticketId: number) {
-    const ticket = tickets.value.find(t => t.id === ticketId)
-    if (ticket) {
-      ticket.status = 'Resolved'
-      ticket.updatedAt = new Date().toISOString()
-      ticket.thread.push({
-        author: 'Sarah Connor',
-        avatar: 'SC',
-        role: 'agent',
-        body: 'This ticket has been marked as resolved. Please reach out if you need further assistance.',
-        time: new Date().toLocaleString(),
-      })
-    }
+  return {
+    tickets,
+    visibleTickets,
+    trashedTickets,
+    activeTicketId,
+    customViews,
+    find,
+    setActive,
+    markRead,
+    markUnread,
+    updateTicket,
+    sendMessage,
+    assignMany,
+    closeMany,
+    trashMany,
+    restoreMany,
+    updateContact,
+    saveView,
+    createTicket,
   }
-
-  function closeTicket(ticketId: number) {
-    const ticket = tickets.value.find(t => t.id === ticketId)
-    if (ticket) {
-      ticket.status = 'Closed'
-      ticket.updatedAt = new Date().toISOString()
-    }
-  }
-
-  function deleteTicket(ticketId: number) {
-    const idx = tickets.value.findIndex(t => t.id === ticketId)
-    if (idx === -1) return
-    tickets.value.splice(idx, 1)
-    if (activeTicketId.value === ticketId) {
-      activeTicketId.value = tickets.value[idx]?.id ?? tickets.value[idx - 1]?.id ?? 0
-    }
-  }
-
-  return { tickets, activeTicketId, setActive, replyToTicket, createTicket, resolveTicket, closeTicket, deleteTicket }
 })

@@ -222,9 +222,9 @@ function buildNavGroups(accountId: string): NavGroup[] {
       icon: 'headset',
       dividerAfter: true,
       requires: 'service',
-      singleRoute: `/accounts/${accountId}/service`,
+      singleRoute: `/service/${accountId}/tickets`,
       items: [
-        { title: 'Tickets', route: `/accounts/${accountId}/service` },
+        { title: 'Tickets', route: `/service/${accountId}/tickets` },
       ],
     },
     {

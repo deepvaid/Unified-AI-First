@@ -1,872 +1,424 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useTicketsStore, SUPPORT_INBOXES } from '@/stores/useTickets'
-import { useToast } from '@/composables/useToast'
-import MpChatBubble from '@/components/MpChatBubble.vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpListRow from '@/components/MpListRow.vue'
+import MpDialog from '@/components/MpDialog.vue'
+import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
-import MpFormSection from '@/components/MpFormSection.vue'
-import MpFilterTabs from '@/components/MpFilterTabs.vue'
-import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
-import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
+import TicketWorkspace from '@/components/service/TicketWorkspace.vue'
+import {
+  useTicketsStore,
+  emptyTicketFilters,
+  SUPPORT_INBOXES,
+  TICKET_AGENTS,
+  TICKET_CHANNELS,
+  TICKET_GROUPS,
+  TICKET_PRIORITIES,
+  TICKET_STATUSES,
+  TICKET_TAGS,
+  TICKET_TYPES,
+  type Ticket,
+  type TicketFilters,
+} from '@/stores/useTickets'
+import { useToast } from '@/composables/useToast'
 
 const store = useTicketsStore()
-const replyBody = ref('')
-const search = ref('')
-const filterStatus = ref('All')
-
-// ── Inboxes (one per store/sales channel) ────────────────────────────────
-const inboxFilter = ref('all')
-const inboxOptions = [
-  { title: 'All inboxes', value: 'all' },
-  ...SUPPORT_INBOXES.map(i => ({ title: i, value: i })),
-]
-const inboxTickets = computed(() =>
-  inboxFilter.value === 'all'
-    ? store.tickets
-    : store.tickets.filter(t => t.inbox === inboxFilter.value)
-)
-
-// Keep the detail pane in sync with the selected inbox
-watch(inboxFilter, () => {
-  if (!inboxTickets.value.some(t => t.id === store.activeTicketId)) {
-    store.setActive(inboxTickets.value[0]?.id ?? 0)
-  }
-})
-
-const activeTicket = computed(() => store.tickets.find(t => t.id === store.activeTicketId))
-
-const openCount = computed(() => inboxTickets.value.filter(t => t.status === 'Open').length)
-const inProgressCount = computed(() => inboxTickets.value.filter(t => t.status === 'In Progress').length)
-
-const replyPlaceholder = computed(() => {
-  const first = activeTicket.value?.customer.split(' ')[0]
-  return first ? `Reply to ${first}…` : 'Write a reply…'
-})
-
-// ── New Ticket Drawer ────────────────────────────────────────────────────
+const route = useRoute()
+const router = useRouter()
 const toast = useToast()
-const newTicketDrawer = ref(false)
-const formTouched = ref(false)
+const accountId = computed(() => route.params.accountId as string)
+const CURRENT_AGENT = 'Deepak Vaidya'
 
-const emptyForm = () => ({
-  customer: '',
-  email: '',
-  subject: '',
-  category: 'General',
-  priority: 'Normal' as const,
-  description: '',
-  assignee: 'Auto-assign',
-  inbox: inboxFilter.value === 'all' ? SUPPORT_INBOXES[0]! : inboxFilter.value,
+// ── Views menu (inbox groups × built-in + saved views, Trash last) ───────────
+const BUILT_IN_VIEWS = ['All Tickets', 'My Tickets', 'High Priority Tickets']
+const currentInbox = ref<'all' | 'trash' | string>('all')
+const currentView = ref('All Tickets')
+const viewsMenuOpen = ref(false)
+
+const inboxGroups = computed(() => [
+  { key: 'all', label: 'ALL INBOXES' },
+  ...SUPPORT_INBOXES.map(name => ({ key: name, label: name.toUpperCase() })),
+])
+const viewNames = computed(() => [...BUILT_IN_VIEWS, ...store.customViews.map(v => v.name)])
+
+const currentLabel = computed(() => {
+  if (currentInbox.value === 'trash') return 'Trash'
+  const inbox = currentInbox.value === 'all' ? 'All Inboxes' : currentInbox.value
+  return `${inbox} · ${currentView.value}`
 })
-const newTicket = ref(emptyForm())
 
-const formErrors = computed(() => ({
-  customer: formTouched.value && !newTicket.value.customer.trim() ? 'Customer name is required' : '',
-  email: formTouched.value && !newTicket.value.email.trim() ? 'Customer email is required' : '',
-  subject: formTouched.value && !newTicket.value.subject.trim() ? 'Subject is required' : '',
-}))
-const formValid = computed(() =>
-  newTicket.value.customer.trim() && newTicket.value.email.trim() && newTicket.value.subject.trim()
+function selectView(inboxKey: string, view: string) {
+  currentInbox.value = inboxKey
+  currentView.value = view
+  const saved = store.customViews.find(v => v.name === view)
+  appliedFilters.value = saved ? { ...saved.filters } : emptyTicketFilters()
+  checked.value = []
+  viewsMenuOpen.value = false
+}
+
+function selectTrash() {
+  currentInbox.value = 'trash'
+  currentView.value = 'All Tickets'
+  appliedFilters.value = emptyTicketFilters()
+  checked.value = []
+  viewsMenuOpen.value = false
+}
+
+// ── Filters drawer ────────────────────────────────────────────────────────────
+const filtersOpen = ref(false)
+const workingFilters = reactive<TicketFilters>(emptyTicketFilters())
+const appliedFilters = ref<TicketFilters>(emptyTicketFilters())
+const filtersDirty = computed(() => JSON.stringify(workingFilters) !== JSON.stringify(appliedFilters.value))
+
+watch(filtersOpen, open => {
+  if (open) Object.assign(workingFilters, JSON.parse(JSON.stringify(appliedFilters.value)))
+})
+
+function applyFilters() {
+  appliedFilters.value = JSON.parse(JSON.stringify(workingFilters))
+  filtersOpen.value = false
+}
+function clearFilters() {
+  Object.assign(workingFilters, emptyTicketFilters())
+}
+
+const saveViewDialog = ref(false)
+const saveViewName = ref('')
+function saveAsView() {
+  const name = saveViewName.value.trim()
+  if (!name) return
+  store.saveView(name, JSON.parse(JSON.stringify(workingFilters)))
+  appliedFilters.value = JSON.parse(JSON.stringify(workingFilters))
+  currentView.value = name
+  saveViewDialog.value = false
+  saveViewName.value = ''
+  filtersOpen.value = false
+  toast.success(`View "${name}" saved`)
+}
+
+const contactOptions = computed(() =>
+  [...new Set(store.tickets.map(t => `${t.customer} - ${t.customerEmail}`))],
 )
 
-// Snapshot the form on open so close paths can tell edits from noise.
-const openSnapshot = ref('')
-function snapshotState() {
-  return JSON.stringify(newTicket.value)
-}
-const drawerDirty = computed(() => newTicketDrawer.value && snapshotState() !== openSnapshot.value)
-
-const confirmDiscard = ref(false)
-function requestCloseDrawer() {
-  if (drawerDirty.value) confirmDiscard.value = true
-  else newTicketDrawer.value = false
-}
-
-function openNewTicket() {
-  newTicket.value = emptyForm()
-  formTouched.value = false
-  openSnapshot.value = snapshotState()
-  newTicketDrawer.value = true
-}
-
-function submitTicket() {
-  formTouched.value = true
-  if (!formValid.value) return
-  store.createTicket({ ...newTicket.value })
-  newTicketDrawer.value = false
-  toast.success('Ticket created and assigned')
-  newTicket.value = emptyForm()
-  formTouched.value = false
-}
-
-// ── Canned responses ─────────────────────────────────────────────────────
-const cannedMenu = ref(false)
-const cannedResponses = [
-  { label: 'Thank you for reaching out', body: 'Hi {{first_name}},\n\nThank you for contacting our support team. We have received your message and will respond within 24 hours.' },
-  { label: 'Order status update',        body: 'Hi {{first_name}},\n\nYour order {{order_id}} is currently being processed and will ship within 1–2 business days.' },
-  { label: 'Refund confirmation',        body: 'Hi {{first_name}},\n\nYour refund of {{amount}} has been processed and will appear in your account within 3–5 business days.' },
-]
-
-// ── Filters ───────────────────────────────────────────────────────────────
-const statusOptions = ['All', 'Open', 'In Progress', 'Awaiting Reply', 'Resolved', 'Closed']
-
-const filterCounts = computed(() => {
-  const map: Record<string, number> = { All: inboxTickets.value.length }
-  for (const s of statusOptions.slice(1)) {
-    map[s] = inboxTickets.value.filter(t => t.status === s).length
+// ── The list ──────────────────────────────────────────────────────────────────
+const listTickets = computed<Ticket[]>(() => {
+  let list = currentInbox.value === 'trash' ? store.trashedTickets : store.visibleTickets
+  if (currentInbox.value !== 'all' && currentInbox.value !== 'trash') {
+    list = list.filter(t => t.inbox === currentInbox.value)
   }
-  return map
+  if (currentView.value === 'My Tickets') list = list.filter(t => t.assignee === CURRENT_AGENT)
+  if (currentView.value === 'High Priority Tickets') list = list.filter(t => t.priority === 'High')
+
+  const f = appliedFilters.value
+  if (f.status.length) list = list.filter(t => f.status.includes(t.status))
+  if (f.priority.length) list = list.filter(t => f.priority.includes(t.priority))
+  if (f.channel.length) list = list.filter(t => t.channel && f.channel.includes(t.channel))
+  if (f.type.length) list = list.filter(t => f.type.includes(t.type))
+  if (f.group.length) list = list.filter(t => f.group.includes(t.group))
+  if (f.agent) list = list.filter(t => t.assignee === f.agent)
+  if (f.contact) list = list.filter(t => `${t.customer} - ${t.customerEmail}` === f.contact)
+  if (f.tags.length) list = list.filter(t => f.tags.some(tag => t.tags.includes(tag)))
+  if (f.createdFrom) list = list.filter(t => t.createdAt >= f.createdFrom)
+  if (f.createdTo) list = list.filter(t => t.createdAt.slice(0, 10) <= f.createdTo)
+  if (f.readStatus) list = list.filter(t => (f.readStatus === 'Unread') === t.unread)
+
+  return [...list].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 })
 
-const statusTabs = computed(() =>
-  statusOptions.map(s => ({
-    label: s,
-    key: s,
-    count: filterCounts.value[s] ?? 0,
-  }))
-)
-
-
-const filteredTickets = computed(() => {
-  const q = search.value.toLowerCase()
-  return inboxTickets.value.filter(ticket => {
-    const matchesStatus = filterStatus.value === 'All' || ticket.status === filterStatus.value
-    const matchesSearch =
-      !q ||
-      ticket.subject.toLowerCase().includes(q) ||
-      ticket.customer.toLowerCase().includes(q) ||
-      ticket.number.toLowerCase().includes(q) ||
-      ticket.customerEmail.toLowerCase().includes(q)
-    return matchesStatus && matchesSearch
-  })
-})
-
-// ── Utilities ─────────────────────────────────────────────────────────────
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const m = Math.floor(diff / 60000)
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
+function formatListDate(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
+  const dayDiff = Math.round((startOfDay(now) - startOfDay(d)) / 86_400_000)
+  if (dayDiff <= 0) return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+  if (dayDiff === 1) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function sendReply() {
-  if (replyBody.value.trim() && activeTicket.value) {
-    store.replyToTicket(activeTicket.value.id, replyBody.value.trim())
-    replyBody.value = ''
+const snippet = (t: Ticket) => t.thread.find(m => m.role === 'customer')?.body ?? ''
+
+// ── Selection (detail pane) — the selected ticket lives in the URL ────────────
+const selectedId = computed(() => Number(route.query.selected ?? 0))
+const selectedTicket = computed(() => (selectedId.value ? store.find(selectedId.value) : undefined))
+
+function openTicket(t: Ticket) {
+  router.replace({ query: { ...route.query, selected: String(t.id) } })
+  store.markRead(t.id)
+  store.setActive(t.id)
+}
+
+// ── Bulk selection ────────────────────────────────────────────────────────────
+const checked = ref<number[]>([])
+function toggleChecked(id: number, value: boolean) {
+  checked.value = value ? [...checked.value, id] : checked.value.filter(x => x !== id)
+}
+
+const assignDialog = ref(false)
+const assignAgent = ref('')
+function confirmAssign() {
+  if (!assignAgent.value) return
+  store.assignMany(checked.value, assignAgent.value)
+  toast.success(`${checked.value.length} ticket${checked.value.length === 1 ? '' : 's'} assigned to ${assignAgent.value}`)
+  assignDialog.value = false
+  assignAgent.value = ''
+  checked.value = []
+}
+
+function closeSelected() {
+  store.closeMany(checked.value)
+  toast.success(`${checked.value.length} ticket${checked.value.length === 1 ? '' : 's'} closed`)
+  checked.value = []
+}
+
+function unreadSelected() {
+  store.markUnread(checked.value)
+  toast.success('Marked as unread')
+  checked.value = []
+}
+
+const deleteDialog = ref(false)
+function confirmDelete() {
+  store.trashMany(checked.value)
+  toast.success(`${checked.value.length} ticket${checked.value.length === 1 ? '' : 's'} moved to Trash`)
+  if (checked.value.includes(selectedId.value)) {
+    router.replace({ query: { ...route.query, selected: undefined } })
   }
+  checked.value = []
 }
 
-function markResolved() {
-  if (activeTicket.value) store.resolveTicket(activeTicket.value.id)
+function restoreSelected() {
+  store.restoreMany(checked.value)
+  toast.success(`${checked.value.length} ticket${checked.value.length === 1 ? '' : 's'} restored`)
+  checked.value = []
 }
 
-function closeActiveTicket() {
-  if (activeTicket.value) store.closeTicket(activeTicket.value.id)
+// ── Header actions ────────────────────────────────────────────────────────────
+function newTicket() {
+  router.push({ name: 'TicketCreate', params: { accountId: accountId.value } })
 }
-
-// ── Delete (confirmed) ─────────────────────────────────────────────────────
-const confirmDelete = ref(false)
-function deleteActiveTicket() {
-  if (activeTicket.value) store.deleteTicket(activeTicket.value.id)
-  confirmDelete.value = false
-}
-
-// ── Multi-select + bulk actions ────────────────────────────────────────────
-const selectedIds = ref<number[]>([])
-const selectedSet = computed(() => new Set(selectedIds.value))
-const confirmBulkDelete = ref(false)
-
-function toggleSelected(id: number) {
-  selectedIds.value = selectedSet.value.has(id)
-    ? selectedIds.value.filter(x => x !== id)
-    : [...selectedIds.value, id]
-}
-function selectAllVisible() {
-  selectedIds.value = filteredTickets.value.map(t => t.id)
-}
-function clearSelection() {
-  selectedIds.value = []
-}
-// Selection only ever refers to visible rows — prune when the inbox/status/search
-// filters (or a deletion) drop a selected ticket out of the list.
-watch(filteredTickets, tickets => {
-  const visible = new Set(tickets.map(t => t.id))
-  if (selectedIds.value.some(id => !visible.has(id))) {
-    selectedIds.value = selectedIds.value.filter(id => visible.has(id))
-  }
-})
-
-function announceBulk(n: number, verb: string) {
-  toast.success(`${n} ticket${n === 1 ? '' : 's'} ${verb}`)
-}
-function bulkResolve() {
-  const ids = [...selectedIds.value]
-  ids.forEach(id => store.resolveTicket(id))
-  clearSelection()
-  announceBulk(ids.length, 'resolved')
-}
-function bulkClose() {
-  const ids = [...selectedIds.value]
-  ids.forEach(id => store.closeTicket(id))
-  clearSelection()
-  announceBulk(ids.length, 'closed')
-}
-function bulkDelete() {
-  const ids = [...selectedIds.value]
-  ids.forEach(id => store.deleteTicket(id))
-  clearSelection()
-  confirmBulkDelete.value = false
-  announceBulk(ids.length, 'deleted')
+function newContact() {
+  router.push({ name: 'CreateContact', params: { accountId: accountId.value } })
 }
 </script>
 
 <template>
-  <div class="tkt-page d-flex flex-column">
-    <!-- ── Header ────────────────────────────────────────────────── -->
-    <MpPageHeader
-      title="Support Tickets"
-      :subtitle="`${openCount} open · ${inProgressCount} in progress`"
-    >
+  <div class="pa-6 d-flex flex-column">
+    <MpPageHeader title="Tickets">
       <template #actions>
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openNewTicket">
-          New Ticket
+        <v-btn variant="outlined" class="text-none" prepend-icon="list-filter" @click="filtersOpen = true">
+          Filters
         </v-btn>
-      </template>
-      <template #tabs>
-        <MpFilterTabs v-model="filterStatus" :tabs="statusTabs" aria-label="Filter tickets by status" />
+        <v-menu location="bottom end">
+          <template #activator="{ props: activator }">
+            <v-btn v-bind="activator" color="primary" variant="flat" class="text-none"
+              prepend-icon="plus" append-icon="chevron-down">New</v-btn>
+          </template>
+          <v-list role="menu">
+            <MpMenuItem title="New ticket" icon="ticket" @click="newTicket" />
+            <MpMenuItem title="New contact" icon="user-plus" @click="newContact" />
+          </v-list>
+        </v-menu>
       </template>
     </MpPageHeader>
 
-    <!-- ── Workspace: list + detail ─────────────────────────────── -->
-    <div class="tkt-workspace d-flex gap-4 mt-4">
-      <!-- Left pane: Ticket list -->
-      <v-card variant="flat" border rounded="lg" class="tkt-list-panel d-flex flex-column overflow-hidden">
-        <!-- In-pane controls: inbox switcher + search. These are dense list-pane
-             controls, not form fields — `density="compact"` and the bare
-             `hide-details` are deliberate suppression so the pane header stays
-             one row tall. -->
-        <div class="tkt-list-head px-3 pt-2 pb-3">
-          <v-select
-            v-model="inboxFilter"
-            :items="inboxOptions"
-            variant="plain"
-            density="compact"
-            hide-details
-            prepend-inner-icon="inbox"
-            aria-label="Switch support inbox"
-            class="tkt-inbox-switch"
-          />
-          <v-text-field
-            v-model="search"
-            prepend-inner-icon="search"
-            placeholder="Search tickets…"
-            aria-label="Search tickets"
-            hide-details
-            clearable
-          />
-        </div>
-        <v-divider />
+    <div class="tickets-split d-flex ga-4 mt-4">
+      <!-- List panel -->
+      <v-card flat border rounded="lg" class="tickets-list d-flex flex-column flex-shrink-0">
+        <v-menu v-model="viewsMenuOpen" location="bottom start" :close-on-content-click="false">
+          <template #activator="{ props: activator }">
+            <button
+              v-bind="activator"
+              class="tickets-views-trigger d-flex align-center ga-2 px-4 border-b"
+              :aria-expanded="viewsMenuOpen"
+              aria-haspopup="menu"
+              aria-label="Change inbox and view"
+            >
+              <v-icon size="18">inbox</v-icon>
+              <span class="text-body-2 text-truncate">{{ currentLabel }}</span>
+              <v-spacer />
+              <v-icon size="16">{{ viewsMenuOpen ? 'chevron-up' : 'chevron-down' }}</v-icon>
+            </button>
+          </template>
+          <v-card flat border rounded="lg" class="py-1" width="300" max-height="420" style="overflow-y: auto;">
+            <template v-for="group in inboxGroups" :key="group.key">
+              <div class="mp-meta-label text-medium-emphasis px-4 pt-3 pb-1">{{ group.label }}</div>
+              <v-list density="compact" class="py-0">
+                <MpMenuItem
+                  v-for="view in viewNames"
+                  :key="`${group.key}-${view}`"
+                  :title="view"
+                  :active="currentInbox === group.key && currentView === view"
+                  @click="selectView(group.key, view)"
+                />
+              </v-list>
+            </template>
+            <v-divider class="my-1" />
+            <v-list density="compact" class="py-0">
+              <MpMenuItem title="Trash" icon="trash-2" :active="currentInbox === 'trash'" @click="selectTrash" />
+            </v-list>
+          </v-card>
+        </v-menu>
 
         <div class="flex-grow-1 overflow-y-auto">
-          <MpEmptyState
-            v-if="filteredTickets.length === 0"
-            icon="inbox"
-            :title="search || filterStatus !== 'All' || inboxFilter !== 'all' ? 'No matching tickets' : 'No tickets yet'"
-            :description="search || filterStatus !== 'All' || inboxFilter !== 'all' ? 'Try adjusting your search, status filter, or inbox.' : 'Create a ticket to start tracking support requests.'"
-            :action-label="filterStatus === 'All' && !search ? 'Create ticket' : undefined"
-            class="ma-4"
-            @action="openNewTicket"
-          />
-          <div
-            v-for="ticket in filteredTickets"
-            :key="ticket.id"
-            class="tkt-row d-flex align-start gap-1 pa-3"
-            :class="{
-              'tkt-row--active': store.activeTicketId === ticket.id,
-              'tkt-row--selected': selectedSet.has(ticket.id),
-            }"
-          >
+          <div v-for="t in listTickets" :key="t.id" class="tickets-row d-flex align-center"
+            :class="{ 'tickets-row--selected': t.id === selectedId }">
             <v-checkbox-btn
-              :model-value="selectedSet.has(ticket.id)"
-              density="compact"
-              class="tkt-row__check flex-shrink-0"
-              :aria-label="`Select ticket ${ticket.number}`"
-              @update:model-value="toggleSelected(ticket.id)"
-            />
-            <button
-              class="tkt-row__main flex-grow-1 d-flex flex-column text-left min-w-0"
-              :aria-pressed="store.activeTicketId === ticket.id"
-              :aria-label="`Ticket ${ticket.number}: ${ticket.subject}`"
-              @click="store.setActive(ticket.id)"
-            >
-              <div class="d-flex align-center gap-2 w-100 mb-1">
-                <span
-                  v-if="ticket.priority === 'Urgent' || ticket.priority === 'High'"
-                  class="tkt-row__dot flex-shrink-0"
-                  :class="ticket.priority === 'Urgent' ? 'tkt-row__dot--urgent' : 'tkt-row__dot--high'"
-                  :title="`${ticket.priority} priority`"
-                />
-                <span class="text-body-2 font-weight-semibold tkt-row__customer flex-grow-1">{{ ticket.customer }}</span>
-                <span class="text-caption text-medium-emphasis flex-shrink-0">{{ timeAgo(ticket.updatedAt) }}</span>
-              </div>
-              <div class="text-body-2 tkt-row__subject w-100 mb-2">{{ ticket.subject }}</div>
-              <div class="d-flex align-center justify-space-between w-100">
-                <MpStatusChip :status="ticket.status" type="ticket" size="sm" />
-                <span v-if="inboxFilter === 'all'" class="tkt-row__origin text-caption text-medium-emphasis">
-                  <v-icon size="12">store</v-icon>
-                  {{ ticket.inbox }}
+              :model-value="checked.includes(t.id)"
+              :aria-label="`Select ticket: ${t.subject}`"
+              class="ml-2 flex-grow-0"
+              @update:model-value="(v: boolean) => toggleChecked(t.id, v)"
+            ></v-checkbox-btn>
+            <MpListRow clickable variant="divided" class="flex-grow-1" style="min-width: 0;" @click="openTicket(t)">
+              <span class="d-flex align-center ga-2" style="min-width: 0;">
+                <span v-if="t.unread" class="tickets-unread-dot flex-shrink-0" role="img" aria-label="Unread"></span>
+                <span class="text-body-2 text-truncate" :class="t.unread ? 'font-weight-bold' : 'font-weight-medium'">
+                  {{ t.subject }}
                 </span>
-              </div>
-            </button>
-          </div>
-        </div>
-      </v-card>
-
-      <!-- Right pane: Ticket detail -->
-      <v-card
-        v-if="activeTicket"
-        variant="flat"
-        border
-        rounded="lg"
-        class="tkt-detail-panel flex-grow-1 d-flex flex-column overflow-hidden"
-      >
-        <!-- Detail header: subject first, quiet meta below -->
-        <div class="tkt-detail__header px-5 py-4 d-flex align-start justify-space-between gap-3">
-          <div class="flex-grow-1 min-w-0">
-            <div class="text-subtitle-1 font-weight-semibold tkt-detail__subject mb-1">{{ activeTicket.subject }}</div>
-            <div class="d-flex align-center gap-2 flex-wrap">
-              <span class="text-caption text-medium-emphasis">{{ activeTicket.number }}</span>
-              <MpStatusChip :status="activeTicket.status" type="ticket" size="sm" />
-              <v-chip
-                v-for="tag in activeTicket.tags"
-                :key="tag"
-                size="x-small"
-                variant="outlined"
-                color="secondary"
-              >{{ tag }}</v-chip>
-            </div>
-          </div>
-          <div class="d-flex gap-2 align-center flex-shrink-0">
-            <v-btn
-              variant="tonal"
-              color="success"
-              size="small"
-              class="text-none"
-              prepend-icon="circle-check"
-              :disabled="activeTicket.status === 'Resolved' || activeTicket.status === 'Closed'"
-              @click="markResolved"
-            >Resolve</v-btn>
-            <MpRowActionsMenu ariaLabel="Ticket actions">
-              <MpMenuItem icon="x-circle" title="Close Ticket" @click="closeActiveTicket" />
-              <v-divider class="my-1" />
-              <MpMenuItem icon="trash-2" title="Delete Ticket" danger @click="confirmDelete = true" />
-            </MpRowActionsMenu>
-          </div>
-        </div>
-
-        <!-- Properties strip -->
-        <div class="tkt-props px-5 py-3">
-          <div class="tkt-prop">
-            <span>Customer</span>
-            <strong>{{ activeTicket.customer }}</strong>
-            <em>{{ activeTicket.customerEmail }}</em>
-          </div>
-          <div class="tkt-prop">
-            <span>Priority</span>
-            <MpStatusChip :status="activeTicket.priority" type="priority" size="sm" variant="flat" class="mt-1" />
-          </div>
-          <div class="tkt-prop">
-            <span>Assignee</span>
-            <strong>{{ activeTicket.assignee }}</strong>
-          </div>
-          <div class="tkt-prop">
-            <span>Inbox</span>
-            <strong>{{ activeTicket.inbox }}</strong>
-          </div>
-          <div class="tkt-prop">
-            <span>Category</span>
-            <strong>{{ activeTicket.category }}</strong>
-          </div>
-          <div class="tkt-prop">
-            <span>Opened</span>
-            <strong>{{ timeAgo(activeTicket.createdAt) }}</strong>
-          </div>
-        </div>
-
-        <!-- Thread -->
-        <div class="flex-grow-1 overflow-y-auto tkt-thread pa-5">
-          <div class="tkt-conversation">
-            <!-- Both roles sit side="start" — the agent is distinguished by tint. -->
-            <MpChatBubble
-              v-for="(msg, idx) in activeTicket.thread"
-              :key="idx"
-              side="start"
-              :tone="msg.role === 'agent' ? 'accent' : 'neutral'"
-              :author="msg.author"
-              :time="msg.time"
-            >
-              <template #avatar>
-                <v-avatar
-                  :color="msg.role === 'agent' ? 'primary' : 'surface-variant'"
-                  :variant="msg.role === 'agent' ? 'flat' : 'tonal'"
-                  size="34"
-                  class="text-caption font-weight-bold"
-                  aria-hidden="true"
-                >
-                  {{ msg.avatar }}
-                </v-avatar>
+              </span>
+              <span class="text-caption text-medium-emphasis d-block">{{ t.customer }}</span>
+              <span class="text-caption text-medium-emphasis d-block text-truncate">{{ snippet(t) }}</span>
+              <template #trailing>
+                <span class="d-flex flex-column align-end ga-1">
+                  <span class="text-caption text-medium-emphasis">{{ formatListDate(t.updatedAt) }}</span>
+                  <MpStatusChip :status="t.status" type="ticket" size="sm" variant="outlined" />
+                </span>
               </template>
-              {{ msg.body }}
-            </MpChatBubble>
+            </MpListRow>
           </div>
-        </div>
 
-        <!-- Composer -->
-        <div class="tkt-reply pa-4">
-          <div class="tkt-composer">
-            <v-textarea
-              v-model="replyBody"
-              :placeholder="replyPlaceholder"
-              variant="plain"
-              rows="3"
-              hide-details
-              class="tkt-composer__input px-4 pt-1"
-              aria-label="Reply to ticket"
-            />
-            <div class="d-flex justify-space-between align-center px-3 pb-3">
-              <div class="d-flex gap-1">
-                <v-tooltip text="Coming soon" location="top">
-                  <template #activator="{ props }">
-                    <v-btn v-bind="props" icon="paperclip" variant="text" size="small" aria-label="Attach file (coming soon)" />
-                  </template>
-                </v-tooltip>
-                <v-tooltip text="Coming soon" location="top">
-                  <template #activator="{ props }">
-                    <v-btn v-bind="props" icon="smile" variant="text" size="small" aria-label="Insert emoji (coming soon)" />
-                  </template>
-                </v-tooltip>
-                <v-menu v-model="cannedMenu" location="top start">
-                  <template #activator="{ props }">
-                    <v-btn
-                      v-bind="props"
-                      icon="files"
-                      variant="text"
-                      size="small"
-                      aria-label="Insert canned response"
-                      :aria-expanded="cannedMenu"
-                    />
-                  </template>
-                  <v-list density="compact" rounded="lg" nav min-width="240">
-                    <v-list-subheader>Canned Responses</v-list-subheader>
-                    <v-list-item
-                      v-for="cr in cannedResponses"
-                      :key="cr.label"
-                      :title="cr.label"
-                      @click="replyBody += cr.body; cannedMenu = false"
-                    />
-                  </v-list>
-                </v-menu>
-              </div>
-              <div class="d-flex gap-2 align-center">
-                <v-btn
-                  variant="text"
-                  size="small"
-                  class="text-none text-medium-emphasis"
-                  :disabled="activeTicket.status === 'Closed'"
-                  @click="closeActiveTicket"
-                >Close Ticket</v-btn>
-                <v-btn
-                  color="primary"
-                  variant="flat"
-                  class="text-none"
-                  prepend-icon="send"
-                  :disabled="!replyBody.trim() || activeTicket.status === 'Closed'"
-                  @click="sendReply"
-                >Send Reply</v-btn>
-              </div>
-            </div>
-          </div>
+          <MpEmptyState
+            v-if="!listTickets.length"
+            icon="inbox"
+            :title="currentInbox === 'trash' ? 'Trash is empty' : 'No tickets in this view'"
+            :description="currentInbox === 'trash'
+              ? 'Deleted tickets land here and can be restored.'
+              : 'Change the view or adjust your filters to see more tickets.'"
+          />
         </div>
       </v-card>
 
-      <!-- No ticket selected -->
-      <v-card
-        v-else
-        variant="flat"
-        border
-        rounded="lg"
-        class="flex-grow-1 d-flex align-center justify-center"
-      >
+      <!-- Detail pane -->
+      <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column" style="min-width: 0;">
+        <TicketWorkspace v-if="selectedTicket" :ticket-id="selectedTicket.id" variant="pane" />
         <MpEmptyState
-          icon="headset"
-          title="Select a ticket"
-          description="Choose a support ticket from the list to view details and reply."
-          class="py-12"
+          v-else
+          class="ma-auto"
+          icon="ticket"
+          title="Select a ticket to view its details"
+          description="Pick a conversation from the list to read the thread, reply, and update its properties."
         />
       </v-card>
     </div>
 
-    <!-- ── Bulk actions (appears on selection) ──────────────────── -->
-    <MpFloatingBulkBar
-      :count="selectedIds.length"
-      :total="filteredTickets.length"
-      @clear="clearSelection"
-      @select-all="selectAllVisible"
-    >
-      <v-btn variant="text" size="small" prepend-icon="circle-check" class="text-none" @click="bulkResolve">Resolve</v-btn>
-      <v-btn variant="text" size="small" prepend-icon="x-circle" class="text-none" @click="bulkClose">Close</v-btn>
-      <v-btn variant="text" size="small" prepend-icon="trash-2" color="error" class="text-none" @click="confirmBulkDelete = true">Delete</v-btn>
+    <MpFloatingBulkBar :count="checked.length" :total="listTickets.length" @clear="checked = []">
+      <template v-if="currentInbox === 'trash'">
+        <v-btn variant="text" class="text-none" prepend-icon="undo-2" @click="restoreSelected">Restore</v-btn>
+      </template>
+      <template v-else>
+        <v-btn variant="text" class="text-none" prepend-icon="user-check" @click="assignDialog = true">Assign</v-btn>
+        <v-btn variant="text" class="text-none" prepend-icon="circle-x" @click="closeSelected">Close</v-btn>
+        <v-btn variant="text" class="text-none" prepend-icon="mail" @click="unreadSelected">Mark as unread</v-btn>
+        <v-btn variant="text" class="text-none" prepend-icon="trash-2" @click="deleteDialog = true">Delete</v-btn>
+      </template>
     </MpFloatingBulkBar>
+
+    <!-- Filters -->
+    <MpFormDrawer v-model="filtersOpen" title="Filters" size="sm">
+      <MpFormGrid>
+        <v-select v-model="workingFilters.status" :items="TICKET_STATUSES" label="Status" multiple chips closable-chips></v-select>
+        <v-select v-model="workingFilters.priority" :items="TICKET_PRIORITIES" label="Priority" multiple chips closable-chips></v-select>
+        <v-select v-model="workingFilters.channel" :items="TICKET_CHANNELS" label="Channel" multiple chips closable-chips></v-select>
+        <v-select v-model="workingFilters.type" :items="TICKET_TYPES" label="Type" multiple chips closable-chips></v-select>
+        <v-select v-model="workingFilters.group" :items="TICKET_GROUPS" label="Group" multiple chips closable-chips></v-select>
+        <v-select v-model="workingFilters.agent" :items="['', ...TICKET_AGENTS]" label="Agent" clearable></v-select>
+        <v-select v-model="workingFilters.contact" :items="['', ...contactOptions]" label="Contacts" clearable></v-select>
+        <v-select v-model="workingFilters.tags" :items="TICKET_TAGS" label="Tags" multiple chips closable-chips></v-select>
+      </MpFormGrid>
+      <MpFormGrid :cols="2" class="mt-4">
+        <v-text-field v-model="workingFilters.createdFrom" label="Created from" type="date"></v-text-field>
+        <v-text-field v-model="workingFilters.createdTo" label="Created to" type="date"></v-text-field>
+        <v-select v-model="workingFilters.readStatus" :items="['', 'Read', 'Unread']" label="Read status" clearable class="mp-form-grid__full"></v-select>
+      </MpFormGrid>
+      <template #footerStart>
+        <v-btn variant="text" class="text-none" @click="clearFilters">Clear filter</v-btn>
+      </template>
+      <template #footer>
+        <v-btn variant="outlined" class="text-none" @click="saveViewDialog = true">Save as view</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!filtersDirty" @click="applyFilters">Apply</v-btn>
+      </template>
+    </MpFormDrawer>
+
+    <!-- Save as View -->
+    <MpDialog v-model="saveViewDialog" title="Save as view" subtitle="Saved views appear in the inbox menu." size="sm">
+      <MpFormGrid>
+        <v-text-field v-model="saveViewName" label="View name *"></v-text-field>
+      </MpFormGrid>
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="saveViewDialog = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!saveViewName.trim()" @click="saveAsView">Save</v-btn>
+      </template>
+    </MpDialog>
+
+    <!-- Assign -->
+    <MpDialog
+      v-model="assignDialog"
+      title="Assign tickets"
+      :subtitle="`${checked.length} ticket${checked.length === 1 ? '' : 's'} selected`"
+      size="sm"
+    >
+      <MpFormGrid>
+        <v-select v-model="assignAgent" :items="TICKET_AGENTS" label="Select agent *"></v-select>
+      </MpFormGrid>
+      <template #footer>
+        <v-btn variant="text" class="text-none" @click="assignDialog = false">Cancel</v-btn>
+        <v-btn color="primary" variant="flat" class="text-none" :disabled="!assignAgent" @click="confirmAssign">Assign</v-btn>
+      </template>
+    </MpDialog>
+
+    <MpConfirmDialog
+      v-model="deleteDialog"
+      danger
+      :title="`Delete ${checked.length} ticket${checked.length === 1 ? '' : 's'}?`"
+      message="Deleted tickets move to the Trash view, where you can restore them later."
+      confirm-label="Delete"
+      @confirm="confirmDelete"
+    />
   </div>
-
-  <!-- ── New Ticket Drawer ─────────────────────────────────────── -->
-  <MpFormDrawer
-    v-model="newTicketDrawer"
-    title="Create New Ticket"
-    subtitle="Log a support request on behalf of a customer"
-    :guarded="drawerDirty"
-    @close="requestCloseDrawer"
-  >
-    <MpFormSection title="Customer" />
-    <MpFormGrid>
-      <v-text-field
-        v-model="newTicket.customer"
-        label="Customer Name *"
-        prepend-inner-icon="user"
-        :error-messages="formErrors.customer"
-        required
-      />
-      <v-text-field
-        v-model="newTicket.email"
-        label="Customer Email *"
-        type="email"
-        prepend-inner-icon="mail"
-        :error-messages="formErrors.email"
-        required
-      />
-    </MpFormGrid>
-
-    <MpFormSection title="Ticket Details" />
-    <MpFormGrid :cols="2">
-      <v-text-field
-        v-model="newTicket.subject"
-        label="Subject *"
-        class="mp-form-grid__full"
-        placeholder="Brief description of the issue"
-        :error-messages="formErrors.subject"
-        required
-      />
-      <v-select
-        v-model="newTicket.category"
-        label="Category"
-        :items="['General', 'Order Issue', 'Billing', 'Technical', 'Returns & Refunds', 'Shipping']"
-      />
-      <v-select
-        v-model="newTicket.priority"
-        label="Priority"
-        :items="[
-          { title: 'Urgent', value: 'Urgent' },
-          { title: 'High', value: 'High' },
-          { title: 'Normal', value: 'Normal' },
-          { title: 'Low', value: 'Low' },
-        ]"
-      >
-        <template #selection="{ item }">
-          <MpStatusChip :status="item.value" type="priority" size="sm" variant="flat" />
-        </template>
-      </v-select>
-      <v-textarea
-        v-model="newTicket.description"
-        label="Description"
-        rows="5"
-        class="mp-form-grid__full"
-        placeholder="Describe the customer's issue in detail…"
-      />
-      <v-select
-        v-model="newTicket.inbox"
-        label="Inbox"
-        :items="SUPPORT_INBOXES"
-        class="mp-form-grid__full"
-        prepend-inner-icon="store"
-        hint="The store or sales channel this request belongs to"
-        persistent-hint
-      />
-      <v-select
-        v-model="newTicket.assignee"
-        label="Assign To"
-        :items="['Auto-assign', 'Sarah Connor', 'Mike Zhang', 'Priya Sharma']"
-        class="mp-form-grid__full"
-        prepend-inner-icon="log-in"
-      />
-    </MpFormGrid>
-
-    <template #footer>
-      <v-btn variant="text" class="text-none" @click="requestCloseDrawer">Cancel</v-btn>
-      <v-btn
-        color="primary"
-        variant="flat"
-        class="text-none"
-        prepend-icon="plus"
-        @click="submitTicket"
-      >Create Ticket</v-btn>
-    </template>
-  </MpFormDrawer>
-
-  <MpConfirmDialog
-    v-model="confirmDiscard"
-    title="Discard ticket changes?"
-    message="You have unsaved changes to this ticket. Closing now will discard them."
-    confirm-label="Discard changes"
-    danger
-    @confirm="newTicketDrawer = false"
-  />
-
-  <!-- Delete confirmation -->
-  <MpConfirmDialog
-    v-model="confirmDelete"
-    title="Delete ticket?"
-    message="This permanently removes the ticket and its entire conversation thread. This cannot be undone."
-    confirm-label="Delete Ticket"
-    danger
-    @confirm="deleteActiveTicket"
-  />
-
-  <!-- Bulk delete confirmation -->
-  <MpConfirmDialog
-    v-model="confirmBulkDelete"
-    title="Delete selected tickets?"
-    :message="selectedIds.length === 1
-      ? 'This permanently removes the selected ticket and its entire conversation thread. This cannot be undone.'
-      : `This permanently removes ${selectedIds.length} tickets and their entire conversation threads. This cannot be undone.`"
-    confirm-label="Delete Tickets"
-    danger
-    @confirm="bulkDelete"
-  />
 </template>
 
 <style scoped>
-/* ── Page shell ────────────────────────────────────────────────── */
-.tkt-page {
-  height: 100%;
-  gap: 0;
+/* The split fills the viewport under the app bar, page padding and header
+   (same approach as the store editor shells). */
+.tickets-split {
+  height: calc(100vh - var(--mp-layout-appbarHeight) - 148px);
+  min-height: 420px;
 }
+.tickets-list { width: 380px; }
 
-/* ── Workspace ─────────────────────────────────────────────────── */
-/*
- * v-container doesn't propagate a fixed height, so we must size the workspace
- * explicitly. --v-layout-top is Vuetify's CSS var for the app-bar offset (56px).
- * 172px = 32px container-padding-top + 68px page-header + 50px filter-row +
- *         22px extra buffer. (List controls now live inside the list pane.)
- */
-.tkt-workspace {
-  flex-direction: row;
-  overflow: hidden;
-  height: calc(100vh - var(--v-layout-top, 56px) - 172px);
-  min-height: 480px;
+.tickets-views-trigger {
+  border: 0; background: transparent; font: inherit; cursor: pointer;
+  width: 100%; min-height: var(--mp-component-toolbar-minHeight, 56px);
+  color: rgb(var(--v-theme-on-surface));
 }
-.tkt-list-panel {
-  width: 340px;
-  min-width: 300px;
-  flex-shrink: 0;
-  height: 100%;
-}
+.tickets-views-trigger:hover { background: rgba(var(--v-theme-on-surface), 0.04); }
+.tickets-views-trigger:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
 
-/* ── In-pane list controls ─────────────────────────────────────── */
-.tkt-inbox-switch {
-  flex: 0 0 auto;
-  margin-bottom: 4px;
-}
-.tkt-inbox-switch :deep(.v-field__input) {
-  font-size: 14px;
-  font-weight: 700;
-  min-height: 36px;
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-/* P6-12 correction: this stays. It looks like the affix hand-patch that phase set
-   out to delete, but it is not — the app-level affix rules are scoped to the
-   outlined variant, and this control is `variant="plain"`, which Vuetify
-   deliberately top-aligns. Combined with the bespoke 36px input height above, the
-   icon needs its own offset. Not a form field: it is the inbox switcher in the
-   ticket toolbar. */
-.tkt-inbox-switch :deep(.v-field__prepend-inner) {
-  padding-top: var(--mp-space-6);
-  color: rgba(var(--v-theme-on-surface), 0.6);
-}
-
-/* ── Ticket rows ───────────────────────────────────────────────── */
-.tkt-row {
-  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  transition: background 0.12s ease;
-}
-.tkt-row:last-child { border-bottom: none; }
-.tkt-row:hover { background: rgba(var(--v-theme-primary), 0.04); }
-.tkt-row--active {
-  background: rgba(var(--v-theme-primary), 0.07) !important;
+.tickets-row--selected {
+  background: rgba(var(--v-theme-primary), 0.06);
   box-shadow: inset 3px 0 0 rgb(var(--v-theme-primary));
 }
-.tkt-row--selected {
-  background: rgba(var(--v-theme-primary), 0.05);
-}
-.tkt-row__main {
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-family: inherit;
-}
-.tkt-row__main:focus-visible {
-  outline: 2px solid rgb(var(--v-theme-primary));
-  outline-offset: -2px;
-}
-.tkt-row__check {
-  margin: -6px 0 0 -8px;
-}
-.tkt-row__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-.tkt-row__dot--urgent { background: rgb(var(--v-theme-error)); }
-.tkt-row__dot--high { background: rgb(var(--v-theme-warning)); }
-.tkt-row__customer {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-.tkt-row__subject {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: rgba(var(--v-theme-on-surface), 0.68);
-}
-.tkt-row__origin {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.min-w-0 { min-width: 0; }
 
-/* ── Detail panel ──────────────────────────────────────────────── */
-.tkt-detail-panel { min-width: 0; height: 100%; }
-.tkt-detail__header {
-  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-.tkt-detail__subject {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+.tickets-unread-dot {
+  width: var(--mp-space-8); height: var(--mp-space-8);
+  border-radius: var(--mp-radius-full);
+  background: rgb(var(--v-theme-primary));
 }
 
-/* ── Properties strip ──────────────────────────────────────────── */
-.tkt-props {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 32px;
-  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  background: rgba(var(--v-theme-surface-variant), 0.18);
-}
-.tkt-prop {
-  min-width: 0;
-}
-.tkt-prop span,
-.tkt-prop strong,
-.tkt-prop em {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.tkt-prop span {
-  color: rgba(var(--v-theme-on-surface), 0.56);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-.tkt-prop strong {
-  margin-top: 1px;
-  color: rgb(var(--v-theme-on-surface));
-  font-size: 13px;
-  font-weight: 600;
-}
-.tkt-prop em {
-  color: rgba(var(--v-theme-on-surface), 0.56);
-  font-size: 12px;
-  font-style: normal;
-}
-
-/* ── Thread ────────────────────────────────────────────────────── */
-.tkt-thread { background: rgba(var(--v-theme-on-surface), 0.015); }
-.tkt-conversation {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mp-space-16);
-  /* The system's widest reading measure (= dialog lg). */
-  max-width: var(--mp-component-dialog-width-lg);
-  margin-inline: auto;
-}
-/* Message anatomy lives in MpChatBubble; the avatar drops to the bubble's
-   first line (below the meta row: 12px line + bubble gap). */
-.tkt-conversation :deep(.mp-chat-bubble__avatar) {
-  margin-top: var(--mp-space-24);
-}
-
-/* ── Composer ──────────────────────────────────────────────────── */
-.tkt-reply {
-  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  background: rgb(var(--v-theme-surface));
-}
-.tkt-composer {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px;
-  background: rgb(var(--v-theme-surface));
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
-}
-.tkt-composer:focus-within {
-  border-color: rgba(var(--v-theme-primary), 0.5);
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.1);
-}
-.tkt-composer__input :deep(textarea) {
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-/* ── Responsive ────────────────────────────────────────────────── */
-@media (max-width: 860px) {
-  .tkt-workspace {
-    flex-direction: column;
-    overflow: visible;
-    height: auto;
-    min-height: 0;
-  }
-  .tkt-list-panel {
-    width: 100%;
-    min-width: 0;
-    height: auto;
-    max-height: 42vh;
-  }
-  .tkt-detail-panel {
-    height: auto;
-    min-height: 400px;
-  }
-}
-@media (max-width: 640px) {
-  .tkt-list-panel { max-height: 36vh; }
-  .tkt-props { gap: 8px 20px; }
-}
+.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
 </style>

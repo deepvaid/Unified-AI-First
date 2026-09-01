@@ -316,7 +316,12 @@ const routes: RouteRecordRaw[] = [
   { path: '/accounts/:accountId/live_content_images', name: 'CountdownTimer', component: () => import('@/views/Marketing/CountdownTimer.vue') },
 
   // 7. Service
-  { path: '/accounts/:accountId/service', name: 'Tickets', component: () => import('@/views/Service/Tickets.vue') },
+  // Service desk lives under /service/:accountId in production; the old sandbox
+  // path redirects so bookmarks keep working.
+  { path: '/service/:accountId/tickets', name: 'Tickets', component: () => import('@/views/Service/Tickets.vue') },
+  { path: '/service/:accountId/tickets/create-new', name: 'TicketCreate', component: () => import('@/views/Service/TicketCreate.vue') },
+  { path: '/service/:accountId/tickets/:id', name: 'TicketDetail', component: () => import('@/views/Service/TicketDetail.vue') },
+  { path: '/accounts/:accountId/service', redirect: (to) => ({ name: 'Tickets', params: { accountId: to.params.accountId } }) },
   { path: '/accounts/:accountId/chatbot', name: 'ChatbotList', component: () => import('@/views/Service/ChatbotList.vue') },
   { path: '/accounts/:accountId/chatbot/archived', name: 'ChatbotArchived', component: () => import('@/views/Service/ChatbotArchived.vue') },
   { path: '/accounts/:accountId/chatbot/:id', name: 'ChatbotBuilder', component: () => import('@/views/Service/ChatbotBuilder.vue'), meta: { builderShell: true } },

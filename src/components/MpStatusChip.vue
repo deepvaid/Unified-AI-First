@@ -44,7 +44,7 @@ const toneMap: Record<string, Record<string, Tone>> = {
   ticket: {
     open: 'brand', 'in progress': 'warning', 'awaiting reply': 'brand',
     resolved: 'success', closed: 'neutral', 'on hold': 'warning',
-    escalated: 'danger', new: 'brand',
+    escalated: 'danger', new: 'brand', pending: 'warning',
   },
   coupon: {
     active: 'success', expired: 'neutral', scheduled: 'brand',
@@ -103,7 +103,7 @@ const iconMap: Record<string, Record<string, string>> = {
     open: 'alert-circle', 'in progress': 'clock',
     'awaiting reply': 'reply', resolved: 'circle-check',
     closed: 'circle-x', escalated: 'alert-triangle',
-    new: 'bell',
+    new: 'bell', pending: 'clock', 'on hold': 'pause-circle',
   },
   order: {
     completed: 'check-circle', cancelled: 'x-circle',
