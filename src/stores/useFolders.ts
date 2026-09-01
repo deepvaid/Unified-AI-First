@@ -8,6 +8,8 @@ export type FolderScope =
   | 'forms'
   | 'landing_pages'
   | 'content_templates'
+  | 'content_feeds'
+  | 'image_groups'
 
 /** Owner-only, or visible to everyone on the account. Only the owner can change this. */
 export type FolderPrivacy = 'private' | 'shared'
@@ -89,6 +91,12 @@ export const useFoldersStore = defineStore('folders', () => {
     mine('lp-evergreen', 'Evergreen', 'landing_pages'),
     shared('lp-harpreet', 'Harpreet_QA Landing pages', 'landing_pages', 'Harpreet Singh'),
     shared('lp-manny', 'Manny', 'landing_pages', 'Manny Ortega'),
+    // Content feeds
+    mine('cfd-commerce', 'Commerce Feeds', 'content_feeds'),
+    mine('cfd-editorial', 'Editorial', 'content_feeds'),
+    // Optimise-on-Open image groups
+    mine('iog-seasonal', 'Seasonal Swaps', 'image_groups'),
+    shared('iog-harpreet', 'Harpreet_QA', 'image_groups', 'Harpreet Singh'),
     // Saved content templates (the gallery's own folder scope)
     mine('ctpl-brand', 'Brand Templates', 'content_templates'),
     mine('ctpl-seasonal', 'Seasonal Templates', 'content_templates'),

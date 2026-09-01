@@ -38,11 +38,21 @@ export interface DynamicContentItem {
 // ── Content Feeds ────────────────────────────────────────────────────────────
 export type FeedType = 'Single' | 'Merge'
 
+/** One key → URL pair of a merge feed. */
+export interface ContentFeedSource {
+  key: string
+  url: string
+}
+
 export interface ContentFeed {
   id: number
   name: string
   feedType: FeedType
+  /** Single feeds: the one endpoint. Merge feeds mirror their first source here. */
   url: string
+  /** Merge feeds only: the key → URL pairs merged at send time. */
+  sources: ContentFeedSource[]
+  folderId: string | null
   updateDay: string
   updateHour: string
   createdAt: string
@@ -218,9 +228,16 @@ export const useMarketingAssetsStore = defineStore('marketingAssets', () => {
 
   // ── Content Feeds ────────────────────────────────────────────────────────
   const feeds = ref<ContentFeed[]>([
-    { id: 1, name: 'Latest Blog Posts', feedType: 'Single', url: 'https://blog.example.com/rss', updateDay: 'Monday', updateHour: '06:00', createdAt: '2025-10-01', updatedAt: '2026-02-20' },
-    { id: 2, name: 'Daily Deals JSON', feedType: 'Single', url: 'https://api.example.com/deals', updateDay: 'Everyday', updateHour: '00:00', createdAt: '2025-11-14', updatedAt: '2026-03-01' },
-    { id: 3, name: 'Merged Product + Blog Feed', feedType: 'Merge', url: 'https://example.com/feed.xml', updateDay: 'Friday', updateHour: '18:00', createdAt: '2026-01-08', updatedAt: '2026-01-20' },
+    { id: 1, name: 'Latest Blog Posts', feedType: 'Single', url: 'https://blog.example.com/rss', sources: [], folderId: 'cfd-editorial', updateDay: 'Monday', updateHour: '06:00 AM', createdAt: '2025-10-01', updatedAt: '2026-02-20' },
+    { id: 2, name: 'Daily Deals JSON', feedType: 'Single', url: 'https://api.example.com/deals', sources: [], folderId: 'cfd-commerce', updateDay: 'Everyday', updateHour: '12:00 AM', createdAt: '2025-11-14', updatedAt: '2026-03-01' },
+    {
+      id: 3, name: 'Merged Product + Blog Feed', feedType: 'Merge', url: 'https://api.example.com/products.json',
+      sources: [
+        { key: 'products', url: 'https://api.example.com/products.json' },
+        { key: 'blog', url: 'https://blog.example.com/rss' },
+      ],
+      folderId: null, updateDay: 'Friday', updateHour: '06:00 PM', createdAt: '2026-01-08', updatedAt: '2026-01-20',
+    },
   ])
 
   function addFeed(input: Omit<ContentFeed, 'id' | 'createdAt' | 'updatedAt'>): ContentFeed {
