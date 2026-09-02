@@ -333,11 +333,10 @@ onMounted(() => {
               :items="SALES_CHANNELS"
               label="Sales channel *"
               hide-details
-              class="mb-4"
-              style="max-width: 320px"
+              class="mb-4 cdo-channel"
             />
 
-            <v-divider class="mb-4" style="opacity: 0.5" />
+            <v-divider class="mb-4" />
             <div class="cdo-info-grid mb-2">
               <div v-for="cell in infoGrid" :key="cell.label">
                 <div class="text-caption text-medium-emphasis">{{ cell.label }}</div>
@@ -345,11 +344,11 @@ onMounted(() => {
               </div>
             </div>
 
-            <v-divider class="my-4" style="opacity: 0.5" />
+            <v-divider class="my-4" />
             <div class="cdo-address-row">
               <div v-for="kind in (['shipping', 'billing'] as const)" :key="kind" class="flex-grow-1">
                 <div class="d-flex align-center justify-space-between mb-1">
-                  <span class="text-subtitle-2 font-weight-medium">{{ kind === 'shipping' ? 'Shipping Address' : 'Billing Address' }}</span>
+                  <span class="cdo-label">{{ kind === 'shipping' ? 'Shipping Address' : 'Billing Address' }}</span>
                   <v-btn
                     variant="text"
                     size="small"
@@ -361,7 +360,7 @@ onMounted(() => {
                   </v-btn>
                 </div>
                 <template v-if="kind === 'shipping' ? shippingAddress : billingAddress">
-                  <div class="text-body-2" style="line-height: 1.6">
+                  <div class="text-body-2 cdo-address">
                     <div class="font-weight-medium">{{ (kind === 'shipping' ? shippingAddress : billingAddress)!.name }}</div>
                     <div>{{ (kind === 'shipping' ? shippingAddress : billingAddress)!.line1 }}</div>
                     <div>{{ (kind === 'shipping' ? shippingAddress : billingAddress)!.city }}, {{ (kind === 'shipping' ? shippingAddress : billingAddress)!.region }} {{ (kind === 'shipping' ? shippingAddress : billingAddress)!.postalCode }}</div>
@@ -397,7 +396,7 @@ onMounted(() => {
               </template>
             </v-autocomplete>
 
-            <div v-if="lineItems.length === 0" class="text-body-2 text-medium-emphasis text-center pa-6 rounded-lg" style="background: rgba(var(--v-theme-on-surface), 0.03)">
+            <div v-if="lineItems.length === 0" class="text-body-2 text-medium-emphasis text-center pa-6 rounded-lg cdo-empty">
               No items yet — search the catalog above or add a custom item.
             </div>
 
@@ -409,7 +408,7 @@ onMounted(() => {
 
                 <template v-if="li.custom">
                   <v-text-field v-model="li.name" label="Item name *" hide-details class="flex-grow-1" />
-                  <v-text-field v-model.number="li.price" label="Price" prefix="$" type="number" hide-details style="max-width: 120px" />
+                  <v-text-field v-model.number="li.price" label="Price" prefix="$" type="number" hide-details class="cdo-price" />
                 </template>
                 <template v-else>
                   <div class="flex-grow-1 min-width-0">
@@ -419,12 +418,21 @@ onMounted(() => {
                 </template>
 
                 <div class="d-flex align-center gap-1 flex-shrink-0">
-                  <v-btn icon="minus" variant="text" size="x-small" aria-label="Decrease quantity" @click="li.qty > 1 ? li.qty-- : removeLine(index)"></v-btn>
-                  <span class="text-body-2 font-weight-bold text-center" style="min-width: 24px">{{ li.qty }}</span>
-                  <v-btn icon="plus" variant="text" size="x-small" aria-label="Increase quantity" @click="li.qty++"></v-btn>
+                  <v-btn icon variant="text" size="x-small" aria-label="Decrease quantity" @click="li.qty > 1 ? li.qty-- : removeLine(index)">
+                    <v-icon>minus</v-icon>
+                    <v-tooltip activator="parent" location="top">Decrease quantity</v-tooltip>
+                  </v-btn>
+                  <span class="text-body-2 font-weight-bold text-center cdo-qty">{{ li.qty }}</span>
+                  <v-btn icon variant="text" size="x-small" aria-label="Increase quantity" @click="li.qty++">
+                    <v-icon>plus</v-icon>
+                    <v-tooltip activator="parent" location="top">Increase quantity</v-tooltip>
+                  </v-btn>
                 </div>
-                <span class="font-weight-bold text-body-2 text-right flex-shrink-0" style="min-width: 72px">${{ (li.price * li.qty).toFixed(2) }}</span>
-                <v-btn icon="trash-2" variant="text" size="x-small" color="error" aria-label="Remove item" class="flex-shrink-0" @click="removeLine(index)"></v-btn>
+                <span class="font-weight-bold text-body-2 text-right flex-shrink-0 cdo-line-total">${{ (li.price * li.qty).toFixed(2) }}</span>
+                <v-btn icon variant="text" size="x-small" color="error" aria-label="Remove item" class="flex-shrink-0" @click="removeLine(index)">
+                  <v-icon>trash-2</v-icon>
+                  <v-tooltip activator="parent" location="top">Remove item</v-tooltip>
+                </v-btn>
               </div>
             </div>
           </v-card>
@@ -448,7 +456,7 @@ onMounted(() => {
               </div>
 
               <div class="d-flex gap-2 align-center my-1">
-                <v-select v-model="discount.type" :items="['None', 'Percentage', 'Fixed']" label="Discount" hide-details style="max-width: 130px" />
+                <v-select v-model="discount.type" :items="['None', 'Percentage', 'Fixed']" label="Discount" hide-details class="cdo-discount-type" />
                 <v-text-field
                   v-if="discount.type !== 'None'"
                   v-model.number="discount.value"
@@ -467,7 +475,7 @@ onMounted(() => {
                 <span>{{ shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}` }}</span>
               </div>
 
-              <v-divider class="my-2" style="opacity: 0.5" />
+              <v-divider class="my-2" />
               <div class="d-flex justify-space-between text-body-1 font-weight-bold">
                 <span>Total</span><span class="text-primary">${{ total.toFixed(2) }}</span>
               </div>
@@ -479,7 +487,7 @@ onMounted(() => {
             <MpSectionHeader title="Ready to Convert?" />
             <div class="d-flex flex-column gap-2 mt-2">
               <div v-for="item in checklist" :key="item.label" class="d-flex align-center gap-2">
-                <v-icon :color="item.done ? 'success' : 'medium-emphasis'" size="17">{{ item.done ? 'circle-check' : 'circle' }}</v-icon>
+                <v-icon :color="item.done ? 'success' : undefined" :class="{ 'text-medium-emphasis': !item.done }" size="16">{{ item.done ? 'circle-check' : 'circle-dashed' }}</v-icon>
                 <span class="text-body-2" :class="item.done ? '' : 'text-medium-emphasis'">{{ item.label }}</span>
               </div>
             </div>
@@ -543,17 +551,17 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .cdo-border-b {
-  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .cdo-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) var(--mp-layout-inboxRailPanelWidth);
+  gap: var(--mp-space-20);
   align-items: start;
-  max-width: 1180px;
+  max-width: var(--mp-layout-contentMaxWidth);
   margin: 0 auto;
 }
 
@@ -562,35 +570,48 @@ onMounted(() => {
   top: 0;
 }
 
-@media (max-width: 1000px) {
+.cdo-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--mp-space-80) * 2), 1fr));
+  gap: var(--mp-space-12) var(--mp-space-20);
+}
+
+.cdo-address-row {
+  display: flex;
+  gap: var(--mp-space-24);
+}
+
+@media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
   .cdo-layout {
     grid-template-columns: 1fr;
   }
   .cdo-sidebar {
     position: static;
   }
-}
-
-.cdo-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px 20px;
-}
-
-.cdo-address-row {
-  display: flex;
-  gap: 24px;
-}
-
-@media (max-width: 800px) {
   .cdo-address-row {
     flex-direction: column;
   }
 }
 
-.cdo-line {
-  padding: 10px 12px;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 12px;
+/* Sub-labels inside a card: the shared label size, not a heading utility. */
+.cdo-label {
+  font-size: var(--mp-text-label-fontSize);
+  font-weight: var(--mp-text-label-fontWeight);
 }
+.cdo-address { line-height: var(--mp-lineHeight-normal); }
+
+.cdo-empty { background: var(--surface-secondary); }
+
+.cdo-line {
+  padding: var(--mp-space-10) var(--mp-space-12);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-12);
+}
+
+/* Control widths — token sums until a field-width ramp exists. */
+.cdo-channel { max-width: var(--mp-component-toolbar-searchWidth); }
+.cdo-price { max-width: calc(var(--mp-space-80) + var(--mp-space-40)); }
+.cdo-discount-type { max-width: calc(var(--mp-space-80) + var(--mp-space-48)); }
+.cdo-qty { min-width: var(--mp-space-24); font-variant-numeric: tabular-nums; }
+.cdo-line-total { min-width: var(--mp-space-80); font-variant-numeric: tabular-nums; }
 </style>

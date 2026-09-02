@@ -141,7 +141,7 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
       :subtitle="`${store.draftOrders.length} drafts · Create manual orders on behalf of customers`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportDrafts">Export</v-btn>
+        <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="exportDrafts">Export</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="goCreate">New Draft Order</v-btn>
       </template>
     </MpPageHeader>
@@ -211,7 +211,6 @@ const { visibleHeaders } = useResponsiveTableHeaders(headers)
             :description="search || activeFilterEntries.length ? 'Try a different search term or clear the filters.' : 'Create a manual order for a customer or wholesale buyer.'"
             :action-label="!search && !activeFilterEntries.length ? 'New Draft Order' : undefined"
             action-icon="plus"
-            class="py-10"
             @action="goCreate"
           />
         </template>

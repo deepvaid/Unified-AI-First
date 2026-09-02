@@ -71,7 +71,7 @@ const barPath = computed(() => heroBars
           </v-btn>
         </div>
 
-        <v-card flat border rounded="lg" class="pa-8 commerce-landing__hero-card">
+        <v-card flat border rounded="lg" class="commerce-landing__hero-card">
           <div class="commerce-landing__hero-metrics">
             <div
               v-for="metric in heroMetrics"
@@ -79,7 +79,7 @@ const barPath = computed(() => heroBars
               class="commerce-landing__hero-metric"
             >
               <span class="commerce-landing__hero-metric-head">
-                <v-icon size="14" class="commerce-landing__hero-metric-icon">{{ metric.icon }}</v-icon>
+                <v-icon size="16" class="commerce-landing__hero-metric-icon">{{ metric.icon }}</v-icon>
                 <span class="commerce-landing__hero-metric-label">{{ metric.label }}</span>
               </span>
               <span class="commerce-landing__hero-metric-value">{{ metric.value }}</span>
@@ -159,7 +159,7 @@ const barPath = computed(() => heroBars
           flat
           border
           rounded="lg"
-          class="pa-8 commerce-landing__capability"
+          class="commerce-landing__capability"
         >
           <div class="commerce-landing__capability-inner">
             <div class="commerce-landing__capability-copy">
@@ -185,41 +185,41 @@ const barPath = computed(() => heroBars
 .commerce-landing {
   display: flex;
   flex-direction: column;
-  gap: 72px;
-  padding-bottom: 96px;
+  gap: var(--mp-space-80);
+  padding-bottom: var(--mp-space-80);
   color: var(--text-primary);
 }
 
 .commerce-landing__hero-inner {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
-  gap: 48px;
+  gap: var(--mp-space-48);
   align-items: center;
-  max-width: 1120px;
+  max-width: var(--mp-layout-contentMaxWidth);
   margin: 0 auto;
-  padding: 8px 0 32px;
+  padding: var(--mp-space-8) 0 var(--mp-space-32);
 }
 
 .commerce-landing__eyebrow {
   display: inline-flex;
   align-items: center;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: var(--accent-subtle-bg);
-  color: var(--accent-default);
+  padding: var(--mp-space-6) var(--mp-space-14);
+  border-radius: var(--mp-radius-full);
+  background: var(--accent-soft);
+  color: var(--accent-on-container);
   font-size: var(--mp-fontSize-12);
   font-weight: var(--mp-fontWeight-semibold);
-  letter-spacing: 0.02em;
-  margin-bottom: 20px;
+  letter-spacing: var(--mp-letterSpacing-wide);
+  margin-bottom: var(--mp-space-20);
 }
 
 .commerce-landing__title {
   font-family: var(--mp-fontFamily-base);
   font-weight: var(--mp-fontWeight-heavy);
-  font-size: clamp(2.4rem, 4.2vw, 3.6rem);
-  line-height: 1.08;
+  font-size: clamp(var(--mp-fontSize-40), 4.2vw, var(--mp-display-lg-fontSize));
+  line-height: var(--mp-lineHeight-display);
   letter-spacing: var(--mp-letterSpacing-tighter);
-  margin: 0 0 20px;
+  margin: 0 0 var(--mp-space-20);
   color: var(--text-primary);
 }
 
@@ -229,45 +229,50 @@ const barPath = computed(() => heroBars
 }
 
 .commerce-landing__subtitle {
-  font-size: 1.06rem;
-  line-height: 1.55;
+  font-size: var(--mp-fontSize-16);
+  line-height: var(--mp-lineHeight-normal);
   color: var(--text-muted);
-  margin: 0 0 32px;
-  max-width: 440px;
+  margin: 0 0 var(--mp-space-32);
+  max-width: var(--mp-component-state-measure);
 }
 
-.commerce-landing__cta {
-  padding-inline: 28px !important;
+/* Specificity over Vuetify's size class, so no !important is needed. */
+.v-btn.commerce-landing__cta {
+  padding-inline: var(--mp-space-28);
   font-weight: var(--mp-fontWeight-semibold);
 }
 
+/* Card insets come from component.card.*, never a pa-* utility on the root. */
 .commerce-landing__hero-card {
   width: 100%;
-  max-width: 480px;
+  max-width: var(--mp-component-state-measureWide);
   margin-left: auto;
-  gap: 20px;
+  padding: var(--mp-component-card-paddingSpacious);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-space-20);
 }
 
 .commerce-landing__hero-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
+/* Tiles inside the bordered card separate by fill, not by a second border. */
 .commerce-landing__hero-metric {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
+  gap: var(--mp-space-6);
+  padding: var(--mp-space-14) var(--mp-space-16);
   border-radius: var(--mp-radius-12);
-  background: var(--surface-primary);
+  background: var(--surface-secondary);
 }
 
 .commerce-landing__hero-metric-head {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
   color: var(--text-muted);
 }
 
@@ -276,30 +281,32 @@ const barPath = computed(() => heroBars
 }
 
 .commerce-landing__hero-metric-label {
-  font-size: var(--mp-fontSize-11);
-  text-transform: uppercase;
-  letter-spacing: var(--mp-letterSpacing-eyebrow);
-  font-weight: var(--mp-fontWeight-semibold);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--text-muted);
 }
 
 .commerce-landing__hero-metric-value {
-  font-size: 1.5rem;
+  font-size: var(--mp-fontSize-24);
   font-weight: var(--mp-fontWeight-bold);
   color: var(--text-primary);
   letter-spacing: var(--mp-letterSpacing-tight);
+  font-variant-numeric: tabular-nums;
 }
 
+/* The svg is taken out of flow so the box keeps its own ratio rather than
+   inheriting the viewBox's 100:80. */
 .commerce-landing__hero-chart {
+  position: relative;
   border-radius: var(--mp-radius-12);
-  background: var(--surface-primary);
-  border: 1px solid var(--border-subtle);
-  padding: 16px;
-  height: 132px;
+  background: var(--surface-secondary);
+  aspect-ratio: 16 / 5;
 
   svg {
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    inset: var(--mp-space-16);
+    width: auto;
+    height: auto;
     display: block;
   }
 }
@@ -307,78 +314,77 @@ const barPath = computed(() => heroBars
 .commerce-landing__hero-footer {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .commerce-landing__hero-footer-cell {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
+  gap: var(--mp-space-6);
+  padding: var(--mp-space-14) var(--mp-space-16);
   border-radius: var(--mp-radius-12);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-primary);
+  background: var(--surface-secondary);
 }
 
 .commerce-landing__hero-footer-value {
-  font-size: 1.25rem;
+  font-size: var(--mp-fontSize-20);
   font-weight: var(--mp-fontWeight-bold);
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .commerce-landing__hero-footer-status {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
   font-size: var(--mp-fontSize-14);
   color: var(--text-primary);
 }
 
 .commerce-landing__status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgb(var(--v-theme-success));
-  box-shadow: 0 0 0 3px rgb(var(--v-theme-success-container));
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-full);
+  background: var(--pos);
+  box-shadow: 0 0 0 var(--mp-space-2) var(--pos-soft);
 }
 
+/* A rounded band inside the content column — no bleed past the shell inset. */
 .commerce-landing__trust {
-  background: var(--accent-subtle-bg);
-  padding: 28px 0;
-  margin: 0 calc(-1 * var(--mp-space-24));
+  background: var(--accent-soft);
+  border-radius: var(--mp-component-card-radius);
+  padding: var(--mp-space-28) var(--mp-space-32);
 }
 
 .commerce-landing__trust-inner {
   display: flex;
   align-items: center;
-  gap: 40px;
-  max-width: 1120px;
+  gap: var(--mp-space-40);
+  max-width: var(--mp-layout-contentMaxWidth);
   margin: 0 auto;
-  padding: 0 var(--mp-space-24);
   flex-wrap: wrap;
 }
 
 .commerce-landing__trust-label {
   font-size: var(--mp-fontSize-12);
   font-weight: var(--mp-fontWeight-semibold);
-  color: var(--text-primary);
-  line-height: 1.2;
+  color: var(--accent-on-container);
+  line-height: var(--mp-lineHeight-tight);
   flex-shrink: 0;
 }
 
 .commerce-landing__trust-brands {
   display: flex;
   align-items: center;
-  gap: 44px;
+  gap: var(--mp-space-40);
   flex-wrap: wrap;
   flex: 1;
   justify-content: space-around;
 }
 
 .commerce-landing__trust-brand {
-  font-size: 1.05rem;
-  color: var(--text-primary);
-  opacity: 0.9;
+  font-size: var(--mp-fontSize-16);
+  color: var(--accent-on-container);
   text-transform: uppercase;
 }
 
@@ -386,12 +392,12 @@ const barPath = computed(() => heroBars
   max-width: 720px;
   margin: 0 auto;
   text-align: center;
-  font-size: 1.02rem;
-  line-height: 1.6;
+  font-size: var(--mp-fontSize-16);
+  line-height: var(--mp-lineHeight-normal);
   color: var(--text-muted);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--mp-space-16);
 
   strong {
     color: var(--text-primary);
@@ -404,62 +410,66 @@ const barPath = computed(() => heroBars
 }
 
 .commerce-landing__capabilities {
-  max-width: 1120px;
+  max-width: var(--mp-layout-contentMaxWidth);
   margin: 0 auto;
   width: 100%;
 }
 
 .commerce-landing__capabilities-head {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: var(--mp-space-40);
 }
 
 .commerce-landing__section-title {
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-size: clamp(var(--mp-fontSize-28), 3vw, var(--mp-fontSize-40));
   font-weight: var(--mp-fontWeight-heavy);
   letter-spacing: var(--mp-letterSpacing-tighter);
-  margin: 0 0 8px;
+  margin: 0 0 var(--mp-space-8);
   color: var(--text-primary);
 }
 
 .commerce-landing__section-subtitle {
   margin: 0;
   color: var(--text-muted);
-  font-size: 1rem;
+  font-size: var(--mp-fontSize-16);
 }
 
 .commerce-landing__capabilities-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--mp-space-24);
+}
+
+.commerce-landing__capability {
+  padding: var(--mp-component-card-paddingSpacious);
 }
 
 .commerce-landing__capability-inner {
   display: grid;
   grid-template-columns: 1.3fr 1fr;
-  gap: 32px;
+  gap: var(--mp-space-32);
   align-items: center;
 }
 
 .commerce-landing__capability-copy {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .commerce-landing__capability-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: var(--mp-space-40);
+  height: var(--mp-space-40);
   border-radius: var(--mp-radius-12);
-  background: var(--accent-subtle-bg);
-  color: var(--accent-default);
+  background: var(--accent-soft);
+  color: var(--accent-on-container);
 }
 
 .commerce-landing__capability-title {
-  font-size: 1.25rem;
+  font-size: var(--mp-fontSize-20);
   font-weight: var(--mp-fontWeight-bold);
   margin: 0;
   color: var(--text-primary);
@@ -468,7 +478,7 @@ const barPath = computed(() => heroBars
 .commerce-landing__capability-body {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.55;
+  line-height: var(--mp-lineHeight-normal);
   max-width: 520px;
 }
 
@@ -486,10 +496,10 @@ const barPath = computed(() => heroBars
   color: var(--text-disabled);
 }
 
-@media (max-width: 960px) {
+@media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
   .commerce-landing__hero-inner {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: var(--mp-space-32);
   }
 
   .commerce-landing__hero-card {
@@ -499,13 +509,17 @@ const barPath = computed(() => heroBars
 
   .commerce-landing__capability-inner {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: var(--mp-space-20);
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: ($mp-layout-breakpointCompact - 0.02px)) {
   .commerce-landing {
-    gap: 56px;
+    gap: var(--mp-space-48);
+  }
+
+  .commerce-landing__trust {
+    padding: var(--mp-space-24) var(--mp-space-20);
   }
 
   .commerce-landing__hero-metrics {
