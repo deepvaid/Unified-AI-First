@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpChatBubble from '@/components/MpChatBubble.vue'
 import MpListRow from '@/components/MpListRow.vue'
@@ -27,10 +27,15 @@ const props = withDefaults(defineProps<{
   variant?: 'pane' | 'page'
   /** Rail panel to open on mount (the full page opens Customer Info by default). */
   defaultRail?: 'contact' | 'tags' | 'orders' | null
+  /** Render a back control (shown below the split breakpoint, where the list is hidden). */
+  showBack?: boolean
 }>(), {
   variant: 'pane',
   defaultRail: null,
+  showBack: false,
 })
+
+const emit = defineEmits<{ back: [] }>()
 
 const store = useTicketsStore()
 const route = useRoute()
@@ -39,6 +44,10 @@ const toast = useToast()
 const accountId = computed(() => route.params.accountId as string)
 
 const ticket = computed(() => store.find(props.ticketId))
+
+const eyebrow = computed(() =>
+  [ticket.value?.number, ticket.value?.channel, ticket.value?.inbox].filter(Boolean).join(' · '),
+)
 
 // ── Formatting ───────────────────────────────────────────────────────────────
 function formatAt(iso: string): string {
@@ -50,6 +59,8 @@ function formatAt(iso: string): string {
 
 const initials = (name: string) =>
   name.split(' ').map(part => part[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
+
+const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 // ── Feed: messages, optionally interleaved with system activities ────────────
 const showActivities = ref(false)
@@ -67,30 +78,55 @@ const feed = computed<FeedItem[]>(() => {
   return items.sort((a, b) => a.time.localeCompare(b.time))
 })
 
-// ── Property bar (inline-editable Priority / Type / Status / Agent) ──────────
+// The thread scrolls on its own; the composer is docked below it, so the
+// latest message has to be brought into view explicitly.
+const feedEl = ref<HTMLElement | null>(null)
+async function scrollFeedToEnd(smooth = true) {
+  await nextTick()
+  const el = feedEl.value
+  if (!el) return
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  el.scrollTo({ top: el.scrollHeight, behavior: smooth && !reduce ? 'smooth' : 'auto' })
+}
+
+// ── Property row (inline-editable Priority / Type / Status / Agent) ──────────
 const priorityDot: Record<TicketPriority, string> = { Low: 'primary', Medium: 'warning', High: 'error' }
 
-function setPriority(value: TicketPriority) {
-  store.updateTicket(props.ticketId, { priority: value })
-  toast.success(`Priority updated to ${value}`)
-}
-function setType(value: string) {
-  store.updateTicket(props.ticketId, { type: value })
-  toast.success(`Type updated to ${value}`)
-}
-function setStatus(value: TicketStatus) {
-  store.updateTicket(props.ticketId, { status: value })
-  toast.success(`Status updated to ${value}`)
-}
-function setAgent(value: string) {
-  store.updateTicket(props.ticketId, { assignee: value })
-  toast.success(`Assigned to ${value}`)
+const propertyMenus = computed(() => {
+  const t = ticket.value
+  if (!t) return []
+  return [
+    { key: 'priority', label: 'Priority', icon: null, value: t.priority, options: TICKET_PRIORITIES as readonly string[] },
+    { key: 'type', label: 'Type', icon: 'tag', value: t.type || 'None', options: TICKET_TYPES as readonly string[] },
+    { key: 'status', label: 'Status', icon: 'circle-dot', value: t.status, options: TICKET_STATUSES as readonly string[] },
+    { key: 'agent', label: 'Agent', icon: 'user', value: t.assignee || 'Unassigned', options: TICKET_AGENTS as readonly string[] },
+  ]
+})
+
+function setProperty(key: string, value: string) {
+  if (key === 'priority') {
+    store.updateTicket(props.ticketId, { priority: value as TicketPriority })
+    toast.success(`Priority updated to ${value}`)
+  } else if (key === 'type') {
+    store.updateTicket(props.ticketId, { type: value })
+    toast.success(`Type updated to ${value}`)
+  } else if (key === 'status') {
+    store.updateTicket(props.ticketId, { status: value as TicketStatus })
+    toast.success(`Status updated to ${value}`)
+  } else {
+    store.updateTicket(props.ticketId, { assignee: value })
+    toast.success(`Assigned to ${value}`)
+  }
 }
 
 // ── Right rail panels ────────────────────────────────────────────────────────
 type RailPanel = 'contact' | 'tags' | 'orders'
 const railOpen = ref<RailPanel | null>(props.defaultRail)
-watch(() => props.ticketId, () => { railOpen.value = props.defaultRail })
+watch(() => props.ticketId, () => {
+  railOpen.value = props.defaultRail
+  closeComposer()
+  scrollFeedToEnd(false)
+})
 function toggleRail(panel: RailPanel) {
   railOpen.value = railOpen.value === panel ? null : panel
 }
@@ -99,6 +135,7 @@ const railButtons: { panel: RailPanel; icon: string; label: string }[] = [
   { panel: 'tags', icon: 'tag', label: 'Tags' },
   { panel: 'orders', icon: 'package', label: 'Customer orders' },
 ]
+const activeRail = computed(() => railButtons.find(b => b.panel === railOpen.value))
 
 const orderSearch = ref('')
 const visibleOrders = computed(() => {
@@ -190,6 +227,7 @@ function openComposer(mode: ComposerMode) {
   composer.attachments = []
   showCc.value = false
   showBcc.value = false
+  scrollFeedToEnd()
 }
 function closeComposer() {
   composerMode.value = null
@@ -211,225 +249,274 @@ function send(setStatus?: TicketStatus) {
   const verb = composerMode.value === 'Note' ? 'Note added' : composerMode.value === 'Forward' ? 'Ticket forwarded' : 'Reply sent'
   toast.success(setStatus ? `${verb} — status set to ${setStatus}` : verb)
   closeComposer()
+  scrollFeedToEnd()
 }
 const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
 </script>
 
 <template>
-  <div v-if="ticket" class="d-flex flex-column h-100" style="min-height: 0;">
-    <!-- Property bar + header row -->
-    <div class="tw-head border-b px-4 py-2 d-flex align-center flex-wrap ga-2 flex-shrink-0">
-      <div class="d-flex align-center ga-4 flex-wrap">
-        <v-menu v-for="menu in [
-          { key: 'priority', label: 'Priority', value: ticket.priority, options: TICKET_PRIORITIES },
-          { key: 'type', label: 'Type', value: ticket.type || '--', options: TICKET_TYPES },
-          { key: 'status', label: 'Status', value: ticket.status, options: TICKET_STATUSES },
-          { key: 'agent', label: 'Agent', value: ticket.assignee || 'Unassigned', options: TICKET_AGENTS },
-        ]" :key="menu.key" location="bottom start">
-          <template #activator="{ props: activator }">
-            <button v-bind="activator" class="tw-prop" :aria-label="`${menu.label}: ${menu.value}. Change ${menu.label.toLowerCase()}`">
-              <span class="tw-prop__label mp-meta-label text-medium-emphasis">{{ menu.label }}</span>
-              <span class="tw-prop__value d-inline-flex align-center ga-1">
-                <span v-if="menu.key === 'priority'" class="tw-dot" :style="{ background: `rgb(var(--v-theme-${priorityDot[ticket.priority]}))` }"></span>
-                {{ menu.value }}
-                <v-icon size="14">chevron-down</v-icon>
-              </span>
-            </button>
-          </template>
-          <v-list role="menu">
-            <MpMenuItem
-              v-for="option in menu.options"
-              :key="option"
-              :title="option"
-              @click="menu.key === 'priority' ? setPriority(option as TicketPriority)
-                : menu.key === 'type' ? setType(option)
-                : menu.key === 'status' ? setStatus(option as TicketStatus)
-                : setAgent(option)"
-            />
-          </v-list>
-        </v-menu>
-      </div>
-
-      <v-spacer />
-
-      <v-switch
-        v-model="showActivities"
-        label="Show activities"
-        color="primary"
-        density="compact"
-        hide-details
-        inset
-        class="flex-grow-0"
-      ></v-switch>
+  <div v-if="ticket" class="tw d-flex flex-column h-100">
+    <!-- Title band (the full page already renders the subject in its page header) -->
+    <header v-if="variant === 'pane'" class="tw-head border-b d-flex align-center ga-3">
       <v-btn
-        v-if="variant === 'pane'"
-        icon="expand"
+        v-if="showBack"
+        class="tw-back"
+        icon="chevron-left"
         variant="text"
         size="small"
-        aria-label="Open ticket as a full page"
-        @click="expandToPage"
+        aria-label="Back to ticket list"
+        @click="emit('back')"
       ></v-btn>
-      <MpRowActionsMenu ariaLabel="Ticket actions">
-        <MpMenuItem title="Edit ticket details" icon="pencil" @click="openEditDetails" />
-        <MpMenuItem title="Mark as unread" icon="mail" @click="markUnread" />
-      </MpRowActionsMenu>
+      <div class="tw-head__title">
+        <div class="mp-meta-label text-medium-emphasis">{{ eyebrow }}</div>
+        <h2 class="mp-section-title text-truncate">{{ ticket.subject }}</h2>
+      </div>
+    </header>
+
+    <!-- Property row + pane actions -->
+    <div class="tw-props border-b d-flex align-center flex-wrap ga-2">
+      <v-menu v-for="menu in propertyMenus" :key="menu.key" location="bottom start">
+        <template #activator="{ props: activator }">
+          <button
+            v-bind="activator"
+            type="button"
+            class="tw-prop"
+            :aria-label="`${menu.label}: ${menu.value}. Change ${menu.label.toLowerCase()}`"
+          >
+            <span
+              v-if="menu.key === 'priority'"
+              class="tw-dot"
+              :style="{ background: `rgb(var(--v-theme-${priorityDot[ticket.priority]}))` }"
+            ></span>
+            <v-icon v-else size="16" class="tw-prop__icon">{{ menu.icon }}</v-icon>
+            <span class="tw-prop__label">{{ menu.label }}</span>
+            <span class="tw-prop__value">{{ menu.value }}</span>
+            <v-icon size="14" class="tw-prop__icon">chevron-down</v-icon>
+          </button>
+        </template>
+        <v-list role="menu">
+          <MpMenuItem
+            v-for="option in menu.options"
+            :key="option"
+            :title="option"
+            :active="option === menu.value"
+            @click="setProperty(menu.key, option)"
+          />
+        </v-list>
+      </v-menu>
+
+      <div class="d-flex align-center ga-1 ms-auto">
+        <v-tooltip text="Show activities" location="bottom">
+          <template #activator="{ props: tooltip }">
+            <v-btn
+              v-bind="tooltip"
+              icon="history"
+              variant="text"
+              size="small"
+              :color="showActivities ? 'primary' : undefined"
+              :aria-pressed="showActivities"
+              aria-label="Show activities"
+              @click="showActivities = !showActivities"
+            ></v-btn>
+          </template>
+        </v-tooltip>
+        <v-tooltip v-if="variant === 'pane'" text="Open as a full page" location="bottom">
+          <template #activator="{ props: tooltip }">
+            <v-btn
+              v-bind="tooltip"
+              icon="expand"
+              variant="text"
+              size="small"
+              aria-label="Open ticket as a full page"
+              @click="expandToPage"
+            ></v-btn>
+          </template>
+        </v-tooltip>
+        <MpRowActionsMenu ariaLabel="Ticket actions">
+          <MpMenuItem title="Edit ticket details" icon="pencil" @click="openEditDetails" />
+          <MpMenuItem title="Mark as unread" icon="mail" @click="markUnread" />
+        </MpRowActionsMenu>
+      </div>
     </div>
 
-    <!-- Body: thread + right rail -->
-    <div class="d-flex flex-grow-1" style="min-height: 0;">
-      <!-- Thread -->
-      <div class="flex-grow-1 overflow-y-auto pa-4 d-flex flex-column ga-4" style="min-width: 0;">
-        <template v-for="item in feed" :key="item.kind === 'message' ? `m${item.message.id}` : `a${item.activity.id}`">
-          <MpChatBubble
-            v-if="item.kind === 'message'"
-            side="start"
-            :tone="item.message.role === 'customer' ? 'accent' : 'neutral'"
-            :author="`${item.message.author} · ${item.message.action} · ${formatAt(item.message.time)}`"
-            class="tw-bubble"
-          >
-            <template v-if="variant === 'page'" #avatar>
-              <v-avatar size="32" :color="item.message.role === 'customer' ? 'primary' : 'secondary'">
-                <span class="text-caption text-white">{{ initials(item.message.author) }}</span>
-              </v-avatar>
-            </template>
-            <span v-if="item.message.to" class="d-block text-caption text-medium-emphasis mb-1">To: {{ item.message.to }}</span>
-            {{ item.message.body }}
-            <template v-if="item.message.role === 'note'" #footer>
-              <span class="d-inline-flex align-center ga-1 text-caption text-medium-emphasis">
-                <v-icon size="12">lock</v-icon> Internal note — not visible to the customer
+    <!-- Body: thread column (feed + docked footer) beside the right rail -->
+    <div class="tw-body d-flex flex-grow-1">
+      <div class="tw-thread d-flex flex-column flex-grow-1">
+        <div ref="feedEl" class="tw-feed flex-grow-1 overflow-y-auto d-flex flex-column">
+          <template v-for="item in feed" :key="item.kind === 'message' ? `m${item.message.id}` : `a${item.activity.id}`">
+            <MpChatBubble
+              v-if="item.kind === 'message'"
+              side="start"
+              :tone="item.message.role === 'customer' ? 'accent' : 'neutral'"
+              :author="item.message.author"
+              :time="formatAt(item.message.time)"
+              class="tw-bubble"
+              :class="{ 'tw-bubble--note': item.message.role === 'note' }"
+            >
+              <template #avatar>
+                <v-avatar v-if="item.message.role === 'customer'" size="28" color="primary">
+                  <span class="text-caption tw-strong">{{ initials(item.message.author) }}</span>
+                </v-avatar>
+                <v-avatar v-else-if="item.message.role === 'agent'" size="28" color="secondary">
+                  <span class="text-caption tw-strong">{{ initials(item.message.author) }}</span>
+                </v-avatar>
+                <v-avatar v-else-if="item.message.role === 'bot'" size="28" color="surface-variant">
+                  <v-icon size="16">bot</v-icon>
+                </v-avatar>
+                <v-avatar v-else size="28" color="warning" variant="tonal">
+                  <v-icon size="16">sticky-note</v-icon>
+                </v-avatar>
+              </template>
+              <span class="tw-bubble__meta d-block text-caption">
+                {{ sentence(item.message.action) }}<template v-if="item.message.to"> · To: {{ item.message.to }}</template>
               </span>
-            </template>
-          </MpChatBubble>
+              {{ item.message.body }}
+              <template v-if="item.message.role === 'note'" #footer>
+                <span class="d-inline-flex align-center ga-1">
+                  <v-icon size="12">lock</v-icon> Internal note — not visible to the customer
+                </span>
+              </template>
+            </MpChatBubble>
 
-          <MpListRow
-            v-else
-            variant="boxed"
-            density="compact"
-            :eyebrow="`${item.activity.actor} · ${formatAt(item.activity.time)}`"
-            :title="item.activity.text"
-          />
-        </template>
-
-        <!-- Composer -->
-        <v-card v-if="composerMode" flat border rounded="lg" class="flex-shrink-0">
-          <div class="d-flex align-center ga-2 px-3 py-2 border-b">
-            <v-select
-              :model-value="composerMode"
-              :items="[...COMPOSER_MODES]"
-              aria-label="Message type"
-              hide-details
+            <MpListRow
+              v-else
+              variant="boxed"
               density="compact"
-              style="max-width: 130px;"
-              @update:model-value="(mode: ComposerMode) => openComposer(mode)"
-            ></v-select>
-            <v-select
-              v-if="composerMode !== 'Note'"
-              v-model="composer.from"
-              :items="FROM_OPTIONS"
-              aria-label="From address"
+              :eyebrow="`${item.activity.actor} · ${formatAt(item.activity.time)}`"
+              :title="item.activity.text"
+            >
+              <template #lead>
+                <v-icon size="16" class="text-medium-emphasis">activity</v-icon>
+              </template>
+            </MpListRow>
+          </template>
+        </div>
+
+        <!-- Docked footer: the composer replaces the action bar while it is open -->
+        <div class="tw-foot border-t flex-shrink-0 d-flex flex-column">
+          <v-card v-if="composerMode" flat border rounded="lg" class="tw-composer ma-4">
+            <div class="d-flex align-center ga-2 px-3 py-2 border-b">
+              <!-- Composer chrome, not form fields: placeholder + aria-label, details
+                   suppressed so the control row can never shift height. -->
+              <v-select
+                :model-value="composerMode"
+                :items="[...COMPOSER_MODES]"
+                aria-label="Message type"
+                hide-details
+                density="compact"
+                class="tw-composer__mode"
+                @update:model-value="(mode: ComposerMode) => openComposer(mode)"
+              ></v-select>
+              <v-select
+                v-if="composerMode !== 'Note'"
+                v-model="composer.from"
+                :items="FROM_OPTIONS"
+                aria-label="From address"
+                hide-details
+                density="compact"
+                prepend-inner-icon="at-sign"
+                class="tw-composer__from"
+              ></v-select>
+              <v-spacer />
+              <v-btn icon="paperclip" variant="text" size="small" aria-label="Attach a file" @click="mockAttach(composer)"></v-btn>
+            </div>
+
+            <div v-if="composerMode !== 'Note'" class="d-flex align-center ga-2 px-3 py-1 border-b">
+              <v-text-field v-model="composer.to" placeholder="To" aria-label="To" hide-details density="compact"></v-text-field>
+              <v-btn v-if="!showCc" variant="text" size="small" class="text-none" @click="showCc = true">Cc</v-btn>
+              <v-btn v-if="!showBcc" variant="text" size="small" class="text-none" @click="showBcc = true">Bcc</v-btn>
+            </div>
+            <div v-if="showCc" class="px-3 py-1 border-b">
+              <v-text-field v-model="composer.cc" placeholder="Cc" aria-label="Cc" hide-details density="compact"></v-text-field>
+            </div>
+            <div v-if="showBcc" class="px-3 py-1 border-b">
+              <v-text-field v-model="composer.bcc" placeholder="Bcc" aria-label="Bcc" hide-details density="compact"></v-text-field>
+            </div>
+
+            <v-textarea
+              v-model="composer.body"
+              :placeholder="composerMode === 'Note' ? 'Write an internal note…' : 'Write your message…'"
+              :aria-label="composerMode === 'Note' ? 'Internal note' : 'Message body'"
+              rows="5"
               hide-details
-              density="compact"
-              prepend-inner-icon="at-sign"
-              style="max-width: 260px;"
-            ></v-select>
-            <v-spacer />
-            <v-btn icon="paperclip" variant="text" size="small" aria-label="Attach a file" @click="mockAttach(composer)"></v-btn>
-          </div>
+              class="tw-composer-body"
+            ></v-textarea>
 
-          <div v-if="composerMode !== 'Note'" class="d-flex align-center ga-2 px-3 py-1 border-b">
-            <v-text-field
-              v-model="composer.to"
-              placeholder="To"
-              aria-label="To"
-              hide-details
-              density="compact"
-            ></v-text-field>
-            <v-btn v-if="!showCc" variant="text" size="small" class="text-none" @click="showCc = true">Cc</v-btn>
-            <v-btn v-if="!showBcc" variant="text" size="small" class="text-none" @click="showBcc = true">Bcc</v-btn>
-          </div>
-          <div v-if="showCc" class="px-3 py-1 border-b">
-            <v-text-field v-model="composer.cc" placeholder="Cc" aria-label="Cc" hide-details density="compact"></v-text-field>
-          </div>
-          <div v-if="showBcc" class="px-3 py-1 border-b">
-            <v-text-field v-model="composer.bcc" placeholder="Bcc" aria-label="Bcc" hide-details density="compact"></v-text-field>
-          </div>
+            <div v-if="composer.attachments.length" class="d-flex flex-wrap ga-2 px-3 pt-2">
+              <v-chip v-for="(file, i) in composer.attachments" :key="file" size="small" closable
+                prepend-icon="paperclip" @click:close="composer.attachments.splice(i, 1)">{{ file }}</v-chip>
+            </div>
 
-          <!-- Formatting toolbar is intentionally inert: rich text is out of scope (see GAPS.md) -->
-          <div class="d-flex align-center ga-1 px-3 py-1 border-b" aria-hidden="true">
-            <v-btn v-for="icon in ['bold', 'italic', 'link', 'quote', 'list', 'list-ordered']" :key="icon"
-              :icon="icon" variant="text" size="x-small" disabled></v-btn>
-            <span class="text-caption text-disabled ml-2">Plain text — rich formatting isn't part of this prototype</span>
-          </div>
+            <div class="d-flex align-center ga-2 pa-3">
+              <v-btn variant="text" class="text-none" @click="closeComposer">Cancel</v-btn>
+              <!-- Rich text is out of scope (see GAPS.md); say so instead of showing dead controls. -->
+              <span class="text-caption text-medium-emphasis">Plain text</span>
+              <v-spacer />
+              <template v-if="composerMode === 'Note'">
+                <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSend" @click="send()">Add note</v-btn>
+              </template>
+              <template v-else>
+                <div class="d-inline-flex">
+                  <v-btn color="primary" variant="flat" class="text-none tw-send" :disabled="!canSend" @click="send()">Send</v-btn>
+                  <v-menu location="top end">
+                    <template #activator="{ props: activator }">
+                      <v-btn v-bind="activator" color="primary" variant="flat" icon="chevron-down" size="small"
+                        class="tw-send-caret" :disabled="!canSend" aria-label="Send and set status"></v-btn>
+                    </template>
+                    <v-list role="menu">
+                      <MpMenuItem v-for="status in SEND_AND_SET" :key="status"
+                        :title="`Send and set as ${status}`" @click="send(status)" />
+                    </v-list>
+                  </v-menu>
+                </div>
+              </template>
+            </div>
+          </v-card>
 
-          <v-textarea
-            v-model="composer.body"
-            :placeholder="composerMode === 'Note' ? 'Write an internal note…' : 'Write your message…'"
-            :aria-label="composerMode === 'Note' ? 'Internal note' : 'Message body'"
-            rows="5"
-            hide-details
-            class="tw-composer-body"
-          ></v-textarea>
-
-          <div v-if="composer.attachments.length" class="d-flex flex-wrap ga-2 px-3 pt-2">
-            <v-chip v-for="(file, i) in composer.attachments" :key="file" size="small" closable
-              prepend-icon="paperclip" @click:close="composer.attachments.splice(i, 1)">{{ file }}</v-chip>
+          <div v-else class="tw-actions d-flex align-center ga-2">
+            <v-btn color="primary" variant="flat" class="text-none" prepend-icon="reply"
+              @click="openComposer('Reply')">Reply</v-btn>
+            <v-btn variant="outlined" class="text-none" prepend-icon="forward"
+              @click="openComposer('Forward')">Forward</v-btn>
+            <v-btn variant="outlined" class="text-none" prepend-icon="file-pen"
+              @click="openComposer('Note')">Note</v-btn>
           </div>
-
-          <div class="d-flex align-center ga-2 pa-3">
-            <v-btn variant="outlined" class="text-none" @click="closeComposer">Cancel</v-btn>
-            <template v-if="composerMode === 'Note'">
-              <v-btn color="primary" variant="flat" class="text-none" :disabled="!canSend" @click="send()">Add note</v-btn>
-            </template>
-            <template v-else>
-              <div class="d-inline-flex">
-                <v-btn color="primary" variant="flat" class="text-none tw-send" :disabled="!canSend" @click="send()">Send</v-btn>
-                <v-menu location="top end">
-                  <template #activator="{ props: activator }">
-                    <v-btn v-bind="activator" color="primary" variant="flat" icon="chevron-down" size="small"
-                      class="tw-send-caret" :disabled="!canSend" aria-label="Send and set status"></v-btn>
-                  </template>
-                  <v-list role="menu">
-                    <MpMenuItem v-for="status in SEND_AND_SET" :key="status"
-                      :title="`Send and set as ${status}`" @click="send(status)" />
-                  </v-list>
-                </v-menu>
-              </div>
-            </template>
-          </div>
-        </v-card>
+        </div>
       </div>
 
-      <!-- Right rail -->
-      <div class="d-flex flex-shrink-0" style="min-height: 0;">
-        <div v-if="railOpen" class="tw-rail-panel border-l d-flex flex-column">
-          <div class="d-flex align-center ga-2 px-4 py-3 border-b">
-            <v-icon size="18">{{ railButtons.find(b => b.panel === railOpen)?.icon }}</v-icon>
-            <span class="text-body-2 font-weight-bold">{{ railButtons.find(b => b.panel === railOpen)?.label }}</span>
-            <v-btn v-if="railOpen === 'contact'" icon="pencil" variant="text" size="x-small"
-              aria-label="Edit contact" @click="openContactEdit"></v-btn>
+      <!-- Right rail: optional panel + icon strip -->
+      <div class="tw-aside d-flex flex-shrink-0">
+        <section v-if="railOpen && activeRail" class="tw-rail-panel border-l d-flex flex-column" :aria-label="activeRail.label">
+          <div class="tw-rail-panel__head d-flex align-center ga-2 border-b">
+            <v-icon size="18" class="text-medium-emphasis">{{ activeRail.icon }}</v-icon>
+            <span class="text-body-2 tw-strong text-truncate">{{ activeRail.label }}</span>
             <v-spacer />
-            <v-btn icon="x" variant="text" size="x-small" aria-label="Close panel" @click="railOpen = null"></v-btn>
+            <v-btn v-if="railOpen === 'contact'" icon="pencil" variant="text" size="small"
+              aria-label="Edit contact" @click="openContactEdit"></v-btn>
+            <v-btn icon="x" variant="text" size="small" aria-label="Close panel" @click="railOpen = null"></v-btn>
           </div>
 
-          <div class="pa-4 overflow-y-auto">
+          <div class="tw-rail-panel__body">
             <template v-if="railOpen === 'contact'">
-              <div class="d-flex flex-column ga-4">
+              <dl class="mp-label-value tw-dl">
                 <div>
-                  <div class="mp-meta-label text-medium-emphasis">Name</div>
-                  <RouterLink
-                    :to="{ name: 'AllContacts', params: { accountId } }"
-                    class="text-body-2 text-primary text-decoration-none d-inline-flex align-center ga-1"
-                  >{{ ticket.customer }} <v-icon size="13">external-link</v-icon></RouterLink>
+                  <dt class="mp-meta-label text-medium-emphasis">Name</dt>
+                  <dd>
+                    <RouterLink
+                      :to="{ name: 'AllContacts', params: { accountId } }"
+                      class="text-body-2 text-primary text-decoration-none d-inline-flex align-center ga-1"
+                    >{{ ticket.customer }} <v-icon size="14">external-link</v-icon></RouterLink>
+                  </dd>
                 </div>
                 <div>
-                  <div class="mp-meta-label text-medium-emphasis">Email</div>
-                  <div class="text-body-2">{{ ticket.customerEmail }}</div>
+                  <dt class="mp-meta-label text-medium-emphasis">Email</dt>
+                  <dd class="text-body-2">{{ ticket.customerEmail }}</dd>
                 </div>
                 <div>
-                  <div class="mp-meta-label text-medium-emphasis">Mobile no.</div>
-                  <div class="text-body-2">{{ ticket.customerPhone || '—' }}</div>
+                  <dt class="mp-meta-label text-medium-emphasis">Mobile no.</dt>
+                  <dd class="text-body-2">{{ ticket.customerPhone || '—' }}</dd>
                 </div>
-              </div>
+              </dl>
             </template>
 
             <template v-else-if="railOpen === 'tags'">
@@ -447,7 +534,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
             <template v-else>
               <v-text-field
                 v-model="orderSearch"
-                placeholder="Search"
+                placeholder="Search orders"
                 aria-label="Search customer orders"
                 prepend-inner-icon="search"
                 hide-details
@@ -469,38 +556,31 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
                     <td>{{ order.date }}</td>
                   </tr>
                   <tr v-if="!visibleOrders.length">
-                    <td colspan="3" class="text-center text-medium-emphasis">No data available</td>
+                    <td colspan="3" class="text-center text-caption text-medium-emphasis py-4">No orders found</td>
                   </tr>
                 </tbody>
               </v-table>
             </template>
           </div>
-        </div>
+        </section>
 
-        <div class="tw-rail border-l d-flex flex-column align-center py-3 ga-1">
-          <v-btn
-            v-for="button in railButtons"
-            :key="button.panel"
-            :icon="button.icon"
-            variant="text"
-            size="small"
-            :color="railOpen === button.panel ? 'primary' : undefined"
-            :aria-label="button.label"
-            :aria-pressed="railOpen === button.panel"
-            @click="toggleRail(button.panel)"
-          ></v-btn>
+        <div class="tw-rail border-l d-flex flex-column align-center ga-1" role="toolbar" aria-label="Ticket panels" aria-orientation="vertical">
+          <v-tooltip v-for="button in railButtons" :key="button.panel" :text="button.label" location="start">
+            <template #activator="{ props: tooltip }">
+              <v-btn
+                v-bind="tooltip"
+                :icon="button.icon"
+                :variant="railOpen === button.panel ? 'tonal' : 'text'"
+                :color="railOpen === button.panel ? 'primary' : undefined"
+                size="small"
+                :aria-label="button.label"
+                :aria-pressed="railOpen === button.panel"
+                @click="toggleRail(button.panel)"
+              ></v-btn>
+            </template>
+          </v-tooltip>
         </div>
       </div>
-    </div>
-
-    <!-- Action bar -->
-    <div class="d-flex align-center ga-2 px-4 py-3 border-t flex-shrink-0">
-      <v-btn color="primary" variant="flat" class="text-none" prepend-icon="reply"
-        @click="openComposer('Reply')">Reply</v-btn>
-      <v-btn variant="outlined" class="text-none" prepend-icon="forward"
-        @click="openComposer('Forward')">Forward</v-btn>
-      <v-btn variant="outlined" class="text-none" prepend-icon="file-pen"
-        @click="openComposer('Note')">Note</v-btn>
     </div>
 
     <!-- Edit Ticket Details drawer -->
@@ -550,34 +630,105 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
   />
 </template>
 
-<style scoped>
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-l { border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+<style scoped lang="scss">
+.tw { min-height: 0; }
 
-/* Inline property triggers: label + value read as one control. */
-.tw-prop {
-  display: inline-flex; align-items: center; gap: var(--mp-space-6);
-  border: 0; background: transparent; font: inherit; cursor: pointer;
-  border-radius: var(--mp-radius-8);
-  padding: var(--mp-space-2) var(--mp-space-6);
-  color: rgb(var(--v-theme-on-surface));
+.border-b { border-bottom: 1px solid var(--border-subtle); }
+.border-t { border-top: 1px solid var(--border-subtle); }
+.border-l { border-left: 1px solid var(--border-subtle); }
+
+/* Vuetify has no 600 utility; this is the one semibold hook in the workspace. */
+.tw-strong { font-weight: var(--mp-fontWeight-semibold); }
+
+/* ── Title band ─────────────────────────────────────────────────────────── */
+.tw-head {
+  flex-shrink: 0;
+  padding: var(--mp-space-16) var(--mp-component-card-padding);
 }
-.tw-prop:hover { background: rgba(var(--v-theme-on-surface), 0.06); }
-.tw-prop:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
-.tw-prop__value { font-size: var(--mp-font-size-13); font-weight: 600; }
+.tw-head__title { min-width: 0; flex: 1 1 auto; }
+.tw-head__title .mp-section-title { margin-top: var(--mp-space-2); }
+
+/* The back control only exists where the list is hidden (below the split breakpoint). */
+.tw-back { display: none; }
+
+/* ── Property row ───────────────────────────────────────────────────────── */
+.tw-props {
+  flex-shrink: 0;
+  padding: var(--mp-space-8) var(--mp-component-card-padding);
+}
+
+/* Inline property triggers read as compact field-chips: label + value as one control. */
+.tw-prop {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mp-space-6);
+  height: var(--mp-component-field-height-sm);
+  padding-inline: var(--mp-space-10);
+  border: 0;
+  border-radius: var(--mp-component-chip-radius);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
+}
+.tw-prop:hover { background: var(--accent-soft); }
+.tw-prop:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.tw-prop__icon { color: var(--on-surface-muted); }
+.tw-prop__label {
+  font-size: var(--mp-fontSize-12);
+  color: var(--on-surface-muted);
+}
+.tw-prop__value {
+  font-size: var(--mp-text-label-fontSize);
+  font-weight: var(--mp-fontWeight-semibold);
+}
 
 .tw-dot {
-  width: var(--mp-space-8); height: var(--mp-space-8);
-  border-radius: var(--mp-radius-full); display: inline-block;
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-full);
+  display: inline-block;
+  flex-shrink: 0;
 }
 
-/* The thread reads as documents, not chat: bubbles span the pane. */
-.tw-bubble { max-width: 100%; }
-.tw-bubble :deep(.mp-bubble) { max-width: 100%; width: 100%; }
+/* ── Body ───────────────────────────────────────────────────────────────── */
+.tw-body { min-height: 0; position: relative; isolation: isolate; }
+.tw-thread { min-width: 0; min-height: 0; }
 
-.tw-rail { width: 48px; }
-.tw-rail-panel { width: 300px; min-width: 0; }
+.tw-feed {
+  padding: var(--mp-component-card-padding);
+  gap: var(--mp-component-card-gap);
+}
+
+/* The thread reads as documents, not chat: bubbles span the column. */
+.tw-bubble { max-width: 100%; }
+.tw-bubble__meta {
+  color: var(--on-surface-muted);
+  margin-bottom: var(--mp-space-4);
+}
+
+/* Internal notes carry a warm tint through MpChatBubble's documented re-skin seam. */
+.tw-bubble.tw-bubble--note {
+  --mp-bubble-bg: var(--warn-soft);
+  --mp-bubble-fg: var(--warn-ink);
+  --mp-bubble-border: transparent;
+}
+.tw-bubble.tw-bubble--note .tw-bubble__meta { color: inherit; }
+
+/* Docked footer: the thread keeps at least 40% of the pane. */
+.tw-foot { max-height: 60%; }
+.tw-composer {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+.tw-actions { padding: var(--mp-space-12) var(--mp-component-card-padding); }
+
+/* Composer selects share the toolbar search widths so the chrome sits on one ramp. */
+.tw-composer__mode { max-width: calc(var(--mp-component-toolbar-searchMinWidth) / 2); }
+.tw-composer__from { max-width: var(--mp-component-toolbar-searchWidth); }
 
 /* Split button: flat pair, no double radius between the halves. */
 .tw-send { border-top-right-radius: 0; border-bottom-right-radius: 0; }
@@ -585,4 +736,54 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
 
 /* The composer body is chrome inside a card, not a labelled form field. */
 .tw-composer-body :deep(.v-field__outline) { display: none; }
+
+/* ── Right rail ─────────────────────────────────────────────────────────── */
+.tw-aside { min-height: 0; }
+
+.tw-rail {
+  width: var(--mp-space-48);
+  padding-block: var(--mp-space-8);
+}
+
+.tw-rail-panel {
+  width: var(--mp-layout-inboxRailPanelWidth);
+  min-width: 0;
+  min-height: 0;
+}
+.tw-rail-panel__head {
+  flex-shrink: 0;
+  min-height: var(--mp-component-control-height);
+  padding: var(--mp-space-8) var(--mp-space-12) var(--mp-space-8) var(--mp-space-16);
+}
+.tw-rail-panel__body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--mp-space-16);
+}
+
+/* One column of label/value pairs at panel width. */
+.tw-dl {
+  grid-template-columns: 1fr;
+  gap: var(--mp-space-16);
+}
+.tw-dl dd { margin: 0; margin-top: var(--mp-space-2); }
+
+/* ── Below the split breakpoint: back control appears, the panel overlays the thread ── */
+@media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
+  .tw-back { display: inline-flex; }
+
+  .tw-head,
+  .tw-props { padding-inline: var(--mp-space-16); }
+  .tw-feed { padding: var(--mp-space-16); }
+  .tw-actions { padding-inline: var(--mp-space-16); }
+
+  .tw-rail-panel {
+    position: absolute;
+    inset: 0 var(--mp-space-48) 0 0;
+    width: auto;
+    z-index: 1;
+    background: var(--surface-primary);
+  }
+}
 </style>
