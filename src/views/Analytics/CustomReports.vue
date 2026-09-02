@@ -21,6 +21,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useToast } from '@/composables/useToast'
 
 const store = useAnalyticsStore()
@@ -44,13 +45,17 @@ const typeQuickFilter = {
 }
 const typeFilter = ref<string[]>([])
 
+// Name, status and the row actions always show; type and the timestamp drop
+// out on narrower viewports so the table never side-scrolls on a phone.
 const headers = [
   { title: 'Name', key: 'name', sortable: true },
-  { title: 'Type', key: 'reportType', sortable: false },
+  { title: 'Type', key: 'reportType', sortable: false, hideBelow: 'md' as const },
   { title: 'Status', key: 'scheduleMode', sortable: false },
-  { title: 'Updated at', key: 'updatedAt', sortable: true },
+  { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'sm' as const },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end' as const, width: 96 },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
@@ -132,14 +137,14 @@ function syncAriaSort() {
   const ths = tableEl.value?.$el?.querySelectorAll('thead th')
   if (!ths) return
   ths.forEach((th, i) => {
-    const header = headers[i]
+    const header = visibleHeaders.value[i]
     if (!header?.sortable) return th.removeAttribute('aria-sort')
     const active = sortBy.value.find(sortItem => sortItem.key === header.key)
     th.setAttribute('aria-sort', active ? (active.order === 'desc' ? 'descending' : 'ascending') : 'none')
   })
 }
 
-watch([sortBy, loading], () => { void nextTick(syncAriaSort) }, { deep: true, immediate: true })
+watch([sortBy, loading, visibleHeaders], () => { void nextTick(syncAriaSort) }, { deep: true, immediate: true })
 
 function clearFilters() {
   search.value = ''
@@ -176,16 +181,13 @@ function clearFilters() {
         :total-count="filtered.length"
         @remove-filter="typeFilter = []"
         @clear-filters="clearFilters"
-      >
-        <template #actions>
-        </template>
-      </MpDataTableToolbar>
+      />
 
       <MpTableSkeleton v-if="loading" :rows="10" :columns="5" />
 
       <v-data-table
         v-else-if="filtered.length"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="filtered"
         :items-per-page="10"
         :items-per-page-options="[5, 10, 25, 50, 100]"
@@ -255,10 +257,3 @@ function clearFilters() {
     />
   </div>
 </template>
-
-<style scoped lang="scss">
-.crl-type-filter {
-  min-width: 200px;
-  max-width: 240px;
-}
-</style>
