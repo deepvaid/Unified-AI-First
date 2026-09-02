@@ -110,7 +110,6 @@ function exportCsv() {
             icon="bar-chart-2"
             :title="search || filterStatus.length ? 'No campaigns match your filters' : 'No campaigns in this range'"
             :description="search || filterStatus.length ? 'Try a different search or clear filters.' : 'Try a wider date range.'"
-            class="py-10"
           />
         </template>
       </v-data-table>
