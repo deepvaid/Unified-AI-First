@@ -1397,5 +1397,8 @@
   --mp-layout-searchMaxWidth: 560px;
   --mp-layout-contentMaxWidth: 1280px;
   --mp-layout-sectionRailWidth: 260px;
+  --mp-layout-inboxListWidth: 380px;
+  --mp-layout-inboxRailPanelWidth: 300px;
+  --mp-layout-breakpointSplit: 960px;
   --mp-layout-breakpointCompact: 640px;
 }
