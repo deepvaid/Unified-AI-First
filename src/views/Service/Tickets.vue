@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpFilterTabs from '@/components/MpFilterTabs.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpListRow from '@/components/MpListRow.vue'
 import MpDialog from '@/components/MpDialog.vue'
@@ -25,6 +26,8 @@ import {
   TICKET_TYPES,
   type Ticket,
   type TicketFilters,
+  type TicketPriority,
+  type TicketStatus,
 } from '@/stores/useTickets'
 import { useToast } from '@/composables/useToast'
 
@@ -58,6 +61,7 @@ function selectView(inboxKey: string, view: string) {
   currentView.value = view
   const saved = store.customViews.find(v => v.name === view)
   appliedFilters.value = saved ? { ...saved.filters } : emptyTicketFilters()
+  search.value = ''
   checked.value = []
   viewsMenuOpen.value = false
 }
@@ -66,11 +70,27 @@ function selectTrash() {
   currentInbox.value = 'trash'
   currentView.value = 'All Tickets'
   appliedFilters.value = emptyTicketFilters()
+  search.value = ''
   checked.value = []
   viewsMenuOpen.value = false
 }
 
+// ── Search + sort (list-local, not part of a saved view) ─────────────────────
+const search = ref('')
+
+const SORT_OPTIONS = [
+  { key: 'updated', label: 'Last updated' },
+  { key: 'created-desc', label: 'Newest created' },
+  { key: 'created-asc', label: 'Oldest created' },
+  { key: 'priority', label: 'Priority (high first)' },
+] as const
+type SortKey = (typeof SORT_OPTIONS)[number]['key']
+const sortKey = ref<SortKey>('updated')
+const PRIORITY_RANK: Record<TicketPriority, number> = { High: 0, Medium: 1, Low: 2 }
+
 // ── Filters drawer ────────────────────────────────────────────────────────────
+// Status is promoted to the quick-filter tabs above the list, so it is not in
+// the drawer — the same field never lives in both places.
 const filtersOpen = ref(false)
 const workingFilters = reactive<TicketFilters>(emptyTicketFilters())
 const appliedFilters = ref<TicketFilters>(emptyTicketFilters())
@@ -85,7 +105,7 @@ function applyFilters() {
   filtersOpen.value = false
 }
 function clearFilters() {
-  Object.assign(workingFilters, emptyTicketFilters())
+  Object.assign(workingFilters, { ...emptyTicketFilters(), status: [...workingFilters.status] })
 }
 
 const saveViewDialog = ref(false)
@@ -106,8 +126,18 @@ const contactOptions = computed(() =>
   [...new Set(store.tickets.map(t => `${t.customer} - ${t.customerEmail}`))],
 )
 
+// ── Status quick filter (tabs) ⇄ appliedFilters.status ───────────────────────
+const statusTab = computed<string>({
+  get: () => (appliedFilters.value.status.length === 1 ? appliedFilters.value.status[0]! : 'all'),
+  set: key => {
+    appliedFilters.value = { ...appliedFilters.value, status: key === 'all' ? [] : [key as TicketStatus] }
+  },
+})
+
 // ── The list ──────────────────────────────────────────────────────────────────
-const listTickets = computed<Ticket[]>(() => {
+// Everything except the status cut and the sort, so the tab counts can be
+// computed from the same base the tabs slice.
+const searchedTickets = computed<Ticket[]>(() => {
   let list = currentInbox.value === 'trash' ? store.trashedTickets : store.visibleTickets
   if (currentInbox.value !== 'all' && currentInbox.value !== 'trash') {
     list = list.filter(t => t.inbox === currentInbox.value)
@@ -116,7 +146,6 @@ const listTickets = computed<Ticket[]>(() => {
   if (currentView.value === 'High Priority Tickets') list = list.filter(t => t.priority === 'High')
 
   const f = appliedFilters.value
-  if (f.status.length) list = list.filter(t => f.status.includes(t.status))
   if (f.priority.length) list = list.filter(t => f.priority.includes(t.priority))
   if (f.channel.length) list = list.filter(t => t.channel && f.channel.includes(t.channel))
   if (f.type.length) list = list.filter(t => f.type.includes(t.type))
@@ -128,7 +157,36 @@ const listTickets = computed<Ticket[]>(() => {
   if (f.createdTo) list = list.filter(t => t.createdAt.slice(0, 10) <= f.createdTo)
   if (f.readStatus) list = list.filter(t => (f.readStatus === 'Unread') === t.unread)
 
-  return [...list].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  const q = search.value.trim().toLowerCase()
+  if (q) {
+    list = list.filter(t =>
+      [t.number, t.subject, t.customer, t.customerEmail, ...t.thread.map(m => m.body)]
+        .some(field => field.toLowerCase().includes(q)),
+    )
+  }
+  return list
+})
+
+const statusTabs = computed(() => [
+  { key: 'all', label: 'All', count: searchedTickets.value.length },
+  ...TICKET_STATUSES.map(status => ({
+    key: status,
+    label: status,
+    count: searchedTickets.value.filter(t => t.status === status).length,
+  })),
+])
+
+const listTickets = computed<Ticket[]>(() => {
+  const f = appliedFilters.value
+  const list = f.status.length ? searchedTickets.value.filter(t => f.status.includes(t.status)) : searchedTickets.value
+  const sorted = [...list]
+  switch (sortKey.value) {
+    case 'created-desc': return sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    case 'created-asc': return sorted.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    case 'priority': return sorted.sort((a, b) =>
+      PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] || b.updatedAt.localeCompare(a.updatedAt))
+    default: return sorted.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  }
 })
 
 function formatListDate(iso: string): string {
@@ -151,6 +209,10 @@ function openTicket(t: Ticket) {
   router.replace({ query: { ...route.query, selected: String(t.id) } })
   store.markRead(t.id)
   store.setActive(t.id)
+}
+
+function clearSelection() {
+  router.replace({ query: { ...route.query, selected: undefined } })
 }
 
 // ── Bulk selection ────────────────────────────────────────────────────────────
@@ -186,9 +248,7 @@ const deleteDialog = ref(false)
 function confirmDelete() {
   store.trashMany(checked.value)
   toast.success(`${checked.value.length} ticket${checked.value.length === 1 ? '' : 's'} moved to Trash`)
-  if (checked.value.includes(selectedId.value)) {
-    router.replace({ query: { ...route.query, selected: undefined } })
-  }
+  if (checked.value.includes(selectedId.value)) clearSelection()
   checked.value = []
 }
 
@@ -208,92 +268,153 @@ function newContact() {
 </script>
 
 <template>
-  <div class="pa-6 d-flex flex-column">
-    <MpPageHeader title="Tickets">
-      <template #actions>
-        <v-btn variant="outlined" class="text-none" prepend-icon="list-filter" @click="filtersOpen = true">
-          Filters
-        </v-btn>
-        <v-menu location="bottom end">
-          <template #activator="{ props: activator }">
-            <v-btn v-bind="activator" color="primary" variant="flat" class="text-none"
-              prepend-icon="plus" append-icon="chevron-down">New</v-btn>
-          </template>
-          <v-list role="menu">
-            <MpMenuItem title="New ticket" icon="ticket" @click="newTicket" />
-            <MpMenuItem title="New contact" icon="user-plus" @click="newContact" />
-          </v-list>
-        </v-menu>
-      </template>
-    </MpPageHeader>
+  <div class="mp-frame-fill tickets-shell d-flex flex-column">
+    <div class="tickets-head flex-shrink-0">
+      <MpPageHeader title="Tickets" density="compact">
+        <template #actions>
+          <v-btn variant="outlined" class="text-none" prepend-icon="list-filter" @click="filtersOpen = true">
+            Filters
+          </v-btn>
+          <v-menu location="bottom end">
+            <template #activator="{ props: activator }">
+              <v-btn v-bind="activator" color="primary" variant="flat" class="text-none"
+                prepend-icon="plus" append-icon="chevron-down">New</v-btn>
+            </template>
+            <v-list role="menu">
+              <MpMenuItem title="New ticket" icon="ticket" @click="newTicket" />
+              <MpMenuItem title="New contact" icon="user-plus" @click="newContact" />
+            </v-list>
+          </v-menu>
+        </template>
+      </MpPageHeader>
+    </div>
 
-    <div class="tickets-split d-flex ga-4 mt-4">
+    <div class="tickets-split" :class="{ 'tickets-split--has-selection': !!selectedTicket }">
       <!-- List panel -->
-      <v-card flat border rounded="lg" class="tickets-list d-flex flex-column flex-shrink-0">
-        <v-menu v-model="viewsMenuOpen" location="bottom start" :close-on-content-click="false">
-          <template #activator="{ props: activator }">
-            <button
-              v-bind="activator"
-              class="tickets-views-trigger d-flex align-center ga-2 px-4 border-b"
-              :aria-expanded="viewsMenuOpen"
-              aria-haspopup="menu"
-              aria-label="Change inbox and view"
-            >
-              <v-icon size="18">inbox</v-icon>
-              <span class="text-body-2 text-truncate">{{ currentLabel }}</span>
-              <v-spacer />
-              <v-icon size="16">{{ viewsMenuOpen ? 'chevron-up' : 'chevron-down' }}</v-icon>
-            </button>
-          </template>
-          <v-card flat border rounded="lg" class="py-1" width="300" max-height="420" style="overflow-y: auto;">
-            <template v-for="group in inboxGroups" :key="group.key">
-              <div class="mp-meta-label text-medium-emphasis px-4 pt-3 pb-1">{{ group.label }}</div>
-              <v-list density="compact" class="py-0">
+      <v-card flat border rounded="lg" class="tickets-list" :class="{ 'tickets-list--selecting': checked.length > 0 }">
+        <div class="tickets-toolbar border-b d-flex flex-column ga-2">
+          <div class="d-flex align-center ga-1">
+            <v-menu v-model="viewsMenuOpen" location="bottom start" :close-on-content-click="false">
+              <template #activator="{ props: activator }">
+                <button
+                  v-bind="activator"
+                  type="button"
+                  class="tickets-views-trigger d-flex align-center ga-2 flex-grow-1"
+                  :aria-expanded="viewsMenuOpen"
+                  aria-haspopup="menu"
+                  aria-label="Change inbox and view"
+                >
+                  <v-icon size="18" class="text-medium-emphasis">inbox</v-icon>
+                  <span class="text-body-2 font-weight-medium text-truncate">{{ currentLabel }}</span>
+                  <v-icon size="16" class="text-medium-emphasis ms-auto">{{ viewsMenuOpen ? 'chevron-up' : 'chevron-down' }}</v-icon>
+                </button>
+              </template>
+              <v-card flat border rounded="lg" class="py-1 tickets-views-panel" width="300" max-height="420">
+                <template v-for="group in inboxGroups" :key="group.key">
+                  <div class="mp-meta-label text-medium-emphasis px-4 pt-3 pb-1">{{ group.label }}</div>
+                  <v-list density="compact" class="py-0">
+                    <MpMenuItem
+                      v-for="view in viewNames"
+                      :key="`${group.key}-${view}`"
+                      :title="view"
+                      :active="currentInbox === group.key && currentView === view"
+                      @click="selectView(group.key, view)"
+                    />
+                  </v-list>
+                </template>
+                <v-divider class="my-1" />
+                <v-list density="compact" class="py-0">
+                  <MpMenuItem title="Trash" icon="trash-2" :active="currentInbox === 'trash'" @click="selectTrash" />
+                </v-list>
+              </v-card>
+            </v-menu>
+
+            <v-menu location="bottom end">
+              <template #activator="{ props: activator }">
+                <v-tooltip text="Sort tickets" location="bottom">
+                  <template #activator="{ props: tooltip }">
+                    <v-btn
+                      v-bind="{ ...activator, ...tooltip }"
+                      icon="arrow-up-down"
+                      variant="text"
+                      size="small"
+                      aria-label="Sort tickets"
+                    ></v-btn>
+                  </template>
+                </v-tooltip>
+              </template>
+              <v-list role="menu" aria-label="Sort tickets">
                 <MpMenuItem
-                  v-for="view in viewNames"
-                  :key="`${group.key}-${view}`"
-                  :title="view"
-                  :active="currentInbox === group.key && currentView === view"
-                  @click="selectView(group.key, view)"
+                  v-for="option in SORT_OPTIONS"
+                  :key="option.key"
+                  :title="option.label"
+                  role="menuitemradio"
+                  :aria-checked="sortKey === option.key"
+                  :active="sortKey === option.key"
+                  @click="sortKey = option.key"
                 />
               </v-list>
-            </template>
-            <v-divider class="my-1" />
-            <v-list density="compact" class="py-0">
-              <MpMenuItem title="Trash" icon="trash-2" :active="currentInbox === 'trash'" @click="selectTrash" />
-            </v-list>
-          </v-card>
-        </v-menu>
+            </v-menu>
+          </div>
 
-        <div class="flex-grow-1 overflow-y-auto">
-          <div v-for="t in listTickets" :key="t.id" class="tickets-row d-flex align-center"
-            :class="{ 'tickets-row--selected': t.id === selectedId }">
+          <!-- Toolbar search, not a form field: placeholder + aria-label, details
+               suppressed so the header block never shifts. -->
+          <v-text-field
+            v-model="search"
+            placeholder="Search tickets"
+            aria-label="Search tickets"
+            prepend-inner-icon="search"
+            clearable
+            hide-details
+          ></v-text-field>
+
+          <MpFilterTabs
+            v-model="statusTab"
+            :tabs="statusTabs"
+            ariaLabel="Filter tickets by status"
+            controlsId="tickets-list"
+          />
+        </div>
+
+        <div id="tickets-list" class="tickets-list__scroll">
+          <div
+            v-for="t in listTickets"
+            :key="t.id"
+            class="tickets-row d-flex align-center"
+            :class="{ 'tickets-row--selected': t.id === selectedId, 'tickets-row--checked': checked.includes(t.id) }"
+          >
             <v-checkbox-btn
               :model-value="checked.includes(t.id)"
               :aria-label="`Select ticket: ${t.subject}`"
-              class="ml-2 flex-grow-0"
+              density="compact"
+              class="tickets-row__check flex-grow-0"
               @update:model-value="(v: boolean) => toggleChecked(t.id, v)"
             ></v-checkbox-btn>
-            <MpListRow clickable variant="divided" class="flex-grow-1" style="min-width: 0;" @click="openTicket(t)">
-              <span class="d-flex align-center ga-2" style="min-width: 0;">
+            <MpListRow clickable class="tickets-row__body" @click="openTicket(t)">
+              <span class="d-flex align-center ga-2">
                 <span v-if="t.unread" class="tickets-unread-dot flex-shrink-0" role="img" aria-label="Unread"></span>
-                <span class="text-body-2 text-truncate" :class="t.unread ? 'font-weight-bold' : 'font-weight-medium'">
+                <span class="tickets-row__subject text-body-2 text-truncate" :class="{ 'tickets-row__subject--unread': t.unread }">
                   {{ t.subject }}
                 </span>
+                <span class="tickets-row__date text-caption text-medium-emphasis ms-auto flex-shrink-0">{{ formatListDate(t.updatedAt) }}</span>
               </span>
-              <span class="text-caption text-medium-emphasis d-block">{{ t.customer }}</span>
-              <span class="text-caption text-medium-emphasis d-block text-truncate">{{ snippet(t) }}</span>
-              <template #trailing>
-                <span class="d-flex flex-column align-end ga-1">
-                  <span class="text-caption text-medium-emphasis">{{ formatListDate(t.updatedAt) }}</span>
-                  <MpStatusChip :status="t.status" type="ticket" size="sm" variant="outlined" />
-                </span>
-              </template>
+              <span class="d-flex align-center ga-2 mt-1">
+                <span class="text-caption text-medium-emphasis text-truncate">{{ t.customer }} · {{ snippet(t) }}</span>
+                <MpStatusChip :status="t.status" type="ticket" size="sm" class="ms-auto flex-shrink-0" />
+              </span>
             </MpListRow>
           </div>
 
           <MpEmptyState
-            v-if="!listTickets.length"
+            v-if="!listTickets.length && search.trim()"
+            icon="search"
+            :title="`No tickets match “${search.trim()}”`"
+            description="Try a different search or clear it."
+            actionLabel="Clear search"
+            @action="search = ''"
+          />
+          <MpEmptyState
+            v-else-if="!listTickets.length"
             icon="inbox"
             :title="currentInbox === 'trash' ? 'Trash is empty' : 'No tickets in this view'"
             :description="currentInbox === 'trash'
@@ -304,8 +425,14 @@ function newContact() {
       </v-card>
 
       <!-- Detail pane -->
-      <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column" style="min-width: 0;">
-        <TicketWorkspace v-if="selectedTicket" :ticket-id="selectedTicket.id" variant="pane" />
+      <v-card flat border rounded="lg" class="tickets-detail">
+        <TicketWorkspace
+          v-if="selectedTicket"
+          :ticket-id="selectedTicket.id"
+          variant="pane"
+          show-back
+          @back="clearSelection"
+        />
         <MpEmptyState
           v-else
           class="ma-auto"
@@ -329,9 +456,8 @@ function newContact() {
     </MpFloatingBulkBar>
 
     <!-- Filters -->
-    <MpFormDrawer v-model="filtersOpen" title="Filters" size="sm">
+    <MpFormDrawer v-model="filtersOpen" title="Filters" subtitle="Status is filtered with the tabs above the list." size="sm">
       <MpFormGrid>
-        <v-select v-model="workingFilters.status" :items="TICKET_STATUSES" label="Status" multiple chips closable-chips></v-select>
         <v-select v-model="workingFilters.priority" :items="TICKET_PRIORITIES" label="Priority" multiple chips closable-chips></v-select>
         <v-select v-model="workingFilters.channel" :items="TICKET_CHANNELS" label="Channel" multiple chips closable-chips></v-select>
         <v-select v-model="workingFilters.type" :items="TICKET_TYPES" label="Type" multiple chips closable-chips></v-select>
@@ -392,33 +518,116 @@ function newContact() {
   </div>
 </template>
 
-<style scoped>
-/* The split fills the viewport under the app bar, page padding and header
-   (same approach as the store editor shells). */
-.tickets-split {
-  height: calc(100vh - var(--mp-layout-appbarHeight) - 148px);
-  min-height: 420px;
+<style scoped lang="scss">
+/* The shell fills the content frame (.mp-frame-fill owns the shell constants);
+   the head band and the split restate the shell's inset as their gutters —
+   the same idiom as CreatePromotion. */
+.tickets-head {
+  padding: var(--mp-space-24) var(--mp-space-32) var(--mp-space-16);
 }
-.tickets-list { width: 380px; }
+
+.tickets-split {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  gap: var(--mp-space-16);
+  padding: 0 var(--mp-space-32) var(--mp-space-32);
+}
+
+/* display lives here, not in d-flex, so the stacked breakpoint can hide a pane
+   (Vuetify's .d-flex is display:flex !important and would win). */
+.tickets-list,
+.tickets-detail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.tickets-list { flex: 0 0 var(--mp-layout-inboxListWidth); }
+.tickets-detail { flex: 1 1 0; min-width: 0; }
+
+.tickets-list__scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.border-b { border-bottom: 1px solid var(--border-subtle); }
+
+/* ── List toolbar: views + sort · search · status tabs ─────────────────── */
+.tickets-toolbar {
+  flex-shrink: 0;
+  padding: var(--mp-space-8) var(--mp-component-card-paddingCompact) 0;
+}
 
 .tickets-views-trigger {
-  border: 0; background: transparent; font: inherit; cursor: pointer;
-  width: 100%; min-height: var(--mp-component-toolbar-minHeight, 56px);
-  color: rgb(var(--v-theme-on-surface));
+  min-width: 0;
+  min-height: var(--mp-component-control-height);
+  padding-inline: var(--mp-space-8);
+  border: 0;
+  border-radius: var(--mp-component-chip-radius);
+  background: transparent;
+  color: var(--on-surface);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
-.tickets-views-trigger:hover { background: rgba(var(--v-theme-on-surface), 0.04); }
-.tickets-views-trigger:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
+.tickets-views-trigger:hover { background: var(--surface-secondary); }
+.tickets-views-trigger:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 
-.tickets-row--selected {
-  background: rgba(var(--v-theme-primary), 0.06);
-  box-shadow: inset 3px 0 0 rgb(var(--v-theme-primary));
+.tickets-views-panel { overflow-y: auto; }
+
+/* ── Rows ───────────────────────────────────────────────────────────────── */
+.tickets-row {
+  padding-inline: var(--mp-space-4) var(--mp-component-card-paddingCompact);
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
+.tickets-row + .tickets-row { border-top: 1px solid var(--border-subtle); }
+.tickets-row:hover { background: var(--surface-secondary); }
+.tickets-row--selected,
+.tickets-row--selected:hover { background: var(--accent-soft); }
+
+/* The row body is the MpListRow; its own hover bleed is neutralised because the
+   whole row (checkbox included) is the hover surface here. */
+.tickets-row__body {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  margin-inline: 0;
+  padding-inline: 0;
+  background: transparent;
+}
+.tickets-row__body:hover { background: transparent; }
+
+.tickets-row__subject { font-weight: var(--mp-fontWeight-medium); }
+.tickets-row__subject--unread { font-weight: var(--mp-fontWeight-semibold); }
+.tickets-row__date { font-variant-numeric: tabular-nums; }
+
+/* Checkboxes stay quiet until the row is hovered, focused, checked, or a bulk
+   selection is in progress; the column is always reserved so nothing shifts. */
+.tickets-row__check {
+  opacity: 0;
+  transition: opacity var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
+}
+.tickets-row:hover .tickets-row__check,
+.tickets-row:focus-within .tickets-row__check,
+.tickets-row--checked .tickets-row__check,
+.tickets-list--selecting .tickets-row__check { opacity: 1; }
 
 .tickets-unread-dot {
-  width: var(--mp-space-8); height: var(--mp-space-8);
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
   border-radius: var(--mp-radius-full);
-  background: rgb(var(--v-theme-primary));
+  background: var(--accent-default);
 }
 
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+/* ── Below the split breakpoint: one pane at a time, the URL decides which ── */
+@media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
+  .tickets-head { padding: var(--mp-space-16) var(--mp-space-16) var(--mp-space-12); }
+  .tickets-split { padding: 0 var(--mp-space-16) var(--mp-space-16); }
+
+  .tickets-list { flex: 1 1 0; }
+  .tickets-split:not(.tickets-split--has-selection) .tickets-detail { display: none; }
+  .tickets-split.tickets-split--has-selection .tickets-list { display: none; }
+}
 </style>

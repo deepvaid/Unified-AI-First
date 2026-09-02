@@ -14,20 +14,23 @@ const ticket = computed(() => store.find(ticketId.value))
 </script>
 
 <template>
-  <div class="pa-6 d-flex flex-column">
-    <MpPageHeader
-      :backTo="{ name: 'Tickets', params: { accountId } }"
-      :eyebrow="ticket ? `All Tickets · ${ticket.number}` : 'All Tickets'"
-      :title="ticket?.subject ?? 'Ticket'"
-    />
+  <div class="mp-frame-fill ticket-shell d-flex flex-column">
+    <div class="ticket-head flex-shrink-0">
+      <MpPageHeader
+        :backTo="{ name: 'Tickets', params: { accountId } }"
+        :eyebrow="ticket ? `All Tickets · ${ticket.number}` : 'All Tickets'"
+        :title="ticket?.subject ?? 'Ticket'"
+        density="compact"
+      />
+    </div>
 
-    <v-card v-if="ticket" flat border rounded="lg" class="ticket-page mt-4 d-flex flex-column">
+    <v-card v-if="ticket" flat border rounded="lg" class="ticket-page">
       <TicketWorkspace :ticket-id="ticket.id" variant="page" defaultRail="contact" />
     </v-card>
 
     <MpEmptyState
       v-else
-      class="mt-4"
+      class="ticket-page"
       icon="ticket"
       title="Ticket not found"
       description="This ticket doesn't exist or was deleted."
@@ -35,10 +38,23 @@ const ticket = computed(() => store.find(ticketId.value))
   </div>
 </template>
 
-<style scoped>
-/* Fill the viewport under the app bar, page padding and header. */
+<style scoped lang="scss">
+/* Same shell idiom as Tickets.vue: the frame owns the height, the head band and
+   the card restate the shell's inset as gutters. */
+.ticket-head {
+  padding: var(--mp-space-24) var(--mp-space-32) var(--mp-space-16);
+}
+
 .ticket-page {
-  height: calc(100vh - var(--mp-layout-appbarHeight) - 172px);
-  min-height: 420px;
+  flex: 1 1 0;
+  min-height: 0;
+  margin: 0 var(--mp-space-32) var(--mp-space-32);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
+  .ticket-head { padding: var(--mp-space-16) var(--mp-space-16) var(--mp-space-12); }
+  .ticket-page { margin: 0 var(--mp-space-16) var(--mp-space-16); }
 }
 </style>
