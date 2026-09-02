@@ -119,7 +119,7 @@ function selectEntry(entry: DashboardWidgetLibraryEntry) {
         :class="{ 'widget-library__category--active': activeCategory === category.key }"
         @click="activeCategory = category.key"
       >
-        <v-icon v-if="category.icon" size="14" class="widget-library__category-icon">{{ category.icon }}</v-icon>
+        <v-icon v-if="category.icon" size="16" class="widget-library__category-icon">{{ category.icon }}</v-icon>
         <span>{{ category.label }}</span>
       </button>
     </div>

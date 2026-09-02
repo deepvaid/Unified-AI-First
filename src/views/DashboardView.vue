@@ -5,6 +5,7 @@ import DashboardGrid from '@/components/dashboards/DashboardGrid.vue'
 import DashboardWidgetCard from '@/components/dashboards/DashboardWidgetCard.vue'
 import WidgetWizardDrawer from '@/components/dashboards/WidgetWizardDrawer.vue'
 import DashboardFormDialog from '@/components/dashboards/DashboardFormDialog.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpDialog from '@/components/MpDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
@@ -463,17 +464,15 @@ function toggleFavoriteActive() {
 
 <template>
   <div class="dashboard-hub">
-    <v-alert
+    <MpAlert
       v-if="renderError"
-      type="error"
-      variant="tonal"
-      class="mb-4"
-      closable
-      @click:close="renderError = null"
+      tone="error"
+      title="Dashboard failed to load"
+      dismissible
+      @dismiss="renderError = null"
     >
-      <div class="text-subtitle-2 font-weight-bold mb-1">Dashboard failed to load</div>
-      <pre class="text-caption" style="white-space: pre-wrap; margin: 0;">{{ renderError }}</pre>
-    </v-alert>
+      <pre class="text-caption dashboard-hub__error-detail">{{ renderError }}</pre>
+    </MpAlert>
 
     <section class="dashboard-page-header">
       <!-- Row 1: Title + primary actions -->
@@ -530,7 +529,7 @@ function toggleFavoriteActive() {
                   </template>
                   <div class="d-flex align-center ga-2 flex-wrap">
                     <span class="text-body-2 font-weight-bold">{{ dashboard.name }}</span>
-                    <v-icon v-if="dashboard.favorite" size="14" color="warning">star</v-icon>
+                    <v-icon v-if="dashboard.favorite" size="16" color="warning">star</v-icon>
                     <v-chip v-if="dashboard.isDefault" size="x-small" variant="tonal" color="success">Default</v-chip>
                   </div>
                 </v-list-item>
@@ -627,12 +626,11 @@ function toggleFavoriteActive() {
             <template #activator="{ props: menuProps }">
               <v-btn
                 v-bind="menuProps"
-                variant="flat"
+                variant="tonal"
                 size="small"
-                density="comfortable"
                 prepend-icon="calendar-range"
                 append-icon="chevron-down"
-                class="text-none dashboard-filter-btn--pill"
+                class="text-none"
                 @click.stop="openDateMenu"
               >
                 {{ dateRangeLabel }}
@@ -664,9 +662,9 @@ function toggleFavoriteActive() {
                   <v-select v-model="dateDraft.grain" :items="grainOptions" item-title="title" item-value="value" label="Grain" hide-details />
                   <v-select v-model="dateDraft.comparison" :items="comparisonOptions" item-title="title" item-value="value" label="Comparison" hide-details />
                 </MpFormGrid>
-                <v-alert variant="tonal" color="info" class="mt-4 dashboard-date-menu__note" density="compact">
+                <MpAlert tone="info" class="mt-4 dashboard-date-menu__note">
                   Widgets will show {{ datePresetOptions.find((option) => option.value === dateDraft.rangePreset)?.title ?? 'the selected range' }} with {{ grainOptions.find((option) => option.value === dateDraft.grain)?.title.toLowerCase() ?? 'daily' }} grouping.
-                </v-alert>
+                </MpAlert>
                 <div class="dashboard-date-menu__actions d-flex justify-end ga-2">
                   <v-btn variant="text" class="text-none" @click="dateMenuOpen = false">Cancel</v-btn>
                   <v-btn color="primary" variant="flat" class="text-none" @click="applyDateDraft">Apply</v-btn>
@@ -684,8 +682,8 @@ function toggleFavoriteActive() {
           <v-btn
             icon="refresh-cw"
             variant="text"
-            size="x-small"
-            class="dashboard-page-header__refresh"
+            size="small"
+            class="text-medium-emphasis"
             aria-label="Refresh dashboard"
             @click="refreshDashboard"
           />
@@ -769,7 +767,12 @@ function toggleFavoriteActive() {
 .dashboard-hub {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--mp-space-24);
+}
+
+.dashboard-hub__error-detail {
+  margin: 0;
+  white-space: pre-wrap;
 }
 
 /* The expanded-widget stage. MpDialog is `flush` here, so this div is the frame:
@@ -785,8 +788,10 @@ function toggleFavoriteActive() {
   height: 100%;
 }
 
+/* Bleeds over the .mp-main-shell inset (32/36 · 28 ≤1024 · 22 ≤640) so the
+   band spans the frame edge-to-edge; the values mirror the shell constants. */
 .dashboard-page-header {
-  margin: -32px -36px 12px;
+  margin: -32px -36px var(--mp-space-12);
   border-bottom: 1px solid var(--border-subtle);
   background: var(--surface-primary);
 }
@@ -801,13 +806,13 @@ function toggleFavoriteActive() {
 
 @media (max-width: 1024px) {
   .dashboard-page-header {
-    margin: -28px -28px 10px;
+    margin: -28px -28px var(--mp-space-10);
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: $mp-layout-breakpointCompact) {
   .dashboard-page-header {
-    margin: -22px -22px 8px;
+    margin: -22px -22px var(--mp-space-8);
   }
 }
 
@@ -815,19 +820,19 @@ function toggleFavoriteActive() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 36px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-10) 36px;
 }
 
 @media (max-width: 1024px) {
   .dashboard-page-header__top {
-    padding: 10px 28px;
+    padding: var(--mp-space-10) 28px;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: $mp-layout-breakpointCompact) {
   .dashboard-page-header__top {
-    padding: 8px 22px;
+    padding: var(--mp-space-8) 22px;
   }
 }
 
@@ -838,7 +843,8 @@ function toggleFavoriteActive() {
 }
 
 .dashboard-page-header__eyebrow {
-  margin-left: 38px;
+  /* Sits flush with the h1: fav button + title-area gap + switcher inset */
+  margin-left: calc(var(--mp-space-28) + var(--mp-space-4) + var(--mp-space-6));
   margin-bottom: 1px;
   color: var(--muted);
   line-height: 1.2;
@@ -847,24 +853,25 @@ function toggleFavoriteActive() {
 .dashboard-page-header__title-area {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
   min-width: 0;
 }
 
 .dashboard-page-header__fav {
-  width: 28px;
-  height: 28px;
+  width: var(--mp-space-28);
+  height: var(--mp-space-28);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 0;
   background: transparent;
-  border-radius: 6px;
+  border-radius: var(--mp-component-chip-radius);
   cursor: pointer;
   color: var(--muted);
   appearance: none;
   flex-shrink: 0;
-  transition: color 120ms ease, background 120ms ease;
+  transition: color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard),
+    background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 
 .dashboard-page-header__fav:hover {
@@ -881,17 +888,17 @@ function toggleFavoriteActive() {
 }
 
 .dashboard-page-header__fav:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgb(var(--v-theme-primary));
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .dashboard-title-switcher {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
+  gap: var(--mp-space-4);
+  padding: var(--mp-space-2) var(--mp-space-6);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--mp-component-chip-radius);
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
@@ -905,16 +912,16 @@ function toggleFavoriteActive() {
 }
 
 .dashboard-title-switcher:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .dashboard-page-header__h1 {
   margin: 0;
-  font-size: 28px;
-  font-weight: 750;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  font-size: var(--mp-text-pageTitle-fontSize);
+  font-weight: var(--mp-text-pageTitle-fontWeight);
+  letter-spacing: var(--mp-text-pageTitle-letterSpacing);
+  line-height: var(--mp-text-pageTitle-lineHeight);
   white-space: nowrap;
   font-feature-settings: 'ss01', 'cv11';
 }
@@ -926,7 +933,7 @@ function toggleFavoriteActive() {
 .dashboard-page-header__actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-8);
   flex-shrink: 0;
 }
 
@@ -934,21 +941,21 @@ function toggleFavoriteActive() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 4px 36px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-4) 36px;
   background: var(--surface-primary);
   border-top: 1px solid var(--border-subtle);
 }
 
 @media (max-width: 1024px) {
   .dashboard-page-header__filters {
-    padding: 4px 28px;
+    padding: var(--mp-space-4) 28px;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: $mp-layout-breakpointCompact) {
   .dashboard-page-header__filters {
-    padding: 4px 22px;
+    padding: var(--mp-space-4) 22px;
   }
 }
 
@@ -956,72 +963,25 @@ function toggleFavoriteActive() {
 .dashboard-page-header__filters-right {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-/* Compact filter pill — used by both Date range and Filters triggers */
-.dashboard-filter-btn--pill.v-btn {
-  border-radius: 9999px !important;
-  padding-inline: 10px 8px !important;
-  min-height: 26px !important;
-  height: 26px !important;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--text-primary);
-  background: color-mix(in oklch, var(--text-primary) 5%, var(--surface-primary)) !important;
-  box-shadow: none !important;
-}
-
-.dashboard-filter-btn--pill.v-btn:hover {
-  background: color-mix(in oklch, var(--text-primary) 9%, var(--surface-primary)) !important;
-}
-
-.dashboard-filter-btn--pill :deep(.v-btn__prepend) {
-  margin-inline-end: 6px;
-}
-
-.dashboard-filter-btn--pill :deep(.v-btn__append) {
-  margin-inline-start: 4px;
-}
-
-.dashboard-filter-btn--pill :deep(.v-btn__prepend .v-icon),
-.dashboard-filter-btn--pill :deep(.v-btn__append .v-icon) {
-  color: var(--muted);
-  font-size: 14px;
-  opacity: 0.85;
-}
-
-.dashboard-filter-btn--pill :deep(.v-btn__overlay) {
-  opacity: 0 !important;
+  gap: var(--mp-space-8);
 }
 
 .dashboard-page-header__status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-text-caption-fontSize);
+  font-weight: var(--mp-text-caption-fontWeight);
   color: var(--muted);
   white-space: nowrap;
 }
 
 .dashboard-page-header__dot {
-  width: 6px;
-  height: 6px;
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
   flex-shrink: 0;
-  border-radius: 999px;
+  border-radius: var(--mp-radius-full);
   background: var(--pos);
-}
-
-.dashboard-page-header__refresh {
-  width: 22px !important;
-  height: 22px !important;
-  color: var(--muted) !important;
-}
-
-.dashboard-page-header__refresh :deep(.v-icon) {
-  font-size: 13px;
 }
 
 /* ── Rich action menu (Actions) — matches the global Create-new menu ── */
@@ -1061,12 +1021,12 @@ function toggleFavoriteActive() {
 
 .mp-menu-row:hover:not(:disabled),
 .mp-menu-row:focus-visible {
-  background: rgba(var(--v-theme-on-surface), 0.05);
+  background: var(--surface-secondary);
 }
 
 .mp-menu-row:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }
 
 .mp-menu-row:disabled {
@@ -1111,7 +1071,7 @@ function toggleFavoriteActive() {
 }
 
 .mp-menu-row--danger:hover:not(:disabled) {
-  background: rgba(var(--v-theme-error), 0.06);
+  background: var(--neg-soft);
 }
 
 .dashboard-date-menu {
@@ -1121,18 +1081,18 @@ function toggleFavoriteActive() {
 }
 
 .dashboard-date-menu__presets {
-  padding: 8px;
+  padding: var(--mp-space-8);
   border-right: 1px solid var(--border-subtle);
-  background: rgba(var(--v-theme-on-surface), 0.025);
+  background: var(--surface-secondary);
 }
 
 .dashboard-date-menu__group {
-  padding: 10px 8px 4px;
+  padding: var(--mp-space-10) var(--mp-space-8) var(--mp-space-4);
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--mp-text-metaLabel-fontSize);
+  font-weight: var(--mp-text-metaLabel-fontWeight);
+  letter-spacing: var(--mp-text-metaLabel-letterSpacing);
+  text-transform: var(--mp-text-metaLabel-textTransform);
 }
 
 /* --muted is calibrated against the plain menu surface; this rail double-tints
@@ -1143,45 +1103,46 @@ function toggleFavoriteActive() {
 }
 
 .dashboard-date-menu__group:first-child {
-  padding-top: 4px;
+  padding-top: var(--mp-space-4);
 }
 
 .dashboard-date-menu__preset {
   display: block;
   width: 100%;
-  min-height: 32px;
-  padding: 6px 10px;
+  min-height: var(--mp-component-field-height-sm);
+  padding: var(--mp-space-6) var(--mp-space-10);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--mp-component-chip-radius);
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
   text-align: left;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard),
+    color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 
 .dashboard-date-menu__preset:hover {
-  background: rgba(var(--v-theme-on-surface), 0.05);
+  background: var(--surface-primary);
 }
 
 .dashboard-date-menu__preset--active,
 .dashboard-date-menu__preset--active:hover {
-  background: color-mix(in oklch, var(--accent) 12%, transparent);
+  background: var(--accent-soft);
   color: var(--accent-ink);
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .dashboard-date-menu__preset:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }
 
 .dashboard-date-menu__body {
   display: flex;
   flex-direction: column;
-  padding: 18px 20px;
+  padding: var(--mp-component-card-padding);
 }
 
 .dashboard-date-menu__note {
@@ -1190,7 +1151,7 @@ function toggleFavoriteActive() {
 
 .dashboard-date-menu__actions {
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: var(--mp-space-16);
 }
 
 .dashboard-switcher-card {
@@ -1201,11 +1162,11 @@ function toggleFavoriteActive() {
   border-bottom: 1px solid var(--border-subtle);
 }
 
-@media (max-width: 960px) {
+@media (max-width: $mp-layout-breakpointSplit) {
   .dashboard-page-header__top {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: var(--mp-space-8);
   }
 
   .dashboard-page-header__actions {
@@ -1216,7 +1177,7 @@ function toggleFavoriteActive() {
   .dashboard-page-header__filters {
     flex-direction: column;
     align-items: stretch;
-    gap: 6px;
+    gap: var(--mp-space-6);
   }
 
   .dashboard-date-menu {
