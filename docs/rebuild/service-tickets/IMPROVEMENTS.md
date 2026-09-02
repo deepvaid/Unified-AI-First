@@ -28,3 +28,26 @@ Each change stays inside the allowed lanes (hierarchy, labels, feedback, a11y); 
     Escape closes, focus returns to the trigger.
 13. **Property changes leave a trail** — every inline property edit appends a system
     activity, so the Show-activities feed stays truthful to what the agent did.
+
+## Aesthetic pass (2026-09-02)
+
+Deliberate departures from the legacy layout, made after the parity rebuild so the surface reads as
+Maropost's own. Function is preserved; three list controls were added on request.
+
+14. **The pane has a title** — number · channel · inbox eyebrow plus the subject sit above the
+    property row (UAT opens straight onto `PRIORITY ● Low`).
+15. **Properties read as field-chips**, on the 32px field ramp, with an icon and a sentence-case
+    label; the activities switch became an `aria-pressed` toggle beside expand/kebab.
+16. **The composer is docked** below the thread and replaces the Reply/Forward/Note bar while open;
+    the thread scrolls to its latest message on open, send and ticket change (UAT renders the
+    composer at the end of the scrolling thread). The inert formatting toolbar is gone — a single
+    "Plain text" hint says what the box does.
+17. **Avatars for every role** and a tinted internal-note bubble, so who-said-what scans without
+    reading the meta line.
+18. **Mobile layout stacks** — below the split breakpoint one pane shows at a time; `?selected`
+    decides which and a back control returns to the list (UAT scrolls horizontally).
+19. **List search, sort and status tabs** — search covers number, subject, customer, email and
+    message bodies; sort offers last-updated / newest / oldest / priority; status is a
+    quick-filter tab row with counts and therefore no longer lives in the Filters drawer.
+20. **Two-line rows with quiet checkboxes** — subject + date, then customer · snippet + status;
+    checkboxes appear on hover, focus, or while a selection is in progress.
