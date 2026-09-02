@@ -103,15 +103,12 @@ function exportCsv() {
         <template v-slot:item.views="{ item }">
           <span class="font-weight-medium">{{ item.views.toLocaleString() }}</span>
         </template>
-        <template v-slot:item.visitors="{ item }">
-          <span class="font-weight-medium">{{ item.visitors.toLocaleString() }}</span>
-        </template>
+        <template v-slot:item.visitors="{ item }">{{ item.visitors.toLocaleString() }}</template>
         <template #no-data>
           <MpEmptyState
             icon="globe"
             :title="search || filterCategory.length ? 'No pages match your filters' : 'No website data'"
             :description="search || filterCategory.length ? 'Try a different search or clear filters.' : 'Page traffic will appear here once tracking is live.'"
-            class="py-10"
           />
         </template>
       </v-data-table>
