@@ -112,19 +112,19 @@ const formatDate = (d?: string) => d ? dateFmt.format(new Date(d)) : '—'
 
 // Quiet dot+label treatment for secondary statuses (order status keeps the chip)
 const fulfillmentDots: Record<string, string> = {
-  'Shipped': 'rgb(var(--v-theme-success))',
-  'Ready For Fulfillment': 'rgb(var(--v-theme-primary))',
-  'Not Ready': 'rgb(var(--v-theme-warning))',
-  'Return Requested': 'rgb(var(--v-theme-warning))',
-  'Cancelled': 'rgb(var(--v-theme-error))',
-  'Unapproved': 'rgba(var(--v-theme-on-surface), 0.38)',
+  'Shipped': 'var(--pos)',
+  'Ready For Fulfillment': 'var(--accent-default)',
+  'Not Ready': 'var(--warn)',
+  'Return Requested': 'var(--warn)',
+  'Cancelled': 'var(--neg)',
+  'Unapproved': 'var(--text-disabled)',
 }
 const paymentDots: Record<string, string> = {
-  'Paid': 'rgb(var(--v-theme-success))',
-  'Refunded': 'rgb(var(--v-theme-error))',
-  'Partially Refunded': 'rgb(var(--v-theme-warning))',
-  'Pending': 'rgb(var(--v-theme-warning))',
-  'Voided': 'rgba(var(--v-theme-on-surface), 0.38)',
+  'Paid': 'var(--pos)',
+  'Refunded': 'var(--neg)',
+  'Partially Refunded': 'var(--warn)',
+  'Pending': 'var(--warn)',
+  'Voided': 'var(--text-disabled)',
 }
 
 // Orders whose total should read as struck-through (money no longer collected)
@@ -299,7 +299,7 @@ function exportOrders() {
         : `${store.orders.length} orders total · $${store.orders.reduce((a,o) => a + parseFloat(o.total), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lifetime revenue`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportOrders">Export</v-btn>
+        <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="exportOrders">Export</v-btn>
         <v-btn v-if="!posMode" color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="goCreateDraft">Create Draft Order</v-btn>
       </template>
       <template #tabs>
@@ -389,7 +389,7 @@ function exportOrders() {
         <!-- Fulfillment — quiet dot + label (order status keeps the chip) -->
         <template v-slot:item.fulfillmentStatus="{ item }">
           <span class="ord-dot-label text-no-wrap">
-            <span class="ord-dot" :style="{ background: fulfillmentDots[item.fulfillmentStatus ?? ''] ?? 'rgba(var(--v-theme-on-surface), 0.38)' }" />
+            <span class="ord-dot" :style="{ background: fulfillmentDots[item.fulfillmentStatus ?? ''] ?? 'var(--text-disabled)' }" />
             {{ item.fulfillmentStatus }}
           </span>
         </template>
@@ -397,7 +397,7 @@ function exportOrders() {
         <!-- Payment — quiet dot + label -->
         <template v-slot:item.paymentStatus="{ item }">
           <span class="ord-dot-label text-no-wrap">
-            <span class="ord-dot" :style="{ background: paymentDots[item.paymentStatus ?? ''] ?? 'rgba(var(--v-theme-on-surface), 0.38)' }" />
+            <span class="ord-dot" :style="{ background: paymentDots[item.paymentStatus ?? ''] ?? 'var(--text-disabled)' }" />
             {{ item.paymentStatus }}
           </span>
         </template>
@@ -457,11 +457,11 @@ function exportOrders() {
         <!-- Expanded detail row -->
         <template v-slot:expanded-row="{ columns, item }">
           <tr class="ord-exp-row" @click.stop>
-            <td :colspan="columns.length" class="pa-0" style="border-bottom: none !important;">
+            <td :colspan="columns.length" class="pa-0 ord-exp-cell">
               <div class="ord-exp">
                 <!-- Header: customer + payment/fulfillment meta + actions -->
                 <div class="ord-exp__bar">
-                  <v-avatar color="primary" size="34" class="font-weight-bold text-white ord-exp__avatar">{{ item.customer.avatar }}</v-avatar>
+                  <v-avatar color="primary" size="34" class="font-weight-bold ord-exp__avatar">{{ item.customer.avatar }}</v-avatar>
                   <div class="min-width-0">
                     <div class="ord-exp__name">{{ item.customer.name }}</div>
                     <div class="ord-exp__email">{{ item.customer.email }}</div>
@@ -470,14 +470,14 @@ function exportOrders() {
                     <div class="ord-exp__meta-block">
                       <span class="mp-meta-label">Payment</span>
                       <span class="ord-exp__meta-val">
-                        <span class="ord-dot" :style="{ background: paymentDots[item.paymentStatus ?? ''] ?? 'rgba(var(--v-theme-on-surface), 0.38)' }" />
+                        <span class="ord-dot" :style="{ background: paymentDots[item.paymentStatus ?? ''] ?? 'var(--text-disabled)' }" />
                         {{ item.paymentStatus }} · {{ item.paymentMethod }}
                       </span>
                     </div>
                     <div class="ord-exp__meta-block">
                       <span class="mp-meta-label">Fulfillment</span>
                       <span class="ord-exp__meta-val">
-                        <span class="ord-dot" :style="{ background: fulfillmentDots[item.fulfillmentStatus ?? ''] ?? 'rgba(var(--v-theme-on-surface), 0.38)' }" />
+                        <span class="ord-dot" :style="{ background: fulfillmentDots[item.fulfillmentStatus ?? ''] ?? 'var(--text-disabled)' }" />
                         {{ item.fulfillmentStatus }}
                       </span>
                     </div>
@@ -496,9 +496,9 @@ function exportOrders() {
                     <thead>
                       <tr>
                         <th class="mp-meta-label">Product</th>
-                        <th class="mp-meta-label ord-num" style="width: 60px;">Qty</th>
-                        <th class="mp-meta-label ord-num" style="width: 110px;">Price</th>
-                        <th class="mp-meta-label ord-num" style="width: 120px;">Total</th>
+                        <th class="mp-meta-label ord-num">Qty</th>
+                        <th class="mp-meta-label ord-num">Price</th>
+                        <th class="mp-meta-label ord-num">Total</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -529,7 +529,7 @@ function exportOrders() {
                   </div>
 
                   <div v-if="item.notes" class="ord-exp__note">
-                    <v-icon size="14">sticky-note</v-icon>
+                    <v-icon size="16">sticky-note</v-icon>
                     <span>{{ item.notes }}</span>
                   </div>
                 </div>
@@ -543,7 +543,6 @@ function exportOrders() {
             icon="search"
             title="No orders match your search"
             description="Adjust your search or filters to see more."
-            class="py-10"
           />
           <MpEmptyState
             v-else
@@ -592,11 +591,6 @@ function exportOrders() {
   white-space: nowrap;
 }
 
-/* Masthead numerals read as aligned figures */
-:deep(.mp-page-subtitle) {
-  font-variant-numeric: tabular-nums;
-}
-
 /* Row click navigates to the order detail */
 .orders-table :deep(tbody tr:not(.v-data-table__expanded__content)) {
   cursor: pointer;
@@ -604,9 +598,9 @@ function exportOrders() {
 
 /* Row grammar — customer name reads ink-strong */
 .ord-customer {
-  font-size: 13.5px;
-  font-weight: 550;
-  color: rgb(var(--v-theme-on-surface));
+  font-size: var(--mp-text-metaValue-fontSize);
+  font-weight: var(--mp-text-metaValue-fontWeight);
+  color: var(--on-surface);
 }
 
 .ord-tnum {
@@ -617,68 +611,73 @@ function exportOrders() {
 .ord-dot-label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: rgba(var(--v-theme-on-surface), 0.72);
-  font-size: 13px;
+  gap: var(--mp-space-6);
+  color: var(--on-surface-muted);
+  font-size: var(--mp-fontSize-13);
 }
 .ord-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-full);
   flex-shrink: 0;
 }
 
 /* ─── Expanded Row — editorial inset panel ───────────────────────── */
 .ord-exp-row :deep(td) {
-  background: rgba(var(--v-theme-on-surface), 0.015);
+  background: var(--surface-secondary);
+}
+/* The expanded cell hosts its own hairline; Vuetify's row border would double it
+   (same !important the table cell rule needs — Vuetify's selector is 5 deep). */
+.orders-table :deep(.ord-exp-cell) {
+  border-bottom: none !important;
 }
 .ord-exp {
-  border-top: 1px solid var(--mp-border-table-row, rgba(var(--v-theme-on-surface), 0.06));
+  border-top: 1px solid var(--border-subtle);
 }
 
 /* Header bar: customer + payment/fulfillment meta + actions */
 .ord-exp__bar {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 16px 20px;
+  gap: var(--mp-space-20);
+  padding: var(--mp-space-16) var(--mp-component-card-padding);
 }
 .ord-exp__avatar {
-  font-size: 13px;
+  font-size: var(--mp-fontSize-13);
   flex-shrink: 0;
 }
 .ord-exp__name {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: rgb(var(--v-theme-on-surface));
-  line-height: 1.3;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
+  color: var(--on-surface);
+  line-height: var(--mp-lineHeight-snug);
 }
 .ord-exp__email {
-  font-size: 12.5px;
-  color: rgba(var(--v-theme-on-surface), 0.6);
+  font-size: var(--mp-fontSize-12);
+  color: var(--on-surface-muted);
 }
 .ord-exp__meta {
   display: flex;
-  gap: 32px;
-  padding-left: 20px;
-  border-left: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  gap: var(--mp-space-32);
+  padding-left: var(--mp-space-20);
+  border-left: 1px solid var(--border-subtle);
 }
 .ord-exp__meta-block {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--mp-space-4);
 }
 .ord-exp__meta-val {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: rgb(var(--v-theme-on-surface));
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-13);
+  color: var(--on-surface);
 }
 
 /* Line-items silent table */
 .ord-exp__items {
-  padding: 0 20px 18px;
+  padding: 0 var(--mp-component-card-padding) var(--mp-space-20);
 }
 .ord-exp__table {
   width: 100%;
@@ -686,67 +685,72 @@ function exportOrders() {
 }
 .ord-exp__table th {
   text-align: left;
-  padding: 6px 12px;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  padding: var(--mp-space-6) var(--mp-space-12);
+  border-bottom: 1px solid var(--border-subtle);
 }
 .ord-exp__table td {
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--mp-border-table-row, rgba(var(--v-theme-on-surface), 0.05));
-  font-size: 13px;
+  padding: var(--mp-space-8) var(--mp-space-12);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--mp-fontSize-13);
 }
 .ord-exp__table tbody tr:last-child td {
   border-bottom: none;
 }
+/* Numeric columns shrink to their content; the product column takes the rest. */
 .ord-num {
+  width: 1%;
+  white-space: nowrap;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 .ord-exp__product {
-  font-weight: 550;
-  color: rgb(var(--v-theme-on-surface));
+  font-weight: var(--mp-text-metaValue-fontWeight);
+  color: var(--on-surface);
 }
 .ord-exp__sku {
-  margin-left: 8px;
-  font-size: 12px;
-  color: rgba(var(--v-theme-on-surface), 0.5);
+  margin-left: var(--mp-space-8);
+  font-size: var(--mp-fontSize-12);
+  color: var(--on-surface-muted);
 }
 .ord-exp__linetotal {
-  font-weight: 600;
-  color: rgb(var(--v-theme-on-surface));
+  font-weight: var(--mp-fontWeight-semibold);
+  color: var(--on-surface);
 }
 
 /* Totals — right-aligned ledger with hairline above the grand total */
 .ord-exp__totals {
   margin-left: auto;
-  width: 260px;
-  padding: 12px 12px 0;
+  min-width: var(--mp-component-toolbar-searchMinWidth);
+  width: max-content;
+  padding: var(--mp-space-12) var(--mp-space-12) 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 .ord-exp__total-line {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
-  color: rgba(var(--v-theme-on-surface), 0.7);
+  gap: var(--mp-space-24);
+  font-size: var(--mp-fontSize-13);
+  color: var(--on-surface-muted);
 }
 .ord-exp__total-line--grand {
-  margin-top: 4px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  font-size: 14px;
-  font-weight: 700;
-  color: rgb(var(--v-theme-on-surface));
+  margin-top: var(--mp-space-4);
+  padding-top: var(--mp-space-10);
+  border-top: 1px solid var(--border-default);
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-bold);
+  color: var(--on-surface);
 }
 .ord-exp__note {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(var(--v-theme-on-surface), 0.03);
-  font-size: 12.5px;
-  color: rgba(var(--v-theme-on-surface), 0.7);
+  gap: var(--mp-space-8);
+  margin-top: var(--mp-space-12);
+  padding: var(--mp-space-8) var(--mp-space-12);
+  border-radius: var(--mp-component-chip-radius);
+  background: var(--surface-primary);
+  font-size: var(--mp-fontSize-12);
+  color: var(--on-surface-muted);
 }
 </style>
