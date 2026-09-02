@@ -866,20 +866,20 @@ tr:focus-within .action-btns {
    slack the existing shells accept applies. Do not use --mp-layout-appbarHeight
    (60px — does not match the rendered 56px bar). */
 .mp-frame-fill {
-  margin: -32px -36px;
+  margin: calc(-1 * var(--mp-layout-shellInsetBlock)) calc(-1 * var(--mp-layout-shellInsetInline));
   height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
   overflow: hidden;
 }
 
 @media (max-width: 1024px) {
   .mp-frame-fill {
-    margin: -28px;
+    margin: calc(-1 * var(--mp-layout-shellInsetMedium));
   }
 }
 
 @media (max-width: 640px) {
   .mp-frame-fill {
-    margin: -22px;
+    margin: calc(-1 * var(--mp-layout-shellInsetCompact));
   }
 }
 

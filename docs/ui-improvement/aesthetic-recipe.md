@@ -32,6 +32,7 @@ planned fix`; a page with zero findings is marked done with no commit.
 - **B1.** Card root insets come from `component.card.*`: `padding` 20 (standard), `paddingCompact` 12
   (list headers, dense panels), `paddingSpacious` 32 (empty/marketing surfaces). Gaps `card.gap` 16 /
   `gapCompact` 8. **Never a `pa-*` utility on a card root.** A card needing a fourth value is a design bug.
+  `MpEmptyState` / `MpErrorState` own their inset (`component.state.padding`) — a `py-*` on them is a finding.
 - **B2.** Forms: `MpFormGrid` owns the field rhythm (`field.groupGap` 16); `MpFormSection` owns the
   air around headings (`sectionGap` 24). Any `mb-*`/`mt-*` on a field or heading inside those is a finding.
 - **B3.** Rows sit on `component.listItem.*` (min 40, padding-block 8, padding-inline 12, gap 12);

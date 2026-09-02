@@ -15,7 +15,7 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <div class="d-flex align-center justify-space-between mb-4">
+  <div class="d-flex flex-wrap align-center justify-space-between ga-2 mb-4">
     <div class="d-flex align-center ga-3 min-width-0">
       <v-icon v-if="icon" size="18" class="mp-section-header__icon">{{ icon }}</v-icon>
       <div class="min-width-0">

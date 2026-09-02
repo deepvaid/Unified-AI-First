@@ -759,7 +759,7 @@ const hasData = computed(() => totalContacts.value.comparison > 0)
 /* No chart-height token exists yet; this is the one literal left on the page
    (proposed: component.chart.height). */
 .erfm-chart {
-  min-height: 320px;
-  height: 320px;
+  min-height: var(--mp-component-chart-height);
+  height: var(--mp-component-chart-height);
 }
 </style>

@@ -129,8 +129,8 @@ const isInteractive = computed(() => !!props.to || !!props.href || props.clickab
 }
 
 .mp-list-row--interactive:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--tile-accent, var(--accent)) 18%, transparent);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }
 
 .mp-list-row--boxed.mp-list-row--interactive:hover {

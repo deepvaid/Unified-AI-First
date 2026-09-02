@@ -310,18 +310,18 @@ html[data-theme='dark'] .mp-content-frame {
 }
 
 .mp-main-shell {
-  padding: 32px 36px !important;
+  padding: var(--mp-layout-shellInsetBlock) var(--mp-layout-shellInsetInline) !important;
 }
 
 @media (max-width: 1024px) {
   .mp-main-shell {
-    padding: 28px !important;
+    padding: var(--mp-layout-shellInsetMedium) !important;
   }
 }
 
 @media (max-width: 640px) {
   .mp-main-shell {
-    padding: 22px !important;
+    padding: var(--mp-layout-shellInsetCompact) !important;
   }
 }
 

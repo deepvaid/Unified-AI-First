@@ -791,7 +791,7 @@ function toggleFavoriteActive() {
 /* Bleeds over the .mp-main-shell inset (32/36 · 28 ≤1024 · 22 ≤640) so the
    band spans the frame edge-to-edge; the values mirror the shell constants. */
 .dashboard-page-header {
-  margin: -32px -36px var(--mp-space-12);
+  margin: calc(-1 * var(--mp-layout-shellInsetBlock)) calc(-1 * var(--mp-layout-shellInsetInline)) var(--mp-space-12);
   border-bottom: 1px solid var(--border-subtle);
   background: var(--surface-primary);
 }
@@ -806,13 +806,13 @@ function toggleFavoriteActive() {
 
 @media (max-width: 1024px) {
   .dashboard-page-header {
-    margin: -28px -28px var(--mp-space-10);
+    margin: calc(-1 * var(--mp-layout-shellInsetMedium)) calc(-1 * var(--mp-layout-shellInsetMedium)) var(--mp-space-10);
   }
 }
 
 @media (max-width: $mp-layout-breakpointCompact) {
   .dashboard-page-header {
-    margin: -22px -22px var(--mp-space-8);
+    margin: calc(-1 * var(--mp-layout-shellInsetCompact)) calc(-1 * var(--mp-layout-shellInsetCompact)) var(--mp-space-8);
   }
 }
 
@@ -1076,7 +1076,7 @@ function toggleFavoriteActive() {
 
 .dashboard-date-menu {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: var(--mp-component-menu-railWidth) 1fr;
   overflow: hidden;
 }
 

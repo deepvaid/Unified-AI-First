@@ -1319,6 +1319,7 @@
   --mp-component-menu-minWidth: 180px;
   --mp-component-menu-itemHeight: 36px;
   --mp-component-menu-itemPaddingBlock: var(--mp-space-6);
+  --mp-component-menu-railWidth: 200px;
   --mp-component-bubble-maxWidth: 88%;
   --mp-component-bubble-paddingBlock: var(--mp-space-10);
   --mp-component-bubble-paddingInline: var(--mp-space-14);
@@ -1390,16 +1391,22 @@
   --mp-component-widget-actionSize: var(--mp-space-32);
   --mp-component-widget-actionGap: var(--mp-space-2);
   --mp-component-widget-actionInset: var(--mp-space-12);
+  --mp-component-chart-height: 320px;
   --mp-layout-sidebarWidth: 248px;
   --mp-layout-sidebarRailWidth: 72px;
   --mp-layout-appbarHeight: 60px;
   --mp-layout-drawerWidth: var(--mp-component-drawer-width-md);
   --mp-layout-searchMaxWidth: 560px;
   --mp-layout-contentMaxWidth: 1280px;
+  --mp-layout-shellInsetBlock: 32px;
+  --mp-layout-shellInsetInline: 36px;
+  --mp-layout-shellInsetMedium: 28px;
+  --mp-layout-shellInsetCompact: 22px;
   --mp-layout-formMaxWidth: 760px;
   --mp-layout-sectionRailWidth: 260px;
   --mp-layout-inboxListWidth: 380px;
   --mp-layout-inboxRailPanelWidth: 300px;
+  --mp-layout-detailSidebarWidth: 340px;
   --mp-layout-breakpointSplit: 960px;
   --mp-layout-breakpointCompact: 640px;
 }

@@ -75,6 +75,8 @@ const toneMap: Record<string, Record<string, Tone>> = {
     running: 'brand', paused: 'warning', completed: 'success',
     // Knowledge-source ingestion (chatbot) and catalogue/plan availability (App Store, Billing).
     indexing: 'brand', available: 'neutral', unconfigured: 'neutral',
+    // Log levels (LogInspector): error is already danger above.
+    info: 'brand', warning: 'warning',
     connected: 'success', disconnected: 'neutral',
     'needs setup': 'warning', 'sync issue': 'danger', 'auth expired': 'danger',
     healthy: 'success', 'needs attention': 'warning', incomplete: 'warning',

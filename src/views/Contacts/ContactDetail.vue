@@ -746,7 +746,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
 /* ── Two-column layout — the page scrolls as one; no viewport constants ── */
 .contact-sidebar {
-  flex: 0 0 var(--mp-layout-inboxListWidth);
+  flex: 0 0 var(--mp-layout-detailSidebarWidth);
   min-width: 0;
 }
 
