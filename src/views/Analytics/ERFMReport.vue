@@ -673,7 +673,7 @@ const hasData = computed(() => totalContacts.value.comparison > 0)
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .erfm-card {
   padding: var(--mp-component-card-padding);
 }
@@ -714,8 +714,8 @@ const hasData = computed(() => totalContacts.value.comparison > 0)
 }
 
 .erfm-dates__field {
-  width: 200px;
-  flex: 0 1 200px;
+  width: var(--mp-component-menu-minWidth);
+  flex: 0 1 var(--mp-component-menu-minWidth);
 }
 
 .erfm-dates__vs {
@@ -723,16 +723,22 @@ const hasData = computed(() => totalContacts.value.comparison > 0)
   padding-top: calc(var(--mp-component-field-labelHeight) + var(--mp-component-field-labelGap) + var(--mp-space-10));
 }
 
+.erfm-dates__span {
+  padding-top: calc(var(--mp-component-field-labelHeight) + var(--mp-component-field-labelGap) + var(--mp-space-12));
+}
+
 /* Once the two fields stack, an inline "vs" lands beside the base date and reads
-   as part of it. The field labels already carry the relationship. */
-@media (max-width: 599px) {
+   as part of it — the field labels already carry the relationship — and the
+   "days apart" note no longer has an input box to line up with. */
+@media (max-width: ($mp-layout-breakpointCompact - 0.02px)) {
   .erfm-dates__vs {
     display: none;
   }
-}
 
-.erfm-dates__span {
-  padding-top: calc(var(--mp-component-field-labelHeight) + var(--mp-component-field-labelGap) + var(--mp-space-12));
+  .erfm-dates__span {
+    flex: 1 0 100%;
+    padding-top: 0;
+  }
 }
 
 /* The create-segment block is a nested region of the insights card, so it gets
@@ -750,12 +756,10 @@ const hasData = computed(() => totalContacts.value.comparison > 0)
   margin-top: var(--mp-component-field-groupGap);
 }
 
+/* No chart-height token exists yet; this is the one literal left on the page
+   (proposed: component.chart.height). */
 .erfm-chart {
   min-height: 320px;
   height: 320px;
-}
-
-.num {
-  font-variant-numeric: tabular-nums;
 }
 </style>
