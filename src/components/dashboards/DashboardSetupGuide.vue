@@ -108,7 +108,7 @@ function toggle() {
 
       <router-link v-if="guideRoute" :to="guideRoute" class="setup-guide-widget__more">
         View full guide
-        <v-icon size="14">arrow-right</v-icon>
+        <v-icon size="16">arrow-right</v-icon>
       </router-link>
     </div>
   </v-card>

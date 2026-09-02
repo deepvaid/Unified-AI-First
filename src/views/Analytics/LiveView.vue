@@ -4,6 +4,7 @@ import type { ApexOptions } from 'apexcharts'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import MpKpiCard from '@/components/MpKpiCard.vue'
+import MpListRow from '@/components/MpListRow.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import { chartLegendOptions, useChartTheme } from '@/plugins/chartPalette'
 
@@ -417,10 +418,8 @@ const recentActivity = computed(() => [
           <template #activator="{ props: tipProps }">
             <v-btn
               v-bind="tipProps"
-              variant="flat"
+              variant="text"
               icon="refresh-cw"
-              rounded="lg"
-              color="surface"
               :loading="isRefreshing"
               aria-label="Refresh now"
               @click="refreshNow"
@@ -440,10 +439,8 @@ const recentActivity = computed(() => [
           <template #activator="{ props: tipProps }">
             <v-btn
               v-bind="tipProps"
-              variant="flat"
+              variant="text"
               :icon="isFullscreen ? 'minimize' : 'maximize'"
-              rounded="lg"
-              color="surface"
               :aria-label="isFullscreen ? 'Exit full screen' : 'View full screen'"
               @click="toggleFullscreen"
             />
@@ -533,22 +530,22 @@ const recentActivity = computed(() => [
     </v-row>
 
     <!-- Customer behavior funnel -->
-    <v-card variant="flat" border rounded="lg" class="pa-6">
-      <div class="text-subtitle-2 font-weight-bold mb-4">Customer behavior</div>
+    <v-card variant="flat" border rounded="lg" class="live-card">
+      <h2 class="mp-section-title">Customer behavior</h2>
       <div class="d-flex align-center gap-4 funnel">
         <div class="funnel__step">
           <div class="text-caption text-medium-emphasis">Active carts</div>
-          <div class="text-h4 font-weight-bold">{{ activeCarts }}</div>
+          <div class="funnel__value">{{ activeCarts }}</div>
         </div>
-        <v-icon class="funnel__arrow">chevron-right</v-icon>
+        <v-icon size="18" class="funnel__arrow">chevron-right</v-icon>
         <div class="funnel__step">
           <div class="text-caption text-medium-emphasis">Checking out</div>
-          <div class="text-h4 font-weight-bold">{{ checkingOut }}</div>
+          <div class="funnel__value">{{ checkingOut }}</div>
         </div>
-        <v-icon class="funnel__arrow">chevron-right</v-icon>
+        <v-icon size="18" class="funnel__arrow">chevron-right</v-icon>
         <div class="funnel__step">
           <div class="text-caption text-medium-emphasis">Purchased</div>
-          <div class="text-h4 font-weight-bold">{{ purchased }}</div>
+          <div class="funnel__value">{{ purchased }}</div>
         </div>
       </div>
     </v-card>
@@ -558,34 +555,36 @@ const recentActivity = computed(() => [
       <v-col cols="12" md="5">
         <div class="d-flex flex-column gap-4">
           <!-- Sessions by location (map) -->
-          <v-card variant="flat" border rounded="lg" class="pa-5">
-            <div class="d-flex align-center justify-space-between mb-3">
-              <div>
-                <div class="text-subtitle-2 font-weight-bold">Sessions by location</div>
-                <div class="text-caption text-medium-emphasis">Top markets right now</div>
-              </div>
+          <v-card variant="flat" border rounded="lg" class="live-card">
+            <div>
+              <h2 class="mp-section-title">Sessions by location</h2>
+              <div class="text-caption text-medium-emphasis">Top markets right now</div>
             </div>
 
             <div class="live-map">
               <div ref="mapContainer" class="live-map__leaflet" />
             </div>
 
-            <div class="live-map__legend mt-4">
-              <div
+            <div class="d-flex flex-column">
+              <MpListRow
                 v-for="loc in topLocations"
                 :key="`leg-${loc.name}`"
-                class="live-map__legend-row"
+                density="compact"
               >
-                <span class="live-flag">{{ loc.flag }}</span>
-                <span class="text-body-2 flex-grow-1">{{ loc.name }}</span>
-                <span class="text-body-2 font-weight-medium">{{ loc.sessions }}</span>
-              </div>
+                <template #lead>
+                  <span class="live-flag">{{ loc.flag }}</span>
+                </template>
+                <span class="text-body-2">{{ loc.name }}</span>
+                <template #trailing>
+                  <span class="text-body-2 font-weight-medium">{{ loc.sessions }}</span>
+                </template>
+              </MpListRow>
             </div>
           </v-card>
 
           <!-- New vs returning -->
-          <v-card variant="flat" border rounded="lg" class="pa-5">
-            <div class="text-subtitle-2 font-weight-bold mb-2">New vs returning customers</div>
+          <v-card variant="flat" border rounded="lg" class="live-card">
+            <h2 class="mp-section-title">New vs returning customers</h2>
             <ApexChart
               v-if="chartReady"
               type="donut"
@@ -597,21 +596,24 @@ const recentActivity = computed(() => [
           </v-card>
 
           <!-- Top products -->
-          <v-card variant="flat" border rounded="lg" class="pa-5">
-            <div class="d-flex align-center justify-space-between mb-3">
-              <div class="text-subtitle-2 font-weight-bold">Top products by sales</div>
+          <v-card variant="flat" border rounded="lg" class="live-card">
+            <div class="d-flex align-center justify-space-between">
+              <h2 class="mp-section-title">Top products by sales</h2>
               <span class="text-caption text-medium-emphasis">Revenue</span>
             </div>
-            <div class="live-rows">
-              <div
+            <div class="d-flex flex-column">
+              <MpListRow
                 v-for="(p, i) in topProducts"
                 :key="p.name"
-                class="live-row"
               >
-                <div class="live-rank">{{ i + 1 }}</div>
-                <span class="text-body-2 flex-grow-1">{{ p.name }}</span>
-                <span class="text-body-2 font-weight-medium">${{ p.revenue.toLocaleString() }}</span>
-              </div>
+                <template #lead>
+                  <span class="live-rank">{{ i + 1 }}</span>
+                </template>
+                <span class="text-body-2">{{ p.name }}</span>
+                <template #trailing>
+                  <span class="text-body-2 font-weight-medium">${{ p.revenue.toLocaleString() }}</span>
+                </template>
+              </MpListRow>
             </div>
           </v-card>
         </div>
@@ -620,14 +622,12 @@ const recentActivity = computed(() => [
       <v-col cols="12" md="7">
         <div class="d-flex flex-column gap-4 h-100">
           <!-- Real-time activity chart -->
-          <v-card variant="flat" border rounded="lg" class="pa-5 flex-grow-1 d-flex flex-column">
-            <div class="d-flex align-center justify-space-between mb-2">
-              <div>
-                <div class="text-subtitle-2 font-weight-bold">Real-time activity</div>
-                <div class="text-caption text-medium-emphasis">Last 30 minutes</div>
-              </div>
+          <v-card variant="flat" border rounded="lg" class="live-card flex-grow-1">
+            <div>
+              <h2 class="mp-section-title">Real-time activity</h2>
+              <div class="text-caption text-medium-emphasis">Last 30 minutes</div>
             </div>
-            <div class="flex-grow-1" style="min-height: 320px;">
+            <div class="flex-grow-1 live-activity__chart">
               <ApexChart
                 v-if="chartReady"
                 type="area"
@@ -640,22 +640,21 @@ const recentActivity = computed(() => [
           </v-card>
 
           <!-- Recent activity feed -->
-          <v-card variant="flat" border rounded="lg" class="pa-5">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Recent activity</div>
-            <div class="live-rows">
-              <div
+          <v-card variant="flat" border rounded="lg" class="live-card">
+            <h2 class="mp-section-title">Recent activity</h2>
+            <div class="d-flex flex-column">
+              <MpListRow
                 v-for="(a, i) in recentActivity"
                 :key="`${a.label}-${i}`"
-                class="live-row"
               >
-                <v-avatar size="32" :color="a.color" variant="tonal">
-                  <v-icon size="18">{{ a.icon }}</v-icon>
-                </v-avatar>
-                <div class="flex-grow-1 d-flex flex-column">
-                  <span class="text-body-2 font-weight-medium">{{ a.label }}</span>
-                  <span class="text-caption text-medium-emphasis">{{ a.meta }}</span>
-                </div>
-              </div>
+                <template #lead>
+                  <v-avatar size="32" :color="a.color" variant="tonal">
+                    <v-icon size="18">{{ a.icon }}</v-icon>
+                  </v-avatar>
+                </template>
+                <span class="text-body-2 font-weight-medium">{{ a.label }}</span>
+                <span class="text-caption text-medium-emphasis">{{ a.meta }}</span>
+              </MpListRow>
             </div>
           </v-card>
         </div>
@@ -670,14 +669,27 @@ const recentActivity = computed(() => [
 }
 
 .live-view__search {
-  width: 240px;
+  width: var(--mp-component-toolbar-searchMinWidth);
+}
+
+/* Card insets and the gap between a card's blocks come from component.card.* —
+   no pa-* on a card root, no mb-* on its children. */
+.live-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-component-card-gap);
+  padding: var(--mp-component-card-padding);
+}
+
+.live-activity__chart {
+  min-height: 320px;
 }
 
 .live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgb(var(--v-theme-success));
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-full);
+  background: var(--pos);
   box-shadow: 0 0 0 0 rgba(var(--v-theme-success), 0.6);
   animation: live-pulse 1.6s ease-out infinite;
 }
@@ -689,10 +701,10 @@ const recentActivity = computed(() => [
 }
 
 .live-spark {
-  margin-left: -8px;
-  margin-right: -8px;
+  margin-left: calc(-1 * var(--mp-space-8));
+  margin-right: calc(-1 * var(--mp-space-8));
   overflow: hidden;
-  width: calc(100% + 16px);
+  width: calc(100% + var(--mp-space-16));
 }
 
 .funnel {
@@ -704,52 +716,45 @@ const recentActivity = computed(() => [
   min-width: 140px;
   padding: var(--mp-space-16) var(--mp-space-20);
   border-radius: var(--mp-radius-12);
-  background: rgba(var(--v-theme-surface-variant), 0.45);
-  border: 1px solid rgba(var(--v-theme-border), 0.6);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
+}
+
+.funnel__value {
+  font-size: var(--mp-text-kpiValue-fontSize);
+  font-weight: var(--mp-text-kpiValue-fontWeight);
+  letter-spacing: var(--mp-text-kpiValue-letterSpacing);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .funnel__arrow {
-  color: rgba(var(--v-theme-on-surface), 0.4);
+  color: var(--on-surface-muted);
 }
 
 .live-flag {
-  font-size: 20px;
+  font-size: var(--mp-fontSize-20);
   line-height: 1;
 }
 
 .live-rank {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
+  width: var(--mp-space-24);
+  height: var(--mp-space-24);
+  border-radius: var(--mp-radius-full);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(var(--v-theme-surface-variant), 0.85);
-  border: 1px solid rgba(var(--v-theme-border), 0.7);
+  background: var(--surface-secondary);
   font-size: var(--mp-fontSize-11);
   font-weight: var(--mp-fontWeight-semibold);
-  color: rgba(var(--v-theme-on-surface), 0.72);
+  color: var(--on-surface-muted);
+  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-}
-
-// ─── List rows (no v-list wrapper border) ──────────────────────
-.live-rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mp-space-8);
-}
-
-.live-row {
-  display: flex;
-  align-items: center;
-  gap: var(--mp-space-12);
-  padding: var(--mp-space-8) 0;
-  min-height: 36px;
 }
 
 // ─── Full screen ───────────────────────────────────────────────
 .live-view:fullscreen {
-  background: rgb(var(--v-theme-background));
+  background: var(--surface-canvas);
   padding: var(--mp-space-24);
   overflow-y: auto;
 }
@@ -761,14 +766,14 @@ const recentActivity = computed(() => [
   aspect-ratio: 2 / 1;
   border-radius: var(--mp-radius-12);
   overflow: hidden;
-  border: 1px solid rgba(var(--v-theme-border), 0.6);
+  border: 1px solid var(--border-subtle);
 }
 
 .live-map__leaflet {
   width: 100%;
   height: 100%;
   z-index: 0;
-  background: rgba(var(--v-theme-surface-variant), 0.35);
+  background: var(--surface-secondary);
 }
 
 :deep(.live-map__marker) {
@@ -825,7 +830,7 @@ const recentActivity = computed(() => [
 }
 
 :deep(.leaflet-control-zoom) {
-  border: 1px solid rgba(var(--v-theme-border), 0.6) !important;
+  border: 1px solid var(--border-subtle) !important;
   border-radius: var(--mp-radius-12) !important;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
@@ -833,11 +838,11 @@ const recentActivity = computed(() => [
 
 :deep(.leaflet-control-zoom a) {
   background: rgb(var(--v-theme-surface)) !important;
-  color: rgba(var(--v-theme-on-surface), 0.75) !important;
-  border-bottom: 1px solid rgba(var(--v-theme-border), 0.4) !important;
+  color: var(--on-surface-muted) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
 
   &:hover {
-    background: rgba(var(--v-theme-surface-variant), 0.9) !important;
+    background: var(--surface-secondary) !important;
     color: rgb(var(--v-theme-on-surface)) !important;
   }
 }
@@ -864,30 +869,17 @@ const recentActivity = computed(() => [
 :deep(.live-map__popup-title) {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
   font-weight: var(--mp-fontWeight-semibold);
 }
 
 :deep(.live-map__popup-flag) {
-  font-size: 16px;
+  font-size: var(--mp-fontSize-16);
   line-height: 1;
 }
 
 :deep(.live-map__popup-meta) {
-  color: rgba(var(--v-theme-on-surface), 0.62);
-  margin-top: 2px;
-}
-
-.live-map__legend {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mp-space-4);
-}
-
-.live-map__legend-row {
-  display: flex;
-  align-items: center;
-  gap: var(--mp-space-12);
-  padding: 4px 0;
+  color: var(--on-surface-muted);
+  margin-top: var(--mp-space-2);
 }
 </style>
