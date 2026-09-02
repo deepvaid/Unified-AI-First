@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useCommerceStore, PRODUCT_TYPES, type Product, type ProductView } from '@/stores/useCommerce'
 import { useProductExtrasStore } from '@/stores/useProductExtras'
 import { useSalesChannelsStore } from '@/stores/useSalesChannels'
@@ -176,13 +177,14 @@ const isFiltering = computed(() => Boolean(search.value.trim()) || activeFilterE
 
 const headers = [
   { title: 'Name', key: 'name', sortable: true, minWidth: '280px' },
-  { title: 'SKU', key: 'sku', sortable: true },
-  { title: 'Stock', key: 'status', sortable: true },
+  { title: 'SKU', key: 'sku', sortable: true, hideBelow: 'md' as const },
+  { title: 'Stock', key: 'status', sortable: true, hideBelow: 'lg' as const },
   { title: 'Price', key: 'price', align: 'end' as const, sortable: true },
-  { title: 'Categories', key: 'collections', sortable: false },
-  { title: 'Status', key: 'publishStatus', sortable: true },
+  { title: 'Categories', key: 'collections', sortable: false, hideBelow: 'lg' as const },
+  { title: 'Status', key: 'publishStatus', sortable: true, hideBelow: 'sm' as const },
   { title: '', key: 'actions', sortable: false, width: 56 },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 const money = (value: string) => `$${(parseFloat(value) || 0).toFixed(2)}`
 
@@ -352,11 +354,11 @@ onMounted(() => {
           <template #activator="{ props: menu }">
             <v-btn v-bind="menu" variant="outlined" prepend-icon="upload" append-icon="chevron-down" class="text-none">Import</v-btn>
           </template>
-          <v-list density="compact">
-            <v-list-item prepend-icon="file-text" title="Upload file" subtitle="CSV up to 150 MB" @click="openImport('csv')" />
-            <v-list-item prepend-icon="server" title="Import over FTP" subtitle="Needs an SFTP connection" @click="openImport('ftp')" />
+          <v-list role="menu">
+            <MpMenuItem icon="file-text" title="Upload file" subtitle="CSV up to 150 MB" @click="openImport('csv')" />
+            <MpMenuItem icon="server" title="Import over FTP" subtitle="Needs an SFTP connection" @click="openImport('ftp')" />
             <v-divider class="my-1" />
-            <v-list-item prepend-icon="history" title="Import logs" @click="openImportLogs" />
+            <MpMenuItem icon="history" title="Import logs" @click="openImportLogs" />
           </v-list>
         </v-menu>
 
@@ -364,9 +366,9 @@ onMounted(() => {
           <template #activator="{ props: menu }">
             <v-btn v-bind="menu" color="primary" variant="flat" prepend-icon="plus" append-icon="chevron-down" class="text-none">New product</v-btn>
           </template>
-          <v-list density="compact">
-            <v-list-item prepend-icon="package" title="New product" @click="openNewProduct" />
-            <v-list-item prepend-icon="boxes" title="New kit" subtitle="A product built from other products" @click="openNewKit" />
+          <v-list role="menu">
+            <MpMenuItem icon="package" title="New product" @click="openNewProduct" />
+            <MpMenuItem icon="boxes" title="New kit" subtitle="A product built from other products" @click="openNewKit" />
           </v-list>
         </v-menu>
       </template>
@@ -455,7 +457,7 @@ onMounted(() => {
         v-else
         v-model="selected"
         v-model:page="page"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="filteredProducts"
         :items-per-page="ITEMS_PER_PAGE"
         item-value="id"
@@ -534,7 +536,6 @@ onMounted(() => {
             :description="isFiltering ? 'Try a different term, or clear the filters to see the whole catalog.' : 'Add your first product or import a catalog to get started.'"
             :action-label="isFiltering ? 'Clear all filters' : 'New product'"
             :action-icon="isFiltering ? 'x' : 'plus'"
-            class="py-10"
             @action="isFiltering ? clearAllFilters() : openNewProduct()"
           />
         </template>
@@ -617,8 +618,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(var(--v-theme-surface-variant));
-  color: rgb(var(--v-theme-on-surface-variant));
+  background: var(--surface-secondary);
+  color: var(--on-surface-muted);
 }
 
 .prod-mono {
