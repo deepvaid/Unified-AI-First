@@ -404,7 +404,11 @@ onMounted(() => {
                       closable-chips
                     />
                   </MpFormGrid>
-                  <v-btn icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove option" :disabled="options.length === 1" @click="removeOption(i)" />
+                  <v-tooltip text="Remove option" location="top">
+                    <template #activator="{ props: tip }">
+                      <v-btn v-bind="tip" icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove option" :disabled="options.length === 1" @click="removeOption(i)" />
+                    </template>
+                  </v-tooltip>
                 </div>
               </MpFormGrid>
             </MpWizardStepCard>
@@ -501,13 +505,12 @@ onMounted(() => {
   justify-content: center;
   text-align: center;
   padding: var(--mp-space-32) var(--mp-space-16);
-  border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.25);
+  border: 1px dashed var(--border-strong);
   border-radius: var(--mp-radius-12);
-  background: rgba(var(--v-theme-on-surface), 0.02);
 }
 
 .pw-variant {
-  border: 1px solid var(--mp-border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--mp-radius-12);
   padding: var(--mp-space-16);
 }

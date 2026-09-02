@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCommerceStore, type KitComponent, type ProductDraftInput, type PublishStatus } from '@/stores/useCommerce'
 import MpWizardShell from '@/components/MpWizardShell.vue'
 import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
@@ -259,7 +260,6 @@ function save(publishStatus: PublishStatus) {
               icon="package"
               title="No components yet"
               description="Go back to Add Product to include products in this kit."
-              class="py-8"
             />
             <v-data-table
               v-else
@@ -278,12 +278,16 @@ function save(publishStatus: PublishStatus) {
                   <!-- Table-cell inline editor (chrome, not a form field): aria-label +
                        `hide-details` + sm density are deliberate, so a component row
                        stays one line tall with no top-label headroom. -->
-                  <v-text-field v-model.number="item.qty" aria-label="Qty" type="number" min="1" density="compact" hide-details style="max-width: 90px;" />
-                  <span class="font-weight-medium" style="min-width: 70px; text-align: right;">${{ (Number(item.price) * item.qty).toFixed(2) }}</span>
+                  <v-text-field v-model.number="item.qty" aria-label="Qty" type="number" min="1" density="compact" hide-details class="kw-qty" />
+                  <span class="kw-line-total num font-weight-medium text-end">${{ (Number(item.price) * item.qty).toFixed(2) }}</span>
                 </div>
               </template>
               <template #item.actions="{ item }">
-                <v-btn icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove component" @click="removeComponent(item.productId)" />
+                <v-tooltip text="Remove component" location="top">
+                  <template #activator="{ props: tip }">
+                    <v-btn v-bind="tip" icon="trash-2" variant="text" size="small" class="text-medium-emphasis" aria-label="Remove component" @click="removeComponent(item.productId)" />
+                  </template>
+                </v-tooltip>
               </template>
             </v-data-table>
           </MpWizardStepCard>
@@ -300,9 +304,9 @@ function save(publishStatus: PublishStatus) {
           <MpWizardStepCard title="Settings" description="Choose where this kit is available. Status is set by the action you take below.">
             <MpFormGrid>
               <v-select v-model="salesChannels" :items="SALES_CHANNELS" label="Sales Channels" multiple chips closable-chips />
-              <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
+              <MpAlert tone="info" live="off">
                 Save as Draft keeps this kit hidden; Publish makes it available on the selected channels.
-              </v-alert>
+              </MpAlert>
             </MpFormGrid>
           </MpWizardStepCard>
         </template>
@@ -330,3 +334,14 @@ function save(publishStatus: PublishStatus) {
     @confirm="discardAndLeave"
   />
 </template>
+
+<style scoped>
+/* Table-cell editor widths on the spacing scale — no bare px. */
+.kw-qty {
+  max-width: var(--mp-space-80);
+}
+
+.kw-line-total {
+  min-width: var(--mp-space-64);
+}
+</style>

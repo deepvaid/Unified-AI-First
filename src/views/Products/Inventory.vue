@@ -18,6 +18,8 @@ import MpFormField from '@/components/MpFormField.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const store = useCommerceStore()
 const route = useRoute()
@@ -115,16 +117,21 @@ const filteredInventory = computed(() => {
 const headers = [
   { title: 'Product', key: 'name', sortable: true, minWidth: '260px' },
   { title: 'Avail. Inventory', key: 'inventory', align: 'end' as const, sortable: true },
-  { title: 'On Order / Incoming', key: 'incoming', align: 'end' as const, sortable: true },
-  { title: 'Status', key: 'status' },
-  { title: 'Location', key: 'locationId' },
+  { title: 'On Order / Incoming', key: 'incoming', align: 'end' as const, sortable: true, hideBelow: 'lg' as const },
+  { title: 'Status', key: 'status', hideBelow: 'sm' as const },
+  { title: 'Location', key: 'locationId', hideBelow: 'md' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 // ── Adjust Stock drawer ─────────────────────────────────────────────
 const adjustDrawer = ref(false)
 const adjustItem = ref<InventoryItem | null>(null)
 const adjustMode = ref<'set' | 'delta'>('set')
+const ADJUST_MODES = [
+  { value: 'set', label: 'Set new count' },
+  { value: 'delta', label: 'Adjust by +/−' },
+]
 const adjustValue = ref(0)
 const adjustReason = ref('Recount')
 const REASONS = ['Recount', 'Received shipment', 'Damaged / shrinkage', 'Customer return', 'Correction']
@@ -217,7 +224,7 @@ const importHeaders = [
 /** Low/none stock emphasis for a pivot cell. */
 function cellClass(qty: number): string {
   if (qty === 0) return 'text-error font-weight-bold'
-  if (qty < 5) return 'text-warning font-weight-medium'
+  if (qty < 5) return 'inventory-low font-weight-medium'
   return ''
 }
 
@@ -245,7 +252,7 @@ function exportInventory() {
       :subtitle="`${store.inventory.length} SKUs across ${locationOptions.length} locations`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportInventory">Export</v-btn>
+        <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="exportInventory">Export</v-btn>
       </template>
     </MpPageHeader>
 
@@ -290,7 +297,7 @@ function exportInventory() {
 
       <v-data-table
         v-else
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="filteredInventory"
         :search="search"
         :items-per-page="15"
@@ -301,20 +308,13 @@ function exportInventory() {
       >
         <template v-slot:item.name="{ item }">
           <div class="d-flex align-center gap-3 py-2">
-            <v-img
-              :src="`https://picsum.photos/seed/${item.id}/32/32`"
-              :width="32"
-              :height="32"
-              cover
-              rounded="md"
-              class="flex-shrink-0 border inventory-thumb"
-            >
-              <template #error>
-                <div class="w-100 h-100 d-flex align-center justify-center bg-surface-variant rounded-md">
-                  <v-icon size="16" class="text-medium-emphasis">image</v-icon>
-                </div>
-              </template>
-            </v-img>
+            <v-avatar :size="32" rounded="lg" class="border flex-shrink-0">
+              <v-img :src="`https://picsum.photos/seed/${item.id}/32/32`" cover alt="">
+                <template #error>
+                  <div class="inventory-thumb-fallback"><v-icon size="16">image</v-icon></div>
+                </template>
+              </v-img>
+            </v-avatar>
             <div>
               <div class="text-body-2 font-weight-medium">{{ item.name }}</div>
               <div class="text-caption text-medium-emphasis">{{ item.sku }}</div>
@@ -323,12 +323,12 @@ function exportInventory() {
         </template>
 
         <template v-slot:item.inventory="{ item }">
-          <span :class="item.inventory === 0 ? 'text-error font-weight-bold' : item.inventory < 20 ? 'text-warning font-weight-bold' : 'font-weight-medium'" style="font-variant-numeric: tabular-nums">{{ item.inventory }}</span>
+          <span class="num" :class="item.inventory === 0 ? 'text-error font-weight-bold' : item.inventory < 20 ? 'inventory-low font-weight-bold' : 'font-weight-medium'">{{ item.inventory }}</span>
         </template>
 
         <template v-slot:item.incoming="{ item }">
-          <span v-if="item.incoming > 0" class="text-medium-emphasis" style="font-variant-numeric: tabular-nums">
-            <v-icon size="13" class="me-1" color="info">truck</v-icon>{{ item.incoming }}
+          <span v-if="item.incoming > 0" class="num text-medium-emphasis d-inline-flex align-center ga-1">
+            <v-icon size="16" color="info">truck</v-icon>{{ item.incoming }}
           </span>
           <span v-else class="text-disabled">—</span>
         </template>
@@ -339,7 +339,7 @@ function exportInventory() {
 
         <template v-slot:item.locationId="{ item }">
           <div class="d-flex align-center gap-2">
-            <v-icon size="15" class="text-medium-emphasis">map-pin</v-icon>
+            <v-icon size="16" class="text-medium-emphasis">map-pin</v-icon>
             <span class="text-body-2">{{ locationName(item.locationId) }}</span>
           </div>
         </template>
@@ -356,7 +356,6 @@ function exportInventory() {
             icon="package"
             :title="search ? 'No items match your search' : 'No inventory items'"
             :description="search ? 'Try a different search term or clear your filters.' : 'Your product inventory will appear here once products are added to your store.'"
-            class="py-10"
           />
         </template>
       </v-data-table>
@@ -387,14 +386,11 @@ function exportInventory() {
         </template>
 
         <template v-for="loc in locationOptions" :key="loc.id" v-slot:[`item.${loc.id}`]="{ item }">
-          <span
-            :class="cellClass(Number(item[loc.id] ?? 0))"
-            style="font-variant-numeric: tabular-nums"
-          >{{ item[loc.id] }}</span>
+          <span class="num" :class="cellClass(Number(item[loc.id] ?? 0))">{{ item[loc.id] }}</span>
         </template>
 
         <template v-slot:item.total="{ item }">
-          <span class="font-weight-bold" style="font-variant-numeric: tabular-nums">{{ item.total }}</span>
+          <span class="num font-weight-bold">{{ item.total }}</span>
         </template>
 
         <template v-slot:no-data>
@@ -444,14 +440,7 @@ function exportInventory() {
           prepend-inner-icon="map-pin"
         />
         <MpFormField label="Adjustment mode">
-          <template #default="{ labelId }">
-            <div>
-              <v-btn-toggle v-model="adjustMode" mandatory class="w-100" :aria-labelledby="labelId">
-                <v-btn value="set" class="text-none flex-grow-1">Set new count</v-btn>
-                <v-btn value="delta" class="text-none flex-grow-1">Adjust by +/−</v-btn>
-              </v-btn-toggle>
-            </div>
-          </template>
+          <MpSegmentedControl v-model="adjustMode" :items="ADJUST_MODES" ariaLabel="Adjustment mode" />
         </MpFormField>
         <v-text-field
           v-model.number="adjustValue"
@@ -502,11 +491,19 @@ function exportInventory() {
 </template>
 
 <style scoped>
-.inventory-thumb {
-  flex: 0 0 32px;
-  width: 32px !important;
-  height: 32px !important;
-  aspect-ratio: 1 / 1;
+.inventory-thumb-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-secondary);
+  color: var(--on-surface-muted);
+}
+
+/* Warm soft-surface ink, not the raw warning hue — low-stock counts have to pass on white. */
+.inventory-low {
+  color: var(--warn-ink);
 }
 
 .inventory-adjust-preview {

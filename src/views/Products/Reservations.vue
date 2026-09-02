@@ -6,6 +6,7 @@ import {
   type Reservation, type InventoryLocation, type ReservableVariant,
 } from '@/stores/useProductExtras'
 import { useToast } from '@/composables/useToast'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -41,13 +42,14 @@ const search = ref('')
 
 const headers = [
   { title: 'Item', key: 'item', sortable: true, minWidth: '240px' },
-  { title: 'SKU', key: 'sku', sortable: true },
-  { title: 'Order', key: 'orderNumber' },
-  { title: 'Location', key: 'location', sortable: true },
-  { title: 'Description', key: 'description' },
+  { title: 'SKU', key: 'sku', sortable: true, hideBelow: 'lg' as const },
+  { title: 'Order', key: 'orderNumber', hideBelow: 'md' as const },
+  { title: 'Location', key: 'location', sortable: true, hideBelow: 'sm' as const },
+  { title: 'Description', key: 'description', hideBelow: 'lg' as const },
   { title: 'Qty', key: 'qty', align: 'end' as const, sortable: true },
   { title: '', key: 'actions', sortable: false, width: 56 },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 const filtered = computed(() => {
   const term = search.value.trim().toLowerCase()
@@ -194,14 +196,10 @@ function doDelete() {
         :active-filters="locationFilterEntries"
         @remove-filter="locationFilter = []"
         @clear-filters="locationFilter = []"
-      >
-        <template #actions>
-          <!-- Toolbar filter, not a form field: hide-details keeps the row height stable. -->
-        </template>
-      </MpDataTableToolbar>
+      />
 
       <v-data-table
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="filtered"
         :items-per-page="10"
         hover
@@ -221,7 +219,7 @@ function doDelete() {
         </template>
         <template #item.location="{ item }">
           <div class="d-flex align-center ga-2">
-            <v-icon size="15" class="text-medium-emphasis">map-pin</v-icon>
+            <v-icon size="16" class="text-medium-emphasis">map-pin</v-icon>
             <span class="text-body-2">{{ item.location }}</span>
           </div>
         </template>
@@ -229,7 +227,7 @@ function doDelete() {
           <span class="text-body-2 text-medium-emphasis">{{ item.description || '—' }}</span>
         </template>
         <template #item.qty="{ item }">
-          <span class="text-body-2 font-weight-medium">{{ item.qty }}</span>
+          <span class="text-body-2 font-weight-medium num">{{ item.qty }}</span>
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Reservation actions" :item-label="item.item">
@@ -245,7 +243,6 @@ function doDelete() {
             :description="search || locationFilter.length ? 'Try a different search term, or switch the location back to All locations.' : 'Reservations hold stock back from available inventory — orders create them automatically, and you can add manual holds.'"
             :action-label="search || locationFilter.length ? undefined : 'New reservation'"
             :action-icon="search || locationFilter.length ? undefined : 'plus'"
-            class="py-10"
             @action="openCreate"
           />
         </template>
@@ -283,12 +280,24 @@ function doDelete() {
 
       <template v-if="showSummary">
         <MpFormSection title="Stock at this location">
-          <div class="res-summary">
-            <div class="res-summary__row"><span>Item</span><span>{{ selectedVariant?.label }}</span></div>
-            <div class="res-summary__row"><span>SKU</span><span class="res-mono">{{ selectedVariant?.sku }}</span></div>
-            <div class="res-summary__row"><span>In stock</span><span>{{ selectedVariant?.inStock ?? 0 }}</span></div>
-            <div class="res-summary__row"><span>Available</span><span>{{ selectedVariant?.available ?? 0 }}</span></div>
-          </div>
+          <dl class="mp-label-value">
+            <div>
+              <dt class="mp-meta-label text-medium-emphasis">Item</dt>
+              <dd class="text-body-2">{{ selectedVariant?.label }}</dd>
+            </div>
+            <div>
+              <dt class="mp-meta-label text-medium-emphasis">SKU</dt>
+              <dd class="res-mono text-body-2">{{ selectedVariant?.sku }}</dd>
+            </div>
+            <div>
+              <dt class="mp-meta-label text-medium-emphasis">In stock</dt>
+              <dd class="text-body-2 num">{{ selectedVariant?.inStock ?? 0 }}</dd>
+            </div>
+            <div>
+              <dt class="mp-meta-label text-medium-emphasis">Available</dt>
+              <dd class="text-body-2 num">{{ selectedVariant?.available ?? 0 }}</dd>
+            </div>
+          </dl>
 
           <MpFormGrid>
             <v-text-field
@@ -346,27 +355,5 @@ function doDelete() {
 .res-link {
   color: rgb(var(--v-theme-primary));
   font-weight: var(--mp-fontWeight-medium);
-}
-
-.res-summary {
-  border: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-  border-radius: var(--mp-component-card-radius);
-  overflow: hidden;
-}
-
-.res-summary__row {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--mp-space-16);
-  padding: var(--mp-component-listItem-paddingBlock) var(--mp-component-listItem-paddingInline);
-  font-size: var(--mp-fontSize-13);
-}
-
-.res-summary__row + .res-summary__row {
-  border-top: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-}
-
-.res-summary__row span:first-child {
-  color: rgb(var(--v-theme-on-surface-variant));
 }
 </style>

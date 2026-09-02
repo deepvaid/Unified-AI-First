@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useProductExtrasStore, type TaxCategory, type TaxCategoryType } from '@/stores/useProductExtras'
 import { downloadCsv } from '@/utils/exportCsv'
 import { useToast } from '@/composables/useToast'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
@@ -24,12 +25,13 @@ const typeMeta: Record<TaxCategoryType, { icon: string; color: string }> = {
 }
 
 const headers = [
-  { title: 'ID', key: 'id', sortable: true },
+  { title: 'ID', key: 'id', sortable: true, hideBelow: 'md' as const },
   { title: 'Type', key: 'type' },
   { title: 'Category Name', key: 'name', sortable: true },
-  { title: 'Description', key: 'description' },
+  { title: 'Description', key: 'description', hideBelow: 'lg' as const },
   { title: '', key: 'actions', sortable: false, width: 48 },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 // ── Filters ────────────────────────────────────────────────────────
 // Type is this table's only filter, so it lives in the toolbar as a pill and
@@ -114,7 +116,7 @@ function exportCategories() {
       :subtitle="`${store.taxCategories.length} categories`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCategories">Export</v-btn>
+        <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="exportCategories">Export</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New Tax Category</v-btn>
       </template>
     </MpPageHeader>
@@ -131,7 +133,7 @@ function exportCategories() {
       />
 
       <v-data-table
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="filteredCategories"
         :search="search"
         :items-per-page="15"
@@ -145,7 +147,7 @@ function exportCategories() {
         </template>
         <template v-slot:item.type="{ item }">
           <v-chip size="small" variant="tonal" :color="typeMeta[item.type].color" label>
-            <v-icon start size="13">{{ typeMeta[item.type].icon }}</v-icon>
+            <v-icon start size="16">{{ typeMeta[item.type].icon }}</v-icon>
             {{ item.type }}
           </v-chip>
         </template>
@@ -169,7 +171,6 @@ function exportCategories() {
             :description="search || typeFilter.length ? 'Try a different search term or clear your filters.' : 'Create a tax category to control how products are taxed at checkout.'"
             :action-label="search || typeFilter.length ? undefined : 'New Tax Category'"
             :action-icon="search || typeFilter.length ? undefined : 'plus'"
-            class="py-10"
             @action="openCreate"
           />
         </template>
@@ -208,5 +209,5 @@ function exportCategories() {
 </template>
 
 <style scoped>
-.font-mono { font-family: monospace; }
+.font-mono { font-family: var(--mp-fontFamily-mono); }
 </style>

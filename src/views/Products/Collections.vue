@@ -6,6 +6,7 @@ import {
   type Collection, type CollectionType, type CollectionStatus,
 } from '@/stores/useProductExtras'
 import { useToast } from '@/composables/useToast'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
@@ -44,13 +45,14 @@ const selected = ref<number[]>([])
 
 const headers = [
   { title: 'Title', key: 'title', sortable: true, minWidth: '260px' },
-  { title: 'Handle', key: 'handle', sortable: true },
-  { title: 'Type', key: 'type', sortable: true },
+  { title: 'Handle', key: 'handle', sortable: true, hideBelow: 'lg' as const },
+  { title: 'Type', key: 'type', sortable: true, hideBelow: 'md' as const },
   { title: 'Products', key: 'productCount', align: 'end' as const, sortable: true },
-  { title: 'Status', key: 'status', sortable: true },
-  { title: 'Updated at', key: 'updatedAt', sortable: true },
+  { title: 'Status', key: 'status', sortable: true, hideBelow: 'sm' as const },
+  { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'lg' as const },
   { title: '', key: 'actions', sortable: false, width: 56 },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 
 const parents = computed(() => Array.from(new Set(store.collections.map((c) => c.parent))))
 
@@ -155,15 +157,15 @@ function doBulkDelete() {
               New collection
             </v-btn>
           </template>
-          <v-list density="compact">
-            <v-list-item
-              prepend-icon="wand-sparkles"
+          <v-list role="menu">
+            <MpMenuItem
+              icon="wand-sparkles"
               title="Automated collection"
               subtitle="Products join automatically when they match your rules"
               @click="createCollection('Automated')"
             />
-            <v-list-item
-              prepend-icon="hand"
+            <MpMenuItem
+              icon="hand"
               title="Manual collection"
               subtitle="You pick the exact products it contains"
               @click="createCollection('Manual')"
@@ -199,7 +201,7 @@ function doBulkDelete() {
 
       <v-data-table
         v-model="selected"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="filtered"
         :items-per-page="10"
         item-value="id"
@@ -237,7 +239,7 @@ function doBulkDelete() {
         </template>
         <template #item.type="{ item }">
           <v-chip size="small" variant="tonal" :color="item.type === 'Automated' ? 'primary' : 'secondary'" label>
-            <v-icon start size="13">{{ item.type === 'Automated' ? 'wand-sparkles' : 'hand' }}</v-icon>
+            <v-icon start size="16">{{ item.type === 'Automated' ? 'wand-sparkles' : 'hand' }}</v-icon>
             {{ item.type }}
           </v-chip>
         </template>
@@ -264,7 +266,6 @@ function doBulkDelete() {
             :description="hasFilters ? 'Try a different search term or clear your filters.' : 'Collections group products for storefront merchandising and navigation.'"
             :action-label="hasFilters ? 'Clear filters' : 'New automated collection'"
             :action-icon="hasFilters ? 'x' : 'plus'"
-            class="py-10"
             @action="hasFilters ? clearFilters() : createCollection('Automated')"
           />
         </template>
