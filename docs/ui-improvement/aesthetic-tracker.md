@@ -63,47 +63,47 @@
 
 ## Wave 2
 
-### Module 01 — Dashboard   [module-status: pending]
+### Module 01 — Dashboard   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Dashboards/DashboardsList.vue | /accounts/2000290/dashboards | standard | pending |  | skeleton + responsive headers + 375px overflow fixed; ad-hoc redesign: single kebab per row, type chips → text, back-to header, factual subtitle |
-| 2 | DashboardView.vue | /accounts/2000290/dashboard · /dashboard/2000290-home | standard | pending |  | serves 2 routes; ad-hoc redesign: compact grouped Actions/Add-content menus, switcher row buttons removed, single-header widget wizard |
-| 3 | Analytics/LiveView.vue | /accounts/2000290/analytics/live_view | standard | pending |  | ad-hoc light redesign: single live indicator, heading scale; 18 pre-existing `!important` untouched (roadmap #16 cluster) |
+| 1 | Dashboards/DashboardsList.vue | /accounts/2000290/dashboards | standard | done | adddc6e | convention root (h-100 d-flex flex-column gap-5); link weight/colour + focus ring on tokens; star 14 → 16; phone media query on $mp-layout-breakpointCompact; cell padding on table.cellPaddingInlineCompact |
+| 2 | DashboardView.vue | /accounts/2000290/dashboard · /dashboard/2000290-home | standard | done | 73f493e | 2 raw v-alert → MpAlert; date-range pill → plain tonal small (7 !important + 4 :deep deleted); refresh button 3 !important deleted; focus rings → --focus-ring; rgba hovers → surface/accent/neg tokens; h1 on text.pageTitle; 640/960 queries on Sass breakpoints. Bespoke header kept (roadmap). Left: shell-bleed negative margins mirror .mp-main-shell literals; 200px date-preset column needs a token |
+| 3 | Analytics/LiveView.vue | /accounts/2000290/analytics/live_view | standard | done | e4ca3e4 | 6 card roots pa-5/pa-6 → .live-card on card.padding/gap; 7 ad-hoc titles → h2.mp-section-title; funnel values on text.kpiValue; 3 hand-rolled rows → MpListRow; rgba literals → token pairs; search on toolbar.searchMinWidth. All 18 !important kept — every one is a Leaflet third-party override |
 
-### Module 02 — Analytics (Reports)   [module-status: pending]
-
-| # | View file | URL(s) | Profile | Status | Commit | Notes |
-|---|-----------|--------|---------|--------|--------|-------|
-| 1 | Analytics/MonthlyTotals.vue | /accounts/2000290/analytics/monthly_totals | standard | pending |  | loading state + responsive columns (table overflowed 201px→0 at 375px); error state N/A (no fetch path); **touched shared MpPageHeader** (actions wrap <600px, f923f0f — fixed 97px header clip) — spot-check prior pages at gate |
-| 2 | Analytics/OrdersReport.vue | /accounts/2000290/analytics/orders | standard | pending |  | loading state + responsive columns (0 overflow at 375px); MpStatusChip type="order" already correct; error state N/A |
-| 3 | Analytics/DispatchedOrders.vue | /accounts/2000290/analytics/dispatched_orders | standard | pending |  | loading state + responsive columns (0 overflow at 375px); error state N/A |
-| 4 | Analytics/SalesSummary.vue | /accounts/2000290/analytics/sales_summary | standard | pending |  | loading state gates whole data region (bars+table); responsive columns (269px→0 at 375px); channel-bar rows already had a 700px breakpoint, measured 0 — untouched; error state N/A |
-| 5 | Analytics/ERFMReport.vue | /accounts/2000290/erfm_report | standard | pending |  | **Page replaced 2026-08-31** (UAT deep-crawl rebuild — the audited card-grid page was an invented design, not this URL). Re-audited after the rebuild: 0 horizontal overflow at 375px, matrices scroll in their own containers, MpTableSkeleton loading in all 4 data sections, MpEmptyState present, zero px literals / hardcoded colours, contrast 244/244 pass. The earlier note about no card-grid skeleton convention no longer applies — the sections are row×column shaped, so MpTableSkeleton fits. Docs: `docs/rebuild/erfm-report/` |
-| 6 | Analytics/CampaignReports.vue | /accounts/2000290/reports | standard | pending |  | loading state + responsive columns (Name+Status at 375px, 6 cols at 1280px); 0 overflow |
-| 7 | Analytics/RecurringCampaignReports.vue | /accounts/2000290/analytics/recurring_campaign_reports | standard | pending |  | loading state + responsive columns (Name+Frequency at 375px); 0 overflow |
-| 8 | Analytics/ABCampaignReports.vue | /accounts/2000290/analytics/ab_campaign_reports | standard | pending |  | loading state + responsive columns (Test Name+Lift — the outcome — at 375px); 0 overflow |
-| 9 | Analytics/TestCampaignReports.vue | /accounts/2000290/analytics/test_campaign_reports | standard | pending |  | loading state + responsive columns (Scenario+Provider at 375px); 0 overflow |
-| 10 | Analytics/WebsiteReports.vue | /accounts/2000290/analytics/website_reports | standard | pending |  | loading state + responsive columns (Path+Pageviews at 375px); 0 overflow |
-| 11 | Analytics/JourneyReports.vue | /accounts/2000290/analytics/journey_reports | standard | pending |  | loading state + responsive columns (Name+Active Contacts at 375px); 0 overflow |
-| 12 | Analytics/CustomReports.vue | /accounts/2000290/analytics/custom_reports | standard | pending |  | already compliant — no commit. Card grid + MpFormDrawer builder; the one page in this module with a real primary CTA (`color="primary" variant="flat"` Create Report). 0 overflow at 375px (page/cards/footers/header), MpEmptyState with action, all icon buttons have aria-label, drawer goes full-width on phone with 0 overflow. Loading state not added (card grid — same reasoning as row 5). One flagged "unlabeled input" was a false positive: Vuetify's internal auto-grow sizer textarea (aria-hidden, readOnly, out of tab order); the real textarea is labelled |
-| 13 | Analytics/TransactionalReports.vue | /accounts/2000290/analytics/transactional_reports | standard | pending |  | loading state + responsive columns (Event+Delivery Rate at 375px); 0 overflow |
-| 14 | Analytics/LogInspector.vue | /accounts/2000290/analytics/log_inspector | standard | pending |  | loading state + responsive columns; Level+Message kept at 375px and Timestamp dropped (inverse of report tables — the message is the content); 0 overflow |
-
-### Module 03 — Contacts (Audience)   [module-status: pending]
+### Module 02 — Analytics (Reports)   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Contacts/AllContacts.vue | /accounts/2000290/contacts | standard | pending |  | ad-hoc polish (subtitle count bug, chip vocab, dates, CTA variants) + redesign (score dots, hover hint removed); touched shared MpStatusChip (additive contact-map entries) — spot-check prior pages at gate |
-| 2 | Contacts/ContactDetail.vue | /accounts/2000290/contacts/:contactId (see Defaults) | standard | pending |  | ad-hoc redesign: flat profile (gradient hero removed), KPIs 8→4, sidebar 6→4 cards, back-to header |
-| 3 | Contacts/ContactLists.vue | /accounts/2000290/lists | standard | pending |  | loading state + responsive columns (229px→**7px** at 375px — residual is cell-padding-driven, not column-driven; see Module 03 note) + itemLabel on row kebabs (6 identical→6 unique names); label "Total Contacts"→"Contacts" for cross-page consistency |
-| 4 | Contacts/Segments.vue | /accounts/2000290/segments | standard | pending |  | loading state + responsive columns (106px→0 at 375px) + itemLabel (12 identical→12 unique); label "Total Contacts"→"Contacts" |
-| 5 | Contacts/ContactFields.vue | /accounts/2000290/contact_fields | standard | pending |  | loading state + responsive columns (170px→0 at 375px) + itemLabel (5 identical→5 unique) |
-| 6 | Contacts/ContactTags.vue | /accounts/2000290/tags | standard | pending |  | loading state + itemLabel (5 identical→5 unique); label "Contacts Tagged"→"Contacts". No column tiering — only 3 cols, all load-bearing; residual **20px** overflow at 375px is cell-padding-driven (see Module 03 note) |
-| 7 | Contacts/RelationalTables.vue | /accounts/2000290/relational_tables | standard | pending |  | loading state + responsive columns (171px→0 at 375px) + itemLabel (3 identical→3 unique) |
-| 8 | Contacts/SQLQueries.vue | /accounts/2000290/sql_queries | standard | pending |  | loading state + responsive columns (250px→0 at 375px) + itemLabel (3 identical→3 unique) |
-| 9 | Contacts/SecureLists.vue | /accounts/2000290/secure_lists | standard | pending |  | loading state + responsive columns (88px→0 at 375px) + itemLabel (2 identical→2 unique) |
-| 10 | Contacts/WebTracking.vue | /accounts/2000290/web_tracking | standard | pending |  | a11y: read-only tracking-domain field had a dangling aria-labelledby and no accessible name (WCAG 4.1.2) — added aria-label, verified via a11y tree. Static page: table/list states N/A; 0 overflow at 375px |
+| 1 | Analytics/MonthlyTotals.vue | /accounts/2000290/analytics/monthly_totals | standard | done | cccb24a | py-10 off MpEmptyState; revenue column drops text-primary → font-weight-medium; per-column weight/muted treatments removed |
+| 2 | Analytics/OrdersReport.vue | /accounts/2000290/analytics/orders | standard | done | b27a41d | py-10 off MpEmptyState |
+| 3 | Analytics/DispatchedOrders.vue | /accounts/2000290/analytics/dispatched_orders | standard | done | dd34195 | py-10 off MpEmptyState. Observation: refunded POS row renders "$-97.90" via template literal — functional formatting, not touched |
+| 4 | Analytics/SalesSummary.vue | /accounts/2000290/analytics/sales_summary | standard | done | d0110ca | card header/bar-list utilities → scoped classes on card.padding; ad-hoc title → MpSectionHeader with period description; 13px trend icons → 16; all px/rgba/gradient literals → tokens; @media 700 → $mp-layout-breakpointCompact with one shared grid |
+| 5 | Analytics/ERFMReport.vue | /accounts/2000290/erfm_report | standard | done | 23bfddc | 200px date fields → menu.minWidth; duplicate scoped .num deleted; @media 599 → breakpointCompact. 320px chart height left (no token — proposal) |
+| 6 | Analytics/CampaignReports.vue | /accounts/2000290/reports | standard | done | 11e85b2 | py-10 off MpEmptyState |
+| 7 | Analytics/RecurringCampaignReports.vue | /accounts/2000290/analytics/recurring_campaign_reports | standard | done | cf11167 | 8 fixed columns side-scrolled at 375 (619px in 311) → useResponsiveTableHeaders with occurrence child rows following visible columns; py-10 off MpEmptyState; rgba fallback → --on-surface-muted |
+| 8 | Analytics/ABCampaignReports.vue | /accounts/2000290/analytics/ab_campaign_reports | standard | done | 6812512 | 11 fixed columns (880px at 375) → useResponsiveTableHeaders with variant child rows; py-10 off MpEmptyState; rgba fallback → --on-surface-muted |
+| 9 | Analytics/TestCampaignReports.vue | /accounts/2000290/analytics/test_campaign_reports | standard | done | 9300581 | py-10 off MpEmptyState. Observation: renders empty on default Last 30 days — mock dates aged out |
+| 10 | Analytics/WebsiteReports.vue | /accounts/2000290/analytics/website_reports | standard | done | 77aa25c | py-10 off MpEmptyState; one weight treatment (Pageviews keeps medium) |
+| 11 | Analytics/JourneyReports.vue | /accounts/2000290/analytics/journey_reports | standard | done | 8e2c948 | py-10 off MpEmptyState |
+| 12 | Analytics/CustomReports.vue | /accounts/2000290/analytics/custom_reports | standard | done | da3815a | useResponsiveTableHeaders (Type ≥md, Updated ≥sm); syncAriaSort reads visible header set; dead .crl-type-filter + empty #actions slot deleted |
+| 13 | Analytics/TransactionalReports.vue | /accounts/2000290/analytics/transactional_reports | standard | done | 8503c7c | py-10 off MpEmptyState. Observation: renders empty on default range — mock dates aged out |
+| 14 | Analytics/LogInspector.vue | /accounts/2000290/analytics/log_inspector | standard | done | d37e212 | py-10 off MpEmptyState |
+
+### Module 03 — Contacts (Audience)   [module-status: done]
+
+| # | View file | URL(s) | Profile | Status | Commit | Notes |
+|---|-----------|--------|---------|--------|--------|-------|
+| 1 | Contacts/AllContacts.vue | /accounts/2000290/contacts | standard | done | 0e7bb09 | identity cell / score / avatar literals → tokens; focus ring → --focus-ring; status chip flat → tonal; score dots on --pos/--warn/--neg; 599.98 query → $mp-layout-breakpointCompact; raw v-alert → MpAlert; inline min-width → w-50. 48px select-column residual at 375 accepted (product call) |
+| 2 | Contacts/ContactDetail.vue | /accounts/2000290/contacts/:contactId (see Defaults) | standard | done | 0b0c398 | calc(100vh - 200px) split + two inner scrollers deleted (page scrolls as one); one primary CTA; pa-5 → .dc-card on card.padding; stat strip box-in-box → --surface-secondary; headings → .mp-section-title; icons → 16 / 8px dots; eRFM → dl.mp-label-value; 340px sidebar → layout.inboxListWidth (proposal: dedicated token); KPI grid → v-row; scoped !important removed |
+| 3 | Contacts/ContactLists.vue | /accounts/2000290/lists | standard | done-no-change |  | already compliant |
+| 4 | Contacts/Segments.vue | /accounts/2000290/segments | standard | done | 1eb6e11 | raw v-alert → MpAlert live=off; rule block rgba → --surface-secondary on tokens; dashed note → --border-subtle; tooltips on Remove icon buttons |
+| 5 | Contacts/ContactFields.vue | /accounts/2000290/contact_fields | standard | done | c21546a | check icon 18 → 16; default-fields head utilities → card.padding; inline max-width → toolbar.searchWidth class |
+| 6 | Contacts/ContactTags.vue | /accounts/2000290/tags | standard | done-no-change |  | already compliant |
+| 7 | Contacts/RelationalTables.vue | /accounts/2000290/relational_tables | standard | done | d6b241b | column block rgba → --surface-secondary on card.paddingCompact/radius-12; tooltip on Remove column |
+| 8 | Contacts/SQLQueries.vue | /accounts/2000290/sql_queries | standard | done | 26395c1 | name-button colour → --accent-default; SQL textarea → --mp-fontFamily-mono |
+| 9 | Contacts/SecureLists.vue | /accounts/2000290/secure_lists | standard | done-no-change |  | already compliant |
+| 10 | Contacts/WebTracking.vue | /accounts/2000290/web_tracking | standard | done | fdf1d34 | Copy Script is the one primary CTA; pa-6 → card.padding; heading → .mp-section-title; code block rgba → --surface-secondary + mono tokens |
 
 ## Wave 3
 
@@ -216,3 +216,4 @@
 
 - 2026-09-02 — Tracker generated from page-tracker.md (14 modules, all rows pending, grouped into waves W1–W4).
 - 2026-09-02 — Wave 1 complete (Products, Commerce, Service, App Store, Billing & Misc): 21 rows done (1 already compliant), 0 skipped/blocked, 20 page commits + shared fix c66ffbb. Three views discovered that page-tracker mis-filed as aliases (CustomGiftCards, PurchasableGiftCards, ChatbotList) added as pending rows for a follow-up. Rejected proposals: MpFilterTabs baked mb-4, MpDataTableToolbar 375 wrap regrouping (both affect every list page — dedicated pass), MpSectionHeader description slot + MpListRow subtitle prop (API additions, out of scope), builder-body pa-* on wizard cards (builder profile excludes B by design), global table tabular-nums (already global at global.scss .v-table td), extra width tokens for 720/520/120/128 (no ramp yet).
+- 2026-09-03 — Wave 2 complete (Dashboard, Analytics, Contacts): 27 rows done (3 already compliant), 0 skipped/blocked, 24 page commits + shared fix 42cd73f (shell-inset / detailSidebarWidth / menu.railWidth / chart.height tokens, info+warning chip tones, MpSectionHeader wrap, MpListRow focus ring per E2, recipe B1 empty-state note). Rejected/deferred: `.v-card.rounded-lg !important` removal (DESIGN_AUDIT P1-8 load-bearing); ContactDetail campaign rows → MpListRow (page redesign, later pass); identity-cell width token (no recurrence). **Human decision needed:** `.mp-label-value dt` renders uppercase 11/600 (F5) but recipe C2 says inline labels beside a value are sentence-case 12 — Tickets (reference) uses the uppercase dt, ContactDetail eRFM now shows "RFM GROUP"; pick one and amend the recipe. Observations: TestCampaignReports/TransactionalReports render empty on the default 30-day range (mock dates aged out); DispatchedOrders shows "$-97.90" on a refund row (template literal, not formatCurrency). Wave-2 worktrees were based on 20f601c (pre-wave-1) — merges were clean and the gate re-verified on master.
