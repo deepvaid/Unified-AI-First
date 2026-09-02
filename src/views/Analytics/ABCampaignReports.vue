@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { isWithinRange, type DateRangeValue, useAnalyticsStore } from '@/stores/useAnalytics'
+import {
+  isWithinRange,
+  type AbCampaignReport,
+  type AbReportVariant,
+  type DateRangeValue,
+  useAnalyticsStore,
+} from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { formatCurrency } from '@/utils/formatCurrency'
 
 // UAT parity: /accounts/:id/ab_reports — every A/B test with roll-up metrics;
@@ -29,19 +36,39 @@ const filtered = computed(() =>
   store.abReports.filter(r => isWithinRange(r.sentAt ?? r.updatedAt, dateRange.value)),
 )
 
+// Name + revenue identify the row and always show; the funnel metrics and the
+// two timestamps drop out progressively so the table never side-scrolls on a
+// phone. The variant child rows render the same visible columns.
 const headers = [
   { title: '', key: 'data-table-expand', sortable: false, width: 48 },
   { title: 'Name', key: 'name', sortable: true },
-  { title: 'Contacts', key: 'contacts', align: 'end' as const },
-  { title: 'Sent', key: 'sent', align: 'end' as const },
-  { title: 'Delivered', key: 'delivered', align: 'end' as const },
-  { title: 'Opens', key: 'opens', align: 'end' as const },
-  { title: 'Clicks', key: 'clicks', align: 'end' as const },
-  { title: 'Bounces', key: 'bounces', align: 'end' as const },
+  { title: 'Contacts', key: 'contacts', align: 'end' as const, hideBelow: 'lg' as const },
+  { title: 'Sent', key: 'sent', align: 'end' as const, hideBelow: 'md' as const },
+  { title: 'Delivered', key: 'delivered', align: 'end' as const, hideBelow: 'lg' as const },
+  { title: 'Opens', key: 'opens', align: 'end' as const, hideBelow: 'sm' as const },
+  { title: 'Clicks', key: 'clicks', align: 'end' as const, hideBelow: 'md' as const },
+  { title: 'Bounces', key: 'bounces', align: 'end' as const, hideBelow: 'lg' as const },
   { title: 'Total Revenue', key: 'revenue', align: 'end' as const },
-  { title: 'Sent At', key: 'sentAt' },
-  { title: 'Updated At', key: 'updatedAt' },
+  { title: 'Sent At', key: 'sentAt', hideBelow: 'lg' as const },
+  { title: 'Updated At', key: 'updatedAt', hideBelow: 'lg' as const },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+
+function variantCell(v: AbReportVariant, report: AbCampaignReport, key: string): string {
+  switch (key) {
+    case 'contacts': return v.overview.contactsCount.toLocaleString()
+    case 'sent': return v.totalSent.toLocaleString()
+    case 'delivered': return v.metrics.delivered.count.toLocaleString()
+    case 'opens': return v.metrics.totalOpens.count.toLocaleString()
+    case 'clicks': return v.metrics.totalClicks.count.toLocaleString()
+    case 'bounces': return v.metrics.bounced.count.toLocaleString()
+    case 'revenue': return formatCurrency(v.overview.totalRevenue)
+    case 'sentAt': return dateTimeLabel(v.sentAt)
+    case 'updatedAt': return dateTimeLabel(report.updatedAt)
+    default: return ''
+  }
+}
 
 // Variant child rows lazy-load in UAT (spinner in the expander cell).
 const loadingIds = ref(new Set<number>())
@@ -96,7 +123,7 @@ function detailLink(campaignId: number) {
       <v-data-table
         v-else
         v-model:expanded="expanded"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="filtered"
         :search="search"
         item-value="id"
@@ -138,20 +165,13 @@ function detailLink(campaignId: number) {
             </td>
           </tr>
           <tr v-for="v in loadedIds.has(item.id) ? item.variants : []" :key="v.id" class="variant-row">
-            <td />
-            <td>
-              <span class="variant-marker" aria-hidden="true">↳</span>
-              <router-link :to="detailLink(item.campaignId)" class="report-link">{{ v.name }}</router-link>
+            <td v-for="h in visibleHeaders" :key="h.key" :class="{ 'text-end': h.align === 'end' }">
+              <template v-if="h.key === 'name'">
+                <span class="variant-marker" aria-hidden="true">↳</span>
+                <router-link :to="detailLink(item.campaignId)" class="report-link">{{ v.name }}</router-link>
+              </template>
+              <template v-else>{{ variantCell(v, item, h.key) }}</template>
             </td>
-            <td class="text-end">{{ v.overview.contactsCount.toLocaleString() }}</td>
-            <td class="text-end">{{ v.totalSent.toLocaleString() }}</td>
-            <td class="text-end">{{ v.metrics.delivered.count.toLocaleString() }}</td>
-            <td class="text-end">{{ v.metrics.totalOpens.count.toLocaleString() }}</td>
-            <td class="text-end">{{ v.metrics.totalClicks.count.toLocaleString() }}</td>
-            <td class="text-end">{{ v.metrics.bounced.count.toLocaleString() }}</td>
-            <td class="text-end">{{ formatCurrency(v.overview.totalRevenue) }}</td>
-            <td>{{ dateTimeLabel(v.sentAt) }}</td>
-            <td>{{ dateTimeLabel(item.updatedAt) }}</td>
           </tr>
         </template>
 
@@ -160,7 +180,6 @@ function detailLink(campaignId: number) {
             icon="split"
             :title="search ? 'No A/B tests match your search' : 'No A/B tests in this range'"
             :description="search ? 'Try a different search.' : 'Try a wider date range, or run an A/B campaign to see it here.'"
-            class="py-10"
           />
         </template>
       </v-data-table>
@@ -184,7 +203,7 @@ function detailLink(campaignId: number) {
 }
 
 .variant-marker {
-  color: var(--text-secondary, rgba(var(--v-theme-on-surface), 0.6));
+  color: var(--on-surface-muted);
   margin-inline-end: var(--mp-space-6);
 }
 </style>
