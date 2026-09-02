@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAnalyticsStore } from '@/stores/useAnalytics'
+import { useAnalyticsStore, type RecurringOccurrence } from '@/stores/useAnalytics'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { formatCurrency } from '@/utils/formatCurrency'
 
 // UAT parity: /accounts/:id/reports/recurring_campaign_report — a flat report
@@ -31,16 +32,27 @@ const rows = computed(() =>
   }),
 )
 
+// Name + revenue identify the row and always show; the funnel metrics drop out
+// progressively so the table never side-scrolls on a phone. The occurrence
+// child rows render the same visible columns.
 const headers = [
   { title: '', key: 'data-table-expand', sortable: false, width: 48 },
   { title: 'Name', key: 'name', sortable: true },
-  { title: 'Sent', key: 'sent', align: 'end' as const },
-  { title: 'Delivered', key: 'delivered', align: 'end' as const },
-  { title: 'Opens', key: 'opens', align: 'end' as const },
-  { title: 'Clicks', key: 'clicks', align: 'end' as const },
-  { title: 'Bounces', key: 'bounces', align: 'end' as const },
+  { title: 'Sent', key: 'sent', align: 'end' as const, hideBelow: 'md' as const },
+  { title: 'Delivered', key: 'delivered', align: 'end' as const, hideBelow: 'lg' as const },
+  { title: 'Opens', key: 'opens', align: 'end' as const, hideBelow: 'sm' as const },
+  { title: 'Clicks', key: 'clicks', align: 'end' as const, hideBelow: 'md' as const },
+  { title: 'Bounces', key: 'bounces', align: 'end' as const, hideBelow: 'lg' as const },
   { title: 'Total Revenue', key: 'revenue', align: 'end' as const },
 ]
+
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
+
+function occurrenceCell(occ: RecurringOccurrence, key: string): string {
+  if (key === 'revenue') return formatCurrency(occ.revenue)
+  const metric = METRIC_KEYS.find((k) => k === key)
+  return metric ? occ[metric].toLocaleString() : ''
+}
 
 // UAT lazy-loads occurrences on expand (spinner in the expander cell); the
 // mock keeps that loading state visible for a beat so the flow is walkable.
@@ -91,7 +103,7 @@ function reportLink(campaignId: number) {
       <v-data-table
         v-else
         v-model:expanded="expanded"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="rows"
         :search="search"
         item-value="id"
@@ -130,19 +142,15 @@ function reportLink(campaignId: number) {
             </td>
           </tr>
           <tr v-for="occ in loadedIds.has(item.id) ? item.occurrences : []" :key="occ.id" class="occurrence-row">
-            <td />
-            <td>
-              <span class="occurrence-marker" aria-hidden="true">↳</span>
-              <router-link :to="reportLink(occ.campaignId)" class="report-link">
-                {{ occurrenceLabel(occ.sentAt) }}
-              </router-link>
+            <td v-for="h in visibleHeaders" :key="h.key" :class="{ 'text-end': h.align === 'end' }">
+              <template v-if="h.key === 'name'">
+                <span class="occurrence-marker" aria-hidden="true">↳</span>
+                <router-link :to="reportLink(occ.campaignId)" class="report-link">
+                  {{ occurrenceLabel(occ.sentAt) }}
+                </router-link>
+              </template>
+              <template v-else>{{ occurrenceCell(occ, h.key) }}</template>
             </td>
-            <td class="text-end">{{ occ.sent.toLocaleString() }}</td>
-            <td class="text-end">{{ occ.delivered.toLocaleString() }}</td>
-            <td class="text-end">{{ occ.opens.toLocaleString() }}</td>
-            <td class="text-end">{{ occ.clicks.toLocaleString() }}</td>
-            <td class="text-end">{{ occ.bounces.toLocaleString() }}</td>
-            <td class="text-end">{{ formatCurrency(occ.revenue) }}</td>
           </tr>
         </template>
 
@@ -151,7 +159,6 @@ function reportLink(campaignId: number) {
             icon="repeat"
             :title="search ? 'No recurring campaigns match your search' : 'No recurring campaign reports yet'"
             :description="search ? 'Try a different search.' : 'Reports appear here after a recurring campaign has sent.'"
-            class="py-10"
           />
         </template>
       </v-data-table>
@@ -175,7 +182,7 @@ function reportLink(campaignId: number) {
 }
 
 .occurrence-marker {
-  color: var(--text-secondary, rgba(var(--v-theme-on-surface), 0.6));
+  color: var(--on-surface-muted);
   margin-inline-end: var(--mp-space-6);
 }
 </style>
