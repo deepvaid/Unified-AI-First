@@ -109,7 +109,6 @@ function exportCsv() {
             icon="scroll-text"
             :title="search || filterLevel.length ? 'No log entries match your filters' : 'No log entries in this range'"
             :description="search || filterLevel.length ? 'Try a different search or clear filters.' : 'Try a wider date range.'"
-            class="py-10"
           />
         </template>
       </v-data-table>
