@@ -249,7 +249,7 @@ function handleDashboardCreated(dashboardId: string) {
 </script>
 
 <template>
-  <div class="dashboards-list">
+  <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Dashboards"
       :subtitle="`${dashboards.length} dashboards · ${dashboards.filter(d => d.kind === 'custom').length} custom · ${account?.name ?? 'this workspace'}`"
@@ -311,7 +311,7 @@ function handleDashboardCreated(dashboardId: string) {
                 </button>
                 <v-icon
                   v-if="item.favorite"
-                  size="14"
+                  size="16"
                   color="warning"
                   aria-label="Favorite"
                   class="flex-shrink-0"
@@ -460,11 +460,6 @@ function handleDashboardCreated(dashboardId: string) {
 </template>
 
 <style scoped lang="scss">
-.dashboards-list {
-  display: flex;
-  flex-direction: column;
-}
-
 .dashboards-table {
   background: transparent;
 }
@@ -478,10 +473,10 @@ function handleDashboardCreated(dashboardId: string) {
   border: 0;
   background: transparent;
   padding: 0;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--on-surface);
   cursor: pointer;
   font: inherit;
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-semibold);
   max-width: 28ch;
   overflow: hidden;
   text-align: left;
@@ -494,9 +489,9 @@ function handleDashboardCreated(dashboardId: string) {
 }
 
 .dashboard-link:focus-visible {
-  outline: none;
-  border-radius: 6px;
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.2);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--mp-radius-4);
 }
 
 .dashboard-description {
@@ -507,7 +502,7 @@ function handleDashboardCreated(dashboardId: string) {
 }
 
 /* Phones: tighten name/description caps + cell padding so the table fits without horizontal scroll */
-@media (max-width: 599px) {
+@media (max-width: $mp-layout-breakpointCompact) {
   .dashboard-link {
     max-width: 14ch;
   }
@@ -518,7 +513,7 @@ function handleDashboardCreated(dashboardId: string) {
 
   .dashboards-table :deep(td),
   .dashboards-table :deep(th) {
-    padding-inline: 8px;
+    padding-inline: var(--mp-component-table-cellPaddingInlineCompact);
   }
 
   .dashboard-title-row {
