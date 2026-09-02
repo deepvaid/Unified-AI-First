@@ -16,6 +16,8 @@ import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
@@ -23,6 +25,15 @@ const router = useRouter()
 const store = useCommerceStore()
 
 const SALES_CHANNELS = ['Online Store', 'POS', 'Amazon', 'eBay', 'Instagram Shop']
+
+const MECHANISM_ITEMS = [
+  { value: 'Code', label: 'Discount code' },
+  { value: 'Automatic', label: 'Automatic' },
+]
+const STATUS_ITEMS = [
+  { value: 'Active', label: 'Active' },
+  { value: 'Inactive', label: 'Inactive' },
+]
 
 const accountId = computed(() => {
   const value = route.params.accountId
@@ -148,8 +159,9 @@ onMounted(() => {
 <template>
   <div class="mp-frame-fill d-flex flex-column">
     <!-- Header -->
-    <div class="cp-head px-8 pt-6 pb-4 bg-surface border-b">
+    <div class="px-8 pt-6 pb-4 bg-surface cp-border-b">
       <MpPageHeader
+        density="compact"
         :title="isEdit ? 'Edit Promotion' : 'New Promotion'"
         subtitle="Discounts apply on the sales channels you choose, between the start and end dates."
         :back-to="promotionsRoute"
@@ -162,7 +174,7 @@ onMounted(() => {
 
     <!-- Content -->
     <div class="flex-grow-1 overflow-y-auto pa-8 bg-background">
-      <div class="d-flex flex-column ga-5" style="max-width: 760px; margin: 0 auto;">
+      <div class="d-flex flex-column ga-5 cp-body">
 
         <!-- General -->
         <v-card variant="flat" border rounded="lg" class="pa-6">
@@ -214,10 +226,12 @@ onMounted(() => {
           <MpFormGrid>
             <MpFormField label="How the discount is applied">
               <div>
-                <v-btn-toggle v-model="mechanism" mandatory>
-                  <v-btn value="Code" class="text-none" prepend-icon="ticket">Discount code</v-btn>
-                  <v-btn value="Automatic" class="text-none" prepend-icon="zap">Automatic</v-btn>
-                </v-btn-toggle>
+                <MpSegmentedControl
+                  :model-value="mechanism"
+                  :items="MECHANISM_ITEMS"
+                  ariaLabel="How the discount is applied"
+                  @update:model-value="(v) => { if (v) mechanism = v as PromotionMechanism }"
+                />
               </div>
             </MpFormField>
 
@@ -244,9 +258,9 @@ onMounted(() => {
                 <v-tooltip activator="parent" location="top">Generate a code</v-tooltip>
               </v-btn>
             </div>
-            <v-alert v-else type="info" variant="tonal" density="compact" class="text-body-2">
+            <MpAlert v-else tone="info">
               Applies automatically at checkout — customers don't need a code.
-            </v-alert>
+            </MpAlert>
           </MpFormGrid>
 
           <MpFormSection title="Discount" />
@@ -282,10 +296,12 @@ onMounted(() => {
           <MpFormGrid>
             <MpFormField label="Promotion status">
               <div>
-                <v-btn-toggle v-model="status" mandatory>
-                  <v-btn value="Active" class="text-none" prepend-icon="play">Active</v-btn>
-                  <v-btn value="Inactive" class="text-none" prepend-icon="pause">Inactive</v-btn>
-                </v-btn-toggle>
+                <MpSegmentedControl
+                  :model-value="status"
+                  :items="STATUS_ITEMS"
+                  ariaLabel="Promotion status"
+                  @update:model-value="(v) => { if (v) status = v as PromotionStatus }"
+                />
               </div>
             </MpFormField>
           </MpFormGrid>
@@ -314,7 +330,7 @@ onMounted(() => {
     </div>
 
     <!-- Sticky footer -->
-    <div class="px-8 py-4 border-t bg-surface d-flex justify-space-between align-center">
+    <div class="px-8 py-4 cp-border-t bg-surface d-flex justify-space-between align-center">
       <v-btn variant="text" class="text-none" @click="router.push(promotionsRoute)">Cancel</v-btn>
       <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="save">Save promotion</v-btn>
     </div>
@@ -331,8 +347,12 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.cp-head :deep(.mp-page-header) { margin-bottom: 0; }
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.font-mono-field :deep(input) { font-family: monospace; text-transform: uppercase; }
+/* Own class names, so no !important is needed to beat Vuetify's .border-b/.border-t utilities. */
+.cp-border-b { border-bottom: 1px solid var(--border-subtle); }
+.cp-border-t { border-top: 1px solid var(--border-subtle); }
+
+/* Reading measure for a single-column form; a layout.formMaxWidth token is proposed. */
+.cp-body { max-width: 760px; margin: 0 auto; }
+
+.font-mono-field :deep(input) { font-family: var(--mp-fontFamily-mono); text-transform: uppercase; }
 </style>
