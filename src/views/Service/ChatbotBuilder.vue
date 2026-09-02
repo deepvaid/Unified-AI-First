@@ -14,6 +14,10 @@ import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpSectionHeader from '@/components/MpSectionHeader.vue'
+import MpOptionCard from '@/components/MpOptionCard.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 
 const route = useRoute()
@@ -167,8 +171,12 @@ function moveField(i: number, dir: -1 | 1) {
   ;[a[i], a[j]] = [a[j]!, a[i]!]
 }
 
-const statusColor: Record<string, string> = { Active: 'success', Disabled: 'default', Indexing: 'info' }
 const addSourceTab = ref<'url' | 'questionnaire' | 'upload'>('url')
+const ADD_SOURCE_ITEMS = [
+  { value: 'url', label: 'Website URL' },
+  { value: 'questionnaire', label: 'Questionnaire' },
+  { value: 'upload', label: 'Upload files' },
+]
 
 // ── Knowledge base ─────────────────────────────────────────────────────────
 const sourceKind = (icon: string) =>
@@ -338,20 +346,21 @@ function sendChat() {
         <!-- Section nav -->
         <nav class="cb__nav border-r bg-surface py-3 flex-shrink-0" aria-label="Chatbot settings">
           <div v-for="group in NAV_GROUPS" :key="group.title" class="cb__nav-group">
-            <div class="cb__nav-heading text-caption text-medium-emphasis font-weight-bold text-uppercase px-3 mb-1">{{ group.title }}</div>
+            <div class="cb__nav-heading mp-meta-label text-medium-emphasis">{{ group.title }}</div>
             <button
               v-for="n in group.items"
               :key="n.key"
               type="button"
               class="cb__nav-item text-none"
               :class="{ 'cb__nav-item--on': section === n.key }"
+              :aria-current="section === n.key ? 'true' : undefined"
               @click="section = n.key"
             >
               <v-icon size="18">{{ n.icon }}</v-icon>
               <span>{{ n.label }}</span>
               <v-tooltip v-if="isSectionLocked(n.key)" text="Upgrade to unlock" location="top">
                 <template #activator="{ props }">
-                  <v-icon v-bind="props" size="14" class="cb__nav-crown">crown</v-icon>
+                  <v-icon v-bind="props" size="16" class="cb__nav-crown">crown</v-icon>
                 </template>
               </v-tooltip>
             </button>
@@ -406,10 +415,10 @@ function sendChat() {
               <v-card flat border rounded="lg" class="pa-6 mb-5">
                 <MpFormSection title="Brand logo" description="Upload your logo and set your brand colors.">
                   <div>
-                    <div class="cb-upload d-flex align-center justify-center ga-3 mb-2" @click="cfg.logoName = 'logo.png'">
+                    <button type="button" class="cb-upload d-flex align-center justify-center ga-3 mb-2 w-100" @click="cfg.logoName = 'logo.png'">
                       <v-icon size="20">upload</v-icon>
                       <span class="text-body-2 font-weight-medium">{{ cfg.logoName || 'Upload logo' }}</span>
-                    </div>
+                    </button>
                     <div class="text-caption text-medium-emphasis">Recommended 160×160px · PNG or SVG</div>
                   </div>
                 </MpFormSection>
@@ -428,19 +437,21 @@ function sendChat() {
                       :aria-label="`Use ${c}`"
                       @click="cfg.primaryColor = c"
                     >
-                      <v-icon v-if="cfg.primaryColor.toLowerCase() === c.toLowerCase()" size="14" color="white">check</v-icon>
+                      <v-icon v-if="cfg.primaryColor.toLowerCase() === c.toLowerCase()" size="16" color="white">check</v-icon>
                     </button>
                   </div>
                   <MpFormField label="Custom color">
-                    <div class="d-flex align-center ga-2">
+                    <MpFormGrid :cols="2">
+                      <div class="d-flex align-center ga-2">
                       <v-menu :close-on-content-click="false" location="bottom start">
                         <template #activator="{ props }">
                           <button v-bind="props" class="cb-swatch cb-swatch--sm" :style="{ background: cfg.primaryColor }" aria-label="Pick custom color" />
                         </template>
                         <v-color-picker v-model="cfg.primaryColor" mode="hex" :modes="['hex']" />
                       </v-menu>
-                      <v-text-field v-model="cfg.primaryColor" aria-label="Custom color hex value" style="max-width:160px;" />
-                    </div>
+                      <v-text-field v-model="cfg.primaryColor" aria-label="Custom color hex value" />
+                      </div>
+                    </MpFormGrid>
                   </MpFormField>
                 </MpFormSection>
               </v-card>
@@ -449,14 +460,8 @@ function sendChat() {
                 <MpFormSection title="Widget configuration">
                   <MpFormField label="Launcher position">
                     <MpFormGrid :cols="2">
-                      <v-card flat border rounded="lg" class="pa-4 text-center cursor-pointer cb-pos" :class="{ 'cb-pos--on': cfg.position === 'left' }" @click="cfg.position = 'left'">
-                        <v-icon size="24" class="mb-1">panel-bottom-dashed</v-icon>
-                        <div class="text-body-2 font-weight-medium">Bottom left</div>
-                      </v-card>
-                      <v-card flat border rounded="lg" class="pa-4 text-center cursor-pointer cb-pos" :class="{ 'cb-pos--on': cfg.position === 'right' }" @click="cfg.position = 'right'">
-                        <v-icon size="24" class="mb-1">panel-bottom-dashed</v-icon>
-                        <div class="text-body-2 font-weight-medium">Bottom right</div>
-                      </v-card>
+                      <MpOptionCard title="Bottom left" icon="panel-bottom-dashed" :selected="cfg.position === 'left'" @click="cfg.position = 'left'" />
+                      <MpOptionCard title="Bottom right" icon="panel-bottom-dashed" :selected="cfg.position === 'right'" @click="cfg.position = 'right'" />
                     </MpFormGrid>
                   </MpFormField>
                   <v-text-field v-model="cfg.welcomeMessage" label="Welcome message *" />
@@ -470,7 +475,7 @@ function sendChat() {
                 <MpFormSection title="Business hours" description="Set when live support is available. Outside these hours the bot handles chats.">
                   <div>
                     <div v-for="h in cfg.businessHours" :key="h.day" class="cb-hour d-flex align-center ga-3">
-                      <v-switch v-model="h.enabled" density="compact" hide-details class="flex-shrink-0" />
+                      <v-switch v-model="h.enabled" density="compact" hide-details class="flex-shrink-0" :aria-label="`Open on ${h.day}`" />
                       <span class="cb-hour__day font-weight-medium">{{ h.day }}</span>
                       <template v-if="h.enabled">
                         <v-text-field v-model="h.open" type="time" hide-details class="cb-hour__time" />
@@ -487,20 +492,32 @@ function sendChat() {
             <!-- QUICK PROMPTS -->
             <template v-else-if="section === 'prompts'">
               <v-card flat border rounded="lg" class="pa-6">
-                <div class="d-flex align-center justify-space-between mb-1">
-                  <div class="text-subtitle-1 font-weight-bold">Quick prompts</div>
-                  <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" @click="addPrompt">Add prompt</v-btn>
-                </div>
-                <div class="text-body-2 text-medium-emphasis mb-5">Predefined options shown when a customer starts a chat. The <strong>intent</strong> routes the reply to shopping, order tracking, support, or FAQ.</div>
+                <MpSectionHeader title="Quick prompts" description="Predefined options shown when a customer starts a chat. The intent routes the reply to shopping, order tracking, support, or FAQ.">
+                  <template #actions>
+                    <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" @click="addPrompt">Add prompt</v-btn>
+                  </template>
+                </MpSectionHeader>
                 <div class="d-flex flex-column ga-2">
                   <div v-for="(p, i) in cfg.quickPrompts" :key="p.id" class="cb-prompt">
                     <div class="d-flex align-center ga-2">
-                      <v-text-field v-model="p.text" hide-details class="flex-grow-1" />
-                      <v-select v-model="p.intent" :items="INTENTS" hide-details class="cb-prompt__intent" />
-                      <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0" aria-label="Move up" @click="movePrompt(i, -1)" />
-                      <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === cfg.quickPrompts.length - 1" aria-label="Move down" @click="movePrompt(i, 1)" />
-                      <v-switch v-model="p.enabled" density="compact" hide-details class="flex-shrink-0" />
-                      <v-btn icon="trash-2" variant="text" size="x-small" color="error" aria-label="Delete prompt" @click="removePrompt(p.id)" />
+                      <v-text-field v-model="p.text" hide-details class="flex-grow-1" aria-label="Prompt text" />
+                      <v-select v-model="p.intent" :items="INTENTS" hide-details class="cb-prompt__intent" aria-label="Intent" />
+                      <v-tooltip text="Move up" location="top">
+                        <template #activator="{ props }">
+                          <v-btn v-bind="props" icon="chevron-up" variant="text" size="small" :disabled="i === 0" aria-label="Move up" @click="movePrompt(i, -1)" />
+                        </template>
+                      </v-tooltip>
+                      <v-tooltip text="Move down" location="top">
+                        <template #activator="{ props }">
+                          <v-btn v-bind="props" icon="chevron-down" variant="text" size="small" :disabled="i === cfg.quickPrompts.length - 1" aria-label="Move down" @click="movePrompt(i, 1)" />
+                        </template>
+                      </v-tooltip>
+                      <v-switch v-model="p.enabled" density="compact" hide-details class="flex-shrink-0" aria-label="Enable prompt" />
+                      <v-tooltip text="Delete prompt" location="top">
+                        <template #activator="{ props }">
+                          <v-btn v-bind="props" icon="trash-2" variant="text" size="small" color="error" aria-label="Delete prompt" @click="removePrompt(p.id)" />
+                        </template>
+                      </v-tooltip>
                     </div>
                   </div>
                 </div>
@@ -512,10 +529,10 @@ function sendChat() {
               <v-card flat border rounded="lg" class="pa-6 mb-5">
                 <div class="d-flex align-start justify-space-between ga-4">
                   <div>
-                    <div class="text-subtitle-1 font-weight-bold mb-1">Shopping assistant</div>
+                    <div class="mp-section-title mb-1">Shopping assistant</div>
                     <div class="text-body-2 text-medium-emphasis">Let the bot recommend products, answer product questions, and add items to cart inside the chat.</div>
                   </div>
-                  <v-switch v-model="cfg.shopping.enabled" density="compact" hide-details inset class="flex-shrink-0 mt-n1" />
+                  <v-switch v-model="cfg.shopping.enabled" density="compact" hide-details inset class="flex-shrink-0 mt-n1" aria-label="Enable shopping assistant" />
                 </div>
               </v-card>
               <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.shopping.enabled }">
@@ -536,10 +553,10 @@ function sendChat() {
               <v-card flat border rounded="lg" class="pa-6 mb-5">
                 <div class="d-flex align-start justify-space-between ga-4">
                   <div>
-                    <div class="text-subtitle-1 font-weight-bold mb-1">Order tracking</div>
+                    <div class="mp-section-title mb-1">Order tracking</div>
                     <div class="text-body-2 text-medium-emphasis">Let customers check order status in chat — with an account or as a guest.</div>
                   </div>
-                  <v-switch v-model="cfg.orderTracking.enabled" density="compact" hide-details inset class="flex-shrink-0 mt-n1" />
+                  <v-switch v-model="cfg.orderTracking.enabled" density="compact" hide-details inset class="flex-shrink-0 mt-n1" aria-label="Enable order tracking" />
                 </div>
               </v-card>
               <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.orderTracking.enabled }">
@@ -557,13 +574,13 @@ function sendChat() {
             <!-- KNOWLEDGE BASE -->
             <template v-else-if="section === 'knowledge'">
               <v-card flat border rounded="lg" class="pa-6 mb-5">
-                <div class="d-flex align-center justify-space-between mb-1">
-                  <div class="text-subtitle-1 font-weight-bold">Knowledge base</div>
-                  <span v-if="cfg.knowledgeSources.length" class="text-caption text-medium-emphasis">
-                    <span class="text-success font-weight-bold">{{ activeSourceCount }}</span> of {{ cfg.knowledgeSources.length }} active
-                  </span>
-                </div>
-                <div class="text-body-2 text-medium-emphasis mb-5">Connect and manage the sources that power your AI responses.</div>
+                <MpSectionHeader title="Knowledge base" description="Connect and manage the sources that power your AI responses.">
+                  <template v-if="cfg.knowledgeSources.length" #actions>
+                    <span class="text-caption text-medium-emphasis">
+                      <span class="text-success x-strong">{{ activeSourceCount }}</span> of {{ cfg.knowledgeSources.length }} active
+                    </span>
+                  </template>
+                </MpSectionHeader>
 
                 <div
                   v-for="s in cfg.knowledgeSources"
@@ -575,16 +592,16 @@ function sendChat() {
                   <div class="flex-grow-1 min-width-0">
                     <div class="d-flex align-center ga-2">
                       <span class="text-body-2 font-weight-medium text-truncate">{{ s.name }}</span>
-                      <v-chip size="x-small" variant="tonal" :color="statusColor[s.status]" class="flex-shrink-0">
-                        <v-progress-circular
-                          v-if="s.status === 'Indexing'"
-                          indeterminate
-                          size="10"
-                          width="2"
-                          class="me-1"
-                        />
-                        {{ s.status }}
-                      </v-chip>
+                      <v-progress-circular
+                        v-if="s.status === 'Indexing'"
+                        indeterminate
+                        size="16"
+                        width="2"
+                        color="primary"
+                        class="flex-shrink-0"
+                        aria-label="Indexing"
+                      />
+                      <MpStatusChip :status="s.status" size="sm" class="flex-shrink-0" />
                     </div>
                     <div class="text-caption text-medium-emphasis text-truncate">
                       {{ sourceKind(s.icon) }} · {{ s.items }} items · {{ s.meta }}
@@ -601,31 +618,34 @@ function sendChat() {
                   <div class="cb-source__actions d-flex align-center flex-shrink-0">
                     <v-tooltip text="Re-sync" location="top">
                       <template #activator="{ props }">
-                        <v-btn v-bind="props" icon="refresh-cw" variant="text" size="x-small" class="text-medium-emphasis" aria-label="Re-sync source" />
+                        <v-btn v-bind="props" icon="refresh-cw" variant="text" size="small" class="text-medium-emphasis" aria-label="Re-sync source" />
                       </template>
                     </v-tooltip>
                     <v-tooltip text="Remove" location="top">
                       <template #activator="{ props }">
-                        <v-btn v-bind="props" icon="trash-2" variant="text" size="x-small" color="error" aria-label="Remove source" @click="askRemoveSource(s.id)" />
+                        <v-btn v-bind="props" icon="trash-2" variant="text" size="small" color="error" aria-label="Remove source" @click="askRemoveSource(s.id)" />
                       </template>
                     </v-tooltip>
                   </div>
                 </div>
 
-                <div v-if="!cfg.knowledgeSources.length" class="cb-kb-empty text-center py-8">
-                  <v-icon size="30" class="mb-2 text-medium-emphasis">book-open</v-icon>
-                  <div class="text-body-2 font-weight-medium">No sources connected yet</div>
-                  <div class="text-caption text-medium-emphasis">Add a website or upload files below to power your AI responses.</div>
-                </div>
+                <MpEmptyState
+                  v-if="!cfg.knowledgeSources.length"
+                  icon="book-open"
+                  title="No sources connected yet"
+                  description="Add a website or upload files below to power your AI responses."
+                />
               </v-card>
 
               <v-card flat border rounded="lg" class="pa-6">
                 <MpFormSection title="Add a source">
-                  <v-btn-toggle v-model="addSourceTab" mandatory density="comfortable" variant="outlined" divided rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
-                    <v-btn value="url" size="small" class="text-none px-4" prepend-icon="link">Website URL</v-btn>
-                    <v-btn value="questionnaire" size="small" class="text-none px-4" prepend-icon="clipboard-list">Questionnaire</v-btn>
-                    <v-btn value="upload" size="small" class="text-none px-4" prepend-icon="upload">Upload files</v-btn>
-                  </v-btn-toggle>
+                  <MpSegmentedControl
+                    v-model="addSourceTab"
+                    :items="ADD_SOURCE_ITEMS"
+                    size="sm"
+                    ariaLabel="Source type"
+                    class="align-self-start"
+                  />
 
                   <div v-if="addSourceTab === 'url'">
                     <div class="d-flex align-start ga-2">
@@ -641,7 +661,7 @@ function sendChat() {
                       <v-btn
                         color="primary"
                         variant="flat"
-                        class="text-none cb-add-btn"
+                        class="text-none"
                         prepend-icon="plus"
                         :disabled="!newUrl.trim()"
                         @click="addUrlSource"
@@ -662,7 +682,7 @@ function sendChat() {
                   </template>
 
                   <div v-else class="cb-drop d-flex flex-column align-center justify-center text-center">
-                    <v-icon size="28" class="mb-2 text-medium-emphasis">upload-cloud</v-icon>
+                    <v-icon size="20" class="mb-2 text-medium-emphasis">upload-cloud</v-icon>
                     <div class="text-body-2 font-weight-medium">Drag &amp; drop, or click to upload</div>
                     <div class="text-caption text-medium-emphasis">Max 5 MB · MD (preferred), TXT, or PDF</div>
                   </div>
@@ -721,20 +741,33 @@ function sendChat() {
               </v-card>
 
               <v-card flat border rounded="lg" class="pa-6" :class="{ 'cb-dim': !cfg.preChatEnabled }">
-                <div class="d-flex align-center justify-space-between mb-4">
-                  <div class="text-subtitle-1 font-weight-bold">Form fields</div>
-                  <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" :disabled="!cfg.preChatEnabled" @click="addField">Add field</v-btn>
-                </div>
+                <MpSectionHeader title="Form fields">
+                  <template #actions>
+                    <v-btn size="small" variant="tonal" color="primary" prepend-icon="plus" class="text-none" :disabled="!cfg.preChatEnabled" @click="addField">Add field</v-btn>
+                  </template>
+                </MpSectionHeader>
                 <div class="d-flex flex-column ga-3">
                   <div v-for="(f, i) in cfg.preChatFields" :key="f.id" class="cb-field">
                     <div class="d-flex align-center ga-2 mb-2">
-                      <span class="text-caption font-weight-bold text-medium-emphasis">#{{ i + 1 }}</span>
+                      <span class="text-caption x-strong text-medium-emphasis">#{{ i + 1 }}</span>
                       <v-spacer />
-                      <v-btn icon="chevron-up" variant="text" size="x-small" :disabled="i === 0 || !cfg.preChatEnabled" aria-label="Move up" @click="moveField(i, -1)" />
-                      <v-btn icon="chevron-down" variant="text" size="x-small" :disabled="i === cfg.preChatFields.length - 1 || !cfg.preChatEnabled" aria-label="Move down" @click="moveField(i, 1)" />
-                      <v-switch v-model="f.required" density="compact" hide-details :disabled="!cfg.preChatEnabled" class="flex-shrink-0" />
+                      <v-tooltip text="Move up" location="top">
+                        <template #activator="{ props }">
+                          <v-btn v-bind="props" icon="chevron-up" variant="text" size="small" :disabled="i === 0 || !cfg.preChatEnabled" aria-label="Move up" @click="moveField(i, -1)" />
+                        </template>
+                      </v-tooltip>
+                      <v-tooltip text="Move down" location="top">
+                        <template #activator="{ props }">
+                          <v-btn v-bind="props" icon="chevron-down" variant="text" size="small" :disabled="i === cfg.preChatFields.length - 1 || !cfg.preChatEnabled" aria-label="Move down" @click="moveField(i, 1)" />
+                        </template>
+                      </v-tooltip>
+                      <v-switch v-model="f.required" density="compact" hide-details :disabled="!cfg.preChatEnabled" class="flex-shrink-0" aria-label="Required field" />
                       <span class="text-caption text-medium-emphasis">Required</span>
-                      <v-btn icon="trash-2" variant="text" size="x-small" color="error" :disabled="!cfg.preChatEnabled" aria-label="Delete field" @click="removeField(f.id)" />
+                      <v-tooltip text="Delete field" location="top">
+                        <template #activator="{ props }">
+                          <v-btn v-bind="props" icon="trash-2" variant="text" size="small" color="error" :disabled="!cfg.preChatEnabled" aria-label="Delete field" @click="removeField(f.id)" />
+                        </template>
+                      </v-tooltip>
                     </div>
                     <MpFormGrid :cols="2">
                       <v-text-field v-model="f.label" label="Label" :disabled="!cfg.preChatEnabled" />
@@ -751,7 +784,7 @@ function sendChat() {
         <!-- Live preview -->
         <div id="cb-preview" class="cb__preview bg-background d-flex flex-column align-center pa-6 flex-shrink-0" tabindex="-1">
           <div class="d-flex align-center justify-space-between w-100 mb-3">
-            <span class="text-caption text-medium-emphasis font-weight-bold text-uppercase">Preview</span>
+            <span class="mp-meta-label text-medium-emphasis">Preview</span>
           </div>
           <div class="cb-scenarios d-flex flex-wrap ga-1 mb-3 align-self-start">
             <button
@@ -760,6 +793,7 @@ function sendChat() {
               type="button"
               class="cb-scenario"
               :class="{ 'cb-scenario--on': previewScenario === t.key }"
+              :aria-pressed="previewScenario === t.key"
               @click="previewScenario = t.key"
             >{{ t.label }}</button>
           </div>
@@ -856,7 +890,7 @@ function sendChat() {
             <div class="cb-widget__input">
               <template v-if="previewScenario === 'openchat'">
                 <input v-model="chatInput" class="cb-widget__field" placeholder="Try: where is my order?" aria-label="Message" @keyup.enter="sendChat" />
-                <v-icon size="16" class="cb-widget__send" role="button" aria-label="Send" @click="sendChat">send</v-icon>
+                <button type="button" class="cb-widget__send" aria-label="Send" @click="sendChat"><v-icon size="16">send</v-icon></button>
               </template>
               <template v-else>
                 <span class="text-medium-emphasis">Write a message…</span>
@@ -877,7 +911,7 @@ function sendChat() {
       >
         <div class="cb-install">
           <div class="cb-install__bar d-flex align-center justify-space-between">
-            <span class="text-caption font-weight-bold text-medium-emphasis">Installation script</span>
+            <span class="text-caption x-strong text-medium-emphasis">Installation script</span>
             <v-btn size="x-small" variant="tonal" :color="copied ? 'success' : 'primary'" class="text-none" :prepend-icon="copied ? 'check' : 'copy'" @click="copyScript">
               {{ copied ? 'Copied' : 'Copy' }}
             </v-btn>
@@ -911,58 +945,66 @@ function sendChat() {
 </template>
 
 <style scoped>
-.border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
+.border-r { border-right: 1px solid var(--border-subtle); }
 
-.cb__nav { width: 220px; display: flex; flex-direction: column; gap: 2px; padding-inline: 10px; }
-.cb__nav-group { display: flex; flex-direction: column; gap: 2px; }
-.cb__nav-group + .cb__nav-group { margin-top: 12px; }
-.cb__nav-heading { letter-spacing: 0.04em; }
+/* Vuetify has no semibold utility; one scoped class instead of a 600 literal. */
+.x-strong { font-weight: var(--mp-fontWeight-semibold); }
+
+/* Section nav: rows sit on the shared listItem geometry, the same scale as MpSectionRail. */
+.cb__nav { width: 220px; display: flex; flex-direction: column; gap: var(--mp-space-2); padding-inline: var(--mp-space-10); }
+.cb__nav-group { display: flex; flex-direction: column; gap: var(--mp-space-2); }
+.cb__nav-group + .cb__nav-group { margin-top: var(--mp-space-12); }
+.cb__nav-heading { padding: var(--mp-space-6) var(--mp-component-listItem-paddingInline) var(--mp-space-4); }
 .cb__nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: 10px;
+  gap: var(--mp-component-listItem-gap);
+  min-height: var(--mp-component-listItem-minHeight);
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-component-listItem-paddingInline);
+  border-radius: var(--mp-component-nav-itemRadius);
   border: 0;
   background: none;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.7);
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
+  color: var(--text-secondary);
   cursor: pointer;
   text-align: left;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard), color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
-.cb__nav-item:hover { background: rgba(var(--v-theme-on-surface), 0.04); color: rgb(var(--v-theme-on-surface)); }
-.cb__nav-item--on { background: rgba(var(--v-theme-primary), 0.1); color: rgb(var(--v-theme-primary)); }
-.cb__nav-crown { margin-left: auto; color: rgb(var(--v-theme-warning)); flex-shrink: 0; }
+.cb__nav-item:hover { background: var(--surface-secondary); color: var(--on-surface); }
+.cb__nav-item--on { background: var(--accent-soft); color: var(--accent-on-container); font-weight: var(--mp-fontWeight-semibold); }
+.cb__nav-item:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.cb__nav-crown { margin-left: auto; color: var(--warn); flex-shrink: 0; }
 
 .cb__panel { min-width: 0; }
 .cb__panel-inner { max-width: 640px; }
 
 .cb-upload {
-  border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.2);
-  border-radius: 10px;
-  padding: 20px;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--mp-component-input-radius);
+  padding: var(--mp-space-20);
+  background: transparent;
+  color: var(--on-surface);
+  font: inherit;
   cursor: pointer;
-  transition: border-color 120ms ease, background 120ms ease;
+  transition: border-color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard), background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
-.cb-upload:hover { border-color: rgba(var(--v-theme-primary), 0.4); background: rgba(var(--v-theme-primary), 0.03); }
+.cb-upload:hover { border-color: var(--accent-default); background: var(--surface-secondary); }
+.cb-upload:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
 .cb-swatch {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.14);
+  width: var(--mp-component-chip-height-lg);
+  height: var(--mp-component-chip-height-lg);
+  border-radius: var(--mp-component-chip-radius);
+  border: 1px solid var(--border-subtle);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-.cb-swatch--on { box-shadow: 0 0 0 2px rgb(var(--v-theme-surface)), 0 0 0 4px rgb(var(--v-theme-primary)); }
-.cb-swatch--sm { width: 40px; height: 40px; }
-
-.cb-pos { transition: border-color 120ms ease, background 120ms ease; }
-.cb-pos--on { border-color: rgb(var(--v-theme-primary)) !important; background: rgba(var(--v-theme-primary), 0.06); }
+.cb-swatch--on { box-shadow: 0 0 0 var(--mp-space-2) var(--surface-primary), 0 0 0 var(--mp-space-4) var(--accent-default); }
+.cb-swatch:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.cb-swatch--sm { width: var(--mp-component-control-height); height: var(--mp-component-control-height); flex-shrink: 0; }
 
 .cb-hour { padding: 6px 0; }
 .cb-hour__day { width: 108px; flex-shrink: 0; }
@@ -971,72 +1013,69 @@ function sendChat() {
 .cb-prompt__intent { max-width: 130px; }
 
 .cb-source {
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  transition: border-color 120ms ease, background 120ms ease;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-12);
+  padding: var(--mp-space-10) var(--mp-space-12);
+  margin-bottom: var(--mp-space-8);
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
-.cb-source:hover {
-  border-color: rgba(var(--v-theme-primary), 0.35);
-  background: rgba(var(--v-theme-primary), 0.02);
-}
+.cb-source:hover { background: var(--surface-secondary); }
 .cb-source--off .cb-source__icon,
 .cb-source--off .flex-grow-1 { opacity: 0.5; }
 .cb-source__actions {
-  padding-left: 4px;
-  border-left: 1px solid var(--mp-border-subtle);
+  padding-left: var(--mp-space-4);
+  border-left: 1px solid var(--border-subtle);
 }
 .cb-source__icon {
-  width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: var(--mp-component-chip-radius); flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(var(--v-theme-primary), 0.1);
-  color: rgb(var(--v-theme-primary));
+  background: var(--accent-soft);
+  color: var(--accent-on-container);
 }
-.cb-add-btn { min-height: 48px; }
 .cb-field {
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: 10px;
-  padding: 12px;
-  background: rgba(var(--v-theme-on-surface), 0.015);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-12);
+  padding: var(--mp-space-12);
 }
 .cb-drop {
-  border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.2);
-  border-radius: 10px;
-  padding: 28px;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--mp-component-input-radius);
+  padding: var(--mp-space-28);
 }
 .cb-dim { opacity: 0.55; }
 
 .cb-install {
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-12);
   overflow: hidden;
 }
 .cb-install__bar {
-  padding: 8px 12px;
-  background: rgba(var(--v-theme-on-surface), 0.03);
-  border-bottom: 1px solid var(--mp-border-subtle);
+  padding: var(--mp-space-8) var(--mp-space-12);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
+  border-bottom: 1px solid var(--border-subtle);
 }
 .cb-install__code {
   margin: 0;
-  padding: 12px;
+  padding: var(--mp-space-12);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.75rem;
+  font-size: var(--mp-fontSize-12);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--on-surface);
   max-height: 180px;
   overflow-y: auto;
 }
-.cb-steps { padding-left: 20px; }
-.cb-steps li { margin-bottom: 4px; }
+.cb-steps { padding-left: var(--mp-space-20); }
+.cb-steps li { margin-bottom: var(--mp-space-4); }
 .cb-steps code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.75rem;
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  padding: 1px 5px;
-  border-radius: 4px;
+  font-size: var(--mp-fontSize-12);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
+  padding: var(--mp-space-2) var(--mp-space-6);
+  border-radius: var(--mp-radius-4);
 }
 
 /* Live widget preview */
@@ -1044,30 +1083,27 @@ function sendChat() {
 
 @media (max-width: 1024px) {
   .cb__body { flex-direction: column; overflow-y: auto; }
+  .cb__panel { flex: 0 0 auto; overflow: visible; }
   .cb__preview {
     width: 100%;
-    border-top: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+    border-top: 1px solid var(--border-subtle);
     order: 3;
   }
-  .cb__nav { width: 180px; }
-}
-@media (max-width: 768px) {
-  .cb__body { flex-direction: column; }
   .cb__nav {
     width: 100%;
-    flex-direction: row;
-    overflow-x: auto;
     border-right: none;
-    border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+    border-bottom: 1px solid var(--border-subtle);
   }
+  .cb__nav-group { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .cb__nav-heading { width: 100%; }
 }
 .cb-widget {
   width: 320px;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: 16px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-component-card-radius);
   overflow: hidden;
-  box-shadow: 0 18px 50px rgba(var(--v-theme-on-surface), 0.14);
+  box-shadow: var(--mp-shadow-lg);
   display: flex;
   flex-direction: column;
 }
@@ -1095,7 +1131,8 @@ function sendChat() {
   min-height: 240px;
   max-height: 360px;
   overflow-y: auto;
-  background: rgba(var(--v-theme-on-surface), 0.02);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1105,8 +1142,8 @@ function sendChat() {
 .cb-b {
   align-self: flex-start;
   max-width: 90%;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid var(--mp-border-subtle);
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px 12px 12px 4px;
   padding: 9px 12px;
   font-size: 0.8125rem;
@@ -1132,7 +1169,7 @@ function sendChat() {
   padding: 6px 12px;
   font-size: 0.75rem;
   font-weight: 600;
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-primary);
 }
 .cb-chip--solid { background: var(--brand); color: #fff; }
 
@@ -1140,9 +1177,9 @@ function sendChat() {
 .cb-products { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
 .cb-product {
   flex: 0 0 130px;
-  border: 1px solid var(--mp-border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-primary);
   padding: 8px;
 }
 .cb-product__thumb {
@@ -1160,8 +1197,8 @@ function sendChat() {
   position: absolute;
   top: 5px;
   left: 5px;
-  background: rgb(var(--v-theme-error));
-  color: rgb(var(--v-theme-on-error));
+  background: var(--neg);
+  color: var(--on-neg);
   font-size: 0.5rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1179,7 +1216,7 @@ function sendChat() {
   overflow: hidden;
 }
 .cb-product__price { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
-.cb-product__was { font-size: 0.625rem; color: rgba(var(--v-theme-on-surface), 0.45); text-decoration: line-through; }
+.cb-product__was { font-size: 0.625rem; color: var(--on-surface-muted); text-decoration: line-through; }
 .cb-product__now { font-size: 0.75rem; font-weight: 700; }
 .cb-product__add {
   width: 100%;
@@ -1195,9 +1232,9 @@ function sendChat() {
 
 /* Order status card */
 .cb-order {
-  border: 1px solid var(--mp-border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-primary);
   padding: 10px 12px;
 }
 .cb-order__row {
@@ -1207,19 +1244,19 @@ function sendChat() {
   font-size: 0.75rem;
   padding: 3px 0;
 }
-.cb-order__row span:first-child { color: rgba(var(--v-theme-on-surface), 0.55); }
-.cb-order__status { color: rgb(var(--v-theme-success)); font-weight: 700; }
+.cb-order__row span:first-child { color: var(--on-surface-muted); }
+.cb-order__status { color: var(--pos); font-weight: var(--mp-fontWeight-bold); }
 .cb-links { display: flex; flex-direction: column; gap: 6px; }
 .cb-link {
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--mp-border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-primary);
 }
 .cb-route {
   align-self: flex-start;
@@ -1237,21 +1274,22 @@ function sendChat() {
 
 /* Scenario switcher */
 .cb-scenario {
-  border: 1px solid var(--mp-border-subtle);
-  background: rgb(var(--v-theme-surface));
-  color: rgba(var(--v-theme-on-surface), 0.7);
-  border-radius: 999px;
-  padding: 4px 11px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--text-secondary);
+  border-radius: var(--mp-radius-full);
+  padding: var(--mp-space-4) var(--mp-space-10);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard), color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
-.cb-scenario:hover { border-color: rgba(var(--v-theme-primary), 0.4); }
+.cb-scenario:hover { background: var(--surface-secondary); color: var(--on-surface); }
+.cb-scenario:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .cb-scenario--on {
-  background: rgb(var(--v-theme-primary));
-  border-color: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
+  background: var(--accent-default);
+  border-color: var(--accent-default);
+  color: var(--accent-on);
 }
 
 /* Open-chat input */
@@ -1261,32 +1299,40 @@ function sendChat() {
   outline: none;
   background: transparent;
   font-size: 0.8125rem;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--on-surface);
 }
-.cb-widget__send { color: var(--brand); cursor: pointer; }
+.cb-widget__send {
+  display: inline-flex;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--brand);
+  cursor: pointer;
+}
+.cb-widget__send:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .cb-widget__input {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 10px 14px;
-  border-top: 1px solid var(--mp-border-subtle);
+  border-top: 1px solid var(--border-subtle);
   font-size: 0.8125rem;
 }
-.cb-widget__foot { text-align: center; font-size: 0.625rem; color: rgba(var(--v-theme-on-surface), 0.45); padding: 6px 0 10px; }
+.cb-widget__foot { text-align: center; font-size: 0.625rem; color: var(--on-surface-muted); padding: 6px 0 10px; }
 
 /* Pre-chat preview */
 .cb-pc__title { font-weight: 700; font-size: 0.9375rem; margin-bottom: 4px; }
-.cb-pc__sub { font-size: 0.75rem; color: rgba(var(--v-theme-on-surface), 0.6); margin-bottom: 14px; }
+.cb-pc__sub { font-size: 0.75rem; color: var(--on-surface-muted); margin-bottom: 14px; }
 .cb-pc__field { margin-bottom: 10px; }
 .cb-pc__label { font-size: 0.6875rem; font-weight: 600; margin-bottom: 4px; }
 .cb-pc__input {
-  border: 1px solid var(--mp-border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 0.75rem;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-  background: rgb(var(--v-theme-surface));
+  color: var(--on-surface-muted);
+  background: var(--surface-primary);
 }
 .cb-pc__input--area { min-height: 44px; }
 .cb-widget__cta {
