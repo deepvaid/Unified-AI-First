@@ -8,6 +8,7 @@ import {
   type FeedInput, type FeedType,
 } from '@/stores/useProductExtras'
 import { useToast } from '@/composables/useToast'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import MpAlert from '@/components/MpAlert.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFilterTabs from '@/components/MpFilterTabs.vue'
@@ -75,13 +76,14 @@ const sourceFilter = ref<string[]>([])
 const catalogSearch = ref('')
 
 const catalogHeaders = [
-  { title: 'Item ID', key: 'itemId', sortable: true },
+  { title: 'Item ID', key: 'itemId', sortable: true, hideBelow: 'md' as const },
   { title: 'Product', key: 'name', sortable: true, minWidth: '260px' },
   { title: 'Price', key: 'price', align: 'end' as const, sortable: true },
-  { title: 'Created at', key: 'createdAt', sortable: true },
-  { title: 'Updated at', key: 'updatedAt', sortable: true },
+  { title: 'Created at', key: 'createdAt', sortable: true, hideBelow: 'lg' as const },
+  { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'md' as const },
   { title: '', key: 'actions', sortable: false, width: 56 },
 ]
+const { visibleHeaders: catalogVisibleHeaders } = useResponsiveTableHeaders(catalogHeaders)
 
 const filteredCatalog = computed(() => {
   const term = catalogSearch.value.trim().toLowerCase()
@@ -194,10 +196,11 @@ const feedSearch = ref('')
 const feedHeaders = [
   { title: 'Name', key: 'name', sortable: true, minWidth: '240px' },
   { title: 'Metric', key: 'metric', sortable: true },
-  { title: 'Created at', key: 'createdAt', sortable: true },
-  { title: 'Updated at', key: 'updatedAt', sortable: true },
+  { title: 'Created at', key: 'createdAt', sortable: true, hideBelow: 'lg' as const },
+  { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'md' as const },
   { title: '', key: 'actions', sortable: false, width: 56 },
 ]
+const { visibleHeaders: feedVisibleHeaders } = useResponsiveTableHeaders(feedHeaders)
 
 const filteredFeeds = computed(() => {
   const term = feedSearch.value.trim().toLowerCase()
@@ -304,10 +307,11 @@ const templateSearch = ref('')
 const templateHeaders = [
   { title: 'Name', key: 'name', sortable: true, minWidth: '260px' },
   { title: 'Block layout', key: 'layout', sortable: false },
-  { title: 'Created at', key: 'createdAt', sortable: true },
-  { title: 'Updated at', key: 'updatedAt', sortable: true },
+  { title: 'Created at', key: 'createdAt', sortable: true, hideBelow: 'lg' as const },
+  { title: 'Updated at', key: 'updatedAt', sortable: true, hideBelow: 'md' as const },
   { title: '', key: 'actions', sortable: false, width: 56 },
 ]
+const { visibleHeaders: templateVisibleHeaders } = useResponsiveTableHeaders(templateHeaders)
 
 const filteredTemplates = computed(() => {
   const term = templateSearch.value.trim().toLowerCase()
@@ -399,7 +403,7 @@ function restore(template: FeedTemplate) {
           />
 
           <v-data-table
-            :headers="catalogHeaders"
+            :headers="catalogVisibleHeaders"
             :items="filteredCatalog"
             :items-per-page="10"
             hover
@@ -423,8 +427,8 @@ function restore(template: FeedTemplate) {
                 <div class="min-w-0">
                   <div v-if="item.name" class="text-body-2 font-weight-medium">{{ item.name }}</div>
                   <div v-else class="text-body-2 text-medium-emphasis font-italic">Untitled product</div>
-                  <div v-if="isIncomplete(item)" class="d-flex align-center ga-1 text-caption text-warning">
-                    <v-icon size="13">triangle-alert</v-icon>
+                  <div v-if="isIncomplete(item)" class="rec-incomplete d-flex align-center ga-1 text-caption">
+                    <v-icon size="16">triangle-alert</v-icon>
                     Incomplete — excluded from recommendations
                   </div>
                 </div>
@@ -451,7 +455,6 @@ function restore(template: FeedTemplate) {
                 :description="catalogSearch || sourceFilter.length ? 'Try a different search term or clear the source filter.' : 'Import a product catalog to power recommendation blocks.'"
                 :action-label="catalogSearch || sourceFilter.length ? undefined : 'Import product catalog'"
                 :action-icon="catalogSearch || sourceFilter.length ? undefined : 'upload'"
-                class="py-10"
                 @action="openImport"
               />
             </template>
@@ -474,7 +477,7 @@ function restore(template: FeedTemplate) {
           />
 
           <v-data-table
-            :headers="feedHeaders"
+            :headers="feedVisibleHeaders"
             :items="filteredFeeds"
             :items-per-page="10"
             hover
@@ -492,7 +495,7 @@ function restore(template: FeedTemplate) {
                 </v-chip>
                 <v-tooltip v-if="isLegacyMetric(item.metric)" location="top" text="Legacy metric — kept on existing feeds, but new feeds can't select it.">
                   <template #activator="{ props: tip }">
-                    <v-icon v-bind="tip" size="15" class="text-medium-emphasis" tabindex="0" role="img"
+                    <v-icon v-bind="tip" size="16" class="text-medium-emphasis" tabindex="0" role="img"
                             aria-label="Legacy metric — kept on existing feeds, but new feeds can't select it.">info</v-icon>
                   </template>
                 </v-tooltip>
@@ -516,7 +519,6 @@ function restore(template: FeedTemplate) {
                 :description="feedSearch ? 'Try a different search term.' : 'A feed picks the products a recommendation block should draw from.'"
                 :action-label="feedSearch ? undefined : 'New product feed'"
                 :action-icon="feedSearch ? undefined : 'plus'"
-                class="py-10"
                 @action="openCreateFeed"
               />
             </template>
@@ -537,7 +539,7 @@ function restore(template: FeedTemplate) {
           />
 
           <v-data-table
-            :headers="templateHeaders"
+            :headers="templateVisibleHeaders"
             :items="filteredTemplates"
             :items-per-page="10"
             hover
@@ -579,7 +581,6 @@ function restore(template: FeedTemplate) {
                 :description="templateScope === 'archived' ? 'Templates you archive are kept here and can be restored.' : 'A template lays out how recommended products render inside an email.'"
                 :action-label="templateScope === 'archived' || templateSearch ? undefined : 'New feed template'"
                 :action-icon="templateScope === 'archived' || templateSearch ? undefined : 'plus'"
-                class="py-10"
                 @action="openCreateTemplate"
               />
             </template>
@@ -703,11 +704,20 @@ function restore(template: FeedTemplate) {
       <template v-else>
         <p class="text-body-2">Ready to import <strong>{{ importFileName }}</strong>.</p>
         <MpFormSection title="Summary" />
-        <div class="rec-summary">
-          <div class="rec-summary__row"><span>File</span><span>{{ importFileName }}</span></div>
-          <div class="rec-summary__row"><span>Delimiter</span><span>{{ importDelimiter === 'Comma' ? 'Comma' : 'Semi-colon' }}</span></div>
-          <div class="rec-summary__row"><span>Mode</span><span>Create or update by Item ID</span></div>
-        </div>
+        <dl class="mp-label-value rec-dl">
+          <div>
+            <dt class="mp-meta-label text-medium-emphasis">File</dt>
+            <dd class="text-body-2">{{ importFileName }}</dd>
+          </div>
+          <div>
+            <dt class="mp-meta-label text-medium-emphasis">Delimiter</dt>
+            <dd class="text-body-2">{{ importDelimiter === 'Comma' ? 'Comma' : 'Semi-colon' }}</dd>
+          </div>
+          <div>
+            <dt class="mp-meta-label text-medium-emphasis">Mode</dt>
+            <dd class="text-body-2">Create or update by Item ID</dd>
+          </div>
+        </dl>
       </template>
 
       <template #footer>
@@ -853,41 +863,30 @@ function restore(template: FeedTemplate) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(var(--v-theme-surface-variant));
-  color: rgb(var(--v-theme-on-surface-variant));
+  background: var(--surface-secondary);
+  color: var(--on-surface-muted);
 }
 
 .rec-mono {
   font-family: var(--mp-fontFamily-mono);
 }
 
+/* Warm soft-surface ink, not the raw warning hue — the text has to pass on white. */
+.rec-incomplete {
+  color: var(--warn-ink);
+}
+
 .rec-readonly {
   min-height: var(--mp-component-control-height);
   display: flex;
   align-items: center;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--on-surface);
 }
 
-.rec-summary {
-  border: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-  border-radius: var(--mp-component-card-radius);
-  overflow: hidden;
-}
-
-.rec-summary__row {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--mp-space-16);
-  padding: var(--mp-component-listItem-paddingBlock) var(--mp-component-listItem-paddingInline);
-  font-size: var(--mp-fontSize-13);
-}
-
-.rec-summary__row + .rec-summary__row {
-  border-top: 1px solid rgb(var(--v-border-color), var(--v-border-opacity));
-}
-
-.rec-summary__row span:first-child {
-  color: rgb(var(--v-theme-on-surface-variant));
+/* Import summary: the shared label/value grid, single column inside the dialog. */
+.rec-dl {
+  grid-template-columns: 1fr;
+  gap: var(--mp-space-12);
 }
 
 .min-w-0 {
