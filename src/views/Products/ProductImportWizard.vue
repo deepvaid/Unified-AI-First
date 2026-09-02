@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MpAlert from '@/components/MpAlert.vue'
 import MpWizardShell from '@/components/MpWizardShell.vue'
 import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
@@ -108,7 +109,7 @@ function finishImport() {
               <v-btn variant="flat" color="primary" size="small" class="text-none" prepend-icon="folder-open">Browse File</v-btn>
             </div>
             <div class="d-flex align-center justify-space-between">
-              <v-select v-model="delimiter" :items="['Comma (,)', 'Semicolon (;)', 'Tab']" label="Delimiter" style="max-width: 260px;" />
+              <v-select v-model="delimiter" :items="['Comma (,)', 'Semicolon (;)', 'Tab']" label="Delimiter" class="iw-delimiter" />
               <v-btn variant="text" color="primary" class="text-none" prepend-icon="download">Download sample template</v-btn>
             </div>
           </MpWizardStepCard>
@@ -143,7 +144,7 @@ function finishImport() {
                       :items="productFields"
                       :aria-label="`Maps ${m.csvCol} to`"
                       hide-details
-                      style="min-width: 180px;"
+                      class="iw-mapping-select"
                     />
                   </td>
                 </tr>
@@ -184,10 +185,10 @@ function finishImport() {
               <v-col cols="4"><v-card variant="tonal" color="success" rounded="lg" class="pa-4 text-center"><div class="text-h5 font-weight-bold">{{ validRows }}</div><div class="text-caption">Valid products</div></v-card></v-col>
               <v-col cols="4"><v-card variant="tonal" color="warning" rounded="lg" class="pa-4 text-center"><div class="text-h5 font-weight-bold">{{ skippedRows }}</div><div class="text-caption">Skipped</div></v-card></v-col>
             </v-row>
-            <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
+            <MpAlert tone="info" live="off">
               Mode: <strong>{{ updateOption === 'update' ? 'Update existing products' : 'Add as new products' }}</strong>
               · Source: <strong>{{ isFtp ? 'FTP' : 'CSV upload' }}</strong>
-            </v-alert>
+            </MpAlert>
           </MpWizardStepCard>
         </template>
 
@@ -221,8 +222,16 @@ function finishImport() {
   justify-content: center;
   text-align: center;
   padding: var(--mp-space-40) var(--mp-space-16);
-  border: 1.5px dashed rgba(var(--v-theme-on-surface), 0.25);
+  border: 1px dashed var(--border-strong);
   border-radius: var(--mp-radius-12);
-  background: rgba(var(--v-theme-on-surface), 0.02);
+}
+
+/* Short control and table-cell editor widths from the token scale — no bare px. */
+.iw-delimiter {
+  max-width: var(--mp-component-toolbar-searchMinWidth);
+}
+
+.iw-mapping-select {
+  min-width: var(--mp-component-menu-minWidth);
 }
 </style>
