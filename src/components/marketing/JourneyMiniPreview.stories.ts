@@ -12,7 +12,7 @@ function linearSlice(nodes: FlowNode[], count: number): FlowNode[] {
 }
 
 const LINEAR_NODES = linearSlice(instantiateTemplate('abandoned-cart', 0), 4)
-const BRANCHED_NODES = instantiateTemplate('welcome', 0)
+const BRANCHED_NODES = instantiateTemplate('re-engagement', 0)
 const NESTED_NODES = instantiateTemplate('lapsed-buyer', 0)
 const DATA_NODES = dataJourneyTemplates[0]!.nodes
 

@@ -35,7 +35,8 @@ export const categoryLabel: Record<NodeCategory, string> = {
   end: 'End',
 }
 
-/** Branch rail chips: YES/NO carry outcome semantics; everything else (CASE n, A/B/%, OTHER) reads as logic. */
+/** Branch rail chips: Yes/No carry outcome semantics; everything else (Case n, A/B, %, Other) reads as logic. */
 export function branchChipColor(label: string): string {
-  return label.startsWith('YES') ? 'success' : label.startsWith('NO') ? 'error' : 'flow-logic'
+  const l = label.toUpperCase()
+  return l.startsWith('YES') ? 'success' : l.startsWith('NO') ? 'error' : 'flow-logic'
 }

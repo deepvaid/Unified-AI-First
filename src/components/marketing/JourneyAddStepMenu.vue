@@ -17,7 +17,7 @@ defineSlots<{
   default(slotProps: { props: Record<string, unknown> }): unknown
 }>()
 
-const COMMON_KINDS = new Set(['send-email', 'delay', 'ab-split', 'yes-no', 'percent-split'])
+const COMMON_KINDS = new Set(['send-email', 'delay', 'yes-no', 'percent-split'])
 const query = ref('')
 
 const filtered = computed(() => {

@@ -63,6 +63,41 @@ Slice-shared: [marketing-acquisition/IMPROVEMENTS.md](marketing-acquisition/IMPR
 /accounts/:accountId/archive                              ContentArchives
 ```
 
+### Journey Builder (2026-09-02)
+
+Crawled from `uat.maropost.com` account 116000 (`/journeys/612/journey-builder`). The live builder is a
+Vue 3 + Vue Flow micro-frontend; the tab rendered at 0×0 so the crawl was taken from the live component
+tree, DOM and handler source (no screenshots). The existing sandbox builder was extended, not replaced:
+production's 18-step palette, every node form, the compact/card face switch at 75 % zoom, Save / Save
+as draft / Clear canvas / Exit, contact search and Flip Yes/No were added on top of the tree canvas.
+
+| Page | Source | Rebuild | Docs |
+|---|---|---|---|
+| Journey Builder | `/journeys/:id/journey-builder` (+ node details drawer, confirmations) | [`JourneyBuilder.vue`](../../src/views/Marketing/JourneyBuilder.vue) + [`JourneyFlowColumn.vue`](../../src/components/marketing/JourneyFlowColumn.vue) + catalog in [`journeyFlowData.ts`](../../src/stores/journeyFlowData.ts) | [AUDIT](journey-builder/AUDIT.md) · [FLOWS](journey-builder/FLOWS.md) · [PARITY](journey-builder/PARITY.md) · [IMPROVEMENTS](journey-builder/IMPROVEMENTS.md) · [GAPS](journey-builder/GAPS.md) |
+
+```
+/accounts/:accountId/journeys/:id/journey-builder → JourneyBuilder   (production path; /builder redirects)
+```
+
+### New Journey slice (2026-09-02)
+
+Crawled and rebuilt from `uat.maropost.com` account 116000. Journey Selection, the two-step template
+wizard and the from-scratch settings form (where both "Create from scratch" and "Build with AI"
+land). The previous `CreateJourney.vue` — a gallery plus Da Vinci draft generator — was an invented
+design and was replaced.
+
+| Page | Source | Rebuild | Docs |
+|---|---|---|---|
+| Journey Selection | `/journeys/new` (+ template dialog) | [`JourneySelection.vue`](../../src/views/Marketing/JourneySelection.vue) + [`JourneyTemplateDialog.vue`](../../src/components/marketing/JourneyTemplateDialog.vue) | [AUDIT](new-journey/AUDIT.md) · [FLOWS](new-journey/FLOWS.md) · [PARITY](new-journey/PARITY.md) · [IMPROVEMENTS](new-journey/IMPROVEMENTS.md) · [GAPS](new-journey/GAPS.md) |
+| Journey Templates wizard | `/journeys/new/template` | [`JourneyTemplateWizard.vue`](../../src/views/Marketing/JourneyTemplateWizard.vue) + [`JourneySettingsForm.vue`](../../src/components/marketing/JourneySettingsForm.vue) + [`JourneyTemplateSetup.vue`](../../src/components/marketing/JourneyTemplateSetup.vue) + [`journeyTemplateSetup.ts`](../../src/stores/journeyTemplateSetup.ts) | same set |
+| Journey Settings (scratch / Build with AI) | `/journeys/new/scratch` (+ `?buildWithAI=true`) | [`CreateJourneyScratch.vue`](../../src/views/Marketing/CreateJourneyScratch.vue) | same set |
+
+```
+/accounts/:accountId/journeys/new                          JourneySelection      (route name CreateJourney kept; ?ai=1 → AI path)
+/accounts/:accountId/journeys/new/scratch                  CreateJourneyScratch
+/accounts/:accountId/journeys/new/template?template=<id>   JourneyTemplateWizard
+```
+
 ### Content & Reporting slice (2026-09-01)
 
 Crawled and rebuilt from `uat.maropost.com` account 116000. Overview, cross-cutting facts, and

@@ -22,7 +22,7 @@ const RECIPES = [
     icon: 'workflow',
     title: 'Journey Builder',
     text: 'A full canvas workspace on system foundations.',
-    to: '/accounts/2000290/journeys/1/builder',
+    to: '/accounts/2000290/journeys/1/journey-builder',
   },
   {
     icon: 'sparkles',
