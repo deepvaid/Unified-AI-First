@@ -25,13 +25,13 @@ async function copyScript() {
       subtitle="Embed the tracking script to capture website activity from your contacts."
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="copy" class="text-none" color="surface" @click="copyScript">Copy Script</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="copy" class="text-none" @click="copyScript">Copy Script</v-btn>
       </template>
     </MpPageHeader>
 
-    <v-card variant="flat" border rounded="lg" class="pa-6">
+    <v-card variant="flat" border rounded="lg" class="wt-card">
       <div class="d-flex align-center justify-space-between mb-4">
-        <h3 class="text-subtitle-1 font-weight-bold">Primary Tracking Domain</h3>
+        <h3 class="mp-section-title">Primary Tracking Domain</h3>
         <v-chip color="success" size="small" variant="tonal">Verified</v-chip>
       </div>
       <MpFormGrid>
@@ -56,15 +56,19 @@ async function copyScript() {
 </template>
 
 <style scoped>
+.wt-card {
+  padding: var(--mp-component-card-padding);
+}
+
+/* A soft fill alone sets the snippet apart — no hairline on top of a background. */
 .code-block {
-  background: rgba(var(--v-theme-on-surface), 0.05);
-  color: rgb(var(--v-theme-on-surface));
-  padding: 16px;
-  border-radius: var(--r-card, 12px);
-  border: 1px solid rgba(var(--v-border-color), 0.12);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
-  line-height: 1.7;
+  background: var(--surface-secondary);
+  color: var(--on-surface);
+  padding: var(--mp-space-16);
+  border-radius: var(--mp-radius-12);
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-13);
+  line-height: var(--mp-lineHeight-loose);
   overflow-x: auto;
 }
 </style>

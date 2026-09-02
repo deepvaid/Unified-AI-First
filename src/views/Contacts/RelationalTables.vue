@@ -143,15 +143,20 @@ function confirmDelete() {
             <v-select v-model="col.keyType" label="Key Type" :items="keyTypes" />
             <v-select v-model="col.allowNull" label="Allow Null" :items="allowNullOptions" />
           </MpFormGrid>
-          <v-btn
-            icon="trash-2"
-            variant="text"
-            size="x-small"
-            color="error"
-            :aria-label="`Remove column ${i + 1}`"
-            :disabled="columns.length === 1"
-            @click="removeColumn(i)"
-          />
+          <v-tooltip :text="`Remove column ${i + 1}`" location="bottom">
+            <template #activator="{ props: tooltip }">
+              <v-btn
+                v-bind="tooltip"
+                icon="trash-2"
+                variant="text"
+                size="x-small"
+                color="error"
+                :aria-label="`Remove column ${i + 1}`"
+                :disabled="columns.length === 1"
+                @click="removeColumn(i)"
+              />
+            </template>
+          </v-tooltip>
         </div>
       </MpFormGrid>
 
@@ -173,10 +178,12 @@ function confirmDelete() {
 </template>
 
 <style scoped>
+/* A soft fill alone groups a column's six fields — no hairline on top of a
+   background (recipe B4). */
 .column-block {
-  border: 1px solid rgba(var(--v-border-color), 0.12);
-  border-radius: 12px;
-  padding: 12px;
-  background: rgba(var(--v-theme-on-surface), 0.015);
+  border-radius: var(--mp-radius-12);
+  padding: var(--mp-component-card-paddingCompact);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
 }
 </style>

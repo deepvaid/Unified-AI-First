@@ -501,7 +501,7 @@ function confirmBulkDelete() {
   background: none;
   font: inherit;
   font-weight: var(--mp-fontWeight-semibold);
-  color: rgb(var(--v-theme-primary));
+  color: var(--accent-default);
   text-align: start;
   cursor: pointer;
 }
@@ -525,7 +525,7 @@ function confirmBulkDelete() {
    GAPS candidate). Monospace and spellcheck off are what the source gets wrong at
    16px Roboto with red squiggles under every keyword. */
 .mp-sql-input :deep(textarea) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--mp-fontFamily-mono);
   font-size: var(--mp-fontSize-13);
   line-height: var(--mp-lineHeight-normal);
 }

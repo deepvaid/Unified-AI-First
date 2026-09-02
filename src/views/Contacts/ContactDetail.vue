@@ -167,7 +167,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 </script>
 
 <template>
-  <div v-if="contact && detail" class="contact-detail-page">
+  <div v-if="contact && detail" class="h-100 d-flex flex-column gap-5">
 
     <!-- ── Page Header ────────────────────────────────────────────────────── -->
     <MpPageHeader
@@ -175,7 +175,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
       :back-to="`/accounts/${route.params.accountId}/contacts`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="pencil" @click="openEditDrawer" color="surface">Edit Contact</v-btn>
+        <v-btn color="primary" variant="flat" prepend-icon="pencil" class="text-none" @click="openEditDrawer">Edit Contact</v-btn>
         <MpRowActionsMenu ariaLabel="Contact actions" :itemLabel="fullName">
           <MpMenuItem icon="share" title="Export" @click="exportContact" />
           <v-divider class="my-1" />
@@ -206,9 +206,9 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
               </v-img>
             </v-avatar>
             <div class="min-w-0">
-              <div class="text-subtitle-1 font-weight-bold text-truncate">{{ fullName }}</div>
+              <div class="mp-section-title text-truncate">{{ fullName }}</div>
               <div v-if="contact.company" class="text-body-2 text-medium-emphasis text-truncate">{{ contact.company }}</div>
-              <MpStatusChip :status="contact.status ?? ''" type="contact" size="sm" variant="flat" class="mt-1" />
+              <MpStatusChip :status="contact.status ?? ''" type="contact" size="sm" class="mt-1" />
             </div>
           </div>
 
@@ -221,38 +221,38 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
             <v-progress-linear :model-value="contact.score" :color="contact.score >= 70 ? 'success' : contact.score >= 40 ? 'warning' : 'error'" rounded height="6" bg-color="surface-variant" />
           </div>
 
-          <v-divider style="opacity:0.5" />
+          <v-divider />
 
           <!-- Detail fields -->
           <div class="d-flex flex-column gap-0 px-5 py-3">
             <div class="detail-row-v2">
-              <v-icon size="15" class="detail-row-v2__icon">mail</v-icon>
+              <v-icon size="16" class="detail-row-v2__icon">mail</v-icon>
               <span class="detail-row-v2__label">Email</span>
-              <a :href="`mailto:${contact.email}`" class="detail-row-v2__value detail-row-v2__link text-truncate" style="max-width: 180px;">{{ contact.email }}</a>
+              <a :href="`mailto:${contact.email}`" class="detail-row-v2__value detail-row-v2__link">{{ contact.email }}</a>
             </div>
             <div v-if="contact.phone" class="detail-row-v2">
-              <v-icon size="15" class="detail-row-v2__icon">phone</v-icon>
+              <v-icon size="16" class="detail-row-v2__icon">phone</v-icon>
               <span class="detail-row-v2__label">Phone</span>
               <span class="detail-row-v2__value">{{ contact.phone }}</span>
             </div>
             <div class="detail-row-v2">
-              <v-icon size="15" class="detail-row-v2__icon">fingerprint</v-icon>
+              <v-icon size="16" class="detail-row-v2__icon">fingerprint</v-icon>
               <span class="detail-row-v2__label">UID</span>
-              <span class="detail-row-v2__value text-truncate" style="max-width: 160px;">{{ detail.uid }}</span>
+              <span class="detail-row-v2__value">{{ detail.uid }}</span>
             </div>
             <div class="detail-row-v2">
-              <v-icon size="15" class="detail-row-v2__icon">calendar</v-icon>
+              <v-icon size="16" class="detail-row-v2__icon">calendar</v-icon>
               <span class="detail-row-v2__label">Created</span>
               <span class="detail-row-v2__value">{{ contact.createdAt }}</span>
             </div>
             <div class="detail-row-v2">
-              <v-icon size="15" class="detail-row-v2__icon">map-pin</v-icon>
+              <v-icon size="16" class="detail-row-v2__icon">map-pin</v-icon>
               <span class="detail-row-v2__label">Location</span>
               <span class="detail-row-v2__value">{{ contact.location }}</span>
             </div>
             <template v-for="field in detail.customFields" :key="field.label">
               <div class="detail-row-v2">
-                <v-icon size="15" class="detail-row-v2__icon">{{ field.label === 'Source' ? 'globe' : field.label === 'Gender' ? 'user' : 'layers' }}</v-icon>
+                <v-icon size="16" class="detail-row-v2__icon">{{ field.label === 'Source' ? 'globe' : field.label === 'Gender' ? 'user' : 'layers' }}</v-icon>
                 <span class="detail-row-v2__label">{{ field.label }}</span>
                 <span class="detail-row-v2__value">{{ field.value }}</span>
               </div>
@@ -261,7 +261,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
         </v-card>
 
         <!-- In-store loyalty, when this shopper is enrolled at a register -->
-        <v-card v-if="contact.loyalty" flat border rounded="lg" class="pa-5">
+        <v-card v-if="contact.loyalty" flat border rounded="lg" class="dc-card">
           <MpSectionHeader title="In-store loyalty" />
           <div class="d-flex align-center ga-2 mb-4">
             <v-chip size="small" variant="tonal" color="primary">{{ LOYALTY_TIER_LABELS[contact.loyalty.tier] }}</v-chip>
@@ -289,7 +289,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
         </v-card>
 
         <!-- Card 2: Tags -->
-        <v-card flat border rounded="lg" class="pa-5">
+        <v-card flat border rounded="lg" class="dc-card">
           <MpSectionHeader :title="`Contact Tags (${contact.tags?.length ?? 0})`" />
           <div v-if="contact.tags?.length" class="d-flex flex-wrap gap-2 mb-4">
             <v-chip
@@ -316,20 +316,24 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
         </v-card>
 
         <!-- Card 3: Lists & Subscriptions -->
-        <v-card flat border rounded="lg" class="pa-5">
+        <v-card flat border rounded="lg" class="dc-card">
           <MpSectionHeader title="Contact Lists">
             <template #actions>
-              <v-btn icon="pencil" variant="text" size="small" density="comfortable" aria-label="Edit contact lists" />
+              <v-tooltip text="Edit contact lists" location="bottom">
+                <template #activator="{ props: tooltip }">
+                  <v-btn v-bind="tooltip" icon="pencil" variant="text" size="small" density="comfortable" aria-label="Edit contact lists" />
+                </template>
+              </v-tooltip>
             </template>
           </MpSectionHeader>
 
-          <div class="text-subtitle-2 font-weight-medium mb-2">Email Subscription ({{ emailLists.length }})</div>
+          <div class="dc-sublabel mb-2">Email Subscription ({{ emailLists.length }})</div>
           <div v-if="emailLists.length" class="d-flex flex-wrap gap-2 mb-4">
             <v-chip v-for="l in emailLists" :key="l.name" size="small" :color="l.subscribed ? 'primary' : 'grey'" variant="tonal">{{ l.name }}</v-chip>
           </div>
           <div v-else class="text-body-2 text-medium-emphasis mb-4">No email subscriptions.</div>
 
-          <div class="text-subtitle-2 font-weight-medium mb-2">SMS Subscription ({{ smsLists.length }})</div>
+          <div class="dc-sublabel mb-2">SMS Subscription ({{ smsLists.length }})</div>
           <div v-if="smsLists.length" class="d-flex flex-wrap gap-2 mb-4">
             <v-chip v-for="l in smsLists" :key="l.name" size="small" :color="l.subscribed ? 'primary' : 'grey'" variant="tonal">{{ l.name }}</v-chip>
           </div>
@@ -347,38 +351,38 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
           </div>
 
           <div class="d-flex align-center gap-4">
-            <div class="d-flex align-center gap-1"><v-icon size="10" color="primary">circle</v-icon><span class="text-caption">Subscribed</span></div>
-            <div class="d-flex align-center gap-1"><v-icon size="10" class="text-medium-emphasis">circle</v-icon><span class="text-caption">Unsubscribed</span></div>
+            <div class="d-flex align-center gap-2"><span class="dc-dot dc-dot--on" aria-hidden="true" /><span class="text-caption">Subscribed</span></div>
+            <div class="d-flex align-center gap-2"><span class="dc-dot" aria-hidden="true" /><span class="text-caption">Unsubscribed</span></div>
           </div>
         </v-card>
 
         <!-- Card 4: Insights (eRFM · Brands · Keywords) -->
-        <v-card flat border rounded="lg" class="pa-5">
+        <v-card flat border rounded="lg" class="dc-card">
           <MpSectionHeader title="Insights" />
 
-          <div class="text-subtitle-2 font-weight-medium mb-2">eRFM Customer Group</div>
-          <div class="d-flex flex-column gap-2 mb-4">
-            <div class="detail-row">
-              <span class="detail-label">RFM Group</span>
-              <span class="detail-value">{{ detail.erfm.rfmGroup }}</span>
+          <div class="dc-sublabel mb-2">eRFM Customer Group</div>
+          <dl class="mp-label-value dc-label-value mb-4">
+            <div>
+              <dt>RFM Group</dt>
+              <dd>{{ detail.erfm.rfmGroup }}</dd>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">Engagement Level</span>
-              <span class="detail-value">{{ detail.erfm.engagementLevel }}</span>
+            <div>
+              <dt>Engagement Level</dt>
+              <dd>{{ detail.erfm.engagementLevel }}</dd>
             </div>
-          </div>
+          </dl>
 
-          <v-divider class="mb-4" style="opacity:0.5" />
+          <v-divider class="mb-4" />
 
-          <div class="text-subtitle-2 font-weight-medium mb-2">Brands ({{ detail.brands.length }})</div>
+          <div class="dc-sublabel mb-2">Brands ({{ detail.brands.length }})</div>
           <div v-if="detail.brands.length" class="d-flex flex-wrap gap-2 mb-4">
             <v-chip v-for="b in detail.brands" :key="b" size="small" variant="tonal">{{ b }}</v-chip>
           </div>
           <div v-else class="text-body-2 text-medium-emphasis mb-4">No brands yet — add the customer to a branded list to send emails.</div>
 
-          <v-divider class="mb-4" style="opacity:0.5" />
+          <v-divider class="mb-4" />
 
-          <div class="text-subtitle-2 font-weight-medium mb-2">Most Engaging Keywords ({{ detail.keywords.length }})</div>
+          <div class="dc-sublabel mb-2">Most Engaging Keywords ({{ detail.keywords.length }})</div>
           <div v-if="detail.keywords.length" class="d-flex flex-wrap gap-2">
             <v-chip v-for="kw in detail.keywords" :key="kw" size="small" variant="tonal">{{ kw }}</v-chip>
           </div>
@@ -404,24 +408,26 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
         </v-tabs>
 
         <!-- Tab content -->
-        <v-window v-model="activeTab" class="flex-grow-1 right-tab-content">
+        <v-window v-model="activeTab" class="flex-grow-1">
 
           <!-- ─── OVERVIEW TAB ──────────────────────────────────────────── -->
           <v-window-item value="overview">
-            <div class="d-flex flex-column gap-4 pa-1">
+            <div class="d-flex flex-column gap-5 pa-1">
 
               <!-- KPI Grid — four headline metrics; ticket counts live in Engagement > Tickets -->
-              <div class="kpi-grid">
-                <MpKpiCard label="Response Rate" :value="detail.responseRate.email" icon="mail" color="primary">
-                  <div class="text-body-2 text-medium-emphasis mt-1">{{ detail.responseRate.sms }} SMS</div>
-                </MpKpiCard>
-                <MpKpiCard label="Ideal Response Time" :value="detail.idealResponseTime" icon="clock" color="info" />
-                <MpKpiCard label="Lifetime Value" :value="`$${detail.lifetimeValue.toLocaleString()}`" icon="banknote" color="success" sub-stat="vs. $310 average" />
-                <MpKpiCard label="Number of Orders" :value="contact.orders" icon="shopping-cart" color="secondary" :sub-stat="`vs. average ${detail.avgOrders} orders`" />
-              </div>
+              <v-row dense>
+                <v-col cols="6" lg="3">
+                  <MpKpiCard label="Response Rate" :value="detail.responseRate.email" icon="mail" color="primary" class="h-100">
+                    <div class="text-body-2 text-medium-emphasis mt-1">{{ detail.responseRate.sms }} SMS</div>
+                  </MpKpiCard>
+                </v-col>
+                <v-col cols="6" lg="3"><MpKpiCard label="Ideal Response Time" :value="detail.idealResponseTime" icon="clock" color="info" class="h-100" /></v-col>
+                <v-col cols="6" lg="3"><MpKpiCard label="Lifetime Value" :value="`$${detail.lifetimeValue.toLocaleString()}`" icon="banknote" color="success" sub-stat="vs. $310 average" class="h-100" /></v-col>
+                <v-col cols="6" lg="3"><MpKpiCard label="Number of Orders" :value="contact.orders" icon="shopping-cart" color="secondary" :sub-stat="`vs. average ${detail.avgOrders} orders`" class="h-100" /></v-col>
+              </v-row>
 
               <!-- Customer Engagement Section -->
-              <v-card flat border rounded="lg" class="pa-5">
+              <v-card flat border rounded="lg" class="dc-card">
                 <MpSectionHeader title="Customer Engagement (Last 7 days)">
                   <template #actions>
                     <v-btn variant="text" prepend-icon="list-filter" size="small">Filters</v-btn>
@@ -490,7 +496,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                 <div class="ce-timeline">
                   <div v-for="(entry, idx) in visibleTimeline" :key="entry.id" class="ce-event">
                     <span class="ce-event__node">
-                      <v-icon size="13">{{ entry.icon }}</v-icon>
+                      <v-icon size="16">{{ entry.icon }}</v-icon>
                     </span>
                     <div class="ce-event__body" :class="{ 'ce-event__body--last': idx === visibleTimeline.length - 1 }">
                       <div class="ce-event__title">{{ entry.title }}</div>
@@ -527,14 +533,14 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
               </v-tabs>
 
               <div v-if="campaignSubTab === 'email' && emailCampaigns.length" class="d-flex flex-column gap-3">
-                <v-card v-for="c in emailCampaigns" :key="c.id" flat border rounded="lg" class="d-flex align-center gap-3 py-3 px-4">
+                <v-card v-for="c in emailCampaigns" :key="c.id" flat border rounded="lg" class="dc-row d-flex align-center flex-wrap gap-3">
                   <v-avatar color="primary" size="36" variant="tonal">
                     <v-icon size="18">mail</v-icon>
                   </v-avatar>
                   <div class="flex-grow-1">
                     <div class="text-body-2 font-weight-medium">{{ c.name }}</div>
                     <div class="d-flex gap-2 mt-1 flex-wrap">
-                      <MpStatusChip v-for="s in c.statuses" :key="s" :status="s" type="campaign" size="sm" variant="outlined" />
+                      <MpStatusChip v-for="s in c.statuses" :key="s" :status="s" type="campaign" size="sm" />
                     </div>
                   </div>
                   <div class="text-caption text-medium-emphasis text-no-wrap mr-3">{{ c.sentDate }}</div>
@@ -544,14 +550,14 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
               </div>
 
               <div v-else-if="campaignSubTab === 'sms' && smsCampaigns.length" class="d-flex flex-column gap-3">
-                <v-card v-for="c in smsCampaigns" :key="c.id" flat border rounded="lg" class="d-flex align-center gap-3 py-3 px-4">
+                <v-card v-for="c in smsCampaigns" :key="c.id" flat border rounded="lg" class="dc-row d-flex align-center flex-wrap gap-3">
                   <v-avatar color="info" size="36" variant="tonal">
                     <v-icon size="18">message-circle</v-icon>
                   </v-avatar>
                   <div class="flex-grow-1">
                     <div class="text-body-2 font-weight-medium">{{ c.name }}</div>
                     <div class="d-flex gap-2 mt-1 flex-wrap">
-                      <MpStatusChip v-for="s in c.statuses" :key="s" :status="s" type="campaign" size="sm" variant="outlined" />
+                      <MpStatusChip v-for="s in c.statuses" :key="s" :status="s" type="campaign" size="sm" />
                     </div>
                   </div>
                   <div class="text-caption text-medium-emphasis text-no-wrap mr-3">{{ c.sentDate }}</div>
@@ -578,7 +584,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                   :items="detail.tickets"
                   items-per-page="10"
                   density="comfortable"
-                  style="background: transparent;"
+                  class="bg-transparent"
                 >
                   <template v-slot:item.status="{ item }">
                     <MpStatusChip :status="item.status" type="ticket" size="sm" />
@@ -600,14 +606,14 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
           <!-- ─── ORDERS TAB ────────────────────────────────────────────── -->
           <v-window-item value="orders">
             <div class="pa-1">
-              <div class="text-subtitle-1 font-weight-medium mb-3">All Orders ({{ detail.orders.length }})</div>
+              <div class="mp-section-title mb-3">All Orders ({{ detail.orders.length }})</div>
               <v-card v-if="detail.orders.length" flat border rounded="lg">
                 <v-data-table
                   :headers="visibleOrderHeaders"
                   :items="detail.orders"
                   items-per-page="10"
                   density="comfortable"
-                  style="background: transparent;"
+                  class="bg-transparent"
                 >
                   <template v-slot:item.total="{ item }">
                     <span class="font-weight-medium">${{ item.total.toFixed(2) }}</span>
@@ -641,7 +647,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                   :items="detail.abandonedCarts"
                   items-per-page="10"
                   density="comfortable"
-                  style="background: transparent;"
+                  class="bg-transparent"
                 >
                   <template v-slot:item.items="{ item }">
                     {{ item.items.length }} item{{ item.items.length !== 1 ? 's' : '' }}
@@ -650,7 +656,7 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
                     <span class="font-weight-medium">${{ item.total.toFixed(2) }}</span>
                   </template>
                   <template v-slot:item.recovered="{ item }">
-                    <MpStatusChip :status="item.recovered ? 'Recovered' : 'Not Recovered'" type="general" size="sm" variant="flat" />
+                    <MpStatusChip :status="item.recovered ? 'Recovered' : 'Not Recovered'" type="general" size="sm" />
                   </template>
                 </v-data-table>
               </v-card>
@@ -707,23 +713,22 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
   </div>
 </template>
 
-<style scoped>
-.contact-detail-page {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+<style scoped lang="scss">
+/* Card roots inset on the card token, never a pa-* utility (recipe B1). */
+.dc-card {
+  padding: var(--mp-component-card-padding);
 }
 
-/* Ensure all cards use the design kit's subtle border and white background */
-.v-card:not(.bg-transparent) {
-  border-color: var(--border-subtle) !important;
-  box-shadow: none !important;
-  background: var(--surface-primary) !important;
+/* Campaign rows: list-row insets; wraps so the action pair never clips. */
+.dc-row {
+  padding: var(--mp-component-listItem-paddingBlock) var(--mp-space-16);
 }
 
-.v-card.bg-transparent {
-  border-color: var(--border-subtle) !important;
-  box-shadow: none !important;
+/* Sentence-case sub-heading inside a card: the label ramp, muted. */
+.dc-sublabel {
+  font-size: var(--mp-text-label-fontSize);
+  font-weight: var(--mp-text-label-fontWeight);
+  color: var(--on-surface-muted);
 }
 
 /* ── Profile card ───────────────────────────────────── */
@@ -733,68 +738,40 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(var(--v-theme-primary-container));
-  color: rgb(var(--v-theme-on-primary-container));
-  font-weight: 700;
-  font-size: 22px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-weight: var(--mp-fontWeight-bold);
+  font-size: var(--mp-fontSize-20);
 }
 
-/* ── Two-column layout ──────────────────────────────── */
-.content-area {
-  height: calc(100vh - 200px);
-  overflow: hidden;
-}
-
+/* ── Two-column layout — the page scrolls as one; no viewport constants ── */
 .contact-sidebar {
-  width: 340px;
-  min-width: 340px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  padding-bottom: 24px;
-  scrollbar-width: thin;
-}
-
-.contact-sidebar > * {
-  flex-shrink: 0;
-}
-
-.contact-sidebar::-webkit-scrollbar {
-  width: 4px;
-}
-
-.contact-sidebar::-webkit-scrollbar-thumb {
-  background: rgba(var(--v-border-color), 0.3);
-  border-radius: var(--mp-radius-4);
+  flex: 0 0 var(--mp-layout-inboxListWidth);
+  min-width: 0;
 }
 
 .right-content {
   min-width: 0;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
   .content-area {
     flex-direction: column;
-    height: auto;
-    overflow: visible;
-    gap: 16px;
   }
 
   .contact-sidebar {
+    flex-basis: auto;
     width: 100%;
-    min-width: 0;
-    max-height: none;
-    overflow: visible;
-    padding-bottom: 0;
   }
 }
 
-/* ── Detail rows v2 (icon + label + value) ──────────── */
+/* ── Detail rows (icon + label + value) ─────────────── */
 .detail-row-v2 {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 0;
-  border-bottom: 1px solid rgba(var(--v-border-color), 0.06);
+  gap: var(--mp-space-8);
+  padding: var(--mp-component-listItem-paddingBlock) 0;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .detail-row-v2:last-child {
@@ -802,93 +779,96 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 }
 
 .detail-row-v2__icon {
-  color: var(--muted);
+  color: var(--on-surface-muted);
   flex-shrink: 0;
-  opacity: 0.6;
 }
 
 .detail-row-v2__label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
+  color: var(--on-surface-muted);
   white-space: nowrap;
-  min-width: 64px;
+  min-width: var(--mp-space-64);
 }
 
 .detail-row-v2__value {
-  font-size: 13px;
-  font-weight: 600;
+  min-width: 0;
   margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
   text-align: right;
 }
 
 .detail-row-v2__link {
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--on-surface);
   text-decoration: none;
 }
 
 .detail-row-v2__link:hover,
 .detail-row-v2__link:focus-visible {
-  color: rgb(var(--v-theme-primary));
+  color: var(--accent-default);
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: var(--mp-space-2);
+}
+
+.detail-row-v2__link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--mp-radius-4);
 }
 
 .min-w-0 { min-width: 0; }
 
-/* ── Right content area ─────────────────────────────── */
-.right-tab-content {
-  overflow-y: auto;
-  scrollbar-width: thin;
+/* Subscription legend dots (recipe D4). */
+.dc-dot {
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-full);
+  background: var(--on-surface-muted);
+}
+.dc-dot--on { background: var(--accent-default); }
+
+/* eRFM pairs stack in one column inside the narrow sidebar card. */
+.dc-label-value {
+  grid-template-columns: 1fr;
+  gap: var(--mp-space-12);
 }
 
-.right-tab-content::-webkit-scrollbar {
-  width: 4px;
-}
-
-.right-tab-content::-webkit-scrollbar-thumb {
-  background: rgba(var(--v-border-color), 0.3);
-  border-radius: var(--mp-radius-4);
-}
-
-/* ── Engagement — quiet stat strip (no colored tiles) ─── */
+/* ── Engagement — quiet stat strip on a soft fill (no box-in-box border) ─── */
 .ce-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-card);
-  overflow: hidden;
+  gap: var(--mp-space-4);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
+  border-radius: var(--mp-radius-12);
+  padding: var(--mp-space-4);
 }
 
 .ce-stat {
-  padding: 16px 18px;
-  border-left: 1px solid var(--border-subtle);
-}
-
-.ce-stat:first-child {
-  border-left: none;
+  padding: var(--mp-space-16);
 }
 
 .ce-stat__value {
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
+  font-size: var(--mp-fontSize-28);
+  font-weight: var(--mp-fontWeight-bold);
+  line-height: var(--mp-lineHeight-tight);
+  letter-spacing: var(--mp-letterSpacing-tight);
+  color: var(--on-surface);
   font-variant-numeric: tabular-nums;
 }
 
 .ce-stat__label {
-  margin-top: 6px;
-  color: var(--muted);
+  margin-top: var(--mp-space-6);
+  color: var(--on-surface-muted);
 }
 
-@media (max-width: 700px) {
+@media (max-width: ($mp-layout-breakpointCompact - 0.02px)) {
   .ce-stats {
     grid-template-columns: repeat(2, 1fr);
-  }
-  .ce-stat:nth-child(3) {
-    border-left: none;
   }
 }
 
@@ -900,38 +880,38 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 
 .ce-event {
   display: flex;
-  gap: 12px;
+  gap: var(--mp-space-12);
   position: relative;
 }
 
 .ce-event:not(:last-child)::before {
   content: '';
   position: absolute;
-  left: 12px;
-  top: 26px;
-  bottom: -2px;
+  left: calc(var(--mp-space-24) / 2);
+  top: var(--mp-space-24);
+  bottom: 0;
   width: 1px;
-  background: rgba(var(--v-theme-on-surface), 0.1);
+  background: var(--border-subtle);
 }
 
 .ce-event__node {
   flex-shrink: 0;
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;
+  width: var(--mp-space-24);
+  height: var(--mp-space-24);
+  border-radius: var(--mp-radius-full);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  color: rgb(var(--v-theme-on-surface-variant));
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--on-surface-muted);
   z-index: 1;
 }
 
 .ce-event__body {
   flex-grow: 1;
   min-width: 0;
-  padding-bottom: 18px;
+  padding-bottom: var(--mp-space-16);
 }
 
 .ce-event__body--last {
@@ -939,56 +919,15 @@ const { visibleHeaders: visibleCartHeaders } = useResponsiveTableHeaders(cartHea
 }
 
 .ce-event__title {
-  font-size: 13.5px;
-  font-weight: 550;
-  line-height: 1.4;
-  color: rgb(var(--v-theme-on-surface));
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
+  line-height: var(--mp-lineHeight-snug);
+  color: var(--on-surface);
 }
 
 .ce-event__time {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: var(--mp-fontSize-12);
+  color: var(--on-surface-muted);
   font-variant-numeric: tabular-nums;
-}
-
-/* Legacy (keep for older sections) */
-.detail-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.detail-label {
-  font-size: 12px;
-  color: rgba(var(--v-theme-on-surface), 0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.detail-value {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.timeline-entry {
-  border-bottom: 1px solid rgba(var(--v-border-color), 0.08);
-}
-
-.timeline-entry:last-child {
-  border-bottom: none;
-}
-
-/* ── KPI adaptive grid ──────────────────────────────── */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-/* ── Detail row contrast lift ───────────────────────── */
-.detail-row-v2__label {
-  color: rgba(var(--v-theme-on-surface), 0.66);
 }
 </style>

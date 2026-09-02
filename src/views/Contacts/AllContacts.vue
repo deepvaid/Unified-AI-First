@@ -14,6 +14,7 @@ import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
@@ -420,7 +421,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="String(item.status ?? '')" type="contact" size="sm" variant="flat" />
+          <MpStatusChip :status="String(item.status ?? '')" type="contact" size="sm" />
         </template>
 
         <template v-slot:item.score="{ item }">
@@ -657,7 +658,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
         />
         <v-table density="compact">
           <thead>
-            <tr><th scope="col">Column in your file</th><th scope="col">Contact field</th></tr>
+            <tr><th scope="col">Column in your file</th><th scope="col" class="w-50">Contact field</th></tr>
           </thead>
           <tbody>
             <tr v-for="(m, i) in importMappings" :key="i">
@@ -665,16 +666,16 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
               <td>
                 <!-- Table-cell editor: compact and detail-free on purpose, so a
                      hint or validation line can't grow the row. -->
-                <v-select v-model="m.field" :items="importFieldOptions" :aria-label="`Contact field for ${m.csvCol}`" hide-details style="min-width:200px;" />
+                <v-select v-model="m.field" :items="importFieldOptions" :aria-label="`Contact field for ${m.csvCol}`" hide-details />
               </td>
             </tr>
           </tbody>
         </v-table>
 
-        <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
+        <MpAlert tone="info">
           <strong>1,284</strong> rows detected · <strong>1,241</strong> valid · <strong>43</strong> skipped.
           Importing into <strong>{{ importList }}</strong>.
-        </v-alert>
+        </MpAlert>
       </template>
 
       <template #footerStart>
@@ -711,7 +712,7 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .contacts-table :deep(thead th) {
   white-space: nowrap;
 }
@@ -723,42 +724,42 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
 .contact-identity {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--mp-space-2);
 }
 
 .contact-link {
   appearance: none;
   border: 0;
   background: transparent;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--on-surface);
   cursor: pointer;
   font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 550;
-  line-height: 1.3;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-medium);
+  line-height: var(--mp-lineHeight-snug);
   padding: 0;
   text-align: left;
 }
 
 .contact-email {
-  font-size: 12.5px;
-  line-height: 1.3;
-  color: rgba(var(--v-theme-on-surface), 0.6);
+  font-size: var(--mp-fontSize-12);
+  line-height: var(--mp-lineHeight-snug);
+  color: var(--on-surface-muted);
 }
 
 /* At phone widths the identity cell is what forces the table to side-scroll: the
-   email has no truncation, so its intrinsic width sets the column (measured 244px
-   of a 311px-wide table). Capping the block and ellipsizing both lines keeps the
+   email has no truncation, so its intrinsic width sets the column. Capping the
+   block (about a third of the viewport) and ellipsizing both lines keeps the
    name — the thing you scan for — fully legible. Wider viewports are untouched. */
-@media (max-width: 599.98px) {
+@media (max-width: ($mp-layout-breakpointCompact - 0.02px)) {
   /* The avatar is a nice-to-have identifier next to the name it duplicates; at this
-     width the ~44px it costs is better spent on the name and status. */
+     width the space it costs is better spent on the name and status. */
   .contact-avatar {
     display: none;
   }
 
   .contact-identity {
-    max-width: 132px;
+    max-width: 35vw;
     min-width: 0;
   }
 
@@ -774,34 +775,34 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
 
 .contact-link:hover,
 .contact-link:focus-visible {
-  color: rgb(var(--v-theme-primary));
+  color: var(--accent-default);
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: var(--mp-space-2);
 }
 
 .contact-link:focus-visible {
-  outline: none;
-  border-radius: 4px;
-  box-shadow: 0 0 0 3px rgba(var(--v-theme-primary), 0.16);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--mp-radius-4);
 }
 
 .contact-score {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .contact-score__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-full);
 }
 
-.contact-score__dot--success { background: rgb(var(--v-theme-success)); }
-.contact-score__dot--warning { background: rgb(var(--v-theme-warning)); }
-.contact-score__dot--error { background: rgb(var(--v-theme-error)); }
+.contact-score__dot--success { background: var(--pos); }
+.contact-score__dot--warning { background: var(--warn); }
+.contact-score__dot--error { background: var(--neg); }
 
 .avatar-fallback {
   width: 100%;
@@ -809,9 +810,9 @@ function handleContactRowClick(event: MouseEvent, payload: { item: unknown }) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(var(--v-theme-primary-container));
-  color: rgb(var(--v-theme-on-primary-container));
-  font-weight: 700;
-  font-size: 14px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-weight: var(--mp-fontWeight-bold);
+  font-size: var(--mp-fontSize-14);
 }
 </style>

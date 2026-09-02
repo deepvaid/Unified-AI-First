@@ -5,6 +5,7 @@ import { useContactsStore, type Segment, type SegmentRule, type SegmentMatchLogi
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import { useInitialLoad } from '@/composables/useInitialLoad'
 import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
@@ -271,10 +272,10 @@ function confirmDelete() {
       <MpFormGrid>
         <v-text-field v-model="segName" label="Segment Name *" />
 
-        <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
+        <MpAlert tone="info" live="off">
           <span class="font-weight-medium">Summary: </span>{{ plainLanguageSummary }}
           <div class="text-caption">≈ {{ matchEstimate.toLocaleString() }} contacts match</div>
-        </v-alert>
+        </MpAlert>
 
         <MpFormField label="Match logic">
           <template #default="{ labelId }">
@@ -295,15 +296,19 @@ function confirmDelete() {
         >
           <div class="d-flex align-center justify-space-between">
             <span class="text-caption text-medium-emphasis font-weight-medium">Rule {{ rIdx + 1 }}</span>
-            <v-btn
-              v-if="rules.length > 1"
-              icon="trash-2"
-              variant="text"
-              size="x-small"
-              color="error"
-              aria-label="Remove rule"
-              @click="removeRule(rule.id)"
-            />
+            <v-tooltip v-if="rules.length > 1" text="Remove rule" location="bottom">
+              <template #activator="{ props: tooltip }">
+                <v-btn
+                  v-bind="tooltip"
+                  icon="trash-2"
+                  variant="text"
+                  size="x-small"
+                  color="error"
+                  aria-label="Remove rule"
+                  @click="removeRule(rule.id)"
+                />
+              </template>
+            </v-tooltip>
           </div>
 
           <MpFormGrid>
@@ -318,15 +323,20 @@ function confirmDelete() {
                 <v-select v-model="crit.operator" :items="OPERATORS" label="Operator" />
                 <v-text-field v-model="crit.value" label="Value" />
               </MpFormGrid>
-              <v-btn
-                icon="x"
-                variant="text"
-                size="x-small"
-                class="text-medium-emphasis"
-                aria-label="Remove criteria"
-                :disabled="rule.criteria.length === 1"
-                @click="removeCriterion(rule, crit.id)"
-              />
+              <v-tooltip text="Remove criteria" location="bottom">
+                <template #activator="{ props: tooltip }">
+                  <v-btn
+                    v-bind="tooltip"
+                    icon="x"
+                    variant="text"
+                    size="x-small"
+                    class="text-medium-emphasis"
+                    aria-label="Remove criteria"
+                    :disabled="rule.criteria.length === 1"
+                    @click="removeCriterion(rule, crit.id)"
+                  />
+                </template>
+              </v-tooltip>
             </div>
           </MpFormGrid>
 
@@ -378,17 +388,18 @@ function confirmDelete() {
 <style scoped>
 .rule-block {
   /* The block owns the rhythm between its header, its criteria grid and its
-     footer, on the same gap the criteria themselves sit on. */
+     footer, on the same gap the criteria themselves sit on. A soft fill alone
+     separates it from the drawer — no hairline on top of a background. */
   display: flex;
   flex-direction: column;
   gap: var(--mp-component-field-groupGap);
-  border: 1px solid rgba(var(--v-border-color), 0.14);
-  border-radius: 12px;
-  padding: 16px;
-  background: rgba(var(--v-theme-on-surface), 0.015);
+  border-radius: var(--mp-radius-12);
+  padding: var(--mp-space-16);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
 }
 
 .builder-note {
-  border: 1px dashed rgba(var(--v-border-color), 0.3);
+  border: 1px dashed var(--border-subtle);
 }
 </style>
