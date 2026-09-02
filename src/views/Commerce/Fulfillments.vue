@@ -15,7 +15,6 @@ import MpTableSkeleton from '@/components/MpTableSkeleton.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpDialog from '@/components/MpDialog.vue'
-import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 
 const store = useCommerceStore()
@@ -180,8 +179,8 @@ function exportFulfillments() {
       :subtitle="`${store.fulfillments.filter(f => f.status !== 'Shipped').length} orders awaiting fulfillment`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportFulfillments">Export</v-btn>
-        <v-btn variant="flat" prepend-icon="printer" class="text-none" color="surface" @click="printPackingSlips">Print Packing Slips</v-btn>
+        <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="exportFulfillments">Export</v-btn>
+        <v-btn variant="outlined" prepend-icon="printer" class="text-none" @click="printPackingSlips">Print Packing Slips</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="truck" class="text-none" :disabled="selected.length === 0" @click="askShip([...selected])">Mark Shipped{{ selected.length > 0 ? ` (${selected.length})` : '' }}</v-btn>
       </template>
     </MpPageHeader>
@@ -194,7 +193,7 @@ function exportFulfillments() {
         :variant="filters.status === s ? 'flat' : 'tonal'"
         size="small"
         :color="stageColor[s]"
-        class="cursor-pointer"
+        role="button"
         :aria-pressed="filters.status === s"
         @click="toggleStage(s)"
       >
@@ -215,20 +214,17 @@ function exportFulfillments() {
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <MpFormSection title="Filter by">
-              <MpFormGrid>
-                <!-- hide-details: dense toolbar filter, no validation to reserve room for. -->
-                <v-select
-                  v-model="filters.status"
-                  label="Fulfillment Status"
-                  :items="[...FULFILLMENT_QUEUE_STATUSES]"
-                  hide-details
-                  clearable
-                />
-              </MpFormGrid>
-            </MpFormSection>
-          </div>
+          <!-- The drawer body already carries the dialog inset and field rhythm. -->
+          <MpFormGrid>
+            <!-- hide-details: dense toolbar filter, no validation to reserve room for. -->
+            <v-select
+              v-model="filters.status"
+              label="Fulfillment Status"
+              :items="[...FULFILLMENT_QUEUE_STATUSES]"
+              hide-details
+              clearable
+            />
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
 
@@ -253,11 +249,14 @@ function exportFulfillments() {
         </template>
 
         <template v-slot:item.orderNumber="{ item }">
-          <span class="text-primary font-weight-bold cursor-pointer" @click="goToOrder(item)">{{ item.orderNumber }}</span>
+          <router-link
+            :to="{ name: 'OrderDetail', params: { accountId, orderId: String(item.orderId) } }"
+            class="text-primary font-weight-bold text-decoration-none"
+          >{{ item.orderNumber }}</router-link>
         </template>
 
         <template v-slot:item.status="{ item }">
-          <MpStatusChip :status="item.status" type="fulfillment" size="md" />
+          <MpStatusChip :status="item.status" type="fulfillment" size="sm" />
         </template>
 
         <template v-slot:item.paymentStatus="{ item }">
@@ -265,7 +264,7 @@ function exportFulfillments() {
         </template>
 
         <template v-slot:item.productQty="{ item }">
-          <v-chip size="x-small" variant="tonal" color="secondary" class="font-weight-bold">{{ item.productQty }}</v-chip>
+          <span class="text-body-2 fq-num">{{ item.productQty }}</span>
         </template>
 
         <template v-slot:item.orderStatus="{ item }">
@@ -277,11 +276,11 @@ function exportFulfillments() {
         </template>
 
         <template v-slot:item.total="{ item }">
-          <span class="font-weight-bold text-no-wrap">${{ item.total }}</span>
+          <span class="font-weight-bold text-no-wrap fq-num">${{ item.total }}</span>
         </template>
 
         <template v-slot:item.createdAt="{ item }">
-          <span class="text-medium-emphasis text-caption text-no-wrap">{{ item.createdAt }}</span>
+          <span class="text-medium-emphasis text-caption text-no-wrap fq-num">{{ item.createdAt }}</span>
         </template>
 
         <template v-slot:item.actions="{ item }">
@@ -330,7 +329,6 @@ function exportFulfillments() {
         v-model="shipTracking"
         label="Tracking number (optional)"
         placeholder="e.g. 1Z999AA10123456784"
-        hide-details
       />
 
       <template #footer>
@@ -342,12 +340,14 @@ function exportFulfillments() {
 </template>
 
 <style scoped>
+/* Stage count sits beside its label as a quiet tabular figure — no second pill
+   inside the chip. */
 .fq-count {
-  margin-left: 6px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.35);
-  font-weight: 700;
+  margin-left: var(--mp-space-6);
+  font-weight: var(--mp-fontWeight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.fq-num {
   font-variant-numeric: tabular-nums;
 }
 </style>
