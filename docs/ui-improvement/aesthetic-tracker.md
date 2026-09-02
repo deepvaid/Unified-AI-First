@@ -12,51 +12,54 @@
 
 ## Wave 1
 
-### Module 04 — Products   [module-status: pending]
+### Module 04 — Products   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Products/ProductRecommendations.vue | /commerce/2000290/product_recommendations | standard | pending |  | commerce gate |
-| 2 | Products/ProductsList.vue | /commerce/2000290/products | standard | pending |  | roadmap #7/#17 touched |
-| 3 | Products/TaxCategories.vue | /commerce/2000290/product_tax_category | standard | pending |  |  |
-| 4 | Products/Collections.vue | /commerce/2000290/products/collections | standard | pending |  |  |
-| 5 | Products/Inventory.vue | /commerce/2000290/inventory | standard | pending |  |  |
-| 6 | Products/Reservations.vue | /commerce/2000290/products/reservations | standard | pending |  |  |
-| 7 | Products/ProductWizard.vue | /commerce/2000290/products/new · /products/1/edit | builder | pending |  | builderShell (2026-07-19): frame-fill; dirty-aware Cancel kept |
-| 8 | Products/KitWizard.vue | /commerce/2000290/products/kits/new | builder | pending |  | builderShell (2026-07-19): leave guard replaces always-on Cancel confirm |
-| 9 | Products/ProductImportWizard.vue | /commerce/2000290/products/import/new/csv · /import/new/ftp | builder | pending |  | builderShell (2026-07-19): leave guard replaces always-on Cancel confirm |
+| 1 | Products/ProductRecommendations.vue | /commerce/2000290/product_recommendations | standard | done | 2c7c9ce | row icons → 16; py-10 off empty states; import summary → dl.mp-label-value; warn-ink/surface tokens; responsive column priority on 3 tables |
+| 2 | Products/ProductsList.vue | /commerce/2000290/products | standard | done | e3c132f | header menus raw v-list-item → MpMenuItem in role=menu; py-10 off; thumb fallback tokens; column priority |
+| 3 | Products/TaxCategories.vue | /commerce/2000290/product_tax_category | standard | done | 9d3cf4d | Export → outlined (one primary CTA); chip icon 13 → 16; py-10 off; .font-mono on token; column priority |
+| 4 | Products/Collections.vue | /commerce/2000290/products/collections | standard | done | a8df279 | New-collection menu → MpMenuItem/role=menu; chip icon → 16; py-10 off; column priority |
+| 5 | Products/Inventory.vue | /commerce/2000290/inventory | standard | done | 55dae7f | Export → outlined; thumb 2×!important → v-avatar + tokens; v-btn-toggle → MpSegmentedControl; icons → 16; low-stock on --warn-ink; inline numeric styles → .num; column priority |
+| 6 | Products/Reservations.vue | /commerce/2000290/products/reservations | standard | done | 5305fc6 | dialog stock summary → dl.mp-label-value; icon → 16; qty on .num; py-10 off; dead #actions slot removed; column priority |
+| 7 | Products/ProductWizard.vue | /commerce/2000290/products/new · /products/1/edit | builder | done | 1be3aa0 | builder: dropzone rgba dashed → 1px dashed --border-strong; fixed non-existent --mp-border-subtle ref; Remove-option tooltip |
+| 8 | Products/KitWizard.vue | /commerce/2000290/products/kits/new | builder | done | 9e6575f | builder: v-alert → MpAlert; inline widths → scoped classes on space tokens; totals on .num; Remove tooltip; py-8 off empty state |
+| 9 | Products/ProductImportWizard.vue | /commerce/2000290/products/import/new/csv · /import/new/ftp | builder | done | 9a9cd7e | builder: dropzone token fix; v-alert → MpAlert; inline 260/180px widths → toolbar/menu width tokens |
 
-### Module 05 — Commerce   [module-status: pending]
-
-| # | View file | URL(s) | Profile | Status | Commit | Notes |
-|---|-----------|--------|---------|--------|--------|-------|
-| 1 | Commerce/CommerceCloudLanding.vue | /accounts/2000290/commerce-cloud | standard | pending |  | marketing-style landing |
-| 2 | Commerce/SalesOrders.vue | /commerce/2000290/orders | standard | pending |  | ad-hoc redesign: one status chip + dot labels for payment/fulfillment, kebab-only actions, column menu added |
-| 3 | Commerce/DraftOrders.vue | /commerce/2000290/orders/drafts | standard | pending |  | roadmap #7/#17 touched |
-| 4 | Commerce/Fulfillments.vue | /commerce/2000290/fulfillments | standard | pending |  | roadmap #7/#17 touched |
-| 5 | Commerce/Coupons.vue | /commerce/2000290/coupons · /promotions · /custom_gift_cards · /purchasable_gift_cards | standard | pending |  | serves 4 routes — spot-check each alias (may branch on route name) |
-| 6 | Commerce/CreateDraftOrder.vue | /commerce/2000290/orders/drafts/new · /drafts/1 | builder | pending |  | builderShell (2026-07-19): snapshot dirty guard replaces manual confirmLeave |
-| 7 | Commerce/CreatePromotion.vue | /commerce/2000290/promotions/new · /promotions/1/edit | builder | pending |  | builderShell (2026-07-19): snapshot dirty guard replaces always-on Cancel confirm |
-
-### Module 10 — Service   [module-status: pending]
+### Module 05 — Commerce   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Service/Tickets.vue | /accounts/2000290/service · /chatbot | standard | pending |  | serves 2 routes; ad-hoc: multi-inbox (per sales channel), kanban removed per stakeholder, then full agent-inbox redesign (in-pane controls, 3-line rows, props strip, unified composer) |
-| 2 | Service/ChatbotBuilder.vue | /accounts/2000290/chatbot/1 | builder | pending |  | builderShell (2026-07-19): MpBuilderShell v2 live chip; widget-preview #fff on merchant brand color is allowlisted |
+| 1 | Commerce/CommerceCloudLanding.vue | /accounts/2000290/commerce-cloud | standard | done | 9a0295c | full CSS retokening; pa-8 → card.paddingSpacious; nested bordered tiles → --surface-secondary fills; uppercase 11px labels → sentence-case 12; !important CTA padding removed; media queries on Sass breakpoints |
+| 2 | Commerce/SalesOrders.vue | /commerce/2000290/orders | standard | done | 51eb68a | Export → outlined; expanded-row panel on tokens; dots 6 → 8px on theme colours; inline !important → scoped rule; :deep(.mp-page-subtitle) removed; py-10 off MpEmptyState |
+| 3 | Commerce/DraftOrders.vue | /commerce/2000290/orders/drafts | standard | done | ae83ea9 | Export → outlined; py-10 off MpEmptyState |
+| 4 | Commerce/Fulfillments.vue | /commerce/2000290/fulfillments | standard | done | d34c3a0 | Export/Print → outlined; rgba stage pill → tabular figure; filter drawer drops pa-4 wrapper; span@click → router-link; stage chips role=button + aria-pressed; chips sm; tabular-nums |
+| 5 | Commerce/Coupons.vue | /commerce/2000290/coupons · /promotions · /custom_gift_cards · /purchasable_gift_cards | standard | done | 4a29203 | Export → outlined; filter drawer drops pa-4 + ad-hoc heading; inline widths → scoped classes; mono chip on token. Row note is wrong: /custom_gift_cards and /purchasable_gift_cards are separate views (CustomGiftCards.vue, PurchasableGiftCards.vue) — need their own rows, not audited |
+| 6 | Commerce/CreateDraftOrder.vue | /commerce/2000290/orders/drafts/new · /drafts/1 | builder | done | 779a3bd | builder: all inline styles → scoped token classes; hairlines --border-subtle; icon 17 → 16, circle → circle-dashed; tooltips on qty/remove; media queries on $mp-layout-breakpointSplit |
+| 7 | Commerce/CreatePromotion.vue | /commerce/2000290/promotions/new · /promotions/1/edit | builder | done | 77764ef | builder: :deep(.mp-page-header) → density=compact; border !important → own classes; 2× v-btn-toggle → MpSegmentedControl; v-alert → MpAlert; mono field on token |
+| 8 | Commerce/CustomGiftCards.vue | /commerce/2000290/custom_gift_cards | standard | pending |  | discovered in wave 1 — listed as a Coupons alias in page-tracker but is its own view; audit in a follow-up wave |
+| 9 | Commerce/PurchasableGiftCards.vue | /commerce/2000290/purchasable_gift_cards | standard | pending |  | discovered in wave 1 — same as row 8 |
 
-### Module 12 — App Store   [module-status: pending]
+### Module 10 — Service   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Integrations/Integrations.vue | /accounts/2000290/app_store | standard | pending |  |  |
+| 1 | Service/Tickets.vue | /accounts/2000290/service | standard | done-no-change |  | already compliant (reference implementation); 3 widths + dark, 0 overflow at 375. Row URL `/chatbot` is stale — it serves ChatbotList.vue, not Tickets.vue; not audited as a row |
+| 2 | Service/ChatbotBuilder.vue | /accounts/2000290/chatbot/1 | builder | done | 554a538 | builder profile: Mp* headings/option cards/segmented control/status chip/empty state, tokens for colours+weights, tooltips/aria on icon buttons, focus rings, 2 `!important` + inline max-width removed; fixed settings panel collapsing at ≤1024 |
+| 3 | Service/ChatbotList.vue | /accounts/2000290/chatbot | standard | pending |  | discovered in wave 1 — page-tracker lists /chatbot as a Tickets alias but it serves this view (router index.ts:329); audit in a follow-up wave |
 
-### Module 14 — Billing & Misc   [module-status: pending]
+### Module 12 — App Store   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Billing/BillingView.vue | /accounts/2000290/billing | standard | pending |  |  |
-| 2 | Settings/DesignSystemDemo.vue | /accounts/2000290/design-system | standard | pending |  | internal demo page — light touch |
+| 1 | Integrations/Integrations.vue | /accounts/2000290/app_store | standard | done | 04441a0 | card insets on component.card.*; rgba/!important hairline + hover-lift removed; section-title/meta-label; 40 accent disc + 20 icon; MpStatusChip sm; search-aware MpEmptyState |
+
+### Module 14 — Billing & Misc   [module-status: done]
+
+| # | View file | URL(s) | Profile | Status | Commit | Notes |
+|---|-----------|--------|---------|--------|--------|-------|
+| 1 | Billing/BillingView.vue | /accounts/2000290/billing | standard | done | ba50c9d | convention root + gap-5; v-tabs+:deep → MpFilterTabs; px → tokens; nested bordered tiles → tonal; MpListRow rows; dl.mp-label-value; banner !important removed; one flat primary CTA |
+| 2 | Settings/DesignSystemDemo.vue | /accounts/2000290/design-system | standard | done | 7259463 | light touch: .ds-card on component.card.padding/gap; card titles → .mp-section-title; 12px literal → token; demo checkboxes aria-label |
 
 ## Wave 2
 
@@ -212,3 +215,4 @@
 ## Progress log
 
 - 2026-09-02 — Tracker generated from page-tracker.md (14 modules, all rows pending, grouped into waves W1–W4).
+- 2026-09-02 — Wave 1 complete (Products, Commerce, Service, App Store, Billing & Misc): 21 rows done (1 already compliant), 0 skipped/blocked, 20 page commits + shared fix c66ffbb. Three views discovered that page-tracker mis-filed as aliases (CustomGiftCards, PurchasableGiftCards, ChatbotList) added as pending rows for a follow-up. Rejected proposals: MpFilterTabs baked mb-4, MpDataTableToolbar 375 wrap regrouping (both affect every list page — dedicated pass), MpSectionHeader description slot + MpListRow subtitle prop (API additions, out of scope), builder-body pa-* on wizard cards (builder profile excludes B by design), global table tabular-nums (already global at global.scss .v-table td), extra width tokens for 720/520/120/128 (no ramp yet).
