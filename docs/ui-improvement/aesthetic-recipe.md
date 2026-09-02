@@ -126,7 +126,9 @@ planned fix`; a page with zero findings is marked done with no commit.
 ## H. Per-page procedure (delta over playbook §4)
 
 1. **Before-capture** at 1440×900, 1024×768 and 375×812 (screenshots to the scratchpad) plus a
-   `read_page` of the interactive tree and `read_console_messages` (errors only).
+   `read_page` of the interactive tree and `read_console_messages` (errors only). Reload after each
+   `resize_window` before reading column visibility — `useDisplay()` does not re-evaluate under
+   viewport emulation without a real resize event.
 2. **Static audit** of the view and its non-`Mp*` children against A–G; write findings as
    `(item) where → fix`. Zero findings → mark done, no commit.
 3. **Fix** with the smallest change set; tokens and Mp\* only; page files only (shared-component

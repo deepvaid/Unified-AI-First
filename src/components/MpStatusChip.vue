@@ -73,6 +73,8 @@ const toneMap: Record<string, Record<string, Tone>> = {
     enabled: 'success', disabled: 'neutral', failed: 'danger',
     success: 'success', required: 'brand', optional: 'neutral',
     running: 'brand', paused: 'warning', completed: 'success',
+    // Knowledge-source ingestion (chatbot) and catalogue/plan availability (App Store, Billing).
+    indexing: 'brand', available: 'neutral', unconfigured: 'neutral',
     connected: 'success', disconnected: 'neutral',
     'needs setup': 'warning', 'sync issue': 'danger', 'auth expired': 'danger',
     healthy: 'success', 'needs attention': 'warning', incomplete: 'warning',

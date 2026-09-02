@@ -352,7 +352,7 @@ onMounted(() => {
 .cp-border-t { border-top: 1px solid var(--border-subtle); }
 
 /* Reading measure for a single-column form; a layout.formMaxWidth token is proposed. */
-.cp-body { max-width: 760px; margin: 0 auto; }
+.cp-body { max-width: var(--mp-layout-formMaxWidth); margin: 0 auto; }
 
 .font-mono-field :deep(input) { font-family: var(--mp-fontFamily-mono); text-transform: uppercase; }
 </style>

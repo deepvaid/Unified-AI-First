@@ -109,6 +109,8 @@ withDefaults(defineProps<{
 }
 
 .mp-page-header__subtitle {
+  /* Count / revenue subtitles ("82 orders · $43,565.90") read as aligned figures. */
+  font-variant-numeric: tabular-nums;
   line-height: 1.4;
 }
 

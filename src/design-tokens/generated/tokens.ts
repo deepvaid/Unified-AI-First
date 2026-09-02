@@ -821,6 +821,7 @@ export const mp_layout_appbarHeight = `60px`
 export const mp_layout_drawerWidth = `480px`
 export const mp_layout_searchMaxWidth = `560px`
 export const mp_layout_contentMaxWidth = `1280px`
+export const mp_layout_formMaxWidth = `760px`
 export const mp_layout_sectionRailWidth = `260px`
 export const mp_layout_inboxListWidth = `380px`
 export const mp_layout_inboxRailPanelWidth = `300px`

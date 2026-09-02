@@ -373,7 +373,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
               {{ item.message.body }}
               <template v-if="item.message.role === 'note'" #footer>
                 <span class="d-inline-flex align-center ga-1">
-                  <v-icon size="12">lock</v-icon> Internal note — not visible to the customer
+                  <v-icon size="16">lock</v-icon> Internal note — not visible to the customer
                 </span>
               </template>
             </MpChatBubble>
@@ -505,7 +505,7 @@ const SEND_AND_SET: TicketStatus[] = ['Pending', 'On Hold', 'Closed']
                     <RouterLink
                       :to="{ name: 'AllContacts', params: { accountId } }"
                       class="text-body-2 text-primary text-decoration-none d-inline-flex align-center ga-1"
-                    >{{ ticket.customer }} <v-icon size="14">external-link</v-icon></RouterLink>
+                    >{{ ticket.customer }} <v-icon size="16">external-link</v-icon></RouterLink>
                   </dd>
                 </div>
                 <div>

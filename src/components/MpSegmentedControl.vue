@@ -55,6 +55,7 @@ function onUpdate(value: unknown) {
             :icon="Boolean(item.icon)"
             :disabled="item.disabled"
             :aria-label="item.icon ? item.label : undefined"
+            :aria-pressed="props.modelValue === item.value"
             variant="text"
           >
             <v-icon v-if="item.icon">{{ item.icon }}</v-icon>
@@ -68,6 +69,7 @@ function onUpdate(value: unknown) {
         :icon="Boolean(item.icon)"
         :disabled="item.disabled"
         :aria-label="item.icon ? item.label : undefined"
+        :aria-pressed="props.modelValue === item.value"
         variant="text"
       >
         <v-icon v-if="item.icon">{{ item.icon }}</v-icon>
