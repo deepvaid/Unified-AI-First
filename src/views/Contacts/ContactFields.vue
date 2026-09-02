@@ -216,7 +216,7 @@ function confirmDelete() {
         </template>
 
         <template v-slot:item.addToEditProfile="{ item }">
-          <v-icon v-if="item.addToEditProfile" size="18" color="success">circle-check</v-icon>
+          <v-icon v-if="item.addToEditProfile" size="16" color="success">circle-check</v-icon>
           <span v-else class="text-disabled">—</span>
         </template>
 
@@ -254,7 +254,7 @@ function confirmDelete() {
     >
       <!-- MpDataTableToolbar always renders a search field, which would be dead
            UI over two rows — this table gets a plain section heading instead. -->
-      <div class="px-6 pt-6 pb-4">
+      <div class="fields-panel__head">
         <MpSectionHeader title="Default fields" :heading-level="2" />
         <p class="text-body-2 text-medium-emphasis mb-0">
           Built-in fields. Their name and type are fixed; you can set a default value.
@@ -285,7 +285,7 @@ function confirmDelete() {
                 :aria-label="`Default value for ${field.name}`"
                 hide-details
                 placeholder="No default"
-                style="max-width: 280px;"
+                class="fields-default-editor"
                 @update:model-value="store.updateDefaultField(field.name, $event)"
               />
             </td>
@@ -412,3 +412,16 @@ function confirmDelete() {
     />
   </div>
 </template>
+
+<style scoped>
+/* The default-fields card has no toolbar, so its head restates the toolbar's
+   inset on the card token rather than a pa-* utility. */
+.fields-panel__head {
+  padding: var(--mp-component-card-padding) var(--mp-component-card-padding) var(--mp-space-16);
+}
+
+/* Cell editor width: the toolbar search width is the one control-width token. */
+.fields-default-editor {
+  max-width: var(--mp-component-toolbar-searchWidth);
+}
+</style>
