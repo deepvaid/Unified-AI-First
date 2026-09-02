@@ -220,7 +220,7 @@ onMounted(() => {
       :subtitle="`${store.promotions.filter(p => p.status==='Active').length} active · ${store.promotions.reduce((a,p)=>a+p.usage,0).toLocaleString()} total uses`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="download" class="text-none" color="surface" @click="exportCsv">Export</v-btn>
+        <v-btn variant="outlined" prepend-icon="download" class="text-none" @click="exportCsv">Export</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openNewPromotion">New Promotion</v-btn>
       </template>
     </MpPageHeader>
@@ -240,22 +240,19 @@ onMounted(() => {
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <!-- Toolbar filters stay compact and suppress details deliberately: this is a
-                 dense popover, not a form, and no select here carries validation. -->
-            <MpFormGrid>
-              <v-select
-                v-for="(options, key) in filterOptions"
-                :key="key"
-                v-model="filters[key as keyof typeof filters]"
-                :label="filterLabels[key]"
-                :items="options"
-                hide-details
-                clearable
-              />
-            </MpFormGrid>
-          </div>
+          <!-- The drawer body already carries the dialog inset and field rhythm. Selects
+               suppress details deliberately: no select here carries validation. -->
+          <MpFormGrid>
+            <v-select
+              v-for="(options, key) in filterOptions"
+              :key="key"
+              v-model="filters[key as keyof typeof filters]"
+              :label="filterLabels[key]"
+              :items="options"
+              hide-details
+              clearable
+            />
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
 
@@ -277,7 +274,7 @@ onMounted(() => {
       >
         <template v-slot:item.title="{ item }">
           <div class="text-body-2 font-weight-medium">{{ item.title }}</div>
-          <div v-if="item.description" class="text-caption text-medium-emphasis text-truncate" style="max-width: 220px">{{ item.description }}</div>
+          <div v-if="item.description" class="text-caption text-medium-emphasis text-truncate promo-desc">{{ item.description }}</div>
         </template>
 
         <template v-slot:item.code="{ item }">
@@ -301,7 +298,7 @@ onMounted(() => {
         </template>
 
         <template v-slot:item.usage="{ item }">
-          <div style="min-width: 88px">
+          <div class="promo-usage">
             <span class="font-weight-bold text-body-2">{{ item.usage.toLocaleString() }}</span>
             <v-progress-linear v-if="item.limit" :model-value="(item.usage/item.limit)*100"
               :color="item.usage/item.limit>0.9?'error':'primary'" height="4" rounded class="mt-1"></v-progress-linear>
@@ -366,5 +363,13 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.font-mono { font-family: monospace; }
+.font-mono { font-family: var(--mp-fontFamily-mono); }
+
+/* Reading measure for the one-line description under a promotion name. */
+.promo-desc { max-width: 28ch; }
+
+.promo-usage {
+  min-width: var(--mp-space-80);
+  font-variant-numeric: tabular-nums;
+}
 </style>
