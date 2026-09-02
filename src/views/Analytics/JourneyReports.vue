@@ -106,7 +106,6 @@ function exportCsv() {
             icon="waypoints"
             :title="search || filterStatus.length ? 'No journeys match your filters' : 'No journeys yet'"
             :description="search || filterStatus.length ? 'Try a different search or clear filters.' : 'Journeys will appear here once created.'"
-            class="py-10"
           />
         </template>
       </v-data-table>

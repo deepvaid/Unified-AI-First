@@ -78,20 +78,15 @@ function exportCsv() {
         class="flex-grow-1"
       >
         <template v-slot:item.revenue="{ item }">
-          <span class="font-weight-bold text-primary">${{ item.revenue.toLocaleString() }}</span>
+          <span class="font-weight-medium">${{ item.revenue.toLocaleString() }}</span>
         </template>
-        <template v-slot:item.subscribers="{ item }">
-          <span class="font-weight-medium">{{ item.subscribers.toLocaleString() }}</span>
-        </template>
-        <template v-slot:item.sends="{ item }">
-          <span class="text-medium-emphasis">{{ item.sends.toLocaleString() }}</span>
-        </template>
+        <template v-slot:item.subscribers="{ item }">{{ item.subscribers.toLocaleString() }}</template>
+        <template v-slot:item.sends="{ item }">{{ item.sends.toLocaleString() }}</template>
         <template #no-data>
           <MpEmptyState
             icon="calendar-range"
             :title="search ? 'No months match your search' : 'No monthly data yet'"
             :description="search ? 'Try a different search term.' : 'Revenue and audience totals will appear here over time.'"
-            class="py-10"
           />
         </template>
       </v-data-table>

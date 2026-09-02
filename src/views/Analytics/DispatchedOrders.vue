@@ -110,7 +110,6 @@ function exportCsv() {
             icon="truck"
             :title="search || filterCourier.length ? 'No dispatched orders match your filters' : 'No dispatched orders'"
             :description="search || filterCourier.length ? 'Try a different search, courier, or date range.' : 'Orders appear here once they ship.'"
-            class="py-10"
           />
         </template>
       </v-data-table>

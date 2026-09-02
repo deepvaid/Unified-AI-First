@@ -111,7 +111,6 @@ function exportCsv() {
             icon="mail-search"
             :title="search || filterProvider.length ? 'No test scenarios match your filters' : 'No test scenarios in this range'"
             :description="search || filterProvider.length ? 'Try a different search or clear filters.' : 'Try a wider date range.'"
-            class="py-10"
           />
         </template>
       </v-data-table>

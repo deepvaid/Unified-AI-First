@@ -110,7 +110,6 @@ function exportCsv() {
             icon="shopping-bag"
             :title="search || filterStatus.length ? 'No orders match your filters' : 'No orders in this range'"
             :description="search || filterStatus.length ? 'Try a different search or clear filters.' : 'Try a wider date range.'"
-            class="py-10"
           />
         </template>
       </v-data-table>

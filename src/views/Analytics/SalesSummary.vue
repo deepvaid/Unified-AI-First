@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useAnalyticsStore, dateRangeLabel, type DateRangeValue } from '@/stores/useAnalytics'
 import { storeToRefs } from 'pinia'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpSectionHeader from '@/components/MpSectionHeader.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpDateRangeSelect from '@/components/MpDateRangeSelect.vue'
@@ -43,7 +44,7 @@ const currency = (n: number) =>
 
 // Channel + Revenue are the identity/headline pair and always show; the derived
 // metrics drop out progressively so the table never side-scrolls on a phone.
-// (The channel-bar rows above have their own 700px breakpoint — already fine.)
+// (The channel-bar rows above drop share + delta below layout.breakpointCompact.)
 const tableHeaders = [
   { title: 'Channel', key: 'channel' },
   { title: 'Revenue', key: 'revenue', align: 'end' as const },
@@ -114,15 +115,17 @@ const { loading } = useInitialLoad()
 
     <!-- Revenue by channel -->
     <v-card variant="flat" border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-      <div class="d-flex align-center justify-space-between px-5 pt-4 pb-1">
-        <div class="text-subtitle-1 font-weight-bold">Revenue by Channel</div>
-        <span class="text-caption text-medium-emphasis">Attributed revenue, {{ dateRangeLabel(dateRange).toLowerCase() }}</span>
+      <div class="channel-head">
+        <MpSectionHeader
+          title="Revenue by Channel"
+          :description="`Attributed revenue, ${dateRangeLabel(dateRange).toLowerCase()}`"
+        />
       </div>
 
-      <MpTableSkeleton v-if="loading" :rows="6" :columns="6" class="px-3 py-2" />
+      <MpTableSkeleton v-if="loading" :rows="6" :columns="6" />
 
       <template v-else>
-      <div v-if="salesChannels.length" class="channel-bars px-5 py-4">
+      <div v-if="salesChannels.length" class="channel-bars">
         <div v-for="c in salesChannels" :key="c.channel" class="channel-row">
           <div class="channel-row__label">
             <v-icon size="16" class="channel-row__icon">{{ c.icon }}</v-icon>
@@ -137,7 +140,7 @@ const { loading } = useInitialLoad()
             class="channel-row__delta num"
             :class="c.delta >= 0 ? 'text-success' : 'text-error'"
           >
-            <v-icon size="13">{{ c.delta >= 0 ? 'trending-up' : 'trending-down' }}</v-icon>
+            <v-icon size="16">{{ c.delta >= 0 ? 'trending-up' : 'trending-down' }}</v-icon>
             {{ Math.abs(c.delta).toFixed(1) }}%
           </div>
         </div>
@@ -166,7 +169,7 @@ const { loading } = useInitialLoad()
           </div>
         </template>
         <template #item.revenue="{ item }">
-          <span class="font-weight-bold text-primary">{{ currency(item.revenue) }}</span>
+          <span class="font-weight-medium">{{ currency(item.revenue) }}</span>
         </template>
         <template #item.orders="{ item }">{{ item.orders.toLocaleString() }}</template>
         <template #item.aov="{ item }">{{ currency(item.orders ? item.revenue / item.orders : 0) }}</template>
@@ -182,74 +185,75 @@ const { loading } = useInitialLoad()
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+/* The card's own inset frames the section header and the bar list; the table
+   below carries its own cell padding, so it sits flush. */
+.channel-head {
+  padding: var(--mp-component-card-padding) var(--mp-component-card-padding) 0;
+}
+
+/* One grid for the whole list (rows are `display: contents`), so the
+   content-sized label and figure columns are shared and every bar starts on the
+   same line without a fixed pixel width per column. */
 .channel-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: var(--mp-space-12) var(--mp-space-16);
+  padding: 0 var(--mp-component-card-padding) var(--mp-component-card-padding);
 }
 
 .channel-row {
-  display: grid;
-  grid-template-columns: 180px 1fr 110px 56px 74px;
-  align-items: center;
-  gap: 16px;
+  display: contents;
 }
 
 .channel-row__label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
   min-width: 0;
 }
 
 .channel-row__icon {
-  color: rgb(var(--v-theme-primary));
+  color: var(--on-surface-muted);
 }
 
 .channel-row__track {
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(var(--v-theme-on-surface), 0.06);
+  height: var(--mp-space-10);
+  border-radius: var(--mp-radius-full);
+  background: var(--surface-secondary);
   overflow: hidden;
 }
 
 .channel-row__fill {
   height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(var(--v-theme-primary), 0.65),
-    rgb(var(--v-theme-primary))
-  );
-  transition: width 0.4s ease;
+  border-radius: var(--mp-radius-full);
+  background: var(--accent-default);
+  transition: width var(--mp-motion-duration-entrance) var(--mp-motion-easing-standard);
 }
 
 .channel-row__value {
   text-align: right;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .channel-row__share {
   text-align: right;
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
+  font-size: var(--mp-fontSize-13);
 }
 
 .channel-row__delta {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 2px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  gap: var(--mp-space-2);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
-@media (max-width: 700px) {
-  .channel-row {
-    grid-template-columns: 120px 1fr 90px;
+@media (max-width: ($mp-layout-breakpointCompact - 0.02px)) {
+  .channel-bars {
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
   .channel-row__share,
   .channel-row__delta {
