@@ -140,9 +140,9 @@ function toggleSelect(id: string) {
           </v-col>
         </v-row>
 
-        <v-card flat border rounded="lg">
-          <v-card-title class="text-subtitle-1 font-weight-bold">What this is</v-card-title>
-          <v-card-text class="text-body-2 ds-overview-copy">
+        <v-card flat border rounded="lg" class="ds-card">
+          <h2 class="mp-section-title">What this is</h2>
+          <div class="text-body-2 ds-overview-copy">
             <p>
               A working prototype environment: real screens, built from one shared kit of parts, running on
               pretend data. It's the reference the product is built to match — shared work converges into
@@ -153,7 +153,7 @@ function toggleSelect(id: string) {
               <strong>Ask Da Vinci</strong> — it answers from the design-system docs: the FAQ, the operating
               model, the audit, and the component inventory.
             </p>
-          </v-card-text>
+          </div>
         </v-card>
 
         <v-row>
@@ -168,9 +168,9 @@ function toggleSelect(id: string) {
           </v-col>
         </v-row>
 
-        <v-card flat border rounded="lg">
-          <v-card-title class="text-subtitle-1 font-weight-bold">How the live token demo works</v-card-title>
-          <v-card-text class="d-flex flex-column gap-3">
+        <v-card flat border rounded="lg" class="ds-card">
+          <h2 class="mp-section-title">How the live token demo works</h2>
+          <div class="d-flex flex-column gap-3">
             <div class="d-flex align-start gap-3">
               <v-chip color="primary" variant="tonal">1</v-chip>
               <div>
@@ -192,23 +192,23 @@ function toggleSelect(id: string) {
                 <div class="text-caption text-medium-emphasis">This page and the Storybook foundation stories reflect the same token source.</div>
               </div>
             </div>
-          </v-card-text>
+          </div>
         </v-card>
       </div>
 
       <!-- ── Foundations: Colors / Typography / Spacing ───────── -->
-      <v-card v-else-if="activeFoundation" flat border rounded="lg" class="pa-6 pa-md-8">
+      <v-card v-else-if="activeFoundation" flat border rounded="lg" class="ds-card ds-card--spacious">
         <component :is="activeFoundation" />
       </v-card>
 
       <!-- ── Components: the live demo ────────────────────────── -->
       <div v-else class="d-flex flex-column gap-5">
-        <v-card flat border rounded="lg">
-          <v-card-text class="text-body-2 text-medium-emphasis">
+        <v-card flat border rounded="lg" class="ds-card">
+          <p class="text-body-2 text-medium-emphasis mb-0">
             A live list screen assembled from the shared parts — page tabs, toolbar, data table, status chips,
             empty state, and the floating bulk bar. Select rows, search, and filter: everything here is the
             real component, not a picture of it.
-          </v-card-text>
+          </p>
         </v-card>
 
         <MpFilterTabs v-model="activeTab" :tabs="tabs" />
@@ -237,6 +237,7 @@ function toggleSelect(id: string) {
               <div class="d-flex align-center gap-2">
                 <v-checkbox-btn
                   :model-value="selected.includes(item.id)"
+                  :aria-label="`Select ${item.id}`"
                   @update:model-value="toggleSelect(item.id)"
                 />
                 <span class="font-weight-medium">{{ item.id }}</span>
@@ -295,9 +296,20 @@ function toggleSelect(id: string) {
 </template>
 
 <style scoped>
+.ds-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-component-card-gap);
+  padding: var(--mp-component-card-padding);
+}
+
+.ds-card--spacious {
+  padding: var(--mp-component-card-paddingSpacious);
+}
+
 .ds-overview-copy p {
   max-width: 72ch;
   line-height: 1.6;
-  margin-bottom: 12px;
+  margin-bottom: var(--mp-space-12);
 }
 </style>

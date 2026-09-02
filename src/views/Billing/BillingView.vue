@@ -6,6 +6,9 @@ import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpFilterTabs from '@/components/MpFilterTabs.vue'
+import MpListRow from '@/components/MpListRow.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
 import {
   usePlgStore,
@@ -30,16 +33,17 @@ const accountId = computed(() => {
 
 type BillingTab = 'overview' | 'usage' | 'company' | 'transactions' | 'documents' | 'delete'
 
-const tabs: { value: BillingTab; label: string }[] = [
-  { value: 'overview',     label: 'Overview' },
-  { value: 'usage',        label: 'Usage & Limits' },
-  { value: 'company',      label: 'Company Info' },
-  { value: 'transactions', label: 'Transactions' },
-  { value: 'documents',    label: 'Documents' },
-  { value: 'delete',       label: 'Delete Account' },
+const tabs: { key: BillingTab; label: string }[] = [
+  { key: 'overview',     label: 'Overview' },
+  { key: 'usage',        label: 'Usage & Limits' },
+  { key: 'company',      label: 'Company Info' },
+  { key: 'transactions', label: 'Transactions' },
+  { key: 'documents',    label: 'Documents' },
+  { key: 'delete',       label: 'Delete Account' },
 ]
 
-const activeTab = ref<BillingTab>('overview')
+// MpFilterTabs models a string; the section keys are the BillingTab union.
+const activeTab = ref<string>('overview')
 
 const products = computed(() => [
   { name: 'Marketing Cloud',  tier: 'Enterprise', icon: 'megaphone',     active: accountsStore.hasSubscription('marketing') },
@@ -328,30 +332,25 @@ const usageRows = computed(() => {
 </script>
 
 <template>
-  <div class="billing-view">
+  <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader
       title="Account & Billing"
       subtitle="Manage your subscription, products, usage, and invoices."
       :back-to="{ name: 'Dashboard', params: { accountId } }"
     >
       <template #tabs>
-        <v-tabs v-model="activeTab" class="billing-tabs" density="compact" color="primary" show-arrows>
-          <v-tab v-for="tab in tabs" :key="tab.value" :value="tab.value" class="text-none">
-            {{ tab.label }}
-          </v-tab>
-        </v-tabs>
+        <MpFilterTabs v-model="activeTab" :tabs="tabs" aria-label="Billing sections" controls-id="billing-section" />
       </template>
     </MpPageHeader>
 
     <!-- Overview -->
-    <section v-if="activeTab === 'overview'" class="billing-panel">
+    <section v-if="activeTab === 'overview'" id="billing-section" class="d-flex flex-column gap-5">
       <MpAlert v-if="statusStrip" :tone="statusStrip.tone" :icon="statusStrip.icon">
         {{ statusStrip.text }}
         <template #actions>
           <v-btn
             variant="flat"
             size="small"
-            class="text-none"
             :color="statusStrip.tone === 'info' ? 'primary' : statusStrip.tone"
             @click="statusStrip.action"
           >
@@ -361,25 +360,25 @@ const usageRows = computed(() => {
       </MpAlert>
 
       <div class="plan-banner">
-        <div>
-          <v-chip size="small" variant="flat" class="plan-banner__chip">{{ bannerChipText }}</v-chip>
+        <div class="d-flex flex-column">
+          <span class="plan-banner__chip mp-meta-label">{{ bannerChipText }}</span>
           <div class="plan-banner__price">{{ bannerHeadline }}</div>
           <div class="plan-banner__meta">{{ bannerMeta }}</div>
         </div>
         <div class="plan-banner__actions">
-          <v-btn variant="flat" color="on-primary" class="text-none plan-banner__cta" prepend-icon="circle-arrow-up" @click="goToPlans">Upgrade Plan</v-btn>
-          <v-btn variant="text" class="text-none plan-banner__link" size="small" @click="openCancelDrawer">Change or cancel plan</v-btn>
+          <v-btn variant="flat" color="surface" prepend-icon="circle-arrow-up" @click="goToPlans">Upgrade Plan</v-btn>
+          <v-btn variant="text" color="on-primary" size="small" @click="openCancelDrawer">Change or cancel plan</v-btn>
         </div>
       </div>
 
       <v-card flat border rounded="lg" class="billing-card">
         <div class="billing-card__head">
-          <h2 class="billing-card__title">Current Subscriptions</h2>
+          <h2 class="mp-section-title">Current Subscriptions</h2>
         </div>
         <div class="subscription-grid">
           <div v-for="card in subscriptionCards" :key="card.cloud" class="subscription-card">
-            <div class="subscription-card__icon">
-              <v-icon size="20" color="primary">{{ card.icon }}</v-icon>
+            <div class="billing-disc">
+              <v-icon size="20">{{ card.icon }}</v-icon>
             </div>
             <div class="subscription-card__body">
               <div class="subscription-card__top">
@@ -390,8 +389,8 @@ const usageRows = computed(() => {
               <div class="subscription-card__meta">Start date: {{ card.startDate }}</div>
               <div class="subscription-card__meta">Billing cycle: {{ card.cycleLabel }}</div>
               <div class="subscription-card__actions">
-                <v-btn variant="text" size="small" color="primary" class="text-none" @click="goToPlans">Change plan</v-btn>
-                <v-btn v-if="card.canDowngrade" variant="text" size="small" class="text-none" @click="openDowngrade(card.cloud)">Downgrade</v-btn>
+                <v-btn variant="text" size="small" color="primary" @click="goToPlans">Change plan</v-btn>
+                <v-btn v-if="card.canDowngrade" variant="text" size="small" @click="openDowngrade(card.cloud)">Downgrade</v-btn>
               </div>
             </div>
           </div>
@@ -400,68 +399,71 @@ const usageRows = computed(() => {
 
       <v-card flat border rounded="lg" class="billing-card">
         <div class="billing-card__head">
-          <h2 class="billing-card__title">Products &amp; Add-ons</h2>
-          <v-btn variant="text" size="small" color="primary" class="text-none" append-icon="external-link">See all features</v-btn>
+          <h2 class="mp-section-title">Products &amp; Add-ons</h2>
+          <v-btn variant="text" size="small" color="primary" append-icon="external-link">See all features</v-btn>
         </div>
-        <div class="product-list">
-          <div v-for="p in products" :key="p.name" class="product-row">
-            <v-icon class="product-row__icon" size="22">{{ p.icon }}</v-icon>
-            <div class="product-row__copy">
-              <div class="product-row__name">{{ p.name }}</div>
-              <div class="product-row__tier">{{ p.tier }}</div>
-            </div>
-            <v-chip
-              :color="p.active ? 'success' : undefined"
-              size="x-small"
-              variant="flat"
-              class="product-row__chip"
-            >
-              {{ p.active ? 'Active' : 'Available' }}
-            </v-chip>
-          </div>
+        <div class="d-flex flex-column">
+          <MpListRow v-for="p in products" :key="p.name" variant="divided">
+            <template #lead>
+              <v-icon size="16" color="primary">{{ p.icon }}</v-icon>
+            </template>
+            <span class="billing-row__name">{{ p.name }}</span>
+            <span class="billing-row__meta">{{ p.tier }}</span>
+            <template #trailing>
+              <MpStatusChip :status="p.active ? 'Active' : 'Available'" size="sm" />
+            </template>
+          </MpListRow>
         </div>
       </v-card>
 
       <v-card flat border rounded="lg" class="billing-card">
         <div class="billing-card__head">
-          <h2 class="billing-card__title">Add-ons</h2>
+          <h2 class="mp-section-title">Add-ons</h2>
         </div>
-        <div class="product-list">
-          <div v-for="a in addOnRows" :key="a.key" class="product-row">
-            <v-icon class="product-row__icon" size="22">{{ a.icon }}</v-icon>
-            <div class="product-row__copy">
-              <div class="product-row__name">{{ a.name }}</div>
-              <div class="product-row__tier">{{ a.description }} · {{ a.priceLabel }}</div>
-            </div>
-            <v-chip v-if="a.owned" color="success" size="x-small" variant="flat" class="product-row__chip">Active</v-chip>
-            <v-btn v-else-if="a.monthly !== null" variant="text" size="small" color="primary" class="text-none" @click="openAddonDrawer(a)">+ Add</v-btn>
-            <v-btn v-else variant="outlined" size="small" color="primary" class="text-none" @click="talkToSales">Talk to sales</v-btn>
-          </div>
+        <div class="d-flex flex-column">
+          <MpListRow v-for="a in addOnRows" :key="a.key" variant="divided">
+            <template #lead>
+              <v-icon size="16" color="primary">{{ a.icon }}</v-icon>
+            </template>
+            <span class="billing-row__name">{{ a.name }}</span>
+            <span class="billing-row__meta">{{ a.description }} · {{ a.priceLabel }}</span>
+            <template #trailing>
+              <MpStatusChip v-if="a.owned" status="Active" size="sm" />
+              <v-btn v-else-if="a.monthly !== null" variant="text" size="small" color="primary" prepend-icon="plus" @click="openAddonDrawer(a)">Add</v-btn>
+              <v-btn v-else variant="outlined" size="small" color="primary" @click="talkToSales">Talk to sales</v-btn>
+            </template>
+          </MpListRow>
         </div>
       </v-card>
 
       <v-card flat border rounded="lg" class="billing-card">
-        <h2 class="billing-card__title mb-3">Payment Method</h2>
+        <div class="billing-card__head">
+          <h2 class="mp-section-title">Payment Method</h2>
+        </div>
         <div class="payment-row">
-          <v-icon color="primary" size="30">credit-card</v-icon>
-          <div class="payment-row__copy">
-            <div class="payment-row__title">Visa ending in 4242</div>
-            <div class="payment-row__sub">Expires 12/2028</div>
+          <div class="billing-disc">
+            <v-icon size="20">credit-card</v-icon>
           </div>
-          <v-btn variant="flat" size="small" color="primary" class="text-none">Change Card</v-btn>
+          <div class="payment-row__copy">
+            <div class="billing-row__name">Visa ending in 4242</div>
+            <div class="billing-row__meta">Expires 12/2028</div>
+          </div>
+          <v-btn variant="outlined" size="small" color="primary">Change Card</v-btn>
         </div>
       </v-card>
     </section>
 
     <!-- Usage & Limits -->
-    <section v-else-if="activeTab === 'usage'" class="billing-panel">
+    <section v-else-if="activeTab === 'usage'" id="billing-section" class="d-flex flex-column gap-5">
       <v-card flat border rounded="lg" class="billing-card">
-        <h2 class="billing-card__title mb-3">Usage This Month</h2>
+        <div class="billing-card__head">
+          <h2 class="mp-section-title">Usage This Month</h2>
+        </div>
         <div class="usage-grid">
           <div v-for="u in usageRows" :key="u.label" class="usage-card">
             <div class="usage-card__head">
-              <span class="usage-card__label">{{ u.label }}</span>
-              <span class="usage-card__values">{{ u.used }} / {{ u.limit }}</span>
+              <span class="billing-row__name">{{ u.label }}</span>
+              <span class="billing-row__meta tabular">{{ u.used }} / {{ u.limit }}</span>
             </div>
             <v-progress-linear v-if="!u.unlimited" :model-value="u.pct" color="primary" rounded height="6" />
             <div v-else class="usage-card__unlimited">Unlimited</div>
@@ -471,42 +473,49 @@ const usageRows = computed(() => {
     </section>
 
     <!-- Company Info -->
-    <section v-else-if="activeTab === 'company'" class="billing-panel">
+    <section v-else-if="activeTab === 'company'" id="billing-section" class="d-flex flex-column gap-5">
       <v-card flat border rounded="lg" class="billing-card">
         <div class="billing-card__head">
-          <h2 class="billing-card__title">Company Information</h2>
-          <v-btn variant="flat" size="small" color="primary" class="text-none">Edit</v-btn>
+          <h2 class="mp-section-title">Company Information</h2>
+          <v-btn variant="outlined" size="small" color="primary">Edit</v-btn>
         </div>
-        <dl class="info-grid">
-          <div v-for="c in company" :key="c.label" class="info-row">
-            <dt class="info-row__label">{{ c.label }}</dt>
-            <dd class="info-row__value">{{ c.value }}</dd>
+        <dl class="mp-label-value company-info">
+          <div v-for="c in company" :key="c.label">
+            <dt class="text-medium-emphasis">{{ c.label }}</dt>
+            <dd>{{ c.value }}</dd>
           </div>
         </dl>
       </v-card>
     </section>
 
     <!-- Transactions -->
-    <section v-else-if="activeTab === 'transactions'" class="billing-panel">
+    <section v-else-if="activeTab === 'transactions'" id="billing-section" class="d-flex flex-column gap-5">
       <v-card flat border rounded="lg" class="billing-card">
-        <h2 class="billing-card__title mb-3">Recent Transactions</h2>
+        <div class="billing-card__head">
+          <h2 class="mp-section-title">Recent Transactions</h2>
+        </div>
         <v-table density="comfortable" class="invoice-table">
           <thead>
             <tr>
               <th>Date</th>
               <th>Description</th>
-              <th>Amount</th>
+              <th class="text-right">Amount</th>
               <th>Status</th>
-              <th></th>
+              <th><span class="d-sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(inv, i) in invoices" :key="i">
-              <td>{{ inv.date }}</td>
+              <td class="tabular">{{ inv.date }}</td>
               <td>{{ inv.desc }}</td>
-              <td class="font-weight-bold">{{ inv.amt }}</td>
-              <td><v-chip color="success" size="x-small" variant="flat">Paid</v-chip></td>
-              <td class="text-right"><v-btn icon="download" variant="text" size="small" color="primary" aria-label="Download invoice" /></td>
+              <td class="text-right tabular x-strong">{{ inv.amt }}</td>
+              <td><MpStatusChip status="Paid" type="payment" size="sm" /></td>
+              <td class="text-right">
+                <v-btn icon variant="text" size="small" aria-label="Download invoice">
+                  <v-icon>download</v-icon>
+                  <v-tooltip activator="parent" location="top">Download invoice</v-tooltip>
+                </v-btn>
+              </td>
             </tr>
           </tbody>
         </v-table>
@@ -514,33 +523,42 @@ const usageRows = computed(() => {
     </section>
 
     <!-- Documents -->
-    <section v-else-if="activeTab === 'documents'" class="billing-panel">
+    <section v-else-if="activeTab === 'documents'" id="billing-section" class="d-flex flex-column gap-5">
       <v-card flat border rounded="lg" class="billing-card">
-        <h2 class="billing-card__title mb-3">Documents</h2>
-        <div class="doc-list">
-          <div v-for="d in documents" :key="d.name" class="doc-row">
-            <v-icon class="doc-row__icon" size="22">file-text</v-icon>
-            <div class="doc-row__copy">
-              <div class="doc-row__name">{{ d.name }}</div>
-              <div class="doc-row__meta">{{ d.meta }}</div>
-            </div>
-            <v-btn icon="download" variant="text" size="small" color="primary" :aria-label="`Download ${d.name}`" />
-          </div>
+        <div class="billing-card__head">
+          <h2 class="mp-section-title">Documents</h2>
+        </div>
+        <div class="d-flex flex-column">
+          <MpListRow v-for="d in documents" :key="d.name" variant="divided">
+            <template #lead>
+              <v-icon size="16" color="primary">file-text</v-icon>
+            </template>
+            <span class="billing-row__name">{{ d.name }}</span>
+            <span class="billing-row__meta">{{ d.meta }}</span>
+            <template #trailing>
+              <v-btn icon variant="text" size="small" :aria-label="`Download ${d.name}`">
+                <v-icon>download</v-icon>
+                <v-tooltip activator="parent" location="top">Download</v-tooltip>
+              </v-btn>
+            </template>
+          </MpListRow>
         </div>
       </v-card>
     </section>
 
     <!-- Delete Account -->
-    <section v-else class="billing-panel">
-      <v-card flat border rounded="lg" class="billing-card danger-card">
-        <h2 class="billing-card__title billing-card__title--danger mb-1">Cancel or delete account</h2>
+    <section v-else id="billing-section" class="d-flex flex-column gap-5">
+      <v-card flat border rounded="lg" class="billing-card">
+        <div class="billing-card__head">
+          <h2 class="mp-section-title text-error">Cancel or delete account</h2>
+        </div>
         <p class="danger-card__copy">
           Cancelling stops billing at the end of your current cycle and downgrades you to read-only
           access. Deleting permanently removes your account, data, and integrations — this cannot be undone.
         </p>
-        <div class="danger-card__actions">
-          <v-btn variant="outlined" color="error" class="text-none" @click="openCancelDrawer">Cancel subscription</v-btn>
-          <v-btn variant="flat" color="error" class="text-none">Delete account</v-btn>
+        <div class="d-flex flex-wrap ga-2">
+          <v-btn variant="outlined" color="error" @click="openCancelDrawer">Cancel subscription</v-btn>
+          <v-btn variant="flat" color="error">Delete account</v-btn>
         </div>
       </v-card>
     </section>
@@ -549,16 +567,18 @@ const usageRows = computed(() => {
     <MpFormDrawer v-model="addonDrawerOpen" title="Add add-on">
       <!-- Direct body children: the drawer shell's gap owns the rhythm. -->
       <template v-if="selectedAddon">
-        <v-icon size="28" color="primary">{{ selectedAddon.icon }}</v-icon>
-        <h3 class="addon-drawer__name">{{ selectedAddon.name }}</h3>
+        <div class="billing-disc">
+          <v-icon size="20">{{ selectedAddon.icon }}</v-icon>
+        </div>
+        <h3 class="mp-section-title">{{ selectedAddon.name }}</h3>
         <p class="addon-drawer__desc">{{ selectedAddon.description }}</p>
         <div class="addon-drawer__price">
           {{ selectedAddon.monthly !== null ? `$${selectedAddon.monthly}` : 'Custom' }}<span v-if="selectedAddon.monthly !== null"> / month</span>
         </div>
       </template>
       <template #footer>
-        <v-btn variant="text" class="text-none" @click="addonDrawerOpen = false">Cancel</v-btn>
-        <v-btn variant="flat" color="primary" class="text-none" @click="confirmPurchase">Confirm purchase</v-btn>
+        <v-btn variant="text" @click="addonDrawerOpen = false">Cancel</v-btn>
+        <v-btn variant="flat" color="primary" @click="confirmPurchase">Confirm purchase</v-btn>
       </template>
     </MpFormDrawer>
 
@@ -573,12 +593,12 @@ const usageRows = computed(() => {
       </MpFormField>
       <v-textarea v-model="cancelComment" label="Anything else? (optional)" rows="3" />
       <p class="cancel-drawer__notice">
-        <v-icon size="14">info</v-icon>
+        <v-icon size="16">info</v-icon>
         You'll keep access until the end of your billing period. Your data is retained for 30 days after.
       </p>
       <template #footer>
-        <v-btn variant="text" class="text-none" @click="cancelDrawerOpen = false">Keep my plan</v-btn>
-        <v-btn variant="flat" color="error" class="text-none" @click="confirmCancel">Cancel subscription</v-btn>
+        <v-btn variant="text" @click="cancelDrawerOpen = false">Keep my plan</v-btn>
+        <v-btn variant="flat" color="error" @click="confirmCancel">Cancel subscription</v-btn>
       </template>
     </MpFormDrawer>
 
@@ -595,44 +615,49 @@ const usageRows = computed(() => {
 </template>
 
 <style scoped lang="scss">
-.billing-view {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.billing-tabs :deep(.v-tab) {
-  letter-spacing: 0;
-  min-width: 0;
-}
-
-.billing-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 20px;
-}
-
 .billing-card {
-  padding: 20px 22px;
+  padding: var(--mp-component-card-padding);
 }
 
 .billing-card__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: var(--mp-space-12);
+  margin-bottom: var(--mp-component-card-gap);
 }
 
-.billing-card__title {
-  font-size: 15px;
-  font-weight: 700;
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.x-strong {
+  font-weight: var(--mp-fontWeight-semibold);
+}
+
+/* Shared row copy for MpListRow bodies, the payment row and usage cards. */
+.billing-row__name {
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--text-primary);
 }
 
-.billing-card__title--danger {
-  color: rgb(var(--v-theme-error));
+.billing-row__meta {
+  font-size: var(--mp-fontSize-12);
+  color: var(--on-surface-muted);
+}
+
+/* Icon disc — the same 40px accent disc the App Directory cards use. */
+.billing-disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--mp-space-40);
+  height: var(--mp-space-40);
+  border-radius: var(--mp-radius-12);
+  background: var(--accent-soft);
+  color: var(--accent-on-container);
 }
 
 /* ─── Plan banner ─────────────────────────────────────────── */
@@ -641,36 +666,34 @@ const usageRows = computed(() => {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
-  padding: 20px 22px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, rgba(var(--v-theme-secondary), 0.85) 100%);
+  gap: var(--mp-space-16);
+  padding: var(--mp-component-card-padding);
+  border-radius: var(--mp-component-card-radius);
+  background: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, rgb(var(--v-theme-secondary)) 100%);
   color: rgb(var(--v-theme-on-primary));
 }
 
 .plan-banner__chip {
-  background: color-mix(in oklch, rgb(var(--v-theme-on-primary)) 18%, transparent) !important;
-  color: rgb(var(--v-theme-on-primary)) !important;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-  margin-bottom: 8px;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  height: var(--mp-component-chip-height-sm);
+  padding-inline: var(--mp-component-chip-paddingInline);
+  border-radius: var(--mp-radius-full);
+  margin-bottom: var(--mp-space-8);
+  background: color-mix(in oklch, rgb(var(--v-theme-on-primary)) 18%, transparent);
+  color: rgb(var(--v-theme-on-primary));
 }
 
 .plan-banner__price {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-28);
+  font-weight: var(--mp-fontWeight-bold);
   line-height: 1;
 }
 
-.plan-banner__cycle {
-  font-size: 14px;
-  font-weight: 500;
-  opacity: 0.85;
-}
-
 .plan-banner__meta {
-  margin-top: 6px;
-  font-size: 12.5px;
+  margin-top: var(--mp-space-6);
+  font-size: var(--mp-fontSize-12);
   color: color-mix(in oklch, rgb(var(--v-theme-on-primary)) 78%, transparent);
 }
 
@@ -678,43 +701,29 @@ const usageRows = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
-}
-
-.plan-banner__cta {
-  color: rgb(var(--v-theme-primary)) !important;
-  font-weight: 600;
-}
-
-.plan-banner__link {
-  color: color-mix(in oklch, rgb(var(--v-theme-on-primary)) 85%, transparent) !important;
+  gap: var(--mp-space-4);
 }
 
 /* ─── Subscriptions ───────────────────────────────────────── */
 .subscription-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
+  gap: var(--mp-space-12);
+}
+
+/* Tonal tile inside the bordered card: tint separates, no second hairline. */
+.subscription-card,
+.usage-card,
+.payment-row {
+  padding: var(--mp-space-14) var(--mp-space-16);
+  border-radius: var(--mp-radius-12);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
 }
 
 .subscription-card {
   display: flex;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--mp-radius-12);
-  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
-}
-
-.subscription-card__icon {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: color-mix(in oklch, rgb(var(--v-theme-primary)) 12%, transparent);
+  gap: var(--mp-space-12);
 }
 
 .subscription-card__body {
@@ -726,232 +735,110 @@ const usageRows = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: var(--mp-space-8);
+  margin-bottom: var(--mp-space-4);
 }
 
 .subscription-card__name {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
 .subscription-card__meta {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: var(--mp-fontSize-12);
+  color: var(--on-surface-muted);
   line-height: 1.6;
 }
 
 .subscription-card__actions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 6px;
-}
-
-/* ─── Products ────────────────────────────────────────────── */
-.product-list,
-.doc-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.product-row,
-.doc-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 2px;
-}
-
-.product-row + .product-row,
-.doc-row + .doc-row {
-  border-top: 1px solid var(--border-subtle);
-}
-
-.product-row__icon,
-.doc-row__icon {
-  color: rgb(var(--v-theme-primary));
-  flex-shrink: 0;
-}
-
-.product-row__copy,
-.doc-row__copy {
-  flex: 1;
-  min-width: 0;
-}
-
-.product-row__name,
-.doc-row__name {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.product-row__tier,
-.doc-row__meta {
-  font-size: 12px;
-  color: var(--muted);
+  gap: var(--mp-space-4);
+  margin-top: var(--mp-space-6);
 }
 
 /* ─── Add-on drawer ───────────────────────────────────────── */
-.addon-drawer__name {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
+.addon-drawer__desc {
+  font-size: var(--mp-fontSize-13);
+  color: var(--on-surface-muted);
   /* The drawer body owns the space between its children. */
   margin: 0;
 }
 
-.addon-drawer__desc {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 0;
-}
-
 .addon-drawer__price {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-20);
+  font-weight: var(--mp-fontWeight-bold);
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .addon-drawer__price span {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--muted);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
+  color: var(--on-surface-muted);
 }
 
 /* ─── Cancel drawer ───────────────────────────────────────── */
 .cancel-drawer__notice {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--mp-space-6);
   /* The drawer body owns the space between its children. */
   margin: 0;
-  font-size: 12px;
-  color: var(--muted);
+  font-size: var(--mp-fontSize-12);
+  color: var(--on-surface-muted);
 }
 
 /* ─── Usage ───────────────────────────────────────────────── */
 .usage-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-.usage-card {
-  padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--mp-radius-12);
-  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
+  gap: var(--mp-space-12);
 }
 
 .usage-card__head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-}
-
-.usage-card__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.usage-card__values {
-  font-size: 12px;
-  color: var(--muted);
+  margin-bottom: var(--mp-space-8);
 }
 
 .usage-card__unlimited {
-  font-size: 12px;
-  color: rgb(var(--v-theme-success));
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
+  color: var(--pos);
 }
 
 /* ─── Company info ────────────────────────────────────────── */
-.info-grid {
-  display: grid;
-  gap: 0;
-  margin: 0;
-}
-
-.info-row {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 16px;
-  padding: 12px 2px;
-}
-
-.info-row + .info-row {
-  border-top: 1px solid var(--border-subtle);
-}
-
-.info-row__label {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.info-row__value {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
+.company-info {
+  grid-template-columns: 1fr;
 }
 
 /* ─── Payment / invoices ──────────────────────────────────── */
 .payment-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--mp-radius-12);
-  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
+  gap: var(--mp-space-16);
 }
 
 .payment-row__copy {
   flex: 1;
 }
 
-.payment-row__title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.payment-row__sub {
-  font-size: 12px;
-  color: var(--muted);
-}
-
 .invoice-table {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--mp-radius-12);
-  overflow: hidden;
-  background: var(--surface-primary);
+  background: transparent;
 }
 
 /* ─── Danger zone ─────────────────────────────────────────── */
-.danger-card {
-  border-color: color-mix(in oklch, rgb(var(--v-theme-error)) 35%, var(--border-subtle)) !important;
-}
-
 .danger-card__copy {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 0 0 16px;
-  max-width: 620px;
+  font-size: var(--mp-fontSize-13);
+  color: var(--on-surface-muted);
+  margin: 0 0 var(--mp-space-16);
+  max-width: var(--mp-component-state-measureWide);
 }
 
-.danger-card__actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-@media (max-width: 640px) {
+@media (max-width: $mp-layout-breakpointCompact) {
   .plan-banner__actions {
     align-items: stretch;
     width: 100%;
@@ -964,11 +851,6 @@ const usageRows = computed(() => {
 
   .payment-row .v-btn {
     width: 100%;
-  }
-
-  .info-row {
-    grid-template-columns: 1fr;
-    gap: 2px;
   }
 }
 </style>

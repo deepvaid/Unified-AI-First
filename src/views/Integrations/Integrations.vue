@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
+import MpEmptyState from '@/components/MpEmptyState.vue'
 
 const search = ref('')
 
@@ -13,6 +15,15 @@ const apps = [
   { name: 'Facebook Ads', category: 'Advertising', connected: true, desc: 'Automatically sync custom audiences and conversion events.' },
   { name: 'Twilio', category: 'SMS', connected: true, desc: 'Enterprise SMS gateway for transactional alerts.' },
 ]
+
+const categoryIcons: Record<string, string> = {
+  Commerce: 'shopping-cart',
+  CRM: 'contact',
+  Automation: 'zap',
+  Productivity: 'calendar',
+  Advertising: 'megaphone',
+  SMS: 'message-square',
+}
 
 const filteredApps = computed(() => {
   if (!search.value) return apps
@@ -39,45 +50,69 @@ const filteredApps = computed(() => {
       />
     </v-card>
 
-    <v-row>
+    <v-row v-if="filteredApps.length">
       <v-col cols="12" sm="6" md="4" v-for="app in filteredApps" :key="app.name">
-        <v-card variant="flat" border rounded="lg" class="h-100 d-flex flex-column pa-2 transition-swing hover-lift">
-          <v-card-text class="d-flex flex-column h-100 pa-6">
-             <div class="d-flex align-center justify-space-between mb-6">
-                 <v-avatar size="56" :color="app.connected ? 'primary-lighten-1' : 'grey-lighten-4'" class="mr-4 text-primary">
-                   <v-icon size="32">{{ app.category === 'Commerce' ? 'shopping-cart' : app.category === 'CRM' ? 'cloud' : 'code-2' }}</v-icon>
-                 </v-avatar>
-                 <v-chip size="small" :color="app.connected ? 'success' : 'grey'" variant="flat" class="font-weight-bold px-3 py-1 text-uppercase text-caption">
-                   <v-icon start size="14" v-if="app.connected">circle-check</v-icon>
-                   {{ app.connected ? 'Active' : 'Unconfigured' }}
-                 </v-chip>
-             </div>
+        <v-card variant="flat" border rounded="lg" class="app-card h-100">
+          <div class="d-flex align-center justify-space-between">
+            <div class="app-card__disc" :class="{ 'app-card__disc--connected': app.connected }">
+              <v-icon size="20">{{ categoryIcons[app.category] ?? 'puzzle' }}</v-icon>
+            </div>
+            <MpStatusChip :status="app.connected ? 'Active' : 'Unconfigured'" size="sm" />
+          </div>
 
-             <h3 class="text-h6 font-weight-bold mb-2">{{ app.name }}</h3>
-             <p class="text-medium-emphasis text-body-2 mb-6 flex-grow-1">{{ app.desc }}</p>
+          <div class="d-flex flex-column ga-1 flex-grow-1">
+            <h3 class="mp-section-title">{{ app.name }}</h3>
+            <p class="text-body-2 text-medium-emphasis mb-0">{{ app.desc }}</p>
+          </div>
 
-             <div class="d-flex align-center justify-space-between mt-auto pt-4 border-t">
-               <span class="text-caption text-medium-emphasis font-weight-bold text-uppercase">{{ app.category }}</span>
-               <v-btn :variant="app.connected ? 'text' : 'tonal'" :color="app.connected ? 'medium-emphasis' : 'primary'" size="small" class="text-none font-weight-bold">
-                 {{ app.connected ? 'Manage App' : 'Connect' }}
-               </v-btn>
-             </div>
-          </v-card-text>
+          <div class="app-card__foot d-flex align-center justify-space-between">
+            <span class="mp-meta-label text-medium-emphasis">{{ app.category }}</span>
+            <v-btn v-if="app.connected" variant="text" size="small">Manage App</v-btn>
+            <v-btn v-else variant="outlined" color="primary" size="small">Connect</v-btn>
+          </div>
         </v-card>
       </v-col>
     </v-row>
+
+    <v-card v-else variant="flat" border rounded="lg">
+      <MpEmptyState
+        icon="search-x"
+        title="No integrations match your search"
+        :description="`Nothing in the directory matches “${search}”.`"
+        action-label="Clear search"
+        action-icon="x"
+        @action="search = ''"
+      />
+    </v-card>
   </div>
 </template>
 
 <style scoped>
-.hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.app-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-component-card-gap);
+  padding: var(--mp-component-card-padding);
 }
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
+
+.app-card__disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mp-space-40);
+  height: var(--mp-space-40);
+  border-radius: var(--mp-radius-12);
+  background: var(--surface-secondary);
+  color: var(--on-surface-muted);
 }
-.border-t {
-  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+
+.app-card__disc--connected {
+  background: var(--accent-soft);
+  color: var(--accent-on-container);
+}
+
+.app-card__foot {
+  padding-top: var(--mp-component-card-gap);
+  border-top: 1px solid var(--border-subtle);
 }
 </style>
