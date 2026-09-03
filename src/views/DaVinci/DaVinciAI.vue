@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpSectionHeader from '@/components/MpSectionHeader.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpUsageMeter from '@/components/MpUsageMeter.vue'
 import DvOrbitOrb from '@/components/copilot/voice/DvOrbitOrb.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
@@ -115,13 +116,13 @@ const metrics = [
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="h-100 d-flex flex-column gap-5">
     <MpPageHeader title="Da Vinci AI" subtitle="Your AI copilot for marketing, commerce, and service" />
 
     <v-tabs
       v-model="activeTab"
       color="primary"
-      class="dv-tabs mb-6"
+      class="dv-tabs"
       slider-color="primary"
     >
       <v-tab value="get-started" class="text-none">Get started</v-tab>
@@ -131,8 +132,7 @@ const metrics = [
           size="x-small"
           color="primary"
           variant="flat"
-          class="ml-2 font-weight-bold"
-          style="height: 18px; font-size: 10px; letter-spacing: 0.04em;"
+          class="ml-2 dv-beta"
         >
           BETA
         </v-chip>
@@ -140,21 +140,21 @@ const metrics = [
     </v-tabs>
 
     <!-- Get started tab -->
-    <section v-if="activeTab === 'get-started'" class="dv-landing">
-      <v-card flat border rounded="lg" class="dv-hero pa-10 mb-6 text-center">
+    <section v-if="activeTab === 'get-started'" class="dv-landing d-flex flex-column ga-6">
+      <v-card flat border rounded="lg" class="dv-hero text-center">
         <div class="dv-hero__brand d-inline-flex align-center justify-center mb-6">
           <DvOrbitOrb class="mr-2" :size="32" />
-          <span class="text-h5 font-weight-bold">Da Vinci AI</span>
+          <span class="mp-section-title">Da Vinci AI</span>
         </div>
-        <h1 class="text-h3 font-weight-bold mb-4 dv-hero__headline">
+        <h2 class="text-h3 font-weight-bold mb-4 dv-hero__headline">
           The complete AI solution<br />that's easy to use.
-        </h1>
-        <p class="text-body-1 text-medium-emphasis mb-0 mx-auto" style="max-width: 640px;">
+        </h2>
+        <p class="text-body-1 text-medium-emphasis mb-0 mx-auto dv-hero__lede">
           Unify your marketing, commerce, and service teams with AI built for merchants — predictive send times, content generation, and intelligent routing, all in one place.
         </p>
       </v-card>
 
-      <v-card v-if="hasDavinciAi" flat border rounded="lg" class="pa-5 mb-6">
+      <v-card v-if="hasDavinciAi" flat border rounded="lg" class="dv-card">
         <MpUsageMeter
           label="Da Vinci AI tokens"
           icon="sparkles"
@@ -163,13 +163,13 @@ const metrics = [
           :hint="aiTokenHint"
         />
       </v-card>
-      <v-card v-else flat border rounded="lg" class="pa-5 mb-6 d-flex align-center justify-space-between flex-wrap ga-3">
+      <v-card v-else flat border rounded="lg" class="dv-card d-flex align-center justify-space-between flex-wrap ga-3">
         <div class="d-flex align-center ga-3">
-          <v-icon size="20" class="text-medium-emphasis">sparkles</v-icon>
+          <v-icon size="18" class="text-medium-emphasis">sparkles</v-icon>
           <div>
-            <div class="text-subtitle-2 font-weight-bold mb-1">Da Vinci AI tokens</div>
+            <div class="dv-card-title mb-1">Da Vinci AI tokens</div>
             <v-chip size="small" variant="flat">
-              <v-icon start size="12">crown</v-icon>
+              <v-icon start size="16">crown</v-icon>
               Not included
             </v-chip>
           </div>
@@ -185,13 +185,13 @@ const metrics = [
           <v-card flat border rounded="lg" class="h-100 d-flex flex-column">
             <div class="dv-feature-media d-flex align-center justify-center" :class="`dv-feature-media--${f.tone}`">
               <div class="dv-feature-play">
-                <v-icon size="22" color="primary">play</v-icon>
+                <v-icon size="20" color="primary">play</v-icon>
               </div>
             </div>
-            <div class="pa-5 d-flex flex-column flex-grow-1">
+            <div class="dv-card d-flex flex-column flex-grow-1">
               <div class="d-flex align-center mb-3">
-                <v-icon size="20" color="primary" class="mr-2">{{ f.icon }}</v-icon>
-                <div class="text-subtitle-1 font-weight-bold">{{ f.title }}</div>
+                <v-icon size="18" color="primary" class="mr-2">{{ f.icon }}</v-icon>
+                <h3 class="mp-section-title">{{ f.title }}</h3>
               </div>
               <p class="text-body-2 text-medium-emphasis mb-0">{{ f.description }}</p>
             </div>
@@ -199,29 +199,29 @@ const metrics = [
         </v-col>
       </v-row>
 
-      <MpSectionHeader title="What's included in your account" class="mt-8 mb-4" />
+      <MpSectionHeader title="What's included in your account" />
       <v-row>
         <v-col v-for="s in includedSurfaces" :key="s.key" cols="12" sm="6" md="3">
           <v-card
             flat
             border
             rounded="lg"
-            class="dv-included-card h-100 pa-5 d-flex flex-column"
+            class="dv-card dv-included-card h-100 d-flex flex-column"
             :class="{ 'dv-included-card--locked': !s.included }"
             :to="s.included ? s.to : undefined"
           >
             <div class="d-flex align-center justify-space-between mb-3">
-              <v-icon size="20" :color="s.included ? 'primary' : undefined" class="text-medium-emphasis">{{ s.icon }}</v-icon>
+              <v-icon size="18" :color="s.included ? 'primary' : undefined" class="text-medium-emphasis">{{ s.icon }}</v-icon>
               <v-chip
                 size="small"
                 :color="s.included ? 'success' : undefined"
                 :variant="s.included ? 'tonal' : 'flat'"
               >
-                <v-icon v-if="!s.included" start size="12">crown</v-icon>
+                <v-icon v-if="!s.included" start size="16">crown</v-icon>
                 {{ s.included ? 'Included' : 'Not included' }}
               </v-chip>
             </div>
-            <div class="text-subtitle-2 font-weight-bold mb-1">{{ s.title }}</div>
+            <div class="dv-card-title mb-1">{{ s.title }}</div>
             <p class="text-body-2 text-medium-emphasis mb-0 flex-grow-1">{{ s.description }}</p>
             <div v-if="!s.included" class="d-flex align-center gap-2 mt-3">
               <v-btn
@@ -251,13 +251,7 @@ const metrics = [
     <section v-else-if="activeTab === 'dashboard'">
       <v-row>
         <v-col v-for="m in metrics" :key="m.label" cols="12" md="4">
-          <v-card flat border rounded="lg" class="pa-5">
-            <div class="d-flex align-center justify-space-between mb-2">
-              <div class="text-caption text-medium-emphasis font-weight-bold text-uppercase">{{ m.label }}</div>
-              <v-icon :color="m.color" size="20">{{ m.icon }}</v-icon>
-            </div>
-            <div class="text-h4 font-weight-bold" :class="`text-${m.color}`">{{ m.value }}</div>
-          </v-card>
+          <MpKpiCard :label="m.label" :value="m.value" :icon="m.icon" :color="m.color" />
         </v-col>
       </v-row>
     </section>
@@ -266,7 +260,25 @@ const metrics = [
 
 <style scoped>
 .dv-tabs {
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dv-beta {
+  height: var(--mp-component-chip-height-sm);
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
+  letter-spacing: var(--mp-letterSpacing-wide);
+}
+
+/* Card root insets come from component.card.* (recipe B1), never a pa-* utility. */
+.dv-card {
+  padding: var(--mp-component-card-padding);
+}
+
+.dv-card-title {
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
+  line-height: var(--mp-lineHeight-snug);
 }
 
 /* Light lavender→blue→cyan pastel — intentional Da Vinci feature-gradient brand
@@ -274,8 +286,8 @@ const metrics = [
    1:1, so recoloring via the core semantic palette would shift the hue instead
    of just centralizing it. Not covered by AUD-L02/the core semantic palette. */
 .dv-hero {
+  padding: var(--mp-component-card-paddingSpacious);
   background: linear-gradient(135deg, #ede9fe 0%, #dbeafe 50%, #cffafe 100%);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 
 /* The light lavender gradient is brand art with no dark equivalent — swap in
@@ -291,14 +303,18 @@ const metrics = [
 }
 
 .dv-hero__headline {
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: var(--mp-lineHeight-tight);
+  letter-spacing: var(--mp-letterSpacing-tight);
+}
+
+.dv-hero__lede {
+  max-width: var(--mp-component-state-measureWide);
 }
 
 .dv-feature-media {
   aspect-ratio: 16 / 9;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
+  border-top-left-radius: var(--mp-component-card-radius);
+  border-top-right-radius: var(--mp-component-card-radius);
   position: relative;
   overflow: hidden;
 }
@@ -322,14 +338,14 @@ const metrics = [
 }
 
 .dv-feature-play {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
+  width: var(--mp-space-48);
+  height: var(--mp-space-48);
+  border-radius: var(--mp-radius-full);
+  background: var(--surface-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--mp-shadow-sm);
 }
 
 /* Dark mode: the near-white circle leaves the bright cyan primary glyph at
