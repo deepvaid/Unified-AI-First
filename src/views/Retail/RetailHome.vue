@@ -6,6 +6,7 @@ import { useCommerceStore } from '@/stores/useCommerce'
 import { formatAgo } from '@/composables/useRelativeTime'
 import { useToast } from '@/composables/useToast'
 import MpKpiCard from '@/components/MpKpiCard.vue'
+import MpPageHeader from '@/components/MpPageHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -142,35 +143,23 @@ function statusIcon(status: string): string {
 
 <template>
   <div class="h-100 d-flex flex-column gap-5">
-    <!-- The rail owns location scope; this header just names the workspace. -->
-    <div class="retail-header">
-      <div class="retail-header__row">
-        <div class="retail-header__titles">
-          <div class="retail-header__title-line">
-            <h1 class="retail-header__title text-h5 font-weight-bold">Retail</h1>
-            <v-icon size="18" class="retail-header__sep">chevron-right</v-icon>
-            <span class="retail-header__scope">
-              <v-icon size="16" class="me-2">{{ store.isAllLocations ? 'store' : 'map-pin' }}</v-icon>
-              {{ store.isAllLocations ? 'All locations' : store.activeLocation.name }}
-            </span>
-          </div>
-          <div class="retail-header__subtitle text-body-2 text-medium-emphasis">
-            In-store POS · {{ store.kpis.registersOnline }} of {{ store.kpis.registersTotal }} registers online
-          </div>
-        </div>
-        <div class="retail-header__actions">
-          <v-btn
-            variant="flat"
-            color="primary"
-            class="text-none"
-            prepend-icon="tablet-smartphone"
-            @click="go('/pos-preview')"
-          >
-            Launch POS
-          </v-btn>
-        </div>
-      </div>
-    </div>
+    <!-- The rail owns location scope; the header names the workspace and restates the scope. -->
+    <MpPageHeader
+      title="Retail"
+      :subtitle="`${store.isAllLocations ? 'All locations' : store.activeLocation.name} · In-store POS · ${store.kpis.registersOnline} of ${store.kpis.registersTotal} registers online`"
+    >
+      <template #actions>
+        <v-btn
+          variant="flat"
+          color="primary"
+          class="text-none"
+          prepend-icon="tablet-smartphone"
+          @click="go('/pos-preview')"
+        >
+          Launch POS
+        </v-btn>
+      </template>
+    </MpPageHeader>
 
     <!-- KPI row -->
     <v-row dense>
@@ -282,7 +271,7 @@ function statusIcon(status: string): string {
               >{{ todo.title }}</v-list-item-title>
               <v-list-item-subtitle class="retail-list-sub">{{ todo.desc }}</v-list-item-subtitle>
               <template #append>
-                <v-icon size="14" class="text-medium-emphasis">chevron-right</v-icon>
+                <v-icon size="16" class="text-medium-emphasis">chevron-right</v-icon>
               </template>
             </v-list-item>
           </v-list>
@@ -310,7 +299,7 @@ function statusIcon(status: string): string {
             >
               <template #prepend>
                 <div class="retail-row-icon" :class="{ 'retail-row-icon--success': txn.status === 'Completed', 'retail-row-icon--warning': txn.paymentStatus === 'Refunded' || txn.paymentStatus === 'Partially Refunded' }">
-                  <v-icon size="14">{{ statusIcon(txn.status) }}</v-icon>
+                  <v-icon size="16">{{ statusIcon(txn.status) }}</v-icon>
                 </div>
               </template>
               <v-list-item-title class="retail-list-title d-flex align-center ga-2">
@@ -321,8 +310,8 @@ function statusIcon(status: string): string {
                 {{ store.locationName(txn.pos?.locationId ?? '') }} · {{ store.registerName(txn.pos?.registerId ?? '') }} · {{ store.staffName(txn.pos?.staffId ?? '') }} · {{ formatAgo(txn.date) }}
               </v-list-item-subtitle>
               <template #append>
-                <div class="d-flex flex-column align-end" style="gap: 2px;">
-                  <span class="font-weight-bold" :class="parseFloat(txn.total) < 0 ? 'text-error' : ''" style="color: var(--text-primary); font-size: 13px;">
+                <div class="retail-txn-amount d-flex flex-column align-end">
+                  <span class="retail-txn-amount__value" :class="{ 'text-error': parseFloat(txn.total) < 0 }">
                     {{ fmtMoney(parseFloat(txn.total)) }}
                   </span>
                   <span class="text-caption text-medium-emphasis">{{ txn.paymentMethod }}</span>
@@ -351,7 +340,7 @@ function statusIcon(status: string): string {
             >
               <template #prepend>
                 <div class="retail-row-icon">
-                  <v-icon size="14">{{ reg.deviceType.startsWith('iPad') || reg.deviceType.includes('Tablet') ? 'tablet' : 'smartphone' }}</v-icon>
+                  <v-icon size="16">{{ reg.deviceType.startsWith('iPad') || reg.deviceType.includes('Tablet') ? 'tablet' : 'smartphone' }}</v-icon>
                 </div>
               </template>
               <v-list-item-title class="retail-list-title">
@@ -376,63 +365,19 @@ function statusIcon(status: string): string {
 <style scoped lang="scss">
 .retail-sparkline {
   width: 100%;
-  height: 48px;
+  height: var(--mp-space-48);
   overflow: visible;
   color: var(--cloud-retail-accent);
 }
 
-.retail-header {
-  margin-bottom: 8px;
+.retail-txn-amount {
+  gap: var(--mp-space-2);
 }
 
-.retail-header__row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+.retail-txn-amount__value {
+  font-size: var(--mp-text-label-fontSize);
+  font-weight: var(--mp-fontWeight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface);
 }
-
-.retail-header__titles {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.retail-header__title-line {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.retail-header__title {
-  line-height: 1.2;
-  color: rgb(var(--v-theme-on-surface));
-  margin: 0;
-}
-
-.retail-header__sep {
-  color: rgba(var(--v-theme-on-surface), 0.3);
-}
-
-.retail-header__scope {
-  display: inline-flex;
-  align-items: center;
-  font-size: 1.05rem;
-  font-weight: 600;
-  line-height: 1.2;
-  color: rgb(var(--v-theme-primary));
-}
-
-.retail-header__subtitle {
-  margin-top: 4px;
-  line-height: 1.4;
-}
-
-.retail-header__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
 </style>

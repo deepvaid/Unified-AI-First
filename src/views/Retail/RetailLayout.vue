@@ -17,8 +17,11 @@ const accountId = computed(() => String(route.params.accountId ?? '2000290'))
 </template>
 
 <style scoped lang="scss">
+/* Mirrors SettingsLayout: the shell eats .mp-main-shell's inset (32/36, 28, 22) and
+   restates it as the content pane's padding. 52px is the shared frame constant
+   (see .mp-frame-fill in global.scss). */
 .retail-shell {
-  margin: -32px -36px;
+  margin: calc(var(--mp-space-32) * -1) calc(var(--mp-space-32) * -1 - var(--mp-space-4));
   min-height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
   overflow: hidden;
   align-items: stretch;
@@ -29,12 +32,12 @@ const accountId = computed(() => String(route.params.accountId ?? '2000290'))
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 24px 36px 32px 32px;
+  padding: var(--mp-space-24) calc(var(--mp-space-32) + var(--mp-space-4)) var(--mp-space-32) var(--mp-space-32);
 }
 
 @media (max-width: 1024px) {
-  .retail-shell { margin: -28px; }
-  .retail-shell__content { padding: 20px 28px 28px; }
+  .retail-shell { margin: calc(var(--mp-space-28) * -1); }
+  .retail-shell__content { padding: var(--mp-space-20) var(--mp-space-28) var(--mp-space-28); }
 }
 
 @media (max-width: 900px) {
@@ -43,7 +46,7 @@ const accountId = computed(() => String(route.params.accountId ?? '2000290'))
 }
 
 @media (max-width: 640px) {
-  .retail-shell { margin: -22px; }
-  .retail-shell__content { padding: 16px 22px 22px; }
+  .retail-shell { margin: calc(var(--mp-space-24) * -1 + var(--mp-space-2)); }
+  .retail-shell__content { padding: var(--mp-space-16) calc(var(--mp-space-24) - var(--mp-space-2)) calc(var(--mp-space-24) - var(--mp-space-2)); }
 }
 </style>
