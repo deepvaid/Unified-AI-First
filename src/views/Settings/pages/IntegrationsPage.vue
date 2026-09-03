@@ -5,7 +5,7 @@ import SettingsSection from '@/components/settings/SettingsSection.vue'
 
 const integrations = [
   { name: 'Shopify',          icon: 'shopping-bag', color: 'success',   connected: true,  desc: 'Sync orders, products & customers' },
-  { name: 'WooCommerce',      icon: 'code-2',        color: 'purple',    connected: false, desc: 'Connect your WooCommerce store' },
+  { name: 'WooCommerce',      icon: 'code-2',        color: 'secondary', connected: false, desc: 'Connect your WooCommerce store' },
   { name: 'Stripe',           icon: 'credit-card',  color: 'primary',   connected: true,  desc: 'Payment and subscription data sync' },
   { name: 'Zapier',           icon: 'zap',          color: 'warning',   connected: false, desc: '5000+ app integrations' },
   { name: 'Google Analytics', icon: 'globe',        color: 'error',     connected: true,  desc: 'Campaign performance tracking' },
@@ -27,14 +27,16 @@ const integrations = [
       <div class="integration-grid">
         <div v-for="intg in integrations" :key="intg.name" class="integration-card">
           <div class="integration-card__header">
-            <v-icon :color="intg.color" size="26">{{ intg.icon }}</v-icon>
+            <v-icon :color="intg.color" size="20">{{ intg.icon }}</v-icon>
             <MpStatusChip :status="intg.connected ? 'Connected' : 'Disconnected'" type="connection" size="sm" />
           </div>
           <div class="integration-card__name">{{ intg.name }}</div>
           <div class="integration-card__desc">{{ intg.desc }}</div>
+          <!-- Nine equal tiles: none is the page's primary action, so every tile
+               action is outlined; the destructive one keeps the error colour. -->
           <v-btn
-            :color="intg.connected ? 'error' : 'primary'"
-            :variant="intg.connected ? 'outlined' : 'flat'"
+            :color="intg.connected ? 'error' : undefined"
+            variant="outlined"
             size="small"
             block
             class="text-none integration-card__cta"
@@ -48,42 +50,43 @@ const integrations = [
 </template>
 
 <style scoped lang="scss">
-
 .integration-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
+  gap: var(--mp-component-card-gap);
 }
 
+/* Nested tile: hairline on the plain surface (no tint — a border or a fill, never both). */
 .integration-card {
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: var(--mp-space-16);
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
+  border-radius: var(--mp-radius-12);
+  background: var(--surface-primary);
+  color: var(--on-surface);
 }
 
 .integration-card__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: var(--mp-space-8);
 }
 
 .integration-card__name {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: var(--mp-space-4);
 }
 
 .integration-card__desc {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
-  line-height: 1.4;
+  line-height: var(--mp-lineHeight-compact);
   flex: 1;
-  margin-bottom: 12px;
+  margin-bottom: var(--mp-space-12);
 }
 
 .integration-card__cta {
