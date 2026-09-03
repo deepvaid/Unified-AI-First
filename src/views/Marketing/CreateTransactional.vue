@@ -125,7 +125,7 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
           <v-card flat border rounded="lg" class="pa-6">
             <div class="d-flex align-center ga-2 mb-4">
               <v-icon size="18" class="text-medium-emphasis">info</v-icon>
-              <span class="text-subtitle-2 font-weight-bold">Details</span>
+              <span class="mp-section-title">Details</span>
             </div>
             <MpFormGrid>
               <v-text-field
@@ -155,7 +155,7 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
           <v-card flat border rounded="lg" class="pa-6">
             <div class="d-flex align-center ga-2 mb-4">
               <v-icon size="18" class="text-medium-emphasis">user</v-icon>
-              <span class="text-subtitle-2 font-weight-bold">Sender</span>
+              <span class="mp-section-title">Sender</span>
             </div>
             <MpFormGrid :cols="2">
               <v-text-field v-model="fromName" label="From name" />
@@ -168,7 +168,7 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
           <v-card flat border rounded="lg" class="pa-6">
             <div class="d-flex align-center ga-2 mb-4">
               <v-icon size="18" class="text-medium-emphasis">file-text</v-icon>
-              <span class="text-subtitle-2 font-weight-bold">Content</span>
+              <span class="mp-section-title">Content</span>
             </div>
             <MpFormGrid :cols="2">
               <v-select
@@ -242,7 +242,7 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
 .cte-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 24px;
+  gap: var(--mp-space-24);
   max-width: 1040px;
   align-items: start;
 }
@@ -251,28 +251,27 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
   .cte-preview { display: none; }
 }
 .cte-preview__sticky { position: sticky; top: 0; }
-.page-head { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.page-head :deep(.mp-page-header) { margin-bottom: 0; }
-.page-foot { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+.page-head { border-bottom: 1px solid var(--border-subtle); }
+.page-foot { border-top: 1px solid var(--border-subtle); }
 
 /* Inbox preview */
 .mail {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 14px 14px 20px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-14) var(--mp-space-14) var(--mp-space-14) var(--mp-space-20);
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
 }
 .mail__unread {
   position: absolute;
-  left: 8px;
-  top: 20px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  left: var(--mp-space-8);
+  top: var(--mp-space-20);
+  width: var(--mp-space-6);
+  height: var(--mp-space-6);
+  border-radius: var(--mp-radius-full);
   background: rgb(var(--v-theme-primary));
 }
 .mail__avatar {
@@ -283,31 +282,31 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional Ema
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(var(--v-theme-primary), 0.12);
-  color: rgb(var(--v-theme-primary));
-  font-weight: 700;
+  background: var(--accent-soft);
+  color: var(--accent-on-container);
+  font-weight: var(--mp-fontWeight-bold);
   font-size: 0.875rem;
 }
 .mail__body { min-width: 0; flex: 1 1 auto; }
-.mail__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.mail__from { font-weight: 700; font-size: 0.8125rem; }
-.mail__time { font-size: 0.6875rem; color: rgba(var(--v-theme-on-surface), 0.5); flex-shrink: 0; }
-.mail__subject { font-size: 0.8125rem; font-weight: 600; margin-top: 1px; }
-.mail__preview { font-size: 0.75rem; color: rgba(var(--v-theme-on-surface), 0.55); margin-top: 1px; }
+.mail__top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--mp-space-8); }
+.mail__from { font-weight: var(--mp-fontWeight-bold); font-size: var(--mp-fontSize-13); }
+.mail__time { font-size: var(--mp-fontSize-11); color: var(--on-surface-muted); flex-shrink: 0; }
+.mail__subject { font-size: var(--mp-fontSize-13); font-weight: var(--mp-fontWeight-semibold); margin-top: 1px; }
+.mail__preview { font-size: var(--mp-fontSize-12); color: var(--on-surface-muted); margin-top: 1px; }
 
 .mailopen {
-  margin-top: 12px;
-  padding: 16px;
+  margin-top: var(--mp-space-12);
+  padding: var(--mp-space-16);
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--mp-border-subtle);
-  border-radius: 12px;
+  border-radius: var(--mp-radius-12);
 }
-.mailopen__subject { font-size: 0.9375rem; font-weight: 700; line-height: 1.3; }
-.mailopen__meta { font-size: 0.6875rem; color: rgba(var(--v-theme-on-surface), 0.55); margin-top: 4px; margin-bottom: 14px; }
-.mailopen__body { display: flex; flex-direction: column; gap: 8px; }
+.mailopen__subject { font-size: var(--mp-fontSize-15); font-weight: var(--mp-fontWeight-bold); line-height: 1.3; }
+.mailopen__meta { font-size: var(--mp-fontSize-11); color: var(--on-surface-muted); margin-top: var(--mp-space-4); margin-bottom: var(--mp-space-14); }
+.mailopen__body { display: flex; flex-direction: column; gap: var(--mp-space-8); }
 .mailopen__body span {
-  height: 8px;
-  border-radius: 4px;
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-4);
   background: rgba(var(--v-theme-on-surface), 0.08);
   display: block;
 }
