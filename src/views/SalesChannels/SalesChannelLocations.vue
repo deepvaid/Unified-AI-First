@@ -7,6 +7,9 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpAlert from '@/components/MpAlert.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import { useRetailStore, type RetailLocation } from '@/stores/useRetail'
 import {
   CHANNEL_STATUS_LABELS,
@@ -96,13 +99,14 @@ const roleOptions = computed(() =>
 
 const tableHeaders = [
   { title: 'Location', key: 'name', sortable: true },
-  { title: 'Roles', key: 'roles', sortable: false, width: 240 },
-  { title: 'Registers', key: 'registers', sortable: true, width: 150 },
-  { title: 'Staff', key: 'staff', sortable: true, width: 150 },
-  { title: 'Today', key: 'todaysSales', sortable: true, width: 140 },
+  { title: 'Roles', key: 'roles', sortable: false, width: 240, hideBelow: 'lg' as const },
+  { title: 'Registers', key: 'registers', sortable: true, width: 150, hideBelow: 'md' as const },
+  { title: 'Staff', key: 'staff', sortable: true, width: 150, hideBelow: 'md' as const },
+  { title: 'Today', key: 'todaysSales', sortable: true, width: 140, hideBelow: 'sm' as const },
   { title: 'Status', key: 'status', sortable: true, width: 120 },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end' as const, width: 96 },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(tableHeaders)
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
@@ -162,36 +166,29 @@ function linkLocation() {
 
       <v-row>
         <v-col cols="12" md="4">
-          <v-card flat border rounded="lg">
-            <v-card-text>
-              <div class="text-caption text-medium-emphasis">Offline Store</div>
-              <div class="text-h6 font-weight-bold">{{ channel.name }}</div>
-              <div class="mt-3">
-                <MpStatusChip :status="CHANNEL_STATUS_LABELS[channel.status]" type="general" size="sm" />
-              </div>
-            </v-card-text>
-          </v-card>
+          <MpKpiCard
+            label="Offline Store"
+            :value="channel.name"
+            icon="store"
+            color="retail"
+            :sub-stat="CHANNEL_STATUS_LABELS[channel.status]"
+          />
         </v-col>
         <v-col cols="12" md="4">
-          <v-card flat border rounded="lg">
-            <v-card-text>
-              <div class="text-caption text-medium-emphasis">Linked locations</div>
-              <div class="text-h6 font-weight-bold">{{ locationRows.length }}</div>
-              <div class="text-caption text-medium-emphasis mt-2">Owned by this Offline Store channel.</div>
-            </v-card-text>
-          </v-card>
+          <MpKpiCard
+            label="Linked locations"
+            :value="locationRows.length"
+            icon="map-pin"
+            sub-stat="Owned by this Offline Store channel."
+          />
         </v-col>
         <v-col cols="12" md="4">
-          <v-card flat border rounded="lg">
-            <v-card-text>
-              <div class="text-caption text-medium-emphasis">Online registers</div>
-              <div class="text-h6 font-weight-bold">
-                {{ locationRows.reduce((sum, location) => sum + location.onlineRegisters, 0) }}
-                / {{ locationRows.reduce((sum, location) => sum + location.registers, 0) }}
-              </div>
-              <div class="text-caption text-medium-emphasis mt-2">Current Retail Cloud register health.</div>
-            </v-card-text>
-          </v-card>
+          <MpKpiCard
+            label="Online registers"
+            :value="`${locationRows.reduce((sum, location) => sum + location.onlineRegisters, 0)} / ${locationRows.reduce((sum, location) => sum + location.registers, 0)}`"
+            icon="monitor"
+            sub-stat="Current Retail Cloud register health."
+          />
         </v-col>
       </v-row>
 
@@ -204,7 +201,7 @@ function linkLocation() {
         />
 
         <v-data-table
-          :headers="tableHeaders"
+          :headers="visibleHeaders"
           :items="filteredLocations"
           item-value="id"
           hover
@@ -213,7 +210,7 @@ function linkLocation() {
           @click:row="(_event: Event, { item }: { item: LocationRow }) => openLocation(item)"
         >
           <template #item.name="{ item }">
-            <div class="min-width-0 py-2">
+            <div class="min-width-0">
               <div class="text-body-2 font-weight-bold">{{ item.name }}</div>
               <div class="text-caption text-medium-emphasis text-truncate">{{ item.address }}</div>
             </div>
@@ -239,12 +236,15 @@ function linkLocation() {
 
           <template #item.actions="{ item }">
             <v-btn
-              icon="chevron-right"
+              icon
               variant="text"
               size="small"
               :aria-label="`Open ${item.name}`"
               @click.stop="openLocation(item)"
-            />
+            >
+              <v-icon>chevron-right</v-icon>
+              <v-tooltip activator="parent" location="top">Open location</v-tooltip>
+            </v-btn>
           </template>
 
           <template #no-data>
@@ -265,9 +265,9 @@ function linkLocation() {
         title="Link location"
         subtitle="Add an existing physical location to this Offline Store channel."
       >
-        <v-alert v-if="availableLocationOptions.length === 0" type="info" variant="tonal" density="comfortable">
+        <MpAlert v-if="availableLocationOptions.length === 0" tone="info" live="off">
           Every available Retail Cloud location is already linked to this Offline Store channel.
-        </v-alert>
+        </MpAlert>
 
         <template v-else>
           <MpFormGrid>
@@ -286,9 +286,9 @@ function linkLocation() {
             />
           </MpFormGrid>
 
-          <v-alert type="info" variant="tonal" density="compact">
+          <MpAlert tone="info" live="off">
             In v1, a physical location belongs to one Offline Store channel. Registers stay managed from Location Detail.
-          </v-alert>
+          </MpAlert>
         </template>
 
         <template #footer>
