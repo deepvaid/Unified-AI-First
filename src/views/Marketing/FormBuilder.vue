@@ -8,6 +8,8 @@ import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useToast } from '@/composables/useToast'
 import {
@@ -166,6 +168,24 @@ const positionStyle = computed(() => {
 
 // ─── Step 5: Finished (review + embed script) ────────────────────────────────────────────
 const reviewTab = ref<'details' | 'preview'>('details')
+const PREVIEW_DEVICE_ITEMS = [
+  { value: 'desktop', label: 'Desktop', icon: 'monitor', tooltip: 'Desktop' },
+  { value: 'mobile', label: 'Mobile', icon: 'smartphone', tooltip: 'Mobile' },
+  { value: 'fullscreen', label: 'Fullscreen', icon: 'maximize', tooltip: 'Fullscreen' },
+]
+const CONTENT_TAB_ITEMS = [
+  { value: 'main', label: 'Main Form' },
+  { value: 'thankyou', label: 'Thank You' },
+]
+const REVIEW_TAB_ITEMS = [
+  { value: 'details', label: 'Details' },
+  { value: 'preview', label: 'Preview' },
+]
+const ALIGN_ITEMS = [
+  { value: 'left', label: 'Align left', icon: 'align-left', tooltip: 'Align left' },
+  { value: 'center', label: 'Align center', icon: 'align-center', tooltip: 'Align center' },
+  { value: 'right', label: 'Align right', icon: 'align-right', tooltip: 'Align right' },
+]
 const embedId = computed(() => persistedId.value ?? 'draft')
 // Same helper the list's Show script link dialog uses, so the two never drift.
 const embedScript = computed(() =>
@@ -599,11 +619,13 @@ function publishForm() {
         <!-- Live device preview -->
         <div class="flex-grow-1 bg-background d-flex flex-column align-center overflow-auto pa-6">
           <div class="d-flex align-center gap-2 mb-4">
-            <v-btn-toggle v-model="previewDevice" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
-              <v-btn value="desktop" class="text-none" size="small" prepend-icon="monitor">Desktop</v-btn>
-              <v-btn value="mobile" class="text-none" size="small" prepend-icon="smartphone">Mobile</v-btn>
-              <v-btn value="fullscreen" class="text-none" size="small" prepend-icon="maximize">Fullscreen</v-btn>
-            </v-btn-toggle>
+            <MpSegmentedControl
+              :model-value="previewDevice"
+              :items="PREVIEW_DEVICE_ITEMS"
+              size="sm"
+              ariaLabel="Preview device"
+              @update:model-value="v => previewDevice = v as typeof previewDevice"
+            />
           </div>
 
           <div class="fb-device" :style="{ width: previewDevice === 'mobile' ? '375px' : previewDevice === 'fullscreen' ? '960px' : '780px' }">
@@ -648,7 +670,7 @@ function publishForm() {
         <div class="d-flex flex-grow-1 overflow-hidden fb__split">
           <!-- palette -->
           <aside class="fb-palette pa-3">
-            <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2 px-1">Blocks</div>
+            <div class="mp-meta-label text-medium-emphasis mb-2 px-1">Blocks</div>
             <button v-for="p in FORM_PALETTE" :key="p.type" type="button" class="fb-palette__item d-flex align-center ga-2" @click="addContentBlock(p.type)">
               <v-icon size="18">{{ p.icon }}</v-icon>
               <span class="text-body-2">{{ p.label }}</span>
@@ -658,10 +680,14 @@ function publishForm() {
 
           <!-- canvas -->
           <main class="fb-canvas flex-grow-1 pa-6 d-flex flex-column align-center overflow-y-auto">
-            <v-btn-toggle v-model="contentTab" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
-              <v-btn value="main" class="text-none" size="small">Main Form</v-btn>
-              <v-btn value="thankyou" class="text-none" size="small">Thank You</v-btn>
-            </v-btn-toggle>
+            <MpSegmentedControl
+              :model-value="contentTab"
+              :items="CONTENT_TAB_ITEMS"
+              size="sm"
+              ariaLabel="Form page"
+              class="mb-4"
+              @update:model-value="v => contentTab = v as typeof contentTab"
+            />
 
             <div class="fb-doc">
               <div v-if="activeBlocks.length === 0" class="fb-doc__empty text-center pa-8">
@@ -683,7 +709,7 @@ function publishForm() {
                 </div>
                 <v-tooltip v-else text="Required block" location="left">
                   <template #activator="{ props }">
-                    <v-icon v-bind="props" size="14" class="fb-doc-block__lock">lock</v-icon>
+                    <v-icon v-bind="props" size="16" class="fb-doc-block__lock">lock</v-icon>
                   </template>
                 </v-tooltip>
 
@@ -737,11 +763,13 @@ function publishForm() {
 
                 <MpFormField v-if="['title', 'paragraph', 'text', 'social', 'icons'].includes(selectedBlock.type)" label="Alignment">
                   <div>
-                    <v-btn-toggle v-model="selectedBlock.align" mandatory>
-                      <v-btn value="left" icon="align-left" size="small" aria-label="Align left" />
-                      <v-btn value="center" icon="align-center" size="small" aria-label="Align center" />
-                      <v-btn value="right" icon="align-right" size="small" aria-label="Align right" />
-                    </v-btn-toggle>
+                    <MpSegmentedControl
+                      :model-value="selectedBlock.align"
+                      :items="ALIGN_ITEMS"
+                      size="sm"
+                      ariaLabel="Alignment"
+                      @update:model-value="v => { if (selectedBlock) selectedBlock.align = v as FormBlock['align'] }"
+                    />
                   </div>
                 </MpFormField>
 
@@ -763,21 +791,25 @@ function publishForm() {
       <!-- STEP 5: Finished — review, embed script, publish -->
       <div v-else class="fb__scroll d-flex justify-center pt-8 pa-4">
         <div style="max-width:680px;width:100%;">
-          <v-btn-toggle v-model="reviewTab" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented mb-4">
-            <v-btn value="details" class="text-none" size="small">Details</v-btn>
-            <v-btn value="preview" class="text-none" size="small">Preview</v-btn>
-          </v-btn-toggle>
+          <MpSegmentedControl
+            :model-value="reviewTab"
+            :items="REVIEW_TAB_ITEMS"
+            size="sm"
+            ariaLabel="Review view"
+            class="mb-4"
+            @update:model-value="v => reviewTab = v as typeof reviewTab"
+          />
 
           <template v-if="reviewTab === 'details'">
-            <v-alert v-if="!domains.length" type="warning" variant="tonal" density="comfortable" class="mb-3" rounded="lg">
+            <MpAlert v-if="!domains.length" tone="warning" class="mb-3">
               No domains configured. Add at least one domain in Setup so the form can load on your site.
-            </v-alert>
-            <v-alert v-if="!selectedListIds.length" type="warning" variant="tonal" density="comfortable" class="mb-3" rounded="lg">
+            </MpAlert>
+            <MpAlert v-if="!selectedListIds.length" tone="warning" class="mb-3">
               No subscription lists selected. Subscribers won’t be added to a list until you choose one in Setup.
-            </v-alert>
+            </MpAlert>
 
             <v-card variant="flat" border rounded="lg" class="pa-8 mb-4">
-              <div class="text-h6 font-weight-bold mb-4">Form Details</div>
+              <h2 class="mp-section-title mb-4">Form Details</h2>
               <MpFormGrid>
                 <v-text-field v-model="formName" label="Name" />
                 <v-list density="compact" class="pa-0">
@@ -792,7 +824,7 @@ function publishForm() {
             </v-card>
 
             <v-card variant="flat" border rounded="lg" class="pa-8 mb-4">
-              <div class="text-h6 font-weight-bold mb-1">Website Embed</div>
+              <h2 class="mp-section-title mb-1">Website Embed</h2>
               <div class="text-body-2 text-medium-emphasis mb-3">Paste this snippet before the closing <code>&lt;/body&gt;</code> tag.</div>
               <MpFormGrid>
                 <v-textarea :model-value="embedScript" label="Embed script" readonly rows="2" class="fb-mono mp-field-readonly" />
@@ -801,7 +833,7 @@ function publishForm() {
             </v-card>
 
             <v-card variant="flat" border rounded="lg" class="pa-8">
-              <div class="text-h6 font-weight-bold mb-1">Manual Integration</div>
+              <h2 class="mp-section-title mb-1">Manual Integration</h2>
               <div class="text-body-2 text-medium-emphasis mb-3">For custom placement inside your page markup.</div>
               <MpFormGrid>
                 <v-textarea :model-value="manualScript" label="Manual snippet" readonly rows="4" class="fb-mono mp-field-readonly" />
@@ -866,17 +898,17 @@ function publishForm() {
 .fb__scroll { height: 100%; overflow-y: auto; }
 .fb__panel { width: 300px; flex-shrink: 0; }
 
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
-.border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important; }
+.border-b { border-bottom: 1px solid var(--border-subtle) !important; }
+.border-t { border-top: 1px solid var(--border-subtle) !important; }
+.border-r { border-right: 1px solid var(--border-subtle) !important; }
 
 .num { font-variant-numeric: tabular-nums; }
 
 .fb-swatch {
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.18);
+  width: var(--mp-component-field-height-sm);
+  height: var(--mp-component-field-height-sm);
+  border-radius: var(--mp-component-chip-radius);
+  border: 1px solid var(--border-default);
   cursor: pointer;
   box-shadow: inset 0 0 0 2px rgb(var(--v-theme-surface));
 }
@@ -945,7 +977,7 @@ function publishForm() {
 .fb-palette {
   width: 200px;
   flex-shrink: 0;
-  border-right: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+  border-right: 1px solid var(--border-subtle);
   background: rgb(var(--v-theme-surface));
   overflow-y: auto;
 }
@@ -957,7 +989,8 @@ function publishForm() {
   cursor: pointer;
   transition: background 100ms ease;
 }
-.fb-palette__item:hover { background: rgba(var(--v-theme-primary), 0.08); }
+.fb-palette__item:hover { background: var(--surface-secondary); }
+.fb-palette__item:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .fb-palette__add { opacity: 0; transition: opacity 100ms ease; }
 .fb-palette__item:hover .fb-palette__add { opacity: 0.6; }
 
@@ -966,7 +999,7 @@ function publishForm() {
   width: 100%;
   max-width: 600px;
   background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 16px;
   min-height: 300px;
@@ -976,15 +1009,15 @@ function publishForm() {
   border-radius: 8px;
 }
 .fb-doc-block { position: relative; padding: 10px 12px; border: 1.5px solid transparent; border-radius: 8px; transition: border-color 100ms ease; }
-.fb-doc-block:hover { border-color: rgba(var(--v-theme-primary), 0.25); }
-.fb-doc-block--selected { border-color: rgb(var(--v-theme-primary)); background: rgba(var(--v-theme-primary), 0.03); }
-.fb-doc-block--fixed { background: rgba(var(--v-theme-on-surface), 0.03); }
+.fb-doc-block:hover { border-color: var(--border-default); }
+.fb-doc-block--selected { border-color: rgb(var(--v-theme-primary)); background: var(--accent-soft); }
+.fb-doc-block--fixed { background: var(--surface-secondary); }
 .fb-doc-block__controls {
   position: absolute; top: -14px; right: 8px; display: none;
-  background: rgb(var(--v-theme-surface)); border: 1px solid rgba(var(--v-theme-on-surface), 0.12); border-radius: 8px; padding: 1px;
+  background: rgb(var(--v-theme-surface)); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1px;
 }
 .fb-doc-block:hover .fb-doc-block__controls, .fb-doc-block--selected .fb-doc-block__controls { display: flex; }
-.fb-doc-block__lock { position: absolute; top: 8px; right: 8px; opacity: 0.5; }
+.fb-doc-block__lock { position: absolute; top: 8px; right: 8px; color: var(--on-surface-muted); }
 .fb-doc__title { font-size: 1.5rem; font-weight: 700; line-height: 1.3; color: rgb(var(--v-theme-on-surface)); }
 .fb-doc__paragraph { font-size: 0.95rem; line-height: 1.6; color: rgb(var(--v-theme-on-surface-variant)); }
 .fb-doc__list { padding-left: 20px; color: rgb(var(--v-theme-on-surface-variant)); font-size: 0.95rem; line-height: 1.7; }
@@ -997,7 +1030,7 @@ function publishForm() {
 .fb-doc__field { height: 36px; border-radius: 8px; background: rgba(var(--v-theme-on-surface), 0.06); display: flex; align-items: center; padding: 0 12px; font-size: 0.8rem; color: rgb(var(--v-theme-on-surface-variant)); }
 .fb-doc__submit { height: 38px; border-radius: 8px; background: rgb(var(--v-theme-primary)); color: rgb(var(--v-theme-on-primary)); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; }
 
-.fb-settings { width: 300px; flex-shrink: 0; border-left: 1px solid rgba(var(--v-theme-on-surface), 0.10); background: rgb(var(--v-theme-surface)); overflow-y: auto; }
+.fb-settings { width: 300px; flex-shrink: 0; border-left: 1px solid var(--border-subtle); background: rgb(var(--v-theme-surface)); overflow-y: auto; }
 :deep(.fb-mono textarea) { font-family: monospace; font-size: 0.8rem; }
 
 @media (max-width: 1024px) {
