@@ -22,7 +22,6 @@ const groups: ComingSoonTile[] = [
       title="Retail settings coming soon"
       description="The MVP exposes the following configuration surfaces. Tap a tile to preview the planned controls — interactive setup will land in Phase 1."
       :tiles="groups"
-      :md-cols="4"
     />
   </div>
 </template>
