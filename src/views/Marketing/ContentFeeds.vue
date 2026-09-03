@@ -8,6 +8,7 @@ import MpFolderSelect from '@/components/MpFolderSelect.vue'
 import MpManageFoldersDrawer from '@/components/MpManageFoldersDrawer.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
@@ -161,7 +162,7 @@ function openPreview(target: string) {
       :subtitle="`${store.feeds.length} feeds configured`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="folder" class="text-none" color="surface" @click="manageFoldersOpen = true">Manage Folders</v-btn>
+        <v-btn variant="text" prepend-icon="folder" class="text-none" @click="manageFoldersOpen = true">Manage Folders</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openCreate">New Feed</v-btn>
       </template>
     </MpPageHeader>
@@ -191,20 +192,25 @@ function openPreview(target: string) {
         <template v-slot:item.name="{ item }">
           <div class="d-flex align-center ga-2">
             <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
-            <v-chip size="x-small" variant="tonal">{{ item.feedType }}</v-chip>
+            <MpStatusChip :status="item.feedType" type="general" size="sm" />
           </div>
           <div v-if="item.folderId" class="text-caption text-medium-emphasis">
             {{ foldersStore.getFolder(item.folderId)?.name }}
           </div>
         </template>
         <template v-slot:item.actions="{ item }">
-          <v-btn
-            icon="pencil"
-            variant="text"
-            size="small"
-            :aria-label="`Edit ${item.name}`"
-            @click="openEdit(item)"
-          />
+          <v-tooltip text="Edit feed" location="bottom">
+            <template #activator="{ props: tooltip }">
+              <v-btn
+                v-bind="tooltip"
+                icon="pencil"
+                variant="text"
+                size="small"
+                :aria-label="`Edit ${item.name}`"
+                @click="openEdit(item)"
+              />
+            </template>
+          </v-tooltip>
         </template>
         <template v-slot:no-data>
           <MpEmptyState
@@ -213,7 +219,6 @@ function openPreview(target: string) {
             :description="search || selectedFolderId ? 'Try a different search or clear the folder filter.' : 'Stream RSS, JSON, or product feeds into your email content.'"
             :action-label="!search && !selectedFolderId ? 'New Feed' : undefined"
             action-icon="plus"
-            class="py-10"
             @action="openCreate"
           />
         </template>
@@ -320,7 +325,7 @@ function openPreview(target: string) {
 
     <!-- Feed URL preview (mock — production fetches the live feed) -->
     <MpDialog v-model="previewOpen" title="Feed Preview" size="sm">
-      <p class="text-body-2 mb-2">
+      <p class="text-body-2">
         Production fetches and renders the live feed. This sandbox previews the endpoint only:
       </p>
       <code class="feed-preview-url">{{ previewUrl }}</code>
@@ -339,7 +344,7 @@ function openPreview(target: string) {
   display: block;
   padding: var(--mp-space-10) var(--mp-space-12);
   border-radius: var(--mp-radius-8);
-  background: rgba(var(--v-theme-on-surface), 0.05);
+  background: var(--surface-secondary);
   word-break: break-all;
 }
 </style>

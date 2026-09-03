@@ -183,22 +183,17 @@ const toast = useToast()
         @clear-filters="clearAllFilters"
       >
         <template #filter-content>
-          <!-- Dense filter popover, not a form: compact + hide-details are deliberate here. -->
-          <div class="pa-4 pb-2">
-            <div class="text-subtitle-2 font-weight-bold mb-3">Filter by</div>
-            <MpFormGrid>
-              <v-select
-                v-model="filters.editorType"
-                label="Editor Type"
-                :items="EDITOR_TYPES.map(e => e.label)"
-                multiple
-                chips
-                closable-chips
-                clearable
-                hide-details
-              />
-            </MpFormGrid>
-          </div>
+          <MpFormGrid>
+            <v-select
+              v-model="filters.editorType"
+              label="Editor Type"
+              :items="EDITOR_TYPES.map(e => e.label)"
+              multiple
+              chips
+              closable-chips
+              clearable
+            />
+          </MpFormGrid>
         </template>
       </MpDataTableToolbar>
 
@@ -222,7 +217,6 @@ const toast = useToast()
             :description="search || activeFilterEntries.length ? 'Try a different search term or clear your filters.' : 'Create a page for subscribers to manage subscriptions, unsubscribe, or update their profile.'"
             :action-label="search || activeFilterEntries.length ? undefined : 'New Page'"
             :action-icon="search || activeFilterEntries.length ? undefined : 'plus'"
-            class="py-10"
             @action="openCreate"
           />
         </template>
@@ -254,7 +248,11 @@ const toast = useToast()
           persistent-hint
           class="flex-grow-1"
         />
-        <v-btn icon="eye" variant="text" aria-label="Preview redirect page" @click="toast.info('Production previews the redirect target here')" />
+        <v-tooltip text="Preview redirect page" location="bottom">
+          <template #activator="{ props: tooltip }">
+            <v-btn v-bind="tooltip" icon="eye" variant="text" aria-label="Preview redirect page" @click="toast.info('Production previews the redirect target here')" />
+          </template>
+        </v-tooltip>
       </div>
 
       <MpFormField label="Select Editor *">
@@ -308,23 +306,23 @@ const toast = useToast()
 
 <style scoped>
 .pref-preview {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border: 1px solid var(--border-subtle);
   border-radius: var(--mp-radius-12);
   padding: var(--mp-space-24);
   display: flex;
   flex-direction: column;
   gap: var(--mp-space-12);
-  max-width: 480px;
+  max-width: var(--mp-component-state-measureWide);
   margin-inline: auto;
 }
 
 .pref-preview__title {
   font-size: var(--mp-fontSize-18);
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .pref-preview__copy {
-  color: var(--text-secondary, rgba(var(--v-theme-on-surface), 0.6));
+  color: var(--on-surface-muted);
   margin: 0;
 }
 </style>

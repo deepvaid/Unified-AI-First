@@ -90,7 +90,7 @@ function doDelete() {
       :subtitle="`${store.imageGroups.length} image groups`"
     >
       <template #actions>
-        <v-btn variant="flat" prepend-icon="folder" class="text-none" color="surface" @click="manageFoldersOpen = true">Manage Folders</v-btn>
+        <v-btn variant="text" prepend-icon="folder" class="text-none" @click="manageFoldersOpen = true">Manage Folders</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openEditor()">New Group</v-btn>
       </template>
     </MpPageHeader>
@@ -149,7 +149,6 @@ function doDelete() {
             :description="search || selectedFolderId ? 'Try a different search or clear the folder filter.' : 'Swap an email image at open time — a default image until it expires, then the expiry image.'"
             :action-label="!search && !selectedFolderId ? 'New Group' : undefined"
             action-icon="plus"
-            class="py-10"
             @action="openEditor()"
           />
         </template>
@@ -161,7 +160,7 @@ function doDelete() {
       :total="visibleGroups.length"
       @clear="selected = []"
     >
-      <v-btn size="small" variant="text" class="text-none text-error" prepend-icon="trash-2" @click="askDelete([...selected])">Delete</v-btn>
+      <v-btn variant="text" class="text-none" prepend-icon="trash-2" @click="askDelete([...selected])">Delete</v-btn>
     </MpFloatingBulkBar>
 
     <MpConfirmDialog
@@ -183,8 +182,8 @@ function doDelete() {
 
 <style scoped>
 .group-name {
-  color: rgb(var(--v-theme-primary));
-  font-weight: 500;
+  color: var(--accent-default);
+  font-weight: var(--mp-fontWeight-medium);
   text-align: left;
 }
 

@@ -16,7 +16,6 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
         icon="lock"
         title="Not available on this account"
         description="Countdown timers aren't part of your current Marketing setup."
-        class="py-10"
       />
     </v-card>
   </div>

@@ -9,6 +9,7 @@ import MpBuilderPreviewDialog from '@/components/MpBuilderPreviewDialog.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFormField from '@/components/MpFormField.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import { useToast } from '@/composables/useToast'
 
@@ -45,6 +46,12 @@ const PALETTE: { type: BlockType; label: string; icon: string }[] = [
   { type: 'spacer', label: 'Spacer', icon: 'move-vertical' },
   { type: 'social', label: 'Social', icon: 'share-2' },
   { type: 'html', label: 'HTML', icon: 'code' },
+]
+
+const ALIGN_ITEMS = [
+  { value: 'left', icon: 'align-left', label: 'Align left' },
+  { value: 'center', icon: 'align-center', label: 'Align center' },
+  { value: 'right', icon: 'align-right', label: 'Align right' },
 ]
 
 let counter = 0
@@ -142,13 +149,13 @@ watch(contentId, () => {
       >
         <template #actions>
           <v-btn variant="text" class="text-none" prepend-icon="eye" @click="previewOpen = true">Preview</v-btn>
-          <v-btn variant="outlined" class="text-none" prepend-icon="check" @click="save">Save</v-btn>
+          <v-btn variant="outlined" class="text-none" prepend-icon="save" @click="save">Save</v-btn>
           <v-btn color="primary" variant="flat" class="text-none" prepend-icon="check" @click="saveAndClose">Save &amp; close</v-btn>
         </template>
 
         <template #left>
           <div class="pa-3">
-            <div class="text-caption text-uppercase text-medium-emphasis font-weight-medium mb-2 px-1">Blocks</div>
+            <div class="mp-meta-label text-medium-emphasis mb-2 px-1">Blocks</div>
             <button
               v-for="p in PALETTE"
               :key="p.type"
@@ -167,7 +174,7 @@ watch(contentId, () => {
           <div class="ece-doc mx-auto">
             <div v-if="!blocks.length" class="text-center py-12 px-6">
               <v-icon size="34" color="primary" class="mb-3">mail</v-icon>
-              <div class="text-h6 font-weight-bold mb-1">Start with a block</div>
+              <div class="mp-section-title mb-1">Start with a block</div>
               <div class="text-body-2 text-medium-emphasis mb-4">Add a title, paragraph, or button from the Blocks panel.</div>
               <div class="d-flex justify-center ga-2 flex-wrap">
                 <v-btn variant="tonal" class="text-none" size="small" @click="addBlock('title')">Title</v-btn>
@@ -183,9 +190,21 @@ watch(contentId, () => {
               @click="selectedId = block.id"
             >
               <div class="ece-block__controls">
-                <v-btn size="x-small" variant="text" icon="chevron-up" aria-label="Move up" @click.stop="move(block.id, -1)" />
-                <v-btn size="x-small" variant="text" icon="chevron-down" aria-label="Move down" @click.stop="move(block.id, 1)" />
-                <v-btn size="x-small" variant="text" icon="trash-2" color="error" aria-label="Delete" @click.stop="removeBlock(block.id)" />
+                <v-tooltip text="Move up" location="top">
+                  <template #activator="{ props: tooltip }">
+                    <v-btn v-bind="tooltip" size="x-small" variant="text" icon="chevron-up" aria-label="Move up" @click.stop="move(block.id, -1)" />
+                  </template>
+                </v-tooltip>
+                <v-tooltip text="Move down" location="top">
+                  <template #activator="{ props: tooltip }">
+                    <v-btn v-bind="tooltip" size="x-small" variant="text" icon="chevron-down" aria-label="Move down" @click.stop="move(block.id, 1)" />
+                  </template>
+                </v-tooltip>
+                <v-tooltip text="Delete block" location="top">
+                  <template #activator="{ props: tooltip }">
+                    <v-btn v-bind="tooltip" size="x-small" variant="text" icon="trash-2" color="error" aria-label="Delete block" @click.stop="removeBlock(block.id)" />
+                  </template>
+                </v-tooltip>
               </div>
 
               <h2 v-if="block.type === 'title'" class="ece-title" :style="{ textAlign: block.align }">{{ block.text }}</h2>
@@ -242,11 +261,13 @@ watch(contentId, () => {
 
                 <MpFormField v-if="['title', 'paragraph', 'button', 'social'].includes(selected.type)" label="Alignment">
                   <div>
-                    <v-btn-toggle v-model="selected.align" mandatory>
-                      <v-btn value="left" icon="align-left" size="small" aria-label="Align left" />
-                      <v-btn value="center" icon="align-center" size="small" aria-label="Align center" />
-                      <v-btn value="right" icon="align-right" size="small" aria-label="Align right" />
-                    </v-btn-toggle>
+                    <MpSegmentedControl
+                      :model-value="selected.align"
+                      :items="ALIGN_ITEMS"
+                      size="sm"
+                      ariaLabel="Alignment"
+                      @update:model-value="(v: string | null) => { if (selected && v) selected.align = v as EmailBlock['align'] }"
+                    />
                   </div>
                 </MpFormField>
 
@@ -309,57 +330,65 @@ watch(contentId, () => {
 </template>
 
 <style scoped>
+/* Editor chrome (palette, canvas frame, block selection, floating controls) is on
+   tokens; the rendered email inside .ece-doc (.ece-title … .ece-html) is a
+   merchant-facing simulation and keeps its own literal type scale. */
 .ece-palette__item {
   width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  color: rgb(var(--v-theme-on-surface));
+  padding: var(--mp-space-8) var(--mp-space-10);
+  border-radius: var(--mp-component-nav-itemRadius);
+  color: var(--on-surface);
   cursor: pointer;
-  transition: background 100ms ease;
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 .ece-palette__item:hover {
-  background: rgba(var(--v-theme-primary), 0.08);
+  background: var(--surface-secondary);
+}
+.ece-palette__item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }
 .ece-palette__add {
+  color: var(--on-surface-muted);
   opacity: 0;
-  transition: opacity 100ms ease;
+  transition: opacity var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 .ece-palette__item:hover .ece-palette__add,
 .ece-palette__item:focus-visible .ece-palette__add {
-  opacity: 0.6;
+  opacity: 1;
 }
 .ece-doc {
-  max-width: 600px;
+  max-width: 600px; /* canonical email width */
   width: 100%;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.10);
-  border-radius: 12px;
-  padding: 16px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-12);
+  padding: var(--mp-space-16);
   min-height: 400px;
 }
 .ece-block {
   position: relative;
-  padding: 10px 12px;
-  border: 1.5px solid transparent;
-  border-radius: 8px;
-  transition: border-color 100ms ease;
+  padding: var(--mp-space-10) var(--mp-space-12);
+  border: var(--mp-space-2) solid transparent;
+  border-radius: var(--mp-radius-8);
+  transition: border-color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 .ece-block:hover {
-  border-color: rgba(var(--v-theme-primary), 0.25);
+  border-color: var(--border-strong);
 }
 .ece-block--selected {
-  border-color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.03);
+  border-color: var(--accent-default);
+  background: var(--accent-soft);
 }
 .ece-block__controls {
   position: absolute;
-  top: -14px;
-  right: 8px;
+  top: calc(-1 * var(--mp-space-14));
+  right: var(--mp-space-8);
   display: none;
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
-  border-radius: 8px;
-  padding: 1px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-radius-8);
+  padding: var(--mp-space-2);
 }
 .ece-block:hover .ece-block__controls,
 .ece-block--selected .ece-block__controls,
@@ -425,7 +454,7 @@ watch(contentId, () => {
   white-space: pre-wrap;
 }
 :deep(.ece-mono textarea) {
-  font-family: monospace;
-  font-size: 0.82rem;
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-13);
 }
 </style>

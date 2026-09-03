@@ -68,7 +68,7 @@ function doArchive() {
       :subtitle="`${rows.length} dynamic content blocks`"
     >
       <template #actions>
-        <v-btn variant="flat" color="surface" prepend-icon="archive" class="text-none" @click="viewArchives">View Archives</v-btn>
+        <v-btn variant="text" prepend-icon="archive" class="text-none" @click="viewArchives">View Archives</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openEditor()">New Dynamic Content</v-btn>
       </template>
     </MpPageHeader>
@@ -98,7 +98,6 @@ function doArchive() {
             :description="search ? 'Try a different search term.' : 'Show different email content to different segments from a single block.'"
             :action-label="!search ? 'New Dynamic Content' : undefined"
             action-icon="plus"
-            class="py-10"
             @action="openEditor()"
           />
         </template>
@@ -117,8 +116,8 @@ function doArchive() {
 
 <style scoped>
 .dc-name {
-  color: rgb(var(--v-theme-primary));
-  font-weight: 500;
+  color: var(--accent-default);
+  font-weight: var(--mp-fontWeight-medium);
   text-align: left;
 }
 
