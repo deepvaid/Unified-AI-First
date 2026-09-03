@@ -72,7 +72,7 @@ async function create() {
   >
     <template #actions>
       <v-chip v-if="withAI" color="primary" variant="tonal" size="small" class="font-weight-bold">
-        <v-icon size="14" class="mr-1">sparkles</v-icon> Build with AI
+        <v-icon size="16" class="mr-1">sparkles</v-icon> Build with AI
       </v-chip>
     </template>
 

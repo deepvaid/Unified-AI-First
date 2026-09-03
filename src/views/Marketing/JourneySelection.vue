@@ -105,6 +105,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.js-head { border-bottom: 1px solid rgb(var(--v-border-color), var(--v-border-opacity)); }
-.js-body { max-width: var(--mp-layout-content-max-width); }
+.js-head { border-bottom: 1px solid var(--border-subtle); }
+.js-body { max-width: var(--mp-layout-contentMaxWidth); }
 </style>
