@@ -172,7 +172,7 @@ function doDelete() {
     >
       <template #actions>
         <MpSegmentedControl v-model="view" :items="VIEW_ITEMS" size="sm" ariaLabel="Library view" />
-        <v-btn variant="flat" prepend-icon="folder" class="text-none" color="surface" @click="manageFoldersOpen = true">Manage Folders</v-btn>
+        <v-btn variant="text" prepend-icon="folder" class="text-none" @click="manageFoldersOpen = true">Manage Folders</v-btn>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none" @click="openUpload">Add New</v-btn>
       </template>
     </MpPageHeader>
@@ -223,7 +223,11 @@ function doDelete() {
         </template>
         <template v-slot:item.actions="{ item }">
           <div class="d-flex align-center justify-end">
-            <v-btn icon="link" variant="text" size="small" :aria-label="`Copy link to ${item.name}`" @click="copyLink(item)" />
+            <v-tooltip text="Copy link" location="bottom">
+              <template #activator="{ props: tooltip }">
+                <v-btn v-bind="tooltip" icon="link" variant="text" size="small" :aria-label="`Copy link to ${item.name}`" @click="copyLink(item)" />
+              </template>
+            </v-tooltip>
             <MpRowActionsMenu ariaLabel="Image actions" :itemLabel="item.name">
               <MpMenuItem icon="pencil" title="Edit Image" @click="openRename(item)" />
               <MpMenuItem icon="folder-input" title="Move to folder…" @click="moveTarget = { id: item.id, name: item.name, folderId: item.folderId }" />
@@ -239,7 +243,6 @@ function doDelete() {
             :description="search || selectedFolderId ? 'Try a different search or clear the folder filter.' : 'Upload images to build your library.'"
             :action-label="!search && !selectedFolderId ? 'Add New' : undefined"
             action-icon="plus"
-            class="py-10"
             @action="openUpload"
           />
         </template>
@@ -299,7 +302,6 @@ function doDelete() {
           :description="search || selectedFolderId ? 'Try a different search or clear the folder filter.' : 'Upload images to build your library.'"
           :action-label="!search && !selectedFolderId ? 'Add New' : undefined"
           action-icon="plus"
-          class="py-10"
           @action="openUpload"
         />
       </div>
@@ -310,8 +312,8 @@ function doDelete() {
       :total="visibleImages.length"
       @clear="selected = []"
     >
-      <v-btn v-if="selected.length === 1" size="small" variant="text" class="text-none" prepend-icon="eye" @click="previewSelected">Preview</v-btn>
-      <v-btn size="small" variant="text" class="text-none text-error" prepend-icon="trash-2" @click="askDelete([...selected])">Delete</v-btn>
+      <v-btn v-if="selected.length === 1" variant="text" class="text-none" prepend-icon="eye" @click="previewSelected">Preview</v-btn>
+      <v-btn variant="text" class="text-none" prepend-icon="trash-2" @click="askDelete([...selected])">Delete</v-btn>
     </MpFloatingBulkBar>
 
     <!-- New Images (upload) -->
@@ -408,8 +410,8 @@ function doDelete() {
 
 <style scoped>
 .image-name {
-  color: rgb(var(--v-theme-primary));
-  font-weight: 500;
+  color: var(--accent-default);
+  font-weight: var(--mp-fontWeight-medium);
   text-align: left;
 }
 
@@ -424,7 +426,7 @@ function doDelete() {
   top: var(--mp-space-4);
   z-index: 2;
   border-radius: var(--mp-radius-8);
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-primary);
 }
 
 .image-card__check {
@@ -440,8 +442,8 @@ function doDelete() {
 }
 
 .image-card--selected {
-  border-color: rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 1px rgb(var(--v-theme-primary));
+  border-color: var(--accent-default);
+  box-shadow: 0 0 0 1px var(--accent-default);
 }
 
 .upload-dropzone {
@@ -450,15 +452,15 @@ function doDelete() {
   flex-direction: column;
   align-items: center;
   padding: var(--mp-space-32);
-  border: 2px dashed rgba(var(--v-border-color), calc(var(--v-border-opacity) * 2));
+  border: 2px dashed var(--border-strong);
   border-radius: var(--mp-radius-12);
-  color: var(--text-secondary, rgba(var(--v-theme-on-surface), 0.6));
+  color: var(--on-surface-muted);
 }
 
 .upload-dropzone:hover,
 .upload-dropzone:focus-visible {
-  border-color: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-primary));
+  border-color: var(--accent-default);
+  color: var(--accent-default);
 }
 
 .preview-meta {
