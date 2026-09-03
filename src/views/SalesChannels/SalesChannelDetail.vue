@@ -5,6 +5,7 @@ import MpDialog from '@/components/MpDialog.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpKpiCard from '@/components/MpKpiCard.vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import StorefrontPreview from '@/components/saleschannels/StorefrontPreview.vue'
 import { useToast } from '@/composables/useToast'
@@ -691,7 +692,7 @@ function locationRoleText(locationId: string) {
         <div class="sc-header__row">
           <div class="sc-header__identity">
             <div class="sc-header__icon" :class="isWebStore ? 'sc-header__icon--web' : 'sc-header__icon--retail'">
-              <v-icon size="24">{{ isWebStore ? 'globe' : 'store' }}</v-icon>
+              <v-icon size="20">{{ isWebStore ? 'globe' : 'store' }}</v-icon>
             </div>
 
             <div class="sc-header__copy">
@@ -774,15 +775,18 @@ function locationRoleText(locationId: string) {
               </div>
 
               <div v-if="isWebStore && channel.webStore?.domain" class="sc-hero-url">
-                <v-icon size="15">globe</v-icon>
+                <v-icon size="16">globe</v-icon>
                 <span>{{ channel.webStore.domain }}</span>
                 <v-btn
                   size="small"
                   variant="text"
-                  icon="copy"
+                  icon
                   aria-label="Copy store URL"
                   @click="copyValue(`https://${channel.webStore?.domain}`, 'Store URL')"
-                />
+                >
+                  <v-icon>copy</v-icon>
+                  <v-tooltip activator="parent" location="top">Copy store URL</v-tooltip>
+                </v-btn>
               </div>
             </div>
           </v-card>
@@ -800,7 +804,7 @@ function locationRoleText(locationId: string) {
             <div class="retail-widget-body sc-setup-body">
               <div v-if="visibleSetupItems.length" class="sc-setup-list">
                 <div v-for="item in visibleSetupItems" :key="item.id" class="sc-setup-row">
-                  <v-icon size="18">circle</v-icon>
+                  <v-icon size="16">circle-dashed</v-icon>
                   <div class="min-width-0">
                     <strong>{{ item.title }}</strong>
                     <span>{{ item.description }}</span>
@@ -811,16 +815,23 @@ function locationRoleText(locationId: string) {
                 </div>
               </div>
               <div v-else class="sc-setup-empty">
-                <v-icon size="18" color="success">check-circle-2</v-icon>
+                <v-icon size="16" color="success">circle-check</v-icon>
                 <span>No urgent setup items.</span>
               </div>
 
-              <button v-if="completedSetupItems.length" type="button" class="sc-text-button sc-completed-toggle" @click="showCompletedSetup = !showCompletedSetup">
+              <v-btn
+                v-if="completedSetupItems.length"
+                variant="text"
+                size="small"
+                class="text-none align-self-start"
+                :aria-expanded="showCompletedSetup"
+                @click="showCompletedSetup = !showCompletedSetup"
+              >
                 {{ showCompletedSetup ? 'Hide completed' : 'View completed' }}
-              </button>
+              </v-btn>
               <div v-if="showCompletedSetup" class="sc-completed-list">
                 <div v-for="item in completedSetupItems" :key="item.id" class="sc-completed-row">
-                  <v-icon size="15" color="success">check-circle-2</v-icon>
+                  <v-icon size="16" color="success">circle-check</v-icon>
                   <span>{{ item.title }}</span>
                 </div>
               </div>
@@ -853,7 +864,7 @@ function locationRoleText(locationId: string) {
 
         <section class="sc-performance-section" aria-labelledby="sales-channel-performance-title">
           <div class="sc-section-line">
-            <h2 id="sales-channel-performance-title">Performance snapshot</h2>
+            <h2 id="sales-channel-performance-title" class="mp-section-title">Performance snapshot</h2>
             <span>Last 30 days</span>
           </div>
           <div class="sc-performance-grid">
@@ -875,7 +886,7 @@ function locationRoleText(locationId: string) {
         <v-card flat border rounded="lg" class="retail-widget-card sc-activity-card">
           <div class="retail-widget-header">
             <div class="retail-widget-header__title">Recent activity</div>
-            <button type="button" class="sc-text-button" @click="activeTab = 'activity'">View all</button>
+            <v-btn variant="text" size="small" class="text-none" @click="activeTab = 'activity'">View all</v-btn>
           </div>
           <v-list class="retail-list" density="compact">
             <v-list-item v-for="item in overviewActivityItems" :key="item.id">
@@ -914,7 +925,7 @@ function locationRoleText(locationId: string) {
             </div>
             <div v-if="isWebStore" class="sc-favicon-row">
               <div class="sc-favicon-row__thumb">
-                <v-icon size="22">image</v-icon>
+                <v-icon size="20">image</v-icon>
               </div>
               <div class="min-width-0">
                 <strong>Favicon</strong>
@@ -963,7 +974,7 @@ function locationRoleText(locationId: string) {
           <div class="retail-widget-body">
             <div class="sc-cross-sell-banner">
               <div class="sc-cross-sell-banner__icon">
-                <v-icon size="18">sparkles</v-icon>
+                <v-icon size="16">sparkles</v-icon>
               </div>
               <div class="min-width-0">
                 <strong>{{ crossSellBanner.title }}</strong>
@@ -1057,10 +1068,16 @@ function locationRoleText(locationId: string) {
         :subtitle="channel.webStore?.domain"
       >
         <template #headerActions>
-          <v-btn-toggle v-model="previewDevice" mandatory density="compact" rounded="lg" border>
-            <v-btn value="desktop" size="small" prepend-icon="monitor" class="text-none">Desktop</v-btn>
-            <v-btn value="mobile" size="small" prepend-icon="smartphone" class="text-none">Mobile</v-btn>
-          </v-btn-toggle>
+          <MpSegmentedControl
+            :model-value="previewDevice"
+            size="sm"
+            ariaLabel="Preview device"
+            :items="[
+              { value: 'desktop', label: 'Desktop', icon: 'monitor' },
+              { value: 'mobile', label: 'Mobile', icon: 'smartphone' },
+            ]"
+            @update:model-value="(value) => { previewDevice = value === 'mobile' ? 'mobile' : 'desktop' }"
+          />
         </template>
 
         <div class="sc-preview-dialog__body">
@@ -1122,7 +1139,7 @@ function locationRoleText(locationId: string) {
 .sc-header__identity {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: var(--mp-space-14);
   min-width: 0;
 }
 
@@ -1131,8 +1148,8 @@ function locationRoleText(locationId: string) {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 48px;
-  height: 48px;
+  width: var(--mp-space-48);
+  height: var(--mp-space-48);
   border-radius: var(--r-section);
 }
 
@@ -1154,7 +1171,7 @@ function locationRoleText(locationId: string) {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--mp-space-8);
   min-width: 0;
 }
 
@@ -1169,10 +1186,10 @@ function locationRoleText(locationId: string) {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--mp-space-4) var(--mp-space-12);
-  margin-top: 9px;
+  margin-top: var(--mp-space-8);
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
 }
 
 .sc-header__meta span {
@@ -1195,15 +1212,14 @@ function locationRoleText(locationId: string) {
 }
 
 .sc-tabs :deep(.v-slide-group__content) {
-  gap: 4px;
+  gap: var(--mp-space-4);
 }
 
 .sc-tabs :deep(.v-tab) {
-  min-height: 36px;
-  padding: 0 10px;
+  padding: 0 var(--mp-space-10);
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .sc-tab-panel {
@@ -1234,17 +1250,17 @@ function locationRoleText(locationId: string) {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  min-height: 40px;
-  padding: 6px 10px;
+  gap: var(--mp-space-8);
+  margin-top: var(--mp-space-12);
+  min-height: var(--mp-component-control-height);
+  padding: var(--mp-space-6) var(--mp-space-10);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
   background: var(--surface-secondary);
   color: var(--muted);
   font-family: var(--mp-fontFamily-mono, monospace);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-bold);
 }
 
 .sc-hero-url span {
@@ -1256,20 +1272,20 @@ function locationRoleText(locationId: string) {
 .sc-setup-card .retail-widget-body {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--mp-space-14);
 }
 
 .sc-setup-list,
 .sc-completed-list {
   display: grid;
-  gap: 10px;
+  gap: var(--mp-space-10);
 }
 
 .sc-setup-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: var(--mp-space-10);
   padding: var(--mp-space-12);
   border: 1px solid color-mix(in oklch, var(--accent) 22%, var(--border-subtle));
   border-radius: var(--r-section);
@@ -1286,18 +1302,18 @@ function locationRoleText(locationId: string) {
 
 .sc-setup-row strong {
   color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-bold);
   line-height: 1.25;
   white-space: nowrap;
 }
 
 .sc-setup-row span,
 .sc-setup-empty span {
-  margin-top: 3px;
+  margin-top: var(--mp-space-2);
   color: var(--muted);
   font-size: var(--mp-fontSize-12);
-  font-weight: 500;
+  font-weight: var(--mp-fontWeight-medium);
   line-height: 1.35;
 }
 
@@ -1305,17 +1321,13 @@ function locationRoleText(locationId: string) {
 .sc-completed-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.sc-completed-toggle {
-  width: fit-content;
+  gap: var(--mp-space-8);
 }
 
 .sc-completed-row {
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .sc-action-grid--compact {
@@ -1323,12 +1335,11 @@ function locationRoleText(locationId: string) {
 }
 
 .retail-action-tile--compact {
-  min-height: 94px;
-  padding: 13px;
+  padding: var(--mp-space-12);
 }
 
 .retail-action-tile--compact .retail-action-tile__desc {
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   line-height: 1.25;
   white-space: nowrap;
 }
@@ -1336,36 +1347,32 @@ function locationRoleText(locationId: string) {
 .sc-performance-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .sc-section-line {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--mp-space-12);
   min-width: 0;
 }
 
 .sc-section-line h2 {
-  margin: 0;
   color: var(--text-primary);
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1.3;
 }
 
 .sc-section-line span {
   color: var(--muted);
   font-size: var(--mp-fontSize-12);
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   white-space: nowrap;
 }
 
 .sc-performance-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--mp-space-12);
   min-width: 0;
 }
 
@@ -1377,7 +1384,7 @@ function locationRoleText(locationId: string) {
 .sc-action-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .sc-action-grid .retail-action-tile {
@@ -1392,15 +1399,14 @@ function locationRoleText(locationId: string) {
 .sc-retail-preview {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
 .sc-location-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
-  min-height: 112px;
-  padding: 14px;
+  gap: var(--mp-space-8);
+  padding: var(--mp-space-14);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
   background: var(--surface-primary);
@@ -1423,16 +1429,16 @@ function locationRoleText(locationId: string) {
 .sc-location-row strong {
   display: block;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--mp-fontSize-14);
   font-style: normal;
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-bold);
   white-space: nowrap;
 }
 
 .sc-location-row em {
   display: -webkit-box;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   font-style: normal;
   line-height: 1.35;
   -webkit-box-orient: vertical;
@@ -1441,15 +1447,15 @@ function locationRoleText(locationId: string) {
 
 .sc-location-row > span:last-child {
   color: var(--text-primary);
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-18);
+  font-weight: var(--mp-fontWeight-bold);
   white-space: nowrap;
 }
 
 .sc-business-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px 18px;
+  gap: var(--mp-space-16) var(--mp-space-20);
 }
 
 .sc-business-field {
@@ -1466,18 +1472,18 @@ function locationRoleText(locationId: string) {
 
 .sc-business-field span {
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.1em;
   line-height: 1.2;
   text-transform: uppercase;
 }
 
 .sc-business-field strong {
-  margin-top: 5px;
+  margin-top: var(--mp-space-4);
   color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-bold);
   line-height: 1.3;
 }
 
@@ -1493,9 +1499,9 @@ function locationRoleText(locationId: string) {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
-  margin-top: 18px;
-  padding: 12px;
+  gap: var(--mp-space-14);
+  margin-top: var(--mp-space-20);
+  padding: var(--mp-space-12);
   border-style: dashed;
   background: color-mix(in oklch, var(--text-primary) 2%, var(--surface-primary));
 }
@@ -1504,8 +1510,8 @@ function locationRoleText(locationId: string) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: var(--mp-space-48);
+  height: var(--mp-space-48);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
   background: var(--surface-secondary);
@@ -1522,22 +1528,22 @@ function locationRoleText(locationId: string) {
 
 .sc-favicon-row strong {
   color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-bold);
 }
 
 .sc-favicon-row span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
 }
 
 .sc-cross-sell-banner {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  margin-top: 18px;
-  padding: 12px;
+  gap: var(--mp-space-12);
+  margin-top: var(--mp-space-20);
+  padding: var(--mp-space-12);
   background: color-mix(in oklch, var(--accent) 5%, var(--surface-primary));
 }
 
@@ -1545,8 +1551,8 @@ function locationRoleText(locationId: string) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
   border-radius: var(--r-chip);
   background: var(--accent-soft);
   color: var(--accent-ink);
@@ -1561,37 +1567,37 @@ function locationRoleText(locationId: string) {
 
 .sc-cross-sell-banner strong {
   color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-bold);
   white-space: nowrap;
 }
 
 .sc-cross-sell-banner span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   line-height: 1.35;
 }
 
 .sc-assistant-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 14px;
+  gap: var(--mp-space-10);
+  margin-top: var(--mp-space-14);
 }
 
 .sc-assistant-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-12);
 }
 
 .sc-assistant-card__header {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 
 .sc-assistant-card strong,
@@ -1601,57 +1607,57 @@ function locationRoleText(locationId: string) {
 
 .sc-assistant-card strong {
   color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-bold);
   line-height: 1.25;
 }
 
 .sc-assistant-card > div:nth-child(2) > span {
-  margin-top: 4px;
+  margin-top: var(--mp-space-4);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   line-height: 1.35;
 }
 
 .sc-feature-list {
   display: grid;
-  margin-top: 14px;
+  margin-top: var(--mp-space-14);
 }
 
 .sc-feature-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px 0;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-12) 0;
 }
 
 .sc-feature-row__title {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 
 .sc-feature-row__title strong {
   color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-bold);
   line-height: 1.25;
 }
 
 .sc-feature-row__title span {
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .sc-feature-row p {
   display: -webkit-box;
   overflow: hidden;
-  margin: 4px 0 0;
+  margin: var(--mp-space-4) 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   line-height: 1.35;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -1660,7 +1666,7 @@ function locationRoleText(locationId: string) {
 .sc-feature-row__actions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 
 .retail-row-icon--primary {
@@ -1678,45 +1684,25 @@ function locationRoleText(locationId: string) {
   color: var(--cloud-analytics-text);
 }
 
-.sc-text-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 28px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.sc-text-button:hover {
-  color: rgb(var(--v-theme-primary));
-}
-
 .sc-time {
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-medium);
   white-space: nowrap;
 }
 
 .sc-app-list {
   display: grid;
-  gap: 8px;
-  padding: 0 22px 20px;
+  gap: var(--mp-space-8);
+  padding: 0 var(--mp-space-20) var(--mp-space-20);
 }
 
 .sc-app-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  min-height: 54px;
-  padding: 10px 12px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-space-10) var(--mp-space-12);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-section);
 }
@@ -1725,13 +1711,13 @@ function locationRoleText(locationId: string) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
   border-radius: var(--r-chip);
   background: var(--surface-secondary);
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-bold);
 }
 
 .sc-app-row strong,
@@ -1744,18 +1730,18 @@ function locationRoleText(locationId: string) {
 
 .sc-app-row strong {
   color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-bold);
 }
 
 .sc-app-row span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
 }
 
 .sc-status-dot {
-  width: 9px;
-  height: 9px;
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
   border-radius: var(--r-pill);
   background: var(--pos);
 }
@@ -1783,11 +1769,11 @@ function locationRoleText(locationId: string) {
 
 @media (max-width: 760px) {
   .sales-channel-detail {
-    gap: 18px;
+    gap: var(--mp-space-20);
   }
 
   .sc-header__identity {
-    gap: 12px;
+    gap: var(--mp-space-12);
   }
 
   .sc-header__actions {
