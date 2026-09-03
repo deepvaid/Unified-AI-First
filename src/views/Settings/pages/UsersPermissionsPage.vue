@@ -315,7 +315,7 @@ function bulkDeactivate() {
                 {{ (item as UserRow).name }}
                 <v-tooltip v-if="(item as UserRow).isOwner" location="top" text="Account owner — full access, protected from changes">
                   <template #activator="{ props: tipProps }">
-                    <v-icon v-bind="tipProps" size="14" color="primary">shield-check</v-icon>
+                    <v-icon v-bind="tipProps" size="16" color="primary">shield-check</v-icon>
                   </template>
                 </v-tooltip>
               </div>
@@ -363,7 +363,7 @@ function bulkDeactivate() {
                   role="img"
                   :aria-label="entry.label"
                 >
-                  <v-icon size="12">{{ entry.entitled ? PRODUCT_ICONS[entry.product] : 'lock' }}</v-icon>
+                  <v-icon size="16">{{ entry.entitled ? PRODUCT_ICONS[entry.product] : 'lock' }}</v-icon>
                 </span>
               </template>
             </v-tooltip>
@@ -417,7 +417,6 @@ function bulkDeactivate() {
             illustration="no-results"
             title="No users match"
             description="Try a different search, status tab, or filter."
-            class="py-10"
           />
           <MpEmptyState
             v-else
@@ -426,7 +425,6 @@ function bulkDeactivate() {
             description="Invite your team and assign roles to control what each person can see and do."
             action-label="Invite users"
             action-icon="user-plus"
-            class="py-10"
             @action="inviteDrawer = true"
           />
         </template>
@@ -450,7 +448,7 @@ function bulkDeactivate() {
         <v-list density="compact">
           <template v-for="group in bulkAssignGroups" :key="group.product">
             <v-list-subheader>{{ group.label }}</v-list-subheader>
-            <v-list-item v-for="role in group.roles" :key="role.id" :title="role.name" @click="bulkAssignRole(role.id)" />
+            <MpMenuItem v-for="role in group.roles" :key="role.id" :title="role.name" @click="bulkAssignRole(role.id)" />
           </template>
         </v-list>
       </v-menu>
@@ -528,25 +526,26 @@ function bulkDeactivate() {
 .user-identity__name {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 13.5px;
-  font-weight: 600;
+  gap: var(--mp-space-4);
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   white-space: nowrap;
 }
 
 .user-identity__email {
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
 }
 
+/* 24px disc around a 16px row icon (recipe D1). */
 .product-dot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
+  width: var(--mp-space-24);
+  height: var(--mp-space-24);
+  border-radius: var(--mp-radius-full);
   border: 1px solid var(--border-subtle);
   background: var(--surface-primary);
   color: var(--text-primary);
@@ -558,7 +557,6 @@ function bulkDeactivate() {
 
 .product-dot--locked {
   color: var(--muted);
-  opacity: 0.65;
 }
 
 .product-dot :deep(.v-icon) {
