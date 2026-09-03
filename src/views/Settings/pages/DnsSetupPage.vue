@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 
@@ -24,52 +25,68 @@ const trackingDomains = ref([
     />
 
     <SettingsSection title="Sending Domains" description="DKIM, SPF, and DMARC verification for the domains you send from.">
-      <div class="section-actions">
+      <template #actions>
         <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">Add Domain</v-btn>
-      </div>
-      <div class="stack">
-        <div v-for="d in sendingDomains" :key="d.domain" class="domain-card">
-          <div class="domain-card__header">
-            <div class="domain-card__title-wrap">
-              <v-icon size="18" color="primary">mail</v-icon>
-              <span class="domain-card__title">{{ d.domain }}</span>
+      </template>
+
+      <!-- Divided rows inside the section card — a hairline between rows is the only
+           separator, so a domain is not a second bordered box inside a bordered card. -->
+      <div class="domain-list">
+        <div v-for="d in sendingDomains" :key="d.domain" class="domain-row">
+          <div class="domain-row__header">
+            <div class="domain-row__title-wrap">
+              <v-icon size="16" color="primary">mail</v-icon>
+              <span class="domain-row__title">{{ d.domain }}</span>
               <v-chip v-if="d.isDefault" size="x-small" variant="tonal" color="primary">Default</v-chip>
             </div>
-            <div class="domain-card__actions">
+            <div class="domain-row__actions">
               <MpStatusChip :status="d.status" type="general" size="sm" />
-              <v-btn icon="server" variant="text" size="small" aria-label="View DNS records" />
-              <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Remove domain" />
+              <v-tooltip text="View DNS records" location="top">
+                <template #activator="{ props: tipProps }">
+                  <v-btn v-bind="tipProps" icon="server" variant="text" size="small" aria-label="View DNS records" />
+                </template>
+              </v-tooltip>
+              <v-tooltip text="Remove domain" location="top">
+                <template #activator="{ props: tipProps }">
+                  <v-btn v-bind="tipProps" icon="trash-2" variant="text" size="small" color="error" aria-label="Remove domain" />
+                </template>
+              </v-tooltip>
             </div>
           </div>
-          <div class="domain-card__checks">
+          <dl class="domain-row__checks">
             <div v-for="(val, key) in { DKIM: d.dkim, SPF: d.spf, DMARC: d.dmarc }" :key="key" class="domain-check">
-              <div class="domain-check__label">{{ key }}</div>
-              <MpStatusChip :status="val" type="general" size="sm" />
+              <dt class="domain-check__label">{{ key }}</dt>
+              <dd class="domain-check__value"><MpStatusChip :status="val" type="general" size="sm" /></dd>
             </div>
-          </div>
+          </dl>
         </div>
-        <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-body-2">
-          <strong>DNS propagation</strong> can take up to 48 hours after adding records to your DNS provider.
-        </v-alert>
       </div>
+      <MpAlert tone="info" live="off" class="mt-4">
+        <strong>DNS propagation</strong> can take up to 48 hours after adding records to your DNS provider.
+      </MpAlert>
     </SettingsSection>
 
     <SettingsSection title="Link Tracking Domains" description="Custom subdomains for click and open tracking.">
-      <div class="section-actions">
-        <v-btn color="primary" variant="flat" prepend-icon="plus" class="text-none">Add Tracking Domain</v-btn>
-      </div>
-      <div class="stack">
-        <div v-for="d in trackingDomains" :key="d.domain" class="domain-card">
-          <div class="domain-card__header">
-            <div class="domain-card__title-wrap">
-              <v-icon size="18" color="secondary">link</v-icon>
-              <span class="domain-card__title">{{ d.domain }}</span>
+      <template #actions>
+        <v-btn variant="outlined" prepend-icon="plus" class="text-none">Add Tracking Domain</v-btn>
+      </template>
+
+      <div class="domain-list">
+        <div v-for="d in trackingDomains" :key="d.domain" class="domain-row">
+          <div class="domain-row__header">
+            <div class="domain-row__title-wrap">
+              <v-icon size="16" color="secondary">link</v-icon>
+              <span class="domain-row__title">{{ d.domain }}</span>
               <v-chip v-if="d.isDefault" size="x-small" variant="tonal" color="primary">Default</v-chip>
             </div>
-            <div class="domain-card__actions">
+            <div class="domain-row__actions">
               <MpStatusChip :status="d.ssl ? 'SSL Active' : 'SSL Pending'" type="general" size="sm" />
               <MpStatusChip :status="d.status" type="general" size="sm" />
-              <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Remove" />
+              <v-tooltip text="Remove" location="top">
+                <template #activator="{ props: tipProps }">
+                  <v-btn v-bind="tipProps" icon="trash-2" variant="text" size="small" color="error" aria-label="Remove" />
+                </template>
+              </v-tooltip>
             </div>
           </div>
         </div>
@@ -79,79 +96,69 @@ const trackingDomains = ref([
 </template>
 
 <style scoped lang="scss">
-
-.section-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 12px;
+.domain-row {
+  padding-block: var(--mp-space-16);
 }
 
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.domain-row + .domain-row {
+  border-top: 1px solid var(--border-subtle);
 }
 
-.domain-card {
-  padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
-}
-
-.domain-card__header {
+.domain-row__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--mp-space-12);
 }
 
-.domain-card__title-wrap {
+.domain-row__title-wrap {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
   min-width: 0;
   flex-wrap: wrap;
 }
 
-.domain-card__title {
-  font-size: 14px;
-  font-weight: 700;
+.domain-row__title {
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   overflow-wrap: anywhere;
 }
 
-.domain-card__actions {
+.domain-row__actions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
-.domain-card__checks {
+.domain-row__checks {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
-  margin-top: 14px;
+  gap: var(--mp-space-24);
+  margin: var(--mp-space-12) 0 0;
 }
 
+/* Key/value pairs: sentence-case muted 12px label over the value (recipe C2). */
 .domain-check__label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
-  margin-bottom: 4px;
-  text-transform: uppercase;
+  margin-bottom: var(--mp-space-4);
 }
 
-@media (max-width: 640px) {
-  .domain-card__header {
+.domain-check__value {
+  margin: 0;
+}
+
+@media (max-width: $mp-layout-breakpointCompact) {
+  .domain-row__header {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .domain-card__actions {
+  .domain-row__actions {
     justify-content: flex-start;
   }
 }
