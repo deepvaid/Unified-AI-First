@@ -13,7 +13,7 @@ const store = useMerchandisingStore()
       :subtitle="`Test search results live for ${store.activeStore.domain}. Coming soon.`"
     />
 
-    <v-card flat border rounded="lg" class="flex-grow-1 d-flex align-center justify-center" min-height="420">
+    <v-card flat border rounded="lg" class="flex-grow-1 d-flex align-center justify-center">
       <MpEmptyState
         icon="search"
         title="Search Preview is coming soon"
