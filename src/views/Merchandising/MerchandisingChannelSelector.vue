@@ -90,7 +90,7 @@ function openChannel(channel: SalesChannel) {
         @click:row="(_event: MouseEvent, { item }: { item: SalesChannel }) => openChannel(item)"
       >
         <template v-slot:item.name="{ item }">
-          <div class="d-flex align-center gap-3 py-2">
+          <div class="d-flex align-center gap-3">
             <v-avatar size="34" rounded="lg" color="primary" variant="tonal">
               <v-icon size="18">{{ item.provider === 'shopify' ? 'shopping-bag' : 'globe' }}</v-icon>
             </v-avatar>
@@ -115,8 +115,12 @@ function openChannel(channel: SalesChannel) {
         </template>
 
         <template v-slot:item.health="{ item }">
-          <span class="d-flex align-center gap-1 text-body-2">
-            <v-icon size="10" :color="merchandisingHealth(item) === 'healthy' ? 'success' : 'warning'">circle</v-icon>
+          <span class="d-flex align-center gap-2 text-body-2">
+            <span
+              class="health-dot flex-shrink-0"
+              :class="merchandisingHealth(item) === 'healthy' ? 'health-dot--healthy' : 'health-dot--warning'"
+              aria-hidden="true"
+            ></span>
             {{ MERCHANDISING_HEALTH_LABELS[merchandisingHealth(item)] }}
           </span>
         </template>
@@ -155,4 +159,13 @@ function openChannel(channel: SalesChannel) {
 .row-clickable :deep(tbody tr) {
   cursor: pointer;
 }
+
+/* Sync-health marker: an 8px dot on the theme colour, always paired with its label. */
+.health-dot {
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  border-radius: var(--mp-radius-full);
+}
+.health-dot--healthy { background: var(--pos); }
+.health-dot--warning { background: var(--warn); }
 </style>
