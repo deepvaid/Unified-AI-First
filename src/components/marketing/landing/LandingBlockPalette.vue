@@ -54,8 +54,8 @@ function onDragStart(e: DragEvent, type: LandingPageBlockType) {
   justify-content: center;
   gap: 6px;
   padding: 14px 6px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.10);
-  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-component-input-radius);
   background: rgb(var(--v-theme-surface));
   color: rgb(var(--v-theme-on-surface-variant));
   cursor: grab;
@@ -64,20 +64,22 @@ function onDragStart(e: DragEvent, type: LandingPageBlockType) {
 .lbp-tile:hover,
 .lbp-tile:focus-visible {
   transform: translateY(-2px);
-  border-color: rgba(var(--v-theme-primary), 0.4);
+  border-color: var(--border-default);
+  background: var(--surface-secondary);
   color: rgb(var(--v-theme-primary));
-  box-shadow: 0 6px 14px rgba(var(--v-theme-on-surface), 0.08);
+  box-shadow: var(--mp-shadow-sm);
 }
 .lbp-tile:focus-visible {
-  outline: none;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 .lbp-tile:active {
   cursor: grabbing;
   transform: translateY(0);
 }
 .lbp-tile__label {
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   line-height: 1.1;
 }
 </style>

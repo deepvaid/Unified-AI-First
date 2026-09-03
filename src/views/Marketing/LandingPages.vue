@@ -289,7 +289,6 @@ function onBulkMove(folderId: string | null) {
         title="Couldn't load your landing pages"
         description="The request timed out. Your pages are safe — try again."
         action-label="Retry"
-        class="py-10"
         @action="loadError = false"
       />
 
@@ -397,7 +396,6 @@ function onBulkMove(folderId: string | null) {
               ? `Nothing is filed under ${folderName(selectedFolderId)} yet.`
               : 'Try a different search term, or clear the editor-type and folder filters.'"
             action-label="Clear filters"
-            class="py-10"
             @action="clearAllFilters"
           />
           <MpEmptyState
@@ -408,7 +406,6 @@ function onBulkMove(folderId: string | null) {
             description="A landing page lives on your own domain and captures sign-ups from campaigns, ads and social posts."
             action-label="New page"
             action-icon="plus"
-            class="py-10"
             @action="newPage"
           />
         </template>

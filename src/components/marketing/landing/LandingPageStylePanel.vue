@@ -106,10 +106,10 @@ function set<K extends keyof LandingPageStyle>(key: K, value: LandingPageStyle[K
 }
 
 .lp-swatch {
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.18);
+  width: var(--mp-component-field-height-sm);
+  height: var(--mp-component-field-height-sm);
+  border-radius: var(--mp-component-chip-radius);
+  border: 1px solid var(--border-default);
   cursor: pointer;
   box-shadow: inset 0 0 0 2px rgb(var(--v-theme-surface));
   flex-shrink: 0;

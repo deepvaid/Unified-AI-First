@@ -44,13 +44,13 @@ function onGripDragStart(e: DragEvent) {
     </div>
     <div v-if="editable" class="lbv__controls">
       <button type="button" class="lbv__ctrl" draggable="true" aria-label="Drag to reorder" @dragstart="onGripDragStart" @click.stop>
-        <v-icon size="14">grip-vertical</v-icon>
+        <v-icon size="16">grip-vertical</v-icon>
       </button>
       <button type="button" class="lbv__ctrl" aria-label="Duplicate block" @click.stop="emit('duplicate')">
-        <v-icon size="14">copy-plus</v-icon>
+        <v-icon size="16">copy-plus</v-icon>
       </button>
       <button type="button" class="lbv__ctrl lbv__ctrl--danger" aria-label="Delete block" @click.stop="emit('remove')">
-        <v-icon size="14">trash-2</v-icon>
+        <v-icon size="16">trash-2</v-icon>
       </button>
     </div>
 
