@@ -4,6 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
+import MpAlert from '@/components/MpAlert.vue'
+import MpKpiCard from '@/components/MpKpiCard.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import {
   STAFF_ROLE_LABELS,
   useRetailStore,
@@ -60,20 +63,22 @@ const validLocation = computed(() => !!channel.value?.offlineStore && !!location
 
 const registerHeaders = [
   { title: 'Register', key: 'name', sortable: true },
-  { title: 'Device', key: 'device', sortable: false },
-  { title: 'Peripherals', key: 'peripherals', sortable: false },
-  { title: 'Pending', key: 'pendingOfflineTxns', sortable: true, width: 120 },
+  { title: 'Device', key: 'device', sortable: false, hideBelow: 'md' as const },
+  { title: 'Peripherals', key: 'peripherals', sortable: false, hideBelow: 'lg' as const },
+  { title: 'Pending', key: 'pendingOfflineTxns', sortable: true, width: 120, hideBelow: 'sm' as const },
   { title: 'Status', key: 'status', sortable: true, width: 120 },
-  { title: 'Last seen', key: 'lastSeenAt', sortable: true, width: 170 },
+  { title: 'Last seen', key: 'lastSeenAt', sortable: true, width: 170, hideBelow: 'md' as const },
 ]
+const { visibleHeaders: visibleRegisterHeaders } = useResponsiveTableHeaders(registerHeaders)
 
 const staffHeaders = [
   { title: 'Name', key: 'name', sortable: true },
-  { title: 'Role', key: 'role', sortable: true },
-  { title: 'PIN', key: 'pinSet', sortable: true, width: 110 },
+  { title: 'Role', key: 'role', sortable: true, hideBelow: 'sm' as const },
+  { title: 'PIN', key: 'pinSet', sortable: true, width: 110, hideBelow: 'md' as const },
   { title: 'Status', key: 'active', sortable: true, width: 120 },
-  { title: 'Last login', key: 'lastLoginAt', sortable: true, width: 170 },
+  { title: 'Last login', key: 'lastLoginAt', sortable: true, width: 170, hideBelow: 'md' as const },
 ]
+const { visibleHeaders: visibleStaffHeaders } = useResponsiveTableHeaders(staffHeaders)
 
 const enabledFulfillmentRoles = computed(() =>
   roles.value.filter((role) => role === 'pickup' || role === 'fulfillment' || role === 'warehouse'),
@@ -133,83 +138,64 @@ function registerStatusLabel(status: Register['status']) {
       </MpPageHeader>
 
       <v-row>
-        <v-col cols="12" md="3">
-          <v-card flat border rounded="lg">
-            <v-card-text>
-              <div class="text-caption text-medium-emphasis">Today sales</div>
-              <div class="text-h5 font-weight-bold">{{ formatCurrency(location.todaysSales) }}</div>
-            </v-card-text>
-          </v-card>
+        <v-col cols="12" sm="6" md="3">
+          <MpKpiCard label="Today sales" :value="formatCurrency(location.todaysSales)" icon="banknote" />
         </v-col>
-        <v-col cols="12" md="3">
-          <v-card flat border rounded="lg">
-            <v-card-text>
-              <div class="text-caption text-medium-emphasis">Registers</div>
-              <div class="text-h5 font-weight-bold">
-                {{ registers.filter((register) => register.status === 'online').length }} / {{ registers.length }}
-              </div>
-            </v-card-text>
-          </v-card>
+        <v-col cols="12" sm="6" md="3">
+          <MpKpiCard
+            label="Registers"
+            :value="`${registers.filter((register) => register.status === 'online').length} / ${registers.length}`"
+            icon="monitor-smartphone"
+            sub-stat="Online / total"
+          />
         </v-col>
-        <v-col cols="12" md="3">
-          <v-card flat border rounded="lg">
-            <v-card-text>
-              <div class="text-caption text-medium-emphasis">Staff</div>
-              <div class="text-h5 font-weight-bold">{{ staff.filter((staff) => staff.active).length }}</div>
-            </v-card-text>
-          </v-card>
+        <v-col cols="12" sm="6" md="3">
+          <MpKpiCard label="Staff" :value="staff.filter((staff) => staff.active).length" icon="users" sub-stat="Active" />
         </v-col>
-        <v-col cols="12" md="3">
-          <v-card flat border rounded="lg">
-            <v-card-text>
-              <div class="text-caption text-medium-emphasis">Status</div>
-              <div class="mt-2">
-                <MpStatusChip :status="location.status === 'open' ? 'Open' : 'Closed'" type="general" size="md" />
-              </div>
-            </v-card-text>
-          </v-card>
+        <v-col cols="12" sm="6" md="3">
+          <MpKpiCard
+            label="Status"
+            :value="location.status === 'open' ? 'Open' : 'Closed'"
+            icon="circle-dot"
+            :color="location.status === 'open' ? 'success' : 'default'"
+          />
         </v-col>
       </v-row>
 
       <v-row>
         <v-col cols="12" lg="7">
-          <v-card flat border rounded="lg" class="h-100">
-            <v-card-text class="pa-5">
-              <div class="text-subtitle-1 font-weight-bold mb-4">Address and hours</div>
-              <v-list class="bg-transparent pa-0" density="compact">
-                <v-list-item class="px-0" title="Address" :subtitle="location.address">
-                  <template #prepend>
-                    <v-icon size="18" color="primary">map-pin</v-icon>
-                  </template>
-                </v-list-item>
-                <v-list-item class="px-0" title="Country" :subtitle="location.country">
-                  <template #prepend>
-                    <v-icon size="18" color="primary">globe-2</v-icon>
-                  </template>
-                </v-list-item>
-                <v-list-item class="px-0" title="Location roles" :subtitle="roleText(roles)">
-                  <template #prepend>
-                    <v-icon size="18" color="primary">tags</v-icon>
-                  </template>
-                </v-list-item>
-                <v-list-item class="px-0" title="Operating hours" subtitle="Mon-Sun, 9:00 AM-6:00 PM">
-                  <template #prepend>
-                    <v-icon size="18" color="primary">clock</v-icon>
-                  </template>
-                </v-list-item>
-              </v-list>
-            </v-card-text>
+          <v-card flat border rounded="lg" class="h-100 ld-card">
+            <h2 class="mp-section-title">Address and hours</h2>
+            <dl class="mp-label-value">
+              <div>
+                <dt>Address</dt>
+                <dd>{{ location.address }}</dd>
+              </div>
+              <div>
+                <dt>Country</dt>
+                <dd>{{ location.country }}</dd>
+              </div>
+              <div>
+                <dt>Location roles</dt>
+                <dd>{{ roleText(roles) }}</dd>
+              </div>
+              <div>
+                <dt>Operating hours</dt>
+                <dd>Mon-Sun, 9:00 AM-6:00 PM</dd>
+              </div>
+            </dl>
           </v-card>
         </v-col>
 
         <v-col cols="12" lg="5">
-          <v-card flat border rounded="lg" class="h-100">
-            <v-card-text class="pa-5">
-              <div class="text-subtitle-1 font-weight-bold mb-2">Pickup and fulfillment</div>
-              <div class="text-body-2 text-medium-emphasis mb-4">
+          <v-card flat border rounded="lg" class="h-100 ld-card">
+            <div>
+              <h2 class="mp-section-title">Pickup and fulfillment</h2>
+              <p class="text-body-2 text-medium-emphasis mt-1 mb-0">
                 These settings describe how this physical location supports the Offline Store channel.
-              </div>
-              <div v-if="enabledFulfillmentRoles.length" class="d-flex align-center ga-2 flex-wrap">
+              </p>
+            </div>
+            <div v-if="enabledFulfillmentRoles.length" class="d-flex align-center ga-2 flex-wrap">
                 <v-chip
                   v-for="role in enabledFulfillmentRoles"
                   :key="role"
@@ -221,18 +207,17 @@ function registerStatusLabel(status: Register['status']) {
                   {{ LOCATION_ROLE_LABELS[role] }}
                 </v-chip>
               </div>
-              <v-alert v-else type="info" variant="tonal" density="compact">
-                Pickup and fulfillment are not enabled for this location.
-              </v-alert>
-            </v-card-text>
+            <MpAlert v-else tone="info" live="off">
+              Pickup and fulfillment are not enabled for this location.
+            </MpAlert>
           </v-card>
         </v-col>
       </v-row>
 
       <v-card flat border rounded="lg">
-        <v-card-title class="px-6 pt-5 pb-2 text-subtitle-1 font-weight-bold">Registers</v-card-title>
+        <h2 class="mp-section-title ld-table-title">Registers</h2>
         <v-data-table
-          :headers="registerHeaders"
+          :headers="visibleRegisterHeaders"
           :items="registers"
           item-value="id"
           density="comfortable"
@@ -272,9 +257,9 @@ function registerStatusLabel(status: Register['status']) {
       </v-card>
 
       <v-card flat border rounded="lg">
-        <v-card-title class="px-6 pt-5 pb-2 text-subtitle-1 font-weight-bold">Staff</v-card-title>
+        <h2 class="mp-section-title ld-table-title">Staff</h2>
         <v-data-table
-          :headers="staffHeaders"
+          :headers="visibleStaffHeaders"
           :items="staff"
           item-value="id"
           density="comfortable"
@@ -325,3 +310,16 @@ function registerStatusLabel(status: Register['status']) {
     </template>
   </div>
 </template>
+
+<style scoped>
+.ld-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-component-card-gap);
+  padding: var(--mp-component-card-padding);
+}
+
+.ld-table-title {
+  padding: var(--mp-component-card-padding) var(--mp-component-card-padding) var(--mp-space-8);
+}
+</style>
