@@ -78,7 +78,7 @@ withDefaults(defineProps<{
   align-items: center;
   justify-content: center;
   gap: var(--mp-space-6);
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.08em;
   font-size: var(--mp-fontSize-12);
   padding-block: var(--mp-space-12);
@@ -102,14 +102,14 @@ withDefaults(defineProps<{
   color: var(--accent-on);
   border-radius: var(--mp-radius-full);
   padding: var(--mp-space-8) var(--mp-space-20);
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
   margin-top: var(--mp-space-4);
 }
 .cep__body { padding-block: var(--mp-space-16); display: flex; flex-direction: column; gap: var(--mp-space-8); }
 .cep__body p { margin: 0; }
-.cep__strong { font-weight: 700; }
+.cep__strong { font-weight: var(--mp-fontWeight-bold); }
 .cep__items-label {
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-bold);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-size: var(--mp-fontSize-11);
@@ -118,7 +118,7 @@ withDefaults(defineProps<{
 .cep__items {
   border-block: 1px solid var(--border-default);
   padding-block: var(--mp-space-8);
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 .cep--dark .cep__items { border-color: var(--ink-panel-muted-fg); }
 .cep__muted { color: var(--on-surface-muted); }

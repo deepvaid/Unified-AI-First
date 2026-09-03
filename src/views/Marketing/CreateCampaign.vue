@@ -747,7 +747,7 @@ const scheduleSummary = computed(() => {
           <section class="d-flex flex-column ga-6">
             <div>
               <div class="d-flex align-center ga-2 mb-3">
-                <h3 class="text-subtitle-1 font-weight-bold mb-0">Campaign details</h3>
+                <h3 class="mp-section-title">Campaign details</h3>
                 <v-btn icon="pencil" size="x-small" variant="text" aria-label="Edit campaign details" @click="goToStep(1)" />
               </div>
               <dl class="cc-review-grid">
@@ -760,7 +760,7 @@ const scheduleSummary = computed(() => {
             <v-divider />
             <div>
               <div class="d-flex align-center ga-2 mb-3">
-                <h3 class="text-subtitle-1 font-weight-bold mb-0">Contacts</h3>
+                <h3 class="mp-section-title">Contacts</h3>
                 <v-btn icon="pencil" size="x-small" variant="text" aria-label="Edit contacts" @click="goToStep(2)" />
               </div>
               <dl class="cc-review-grid">
@@ -783,7 +783,7 @@ const scheduleSummary = computed(() => {
             <v-divider />
             <div>
               <div class="d-flex align-center ga-2 mb-3">
-                <h3 class="text-subtitle-1 font-weight-bold mb-0">Content</h3>
+                <h3 class="mp-section-title">Content</h3>
                 <v-btn icon="pencil" size="x-small" variant="text" aria-label="Edit content" @click="goToStep(3)" />
               </div>
               <dl class="cc-review-grid mb-4">
@@ -799,7 +799,7 @@ const scheduleSummary = computed(() => {
             <v-divider />
             <div>
               <div class="d-flex align-center ga-2 mb-3">
-                <h3 class="text-subtitle-1 font-weight-bold mb-0">Schedule</h3>
+                <h3 class="mp-section-title">Schedule</h3>
                 <v-btn icon="pencil" size="x-small" variant="text" aria-label="Edit schedule" @click="goToStep(4)" />
               </div>
               <dl class="cc-review-grid">
@@ -857,7 +857,7 @@ const scheduleSummary = computed(() => {
 }
 .cc-review-grid dt {
   font-size: var(--mp-fontSize-12);
-  font-weight: 500;
+  font-weight: var(--mp-fontWeight-medium);
   color: var(--text-secondary);
 }
 .cc-review-grid dd { font-size: var(--mp-fontSize-13); margin: 0; overflow-wrap: anywhere; }
