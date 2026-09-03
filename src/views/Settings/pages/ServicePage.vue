@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpListRow from '@/components/MpListRow.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -62,23 +63,28 @@ function save() { toast.success('Service settings saved') }
     </SettingsSection>
 
     <SettingsSection title="Reply Templates" description="Reusable snippets for fast, consistent responses.">
-      <div class="section-actions">
-        <v-btn size="small" variant="flat" color="primary" prepend-icon="plus" class="text-none">Add Template</v-btn>
-      </div>
-      <div class="stack">
-        <template v-for="(t, i) in replyTemplates" :key="t.id">
-          <v-divider v-if="i > 0" />
-          <div class="template-card">
-            <div class="template-card__copy">
-              <div class="template-card__name">{{ t.name }}</div>
-              <div class="template-card__preview">{{ t.preview }}</div>
+      <template #actions>
+        <v-btn variant="outlined" prepend-icon="plus" class="text-none">Add Template</v-btn>
+      </template>
+      <div class="template-list">
+        <MpListRow v-for="t in replyTemplates" :key="t.id" variant="divided">
+          <span class="template-row__name">{{ t.name }}</span>
+          <span class="template-row__preview">{{ t.preview }}</span>
+          <template #trailing>
+            <div class="template-row__actions">
+              <v-tooltip text="Edit template" location="top">
+                <template #activator="{ props: tipProps }">
+                  <v-btn v-bind="tipProps" icon="pencil" variant="text" size="small" aria-label="Edit template" />
+                </template>
+              </v-tooltip>
+              <v-tooltip text="Delete template" location="top">
+                <template #activator="{ props: tipProps }">
+                  <v-btn v-bind="tipProps" icon="trash-2" variant="text" size="small" color="error" aria-label="Delete template" />
+                </template>
+              </v-tooltip>
             </div>
-            <div class="template-card__actions">
-              <v-btn icon="pencil" variant="text" size="small" aria-label="Edit template" />
-              <v-btn icon="trash-2" variant="text" size="small" color="error" aria-label="Delete template" />
-            </div>
-          </div>
-        </template>
+          </template>
+        </MpListRow>
       </div>
     </SettingsSection>
 
@@ -93,78 +99,43 @@ function save() { toast.success('Service settings saved') }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--mp-space-16);
 }
 
-.toggle-row__title {
-  font-size: 13.5px;
-  font-weight: 600;
+.toggle-row__title,
+.template-row__name {
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
-.toggle-row__sub {
-  font-size: 12.5px;
+.toggle-row__sub,
+.template-row__preview {
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
 }
 
-.section-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
-}
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.template-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.template-card__name {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.template-card__preview {
-  font-size: 12.5px;
-  color: var(--muted);
-  margin-top: 2px;
-  max-width: 420px;
+.template-row__preview {
+  max-width: var(--mp-component-state-measure);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.template-card__actions {
+.template-row__actions {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--mp-space-4);
 }
 
-@media (max-width: 640px) {
-  .toggle-row,
-  .template-card {
+@media (max-width: $mp-layout-breakpointCompact) {
+  .toggle-row {
     align-items: flex-start;
   }
 
-  .template-card {
-    flex-direction: column;
-  }
-
-  .template-card__preview {
+  .template-row__preview {
     max-width: none;
     white-space: normal;
-  }
-
-  .template-card__actions {
-    align-self: flex-end;
   }
 }
 </style>
