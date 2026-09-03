@@ -8,6 +8,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 import {
   CHANNEL_HEALTH_LABELS,
   CHANNEL_STATUS_LABELS,
@@ -49,12 +50,13 @@ const tabs = computed(() => [
 
 const tableHeaders = [
   { title: 'Sales Channel', key: 'name', sortable: true },
-  { title: 'Type', key: 'type', sortable: true, width: 130 },
-  { title: 'Clouds', key: 'connectedClouds', sortable: false, width: 150 },
+  { title: 'Type', key: 'type', sortable: true, width: 130, hideBelow: 'md' as const },
+  { title: 'Clouds', key: 'connectedClouds', sortable: false, width: 150, hideBelow: 'lg' as const },
   { title: 'Status', key: 'health', sortable: true, width: 140 },
-  { title: 'Activity', key: 'lastActivityAt', sortable: true, width: 120 },
+  { title: 'Activity', key: 'lastActivityAt', sortable: true, width: 120, hideBelow: 'sm' as const },
   { title: '', key: 'actions', sortable: false, align: 'end' as const, width: 56 },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(tableHeaders)
 
 const filteredChannels = computed(() => {
   const query = search.value.trim().toLowerCase()
@@ -160,7 +162,7 @@ function mergedStatus(channel: SalesChannel): MergedStatus {
 
       <v-data-table
         class="sales-channels-table"
-        :headers="tableHeaders"
+        :headers="visibleHeaders"
         :items="filteredChannels"
         item-value="id"
         hover
@@ -171,7 +173,7 @@ function mergedStatus(channel: SalesChannel): MergedStatus {
         <template #item.name="{ item }">
           <div class="sales-channel-cell d-flex align-center ga-4 min-width-0">
             <v-avatar size="42" variant="tonal" color="primary">
-              <v-icon size="18">{{ channelIcon(item) }}</v-icon>
+              <v-icon size="16">{{ channelIcon(item) }}</v-icon>
             </v-avatar>
             <div class="min-width-0">
               <RouterLink
@@ -206,7 +208,7 @@ function mergedStatus(channel: SalesChannel): MergedStatus {
                   class="cloud-pill"
                   :class="`cloud-pill--${cloudTone(cloud)}`"
                 >
-                  <v-icon size="14">{{ CONNECTED_CLOUD_ICONS[cloud] }}</v-icon>
+                  <v-icon size="16">{{ CONNECTED_CLOUD_ICONS[cloud] }}</v-icon>
                 </span>
               </template>
             </v-tooltip>
@@ -254,17 +256,8 @@ function mergedStatus(channel: SalesChannel): MergedStatus {
   text-decoration: none;
 }
 
-.sales-channels-table :deep(tbody td) {
-  padding-top: 14px !important;
-  padding-bottom: 14px !important;
-}
-
-.sales-channel-cell {
-  padding-block: 2px;
-}
-
 .sales-channel-description {
-  margin-top: 3px;
+  margin-top: var(--mp-space-2);
 }
 
 .sales-channel-link:hover {
@@ -275,30 +268,30 @@ function mergedStatus(channel: SalesChannel): MergedStatus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  color: rgba(var(--v-theme-on-surface), 0.7);
+  width: var(--mp-space-24);
+  height: var(--mp-space-24);
+  border-radius: var(--mp-component-chip-radius);
+  background: var(--surface-secondary);
+  color: var(--on-surface-muted);
 }
 
 .cloud-pill--success {
-  background: rgba(var(--v-theme-success), 0.12);
-  color: rgb(var(--v-theme-success));
+  background: var(--pos-soft);
+  color: var(--pos-ink);
 }
 
 .cloud-pill--info {
-  background: rgba(var(--v-theme-info), 0.12);
-  color: rgb(var(--v-theme-info));
+  background: var(--surface-secondary);
+  color: var(--cloud-retail-text);
 }
 
 .cloud-pill--secondary {
-  background: rgba(var(--v-theme-secondary), 0.12);
-  color: rgb(var(--v-theme-secondary));
+  background: var(--surface-secondary);
+  color: var(--on-surface);
 }
 
 .cloud-pill--primary {
-  background: rgba(var(--v-theme-primary), 0.12);
-  color: rgb(var(--v-theme-primary));
+  background: var(--accent-soft);
+  color: var(--accent-on-container);
 }
 </style>
