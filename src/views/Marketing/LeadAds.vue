@@ -166,7 +166,6 @@ const deleteMessage = computed(() => {
         title="Couldn't load your lead ads"
         description="The connection to Meta timed out. Your lead ads are safe — try again."
         action-label="Retry"
-        class="py-10"
         @action="loadError = false"
       />
 
@@ -192,7 +191,7 @@ const deleteMessage = computed(() => {
             class="la-link"
           >
             {{ pageLabel(item) }}
-            <v-icon size="13" aria-hidden="true">external-link</v-icon>
+            <v-icon size="16" aria-hidden="true">external-link</v-icon>
             <span class="d-sr-only">(opens Facebook in a new tab)</span>
           </a>
         </template>
@@ -259,7 +258,6 @@ const deleteMessage = computed(() => {
               : 'Connect a Meta instant form to a contact list and every lead it captures lands in Maropost automatically.'"
             :action-label="hasFilters ? 'Clear filters' : 'New Meta lead ad'"
             :action-icon="hasFilters ? undefined : 'plus'"
-            class="py-10"
             @action="hasFilters ? clearFilters() : newLeadAd()"
           />
         </template>
