@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpListRow from '@/components/MpListRow.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -27,22 +28,24 @@ function save() { toast.success('Preferences saved') }
     />
 
     <SettingsSection title="Email Notifications">
-      <ul class="notif-list">
-        <li v-for="p in prefs" :key="p.key" class="notif-row">
-          <div class="notif-row__copy">
-            <div class="notif-row__title">{{ p.label }}</div>
-            <div class="notif-row__sub">{{ p.desc }}</div>
-          </div>
-          <!-- `hide-details` is deliberate: each switch sits in a list row that
-               already carries its own title and description. -->
-          <v-switch
-            v-model="p.value"
-            hide-details
-            inset
-            :aria-label="`Toggle ${p.label}`"
-          />
-        </li>
-      </ul>
+      <!-- Divided MpListRows inside the section card: the hairline between rows is
+           the only separator, so the list is not a second bordered box in a card. -->
+      <div class="notif-list">
+        <MpListRow v-for="p in prefs" :key="p.key" variant="divided">
+          <span class="notif-row__title">{{ p.label }}</span>
+          <span class="notif-row__sub">{{ p.desc }}</span>
+          <template #trailing>
+            <!-- `hide-details` is deliberate: each switch sits in a list row that
+                 already carries its own title and description. -->
+            <v-switch
+              v-model="p.value"
+              hide-details
+              inset
+              :aria-label="`Toggle ${p.label}`"
+            />
+          </template>
+        </MpListRow>
+      </div>
     </SettingsSection>
 
     <div class="settings-save-bar">
@@ -52,48 +55,15 @@ function save() { toast.success('Preferences saved') }
 </template>
 
 <style scoped lang="scss">
-
-.notif-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.notif-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
-}
-
-.notif-row + .notif-row {
-  border-top: 1px solid var(--border-subtle);
-}
-
-.notif-row__copy {
-  flex: 1;
-  min-width: 0;
-}
-
 .notif-row__title {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
 .notif-row__sub {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
-  margin-top: 2px;
-}
-
-@media (max-width: 640px) {
-  .notif-row {
-    align-items: flex-start;
-    padding: 12px;
-  }
+  margin-top: var(--mp-space-2);
 }
 </style>
