@@ -156,7 +156,7 @@ const openCreator = () => {
     <!-- Summary Stats -->
     <v-row class="mp-enter-stagger" dense>
       <v-col cols="12" md="6">
-        <MpKpiCard label="Total Revenue" :value="formatCurrency(totalRevenue)" emphasis="hero">
+        <MpKpiCard label="Total Revenue" :value="formatCurrency(totalRevenue)" emphasis="prominent">
           <template #value>
             <span class="mp-kpi-value--hero mp-money">{{ revenueParts.symbol }}{{ revenueParts.integer }}<span class="mp-money__cents">.{{ revenueParts.cents }}</span></span>
           </template>

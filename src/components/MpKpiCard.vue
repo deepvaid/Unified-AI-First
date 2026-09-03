@@ -10,8 +10,8 @@ const props = withDefaults(defineProps<{
   trendPositive?: boolean
   subStat?: string
   period?: string
-  /** 'hero' renders the value at display scale (48px/800) for a single headline metric. */
-  emphasis?: 'default' | 'hero'
+  /** 'prominent' renders the value at display scale (48px/800) for a single headline metric. */
+  emphasis?: 'default' | 'prominent'
   /** Optional last-updated meta line ("Updated 2h ago"), rendered as the smallest, most-muted caption at the card's bottom edge. */
   updatedAt?: string
 }>(), {
@@ -50,7 +50,7 @@ const trendUp = computed(() => props.trendPositive !== false)
       <div class="min-width-0 flex-grow-1">
         <div class="mp-kpi-card__value">
           <slot name="value">
-            <span :class="emphasis === 'hero' ? 'mp-kpi-value--hero' : 'mp-kpi-value'">{{ value }}</span>
+            <span :class="emphasis === 'prominent' ? 'mp-kpi-value--hero' : 'mp-kpi-value'">{{ value }}</span>
           </slot>
         </div>
 

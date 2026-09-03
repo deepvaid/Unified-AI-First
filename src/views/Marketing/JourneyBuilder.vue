@@ -1040,7 +1040,7 @@ onBeforeUnmount(() => {
 .jb-body { position: relative; overflow: hidden; min-height: 0; }
 .jb-name {
   cursor: pointer; border-radius: var(--mp-radius-4); padding: var(--mp-space-2) var(--mp-space-6); margin: calc(-1 * var(--mp-space-2)) calc(-1 * var(--mp-space-6));
-  font-size: var(--mp-fontSize-15); font-weight: 650; color: rgb(var(--v-theme-on-surface));
+  font-size: var(--mp-fontSize-15); font-weight: var(--mp-text-sectionTitle-fontWeight); color: rgb(var(--v-theme-on-surface));
   transition: background var(--dur-fast) var(--ease);
   /* Native <button> resets so the rename control keeps its text styling. */
   border: 0; background: transparent; font-family: inherit; text-align: left;
@@ -1075,7 +1075,7 @@ onBeforeUnmount(() => {
 /* Palette: quiet grey well with white step rows (Klaviyo / Customer.io pattern) so each
    step reads as a pick-up-able object and the heading/search stay on the surface. */
 .jb-palette { width: var(--mp-layout-sectionRailWidth); flex-shrink: 0; overflow: hidden; }
-.jb-palette__title { font-size: var(--mp-fontSize-14); font-weight: 650; line-height: 1.3; color: rgb(var(--v-theme-on-surface)); }
+.jb-palette__title { font-size: var(--mp-fontSize-14); font-weight: var(--mp-text-sectionTitle-fontWeight); line-height: 1.3; color: rgb(var(--v-theme-on-surface)); }
 .jb-palette__scroll { background: var(--surface-secondary); }
 @media (max-width: 1024px) {
   .jb-palette-toggle { display: inline-flex; }

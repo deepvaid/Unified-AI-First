@@ -128,7 +128,7 @@ const chipLabel = () => {
         {{ chipLabel() }}
       </div>
 
-      <div class="d-flex align-center ga-2 flex-shrink-0">
+      <div class="mp-builder__actions d-flex align-center ga-2 flex-shrink-0">
         <slot name="actions" />
       </div>
     </header>
@@ -223,5 +223,17 @@ const chipLabel = () => {
 @media (max-width: 768px) {
   .mp-builder__left,
   .mp-builder__right { display: none; }
+  /* The head band wraps: the actions cluster takes a full second line instead
+     of clipping off the right edge (EmailContentEditor at 375). */
+  .mp-builder__top {
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    padding-bottom: var(--mp-space-8);
+  }
+  .mp-builder__actions {
+    flex: 1 0 100%;
+    justify-content: flex-end;
+  }
 }
 </style>

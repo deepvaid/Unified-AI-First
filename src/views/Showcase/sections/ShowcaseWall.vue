@@ -147,7 +147,7 @@ const CHIP_ROWS = [
           icon="activity"
           color="success"
           trend="+0.02% this quarter"
-          emphasis="hero"
+          emphasis="prominent"
           class="h-100"
         />
       </v-col>

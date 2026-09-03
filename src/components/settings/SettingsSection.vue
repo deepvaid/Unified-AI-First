@@ -51,6 +51,13 @@ const headingId = useId()
   margin-bottom: var(--mp-component-card-gap);
 }
 
+@media (max-width: ($mp-layout-breakpointCompact - 0.02px)) {
+  /* A long #actions button no longer squeezes the description at 375. */
+  .settings-section__head {
+    flex-wrap: wrap;
+  }
+}
+
 .settings-section__head-left {
   flex: 1;
   min-width: 0;

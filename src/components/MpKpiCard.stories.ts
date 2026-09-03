@@ -251,7 +251,7 @@ export const IconTones: Story = {
   args: {} as any, // Fixes TS strict mode error
 }
 
-/** `emphasis="hero"` renders the value at display scale (48px/800) for a single headline metric. */
+/** `emphasis="prominent"` renders the value at display scale (48px/800) for a single headline metric. */
 export const Hero: Story = {
   args: {
     label: 'Total Revenue',
@@ -261,7 +261,7 @@ export const Hero: Story = {
     trend: '+18.2%',
     trendPositive: true,
     subStat: 'vs last quarter',
-    emphasis: 'hero',
+    emphasis: 'prominent',
   },
 }
 

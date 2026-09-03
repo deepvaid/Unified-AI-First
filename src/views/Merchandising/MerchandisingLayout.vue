@@ -124,10 +124,10 @@ function connectChannel() {
    scrolls as one — the frame's fixed height and clipping are released. */
 @media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
   .merch-shell { flex-direction: column; height: auto; overflow: visible; }
-  .merch-shell__content { overflow: visible; padding: var(--mp-space-20) var(--mp-space-28) var(--mp-space-28); }
+  .merch-shell__content { overflow: visible; padding: var(--mp-space-20) var(--mp-layout-shellInsetMedium) var(--mp-layout-shellInsetMedium); }
 }
 
 @media (max-width: ($mp-layout-breakpointCompact - 0.02px)) {
-  .merch-shell__content { padding: var(--mp-space-16) var(--mp-space-20) var(--mp-space-20); }
+  .merch-shell__content { padding: var(--mp-space-16) var(--mp-layout-shellInsetCompact) var(--mp-layout-shellInsetCompact); }
 }
 </style>
