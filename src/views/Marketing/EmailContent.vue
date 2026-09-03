@@ -266,7 +266,6 @@ function doMove(folderId: string | null) {
         title="Couldn't load your content"
         description="The request timed out. Your content is safe — try again."
         action-label="Retry"
-        class="py-10"
         @action="loadError = false"
       />
 
@@ -344,7 +343,6 @@ function doMove(folderId: string | null) {
               : 'Email content is the creative your campaigns send. Start from a template, or build one from scratch.'"
             :action-label="hasFilters ? 'Clear filters' : 'New content'"
             :action-icon="hasFilters ? undefined : 'plus'"
-            class="py-10"
             @action="hasFilters ? clearAllFilters() : newContent()"
           />
         </template>
@@ -386,13 +384,14 @@ function doMove(folderId: string | null) {
 
 <style scoped>
 .ec-name {
-  color: rgb(var(--v-theme-primary));
+  color: var(--accent-default);
   font-size: var(--mp-fontSize-14);
   font-weight: var(--mp-fontWeight-medium);
   text-align: left;
 }
 
-.ec-name:hover {
+.ec-name:hover,
+.ec-name:focus-visible {
   text-decoration: underline;
 }
 </style>
