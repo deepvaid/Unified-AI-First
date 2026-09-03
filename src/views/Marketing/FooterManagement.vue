@@ -127,7 +127,6 @@ function doDelete() {
             :description="search || editorFilter.length ? 'Try a different search or clear the editor filter.' : 'Standardize footers across brands with unsubscribe and compliance links.'"
             :action-label="!search && !editorFilter.length ? 'New Footer' : undefined"
             action-icon="plus"
-            class="py-10"
             @action="router.push(`/accounts/${accountId}/footers/new`)"
           />
         </template>
@@ -147,9 +146,9 @@ function doDelete() {
 
 <style scoped>
 .footer-link {
-  color: rgb(var(--v-theme-primary));
+  color: var(--accent-default);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: var(--mp-fontWeight-medium);
 }
 
 .footer-link:hover,
