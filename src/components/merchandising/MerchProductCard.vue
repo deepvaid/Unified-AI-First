@@ -32,7 +32,7 @@ const emit = defineEmits<{
       <v-img :src="product.image" :alt="product.title" :aspect-ratio="1" cover>
         <template #placeholder>
           <div class="merch-card__media-fallback">
-            <v-icon size="28" class="text-medium-emphasis">image</v-icon>
+            <v-icon size="20" class="text-medium-emphasis">image</v-icon>
           </div>
         </template>
       </v-img>
@@ -79,25 +79,27 @@ const emit = defineEmits<{
 <style scoped>
 .merch-card {
   position: relative;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border: 1px solid var(--border-subtle);
   border-radius: var(--mp-component-card-radius);
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-primary);
+  color: var(--on-surface);
   overflow: hidden;
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+  transition: border-color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard),
+    box-shadow var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 
 .merch-card:hover {
-  border-color: rgba(var(--v-theme-primary), 0.35);
+  border-color: var(--border-hover);
 }
 
 .merch-card--selected {
-  border-color: rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 1px rgba(var(--v-theme-primary), 0.3);
+  border-color: var(--accent-default);
+  box-shadow: 0 0 0 1px var(--accent-default);
 }
 
 .merch-card__media {
   position: relative;
-  background: rgba(var(--v-theme-surface-variant), 0.3);
+  background: var(--surface-secondary);
 }
 
 .merch-card__media-fallback {
@@ -118,10 +120,11 @@ const emit = defineEmits<{
   justify-content: center;
   padding-inline: var(--mp-space-6);
   border-radius: var(--mp-radius-full);
-  background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  background: var(--surface-primary);
+  color: var(--on-surface);
+  border: 1px solid var(--border-subtle);
   font-size: var(--mp-fontSize-11);
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-bold);
   font-variant-numeric: tabular-nums;
 }
 
@@ -129,10 +132,10 @@ const emit = defineEmits<{
   position: absolute;
   top: var(--mp-space-4);
   left: var(--mp-space-4);
-  background: rgba(var(--v-theme-surface), 0.9);
+  background: var(--surface-primary);
   border-radius: var(--mp-component-chip-radius);
   opacity: 0;
-  transition: opacity 120ms ease;
+  transition: opacity var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 
 .merch-card__pin {
@@ -140,7 +143,7 @@ const emit = defineEmits<{
   top: var(--mp-space-8);
   right: var(--mp-space-8);
   opacity: 0;
-  transition: opacity 120ms ease;
+  transition: opacity var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 
 .merch-card__check--visible,
