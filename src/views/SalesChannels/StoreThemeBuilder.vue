@@ -717,7 +717,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                   @click="leftTab = 'sections'"
                   @keydown="onModeRailKeydown"
                 >
-                  <v-icon size="20">layers</v-icon>
+                  <v-icon size="18">layers</v-icon>
                 </button>
               </template>
             </v-tooltip>
@@ -735,7 +735,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                   @click="leftTab = 'styles'"
                   @keydown="onModeRailKeydown"
                 >
-                  <v-icon size="20">palette</v-icon>
+                  <v-icon size="18">palette</v-icon>
                 </button>
               </template>
             </v-tooltip>
@@ -828,7 +828,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
                   :aria-label="`Select ${blockLabel(block)} block`"
                   @click="selectBlock(section.id, block.id)"
                 >
-                  <v-icon size="14" class="tb-block-row__icon">{{ blockIcon(block.kind) }}</v-icon>
+                  <v-icon size="16" class="tb-block-row__icon">{{ blockIcon(block.kind) }}</v-icon>
                   <span class="tb-block-row__label text-truncate">{{ blockLabel(block) }}</span>
                   <span
                     v-if="newBlockIds.has(block.id)"
@@ -871,7 +871,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
               <v-menu location="bottom start">
                 <template #activator="{ props: menuProps }">
                   <button v-bind="menuProps" class="tb-block-add" :aria-label="`Add a block to ${section.label}`">
-                    <v-icon size="14" class="tb-block-row__icon">plus</v-icon>
+                    <v-icon size="16" class="tb-block-row__icon">plus</v-icon>
                     <span class="tb-block-row__label">Add block</span>
                   </button>
                 </template>
@@ -1002,7 +1002,7 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
         <div class="pa-4 border-b d-flex align-center justify-space-between flex-shrink-0">
           <div class="d-flex align-center gap-3" style="min-width:0;">
             <v-avatar color="primary" variant="tonal" size="32" rounded="lg" class="flex-shrink-0">
-              <v-icon size="17">{{ (isBlockSelected ? selectedBlockDef : selectedSectionDef)?.icon }}</v-icon>
+              <v-icon size="16">{{ (isBlockSelected ? selectedBlockDef : selectedSectionDef)?.icon }}</v-icon>
             </v-avatar>
             <div style="min-width:0;">
               <div class="text-body-2 font-weight-bold text-truncate">
@@ -1177,10 +1177,10 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
   width: 44px;
   flex-shrink: 0;
-  padding: 8px 0;
+  padding: var(--mp-space-8) 0;
   border-right: 1px solid var(--mp-border-subtle);
   background: var(--surface-primary);
 }
@@ -1188,8 +1188,8 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: var(--mp-space-32);
+  height: var(--mp-space-32);
   border-radius: var(--r-chip);
   color: var(--muted);
   cursor: pointer;
@@ -1204,8 +1204,8 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   color: var(--accent);
 }
 .tb-mode-rail__btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.5);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 .tb-panel-content {
   min-width: 0;
@@ -1223,14 +1223,14 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   bottom: 0;
   left: 0;
   z-index: 5;
-  box-shadow: 0 8px 24px rgba(var(--v-theme-on-surface), 0.14);
+  box-shadow: var(--mp-shadow-lg);
 }
 
 .tb-section-row {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px 4px 2px 0;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-2) var(--mp-space-4) var(--mp-space-2) 0;
   border-radius: var(--r-chip);
   transition: background 0.15s;
 }
@@ -1239,15 +1239,15 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 .tb-section-row--selected:hover { background: var(--accent-soft); }
 .tb-section-row--selected .tb-section-row__main { color: var(--accent); }
 .tb-section-row--hidden .tb-section-row__icon,
-.tb-section-row--hidden .tb-section-row__label { opacity: 0.45; }
+.tb-section-row--hidden .tb-section-row__label { color: var(--text-disabled); }
 
 .tb-section-row__main {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mp-space-8);
   flex: 1;
   min-width: 0;
-  padding: 7px 8px;
+  padding: var(--mp-space-6) var(--mp-space-8);
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -1255,17 +1255,17 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   text-align: left;
   color: var(--text-primary);
 }
-.tb-section-row__main:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tb-section-row__main:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .tb-section-row__icon { color: var(--muted); flex-shrink: 0; }
-.tb-section-row__label { font-size: 0.8125rem; font-weight: 600; }
+.tb-section-row__label { font-size: var(--mp-text-label-fontSize); font-weight: var(--mp-fontWeight-semibold); }
 .tb-section-row__new {
   flex-shrink: 0;
-  padding: 1px 6px;
+  padding: var(--mp-space-2) var(--mp-space-6);
   border-radius: var(--r-pill);
   background: var(--accent);
   color: rgb(var(--v-theme-on-primary));
-  font-size: 0.625rem;
-  font-weight: 700;
+  font-size: var(--mp-fontSize-10);
+  font-weight: var(--mp-fontWeight-bold);
   letter-spacing: 0.04em;
 }
 
@@ -1287,22 +1287,22 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 
 /* Expand chevron + spacer keep section rows aligned whether or not they nest */
 .tb-section-row__expand { flex-shrink: 0; }
-.tb-section-row__expand-spacer { width: 28px; flex-shrink: 0; }
+.tb-section-row__expand-spacer { width: var(--mp-space-28); flex-shrink: 0; }
 
 /* ── Block sub-tree (nested under a section) ─────────────────────── */
 .tb-blocks {
   display: flex;
   flex-direction: column;
-  margin: 0 0 4px 26px;
-  padding-left: 8px;
+  margin: 0 0 var(--mp-space-4) var(--mp-space-24);
+  padding-left: var(--mp-space-8);
   border-left: 1px solid var(--mp-border-subtle);
 }
 
 .tb-block-row {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 1px 4px 1px 0;
+  gap: var(--mp-space-2);
+  padding: var(--mp-space-2) var(--mp-space-4) var(--mp-space-2) 0;
   border-radius: var(--r-chip);
   transition: background 0.15s;
 }
@@ -1314,10 +1314,10 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 .tb-block-row__main {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--mp-space-6);
   flex: 1;
   min-width: 0;
-  padding: 5px 8px;
+  padding: var(--mp-space-4) var(--mp-space-8);
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -1325,16 +1325,16 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   text-align: left;
   color: var(--text-primary);
 }
-.tb-block-row__main:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tb-block-row__main:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .tb-block-row__icon { color: var(--muted); flex-shrink: 0; }
-.tb-block-row__label { font-size: 0.75rem; font-weight: 500; }
+.tb-block-row__label { font-size: var(--mp-fontSize-12); font-weight: var(--mp-fontWeight-medium); }
 
 .tb-block-add {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--mp-space-6);
   width: 100%;
-  padding: 5px 8px;
+  padding: var(--mp-space-4) var(--mp-space-8);
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -1343,9 +1343,9 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
   color: var(--accent);
 }
 .tb-block-add:hover { background: var(--accent-soft); }
-.tb-block-add:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tb-block-add:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .tb-block-add .tb-block-row__icon { color: var(--accent); }
-.tb-block-add .tb-block-row__label { font-weight: 600; }
+.tb-block-add .tb-block-row__label { font-weight: var(--mp-fontWeight-semibold); }
 
 /* ── Canvas ──────────────────────────────────────────────────────── */
 .tb-canvas { flex: 1 1 auto; position: relative; overflow: hidden; background: var(--surface-0); }
@@ -1357,20 +1357,20 @@ onBeforeUnmount(() => narrowQuery.removeEventListener('change', onNarrowChange))
 .tb-panel-right { width: 340px; flex-shrink: 0; overflow: hidden; }
 
 /* ── Color swatches (token palette presets) ──────────────────────── */
-.tb-swatch-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.tb-swatch-row { display: flex; flex-wrap: wrap; gap: var(--mp-space-10); }
 
 .tb-swatch {
-  width: 28px;
-  height: 28px;
+  width: var(--mp-space-28);
+  height: var(--mp-space-28);
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--r-pill);
   cursor: pointer;
   box-shadow: inset 0 0 0 1px var(--mp-border-subtle);
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .tb-swatch:hover { transform: scale(1.12); }
-.tb-swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tb-swatch:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .tb-swatch--selected {
   box-shadow:
     inset 0 0 0 1px var(--mp-border-subtle),
