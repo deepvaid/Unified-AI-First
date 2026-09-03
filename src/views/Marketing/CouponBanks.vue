@@ -149,7 +149,6 @@ function notify(text: string) { toast.success(text) }
             :description="search ? 'Try a different search term.' : 'Create a pool of unique coupon codes to assign per recipient at send time.'"
             :action-label="!search ? 'New Coupon' : undefined"
             action-icon="plus"
-            class="py-10"
             @action="openCreate"
           />
         </template>
@@ -226,5 +225,5 @@ function notify(text: string) { toast.success(text) }
 </template>
 
 <style scoped>
-.font-mono { font-family: monospace; }
+.font-mono { font-family: var(--mp-fontFamily-mono); }
 </style>
