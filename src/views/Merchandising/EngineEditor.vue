@@ -10,6 +10,7 @@ import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import MerchProductCard from '@/components/merchandising/MerchProductCard.vue'
 import { useToast } from '@/composables/useToast'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
@@ -179,6 +180,10 @@ const remainingFallbacks = computed(() =>
 
 /* ── Preview (persistent from step 2 onward) ──────────────────── */
 const previewDevice = ref<'desktop' | 'mobile'>('desktop')
+const PREVIEW_DEVICES = [
+  { value: 'desktop', label: 'Desktop preview', icon: 'monitor' },
+  { value: 'mobile', label: 'Mobile preview', icon: 'smartphone' },
+]
 
 const previewProducts = computed(() => {
   if (!draft.value.type) return []
@@ -360,8 +365,8 @@ function performDelete() {
                     Add fallback
                   </v-btn>
                 </template>
-                <v-list density="compact" rounded="lg" min-width="200" class="py-1">
-                  <v-list-item
+                <v-list role="menu" aria-label="Add fallback">
+                  <MpMenuItem
                     v-for="fallback in remainingFallbacks"
                     :key="fallback"
                     :title="fallback"
@@ -386,7 +391,7 @@ function performDelete() {
         <v-card v-else variant="flat" border rounded="lg" class="engine-filters">
         <div class="d-flex align-center justify-space-between px-5 py-4">
           <div>
-            <span class="text-subtitle-2 font-weight-bold">Filters</span>
+            <h2 class="mp-section-title d-inline">Filters</h2>
             <span class="text-caption text-medium-emphasis ml-2">Narrow which products the engine may recommend</span>
           </div>
           <v-btn
@@ -473,21 +478,18 @@ function performDelete() {
       <!-- Preview (persistent from step 2) -->
       <v-card variant="flat" border rounded="lg" class="engine-preview flex-shrink-0">
         <div class="px-4 py-2 d-flex align-center justify-space-between gap-2">
-          <span class="text-subtitle-2 font-weight-bold">Preview</span>
+          <h2 class="mp-section-title">Preview</h2>
           <div class="d-flex align-center gap-2">
             <span class="text-caption text-medium-emphasis text-no-wrap">
               {{ draft.page ? `${ENGINE_PAGE_LABELS[draft.page]} page` : '' }}
             </span>
-            <v-btn-toggle
-              v-model="previewDevice"
-              density="compact"
-              mandatory
-              rounded="lg"
-              class="engine-device-toggle"
-            >
-              <v-btn value="desktop" size="x-small" icon="monitor" aria-label="Desktop preview" />
-              <v-btn value="mobile" size="x-small" icon="smartphone" aria-label="Mobile preview" />
-            </v-btn-toggle>
+            <MpSegmentedControl
+              :model-value="previewDevice"
+              :items="PREVIEW_DEVICES"
+              size="sm"
+              ariaLabel="Preview device"
+              @update:model-value="(v) => (previewDevice = v === 'mobile' ? 'mobile' : 'desktop')"
+            />
           </div>
         </div>
         <v-divider />
@@ -563,16 +565,15 @@ function performDelete() {
     />
   </template>
 
-  <div v-if="notFound" class="pa-10">
-    <MpErrorState
-      icon="sparkles"
-      title="Engine not found"
-      description="This engine may have been deleted, or the link is incorrect."
-      action-label="Back to Recommendations"
-      action-icon="arrow-left"
-      @action="router.push(listRoute)"
-    />
-  </div>
+  <MpErrorState
+    v-if="notFound"
+    icon="sparkles"
+    title="Engine not found"
+    description="This engine may have been deleted, or the link is incorrect."
+    action-label="Back to Recommendations"
+    action-icon="arrow-left"
+    @action="router.push(listRoute)"
+  />
 </template>
 
 <style scoped>
@@ -606,33 +607,30 @@ function performDelete() {
   align-items: center;
   gap: var(--mp-space-12);
   padding: var(--mp-space-14) var(--mp-space-16);
-  border: 1px dashed rgba(var(--v-theme-primary), 0.4);
+  border: 1px dashed var(--border-default);
   border-radius: var(--mp-radius-12);
-  background: rgba(var(--v-theme-primary), 0.03);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
   cursor: pointer;
   font: inherit;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background var(--mp-motion-duration-fast) var(--mp-motion-easing-standard),
+    border-color var(--mp-motion-duration-fast) var(--mp-motion-easing-standard);
 }
 
 .engine-davinci:hover {
-  background: rgba(var(--v-theme-primary), 0.07);
-  border-color: rgba(var(--v-theme-primary), 0.6);
+  background: var(--accent-soft);
+  border-color: var(--accent-default);
 }
 
 .engine-davinci:focus-visible {
-  outline: 2px solid rgb(var(--v-theme-primary));
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .engine-preview {
-  width: 380px;
+  width: var(--mp-layout-inboxListWidth);
   position: sticky;
   top: 0;
-}
-
-.engine-device-toggle {
-  height: 28px;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .engine-preview-grid {
@@ -653,7 +651,7 @@ function performDelete() {
 }
 
 .engine-condition-form {
-  background: rgba(var(--v-theme-surface-variant), 0.18);
+  background: var(--surface-secondary);
 }
 
 @media (max-width: 1100px) {

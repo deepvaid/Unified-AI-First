@@ -125,11 +125,11 @@ function performConfirm() {
               Add new rule
             </v-btn>
           </template>
-          <v-list density="compact" rounded="lg" min-width="230" class="py-1">
-            <v-list-item prepend-icon="pin" title="Pinning rule" @click="router.push(pinningRoute('new'))" />
-            <v-list-item prepend-icon="sliders-horizontal" title="Merchandising rule" @click="router.push(ruleRoute('new'))" />
+          <v-list role="menu" aria-label="Add new rule">
+            <MpMenuItem icon="pin" title="Pinning rule" @click="router.push(pinningRoute('new'))" />
+            <MpMenuItem icon="sliders-horizontal" title="Merchandising rule" @click="router.push(ruleRoute('new'))" />
             <v-divider class="my-1" />
-            <v-list-item prepend-icon="tags" title="Promo card" subtitle="Coming soon" disabled />
+            <MpMenuItem icon="tags" title="Promo card" subtitle="Coming soon" disabled />
           </v-list>
         </v-menu>
       </template>
@@ -154,7 +154,7 @@ function performConfirm() {
           <span class="text-body-2 font-weight-medium">{{ item.collection }}</span>
         </template>
         <template #item.count="{ item }">
-          <span class="text-body-2 font-weight-semibold">{{ item.count }}</span>
+          <span class="text-body-2 x-strong">{{ item.count }}</span>
         </template>
         <template #item.actions="{ item }">
           <MpRowActionsMenu ariaLabel="Pinning rule actions" :item-label="item.collection">
@@ -170,7 +170,6 @@ function performConfirm() {
             description="Pin products to fixed positions at the top of a collection."
             action-label="Add pinning rule"
             action-icon="plus"
-            class="py-10"
             @action="router.push(pinningRoute('new'))"
           />
         </template>
@@ -190,7 +189,7 @@ function performConfirm() {
         @click:row="(e: MouseEvent, { item }: { item: MerchRule }) => handleRowClick(e, () => openRule(item.id))"
       >
         <template #item.status="{ item }">
-          <MpStatusChip :status="item.active ? 'Active' : 'Inactive'" type="general" size="sm" variant="flat" />
+          <MpStatusChip :status="item.active ? 'Active' : 'Inactive'" type="general" size="sm" />
         </template>
         <template #item.name="{ item }">
           <span class="text-body-2 font-weight-medium">{{ item.name }}</span>
@@ -220,7 +219,6 @@ function performConfirm() {
             description="Create rules to control product ranking, boost specific products, or apply business logic."
             action-label="Add merchandising rule"
             action-icon="plus"
-            class="py-10"
             @action="router.push(ruleRoute('new'))"
           />
         </template>
@@ -233,7 +231,6 @@ function performConfirm() {
         icon="tags"
         title="Promo cards are coming soon"
         description="Create promotional messages within the product grid to highlight offers and drive users to key pages."
-        class="py-12"
       />
     </v-card>
 
@@ -251,6 +248,11 @@ function performConfirm() {
 </template>
 
 <style scoped>
+/* Vuetify has no semibold weight utility. */
+.x-strong {
+  font-weight: var(--mp-fontWeight-semibold);
+}
+
 .dm-table :deep(tbody tr) {
   cursor: pointer;
 }
