@@ -58,14 +58,16 @@ function startNewChat() {
 <template>
   <div class="davinci-copilot">
     <header class="davinci-copilot__topbar">
-      <button
-        type="button"
+      <v-btn
+        size="small"
+        variant="flat"
+        rounded="pill"
+        prepend-icon="square-pen"
         class="davinci-copilot__newchat"
         @click="startNewChat"
       >
-        <v-icon size="14">square-pen</v-icon>
         Start new chat
-      </button>
+      </v-btn>
     </header>
 
     <div class="davinci-copilot__body">
@@ -88,48 +90,30 @@ function startNewChat() {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .davinci-copilot {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: calc(100vh - var(--v-layout-top, 64px));
-  background: rgb(var(--v-theme-surface));
+  min-height: calc(100vh - var(--v-layout-top, var(--mp-layout-appbarHeight)));
+  background: var(--surface-primary);
 }
 
 .davinci-copilot__topbar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  height: 48px;
-  padding: 0 16px;
-  background: rgb(var(--v-theme-surface));
-  border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
+  height: var(--mp-space-48);
+  padding: 0 var(--mp-space-16);
+  background: var(--surface-primary);
+  border-bottom: 1px solid var(--border-subtle);
   flex: 0 0 auto;
 }
 
+/* The one primary CTA on this surface wears the Da Vinci gradient skin
+   (dv-tokens.css pair --dv-grad / --dv-on-accent) over a plain v-btn. */
 .davinci-copilot__newchat {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 9999px;
   background: var(--dv-grad);
-  color: var(--dv-on-accent);
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.1px;
-  cursor: pointer;
-  transition: filter 120ms ease;
-}
-
-.davinci-copilot__newchat:hover {
-  filter: brightness(1.05);
-}
-
-.davinci-copilot__newchat :deep(.v-icon) {
   color: var(--dv-on-accent);
 }
 
@@ -140,17 +124,25 @@ function startNewChat() {
 }
 
 .davinci-copilot__rail {
-  width: 260px;
-  flex: 0 0 260px;
-  background: rgb(var(--v-theme-surface-variant));
-  border-right: 1px solid rgb(var(--v-theme-outline-variant));
+  width: var(--mp-layout-sectionRailWidth);
+  flex: 0 0 var(--mp-layout-sectionRailWidth);
+  background: var(--surface-secondary);
+  border-right: 1px solid var(--border-subtle);
   overflow-y: auto;
+}
+
+/* Below the split breakpoint the 260px history rail would leave the chat
+   ~115px wide; the conversation gets the whole frame instead. */
+@media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
+  .davinci-copilot__rail {
+    display: none;
+  }
 }
 
 .davinci-copilot__main {
   flex: 1 1 auto;
   min-width: 0;
-  background: rgb(var(--v-theme-surface));
+  background: var(--surface-primary);
   overflow: hidden;
   display: flex;
   flex-direction: column;
