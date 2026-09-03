@@ -3,6 +3,7 @@ import MpAlert from '@/components/MpAlert.vue'
 import MpFormField from '@/components/MpFormField.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import { mp_color_light_textPrimary } from '@/design-tokens/generated/tokens'
 import type { LandingPageBlock, SocialNetwork } from '@/stores/useLandingPages'
 
@@ -24,6 +25,22 @@ const NETWORKS: { value: SocialNetwork; icon: string }[] = [
   { value: 'linkedin', icon: 'linkedin' },
   { value: 'youtube', icon: 'youtube' },
   { value: 'tiktok', icon: 'music-2' },
+]
+const TITLE_SIZE_ITEMS = TITLE_SIZES.map(s => ({ value: s, label: s }))
+const BUTTON_SIZE_ITEMS = BUTTON_SIZES.map(s => ({ value: s, label: s }))
+const ASPECT_ITEMS = ASPECTS.map(a => ({ value: a, label: a }))
+const BUTTON_STYLE_ITEMS = [
+  { value: 'filled', label: 'Filled' },
+  { value: 'outline', label: 'Outline' },
+]
+const DIVIDER_STYLE_ITEMS = [
+  { value: 'solid', label: 'Solid' },
+  { value: 'dashed', label: 'Dashed' },
+]
+const ALIGN_ITEMS = [
+  { value: 'left', label: 'Align left', icon: 'align-left', tooltip: 'Align left' },
+  { value: 'center', label: 'Align center', icon: 'align-center', tooltip: 'Align center' },
+  { value: 'right', label: 'Align right', icon: 'align-right', tooltip: 'Align right' },
 ]
 const ICON_CHOICES = ['star', 'heart', 'shield-check', 'award', 'thumbs-up', 'zap', 'check-circle', 'sparkles', 'flame', 'trophy']
 
@@ -51,9 +68,7 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
     <template v-if="block.type === 'title'">
       <v-textarea v-model="block.text" label="Text" auto-grow rows="3" />
       <MpFormField label="Size">
-        <v-btn-toggle v-model="block.titleSize" mandatory class="lbs-toggle-full">
-          <v-btn v-for="s in TITLE_SIZES" :key="s" :value="s" size="small" class="text-none">{{ s }}</v-btn>
-        </v-btn-toggle>
+        <MpSegmentedControl :model-value="block.titleSize" :items="TITLE_SIZE_ITEMS" size="sm" ariaLabel="Title size" @update:model-value="v => block.titleSize = v as typeof block.titleSize" />
       </MpFormField>
       <MpFormField label="Text color">
         <v-menu :close-on-content-click="false" location="start">
@@ -80,15 +95,10 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
       <v-text-field v-model="block.label" label="Label" />
       <v-text-field v-model="block.url" label="Link URL" placeholder="https://" />
       <MpFormField label="Style">
-        <v-btn-toggle v-model="block.buttonStyle" mandatory class="lbs-toggle-full">
-          <v-btn value="filled" size="small" class="text-none">Filled</v-btn>
-          <v-btn value="outline" size="small" class="text-none">Outline</v-btn>
-        </v-btn-toggle>
+        <MpSegmentedControl :model-value="block.buttonStyle" :items="BUTTON_STYLE_ITEMS" size="sm" ariaLabel="Button style" @update:model-value="v => block.buttonStyle = v as typeof block.buttonStyle" />
       </MpFormField>
       <MpFormField label="Size">
-        <v-btn-toggle v-model="block.buttonSize" mandatory class="lbs-toggle-full">
-          <v-btn v-for="s in BUTTON_SIZES" :key="s" :value="s" size="small" class="text-none">{{ s }}</v-btn>
-        </v-btn-toggle>
+        <MpSegmentedControl :model-value="block.buttonSize" :items="BUTTON_SIZE_ITEMS" size="sm" ariaLabel="Button size" @update:model-value="v => block.buttonSize = v as typeof block.buttonSize" />
       </MpFormField>
       <v-switch v-model="block.fullWidth" label="Full width" />
     </template>
@@ -98,9 +108,7 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
       <v-text-field v-model="block.alt" label="Alt text" />
       <v-text-field v-model="block.caption" label="Caption" hint="Optional — shown under the image." />
       <MpFormField label="Aspect ratio">
-        <v-btn-toggle v-model="block.aspect" mandatory class="lbs-toggle-full">
-          <v-btn v-for="a in ASPECTS" :key="a" :value="a" size="small" class="text-none">{{ a }}</v-btn>
-        </v-btn-toggle>
+        <MpSegmentedControl :model-value="block.aspect" :items="ASPECT_ITEMS" size="sm" ariaLabel="Aspect ratio" @update:model-value="v => block.aspect = v as typeof block.aspect" />
       </MpFormField>
       <v-switch v-model="block.rounded" label="Rounded corners" />
     </template>
@@ -208,10 +216,7 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
     <!-- divider -->
     <template v-else-if="block.type === 'divider'">
       <MpFormField label="Style">
-        <v-btn-toggle v-model="block.dividerStyle" mandatory class="lbs-toggle-full">
-          <v-btn value="solid" size="small" class="text-none">Solid</v-btn>
-          <v-btn value="dashed" size="small" class="text-none">Dashed</v-btn>
-        </v-btn-toggle>
+        <MpSegmentedControl :model-value="block.dividerStyle" :items="DIVIDER_STYLE_ITEMS" size="sm" ariaLabel="Divider style" @update:model-value="v => block.dividerStyle = v as typeof block.dividerStyle" />
       </MpFormField>
       <MpFormField label="Width">
         <template #default="{ labelId }">
@@ -227,11 +232,7 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
       v-if="['title', 'paragraph', 'text', 'button', 'social', 'icons', 'menu'].includes(block.type)"
       label="Alignment"
     >
-      <v-btn-toggle v-model="block.align" mandatory>
-        <v-btn value="left" icon="align-left" size="small" aria-label="Align left" />
-        <v-btn value="center" icon="align-center" size="small" aria-label="Align center" />
-        <v-btn value="right" icon="align-right" size="small" aria-label="Align right" />
-      </v-btn-toggle>
+      <MpSegmentedControl :model-value="block.align" :items="ALIGN_ITEMS" size="sm" ariaLabel="Alignment" @update:model-value="v => block.align = v as typeof block.align" />
     </MpFormField>
 
     <div>
@@ -241,13 +242,11 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
 </template>
 
 <style scoped>
-.lbs-toggle-full { width: 100%; }
-.lbs-toggle-full :deep(.v-btn) { flex: 1; }
 .lbs-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.18);
+  width: var(--mp-component-field-height-sm);
+  height: var(--mp-component-field-height-sm);
+  border-radius: var(--mp-component-chip-radius);
+  border: 1px solid var(--border-default);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -256,19 +255,24 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  border-radius: var(--mp-radius-full);
+  border: 1px solid var(--border-default);
   background: rgb(var(--v-theme-surface));
   color: rgb(var(--v-theme-on-surface-variant));
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-12);
+  font-weight: var(--mp-fontWeight-semibold);
   cursor: pointer;
   transition: border-color 100ms ease, color 100ms ease, background 100ms ease;
 }
 .lbs-chip--active {
   border-color: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.08);
+  color: var(--accent-on-container);
+  background: var(--accent-soft);
+}
+.lbs-chip:focus-visible,
+.lbs-icon-choice:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 .lbs-icon-choice {
   display: flex;
@@ -276,8 +280,8 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.16);
+  border-radius: var(--mp-component-chip-radius);
+  border: 1px solid var(--border-default);
   background: rgb(var(--v-theme-surface));
   color: rgb(var(--v-theme-on-surface-variant));
   cursor: pointer;
@@ -285,8 +289,8 @@ function removeLink(i: number) { props.block.links.splice(i, 1) }
 }
 .lbs-icon-choice--active {
   border-color: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.08);
+  color: var(--accent-on-container);
+  background: var(--accent-soft);
 }
 .lbs-slider-value {
   display: inline-block;

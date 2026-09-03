@@ -47,7 +47,7 @@ function pick(type: LandingPageBlockType) {
     <v-menu v-model="menuOpen" location="bottom" :close-on-content-click="false">
       <template #activator="{ props: menuProps }">
         <button v-bind="menuProps" type="button" class="lip__pill" aria-label="Insert block here">
-          <v-icon size="13">plus</v-icon>
+          <v-icon size="16">plus</v-icon>
         </button>
       </template>
       <v-card rounded="lg" border flat class="pa-3" style="width: 220px;">
@@ -100,8 +100,13 @@ function pick(type: LandingPageBlockType) {
   z-index: 1;
 }
 .lip:hover .lip__pill,
-.lip--over .lip__pill {
+.lip--over .lip__pill,
+.lip__pill:focus-visible {
   opacity: 1;
   transform: scale(1);
+}
+.lip__pill:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 </style>

@@ -82,7 +82,7 @@ function onDragEnd() {
       @drop.prevent="onDrop(index)"
       @dragend="onDragEnd"
     >
-      <v-icon size="14" class="llp-row__grip" aria-hidden="true">grip-vertical</v-icon>
+      <v-icon size="16" class="llp-row__grip" aria-hidden="true">grip-vertical</v-icon>
       <v-icon size="16" class="llp-row__icon">{{ meta(block.type)?.icon ?? 'square' }}</v-icon>
       <div class="llp-row__text min-width-0">
         <div class="llp-row__label text-truncate">{{ meta(block.type)?.label ?? block.type }}</div>
@@ -90,16 +90,16 @@ function onDragEnd() {
       </div>
       <div class="llp-row__actions">
         <button type="button" class="llp-icon-btn" aria-label="Move up" :disabled="index === 0" @click.stop="emit('move', block.id, -1)">
-          <v-icon size="13">chevron-up</v-icon>
+          <v-icon size="16">chevron-up</v-icon>
         </button>
         <button type="button" class="llp-icon-btn" aria-label="Move down" :disabled="index === blocks.length - 1" @click.stop="emit('move', block.id, 1)">
-          <v-icon size="13">chevron-down</v-icon>
+          <v-icon size="16">chevron-down</v-icon>
         </button>
         <button type="button" class="llp-icon-btn" aria-label="Duplicate block" @click.stop="emit('duplicate', block.id)">
-          <v-icon size="13">copy-plus</v-icon>
+          <v-icon size="16">copy-plus</v-icon>
         </button>
         <button type="button" class="llp-icon-btn llp-icon-btn--danger" aria-label="Delete block" @click.stop="emit('remove', block.id)">
-          <v-icon size="13">trash-2</v-icon>
+          <v-icon size="16">trash-2</v-icon>
         </button>
       </div>
     </div>
@@ -124,22 +124,21 @@ function onDragEnd() {
   transition: background 100ms ease, border-color 100ms ease;
 }
 .llp-row:hover {
-  background: rgba(var(--v-theme-on-surface), 0.05);
+  background: var(--surface-secondary);
 }
 .llp-row--selected {
   border-color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.06);
+  background: var(--accent-soft);
 }
 .llp-row--over {
   box-shadow: inset 0 2px 0 rgb(var(--v-theme-primary));
 }
 .llp-row:focus-visible {
-  outline: 2px solid rgb(var(--v-theme-primary));
-  outline-offset: 1px;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 .llp-row__grip {
-  color: rgb(var(--v-theme-on-surface-variant));
-  opacity: 0.5;
+  color: var(--on-surface-muted);
   flex-shrink: 0;
 }
 .llp-row__icon {
@@ -150,13 +149,13 @@ function onDragEnd() {
   flex-grow: 1;
 }
 .llp-row__label {
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: var(--mp-text-label-fontSize);
+  font-weight: var(--mp-fontWeight-semibold);
   color: rgb(var(--v-theme-on-surface));
 }
 .llp-row__preview {
-  font-size: 0.68rem;
-  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: var(--mp-fontSize-12);
+  color: var(--on-surface-muted);
 }
 .llp-row__actions {
   display: none;
@@ -172,17 +171,21 @@ function onDragEnd() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
+  width: var(--mp-space-24);
+  height: var(--mp-space-24);
+  border-radius: var(--mp-radius-4);
   color: rgb(var(--v-theme-on-surface-variant));
   background: transparent;
   border: none;
   cursor: pointer;
 }
 .llp-icon-btn:hover {
-  background: rgba(var(--v-theme-on-surface), 0.08);
+  background: var(--surface-secondary);
   color: rgb(var(--v-theme-on-surface));
+}
+.llp-icon-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }
 .llp-icon-btn:disabled {
   opacity: 0.3;

@@ -13,6 +13,7 @@ import MpStatusChip from '@/components/MpStatusChip.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpBuilderPreviewDialog from '@/components/MpBuilderPreviewDialog.vue'
+import MpSegmentedControl from '@/components/MpSegmentedControl.vue'
 import LandingBlockPalette, { type PaletteItem } from '@/components/marketing/landing/LandingBlockPalette.vue'
 import LandingLayersPanel from '@/components/marketing/landing/LandingLayersPanel.vue'
 import LandingPageStylePanel from '@/components/marketing/landing/LandingPageStylePanel.vue'
@@ -63,6 +64,10 @@ const leftTab = ref<'blocks' | 'layers'>('blocks')
 const settingsOpen = ref(false)
 const previewOpen = ref(route.query.preview === '1')
 const previewDevice = ref<'desktop' | 'mobile'>('desktop')
+const DEVICE_ITEMS = [
+  { value: 'desktop', label: 'Desktop view', icon: 'monitor', tooltip: 'Desktop view' },
+  { value: 'mobile', label: 'Mobile view', icon: 'smartphone', tooltip: 'Mobile view' },
+]
 
 const FONT_STACK: Record<BaseFont, string> = {
   Inter: 'Inter, system-ui, -apple-system, sans-serif',
@@ -327,10 +332,13 @@ function saveAndClose() {
     </template>
 
     <template #toolbar-center>
-      <v-btn-toggle v-model="device" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
-        <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop view" />
-        <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile view" />
-      </v-btn-toggle>
+      <MpSegmentedControl
+        :model-value="device"
+        :items="DEVICE_ITEMS"
+        size="sm"
+        ariaLabel="Canvas device"
+        @update:model-value="v => device = v as typeof device"
+      />
       <v-btn
         :variant="showStructure ? 'tonal' : 'text'"
         :color="showStructure ? 'primary' : undefined"
@@ -388,7 +396,7 @@ function saveAndClose() {
 
       <div class="lpe-body d-flex h-100 overflow-hidden">
         <!-- left: Blocks / Layers -->
-        <aside class="lpe-left d-flex flex-column">
+        <aside class="lpe-left">
           <div class="lpe-left__tabs" role="tablist" aria-label="Editor panels">
             <button
               type="button"
@@ -429,7 +437,7 @@ function saveAndClose() {
             <div class="lpe-content" @click.self="selectedId = null">
               <div v-if="!blocks.length" class="lpe-empty text-center py-16 px-6">
                 <v-icon size="34" color="primary" class="mb-3">layout-template</v-icon>
-                <div class="text-h6 font-weight-bold mb-1">Start with a section</div>
+                <h2 class="mp-section-title mb-1">Start with a section</h2>
                 <div class="text-body-2 text-medium-emphasis mb-6">Add a ready-made block group, or drag one in from the Blocks palette.</div>
                 <div class="d-flex justify-center ga-3 flex-wrap">
                   <v-btn variant="tonal" color="primary" prepend-icon="sparkles" class="text-none" @click="insertQuickStart('hero')">Hero</v-btn>
@@ -497,10 +505,13 @@ function saveAndClose() {
 
       <MpBuilderPreviewDialog v-model="previewOpen" :title="pageName || 'Preview'">
         <template #toolbar>
-          <v-btn-toggle v-model="previewDevice" density="compact" mandatory rounded="lg" class="mp-toggle-group mp-toggle-group--segmented">
-            <v-btn value="desktop" size="small" icon="monitor" aria-label="Desktop view" />
-            <v-btn value="mobile" size="small" icon="smartphone" aria-label="Mobile view" />
-          </v-btn-toggle>
+          <MpSegmentedControl
+            :model-value="previewDevice"
+            :items="DEVICE_ITEMS"
+            size="sm"
+            ariaLabel="Preview device"
+            @update:model-value="v => previewDevice = v as typeof previewDevice"
+          />
         </template>
         <div class="lpe-sheet" :class="`lpe-sheet--${previewDevice}`" :style="{ background: pageStyle.backgroundColor, ...styleVars }">
           <div class="lpe-content">
@@ -562,30 +573,36 @@ function saveAndClose() {
   min-height: 0;
 }
 .lpe-left {
+  display: flex;
+  flex-direction: column;
   width: 264px;
   flex-shrink: 0;
-  border-right: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+  border-right: 1px solid var(--border-subtle);
   background: rgb(var(--v-theme-surface));
 }
 .lpe-left__tabs {
   display: flex;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+  border-bottom: 1px solid var(--border-subtle);
 }
 .lpe-tab {
   flex: 1;
   padding: 10px 0;
   border: none;
   background: transparent;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: rgb(var(--v-theme-on-surface-variant));
+  font-size: var(--mp-text-label-fontSize);
+  font-weight: var(--mp-fontWeight-semibold);
+  color: var(--on-surface-muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: color 100ms ease, border-color 100ms ease;
 }
 .lpe-tab:hover {
   color: rgb(var(--v-theme-on-surface));
+}
+.lpe-tab:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }
 .lpe-tab--active {
   color: rgb(var(--v-theme-primary));
@@ -598,7 +615,7 @@ function saveAndClose() {
 .lpe-right {
   width: 320px;
   flex-shrink: 0;
-  border-left: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+  border-left: 1px solid var(--border-subtle);
   background: rgb(var(--v-theme-surface));
   overflow-y: auto;
 }
@@ -654,7 +671,7 @@ function saveAndClose() {
 .lpe-preview-bar {
   height: 52px;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.10);
+  border-bottom: 1px solid var(--border-subtle);
 }
 .lpe-preview-stage {
   overflow-y: auto;
