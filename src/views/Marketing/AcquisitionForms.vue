@@ -281,7 +281,6 @@ function doDuplicate(form: AcquisitionForm) {
         title="Couldn't load your forms"
         description="The request timed out. Your forms are safe — try again."
         action-label="Retry"
-        class="py-10"
         @action="loadError = false"
       />
 
@@ -366,7 +365,6 @@ function doDuplicate(form: AcquisitionForm) {
               : 'Acquisition forms capture email sign-ups from your website — as a popup, or embedded in the page.'"
             :action-label="hasFilters ? 'Clear filters' : 'New form'"
             :action-icon="hasFilters ? undefined : 'plus'"
-            class="py-10"
             @action="hasFilters ? clearAllFilters() : newForm()"
           />
         </template>
@@ -511,7 +509,7 @@ function doDuplicate(form: AcquisitionForm) {
   align-items: flex-start;
   gap: var(--mp-space-8);
   padding: var(--mp-space-12);
-  background: rgb(var(--v-theme-surface-variant));
+  background: var(--surface-secondary);
   border-radius: var(--mp-component-input-radius);
 }
 
@@ -521,7 +519,7 @@ function doDuplicate(form: AcquisitionForm) {
   font-family: var(--mp-fontFamily-mono);
   font-size: var(--mp-fontSize-12);
   line-height: var(--mp-lineHeight-normal);
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--on-surface);
   white-space: pre-wrap;
   word-break: break-all;
 }
