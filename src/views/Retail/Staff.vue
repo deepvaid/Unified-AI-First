@@ -109,7 +109,7 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
     <v-card flat border rounded="lg" class="retail-widget-card d-flex flex-column">
       <MpDataTableToolbar v-model:search="search" search-placeholder="Search staff…">
         <template #actions>
-          <v-btn variant="outlined" size="small" class="text-none" prepend-icon="download" @click="showToast('Export — mock only')">
+          <v-btn variant="outlined" class="text-none" prepend-icon="download" @click="showToast('Export — mock only')">
             Export
           </v-btn>
         </template>
@@ -125,13 +125,13 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
         show-select
         density="comfortable"
         :items-per-page="25"
+        class="retail-clickable-rows"
         @click:row="(_e: Event, { item }: { item: StaffMember }) => openEdit(item)"
-        style="cursor: pointer;"
       >
         <template #item.name="{ item }">
           <div class="d-flex align-center ga-3">
             <v-avatar size="30" color="primary">
-              <span class="text-caption text-white font-weight-bold">
+              <span class="text-caption font-weight-bold">
                 {{ item.name.split(' ').map((n) => n[0]).join('') }}
               </span>
             </v-avatar>
@@ -146,7 +146,7 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
         </template>
 
         <template #item.locationIds="{ item }">
-          <div class="d-flex flex-wrap gap-1">
+          <div class="d-flex flex-wrap ga-1">
             <v-chip
               v-for="locId in item.locationIds"
               :key="locId"
@@ -288,7 +288,7 @@ const ROLE_ITEMS = Object.entries(STAFF_ROLE_LABELS).map(([v, t]) => ({ value: v
 </template>
 
 <style scoped lang="scss">
-.gap-1 {
-  gap: 4px;
+.retail-clickable-rows {
+  cursor: pointer;
 }
 </style>
