@@ -25,8 +25,8 @@ const DELIVERY_OPTIONS = [
     />
 
     <v-row dense>
-      <v-col cols="12" md="7">
-        <v-card flat border rounded="lg" class="pa-6 mb-4">
+      <v-col cols="12" md="7" class="d-flex flex-column ga-5">
+        <v-card flat border rounded="lg" class="retail-form-card">
           <MpSectionHeader title="Template" />
           <MpFormGrid>
             <v-text-field
@@ -54,14 +54,13 @@ const DELIVERY_OPTIONS = [
           </MpFormGrid>
         </v-card>
 
-        <v-card flat border rounded="lg" class="pa-6">
+        <v-card flat border rounded="lg" class="retail-form-card">
           <MpSectionHeader title="Delivery" />
-          <MpFormGrid>
+          <MpFormGrid :cols="2">
             <v-select
               :model-value="settings.defaultDelivery"
               :items="DELIVERY_OPTIONS"
               label="Default at checkout"
-              style="max-width: 360px"
               @update:model-value="(v) => store.updateReceiptSettings({ defaultDelivery: v })"
             />
             <v-text-field
@@ -69,11 +68,13 @@ const DELIVERY_OPTIONS = [
               label="Email subject"
               hint="{{store}} is replaced with the selling location's name."
               persistent-hint
+              class="mp-form-grid__full"
               @update:model-value="(v) => store.updateReceiptSettings({ emailSubject: v })"
             />
             <v-switch
               :model-value="settings.giftReceiptsEnabled"
               label="Offer gift receipts (prices hidden)"
+              class="mp-form-grid__full"
               @update:model-value="(v) => store.updateReceiptSettings({ giftReceiptsEnabled: !!v })"
             />
           </MpFormGrid>
@@ -81,9 +82,9 @@ const DELIVERY_OPTIONS = [
       </v-col>
 
       <v-col cols="12" md="5">
-        <v-card flat border rounded="lg" class="pa-6">
+        <v-card flat border rounded="lg" class="retail-form-card">
           <MpSectionHeader title="Preview" />
-          <div class="receipt-preview mt-4">
+          <div class="receipt-preview">
             <div v-if="settings.showLogo" class="receipt-preview__logo">LOGO</div>
             <div class="receipt-preview__header">{{ settings.headerText }}</div>
             <div class="receipt-preview__rule" />
@@ -101,32 +102,40 @@ const DELIVERY_OPTIONS = [
 </template>
 
 <style scoped lang="scss">
+/* Card root inset is the card token, never a pa-* utility (recipe B1). */
+.retail-form-card {
+  padding: var(--mp-component-card-padding);
+}
+
+/* Paper-receipt mock: dashed hairlines on --border-default, muted ink pairs on the card surface. */
 .receipt-preview {
-  border: 1px dashed rgba(var(--v-theme-on-surface), 0.2);
-  border-radius: 8px;
-  padding: 20px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--mp-component-chip-radius);
+  padding: var(--mp-component-card-padding);
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-text-caption-fontSize);
   line-height: 1.6;
+  color: var(--on-surface);
+  font-variant-numeric: tabular-nums;
 }
 
 .receipt-preview__logo {
   text-align: center;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: rgba(var(--v-theme-on-surface), 0.45);
-  margin-bottom: 8px;
+  font-weight: var(--mp-fontWeight-bold);
+  letter-spacing: var(--mp-text-eyebrow-letterSpacing);
+  color: var(--on-surface-muted);
+  margin-bottom: var(--mp-space-8);
 }
 
 .receipt-preview__header {
   text-align: center;
-  font-weight: 600;
-  margin-bottom: 10px;
+  font-weight: var(--mp-fontWeight-semibold);
+  margin-bottom: var(--mp-space-10);
 }
 
 .receipt-preview__rule {
-  border-top: 1px dashed rgba(var(--v-theme-on-surface), 0.2);
-  margin: 8px 0;
+  border-top: 1px dashed var(--border-default);
+  margin: var(--mp-space-8) 0;
 }
 
 .receipt-preview__line {
@@ -135,18 +144,13 @@ const DELIVERY_OPTIONS = [
 }
 
 .receipt-preview__line--total {
-  font-weight: 700;
+  font-weight: var(--mp-fontWeight-bold);
 }
 
-.receipt-preview__meta {
-  margin-top: 10px;
-  text-align: center;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-}
-
+.receipt-preview__meta,
 .receipt-preview__footer {
-  margin-top: 10px;
+  margin-top: var(--mp-space-10);
   text-align: center;
-  color: rgba(var(--v-theme-on-surface), 0.7);
+  color: var(--on-surface-muted);
 }
 </style>

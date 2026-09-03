@@ -9,6 +9,7 @@ import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpFormSection from '@/components/MpFormSection.vue'
 import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import { useRetailStore } from '@/stores/useRetail'
@@ -153,7 +154,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
       </v-col>
       <v-col cols="6" sm="3">
         <div class="retail-fleet-tile">
-          <v-icon size="16" color="warning" style="margin-right: 8px;">clock</v-icon>
+          <v-icon size="16" color="warning" class="retail-fleet-tile__dot">clock</v-icon>
           <div>
             <div class="retail-fleet-tile__value">{{ store.registerList.filter((r) => store.scopedLocationIds.includes(r.locationId)).reduce((s, r) => s + r.pendingOfflineTxns, 0) }}</div>
             <div class="retail-fleet-tile__label">Pending txns</div>
@@ -167,7 +168,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
     <v-card flat border rounded="lg" class="retail-widget-card d-flex flex-column">
       <MpDataTableToolbar v-model:search="search" search-placeholder="Search registers…">
         <template #actions>
-          <v-btn v-if="selectedRows.length === 0" variant="outlined" size="small" class="text-none" prepend-icon="download" @click="showToast('Export registers — mock only')">
+          <v-btn v-if="selectedRows.length === 0" variant="outlined" class="text-none" prepend-icon="download" @click="showToast('Export registers — mock only')">
             Export
           </v-btn>
         </template>
@@ -183,8 +184,8 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         show-select
         density="comfortable"
         :items-per-page="25"
+        class="retail-clickable-rows"
         @click:row="(_e: Event, { item }: { item: Register }) => openDetail(item)"
-        style="cursor: pointer;"
       >
         <template #item.name="{ item }">
           <div class="d-flex align-center ga-2">
@@ -201,7 +202,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
 
         <template #item.deviceModel="{ item }">
           <div class="d-flex align-center ga-1">
-            <v-icon size="14" class="text-medium-emphasis">
+            <v-icon size="16" class="text-medium-emphasis">
               {{ item.deviceType.includes('iPad') || item.deviceType.includes('Tablet') ? 'tablet' : 'smartphone' }}
             </v-icon>
             <span class="text-body-2">{{ item.deviceModel }}</span>
@@ -269,7 +270,7 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
         <div class="register-detail-status" :class="`register-detail-status--${selectedRegister.status}`">
           <div :class="['retail-status-dot', `retail-status-dot--${selectedRegister.status}`]" />
           <span class="font-weight-medium text-capitalize">{{ selectedRegister.status }}</span>
-          <span class="text-medium-emphasis" style="margin-left: auto; font-size: 12px;">
+          <span class="text-caption text-medium-emphasis ms-auto">
             Last seen {{ formatAgo(selectedRegister.lastSeenAt) }}
           </span>
         </div>
@@ -306,14 +307,17 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
 
         <!-- Offline queue -->
         <MpFormSection title="Offline queue">
-          <div v-if="selectedRegister.pendingOfflineTxns > 0" class="register-offline-warning">
-            <v-icon size="18" color="warning">alert-triangle</v-icon>
-            <div>
-              <div class="font-weight-medium" style="font-size: 13px;">{{ selectedRegister.pendingOfflineTxns }} transactions pending sync</div>
-              <div style="font-size: 12px; color: var(--muted);">These will upload automatically when the device reconnects.</div>
-            </div>
-            <v-btn size="x-small" variant="tonal" color="warning" class="text-none ml-auto" @click="showToast('Sync triggered — mock only')">Sync now</v-btn>
-          </div>
+          <MpAlert
+            v-if="selectedRegister.pendingOfflineTxns > 0"
+            tone="warning"
+            live="off"
+            :title="`${selectedRegister.pendingOfflineTxns} transactions pending sync`"
+          >
+            These will upload automatically when the device reconnects.
+            <template #actions>
+              <v-btn size="small" variant="tonal" color="warning" class="text-none" @click="showToast('Sync triggered — mock only')">Sync now</v-btn>
+            </template>
+          </MpAlert>
           <div v-else class="text-body-2 text-medium-emphasis">No pending transactions. Device is fully synced.</div>
         </MpFormSection>
 
@@ -378,26 +382,31 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
 </template>
 
 <style scoped lang="scss">
+.retail-clickable-rows {
+  cursor: pointer;
+}
+
 .retail-fleet-tile {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid color-mix(in oklch, var(--text-primary) 7%, transparent);
-  border-radius: var(--r-section);
+  gap: var(--mp-space-10);
+  padding: var(--mp-space-14) var(--mp-space-16);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--mp-component-card-radius);
   background: var(--surface-primary);
 
   &__value {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text-primary);
+    font-size: var(--mp-fontSize-20);
+    font-weight: var(--mp-fontWeight-bold);
+    font-variant-numeric: tabular-nums;
+    color: var(--on-surface);
     line-height: 1;
   }
 
   &__label {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 2px;
+    font-size: var(--mp-text-caption-fontSize);
+    color: var(--on-surface-muted);
+    margin-top: var(--mp-space-2);
   }
 
   &__dot {
@@ -405,31 +414,23 @@ const PRINTERS = ['Star mC-Print3', 'Epson TM-m30III', 'None']
   }
 }
 
+/* Drawer status band — soft tint + matching ink, like MpAlert's container pairs. */
 .register-detail-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: var(--r-section);
-  background: color-mix(in oklch, var(--text-primary) 4%, transparent);
+  gap: var(--mp-space-8);
+  padding: var(--mp-space-10) var(--mp-space-14);
+  border-radius: var(--mp-component-chip-radius);
+  background: var(--surface-secondary);
+  color: var(--on-surface);
 
-  &--online { background: color-mix(in oklch, var(--pos) 8%, transparent); }
-  &--offline { background: color-mix(in oklch, var(--neg) 8%, transparent); }
-  &--syncing { background: color-mix(in oklch, rgb(var(--v-theme-warning)) 8%, transparent); }
-}
-
-.register-offline-warning {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid color-mix(in oklch, rgb(var(--v-theme-warning)) 30%, transparent);
-  border-radius: var(--r-section);
-  background: color-mix(in oklch, rgb(var(--v-theme-warning)) 8%, transparent);
+  &--online { background: var(--pos-soft); color: var(--pos-ink); }
+  &--offline { background: var(--neg-soft); color: var(--neg-ink); }
+  &--syncing { background: var(--warn-soft); color: var(--warn-ink); }
 }
 
 .text-mono {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 12px;
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-text-caption-fontSize);
 }
 </style>
