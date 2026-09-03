@@ -24,9 +24,13 @@ const store = useMerchandisingStore()
 const toast = useToast()
 const search = ref('')
 
-/** Open the collection configuration editor (Shopify Filters / Activation / Sorting). */
+/** Route to the collection configuration editor (Shopify Filters / Activation / Sorting). */
+function collectionRoute(collection: SmartCollection) {
+  return { name: 'MerchandisingChannelCollectionEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, collectionId: collection.id } }
+}
+
 function editCollection(collection: SmartCollection) {
-  router.push({ name: 'MerchandisingChannelCollectionEdit', params: { accountId: route.params.accountId, channelId: route.params.channelId, collectionId: collection.id } })
+  router.push(collectionRoute(collection))
 }
 
 /** Open the channel-scoped pinning editor for this collection. */
@@ -151,11 +155,11 @@ function submitCreate() {
         class="flex-grow-1"
       >
         <template #item.status="{ item }">
-          <MpStatusChip :status="item.status === 'active' ? 'Active' : 'Inactive'" type="general" size="sm" variant="flat" />
+          <MpStatusChip :status="item.status === 'active' ? 'Active' : 'Inactive'" type="general" size="sm" />
         </template>
 
         <template #item.name="{ item }">
-          <a class="font-weight-bold text-body-2 text-primary cursor-pointer" @click="editCollection(item)">{{ item.name }}</a>
+          <router-link class="font-weight-bold text-body-2 text-primary collection-link" :to="collectionRoute(item)">{{ item.name }}</router-link>
         </template>
 
         <template #item.filterType="{ item }">
@@ -242,7 +246,15 @@ function submitCreate() {
 </template>
 
 <style scoped>
-.cursor-pointer {
-  cursor: pointer;
+.collection-link {
+  text-decoration: none;
+}
+.collection-link:hover {
+  text-decoration: underline;
+}
+.collection-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--mp-radius-4);
 }
 </style>
