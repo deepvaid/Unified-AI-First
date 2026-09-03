@@ -36,8 +36,8 @@ function connectChannel() {
 </script>
 
 <template>
-  <div v-if="!channel" class="merch-shell merch-shell--recovery d-flex align-center justify-center">
-    <v-card flat border rounded="lg" class="pa-8" max-width="500">
+  <div v-if="!channel" class="mp-frame-fill merch-shell d-flex align-center justify-center">
+    <v-card flat border rounded="lg" max-width="500">
       <MpEmptyState
         icon="store"
         title="Merchandising channel not found"
@@ -49,7 +49,7 @@ function connectChannel() {
     </v-card>
   </div>
 
-  <div v-else class="merch-shell d-flex">
+  <div v-else class="mp-frame-fill merch-shell d-flex">
     <MerchandisingSidebar :account-id="accountId" :channel="channel" />
     <main class="merch-shell__content" :class="{ 'merch-shell__content--flush': flushChild }">
       <MpBanner
@@ -66,12 +66,12 @@ function connectChannel() {
       </MpBanner>
 
       <div v-if="needsSetup" class="merch-shell__setup d-flex align-center justify-center">
-        <v-card flat border rounded="lg" class="pa-8" max-width="620">
+        <v-card flat border rounded="lg" class="merch-shell__setup-card" max-width="620">
           <div class="d-flex align-start ga-4">
             <v-avatar color="warning" variant="tonal" rounded="lg" size="48"><v-icon>plug</v-icon></v-avatar>
             <div>
-              <div class="text-overline text-warning">{{ providerLabel(channel) }}</div>
-              <h1 class="text-h5 font-weight-bold mb-2">Connect Merchandising to {{ channel.name }}</h1>
+              <div class="mp-meta-label text-warning">{{ providerLabel(channel) }}</div>
+              <h1 class="mp-page-title mb-2">Connect Merchandising to {{ channel.name }}</h1>
               <p class="text-body-2 text-medium-emphasis mb-4">Connect this online channel before managing search, smart collections, or recommendations. Existing Commerce data stays unchanged until the sync is ready.</p>
               <div class="d-flex flex-wrap ga-2 mb-6">
                 <v-chip size="small" variant="tonal">{{ channelDomain(channel) }}</v-chip>
@@ -92,10 +92,9 @@ function connectChannel() {
 </template>
 
 <style scoped lang="scss">
+/* .mp-frame-fill owns the bleed-to-edge margins and the frame height; the
+   content pane restates the shell's inset as its own padding. */
 .merch-shell {
-  margin: -32px -36px;
-  min-height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
-  overflow: hidden;
   align-items: stretch;
 }
 
@@ -104,7 +103,7 @@ function connectChannel() {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 24px 36px 32px 32px;
+  padding: var(--mp-space-24) var(--mp-space-32) var(--mp-space-32);
 }
 
 /* Wizard child (MpWizardShell standalone) owns its bands and scroll. */
@@ -117,22 +116,18 @@ function connectChannel() {
   min-height: 60vh;
 }
 
-.merch-shell--recovery {
-  min-height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
+.merch-shell__setup-card {
+  padding: var(--mp-component-card-paddingSpacious);
 }
 
-@media (max-width: 1024px) {
-  .merch-shell { margin: -28px; }
-  .merch-shell__content { padding: 20px 28px 28px; }
-}
-
-@media (max-width: 900px) {
+/* Below the split breakpoint the rail stacks above the content and the page
+   scrolls as one — the frame's fixed height and clipping are released. */
+@media (max-width: ($mp-layout-breakpointSplit - 0.02px)) {
   .merch-shell { flex-direction: column; height: auto; overflow: visible; }
-  .merch-shell__content { overflow: visible; }
+  .merch-shell__content { overflow: visible; padding: var(--mp-space-20) var(--mp-space-28) var(--mp-space-28); }
 }
 
-@media (max-width: 640px) {
-  .merch-shell { margin: -22px; }
-  .merch-shell__content { padding: 16px 22px 22px; }
+@media (max-width: ($mp-layout-breakpointCompact - 0.02px)) {
+  .merch-shell__content { padding: var(--mp-space-16) var(--mp-space-20) var(--mp-space-20); }
 }
 </style>
