@@ -905,6 +905,7 @@ onBeforeUnmount(() => {
         </v-btn>
         <v-btn icon size="small" variant="text" aria-label="Exit AI experience" @click="exitExperience">
           <v-icon size="18">x</v-icon>
+          <v-tooltip activator="parent" location="bottom">Exit AI experience</v-tooltip>
         </v-btn>
       </div>
     </header>
@@ -990,7 +991,7 @@ onBeforeUnmount(() => {
               class="dvx__chip"
               @click="onQuickReply(reply.value)"
             >
-              <v-icon v-if="reply.icon" size="13">{{ reply.icon }}</v-icon>
+              <v-icon v-if="reply.icon" size="16">{{ reply.icon }}</v-icon>
               {{ reply.label }}
             </button>
           </div>
@@ -1033,11 +1034,11 @@ onBeforeUnmount(() => {
         </p>
         <div v-if="liveActive" class="dvx__live-controls">
           <button v-if="voice.state.value === 'speaking'" type="button" class="dvx__live-btn" @click="voice.cancelSpeech()">
-            <v-icon size="15">square</v-icon>
+            <v-icon size="16">square</v-icon>
             Interrupt
           </button>
           <button type="button" class="dvx__live-btn dvx__live-btn--end" @click="endLive">
-            <v-icon size="15">x</v-icon>
+            <v-icon size="16">x</v-icon>
             End conversation
           </button>
         </div>
@@ -1062,6 +1063,7 @@ onBeforeUnmount(() => {
             :disabled="!inputText.trim() || (!liveActive && busy)"
           >
             <v-icon size="18">arrow-up</v-icon>
+            <v-tooltip activator="parent" location="top">Send</v-tooltip>
           </button>
         </form>
 
@@ -1074,7 +1076,7 @@ onBeforeUnmount(() => {
             class="dvx__chip"
             @click="onQuickReply(chip.value)"
           >
-            <v-icon v-if="chip.icon" size="13">{{ chip.icon }}</v-icon>
+            <v-icon v-if="chip.icon" size="16">{{ chip.icon }}</v-icon>
             {{ chip.label }}
           </button>
         </div>
@@ -1144,9 +1146,9 @@ onBeforeUnmount(() => {
 .dvx__wordmark {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 800;
-  font-size: 1.0625rem;
+  gap: var(--mp-space-10);
+  font-weight: var(--mp-fontWeight-heavy);
+  font-size: var(--mp-fontSize-16);
   letter-spacing: 0.01em;
   user-select: none;
 }
@@ -1158,7 +1160,7 @@ onBeforeUnmount(() => {
 .dvx__top-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--mp-space-10);
 }
 
 /* prototype ghost buttons — white pill, hairline border, quiet ink */
@@ -1166,8 +1168,8 @@ onBeforeUnmount(() => {
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--dv-border);
   color: var(--dv-text-secondary);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   letter-spacing: 0;
   transition:
     border-color var(--dur-fast) var(--ease),
@@ -1218,8 +1220,8 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  padding: 18px 20px;
+  gap: var(--mp-space-24);
+  padding: var(--mp-space-16) var(--mp-space-20);
   scrollbar-width: thin;
 }
 
@@ -1236,8 +1238,8 @@ onBeforeUnmount(() => {
 
 .dvx__role {
   font-family: var(--dvx-mono);
-  font-size: 0.625rem;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--dv-muted);
@@ -1248,14 +1250,14 @@ onBeforeUnmount(() => {
 }
 
 .dvx__msg {
-  font-size: 0.875rem;
+  font-size: var(--mp-fontSize-14);
   line-height: 1.55;
   max-width: 90%;
   margin: 0;
 }
 
 .dvx__turn--user .dvx__msg {
-  font-weight: 500;
+  font-weight: var(--mp-fontWeight-medium);
   text-align: right;
   color: var(--dv-text-primary);
 }
@@ -1263,7 +1265,7 @@ onBeforeUnmount(() => {
 .dvx__cards {
   width: 100%;
   max-width: 430px;
-  margin-top: 4px;
+  margin-top: var(--mp-space-4);
 }
 
 /* ─── First-run campaign welcome ─────────────────────────────────────── */
@@ -1279,7 +1281,7 @@ onBeforeUnmount(() => {
   gap: var(--mp-space-8);
   margin-bottom: var(--mp-space-16);
   color: var(--dv-accent);
-  font-weight: 600;
+  font-weight: var(--mp-fontWeight-semibold);
 }
 
 .dvx__welcome-title {
@@ -1287,30 +1289,30 @@ onBeforeUnmount(() => {
   /* ink, not brand navy — matches the register (signup) typography on glass */
   color: var(--dv-ink);
   line-height: 1.12;
-  font-size: clamp(28px, 5vw, 44px);
-  font-weight: 500;
-  letter-spacing: -0.02em;
+  font-size: clamp(var(--mp-fontSize-28), 5vw, var(--mp-display-md-fontSize));
+  font-weight: var(--mp-fontWeight-medium);
+  letter-spacing: var(--mp-letterSpacing-tight);
 }
 
 /* Ink capsule CTA — same treatment as the signup's primary button */
 .dvx__welcome-primary {
   background: var(--dv-ink) !important;
   color: rgb(var(--v-theme-surface)) !important;
-  border-radius: 7px !important;
-  font-weight: 600;
+  border-radius: var(--mp-radius-8) !important;
+  font-weight: var(--mp-fontWeight-semibold);
   letter-spacing: 0;
 }
 
 .dvx__welcome-copy {
   margin: var(--mp-space-16) 0 var(--mp-space-24);
   color: var(--dv-text-secondary);
-  font-size: 1rem;
+  font-size: var(--mp-fontSize-16);
   line-height: 1.6;
 }
 
 .dvx__welcome-disclosure {
   color: var(--dv-text-secondary);
-  font-size: 0.6875rem;
+  font-size: var(--mp-fontSize-11);
   line-height: 1.5;
   max-width: 46ch;
 }
@@ -1322,7 +1324,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: var(--mp-space-16);
 }
 
 /* ─── Stage: focal mic centered in the orb ────────────────────────────────── */
@@ -1330,7 +1332,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: var(--mp-space-14);
   text-align: center;
 }
 
@@ -1403,8 +1405,8 @@ onBeforeUnmount(() => {
 .dvx__hint {
   margin: 0;
   font-family: var(--dvx-mono);
-  font-size: 0.6875rem;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--dv-text-secondary);
@@ -1416,7 +1418,7 @@ onBeforeUnmount(() => {
 /* When showing the live interim transcript, switch to readable sentence case */
 .dvx__hint--live {
   font-family: inherit;
-  font-size: 0.9375rem;
+  font-size: var(--mp-fontSize-15);
   letter-spacing: 0;
   text-transform: none;
   color: var(--dv-text-primary);
@@ -1427,24 +1429,24 @@ onBeforeUnmount(() => {
 .dvx__live-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--mp-space-8);
   justify-content: center;
 }
 
 .dvx__live-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
   font-family: var(--dvx-mono);
-  font-size: 0.6875rem;
-  font-weight: 500;
+  font-size: var(--mp-fontSize-11);
+  font-weight: var(--mp-fontWeight-medium);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   background: rgb(var(--v-theme-surface));
   border: 1px solid var(--dv-border);
   color: var(--dv-text-secondary);
-  border-radius: 999px;
-  padding: 8px 16px;
+  border-radius: var(--mp-radius-full);
+  padding: var(--mp-space-8) var(--mp-space-16);
   cursor: pointer;
   transition:
     border-color var(--dur-fast) var(--ease),
@@ -1487,8 +1489,8 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(12px) saturate(140%);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
   border: 1px solid var(--dv-border);
-  border-radius: 999px;
-  padding: 7px 7px 7px 20px;
+  border-radius: var(--mp-radius-full);
+  padding: var(--mp-space-6) var(--mp-space-6) var(--mp-space-6) var(--mp-space-20);
   box-shadow: 0 1px 2px rgba(24, 27, 33, 0.03), 0 18px 44px -28px rgba(24, 27, 33, 0.45);
   transition:
     border-color var(--dur-base) var(--ease),
@@ -1506,7 +1508,7 @@ onBeforeUnmount(() => {
   background: transparent;
   border: 0;
   outline: 0;
-  font-size: 1rem;
+  font-size: var(--mp-fontSize-16);
   /* explicit ink — theme-var indirection left typed text near-invisible on white */
   color: var(--dv-text-primary);
   caret-color: var(--dv-accent);
@@ -1554,28 +1556,28 @@ onBeforeUnmount(() => {
 .dvx__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--mp-space-8);
   justify-content: center;
 }
 
 .dvx__quick {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
+  gap: var(--mp-space-8);
+  margin-top: var(--mp-space-6);
 }
 
 .dvx__chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8125rem;
-  font-weight: 550;
+  gap: var(--mp-space-6);
+  font-size: var(--mp-fontSize-13);
+  font-weight: var(--mp-fontWeight-medium);
   background: transparent;
   border: 1px solid var(--dv-border);
   color: var(--dv-text-secondary);
-  border-radius: 999px;
-  padding: 8px 14px;
+  border-radius: var(--mp-radius-full);
+  padding: var(--mp-space-8) var(--mp-space-14);
   cursor: pointer;
   transition:
     border-color var(--dur-fast) var(--ease),
@@ -1611,16 +1613,8 @@ onBeforeUnmount(() => {
     padding: var(--mp-space-20);
   }
 
-  .dvx__welcome-title {
-    font-size: 1.75rem !important;
-  }
-
   .dvx__welcome .v-btn {
     width: 100%;
-  }
-
-  .dvx__msg {
-    font-size: 0.875rem;
   }
 
   .dvx__thread-shell {
@@ -1630,9 +1624,9 @@ onBeforeUnmount(() => {
   /* Topbar fits 375px: keep the orb, drop the wordmark text, tighten the pills
      so all actions stay reachable instead of overflowing off-screen. */
   .dvx__topbar {
-    padding: 0 12px;
-    min-height: 60px;
-    gap: 8px;
+    padding: 0 var(--mp-space-12);
+    min-height: var(--mp-layout-appbarHeight);
+    gap: var(--mp-space-8);
   }
 
   .dvx__wordmark span {
@@ -1640,7 +1634,7 @@ onBeforeUnmount(() => {
   }
 
   .dvx__top-actions {
-    gap: 6px;
+    gap: var(--mp-space-6);
     min-width: 0;
   }
 
