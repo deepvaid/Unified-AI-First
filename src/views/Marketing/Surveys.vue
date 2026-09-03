@@ -27,7 +27,6 @@ function viewPlans() {
         description="Surveys is part of Marketing Cloud. Upgrade your plan to build and send surveys to your audience."
         action-label="View plans"
         action-icon="arrow-right"
-        class="py-10"
         @action="viewPlans"
       />
       <div class="d-flex justify-center pb-8">
