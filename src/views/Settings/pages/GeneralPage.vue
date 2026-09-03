@@ -62,11 +62,10 @@ function onFile(e: Event) {
           <div class="d-flex align-center gap-2">
             <v-btn
               variant="outlined"
-              color="default"
               size="small"
               density="compact"
               prepend-icon="upload"
-              class="text-none profile-image-upload-btn"
+              class="text-none"
               @click="fileInput?.click()"
             >
               Upload photo
@@ -132,13 +131,13 @@ function onFile(e: Event) {
 .profile-image-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: var(--mp-space-14);
 }
 
 .profile-image-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--mp-space-6);
 }
 
 .profile-image-fallback {
@@ -149,17 +148,12 @@ function onFile(e: Event) {
   justify-content: center;
   background: rgb(var(--v-theme-primary));
   color: rgb(var(--v-theme-on-primary));
-  font-weight: 700;
-  font-size: 18px;
+  font-weight: var(--mp-fontWeight-bold);
+  font-size: var(--mp-fontSize-18);
 }
 
 .profile-image-help {
-  font-size: 12px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
-}
-
-.profile-image-upload-btn {
-  border-color: var(--border-subtle) !important;
-  color: var(--text-primary) !important;
 }
 </style>

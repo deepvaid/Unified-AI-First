@@ -15,7 +15,7 @@ const groups = computed(() => settingsRailGroups(accountId.value))
 </script>
 
 <template>
-  <div class="settings-shell d-flex">
+  <div class="settings-shell mp-frame-fill d-flex">
     <!-- P4-7: was a bespoke SettingsSidebar — a near-verbatim copy of MpSectionRail
          at its own item height. The rail's `title` + `searchable` props were built
          for this flavor; Retail and Merchandising already used them. -->
@@ -33,10 +33,9 @@ const groups = computed(() => settingsRailGroups(accountId.value))
 </template>
 
 <style scoped lang="scss">
+/* .mp-frame-fill owns the bleed-to-edge margins and the frame height; the
+   scoped rules only add the flex geometry and the stacked breakpoint. */
 .settings-shell {
-  margin: calc(-1 * var(--mp-layout-shellInsetBlock)) calc(-1 * var(--mp-layout-shellInsetInline));
-  height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
-  overflow: hidden;
   align-items: stretch;
 }
 
@@ -49,9 +48,6 @@ const groups = computed(() => settingsRailGroups(accountId.value))
 }
 
 @media (max-width: 1024px) {
-  .settings-shell {
-    margin: calc(-1 * var(--mp-layout-shellInsetMedium));
-  }
   .settings-shell__content {
     padding: var(--mp-space-20) var(--mp-layout-shellInsetMedium) var(--mp-layout-shellInsetMedium) var(--mp-layout-shellInsetMedium);
   }
@@ -61,7 +57,6 @@ const groups = computed(() => settingsRailGroups(accountId.value))
   .settings-shell {
     flex-direction: column;
     height: auto;
-    min-height: calc(100vh - 52px - var(--mp-frame-offset, 0px));
     overflow: visible;
   }
 
@@ -71,9 +66,6 @@ const groups = computed(() => settingsRailGroups(accountId.value))
 }
 
 @media (max-width: 640px) {
-  .settings-shell {
-    margin: calc(-1 * var(--mp-layout-shellInsetCompact));
-  }
   .settings-shell__content {
     padding: var(--mp-space-16) var(--mp-layout-shellInsetCompact) var(--mp-layout-shellInsetCompact) var(--mp-layout-shellInsetCompact);
   }

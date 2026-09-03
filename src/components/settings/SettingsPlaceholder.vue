@@ -13,7 +13,7 @@ defineProps<{
     <MpPageHeader :level="2" density="compact" :title="title" :subtitle="description" />
     <SettingsSection>
       <div class="settings-placeholder">
-        <v-icon size="22" class="settings-placeholder__icon">sparkles</v-icon>
+        <v-icon size="18" class="settings-placeholder__icon">sparkles</v-icon>
         <div class="settings-placeholder__copy">
           <div class="settings-placeholder__title">Coming soon</div>
           <p class="settings-placeholder__sub">
@@ -45,7 +45,7 @@ defineProps<{
 
 .settings-placeholder__title {
   font-size: var(--mp-fontSize-14);
-  font-weight: var(--mp-fontWeight-bold);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   margin-bottom: var(--mp-space-4);
 }
@@ -54,6 +54,6 @@ defineProps<{
   margin: 0;
   color: var(--muted);
   font-size: var(--mp-fontSize-13);
-  line-height: 1.5;
+  line-height: var(--mp-lineHeight-normal);
 }
 </style>

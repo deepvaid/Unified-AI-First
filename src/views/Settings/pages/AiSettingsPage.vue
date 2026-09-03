@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpListRow from '@/components/MpListRow.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
 import { useAccountsStore } from '@/stores/useAccounts'
 
@@ -51,20 +52,22 @@ const surfaces = computed(() => [
     />
 
     <SettingsSection title="Da Vinci AI" description="Availability of each AI surface on this account's plan.">
-      <div class="stack">
-        <div v-for="s in surfaces" :key="s.key" class="ai-surface-row">
-          <div class="ai-surface-row__copy">
-            <div class="ai-surface-row__name">{{ s.title }}</div>
-            <div class="ai-surface-row__desc">{{ s.description }}</div>
-          </div>
-          <v-chip
-            size="small"
-            :color="s.included ? 'success' : undefined"
-            :variant="s.included ? 'tonal' : 'flat'"
-          >
-            {{ s.included ? 'Included' : 'Not included' }}
-          </v-chip>
-        </div>
+      <!-- Divided rows inside the section card — the hairline is the only separator,
+           so a surface is not a second bordered box inside a bordered card. -->
+      <div class="ai-surface-list">
+        <MpListRow v-for="s in surfaces" :key="s.key" variant="divided">
+          <span class="ai-surface-row__name">{{ s.title }}</span>
+          <span class="ai-surface-row__desc">{{ s.description }}</span>
+          <template #trailing>
+            <v-chip
+              size="small"
+              :color="s.included ? 'success' : undefined"
+              :variant="s.included ? 'tonal' : 'flat'"
+            >
+              {{ s.included ? 'Included' : 'Not included' }}
+            </v-chip>
+          </template>
+        </MpListRow>
       </div>
     </SettingsSection>
 
@@ -101,32 +104,15 @@ const surfaces = computed(() => [
 </template>
 
 <style scoped lang="scss">
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.ai-surface-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: color-mix(in oklch, var(--surface-secondary) 34%, transparent);
-}
-
 .ai-surface-row__name {
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-14);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
 }
 
 .ai-surface-row__desc {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: var(--mp-space-2);
 }
 </style>
