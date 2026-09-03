@@ -10,6 +10,7 @@ import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import { useResponsiveTableHeaders } from '@/composables/useResponsiveTableHeaders'
 
 const route = useRoute()
 const router = useRouter()
@@ -41,13 +42,14 @@ const filtered = computed(() => {
 
 const headers = [
   { title: 'Transactional Event', key: 'name', sortable: true },
-  { title: 'Message', key: 'messagePreview', sortable: false },
-  { title: 'Sender ID', key: 'senderId' },
+  { title: 'Message', key: 'messagePreview', sortable: false, hideBelow: 'md' as const },
+  { title: 'Sender ID', key: 'senderId', hideBelow: 'lg' as const },
   { title: 'Status', key: 'status' },
-  { title: 'Sent Date', key: 'sentDate' },
-  { title: 'Delivered', key: 'delivered', align: 'end' as const },
+  { title: 'Sent Date', key: 'sentDate', hideBelow: 'lg' as const },
+  { title: 'Delivered', key: 'delivered', align: 'end' as const, hideBelow: 'md' as const },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]
+const { visibleHeaders } = useResponsiveTableHeaders(headers)
 </script>
 
 <template>
@@ -79,7 +81,7 @@ const headers = [
 
       <v-data-table
         v-if="transactionalSms.length"
-        :headers="headers"
+        :headers="visibleHeaders"
         :items="filtered"
         :search="search"
         hover
@@ -145,8 +147,7 @@ const headers = [
   vertical-align: middle;
 }
 .sms-sender {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 0.02em;
+  font-family: var(--mp-fontFamily-mono);
 }
 .num {
   font-variant-numeric: tabular-nums;
