@@ -260,17 +260,17 @@ const pageTitle = computed(() => (editId.value != null ? 'Edit Transactional SMS
 .cts-preview__sticky { position: sticky; top: 0; }
 .sms-count { font-variant-numeric: tabular-nums; }
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.75rem;
-  background: rgba(var(--v-theme-on-surface), 0.06);
+  font-family: var(--mp-fontFamily-mono);
+  font-size: var(--mp-fontSize-12);
+  background: var(--surface-secondary);
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--mp-radius-4);
 }
 
 .cts-preview__meta {
   text-align: right;
-  font-size: 0.6875rem;
+  font-size: var(--mp-fontSize-11);
   font-variant-numeric: tabular-nums;
-  margin-top: 8px;
+  margin-top: var(--mp-space-8);
 }
 </style>
