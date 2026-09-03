@@ -182,8 +182,7 @@ function performDelete() {
       <template #actions>
         <v-btn
           v-if="!isNew"
-          variant="flat"
-          color="surface"
+          variant="outlined"
           class="text-none"
           prepend-icon="trash-2"
           @click="confirmDelete = true"
@@ -206,7 +205,7 @@ function performDelete() {
     <div class="rule-layout d-flex gap-4 align-start">
       <!-- Editor column -->
       <div class="rule-editor d-flex flex-column gap-4 flex-grow-1">
-        <v-card variant="flat" border rounded="lg" class="pa-5">
+        <v-card variant="flat" border rounded="lg" class="rule-card">
           <MpFormGrid>
             <v-text-field v-model="draft.name" label="Rule name *" />
             <v-select
@@ -222,7 +221,7 @@ function performDelete() {
 
             <div>
               <button type="button" class="rule-advanced-toggle" @click="advancedOpen = !advancedOpen">
-                <v-icon size="15">{{ advancedOpen ? 'chevron-down' : 'chevron-right' }}</v-icon>
+                <v-icon size="16">{{ advancedOpen ? 'chevron-down' : 'chevron-right' }}</v-icon>
                 Advanced settings
               </button>
             </div>
@@ -253,7 +252,7 @@ function performDelete() {
         <!-- Conditions -->
         <v-card variant="flat" border rounded="lg">
           <div class="d-flex align-center justify-space-between px-5 py-4">
-            <span class="text-subtitle-2 font-weight-bold">Conditions</span>
+            <h2 class="mp-section-title">Conditions</h2>
             <v-btn
               color="primary"
               variant="flat"
@@ -332,7 +331,7 @@ function performDelete() {
                 <th class="text-caption font-weight-bold">Action</th>
                 <th class="text-caption font-weight-bold">Field</th>
                 <th class="text-caption font-weight-bold">Values</th>
-                <th style="width: 56px" />
+                <th class="rule-actions-col" />
               </tr>
             </thead>
             <tbody>
@@ -361,7 +360,6 @@ function performDelete() {
             description="Add a condition to include, exclude, or promote products in the selected collections."
             action-label="Add condition"
             action-icon="plus"
-            class="py-8"
             @action="startAddCondition"
           />
         </v-card>
@@ -370,15 +368,21 @@ function performDelete() {
       <!-- Preview column -->
       <v-card variant="flat" border rounded="lg" class="rule-preview flex-shrink-0">
         <div class="d-flex align-center justify-space-between px-4 py-3">
-          <span class="text-subtitle-2 font-weight-bold">Preview</span>
-          <v-btn
-            :icon="previewExpanded ? 'minimize-2' : 'maximize-2'"
-            variant="text"
-            size="small"
-            density="comfortable"
-            :aria-label="previewExpanded ? 'Collapse preview' : 'Expand preview'"
-            @click="previewExpanded = !previewExpanded"
-          />
+          <h2 class="mp-section-title">Preview</h2>
+          <v-tooltip :text="previewExpanded ? 'Collapse preview' : 'Expand preview'" location="bottom">
+            <template #activator="{ props: tooltip }">
+              <v-btn
+                v-bind="tooltip"
+                :icon="previewExpanded ? 'minimize-2' : 'maximize-2'"
+                variant="text"
+                size="small"
+                density="comfortable"
+                :aria-label="previewExpanded ? 'Collapse preview' : 'Expand preview'"
+                :aria-pressed="previewExpanded"
+                @click="previewExpanded = !previewExpanded"
+              />
+            </template>
+          </v-tooltip>
         </div>
         <v-divider />
         <div class="pa-4">
@@ -422,16 +426,15 @@ function performDelete() {
 
   </div>
 
-  <div v-else class="pa-10">
-    <MpErrorState
-      icon="list-x"
-      title="Merchandising rule not found"
-      description="This rule may have been deleted, or the link is incorrect."
-      action-label="Back to Default Merchandising"
-      action-icon="arrow-left"
-      @action="router.push(listRoute)"
-    />
-  </div>
+  <MpErrorState
+    v-else
+    icon="list-x"
+    title="Merchandising rule not found"
+    description="This rule may have been deleted, or the link is incorrect."
+    action-label="Back to Default Merchandising"
+    action-icon="arrow-left"
+    @action="router.push(listRoute)"
+  />
 </template>
 
 <style scoped>
@@ -439,16 +442,24 @@ function performDelete() {
   min-width: 0;
 }
 
+.rule-card {
+  padding: var(--mp-component-card-padding);
+}
+
+.rule-actions-col {
+  width: var(--mp-space-64);
+}
+
 .rule-preview {
-  width: 380px;
+  width: var(--mp-layout-inboxListWidth);
   position: sticky;
-  top: 16px;
+  top: var(--mp-space-16);
 }
 
 .rule-preview-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: var(--mp-space-10);
   max-height: 60vh;
   overflow-y: auto;
 }
@@ -461,23 +472,29 @@ function performDelete() {
 .rule-advanced-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
   border: 0;
   background: transparent;
   padding: 0;
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(var(--v-theme-on-surface), 0.72);
+  font-size: var(--mp-text-label-fontSize);
+  font-weight: var(--mp-fontWeight-semibold);
+  color: var(--on-surface-muted);
 }
 
 .rule-advanced-toggle:hover {
-  color: rgb(var(--v-theme-primary));
+  color: var(--accent-default);
+}
+
+.rule-advanced-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--mp-radius-4);
 }
 
 .rule-condition-form {
-  background: rgba(var(--v-theme-surface-variant), 0.18);
+  background: var(--surface-secondary);
 }
 
 @media (max-width: 1100px) {
