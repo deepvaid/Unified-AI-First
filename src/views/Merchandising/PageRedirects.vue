@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import MpPageHeader from '@/components/MpPageHeader.vue'
+import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
@@ -127,19 +128,25 @@ function submitEdit() {
     <v-card flat border rounded="lg">
       <div class="merch-create__header">
         <div>
-          <div class="text-subtitle-2 font-weight-bold">Create new page redirect</div>
+          <h2 class="mp-section-title">Create new page redirect</h2>
           <div class="text-caption text-medium-emphasis mt-1">
             Type a query and press Enter to add it as a chip. Add multiple queries to trigger the same redirect.
           </div>
         </div>
-        <v-btn
-          icon="chevron-down"
-          variant="text"
-          size="small"
-          :aria-label="createOpen ? 'Collapse form' : 'Expand form'"
-          :style="{ transform: createOpen ? 'rotate(180deg)' : 'rotate(0deg)' }"
-          @click="createOpen = !createOpen"
-        />
+        <v-tooltip :text="createOpen ? 'Collapse form' : 'Expand form'" location="bottom">
+          <template #activator="{ props: tooltip }">
+            <v-btn
+              v-bind="tooltip"
+              icon="chevron-down"
+              variant="text"
+              size="small"
+              :aria-label="createOpen ? 'Collapse form' : 'Expand form'"
+              :aria-expanded="createOpen"
+              :style="{ transform: createOpen ? 'rotate(180deg)' : 'rotate(0deg)' }"
+              @click="createOpen = !createOpen"
+            />
+          </template>
+        </v-tooltip>
       </div>
 
       <v-expand-transition>
@@ -186,20 +193,12 @@ function submitEdit() {
 
     <!-- Table -->
     <v-card flat border rounded="lg" class="flex-grow-1 d-flex flex-column overflow-hidden">
-      <div class="merch-table__header">
-        <div class="text-subtitle-2 font-weight-bold">All page redirects</div>
-        <!-- Toolbar search: `hide-details` is deliberate here — a table filter
-             never carries a hint, and the label lives on `aria-label` so the
-             header row stays one control tall (same contract as MpDataTableToolbar). -->
-        <v-text-field
-          v-model="search"
-          placeholder="Search queries or URLs…"
-          aria-label="Search page redirects"
-          hide-details
-          prepend-inner-icon="search"
-          max-width="320"
-        />
-      </div>
+      <MpDataTableToolbar
+        v-model:search="search"
+        title="All page redirects"
+        search-placeholder="Search queries or URLs…"
+        :total-count="filteredRedirects.length"
+      />
 
       <v-data-table
         :headers="headers"
@@ -228,7 +227,7 @@ function submitEdit() {
 
         <template #item.leadsTo="{ item }">
           <a
-            class="merch-link text-body-2"
+            class="merch-link text-body-2 text-primary"
             :href="item.leadsTo"
             target="_blank"
             rel="noopener noreferrer"
@@ -310,31 +309,23 @@ function submitEdit() {
 </template>
 
 <style scoped lang="scss">
+/* Card insets on component.card.*: the header band and the body share one
+   inline inset; the body's top inset is the header's gap below the caption. */
 .merch-create__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px 22px 14px 22px;
+  gap: var(--mp-component-card-gap);
+  padding: var(--mp-component-card-padding) var(--mp-component-card-padding) var(--mp-component-card-gap);
 }
 
 .merch-create__body {
-  padding: 0 22px 22px 22px;
-}
-
-.merch-table__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
+  padding: 0 var(--mp-component-card-padding) var(--mp-component-card-padding);
 }
 
 .merch-link {
-  color: rgb(var(--v-theme-primary));
   text-decoration: none;
-  max-width: 420px;
+  max-width: var(--mp-component-state-measure);
   display: inline-block;
   overflow: hidden;
   text-overflow: ellipsis;
