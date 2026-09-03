@@ -190,7 +190,7 @@ watch(channelId, () => {
         <v-tooltip text="Explorer" location="right">
           <template #activator="{ props }">
             <button v-bind="props" class="tc-rail__btn tc-rail__btn--active" aria-label="Explorer" aria-current="page">
-              <v-icon size="22">files</v-icon>
+              <v-icon size="18">files</v-icon>
             </button>
           </template>
         </v-tooltip>
@@ -217,7 +217,7 @@ watch(channelId, () => {
                 :class="{ 'tc-file-row--active': path === activePath }"
               >
                 <button class="tc-file-row__main" :aria-label="`Open ${fileLeafLabel(path)}`" @click="openFile(path)">
-                  <v-icon size="15" class="tc-file-row__icon">{{ fileIcon(codeStore.getFile(path)!.language) }}</v-icon>
+                  <v-icon size="16" class="tc-file-row__icon">{{ fileIcon(codeStore.getFile(path)!.language) }}</v-icon>
                   <span class="tc-file-row__label text-truncate">{{ fileLeafLabel(path) }}</span>
                   <span v-if="codeStore.isDirty(path)" class="tc-dot" role="status" aria-label="Unsaved"></span>
                 </button>
@@ -258,7 +258,7 @@ watch(channelId, () => {
                   :class="{ 'tc-file-row--active': file.path === activePath }"
                 >
                   <button class="tc-file-row__main" :aria-label="`Open ${fileLeafLabel(file.path)}`" @click="openFile(file.path)">
-                    <v-icon size="15" class="tc-file-row__icon">{{ fileIcon(file.language) }}</v-icon>
+                    <v-icon size="16" class="tc-file-row__icon">{{ fileIcon(file.language) }}</v-icon>
                     <span class="tc-file-row__label text-truncate">{{ fileLeafLabel(file.path) }}</span>
                     <span v-if="codeStore.isDirty(file.path)" class="tc-dot" role="status" aria-label="Unsaved"></span>
                   </button>
@@ -283,7 +283,7 @@ watch(channelId, () => {
               :aria-selected="path === activePath"
             >
               <button class="tc-tab__label" @click="openFile(path)">
-                <v-icon size="14" class="tc-tab__icon">{{ fileIcon(codeStore.getFile(path)!.language) }}</v-icon>
+                <v-icon size="16" class="tc-tab__icon">{{ fileIcon(codeStore.getFile(path)!.language) }}</v-icon>
                 <span class="text-truncate">{{ fileLeafLabel(path) }}</span>
               </button>
               <span v-if="codeStore.isDirty(path)" class="tc-dot tc-dot--tab" aria-label="Unsaved"></span>
@@ -344,30 +344,29 @@ watch(channelId, () => {
 .tc-missing { min-height: 60vh; }
 .tc-body { position: relative; }
 
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-r { border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+.border-b { border-bottom: 1px solid var(--border-subtle); }
+.border-r { border-right: 1px solid var(--border-subtle); }
 
 /* ── Icon rail ─────────────────────────────────────────────────────── */
-.tc-rail { width: 48px; flex-shrink: 0; gap: 4px; }
+.tc-rail { width: var(--mp-space-48); flex-shrink: 0; gap: var(--mp-space-4); }
 .tc-rail__btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: var(--mp-component-control-height);
+  height: var(--mp-component-control-height);
   border: 0;
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--r-chip);
   cursor: pointer;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  border-left: 2px solid transparent;
+  color: var(--on-surface-muted);
 }
-.tc-rail__btn:hover { color: rgb(var(--v-theme-on-surface)); }
+.tc-rail__btn:hover { background: var(--surface-secondary); color: var(--text-primary); }
 .tc-rail__btn--active {
-  color: rgb(var(--v-theme-on-surface));
-  border-left-color: rgb(var(--v-theme-primary));
+  background: var(--accent-soft);
+  color: var(--accent);
 }
-.tc-rail__btn:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
+.tc-rail__btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
 /* ── Explorer ──────────────────────────────────────────────────────── */
 .tc-explorer { width: 280px; flex-shrink: 0; overflow: hidden; }
@@ -377,132 +376,132 @@ watch(channelId, () => {
 .tc-folder-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
   width: 100%;
-  padding: 5px 12px;
+  padding: var(--mp-space-4) var(--mp-space-12);
   border: 0;
   background: transparent;
   cursor: pointer;
   text-align: left;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--text-primary);
 }
-.tc-folder-row:hover { background: rgba(var(--v-theme-on-surface), 0.05); }
-.tc-folder-row:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
-.tc-folder-row__chevron { color: rgba(var(--v-theme-on-surface), 0.6); flex-shrink: 0; }
-.tc-folder-row__icon { color: rgba(var(--v-theme-on-surface), 0.6); flex-shrink: 0; }
-.tc-folder-row__label { font-size: 0.8125rem; font-weight: 600; }
+.tc-folder-row:hover { background: var(--surface-secondary); }
+.tc-folder-row:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.tc-folder-row__chevron { color: var(--on-surface-muted); flex-shrink: 0; }
+.tc-folder-row__icon { color: var(--on-surface-muted); flex-shrink: 0; }
+.tc-folder-row__label { font-size: var(--mp-text-label-fontSize); font-weight: var(--mp-fontWeight-semibold); }
 
 .tc-file-row {
   display: flex;
   align-items: center;
-  border-radius: 6px;
+  border-radius: var(--r-chip);
 }
-.tc-file-row:hover { background: rgba(var(--v-theme-on-surface), 0.05); }
+.tc-file-row:hover { background: var(--surface-secondary); }
 .tc-file-row--active,
-.tc-file-row--active:hover { background: rgba(var(--v-theme-primary), 0.12); }
-.tc-file-row--nested .tc-file-row__main { padding-left: 34px; }
+.tc-file-row--active:hover { background: var(--accent-soft); }
+.tc-file-row--nested .tc-file-row__main { padding-left: var(--mp-space-32); }
 
 .tc-file-row__main {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--mp-space-6);
   flex: 1;
   min-width: 0;
-  padding: 5px 12px;
+  padding: var(--mp-space-4) var(--mp-space-12);
   border: 0;
   background: transparent;
   cursor: pointer;
   text-align: left;
-  color: rgb(var(--v-theme-on-surface));
+  color: var(--text-primary);
 }
-.tc-file-row__main:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
-.tc-file-row__icon { color: rgba(var(--v-theme-on-surface), 0.55); flex-shrink: 0; }
-.tc-file-row__label { font-size: 0.8125rem; }
-.tc-file-row__close { flex-shrink: 0; margin-right: 4px; opacity: 0; transition: opacity 0.15s; }
+.tc-file-row__main:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.tc-file-row__icon { color: var(--on-surface-muted); flex-shrink: 0; }
+.tc-file-row__label { font-size: var(--mp-fontSize-13); }
+.tc-file-row__close { flex-shrink: 0; margin-right: var(--mp-space-4); opacity: 0; transition: opacity var(--dur-fast); }
 .tc-file-row:hover .tc-file-row__close,
 .tc-file-row--active .tc-file-row__close,
 .tc-file-row:focus-within .tc-file-row__close { opacity: 1; }
 
 .tc-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+  width: var(--mp-space-8);
+  height: var(--mp-space-8);
+  border-radius: var(--r-pill);
   flex-shrink: 0;
   margin-left: auto;
-  background: rgb(var(--v-theme-primary));
+  background: var(--accent);
 }
 .tc-dot--tab { margin-left: 0; }
 
 /* ── Editor area ───────────────────────────────────────────────────── */
-.tc-editor-area { background: rgb(var(--v-theme-background)); }
+.tc-editor-area { background: var(--surface-canvas); }
 
 .tc-tabs { flex-shrink: 0; overflow-x: auto; }
 .tc-tab {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 6px 0 12px;
-  border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  gap: var(--mp-space-6);
+  padding: 0 var(--mp-space-6) 0 var(--mp-space-12);
+  border-right: 1px solid var(--border-subtle);
   cursor: pointer;
   flex-shrink: 0;
   max-width: 220px;
-  color: rgba(var(--v-theme-on-surface), 0.7);
+  color: var(--on-surface-muted);
   border-top: 2px solid transparent;
 }
 .tc-tab--active {
-  background: rgb(var(--v-theme-background));
-  color: rgb(var(--v-theme-on-surface));
-  border-top-color: rgb(var(--v-theme-primary));
+  background: var(--surface-canvas);
+  color: var(--text-primary);
+  border-top-color: var(--accent);
 }
 .tc-tab__label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mp-space-6);
   min-width: 0;
-  padding: 9px 0;
+  padding: var(--mp-space-8) 0;
   border: 0;
   background: transparent;
   cursor: pointer;
   color: inherit;
-  font-size: 0.8125rem;
+  font-size: var(--mp-fontSize-13);
 }
-.tc-tab__label:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: -2px; }
-.tc-tab__icon { color: rgba(var(--v-theme-on-surface), 0.55); flex-shrink: 0; }
+.tc-tab__label:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.tc-tab__icon { color: var(--on-surface-muted); flex-shrink: 0; }
 .tc-tab__close { flex-shrink: 0; }
 
 .tc-editor {
   display: flex;
   min-height: 0;
   overflow: hidden;
-  background: rgba(var(--v-theme-on-surface), 0.02);
+  background: var(--surface-canvas);
 }
 
 .tc-gutter {
   flex-shrink: 0;
-  padding: 12px 8px 12px 12px;
+  padding: var(--mp-space-12) var(--mp-space-8) var(--mp-space-12) var(--mp-space-12);
   overflow: hidden;
   text-align: right;
   user-select: none;
-  font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
-  font-size: 0.8125rem;
+  font-family: var(--mp-fontFamily-mono, monospace);
+  font-size: var(--mp-fontSize-13);
   line-height: 1.6;
-  color: rgba(var(--v-theme-on-surface), 0.35);
-  background: rgba(var(--v-theme-on-surface), 0.03);
-  border-right: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  color: var(--text-disabled);
+  background: var(--surface-secondary);
+  border-right: 1px solid var(--border-subtle);
 }
-.tc-gutter__line { height: calc(0.8125rem * 1.6); }
+.tc-gutter__line { height: calc(var(--mp-fontSize-13) * 1.6); }
 
 .tc-textarea {
   flex: 1;
   min-width: 0;
-  padding: 12px 16px;
+  padding: var(--mp-space-12) var(--mp-space-16);
   border: 0;
   outline: none;
   resize: none;
   background: transparent;
-  color: rgb(var(--v-theme-on-surface));
-  font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
-  font-size: 0.8125rem;
+  color: var(--text-primary);
+  font-family: var(--mp-fontFamily-mono, monospace);
+  font-size: var(--mp-fontSize-13);
   line-height: 1.6;
   tab-size: 2;
   white-space: pre;
