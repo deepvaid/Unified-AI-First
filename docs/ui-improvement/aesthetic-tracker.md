@@ -160,60 +160,63 @@
 
 ## Wave 4
 
-### Module 09 — Marketing   [module-status: pending]
+### Module 09 — Marketing   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Marketing/MarketingLanding.vue | /accounts/2000290/marketing | standard | pending |  |  |
-| 2 | Marketing/ContentLanding.vue | /accounts/2000290/content | standard | pending |  |  |
-| 3 | Marketing/CreateCampaign.vue | /accounts/2000290/campaigns/new | builder | pending |  | builderShell (2026-07-19): system chrome + rounded frame; roadmap #10 reference flow — likely compliant |
-| 4 | Marketing/EmailCampaigns.vue | /accounts/2000290/campaigns | standard | pending |  | roadmap #7/#12/#17 touched |
-| 5 | Marketing/JourneyBuilder.vue | /accounts/2000290/journeys/1/builder · /data_journeys/1/builder | builder | pending |  | builderShell (2026-07-19): MpBuilderShell v2, unified dirty chip; empty-canvas exemption (roadmap P1 #5) |
-| 6 | Marketing/FormBuilder.vue | /accounts/2000290/acquisition/forms/create | builder | pending |  | builderShell (2026-07-19): MpBuilderShell v2 + steps slot, dark-safe device mock |
-| 7 | Marketing/TransactionalEmail.vue | /accounts/2000290/sms_campaigns · /transactional_campaigns · /transactional_sms | standard | pending |  | serves 3 routes — spot-check aliases |
-| 8 | Marketing/CampaignTags.vue | /accounts/2000290/campaign_tags | standard | pending |  |  |
-| 9 | Marketing/AcquisitionForms.vue | /accounts/2000290/acquisition · /lead_ads | standard | pending |  | serves 2 routes |
-| 10 | Marketing/LandingPages.vue | /accounts/2000290/landing_pages | standard | pending |  |  |
-| 11 | Marketing/SignupForms.vue | /accounts/2000290/signup_forms | standard | pending |  |  |
-| 12 | Marketing/Surveys.vue | /accounts/2000290/surveys | standard | pending |  |  |
-| 13 | Marketing/Journeys.vue | /accounts/2000290/journeys | standard | pending |  |  |
-| 14 | Marketing/DataJourneys.vue | /accounts/2000290/data_journeys | standard | pending |  |  |
-| 15 | Marketing/EmailContent.vue | /accounts/2000290/contents | standard | pending |  | roadmap #13 touched |
-| 16 | Marketing/DynamicContent.vue | /accounts/2000290/dynamic_contents | standard | pending |  |  |
-| 17 | Marketing/ImageLibrary.vue | /accounts/2000290/images | standard | pending |  | roadmap #13 touched |
-| 18 | Marketing/FooterManagement.vue | /accounts/2000290/footers | standard | pending |  |  |
-| 19 | Marketing/OptimizeOnOpen.vue | /accounts/2000290/image_groups | standard | pending |  |  |
-| 20 | Marketing/ContentFeeds.vue | /accounts/2000290/content_feeds | standard | pending |  |  |
-| 21 | Marketing/CouponBanks.vue | /accounts/2000290/coupon_banks | standard | pending |  |  |
-| 22 | Marketing/PreferencePages.vue | /accounts/2000290/preference_pages | standard | pending |  |  |
-| 23 | Marketing/CountdownTimer.vue | /accounts/2000290/live_content_images | standard | pending |  |  |
-| 24 | Marketing/CreateJourney.vue | /accounts/2000290/journeys/new | builder | pending |  | builderShell (2026-07-19): normalized to MpPageHeader band (was bespoke toolbar) |
-| 25 | Marketing/CreateSmsCampaign.vue | /accounts/2000290/sms_campaigns/new | builder | pending |  | builderShell (2026-07-19): frame-fill + new leave guard |
-| 26 | Marketing/CreateTransactional.vue | /accounts/2000290/transactional_campaigns/new | builder | pending |  | builderShell (2026-07-19): frame-fill + new leave guard |
-| 27 | Marketing/CreateTransactionalSms.vue | /accounts/2000290/transactional_sms/new | builder | pending |  | builderShell (2026-07-19): frame-fill + new leave guard |
-| 28 | Marketing/LandingPageEditor.vue | /accounts/2000290/landing_pages/editor/1/edit | builder | pending |  | builderShell (2026-07-19): MpBuilderShell v2, toolbar decluttered; autosave — deliberately no leave guard |
-| 29 | Marketing/EmailContentEditor.vue | /accounts/2000290/contents/editor/1 | builder | pending |  | builderShell (2026-07-19): shell v2 reference consumer |
+| 1 | Marketing/MarketingLanding.vue | /accounts/2000290/marketing | standard | done-no-change |  | already compliant — prop-driven ModuleLandingPage wrapper |
+| 2 | Marketing/ContentLanding.vue | /accounts/2000290/content | standard | done-no-change |  | already compliant — prop-driven ModuleLandingPage wrapper |
+| 3 | Marketing/CreateCampaign.vue | /accounts/2000290/campaigns/new | builder | done | d6fa766 | builder: review-step h3s → .mp-section-title; weight literals → tokens (incl. CampaignEmailPreview/ContentEditor). /campaigns/new itself is CampaignTypeChooser.vue — compliant |
+| 4 | Marketing/EmailCampaigns.vue | /accounts/2000290/campaigns | standard | done | 2dc28ef | KPI mb-6 off root gap; py-10 off 3 empty states; :deep(.mp-page-header__main) + 600px media deleted; Manage Folders → outlined; small KPIs clipped at 375 → 12/sm-4/md-2; row icon 20 → 16; fake-link name cell de-linked |
+| 5 | Marketing/JourneyBuilder.vue | /accounts/2000290/journeys/1/journey-builder · /data_journeys/1/builder | builder | done | 4bbee01 | builder (+ JourneyAddStepMenu): rename control hover/focus/pencil → tokens; chrome hairlines → --border-subtle; chrome icons → 16/18. Canvas/Vue Flow untouched. /data_journeys/1/builder alias renders the same view |
+| 6 | Marketing/FormBuilder.vue | /accounts/2000290/acquisition/forms/create | builder | done | 4bbc62a | builder: 4 raw v-btn-toggle → MpSegmentedControl; 2 raw v-alert → MpAlert warning; review headings → .mp-section-title; palette eyebrow → .mp-meta-label; lock icon → 16; hover/selected/hairlines/focus → tokens. Step-card text-h5 + pa-8 left (builder profile skips A/B) |
+| 7 | Marketing/TransactionalEmail.vue | /accounts/2000290/transactional_campaigns | standard | done-no-change |  | zero findings. Row note was wrong: /sms_campaigns → SmsCampaigns.vue and /transactional_sms → TransactionalSms.vue are separate views (rows below) |
+| 7b | Marketing/SmsCampaigns.vue | /accounts/2000290/sms_campaigns | standard | done | a485ec5 | discovered in wave 4 (page-tracker listed it as a TransactionalEmail alias): py-10 off; responsive columns so the kebab stays on-screen at 375 |
+| 7c | Marketing/TransactionalSms.vue | /accounts/2000290/transactional_sms | standard | done | 901cb1f | discovered in wave 4: literal mono stack → --mp-fontFamily-mono; responsive columns |
+| 8 | Marketing/CampaignTags.vue | /accounts/2000290/campaign_tags | standard | done | 915944a | Import Tags → outlined; py-10 off empty state; Created column hides < sm |
+| 9 | Marketing/AcquisitionForms.vue | /accounts/2000290/acquisition | standard | done | 9ea6e98 | py-10 off empty/error states; script snippet box surface-variant → --surface-secondary/--on-surface pair. Row corrected: /lead_ads is LeadAds.vue (separate view, row below); /acquisition redirects to /acquisition/forms |
+| 9b | Marketing/LeadAds.vue | /accounts/2000290/lead_ads | standard | done | 1736243 | discovered in wave 4 (page-tracker listed it as an AcquisitionForms alias): py-10 ×2 removed; external-link icon 13 → 16 |
+| 10 | Marketing/LandingPages.vue | /accounts/2000290/landing_pages | standard | done | ef3a401 | py-10 ×3 removed |
+| 11 | Marketing/SignupForms.vue | /accounts/2000290/signup_forms | standard | done | 44de796 | py-10 removed (page redirects to Acquisition Forms on mount) |
+| 12 | Marketing/Surveys.vue | /accounts/2000290/surveys | standard | done | 19c6ad3 | py-10 removed |
+| 13 | Marketing/Journeys.vue | /accounts/2000290/journeys | standard | done | f5b477c | <div @click> + !important hover → real <button> on tokens; useResponsiveTableHeaders + skeleton; x-small → small; revenue by weight not colour |
+| 14 | Marketing/DataJourneys.vue | /accounts/2000290/data_journeys | standard | done | b17a012 | pa-6 root → convention root; MpDataTableToolbar added; inline 200px header select → toolbar exclusive quickFilter (5 options preserved); skeleton + responsive columns; search-aware empty state |
+| 15 | Marketing/EmailContent.vue | /accounts/2000290/contents | standard | done | 23408c8 | py-10 off empty/error states; row-name rgb(theme-primary) → --accent-default; focus-visible underline |
+| 16 | Marketing/DynamicContent.vue | /accounts/2000290/dynamic_contents | standard | done | 3832c1e | View Archives flat → text (one primary CTA); py-10 off empty/error states; accent colour; 500 → weight token |
+| 17 | Marketing/ImageLibrary.vue | /accounts/2000290/images | standard | done | 506b402 | Manage Folders → text; py-10 off empty/error states; rgb primary/surface → tokens; dropzone rgba → --border-strong/--on-surface-muted; bulk-bar buttons normalised; tooltip on Copy-link |
+| 18 | Marketing/FooterManagement.vue | /accounts/2000290/footers | standard | done | 8de2863 | py-10 off empty/error states; link colour; weight token |
+| 19 | Marketing/OptimizeOnOpen.vue | /accounts/2000290/image_groups | standard | done | d4400c0 | Manage Folders → text; py-10 off empty/error states; accent/weight tokens; bulk-bar Delete normalised |
+| 20 | Marketing/ContentFeeds.vue | /accounts/2000290/content_feeds | standard | done | 3dc2704 | Manage Folders → text; py-10 off empty/error states; raw v-chip → MpStatusChip sm; tooltip on Edit; rgba hover → --surface-secondary; mb-2 in dialog removed |
+| 21 | Marketing/CouponBanks.vue | /accounts/2000290/coupon_banks | standard | done | 45268ec | py-10 off empty/error states; monospace → --mp-fontFamily-mono |
+| 22 | Marketing/PreferencePages.vue | /accounts/2000290/preference_pages | standard | done | 88a5c63 | py-10 off empty/error states; filter drawer pa-4 wrapper + ad-hoc heading removed; tooltip on Preview; preview mock rgba/600/480px → tokens |
+| 23 | Marketing/CountdownTimer.vue | /accounts/2000290/live_content_images | standard | done | a4e2971 | py-10 off empty/error states |
+| 24 | Marketing/CreateJourney.vue | /accounts/2000290/journeys/new | builder | done | 4fa427c | = JourneySelection.vue + CreateJourneyScratch.vue. Bug fixed: .js-body used non-existent --mp-layout-content-max-width (computed none) → --mp-layout-contentMaxWidth; hairline → --border-subtle; icon 14 → 16 |
+| 25 | Marketing/CreateSmsCampaign.vue | /accounts/2000290/sms_campaigns/new | builder | done | f785db3 | builder: inline max-width 260px on test-phone field → flex-grow-1 |
+| 26 | Marketing/CreateTransactional.vue | /accounts/2000290/transactional_campaigns/new | builder | done | 416c388 | builder: section labels → .mp-section-title; :deep(.mp-page-header) removed; hairlines/gap → tokens; inbox-mock 1:1 token swaps |
+| 27 | Marketing/CreateTransactionalSms.vue | /accounts/2000290/transactional_sms/new | builder | done | 06ce4e2 | builder: <code> mono stack/bg/radius/sizes → tokens |
+| 28 | Marketing/LandingPageEditor.vue | /accounts/2000290/landing_pages/editor/1/edit | builder | done | a0da7d4 | builder (+ components/marketing/landing/*): 8 raw v-btn-toggle → MpSegmentedControl; bug fixed — d-flex utilities on .lpe-left defeated the ≤768 media query, left panel now hides at 375; rem type → tokens; chrome icons → 16; focus rings added; hairlines → --border-subtle. Observation: LandingBlockView dark theme renders on-surface text over the white merchant sheet (allowlisted area, follow-up) |
+| 29 | Marketing/EmailContentEditor.vue | /accounts/2000290/contents/editor/200 | builder | done | d458122 | builder: duplicate check → save icon; tooltips on block controls; eyebrow → .mp-meta-label; text-h6 → .mp-section-title; v-btn-toggle → MpSegmentedControl; palette/controls CSS on tokens; canvas untouched (allowlisted). URL corrected: ids start at 200 |
 
-### Module 13 — Settings   [module-status: pending]
+### Module 13 — Settings   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Settings/pages/AccountDefaultsPage.vue | /accounts/2000290/settings/account-defaults | standard | pending |  | default child; audit SettingsLayout.vue shell here too |
-| 2 | Settings/pages/GeneralPage.vue | /accounts/2000290/settings/general | standard | pending |  | 2 `!important` (roadmap note) |
-| 3 | Settings/pages/NotificationsPage.vue | /accounts/2000290/settings/notifications | standard | pending |  |  |
-| 4 | Settings/pages/UsersPermissionsPage.vue | /accounts/2000290/settings/users-permissions | standard | pending |  |  |
-| 5 | Settings/pages/AuditLogPage.vue | /accounts/2000290/settings/audit-log | standard | pending |  |  |
-| 6 | Settings/pages/ConnectionsPage.vue | /accounts/2000290/settings/connections | standard | pending |  |  |
-| 7 | Settings/pages/DnsSetupPage.vue | /accounts/2000290/settings/dns-setup | standard | pending |  |  |
-| 8 | Settings/pages/IntegrationsPage.vue | /accounts/2000290/settings/integrations | standard | pending |  |  |
-| 9 | Settings/pages/TrackingAnalyticsPage.vue | /accounts/2000290/settings/tracking-analytics | standard | pending |  |  |
-| 10 | Settings/pages/PrivacyConsentPage.vue | /accounts/2000290/settings/privacy-consent | standard | pending |  |  |
-| 11 | Settings/pages/SecurityPage.vue | /accounts/2000290/settings/security | standard | pending |  |  |
-| 12 | Settings/pages/StoreProfilePage.vue | /accounts/2000290/settings/store-profile | standard | pending |  |  |
-| 13 | Settings/pages/SalesChannelsPage.vue | /accounts/2000290/settings/sales-channels | standard | pending |  |  |
-| 14 | Settings/pages/PaymentAccountPage.vue | /accounts/2000290/settings/payment-account | standard | pending |  |  |
-| 15 | Settings/pages/ServicePage.vue | /accounts/2000290/settings/service | standard | pending |  |  |
-| 16 | Settings/pages/AiSettingsPage.vue | /accounts/2000290/settings/ai-settings | standard | pending |  |  |
+| 1 | Settings/pages/AccountDefaultsPage.vue | /accounts/2000290/settings/account-defaults | standard | done | 39a0902 | page already compliant; SettingsLayout shell: scoped restatement of .mp-frame-fill margins + calc(100vh) removed → composes .mp-frame-fill |
+| 2 | Settings/pages/GeneralPage.vue | /accounts/2000290/settings/general | standard | done | 566413a | both !important rules deleted (renders identically); 5 px/weight literals → tokens |
+| 3 | Settings/pages/NotificationsPage.vue | /accounts/2000290/settings/notifications | standard | done | ff66044 | box-in-box list → MpListRow divided with switch in #trailing; 8 literals → tokens |
+| 4 | Settings/pages/UsersPermissionsPage.vue | /accounts/2000290/settings/users-permissions | standard | done | a988d50 | py-10 off both empty states; row icons → 16 in 24px disc; opacity literal dropped; bulk-menu v-list-item → MpMenuItem; literals → tokens |
+| 5 | Settings/pages/AuditLogPage.vue | /accounts/2000290/settings/audit-log | standard | done | 06cd433 | v-btn-toggle → MpSegmentedControl sm (wraps at 375); v-alert → MpAlert live=off; py-14/py-10 removed; literals → tokens |
+| 6 | Settings/pages/ConnectionsPage.vue | /accounts/2000290/settings/connections | standard | done | 1d58add | bordered+tinted tiles → divided rows; CTAs into SettingsSection #actions, only Generate Key primary; 5 tooltips; drawer v-btn-toggle → MpSegmentedControl; tokens |
+| 7 | Settings/pages/DnsSetupPage.vue | /accounts/2000290/settings/dns-setup | standard | done | 6a0d750 | tiles → divided rows; one primary CTA; v-alert → MpAlert; icons 18 → 16; tooltips; uppercase DKIM/SPF/DMARC labels → sentence-case muted dl |
+| 8 | Settings/pages/IntegrationsPage.vue | /accounts/2000290/settings/integrations | standard | done | 7e9465f | six primary Connects → outlined; tiles lose color-mix tint (hairline, radius-12); icons 26 → 20; purple → secondary; tokens |
+| 9 | Settings/pages/TrackingAnalyticsPage.vue | /accounts/2000290/settings/tracking-analytics | standard | done | 24fcc00 | renders SettingsPlaceholder only — placeholder component polished in 24fcc00 (icon 22 → 18, line-height token, bold → semibold) |
+| 10 | Settings/pages/PrivacyConsentPage.vue | /accounts/2000290/settings/privacy-consent | standard | done | 24fcc00 | renders SettingsPlaceholder only — placeholder component polished in 24fcc00 (icon 22 → 18, line-height token, bold → semibold) |
+| 11 | Settings/pages/SecurityPage.vue | /accounts/2000290/settings/security | standard | done | 24fcc00 | renders SettingsPlaceholder only — placeholder component polished in 24fcc00 (icon 22 → 18, line-height token, bold → semibold) |
+| 12 | Settings/pages/StoreProfilePage.vue | /accounts/2000290/settings/store-profile | standard | done | 24fcc00 | renders SettingsPlaceholder only — placeholder component polished in 24fcc00 (icon 22 → 18, line-height token, bold → semibold) |
+| 13 | Settings/pages/SalesChannelsPage.vue | /accounts/2000290/settings/sales-channels | standard | done | 24fcc00 | renders SettingsPlaceholder only — placeholder component polished in 24fcc00 (icon 22 → 18, line-height token, bold → semibold) |
+| 14 | Settings/pages/PaymentAccountPage.vue | /accounts/2000290/settings/payment-account | standard | done | 24fcc00 | renders SettingsPlaceholder only — placeholder component polished in 24fcc00 (icon 22 → 18, line-height token, bold → semibold) |
+| 15 | Settings/pages/ServicePage.vue | /accounts/2000290/settings/service | standard | done | ff8feba | Add Template → outlined in #actions (Save sole primary); template rows → MpListRow divided; tooltips; 420px → state.measure; tokens |
+| 16 | Settings/pages/AiSettingsPage.vue | /accounts/2000290/settings/ai-settings | standard | done | 6b9927c | bordered+tinted rows → MpListRow divided with chip in #trailing; literals → tokens |
 
 ## Progress log
 
@@ -221,3 +224,4 @@
 - 2026-09-02 — Wave 1 complete (Products, Commerce, Service, App Store, Billing & Misc): 21 rows done (1 already compliant), 0 skipped/blocked, 20 page commits + shared fix c66ffbb. Three views discovered that page-tracker mis-filed as aliases (CustomGiftCards, PurchasableGiftCards, ChatbotList) added as pending rows for a follow-up. Rejected proposals: MpFilterTabs baked mb-4, MpDataTableToolbar 375 wrap regrouping (both affect every list page — dedicated pass), MpSectionHeader description slot + MpListRow subtitle prop (API additions, out of scope), builder-body pa-* on wizard cards (builder profile excludes B by design), global table tabular-nums (already global at global.scss .v-table td), extra width tokens for 720/520/120/128 (no ramp yet).
 - 2026-09-03 — Wave 2 complete (Dashboard, Analytics, Contacts): 27 rows done (3 already compliant), 0 skipped/blocked, 24 page commits + shared fix 42cd73f (shell-inset / detailSidebarWidth / menu.railWidth / chart.height tokens, info+warning chip tones, MpSectionHeader wrap, MpListRow focus ring per E2, recipe B1 empty-state note). Rejected/deferred: `.v-card.rounded-lg !important` removal (DESIGN_AUDIT P1-8 load-bearing); ContactDetail campaign rows → MpListRow (page redesign, later pass); identity-cell width token (no recurrence). **Human decision needed:** `.mp-label-value dt` renders uppercase 11/600 (F5) but recipe C2 says inline labels beside a value are sentence-case 12 — Tickets (reference) uses the uppercase dt, ContactDetail eRFM now shows "RFM GROUP"; pick one and amend the recipe. Observations: TestCampaignReports/TransactionalReports render empty on the default 30-day range (mock dates aged out); DispatchedOrders shows "$-97.90" on a refund row (template literal, not formatCurrency). Wave-2 worktrees were based on 20f601c (pre-wave-1) — merges were clean and the gate re-verified on master.
 - 2026-09-03 — Wave 3 complete (Merchandising, Retail, Sales Channels, Da Vinci): 30 rows done (4 already compliant, 5 stale Retail rows resolved as redirects/cross-module), 0 skipped/blocked, 28 page commits + shared fix 037bf7f (shell-inset tokens into Retail/Settings/Merchandising shells, retail-widget header tokens + compact wrap, MpKpiCard trend icon 16, DvHistoryDrawer hairlines/search/icon, StorefrontPreview allow-listed). Tracker corrections: MerchandisingHome → MerchandisingChannelSelector; Associates → Staff; Payments/Receipts added (done); Products/PriceLists added (pending). Rejected/deferred: full retail-widgets.scss retoken (33 px, 9 !important — dedicated pass); builder-panel width tokens (component.builder.panelWidth 380 exists — swap StoreThemeBuilder/Code onto it when a 320/280 decision is made); product-card min-width + breakpointWide tokens (no design decision); MpSourceCloudChip icon ramp (chip-proportional by design); MpSegmentedControl generic model (API change); MpSegmentedControl aria-pressed (already applied in wave 1 — agents branched from 20f601c). **Decision for human:** DaVinciCopilot history rail hidden <960 leaves history unreachable on phones (see row note).
+- 2026-09-03 — Wave 4 complete (Marketing ×3 slices, Settings) — ALL FOUR WAVES DONE: 48 rows done (3 already compliant), 0 skipped/blocked, 45 page commits + shared fix 75b60b6 (MpBuilderShell head wraps <768, MpKpiCard emphasis hero → prominent, MerchandisingLayout compact insets on shell tokens, JourneyBuilder 650 → sectionTitle weight token, settings-form.scss paddings tokenised, SettingsSection head wraps <640). Tracker corrections: LeadAds, SmsCampaigns, TransactionalSms added as rows (page-tracker listed them as aliases); EmailContentEditor URL → /contents/editor/200; JourneyBuilder URL → /journeys/1/journey-builder. Two agents were cut off by a usage limit mid-module and resumed cleanly from their worktrees. Rejected/deferred: v-tooltip directive registration (plugin change — decide separately); MpSegmentedControl generic model + block prop (API change); width tokens for truncated cells / preview columns / settings page width (no design decision); builder collapse breakpoints 900/1024 → breakpointSplit (page-level follow-up); settings-page top/right padding removal (visual decision). Observations: LandingBlockView dark theme renders on-surface text over the white merchant sheet (allowlisted area). **Open human decisions carried over:** `.mp-label-value dt` uppercase vs recipe C2 sentence-case; DaVinciCopilot history rail hidden on phones. **Follow-up rows still pending:** Commerce/CustomGiftCards, Commerce/PurchasableGiftCards, Service/ChatbotList, Products/PriceLists.
