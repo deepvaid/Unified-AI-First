@@ -5,6 +5,7 @@ import MpDataTableToolbar from '@/components/MpDataTableToolbar.vue'
 import MpEmptyState from '@/components/MpEmptyState.vue'
 import MpFormDrawer from '@/components/MpFormDrawer.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
+import MpFloatingBulkBar from '@/components/MpFloatingBulkBar.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
 import MpMenuItem from '@/components/MpMenuItem.vue'
 import MpRowActionsMenu from '@/components/MpRowActionsMenu.vue'
@@ -207,23 +208,6 @@ function doDelete() {
         </template>
       </MpDataTableToolbar>
 
-      <!-- Bulk action bar (inline, codebase convention) -->
-      <div v-if="selected.length > 0" class="merch-bulk-bar">
-        <span class="text-body-2 font-weight-medium">{{ selected.length }} selected</span>
-        <v-divider vertical class="mx-3" />
-        <v-btn variant="text" size="small" class="text-none" prepend-icon="check-circle" @click="bulkEnable">
-          Enable
-        </v-btn>
-        <v-btn variant="text" size="small" class="text-none" prepend-icon="circle-pause" @click="bulkDisable">
-          Disable
-        </v-btn>
-        <v-btn variant="text" size="small" class="text-none text-error" prepend-icon="trash-2" @click="bulkDelete">
-          Delete
-        </v-btn>
-        <v-spacer />
-        <v-btn variant="text" size="small" class="text-none" @click="selected = []">Clear selection</v-btn>
-      </div>
-
       <v-data-table
         v-model="selected"
         :headers="headers"
@@ -284,7 +268,7 @@ function doDelete() {
 
         <template #item.leadsTo="{ item }">
           <div v-if="item.type === 'two_way'" class="d-flex align-center gap-1 text-primary font-weight-medium">
-            <v-icon size="14">arrow-left-right</v-icon>
+            <v-icon size="16">arrow-left-right</v-icon>
             <span class="text-body-2">Bidirectional</span>
           </div>
           <div v-else class="d-flex flex-wrap gap-1">
@@ -336,6 +320,17 @@ function doDelete() {
         </template>
       </v-data-table>
     </v-card>
+
+    <MpFloatingBulkBar
+      :count="selected.length"
+      :total="filteredSynonyms.length"
+      @clear="selected = []"
+      @select-all="selected = filteredSynonyms.map((s) => s.id)"
+    >
+      <v-btn variant="text" size="small" class="text-none" prepend-icon="circle-check" @click="bulkEnable">Enable</v-btn>
+      <v-btn variant="text" size="small" class="text-none" prepend-icon="circle-pause" @click="bulkDisable">Disable</v-btn>
+      <v-btn variant="text" size="small" class="text-none" prepend-icon="trash-2" @click="bulkDelete">Delete</v-btn>
+    </MpFloatingBulkBar>
 
     <!-- Edit synonym drawer -->
     <MpFormDrawer v-model="editDrawer" title="Edit synonym" subtitle="Update this synonym mapping">
@@ -423,14 +418,3 @@ function doDelete() {
   </div>
 </template>
 
-<style scoped lang="scss">
-.merch-bulk-bar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 16px;
-  background: rgba(var(--v-theme-primary), 0.06);
-  border-top: 1px solid rgba(var(--v-theme-primary), 0.18);
-  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.18);
-}
-</style>
