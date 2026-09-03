@@ -107,53 +107,56 @@
 
 ## Wave 3
 
-### Module 06 — Merchandising (MerchCloud)   [module-status: pending]
+### Module 06 — Merchandising (MerchCloud)   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | Merchandising/MerchandisingHome.vue | /commerce/2000290/merchandising | standard | pending |  |  |
-| 2 | Merchandising/SearchPreview.vue | /commerce/2000290/merchandising/search/preview | standard | pending |  |  |
-| 3 | Merchandising/Synonyms.vue | /commerce/2000290/merchandising/search/synonyms | standard | pending |  |  |
-| 4 | Merchandising/PageRedirects.vue | /commerce/2000290/merchandising/search/redirects | standard | pending |  |  |
-| 5 | Merchandising/Collections.vue | /commerce/2000290/merchandising/collections | standard | pending |  | redesign a846e3a + Edit-pins wired to Default Merchandising pinning editor |
-| 6 | Merchandising/DefaultMerchandising.vue | /commerce/2000290/merchandising/default-merchandising (+ /pinning/:ruleId, /rules/:ruleId) | standard | pending |  | Findify replica built: pinning + rules tabs, pin editor w/ drag reorder (4ec82ca), rule editor w/ live preview, store data layer (7cebe6e) |
-| 7 | Merchandising/RecommendationEngines.vue | /commerce/2000290/merchandising/recommendations (+ /:engineId editor) | standard | pending |  | engine wizard rebuilt to match real Findify flow (page→type→settings→filters, user-verified screenshots); list itself still pre-redesign — polish at module pass |
-| 8 | Merchandising/FieldTransformations.vue | /commerce/2000290/merchandising/fields | standard | pending |  |  |
+| 1 | Merchandising/MerchandisingChannelSelector.vue | /commerce/2000290/merchandising | standard | done | 882c649 | row corrected: the route serves MerchandisingChannelSelector.vue (no MerchandisingHome.vue exists). 10px circle health icon → 8px token dot with label; py-2 cell dropped. Shell MerchandisingLayout.vue (wraps rows 2–8) also done in ab6f8ba: hand-rolled -32/-36 margins + calc(100vh) → .mp-frame-fill; pa-8 → card.paddingSpacious; media queries on Sass breakpoints |
+| 2 | Merchandising/SearchPreview.vue | /commerce/2000290/merchandising/search/preview | standard | done | 1bc62e7 | min-height="420" literal removed |
+| 3 | Merchandising/Synonyms.vue | /commerce/2000290/merchandising/search/synonyms | standard | done | a7ae071 | hand-rolled bulk bar (rgba + px) → MpFloatingBulkBar; icon 14 → 16; check-circle → circle-check |
+| 4 | Merchandising/PageRedirects.vue | /commerce/2000290/merchandising/search/redirects | standard | done | 3dd17d1 | hand-rolled table header → MpDataTableToolbar; card insets → component.card.*; title → .mp-section-title; tooltip + aria-expanded on collapse; link colour/420px → text-primary/state.measure |
+| 5 | Merchandising/Collections.vue | /commerce/2000290/merchandising/collections | standard | done | 43cea12 | <a @click> → router-link; status chip flat → tonal; focus ring |
+| 6 | Merchandising/DefaultMerchandising.vue | /commerce/2000290/merchandising/default-merchandising (+ /pinning/:ruleId, /rules/:ruleId) | standard | done | 3355cc4 | raw v-list-item menu → MpMenuItem role=menu; py-10/12 off MpEmptyState; phantom font-weight-semibold → .x-strong; chips tonal. Sub-editors: PinningEditor 75dfee1 (dashed empty box → MpEmptyState, widths → toolbar tokens, 860 media → breakpointSplit, Delete → outlined); RuleEditor b7c34d5 (pa-5 → card.padding, toggle literals → tokens + focus ring, preview 380 → inboxListWidth, aria-pressed on expand) |
+| 7 | Merchandising/RecommendationEngines.vue | /commerce/2000290/merchandising/recommendations (+ /:engineId editor) | standard | done | 190f65e | list already compliant (no change). EngineEditor (wizard) 190f65e: raw v-btn-toggle → MpSegmentedControl sm; fallback menu → MpMenuItem; Da Vinci callout rgba → --surface-secondary/--accent-soft; titles → .mp-section-title; step structure untouched. MerchProductCard 03e9506: rgba literals → surface/border/accent pairs, 700 → fontWeight-bold, placeholder icon 28 → 20 |
+| 8 | Merchandising/FieldTransformations.vue | /commerce/2000290/merchandising/fields | standard | done-no-change |  | already compliant |
 
-### Module 07 — Retail   [module-status: pending]
-
-| # | View file | URL(s) | Profile | Status | Commit | Notes |
-|---|-----------|--------|---------|--------|--------|-------|
-| 1 | Retail/RetailHome.vue | /commerce/2000290/retail | standard | pending |  |  |
-| 2 | Retail/Registers.vue | /commerce/2000290/retail/registers | standard | pending |  |  |
-| 3 | Retail/Transactions.vue | /commerce/2000290/retail/transactions | standard | pending |  |  |
-| 4 | Retail/Associates.vue | /commerce/2000290/retail/associates | standard | pending |  |  |
-| 5 | Retail/PosPreview.vue | /commerce/2000290/retail/pos-preview | builder | pending |  | fullPage; intentional hardcoded hex (device mock — allowlisted); stakeholder fix: persistent scan/search on sale home (Brendan feedback) |
-| 6 | Retail/StockByLocation.vue | /commerce/2000290/retail/stock | standard | pending |  |  |
-| 7 | Retail/BulkInventory.vue | /commerce/2000290/retail/inventory | standard | pending |  |  |
-| 8 | Retail/Pricing.vue | /commerce/2000290/retail/pricing | standard | pending |  |  |
-| 9 | Retail/Hardware.vue | /commerce/2000290/retail/hardware | standard | pending |  |  |
-| 10 | Retail/RetailSettings.vue | /commerce/2000290/retail/settings | standard | pending |  |  |
-
-### Module 08 — Sales Channels   [module-status: pending]
+### Module 07 — Retail   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | SalesChannels/SalesChannelsList.vue | /accounts/2000290/sales_channels | standard | pending |  |  |
-| 2 | SalesChannels/CreateSalesChannel.vue | /accounts/2000290/sales_channels/new | standard | pending |  |  |
-| 3 | SalesChannels/SalesChannelLocations.vue | /accounts/2000290/sales_channels/pos-store/locations | standard | pending |  | ad-hoc redesign: role chips → joined text, row avatars removed, toolbar title dropped |
-| 4 | SalesChannels/SalesChannelLocationDetail.vue | /accounts/2000290/sales_channels/pos-store/locations/loc-bondi | standard | pending |  |  |
-| 5 | SalesChannels/SalesChannelDetail.vue | /accounts/2000290/sales_channels/pos-store | standard | pending |  | bespoke identity header is CORRECT (roadmap #9/#14) — don't "fix" it |
-| 6 | SalesChannels/StoreThemeBuilder.vue | /accounts/2000290/sales_channels/retest-sales-notification/theme | builder | pending |  | builderShell (2026-07-19): MpBuilderShell v2, live chip replaces dirty dot, --mp-border-subtle |
-| 7 | SalesChannels/StoreThemeCode.vue | /accounts/2000290/sales_channels/retest-sales-notification/theme/code | builder | pending |  | builderShell (2026-07-19): MpBuilderShell v2, duplicate back control removed |
+| 1 | Retail/RetailHome.vue | /commerce/2000290/retail | standard | done | 124b800 | bespoke h1 header → MpPageHeader; inline gap/font → tokens; icons 14 → 16; RetailLayout.vue shell margins/paddings tokenised in the same commit (640 inset exactly 22) |
+| 2 | Retail/Registers.vue | /commerce/2000290/retail/registers | standard | done | c5d5aae | fleet tiles tokenised; hand-rolled offline warning → MpAlert warning with Sync action; status band → pos/neg/warn soft + ink pairs; inline styles removed; Export on control.height; mono → --mp-fontFamily-mono |
+| 3 | Retail/Transactions.vue | /commerce/2000290/retail/transactions | standard | done-no-change |  | row is stale: no such file — the route renders Commerce/SalesOrders.vue (done in wave 1) |
+| 4 | Retail/Staff.vue | /commerce/2000290/retail/associates | standard | done | cec6f35 | row corrected: route redirects to Retail/Staff.vue. inline cursor + px gap → utilities; Export on control.height; avatar drops text-white |
+| 5 | Retail/PosPreview.vue | /commerce/2000290/retail/pos-preview | builder | done | ee7c422 | builder chrome only: 2× raw v-btn-toggle → MpSegmentedControl sm (icon segments, aria-label + tooltip); aria-labels on offline switch + location select; header/badge/stage px + #f59e0b → tokens. Device mock untouched; persistent scan/search kept |
+| 6 | Retail/StockByLocation.vue | /commerce/2000290/retail/stock | standard | done-no-change |  | row is stale: redirect → Products/Inventory.vue?view=locations (wave 1) |
+| 7 | Retail/BulkInventory.vue | /commerce/2000290/retail/inventory | standard | done-no-change |  | row is stale: redirect → Products/Inventory.vue?view=imports (wave 1) |
+| 8 | Retail/Pricing.vue | /commerce/2000290/retail/pricing | standard | done-no-change |  | row is stale: redirect → Products/PriceLists.vue — PriceLists.vue is not in any tracker module; add as a follow-up row |
+| 9 | Retail/Hardware.vue | /commerce/2000290/retail/hardware | standard | done-no-change |  | already compliant |
+| 10 | Retail/RetailSettings.vue | /commerce/2000290/retail/settings | standard | done | 36030bd | dropped :md-cols="4" — 4 tiles now 2×2 (was 3 + orphan), matching Hardware |
+| 11 | Retail/Payments.vue | /commerce/2000290/retail/payments | standard | done | 1ab4d78 | discovered in wave 3 (absent from page-tracker): pa-6 card roots → card.padding; inline max-width px → MpFormGrid cols=2 |
+| 12 | Retail/Receipts.vue | /commerce/2000290/retail/receipts | standard | done | 7ba9020 | discovered in wave 3: card inset + mb-4 → ga-5 column; receipt mock rgba/px → border/on-surface-muted/mono/caption tokens, tabular-nums |
+| 13 | Products/PriceLists.vue | /commerce/2000290/retail/pricing | standard | pending |  | discovered in wave 3 — served by the Retail pricing redirect but in no tracker module; audit in a follow-up |
 
-### Module 11 — Da Vinci   [module-status: pending]
+### Module 08 — Sales Channels   [module-status: done]
 
 | # | View file | URL(s) | Profile | Status | Commit | Notes |
 |---|-----------|--------|---------|--------|--------|-------|
-| 1 | DaVinci/DaVinciAI.vue | /accounts/2000290/da-vinci · /da-vinci/dashboard | standard | pending |  | serves 2 routes |
-| 2 | DaVinci/DaVinciCopilot.vue | /accounts/2000290/da-vinci/copilot | builder | pending |  | flush layout; chat surface |
-| 3 | DaVinci/DaVinciExperience.vue | /accounts/2000290/da-vinci/experience | builder | pending |  | fullPage; WebGL orb — intentional canvas hex (allowlisted); screenshots may freeze when tab hidden |
+| 1 | SalesChannels/SalesChannelsList.vue | /accounts/2000290/sales_channels | standard | done | 53414ab | :deep(tbody td) 14px !important removed; cloud pills px/rgba → space/chip-radius/--pos-soft/--accent-soft pairs; row icons → 16; responsive headers |
+| 2 | SalesChannels/CreateSalesChannel.vue | /accounts/2000290/sales_channels/new | standard | done | bb9e3ff | raw v-alert → MpAlert; bordered v-list review step → dl.mp-label-value. Router marks it builderShell (tracker said standard) — shell left alone, B/C/F5 applied inside step cards |
+| 3 | SalesChannels/SalesChannelLocations.vue | /accounts/2000290/sales_channels/pos-store/locations | standard | done | 1d9dda9 | 3 hand-rolled stat cards → MpKpiCard; 2 raw v-alert → MpAlert; py-2 cell removed; chevron action tooltip; responsive headers. Channel status moved from MpStatusChip to the KPI subStat text |
+| 4 | SalesChannels/SalesChannelLocationDetail.vue | /accounts/2000290/sales_channels/pos-store/locations/loc-bondi | standard | done | bfe6fef | 4 stat cards → MpKpiCard; address v-list → mp-label-value; card titles → .mp-section-title on card tokens; v-alert → MpAlert; responsive headers ×2 |
+| 5 | SalesChannels/SalesChannelDetail.vue | /accounts/2000290/sales_channels/pos-store | standard | done | 633fe17 | ~100 px/weight literals → tokens; magic min-heights removed; hand-rolled text buttons → v-btn text; v-btn-toggle → MpSegmentedControl; circle → circle-dashed; copy tooltip. Bespoke identity header kept (roadmap) |
+| 6 | SalesChannels/StoreThemeBuilder.vue | /accounts/2000290/sales_channels/retest-sales-notification/theme | builder | done | f111b40 | builder: focus rings → --focus-ring; overlay shadow → --mp-shadow-lg; hidden-row opacity → --text-disabled; rem/px/weights → tokens; rail icons 20 → 18, block icons → 16. Panel widths 324/340/44/190 stay literal (no builder-panel token yet) |
+| 7 | SalesChannels/StoreThemeCode.vue | /accounts/2000290/sales_channels/retest-sales-notification/theme/code | builder | done | 9567046 | builder: rgba states → --surface-secondary/--accent-soft/--on-surface-muted; rail active bar → tonal fill; focus → --focus-ring; hairlines → --border-subtle; mono/px/rem → tokens; icons → 18/16 |
+
+### Module 11 — Da Vinci   [module-status: done]
+
+| # | View file | URL(s) | Profile | Status | Commit | Notes |
+|---|-----------|--------|---------|--------|--------|-------|
+| 1 | DaVinci/DaVinciAI.vue | /accounts/2000290/da-vinci · /da-vinci/dashboard | standard | done | a2ad617 | gap-5/ga-6 replace mb-6; card insets on component.card.*; hero h1 → h2 (MpPageHeader owns h1); titles → .mp-section-title; BETA chip inline px → chip-height-sm/fontSize-11; icon ramp normalised; rgba hairlines → --border-subtle; Dashboard-tab metrics compose MpKpiCard. Alias /da-vinci/dashboard spot-checked |
+| 2 | DaVinci/DaVinciCopilot.vue | /accounts/2000290/da-vinci/copilot | builder | done | e04a399 | hand-rolled <button> CTA → v-btn with --dv-grad skin (6 px literals + :deep dropped); hairlines/surfaces → tokens; 48/16/260/64px → space/sectionRailWidth/appbarHeight tokens; history rail hidden below $mp-layout-breakpointSplit (chat pane was 115px wide at 375). **Decision for human:** history is unreachable on phones until an overlay trigger exists (DvHistoryDrawer supports mode=overlay) — revert the media query or add the trigger |
+| 3 | DaVinci/DaVinciExperience.vue | /accounts/2000290/da-vinci/experience | builder | done | 31c82ff | builder profile: chip/live-control icons → 16; Exit/Send icon buttons gain tooltips; eyebrow 10px → fontSize-11; weights/rem/spacing/radius literals → tokens; redundant mobile !important dropped. Orb/aura canvases + glass skin untouched (allowlisted) |
 
 ## Wave 4
 
@@ -217,3 +220,4 @@
 - 2026-09-02 — Tracker generated from page-tracker.md (14 modules, all rows pending, grouped into waves W1–W4).
 - 2026-09-02 — Wave 1 complete (Products, Commerce, Service, App Store, Billing & Misc): 21 rows done (1 already compliant), 0 skipped/blocked, 20 page commits + shared fix c66ffbb. Three views discovered that page-tracker mis-filed as aliases (CustomGiftCards, PurchasableGiftCards, ChatbotList) added as pending rows for a follow-up. Rejected proposals: MpFilterTabs baked mb-4, MpDataTableToolbar 375 wrap regrouping (both affect every list page — dedicated pass), MpSectionHeader description slot + MpListRow subtitle prop (API additions, out of scope), builder-body pa-* on wizard cards (builder profile excludes B by design), global table tabular-nums (already global at global.scss .v-table td), extra width tokens for 720/520/120/128 (no ramp yet).
 - 2026-09-03 — Wave 2 complete (Dashboard, Analytics, Contacts): 27 rows done (3 already compliant), 0 skipped/blocked, 24 page commits + shared fix 42cd73f (shell-inset / detailSidebarWidth / menu.railWidth / chart.height tokens, info+warning chip tones, MpSectionHeader wrap, MpListRow focus ring per E2, recipe B1 empty-state note). Rejected/deferred: `.v-card.rounded-lg !important` removal (DESIGN_AUDIT P1-8 load-bearing); ContactDetail campaign rows → MpListRow (page redesign, later pass); identity-cell width token (no recurrence). **Human decision needed:** `.mp-label-value dt` renders uppercase 11/600 (F5) but recipe C2 says inline labels beside a value are sentence-case 12 — Tickets (reference) uses the uppercase dt, ContactDetail eRFM now shows "RFM GROUP"; pick one and amend the recipe. Observations: TestCampaignReports/TransactionalReports render empty on the default 30-day range (mock dates aged out); DispatchedOrders shows "$-97.90" on a refund row (template literal, not formatCurrency). Wave-2 worktrees were based on 20f601c (pre-wave-1) — merges were clean and the gate re-verified on master.
+- 2026-09-03 — Wave 3 complete (Merchandising, Retail, Sales Channels, Da Vinci): 30 rows done (4 already compliant, 5 stale Retail rows resolved as redirects/cross-module), 0 skipped/blocked, 28 page commits + shared fix 037bf7f (shell-inset tokens into Retail/Settings/Merchandising shells, retail-widget header tokens + compact wrap, MpKpiCard trend icon 16, DvHistoryDrawer hairlines/search/icon, StorefrontPreview allow-listed). Tracker corrections: MerchandisingHome → MerchandisingChannelSelector; Associates → Staff; Payments/Receipts added (done); Products/PriceLists added (pending). Rejected/deferred: full retail-widgets.scss retoken (33 px, 9 !important — dedicated pass); builder-panel width tokens (component.builder.panelWidth 380 exists — swap StoreThemeBuilder/Code onto it when a 320/280 decision is made); product-card min-width + breakpointWide tokens (no design decision); MpSourceCloudChip icon ramp (chip-proportional by design); MpSegmentedControl generic model (API change); MpSegmentedControl aria-pressed (already applied in wave 1 — agents branched from 20f601c). **Decision for human:** DaVinciCopilot history rail hidden <960 leaves history unreachable on phones (see row note).
