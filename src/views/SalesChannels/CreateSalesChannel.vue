@@ -6,6 +6,7 @@ import MpWizardStepCard from '@/components/MpWizardStepCard.vue'
 import MpOptionCard from '@/components/MpOptionCard.vue'
 import MpFormGrid from '@/components/MpFormGrid.vue'
 import MpConfirmDialog from '@/components/MpConfirmDialog.vue'
+import MpAlert from '@/components/MpAlert.vue'
 import { useWizardSteps } from '@/composables/useWizardSteps'
 import { useDirtyLeaveGuard } from '@/composables/useDirtyLeaveGuard'
 import {
@@ -233,9 +234,9 @@ const reviewRows = computed(() => {
             chips
             class="mp-form-grid__full"
           />
-          <v-alert type="info" variant="tonal" density="compact" class="mp-form-grid__full">
+          <MpAlert tone="info" live="off" class="mp-form-grid__full">
             Locations are physical places owned by this Offline Store channel. Registers are managed from Location Detail.
-          </v-alert>
+          </MpAlert>
         </template>
       </MpFormGrid>
     </MpWizardStepCard>
@@ -245,15 +246,12 @@ const reviewRows = computed(() => {
       title="Review sales channel"
       description="This creates a prototype channel in local mock state."
     >
-      <v-list class="bg-transparent review-list" density="comfortable">
-        <v-list-item v-for="row in reviewRows" :key="row.label">
-          <template #prepend>
-            <v-icon size="18" class="text-medium-emphasis">circle-check</v-icon>
-          </template>
-          <v-list-item-title>{{ row.label }}</v-list-item-title>
-          <v-list-item-subtitle>{{ row.value }}</v-list-item-subtitle>
-        </v-list-item>
-      </v-list>
+      <dl class="mp-label-value">
+        <div v-for="row in reviewRows" :key="row.label">
+          <dt>{{ row.label }}</dt>
+          <dd>{{ row.value }}</dd>
+        </div>
+      </dl>
     </MpWizardStepCard>
 
     <template #footerStart>
@@ -303,10 +301,3 @@ const reviewRows = computed(() => {
     @confirm="discardAndLeave"
   />
 </template>
-
-<style scoped>
-.review-list {
-  border: 1px solid var(--mp-border-subtle);
-  border-radius: var(--mp-radius-12);
-}
-</style>
