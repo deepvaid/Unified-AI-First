@@ -24,7 +24,7 @@ From the roadmap DoD + established constraints:
 - [ ] Tables responsive via `useResponsiveTableHeaders` (`hideBelow: 'sm'|'md'|'lg'` column priority); no horizontal scroll or lost actions at 375px; sensible reflow at 768px.
 - [ ] Every control keyboard-operable with visible focus; icon-only buttons have `aria-label`; inputs labeled; images have `alt` (or `alt=""` decorative); no `<div @click>` controls.
 - [ ] Text contrast ≥4.5:1 (≥3:1 large); interactive UI ≥3:1 — check new pairs with the roadmap's contrast script (line 52). Decorative dividers exempt.
-- [ ] No new hardcoded hex/px, no new `!important`; theme tokens / Vuetify utilities only. (Allowlisted intentional hex: `Retail/PosPreview` device mock, DaVinci orb/voice canvases, chart series colors.)
+- [ ] No new hardcoded hex/px, no new `!important`; theme tokens / Vuetify utilities only. (Allowlisted intentional hex: `Retail/PosPreview` device mock, `salesChannels/StorefrontPreview` merchant storefront mock, DaVinci orb/voice canvases, chart series colors.)
 - [ ] Cards `flat border rounded="lg"`; Lucide icons kebab-case (no `mdi-*`); tabular-nums already global on tables/KPIs — don't undo.
 - [ ] Status columns use `MpStatusChip` with the correct `type`; bulk selection uses `MpFloatingBulkBar`; toolbars use `MpDataTableToolbar`; forms ≤2 steps use `MpFormDrawer`, multi-step uses full-page stepper ending in a success confirmation.
 

@@ -140,7 +140,7 @@ function buildSub(item: DaVinciHistoryItem): string {
               :aria-label="`Delete ${item.title}`"
               @click="handleDelete(item.id, $event)"
             >
-              <v-icon size="14">trash-2</v-icon>
+              <v-icon size="16">trash-2</v-icon>
             </button>
           </div>
         </section>
@@ -170,7 +170,7 @@ function buildSub(item: DaVinciHistoryItem): string {
 .dv-eyebrow {
   font-size: var(--mp-fontSize-11);
   font-weight: var(--mp-fontWeight-semibold);
-  letter-spacing: 1.5px;
+  letter-spacing: var(--mp-letterSpacing-eyebrow);
   text-transform: uppercase;
   color: rgb(var(--v-theme-on-surface-variant));
 }
@@ -179,7 +179,7 @@ function buildSub(item: DaVinciHistoryItem): string {
   position: absolute;
   inset: 56px 0 0 0;
   background: rgb(var(--v-theme-surface));
-  border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
+  border-bottom: 1px solid var(--border-subtle);
   transform: translateX(100%);
   transition: transform 220ms ease;
   display: flex;
@@ -201,7 +201,7 @@ function buildSub(item: DaVinciHistoryItem): string {
   align-items: center;
   justify-content: space-between;
   padding: var(--mp-space-12) var(--mp-space-14) var(--mp-space-10);
-  border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .dv-history__search {
@@ -210,7 +210,7 @@ function buildSub(item: DaVinciHistoryItem): string {
   gap: var(--mp-space-8);
   margin: var(--mp-space-12) var(--mp-space-14) var(--mp-space-8);
   padding: 0 var(--mp-space-12);
-  height: 38px;
+  height: var(--mp-component-control-height);
   background: rgb(var(--v-theme-surface-variant));
   border-radius: var(--mp-radius-full);
 }
@@ -241,7 +241,7 @@ function buildSub(item: DaVinciHistoryItem): string {
 .dv-history__label {
   font-size: var(--mp-fontSize-11);
   font-weight: var(--mp-fontWeight-semibold);
-  letter-spacing: 1.5px;
+  letter-spacing: var(--mp-letterSpacing-eyebrow);
   text-transform: uppercase;
   color: rgb(var(--v-theme-on-surface-variant));
   padding: var(--mp-space-6) var(--mp-space-8) var(--mp-space-8);

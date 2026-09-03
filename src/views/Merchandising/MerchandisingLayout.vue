@@ -103,7 +103,7 @@ function connectChannel() {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--mp-space-24) var(--mp-space-32) var(--mp-space-32);
+  padding: var(--mp-space-24) var(--mp-layout-shellInsetInline) var(--mp-layout-shellInsetBlock);
 }
 
 /* Wizard child (MpWizardShell standalone) owns its bands and scroll. */

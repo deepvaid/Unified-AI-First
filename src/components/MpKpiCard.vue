@@ -55,7 +55,7 @@ const trendUp = computed(() => props.trendPositive !== false)
         </div>
 
         <div v-if="trend" class="d-flex align-center ga-1 mt-2">
-          <v-icon size="14" :class="trendUp ? 'mp-kpi-card__trend-icon--positive' : 'mp-kpi-card__trend-icon--negative'">
+          <v-icon size="16" :class="trendUp ? 'mp-kpi-card__trend-icon--positive' : 'mp-kpi-card__trend-icon--negative'">
             {{ trendUp ? 'trending-up' : 'trending-down' }}
           </v-icon>
           <span

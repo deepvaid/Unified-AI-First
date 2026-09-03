@@ -25,13 +25,24 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 20px 22px 14px;
+  gap: var(--mp-space-12);
+  padding: var(--mp-component-card-padding) var(--mp-component-card-padding) var(--mp-space-14);
+}
+
+/* Below the compact breakpoint the actions cluster drops under the title
+   instead of overlapping it (SalesChannelDetail POS overview at 375). */
+@media (max-width: 640px) {
+  .retail-widget-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .retail-widget-header__actions {
+    justify-self: start;
+  }
 }
 
 .retail-widget-header__title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--mp-fontSize-15);
+  font-weight: var(--mp-fontWeight-semibold);
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -41,18 +52,18 @@
 .retail-widget-header__actions {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--mp-space-4);
 }
 
 .retail-widget-header__sub {
-  font-size: 12.5px;
+  font-size: var(--mp-fontSize-12);
   color: var(--muted);
   font-weight: 500;
   white-space: nowrap;
 }
 
 .retail-widget-body {
-  padding: 0 22px 20px;
+  padding: 0 var(--mp-component-card-padding) var(--mp-component-card-padding);
 }
 
 /* ── Quick action tiles ───────────────────────────────────────── */
